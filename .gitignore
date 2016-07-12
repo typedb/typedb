@@ -1,0 +1,30 @@
+# Mac files #
+.DS_Store
+
+# IntelliJ files #
+.idea/
+*.iml
+
+# Compiled files #
+out/
+target/
+*.class
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
+*.jar
+*.war
+*.ear
+
+# Debug files #
+dep.tree
+
+# Databases #
+db/
+
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
+
+# junk files #
