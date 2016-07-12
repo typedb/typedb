@@ -1,2 +1,2 @@
-# mindmaps
-Distributed Semantic Database http://mindmaps.io
+# MindmapsDB
+Open-Source Distributed Semantic Database http://mindmaps.io
