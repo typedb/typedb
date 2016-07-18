@@ -40,6 +40,7 @@ public enum ErrorMessage {
             "with roles 'has-resource-target' and 'has-resource-value'"
     ),
     INSERT_METATYPE("%s cannot be a subtype of meta-type %s"),
+    INSERT_RECURSIVE("%s should not refer to itself"),
 
     DELETE_VALUE("deleting values is not supported");
 

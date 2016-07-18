@@ -389,6 +389,13 @@ public class InsertQueryTest {
         qb.insert(id("my-thing").ako(RELATION_TYPE.getId())).execute();
     }
 
+    @Test
+    public void testErrorRecursiveType() {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage(allOf(containsString("thingy"), containsString("itself")));
+        qb.insert(id("thingy").isa("thingy")).execute();
+    }
+
     private void assertInsert(Var... vars) {
         // Make sure vars don't exist
         for (Var var : vars) {
