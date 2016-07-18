@@ -29,7 +29,7 @@ public class InsertQueryImpl implements InsertQuery.Admin {
     private final Map<String, List<Var.Admin>> varsByName;
     private final Map<String, List<Var.Admin>> varsById;
     private Map<String, Concept> concepts = new HashMap<>();
-    private Set<String> visitedVars = new HashSet<>();
+    private Stack<String> visitedVars = new Stack<>();
 
     private RelationType hasResource = null;
     private RoleType hasResourceTarget = null;
@@ -156,12 +156,15 @@ public class InsertQueryImpl implements InsertQuery.Admin {
      * @return the same as addConcept, but using an internal map to remember previous calls
      */
     private Concept getConcept(Var.Admin var) {
-        if (visitedVars.contains(var.getName()) && !concepts.containsKey(var.getName())) {
+        String name = var.getName();
+        if (visitedVars.contains(name)) {
             throw new IllegalStateException(ErrorMessage.INSERT_RECURSIVE.getMessage(var.getPrintableName()));
         }
 
-        visitedVars.add(var.getName());
-        return concepts.computeIfAbsent(var.getName(), n -> addConcept(var));
+        visitedVars.push(name);
+        Concept concept = concepts.computeIfAbsent(name, n -> addConcept(var));
+        visitedVars.pop();
+        return concept;
     }
 
     /**
