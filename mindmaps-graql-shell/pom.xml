@@ -18,7 +18,7 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>io.mindmaps.factory</groupId>
+            <groupId>io.mindmaps</groupId>
             <artifactId>mindmaps-titan-factory</artifactId>
             <version>${project.version}</version>
         </dependency>
