@@ -4,6 +4,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import io.mindmaps.core.dao.MindmapsGraph;
 import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.exceptions.InvalidConceptTypeException;
 import io.mindmaps.core.exceptions.MindmapsValidationException;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.factory.MindmapsGraphFactory;
@@ -58,6 +59,7 @@ public class GraqlShell implements AutoCloseable {
 
     private final File tempFile = new File(System.getProperty("java.io.tmpdir") + TEMP_FILENAME);
     private ConsoleReader console;
+    private PrintStream err;
 
     private final MindmapsGraph graph;
     private final MindmapsTransaction transaction;
@@ -69,10 +71,13 @@ public class GraqlShell implements AutoCloseable {
     public static void main(String[] args) {
         String version = GraqlShell.class.getPackage().getImplementationVersion();
         MindmapsGraphFactory graphFactory = MindmapsTitanGraphFactory.getInstance();
-        runShell(args, graphFactory, version, System.in, System.out);
+        runShell(args, graphFactory, version, System.in, System.out, System.err);
     }
 
-    static void runShell(String[] args, MindmapsGraphFactory factory, String version, InputStream in, PrintStream out) {
+    static void runShell(
+            String[] args, MindmapsGraphFactory factory, String version,
+            InputStream in, PrintStream out, PrintStream err
+    ) {
         // Disable horrid cassandra logs
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.OFF);
@@ -90,7 +95,7 @@ public class GraqlShell implements AutoCloseable {
         try {
             cmd = parser.parse(options, args);
         } catch (ParseException e) {
-            System.err.println(e.getMessage());
+            err.println(e.getMessage());
             return;
         }
 
@@ -117,7 +122,7 @@ public class GraqlShell implements AutoCloseable {
 
         MindmapsGraph graph = factory.newGraph(graphConf);
 
-        try(GraqlShell shell = new GraqlShell(graph, in, out)) {
+        try(GraqlShell shell = new GraqlShell(graph, in, out, err)) {
             if (filePath != null) {
                 query = loadQuery(filePath);
             }
@@ -129,7 +134,7 @@ public class GraqlShell implements AutoCloseable {
                 shell.executeRepl();
             }
         } catch (IOException e) {
-            System.err.println(e.toString());
+            err.println(e.toString());
         }
     }
 
@@ -142,10 +147,11 @@ public class GraqlShell implements AutoCloseable {
      * Create a new Graql shell
      * @param graph the graph to operate on
      */
-    GraqlShell(MindmapsGraph graph, InputStream in, OutputStream out) throws IOException {
+    GraqlShell(MindmapsGraph graph, InputStream in, OutputStream out, PrintStream err) throws IOException {
         this.graph = graph;
         transaction = graph.newTransaction();
         console = new ConsoleReader(in, out);
+        this.err = err;
     }
 
     @Override
@@ -210,7 +216,7 @@ public class GraqlShell implements AutoCloseable {
                         try {
                             queryString = loadQuery(path);
                         } catch (IOException e) {
-                            System.err.println(e.toString());
+                            err.println(e.toString());
                             break;
                         }
                     }
@@ -239,8 +245,8 @@ public class GraqlShell implements AutoCloseable {
             } else {
                 throw new RuntimeException("Unrecognized query " + query);
             }
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            System.err.println(e.getMessage());
+        } catch (IllegalArgumentException | IllegalStateException | InvalidConceptTypeException e) {
+            err.println(e.getMessage());
         }
     }
 
@@ -266,7 +272,7 @@ public class GraqlShell implements AutoCloseable {
         try {
             transaction.commit();
         } catch (MindmapsValidationException e) {
-            System.err.println(e.getMessage());
+            err.println(e.getMessage());
         }
     }
 

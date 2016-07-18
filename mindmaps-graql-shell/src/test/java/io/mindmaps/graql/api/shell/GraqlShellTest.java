@@ -131,15 +131,30 @@ public class GraqlShellTest {
         assertThat(result, allOf(containsString("type"), containsString("match"), containsString("exit")));
     }
 
+    @Test
+    public void testInvalidQuery() throws IOException {
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        testShell("insert movie isa entity-type; moon isa movie; europa isa moon\n", err);
+
+        assertThat(err.toString(), allOf(containsString("moon"), containsString("not"), containsString("type")));
+    }
+
     private String testShell(String input, String... args) throws IOException {
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        return testShell(input, err, args);
+    }
+
+    private String testShell(String input, ByteArrayOutputStream err, String... args) throws IOException {
         InputStream in = new ByteArrayInputStream(input.getBytes());
 
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
-        PrintStream out = new PrintStream(bout);
+        PrintStream pout = new PrintStream(bout);
+        PrintStream perr = new PrintStream(err);
 
-        GraqlShell.runShell(args, graphFactory, expectedVersion, in, out);
+        GraqlShell.runShell(args, graphFactory, expectedVersion, in, pout, perr);
 
-        out.flush();
+        pout.flush();
+        perr.flush();
 
         return bout.toString();
     }
