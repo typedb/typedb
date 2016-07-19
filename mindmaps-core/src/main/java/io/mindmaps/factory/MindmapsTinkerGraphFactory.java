@@ -6,7 +6,7 @@ import io.mindmaps.core.implementation.MindmapsTinkerGraph;
 public class MindmapsTinkerGraphFactory implements MindmapsGraphFactory {
     private static MindmapsTinkerGraphFactory factoryInstance;
 
-    private MindmapsTinkerGraphFactory(){
+    public MindmapsTinkerGraphFactory(){
 
     }
 

@@ -21,7 +21,7 @@ public class MindmapsTitanGraphFactory implements MindmapsGraphFactory{
     private final Map<String, TitanGraph> instances;
     private final static String SEARCH_KEY = "search";
 
-    private MindmapsTitanGraphFactory(){
+    public MindmapsTitanGraphFactory(){
         instances = new HashMap<>();
     }
 
