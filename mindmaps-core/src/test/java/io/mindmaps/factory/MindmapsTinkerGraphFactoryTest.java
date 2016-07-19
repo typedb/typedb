@@ -19,7 +19,7 @@ public class MindmapsTinkerGraphFactoryTest {
 
     @Before
     public void setup() {
-        tinkerGraphFactory = MindmapsTinkerGraphFactory.getInstance();
+        tinkerGraphFactory = new MindmapsTinkerGraphFactory();
     }
 
     @Test

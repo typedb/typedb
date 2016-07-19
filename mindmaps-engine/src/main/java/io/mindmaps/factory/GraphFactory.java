@@ -1,8 +1,6 @@
-package factory;
+package io.mindmaps.factory;
 
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
-import io.mindmaps.factory.MindmapsGraphFactory;
-import io.mindmaps.factory.MindmapsTitanGraphFactory;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import java.io.IOException;
@@ -33,7 +31,7 @@ public class GraphFactory {
 //        conf.getLoggerConfig(LogManager.ROOT_LOGGER_NAME).setLevel(Level.ERROR);
 
 
-        titanGraphFactory = MindmapsTitanGraphFactory.getInstance();
+        titanGraphFactory = new MindmapsTitanGraphFactory();
         Properties prop = new Properties();
         try {
             prop.load(getClass().getClassLoader().getResourceAsStream("application.properties"));

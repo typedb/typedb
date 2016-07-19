@@ -1,8 +1,8 @@
-package api;
+package io.mindmaps.api;
 
-import factory.GraphFactory;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.core.model.Concept;
+import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.api.parser.QueryParser;
 import org.json.JSONArray;
 import org.json.JSONObject;

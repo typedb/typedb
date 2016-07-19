@@ -3,7 +3,7 @@ package io.mindmaps.example;
 import io.mindmaps.core.dao.MindmapsGraph;
 import io.mindmaps.core.dao.MindmapsTransaction;
 import io.mindmaps.core.model.*;
-import io.mindmaps.factory.MindmapsTinkerGraphFactory;
+import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -18,7 +18,7 @@ public class PokemonGraphFactoryTest {
 
     @Before
     public void setup(){
-        mindmapsGraph = MindmapsTinkerGraphFactory.getInstance().newGraph();
+        mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         PokemonGraphFactory.loadGraph(mindmapsGraph);
         transaction = mindmapsGraph.newTransaction();
     }

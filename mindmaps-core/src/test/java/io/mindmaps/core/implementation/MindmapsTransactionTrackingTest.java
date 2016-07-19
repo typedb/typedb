@@ -5,7 +5,7 @@ import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.EntityType;
 import io.mindmaps.core.model.Instance;
 import io.mindmaps.core.model.Type;
-import io.mindmaps.factory.MindmapsTinkerGraphFactory;
+import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.junit.After;
 import org.junit.Before;
@@ -34,7 +34,7 @@ public class MindmapsTransactionTrackingTest {
 
     @Before
     public void buildGraphAccessManager() {
-        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTinkerGraphFactory.getInstance().newGraph().newTransaction();
+        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
         Graph graph = mindmapsGraph.getTinkerPopGraph();
         // start standard rootGraph access manager
         mindmapsGraph.initialiseMetaConcepts();

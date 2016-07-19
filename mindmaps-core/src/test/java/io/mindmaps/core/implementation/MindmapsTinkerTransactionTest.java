@@ -1,7 +1,7 @@
 package io.mindmaps.core.implementation;
 
 import io.mindmaps.core.dao.MindmapsGraph;
-import io.mindmaps.factory.MindmapsTinkerGraphFactory;
+import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -13,7 +13,7 @@ public class MindmapsTinkerTransactionTest {
 
     @Before
     public void setup(){
-        mindmapsGraph = MindmapsTinkerGraphFactory.getInstance().newGraph();
+        mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
     }
 
     @Test(expected=UnsupportedOperationException.class)

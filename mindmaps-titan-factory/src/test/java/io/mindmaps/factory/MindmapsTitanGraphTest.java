@@ -1,12 +1,12 @@
-package io.mindmaps.core.implementation;
+package io.mindmaps.factory;
 
 import io.mindmaps.core.dao.MindmapsGraph;
 import io.mindmaps.core.dao.MindmapsTransaction;
 import io.mindmaps.core.exceptions.ErrorMessage;
 import io.mindmaps.core.exceptions.GraphRuntimeException;
 import io.mindmaps.core.exceptions.MindmapsValidationException;
+import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.core.model.EntityType;
-import io.mindmaps.factory.MindmapsTitanGraphFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,21 +19,23 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import static junit.framework.Assert.*;
+import static junit.framework.Assert.assertNull;
+import static junit.framework.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
 
 public class MindmapsTitanGraphTest {
-    private final String TEST_CONFIG = "conf/titan-cassandra-es-test.properties";
+    private final String TEST_CONFIG = "../conf/titan/titan-cassandra-es-test.properties";
     private MindmapsGraph mindmapsGraph;
 
     @Before
     public void setup(){
-        mindmapsGraph = MindmapsTitanGraphFactory.getInstance().newGraph(TEST_CONFIG);
+        mindmapsGraph = new MindmapsTitanGraphFactory().newGraph(TEST_CONFIG);
     }
 
     @After
     public void cleanup(){
-        MindmapsTitanGraphFactory.getInstance().newGraph(TEST_CONFIG).clear();
+        MindmapsGraph mg = new MindmapsTitanGraphFactory().newGraph(TEST_CONFIG);
+        mg.clear();
     }
 
     @Test

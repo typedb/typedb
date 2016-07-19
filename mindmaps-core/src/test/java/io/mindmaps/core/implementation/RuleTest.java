@@ -1,9 +1,9 @@
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.core.model.Type;
 import io.mindmaps.core.model.Rule;
 import io.mindmaps.core.model.RuleType;
-import io.mindmaps.factory.MindmapsTinkerGraphFactory;
+import io.mindmaps.core.model.Type;
+import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Before;
@@ -17,7 +17,7 @@ public class RuleTest {
 
     @Before
     public void buildGraph() {
-        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTinkerGraphFactory.getInstance().newGraph().newTransaction();
+        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
         mindmapsGraph.initialiseMetaConcepts();
     }
 

@@ -3,7 +3,7 @@ package io.mindmaps.core.implementation;
 import io.mindmaps.core.exceptions.ErrorMessage;
 import io.mindmaps.core.exceptions.MoreThanOneEdgeException;
 import io.mindmaps.core.model.*;
-import io.mindmaps.factory.MindmapsTinkerGraphFactory;
+import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -14,9 +14,7 @@ import java.util.UUID;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class RoleTypeTest {
     private MindmapsTransactionImpl mindmapsGraph;
@@ -28,7 +26,7 @@ public class RoleTypeTest {
 
     @Before
     public void buildGraph(){
-        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTinkerGraphFactory.getInstance().newGraph().newTransaction();
+        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
         mindmapsGraph.initialiseMetaConcepts();
 
         roleType = mindmapsGraph.putRoleType("RoleType");

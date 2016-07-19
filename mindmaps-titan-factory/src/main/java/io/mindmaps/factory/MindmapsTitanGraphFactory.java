@@ -16,20 +16,12 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.*;
 
-public class MindmapsTitanGraphFactory implements MindmapsGraphFactory{
-    private static MindmapsTitanGraphFactory factoryInstance;
+class MindmapsTitanGraphFactory implements MindmapsGraphFactory{
     private final Map<String, TitanGraph> instances;
     private final static String SEARCH_KEY = "search";
 
     public MindmapsTitanGraphFactory(){
         instances = new HashMap<>();
-    }
-
-    public static MindmapsGraphFactory getInstance(){
-        if(factoryInstance == null){
-            factoryInstance = new MindmapsTitanGraphFactory();
-        }
-        return factoryInstance;
     }
 
     @Override

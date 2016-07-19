@@ -4,7 +4,7 @@ import io.mindmaps.core.dao.MindmapsGraph;
 import io.mindmaps.core.dao.MindmapsTransaction;
 import io.mindmaps.core.implementation.Data;
 import io.mindmaps.example.MovieGraphFactory;
-import io.mindmaps.factory.MindmapsTinkerGraphFactory;
+import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -24,7 +24,7 @@ public class QueryErrorTest {
 
     @BeforeClass
     public static void setUpClass() {
-        MindmapsGraph mindmapsGraph = MindmapsTinkerGraphFactory.getInstance().newGraph();
+        MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
         transaction = mindmapsGraph.newTransaction();
     }
@@ -133,7 +133,7 @@ public class QueryErrorTest {
     @Test
     public void testExceptionWhenNoHasResourceRelation() {
         // Create a fresh graph, with no has-resource relationship
-        MindmapsTransaction empty = MindmapsTinkerGraphFactory.getInstance().newGraph().newTransaction();
+        MindmapsTransaction empty = MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
 
         QueryBuilder emptyQb = QueryBuilder.build(empty);
         emptyQb.insert(

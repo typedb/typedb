@@ -4,7 +4,7 @@ import io.mindmaps.core.exceptions.ConceptIdNotUniqueException;
 import io.mindmaps.core.exceptions.ErrorMessage;
 import io.mindmaps.core.exceptions.MindmapsValidationException;
 import io.mindmaps.core.model.*;
-import io.mindmaps.factory.MindmapsTinkerGraphFactory;
+import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -31,7 +31,7 @@ public class MindmapsTransactionLowLevelTest {
 
     @Before
     public void buildGraphAccessManager(){
-        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTinkerGraphFactory.getInstance().newGraph().newTransaction();
+        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
         mindmapsGraph.initialiseMetaConcepts();
     }
     @After

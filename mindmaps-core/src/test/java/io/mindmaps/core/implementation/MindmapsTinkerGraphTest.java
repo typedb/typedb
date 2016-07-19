@@ -6,8 +6,7 @@ import io.mindmaps.core.exceptions.ErrorMessage;
 import io.mindmaps.core.exceptions.GraphRuntimeException;
 import io.mindmaps.core.exceptions.MindmapsValidationException;
 import io.mindmaps.core.model.EntityType;
-import io.mindmaps.factory.MindmapsGraphFactory;
-import io.mindmaps.factory.MindmapsTinkerGraphFactory;
+import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -27,7 +26,7 @@ public class MindmapsTinkerGraphTest {
 
     @Before
     public void setup() throws MindmapsValidationException {
-        mindmapsGraph = MindmapsTinkerGraphFactory.getInstance().newGraph();
+        mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         mindmapsGraph.newTransaction().commit();
     }
 
@@ -80,13 +79,5 @@ public class MindmapsTinkerGraphTest {
         } catch (MindmapsValidationException e) {
             e.printStackTrace();
         }
-    }
-
-    @Test
-    public void simpleTestClear(){
-        MindmapsGraphFactory factory = MindmapsTinkerGraphFactory.getInstance();
-        MindmapsGraph graph = factory.newGraph();
-        graph.clear();
-        assertEquals(8, graph.getGraph().traversal().V().toList().size());
     }
 }

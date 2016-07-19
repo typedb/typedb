@@ -6,7 +6,7 @@ import io.mindmaps.core.exceptions.NoEdgeException;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.EntityType;
 import io.mindmaps.core.model.Relation;
-import io.mindmaps.factory.MindmapsTinkerGraphFactory;
+import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
@@ -35,7 +35,7 @@ public class CastingTest {
 
     @Before
     public void setUp() {
-        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTinkerGraphFactory.getInstance().newGraph().newTransaction();
+        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
         mindmapsGraph.initialiseMetaConcepts();
         role = (RoleTypeImpl) mindmapsGraph.putRoleType("Role");
         conceptType = (EntityTypeImpl) mindmapsGraph.putEntityType("A thing");

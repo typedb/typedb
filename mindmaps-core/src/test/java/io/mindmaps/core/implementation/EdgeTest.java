@@ -1,7 +1,7 @@
 package io.mindmaps.core.implementation;
 
 import io.mindmaps.core.model.Type;
-import io.mindmaps.factory.MindmapsTinkerGraphFactory;
+import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -14,7 +14,7 @@ public class EdgeTest {
 
     @Before
     public void setUp(){
-        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTinkerGraphFactory.getInstance().newGraph().newTransaction();
+        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
     }
     @After
     public void destroyGraphAccessManager() throws Exception {

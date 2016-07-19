@@ -2,7 +2,7 @@ package io.mindmaps.core.implementation;
 
 import io.mindmaps.core.exceptions.ErrorMessage;
 import io.mindmaps.core.model.*;
-import io.mindmaps.factory.MindmapsTinkerGraphFactory;
+import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -23,7 +23,7 @@ public class ResourceTest {
 
     @Before
     public void buildGraph() {
-        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTinkerGraphFactory.getInstance().newGraph().newTransaction();
+        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
         mindmapsGraph.initialiseMetaConcepts();
     }
 

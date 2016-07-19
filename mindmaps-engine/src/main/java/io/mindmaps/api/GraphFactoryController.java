@@ -1,4 +1,4 @@
-package api;
+package io.mindmaps.api;
 
 
 import org.slf4j.Logger;

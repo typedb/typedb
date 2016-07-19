@@ -1,4 +1,4 @@
-package visualiser;
+package io.mindmaps.visualiser;
 
 import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;

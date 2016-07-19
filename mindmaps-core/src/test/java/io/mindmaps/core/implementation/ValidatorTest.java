@@ -3,7 +3,7 @@ package io.mindmaps.core.implementation;
 import io.mindmaps.core.exceptions.ErrorMessage;
 import io.mindmaps.core.exceptions.MindmapsValidationException;
 import io.mindmaps.core.model.*;
-import io.mindmaps.factory.MindmapsTinkerGraphFactory;
+import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,7 +28,7 @@ public class ValidatorTest {
 
     @Before
     public void buildGraphAccessManager(){
-        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTinkerGraphFactory.getInstance().newGraph().newTransaction();
+        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
     }
     @After
     public void destroyGraphAccessManager()  throws Exception{

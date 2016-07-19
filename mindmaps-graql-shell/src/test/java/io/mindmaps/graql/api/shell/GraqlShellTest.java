@@ -1,33 +1,31 @@
 package io.mindmaps.graql.api.shell;
 
-import io.mindmaps.factory.MindmapsGraphFactory;
-import io.mindmaps.factory.MindmapsTinkerGraphFactory;
+import io.mindmaps.core.dao.MindmapsGraph;
+import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.*;
 import java.util.Arrays;
+import java.util.function.Function;
 
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class GraqlShellTest {
 
-    private MindmapsGraphFactory graphFactory;
+    private Function<String, MindmapsGraph> graphFactory;
 
-    private String[] providedConf;
+    private String providedUrl;
     private String expectedVersion = "graql-9.9.9";
 
     @Before
     public void setUp() {
-        graphFactory = strings -> {
-            providedConf = strings;
-            return MindmapsTinkerGraphFactory.getInstance().newGraph();
+        graphFactory = url -> {
+            providedUrl = url;
+            return MindmapsTestGraphFactory.newEmptyGraph();
         };
     }
 
@@ -58,9 +56,9 @@ public class GraqlShellTest {
     }
 
     @Test
-    public void testConfigOption() throws IOException {
-        testShell("", "-c", "conf.properties");
-        assertArrayEquals(new String[]{"conf.properties"}, providedConf);
+    public void testRemoteOption() throws IOException {
+        testShell("", "-r", "http://localhost:8080/");
+        assertEquals("http://localhost:8080/", providedUrl);
     }
 
     @Test

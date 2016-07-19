@@ -1,8 +1,8 @@
-package core;
+package io.mindmaps.core;
 
-import factory.GraphFactory;
 import io.mindmaps.core.implementation.DataType;
-import loader.QueueManager;
+import io.mindmaps.factory.GraphFactory;
+import io.mindmaps.loader.QueueManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

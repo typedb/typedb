@@ -5,7 +5,7 @@ import io.mindmaps.core.exceptions.ErrorMessage;
 import io.mindmaps.core.exceptions.InvalidConceptValueException;
 import io.mindmaps.core.model.Resource;
 import io.mindmaps.core.model.ResourceType;
-import io.mindmaps.factory.MindmapsTinkerGraphFactory;
+import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -13,14 +13,10 @@ import org.junit.rules.ExpectedException;
 
 import java.util.regex.PatternSyntaxException;
 
-import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertNull;
-import static junit.framework.Assert.assertTrue;
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.instanceOf;
+import static junit.framework.Assert.*;
+import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
 
 public class ResourceTypeTest {
 
@@ -32,7 +28,7 @@ public class ResourceTypeTest {
 
     @Before
     public void buildGraph() {
-        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTinkerGraphFactory.getInstance().newGraph().newTransaction();
+        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
         mindmapsGraph.initialiseMetaConcepts();
         resourceType = mindmapsGraph.putResourceType("Resource Type", Data.STRING);
     }

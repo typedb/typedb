@@ -4,7 +4,7 @@ import io.mindmaps.core.exceptions.ConceptException;
 import io.mindmaps.core.exceptions.ErrorMessage;
 import io.mindmaps.core.exceptions.MoreThanOneEdgeException;
 import io.mindmaps.core.model.*;
-import io.mindmaps.factory.MindmapsTinkerGraphFactory;
+import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
@@ -31,7 +31,7 @@ public class ConceptTest {
 
     @Before
     public void setUp(){
-        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTinkerGraphFactory.getInstance().newGraph().newTransaction();
+        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
         mindmapsGraph.initialiseMetaConcepts();
         concept = (ConceptImpl) mindmapsGraph.putEntityType("main_concept");
     }

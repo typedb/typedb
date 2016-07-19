@@ -2,7 +2,7 @@ package io.mindmaps.core.implementation;
 
 import io.mindmaps.core.exceptions.ErrorMessage;
 import io.mindmaps.core.model.*;
-import io.mindmaps.factory.MindmapsTinkerGraphFactory;
+import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -36,7 +36,7 @@ public class MindmapsTransactionHighLevelTest {
 
     @Before
     public void buildGraphAccessManager(){
-        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTinkerGraphFactory.getInstance().newGraph().newTransaction();
+        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
         mindmapsGraph.initialiseMetaConcepts();
 
         type = mindmapsGraph.putEntityType("Test");
