@@ -53,7 +53,7 @@ public class QueryBuilder {
      * @param patterns a collection of patterns to match in the graph
      * @return a match query that will find matches of the given patterns
      */
-    public MatchQuery match(Collection<Pattern> patterns) {
+    public MatchQuery match(Collection<? extends Pattern> patterns) {
         return new MatchQueryImpl(transaction, Pattern.Admin.conjunction(AdminConverter.getPatternAdmins(patterns)));
     }
 
@@ -69,7 +69,7 @@ public class QueryBuilder {
      * @param vars a collection of variables to insert into the graph
      * @return an insert query that will insert the given variables into the graph
      */
-    public InsertQuery insert(Collection<Var> vars) {
+    public InsertQuery insert(Collection<? extends Var> vars) {
         return new InsertQueryImpl(transaction, AdminConverter.getVarAdmins(vars));
     }
 
@@ -108,7 +108,7 @@ public class QueryBuilder {
      * @param patterns a collection of patterns to match
      * @return a pattern that will match only when all contained patterns match
      */
-    public static Pattern and(Collection<Pattern> patterns) {
+    public static Pattern and(Collection<? extends Pattern> patterns) {
         Pattern.Conjunction<Pattern.Admin> conjunction =
                 Pattern.Admin.conjunction(AdminConverter.getPatternAdmins(patterns));
 
@@ -127,7 +127,7 @@ public class QueryBuilder {
      * @param patterns a collection of patterns to match
      * @return a pattern that will match when any contained pattern matches
      */
-    public static Pattern or(Collection<Pattern> patterns) {
+    public static Pattern or(Collection<? extends Pattern> patterns) {
         Pattern.Disjunction<Pattern.Admin> disjunction =
                 Pattern.Admin.disjunction(AdminConverter.getPatternAdmins(patterns));
 

@@ -126,12 +126,12 @@ public class MatchQueryImpl implements MatchQuery.Admin {
     }
 
     @Override
-    public InsertQuery insert(Collection<Var> vars) {
+    public InsertQuery insert(Collection<? extends Var> vars) {
         return new InsertQueryImpl(transaction, AdminConverter.getVarAdmins(vars), this);
     }
 
     @Override
-    public DeleteQuery delete(Collection<Var> deleters) {
+    public DeleteQuery delete(Collection<? extends Var> deleters) {
         return new DeleteQueryImpl(transaction, AdminConverter.getVarAdmins(deleters), this);
     }
 
