@@ -132,7 +132,7 @@ public class QueryErrorTest {
 
     @Test
     public void testExceptionWhenNoHasResourceRelation() {
-        // Create a fresh graph, with no has-resource relationship
+        // Create a fresh graph, with no has-resource between person and name
         MindmapsTransaction empty = MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
 
         QueryBuilder emptyQb = QueryBuilder.build(empty);
@@ -143,9 +143,8 @@ public class QueryErrorTest {
 
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(
-                containsString("has-resource"),
-                containsString("has-resource-target"),
-                containsString("has-resource-value")
+                containsString("person"),
+                containsString("name")
         ));
         emptyQb.insert(var().isa("person").has("name", "Bob")).execute();
     }

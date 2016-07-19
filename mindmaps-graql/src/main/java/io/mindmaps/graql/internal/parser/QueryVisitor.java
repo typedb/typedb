@@ -216,6 +216,12 @@ public class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
+    public Object visitPropResource(GraqlParser.PropResourceContext ctx) {
+        patterns.peek().hasResource(visitId(ctx.id()));
+        return null;
+    }
+
+    @Override
     public Void visitIsAbstract(GraqlParser.IsAbstractContext ctx) {
         patterns.peek().isAbstract();
         return null;

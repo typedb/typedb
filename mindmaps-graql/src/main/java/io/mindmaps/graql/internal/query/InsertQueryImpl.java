@@ -31,10 +31,6 @@ public class InsertQueryImpl implements InsertQuery.Admin {
     private Map<String, Concept> concepts = new HashMap<>();
     private Stack<String> visitedVars = new Stack<>();
 
-    private RelationType hasResource = null;
-    private RoleType hasResourceTarget = null;
-    private RoleType hasResourceValue = null;
-
     /**
      * @param transaction the transaction to execute on
      * @param vars a collection of Vars to insert
@@ -121,7 +117,14 @@ public class InsertQueryImpl implements InsertQuery.Admin {
      * Insert all the Vars
      */
     private Stream<Concept> insertAll() {
-        return getAllVars().stream().map(this::insertVar);
+        // First insert each var
+        getAllVars().stream().forEach(this::insertVar);
+
+        // Then add resources to each var, streaming out the results.
+        // It is necessary to add resources last to be sure that any 'has-resource' information in the query has
+        // already been added.
+        // TODO: Fix this so this step is no longer necessary (can be done by correctly expanding 'has-resource')
+        return getAllVars().stream().map(this::insertVarResources);
     }
 
     /**
@@ -141,12 +144,24 @@ public class InsertQueryImpl implements InsertQuery.Admin {
         var.getPlaysRoles().stream().forEach(role -> concept.asType().playsRole(getConcept(role).asRoleType()));
         var.getScopes().stream().forEach(scope -> concept.asRelation().scope(getConcept(scope).asInstance()));
 
+        var.getHasResourceTypes().forEach(resourceType -> addResourceType(var, resourceType));
+
+        var.getCastings().forEach(casting -> addCasting(var, casting));
+
+        return concept;
+    }
+
+    /**
+     * Add all the resources of the given var
+     * @param var the var to add resources to
+     */
+    private Concept insertVarResources(Var.Admin var) {
+        Concept concept = getConcept(var);
+
         if (!var.getResourceEqualsPredicates().isEmpty()) {
             Instance instance = concept.asInstance();
             var.getResourceEqualsPredicates().forEach((type, values) -> addResources(instance, type, values));
         }
-
-        var.getCastings().forEach(casting -> addCasting(var, casting));
 
         return concept;
     }
@@ -346,6 +361,23 @@ public class InsertQueryImpl implements InsertQuery.Admin {
     }
 
     /**
+     * @param var the var representing a type that can own the given resource type
+     * @param resourceVar the var representing the resource type
+     */
+    private void addResourceType(Var.Admin var, Var.Admin resourceVar) {
+        Type type = getConcept(var).asType();
+        ResourceType resourceType = getConcept(resourceVar).asResourceType();
+
+        RoleType owner = transaction.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceType.getId()));
+        RoleType value = transaction.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceType.getId()));
+        transaction.putRelationType(GraqlType.HAS_RESOURCE.getId(resourceType.getId()))
+                .hasRole(owner).hasRole(value);
+
+        type.playsRole(owner);
+        resourceType.playsRole(value);
+    }
+
+    /**
      * Add resources to the given instance, using the has-resource relation
      * @param instance the instance to add resources to
      * @param resourceType the variable representing the resource type
@@ -369,12 +401,14 @@ public class InsertQueryImpl implements InsertQuery.Admin {
     private <D> void addResource(Instance instance, ResourceType<D> type, D value) {
         Resource resource = transaction.addResource(type).setValue(value);
 
-        if (hasResource == null) hasResource = transaction.getRelationType(GraqlType.HAS_RESOURCE);
-        if (hasResourceTarget == null) hasResourceTarget = transaction.getRoleType(GraqlType.HAS_RESOURCE_TARGET);
-        if (hasResourceValue == null) hasResourceValue = transaction.getRoleType(GraqlType.HAS_RESOURCE_VALUE);
+        RelationType hasResource = transaction.getRelationType(GraqlType.HAS_RESOURCE.getId(type.getId()));
+        RoleType hasResourceTarget = transaction.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(type.getId()));
+        RoleType hasResourceValue = transaction.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(type.getId()));
 
         if (hasResource == null || hasResourceTarget == null || hasResourceValue == null) {
-            throw new IllegalStateException(ErrorMessage.INSERT_NO_RESOURCE_RELATION.getMessage());
+            throw new IllegalStateException(
+                    ErrorMessage.INSERT_NO_RESOURCE_RELATION.getMessage(instance.type().getId(), type.getId())
+            );
         }
 
         Relation relation = transaction.addRelation(hasResource);

@@ -259,7 +259,7 @@ public class MatchQueryTest {
     @Test
     public void testTypeAsVariable() {
         MatchQuery query = qb.match(id("genre").playsRole(var("x")));
-        QueryUtil.assertResultsMatch(query, "x", null, "genre-of-production", "has-resource-target");
+        QueryUtil.assertResultsMatch(query, "x", null, "genre-of-production");
     }
 
     @Test

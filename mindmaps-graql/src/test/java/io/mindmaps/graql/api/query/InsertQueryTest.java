@@ -323,7 +323,7 @@ public class InsertQueryTest {
         qb.insert(
                 var().id("new-type").isa(ENTITY_TYPE.getId()),
                 id("new-type").value("A value"),
-                var().id("new-type").playsRole("has-resource-target"),
+                var().id("new-type").playsRole("has-title-owner"),
                 var().id("new-thing").isa("new-type")
         ).execute();
 
@@ -334,7 +334,7 @@ public class InsertQueryTest {
         EntityType newType = typeQuery.stream().findFirst().get().get("n").asEntityType();
 
         assertEquals("A value", newType.getValue());
-        assertTrue(newType.playsRoles().contains(transaction.getRoleType("has-resource-target")));
+        assertTrue(newType.playsRoles().contains(transaction.getRoleType("has-title-owner")));
 
         assertTrue(qb.match(var().isa("new-type")).ask().execute());
     }
@@ -363,8 +363,33 @@ public class InsertQueryTest {
     public void testInsertResourceTypeAndInstance() {
         qb.insert(
                 var("x").isa("movie").has("my-resource", "look a string"),
-                var().id("my-resource").isa("resource-type").datatype(Data.STRING).playsRole("has-resource-value")
+                id("my-resource").isa("resource-type").datatype(Data.STRING),
+                id("movie").hasResource("my-resource")
         ).execute();
+    }
+
+    @Test
+    public void testHasResource() {
+        qb.insert(
+                id("a-new-type").isa("entity-type").hasResource("a-new-resource-type"),
+                id("a-new-resource-type").isa("resource-type").datatype(Data.STRING),
+                id("an-unconnected-resource-type").isa("resource-type").datatype(Data.LONG)
+        ).execute();
+
+        // Make sure a-new-type can have the given resource type, but not other resource types
+        assertTrue(qb.match(id("a-new-type").isa("entity-type").hasResource("a-new-resource-type")).ask().execute());
+        assertFalse(qb.match(id("a-new-type").hasResource("title")).ask().execute());
+        assertFalse(qb.match(id("movie").hasResource("a-new-resource-type")).ask().execute());
+        assertFalse(qb.match(id("a-new-type").hasResource("an-unconnected-resource-type")).ask().execute());
+
+        // Make sure the expected ontology elements are created
+        assertTrue(qb.match(id("has-a-new-resource-type").isa("relation-type")).ask().execute());
+        assertTrue(qb.match(id("has-a-new-resource-type-owner").isa("role-type")).ask().execute());
+        assertTrue(qb.match(id("has-a-new-resource-type-value").isa("role-type")).ask().execute());
+        assertTrue(qb.match(id("has-a-new-resource-type").hasRole("has-a-new-resource-type-owner")).ask().execute());
+        assertTrue(qb.match(id("has-a-new-resource-type").hasRole("has-a-new-resource-type-value")).ask().execute());
+        assertTrue(qb.match(id("a-new-type").playsRole("has-a-new-resource-type-owner")).ask().execute());
+        assertTrue(qb.match(id("a-new-resource-type").playsRole("has-a-new-resource-type-value")).ask().execute());
     }
 
     @Test

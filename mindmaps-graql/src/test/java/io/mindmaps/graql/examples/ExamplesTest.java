@@ -74,14 +74,10 @@ public class ExamplesTest {
         );
 
         load(
-                "insert has-resource isa relation-type;",
-                "insert has-resource-target isa role-type;",
-                "insert has-resource-value isa role-type;",
-                "insert has-resource has-role has-resource-target;",
-                "insert has-resource has-role has-resource-value;",
-                "insert person plays-role has-resource-target;",
-                "insert title isa resource-type, datatype string, plays-role has-resource-value;",
-                "insert epithet isa resource-type, datatype string, plays-role has-resource-value;"
+                "insert title isa resource-type, datatype string",
+                "insert epithet isa resource-type, datatype string",
+                "insert person has-resource title",
+                "insert person has-resource epithet"
         );
 
         load(

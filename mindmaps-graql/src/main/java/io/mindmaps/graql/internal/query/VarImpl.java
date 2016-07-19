@@ -43,6 +43,7 @@ public class VarImpl implements Var.Admin {
     private final Set<Var.Admin> hasRole = new HashSet<>();
     private final Set<Var.Admin> playsRole = new HashSet<>();
     private final Set<Var.Admin> hasScope = new HashSet<>();
+    private final Set<Var.Admin> hasResourceTypes = new HashSet<>();
 
     private final Map<Var.Admin, Set<ValuePredicate.Admin>> resources = new HashMap<>();
 
@@ -185,6 +186,12 @@ public class VarImpl implements Var.Admin {
     }
 
     @Override
+    public Var hasResource(String type) {
+        hasResourceTypes.add(QueryBuilder.id(type).admin());
+        return this;
+    }
+
+    @Override
     public Var rel(Var roleplayer) {
         castings.add(new Casting(roleplayer.admin()));
         return this;
@@ -284,6 +291,11 @@ public class VarImpl implements Var.Admin {
     @Override
     public Set<Var.Admin> getScopes() {
         return hasScope;
+    }
+
+    @Override
+    public Set<Var.Admin> getHasResourceTypes() {
+        return hasResourceTypes;
     }
 
     @Override
@@ -395,6 +407,7 @@ public class VarImpl implements Var.Admin {
             var.getHasRoles().forEach(newVars::add);
             var.getPlaysRoles().forEach(newVars::add);
             var.getScopes().forEach(newVars::add);
+            var.getHasResourceTypes().forEach(newVars::add);
             var.getResourcePredicates().keySet().forEach(newVars::add);
 
             var.getCastings().forEach(casting -> {

@@ -14,13 +14,12 @@ import java.util.UUID;
 public class MovieGraphFactory {
     private static MindmapsTransaction mindmapsTransaction;
     private static EntityType movie, person, genre, character, cluster;
-    private static ResourceType<String> title;
-    private static ResourceType<Long> tmdbVoteCount, releaseDate;
+    private static ResourceType<String> title, gender, realName;
+    private static ResourceType<Long> tmdbVoteCount, releaseDate, runtime;
     private static ResourceType<Double> tmdbVoteAverage;
-    private static RelationType hasResource, hasCast, directedBy, hasGenre, hasCluster;
-    private static RoleType hasResourceTarget, hasResourceValue, productionBeingDirected, director;
-    private static RoleType productionWithCast, actor, characterBeingPlayed, genreOfProduction, productionWithGenre;
-    private static RoleType clusterOfProduction, productionWithCluster;
+    private static RelationType hasCast, directedBy, hasGenre, hasCluster;
+    private static RoleType productionBeingDirected, director, productionWithCast, actor, characterBeingPlayed;
+    private static RoleType genreOfProduction, productionWithGenre, clusterOfProduction, productionWithCluster;
 
     private static Instance godfather, theMuppets, heat, apocalypseNow, hocusPocus, spy, chineseCoffee;
     private static Instance marlonBrando, alPacino, missPiggy, kermitTheFrog, martinSheen, robertDeNiro, judeLaw;
@@ -59,11 +58,6 @@ public class MovieGraphFactory {
 
     private static void buildOntology() {
 
-        hasResourceTarget = mindmapsTransaction.putRoleType("has-resource-target");
-        hasResourceValue = mindmapsTransaction.putRoleType("has-resource-value");
-        hasResource = mindmapsTransaction.putRelationType("has-resource")
-                .hasRole(hasResourceTarget).hasRole(hasResourceValue);
-
         productionBeingDirected = mindmapsTransaction.putRoleType("production-being-directed");
         director = mindmapsTransaction.putRoleType("director");
         directedBy = mindmapsTransaction.putRelationType("directed-by")
@@ -83,19 +77,25 @@ public class MovieGraphFactory {
         clusterOfProduction = mindmapsTransaction.putRoleType("cluster-of-production");
         productionWithCluster = mindmapsTransaction.putRoleType("production-with-cluster");
         hasCluster = mindmapsTransaction.putRelationType("has-cluster")
-                .hasRole(clusterOfProduction).hasRole(productionWithCluster).playsRole(hasResourceTarget);
+                .hasRole(clusterOfProduction).hasRole(productionWithCluster);
 
-        title = mindmapsTransaction.putResourceType("title", Data.STRING).playsRole(hasResourceValue);
-        tmdbVoteCount = mindmapsTransaction.putResourceType("tmdb-vote-count", Data.LONG).playsRole(hasResourceValue);
-        tmdbVoteAverage = mindmapsTransaction.putResourceType("tmdb-vote-average", Data.DOUBLE).playsRole(hasResourceValue);
-        releaseDate = mindmapsTransaction.putResourceType("release-date", Data.LONG).playsRole(hasResourceValue);
-        mindmapsTransaction.putResourceType("runtime", Data.LONG).playsRole(hasResourceValue);
-        mindmapsTransaction.putResourceType("gender", Data.STRING).playsRole(hasResourceValue);
-        mindmapsTransaction.putResourceType("real-name", Data.STRING).playsRole(hasResourceValue);
+        title = mindmapsTransaction.putResourceType("title", Data.STRING);
+        tmdbVoteCount = mindmapsTransaction.putResourceType("tmdb-vote-count", Data.LONG);
+        tmdbVoteAverage = mindmapsTransaction.putResourceType("tmdb-vote-average", Data.DOUBLE);
+        releaseDate = mindmapsTransaction.putResourceType("release-date", Data.LONG);
+        runtime = mindmapsTransaction.putResourceType("runtime", Data.LONG);
+        gender = mindmapsTransaction.putResourceType("gender", Data.STRING);
+        realName = mindmapsTransaction.putResourceType("real-name", Data.STRING);
 
         EntityType production = mindmapsTransaction.putEntityType("production").setValue("production")
-                .playsRole(hasResourceTarget).playsRole(productionWithCluster)
-                .playsRole(productionBeingDirected).playsRole(productionWithCast).playsRole(productionWithGenre);
+                .playsRole(productionWithCluster).playsRole(productionBeingDirected).playsRole(productionWithCast)
+                .playsRole(productionWithGenre);
+
+        hasResource(production, title);
+        hasResource(production, tmdbVoteCount);
+        hasResource(production, tmdbVoteAverage);
+        hasResource(production, releaseDate);
+        hasResource(production, runtime);
 
         movie = mindmapsTransaction.putEntityType("movie").setValue("movie").superType(production);
 
@@ -104,8 +104,10 @@ public class MovieGraphFactory {
         person = mindmapsTransaction.putEntityType("person").setValue("person")
                 .playsRole(director).playsRole(actor).playsRole(characterBeingPlayed);
 
-        genre = mindmapsTransaction.putEntityType("genre").setValue("genre")
-                .playsRole(hasResourceTarget).playsRole(genreOfProduction);
+        hasResource(person, gender);
+        hasResource(person, realName);
+
+        genre = mindmapsTransaction.putEntityType("genre").setValue("genre").playsRole(genreOfProduction);
 
         character = mindmapsTransaction.putEntityType("character").setValue("character")
                 .playsRole(characterBeingPlayed);
@@ -113,7 +115,7 @@ public class MovieGraphFactory {
         mindmapsTransaction.putEntityType("award");
         mindmapsTransaction.putEntityType("language");
 
-        cluster = mindmapsTransaction.putEntityType("cluster").playsRole(hasResourceTarget).playsRole(clusterOfProduction);
+        cluster = mindmapsTransaction.putEntityType("cluster").playsRole(clusterOfProduction);
     }
 
     private static void buildInstances() throws ParseException {
@@ -242,12 +244,26 @@ public class MovieGraphFactory {
         return mindmapsTransaction.putEntity(name.replaceAll(" ", "-").replaceAll("\\.", ""), type).setValue(name);
     }
 
+    private static void hasResource(Type type, ResourceType<?> resourceType) {
+        RoleType owner = mindmapsTransaction.putRoleType("has-" + resourceType.getId() + "-owner");
+        RoleType value = mindmapsTransaction.putRoleType("has-" + resourceType.getId() + "-value");
+        mindmapsTransaction.putRelationType("has-" + resourceType.getId()).hasRole(owner).hasRole(value);
+
+        type.playsRole(owner);
+        resourceType.playsRole(value);
+    }
+
     private static <D> void putResource(Instance instance, ResourceType<D> resourceType, D resource) {
         Resource resourceInstance = mindmapsTransaction.putResource(UUID.randomUUID().toString(), resourceType).setValue(resource);
 
-        mindmapsTransaction.addRelation(hasResource)
-                .putRolePlayer(hasResourceTarget, instance)
-                .putRolePlayer(hasResourceValue, resourceInstance);
+        RoleType owner = mindmapsTransaction.putRoleType("has-" + resourceType.getId() + "-owner");
+        RoleType value = mindmapsTransaction.putRoleType("has-" + resourceType.getId() + "-value");
+        RelationType relationType = mindmapsTransaction.putRelationType("has-" + resourceType.getId())
+                .hasRole(owner).hasRole(value);
+
+        mindmapsTransaction.addRelation(relationType)
+                .putRolePlayer(owner, instance)
+                .putRolePlayer(value, resourceInstance);
     }
 
     private static void hasCast(Instance movie, Instance person, Instance character) {
