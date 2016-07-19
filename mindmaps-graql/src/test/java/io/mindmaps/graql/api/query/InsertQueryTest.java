@@ -360,6 +360,14 @@ public class InsertQueryTest {
     }
 
     @Test
+    public void testInsertResourceTypeAndInstance() {
+        qb.insert(
+                var("x").isa("movie").has("my-resource", "look a string"),
+                var().id("my-resource").isa("resource-type").datatype(Data.STRING).playsRole("has-resource-value")
+        ).execute();
+    }
+
+    @Test
     public void testErrorWhenInsertRelationWithEmptyRolePlayer() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(

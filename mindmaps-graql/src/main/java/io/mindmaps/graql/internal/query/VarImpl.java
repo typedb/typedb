@@ -3,6 +3,7 @@ package io.mindmaps.graql.internal.query;
 import com.google.common.collect.Maps;
 import io.mindmaps.core.implementation.Data;
 import io.mindmaps.graql.api.query.Pattern;
+import io.mindmaps.graql.api.query.QueryBuilder;
 import io.mindmaps.graql.api.query.ValuePredicate;
 import io.mindmaps.graql.api.query.Var;
 import io.mindmaps.graql.internal.StringConverter;
@@ -43,7 +44,7 @@ public class VarImpl implements Var.Admin {
     private final Set<Var.Admin> playsRole = new HashSet<>();
     private final Set<Var.Admin> hasScope = new HashSet<>();
 
-    private final Map<String, Set<ValuePredicate.Admin>> resources = new HashMap<>();
+    private final Map<Var.Admin, Set<ValuePredicate.Admin>> resources = new HashMap<>();
 
     private final Set<Var.Casting> castings = new HashSet<>();
 
@@ -95,7 +96,9 @@ public class VarImpl implements Var.Admin {
             playsRole.addAll(var.getPlaysRoles());
             hasScope.addAll(var.getScopes());
 
-            var.getResourcePredicates().forEach((type, values) -> values.forEach(value -> has(type, value)));
+            var.getResourcePredicates().forEach(
+                    (type, values) -> values.forEach(value -> has(type.getId().get(), value))
+            );
 
             castings.addAll(var.getCastings());
         }
@@ -126,13 +129,15 @@ public class VarImpl implements Var.Admin {
 
     @Override
     public Var has(String type) {
-        resources.putIfAbsent(Objects.requireNonNull(type), new HashSet<>());
+        Var.Admin resourceVar = QueryBuilder.id(Objects.requireNonNull(type)).admin();
+        resources.putIfAbsent(resourceVar, new HashSet<>());
         return this;
     }
 
     @Override
     public Var has(String type, ValuePredicate predicate) {
-        resources.computeIfAbsent(Objects.requireNonNull(type), k -> new HashSet<>()).add(predicate.admin());
+        Var.Admin resourceVar = QueryBuilder.id(Objects.requireNonNull(type)).admin();
+        resources.computeIfAbsent(resourceVar, k -> new HashSet<>()).add(predicate.admin());
         return this;
     }
 
@@ -293,7 +298,7 @@ public class VarImpl implements Var.Admin {
 
     @Override
     public Set<String> getResourceTypes() {
-        return resources.keySet();
+        return resources.keySet().stream().map(var -> var.getId().get()).collect(toSet());
     }
 
     @Override
@@ -356,12 +361,12 @@ public class VarImpl implements Var.Admin {
     }
 
     @Override
-    public Map<String, Set<?>> getResourceEqualsPredicates() {
+    public Map<Var.Admin, Set<?>> getResourceEqualsPredicates() {
         return Maps.transformValues(resources, this::getEqualsPredicatesUnknownType);
     }
 
     @Override
-    public Map<String, Set<ValuePredicate.Admin>> getResourcePredicates() {
+    public Map<Var.Admin, Set<ValuePredicate.Admin>> getResourcePredicates() {
         return resources;
     }
 
@@ -390,6 +395,7 @@ public class VarImpl implements Var.Admin {
             var.getHasRoles().forEach(newVars::add);
             var.getPlaysRoles().forEach(newVars::add);
             var.getScopes().forEach(newVars::add);
+            var.getResourcePredicates().keySet().forEach(newVars::add);
 
             var.getCastings().forEach(casting -> {
                 casting.getRoleType().ifPresent(newVars::add);
@@ -429,7 +435,9 @@ public class VarImpl implements Var.Admin {
         id.ifPresent(i -> properties.add("id " + StringConverter.valueToString(i)));
         values.forEach(v -> properties.add("value " + v));
 
-        resources.forEach((type, predicates) -> predicates.forEach(p -> properties.add("has " + type + " " + p)));
+        resources.forEach(
+                (type, predicates) -> predicates.forEach(p -> properties.add("has " + type.getId().get() + " " + p))
+        );
 
         getDatatypeName().ifPresent(d -> properties.add("datatype " + d));
 
