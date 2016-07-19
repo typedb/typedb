@@ -106,12 +106,12 @@ public class DeleteQueryImpl implements DeleteQuery.Admin {
     /**
      * Delete all resources of the given type and given values on the given concept
      * @param id the ID of a concept
-     * @param type the ID of a resource type
+     * @param type a variable representing the resource type
      * @param values a set of values of resources
      */
-    private void deleteResources(String id, String type, Set<?> values) {
+    private void deleteResources(String id, Var.Admin type, Set<?> values) {
         resources(id).stream()
-                .filter(r -> r.type().getId().equals(type))
+                .filter(r -> r.type().getId().equals(type.getId().get()))
                 .filter(r -> values.isEmpty() || values.contains(r.getValue()))
                 .forEach(Concept::delete);
     }

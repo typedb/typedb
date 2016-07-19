@@ -364,12 +364,12 @@ public interface Var extends Pattern {
         /**
          * @return all predicates on resources of this variable (where the key is the resource type)
          */
-        Map<String, Set<ValuePredicate.Admin>> getResourcePredicates();
+        Map<Var.Admin, Set<ValuePredicate.Admin>> getResourcePredicates();
 
         /**
          * @return all values of resources on this variable (where the key is the resource type)
          */
-        Map<String, Set<?>> getResourceEqualsPredicates();
+        Map<Var.Admin, Set<?>> getResourceEqualsPredicates();
 
         /**
          * @return whether this variable uses any predicate that is not equality

@@ -1,16 +1,13 @@
 package io.mindmaps.graql.internal.gremlin;
 
-import io.mindmaps.core.implementation.DataType;
 import io.mindmaps.core.implementation.Data;
+import io.mindmaps.core.implementation.DataType;
 import io.mindmaps.graql.api.query.ValuePredicate;
 import io.mindmaps.graql.api.query.Var;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static io.mindmaps.core.implementation.DataType.ConceptProperty.*;
@@ -174,21 +171,21 @@ public class VarTraversals {
 
     /**
      * Add a pattern checking that this variable has a resource of the given type
-     * @param type a resource type ID
+     * @param type a variable representing the resource type
      * @return the variable name of the resource
      */
-    private String addResourcePattern(String type) {
+    private String addResourcePattern(Var.Admin type) {
         shortcutTraversal.setInvalid();
 
         String resource = UUID.randomUUID().toString();
 
         addPattern(
                 new Fragment(t ->
-                        t.outE(SHORTCUT.getLabel()).has(TO_TYPE.name(), type).inV(),
+                        t.outE(SHORTCUT.getLabel()).has(TO_TYPE.name(), type.getId().get()).inV(),
                         EDGE_UNBOUNDED, getName(), resource
                 ),
                 new Fragment(t ->
-                        t.inE(SHORTCUT.getLabel()).has(TO_TYPE.name(), type).outV(),
+                        t.inE(SHORTCUT.getLabel()).has(TO_TYPE.name(), type.getId().get()).outV(),
                         EDGE_UNBOUNDED, resource, getName()
                 )
         );
@@ -198,10 +195,10 @@ public class VarTraversals {
 
     /**
      * Add a pattern checking this variable has a resource of the given type matching the given predicate
-     * @param type a resource type ID
+     * @param type a variable representing the resource type
      * @param predicate a predicate to match on a resource's VALUE
      */
-    private void addResourcePattern(String type, ValuePredicate.Admin predicate) {
+    private void addResourcePattern(Var.Admin type, ValuePredicate.Admin predicate) {
         String resource = addResourcePattern(type);
         DataType.ConceptProperty value = getValuePropertyForPredicate(predicate);
         addPropertyPattern(resource, value.name(), predicate, getValuePriority(predicate));
