@@ -17,7 +17,7 @@ public class AdminConverter {
      * @param patterns a collection of patterns to change to admin
      * @return a collection of Pattern.Admin from the given patterns
      */
-    public static Set<Pattern.Admin> getPatternAdmins(Collection<Pattern> patterns) {
+    public static Set<Pattern.Admin> getPatternAdmins(Collection<? extends Pattern> patterns) {
         return patterns.stream().map(Pattern::admin).collect(toSet());
     }
 
@@ -25,7 +25,7 @@ public class AdminConverter {
      * @param patterns a collection of vars to change to admin
      * @return a collection of Var.Admin from the given patterns
      */
-    public static Set<Var.Admin> getVarAdmins(Collection<Var> patterns) {
+    public static Set<Var.Admin> getVarAdmins(Collection<? extends Var> patterns) {
         return patterns.stream().map(Var::admin).collect(toSet());
     }
 }
