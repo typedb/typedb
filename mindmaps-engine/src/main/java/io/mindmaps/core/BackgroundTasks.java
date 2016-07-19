@@ -1,6 +1,5 @@
 package io.mindmaps.core;
 
-import io.mindmaps.core.implementation.DataType;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.loader.QueueManager;
 import org.slf4j.Logger;
@@ -136,20 +135,14 @@ public class BackgroundTasks {
         currentStage = "Merging Castings";
         cache.getCastingJobs().entrySet().parallelStream().forEach(inner -> {
             LOG.info("Merging type [" + inner.getKey() + "] which has [" + inner.getValue().size() + "] potential casting sets . . . ");
-            inner.getValue().keySet().parallelStream().forEach(key -> futures.add(postpool.submit(() -> conceptFixer.fixElements(DataType.BaseType.CASTING, inner.getKey(), key))));
+            inner.getValue().keySet().parallelStream().forEach(key -> futures.add(postpool.submit(() -> conceptFixer.fixElements(inner.getKey(), key))));
         });
         LOG.info("Waiting for casting fix to complete");
         waitToContinue();
     }
 
     private void performShortcutFix() {
-        currentStage = "Inserting shortcut edges";
-        cache.getAssertionJobs().entrySet().parallelStream().forEach(inner -> {
-            LOG.info("Adding to type [" + inner.getKey() + "] shortcuts [" + inner.getValue().size() + "]");
-            inner.getValue().parallelStream().forEach(conceptId -> futures.add(postpool.submit(() -> conceptFixer.fixElements(DataType.BaseType.RELATION, inner.getKey(), String.valueOf(conceptId)))));
-        });
-        LOG.info("Waiting for assertion shortcut fix to complete");
-        waitToContinue();
+        //TODO: Fix duplicate shortcuts which may exist.
     }
 
     public void cancelPostProcessing() {

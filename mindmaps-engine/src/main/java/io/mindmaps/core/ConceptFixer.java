@@ -1,6 +1,5 @@
 package io.mindmaps.core;
 
-import io.mindmaps.core.implementation.DataType;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Relation;
@@ -38,21 +37,17 @@ class ConceptFixer {
         commitGraph(graph);
     }
 
-    public void fixElements(DataType.BaseType fixType, String conceptType, String key, Long... newDegree){
+    public void fixElements(String conceptType, String key, Long... newDegree){
         int MAX_RETRY = 10;
         int retry = 0;
         while (retry < MAX_RETRY){
             boolean complete = false;
 
             try {
-                if (fixType == DataType.BaseType.CASTING) {
-                    complete = fixCastings(conceptType, key);
-                } else if (fixType == DataType.BaseType.RELATION) {
-                    complete = fixAssertion(conceptType, key);
-                }
+                complete = fixCastings(conceptType, key);
                 System.out.print(".");
             } catch (Exception e){
-                LOG.error("Error during post processing fixType [" + fixType + "] on Key[" + key +  "]", e);
+                LOG.error("Error during post processing fixType [Casting Merge] on Key[" + key +  "]", e);
             }
 
             if(complete)
@@ -64,24 +59,8 @@ class ConceptFixer {
         if (newDegree.length > 0){
             LOG.error("Unable to update degree of key [" + key + "] to [" + newDegree[0] + "] after [" + MAX_RETRY + "] retries");
         } else {
-            LOG.error("Error when performing " + fixType + " fix on key [" + key + "] after [" + MAX_RETRY + "] retries");
+            LOG.error("Error when performing [Casting Merge] fix on key [" + key + "] after [" + MAX_RETRY + "] retries");
         }
-    }
-
-    private boolean fixAssertion(String type, String assertionId){
-        MindmapsTransactionImpl graph = daoFactory.buildMindmapsGraphBatchLoading();
-        Relation relation = graph.getRelation(assertionId);
-        if (relation != null && relation.type() != null) {
-            graph.putShortcutEdges(relation, relation.type());
-
-            if(!commitGraph(graph))
-                return false;
-
-        } else {
-            closeGraph(graph);
-        }
-        cache.deleteJobAssertion(type, assertionId);
-        return true;
     }
 
     private boolean fixCastings(String type, String key){
