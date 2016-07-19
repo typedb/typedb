@@ -1,10 +1,10 @@
-package api;
+package io.mindmaps.api;
 
-import factory.GraphFactory;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
+import io.mindmaps.factory.GraphFactory;
 import spark.Request;
 import spark.Response;
-import visualiser.HALConcept;
+import io.mindmaps.visualiser.HALConcept;
 
 import static spark.Spark.get;
 

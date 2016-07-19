@@ -3,7 +3,7 @@ package io.mindmaps.example;
 import io.mindmaps.core.dao.MindmapsGraph;
 import io.mindmaps.core.dao.MindmapsTransaction;
 import io.mindmaps.core.model.*;
-import io.mindmaps.factory.MindmapsTinkerGraphFactory;
+import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -21,7 +21,7 @@ public class MovieGraphFactoryTest {
 
     @BeforeClass
     public static void setUp() throws IOException {
-        MindmapsGraph mindmapsGraph = MindmapsTinkerGraphFactory.getInstance().newGraph();
+        MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
         dao = mindmapsGraph.newTransaction();
         graph = mindmapsGraph.getGraph();

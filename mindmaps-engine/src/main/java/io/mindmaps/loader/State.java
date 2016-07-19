@@ -1,4 +1,4 @@
-package loader;
+package io.mindmaps.loader;
 
 /**
  * The set of states of graph loader.

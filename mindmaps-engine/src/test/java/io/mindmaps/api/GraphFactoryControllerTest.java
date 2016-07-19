@@ -1,4 +1,4 @@
-package api;
+package io.mindmaps.api;
 
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
@@ -23,7 +23,7 @@ public class GraphFactoryControllerTest {
     public void testConfigWorking(){
         Response response = get("/graph_factory").then().statusCode(200).extract().response().andReturn();
         String config = response.getBody().prettyPrint();
-        assertTrue(config.contains("storage"));
+        assertTrue(config.contains("factory"));
     }
 
     @Test

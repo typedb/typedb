@@ -6,7 +6,7 @@ import io.mindmaps.core.dao.MindmapsGraph;
 import io.mindmaps.core.dao.MindmapsTransaction;
 import io.mindmaps.core.implementation.Data;
 import io.mindmaps.example.MovieGraphFactory;
-import io.mindmaps.factory.MindmapsTinkerGraphFactory;
+import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.api.query.MatchQuery;
 import io.mindmaps.graql.api.query.QueryBuilder;
 import io.mindmaps.graql.api.query.Var;
@@ -32,7 +32,7 @@ public class QueryParserTest {
 
     @BeforeClass
     public static void setUpClass() {
-        MindmapsGraph mindmapsGraph = MindmapsTinkerGraphFactory.getInstance().newGraph();
+        MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
         transaction = mindmapsGraph.newTransaction();
     }

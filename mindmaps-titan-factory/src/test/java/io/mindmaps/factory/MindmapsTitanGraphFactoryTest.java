@@ -31,7 +31,7 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.*;
 
 public class MindmapsTitanGraphFactoryTest {
-    private final String TEST_CONFIG = "conf/titan-cassandra-es-test.properties";
+    private final String TEST_CONFIG = "../conf/titan/titan-cassandra-es-test.properties";
     private MindmapsGraphFactory titanGraphFactory ;
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -41,7 +41,7 @@ public class MindmapsTitanGraphFactoryTest {
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.OFF);
 
-        titanGraphFactory = MindmapsTitanGraphFactory.getInstance();
+        titanGraphFactory = new MindmapsTitanGraphFactory();
     }
 
     @After
@@ -126,13 +126,13 @@ public class MindmapsTitanGraphFactoryTest {
 
     @Test
     public void testSingleton(){
-        Graph graph1 = titanGraphFactory.newGraph("conf/titan-cassandra-batch-test.properties").getGraph();
-        Graph graph2 = titanGraphFactory.newGraph("conf/titan-cassandra-es-test.properties").getGraph();
-        Graph graph3 = titanGraphFactory.newGraph("conf/titan-cassandra-es.properties").getGraph();
-        Graph graph4 = titanGraphFactory.newGraph("conf/titan-cassandra-batch-test.properties").getGraph();
-        Graph graph5 = titanGraphFactory.newGraph("conf/titan-cassandra-es-test.properties").getGraph();
-        Graph graph6 = titanGraphFactory.newGraph("conf/titan-cassandra-es.properties").getGraph();
-        Graph graph7 = titanGraphFactory.newGraph("conf/titan-cassandra-test.properties").getGraph();
+        Graph graph1 = titanGraphFactory.newGraph("../conf/titan/titan-cassandra-batch-test.properties").getGraph();
+        Graph graph2 = titanGraphFactory.newGraph("../conf/titan/titan-cassandra-es-test.properties").getGraph();
+        Graph graph3 = titanGraphFactory.newGraph("../conf/titan/titan-cassandra-es.properties").getGraph();
+        Graph graph4 = titanGraphFactory.newGraph("../conf/titan/titan-cassandra-batch-test.properties").getGraph();
+        Graph graph5 = titanGraphFactory.newGraph("../conf/titan/titan-cassandra-es-test.properties").getGraph();
+        Graph graph6 = titanGraphFactory.newGraph("../conf/titan/titan-cassandra-es.properties").getGraph();
+        Graph graph7 = titanGraphFactory.newGraph("../conf/titan/titan-cassandra-test.properties").getGraph();
 
         assertEquals(graph1, graph4);
         assertEquals(graph2, graph5);

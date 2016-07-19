@@ -3,7 +3,7 @@ package io.mindmaps.graql.api.query;
 import io.mindmaps.core.dao.MindmapsGraph;
 import io.mindmaps.core.dao.MindmapsTransaction;
 import io.mindmaps.example.MovieGraphFactory;
-import io.mindmaps.factory.MindmapsTinkerGraphFactory;
+import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -21,7 +21,7 @@ public class AskQueryTest {
 
     @Before
     public void setUp() {
-        MindmapsGraph mindmapsGraph = MindmapsTinkerGraphFactory.getInstance().newGraph();
+        MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
         MindmapsTransaction transaction = mindmapsGraph.newTransaction();
         qb = QueryBuilder.build(transaction);

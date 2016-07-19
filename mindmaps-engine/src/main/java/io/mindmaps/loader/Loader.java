@@ -1,9 +1,9 @@
-package loader;
+package io.mindmaps.loader;
 
-import core.Cache;
-import factory.GraphFactory;
+import io.mindmaps.core.Cache;
 import io.mindmaps.core.exceptions.MindmapsValidationException;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
+import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.api.parser.QueryParser;
 import io.mindmaps.graql.api.query.QueryBuilder;
 import io.mindmaps.graql.api.query.Var;

@@ -1,7 +1,7 @@
 package io.mindmaps.graql.examples;
 
 import io.mindmaps.core.dao.MindmapsGraph;
-import io.mindmaps.factory.MindmapsTinkerGraphFactory;
+import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.api.parser.QueryParser;
 import io.mindmaps.graql.api.query.InsertQuery;
 import io.mindmaps.graql.api.query.MatchQuery;
@@ -18,7 +18,7 @@ public class ExamplesTest {
 
     @Before
     public void setUp() {
-        MindmapsGraph graph = MindmapsTinkerGraphFactory.getInstance().newGraph();
+        MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
         qp = QueryParser.create(graph.newTransaction());
     }
 

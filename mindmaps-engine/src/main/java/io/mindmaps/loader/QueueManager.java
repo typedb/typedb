@@ -1,6 +1,6 @@
-package loader;
+package io.mindmaps.loader;
 
-import core.BackgroundTasks;
+import io.mindmaps.core.BackgroundTasks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

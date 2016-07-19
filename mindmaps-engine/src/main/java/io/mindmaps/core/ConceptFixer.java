@@ -1,10 +1,10 @@
-package core;
+package io.mindmaps.core;
 
-import factory.GraphFactory;
 import io.mindmaps.core.implementation.DataType;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Relation;
+import io.mindmaps.factory.GraphFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -3,7 +3,7 @@ package io.mindmaps.core.implementation;
 import io.mindmaps.core.exceptions.ErrorMessage;
 import io.mindmaps.core.exceptions.MindmapsValidationException;
 import io.mindmaps.core.model.*;
-import io.mindmaps.factory.MindmapsTinkerGraphFactory;
+import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -38,7 +38,7 @@ public class OntologyMutationTest {
 
     @Before
     public void buildGraph() throws MindmapsValidationException {
-        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTinkerGraphFactory.getInstance().newGraph().newTransaction();
+        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
 
         //spouse = mindmapsGraph.putRoleType("Spouse");
         husband = mindmapsGraph.putRoleType("Husband");//.superType(spouse);

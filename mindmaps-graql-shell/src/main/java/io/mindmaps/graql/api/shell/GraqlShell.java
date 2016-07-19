@@ -7,8 +7,7 @@ import io.mindmaps.core.dao.MindmapsTransaction;
 import io.mindmaps.core.exceptions.InvalidConceptTypeException;
 import io.mindmaps.core.exceptions.MindmapsValidationException;
 import io.mindmaps.core.model.Concept;
-import io.mindmaps.factory.MindmapsGraphFactory;
-import io.mindmaps.factory.MindmapsTitanGraphFactory;
+import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.graql.api.parser.QueryParser;
 import io.mindmaps.graql.api.query.AskQuery;
 import io.mindmaps.graql.api.query.DeleteQuery;
@@ -29,6 +28,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -38,6 +38,7 @@ import java.util.stream.Stream;
 public class GraqlShell implements AutoCloseable {
 
     private static final String GRAPH_CONF = "/opt/mindmaps/resources/conf/titan-cassandra-es.properties";
+    private static final String DEFAULT_URL = "http://localhost:4567/graph_factory";
 
     private static final String PROMPT = ">>> ";
 
@@ -70,14 +71,10 @@ public class GraqlShell implements AutoCloseable {
      */
     public static void main(String[] args) {
         String version = GraqlShell.class.getPackage().getImplementationVersion();
-        MindmapsGraphFactory graphFactory = MindmapsTitanGraphFactory.getInstance();
-        runShell(args, graphFactory, version, System.in, System.out, System.err);
+        runShell(args, MindmapsClient::newGraph, version, System.in, System.out, System.err);
     }
 
-    static void runShell(
-            String[] args, MindmapsGraphFactory factory, String version,
-            InputStream in, PrintStream out, PrintStream err
-    ) {
+    static void runShell(String[] args, Function<String, MindmapsGraph> factory, String version, InputStream in, PrintStream out, PrintStream err) {
         // Disable horrid cassandra logs
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.OFF);
@@ -88,6 +85,7 @@ public class GraqlShell implements AutoCloseable {
         options.addOption("f", "file", true, "graql file path to execute");
         options.addOption("h", "help", false, "print usage message");
         options.addOption("v", "version", false, "print version");
+        options.addOption("r", "remote", true, "remote url");
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd;
@@ -120,7 +118,8 @@ public class GraqlShell implements AutoCloseable {
             return;
         }
 
-        MindmapsGraph graph = factory.newGraph(graphConf);
+        String remoteUrl = cmd.getOptionValue("r", DEFAULT_URL);
+        MindmapsGraph graph = factory.apply(remoteUrl);
 
         try(GraqlShell shell = new GraqlShell(graph, in, out, err)) {
             if (filePath != null) {

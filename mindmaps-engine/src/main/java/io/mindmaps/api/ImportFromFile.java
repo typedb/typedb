@@ -1,14 +1,12 @@
-package api;
+package io.mindmaps.api;
 
-import factory.GraphFactory;
-import io.mindmaps.core.dao.MindmapsGraph;
 import io.mindmaps.core.exceptions.MindmapsValidationException;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
-import io.mindmaps.factory.MindmapsTitanGraphFactory;
+import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.api.parser.QueryParser;
 import io.mindmaps.graql.api.query.Var;
-import loader.Loader;
-import loader.QueueManager;
+import io.mindmaps.loader.Loader;
+import io.mindmaps.loader.QueueManager;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;

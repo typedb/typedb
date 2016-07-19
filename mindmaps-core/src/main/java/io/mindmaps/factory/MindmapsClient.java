@@ -6,11 +6,14 @@ import io.mindmaps.core.exceptions.ErrorMessage;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.PropertyResourceBundle;
 
 public class MindmapsClient {
     private static final String DEFAULT_URI = "http://localhost:4567/graph_factory";
+    private static final Map<String, MindmapsGraphFactory> openFactories = new HashMap<>();
 
     public static MindmapsGraph newGraph(){
         return newGraph(DEFAULT_URI);
@@ -48,23 +51,29 @@ public class MindmapsClient {
             FileInputStream fis = new FileInputStream(path);
             PropertyResourceBundle bundle = new PropertyResourceBundle(fis);
 
-            String factory;
+            String factoryType;
             try {
-                factory = bundle.getString("factory.internal");
+                factoryType = bundle.getString("factory.internal");
             } catch(MissingResourceException e){
                 throw new IllegalArgumentException(ErrorMessage.MISSING_FACTORY_DEFINITION.getMessage());
             }
 
-            MindmapsGraphFactory mindmapsGraphFactory;
-            try {
-                mindmapsGraphFactory = (MindmapsGraphFactory) Class.forName(factory).newInstance();
-            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-                throw new IllegalArgumentException(ErrorMessage.INVALID_FACTORY.getMessage(factory));
-            }
-
-            return mindmapsGraphFactory.newGraph(path);
+            return getFactory(factoryType).newGraph(path);
         } catch (IOException e) {
             throw new IllegalArgumentException(ErrorMessage.CONFIG_NOT_FOUND.getMessage(uri, e.getMessage()));
         }
+    }
+
+    private static MindmapsGraphFactory getFactory(String factoryType){
+        if(!openFactories.containsKey(factoryType)) {
+            MindmapsGraphFactory mindmapsGraphFactory;
+            try {
+                mindmapsGraphFactory = (MindmapsGraphFactory) Class.forName(factoryType).newInstance();
+            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+                throw new IllegalArgumentException(ErrorMessage.INVALID_FACTORY.getMessage(factoryType));
+            }
+            openFactories.put(factoryType, mindmapsGraphFactory);
+        }
+        return openFactories.get(factoryType);
     }
 }

@@ -1,6 +1,6 @@
-package api;
+package io.mindmaps.api;
 
-import loader.Loader;
+import io.mindmaps.loader.Loader;
 
 import java.util.UUID;
 
