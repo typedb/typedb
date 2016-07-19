@@ -22,6 +22,7 @@ public enum ErrorMessage {
     INVALID_EDGE("The edge ['%s'] between concept ['%s'] and ['%s'] is invalid"),
     NOT_SUPPORTED("Not supported with a ['%s'] backend"),
     CLOSED("The ['%s'] has been permanently closed"),
+    TINKERGRAPH_WARNING("Tinkergraph does not actually support commits. The graph was only validated"),
 
     //--------------------------------------------- Validation Errors -----------------------------------------------
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
@@ -35,7 +36,15 @@ public enum ErrorMessage {
     VALIDATION_ROLE_TYPE("RoleType ['%s'] does not have exactly one has-role connection to any RelationType. \n"),
     VALIDATION_RELATION_TYPE("Relation Type ['%s'] does not have two or more roles \n"),
 
-    TINKERGRAPH_WARNING("Tinkergraph does not actually support commits. The graph was only validated");
+    //--------------------------------------------- Client Errors -----------------------------------------------
+    INVALID_ENGINE_RESPONSE("Mindmaps Engine located at ['%s'] returned response ['%s'], cannot produce a graph."),
+    INVALID_FACTORY("Graph Factory ['%s'] is not valid"),
+    MISSING_FACTORY_DEFINITION("Graph Factor Config ['factory.internal'] missing from provided config. Cannot produce graph"),
+    CONFIG_NOT_FOUND("Mindmaps Engine located at ['%s'] did not return the config as expected, due to ['%s']");
+
+
+
+
 
     private final String message;
 
