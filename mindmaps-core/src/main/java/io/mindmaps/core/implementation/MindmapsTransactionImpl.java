@@ -150,14 +150,17 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
         return transaction;
     }
 
+    @Override
     public void enableBatchLoading() {
         batchLoading = true;
     }
 
+    @Override
     public void disableBatchLoading() {
         batchLoading = false;
     }
 
+    @Override
     public boolean isBatchLoadingEnabled(){
         return batchLoading;
     }
@@ -545,9 +548,7 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
         EdgeImpl assertionToCasting = addEdge(relation, foundCasting, DataType.EdgeLabel.CASTING);// Relation To Casting
         assertionToCasting.setEdgePropertyRoleType(role.getId());
 
-        if(!batchLoading) {
-            putShortcutEdges(relation, relation.type());
-        }
+        putShortcutEdges(relation, relation.type());
 
         return foundCasting;
     }

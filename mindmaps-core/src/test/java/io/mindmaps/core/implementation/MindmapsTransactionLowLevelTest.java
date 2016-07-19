@@ -502,7 +502,7 @@ public class MindmapsTransactionLowLevelTest {
         mindmapsGraph.putRelation(UUID.randomUUID().toString(), cast).
                 putRolePlayer(feature, godfather).putRolePlayer(actor, pacino);
 
-        assertFalse(mindmapsGraph.getTinkerPopGraph().traversal().E().hasLabel(DataType.EdgeLabel.SHORTCUT.getLabel()).hasNext());
+        assertTrue(mindmapsGraph.getTinkerPopGraph().traversal().E().hasLabel(DataType.EdgeLabel.SHORTCUT.getLabel()).hasNext());
 
         mindmapsGraph.disableBatchLoading();
 
