@@ -37,15 +37,12 @@ public class MindmapsTitanGraphFactoryTest {
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
+    @After
     public void setup() {
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.OFF);
 
         titanGraphFactory = new MindmapsTitanGraphFactory();
-    }
-
-    @After
-    public void cleanup() throws InterruptedException {
         MindmapsGraph graph = titanGraphFactory.newGraph(TEST_CONFIG);
         graph.clear();
     }
