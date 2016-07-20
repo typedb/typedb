@@ -1,7 +1,5 @@
 package io.mindmaps.graql.internal.query;
 
-import com.google.common.collect.Iterators;
-import com.google.common.collect.UnmodifiableIterator;
 import io.mindmaps.core.dao.MindmapsTransaction;
 import io.mindmaps.core.implementation.DataType;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
@@ -13,20 +11,16 @@ import io.mindmaps.graql.internal.gremlin.Query;
 import io.mindmaps.graql.internal.validation.ErrorMessage;
 import io.mindmaps.graql.internal.validation.MatchQueryValidator;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static io.mindmaps.core.implementation.DataType.ConceptPropertyUnique.ITEM_IDENTIFIER;
 import static io.mindmaps.core.implementation.DataType.EdgeLabel.SHORTCUT;
 import static io.mindmaps.core.implementation.DataType.EdgeProperty.TO_TYPE;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -72,27 +66,9 @@ public class MatchQueryImpl implements MatchQuery.Admin {
 
     @Override
     public Stream<Map<String, Concept>> stream() {
-        List<GraphTraversal<Vertex, Map<String, Vertex>>> traversals = getQuery().getTraversals();
-
-        traversals.forEach(this::applyModifiers);
-
-        List<Stream<Map<String, Vertex>>> streams = traversals.parallelStream().map(Traversal::toStream).collect(toList());
-
-        Stream<Map<String, Vertex>> stream;
-
-        if (orderVar.isPresent()) {
-            // Merge together all streams, maintaining any existing sort order
-            stream = mergeSortedStreams(streams, resultComparator());
-        } else {
-            // Join together streams in no particular order
-            stream = streams.parallelStream().unordered().flatMap(Function.identity());
-        }
-
-        if (distinct) stream = stream.distinct();
-        stream = stream.skip(offset);
-        if (limit.isPresent()) stream = stream.limit(limit.get());
-
-        return stream.map(this::makeResults).sequential();
+        GraphTraversal<Vertex, Map<String, Vertex>> traversal = getQuery().getTraversals();
+        applyModifiers(traversal);
+        return traversal.toStream().map(this::makeResults).sequential();
     }
 
     @Override
@@ -235,32 +211,11 @@ public class MatchQueryImpl implements MatchQuery.Admin {
         } else if (namesArray.length != 0) {
             traversal.select(namesArray[0], namesArray[0], namesArray);
         }
-    }
 
-    /**
-     * @return get a comparator to order results based on what ordering is specified in the query
-     */
-    private Comparator<Map<String, Vertex>> resultComparator() {
-        // Get the comparator to use for ordering final results
-        Comparator<Map<String, Vertex>> comparator;
-        
-        if (orderResourceType.isPresent()) {
-            // Order by resource type
-            String typeId = orderResourceType.get();
-            DataType.ConceptProperty valueProp = transaction.getResourceType(typeId).getDataType().getConceptProperty();
+        if (distinct) traversal.dedup();
 
-            comparator = Comparator.comparing(
-                    result -> getResourceValue(result.get(orderVar.get()), typeId, valueProp),
-                    new ResourceComparator()
-            );
-        } else {
-            // Order by item identifier
-            comparator = Comparator.comparing(result -> result.get(orderVar.get()).value(ITEM_IDENTIFIER.name()));
-        }
-
-        if (!orderAsc) comparator = comparator.reversed();
-
-        return comparator;
+        long top = limit.map(lim -> offset + lim).orElse(Long.MAX_VALUE);
+        traversal.range(offset, top);
     }
 
     /**
@@ -319,20 +274,6 @@ public class MatchQueryImpl implements MatchQuery.Admin {
                 name -> name,
                 name -> transaction.getConcept(vertices.get(name).value(ITEM_IDENTIFIER.name()))
         ));*/
-    }
-
-    /**
-     * @param streams a collection of streams to mergesort
-     * @param comparator a comparator to decide how to sort the elements of the stream
-     * @param <T> the type of the elements in the stream
-     * @return a single sorted stream, sorted using mergesort
-     */
-    private static <T> Stream<T> mergeSortedStreams(Collection<Stream<T>> streams, Comparator<T> comparator) {
-        // Merge several sorted streams into one sorted streams
-        List<Iterator<T>> iterators = streams.stream().map(Stream::iterator).collect(toList());
-        UnmodifiableIterator<T> merged = Iterators.mergeSorted(iterators, comparator);
-        Iterable<T> iterable = () -> merged;
-        return StreamSupport.stream(iterable.spliterator(), true);
     }
 
     /**
