@@ -1,6 +1,7 @@
 package io.mindmaps.graql.internal.gremlin;
 
 import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.graql.api.query.Pattern;
 import io.mindmaps.graql.api.query.Var;
 import io.mindmaps.graql.internal.validation.ErrorMessage;
@@ -24,6 +25,7 @@ import static java.util.stream.Collectors.*;
  */
 public class Query {
 
+    private final MindmapsTransaction transaction;
     private final Collection<ConjunctionQuery> innerQueries;
 
     /**
@@ -38,14 +40,21 @@ public class Query {
             throw new IllegalStateException(ErrorMessage.NO_TRANSACTION.getMessage());
         }
 
+        this.transaction = transaction;
+
         innerQueries = patterns.stream().map(pattern -> new ConjunctionQuery(transaction, pattern)).collect(toList());
     }
 
     /**
-     * @return a list of gremlin traversals to execute to find results
+     * @return a gremlin traversal to execute to find results
      */
-    public List<GraphTraversal<Vertex, Map<String, Vertex>>> getTraversals() {
-        return innerQueries.stream().map(ConjunctionQuery::getTraversal).collect(toList());
+    public GraphTraversal<Vertex, Map<String, Vertex>> getTraversals() {
+        GraphTraversal[] collect =
+                innerQueries.stream().map(ConjunctionQuery::getTraversal).toArray(GraphTraversal[]::new);
+
+        // Because 'union' accepts an array, we can't use generics...
+        //noinspection unchecked
+        return ((MindmapsTransactionImpl) transaction).getTinkerPopGraph().traversal().V().limit(1).union(collect);
     }
 
     /**
