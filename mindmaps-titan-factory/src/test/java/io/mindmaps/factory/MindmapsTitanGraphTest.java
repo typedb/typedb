@@ -29,6 +29,7 @@ public class MindmapsTitanGraphTest {
 
     @Before
     public void setup(){
+        cleanup();
         mindmapsGraph = new MindmapsTitanGraphFactory().newGraph(TEST_CONFIG);
     }
 
