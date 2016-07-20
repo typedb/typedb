@@ -27,6 +27,12 @@
             <artifactId>antlr4-runtime</artifactId>
             <version>${antlr.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.javatuples</groupId>
+            <artifactId>javatuples</artifactId>
+            <version>${java-tuples.version}</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
     <build>
