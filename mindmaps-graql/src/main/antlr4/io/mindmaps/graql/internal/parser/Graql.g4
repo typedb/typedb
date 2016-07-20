@@ -37,6 +37,7 @@ property       : edge
                | propRhs
                | propHasFlag
                | propHasPred
+               | propResource
                | propRel
                | isAbstract
                | propDatatype
@@ -44,7 +45,17 @@ property       : edge
 
 insertPatterns : insertPattern (';' insertPattern)* ';'? ;
 insertPattern  : variable? insert (','? insert)* ;
-insert         : edge | propId | propVal | propLhs | propRhs | insertRel | propHas | isAbstract | propDatatype;
+insert         : edge
+               | propId
+               | propVal
+               | propLhs
+               | propRhs
+               | insertRel
+               | propHas
+               | propResource
+               | isAbstract
+               | propDatatype
+               ;
 
 deletePatterns : deletePattern (';' deletePattern)* ';'? ;
 deletePattern  : VARIABLE (delete ','?)* delete? ;
@@ -62,6 +73,8 @@ propRhs        : 'rhs' '{' query '}' ;
 propHasFlag    : 'has' id ;
 propHas        : 'has' id value ;
 propHasPred    : 'has' id predicate ;
+
+propResource   : 'has-resource' id ;
 
 propDatatype   : 'datatype' DATATYPE ;
 

@@ -35,10 +35,7 @@ public enum ErrorMessage {
     INSERT_MULTIPLE_VALUES("a concept cannot have multiple values %s and '%s'"),
     INSERT_ISA_AND_AKO("cannot insert %s with an isa and an ako"),
     INSERT_NO_DATATYPE("resource type %s must have a datatype defined"),
-    INSERT_NO_RESOURCE_RELATION(
-            "adding a resource with 'has' requires a 'has-resource' relation type " +
-            "with roles 'has-resource-target' and 'has-resource-value'"
-    ),
+    INSERT_NO_RESOURCE_RELATION("type %s cannot have resource type %s"),
     INSERT_METATYPE("%s cannot be a subtype of meta-type %s"),
     INSERT_RECURSIVE("%s should not refer to itself"),
 

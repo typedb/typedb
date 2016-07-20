@@ -2,12 +2,17 @@ package io.mindmaps.graql.internal.gremlin;
 
 import io.mindmaps.core.implementation.Data;
 import io.mindmaps.core.implementation.DataType;
+import io.mindmaps.graql.api.query.QueryBuilder;
 import io.mindmaps.graql.api.query.ValuePredicate;
 import io.mindmaps.graql.api.query.Var;
+import io.mindmaps.graql.internal.GraqlType;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import static io.mindmaps.core.implementation.DataType.ConceptProperty.*;
@@ -104,6 +109,7 @@ public class VarTraversals {
         var.getHasRoles().forEach(type -> addEdgePattern(HAS_ROLE, type));
         var.getPlaysRoles().forEach(type -> addEdgePattern(PLAYS_ROLE, type));
         var.getScopes().forEach(type -> addEdgePattern(HAS_SCOPE, type));
+        var.getHasResourceTypes().forEach(this::addHasResourcePattern);
 
         // Check identity of roleplayers and role types (if specified)
         var.getCastings().forEach(casting -> {
@@ -324,6 +330,34 @@ public class VarTraversals {
         );
 
         innerVarTraversals.add(new VarTraversals(rolePlayer));
+    }
+
+    /**
+     * Add patterns for the 'has-resource' syntax. This must check for a structure like so:
+     *
+     * {@code
+     * [this] -plays-role-> has-[type]-owner <-has-role- has-[type] -has-role-> has-[type]-value <-plays-role- [type]
+     * }
+     *
+     * @param type the resource type variable
+     */
+    private void addHasResourcePattern(Var.Admin type) {
+        Var owner = QueryBuilder.id(GraqlType.HAS_RESOURCE_OWNER.getId(type.getId().get()))
+                .isa(DataType.ConceptMeta.ROLE_TYPE.getId());
+        Var value = QueryBuilder.id(GraqlType.HAS_RESOURCE_VALUE.getId(type.getId().get()))
+                .isa(DataType.ConceptMeta.ROLE_TYPE.getId());
+
+        Var relationType = QueryBuilder.id(GraqlType.HAS_RESOURCE.getId(type.getId().get()))
+                .isa(DataType.ConceptMeta.RELATION_TYPE.getId())
+                .hasRole(owner).hasRole(value);
+
+        addEdgePattern(PLAYS_ROLE, owner.admin());
+
+        VarTraversals relationTraversals = new VarTraversals(type);
+        relationTraversals.addEdgePattern(PLAYS_ROLE, value.admin());
+
+        innerVarTraversals.add(new VarTraversals(relationType.admin()));
+        innerVarTraversals.add(relationTraversals);
     }
 
     /**

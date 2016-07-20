@@ -138,6 +138,12 @@ public interface Var extends Pattern {
     Var hasScope(Var type);
 
     /**
+     * @param type a resource type that this type variable can be related to
+     * @return this
+     */
+    Var hasResource(String type);
+
+    /**
      * the variable must be a relation with the given roleplayer
      *
      * @param roleplayer a variable representing a roleplayer
@@ -280,6 +286,11 @@ public interface Var extends Pattern {
          * @return all scopes this relation has
          */
         Set<Var.Admin> getScopes();
+
+        /**
+         * @return all resource types that this type's instances can have
+         */
+        Set<Var.Admin> getHasResourceTypes();
 
         /**
          * @return the datatype of this resource type, if one is set
