@@ -1,11 +1,12 @@
 package io.mindmaps.core.implementation;
 
 import io.mindmaps.core.exceptions.MoreThanOneEdgeException;
-import io.mindmaps.core.model.*;
+import io.mindmaps.core.model.RelationType;
+import io.mindmaps.core.model.RoleType;
+import io.mindmaps.core.model.Type;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Set;
 
 class ValidateGlobalRules {
@@ -23,22 +24,15 @@ class ValidateGlobalRules {
      */
     public static boolean validatePlaysRoleStructure(CastingImpl casting) {
         InstanceImpl rolePlayer = casting.getRolePlayer();
-        TypeImpl<?, ?> currentConcept = rolePlayer.getParentIsa();
+        TypeImpl<?, ?> currentRolePlayerType = rolePlayer.getParentIsa();
         RoleType roleType = casting.getRole();
-        Set<Concept> visitedConcepts = new HashSet<>();
+        Set<Type> rolePlayerTypes = currentRolePlayerType.getAkoHierarchySuperSet();
+        Collection<Type> allowedTypes = roleType.playedByTypes();
 
-        while(!visitedConcepts.contains(currentConcept)){
-            visitedConcepts.add(currentConcept);
-            if(currentConcept.playsRoles().contains(roleType))
-                return true;
+        if(allowedTypes.size() == 0)
+            return false;
 
-            TypeImpl nextConcept = currentConcept.getParentAko();
-            if(nextConcept == null)
-                return false;
-            currentConcept = nextConcept;
-        }
-
-        return false;
+        return rolePlayerTypes.containsAll(roleType.playedByTypes());
     }
 
     /*------------------------------------------------- Axiom Rules --------------------------------------------------*/
@@ -57,6 +51,18 @@ class ValidateGlobalRules {
                 return false;
         } catch (MoreThanOneEdgeException e){
             return false;
+        }
+        return true;
+    }
+
+    /**
+     *
+     * @param roleType The RoleType to validate
+     * @return A flag indicating if an abstrcat role has an incoming plays role edge
+     */
+    public static boolean validateAbstractRoleTypeNotPlayingRole(RoleTypeImpl roleType){
+        if(roleType.isAbstract()){
+            return !roleType.getVertex().edges(Direction.IN, DataType.EdgeLabel.PLAYS_ROLE.getLabel()).hasNext();
         }
         return true;
     }
@@ -91,6 +97,8 @@ class ValidateGlobalRules {
 
         return true;
     }
+
+
 
     /*--------------------------------------- Global Related TO Local Rules ------------------------------------------*/
     public static boolean validateIsAbstractHasNoIncomingIsaEdges(TypeImpl conceptType){

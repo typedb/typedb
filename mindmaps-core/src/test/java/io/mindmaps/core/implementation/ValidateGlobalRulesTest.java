@@ -1,5 +1,7 @@
 package io.mindmaps.core.implementation;
 
+import io.mindmaps.core.exceptions.ConceptException;
+import io.mindmaps.core.exceptions.ErrorMessage;
 import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -7,16 +9,22 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.UUID;
 
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class ValidateGlobalRulesTest {
     private MindmapsTransactionImpl mindmapsGraph;
+
+    @org.junit.Rule
+    public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void buildGraphAccessManager() {
@@ -122,8 +130,13 @@ public class ValidateGlobalRulesTest {
         Vertex wolf_Vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(wolf.getBaseIdentifier()).next();
         creature_Vertex.addEdge(DataType.EdgeLabel.AKO.getLabel(), wolf_Vertex);
 
+        expectedException.expect(ConceptException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.LOOP_DETECTED.getMessage(wolf, DataType.EdgeLabel.AKO.getLabel()))
+        ));
+
         for (CastingImpl casting : assertion.getMappingCasting()) {
-            assertFalse(ValidateGlobalRules.validatePlaysRoleStructure(casting));
+            ValidateGlobalRules.validatePlaysRoleStructure(casting);
         }
     }
 
