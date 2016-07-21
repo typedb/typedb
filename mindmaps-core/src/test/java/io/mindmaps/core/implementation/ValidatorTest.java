@@ -6,6 +6,7 @@ import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
@@ -272,4 +273,72 @@ public class ValidatorTest {
         mindmapsGraph.putEntity("ent1", ent_t);
         mindmapsGraph.commit();
     }
+
+    @Test
+    public void testRoleTypeCannotPlayRoleIfAbstract() throws MindmapsValidationException {
+        RoleType role1 = mindmapsGraph.putRoleType("role1").setAbstract(true);
+        RoleType role2 = mindmapsGraph.putRoleType("role2").setAbstract(false);
+        EntityType entityType = mindmapsGraph.putEntityType("my type").playsRole(role1).playsRole(role2);
+
+        expectedException.expect(MindmapsValidationException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.VALIDATION_ROLE_TYPE_ABSTRACT.getMessage(role1.getId(), entityType.getId()))
+        ));
+
+        mindmapsGraph.commit();
+    }
+
+
+    //TODO: Find way of making the expected exception being thrown without invalidating the test below this one.
+    @Ignore
+    @Test
+    public void testRolesAllowedTypesSubsetOfRolePlayerType() throws MindmapsValidationException {
+        RoleType spouse1 = mindmapsGraph.putRoleType("Spouse1");
+        RoleType spouse2 = mindmapsGraph.putRoleType("Spouse2");
+        RoleType wife = mindmapsGraph.putRoleType("Wife").superType(spouse1);
+        RoleType husband = mindmapsGraph.putRoleType("Husband").superType(spouse2);
+
+        EntityType person = mindmapsGraph.putEntityType("Person").playsRole(spouse1).playsRole(spouse2);
+        EntityType woman = mindmapsGraph.putEntityType("Woman").superType(person).playsRole(wife);
+        EntityType man = mindmapsGraph.putEntityType("Man").superType(person).playsRole(husband);
+
+        RelationType hasSpouse= mindmapsGraph.putRelationType("hasSpouse").hasRole(spouse1).hasRole(spouse2);
+        RelationType hasWife = mindmapsGraph.putRelationType("hasWife").hasRole(wife).hasRole(husband);
+
+        Entity bob = mindmapsGraph.putEntity("bob", man);
+        Entity john = mindmapsGraph.putEntity("john", man);
+        Entity jack = mindmapsGraph.putEntity("jack", man);
+        Entity alice = mindmapsGraph.putEntity("alice", woman);
+
+        mindmapsGraph.addRelation(hasWife).putRolePlayer(wife, alice).putRolePlayer(husband, john);
+        mindmapsGraph.addRelation(hasWife).putRolePlayer(wife, bob).putRolePlayer(husband, jack);
+
+        expectedException.expect(MindmapsValidationException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.VALIDATION_CASTING.getMessage(man.getId(), bob.getId(), wife.getId()))
+        ));
+
+        mindmapsGraph.commit();
+    }
+
+    @Test
+    public void testNormalRelationshipWithTwoPlaysRole() throws MindmapsValidationException {
+        RoleType characterBeingPlayed = mindmapsGraph.putRoleType("Character being played");
+        RoleType personPlayingCharacter = mindmapsGraph.putRoleType("Person Playing Char");
+        RelationType playsChar = mindmapsGraph.putRelationType("Plays Char").hasRole(characterBeingPlayed).hasRole(personPlayingCharacter);
+
+        EntityType person = mindmapsGraph.putEntityType("person").playsRole(characterBeingPlayed).playsRole(personPlayingCharacter);
+        EntityType character = mindmapsGraph.putEntityType("character").playsRole(characterBeingPlayed);
+
+        Entity matt = mindmapsGraph.putEntity("Matt", person);
+        Entity walker = mindmapsGraph.putEntity("Walker", character);
+
+        mindmapsGraph.addRelation(playsChar).
+                putRolePlayer(personPlayingCharacter, matt).
+                putRolePlayer(characterBeingPlayed, walker);
+
+        mindmapsGraph.commit();
+
+    }
+
 }
