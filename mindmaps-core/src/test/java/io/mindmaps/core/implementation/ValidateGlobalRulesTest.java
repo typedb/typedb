@@ -3,10 +3,10 @@ package io.mindmaps.core.implementation;
 import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -17,6 +17,9 @@ import static org.junit.Assert.assertTrue;
 
 public class ValidateGlobalRulesTest {
     private MindmapsTransactionImpl mindmapsGraph;
+
+    @org.junit.Rule
+    public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void buildGraphAccessManager() {
@@ -117,14 +120,6 @@ public class ValidateGlobalRulesTest {
         for (CastingImpl casting : assertion.getMappingCasting()) {
             assertFalse(ValidateGlobalRules.validatePlaysRoleStructure(casting));
         }
-
-        Vertex creature_Vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(creature.getBaseIdentifier()).next();
-        Vertex wolf_Vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(wolf.getBaseIdentifier()).next();
-        creature_Vertex.addEdge(DataType.EdgeLabel.AKO.getLabel(), wolf_Vertex);
-
-        for (CastingImpl casting : assertion.getMappingCasting()) {
-            assertFalse(ValidateGlobalRules.validatePlaysRoleStructure(casting));
-        }
     }
 
     @Test
@@ -193,6 +188,7 @@ public class ValidateGlobalRulesTest {
         RelationImpl assertion2 = (RelationImpl) mindmapsGraph.putRelation(UUID.randomUUID().toString(), naps).putRolePlayer(hunter, cathulu);
         assertFalse(ValidateGlobalRules.validateRelationshipStructure(assertion2));
     }
+
 
     @Test
     public void testAbstractConceptValidation(){

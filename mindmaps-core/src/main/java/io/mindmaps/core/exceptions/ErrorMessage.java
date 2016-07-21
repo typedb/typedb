@@ -34,6 +34,7 @@ public enum ErrorMessage {
     VALIDATION_CASTING("The type ['%s'] of role player ['%s'] is not allowed to play RoleType ['%s'] \n"),
     VALIDATION_IS_ABSTRACT("The abstract Type ['%s'] should not have any instances \n"),
     VALIDATION_ROLE_TYPE("RoleType ['%s'] does not have exactly one has-role connection to any RelationType. \n"),
+    VALIDATION_ROLE_TYPE_ABSTRACT("RoleType ['%s'] is abstract but is being played by type ['%s']. \n"),
     VALIDATION_RELATION_TYPE("Relation Type ['%s'] does not have two or more roles \n"),
 
     //--------------------------------------------- Client Errors -----------------------------------------------
@@ -41,10 +42,6 @@ public enum ErrorMessage {
     INVALID_FACTORY("Graph Factory ['%s'] is not valid"),
     MISSING_FACTORY_DEFINITION("Graph Factor Config ['factory.internal'] missing from provided config. Cannot produce graph"),
     CONFIG_NOT_FOUND("Mindmaps Engine located at ['%s'] did not return the config as expected, due to ['%s']");
-
-
-
-
 
     private final String message;
 

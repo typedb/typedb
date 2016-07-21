@@ -1,7 +1,9 @@
 package io.mindmaps.core.implementation;
 
 import io.mindmaps.core.exceptions.MoreThanOneEdgeException;
-import io.mindmaps.core.model.*;
+import io.mindmaps.core.model.Concept;
+import io.mindmaps.core.model.RelationType;
+import io.mindmaps.core.model.RoleType;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Collection;
@@ -63,6 +65,18 @@ class ValidateGlobalRules {
 
     /**
      *
+     * @param roleType The RoleType to validate
+     * @return A flag indicating if an abstrcat role has an incoming plays role edge
+     */
+    public static boolean validateAbstractRoleTypeNotPlayingRole(RoleTypeImpl roleType){
+        if(roleType.isAbstract()){
+            return !roleType.getVertex().edges(Direction.IN, DataType.EdgeLabel.PLAYS_ROLE.getLabel()).hasNext();
+        }
+        return true;
+    }
+
+    /**
+     *
      * @param relationType The RelationType to validate
      * @return A flag indicating if the relationType has at least 2 roles
      */
@@ -91,6 +105,8 @@ class ValidateGlobalRules {
 
         return true;
     }
+
+
 
     /*--------------------------------------- Global Related TO Local Rules ------------------------------------------*/
     public static boolean validateIsAbstractHasNoIncomingIsaEdges(TypeImpl conceptType){
