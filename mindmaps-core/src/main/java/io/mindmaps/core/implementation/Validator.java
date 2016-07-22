@@ -75,8 +75,6 @@ class Validator {
     private void validateRoleType(RoleTypeImpl roleType){
         if(!ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(roleType))
             logError(ErrorMessage.VALIDATION_ROLE_TYPE.getMessage(roleType.getId()));
-        if(!ValidateGlobalRules.validateAbstractRoleTypeNotPlayingRole(roleType))
-            logError(ErrorMessage.VALIDATION_ROLE_TYPE_ABSTRACT.getMessage(roleType.getId(), roleType.playedByTypes().iterator().next().getId()));
     }
 
     private void validateRelationType(RelationTypeImpl relationType){

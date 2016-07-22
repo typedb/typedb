@@ -72,7 +72,7 @@ public class GraqlShell implements AutoCloseable {
      */
     public static void main(String[] args) {
         String version = GraqlShell.class.getPackage().getImplementationVersion();
-        runShell(args, MindmapsClient::newGraph, version, System.in, System.out, System.err);
+        runShell(args, MindmapsClient::getGraph, version, System.in, System.out, System.err);
     }
 
     static void runShell(String[] args, Function<String, MindmapsGraph> factory, String version, InputStream in, PrintStream out, PrintStream err) {

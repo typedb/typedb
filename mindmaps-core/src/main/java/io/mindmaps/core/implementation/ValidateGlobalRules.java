@@ -65,18 +65,6 @@ class ValidateGlobalRules {
 
     /**
      *
-     * @param roleType The RoleType to validate
-     * @return A flag indicating if an abstrcat role has an incoming plays role edge
-     */
-    public static boolean validateAbstractRoleTypeNotPlayingRole(RoleTypeImpl roleType){
-        if(roleType.isAbstract()){
-            return !roleType.getVertex().edges(Direction.IN, DataType.EdgeLabel.PLAYS_ROLE.getLabel()).hasNext();
-        }
-        return true;
-    }
-
-    /**
-     *
      * @param relationType The RelationType to validate
      * @return A flag indicating if the relationType has at least 2 roles
      */

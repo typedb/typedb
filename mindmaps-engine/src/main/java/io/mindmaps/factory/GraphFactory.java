@@ -9,6 +9,7 @@ import java.util.Properties;
 public class GraphFactory {
 
     private String CONFIG;
+    private String DEFAULT_NAME; //TO_DO: This should be parametrised
 
     private int idBlockSize;
 
@@ -37,6 +38,7 @@ public class GraphFactory {
             prop.load(getClass().getClassLoader().getResourceAsStream("application.properties"));
             idBlockSize = Integer.parseInt(prop.getProperty("graph.block-size"));
             CONFIG = prop.getProperty("graphdatabase.config");
+            DEFAULT_NAME = prop.getProperty("graphdatabase.name");
             System.out.println("hello config " + CONFIG);
         } catch (IOException e) {
             e.printStackTrace();
@@ -45,18 +47,18 @@ public class GraphFactory {
     }
 
     public MindmapsTransactionImpl buildMindmapsGraphBatchLoading() {
-        MindmapsTransactionImpl graph = buildGraph(CONFIG);
+        MindmapsTransactionImpl graph = buildGraph(DEFAULT_NAME, CONFIG);
         graph.enableBatchLoading();
         return graph;
     }
 
     public MindmapsTransactionImpl buildMindmapsGraph() {
-        return buildGraph(CONFIG);
+        return buildGraph(DEFAULT_NAME, CONFIG);
     }
 
-    private synchronized MindmapsTransactionImpl buildGraph(String config) {
+    private synchronized MindmapsTransactionImpl buildGraph(String name, String config) {
 
-        MindmapsTransactionImpl mindmapsGraph = (MindmapsTransactionImpl) titanGraphFactory.newGraph(config).newTransaction();
+        MindmapsTransactionImpl mindmapsGraph = (MindmapsTransactionImpl) titanGraphFactory.getGraph(name, null, config).newTransaction();
         Graph graph = mindmapsGraph.getTinkerPopGraph();
         graph.configuration().setProperty("ids.block-size", idBlockSize);
 

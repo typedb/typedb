@@ -24,18 +24,19 @@ import static junit.framework.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
 
 public class MindmapsTitanGraphTest {
-    private final String TEST_CONFIG = "../conf/titan/titan-cassandra-es-test.properties";
+    private final String TEST_NAME = "mindmapstest";
+    private final String TEST_URI = "localhost";
     private MindmapsGraph mindmapsGraph;
 
     @Before
     public void setup(){
         cleanup();
-        mindmapsGraph = new MindmapsTitanGraphFactory().newGraph(TEST_CONFIG);
+        mindmapsGraph = new MindmapsTitanGraphFactory().getGraph(TEST_NAME, TEST_URI, null);
     }
 
     @After
     public void cleanup(){
-        MindmapsGraph mg = new MindmapsTitanGraphFactory().newGraph(TEST_CONFIG);
+        MindmapsGraph mg = new MindmapsTitanGraphFactory().getGraph(TEST_NAME, TEST_URI, null);
         mg.clear();
     }
 
