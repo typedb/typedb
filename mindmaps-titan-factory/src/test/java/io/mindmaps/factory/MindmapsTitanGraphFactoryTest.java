@@ -32,6 +32,9 @@ import static org.junit.Assert.*;
 
 public class MindmapsTitanGraphFactoryTest {
     private final String TEST_CONFIG = "../conf/titan/titan-cassandra-es-test.properties";
+    private final String TEST_NAME = "mindmaps-test";
+    private final String TEST_URI = "localhost";
+
     private MindmapsGraphFactory titanGraphFactory ;
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -43,19 +46,19 @@ public class MindmapsTitanGraphFactoryTest {
         logger.setLevel(Level.OFF);
 
         titanGraphFactory = new MindmapsTitanGraphFactory();
-        MindmapsGraph graph = titanGraphFactory.newGraph(TEST_CONFIG);
+        MindmapsGraph graph = titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG);
         graph.clear();
     }
 
     @Test
     public void testBuildTitanGraph() throws Exception {
-        Graph graph = titanGraphFactory.newGraph(TEST_CONFIG).getGraph();
+        Graph graph = titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph();
         assertThat(graph, instanceOf(TitanGraph.class));
     }
 
     @Test
     public void productionIndexConstructionTest() throws InterruptedException {
-        TitanGraph graph = (TitanGraph) titanGraphFactory.newGraph(TEST_CONFIG).getGraph();
+        TitanGraph graph = (TitanGraph) titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph();
         TitanManagement management = graph.openManagement();
 
         assertEquals("byItemIdentifier", management.getGraphIndex("byItemIdentifier").toString());
@@ -75,7 +78,7 @@ public class MindmapsTitanGraphFactoryTest {
     @Test
     public void testBuildIndexedGraphWithCommit() throws Exception {
         clearGraph();
-        Graph graph = titanGraphFactory.newGraph(TEST_CONFIG).getGraph();
+        Graph graph = titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph();
         addConcepts(graph);
         graph.tx().commit();
         assertIndexCorrect(graph);
@@ -84,14 +87,14 @@ public class MindmapsTitanGraphFactoryTest {
     @Test
     public void testBuildIndexedGraphWithoutCommit() throws Exception {
         clearGraph();
-        Graph graph = titanGraphFactory.newGraph(TEST_CONFIG).getGraph();
+        Graph graph = titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph();
         addConcepts(graph);
         assertIndexCorrect(graph);
     }
 
     @Test
     public void testVertexLabels(){
-        TitanGraph graph = (TitanGraph) titanGraphFactory.newGraph(TEST_CONFIG).getGraph();
+        TitanGraph graph = (TitanGraph) titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph();
         TitanManagement management = graph.openManagement();
 
         ResourceBundle keys = ResourceBundle.getBundle("base-types");
@@ -103,7 +106,7 @@ public class MindmapsTitanGraphFactoryTest {
 
     @Test
     public void testBatchLoading(){
-        TitanGraph graph = (TitanGraph) titanGraphFactory.newGraph(TEST_CONFIG).getGraph();
+        TitanGraph graph = (TitanGraph) titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph();
         TitanManagement management = graph.openManagement();
 
         ResourceBundle keys = ResourceBundle.getBundle("property-keys");
@@ -123,33 +126,12 @@ public class MindmapsTitanGraphFactoryTest {
 
     @Test
     public void testSingleton(){
-        Graph graph1 = titanGraphFactory.newGraph("../conf/titan/titan-cassandra-batch-test.properties").getGraph();
-        Graph graph2 = titanGraphFactory.newGraph("../conf/titan/titan-cassandra-es-test.properties").getGraph();
-        Graph graph3 = titanGraphFactory.newGraph("../conf/titan/titan-cassandra-es.properties").getGraph();
-        Graph graph4 = titanGraphFactory.newGraph("../conf/titan/titan-cassandra-batch-test.properties").getGraph();
-        Graph graph5 = titanGraphFactory.newGraph("../conf/titan/titan-cassandra-es-test.properties").getGraph();
-        Graph graph6 = titanGraphFactory.newGraph("../conf/titan/titan-cassandra-es.properties").getGraph();
-        Graph graph7 = titanGraphFactory.newGraph("../conf/titan/titan-cassandra-test.properties").getGraph();
+        Graph graph1 = titanGraphFactory.getGraph("a", TEST_URI, TEST_CONFIG).getGraph();
+        Graph graph2 = titanGraphFactory.getGraph("b", TEST_URI, TEST_CONFIG).getGraph();
+        Graph graph3 = titanGraphFactory.getGraph("a", TEST_URI, TEST_CONFIG).getGraph();
 
-        assertEquals(graph1, graph4);
-        assertEquals(graph2, graph5);
-        assertEquals(graph3, graph6);
-        assertNotEquals(graph2, graph7);
-
-        assertNotSame(graph1, graph2);
-        assertNotSame(graph1, graph3);
-        assertNotSame(graph1, graph5);
-        assertNotSame(graph1, graph6);
-
-        assertNotSame(graph2, graph1);
-        assertNotSame(graph2, graph3);
-        assertNotSame(graph2, graph4);
-        assertNotSame(graph2, graph6);
-
-        assertNotSame(graph3, graph2);
-        assertNotSame(graph3, graph1);
-        assertNotSame(graph3, graph5);
-        assertNotSame(graph3, graph4);
+        assertEquals(graph1, graph3);
+        assertNotEquals(graph2, graph1);
     }
 
     @Test
@@ -160,7 +142,7 @@ public class MindmapsTitanGraphFactoryTest {
 
         // Indexed Lookup /////////////////////////////////////////////////////
         clearGraph();
-        Graph graph = titanGraphFactory.newGraph(TEST_CONFIG).getGraph();
+        Graph graph = titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph();
         createGraphTestVertexCentricIndex("",graph, max);
 
         // time the same query multiple times
@@ -178,7 +160,7 @@ public class MindmapsTitanGraphFactoryTest {
 
         // Non-Indexed Lookup /////////////////////////////////////////////////////
         clearGraph();
-        graph = titanGraphFactory.newGraph(TEST_CONFIG).getGraph();
+        graph = titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph();
         createGraphTestNoIndex("", graph, max);
 
         // time the same query multiple times
@@ -214,7 +196,7 @@ public class MindmapsTitanGraphFactoryTest {
 
         // Gremlin Indexed Lookup ////////////////////////////////////////////////////
         clearGraph();
-        Graph graph = titanGraphFactory.newGraph(TEST_CONFIG).getGraph();
+        Graph graph = titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph();
         createGraphTestVertexCentricIndex("",graph, max);
 
         // time the same query multiple times
@@ -231,7 +213,7 @@ public class MindmapsTitanGraphFactoryTest {
 
         // Non-Indexed Gremlin Lookup ////////////////////////////////////////////////////
         clearGraph();
-        graph = titanGraphFactory.newGraph(TEST_CONFIG).getGraph();
+        graph = titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph();
         createGraphTestNoIndex("",graph,max);
 
         // time the same query multiple times
@@ -260,7 +242,7 @@ public class MindmapsTitanGraphFactoryTest {
 
         // Gremlin Indexed Lookup ////////////////////////////////////////////////////
         clearGraph();
-        Graph graph = titanGraphFactory.newGraph(TEST_CONFIG).getGraph();
+        Graph graph = titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph();
         createGraphTestVertexCentricIndex("rand",graph, max);
 
         Vertex first = graph.traversal().V().has(DataType.ConceptProperty.VALUE_STRING.name(),String.valueOf(0)).next();
@@ -289,7 +271,7 @@ public class MindmapsTitanGraphFactoryTest {
     }
 
     private void clearGraph() {
-        Graph graph = titanGraphFactory.newGraph(TEST_CONFIG).getGraph();
+        Graph graph = titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph();
         try {
             graph.close();
         } catch (Exception e) {

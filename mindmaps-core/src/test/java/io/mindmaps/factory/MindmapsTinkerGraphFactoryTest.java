@@ -10,6 +10,8 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 
 public class MindmapsTinkerGraphFactoryTest {
@@ -24,7 +26,7 @@ public class MindmapsTinkerGraphFactoryTest {
 
     @Test
     public void testBuildTinkerGraph() throws Exception {
-        MindmapsGraph graph = tinkerGraphFactory.newGraph();
+        MindmapsGraph graph = tinkerGraphFactory.getGraph("test", null, null);
         MindmapsTransaction transaction = graph.newTransaction();
         assertThat(graph, instanceOf(MindmapsTinkerGraph.class));
         assertThat(transaction, instanceOf(MindmapsTinkerTransaction.class));;
@@ -35,5 +37,15 @@ public class MindmapsTinkerGraphFactoryTest {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    @Test
+    public void testFactoryMap(){
+        MindmapsGraph graph1 = tinkerGraphFactory.getGraph("graph1", null, null);
+        MindmapsGraph graph2 = tinkerGraphFactory.getGraph("graph2", null, null);
+        MindmapsGraph graph1_copy = tinkerGraphFactory.getGraph("graph1", null, null);
+
+        assertNotEquals(graph1, graph2);
+        assertEquals(graph1, graph1_copy);
     }
 }

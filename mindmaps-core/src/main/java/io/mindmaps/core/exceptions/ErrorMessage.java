@@ -34,8 +34,10 @@ public enum ErrorMessage {
     VALIDATION_CASTING("The type ['%s'] of role player ['%s'] is not allowed to play RoleType ['%s'] \n"),
     VALIDATION_IS_ABSTRACT("The abstract Type ['%s'] should not have any instances \n"),
     VALIDATION_ROLE_TYPE("RoleType ['%s'] does not have exactly one has-role connection to any RelationType. \n"),
-    VALIDATION_ROLE_TYPE_ABSTRACT("RoleType ['%s'] is abstract but is being played by type ['%s']. \n"),
     VALIDATION_RELATION_TYPE("Relation Type ['%s'] does not have two or more roles \n"),
+
+    //--------------------------------------------- Factory Errors -----------------------------------------------
+    INVALID_PATH_TO_CONFIG("Unable to open config file ['%s']"),
 
     //--------------------------------------------- Client Errors -----------------------------------------------
     INVALID_ENGINE_RESPONSE("Mindmaps Engine located at ['%s'] returned response ['%s'], cannot produce a graph."),

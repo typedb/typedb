@@ -8,6 +8,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static com.jayway.restassured.RestAssured.get;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -28,8 +29,12 @@ public class GraphFactoryControllerTest {
 
     @Test
     public void testMindmapsClient(){
-        MindmapsGraph graph = MindmapsClient.newGraph();
+        MindmapsGraph graph = MindmapsClient.getGraph("mindmapstest");
+        MindmapsGraph graph2 = MindmapsClient.getGraph("mindmapstest2");
+        MindmapsGraph graphCopy = MindmapsClient.getGraph("mindmapstest");
         assertNotEquals(0, graph.getGraph().traversal().V().toList().size());
+        assertNotEquals(graph, graph2);
+        assertEquals(graph, graphCopy);
         graph.close();
     }
 }

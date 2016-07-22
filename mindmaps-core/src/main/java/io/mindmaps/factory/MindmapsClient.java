@@ -12,16 +12,19 @@ import java.util.MissingResourceException;
 import java.util.PropertyResourceBundle;
 
 public class MindmapsClient {
-    private static final String DEFAULT_URI = "http://localhost:4567/graph_factory";
+    private static final String DEFAULT_PROTOCOL = "http://";
+    private static final String DEFAULT_URI = "localhost";
+    private static final String REST_END_POINT = ":4567/graph_factory";
     private static final Map<String, MindmapsGraphFactory> openFactories = new HashMap<>();
 
-    public static MindmapsGraph newGraph(){
-        return newGraph(DEFAULT_URI);
+    public static MindmapsGraph getGraph(String name){
+        return getGraph(name, DEFAULT_URI);
     }
 
-    public static MindmapsGraph newGraph(String uri){
+    public static MindmapsGraph getGraph(String name, String uri){
         try {
-            URL url = new URL(uri);
+            String restFactoryUri = DEFAULT_PROTOCOL + uri + REST_END_POINT;
+            URL url = new URL(restFactoryUri);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
 
@@ -58,7 +61,7 @@ public class MindmapsClient {
                 throw new IllegalArgumentException(ErrorMessage.MISSING_FACTORY_DEFINITION.getMessage());
             }
 
-            return getFactory(factoryType).newGraph(path);
+            return getFactory(factoryType).getGraph(name, uri, path);
         } catch (IOException e) {
             throw new IllegalArgumentException(ErrorMessage.CONFIG_NOT_FOUND.getMessage(uri, e.getMessage()));
         }

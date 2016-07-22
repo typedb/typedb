@@ -5,80 +5,82 @@ import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.schema.TitanIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import io.mindmaps.core.dao.MindmapsGraph;
+import io.mindmaps.core.exceptions.ErrorMessage;
 import io.mindmaps.core.implementation.MindmapsTitanGraph;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.*;
 
 class MindmapsTitanGraphFactory implements MindmapsGraphFactory{
-    private final Map<String, TitanGraph> instances;
+    protected final Logger LOG = LoggerFactory.getLogger(MindmapsTitanGraphFactory.class);
+    private final Map<String, MindmapsTitanGraph> openGraphs;
     private final static String SEARCH_KEY = "search";
+    private final static String DEFAULT_ADDRESS = "localhost";
+    private final static String DEAFULT_CONFIG = "backend-default";
 
     public MindmapsTitanGraphFactory(){
-        instances = new HashMap<>();
+        openGraphs = new HashMap<>();
     }
 
     @Override
-    public MindmapsGraph newGraph(String... config){
-        if(config.length != 1){
-            throw new IllegalArgumentException("Exactly one configuration file must be provided when creating a Titan Graph Instance");
-        }
-        return new MindmapsTitanGraph(getTitanGraph(config[0]));
-    }
+    public MindmapsGraph getGraph(String name, String address, String pathToConfig){
+        if(address == null)
+            address = DEFAULT_ADDRESS;
 
-    private synchronized TitanGraph getTitanGraph(String config) {
-        String key = generateKey(config);
-        TitanGraph instance = instances.get(key);
-        if(instance == null || !instance.isOpen()) {
-            TitanGraph titanGraph = TitanFactory.open(config);
-            buildTitanIndexes(titanGraph);
-            titanGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
-            instance = titanGraph;
-            instances.put(key, instance);
-
-            // We must perfectly align things!
-            String extraBars = "";
-            for (int i = 0; i < Integer.toString(instances.size()).length(); i ++) {
-                extraBars += "|";
+        String key = name + "_" + address;
+        if(openGraphs.containsKey(key)){
+            MindmapsTitanGraph mindmapsTitanGraph = openGraphs.get(key);
+            if(((TitanGraph)mindmapsTitanGraph.getGraph()).isOpen()){
+                return mindmapsTitanGraph;
             }
-
-            System.out.println("=================================================================================================");
-            System.out.println("||||||||||||||||||||      " + instances.size() + " TitanGraph(s) are instantiated for Mindmaps      |||||||||||||||||||" + extraBars);
-            System.out.println("=================================================================================================");
         }
-        return instance;
+
+        MindmapsTitanGraph mindmapsTitanGraph = new MindmapsTitanGraph(newTitanGraph(name, address, pathToConfig));
+        openGraphs.put(key, mindmapsTitanGraph);
+
+        System.out.println("=================================================================================================");
+        System.out.println("||||||||||||||||||||      " + openGraphs.size() + " TitanGraph(s) are instantiated for Mindmaps      |||||||||||||||||||");
+        System.out.println("=================================================================================================");
+
+        return mindmapsTitanGraph;
     }
 
-    private static String generateKey(String config){
-        try {
-            FileInputStream fis = new FileInputStream(config);
-            PropertyResourceBundle prop = new PropertyResourceBundle(fis);
-            String graphKey = "";
-            Set<String> keys = prop.keySet();
+    private synchronized TitanGraph newTitanGraph(String name, String address, String pathToConfig){
+        TitanGraph titanGraph = configureGraph(name, address, pathToConfig);
+        buildTitanIndexes(titanGraph);
+        titanGraph.tx().onClose(Transaction.CLOSE_BEHAVIOR.ROLLBACK);
+        return titanGraph;
+    }
 
-            graphKey = expandKey(prop, keys, graphKey, "storage.hostname");
-            graphKey = expandKey(prop, keys, graphKey, "storage.cassandra.keyspace");
-            graphKey = expandKey(prop, keys, graphKey, "storage.batch-loading");
-            graphKey = expandKey(prop, keys, graphKey, "index.search.backend");
-
-            return graphKey;
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Cannot find config file [" + config +"]");
+    private TitanGraph configureGraph(String name, String address, String pathToConfig){
+        ResourceBundle defaultConfig;
+        if(pathToConfig == null) {
+            defaultConfig = ResourceBundle.getBundle(DEAFULT_CONFIG);
+        } else {
+            try {
+                FileInputStream fis = new FileInputStream(pathToConfig);
+                defaultConfig = new PropertyResourceBundle(fis);
+            } catch (IOException e) {
+                LOG.error(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(pathToConfig), e);
+                throw new IllegalArgumentException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(pathToConfig));
+            }
         }
-    }
-    private static String expandKey(PropertyResourceBundle prop, Set<String> keys, String graphKey, String property){
-        if(keys.contains(property))
-            return graphKey + prop.getString(property);
-        else
-            return graphKey;
-    }
 
+        TitanFactory.Builder builder = TitanFactory.build().
+                set("storage.hostname", address).
+                set("storage.cassandra.keyspace", name);
+
+        defaultConfig.keySet().forEach(key -> builder.set(key, defaultConfig.getString(key)));
+        return builder.open();
+    }
 
     private static void buildTitanIndexes(TitanGraph graph) {
         TitanManagement management = graph.openManagement();
