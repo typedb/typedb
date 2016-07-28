@@ -38,10 +38,10 @@ abstract class InstanceImpl<T extends Instance, V extends Type, D> extends Conce
         deleteNode();
         for(CastingImpl casting: castings){
             Set<RelationImpl> relations = casting.getRelations();
-            getMindmapsGraph().getTransaction().putConcept(casting);
+            getMindmapsTransaction().getTransaction().putConcept(casting);
 
             for(RelationImpl relation : relations) {
-                getMindmapsGraph().getTransaction().putConcept(relation);
+                getMindmapsTransaction().getTransaction().putConcept(relation);
                 relation.cleanUp();
             }
 
@@ -83,7 +83,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type, D> extends Conce
         InstanceImpl<?, ?, ?> parent = this;
 
         parent.castings().forEach(c -> {
-            CastingImpl casting = getMindmapsGraph().getElementFactory().buildCasting(c);
+            CastingImpl casting = getMindmapsTransaction().getElementFactory().buildCasting(c);
             if (roleTypeItemIdentifier.size() != 0) {
                 if (roleTypeItemIdentifier.contains(casting.getType()))
                     relations.addAll(casting.getRelations());
@@ -100,7 +100,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type, D> extends Conce
         Set<RoleType> roleTypes = new HashSet<>();
         ConceptImpl<?, ?, ?> parent = this;
         parent.getIncomingNeighbours(DataType.EdgeLabel.ROLE_PLAYER).forEach(c -> {
-            roleTypes.add(getMindmapsGraph().getElementFactory().buildCasting(c).getRole());
+            roleTypes.add(getMindmapsTransaction().getElementFactory().buildCasting(c).getRole());
         });
         return roleTypes;
     }

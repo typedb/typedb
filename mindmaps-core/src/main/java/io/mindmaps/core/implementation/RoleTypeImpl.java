@@ -37,14 +37,14 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
         if(concept == null){
             return null;
         } else {
-            return getMindmapsGraph().getElementFactory().buildRelationType(concept);
+            return getMindmapsTransaction().getElementFactory().buildRelationType(concept);
         }
     }
 
     @Override
     public Collection<Type> playedByTypes() {
         Collection<Type> types = new HashSet<>();
-        getIncomingNeighbours(DataType.EdgeLabel.PLAYS_ROLE).forEach(c -> types.add(getMindmapsGraph().getElementFactory().buildSpecificConceptType(c)));
+        getIncomingNeighbours(DataType.EdgeLabel.PLAYS_ROLE).forEach(c -> types.add(getMindmapsTransaction().getElementFactory().buildSpecificConceptType(c)));
         return types;
     }
 
@@ -61,7 +61,7 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
     public Set<CastingImpl> castings(){
         Set<CastingImpl> castings = new HashSet<>();
         getIncomingNeighbours(DataType.EdgeLabel.ISA).forEach(concept -> {
-            ((CastingImpl) concept).getRelations().forEach(relation -> mindmapsGraph.getTransaction().putConcept(relation));
+            ((CastingImpl) concept).getRelations().forEach(relation -> mindmapsTransaction.getTransaction().putConcept(relation));
         });
         return castings;
     }

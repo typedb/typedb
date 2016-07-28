@@ -45,4 +45,23 @@ public interface MindmapsGraph {
      * @return Returns the underlaying gremlin graph.
      */
     Graph getGraph();
+
+    /**
+     * Enables batch loading which skips redundancy checks.
+     * With this mode enabled duplicate concepts and relations maybe created.
+     * Faster writing at the cost of consistency.
+     */
+    void enableBatchLoading();
+
+    /**
+     * Disables batch loading which prevents the creation of duplicate castings.
+     * Immediate constancy at the cost of writing speed.
+     */
+    void disableBatchLoading();
+
+    /**
+     *
+     * @return A flag indicating if this transaction is batch loading or not
+     */
+    boolean isBatchLoadingEnabled();
 }

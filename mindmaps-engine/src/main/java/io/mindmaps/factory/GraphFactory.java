@@ -18,6 +18,7 @@
 
 package io.mindmaps.factory;
 
+import io.mindmaps.core.dao.MindmapsGraph;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
@@ -28,8 +29,6 @@ public class GraphFactory {
 
     private String CONFIG;
     private String DEFAULT_NAME; //TO_DO: This should be parametrised
-
-    private int idBlockSize;
 
     private static GraphFactory instance = null;
 
@@ -54,7 +53,6 @@ public class GraphFactory {
         Properties prop = new Properties();
         try {
             prop.load(getClass().getClassLoader().getResourceAsStream("application.properties"));
-            idBlockSize = Integer.parseInt(prop.getProperty("graph.block-size"));
             CONFIG = prop.getProperty("graphdatabase.config");
             DEFAULT_NAME = prop.getProperty("graphdatabase.name");
             System.out.println("hello config " + CONFIG);
@@ -65,20 +63,18 @@ public class GraphFactory {
     }
 
     public MindmapsTransactionImpl buildMindmapsGraphBatchLoading() {
-        MindmapsTransactionImpl graph = buildGraph(DEFAULT_NAME, CONFIG);
+        MindmapsGraph graph = buildGraph(DEFAULT_NAME, CONFIG);
         graph.enableBatchLoading();
-        return graph;
+        return (MindmapsTransactionImpl) graph.newTransaction();
     }
 
     public MindmapsTransactionImpl buildMindmapsGraph() {
-        return buildGraph(DEFAULT_NAME, CONFIG);
+        return (MindmapsTransactionImpl) buildGraph(DEFAULT_NAME, CONFIG).newTransaction();
     }
 
-    private synchronized MindmapsTransactionImpl buildGraph(String name, String config) {
-
-        MindmapsTransactionImpl mindmapsGraph = (MindmapsTransactionImpl) titanGraphFactory.getGraph(name, null, config).newTransaction();
-        Graph graph = mindmapsGraph.getTinkerPopGraph();
-        graph.configuration().setProperty("ids.block-size", idBlockSize);
+    private synchronized MindmapsGraph buildGraph(String name, String config) {
+        MindmapsGraph mindmapsGraph = titanGraphFactory.getGraph(name, null, config);
+        Graph graph = mindmapsGraph.getGraph();
 
         return mindmapsGraph;
     }

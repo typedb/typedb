@@ -39,16 +39,20 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
     private final ElementFactory elementFactory;
     private Graph graph;
     private final Transaction transaction;
-    private boolean batchLoading;
+    private final boolean batchLoadingEnabled;
 
-    public MindmapsTransactionImpl(Graph graph) {
+    public MindmapsTransactionImpl(Graph graph, boolean batchLoadingEnabled) {
         this.graph = graph;
+        this.batchLoadingEnabled = batchLoadingEnabled;
         transaction = new Transaction();
         elementFactory = new ElementFactory(this);
-        batchLoading = false;
     }
 
     public abstract MindmapsGraph getRootGraph();
+
+    public boolean isBatchLoadingEnabled(){
+        return batchLoadingEnabled;
+    }
 
     @SuppressWarnings("unchecked")
     public void initialiseMetaConcepts(){
@@ -166,21 +170,6 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
 
     public Transaction getTransaction () {
         return transaction;
-    }
-
-    @Override
-    public void enableBatchLoading() {
-        batchLoading = true;
-    }
-
-    @Override
-    public void disableBatchLoading() {
-        batchLoading = false;
-    }
-
-    @Override
-    public boolean isBatchLoadingEnabled(){
-        return batchLoading;
     }
 
     //----------------------------------------------Concept Functionality-----------------------------------------------

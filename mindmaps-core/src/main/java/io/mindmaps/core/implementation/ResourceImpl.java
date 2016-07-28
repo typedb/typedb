@@ -45,7 +45,7 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>, D> impl
         Set<Instance> owners = new HashSet<>();
         this.getOutgoingNeighbours(DataType.EdgeLabel.SHORTCUT).forEach(concept -> {
             if(!concept.getBaseType().equals(DataType.BaseType.RESOURCE.name()))
-                owners.add(getMindmapsGraph().getElementFactory().buildSpecificInstance(concept));
+                owners.add(getMindmapsTransaction().getElementFactory().buildSpecificInstance(concept));
         });
         return owners;
     }
@@ -66,7 +66,7 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>, D> impl
             //If the value has to be unique some additional checks are in order
             if(type().isUnique()){
                 String index = generateResourceIndex(value);
-                ConceptImpl<?, ?, ?> conceptByIndex = mindmapsGraph.getConcept(DataType.ConceptPropertyUnique.INDEX, index);
+                ConceptImpl<?, ?, ?> conceptByIndex = mindmapsTransaction.getConcept(DataType.ConceptPropertyUnique.INDEX, index);
                 if(conceptByIndex != null && !conceptByIndex.getId().equals(getId())){
                     throw new InvalidConceptValueException(ErrorMessage.RESOURCE_CANNOT_HAVE_VALUE.getMessage(value, this, conceptByIndex));
                 } else {

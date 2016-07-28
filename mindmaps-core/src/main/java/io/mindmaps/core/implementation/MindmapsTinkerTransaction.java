@@ -26,9 +26,8 @@ public class MindmapsTinkerTransaction extends MindmapsTransactionImpl {
     MindmapsTinkerGraph rootGraph;
 
     public MindmapsTinkerTransaction(MindmapsTinkerGraph graph) {
-        super(graph.getGraph());
+        super(graph.getGraph(), graph.isBatchLoadingEnabled());
         this.rootGraph = graph;
-        initialiseMetaConcepts();
     }
 
     @Override
