@@ -47,6 +47,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Scanner;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -55,6 +56,12 @@ import java.util.stream.Stream;
  * A Graql REPL shell that can be run from the command line
  */
 public class GraqlShell implements AutoCloseable {
+    private static final String LICENSE_PROMPT = "\n" +
+            "MindmapsDB  Copyright (C) 2016  Mindmaps Research Ltd \n" +
+            "This is free software, and you are welcome to redistribute it \n" +
+            "under certain conditions; type 'license' for details. \n ";
+
+    private static final String LICENSE_LOCATION = "LICENSE.txt";
 
     private static final String GRAPH_CONF = "/opt/mindmaps/resources/conf/titan-cassandra-es.properties";
     private static final String DEFAULT_URL = "http://localhost:4567/graph_factory";
@@ -66,6 +73,7 @@ public class GraqlShell implements AutoCloseable {
     private static final String LOAD_COMMAND = "load";
     private static final String CLEAR_COMMAND = "clear";
     private static final String EXIT_COMMAND = "exit";
+    private static final String LICENSE_COMMAND = "license";
 
     /**
      * Array of available commands in shell
@@ -94,6 +102,8 @@ public class GraqlShell implements AutoCloseable {
     }
 
     static void runShell(String[] args, Function<String, MindmapsGraph> factory, String version, InputStream in, PrintStream out, PrintStream err) {
+        out.println(LICENSE_PROMPT);
+
         // Disable horrid cassandra logs
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.OFF);
@@ -218,6 +228,9 @@ public class GraqlShell implements AutoCloseable {
                 case CLEAR_COMMAND:
                     console.clearScreen();
                     break;
+                case LICENSE_COMMAND:
+                    printLicense();
+                    break;
                 case EXIT_COMMAND:
                     return;
                 case "":
@@ -240,6 +253,24 @@ public class GraqlShell implements AutoCloseable {
                     break;
             }
         }
+    }
+
+    private void printLicense(){
+        StringBuilder result = new StringBuilder("");
+
+        //Get file from resources folder
+        ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+        InputStream is = classloader.getResourceAsStream(LICENSE_LOCATION);
+
+        Scanner scanner = new Scanner(is);
+        while (scanner.hasNextLine()) {
+            String line = scanner.nextLine();
+            result.append(line).append("\n");
+        }
+        result.append("\n");
+        scanner.close();
+
+        this.print(result.toString());
     }
 
     private void executeQuery(String queryString, boolean setLimit) {

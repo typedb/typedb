@@ -50,7 +50,7 @@ public class GraqlShellTest {
     @Test
     public void testStartAndExitShell() throws IOException {
         // Assert simply that the shell starts and terminates without errors
-        assertEquals(">>> exit\n", testShell("exit\n"));
+        assertTrue(testShell("exit\n").endsWith(">>> exit\n"));
     }
 
     @Test
@@ -92,7 +92,7 @@ public class GraqlShellTest {
         String[] result = testShell("match $x isa type\nexit").split("\n");
 
         // Make sure we find a few results (don't be too fussy about the output here)
-        assertEquals(">>> match $x isa type", result[0]);
+        assertEquals(">>> match $x isa type", result[5]);
         assertTrue(result.length > 5);
     }
 
@@ -115,12 +115,12 @@ public class GraqlShellTest {
         String[] result = testShell("insert a-type isa entity-type; thingy isa a-type\n").split("\n");
 
         // Expect six lines output - one for the query, four results and a new prompt
-        assertEquals(6, result.length);
-        assertEquals(">>> insert a-type isa entity-type; thingy isa a-type", result[0]);
-        assertEquals(">>> ", result[5]);
+        assertEquals(11, result.length);
+        assertEquals(">>> insert a-type isa entity-type; thingy isa a-type", result[5]);
+        assertEquals(">>> ", result[10]);
 
         assertThat(
-                Arrays.toString(Arrays.copyOfRange(result, 1, 5)),
+                Arrays.toString(Arrays.copyOfRange(result, 6, 10)),
                 allOf(containsString("a-type"), containsString("entity-type"), containsString("thingy"))
         );
     }
