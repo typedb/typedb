@@ -18,41 +18,33 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.core.dao.MindmapsGraph;
 import io.mindmaps.core.dao.MindmapsTransaction;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
-public class MindmapsTinkerGraph implements MindmapsGraph {
-
-    private TinkerGraph tinkerGraph;
-
+public class MindmapsTinkerGraph extends MindmapsGraphImpl {
     public MindmapsTinkerGraph(){
-        tinkerGraph = TinkerGraph.open();
+        super(TinkerGraph.open());
         new MindmapsTinkerTransaction(this).initialiseMetaConcepts();
     }
 
     @Override
     public MindmapsTransaction newTransaction() {
-        if(tinkerGraph == null){
-            tinkerGraph = TinkerGraph.open();
-        }
+        getGraph();
         return new MindmapsTinkerTransaction(this);
     }
 
     @Override
     public void close() {
-        clear();
-        tinkerGraph = null;
+        try {
+            getGraph().close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
+
 
     @Override
     public void clear() {
-        tinkerGraph.close();
-    }
-
-    @Override
-    public Graph getGraph() {
-        return tinkerGraph;
+        close();
     }
 }

@@ -18,6 +18,7 @@
 
 package io.mindmaps.core.implementation;
 
+import io.mindmaps.core.dao.MindmapsGraph;
 import io.mindmaps.core.exceptions.ErrorMessage;
 import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
@@ -533,29 +534,34 @@ public class MindmapsTransactionHighLevelTest {
 
     @Test
     public void testPutRelationSimple(){
-        EntityType type = mindmapsGraph.putEntityType("Test");
-        RoleType actor = mindmapsGraph.putRoleType("Actor");
-        RoleType actor2 = mindmapsGraph.putRoleType("Actor 2");
-        RoleType actor3 = mindmapsGraph.putRoleType("Actor 3");
-        RelationType cast = mindmapsGraph.putRelationType("Cast").hasRole(actor).hasRole(actor2).hasRole(actor3);
-        Instance pacino = mindmapsGraph.putEntity("Pacino", type);
-        Instance thing = mindmapsGraph.putEntity("Thing", type);
-        Instance godfather = mindmapsGraph.putEntity("Godfather", type);
+        MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
+        graph.enableBatchLoading();
+        MindmapsTransactionImpl mindmapsGraphBatch = (MindmapsTransactionImpl) graph.newTransaction();
 
-        Instance pacino2 = mindmapsGraph.putEntity("Pacino", type);
-        Instance thing2 = mindmapsGraph.putEntity("Thing", type);
-        Instance godfather2 = mindmapsGraph.putEntity("Godfather", type);
+        EntityType type = mindmapsGraphBatch.putEntityType("Test");
+        RoleType actor = mindmapsGraphBatch.putRoleType("Actor");
+        RoleType actor2 = mindmapsGraphBatch.putRoleType("Actor 2");
+        RoleType actor3 = mindmapsGraphBatch.putRoleType("Actor 3");
+        RelationType cast = mindmapsGraphBatch.putRelationType("Cast").hasRole(actor).hasRole(actor2).hasRole(actor3);
+        Instance pacino = mindmapsGraphBatch.putEntity("Pacino", type);
+        Instance thing = mindmapsGraphBatch.putEntity("Thing", type);
+        Instance godfather = mindmapsGraphBatch.putEntity("Godfather", type);
 
-        assertEquals(0, mindmapsGraph.getTinkerPopGraph().traversal().V().hasLabel(DataType.BaseType.RELATION.name()).toList().size());
-        RelationImpl relation = (RelationImpl) mindmapsGraph.putRelation("a", cast).
+        Instance pacino2 = mindmapsGraphBatch.putEntity("Pacino", type);
+        Instance thing2 = mindmapsGraphBatch.putEntity("Thing", type);
+        Instance godfather2 = mindmapsGraphBatch.putEntity("Godfather", type);
+
+        assertEquals(0, mindmapsGraphBatch.getTinkerPopGraph().traversal().V().hasLabel(DataType.BaseType.RELATION.name()).toList().size());
+        RelationImpl relation = (RelationImpl) mindmapsGraphBatch.putRelation("a", cast).
                 putRolePlayer(actor, pacino).putRolePlayer(actor2, thing).putRolePlayer(actor3, godfather);
-        assertEquals(1, mindmapsGraph.getTinkerPopGraph().traversal().V().hasLabel(DataType.BaseType.RELATION.name()).toList().size());
+        assertEquals(1, mindmapsGraphBatch.getTinkerPopGraph().traversal().V().hasLabel(DataType.BaseType.RELATION.name()).toList().size());
         assertNotEquals(String.valueOf(relation.getBaseIdentifier()), relation.getId());
 
-        mindmapsGraph.enableBatchLoading();
+        //mindmapsGraph.enableBatchLoading();
 
-        relation = (RelationImpl) mindmapsGraph.addRelation(cast).
+        relation = (RelationImpl) mindmapsGraphBatch.addRelation(cast).
                 putRolePlayer(actor, pacino2).putRolePlayer(actor2, thing2).putRolePlayer(actor3, godfather2);
+
         assertTrue(relation.getIndex().startsWith("RelationBaseId_" + String.valueOf(relation.getBaseIdentifier())));
     }
 

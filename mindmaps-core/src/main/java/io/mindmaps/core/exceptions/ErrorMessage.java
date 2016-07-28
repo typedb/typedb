@@ -56,6 +56,7 @@ public enum ErrorMessage {
 
     //--------------------------------------------- Factory Errors -----------------------------------------------
     INVALID_PATH_TO_CONFIG("Unable to open config file ['%s']"),
+    CREATING_ONTOLOGY_ERROR("Unable to create a new meta ontology due to ['%s']"),
 
     //--------------------------------------------- Client Errors -----------------------------------------------
     INVALID_ENGINE_RESPONSE("Mindmaps Engine located at ['%s'] returned response ['%s'], cannot produce a graph."),

@@ -96,7 +96,7 @@ public class MindmapsTitanGraphTest {
             mindmapsGraph.newTransaction();
         } catch (GraphRuntimeException e){
             thrown = true;
-            assertEquals(ErrorMessage.CLOSED.getMessage(mindmapsGraph.getClass().getName()), e.getMessage());
+            assertEquals(ErrorMessage.CLOSED.getMessage(mindmapsGraph), e.getMessage());
         }
         assertTrue(thrown);
     }

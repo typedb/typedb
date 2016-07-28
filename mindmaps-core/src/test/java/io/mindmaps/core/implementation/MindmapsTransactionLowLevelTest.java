@@ -504,36 +504,6 @@ public class MindmapsTransactionLowLevelTest {
     }
 
     @Test
-    public void testBatchLoadingMode(){
-        mindmapsGraph.enableBatchLoading();
-
-        EntityType type = mindmapsGraph.putEntityType("Concept Type");
-        RoleTypeImpl feature = (RoleTypeImpl) mindmapsGraph.putRoleType("Feature");
-        RoleTypeImpl actor = (RoleTypeImpl) mindmapsGraph.putRoleType("Actor");
-        InstanceImpl pacino = (InstanceImpl) mindmapsGraph.putEntity("Pacino", type);
-        InstanceImpl godfather = (InstanceImpl) mindmapsGraph.putEntity("Godfather", type);
-        RelationTypeImpl cast = (RelationTypeImpl) mindmapsGraph.putRelationType("Cast");
-
-        cast.hasRole(feature);
-        cast.hasRole(actor);
-
-        mindmapsGraph.putRelation(UUID.randomUUID().toString(), cast).
-                putRolePlayer(feature, godfather).putRolePlayer(actor, pacino);
-
-        assertTrue(mindmapsGraph.getTinkerPopGraph().traversal().E().hasLabel(DataType.EdgeLabel.SHORTCUT.getLabel()).hasNext());
-
-        mindmapsGraph.disableBatchLoading();
-
-        InstanceImpl x = (InstanceImpl) mindmapsGraph.putEntity("x", type);
-        InstanceImpl y = (InstanceImpl) mindmapsGraph.putEntity("x", type);
-
-        mindmapsGraph.putRelation(UUID.randomUUID().toString(), cast).
-                putRolePlayer(feature, x).putRolePlayer(actor, y);
-
-        assertTrue(mindmapsGraph.getTinkerPopGraph().traversal().E().hasLabel(DataType.EdgeLabel.SHORTCUT.getLabel()).hasNext());
-    }
-
-    @Test
     public void checkTypeCreation(){
         Type testType = mindmapsGraph.putEntityType("Test Concept Type");
         ResourceType testResourceType = mindmapsGraph.putResourceType("Test Resource Type", Data.STRING);

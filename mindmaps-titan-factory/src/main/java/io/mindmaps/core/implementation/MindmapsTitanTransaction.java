@@ -18,6 +18,7 @@
 
 package io.mindmaps.core.implementation;
 
+import com.thinkaurelius.titan.core.TitanGraph;
 import io.mindmaps.core.dao.MindmapsGraph;
 import io.mindmaps.core.exceptions.MindmapsValidationException;
 
@@ -25,7 +26,7 @@ public class MindmapsTitanTransaction extends MindmapsTransactionImpl {
     private MindmapsTitanGraph rootGraph;
 
     public MindmapsTitanTransaction(MindmapsTitanGraph graph) {
-        super(graph.getTitanGraph().newTransaction());
+        super(((TitanGraph) graph.getGraph()).newTransaction(), graph.isBatchLoadingEnabled());
         rootGraph = graph;
     }
 
@@ -57,7 +58,7 @@ public class MindmapsTitanTransaction extends MindmapsTransactionImpl {
 
     private void refreshTransaction() throws Exception {
         getTinkerPopGraph().close();
-        setTinkerPopGraph(rootGraph.getTitanGraph().newTransaction());
+        setTinkerPopGraph(((TitanGraph) rootGraph.getGraph()).newTransaction());
         getTransaction().clearTransaction();
     }
 
