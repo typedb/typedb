@@ -23,7 +23,13 @@ import io.mindmaps.core.dao.MindmapsTransaction;
 import io.mindmaps.core.model.Rule;
 import io.mindmaps.graql.api.parser.QueryParser;
 import io.mindmaps.graql.api.query.MatchQuery;
+import io.mindmaps.graql.api.query.Pattern;
+import io.mindmaps.graql.api.query.QueryBuilder;
+import io.mindmaps.graql.api.query.Var;
 import io.mindmaps.reasoner.graphs.SNBGraph;
+import io.mindmaps.reasoner.internal.predicate.Atom;
+import io.mindmaps.reasoner.internal.container.Query;
+import io.mindmaps.reasoner.internal.predicate.Atomic;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -35,12 +41,14 @@ public class QueryTest {
 
     private static MindmapsTransaction graph;
     private static QueryParser qp;
+    private static QueryBuilder qb;
 
     @BeforeClass
     public static void setUpClass() {
 
         graph = SNBGraph.getTransaction();
         qp = QueryParser.create(graph);
+        qb = QueryBuilder.build(graph);
     }
 
     @Test
@@ -50,7 +58,7 @@ public class QueryTest {
 
         Query query = new Query(queryString, graph);
         boolean containsAtom = false;
-        for(Atom atom : query.getAtoms())
+        for(Atomic atom : query.getAtoms())
             if (atom.toString().equals("$x value \"Bob\"")) containsAtom = true;
         assertTrue(containsAtom);
         assertEquals(query.getValue("x"), "Bob");
@@ -66,7 +74,7 @@ public class QueryTest {
         Query query = new Query(queryString, graph);
         Query rule = new Query(r.getLHS(), graph);
 
-        Atom recommendation = query.getAtomsWithType(graph.getType("recommendation")).iterator().next();
+        Atomic recommendation = query.getAtomsWithType(graph.getType("recommendation")).iterator().next();
         query.expandAtomByQuery(recommendation, rule);
 
         Query copy = new Query(query);
@@ -86,13 +94,81 @@ public class QueryTest {
         Query query = new Query(queryString, graph);
         Query ruleLHS = new Query(LHS, graph);
 
-        Atom recommendation = query.getAtomsWithType(graph.getType("recommendation")).iterator().next();
+        Atomic recommendation = query.getAtomsWithType(graph.getType("recommendation")).iterator().next();
         query.expandAtomByQuery(recommendation, ruleLHS);
 
         query.getExpandedMatchQuery();
 
         assertQueriesEqual( query.getMatchQuery(), query.getExpandedMatchQuery());
     }
+
+    @Test
+    public void testExpansion2()
+    {
+        String queryString = "match $x isa person;$y isa product;($x, $y) isa recommendation";
+
+        String LHS = "match $x isa person;$t isa tag, value 'Michelangelo';\n" +
+                "($x, $t) isa tagging;\n" +
+                "$y isa product, value 'Michelangelo - The Last Judgement'; select $x, $y";
+
+        Query query = new Query(queryString, graph);
+        Query ruleLHS = new Query(LHS, graph);
+
+        Atomic recommendation = query.getAtomsWithType(graph.getType("recommendation")).iterator().next();
+        query.expandAtomByQuery(recommendation, ruleLHS);
+
+        MatchQuery mq = query.getExpandedMatchQuery();
+
+        Query queryCopy = new Query(query);
+        assertQueriesEqual( queryCopy.getExpandedMatchQuery(), query.getExpandedMatchQuery());
+
+        query.removeExpansionFromAtom(recommendation, ruleLHS);
+        assertQueriesEqual( (new Query(queryString, graph)).getExpandedMatchQuery(), query.getExpandedMatchQuery());
+
+        Atomic recommendationAgain = queryCopy.getAtomsWithType(graph.getType("recommendation")).iterator().next();
+        Query expansion = recommendationAgain.getExpansions().iterator().next();
+        queryCopy.removeExpansionFromAtom(queryCopy.getAtomsWithType(graph.getType("recommendation")).iterator().next(), expansion);
+        assertQueriesEqual((new Query(queryString, graph)).getExpandedMatchQuery(), queryCopy.getExpandedMatchQuery());
+    }
+
+    @Test
+    public void testDisjunctiveNormalForm()
+    {
+        String queryString = "match $x isa person;$y isa product;($x, $y) isa recommendation";
+
+        String LHS = "match $x isa person;$t isa tag, value 'Michelangelo';\n" +
+                "($x, $t) isa tagging;\n" +
+                "$y isa product, value 'Michelangelo - The Last Judgement'; select $x, $y";
+
+        Query query = new Query(queryString, graph);
+        Query ruleLHS = new Query(LHS, graph);
+        Atomic recommendation = query.getAtomsWithType(graph.getType("recommendation")).iterator().next();
+        query.expandAtomByQuery(recommendation, ruleLHS);
+
+        MatchQuery mq = query.getExpandedMatchQuery();
+
+        Pattern.Disjunction<Pattern.Conjunction<Var.Admin>> disjunction = mq.admin().getPattern().getDisjunctiveNormalForm();
+        System.out.println(disjunction.toString());
+
+        query.changeVarName("y", "z");
+
+        disjunction = query.getExpandedMatchQuery().admin().getPattern().getDisjunctiveNormalForm();
+
+        System.out.println(disjunction.toString());
+        /*
+        Pattern.Disjunction<Pattern.Conjunction<Var.Admin>> disjunction = sq.admin().getPattern().getDisjunctiveNormalForm();
+        Query q = new Query(queryString, graph);
+
+        Pattern.Conjunction<Var.Admin> conj = disjunction.getPatterns().iterator().next();
+        Var.Admin var = conj.getPatterns().iterator().next();
+        conj.getPatterns().remove(var);
+        */
+        /*
+        for (Pattern.Conjunction<Var.Admin> pt : disjunction.getPatterns()) {
+            Var.Admin var = pt.getPatterns().iterator().next();
+        }
+        */
+        }
 
     @Test
     public void testDisjunctiveQuery()
@@ -103,10 +179,11 @@ public class QueryTest {
         System.out.println(sq.toString());
 
         Query query = new Query(queryString, graph);
-        Atom atom = query.getAtomsWithType(graph.getEntityType("product")).iterator().next();
+        Atomic atom = query.getAtomsWithType(graph.getEntityType("product")).iterator().next();
         query.expandAtomByQuery(atom, new Query("match $y isa product;$y value 'blabla'", graph) );
         System.out.println(query.getExpandedMatchQuery().toString());
 
+        System.out.println();
     }
 
     @Test
@@ -120,7 +197,7 @@ public class QueryTest {
         Query query = new Query(queryString, graph);
         Query rule = new Query(graph.getRule("R33").getLHS(), graph);
 
-        Atom atom = query.getAtomsWithType(graph.getRelationType("recommendation")).iterator().next();
+        Atomic atom = query.getAtomsWithType(graph.getRelationType("recommendation")).iterator().next();
         query.expandAtomByQuery(atom, rule);
         System.out.println(query.getExpandedMatchQuery().toString());
 
