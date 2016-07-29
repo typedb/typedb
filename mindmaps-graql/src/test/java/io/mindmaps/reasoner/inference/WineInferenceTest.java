@@ -27,6 +27,7 @@ import io.mindmaps.reasoner.graphs.WineGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static io.mindmaps.reasoner.internal.Utility.printMatchQueryResults;
 import static org.junit.Assert.assertEquals;
 
 
@@ -43,6 +44,10 @@ public class WineInferenceTest {
         qp = QueryParser.create(graph);
     }
 
+    private static void printMatchQuery(MatchQuery query) {
+        System.out.println(query.toString().replace(" or ", "\nor\n").replace("};", "};\n").replace("; {", ";\n{"));
+    }
+
     @Test
     public void testRecommendation() {
 
@@ -50,7 +55,9 @@ public class WineInferenceTest {
         MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQuery expandedQuery = reasoner.expandQuery(query);
 
-        reasoner.printMatchQueryResults(expandedQuery.distinct());
+        printMatchQuery(expandedQuery);
+        System.out.println("DNF size: " + expandedQuery.admin().getPattern().getDisjunctiveNormalForm().getPatterns().size());
+        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match $x isa person;$y isa wine;" +
                                "{$x value 'Alice';$y value 'Cabernet Sauvignion'} or" +

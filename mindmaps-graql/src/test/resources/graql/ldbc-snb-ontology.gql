@@ -44,7 +44,7 @@ creation-date plays-role relation-resource-value;
 "member-location" ako location;
 "container-location" ako location;
 "sublocate" isa relation-type, has-role member-location, has-role container-location;
-place plays-role location;
+place plays-role member-location, plays-role container-location, plays-role subject-location;
 
 # organization
 "university" ako organization;
@@ -76,7 +76,7 @@ person plays-role located-subject;
 "acquaintance1" ako acquaintance;
 "acquaintance2" ako acquaintance;
 "knows" ako relation, has-role acquaintance1, has-role acquaintance2;
-person plays-role acquaintance;
+person plays-role acquaintance1, plays-role acquaintance2;
 
 "student" isa role-type;
 "enrolled-university" isa role-type;
@@ -189,7 +189,7 @@ person plays-role tagged-subject;
 "subgroup" ako group;
 "supergroup" ako group;
 "subgrouping" isa relation-type, has-role subgroup, has-role supergroup;
-category plays-role group;
+category plays-role subgroup, plays-role supergroup;
 
 "grouped-tag" isa role-type;
 "tag-group" isa role-type;

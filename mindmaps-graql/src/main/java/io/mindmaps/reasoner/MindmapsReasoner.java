@@ -18,7 +18,7 @@
 
 package io.mindmaps.reasoner;
 
-
+import com.google.common.collect.Sets;
 import com.google.common.collect.Lists;
 import io.mindmaps.core.dao.MindmapsTransaction;
 import io.mindmaps.core.exceptions.MindmapsValidationException;
@@ -28,11 +28,17 @@ import io.mindmaps.core.model.Rule;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.api.parser.QueryParser;
 import io.mindmaps.graql.api.query.MatchQuery;
+import io.mindmaps.reasoner.internal.container.Query;
+import io.mindmaps.reasoner.internal.predicate.Atomic;
+import io.mindmaps.reasoner.internal.predicate.RelationAtom;
 import org.javatuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+
+import static io.mindmaps.reasoner.internal.Utility.*;
+
 
 public class MindmapsReasoner {
 
@@ -45,161 +51,124 @@ public class MindmapsReasoner {
     public MindmapsReasoner(MindmapsTransaction tr){
         this.graph = tr;
         qp =  QueryParser.create(graph);
+        
 
         linkConceptTypes();
     }
 
-    public void printMatchQueryResults(MatchQuery sq)
-    {
-        List<Map<String, Concept>> results = Lists.newArrayList(sq);
-        Iterator<Map<String, Concept>> it = results.iterator();
-
-        while( it.hasNext() )
-        {
-            Map<String, Concept> result = it.next();
-            for (Map.Entry<String, Concept> entry : result.entrySet() ) {
-                Concept concept = entry.getValue();
-                System.out.print(entry.getKey() + ": " + concept.getId() + " : " + concept.getValue() + " ");
-            }
-            System.out.println();
-        }
-    }
-
-    private boolean checkRelationApplicable(Query parent, Query childLHS, Query childRHS, Type relType)
+    private boolean checkChildApplicableToAtomThruRelation(RelationAtom parentAtom, Query parent, Query childLHS, Query childRHS, Type relType)
     {
         boolean relRelevant = true;
-        LOG.debug("in checkRelationApplicable: type: " + relType.getId() + " chRHS:\n" + childLHS.toString());
-
-        Atom childAtom = childRHS.getAtomsWithType(relType).iterator().next();
-        Set<Atom> relevantAtoms = parent.getAtomsWithType(relType);
+        
+        Atomic childAtom = getRuleConclusionAtom(childLHS, childRHS, relType);
+        Map<RoleType, Pair<String, Type>> childRoleVarTypeMap = ((RelationAtom) childAtom).getRoleVarTypeMap();
 
         /**Check for role compatibility*/
-        Map<RoleType, Pair<String, Type>> childRoleVarTypeMap = childLHS.getRoleVarTypeMap(childAtom);
-        for(Atom parentAtom : relevantAtoms) {
+        Map<RoleType, Pair<String, Type>> parentRoleVarTypeMap = parentAtom.getRoleVarTypeMap();
+        for (Map.Entry<RoleType, Pair<String, Type>> entry : parentRoleVarTypeMap.entrySet()) {
+            RoleType role = entry.getKey();
+            Type pType = entry.getValue().getValue1();
+            /**vars can be matched by role types*/
+            if (childRoleVarTypeMap.containsKey(role)) {
+                Type chType = childRoleVarTypeMap.get(role).getValue1();
+                /**check type compatibility*/
+                if (chType != null) {
 
-            Map<RoleType, Pair<String, Type>> parentRoleVarTypeMap = parent.getRoleVarTypeMap(parentAtom);
-            for (Map.Entry<RoleType, Pair<String, Type>> entry : parentRoleVarTypeMap.entrySet()) {
-                RoleType role = entry.getKey();
-                Type pType = entry.getValue().getValue1();
-                /**vars can be matched by role types*/
-                if (childRoleVarTypeMap.containsKey(role)) {
-                    Type chType = childRoleVarTypeMap.get(role).getValue1();
-                    /**check type compatibility*/
-                    if (chType != null) {
+                    relRelevant &= pType.equals(chType) || chType.subTypes().contains(pType);
 
-                        relRelevant &= pType.equals(chType) ||
-                                pType.subTypes().contains(chType) || chType.subTypes().contains(pType);
-
-                        /**Check for any constraints on the variables*/
-                        String chVar = childRoleVarTypeMap.get(role).getValue0();
-                        String pVar = entry.getValue().getValue0();
-                        String chVal = childLHS.getValue(chVar);
-                        String pVal = parent.getValue(pVar);
-                        if ( !chVal.isEmpty() && !pVal.isEmpty())
-                            relRelevant &= chVal.equals(pVal);
-                    }
+                    /**Check for any constraints on the variables*/
+                    String chVar = childRoleVarTypeMap.get(role).getValue0();
+                    String pVar = entry.getValue().getValue0();
+                    String chVal = childLHS.getValue(chVar);
+                    String pVal = parent.getValue(pVar);
+                    if ( !chVal.isEmpty() && !pVal.isEmpty())
+                        relRelevant &= chVal.equals(pVal);
                 }
             }
         }
 
-        LOG.debug("in checkRelationApplicable: relRelevant: " + relRelevant);
         return relRelevant;
-
     }
 
-    private boolean checkResourceApplicable(Query parent, Query childRHS, Type type)
+    private boolean checkChildApplicableThruRelation(Query parent, Query childLHS, Query childRHS, Type relType)
+    {
+        boolean relRelevant = false;
+        Set<Atomic> relevantAtoms = parent.getAtomsWithType(relType);
+        Iterator<Atomic> it = relevantAtoms.iterator();
+        while(it.hasNext() && !relRelevant)
+            relRelevant = checkChildApplicableToAtomThruRelation((RelationAtom) it.next(), parent, childLHS, childRHS, relType);
+
+        return relRelevant;
+    }
+
+    private boolean checkChildApplicableToAtomThruResource(Atomic parent, Query childLHS, Query childRHS, Type type)
     {
         boolean resourceApplicable = false;
 
-        LOG.debug("in checkResourceApplicable: type: " + type.getId());
-        LOG.debug("parent:\n" + parent.toString());
-        LOG.debug("child:\n" + childRHS.toString());
-
-        Atom childAtom = getRuleConclusionAtom(childRHS, type);
+        Atomic childAtom = getRuleConclusionAtom(childLHS, childRHS, type);
         String childVal = childAtom.getVal();
 
-        Set<Atom> atoms = parent.getAtomsWithType(type);
-        for(Atom atom : atoms)
-        {
-            String atomTypeId = atom.getTypeId();
-            if(atomTypeId.equals(type.getId())) {
-                String val = atom.getVal();
-                resourceApplicable = resourceApplicable || val.equals(childVal);
-            }
+        String atomTypeId = parent.getTypeId();
+        if(atomTypeId.equals(type.getId())) {
+            String val = parent.getVal();
+            resourceApplicable = val.equals(childVal);
         }
+
+        return resourceApplicable;
+    }
+
+    private boolean checkChildApplicableThruResource(Query parent, Query childLHS, Query childRHS, Type type)
+    {
+        boolean resourceApplicable = false;
+
+        Set<Atomic> atoms = parent.getAtomsWithType(type);
+        Iterator<Atomic> it = atoms.iterator();
+        while(it.hasNext() && !resourceApplicable)
+            resourceApplicable = checkChildApplicableToAtomThruResource(it.next(), childLHS, childRHS, type);
+
         return resourceApplicable;
 
-    }
-
-    /**
-     * Check whether two types can play a common role in a relation
-     * @param pTypeId type id of the parent var
-     * @param chTypeId type id of the child var
-     * @param relId id of the relation type the variables are present in
-     * @return
-     */
-    private boolean checkTypesCompatible(String pTypeId, String chTypeId, String relId)
-    {
-        boolean typesCompatible = false;
-        if (!chTypeId.equals(pTypeId) && !chTypeId.isEmpty() && !pTypeId.isEmpty())
-        {
-            Collection<RoleType> relRoles = graph.getRelationType(relId).hasRoles();
-            Collection<RoleType> pTypeRoles = graph.getType(pTypeId).playsRoles();
-            Collection<RoleType> chTypeRoles = graph.getType(chTypeId).playsRoles();
-            for (RoleType rt : relRoles)
-                typesCompatible = typesCompatible|| (pTypeRoles.contains(rt) && chTypeRoles.contains(rt));
-        }
-
-        return typesCompatible;
-    }
-
-    private Type getRuleConclusionType(Rule rule)
-    {
-        Set<Type> types = new HashSet<>();
-        Collection<Type> unfilteredTypes = rule.getConclusionTypes();
-        for(Type type : unfilteredTypes)
-            if (!type.isRoleType()) types.add(type);
-
-        if (types.size() > 1)
-            throw new IllegalArgumentException("Found more than single conclusion type!");
-
-        return types.iterator().next();
-    }
-
-    private Atom getRuleConclusionAtom(Query ruleRHS, Type type)
-    {
-        Set<Atom> atoms = ruleRHS.getAtomsWithType(type);
-        if (atoms.size() > 1)
-            throw new IllegalArgumentException("Found more than single relevant conclusion atom!");
-
-        return atoms.iterator().next();
     }
 
     private Set<Rule> getQueryChildren(Query query)
     {
         Set<Rule> children = new HashSet<>();
-        MatchQuery parent = query.getMatchQuery();
-        Set<Type> types = parent.admin().getTypes();
-        for( Type type : types)
+
+        query.getAtoms().stream().filter(Atomic::isType).forEach(atom -> children.addAll(getAtomChildren(atom, query)));
+
+        return children;
+    }
+
+    private Set<Rule> getAtomChildren(Atomic atom, Query parent)
+    {
+        Set<Rule> children = new HashSet<>();
+
+        String typeId = atom.getTypeId();
+        if (typeId.isEmpty()) return children;
+        Type type = graph.getType(typeId);
+
+        Collection<Rule> rulesFromType = type.getRulesOfConclusion();
+
+        for (Rule rule : rulesFromType)
         {
-            Collection<Rule> rulesFromType = type.getRulesOfConclusion();
-
-            for ( Rule rule : rulesFromType) {
-                boolean ruleRelevant = true;
-                if (type.isResourceType())
-                    ruleRelevant = checkResourceApplicable(query, new Query(rule.getRHS(), graph), type);
-                else if (type.isRelationType()) {
-                    LOG.debug("Checking relevance of rule " + rule.getId());
-                    ruleRelevant = checkRelationApplicable(query, workingMemory.get(rule.getId()), new Query(rule.getRHS(), graph), type);
-                    if (!ruleRelevant) LOG.debug("Rule " + rule.getId() + " not relevant through type " + type.getId());
-                }
-
-                if (ruleRelevant) children.add(rule);
+            boolean ruleRelevant = true;
+            if (atom.isResource())
+                        ruleRelevant = checkChildApplicableToAtomThruResource(atom,
+                                workingMemory.get(rule.getId()), new Query(rule.getRHS(), graph), type);
+            else if (atom.isRelation()) {
+                System.out.println("Checking relevance of rule " + rule.getId());
+                ruleRelevant = checkChildApplicableToAtomThruRelation((RelationAtom) atom, parent,
+                        workingMemory.get(rule.getId()), new Query(rule.getRHS(), graph), type);
+                if (!ruleRelevant)
+                    System.out.println("Rule " + rule.getId() + " not relevant through type " + type.getId());
             }
+
+            if (ruleRelevant) children.add(rule);
         }
 
         return children;
     }
+
 
     private Set<Rule> getRuleChildren(Rule parent)
     {
@@ -210,14 +179,15 @@ public class MindmapsReasoner {
             for (Rule rule : rulesFromType) {
                 boolean ruleRelevant = true;
                 if (type.isResourceType())
-                    ruleRelevant = checkResourceApplicable(workingMemory.get(parent.getId()), new Query(rule.getRHS(), graph), type);
+                    ruleRelevant = checkChildApplicableThruResource(workingMemory.get(parent.getId()),
+                            workingMemory.get(rule.getId()), new Query(rule.getRHS(), graph), type);
                 else if (type.isRelationType())
-                    ruleRelevant = checkRelationApplicable(workingMemory.get(parent.getId()),
+                    ruleRelevant = checkChildApplicableThruRelation(workingMemory.get(parent.getId()),
                             workingMemory.get(rule.getId()), new Query(rule.getRHS(), graph), type);
 
                 if (!rule.equals(parent) && ruleRelevant ) children.add(rule);
                 else{
-                    LOG.debug("in getRuleChildren: Rule " + rule.getId() + " not relevant to type " + type.getId() + " " + ruleRelevant);
+                    System.out.println("in getRuleChildren: Rule " + rule.getId() + " not relevant to type " + type.getId() + " " + ruleRelevant);
                 }
             }
         }
@@ -227,7 +197,7 @@ public class MindmapsReasoner {
 
     private void linkConceptTypes(Rule rule)
     {
-        LOG.debug("Linking rule " + rule.getId() + "...");
+        System.out.println("Linking rule " + rule.getId() + "...");
         MatchQuery qLHS = qp.parseMatchQuery(rule.getLHS()).getMatchQuery();
         MatchQuery qRHS = qp.parseMatchQuery(rule.getRHS()).getMatchQuery();
 
@@ -238,7 +208,7 @@ public class MindmapsReasoner {
 
         conclusionConceptTypes.forEach(rule::addConclusion);
 
-        LOG.debug("Rule " + rule.getId() + " linked");
+        System.out.println("Rule " + rule.getId() + " linked");
 
     }
 
@@ -269,7 +239,7 @@ public class MindmapsReasoner {
     {
         Set<Rule> rules = getRules();
 
-        LOG.debug(rules.size() + " rules initialized...");
+        System.out.println(rules.size() + " rules initialized...");
 
         for(Rule rule : rules) {
             workingMemory.putIfAbsent(rule.getId(), new Query(rule.getLHS(), graph));
@@ -295,18 +265,17 @@ public class MindmapsReasoner {
     }
 
 
-    private void makeChildRelationConsistent(Atom childAtom, Query childLHS, Atom parentAtom, Query parentLHS,
+    private void makeChildRelationConsistent(RelationAtom childAtom, Query childLHS, RelationAtom parentAtom, Query parentLHS,
                                              Map<String, Type> globalVarMap) {
 
         Set<String> varsToAllocate = parentAtom.getVarNames();
         Set<String> chRelVars = childAtom.getVarNames();
         Set<String> pVars = parentLHS.getVarSet();
-        Set<String> chVars = childLHS.getVarSet();
 
         /**construct mapping between child and parent variables*/
         Map<String, String> varMapping = new HashMap<>();
-        Map<String, Pair<Type, RoleType>> childMap = childLHS.getVarTypeRoleMap(childAtom);
-        Map<RoleType, Pair<String, Type>> parentMap = parentLHS.getRoleVarTypeMap(parentAtom);
+        Map<String, Pair<Type, RoleType>> childMap = childAtom.getVarTypeRoleMap();
+        Map<RoleType, Pair<String, Type>> parentMap = parentAtom.getRoleVarTypeMap();
 
         for (String chVar : chRelVars) {
             RoleType role = childMap.containsKey(chVar)? childMap.get(chVar).getValue1(): null;
@@ -333,35 +302,35 @@ public class MindmapsReasoner {
                 /**bidirectional mapping*/
                 if (varMapping.containsKey(replacementVar) && varMapping.get(replacementVar).equals(varToReplace))
                 {
-                    childLHS.changeVarName(replacementVar, "$temp");
-                    childLHS.changeVarName(varToReplace, replacementVar);
-                    childLHS.changeVarName("$temp", varToReplace);
+                    childLHS.exchangeRelVarNames(varToReplace, replacementVar);
                     appliedMappings.put(varToReplace, replacementVar);
                     appliedMappings.put(replacementVar, varToReplace);
                 }
                 else
                 {
-                    childLHS.changeVarName(varToReplace, replacementVar);
+                    childLHS.changeRelVarName(varToReplace, replacementVar);
                     appliedMappings.put(varToReplace, replacementVar);
                 }
             }
         }
 
         /**check variables not present in relation*/
-        chRelVars.forEach(chRelVar -> chVars.remove(chRelVar));
-        for( String chVar : chVars)
+        Set<String> modChVars = childLHS.getVarSet();
+        Set<String> pRelVars = parentAtom.getVarNames();
+        pRelVars.forEach(chRelVar -> modChVars.remove(chRelVar));
+        for( String chVar : modChVars)
         {
             if (pVars.contains(chVar) || globalVarMap.containsKey(chVar))
                 childLHS.changeVarName(chVar, chVar + chVar.replace("$", ""));
         }
     }
 
-    private void makeChildConsistent(Atom childAtom, Query childLHS, Atom parentAtom, Query parentLHS,
+    private void makeChildConsistent(Atomic childAtom, Query childLHS, Atomic parentAtom, Query parentLHS,
                                         Type type, Map<String, Type> globalVarMap)
     {
 
         if (type.isRelationType())
-            makeChildRelationConsistent(childAtom, childLHS, parentAtom, parentLHS, globalVarMap);
+            makeChildRelationConsistent((RelationAtom) childAtom, childLHS, (RelationAtom) parentAtom, parentLHS, globalVarMap);
         else {
             Set<String> chVars = childLHS.getVarSet();
             Set<String> pVars = parentLHS.getVarSet();
@@ -373,11 +342,11 @@ public class MindmapsReasoner {
                 //if from exists in child, create a new variable for from
                 if (chVars.contains(parentVar)) {
                     String replacement = parentVar + parentVar.replace("$", "");
-                    LOG.debug("Replacing: " + parentVar + "->" + replacement);
+                    System.out.println("Replacing: " + parentVar + "->" + replacement);
                     childLHS.changeVarName(parentVar, replacement);
                 }
 
-                LOG.debug("Replacing: " + childVar + "->" + parentVar);
+                System.out.println("Replacing: " + childVar + "->" + parentVar);
                 childLHS.changeVarName(childVar, parentVar);
             }
 
@@ -385,33 +354,37 @@ public class MindmapsReasoner {
             for (String var : chVars) {
                 if (!var.equals(parentVar) && ( pVars.contains(var) || globalVarMap.containsKey(var))) {
                     String replacement = var + var.replace("$", "");
-                    LOG.debug("Replacing: " + var + "->" + replacement);
+                    System.out.println("Replacing: " + var + "->" + replacement);
                     childLHS.changeVarName(var, replacement);
                 }
             }
         }
     }
 
+    private Query applyRuleToAtom(Atomic parentAtom, Query parent, Rule child, Map<String, Type> varMap)
+    {
+        Type type = getRuleConclusionType(child);
+        Query childLHS = new Query(child.getLHS(), child, graph);
+        Query childRHS = new Query(child.getRHS(), graph);
+
+        Atomic childAtom = getRuleConclusionAtom(childLHS, childRHS, type);
+        makeChildConsistent(childAtom, childLHS, parentAtom, parent, type, varMap);
+        parentAtom.addExpansion(childLHS);
+
+        return childLHS;
+    }
+
     private Set<Query> applyRuleToQuery(Query parent, Rule child, Map<String, Type> varMap)
     {
         Type type = getRuleConclusionType(child);
         Set<Query> expansions = new HashSet<>();
-        Query childRHS = new Query(child.getRHS(), graph);
 
-        Set<Atom> atoms = parent.getAtomsWithType(type);
+        Set<Atomic> atoms = parent.getAtomsWithType(type);
         if (atoms == null) return expansions;
 
-        for(Atom atom : atoms)
-        {
-            Query childLHS = new Query(child.getLHS(), graph);
-            Atom childAtom = getRuleConclusionAtom(childRHS, type);
+        atoms.forEach(atom -> expansions.add(applyRuleToAtom(atom, parent, child, varMap)));
 
-            makeChildConsistent(childAtom, childLHS, atom, parent, type, varMap);
-            expansions.add(childLHS);
-            parent.expandAtomByQuery(atom, childLHS);
-        }
-
-        LOG.debug("EXPANDED: Parent\n" + parent.toString() + "\nEXPANDED by " + child.getId() + " through type " + type.getId());
+        System.out.println("EXPANDED: Parent\n" + parent.toString() + "\nEXPANDED by " + child.getId() + " through type " + type.getId());
 
         return expansions;
     }
@@ -448,15 +421,53 @@ public class MindmapsReasoner {
         }
     }
 
-    private void expandQuery(Query q, Map<String, Type> varMap)
+    private void expandQueryQSQ(Query query, Map<String, Type> varMap)
     {
-        Set<Rule> rules = getQueryChildren(q);
-        for( Rule rule : rules )
+        System.out.println("expandQueryQSQ: " + (query.getRule() != null ? query.getRule().getId() : "top"));
+        for(Atomic atom : query.getAtoms())
         {
-            Set<Query> expansions = applyRuleToQuery(q, rule, varMap);
-            for(Query exp: expansions)
-                expandQuery(exp, varMap);
+            Set<Rule> rules = getAtomChildren(atom, query);
+
+            if(isAtomRecursive(atom, graph))
+            {
+                System.out.println("Atomic : " + atom.toString() + " is recursive");
+                for(Rule r : rules)
+                {
+                    System.out.println("Attempting expansion by rule + " + r.getId());
+                    if (isRuleRecursive(r)) {
+                        Query topQuery = query.getTopQueryWithRule(r);
+                        boolean ruleApplied = topQuery != null;
+                        if (topQuery == null) topQuery = query;
+
+                        MatchQuery Q = topQuery.getExpandedMatchQuery();
+                        Set<Map<String, Concept>> Ans = Sets.newHashSet(Q.distinct());
+
+                        Query qr = applyRuleToAtom(atom, query, r, varMap);
+                        MatchQuery Qstar = topQuery.getExpandedMatchQuery();
+                        Set<Map<String, Concept>> AnsStar = Sets.newHashSet(Qstar.distinct());
+
+
+                        if ( Ans.size() != AnsStar.size() || !ruleApplied)
+                            expandQueryQSQ(qr, varMap);
+                        else
+                            query.removeExpansionFromAtom(atom, qr);
+                    }
+                    else{
+                        Query qr = applyRuleToAtom(atom, query, r, varMap);
+                        expandQueryQSQ(qr, varMap);
+                    }
+                }
+
+            }
+            else {
+                for (Rule r : rules) {
+                    Query qr = applyRuleToAtom(atom, query, r, varMap);
+                    expandQueryQSQ(qr, varMap);
+                }
+            }
+
         }
+
     }
 
     /**
@@ -470,9 +481,11 @@ public class MindmapsReasoner {
         Query query = new Query(inputQuery, graph);
         Map<String, Type> varMap = query.getVarTypeMap();
 
-        expandQueryWithStack(query, varMap);
+        expandQueryQSQ(query, varMap);
 
-        return query.getExpandedMatchQuery();
+        MatchQuery expandedQuery = query.getExpandedMatchQuery();
+        System.out.println("DNF size: " + expandedQuery.admin().getPattern().getDisjunctiveNormalForm().getPatterns().size());
+        return expandedQuery;
 
     }
 
