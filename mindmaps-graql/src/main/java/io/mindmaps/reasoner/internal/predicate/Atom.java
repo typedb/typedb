@@ -1,55 +1,48 @@
+/*
+ * MindmapsDB - A Distributed Semantic Database
+ * Copyright (C) 2016  Mindmaps Research Ltd
+ *
+ * MindmapsDB is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * MindmapsDB is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
 package io.mindmaps.reasoner.internal.predicate;
 
-import com.google.common.collect.Sets;
-import io.mindmaps.core.dao.MindmapsTransaction;
 import io.mindmaps.graql.api.query.*;
 import io.mindmaps.reasoner.internal.container.Query;
-import org.javatuples.Triplet;
 
 import java.util.*;
 
-public class Atom implements Atomic{
+public class Atom extends AtomBase{
 
-    private String varName;
-    private final String typeId;
     private final String val;
-
-    private final Pattern.Admin atomPattern;
-    private final Set<Query> expansions = new HashSet<>();
-
-    private Query parent = null;
 
     public Atom(Var.Admin pattern)
     {
-        this.atomPattern = pattern;
-        Triplet<String, String, String> varData = getDataFromVar(atomPattern.asVar());
-        varName = varData.getValue0();
-        typeId = varData.getValue1();
-        val = varData.getValue2();
+        super(pattern);
+        this.val = extractValue(pattern);
     }
 
     public Atom(Var.Admin pattern, Query par)
     {
-        this.atomPattern = pattern;
-        Triplet<String, String, String> varData = getDataFromVar(atomPattern.asVar());
-        varName = varData.getValue0();
-        typeId = varData.getValue1();
-        val = varData.getValue2();
-        this.parent = par;
+        super(pattern, par);
+        this.val = extractValue(pattern);
     }
 
     public Atom(Atom a)
     {
-        this.atomPattern = a.atomPattern;
-        Triplet<String, String, String> varData = getDataFromVar(atomPattern.asVar());
-        varName = varData.getValue0();
-        typeId = varData.getValue1();
-        val = varData.getValue2();
-        a.expansions.forEach(exp -> expansions.add(new Query(exp)));
+        super(a);
+        this.val = extractValue(a.getPattern().asVar());
     }
-
-    @Override
-    public String toString(){ return atomPattern.toString(); }
 
     @Override
     public boolean equals(Object obj)
@@ -80,93 +73,10 @@ public class Atom implements Atomic{
     }
 
     @Override
-    public void addExpansion(Query query){
-        query.setParentAtom(this);
-        expansions.add(query);
-    }
-    @Override
-    public void removeExpansion(Query query){
-        if(expansions.contains(query))
-        {
-            query.setParentAtom(null);
-            expansions.remove(query);
-        }
-    }
-    @Override
-    public boolean isRelation(){ return false;}
-
-    @Override
-    public boolean isValuePredicate(){ return !atomPattern.asVar().getValueEqualsPredicates().isEmpty();}
-    @Override
-    public boolean isResource(){ return !atomPattern.asVar().getResourcePredicates().isEmpty();}
-    @Override
-    public boolean isType(){ return !typeId.isEmpty();}
-    @Override
-    public boolean containsVar(String name){ return varName.equals(name);}
-
-    @Override
-    public Pattern.Admin getPattern(){ return atomPattern;}
-    @Override
-    public Pattern.Admin getExpandedPattern()
-    {
-        Set<Pattern.Admin> expandedPattern = new HashSet<>();
-        expandedPattern.add(atomPattern);
-        expansions.forEach(q -> expandedPattern.add(q.getExpandedPattern()));
-        return Pattern.Admin.disjunction(expandedPattern);
-    }
-
-    @Override
-    public MatchQuery getExpandedMatchQuery(MindmapsTransaction graph)
-    {
-        QueryBuilder qb = QueryBuilder.build(graph);
-        Set<String> selectVars = isRelation()? getVarNames() : Sets.newHashSet(varName);
-        return qb.match(getExpandedPattern()).select(selectVars);
-    }
-
-    @Override
-    public Query getParentQuery(){return parent;}
-    @Override
-    public void setParentQuery(Query q){ parent = q;}
-
-    @Override
-    public void setVarName(String var){
-        varName = var;
-        atomPattern.asVar().setName(var);
-    }
-
-    @Override
-    public void changeRelVarName(String from, String to){
-        throw new IllegalAccessError("changeRelVarName attempted on a non-relation atom!");
-    }
-
-    @Override
-    public String getVarName(){ return varName;}
-    @Override
-    public Set<String> getVarNames(){
-        Set<String> vars = new HashSet<>();
-        if (isRelation())
-            getCastings().forEach(c -> vars.add(c.getRolePlayer().getName()));
-        else
-            vars.add(varName);
-        return vars;
-    }
-    @Override
-    public String getTypeId(){ return typeId;}
-    @Override
     public String getVal(){ return val;}
 
-    @Override
-    public Set<Var.Casting> getCastings(){
-        throw new IllegalAccessError("getCastings() attempted on a non-relation atom!");
-    }
+    private String extractValue(Var.Admin var) {
 
-    @Override
-    public Set<Query> getExpansions(){ return expansions;}
-
-    private Triplet<String, String, String> getDataFromVar(Var.Admin var) {
-
-        String vTypeId;
-        String vName = var.getName();
         String value = "";
 
         Map<Var.Admin, Set<ValuePredicate.Admin>> resourceMap = var.getResourcePredicates();
@@ -176,24 +86,21 @@ public class Atom implements Atomic{
                 throw new IllegalArgumentException("Multiple resource types in extractData");
 
             Map.Entry<Var.Admin, Set<ValuePredicate.Admin>> entry = resourceMap.entrySet().iterator().next();
-            vTypeId = entry.getKey().getId().get();
             value = entry.getValue().iterator().hasNext()? entry.getValue().iterator().next().getPredicate().getValue().toString() : "";
         }
         else {
-            vTypeId = var.getType().flatMap(Var.Admin::getId).orElse("");
-
             if ( isValuePredicate() )
             {
                 Set<ValuePredicate.Admin> valuePredicates = var.admin().getValuePredicates();
                 if (valuePredicates.size() != 1)
                     throw new IllegalArgumentException("More than one value predicate in extractAtomFromVar\n"
-                                + atomPattern.toString());
+                            + atomPattern.toString());
                 else
                     value = valuePredicates.iterator().next().getPredicate().getValue().toString();
-                }
+            }
         }
 
-        return new Triplet<>(vName, vTypeId, value);
+        return value;
 
     }
 

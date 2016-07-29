@@ -421,9 +421,9 @@ public class MindmapsReasoner {
         }
     }
 
-    private void expandQueryQSQ(Query query, Map<String, Type> varMap)
+    private void expandQuery(Query query, Map<String, Type> varMap)
     {
-        LOG.debug("expandQueryQSQ: " + (query.getRule() != null ? query.getRule().getId() : "top"));
+        LOG.debug("expandQuery: " + (query.getRule() != null ? query.getRule().getId() : "top"));
         for(Atomic atom : query.getAtoms())
         {
             Set<Rule> rules = getAtomChildren(atom, query);
@@ -448,13 +448,13 @@ public class MindmapsReasoner {
 
 
                         if ( Ans.size() != AnsStar.size() || !ruleApplied)
-                            expandQueryQSQ(qr, varMap);
+                            expandQuery(qr, varMap);
                         else
                             query.removeExpansionFromAtom(atom, qr);
                     }
                     else{
                         Query qr = applyRuleToAtom(atom, query, r, varMap);
-                        expandQueryQSQ(qr, varMap);
+                        expandQuery(qr, varMap);
                     }
                 }
 
@@ -462,7 +462,7 @@ public class MindmapsReasoner {
             else {
                 for (Rule r : rules) {
                     Query qr = applyRuleToAtom(atom, query, r, varMap);
-                    expandQueryQSQ(qr, varMap);
+                    expandQuery(qr, varMap);
                 }
             }
 
@@ -481,7 +481,7 @@ public class MindmapsReasoner {
         Query query = new Query(inputQuery, graph);
         Map<String, Type> varMap = query.getVarTypeMap();
 
-        expandQueryQSQ(query, varMap);
+        expandQuery(query, varMap);
 
         MatchQuery expandedQuery = query.getExpandedMatchQuery();
 

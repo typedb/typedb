@@ -1,6 +1,23 @@
+/*
+ * MindmapsDB - A Distributed Semantic Database
+ * Copyright (C) 2016  Mindmaps Research Ltd
+ *
+ * MindmapsDB is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * MindmapsDB is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
+
 package io.mindmaps.reasoner.internal.predicate;
 
-import com.google.common.collect.Sets;
 import io.mindmaps.core.dao.MindmapsTransaction;
 import io.mindmaps.core.model.RoleType;
 import io.mindmaps.core.model.Type;
@@ -12,45 +29,31 @@ import java.util.*;
 
 import static io.mindmaps.reasoner.internal.Utility.getCompatibleRoleTypes;
 
-public class RelationAtom implements Atomic{
+public class RelationAtom extends AtomBase{
 
-    private final String varName;
     private final Set<Var.Casting> castings = new HashSet<>();
-    private final String typeId;
-
-    private final Pattern.Admin atomPattern;
-    private final Set<Query> expansions = new HashSet<>();
-
-    private Query parent = null;
 
     public RelationAtom(Var.Admin pattern)
     {
-        this.atomPattern = pattern;
-        Pair<String, String> varData = getDataFromVar(atomPattern.asVar());
-        varName = varData.getValue0();
-        typeId = varData.getValue1();
+        super(pattern);
+        castings.addAll(pattern.getCastings());
     }
 
     public RelationAtom(Var.Admin pattern, Query par)
     {
-        this.atomPattern = pattern;
-        Pair<String, String> varData = getDataFromVar(atomPattern.asVar());
-        varName = varData.getValue0();
-        typeId = varData.getValue1();
-        this.parent = par;
+        super(pattern, par);
+        castings.addAll(pattern.getCastings());
     }
 
     public RelationAtom(RelationAtom a)
     {
-        this.atomPattern = a.atomPattern;
-        Pair<String, String> varData = getDataFromVar(atomPattern.asVar());
-        varName = varData.getValue0();
-        typeId = varData.getValue1();
+        super(a);
+        castings.addAll(a.getPattern().asVar().getCastings());
+
+        for(Query exp : expansions)
+            removeExpansion(exp);
         a.expansions.forEach(exp -> expansions.add(new Query(exp)));
     }
-
-    @Override
-    public String toString(){ return atomPattern.toString(); }
 
     @Override
     public boolean equals(Object obj)
@@ -80,19 +83,6 @@ public class RelationAtom implements Atomic{
     }
 
     @Override
-    public void addExpansion(Query query){
-        query.setParentAtom(this);
-        expansions.add(query);
-    }
-    @Override
-    public void removeExpansion(Query query){
-        if(expansions.contains(query))
-        {
-            query.setParentAtom(null);
-            expansions.remove(query);
-        }
-    }
-    @Override
     public boolean isRelation(){ return true;}
     @Override
     public boolean isValuePredicate(){ return false;}
@@ -113,28 +103,12 @@ public class RelationAtom implements Atomic{
     }
 
     @Override
-    public Pattern.Admin getPattern(){ return atomPattern;}
-    @Override
-    public Pattern.Admin getExpandedPattern()
-    {
-        Set<Pattern.Admin> expandedPattern = new HashSet<>();
-        expandedPattern.add(atomPattern);
-        expansions.forEach(q -> expandedPattern.add(q.getExpandedPattern()));
-        return Pattern.Admin.disjunction(expandedPattern);
-    }
-
-    @Override
     public MatchQuery getExpandedMatchQuery(MindmapsTransaction graph)
     {
         QueryBuilder qb = QueryBuilder.build(graph);
-        Set<String> selectVars = isRelation()? getVarNames() : Sets.newHashSet(varName);
+        Set<String> selectVars = getVarNames();
         return qb.match(getExpandedPattern()).select(selectVars);
     }
-
-    @Override
-    public Query getParentQuery(){return parent;}
-    @Override
-    public void setParentQuery(Query q){ parent = q;}
 
     @Override
     public void setVarName(String var){
@@ -149,35 +123,14 @@ public class RelationAtom implements Atomic{
     }
 
     @Override
-    public String getVarName(){ return varName;}
-    @Override
     public Set<String> getVarNames(){
         Set<String> vars = new HashSet<>();
-        getCastings().forEach(c -> vars.add(c.getRolePlayer().getName()));
+        castings.forEach(c -> vars.add(c.getRolePlayer().getName()));
         return vars;
     }
     @Override
-    public String getTypeId(){ return typeId;}
-    @Override
     public String getVal(){
         throw new IllegalAccessError("getVal() on a relation atom!");
-    }
-
-    @Override
-    public Set<Var.Casting> getCastings(){ return castings;}
-
-    @Override
-    public Set<Query> getExpansions(){ return expansions;}
-
-
-    private Pair<String, String> getDataFromVar(Var.Admin var) {
-
-        String vTypeId = var.getType().flatMap(Var.Admin::getId).orElse("");
-        String vName = "rel";
-        castings.addAll(var.getCastings());
-
-        return new Pair<>(vName, vTypeId);
-
     }
 
     /**
