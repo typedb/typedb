@@ -1,0 +1,37 @@
+insert
+
+"R6" isa inference-rule,
+lhs {select $x, $y where
+$x isa person;$x has gender 'male';$x has age >=18;
+$y isa product;$y has min-age >=18;
+$z isa country;$z value 'Italy';
+($y, $z) isa made-in},
+rhs {select $x, $y where ($x, $y) isa recommendation};
+
+"R25" isa inference-rule,
+lhs {select $x, $y where
+$x isa person;$t isa tag, value 'Johann_Wolfgang_von_Goethe';
+($x, $t) isa tagging;
+$y isa product, value 'Faust'},
+rhs {select $x, $y where
+($x, $y) isa recommendation};
+
+"R7" isa inference-rule,
+lhs {select $x, $y where
+$x isa person;
+$t isa tag;{$t value 'Ludwig_van_Beethoven'} or {$t value 'Johann_Sebastian_Bach'} or {$t value 'Wolfgang_Amadeus_Mozart'};
+($x, $t) isa tagging;
+$y isa product, value 'Chopin - Nocturnes'},
+rhs {select $x, $y where ($x, $y) isa recommendation};
+
+"R4" isa inference-rule,
+lhs {select $x, $y where
+$x isa person;
+$t1 isa tag;$t1 value 'Ennio_Morricone';
+$t2 isa tag;$t2 value 'John_Wayne';
+($x, $t1) isa tagging;
+($x, $t2) isa tagging;
+$y isa product;
+$y value 'The Good, the Bad and the Ugly'},
+rhs {select $x, $y where ($x, $y) isa recommendation};
+
