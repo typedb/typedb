@@ -30,16 +30,27 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+/**
+ * A concept which represents a resource.
+ * @param <D> The data type of this resource. Supported Types include: String, Long, Double, and Boolean
+ */
 class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>, D> implements Resource<D> {
     ResourceImpl(Vertex v, MindmapsTransactionImpl mindmapsGraph) {
         super(v, mindmapsGraph);
     }
 
+    /**
+     *
+     * @return The data type of this Resource's type.
+     */
     @Override
     public Data<D> dataType() {
         return type().getDataType();
     }
 
+    /**
+     * @return The list of all Instances which posses this resource
+     */
     @Override
     public Collection<Instance> ownerInstances() {
         Set<Instance> owners = new HashSet<>();
@@ -50,6 +61,11 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>, D> impl
         return owners;
     }
 
+    /**
+     *
+     * @param value The value to store on the resource
+     * @return The Resource itself
+     */
     @Override
     public Resource<D> setValue(D value) {
         try {
@@ -80,10 +96,20 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>, D> impl
         }
     }
 
+    /**
+     *
+     * @param value The value of the resource
+     * @return A unique id for the resource
+     */
     public String generateResourceIndex(D value){
         return DataType.BaseType.RESOURCE.name() + "-" + type().getId() + "-" + value.toString();
     }
 
+    /**
+     * This is to handle casting longs and doubles when the type allows for the data type to be a number
+     * @param value The value of the resource
+     * @return The value casted to the correct type
+     */
     private Object castValue(Object value){
         Data<D> parentDataType = dataType();
         if(parentDataType.equals(Data.DOUBLE)){
@@ -97,6 +123,10 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>, D> impl
         return value;
     }
 
+    /**
+     *
+     * @return The value casted to the correct type
+     */
     @SuppressWarnings("unchecked")
     @Override
     public D getValue(){

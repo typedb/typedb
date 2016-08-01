@@ -25,11 +25,18 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * An ontological element which defines a role which can be played in a relation type.
+ */
 class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
     RoleTypeImpl(Vertex v, MindmapsTransactionImpl mindmapsGraph) {
         super(v, mindmapsGraph);
     }
 
+    /**
+     *
+     * @return The Relation Type which this role takes part in.
+     */
     @Override
     public RelationType relationType() {
         Concept concept = getIncomingNeighbour(DataType.EdgeLabel.HAS_ROLE);
@@ -41,6 +48,10 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
         }
     }
 
+    /**
+     *
+     * @return A list of all the Concept Types which can play this role.
+     */
     @Override
     public Collection<Type> playedByTypes() {
         Collection<Type> types = new HashSet<>();
@@ -48,6 +59,10 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
         return types;
     }
 
+    /**
+     *
+     * @return All the instances of this type.
+     */
     @Override
     public Collection<Instance> instances(){
         Set<Instance> instances = new HashSet<>();
@@ -58,6 +73,10 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
         return instances;
     }
 
+    /**
+     *
+     * @return The castings of this role
+     */
     public Set<CastingImpl> castings(){
         Set<CastingImpl> castings = new HashSet<>();
         getIncomingNeighbours(DataType.EdgeLabel.ISA).forEach(concept -> {

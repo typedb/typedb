@@ -494,7 +494,7 @@ public class MindmapsTransactionHighLevelTest {
 
         Set<EdgeImpl> edges = pacino.getEdgesOfType(Direction.OUT, DataType.EdgeLabel.SHORTCUT);
         for(EdgeImpl edge : edges){
-            assertTrue(relation.getBaseIdentifier() == edge.getEdgePropertyBaseAssertionId());
+            assertEquals(relation.type().getId(), edge.getProperty(DataType.EdgeProperty.RELATION_TYPE_ID));
         }
 
         Set<ConceptImpl> godfatherToOthers = godfather.getOutgoingNeighbours(DataType.EdgeLabel.SHORTCUT);
@@ -523,8 +523,6 @@ public class MindmapsTransactionHighLevelTest {
 
         mindmapsGraph.getTinkerPopGraph().traversal().V(pacino.getIncomingNeighbours(DataType.EdgeLabel.ROLE_PLAYER).iterator().next().getBaseIdentifier()).next().remove();
 
-        pacino.getEdgesOfType(Direction.OUT, DataType.EdgeLabel.SHORTCUT).forEach(edge -> edge.setEdgePropertyBaseAssertionId(476L));
-        godfather.getEdgesOfType(Direction.OUT, DataType.EdgeLabel.SHORTCUT).forEach(edge -> edge.setEdgePropertyBaseAssertionId(476L));
         godfatherToOthers = godfather.getOutgoingNeighbours(DataType.EdgeLabel.SHORTCUT);
         pacinoToOthers = pacino.getOutgoingNeighbours(DataType.EdgeLabel.SHORTCUT);
 

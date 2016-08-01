@@ -18,6 +18,9 @@
 
 package io.mindmaps.core.exceptions;
 
+/**
+ * The exception thrown when an edge is expected between two concepts.
+ */
 public class NoEdgeException extends GraphRuntimeException{
     public NoEdgeException(String id, String target) {
         super(ErrorMessage.NO_EDGE.getMessage(id, target));

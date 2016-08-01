@@ -88,7 +88,7 @@ public interface Type extends Concept {
 
     /**
      *
-     * @return Gets all the instances of this type.
+     * @return All the instances of this type.
      */
     Collection<? extends Concept> instances();
 

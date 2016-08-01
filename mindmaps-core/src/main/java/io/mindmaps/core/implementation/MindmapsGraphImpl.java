@@ -26,6 +26,9 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * A mindmaps graph which produces new transactions to work with
+ */
 public abstract class MindmapsGraphImpl implements MindmapsGraph {
     protected final Logger LOG = LoggerFactory.getLogger(MindmapsGraphImpl.class);
     private boolean batchLoading;
@@ -33,33 +36,58 @@ public abstract class MindmapsGraphImpl implements MindmapsGraph {
 
     public MindmapsGraphImpl(Graph graph){
         this.graph = graph;
-        checkMetaOntology((MindmapsTransactionImpl) newTransaction());
+        checkSchema((MindmapsTransactionImpl) newTransaction());
     }
 
+    /**
+     *
+     * @return A new transaction with a snapshot of the graph at the time of creation
+     */
     @Override
     public abstract MindmapsTransaction newTransaction();
 
+    /**
+     * Enables batch loading which skips redundancy checks.
+     * With this mode enabled duplicate concepts and relations maybe created.
+     * Faster writing at the cost of consistency.
+     */
     @Override
     public void enableBatchLoading() {
         batchLoading = true;
     }
 
+    /**
+     * Disables batch loading which prevents the creation of duplicate castings.
+     * Immediate constancy at the cost of writing speed.
+     */
     @Override
     public void disableBatchLoading() {
         batchLoading = false;
     }
 
+    /**
+     *
+     * @return A flag indicating if this transaction is batch loading or not
+     */
     @Override
     public boolean isBatchLoadingEnabled(){
         return batchLoading;
     }
 
+    /**
+     *
+     * @return Returns the underlaying gremlin graph.
+     */
     @Override
     public Graph getGraph() {
         return graph;
     }
 
-    private void checkMetaOntology(MindmapsTransactionImpl mindmapsTransaction){
+    /**
+     * Checks if the schema exists if not it creates and commits it.
+     * @param mindmapsTransaction A transaction to use to check the schema
+     */
+    private void checkSchema(MindmapsTransactionImpl mindmapsTransaction){
         if(!mindmapsTransaction.isMetaOntologyInitialised()){
             mindmapsTransaction.initialiseMetaConcepts();
             try {

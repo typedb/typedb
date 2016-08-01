@@ -27,7 +27,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * A concept node which wraps around the vertex. This gives grater control over accessible properties.
+ * A concept which can represent anything in the graph
+ * @param <T> The leaf interface of the object model. For example an EntityType, Entity, RelationType etc . . .
+ * @param <V> The type of the concept.
+ * @param <D> The data type of the value in the concept.
  */
 abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Concept {
     @SuppressWarnings("unchecked")
@@ -44,7 +47,12 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
         mindmapsTransaction.getTransaction().putConcept(this);
     }
 
-    //Root Set and Get
+    /**
+     *
+     * @param key The key of the property to mutate
+     * @param value The value to commit into the property
+     * @return The concept itself casted to the correct interface itself
+     */
     private T setProperty(String key, Object value){
         if(value == null)
             vertex.property(key).remove();
@@ -52,6 +60,12 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
             vertex.property(key, value);
         return getThis();
     }
+
+    /**
+     *
+     * @param key The key of the property to retrieve
+     * @return The value in the property
+     */
     private Object getProperty(String key){
         VertexProperty property = vertex.property(key);
         if(property != null && property.isPresent())
@@ -60,15 +74,29 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
             return null;
     }
 
+    /**
+     * Deletes the concept.
+     * @throws ConceptException Throws an exception if the node has any edges attached to it.
+     */
     @Override
     public void delete() throws ConceptException {
         ConceptImpl properType = getMindmapsTransaction().getElementFactory().buildUnknownConcept(this);
         properType.innerDelete(); //This will execute the proper deletion method.
     }
+
+    /**
+     * Helper method to call the appropriate deletion based on the type of the concept.
+     */
+    //TODO: Check if this is actually the right way of doing things. This is quite odd.
     void innerDelete(){
         deleteNode();
     }
 
+    /**
+     *
+     * @param id The new unique id of the concept.
+     * @return The concept itself casted to the correct interface itself
+     */
     @Override
     public T setId(String id) {
         if(DataType.ConceptMeta.isMetaId(id)){
@@ -78,11 +106,22 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
         return setUniqueProperty(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER, id);
     }
 
+    /**
+     *
+     * @param subject The new unique subject of the concept.
+     * @return The concept itself casted to the correct interface itself
+     */
     @Override
     public T setSubject(String subject) {
         return setUniqueProperty(DataType.ConceptPropertyUnique.SUBJECT_IDENTIFIER, subject);
     }
 
+    /**
+     *
+     * @param key The key of the unique property to mutate
+     * @param id The new value of the unique property
+     * @return The concept itself casted to the correct interface itself
+     */
     T setUniqueProperty(DataType.ConceptPropertyUnique key, String id){
         if(mindmapsTransaction.isBatchLoadingEnabled() || updateAllowed(key, id))
             return setProperty(key, id);
@@ -90,11 +129,20 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
             throw new ConceptIdNotUniqueException(this, key, id);
     }
 
+    /**
+     *
+     * @param key The key of the unique property to mutate
+     * @param value The value to check
+     * @return True if the concept can be updated. I.e. the value is unique for the property.
+     */
     private boolean updateAllowed(DataType.ConceptPropertyUnique key, String value) {
         ConceptImpl fetchedConcept = mindmapsTransaction.getConcept(key, value);
         return fetchedConcept == null || this.equals(fetchedConcept);
     }
 
+    /**
+     * Deletes the node and adds it neighbours for validation
+     */
     void deleteNode(){
         // tracking
         vertex.edges(Direction.BOTH).
@@ -109,6 +157,10 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
         vertex = null;
     }
 
+    /**
+     *
+     * @return The type of the concept casted to the correct interface
+     */
     @SuppressWarnings("unchecked")
     @Override
     public V type() {
@@ -140,6 +192,13 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
         return (V) type;
     }
 
+    /**
+     * Helper method to cast a concept to it's correct type
+     * @param type The type to cast to
+     * @param <E> The type of the interface we are casting to.
+     * @return The concept itself casted to the defined interface
+     * @throws InvalidConceptTypeException when casting a concept incorrectly
+     */
     private <E> E castConcept(Class<E> type){
         try {
             return type.cast(this);
@@ -148,126 +207,226 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
         }
     }
 
+    /**
+     *
+     * @return A Type if the concept is a Type
+     */
     @Override
     public Type asType() {
         return castConcept(Type.class);
     }
 
+    /**
+     *
+     * @return An Instance if the concept is an Instance
+     */
     @Override
     public Instance asInstance() {
         return castConcept(Instance.class);
     }
 
+    /**
+     *
+     * @return A Entity Type if the concept is a Entity Type
+     */
     @Override
     public EntityType asEntityType() {
         return castConcept(EntityType.class);
     }
 
+    /**
+     *
+     * @return A Role Type if the concept is a Role Type
+     */
     @Override
     public RoleType asRoleType() {
         return castConcept(RoleType.class);
     }
 
+    /**
+     *
+     * @return A Relation Type if the concept is a Relation Type
+     */
     @Override
     public RelationType asRelationType() {
         return castConcept(RelationType.class);
     }
 
+    /**
+     *
+     * @return A Resource Type if the concept is a Resource Type
+     */
     @SuppressWarnings("unchecked")
     @Override
     public <D> ResourceType<D> asResourceType() {
         return castConcept(ResourceType.class);
     }
 
+    /**
+     *
+     * @return A Rule Type if the concept is a Rule Type
+     */
     @Override
     public RuleType asRuleType() {
         return castConcept(RuleType.class);
     }
 
+    /**
+     *
+     * @return An Entity if the concept is an Instance
+     */
     @Override
     public Entity asEntity() {
         return castConcept(Entity.class);
     }
 
+    /**
+     *
+     * @return A Relation if the concept is a Relation
+     */
     @Override
     public Relation asRelation() {
         return castConcept(Relation.class);
     }
 
+    /**
+     *
+     * @return A Resource if the concept is a Resource
+     */
     @SuppressWarnings("unchecked")
     @Override
     public <D> Resource<D> asResource() {
         return castConcept(Resource.class);
     }
 
-    @Override
+    /**
+     *
+     * @return A Rule if the concept is a Rule
+     */@Override
     public Rule asRule() {
         return castConcept(Rule.class);
     }
 
+    /**
+     *
+     * @return A casting if the concept is a casting
+     */
     public CastingImpl asCasting(){
         return (CastingImpl) this;
     }
 
+    /**
+     *
+     * @return true if the concept is a Type
+     */
     @Override
     public boolean isType() {
         return this instanceof Type;
     }
 
+    /**
+     *
+     * @return true if the concept is an Instance
+     */
     @Override
     public boolean isInstance() {
         return this instanceof Instance;
     }
 
+    /**
+     *
+     * @return true if the concept is a Entity Type
+     */
     @Override
     public boolean isEntityType() {
         return this instanceof EntityType;
     }
 
+    /**
+     *
+     * @return true if the concept is a Role Type
+     */
     @Override
     public boolean isRoleType() {
         return this instanceof RoleType;
     }
 
+    /**
+     *
+     * @return true if the concept is a Relation Type
+     */
     @Override
     public boolean isRelationType() {
         return this instanceof RelationType;
     }
 
+    /**
+     *
+     * @return true if the concept is a Resource Type
+     */
     @Override
     public boolean isResourceType() {
         return this instanceof ResourceType;
     }
 
+    /**
+     *
+     * @return true if the concept is a Rule Type
+     */
     @Override
     public boolean isRuleType() {
         return this instanceof RuleType;
     }
 
+    /**
+     *
+     * @return true if the concept is a Entity
+     */
     @Override
     public boolean isEntity() {
         return this instanceof Entity;
     }
 
+    /**
+     *
+     * @return true if the concept is a Relation
+     */
     @Override
     public boolean isRelation() {
         return this instanceof Relation;
     }
 
+    /**
+     *
+     * @return true if the concept is a Resource
+     */
     @Override
     public boolean isResource() {
         return this instanceof Resource;
     }
 
+    /**
+     *
+     * @return true if the concept is a Rule
+     */
     @Override
     public boolean isRule() {
         return this instanceof Rule;
     }
 
+    /**
+     *
+     * @return true if the concept is a casting
+     */
     public boolean isCasting(){
         return this instanceof CastingImpl;
     }
 
+    /**
+     *
+     * @param type The type of this concept
+     * @return The concept itself casted to the correct interface
+     */
     public T type(Type type) {
         deleteEdges(Direction.OUT, DataType.EdgeLabel.ISA);
         putEdge(getMindmapsTransaction().getElementFactory().buildSpecificConceptType(type), DataType.EdgeLabel.ISA);
@@ -282,6 +441,10 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
     }
 
 
+    /**
+     *
+     * @return All of this concept's types going upwards. I.e. the result of calling {@link ConceptImpl#type()}
+     */
     public Set<Type> getConceptTypeHierarchy() {
         HashSet<Type> types = new HashSet<>();
         Concept currentConcept = this;
@@ -298,6 +461,10 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
         return types;
     }
 
+    /**
+     *
+     * @return The result of following one outgoing isa edge to a Type.
+     */
     public TypeImpl getParentIsa(){
         Concept isaParent = getOutgoingNeighbour(DataType.EdgeLabel.ISA);
         if(isaParent != null){
@@ -307,6 +474,10 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
         }
     }
 
+    /**
+     *
+     * @return The result of following one outgoing ako edge to a Type.
+     */
     public TypeImpl getParentAko(){
         Concept akoParent = getOutgoingNeighbour(DataType.EdgeLabel.AKO);
         if(akoParent != null){
@@ -316,6 +487,11 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
         }
     }
 
+    /**
+     *
+     * @param edgeLabel The edge label to traverse
+     * @return The neighbouring concept found by traversing one outgoing edge of a specific type
+     */
     protected Concept getOutgoingNeighbour(DataType.EdgeLabel edgeLabel){
         Set<ConceptImpl> concepts = getOutgoingNeighbours(edgeLabel);
         if(concepts.size() == 1){
@@ -327,15 +503,25 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
         }
     }
 
+    /**
+     *
+     * @param edgeType The edge label to traverse
+     * @return The neighbouring concepts found by traversing outgoing edges of a specific type
+     */
     protected Set<ConceptImpl> getOutgoingNeighbours(DataType.EdgeLabel edgeType){
         Set<ConceptImpl> outgoingNeighbours = new HashSet<>();
 
         getEdgesOfType(Direction.OUT, edgeType).forEach(edge -> {
-            outgoingNeighbours.add(edge.getToConcept());
+            outgoingNeighbours.add(edge.getTarget());
         });
         return outgoingNeighbours;
     }
 
+    /**
+     *
+     * @param edgeLabel The edge label to traverse
+     * @return The neighbouring concept found by traversing one incoming edge of a specific type
+     */
     Concept getIncomingNeighbour(DataType.EdgeLabel edgeLabel){
         Set<ConceptImpl> concepts = getIncomingNeighbours(edgeLabel);
         if(concepts.size() == 1){
@@ -346,22 +532,44 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
             throw new MoreThanOneEdgeException(this, edgeLabel);
         }
     }
+    /**
+     *
+     * @param edgeType The edge label to traverse
+     * @return The neighbouring concepts found by traversing incoming edges of a specific type
+     */
     protected Set<ConceptImpl> getIncomingNeighbours(DataType.EdgeLabel edgeType){
         Set<ConceptImpl> incomingNeighbours = new HashSet<>();
         getEdgesOfType(Direction.IN, edgeType).forEach(edge -> {
-            incomingNeighbours.add(edge.getFromConcept());
+            incomingNeighbours.add(edge.getSource());
         });
         return incomingNeighbours;
     }
 
-    //Root Set and Get
+    /**
+     *
+     * @param key The key of the unique property to mutate
+     * @param value The value to commit into the property
+     * @return The concept itself casted to the correct interface
+     */
     public T setProperty(DataType.ConceptPropertyUnique key, Object value) {
         return setProperty(key.name(), value);
     }
+
+    /**
+     *
+     * @param key The key of the non-unique property to mutate
+     * @param value The value to commit into the property
+     * @return The concept itself casted to the correct interface
+     */
     T setProperty(DataType.ConceptProperty key, Object value){
         return setProperty(key.name(), value);
     }
 
+    /**
+     *
+     * @param key The key of the unique property to retrieve
+     * @return The value stored in the property
+     */
     public String getProperty(DataType.ConceptPropertyUnique key){
         Object property = getProperty(key.name());
         if(property == null)
@@ -369,47 +577,101 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
         else
             return property.toString();
     }
+
+    /**
+     *
+     * @param key The key of the non-unique property to retrieve
+     * @return The value stored in the property
+     */
     public Object getProperty(DataType.ConceptProperty key){
         return getProperty(key.name());
     }
+
+    /**
+     *
+     * @return The tinkerpop vertex
+     */
     Vertex getVertex() {
         return vertex;
     }
 
     //------------ Setters ------------
-    public Concept setType(String type){
+    /**
+     *
+     * @param type The type of this concept
+     * @return The concept itself casted to the correct interface
+     */
+    public T setType(String type){
         return setProperty(DataType.ConceptProperty.TYPE, type);
     }
 
-
+    /**
+     *
+     * @param value The value of this concept
+     * @return The concept itself casted to the correct interface
+     */
     public T setValue(D value) {
         return setProperty(DataType.ConceptProperty.VALUE_STRING, value);
     }
 
     //------------ Getters ------------
+    /**
+     *
+     * @return The unique base identifier of this concept.
+     */
     public long getBaseIdentifier() {
         return (long) vertex.id();
     }
+
+    /**
+     *
+     * @return The base ttpe of this concept which helps us identify the concept
+     */
     public String getBaseType(){
         return vertex.label();
     }
+
+    /**
+     *
+     * @return A string representing the concept's unique id.
+     */
     @Override
     public String getId(){
         return getProperty(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER);
     }
+
+    /**
+     *
+     * @return A string representing the concept's unique subject.
+     */
     @Override
     public String getSubject() {
         return getProperty(DataType.ConceptPropertyUnique.SUBJECT_IDENTIFIER);
     }
+
+    /**
+     *
+     * @return The id of the type of this concept. This is a shortcut used to prevent traversals.
+     */
     public String getType(){
         return String.valueOf(getProperty(DataType.ConceptProperty.TYPE));
     }
 
+    /**
+     *
+     * @return The value of this concept
+     */
     @SuppressWarnings("unchecked")
     public D getValue() {
         return (D) getProperty(DataType.ConceptProperty.VALUE_STRING);
     }
 
+    /**
+     *
+     * @param direction The direction of the edges to retrieve
+     * @param type The type of the edges to retrieve
+     * @return A collection of edges from this concept in a particular direction of a specific type
+     */
     protected Set<EdgeImpl> getEdgesOfType(Direction direction, DataType.EdgeLabel type){
         Set<EdgeImpl> edges = new HashSet<>();
         vertex.edges(direction, type.getLabel()).
@@ -417,6 +679,12 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
         return edges;
     }
 
+    /**
+     *
+     * @param type The type of the edge to retrieve
+     * @return An edge from this concept in a particular direction of a specific type
+     * @throws MoreThanOneEdgeException when more than one edge of s specific type
+     */
     public EdgeImpl getEdgeOutgoingOfType(DataType.EdgeLabel type) {
         Set<EdgeImpl> edges = getEdgesOfType(Direction.OUT, type);
         if(edges.size() == 1)
@@ -427,15 +695,30 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
             return null;
     }
 
+    /**
+     *
+     * @return The mindmaps transaction this concept is bound to.
+     */
     MindmapsTransactionImpl getMindmapsTransaction() {return mindmapsTransaction;}
 
     //--------- Create Links -------//
+    /**
+     *
+     * @param toConcept the target concept
+     * @param type the type of the edge to create
+     */
     void putEdge(ConceptImpl toConcept, DataType.EdgeLabel type){
         GraphTraversal<Vertex, Edge> traversal = mindmapsTransaction.getTinkerPopGraph().traversal().V(getBaseIdentifier()).outE(type.getLabel()).as("edge").otherV().hasId(toConcept.getBaseIdentifier()).select("edge");
         if(!traversal.hasNext())
             addEdge(toConcept, type);
     }
 
+    /**
+     *
+     * @param toConcept the target concept
+     * @param type the type of the edge to create
+     * @return The edge created
+     */
     public EdgeImpl addEdge(ConceptImpl toConcept, DataType.EdgeLabel type) {
         mindmapsTransaction.getTransaction().putConcept(this);
         mindmapsTransaction.getTransaction().putConcept(toConcept);
@@ -443,6 +726,11 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
         return getMindmapsTransaction().getElementFactory().buildEdge(toConcept.addEdgeFrom(this.vertex, type.getLabel()), mindmapsTransaction);
     }
 
+    /**
+     *
+     * @param direction The direction of the edges to retrieve
+     * @param type The type of the edges to retrieve
+     */
     void deleteEdges(Direction direction, DataType.EdgeLabel type){
         // track changes
         vertex.edges(direction, type.getLabel()).
@@ -459,6 +747,11 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
         vertex.edges(direction, type.getLabel()).forEachRemaining(Element::remove);
     }
 
+    /**
+     * Deletes an edge of a specific type going to a specific concept
+     * @param type The type of the edge
+     * @param toConcept The target concept
+     */
     void deleteEdgeTo(DataType.EdgeLabel type, ConceptImpl toConcept){
         GraphTraversal<Vertex, Edge> traversal = mindmapsTransaction.getTinkerPopGraph().traversal().V(getBaseIdentifier()).
                 outE(type.getLabel()).as("edge").otherV().hasId(toConcept.getBaseIdentifier()).select("edge");
@@ -466,27 +759,23 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
             traversal.next().remove();
     }
 
-    //====================================================================================
-    // By not defining 'public' nor 'private', these functions are only accessible from
-    // classes in the same package directory. They are also not exposed in the public
-    // interface. Therefore they are not accessible from the rest of the system components.
     private org.apache.tinkerpop.gremlin.structure.Edge addEdgeFrom(Vertex fromVertex, String type) {
         return fromVertex.addEdge(type, vertex);
     }
 
 
     //------------ Base Equality ------------
+    /**
+     *
+     * @return The hash code of the underlying vertex
+     */
     public int hashCode() {
         return vertex.hashCode();
     }
 
-    private boolean vertexEquals(Vertex toVertex) {
-        return vertex.equals(toVertex);
-    }
-
     @Override
     public boolean equals(Object object) {
-        return object instanceof ConceptImpl && ((ConceptImpl) object).vertexEquals(vertex);
+        return object instanceof ConceptImpl && ((ConceptImpl) object).getVertex().equals(vertex);
     }
 
     @Override
@@ -504,10 +793,14 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
     }
 
     //---------- Null Vertex Handler ---------
+    /**
+     *
+     * @return true if the underlying vertex has not been removed.
+     */
     public boolean isAlive () {
         return vertex != null;
     }
-
+    
     @Override
     public int compareTo(Concept o) {
         return this.getId().compareTo(o.getId());
