@@ -99,7 +99,7 @@ class ShortcutTraversal {
         GraphTraversal<Vertex, Edge> edgeTraversal = traversal.outE(SHORTCUT.getLabel());
         roleA.ifPresent(ra -> edgeTraversal.has(FROM_ROLE.name(), ra));
         roleB.ifPresent(rb -> edgeTraversal.has(TO_ROLE.name(), rb));
-        type.ifPresent(t -> edgeTraversal.has(RELATION_ID.name(), t));
+        type.ifPresent(t -> edgeTraversal.has(RELATION_TYPE_ID.name(), t));
         return edgeTraversal.inV();
     }
 

@@ -29,16 +29,32 @@ import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.PropertyResourceBundle;
 
+/**
+ * A client for creating a mindmaps graph from a running engine.
+ * This is to abstract away factories and the backend from the user.
+ * The deployer of engine decides on the backend and this class will handle producing the correct graphs.
+ */
 public class MindmapsClient {
     private static final String DEFAULT_PROTOCOL = "http://";
     private static final String DEFAULT_URI = "localhost";
     private static final String REST_END_POINT = ":4567/graph_factory";
     private static final Map<String, MindmapsGraphFactory> openFactories = new HashMap<>();
 
+    /**
+     *
+     * @param name The desired name for the mindmaps graph
+     * @return A new or existing mindmaps graph with the defined name
+     */
     public static MindmapsGraph getGraph(String name){
         return getGraph(name, DEFAULT_URI);
     }
 
+    /**
+     *
+     * @param name The desired name for the mindmaps graph
+     * @param uri The remote uri fo where engine is located
+     * @return A new or existing mindmaps graph with the defined name connecting to the specified remote uri
+     */
     public static MindmapsGraph getGraph(String name, String uri){
         try {
             String restFactoryUri = DEFAULT_PROTOCOL + uri + REST_END_POINT;
@@ -60,7 +76,7 @@ public class MindmapsClient {
             br.close();
             String config = sb.toString();
 
-            //TODO: We should make config handling generic rather than through files.
+            //TODO: We should make config handling generic rather than through files. Using a temp file here is a bit strange
             //Creating Temp File
             File file = File.createTempFile("mindmaps-config", ".tmp");
             String path = file.getAbsolutePath();
@@ -68,7 +84,7 @@ public class MindmapsClient {
             bw.write(config);
             bw.close();
 
-            //Creating the actual mindmaps graph using reflection
+            //Creating the actual mindmaps graph using reflection to identify the factory
             FileInputStream fis = new FileInputStream(path);
             PropertyResourceBundle bundle = new PropertyResourceBundle(fis);
 
@@ -85,6 +101,12 @@ public class MindmapsClient {
         }
     }
 
+    /**
+     *
+     * @param factoryType The string defining which factory should be used for creating the mindmaps graph.
+     *                    A valid example includes: io.mindmaps.factory.MindmapsTinkerGraphFactory
+     * @return A graph factory which produces the relevant expected graph.
+     */
     private static MindmapsGraphFactory getFactory(String factoryType){
         if(!openFactories.containsKey(factoryType)) {
             MindmapsGraphFactory mindmapsGraphFactory;

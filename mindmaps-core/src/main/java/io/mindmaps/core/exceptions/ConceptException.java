@@ -18,6 +18,9 @@
 
 package io.mindmaps.core.exceptions;
 
+/**
+ * This Exception is thrown when a concept is malformed or incorrect in some way.
+ */
 public class ConceptException extends GraphRuntimeException {
     public ConceptException(String message) {
         super(message);

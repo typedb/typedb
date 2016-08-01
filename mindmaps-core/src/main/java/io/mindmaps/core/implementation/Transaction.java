@@ -30,7 +30,6 @@ import java.util.stream.Collectors;
  *      edge cases, for example, relationship where a new role player is added.
  *
  */
-
 class Transaction {
     private Set<ConceptImpl> modifiedConcepts;
     private Set<ConceptImpl> modifiedCastings;
@@ -42,12 +41,19 @@ class Transaction {
         modifiedRelations = new HashSet<>();
     }
 
+    /**
+     * Removes all the concepts from the transaction tracker
+     */
     public void clearTransaction(){
         modifiedConcepts.clear();
         modifiedCastings.clear();
         modifiedRelations.clear();
     }
 
+    /**
+     *
+     * @param concept The concept to be later validated
+     */
     public void putConcept(ConceptImpl concept) {
         if(!modifiedConcepts.contains(concept)) {
             modifiedConcepts.add(concept);
@@ -58,21 +64,37 @@ class Transaction {
         }
     }
 
+    /**
+     *
+     * @return All the concepts which have been affected within the transaction in some way
+     */
     public Set<ConceptImpl> getModifiedConcepts () {
         modifiedConcepts = modifiedConcepts.stream().filter(ConceptImpl::isAlive).collect(Collectors.toSet());
         return modifiedConcepts;
     }
 
+    /**
+     *
+     * @return All the castings which have been affected within the transaction in some way
+     */
     public Set<ConceptImpl> getModifiedCastings () {
         modifiedCastings = modifiedCastings.stream().filter(ConceptImpl::isAlive).collect(Collectors.toSet());
         return modifiedCastings;
     }
 
+    /**
+     *
+     * @return All the relations which have been affected within the transaction in some way
+     */
     public Set<ConceptImpl> getModifiedRelations () {
         modifiedRelations = modifiedRelations.stream().filter(ConceptImpl::isAlive).collect(Collectors.toSet());
         return modifiedRelations;
     }
 
+    /**
+     *
+     * @param c The concept to nio longer track
+     */
     public void removeConcept(ConceptImpl c){
         modifiedConcepts.remove(c);
     }

@@ -29,6 +29,9 @@ import java.text.SimpleDateFormat;
 import java.util.Locale;
 import java.util.UUID;
 
+/**
+ * A class which loads sample data into a mindmaps graph
+ */
 public class MovieGraphFactory {
     private static MindmapsTransaction mindmapsTransaction;
     private static EntityType movie, person, genre, character, cluster;

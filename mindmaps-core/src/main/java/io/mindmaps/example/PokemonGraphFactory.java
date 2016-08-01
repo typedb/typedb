@@ -24,6 +24,9 @@ import io.mindmaps.core.exceptions.MindmapsValidationException;
 import io.mindmaps.core.implementation.Data;
 import io.mindmaps.core.model.*;
 
+/**
+ * A class which loads sample data into a mindmaps graph
+ */
 public class PokemonGraphFactory{
     private static EntityType pokemon;
     private static EntityType pokemonType;
