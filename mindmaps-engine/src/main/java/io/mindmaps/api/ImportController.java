@@ -18,13 +18,15 @@
 
 package io.mindmaps.api;
 
-import io.mindmaps.core.exceptions.MindmapsValidationException;
-import io.mindmaps.core.implementation.MindmapsTransactionImpl;
+import io.mindmaps.util.ConfigProperties;
+import io.mindmaps.core.dao.MindmapsTransaction;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.api.parser.QueryParser;
 import io.mindmaps.graql.api.query.Var;
-import io.mindmaps.loader.Loader;
-import io.mindmaps.loader.QueueManager;
+import io.mindmaps.loader.BlockingLoader;
+import io.mindmaps.util.RESTUtil;
+import org.json.JSONObject;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -33,113 +35,118 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiPredicate;
 
-public class ImportFromFile {
+import static spark.Spark.post;
+
+/**
+ * Class that provides methods to import ontologies and data from a Graql file to a graph.
+ */
+
+public class ImportController {
+
+    private final org.slf4j.Logger LOG = LoggerFactory.getLogger(ImportController.class);
 
 
-    //Todo:
-    // - we add entities to cache before trying to commit. A lot of optimism here
-    // - think about how to escape the semi-colon: value "djnjsdk; eoine;"; $person .... this will not work correctly -> Felix should be implementing a feature that allows to read one Pattern at the time given an InputStream
-    //
+    private int batchSize;
+    private String graphName;
 
-    private final int batchSize = 60;
-    private final int sleepTime = 100;
-
+    //Use redis for caching LRU
     Map<String, String> entitiesMap;
     ArrayList<Var> relationshipsList;
 
-    private Loader loader;
-    QueueManager queueManager;
+    private BlockingLoader loader;
 
 
-    public ImportFromFile() {
-        entitiesMap = new ConcurrentHashMap<>();
-        relationshipsList = new ArrayList<>();
-        loader = Loader.getInstance();
-        queueManager = QueueManager.getInstance();
+    public ImportController() {
+        new ImportController(ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY));
     }
 
-    public void importGraph(String dataFile) {
-        System.out.println("LOAD GRAPH FROM GRAQL FILE!");
+    public ImportController(String graphNameInit) {
 
-        BiPredicate<String, List<Var>> parseEntity = this::parseEntity;
-        BiPredicate<String, List<Var>> parseRelation = this::parseRelation;
+        // These two functions still block. Create new thread
 
+        post(RESTUtil.WebPath.IMPORT_DATA_URI, (req, res) -> {
+            JSONObject bodyObject = new JSONObject(req.body());
+            importDataFromFile(bodyObject.get(RESTUtil.Request.PATH_FIELD).toString());
+            return null;
+        });
+
+        post(RESTUtil.WebPath.IMPORT_ONTOLOGY_URI, (req, res) -> {
+            JSONObject bodyObject = new JSONObject(req.body());
+            loadOntologyFromFile(bodyObject.get(RESTUtil.Request.PATH_FIELD).toString());
+            return null;
+        });
+
+        entitiesMap = new ConcurrentHashMap<>();
+        relationshipsList = new ArrayList<>();
+        batchSize = ConfigProperties.getInstance().getPropertyAsInt(ConfigProperties.BATCH_SIZE_PROPERTY);
+        graphName = graphNameInit;
+        loader = new BlockingLoader(graphName);
+
+    }
+
+    public void importDataFromFile(String dataFile) {
         try {
-            scanFile(parseEntity, dataFile);
-            scanFile(parseRelation, dataFile);
+            scanFile(this::parseEntity, dataFile);
+            loader.waitToFinish();
+            scanFile(this::parseRelation, dataFile);
+            loader.waitToFinish();
         } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
 
 
     private void scanFile(BiPredicate<String, List<Var>> parser, String dataFile) throws IOException {
+
         int i = 0;
         int latestBatchNumber = 0;
         String line;
         List<Var> currentVarsBatch = new ArrayList<>();
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(new FileInputStream(dataFile)));
+
+        // Instead of reading one line at the time, in the future we will have a
+        // Graql method that given an input stream provides .nextPattern.
+
         while ((line = bufferedReader.readLine()) != null) {
             if (line.startsWith("insert")) line = line.substring(6);
 
-//            for (String command : line.split(";")) // we cannot use the split function
-//                if (command.length() > 0 && !command.startsWith("#") && parser.test(command, currentVarsBatch))
-//                    i++;
-
-            while (queueManager.getTotalJobs() - queueManager.getFinishedJobs() - queueManager.getErrorJobs() > 100) {
-                //like in TCP protocol, every time we have to wait this time to let time to the loader to  catch up on the workload, we should increase the sleeping time between one batch and the other!
-                // and slowly decrease it again as the time goes by
-                try {
-                    Thread.sleep(10000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-
+            //Skip empty lines && comments
             if (line.length() > 0 && !line.startsWith("#") && parser.test(line, currentVarsBatch))
                 i++;
 
             if (i % batchSize == 0 && latestBatchNumber != i) {
                 latestBatchNumber = i;
-                loadCurrentBatch(currentVarsBatch);
-                System.out.println("== NEW BATCH !!! ====> " + i);
+                loader.addToQueue(currentVarsBatch);
+                LOG.info("[ New batch:  " + i + " ]");
                 currentVarsBatch = new ArrayList<>();
             }
         }
 
+        //Digest the remaining Vars in the batch.
+
         if (currentVarsBatch.size() > 0) {
-            loadCurrentBatch(currentVarsBatch);
-            System.out.println("== NEW BATCH !!! ====> " + i);
+            loader.addToQueue(currentVarsBatch);
+            LOG.info("[ New batch:  " + i + " ]");
         }
 
         bufferedReader.close();
     }
 
-    private void loadCurrentBatch(List<Var> currentVarsBatch) {
-        final List<Var> finalCurrentVarsBatch = new ArrayList<>(currentVarsBatch);
-        loader.addJob(finalCurrentVarsBatch);
-
+    private boolean parseEntity(String command, List<Var> currentVarsBatch) {
+        Var var = null;
         try {
-            Thread.sleep(sleepTime);
-        } catch (InterruptedException e) {
+            var = (Var) QueryParser.create().parseInsertQuery("insert " + command).admin().getVars().toArray()[0];
+            //catch more precise exception
+        } catch (IllegalArgumentException e) {
+            LOG.error("Exception caused by " + command);
             e.printStackTrace();
         }
-    }
 
-    private boolean parseEntity(String command, List<Var> currentVarsBatch) {
-        try {
-
-            Var var = (Var) QueryParser.create().parseInsertQuery("insert " + command).admin().getVars().toArray()[0];
-
-            if (!entitiesMap.containsKey(var.admin().getName()) && !var.admin().isRelation() && var.admin().getType().isPresent()) {
+        if (!entitiesMap.containsKey(var.admin().getName()) && !var.admin().isRelation() && var.admin().getType().isPresent()) {
 
                 if (var.admin().isUserDefinedName()) {
                     String varId = (var.admin().getId().isPresent()) ? var.admin().getId().get() : UUID.randomUUID().toString();
@@ -151,10 +158,6 @@ public class ImportFromFile {
 
                 return true;
             }
-        } catch (Exception e) {
-            System.out.println("Exception caused by " + command);
-            e.printStackTrace();
-        }
         return false;
     }
 
@@ -177,41 +180,28 @@ public class ImportFromFile {
                 currentVarsBatch.add(var);
             }
             return ready;
+            //fix execption
         } catch (Exception e) {
-            System.out.println("Exception caused by " + command);
+            LOG.error("Exception caused by " + command);
             e.printStackTrace();
             return false;
         }
 
     }
 
-    private void clearGraph() {
+    public void loadOntologyFromFile(String ontologyFile) {
 
-        MindmapsTransactionImpl mindmapsGraph = GraphFactory.getInstance().buildMindmapsGraph();
-        System.out.println("=============  ABOUT TO CLEAR THE GRAPH ==============");
-
-        mindmapsGraph.clearGraph();
+        MindmapsTransaction transaction = GraphFactory.getInstance().getGraph(graphName).newTransaction();
 
         try {
-            mindmapsGraph.commit();
-            System.out.println("=============  GRAPH CLEARED ==============");
-
-        } catch (MindmapsValidationException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void loadOntology(String ontologyFile) {
-
-        MindmapsTransactionImpl mindmapsGraph = GraphFactory.getInstance().buildMindmapsGraph();
-        try {
+            LOG.info("[ Loading new ontology .. ]");
 
             List<String> lines = Files.readAllLines(Paths.get(ontologyFile), StandardCharsets.UTF_8);
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-            QueryParser.create(mindmapsGraph).parseInsertQuery(query).execute();
-            mindmapsGraph.commit();
+            QueryParser.create(transaction).parseInsertQuery(query).execute();
+            transaction.commit();
 
-            System.out.println("=============  ONTOLOGY LOADED ==============");
+            LOG.info("[ Ontology loaded. ]");
         } catch (Exception e) {
             e.printStackTrace();
         }

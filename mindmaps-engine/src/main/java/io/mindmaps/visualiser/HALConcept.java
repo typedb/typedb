@@ -21,6 +21,7 @@ package io.mindmaps.visualiser;
 import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
+import io.mindmaps.util.ConfigProperties;
 import io.mindmaps.core.model.*;
 
 
@@ -30,13 +31,17 @@ public class HALConcept {
 
     Representation halResource;
 
+    String resourceLinkPrefix;
+
 
     public HALConcept(Concept concept) {
 
-        int separationDegrees = 1; // read from config
+
+        int separationDegrees = Integer.parseInt(ConfigProperties.getInstance().getProperty(ConfigProperties.HAL_DEGREE_PROPERTY));
+        resourceLinkPrefix=ConfigProperties.HAL_RESOURCE_PREFIX;
 
         factory = new StandardRepresentationFactory();
-        halResource = factory.newRepresentation("http://mindmapsengine.com/concept/" + concept.getId());
+        halResource = factory.newRepresentation(resourceLinkPrefix + concept.getId());
 
         generateState(halResource, concept);
         if (concept.isEntity()) {
@@ -48,7 +53,7 @@ public class HALConcept {
             generateRelationEmbedded(halResource, concept.asRelation());
         }
         if (concept.isType()) {
-            generateTypeEmbedded(halResource,concept.asType());
+            generateTypeEmbedded(halResource, concept.asType());
         }
 
 
@@ -85,12 +90,12 @@ public class HALConcept {
         for (Relation rel : concept.asInstance().relations()) {
             final String[] rolePlayedByCurrentConcept = {""};
 
-            Representation relationResource = factory.newRepresentation("http://mindmapsengine.com/relation/" + rel.getId());
+            Representation relationResource = factory.newRepresentation(resourceLinkPrefix + rel.getId());
             generateState(relationResource, rel);
 
             if (!isRelationToResource(rel)) {
                 rel.rolePlayers().forEach((roleType, instance) -> {
-                    Representation roleResource = factory.newRepresentation("http://mindmapsengine.com/concept/" + instance.getId());
+                    Representation roleResource = factory.newRepresentation(resourceLinkPrefix + instance.getId());
                     HALConcept.this.generateState(roleResource, instance);
                     if (instance.getId().equals(concept.getId())) rolePlayedByCurrentConcept[0] = roleType.getId();
                     relationResource.withRepresentation(instance.getId(), roleResource);
@@ -116,7 +121,7 @@ public class HALConcept {
     private void generateRelationEmbedded(Representation halResource, Relation rel) {
 
         rel.rolePlayers().forEach((roleType, instance) -> {
-            Representation roleResource = factory.newRepresentation("http://mindmapsengine.com/concept/" + instance.getId());
+            Representation roleResource = factory.newRepresentation(resourceLinkPrefix + instance.getId());
             generateState(roleResource, instance);
             halResource.withRepresentation(roleType.getId(), roleResource);
         });
@@ -127,7 +132,7 @@ public class HALConcept {
     private void generateTypeEmbedded(Representation halResource, Type type) {
 
         type.instances().forEach(instance -> {
-            Representation roleResource = factory.newRepresentation("http://mindmapsengine.com/concept/" + instance.getId());
+            Representation roleResource = factory.newRepresentation(resourceLinkPrefix + instance.getId());
             generateState(roleResource, instance);
             halResource.withRepresentation(instance.getId(), roleResource);
         });

@@ -16,17 +16,26 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.core;
+package io.mindmaps.postprocessing;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Cache {
     private final ConcurrentHashMap<String, ConcurrentHashMap<String, Set<String>>> castingsToPostProcess;
     private final ConcurrentHashMap<String, Set<String>> assertionsToPostProcess;
     private final AtomicBoolean saveInProgress;
+    private ExecutorService flushToCache;
+
+    private final Logger LOG = LoggerFactory.getLogger(Cache.class);
+
 
     private static Cache instance=null;
 
@@ -39,6 +48,7 @@ public class Cache {
         castingsToPostProcess = new ConcurrentHashMap<>();
         assertionsToPostProcess = new ConcurrentHashMap<>();
         saveInProgress = new AtomicBoolean(false);
+        flushToCache = Executors.newFixedThreadPool(10);
     }
 
     public boolean isSaveInProgress() {
@@ -71,6 +81,31 @@ public class Cache {
 
     public void deleteJobAssertion(String type, String key) {
         getAssertionJobs().get(type).remove(key);
+    }
+
+    private void writeNewJobsToCache(Map<String, Map<String, Set<String>>> futureCastingJobs, Map<String, Set<String>> futureAssertionJobs) {
+        LOG.info("Updating casting jobs . . .");
+        for (Map.Entry<String, Map<String, Set<String>>> entry : futureCastingJobs.entrySet()) {
+            String type = entry.getKey();
+            for (Map.Entry<String, Set<String>> innerEntry : entry.getValue().entrySet()) {
+                String key = innerEntry.getKey();
+                for (String value : innerEntry.getValue()) {
+                    addJobCasting(type, key, value);
+                }
+            }
+        }
+
+        LOG.info("Updating assertion jobs . . .");
+        for (Map.Entry<String, Set<String>> entry : futureAssertionJobs.entrySet()) {
+            String type = entry.getKey();
+            for (String value : entry.getValue()) {
+                addJobAssertion(type, value);
+            }
+        }
+    }
+
+    public void addCacheJob(Map<String, Map<String, Set<String>>> modifiedCastingIds,Map<String, Set<String>> modifiedRelationIds){
+        flushToCache.submit(() -> writeNewJobsToCache(modifiedCastingIds, modifiedRelationIds));
     }
 
 }
