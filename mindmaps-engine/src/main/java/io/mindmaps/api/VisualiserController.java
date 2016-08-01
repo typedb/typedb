@@ -19,8 +19,10 @@
 package io.mindmaps.api;
 
 import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.model.Concept;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.util.ConfigProperties;
+import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.RESTUtil;
 import io.mindmaps.visualiser.HALConcept;
 import spark.Request;
@@ -43,7 +45,9 @@ public class VisualiserController {
     }
 
     private String getConceptsByValue(Request req, Response res) {
-        // Implement HAL builder for concepts retrieved by Value
+
+        // TODO: Implement HAL builder for concepts retrieved by Value
+
         GraphFactory.getInstance().getGraph(defaultGraphName).newTransaction().getConceptsByValue(req.queryParams(RESTUtil.Request.VALUE_FIELD));
         return req.queryParams(RESTUtil.Request.VALUE_FIELD);
     }
@@ -52,11 +56,12 @@ public class VisualiserController {
 
         MindmapsTransaction transaction = GraphFactory.getInstance().getGraph(defaultGraphName).newTransaction();
 
-        if (transaction.getConcept(req.params(RESTUtil.Request.ID_PARAMETER)) != null)
-            return new HALConcept(transaction.getConcept(req.params(RESTUtil.Request.ID_PARAMETER))).render();
+        Concept concept = transaction.getConcept(req.params(RESTUtil.Request.ID_PARAMETER));
+        if (concept != null)
+            return new HALConcept(concept).render();
         else {
             res.status(404);
-            return "ID not found in the graph.";
+            return ErrorMessage.CONCEPT_ID_NOT_FOUND.getMessage(req.params(RESTUtil.Request.ID_PARAMETER));
         }
     }
 

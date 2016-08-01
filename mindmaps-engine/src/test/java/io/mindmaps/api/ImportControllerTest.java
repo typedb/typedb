@@ -1,5 +1,6 @@
 package io.mindmaps.api;
 
+import io.mindmaps.core.exceptions.MindmapsValidationException;
 import io.mindmaps.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
 import org.junit.After;
@@ -10,6 +11,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Properties;
 
 public class ImportControllerTest {
@@ -35,9 +37,19 @@ public class ImportControllerTest {
         logger.setLevel(Level.INFO);
         ClassLoader classLoader = getClass().getClassLoader();
         File file = new File(classLoader.getResource("dblp-ontology.gql").getFile());
-        importer.loadOntologyFromFile(file.getAbsolutePath());
+        try {
+            importer.importOntologyFromFile(file.getAbsolutePath());
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (MindmapsValidationException e) {
+            e.printStackTrace();
+        }
         File fileData= new File(classLoader.getResource("small_nametags.gql").getFile());
-        importer.importDataFromFile(fileData.getAbsolutePath());
+        try {
+            importer.importDataFromFile(fileData.getAbsolutePath());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         Assert.assertNotNull(GraphFactory.getInstance().getGraph(graphName).newTransaction().getConcept("X546f736869616b69204b61776173616b69").getId());
     }
 

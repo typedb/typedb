@@ -20,6 +20,7 @@ package io.mindmaps.api;
 
 
 import io.mindmaps.util.ConfigProperties;
+import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.RESTUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,8 +49,9 @@ public class GraphFactoryController {
             try {
                 return new String(Files.readAllBytes(Paths.get(graphConfig)));
             } catch (IOException e) {
-                LOG.error("Cannot find config file [" + graphConfig + "]", e);
-                throw new IOException("Cannot find config file [" + graphConfig + "]");
+                LOG.error(ErrorMessage.NO_CONFIG_FILE.getMessage(graphConfig));
+                res.status(500);
+                return ErrorMessage.NO_CONFIG_FILE.getMessage(graphConfig);
             }
         });
 

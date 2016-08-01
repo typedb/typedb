@@ -25,10 +25,13 @@ import io.mindmaps.graql.api.query.QueryBuilder;
 import io.mindmaps.graql.api.query.Var;
 import io.mindmaps.postprocessing.Cache;
 import io.mindmaps.util.ConfigProperties;
+import io.mindmaps.util.ErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
@@ -44,18 +47,18 @@ public class BlockingLoader {
     private int batchSize;
     private static Semaphore transactionsSemaphore;
     private static int repeatCommits;
+    private int numThreads;
     private String graphName;
+
 
     public BlockingLoader(String graphNameInit) {
 
         ConfigProperties prop = ConfigProperties.getInstance();
-
-        int numThreads = prop.getPropertyAsInt(ConfigProperties.NUM_THREADS_PROPERTY);
+        numThreads = prop.getPropertyAsInt(ConfigProperties.NUM_THREADS_PROPERTY);
         batchSize = prop.getPropertyAsInt(ConfigProperties.BATCH_SIZE_PROPERTY);
         repeatCommits = prop.getPropertyAsInt(ConfigProperties.LOADER_REPEAT_COMMITS);
         graphName = graphNameInit;
         cache = Cache.getInstance();
-
         executor = Executors.newFixedThreadPool(numThreads);
         transactionsSemaphore = new Semaphore(numThreads * 3);
         batch = new HashSet<>();
@@ -73,7 +76,13 @@ public class BlockingLoader {
     private void submitToExecutor(Collection<Var> vars) {
         try {
             transactionsSemaphore.acquire();
-            executor.submit(() -> loadData(graphName, vars));
+            executor.submit(() -> {
+                try {
+                    loadData(graphName, vars);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -85,65 +94,59 @@ public class BlockingLoader {
 
     public void waitToFinish() {
         if (batch.size() > 0) {
-            executor.submit(() -> loadData(graphName, batch));
+            executor.submit(() -> {
+                try {
+                    loadData(graphName, batch);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
         }
         try {
             executor.shutdown();
             executor.awaitTermination(5, TimeUnit.MINUTES);
-            System.out.println("All tasks submitted, waiting for termination..");
+            LOG.info("All tasks submitted, waiting for termination..");
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         } finally {
-            System.out.println("ALL TASKS DONE!");
-            executor = Executors.newFixedThreadPool(50);
+            LOG.info("ALL TASKS DONE!");
+            executor = Executors.newFixedThreadPool(numThreads);
         }
     }
 
-    private List<String> loadData(String name, Collection<Var> batch) {
-        List<String> errors = new ArrayList<>();
+    private void loadData(String name, Collection<Var> batch) throws MindmapsValidationException {
 
         for (int i = 0; i < repeatCommits; i++) {
             MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) GraphFactory.getInstance().getGraphBatchLoading(name).newTransaction();
             try {
 
                 QueryBuilder.build(transaction).insert(batch).execute();
-
-                if (Thread.currentThread().isInterrupted()) {
-                    errors.add("Transaction cancelled");
-                    return errors;
-                }
-
                 transaction.commit();
-
-                if (errors.isEmpty()) {
-                    cache.addCacheJob(transaction.getModifiedCastingIds(), transaction.getModifiedRelationIds());
-                }
-
+                cache.addCacheJob(transaction.getModifiedCastingIds(), transaction.getModifiedRelationIds());
                 transactionsSemaphore.release();
-                return errors; //Is empty if no errors found
 
             } catch (MindmapsValidationException e) {
                 //If it's a validation exception there is no point in re-trying
-                System.out.println("Caught exception during validation" + e.getMessage());
-
+                LOG.error(ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));
                 transactionsSemaphore.release();
-                return errors;
+                throw e;
             } catch (Exception e) {
                 //If it's not a validation exception we need to remain in the for loop
                 handleError(e, 1);
             } finally {
                 try {
                     transaction.close();
+                    return;
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         }
 
-        //If we reach this point it means the transaction failed repeatCommits times
         transactionsSemaphore.release();
-        errors.add("Could not commit to graph after " + repeatCommits + " retries");
-        return errors;
+        LOG.error(ErrorMessage.FAILED_TRANSACTION.getMessage(repeatCommits));
+
+        // instead of throwing exceptions, maybe a logfile with all the failed transactions? throwing exception blocks all the loading
     }
 
     private void handleError(Exception e, int i) {

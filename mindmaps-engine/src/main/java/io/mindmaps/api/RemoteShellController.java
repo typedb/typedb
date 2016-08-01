@@ -68,7 +68,7 @@ public class RemoteShellController {
 
         QueryParser parser = QueryParser.create(GraphFactory.getInstance().getGraph(graphName).newTransaction());
 
-        LOG.info("[ Received match query: \"" + req.queryParams(RESTUtil.Request.QUERY_FIELD) + "\"]");
+        LOG.info("Received match query: \"" + req.queryParams(RESTUtil.Request.QUERY_FIELD) + "\"");
 
         try {
             return parser.parseMatchQuery(req.queryParams(RESTUtil.Request.QUERY_FIELD))

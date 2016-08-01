@@ -18,13 +18,16 @@
 
 package io.mindmaps.api;
 
-import io.mindmaps.util.ConfigProperties;
 import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.exceptions.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.api.parser.QueryParser;
 import io.mindmaps.graql.api.query.Var;
 import io.mindmaps.loader.BlockingLoader;
+import io.mindmaps.util.ConfigProperties;
+import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.RESTUtil;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +38,10 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiPredicate;
 
@@ -53,7 +59,7 @@ public class ImportController {
     private int batchSize;
     private String graphName;
 
-    //Use redis for caching LRU
+    //TODO: Use redis for caching LRU
     Map<String, String> entitiesMap;
     ArrayList<Var> relationshipsList;
 
@@ -66,18 +72,33 @@ public class ImportController {
 
     public ImportController(String graphNameInit) {
 
-        // These two functions still block. Create new thread
-
         post(RESTUtil.WebPath.IMPORT_DATA_URI, (req, res) -> {
-            JSONObject bodyObject = new JSONObject(req.body());
-            importDataFromFile(bodyObject.get(RESTUtil.Request.PATH_FIELD).toString());
-            return null;
+            try {
+                JSONObject bodyObject = new JSONObject(req.body());
+                importDataFromFile(bodyObject.get(RESTUtil.Request.PATH_FIELD).toString());
+            } catch (JSONException j) {
+                res.status(400);
+                return j.getMessage();
+            } catch (Exception e) {
+                res.status(500);
+                return e.getMessage();
+            }
+            return "";
         });
 
         post(RESTUtil.WebPath.IMPORT_ONTOLOGY_URI, (req, res) -> {
-            JSONObject bodyObject = new JSONObject(req.body());
-            loadOntologyFromFile(bodyObject.get(RESTUtil.Request.PATH_FIELD).toString());
-            return null;
+            try {
+                JSONObject bodyObject = new JSONObject(req.body());
+                importOntologyFromFile(bodyObject.get(RESTUtil.Request.PATH_FIELD).toString());
+            } catch (JSONException j) {
+                res.status(400);
+                return j.getMessage();
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.status(500);
+                return e.getMessage();
+            }
+            return "";
         });
 
         entitiesMap = new ConcurrentHashMap<>();
@@ -88,19 +109,15 @@ public class ImportController {
 
     }
 
-    public void importDataFromFile(String dataFile) {
-        try {
-            scanFile(this::parseEntity, dataFile);
-            loader.waitToFinish();
-            scanFile(this::parseRelation, dataFile);
-            loader.waitToFinish();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public void importDataFromFile(String dataFile) throws IOException {
+        scanFile(this::parseEntity, dataFile);
+        loader.waitToFinish();
+        scanFile(this::parseRelation, dataFile);
+        loader.waitToFinish();
     }
 
 
-    private void scanFile(BiPredicate<String, List<Var>> parser, String dataFile) throws IOException {
+    private void scanFile(BiPredicate<String, List<Var>> parser, String dataFile) throws IOException, IllegalArgumentException {
 
         int i = 0;
         int latestBatchNumber = 0;
@@ -108,8 +125,7 @@ public class ImportController {
         List<Var> currentVarsBatch = new ArrayList<>();
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(new FileInputStream(dataFile)));
 
-        // Instead of reading one line at the time, in the future we will have a
-        // Graql method that given an input stream provides .nextPattern.
+        // TODO: as soon as it is available use Graql method that given an input stream provides .nextPattern.
 
         while ((line = bufferedReader.readLine()) != null) {
             if (line.startsWith("insert")) line = line.substring(6);
@@ -121,7 +137,7 @@ public class ImportController {
             if (i % batchSize == 0 && latestBatchNumber != i) {
                 latestBatchNumber = i;
                 loader.addToQueue(currentVarsBatch);
-                LOG.info("[ New batch:  " + i + " ]");
+                LOG.info("New batch:  " + i);
                 currentVarsBatch = new ArrayList<>();
             }
         }
@@ -130,80 +146,78 @@ public class ImportController {
 
         if (currentVarsBatch.size() > 0) {
             loader.addToQueue(currentVarsBatch);
-            LOG.info("[ New batch:  " + i + " ]");
+            LOG.info("New batch:  " + i);
         }
 
         bufferedReader.close();
     }
 
-    private boolean parseEntity(String command, List<Var> currentVarsBatch) {
-        Var var = null;
+    //TODO: refactor the two following methods
+
+    private boolean parseEntity(String line, List<Var> currentVarsBatch) throws IllegalArgumentException {
+        Var var;
         try {
-            var = (Var) QueryParser.create().parseInsertQuery("insert " + command).admin().getVars().toArray()[0];
-            //catch more precise exception
+            var = (Var) QueryParser.create().parseInsertQuery("insert " + line).admin().getVars().toArray()[0];
         } catch (IllegalArgumentException e) {
-            LOG.error("Exception caused by " + command);
-            e.printStackTrace();
+            LOG.error(ErrorMessage.PARSING_EXCEPTION.getMessage(line));
+            throw e;
         }
 
         if (!entitiesMap.containsKey(var.admin().getName()) && !var.admin().isRelation() && var.admin().getType().isPresent()) {
 
-                if (var.admin().isUserDefinedName()) {
-                    String varId = (var.admin().getId().isPresent()) ? var.admin().getId().get() : UUID.randomUUID().toString();
-                    entitiesMap.put(var.admin().getName(), varId); // add check for var name.
-                    currentVarsBatch.add(var.admin().id(varId));
-                } else {
-                    currentVarsBatch.add(var);
-                }
-
-                return true;
+            if (var.admin().isUserDefinedName()) {
+                String varId = (var.admin().getId().isPresent()) ? var.admin().getId().get() : UUID.randomUUID().toString();
+                entitiesMap.put(var.admin().getName(), varId); // add check for var name.
+                currentVarsBatch.add(var.admin().id(varId));
+            } else {
+                currentVarsBatch.add(var);
             }
+
+            return true;
+        }
         return false;
     }
 
-    private boolean parseRelation(String command, List<Var> currentVarsBatch) {
+    private boolean parseRelation(String line, List<Var> currentVarsBatch) throws IllegalArgumentException {
         // if both role players have id in the cache then substitute the var to var().id(map.get(variable))
+        Var var;
         try {
-            Var var = (Var) QueryParser.create().parseInsertQuery("insert " + command).admin().getVars().toArray()[0];
-            boolean ready = false;
-            if (var.admin().isRelation()) {
-                ready = true;
+            var = (Var) QueryParser.create().parseInsertQuery("insert " + line).admin().getVars().toArray()[0];
+        } catch (IllegalArgumentException e) {
+            LOG.error(ErrorMessage.PARSING_EXCEPTION.getMessage(line));
+            throw e;
+        }
 
-                for (Var.Casting x : var.admin().getCastings()) {
-                    if (!x.getRolePlayer().admin().isUserDefinedName())
-                        continue; ///aaahhh very ugly
+        boolean ready = false;
+        if (var.admin().isRelation()) {
+            ready = true;
+
+            for (Var.Casting x : var.admin().getCastings()) {
+                if (x.getRolePlayer().admin().isUserDefinedName()) {
                     if (entitiesMap.containsKey(x.getRolePlayer().getName()))
                         x.getRolePlayer().id(entitiesMap.get(x.getRolePlayer().getName()));
                     else
-                        return false; /// aaahhhhhh
+                        return false;
                 }
-                currentVarsBatch.add(var);
             }
-            return ready;
-            //fix execption
-        } catch (Exception e) {
-            LOG.error("Exception caused by " + command);
-            e.printStackTrace();
-            return false;
+            currentVarsBatch.add(var);
         }
+        return ready;
 
     }
 
-    public void loadOntologyFromFile(String ontologyFile) {
+    public void importOntologyFromFile(String ontologyFile) throws IOException, MindmapsValidationException{
 
         MindmapsTransaction transaction = GraphFactory.getInstance().getGraph(graphName).newTransaction();
 
-        try {
-            LOG.info("[ Loading new ontology .. ]");
+        LOG.info("Loading new ontology .. ");
 
-            List<String> lines = Files.readAllLines(Paths.get(ontologyFile), StandardCharsets.UTF_8);
-            String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-            QueryParser.create(transaction).parseInsertQuery(query).execute();
-            transaction.commit();
+        List<String> lines = Files.readAllLines(Paths.get(ontologyFile), StandardCharsets.UTF_8);
+        String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
+        QueryParser.create(transaction).parseInsertQuery(query).execute();
+        transaction.commit();
 
-            LOG.info("[ Ontology loaded. ]");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        LOG.info("Ontology loaded. ");
+
     }
 }
