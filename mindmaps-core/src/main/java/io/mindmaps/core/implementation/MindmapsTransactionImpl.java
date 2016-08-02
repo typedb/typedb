@@ -24,6 +24,7 @@ import io.mindmaps.core.exceptions.*;
 import io.mindmaps.core.model.*;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
@@ -110,7 +111,8 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
     }
 
     public GraphTraversalSource getTinkerTraversal(){
-        return getTinkerPopGraph().traversal();
+        ReadOnlyStrategy readOnlyStrategy = ReadOnlyStrategy.instance();
+        return getTinkerPopGraph().traversal().asBuilder().with(readOnlyStrategy).create(getTinkerPopGraph());
     }
 
     protected void setTinkerPopGraph(Graph graph){
