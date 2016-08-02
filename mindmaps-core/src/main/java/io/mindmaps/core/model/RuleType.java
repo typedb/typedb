@@ -20,16 +20,78 @@ package io.mindmaps.core.model;
 
 import java.util.Collection;
 
+/**
+ * An ontological element used to define different types of rule.
+ * Currently supported rules include Constraint Rules and Inference Rules.
+ */
 public interface RuleType extends Type {
     //---- Inherited Methods
+
+    /**
+     *
+     * @param id The new unique id of the concept.
+     * @return The Rule Type itself
+     */
     RuleType setId(String id);
+
+    /**
+     *
+     * @param subject The new unique subject of the concept.
+     * @return The Rule Type itself
+     */
     RuleType setSubject(String subject);
+
+    /**
+     *
+     * @param value The String value to store in the type
+     * @return The Rule Type itself
+     */
     RuleType setValue(String value);
+
+    /**
+     *
+     * @param isAbstract  Specifies if the concept is abstract (true) or not (false).
+     *                    If the concept type is abstract it is not allowed to have any instances.
+     * @return The Rule Type itself
+     */
     RuleType setAbstract(Boolean isAbstract);
+
+    /**
+     *
+     * @return The super type of this Rule Type
+     */
     RuleType superType();
+
+    /**
+     *
+     * @param type The super type of this Rule Type
+     * @return The Rule Type itself
+     */
     RuleType superType(RuleType type);
+
+    /**
+     *
+     * @return All the sub types of this rule type
+     */
     Collection<RuleType> subTypes();
+
+    /**
+     *
+     * @param roleType The Role Type which the instances of this Type are allowed to play.
+     * @return The Rule Type itself
+     */
     RuleType playsRole(RoleType roleType);
+
+    /**
+     *
+     * @param roleType The Role Type which the instances of this Type should no longer be allowed to play.
+     * @return The Rule Type itself
+     */
     RuleType deletePlaysRole(RoleType roleType);
+
+    /**
+     *
+     * @return All the rule instances of this Rule Type.
+     */
     Collection<Rule> instances();
 }

@@ -20,6 +20,10 @@ package io.mindmaps.core.exceptions;
 
 import io.mindmaps.core.model.Concept;
 
+/**
+ * This exception is thrown when attempting to incorrectly cast a concept to something it is not.
+ * For example when
+ */
 public class InvalidConceptTypeException extends ConceptException {
     public InvalidConceptTypeException(Concept c, Class type) {
         super(ErrorMessage.INVALID_OBJECT_TYPE.getMessage(c.toString(), type.getName()));

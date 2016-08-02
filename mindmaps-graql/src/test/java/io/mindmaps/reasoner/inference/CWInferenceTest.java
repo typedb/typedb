@@ -30,6 +30,7 @@ import io.mindmaps.reasoner.graphs.CWGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static io.mindmaps.reasoner.internal.Utility.printMatchQueryResults;
 import static org.junit.Assert.assertEquals;
 
 
@@ -52,16 +53,57 @@ public class CWInferenceTest {
     }
 
     @Test
+    public void testWeapon() {
+        String queryString = "match $x isa weapon";
+        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery expandedQuery = reasoner.expandQuery(query);
+        printMatchQuery(expandedQuery);
+        printMatchQueryResults(expandedQuery.distinct());
+
+        String explicitQuery = "match \n" +
+                "{$x isa weapon} or {\n" +
+                "{{$x isa missile} or {$x isa rocket;$x has propulsion 'gsp';}} or {$x isa rocket;$x has propulsion 'gsp';}\n" +
+                "}";
+
+        assertQueriesEqual(expandedQuery, qp.parseMatchQuery(explicitQuery).getMatchQuery());
+    }
+
+    @Test
     public void testTransactionQuery() {
         String queryString = "match" +
-                       "$x isa person;\n" +
-                        "$z isa country;\n" +
-                        "$y isa weapon;\n" +
+                "$x isa person;\n" +
+                "$z isa country;\n" +
+                "($x, $y, $z) isa transaction";
+        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery expandedQuery = reasoner.expandQuery(query);
+        printMatchQuery(expandedQuery);
+        printMatchQueryResults(expandedQuery.distinct());
+
+        String explicitQuery = "match \n" +
+                "$x isa person;\n" +
+                "$z isa country;\n" +
+                "{($x, $y, $z) isa transaction} or {\n" +
+                "$x isa person;\n" +
+                "$z isa country;\n" +
+                "{{$y isa weapon} or {\n" +
+                "{{$y isa missile} or {$y isa rocket;$y has propulsion 'gsp';}} or {$y isa rocket;$y has propulsion 'gsp';};\n" +
+                "}} or {{$y isa missile} or {$y isa rocket;$y has propulsion 'gsp';};};\n" +
+                "($x, $z) isa is-paid-by;\n" +
+                "($z, $y) isa owns\n" +
+                "}";
+
+        assertQueriesEqual(expandedQuery, qp.parseMatchQuery(explicitQuery).getMatchQuery());
+    }
+
+    @Test
+    public void testTransactionQuery2() {
+        String queryString = "match" +
+                       "$x isa person;$z isa country;$y isa weapon;\n" +
                         "($x, $y, $z) isa transaction";
         MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQuery expandedQuery = reasoner.expandQuery(query);
         printMatchQuery(expandedQuery);
-        reasoner.printMatchQueryResults(expandedQuery.distinct());
+        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match \n" +
                 "$x isa person;\n" +
@@ -90,8 +132,7 @@ public class CWInferenceTest {
         MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQuery expandedQuery = reasoner.expandQuery(query);
         printMatchQuery(expandedQuery);
-
-        reasoner.printMatchQueryResults(expandedQuery.distinct());
+        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match " +
                 "{$x isa criminal} or {" +
@@ -124,7 +165,7 @@ public class CWInferenceTest {
         MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQuery expandedQuery = reasoner.expandQuery(query);
 
-        reasoner.printMatchQueryResults(expandedQuery.distinct());
+        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match " +
             "{{$x isa criminal} or {$x has nationality 'American';\n" +
@@ -158,7 +199,7 @@ public class CWInferenceTest {
 
         Type region = graph.putEntityType("region").setValue("region");
 
-        String R6_LHS = "match x isa region";
+        String R6_LHS = "match $x isa region";
         String R6_RHS = "match $x isa country";
 
         R6.setLHS(R6_LHS);
@@ -170,7 +211,7 @@ public class CWInferenceTest {
         MatchQuery expandedQuery = reasoner.expandQuery(query);
         printMatchQuery(expandedQuery);
 
-        reasoner.printMatchQueryResults(expandedQuery.distinct());
+        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match " +
                 "{$x isa criminal} or {\n" +

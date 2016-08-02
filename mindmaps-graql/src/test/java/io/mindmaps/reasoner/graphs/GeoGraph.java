@@ -33,7 +33,7 @@ public class GeoGraph {
     private static EntityType university, city, region, country, continent, geographicalObject;
     private static RelationType hasResource, isLocatedIn;
 
-    private static RoleType geoEntity, location;
+    private static RoleType geoEntity, entityLocation;
     private static RoleType hasResourceTarget, hasResourceValue;
 
     private static Instance Europe, NorthAmerica;
@@ -74,21 +74,21 @@ public class GeoGraph {
                 .hasRole(hasResourceTarget).hasRole(hasResourceValue);
 
 
-        geoEntity = mindmaps.putRoleType("geoEntity");
-        location = mindmaps.putRoleType("location");
-        isLocatedIn = mindmaps.putRelationType("isLocatedIn")
-                .hasRole(geoEntity).hasRole(location);
+        geoEntity = mindmaps.putRoleType("geo-entity");
+        entityLocation = mindmaps.putRoleType("entity-location");
+        isLocatedIn = mindmaps.putRelationType("is-located-in")
+                .hasRole(geoEntity).hasRole(entityLocation);
 
         geographicalObject = mindmaps.putEntityType("geoObject").setValue("geoObject");
 
         continent = mindmaps.putEntityType("continent").setValue("continent").superType(geographicalObject)
-                    .playsRole(location);
+                    .playsRole(entityLocation);
         country = mindmaps.putEntityType("country").setValue("country").superType(geographicalObject)
-                .playsRole(geoEntity).playsRole(location);
+                .playsRole(geoEntity).playsRole(entityLocation);
         region = mindmaps.putEntityType("region").setValue("region").superType(geographicalObject)
-                .playsRole(geoEntity).playsRole(location);
+                .playsRole(geoEntity).playsRole(entityLocation);
         city = mindmaps.putEntityType("city").setValue("city").superType(geographicalObject)
-                .playsRole(geoEntity).playsRole(location);
+                .playsRole(geoEntity).playsRole(entityLocation);
         university = mindmaps.putEntityType("university").setValue("university")
                         .playsRole(geoEntity);
 
@@ -131,74 +131,74 @@ public class GeoGraph {
 
         mindmaps.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, PW)
-                .putRolePlayer(location, Warsaw);
+                .putRolePlayer(entityLocation, Warsaw);
         mindmaps.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, UW)
-                .putRolePlayer(location, Warsaw);
+                .putRolePlayer(entityLocation, Warsaw);
         mindmaps.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Imperial)
-                .putRolePlayer(location, London);
+                .putRolePlayer(entityLocation, London);
         mindmaps.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, UCL)
-                .putRolePlayer(location, London);
+                .putRolePlayer(entityLocation, London);
 
         mindmaps.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Warsaw)
-                .putRolePlayer(location, Masovia);
+                .putRolePlayer(entityLocation, Masovia);
         mindmaps.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Masovia)
-                .putRolePlayer(location, Poland);
+                .putRolePlayer(entityLocation, Poland);
         mindmaps.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Wroclaw)
-                .putRolePlayer(location, Silesia);
+                .putRolePlayer(entityLocation, Silesia);
         mindmaps.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Silesia)
-                .putRolePlayer(location, Poland);
+                .putRolePlayer(entityLocation, Poland);
         mindmaps.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Poland)
-                .putRolePlayer(location, Europe);
+                .putRolePlayer(entityLocation, Europe);
 
 
 
         mindmaps.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, London)
-                .putRolePlayer(location, GreaterLondon);
+                .putRolePlayer(entityLocation, GreaterLondon);
         mindmaps.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, GreaterLondon)
-                .putRolePlayer(location, England);
+                .putRolePlayer(entityLocation, England);
         mindmaps.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, England)
-                .putRolePlayer(location, Europe);
+                .putRolePlayer(entityLocation, Europe);
 
         mindmaps.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Munich)
-                .putRolePlayer(location, Bavaria);
+                .putRolePlayer(entityLocation, Bavaria);
         mindmaps.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Bavaria)
-                .putRolePlayer(location, Germany);
+                .putRolePlayer(entityLocation, Germany);
         mindmaps.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Germany)
-                .putRolePlayer(location, Europe);
+                .putRolePlayer(entityLocation, Europe);
 
         mindmaps.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Milan)
-                .putRolePlayer(location, Lombardy);
+                .putRolePlayer(entityLocation, Lombardy);
         mindmaps.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Lombardy)
-                .putRolePlayer(location, Italy);
+                .putRolePlayer(entityLocation, Italy);
         mindmaps.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Italy)
-                .putRolePlayer(location, Europe);
+                .putRolePlayer(entityLocation, Europe);
 
         mindmaps.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Paris)
-                .putRolePlayer(location, IleDeFrance);
+                .putRolePlayer(entityLocation, IleDeFrance);
         mindmaps.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, IleDeFrance)
-                .putRolePlayer(location, France);
+                .putRolePlayer(entityLocation, France);
         mindmaps.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, France)
-                .putRolePlayer(location, Europe);
+                .putRolePlayer(entityLocation, Europe);
 
     }
     private static void buildRules() {
@@ -208,11 +208,11 @@ public class GeoGraph {
         Rule transitivity = mindmaps.putRule("transitivity", inferenceRule);
 
         String transitivity_LHS = "match " +
-                "($x, $y) isa isLocatedIn;\n" +
-                "($y, $z) isa isLocatedIn; select $x, $z";
+                "(geo-entity $x, entity-location $y) isa is-located-in;\n" +
+                "(geo-entity $y, entity-location $z) isa is-located-in; select $x, $z";
 
         String transitivity_RHS = "match " +
-                "($x, $z) isa isLocatedIn select $x, $z";
+                "(geo-entity $x, entity-location $z) isa is-located-in select $x, $z";
 
         transitivity.setLHS(transitivity_LHS);
         transitivity.setRHS(transitivity_RHS);

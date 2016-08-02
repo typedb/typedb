@@ -29,17 +29,28 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.*;
 
+/**
+ * A relation represents and instance of a relation type which model how different entities relate to one another.
+ */
 class RelationImpl extends InstanceImpl<Relation, RelationType, String> implements Relation {
     RelationImpl(Vertex v, MindmapsTransactionImpl mindmapsGraph) {
         super(v, mindmapsGraph);
     }
 
+    /**
+     *
+     * @return All the castings this relation is connected with
+     */
     public Set<CastingImpl> getMappingCasting() {
         Set<CastingImpl> castings = new HashSet<>();
         getOutgoingNeighbours(DataType.EdgeLabel.CASTING).forEach(casting -> castings.add(getMindmapsTransaction().getElementFactory().buildCasting(casting)));
         return castings;
     }
 
+    /**
+     * Sets the internal hash in order to perform a faster lookup
+     * @param roleMap The roles and their corresponding role players
+     */
     public void setHash(Map<RoleType, Instance> roleMap){
         if(roleMap == null || roleMap.isEmpty())
             setUniqueProperty(DataType.ConceptPropertyUnique.INDEX, "RelationBaseId_" + getBaseIdentifier() + UUID.randomUUID().toString());
@@ -47,6 +58,12 @@ class RelationImpl extends InstanceImpl<Relation, RelationType, String> implemen
             setUniqueProperty(DataType.ConceptPropertyUnique.INDEX, generateNewHash(type(), roleMap));
     }
 
+    /**
+     *
+     * @param relationType The type of this relation
+     * @param roleMap The roles and their corresponding role players
+     * @return A unique hash identifying this relation
+     */
     public static String generateNewHash(RelationType relationType, Map<RoleType, Instance> roleMap){
         SortedSet<RoleType> sortedRoleIds = new TreeSet<>(roleMap.keySet());
         String hash = "RelationType_" + relationType.getId().replace("_", "\\_") + "_Relation";
@@ -61,6 +78,10 @@ class RelationImpl extends InstanceImpl<Relation, RelationType, String> implemen
         return hash;
     }
 
+    /**
+     *
+     * @return A list of all the Instances involved in the relationships and the Role Types which they play.
+     */
     @Override
     public Map<RoleType, Instance> rolePlayers() {
         Set<CastingImpl> castings = getMappingCasting();
@@ -79,6 +100,10 @@ class RelationImpl extends InstanceImpl<Relation, RelationType, String> implemen
         return roleMap;
     }
 
+    /**
+     *
+     * @return A list of the Instances which scope this Relation
+     */
     @Override
     public Set<Instance> scopes() {
         HashSet<Instance> scopes = new HashSet<>();
@@ -86,12 +111,23 @@ class RelationImpl extends InstanceImpl<Relation, RelationType, String> implemen
         return scopes;
     }
 
+    /**
+     *
+     * @param instance A new instance which can scope this Relation
+     * @return The Relation itself
+     */
     @Override
     public Relation scope(Instance instance) {
         putEdge(getMindmapsTransaction().getElementFactory().buildEntity(instance), DataType.EdgeLabel.HAS_SCOPE);
         return this;
     }
 
+    /**
+     * Expands this Relation to include a new role player which is playing a specific role.
+     * @param roleType The role of the new role player.
+     * @param instance The new role player.
+     * @return The Relation itself
+     */
     @Override
     public Relation putRolePlayer(RoleType roleType, Instance instance) {
         if(roleType == null){
@@ -116,6 +152,13 @@ class RelationImpl extends InstanceImpl<Relation, RelationType, String> implemen
             }
         }
     }
+
+    /**
+     * Adds a new role player to this relation
+     * @param roleType The role of the new role player.
+     * @param instance The new role player.
+     * @return The Relation itself
+     */
     private Relation addNewRolePlayer(Map<RoleType, Instance> roleMap, RoleType roleType, Instance instance){
         if(instance != null)
             mindmapsTransaction.putCasting((RoleTypeImpl) roleType, (InstanceImpl) instance, this);
@@ -129,14 +172,20 @@ class RelationImpl extends InstanceImpl<Relation, RelationType, String> implemen
         return this;
     }
 
-
+    /**
+     * @param scope A concept which is currently scoping this concept.
+     * @return The Relation itself
+     */
     @Override
     public Relation deleteScope(Instance scope) throws ConceptException {
         deleteEdgeTo(DataType.EdgeLabel.HAS_SCOPE, getMindmapsTransaction().getElementFactory().buildEntity(scope));
         return this;
     }
 
-    public void cleanUp() throws ConceptException {
+    /**
+     * When a relation is deleted this cleans up any solitary casting and resources.
+     */
+    public void cleanUp() {
         boolean performDeletion = true;
         Collection<Instance> rolePlayers = rolePlayers().values();
 
@@ -158,8 +207,11 @@ class RelationImpl extends InstanceImpl<Relation, RelationType, String> implemen
         }
     }
 
+    /**
+     * Deletes the concept as a Relation
+     */
     @Override
-    public void innerDelete() throws ConceptException {
+    public void innerDelete() {
         scopes().forEach(this::deleteScope);
         Set<CastingImpl> castings = getMappingCasting();
 
@@ -167,7 +219,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType, String> implemen
             InstanceImpl<?, ?, ?> instance = casting.getRolePlayer();
             if(instance != null) {
                 for (EdgeImpl edge : instance.getEdgesOfType(Direction.BOTH, DataType.EdgeLabel.SHORTCUT)) {
-                    if(edge.getEdgePropertyBaseAssertionId().equals(getBaseIdentifier())){
+                    if(edge.getProperty(DataType.EdgeProperty.RELATION_ID).equals(getId())){
                         edge.delete();
                     }
                 }

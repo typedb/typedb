@@ -191,8 +191,18 @@ public class InsertQueryTest {
         assertTrue(qb.match(
                 var("x").id("Pichu").isa("pokemon"),
                 var("y").id("Pikachu").isa("pokemon"),
+                var("z").id("Raichu").isa("pokemon")
+        ).ask().execute());
+
+        assertTrue(qb.match(
+                var("x").id("Pichu").isa("pokemon"),
+                var("y").id("Pikachu").isa("pokemon"),
+                var().rel("evolves-from", "x").rel("evolves-to", "y").isa("evolution")
+        ).ask().execute());
+
+        assertTrue(qb.match(
+                var("y").id("Pikachu").isa("pokemon"),
                 var("z").id("Raichu").isa("pokemon"),
-                var().rel("evolves-from", "x").rel("evolves-to", "y").isa("evolution"),
                 var().rel("evolves-from", "y").rel("evolves-to", "z").isa("evolution")
         ).ask().execute());
     }

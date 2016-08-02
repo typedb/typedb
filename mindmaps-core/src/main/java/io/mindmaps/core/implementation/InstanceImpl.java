@@ -18,7 +18,6 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.core.exceptions.ConceptException;
 import io.mindmaps.core.model.*;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -26,13 +25,22 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * This represents an instance of a Type. It represents data in the graph.
+ * @param <T> The leaf interface of the object model. For example an EntityType, Entity, RelationType etc . . .
+ * @param <V> The type of the concept.
+ * @param <D> The data type of the value in the concept.
+ */
 abstract class InstanceImpl<T extends Instance, V extends Type, D> extends ConceptImpl<T, V, D> implements Instance {
     InstanceImpl(Vertex v, MindmapsTransactionImpl mindmapsGraph) {
         super(v, mindmapsGraph);
     }
 
+    /**
+     * Deletes the concept as an Instance
+     */
     @Override
-    public void innerDelete() throws ConceptException {
+    public void innerDelete() {
         InstanceImpl<?, ?, ?> parent = this;
         Set<CastingImpl> castings = parent.castings();
         deleteNode();
@@ -49,10 +57,18 @@ abstract class InstanceImpl<T extends Instance, V extends Type, D> extends Conce
         }
     }
 
+    /**
+     * This index is used by concepts such as casting and relations to speed up internal lookups
+     * @return The inner index value of some concepts.
+     */
     public String getIndex(){
         return getProperty(DataType.ConceptPropertyUnique.INDEX);
     }
 
+    /**
+     *
+     * @return All the {@link Resource} that this Instance is linked with
+     */
     public Collection<Resource<?>> resources() {
         Set<Resource<?>> resources = new HashSet<>();
         this.getOutgoingNeighbours(DataType.EdgeLabel.SHORTCUT).forEach(concept -> {
@@ -64,6 +80,10 @@ abstract class InstanceImpl<T extends Instance, V extends Type, D> extends Conce
         return resources;
     }
 
+    /**
+     *
+     * @return All the {@link CastingImpl} that this Instance is linked with
+     */
     public Set<CastingImpl> castings(){
         Set<CastingImpl> castings = new HashSet<>();
         getIncomingNeighbours(DataType.EdgeLabel.ROLE_PLAYER).forEach(casting -> {
@@ -72,6 +92,11 @@ abstract class InstanceImpl<T extends Instance, V extends Type, D> extends Conce
         return castings;
     }
 
+    /**
+     *
+     * @param roleTypes An optional parameter which allows you to specify the role of the relations you wish to retrieve.
+     * @return A set of Relations which the concept instance takes part in, optionally constrained by the Role Type.
+     */
     @Override
     public Collection<Relation> relations(RoleType... roleTypes) {
         Set<Relation> relations = new HashSet<>();
@@ -95,6 +120,10 @@ abstract class InstanceImpl<T extends Instance, V extends Type, D> extends Conce
         return relations;
     }
 
+    /**
+     *
+     * @return A set of all the Role Types which this instance plays.
+     */
     @Override
     public Collection<RoleType> playsRoles() {
         Set<RoleType> roleTypes = new HashSet<>();

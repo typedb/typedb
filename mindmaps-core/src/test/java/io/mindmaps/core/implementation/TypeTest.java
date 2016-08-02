@@ -167,7 +167,7 @@ public class TypeTest {
         EntityType child3b2 = mindmapsGraph.putEntityType("3b2");
         EntityType child3b3 = mindmapsGraph.putEntityType("3b3");
 
-        assertEquals(1, ((TypeImpl) parent).getAkoHierarchySubSet().size());
+        assertEquals(1, ((TypeImpl) parent).subTypes().size());
 
         parent.superType(superParent);
         child1.superType(parent);
@@ -179,17 +179,17 @@ public class TypeTest {
         child3b2.superType(child3b);
         child3b3.superType(child3b);
 
-        assertEquals(9, ((TypeImpl) parent).getAkoHierarchySubSet().size());
-        assertTrue(((TypeImpl) parent).getAkoHierarchySubSet().contains(parent));
-        assertTrue(((TypeImpl) parent).getAkoHierarchySubSet().contains(child3));
-        assertTrue(((TypeImpl) parent).getAkoHierarchySubSet().contains(child2));
-        assertTrue(((TypeImpl) parent).getAkoHierarchySubSet().contains(child1));
-        assertTrue(((TypeImpl) parent).getAkoHierarchySubSet().contains(child3a));
-        assertTrue(((TypeImpl) parent).getAkoHierarchySubSet().contains(child3b));
-        assertTrue(((TypeImpl) parent).getAkoHierarchySubSet().contains(child3b1));
-        assertTrue(((TypeImpl) parent).getAkoHierarchySubSet().contains(child3b2));
-        assertTrue(((TypeImpl) parent).getAkoHierarchySubSet().contains(child3b3));
-        assertFalse(((TypeImpl) parent).getAkoHierarchySubSet().contains(superParent));
+        assertEquals(9, ((TypeImpl) parent).subTypes().size());
+        assertTrue(((TypeImpl) parent).subTypes().contains(parent));
+        assertTrue(((TypeImpl) parent).subTypes().contains(child3));
+        assertTrue(((TypeImpl) parent).subTypes().contains(child2));
+        assertTrue(((TypeImpl) parent).subTypes().contains(child1));
+        assertTrue(((TypeImpl) parent).subTypes().contains(child3a));
+        assertTrue(((TypeImpl) parent).subTypes().contains(child3b));
+        assertTrue(((TypeImpl) parent).subTypes().contains(child3b1));
+        assertTrue(((TypeImpl) parent).subTypes().contains(child3b2));
+        assertTrue(((TypeImpl) parent).subTypes().contains(child3b3));
+        assertFalse(((TypeImpl) parent).subTypes().contains(superParent));
 
     }
 

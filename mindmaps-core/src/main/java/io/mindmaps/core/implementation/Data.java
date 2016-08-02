@@ -22,8 +22,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * A class used to hold the supported data types of resources and any other concepts
- * @param <D>
+ * A class used to hold the supported data types of resources and any other concepts.
+ * This is used tp constrain value data types to only those we explicitly support.
+ * @param <D> The data type.
  */
 public class Data<D> {
     public static final Data<String> STRING = new Data<>(String.class.getName(), DataType.ConceptProperty.VALUE_STRING);

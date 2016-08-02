@@ -20,6 +20,9 @@ package io.mindmaps.core.model;
 
 import java.util.Collection;
 
+/**
+ * A Relation Type is an ontological element used to model how entity types relate to one another.
+ */
 public interface RelationType extends Type {
     //------------------------------------- Accessors ----------------------------------
     /**
@@ -47,14 +50,72 @@ public interface RelationType extends Type {
     RelationType deleteHasRole(RoleType roleType);
 
     //---- Inherited Methods
+
+    /**
+     *
+     * @param id The new unique id of the concept.
+     * @return The Relation Type itself.
+     */
     RelationType setId(String id);
+
+    /**
+     *
+     * @param subject The new unique subject of the concept.
+     * @return The Relation Type itself.
+     */
     RelationType setSubject(String subject);
+
+    /**
+     *
+     * @param value The String value to store in the type
+     * @return The Relation Type itself.
+     */
     RelationType setValue(String value);
+
+    /**
+     *
+     * @param isAbstract  Specifies if the concept is abstract (true) or not (false).
+     *                    If the concept type is abstract it is not allowed to have any instances.
+     * @return The Relation Type itself.
+     */
     RelationType setAbstract(Boolean isAbstract);
+
+    /**
+     *
+     * @return The super type of this Relation Type
+     */
     RelationType superType();
+
+    /**
+     *
+     * @param type The super type of this Relation Type
+     * @return  The Relation Type itself.
+     */
     RelationType superType(RelationType type);
+
+    /**
+     *
+     * @return All the sub types of this Relation Type
+     */
     Collection<RelationType> subTypes();
+
+    /**
+     *
+     * @param roleType The Role Type which the instances of this Type are allowed to play.
+     * @return  The Relation Type itself.
+     */
     RelationType playsRole(RoleType roleType);
+
+    /**
+     *
+     * @param roleType The Role Type which the instances of this Type should no longer be allowed to play.
+     * @return The Relation Type itself.
+     */
     RelationType deletePlaysRole(RoleType roleType);
+
+    /**
+     *
+     * @return All the Relation instances of this relation type
+     */
     Collection<Relation> instances();
 }
