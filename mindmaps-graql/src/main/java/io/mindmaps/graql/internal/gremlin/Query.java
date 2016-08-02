@@ -72,7 +72,7 @@ public class Query {
 
         // Because 'union' accepts an array, we can't use generics...
         //noinspection unchecked
-        return ((MindmapsTransactionImpl) transaction).getTinkerPopGraph().traversal().V().limit(1).union(collect);
+        return ((MindmapsTransactionImpl) transaction).getTinkerTraversal().V().limit(1).union(collect);
     }
 
     /**

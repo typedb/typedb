@@ -23,6 +23,7 @@ import io.mindmaps.core.dao.MindmapsTransaction;
 import io.mindmaps.core.exceptions.*;
 import io.mindmaps.core.model.*;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
@@ -101,17 +102,15 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
         return getMetaType() != null;
     }
 
-    public Graph getTinkerPopGraph(){
+    Graph getTinkerPopGraph(){
         if(graph == null){
             throw new GraphRuntimeException(ErrorMessage.CLOSED.getMessage(this.getClass().getName()));
         }
         return graph;
     }
 
-    @Override
-    public void clearGraph(){
-        getTinkerPopGraph().traversal().V().drop().iterate();
-        initialiseMetaConcepts();
+    public GraphTraversalSource getTinkerTraversal(){
+        return getTinkerPopGraph().traversal();
     }
 
     protected void setTinkerPopGraph(Graph graph){
@@ -128,7 +127,7 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
     }
 
     public ConceptImpl getConcept(DataType.ConceptPropertyUnique key, String value) {
-        Iterator<Vertex> vertices = getTinkerPopGraph().traversal().V().has(key.name(), value);
+        Iterator<Vertex> vertices = getTinkerTraversal().V().has(key.name(), value);
 
         if(vertices.hasNext()){
             Vertex vertex = vertices.next();
@@ -306,7 +305,7 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
         return null;
     }
     public ConceptImpl getConceptByBaseIdentifier(long baseIdentifier) {
-        GraphTraversal<Vertex, Vertex> traversal = getTinkerPopGraph().traversal().V(baseIdentifier);
+        GraphTraversal<Vertex, Vertex> traversal = getTinkerTraversal().V(baseIdentifier);
         if (traversal.hasNext()) {
             return elementFactory.buildUnknownConcept(traversal.next());
         } else {
@@ -359,7 +358,7 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
     private <T extends Concept> HashSet<T> getConceptsByValue(Object value, Class type, Data dataType){
         HashSet<T> concepts = new HashSet<>();
 
-        getTinkerPopGraph().traversal().V().has(dataType.getConceptProperty().name(), value).
+        getTinkerTraversal().V().has(dataType.getConceptProperty().name(), value).
                 forEachRemaining(v -> {
                     T concept = validConceptOfType(elementFactory.buildUnknownConcept(v), type);
                     if (concept != null)
@@ -588,7 +587,7 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
                 assertionToCasting.setProperty(DataType.EdgeProperty.ROLE_TYPE, role.getId());
             }
 
-            getTinkerPopGraph().traversal().V(otherCasting.getBaseIdentifier()).next().remove();
+            getTinkerTraversal().V(otherCasting.getBaseIdentifier()).next().remove();
         }
 
         return mainCasting.getRolePlayer();
@@ -617,7 +616,7 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
 
     private void putShortcutEdge(RelationImpl  relation, RelationTypeImpl  relationType, RoleTypeImpl  fromRole, InstanceImpl fromRolePlayer, RoleTypeImpl  toRole, InstanceImpl toRolePlayer){
         String hash = calculateShortcutHash(relation, relationType, fromRole, fromRolePlayer, toRole, toRolePlayer);
-        boolean exists = getTinkerPopGraph().traversal().V(fromRolePlayer.getBaseIdentifier()).
+        boolean exists = getTinkerTraversal().V(fromRolePlayer.getBaseIdentifier()).
                     local(outE(DataType.EdgeLabel.SHORTCUT.getLabel()).has(DataType.EdgeProperty.SHORTCUT_HASH.name(), hash)).
                     hasNext();
 

@@ -109,10 +109,10 @@ public class RelationTest {
         relation.scope(scope);
         relationValue.scope(scope);
 
-        Vertex vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(relation.getBaseIdentifier()).out(DataType.EdgeLabel.HAS_SCOPE.getLabel()).next();
+        Vertex vertex = mindmapsGraph.getTinkerTraversal().V(relation.getBaseIdentifier()).out(DataType.EdgeLabel.HAS_SCOPE.getLabel()).next();
         assertEquals(scope.getBaseIdentifier(), vertex.id());
 
-        vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(relationValue.getBaseIdentifier()).out(DataType.EdgeLabel.HAS_SCOPE.getLabel()).next();
+        vertex = mindmapsGraph.getTinkerTraversal().V(relationValue.getBaseIdentifier()).out(DataType.EdgeLabel.HAS_SCOPE.getLabel()).next();
         assertEquals(scope.getBaseIdentifier(), vertex.id());
     }
 
@@ -163,7 +163,7 @@ public class RelationTest {
         relation2.scope(scope2);
 
         relation2.deleteScope(scope2);
-        Vertex assertion2_vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(relation2.getBaseIdentifier()).next();
+        Vertex assertion2_vertex = mindmapsGraph.getTinkerTraversal().V(relation2.getBaseIdentifier()).next();
 
         int count = 0;
         Iterator<Edge> edges =  assertion2_vertex.edges(Direction.OUT, DataType.EdgeLabel.HAS_SCOPE.getLabel());
@@ -174,13 +174,13 @@ public class RelationTest {
         assertEquals(2, count);
 
         relation2.deleteScope(scope3);
-        assertTrue(mindmapsGraph.getTinkerPopGraph().traversal().V(scope3.getBaseIdentifier()).hasNext());
+        assertTrue(mindmapsGraph.getTinkerTraversal().V(scope3.getBaseIdentifier()).hasNext());
 
         relation.deleteScope(scope1);
-        assertTrue(mindmapsGraph.getTinkerPopGraph().traversal().V(scope1.getBaseIdentifier()).hasNext());
+        assertTrue(mindmapsGraph.getTinkerTraversal().V(scope1.getBaseIdentifier()).hasNext());
         relation2.deleteScope(scope1);
         relation.deleteScope(scope3);
-        assertFalse(mindmapsGraph.getTinkerPopGraph().traversal().V(relation.getBaseIdentifier()).next().edges(Direction.OUT, DataType.EdgeLabel.HAS_SCOPE.getLabel()).hasNext());
+        assertFalse(mindmapsGraph.getTinkerTraversal().V(relation.getBaseIdentifier()).next().edges(Direction.OUT, DataType.EdgeLabel.HAS_SCOPE.getLabel()).hasNext());
     }
 
     @Test
@@ -191,7 +191,7 @@ public class RelationTest {
         relation.scope(scope2);
 
         relation.scopes().forEach(relation::deleteScope);
-        assertFalse(mindmapsGraph.getTinkerPopGraph().traversal().V(relation.getBaseIdentifier()).next().edges(Direction.OUT, DataType.EdgeLabel.HAS_SCOPE.getLabel()).hasNext());
+        assertFalse(mindmapsGraph.getTinkerTraversal().V(relation.getBaseIdentifier()).next().edges(Direction.OUT, DataType.EdgeLabel.HAS_SCOPE.getLabel()).hasNext());
     }
 
     @Test

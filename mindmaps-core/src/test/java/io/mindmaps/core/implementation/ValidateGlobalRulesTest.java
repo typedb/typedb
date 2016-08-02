@@ -94,11 +94,11 @@ public class ValidateGlobalRulesTest {
             assertTrue(ValidateGlobalRules.validatePlaysRoleStructure(casting));
         }
 
-        mindmapsGraph.getTinkerPopGraph().traversal().V().
+        mindmapsGraph.getTinkerTraversal().V().
                 has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), werewolf.getId()).
                 outE(DataType.EdgeLabel.ISA.getLabel()).next().remove();
-        ((Edge) mindmapsGraph.getTinkerPopGraph().traversal().V(wolf.getBaseIdentifier()).outE(DataType.EdgeLabel.AKO.getLabel()).as("edge").otherV().hasId(creature.getBaseIdentifier()).select("edge").next()).remove();
-        ((Edge) mindmapsGraph.getTinkerPopGraph().traversal().V(creature.getBaseIdentifier()).outE(DataType.EdgeLabel.PLAYS_ROLE.getLabel()).as("edge").otherV().hasId(monster.getBaseIdentifier()).select("edge").next()).remove();
+        ((Edge) mindmapsGraph.getTinkerTraversal().V(wolf.getBaseIdentifier()).outE(DataType.EdgeLabel.AKO.getLabel()).as("edge").otherV().hasId(creature.getBaseIdentifier()).select("edge").next()).remove();
+        ((Edge) mindmapsGraph.getTinkerTraversal().V(creature.getBaseIdentifier()).outE(DataType.EdgeLabel.PLAYS_ROLE.getLabel()).as("edge").otherV().hasId(monster.getBaseIdentifier()).select("edge").next()).remove();
 
         werewolf.type(wolf);
         wolf.type(creature);
@@ -113,13 +113,13 @@ public class ValidateGlobalRulesTest {
         assertFalse(flags[0] && flags[1]);
         assertTrue(flags[0] || flags[1]);
 
-        mindmapsGraph.getTinkerPopGraph().traversal().V().
+        mindmapsGraph.getTinkerTraversal().V().
                 has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), werewolf.getId()).
                 outE(DataType.EdgeLabel.ISA.getLabel()).next().remove();
-        mindmapsGraph.getTinkerPopGraph().traversal().V().
+        mindmapsGraph.getTinkerTraversal().V().
                 has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), wolf.getId()).
                 outE(DataType.EdgeLabel.ISA.getLabel()).next().remove();
-        mindmapsGraph.getTinkerPopGraph().traversal().V().
+        mindmapsGraph.getTinkerTraversal().V().
                 has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), creature.getId()).
                 outE(DataType.EdgeLabel.ISA.getLabel()).next().remove();
 
@@ -132,8 +132,8 @@ public class ValidateGlobalRulesTest {
             assertTrue(ValidateGlobalRules.validatePlaysRoleStructure(casting));
         }
 
-        ((Edge) mindmapsGraph.getTinkerPopGraph().traversal().V(creature.getBaseIdentifier()).outE(DataType.EdgeLabel.PLAYS_ROLE.getLabel()).as("edge").otherV().hasId(monster.getBaseIdentifier()).select("edge").next()).remove();
-        ((Edge) mindmapsGraph.getTinkerPopGraph().traversal().V(hunter.getBaseIdentifier()).outE(DataType.EdgeLabel.PLAYS_ROLE.getLabel()).as("edge").otherV().hasId(witcher.getBaseIdentifier()).select("edge").next()).remove();
+        ((Edge) mindmapsGraph.getTinkerTraversal().V(creature.getBaseIdentifier()).outE(DataType.EdgeLabel.PLAYS_ROLE.getLabel()).as("edge").otherV().hasId(monster.getBaseIdentifier()).select("edge").next()).remove();
+        ((Edge) mindmapsGraph.getTinkerTraversal().V(hunter.getBaseIdentifier()).outE(DataType.EdgeLabel.PLAYS_ROLE.getLabel()).as("edge").otherV().hasId(witcher.getBaseIdentifier()).select("edge").next()).remove();
 
         for (CastingImpl casting : assertion.getMappingCasting()) {
             assertFalse(ValidateGlobalRules.validatePlaysRoleStructure(casting));

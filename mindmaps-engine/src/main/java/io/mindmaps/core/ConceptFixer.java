@@ -51,7 +51,7 @@ class ConceptFixer {
 
     public void deleteDuplicateAssertion(Long assertionId){
         MindmapsTransactionImpl graph = daoFactory.buildMindmapsGraph();
-        graph.getTinkerPopGraph().traversal().V(assertionId).next().remove();
+        graph.getTinkerTraversal().V(assertionId).next().remove();
         commitGraph(graph);
     }
 
@@ -121,7 +121,7 @@ class ConceptFixer {
 
     private boolean commitGraph(MindmapsTransactionImpl graphDAO){
         try {
-            graphDAO.getTinkerPopGraph().tx().commit();
+            graphDAO.commit();
             return true;
         } catch (Exception e){
             LOG.error("Failed to commit postprocessing job", e);

@@ -87,7 +87,7 @@ public class MindmapsTinkerGraphTest {
         });
 
         MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) mindmapsGraph.newTransaction();
-        assertEquals(108, transaction.getTinkerPopGraph().traversal().V().toList().size());
+        assertEquals(108, transaction.getTinkerTraversal().V().toList().size());
     }
     private void addEntityType(MindmapsGraph mindmapsGraph){
         MindmapsTransaction mindmapsTransaction = mindmapsGraph.newTransaction();

@@ -18,7 +18,6 @@
 
 package io.mindmaps.api;
 
-import io.mindmaps.core.exceptions.MindmapsValidationException;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.api.parser.QueryParser;
@@ -183,22 +182,6 @@ public class ImportFromFile {
             return false;
         }
 
-    }
-
-    private void clearGraph() {
-
-        MindmapsTransactionImpl mindmapsGraph = GraphFactory.getInstance().buildMindmapsGraph();
-        System.out.println("=============  ABOUT TO CLEAR THE GRAPH ==============");
-
-        mindmapsGraph.clearGraph();
-
-        try {
-            mindmapsGraph.commit();
-            System.out.println("=============  GRAPH CLEARED ==============");
-
-        } catch (MindmapsValidationException e) {
-            e.printStackTrace();
-        }
     }
 
     public void loadOntology(String ontologyFile) {

@@ -73,7 +73,7 @@ class ConjunctionQuery {
      */
     GraphTraversal<Vertex, Map<String, Vertex>> getTraversal() {
         GraphTraversal<Vertex, Vertex> traversal =
-                ((MindmapsTransactionImpl) transaction).getTinkerPopGraph().traversal().V();
+                ((MindmapsTransactionImpl) transaction).getTinkerTraversal().V();
 
         Set<String> foundNames = new HashSet<>();
 
