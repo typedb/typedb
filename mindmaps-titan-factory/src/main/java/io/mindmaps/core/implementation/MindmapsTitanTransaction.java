@@ -19,7 +19,6 @@
 package io.mindmaps.core.implementation;
 
 import com.thinkaurelius.titan.core.TitanGraph;
-import io.mindmaps.core.dao.MindmapsGraph;
 import io.mindmaps.core.exceptions.MindmapsValidationException;
 
 public class MindmapsTitanTransaction extends MindmapsTransactionImpl {
@@ -63,7 +62,7 @@ public class MindmapsTitanTransaction extends MindmapsTransactionImpl {
     }
 
     @Override
-    public MindmapsGraph getRootGraph() {
+    public MindmapsGraphImpl getRootGraph() {
         return rootGraph;
     }
 }

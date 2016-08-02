@@ -18,7 +18,6 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.core.dao.MindmapsGraph;
 import io.mindmaps.core.exceptions.ErrorMessage;
 import io.mindmaps.core.exceptions.MindmapsValidationException;
 
@@ -69,7 +68,7 @@ public class MindmapsTinkerTransaction extends MindmapsTransactionImpl {
      * @return the root mindmaps graph of the transaction
      */
     @Override
-    public MindmapsGraph getRootGraph() {
+    public MindmapsGraphImpl getRootGraph() {
         return rootGraph;
     }
 }
