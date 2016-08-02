@@ -102,14 +102,14 @@ public class InstanceTest {
                 putRolePlayer(role2, rolePlayer2).
                 putRolePlayer(role3, rolePlayer3);
 
-        assertEquals(20, mindmapsGraph.getTinkerPopGraph().traversal().V().toList().size());
-        assertEquals(35, mindmapsGraph.getTinkerPopGraph().traversal().E().toList().size());
+        assertEquals(20, mindmapsGraph.getTinkerTraversal().V().toList().size());
+        assertEquals(35, mindmapsGraph.getTinkerTraversal().E().toList().size());
 
         rolePlayer1.delete();
 
         assertNull(mindmapsGraph.getConcept("role-player1"));
-        assertEquals(18, mindmapsGraph.getTinkerPopGraph().traversal().V().toList().size());
-        assertEquals(27, mindmapsGraph.getTinkerPopGraph().traversal().E().toList().size());
+        assertEquals(18, mindmapsGraph.getTinkerTraversal().V().toList().size());
+        assertEquals(27, mindmapsGraph.getTinkerTraversal().E().toList().size());
     }
 
     @Test
@@ -129,16 +129,16 @@ public class InstanceTest {
                 putRolePlayer(role2, null).
                 putRolePlayer(role3, null);
 
-        long value = mindmapsGraph.getTinkerPopGraph().traversal().V().count().next();
+        long value = mindmapsGraph.getTinkerTraversal().V().count().next();
         assertEquals(16, value);
-        value = mindmapsGraph.getTinkerPopGraph().traversal().E().count().next();
+        value = mindmapsGraph.getTinkerTraversal().E().count().next();
         assertEquals(21, value);
 
         rolePlayer1.delete();
 
         assertNull(mindmapsGraph.getConcept("role-player1"));
-        assertEquals(13, mindmapsGraph.getTinkerPopGraph().traversal().V().toList().size());
-        assertEquals(16, mindmapsGraph.getTinkerPopGraph().traversal().E().toList().size());
+        assertEquals(13, mindmapsGraph.getTinkerTraversal().V().toList().size());
+        assertEquals(16, mindmapsGraph.getTinkerTraversal().E().toList().size());
     }
 
     @Test

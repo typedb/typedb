@@ -24,9 +24,7 @@ import io.mindmaps.core.exceptions.MindmapsValidationException;
 import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -37,7 +35,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.*;
 
 public class MindmapsTransactionLowLevelTest {
@@ -58,16 +57,11 @@ public class MindmapsTransactionLowLevelTest {
     }
 
     @Test
-    public void testGetGraph(){
-        assertThat(mindmapsGraph.getTinkerPopGraph(), instanceOf(Graph.class));
-    }
-
-    @Test
     public void testPutConcept() throws Exception {
         int numVerticies = 14;
         for(int i = 0; i < numVerticies; i ++)
             mindmapsGraph.putEntityType("c" + i);
-        assertEquals(22, mindmapsGraph.getTinkerPopGraph().traversal().V().toList().size());
+        assertEquals(22, mindmapsGraph.getTinkerTraversal().V().toList().size());
     }
 
     //----------------------------------------------Concept Functionality-----------------------------------------------
@@ -107,14 +101,6 @@ public class MindmapsTransactionLowLevelTest {
     }
 
     @Test
-    public void testSetTinkerPopGrap(){
-        Graph graph1 = mindmapsGraph.getTinkerPopGraph();
-        mindmapsGraph.setTinkerPopGraph(TinkerGraph.open());
-        Graph graph2 = mindmapsGraph.getTinkerPopGraph();
-        assertNotEquals(graph1, graph2);
-    }
-
-    @Test
     public void testMergeCastings(){
         RoleType roleType1 = mindmapsGraph.putRoleType("role 1");
         RoleType roleType2 = mindmapsGraph.putRoleType("role 2");
@@ -132,17 +118,9 @@ public class MindmapsTransactionLowLevelTest {
         Set<Concept> concepts = new HashSet<>();
         castings.forEach(concepts::add);
 
-        assertEquals(4, mindmapsGraph.getTinkerPopGraph().traversal().V().hasLabel(DataType.BaseType.CASTING.name()).toList().size());
+        assertEquals(4, mindmapsGraph.getTinkerTraversal().V().hasLabel(DataType.BaseType.CASTING.name()).toList().size());
         mindmapsGraph.mergeCastings(concepts);
-        assertEquals(1, mindmapsGraph.getTinkerPopGraph().traversal().V().hasLabel(DataType.BaseType.CASTING.name()).toList().size());
-    }
-
-    @Test
-    public void testClearGraph(){
-        mindmapsGraph.putEntityType("Hello");
-        assertEquals(9, mindmapsGraph.getTinkerPopGraph().traversal().V().toList().size());
-        mindmapsGraph.clearGraph();
-        assertEquals(8, mindmapsGraph.getTinkerPopGraph().traversal().V().toList().size());
+        assertEquals(1, mindmapsGraph.getTinkerTraversal().V().hasLabel(DataType.BaseType.CASTING.name()).toList().size());
     }
 
     @Test
@@ -154,12 +132,8 @@ public class MindmapsTransactionLowLevelTest {
 
     @Test(expected=RuntimeException.class)
     public void testTooManyNodesForId() {
-        Graph graph = mindmapsGraph.getTinkerPopGraph();
-        Vertex v1 = graph.addVertex();
-        v1.property(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), "value");
-        Vertex v2 = graph.addVertex();
-        v2.property(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), "value");
         mindmapsGraph.putEntityType("value");
+        mindmapsGraph.putRelationType("value");
     }
 
     @Test
@@ -197,9 +171,9 @@ public class MindmapsTransactionLowLevelTest {
         CastingImpl casting = mindmapsGraph.putCasting(role, rolePlayer, relation);
 
         //Check it
-        Vertex roleVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(role.getBaseIdentifier()).next();
-        Vertex rolePlayerVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(rolePlayer.getBaseIdentifier()).next();
-        Vertex assertionVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(relation.getBaseIdentifier()).next();
+        Vertex roleVertex = mindmapsGraph.getTinkerTraversal().V(role.getBaseIdentifier()).next();
+        Vertex rolePlayerVertex = mindmapsGraph.getTinkerTraversal().V(rolePlayer.getBaseIdentifier()).next();
+        Vertex assertionVertex = mindmapsGraph.getTinkerTraversal().V(relation.getBaseIdentifier()).next();
 
         org.apache.tinkerpop.gremlin.structure.Edge casting_role = roleVertex.edges(Direction.IN).next();
         org.apache.tinkerpop.gremlin.structure.Edge casting_rolePlayer = rolePlayerVertex.edges(Direction.IN).next();
@@ -221,43 +195,6 @@ public class MindmapsTransactionLowLevelTest {
         CastingImpl casting1 = mindmapsGraph.putCasting(role, rolePlayer, relation);
         CastingImpl casting2 = mindmapsGraph.putCasting(role, rolePlayer, relation);
         assertEquals(casting1, casting2);
-    }
-
-    public void makeArtificialCasting(RoleTypeImpl role, InstanceImpl rolePlayer, RelationImpl relation) {
-        String id = "FakeCasting " + UUID.randomUUID();
-        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.CASTING.name());
-        vertex.property(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), id);
-        vertex.property(DataType.ConceptPropertyUnique.INDEX.name(), CastingImpl.generateNewHash(role, rolePlayer));
-
-        CastingImpl casting = (CastingImpl) mindmapsGraph.getConcept(id);
-        EdgeImpl edge = casting.addEdge(role, DataType.EdgeLabel.ISA); // Casting to Role
-        edge.setProperty(DataType.EdgeProperty.ROLE_TYPE, role.getId());
-        edge = casting.addEdge(rolePlayer, DataType.EdgeLabel.ROLE_PLAYER);// Casting to Roleplayer
-        edge.setProperty(DataType.EdgeProperty.ROLE_TYPE, role.getId());
-        relation.addEdge(casting, DataType.EdgeLabel.CASTING);// Assertion to Casting
-    }
-
-    @Test
-    public void testAddCastingLongManyCastingFound() {
-        //Artificially Make First Casting
-        RelationType relationType = mindmapsGraph.putRelationType("RelationType");
-        RoleTypeImpl role = (RoleTypeImpl) mindmapsGraph.putRoleType("role");
-        EntityType thing = mindmapsGraph.putEntityType("thing");
-        InstanceImpl rolePlayer = (InstanceImpl) mindmapsGraph.putEntity("rolePlayer", thing);
-        RelationImpl relation = (RelationImpl) mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType);
-
-        //First Casting
-        makeArtificialCasting(role, rolePlayer, relation);
-
-        //Second Casting Between same entities
-        makeArtificialCasting(role, rolePlayer, relation);
-
-        expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage(allOf(
-                containsString("More than one casting found")
-        ));
-
-        mindmapsGraph.putCasting(role, rolePlayer, relation);
     }
 
     @Test

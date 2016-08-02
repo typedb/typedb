@@ -70,8 +70,8 @@ public class ConceptTest {
         assertNotNull(type1.getEdgeOutgoingOfType(DataType.EdgeLabel.ISA));
 
         type1.type(type2);
-        Vertex vertexType1 = mindmapsGraph.getTinkerPopGraph().traversal().V(type1.getBaseIdentifier()).next();
-        Vertex vertexType3 = mindmapsGraph.getTinkerPopGraph().traversal().V(type3.getBaseIdentifier()).next();
+        Vertex vertexType1 = mindmapsGraph.getTinkerTraversal().V(type1.getBaseIdentifier()).next();
+        Vertex vertexType3 = mindmapsGraph.getTinkerTraversal().V(type3.getBaseIdentifier()).next();
         vertexType1.addEdge(DataType.EdgeLabel.ISA.getLabel(), vertexType3);
         type1.getEdgeOutgoingOfType(DataType.EdgeLabel.ISA);
     }
@@ -79,7 +79,7 @@ public class ConceptTest {
     @Test
     public void testItemIdentifier() {
         concept.setId("http://mindmaps.io");
-        Vertex conceptVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
+        Vertex conceptVertex = mindmapsGraph.getTinkerTraversal().V(concept.getBaseIdentifier()).next();
         assertEquals("http://mindmaps.io", conceptVertex.property(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name()).value());
         assertEquals("http://mindmaps.io", concept.getId());
     }
@@ -87,7 +87,7 @@ public class ConceptTest {
     @Test
     public void testSubjectIdentifier() throws ConceptException {
         concept.setSubject("http://mindmaps.io");
-        Vertex conceptVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
+        Vertex conceptVertex = mindmapsGraph.getTinkerTraversal().V(concept.getBaseIdentifier()).next();
         assertEquals("http://mindmaps.io", conceptVertex.property(DataType.ConceptPropertyUnique.SUBJECT_IDENTIFIER.name()).value());
         assertEquals("http://mindmaps.io", concept.getSubject());
     }
@@ -101,7 +101,7 @@ public class ConceptTest {
     public void testSetItemIdentifier() throws ConceptException{
         concept.setId("Test");
         assertEquals("Test", concept.getId());
-        Vertex conceptVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
+        Vertex conceptVertex = mindmapsGraph.getTinkerTraversal().V(concept.getBaseIdentifier()).next();
         assertEquals("Test", conceptVertex.property(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name()).value());
     }
 
@@ -109,14 +109,14 @@ public class ConceptTest {
     @Test
     public void testSetType() {
         concept.setType("test_type");
-        Vertex conceptVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
+        Vertex conceptVertex = mindmapsGraph.getTinkerTraversal().V(concept.getBaseIdentifier()).next();
         assertEquals("test_type", conceptVertex.property(DataType.ConceptProperty.TYPE.name()).value());
     }
 
     @Test
     public void testGetType() {
         concept.setType("test_type");
-        Vertex conceptVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
+        Vertex conceptVertex = mindmapsGraph.getTinkerTraversal().V(concept.getBaseIdentifier()).next();
         assertEquals(concept.getType(), conceptVertex.property(DataType.ConceptProperty.TYPE.name()).value());
     }
 
@@ -124,36 +124,36 @@ public class ConceptTest {
     public void testGetValue(){
         String valueString = "Test";
         concept.setValue(valueString);
-        Vertex vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
+        Vertex vertex = mindmapsGraph.getTinkerTraversal().V(concept.getBaseIdentifier()).next();
         assertEquals("Test", vertex.property(DataType.ConceptProperty.VALUE_STRING.name()).value().toString());
 
         int valueInt = 1;
         concept.setValue(valueInt);
-        vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
+        vertex = mindmapsGraph.getTinkerTraversal().V(concept.getBaseIdentifier()).next();
         assertEquals(valueInt, vertex.property(DataType.ConceptProperty.VALUE_STRING.name()).value());
 
         long valueLong = 1;
         concept.setValue(valueLong);
-        vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
+        vertex = mindmapsGraph.getTinkerTraversal().V(concept.getBaseIdentifier()).next();
         assertEquals(valueLong, vertex.property(DataType.ConceptProperty.VALUE_STRING.name()).value());
 
         float valueFloat = 1;
         concept.setValue(valueFloat);
-        vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
+        vertex = mindmapsGraph.getTinkerTraversal().V(concept.getBaseIdentifier()).next();
         assertEquals(valueFloat, vertex.property(DataType.ConceptProperty.VALUE_STRING.name()).value());
 
         double valueDouble = 1;
         concept.setValue(valueDouble);
-        vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
+        vertex = mindmapsGraph.getTinkerTraversal().V(concept.getBaseIdentifier()).next();
         assertEquals(valueDouble, vertex.property(DataType.ConceptProperty.VALUE_STRING.name()).value());
 
         concept.setValue(true);
-        vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
+        vertex = mindmapsGraph.getTinkerTraversal().V(concept.getBaseIdentifier()).next();
         assertEquals(true, vertex.property(DataType.ConceptProperty.VALUE_STRING.name()).value());
 
         char valueChar = 'c';
         concept.setValue(valueChar);
-        vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
+        vertex = mindmapsGraph.getTinkerTraversal().V(concept.getBaseIdentifier()).next();
         assertEquals(valueChar, vertex.property(DataType.ConceptProperty.VALUE_STRING.name()).value());
 
     }
@@ -173,9 +173,8 @@ public class ConceptTest {
     @Test(expected=RuntimeException.class)
     public void updateConceptFailTooManyConcepts()  {
         concept.setId("VALUE");
-        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex();
-        vertex.property(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), "VALUE");
         mindmapsGraph.putEntityType("VALUE");
+        mindmapsGraph.putRelationType("VALUE");
     }
 
     @Test
@@ -199,7 +198,7 @@ public class ConceptTest {
 
         concepts.add(c2);
         assertEquals(2, concepts.size());
-        Vertex conceptVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
+        Vertex conceptVertex = mindmapsGraph.getTinkerTraversal().V(concept.getBaseIdentifier()).next();
         assertNotEquals(concept, conceptVertex);
     }
 
@@ -258,16 +257,16 @@ public class ConceptTest {
 
     @Test
     public void testDelete() throws ConceptException{
-        assertEquals(9, mindmapsGraph.getTinkerPopGraph().traversal().V().toList().size());
+        assertEquals(9, mindmapsGraph.getTinkerTraversal().V().toList().size());
         Concept c1 = mindmapsGraph.putEntityType("1");
-        assertEquals(10, mindmapsGraph.getTinkerPopGraph().traversal().V().toList().size());
+        assertEquals(10, mindmapsGraph.getTinkerTraversal().V().toList().size());
         c1.delete();
-        assertEquals(9, mindmapsGraph.getTinkerPopGraph().traversal().V().toList().size());
+        assertEquals(9, mindmapsGraph.getTinkerTraversal().V().toList().size());
 
         Concept c2 = mindmapsGraph.putEntityType("blab");
-        assertEquals(10, mindmapsGraph.getTinkerPopGraph().traversal().V().toList().size());
+        assertEquals(10, mindmapsGraph.getTinkerTraversal().V().toList().size());
         c2.delete();
-        assertEquals(9, mindmapsGraph.getTinkerPopGraph().traversal().V().toList().size());
+        assertEquals(9, mindmapsGraph.getTinkerTraversal().V().toList().size());
     }
 
     @Test(expected = ConceptException.class)
@@ -309,9 +308,9 @@ public class ConceptTest {
 
         TypeImpl c2 = (TypeImpl) mindmapsGraph.putEntityType("c2");
         TypeImpl c3 = (TypeImpl) mindmapsGraph.putEntityType("c3");
-        Vertex c1_Vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(c1.getBaseIdentifier()).next();
-        Vertex c2_Vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(c2.getBaseIdentifier()).next();
-        Vertex c3_Vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(c3.getBaseIdentifier()).next();
+        Vertex c1_Vertex = mindmapsGraph.getTinkerTraversal().V(c1.getBaseIdentifier()).next();
+        Vertex c2_Vertex = mindmapsGraph.getTinkerTraversal().V(c2.getBaseIdentifier()).next();
+        Vertex c3_Vertex = mindmapsGraph.getTinkerTraversal().V(c3.getBaseIdentifier()).next();
 
         c1_Vertex.edges(Direction.BOTH).next().remove();
         c2_Vertex.edges(Direction.BOTH).next().remove();
@@ -380,12 +379,12 @@ public class ConceptTest {
         InstanceImpl conceptInstance4 = (InstanceImpl) mindmapsGraph.putEntity("ci4", entityType);
         InstanceImpl conceptInstance5 = (InstanceImpl) mindmapsGraph.putEntity("ci5", entityType);
         InstanceImpl conceptInstance6 = (InstanceImpl) mindmapsGraph.putEntity("ci6", entityType);
-        Vertex conceptInstance1_Vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(conceptInstance1.getBaseIdentifier()).next();
-        Vertex conceptInstance2_Vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(conceptInstance2.getBaseIdentifier()).next();
-        Vertex conceptInstance3_Vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(conceptInstance3.getBaseIdentifier()).next();
-        Vertex conceptInstance4_Vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(conceptInstance4.getBaseIdentifier()).next();
-        Vertex conceptInstance5_Vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(conceptInstance5.getBaseIdentifier()).next();
-        Vertex conceptInstance6_Vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(conceptInstance6.getBaseIdentifier()).next();
+        Vertex conceptInstance1_Vertex = mindmapsGraph.getTinkerTraversal().V(conceptInstance1.getBaseIdentifier()).next();
+        Vertex conceptInstance2_Vertex = mindmapsGraph.getTinkerTraversal().V(conceptInstance2.getBaseIdentifier()).next();
+        Vertex conceptInstance3_Vertex = mindmapsGraph.getTinkerTraversal().V(conceptInstance3.getBaseIdentifier()).next();
+        Vertex conceptInstance4_Vertex = mindmapsGraph.getTinkerTraversal().V(conceptInstance4.getBaseIdentifier()).next();
+        Vertex conceptInstance5_Vertex = mindmapsGraph.getTinkerTraversal().V(conceptInstance5.getBaseIdentifier()).next();
+        Vertex conceptInstance6_Vertex = mindmapsGraph.getTinkerTraversal().V(conceptInstance6.getBaseIdentifier()).next();
 
         conceptInstance2_Vertex.addEdge(DataType.EdgeLabel.SHORTCUT.getLabel(), conceptInstance1_Vertex);
         conceptInstance3_Vertex.addEdge(DataType.EdgeLabel.SHORTCUT.getLabel(), conceptInstance1_Vertex);

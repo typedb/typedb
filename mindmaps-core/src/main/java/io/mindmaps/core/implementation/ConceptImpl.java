@@ -708,7 +708,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
      * @param type the type of the edge to create
      */
     void putEdge(ConceptImpl toConcept, DataType.EdgeLabel type){
-        GraphTraversal<Vertex, Edge> traversal = mindmapsTransaction.getTinkerPopGraph().traversal().V(getBaseIdentifier()).outE(type.getLabel()).as("edge").otherV().hasId(toConcept.getBaseIdentifier()).select("edge");
+        GraphTraversal<Vertex, Edge> traversal = mindmapsTransaction.getTinkerTraversal().V(getBaseIdentifier()).outE(type.getLabel()).as("edge").otherV().hasId(toConcept.getBaseIdentifier()).select("edge");
         if(!traversal.hasNext())
             addEdge(toConcept, type);
     }
@@ -753,7 +753,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
      * @param toConcept The target concept
      */
     void deleteEdgeTo(DataType.EdgeLabel type, ConceptImpl toConcept){
-        GraphTraversal<Vertex, Edge> traversal = mindmapsTransaction.getTinkerPopGraph().traversal().V(getBaseIdentifier()).
+        GraphTraversal<Vertex, Edge> traversal = mindmapsTransaction.getTinkerTraversal().V(getBaseIdentifier()).
                 outE(type.getLabel()).as("edge").otherV().hasId(toConcept.getBaseIdentifier()).select("edge");
         if(traversal.hasNext())
             traversal.next().remove();

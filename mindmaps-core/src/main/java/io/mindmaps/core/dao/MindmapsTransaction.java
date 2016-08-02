@@ -467,9 +467,4 @@ public interface MindmapsTransaction {
      * @throws Exception
      */
     void close() throws Exception;
-
-    /**
-     * Resets the graph to an empty state. A commit is required for this to take affect.
-     */
-    void clearGraph();
 }

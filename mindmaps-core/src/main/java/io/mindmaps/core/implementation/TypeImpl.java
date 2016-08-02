@@ -158,7 +158,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type, S
         Set<V> instances = new HashSet<>();
 
         //noinspection unchecked
-        GraphTraversal<Vertex, Vertex> traversal = getMindmapsTransaction().getTinkerPopGraph().traversal().V()
+        GraphTraversal<Vertex, Vertex> traversal = getMindmapsTransaction().getTinkerTraversal().V()
                 .has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), getId())
                 .union(__.identity(), __.repeat(__.in(DataType.EdgeLabel.AKO.getLabel())).emit()).unfold()
                 .in(DataType.EdgeLabel.ISA.getLabel())
