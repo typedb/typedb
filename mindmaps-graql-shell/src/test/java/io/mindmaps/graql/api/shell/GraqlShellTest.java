@@ -154,6 +154,12 @@ public class GraqlShellTest {
     }
 
     @Test
+    public void testAutocompleteFill() throws IOException {
+        String result = testShell("match $x isa typ\t\n");
+        assertThat(result, containsString("\"relation-type\""));
+    }
+
+    @Test
     public void testInvalidQuery() throws IOException {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         testShell("insert movie isa entity-type; moon isa movie; europa isa moon\n", err);
