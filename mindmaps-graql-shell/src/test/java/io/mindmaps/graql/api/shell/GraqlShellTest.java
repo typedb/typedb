@@ -36,13 +36,13 @@ public class GraqlShellTest {
 
     private Function<String, MindmapsGraph> graphFactory;
 
-    private String providedUrl;
+    private String providedNamespace;
     private String expectedVersion = "graql-9.9.9";
 
     @Before
     public void setUp() {
-        graphFactory = url -> {
-            providedUrl = url;
+        graphFactory = namespace -> {
+            providedNamespace = namespace;
             return MindmapsTestGraphFactory.newEmptyGraph();
         };
     }
@@ -74,9 +74,9 @@ public class GraqlShellTest {
     }
 
     @Test
-    public void testRemoteOption() throws IOException {
-        testShell("", "-r", "http://localhost:8080/");
-        assertEquals("http://localhost:8080/", providedUrl);
+    public void testNamespace() throws IOException {
+        testShell("");
+        assertEquals("mindmaps", providedNamespace);
     }
 
     @Test
@@ -92,7 +92,7 @@ public class GraqlShellTest {
         String[] result = testShell("match $x isa type\nexit").split("\n");
 
         // Make sure we find a few results (don't be too fussy about the output here)
-        assertEquals(">>> match $x isa type", result[5]);
+        assertEquals(">>> match $x isa type", result[4]);
         assertTrue(result.length > 5);
     }
 
@@ -114,13 +114,13 @@ public class GraqlShellTest {
     public void testInsertOutput() throws IOException {
         String[] result = testShell("insert a-type isa entity-type; thingy isa a-type\n").split("\n");
 
-        // Expect six lines output - one for the query, four results and a new prompt
-        assertEquals(11, result.length);
-        assertEquals(">>> insert a-type isa entity-type; thingy isa a-type", result[5]);
-        assertEquals(">>> ", result[10]);
+        // Expect ten lines output - four for the license, one for the query, four results and a new prompt
+        assertEquals(10, result.length);
+        assertEquals(">>> insert a-type isa entity-type; thingy isa a-type", result[4]);
+        assertEquals(">>> ", result[9]);
 
         assertThat(
-                Arrays.toString(Arrays.copyOfRange(result, 6, 10)),
+                Arrays.toString(Arrays.copyOfRange(result, 5, 9)),
                 allOf(containsString("a-type"), containsString("entity-type"), containsString("thingy"))
         );
     }
