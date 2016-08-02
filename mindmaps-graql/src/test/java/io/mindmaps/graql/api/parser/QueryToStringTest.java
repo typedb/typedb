@@ -116,6 +116,11 @@ public class QueryToStringTest {
         assertEquals("insert $x isa movie;", qb.insert(var("x").isa("movie")).toString());
     }
 
+    @Test
+    public void testEscapeStrings() {
+        assertEquals("insert $x value \"hello\\nworld\";", qb.insert(var("x").value("hello\nworld")).toString());
+    }
+
     @Test(expected=UnsupportedOperationException.class)
     public void testToStringUnsupported() {
         //noinspection ResultOfMethodCallIgnored
