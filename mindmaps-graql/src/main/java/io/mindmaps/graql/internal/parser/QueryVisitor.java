@@ -155,7 +155,7 @@ public class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Collection<Pattern> visitPatterns(GraqlParser.PatternsContext ctx) {
+    public List<Pattern> visitPatterns(GraqlParser.PatternsContext ctx) {
         return ctx.pattern().stream()
                 .map(this::visitPattern)
                 .collect(toList());
