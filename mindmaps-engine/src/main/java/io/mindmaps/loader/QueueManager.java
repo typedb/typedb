@@ -18,7 +18,8 @@
 
 package io.mindmaps.loader;
 
-import io.mindmaps.core.BackgroundTasks;
+import io.mindmaps.postprocessing.BackgroundTasks;
+import io.mindmaps.util.ConfigProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,8 +34,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class QueueManager {
     private final Logger LOG = LoggerFactory.getLogger(QueueManager.class);
-    private int NUM_THREADS = 20; // load from config file
-    private int MAINTENANCE_ITERATION = 3; // load from config file
+    private int maintenanceIteration;
     private AtomicBoolean maintenanceInProcess;
     private AtomicInteger currentJobs;
     private AtomicInteger finishedJobs;
@@ -69,6 +69,7 @@ public class QueueManager {
     }
 
     private QueueManager() {
+        ConfigProperties prop = ConfigProperties.getInstance();
         maintenanceInProcess = new AtomicBoolean(false);
         currentJobs = new AtomicInteger(0);
         finishedJobs = new AtomicInteger(0);
@@ -76,8 +77,9 @@ public class QueueManager {
         totalJobs = new AtomicInteger(0);
         lastJobFinished = new AtomicLong(0);
         futures = new ConcurrentHashMap<>();
-        executor = Executors.newFixedThreadPool(NUM_THREADS);
+        executor = Executors.newFixedThreadPool(prop.getPropertyAsInt(ConfigProperties.NUM_THREADS_PROPERTY));
         loaderState = new StateVariables();
+        maintenanceIteration= prop.getPropertyAsInt(ConfigProperties.MAINTENANCE_ITERATION);
     }
 
     // add a job to the queue and generate a unique transaction ID
@@ -205,7 +207,7 @@ public class QueueManager {
         loaderState.putState(uuid, State.FINISHED);
         long jobs = finishedJobs.incrementAndGet();
         printStatus();
-        if (jobs % MAINTENANCE_ITERATION == 0) {
+        if (jobs % maintenanceIteration == 0) {
             BackgroundTasks.getInstance().forcePostprocessing();
         }
     }
