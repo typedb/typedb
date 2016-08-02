@@ -74,9 +74,15 @@ public class GraqlShellTest {
     }
 
     @Test
-    public void testNamespace() throws IOException {
+    public void testDefaultNamespace() throws IOException {
         testShell("");
         assertEquals("mindmaps", providedNamespace);
+    }
+
+    @Test
+    public void testSpecifiedNamespace() throws IOException {
+        testShell("", "-n", "myspace");
+        assertEquals("myspace", providedNamespace);
     }
 
     @Test

@@ -106,6 +106,7 @@ public class GraqlShell implements AutoCloseable {
         logger.setLevel(Level.OFF);
 
         Options options = new Options();
+        options.addOption("n", "name", true, "name of the graph");
         options.addOption("e", "execute", true, "query to execute");
         options.addOption("f", "file", true, "graql file path to execute");
         options.addOption("h", "help", false, "print usage message");
@@ -141,7 +142,8 @@ public class GraqlShell implements AutoCloseable {
             return;
         }
 
-        MindmapsGraph graph = factory.apply(NAMESPACE);
+        String namespace = cmd.getOptionValue("n", NAMESPACE);
+        MindmapsGraph graph = factory.apply(namespace);
 
         try(GraqlShell shell = new GraqlShell(graph, in, out, err)) {
             if (filePath != null) {
