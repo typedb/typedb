@@ -23,6 +23,7 @@ import io.mindmaps.core.exceptions.ErrorMessage;
 import io.mindmaps.core.exceptions.MindmapsValidationException;
 import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
@@ -159,7 +160,16 @@ public class MindmapsTransactionLowLevelTest {
         assertEquals(c1, c2);
     }
 
-    //-----------------------------------------------Casting Functionality----------------------------------------------
+    @Test
+    public void testReadOnlyTraversal(){
+        expectedException.expect(VerificationException.class);
+        expectedException.expectMessage(allOf(
+                containsString("not read only")
+        ));
+
+        mindmapsGraph.getTinkerTraversal().V().drop().iterate();
+    }
+
     @Test
     public void testAddCastingLong() {
         //Build It

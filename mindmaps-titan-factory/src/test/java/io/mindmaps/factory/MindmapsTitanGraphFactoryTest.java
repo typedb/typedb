@@ -26,8 +26,11 @@ import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import io.mindmaps.core.dao.MindmapsGraph;
 import io.mindmaps.core.implementation.DataType;
+import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.engine.ComputerTraversalEngine;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
@@ -367,5 +370,12 @@ public class MindmapsTitanGraphFactoryTest {
             first.addEdge(edgeLabel, current, edgeProp, edgePropValue.toString());
         }
         transaction.commit();
+    }
+
+    @Test
+    public void testGraphComputerTraversal(){
+        MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG).newTransaction();
+        List<TraversalStrategy> strategies = transaction.getTinkerTraversalWithComputer().getStrategies();
+        assertTrue(strategies.contains(ComputerTraversalEngine.ComputerResultStrategy.instance()));
     }
 }
