@@ -21,6 +21,10 @@ package io.mindmaps.core.exceptions;
 import io.mindmaps.core.implementation.DataType;
 import io.mindmaps.core.model.Concept;
 
+/**
+ * Thrown when more than one edge appears between two oncepts when it should not be the case.
+ * For example if 2 isa edges appear between the same concepts.
+ */
 public class MoreThanOneEdgeException extends GraphRuntimeException{
     public MoreThanOneEdgeException(Concept concept, DataType.EdgeLabel edgeType) {
         super(ErrorMessage.MORE_THAN_ONE_EDGE.getMessage(concept, edgeType.name()));

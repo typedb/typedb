@@ -22,6 +22,7 @@ public class RESTUtil {
         public static final String QUERY_FIELD = "query";
         public static final String VALUE_FIELD = "value";
         public static final String ID_PARAMETER = ":id";
+        public static final String GRAPH_NAME_PARAM = "graphName";
 
 
     }

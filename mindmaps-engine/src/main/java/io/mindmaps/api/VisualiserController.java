@@ -54,7 +54,10 @@ public class VisualiserController {
 
     private String getConceptById(Request req, Response res) {
 
-        MindmapsTransaction transaction = GraphFactory.getInstance().getGraph(defaultGraphName).newTransaction();
+        String graphNameParam = req.queryParams(RESTUtil.Request.GRAPH_NAME_PARAM);
+        String currentGraphName = (graphNameParam==null) ? defaultGraphName : graphNameParam;
+
+        MindmapsTransaction transaction = GraphFactory.getInstance().getGraph(currentGraphName).newTransaction();
 
         Concept concept = transaction.getConcept(req.params(RESTUtil.Request.ID_PARAMETER));
         if (concept != null)

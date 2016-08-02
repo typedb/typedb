@@ -231,9 +231,9 @@ public class MindmapsTransactionLowLevelTest {
 
         CastingImpl casting = (CastingImpl) mindmapsGraph.getConcept(id);
         EdgeImpl edge = casting.addEdge(role, DataType.EdgeLabel.ISA); // Casting to Role
-        edge.setEdgePropertyRoleType(role.getId());
+        edge.setProperty(DataType.EdgeProperty.ROLE_TYPE, role.getId());
         edge = casting.addEdge(rolePlayer, DataType.EdgeLabel.ROLE_PLAYER);// Casting to Roleplayer
-        edge.setEdgePropertyRoleType(role.getId());
+        edge.setProperty(DataType.EdgeProperty.ROLE_TYPE, role.getId());
         relation.addEdge(casting, DataType.EdgeLabel.CASTING);// Assertion to Casting
     }
 

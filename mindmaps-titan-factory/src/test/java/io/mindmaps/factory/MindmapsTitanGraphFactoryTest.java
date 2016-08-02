@@ -49,8 +49,8 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.*;
 
 public class MindmapsTitanGraphFactoryTest {
-    private final String TEST_CONFIG = "../conf/titan/titan-cassandra-es-test.properties";
-    private final String TEST_NAME = "mindmaps-test";
+    private final String TEST_CONFIG = "../conf/titan/titan-cassandra.properties";
+    private final String TEST_NAME = "mindmapstest";
     private final String TEST_URI = "localhost";
 
     private MindmapsGraphFactory titanGraphFactory ;

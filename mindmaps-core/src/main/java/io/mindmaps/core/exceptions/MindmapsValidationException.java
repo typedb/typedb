@@ -18,6 +18,9 @@
 
 package io.mindmaps.core.exceptions;
 
+/**
+ * Thrown when a mindmaps validation rule is broken. {@see io.mindmaps.core.implementation.Validator} for more details
+ */
 public class MindmapsValidationException extends Exception{
     public MindmapsValidationException(String error) {
         super(error);

@@ -37,8 +37,8 @@ public class HALConcept {
     public HALConcept(Concept concept) {
 
 
-        int separationDegrees = Integer.parseInt(ConfigProperties.getInstance().getProperty(ConfigProperties.HAL_DEGREE_PROPERTY));
-        resourceLinkPrefix=ConfigProperties.HAL_RESOURCE_PREFIX;
+        int separationDegrees = ConfigProperties.getInstance().getPropertyAsInt(ConfigProperties.HAL_DEGREE_PROPERTY);
+        resourceLinkPrefix=ConfigProperties.getInstance().getProperty(ConfigProperties.HAL_RESOURCE_PREFIX);
 
         factory = new StandardRepresentationFactory();
         halResource = factory.newRepresentation(resourceLinkPrefix + concept.getId());
@@ -105,6 +105,8 @@ public class HALConcept {
                 halResource.withRepresentation(rolePlayedByCurrentConcept[0], relationResource);
             }
         }
+
+        //
     }
 
     private boolean isRelationToResource(Relation rel) {

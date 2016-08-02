@@ -39,7 +39,7 @@ public class RemoteShellController {
 
     private final Logger LOG = LoggerFactory.getLogger(RemoteShellController.class);
 
-    String graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+    String defaultGraphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
 
     public RemoteShellController() {
 
@@ -53,7 +53,7 @@ public class RemoteShellController {
 
     private String buildMetaTypeInstancesObject(Request req, Response res){
 
-        MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) GraphFactory.getInstance().getGraph(graphName).newTransaction();
+        MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) GraphFactory.getInstance().getGraph(defaultGraphName).newTransaction();
 
         JSONObject responseObj = new JSONObject();
         responseObj.put(RESTUtil.Response.ROLES_JSON_FIELD, new JSONArray(transaction.getMetaRoleType().instances().stream().map(x -> x.getId()).toArray()));
@@ -66,7 +66,10 @@ public class RemoteShellController {
 
     private String matchQuery(Request req, Response res) {
 
-        QueryParser parser = QueryParser.create(GraphFactory.getInstance().getGraph(graphName).newTransaction());
+        String graphNameParam = req.queryParams(RESTUtil.Request.GRAPH_NAME_PARAM);
+        String currentGraphName = (graphNameParam==null) ? defaultGraphName : graphNameParam;
+
+        QueryParser parser = QueryParser.create(GraphFactory.getInstance().getGraph(currentGraphName).newTransaction());
 
         LOG.info("Received match query: \"" + req.queryParams(RESTUtil.Request.QUERY_FIELD) + "\"");
 

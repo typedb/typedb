@@ -18,195 +18,56 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.core.model.Type;
+import io.mindmaps.core.model.Entity;
+import io.mindmaps.core.model.EntityType;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class EdgeTest {
 
-    private MindmapsTransactionImpl mindmapsGraph;
+    private MindmapsTransactionImpl mindmapsTransaction;
+    private EntityType entityType;
+    private Entity entity;
+    private EdgeImpl edge;
 
     @Before
     public void setUp(){
-        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
+        mindmapsTransaction = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
+        entityType = mindmapsTransaction.putEntityType("My Entity Type");
+        entity = mindmapsTransaction.putEntity("My entity", entityType);
+        Edge tinkerEdge = mindmapsTransaction.getTinkerPopGraph().traversal().V().has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), entity.getId()).outE().next();
+        edge = new EdgeImpl(tinkerEdge, mindmapsTransaction);
     }
+
     @After
     public void destroyGraphAccessManager() throws Exception {
-        mindmapsGraph.close();
+        mindmapsTransaction.close();
     }
 
     @Test
-    public void equalityTest() {
-        Type c1 = mindmapsGraph.putEntityType("1");
-        Type c2 = mindmapsGraph.putEntityType("2");
-        mindmapsGraph.putEntityType("3");
-
-        EdgeImpl l1 = createType(c1, c2);
-        EdgeImpl l1_copy = new EdgeImpl(mindmapsGraph.getTinkerPopGraph().traversal().V().
-                has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), c1.getId()).
-                outE(DataType.EdgeLabel.ISA.getLabel()).next(), mindmapsGraph);
-        EdgeImpl l2 = new EdgeImpl(mindmapsGraph.getTinkerPopGraph().traversal().V().
-                has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), c1.getId()).
-                outE(DataType.EdgeLabel.ISA.getLabel()).next(), mindmapsGraph);
-        EdgeImpl l3 = createType(c2, c1);
-
-        assertEquals(l1, l1_copy);
-        assertEquals(l1, l2);
-        assertNotEquals(l1, l3);
-        assertNotEquals(l1, mindmapsGraph);
-    }
-
-    private EdgeImpl createType(Type c1, Type c2){
-        ((ConceptImpl)c1).type(c2);
-        return new EdgeImpl(mindmapsGraph.getTinkerPopGraph().traversal().V().
-                has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), c1.getId()).
-                outE(DataType.EdgeLabel.ISA.getLabel()).next(), mindmapsGraph);
+    public void testGetSource() throws Exception {
+        assertEquals(entity, edge.getSource());
     }
 
     @Test
-    public void hashCodeTest() {
-        Type c1 = mindmapsGraph.putEntityType("1");
-        Type c2 = mindmapsGraph.putEntityType("2");
-        EdgeImpl l1 = createType(c1, c2);
-        org.apache.tinkerpop.gremlin.structure.Edge l1edge = mindmapsGraph.getTinkerPopGraph().traversal().E(l1.getId()).next();
-        assertEquals(l1.hashCode(), l1edge.hashCode());
+    public void testGetTarget() throws Exception {
+        assertEquals(entityType, edge.getTarget());
     }
 
     @Test
-    public void testGetFromAndToVertices(){
-        Type c1 = mindmapsGraph.putEntityType("1");
-        Type c2 = mindmapsGraph.putEntityType("2");
-        EdgeImpl edge = createType(c1, c2);
-
-        assertEquals(c1, edge.getFromConcept());
-        assertEquals(c2, edge.getToConcept());
-        assertNotEquals(edge.getFromConcept(), edge.getToConcept());
-    }
-
-    @Test
-    public void testGetLabelFromEdge(){
-        Type c1 = mindmapsGraph.putEntityType("1");
-        Type c2 = mindmapsGraph.putEntityType("2");
-        EdgeImpl edge = createType(c1, c2);
-
+    public void testGetType() throws Exception {
         assertEquals(DataType.EdgeLabel.ISA, edge.getType());
     }
 
     @Test
-    public void testEdgeProperties(){
-        Type c1 = mindmapsGraph.putEntityType("1");
-        Type c2 = mindmapsGraph.putEntityType("2");
-        EdgeImpl edge = createType(c1, c2);
-        assertNull(edge.getEdgePropertyRoleType());
-        edge.setEdgePropertyRoleType("test");
-        assertEquals("test", edge.getEdgePropertyRoleType());
+    public void testProperty() throws Exception {
+        edge.setProperty(DataType.EdgeProperty.ROLE_TYPE, "role");
+        assertEquals("role", edge.getProperty(DataType.EdgeProperty.ROLE_TYPE));
     }
 
-    @Test
-    public void testEdgePropertyToId(){
-        Type c1 = mindmapsGraph.putEntityType("1");
-        Type c2 = mindmapsGraph.putEntityType("2");
-        EdgeImpl edge = createType(c1, c2);
-
-        edge.setEdgePropertyToId("Test");
-        assertEquals("Test", edge.getEdgePropertyToId());
-    }
-
-    @Test
-    public void testEdgePropertyToRole(){
-        Type c1 = mindmapsGraph.putEntityType("1");
-        Type c2 = mindmapsGraph.putEntityType("2");
-        EdgeImpl edge = createType(c1, c2);
-
-        edge.setEdgePropertyToRole("Test");
-        assertEquals("Test", edge.getEdgePropertyToRole());
-    }
-
-    @Test
-    public void testEdgePropertyToType(){
-        Type c1 = mindmapsGraph.putEntityType("1");
-        Type c2 = mindmapsGraph.putEntityType("2");
-        EdgeImpl edge = createType(c1, c2);
-
-        edge.setEdgePropertyToType("Test");
-        assertEquals("Test", edge.getEdgePropertyToType());
-
-    }
-
-    @Test
-    public void testEdgePropertyFromId(){
-        Type c1 = mindmapsGraph.putEntityType("1");
-        Type c2 = mindmapsGraph.putEntityType("2");
-        EdgeImpl edge = createType(c1, c2);
-
-        edge.setEdgePropertyFromId("Test");
-        assertEquals("Test", edge.getEdgePropertyFromId());
-
-    }
-
-    @Test
-    public void testEdgePropertyFromRole(){
-        Type c1 = mindmapsGraph.putEntityType("1");
-        Type c2 = mindmapsGraph.putEntityType("2");
-        EdgeImpl edge = createType(c1, c2);
-
-        edge.setEdgePropertyFromRole("Test");
-        assertEquals("Test", edge.getEdgePropertyFromRole());
-
-    }
-
-    @Test
-    public void testEdgePropertyFromType(){
-        Type c1 = mindmapsGraph.putEntityType("1");
-        Type c2 = mindmapsGraph.putEntityType("2");
-        EdgeImpl edge = createType(c1, c2);
-
-        edge.setEdgePropertyFromType("Test");
-        assertEquals("Test", edge.getEdgePropertyFromType());
-
-    }
-
-    @Test
-    public void testEdgePropertyRelationId(){
-        Type c1 = mindmapsGraph.putEntityType("1");
-        Type c2 = mindmapsGraph.putEntityType("2");
-        EdgeImpl edge = createType(c1, c2);
-
-        edge.setEdgePropertyRelationId("Test");
-        assertEquals("Test", edge.getEdgePropertyRelationId());
-
-    }
-
-    @Test
-    public void testEdgePropertyBaseAssertionId(){
-        Type c1 = mindmapsGraph.putEntityType("1");
-        Type c2 = mindmapsGraph.putEntityType("2");
-        EdgeImpl edge = createType(c1, c2);
-
-        edge.setEdgePropertyBaseAssertionId(1L);
-        assertTrue(1L == edge.getEdgePropertyBaseAssertionId());
-    }
-
-    @Test
-    public void testEdgePropertyShortcutHash(){
-        Type c1 = mindmapsGraph.putEntityType("1");
-        Type c2 = mindmapsGraph.putEntityType("2");
-        EdgeImpl edge = createType(c1, c2);
-        edge.setEdgePropertyShortcutHash("Test");
-        assertEquals("Test", edge.getEdgePropertyShortcutHash());
-    }
-
-    @Test
-    public void testEdgePropertyValue(){
-        Type c1 = mindmapsGraph.putEntityType("1");
-        Type c2 = mindmapsGraph.putEntityType("2");
-        EdgeImpl edge = createType(c1, c2);
-        edge.setEdgePropertyValue("Test");
-        assertEquals("Test", edge.getEdgePropertyValue());
-
-    }
 }

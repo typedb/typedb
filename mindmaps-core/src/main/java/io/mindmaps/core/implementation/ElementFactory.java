@@ -21,6 +21,9 @@ package io.mindmaps.core.implementation;
 import io.mindmaps.core.model.Concept;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+/**
+ * Internal factory to produce different types of concepts
+ */
 final class ElementFactory {
     private final MindmapsTransactionImpl mindmapsGraph;
 
@@ -108,9 +111,16 @@ final class ElementFactory {
         return  buildRule(((ConceptImpl) c).getVertex());
     }
 
+
     public ConceptImpl buildUnknownConcept(Concept concept){
         return  buildUnknownConcept(((ConceptImpl) concept).getVertex());
     }
+
+    /**
+     *
+     * @param v A vertex of an unknown type
+     * @return A concept built to the correct type
+     */
     public ConceptImpl buildUnknownConcept(Vertex v){
         DataType.BaseType type = DataType.BaseType.valueOf(v.label());
         ConceptImpl concept = null;

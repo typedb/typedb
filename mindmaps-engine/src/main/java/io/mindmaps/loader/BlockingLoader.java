@@ -50,7 +50,6 @@ public class BlockingLoader {
     private int numThreads;
     private String graphName;
 
-
     public BlockingLoader(String graphNameInit) {
 
         ConfigProperties prop = ConfigProperties.getInstance();
@@ -62,7 +61,6 @@ public class BlockingLoader {
         executor = Executors.newFixedThreadPool(numThreads);
         transactionsSemaphore = new Semaphore(numThreads * 3);
         batch = new HashSet<>();
-
     }
 
     public void addToQueue(Collection<Var> vars) {
@@ -76,13 +74,7 @@ public class BlockingLoader {
     private void submitToExecutor(Collection<Var> vars) {
         try {
             transactionsSemaphore.acquire();
-            executor.submit(() -> {
-                try {
-                    loadData(graphName, vars);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            });
+            executor.submit(() -> loadData(graphName, vars));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -94,13 +86,7 @@ public class BlockingLoader {
 
     public void waitToFinish() {
         if (batch.size() > 0) {
-            executor.submit(() -> {
-                try {
-                    loadData(graphName, batch);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            });
+            executor.submit(() -> loadData(graphName, batch));
         }
         try {
             executor.shutdown();
@@ -114,7 +100,7 @@ public class BlockingLoader {
         }
     }
 
-    private void loadData(String name, Collection<Var> batch) throws MindmapsValidationException {
+    private void loadData(String name, Collection<Var> batch) {
 
         for (int i = 0; i < repeatCommits; i++) {
             MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) GraphFactory.getInstance().getGraphBatchLoading(name).newTransaction();
@@ -124,19 +110,18 @@ public class BlockingLoader {
                 transaction.commit();
                 cache.addCacheJob(transaction.getModifiedCastingIds(), transaction.getModifiedRelationIds());
                 transactionsSemaphore.release();
+                return;
 
             } catch (MindmapsValidationException e) {
                 //If it's a validation exception there is no point in re-trying
                 LOG.error(ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));
                 transactionsSemaphore.release();
-                throw e;
             } catch (Exception e) {
                 //If it's not a validation exception we need to remain in the for loop
                 handleError(e, 1);
             } finally {
                 try {
                     transaction.close();
-                    return;
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -146,7 +131,7 @@ public class BlockingLoader {
         transactionsSemaphore.release();
         LOG.error(ErrorMessage.FAILED_TRANSACTION.getMessage(repeatCommits));
 
-        // instead of throwing exceptions, maybe a logfile with all the failed transactions? throwing exception blocks all the loading
+        //TODO: set a proper file appender to log all exceptions to file.
     }
 
     private void handleError(Exception e, int i) {
