@@ -39,7 +39,8 @@ class MindmapsTitanGraphFactory implements MindmapsGraphFactory{
     private final Map<String, MindmapsTitanGraph> openGraphs;
     private final static String SEARCH_KEY = "search";
     private final static String DEFAULT_ADDRESS = "localhost:4567";
-    private final static String DEAFULT_CONFIG = "backend-default";
+    private final static String DEFAULT_CONFIG = "backend-default";
+    private final static String GRAPH_COMPUTER = "com.thinkaurelius.titan.graphdb.olap.computer.FulgoraGraphComputer";
 
     public MindmapsTitanGraphFactory(){
         openGraphs = new HashMap<>();
@@ -59,7 +60,7 @@ class MindmapsTitanGraphFactory implements MindmapsGraphFactory{
             }
         }
 
-        MindmapsTitanGraph mindmapsTitanGraph = new MindmapsTitanGraph(newTitanGraph(name, address, pathToConfig), address);
+        MindmapsTitanGraph mindmapsTitanGraph = new MindmapsTitanGraph(newTitanGraph(name, address, pathToConfig), address, GRAPH_COMPUTER);
         openGraphs.put(key, mindmapsTitanGraph);
 
         System.out.println("=================================================================================================");
@@ -79,7 +80,7 @@ class MindmapsTitanGraphFactory implements MindmapsGraphFactory{
     private TitanGraph configureGraph(String name, String address, String pathToConfig){
         ResourceBundle defaultConfig;
         if(pathToConfig == null) {
-            defaultConfig = ResourceBundle.getBundle(DEAFULT_CONFIG);
+            defaultConfig = ResourceBundle.getBundle(DEFAULT_CONFIG);
         } else {
             try {
                 FileInputStream fis = new FileInputStream(pathToConfig);

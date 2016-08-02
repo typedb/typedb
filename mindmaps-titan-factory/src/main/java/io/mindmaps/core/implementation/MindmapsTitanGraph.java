@@ -24,8 +24,8 @@ import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
 
 public class MindmapsTitanGraph extends MindmapsGraphImpl {
-    public MindmapsTitanGraph(TitanGraph graph, String engineUrl){
-        super(graph, engineUrl);
+    public MindmapsTitanGraph(TitanGraph graph, String engineUrl, String graphComputer){
+        super(graph, engineUrl, graphComputer);
     }
 
     @Override

@@ -24,11 +24,14 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
+import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.constants.DataType;
 import io.mindmaps.core.implementation.MindmapsGraphImpl;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.engine.ComputerTraversalEngine;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
@@ -378,5 +381,12 @@ public class MindmapsTitanGraphFactoryTest {
     public void testEngineUrl(){
         MindmapsGraphImpl graph = (MindmapsGraphImpl) titanGraphFactory.getGraph(TEST_NAME, "invalid_uri", TEST_CONFIG);
         assertEquals("invalid_uri", graph.getEngineUrl());
+    }
+
+    @Test
+    public void testGraphComputerTraversal(){
+        MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG).newTransaction();
+        List<TraversalStrategy> strategies = transaction.getTinkerTraversalWithComputer().getStrategies();
+        assertTrue(strategies.contains(ComputerTraversalEngine.ComputerResultStrategy.instance()));
     }
 }

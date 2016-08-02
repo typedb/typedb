@@ -31,12 +31,14 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class MindmapsGraphImpl implements MindmapsGraph {
     protected final Logger LOG = LoggerFactory.getLogger(MindmapsGraphImpl.class);
+    private final String graphComputerType;
     private final String engineUrl;
     private boolean batchLoading;
     private Graph graph;
 
-    public MindmapsGraphImpl(Graph graph, String engineUrl){
+    public MindmapsGraphImpl(Graph graph, String engineUrl, String graphComputerType){
         this.graph = graph;
+        this.graphComputerType = graphComputerType;
         this.engineUrl = engineUrl;
         checkSchema((MindmapsTransactionImpl) newTransaction());
     }
@@ -117,6 +119,14 @@ public abstract class MindmapsGraphImpl implements MindmapsGraph {
                 LOG.error(ErrorMessage.CREATING_ONTOLOGY_ERROR.getMessage(e.getMessage()), e);
             }
         }
+    }
+
+    /**
+     *
+     * @return The graph computer to inject into traversals
+     */
+    protected String getGraphComputerType(){
+        return graphComputerType;
     }
 
 }
