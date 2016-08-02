@@ -35,6 +35,7 @@ import io.mindmaps.graql.internal.parser.MatchQueryPrinter;
 import io.mindmaps.graql.internal.shell.ErrorMessage;
 import io.mindmaps.graql.internal.shell.GraQLCompleter;
 import io.mindmaps.graql.internal.shell.ShellCommandCompleter;
+import io.mindmaps.graql.internal.shell.Version;
 import jline.console.ConsoleReader;
 import jline.console.completer.AggregateCompleter;
 import jline.console.history.FileHistory;
@@ -96,8 +97,7 @@ public class GraqlShell implements AutoCloseable {
      * @param args arguments to the Graql shell. Possible arguments can be listed by running {@code graql.sh --help}
      */
     public static void main(String[] args) {
-        String version = GraqlShell.class.getPackage().getImplementationVersion();
-        runShell(args, MindmapsClient::getGraph, version, System.in, System.out, System.err);
+        runShell(args, MindmapsClient::getGraph, Version.VERSION, System.in, System.out, System.err);
     }
 
     static void runShell(String[] args, Function<String, MindmapsGraph> factory, String version, InputStream in, PrintStream out, PrintStream err) {
