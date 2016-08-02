@@ -23,9 +23,6 @@ import io.mindmaps.api.ImportController;
 import io.mindmaps.api.RemoteShellController;
 import io.mindmaps.api.VisualiserController;
 import io.mindmaps.util.ConfigProperties;
-import spark.Spark;
-
-import java.util.Properties;
 
 import static spark.Spark.port;
 
@@ -33,13 +30,6 @@ public class MindmapsEngineServer {
 
     public static void main(String[] args) {
 
-        // --- Spark JAVA configurations ---- //
-
-        //Spark.staticFileLocation("/public");
-
-        // Max number of concurrent threads
-        //  int maxThreads = 8;
-        //  threadPool(maxThreads);
 
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.INFO);
@@ -60,10 +50,6 @@ public class MindmapsEngineServer {
         new GraphFactoryController();
         new ImportController();
 
-        // ------ WEB INTERFACE ----- //
-//        new Dashboard();
-//        new Visualiser();
-//        new GraqlShell();
-//        new Import();
+
     }
 }
