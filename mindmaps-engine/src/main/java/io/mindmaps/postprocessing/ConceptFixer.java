@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.core;
+package io.mindmaps.postprocessing;
 
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.core.model.Concept;
@@ -31,16 +31,14 @@ import java.util.Set;
 class ConceptFixer {
     private final Logger LOG = LoggerFactory.getLogger(ConceptFixer.class);
     private final Cache cache;
-    private final GraphFactory daoFactory;
 
     public ConceptFixer(Cache c, GraphFactory graphDAOFactory){
         cache = c;
-        daoFactory = graphDAOFactory;
     }
 
     public String createAssertionHashCode(String assertionId) {
         String code = "";
-        MindmapsTransactionImpl graph = daoFactory.buildMindmapsGraph();
+        MindmapsTransactionImpl graph = (MindmapsTransactionImpl) GraphFactory.getInstance().getGraph("mindmaps").newTransaction();
         Relation relation = graph.getRelation(assertionId);
         if(relation != null){
             code = graph.getUniqueRelationId(relation);
@@ -50,7 +48,7 @@ class ConceptFixer {
     }
 
     public void deleteDuplicateAssertion(Long assertionId){
-        MindmapsTransactionImpl graph = daoFactory.buildMindmapsGraph();
+        MindmapsTransactionImpl graph = (MindmapsTransactionImpl) GraphFactory.getInstance().getGraph("mindmaps").newTransaction();
         graph.getTinkerPopGraph().traversal().V(assertionId).next().remove();
         commitGraph(graph);
     }
@@ -82,7 +80,7 @@ class ConceptFixer {
     }
 
     private boolean fixCastings(String type, String key){
-        MindmapsTransactionImpl graph = daoFactory.buildMindmapsGraphBatchLoading();
+        MindmapsTransactionImpl graph = (MindmapsTransactionImpl) GraphFactory.getInstance().getGraphBatchLoading("mindmaps").newTransaction();
         boolean commitNeeded = false;
         Set<String> castingIds = cache.getCastingJobs().get(type).get(key);
         Set<Concept> castings = new HashSet<>();
