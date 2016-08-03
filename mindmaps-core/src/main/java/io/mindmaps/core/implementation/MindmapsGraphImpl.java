@@ -22,6 +22,7 @@ import io.mindmaps.core.dao.MindmapsGraph;
 import io.mindmaps.core.dao.MindmapsTransaction;
 import io.mindmaps.core.exceptions.ErrorMessage;
 import io.mindmaps.core.exceptions.MindmapsValidationException;
+import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,4 +115,32 @@ public abstract class MindmapsGraphImpl implements MindmapsGraph {
         return graphComputerType;
     }
 
+    /**
+     * Closes the graph making it unusable
+     */
+    @Override
+    public void close() {
+        try {
+            getGraph().close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     *
+     * @return A graph computer supported by this mindmaps graph
+     */
+    public Class<? extends GraphComputer> getGraphComputer(){
+        String graphComputerType = getGraphComputerType();
+
+        if(graphComputerType == null)
+            throw new UnsupportedOperationException(ErrorMessage.GRAPH_COMPUTER_NOT_SUPPORTED.getMessage(getGraph()));
+
+        try {
+            return (Class<? extends GraphComputer>) Class.forName(graphComputerType);
+        } catch (ClassNotFoundException e) {
+            throw new IllegalArgumentException(ErrorMessage.INVALID_COMPUTER.getMessage(graphComputerType));
+        }
+    }
 }
