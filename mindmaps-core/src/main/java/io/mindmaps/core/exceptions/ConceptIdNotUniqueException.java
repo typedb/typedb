@@ -21,6 +21,9 @@ package io.mindmaps.core.exceptions;
 import io.mindmaps.core.implementation.DataType;
 import io.mindmaps.core.model.Concept;
 
+/**
+ * This exception is thrown when two concepts attept to have the same unique id.
+ */
 public class ConceptIdNotUniqueException extends ConceptException {
     public ConceptIdNotUniqueException(Concept concept, DataType.ConceptPropertyUnique type, String id) {
         super(ErrorMessage.ID_NOT_UNIQUE.getMessage(concept.toString(), type.name(), id));

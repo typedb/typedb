@@ -35,6 +35,7 @@ import io.mindmaps.graql.internal.parser.MatchQueryPrinter;
 import io.mindmaps.graql.internal.shell.ErrorMessage;
 import io.mindmaps.graql.internal.shell.GraQLCompleter;
 import io.mindmaps.graql.internal.shell.ShellCommandCompleter;
+import io.mindmaps.graql.internal.shell.Version;
 import jline.console.ConsoleReader;
 import jline.console.completer.AggregateCompleter;
 import jline.console.history.FileHistory;
@@ -59,12 +60,11 @@ public class GraqlShell implements AutoCloseable {
     private static final String LICENSE_PROMPT = "\n" +
             "MindmapsDB  Copyright (C) 2016  Mindmaps Research Ltd \n" +
             "This is free software, and you are welcome to redistribute it \n" +
-            "under certain conditions; type 'license' for details. \n ";
+            "under certain conditions; type 'license' for details.\n";
 
     private static final String LICENSE_LOCATION = "LICENSE.txt";
 
-    private static final String GRAPH_CONF = "/opt/mindmaps/resources/conf/titan-cassandra-es.properties";
-    private static final String DEFAULT_URL = "http://localhost:4567/graph_factory";
+    private static final String NAMESPACE = "mindmaps";
 
     private static final String PROMPT = ">>> ";
 
@@ -97,24 +97,20 @@ public class GraqlShell implements AutoCloseable {
      * @param args arguments to the Graql shell. Possible arguments can be listed by running {@code graql.sh --help}
      */
     public static void main(String[] args) {
-        String version = GraqlShell.class.getPackage().getImplementationVersion();
-        runShell(args, MindmapsClient::getGraph, version, System.in, System.out, System.err);
+        runShell(args, MindmapsClient::getGraph, Version.VERSION, System.in, System.out, System.err);
     }
 
     static void runShell(String[] args, Function<String, MindmapsGraph> factory, String version, InputStream in, PrintStream out, PrintStream err) {
-        out.println(LICENSE_PROMPT);
-
         // Disable horrid cassandra logs
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.OFF);
 
         Options options = new Options();
-        options.addOption("c", "config", true, "path to a graph config file");
+        options.addOption("n", "name", true, "name of the graph");
         options.addOption("e", "execute", true, "query to execute");
         options.addOption("f", "file", true, "graql file path to execute");
         options.addOption("h", "help", false, "print usage message");
         options.addOption("v", "version", false, "print version");
-        options.addOption("r", "remote", true, "remote url");
 
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd;
@@ -126,7 +122,6 @@ public class GraqlShell implements AutoCloseable {
             return;
         }
 
-        String graphConf = cmd.getOptionValue("c", GRAPH_CONF);
         String query = cmd.getOptionValue("e");
         String filePath = cmd.getOptionValue("f");
 
@@ -147,8 +142,8 @@ public class GraqlShell implements AutoCloseable {
             return;
         }
 
-        String remoteUrl = cmd.getOptionValue("r", DEFAULT_URL);
-        MindmapsGraph graph = factory.apply(remoteUrl);
+        String namespace = cmd.getOptionValue("n", NAMESPACE);
+        MindmapsGraph graph = factory.apply(namespace);
 
         try(GraqlShell shell = new GraqlShell(graph, in, out, err)) {
             if (filePath != null) {
@@ -192,6 +187,8 @@ public class GraqlShell implements AutoCloseable {
      * Run a Read-Evaluate-Print loop until the input terminates
      */
     void executeRepl() throws IOException {
+        console.print(LICENSE_PROMPT);
+
         // Disable JLine feature when seeing a '!', which is used in our queries
         console.setExpandEvents(false);
 

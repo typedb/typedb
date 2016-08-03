@@ -32,11 +32,20 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+/**
+ * A Type represents any ontological element in the graph. For example Entity Types and Rule Types.
+ * @param <T> The leaf interface of the object model. For example an EntityType, Entity, RelationType etc . . .
+ * @param <V> The type of the instances of this concept type.
+ */
 class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type, String> implements Type {
     TypeImpl(Vertex v, MindmapsTransactionImpl mindmapsGraph) {
         super(v, mindmapsGraph);
     }
 
+    /**
+     *
+     * @return A list of all the roles this Type is allowed to play.
+     */
     @Override
     public Collection<RoleType> playsRoles() {
         Set<RoleType> rolesPlayed = new HashSet<>();
@@ -44,12 +53,16 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type, S
 
         edges.forEachRemaining(edge -> {
             RoleTypeImpl roleType = getMindmapsTransaction().getElementFactory().buildRoleType(edge.inVertex());
-            roleType.getAkoHierarchySubSet().forEach(role -> rolesPlayed.add(getMindmapsTransaction().getElementFactory().buildRoleType(role)));
+            roleType.subTypes().forEach(role -> rolesPlayed.add(getMindmapsTransaction().getElementFactory().buildRoleType(role)));
         });
 
         return rolesPlayed;
     }
 
+    /**
+     *
+     * @return This type's super type
+     */
     @Override
     @SuppressWarnings("unchecked")
     public T superType() {
@@ -60,6 +73,9 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type, S
             return (T) concept;
     }
 
+    /**
+     * Deletes the concept as a type
+     */
     @Override
     public void innerDelete(){
         Collection<? extends Concept> subSet = subTypes();
@@ -73,6 +89,10 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type, S
         }
     }
 
+    /**
+     *
+     * @return All outgoing ako parents including itself
+     */
     public Set<Type> getAkoHierarchySuperSet() {
         Set<Type> superSet= new HashSet<>();
         superSet.add(this);
@@ -89,10 +109,11 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type, S
         return superSet;
     }
 
-    public Set<T> getAkoHierarchySubSet() {
-        return nextAkoLevel(this);
-    }
-
+    /**
+     *
+     * @param root The current type to example
+     * @return All the ako children of the root. Effectively calls  {@link TypeImpl#getSubConceptTypes()} recursively
+     */
     @SuppressWarnings("unchecked")
     private Set<T> nextAkoLevel(TypeImpl<?, ?> root){
         Set<T> results = new HashSet<>();
@@ -106,10 +127,19 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type, S
         return results;
     }
 
+    /**
+     *
+     * @return All the subtypes of this concept including itself
+     */
     @Override
     public Collection<T> subTypes(){
-        return getAkoHierarchySubSet();
+        return nextAkoLevel(this);
     }
+
+    /**
+     *
+     * @return All of the concepts direct ako children spanning a single level.
+     */
     private Collection<TypeImpl> getSubConceptTypes(){
         Collection<TypeImpl> subSet = new HashSet<>();
         getIncomingNeighbours(DataType.EdgeLabel.AKO).forEach(concept -> {
@@ -118,6 +148,10 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type, S
         return subSet;
     }
 
+    /**
+     *
+     * @return All the instances of this type.
+     */
     @SuppressWarnings("unchecked")
     @Override
     public Collection<V> instances() {
@@ -140,12 +174,20 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type, S
         return instances;
     }
 
+    /**
+     *
+     * @return returns true if the type is set to be abstract.
+     */
     @Override
     public Boolean isAbstract() {
         Object object = getProperty(DataType.ConceptProperty.IS_ABSTRACT);
         return object != null && Boolean.parseBoolean(object.toString());
     }
 
+    /**
+     *
+     * @return A collection of Rules for which this Type serves as a hypothesis
+     */
     @Override
     public Collection<Rule> getRulesOfHypothesis() {
         Set<Rule> rules = new HashSet<>();
@@ -155,6 +197,10 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type, S
         return rules;
     }
 
+    /**
+     *
+     * @return A collection of Rules for which this Type serves as a conclusion
+     */
     @Override
     public Collection<Rule> getRulesOfConclusion() {
         Set<Rule> rules = new HashSet<>();
@@ -164,6 +210,11 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type, S
         return rules;
     }
 
+    /**
+     *
+     * @param type This type's super type
+     * @return The Type itself
+     */
     public T superType(T type) {
         //Track any existing data if there is some
         Type currentSuperType = superType();
@@ -182,12 +233,22 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type, S
         return getThis();
     }
 
+    /**
+     *
+     * @param roleType The Role Type which the instances of this Type are allowed to play.
+     * @return The Type itself.
+     */
     @Override
     public T playsRole(RoleType roleType) {
         putEdge(getMindmapsTransaction().getElementFactory().buildRoleType(roleType), DataType.EdgeLabel.PLAYS_ROLE);
         return getThis();
     }
 
+    /**
+     *
+     * @param roleType The Role Type which the instances of this Type should no longer be allowed to play.
+     * @return The Type itself.
+     */
     @Override
     public T deletePlaysRole(RoleType roleType) {
         deleteEdgeTo(DataType.EdgeLabel.PLAYS_ROLE, getMindmapsTransaction().getElementFactory().buildRoleType(roleType));
@@ -209,6 +270,12 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type, S
         return message;
     }
 
+    /**
+     *
+     * @param isAbstract  Specifies if the concept is abstract (true) or not (false).
+     *                    If the concept type is abstract it is not allowed to have any instances.
+     * @return The Type itself.
+     */
     @Override
     public T setAbstract(Boolean isAbstract) {
         setProperty(DataType.ConceptProperty.IS_ABSTRACT, isAbstract);

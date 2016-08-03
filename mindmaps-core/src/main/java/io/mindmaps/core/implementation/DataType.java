@@ -76,6 +76,9 @@ public final class DataType {
         }
     }
 
+    /**
+     * The concepts which represent our internal schema
+     */
     public enum ConceptMeta {
         TYPE("type"),
         ENTITY_TYPE("entity-type"),
@@ -135,14 +138,13 @@ public final class DataType {
     public enum EdgeProperty {
         ROLE_TYPE,
         RELATION_ID,
+        RELATION_TYPE_ID,
         TO_ID,
         TO_ROLE,
         TO_TYPE,
         FROM_ID,
         FROM_ROLE,
         FROM_TYPE,
-        ASSERTION_BASE_ID,
-        VALUE,
         SHORTCUT_HASH
     }
 }

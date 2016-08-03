@@ -27,12 +27,20 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * An internal concept used to represent the link between a roleplayer and it's role.
+ * For example Pacino as an actor would be represented by a single casting regardless of the number of movies he acts in.
+ */
 class CastingImpl extends ConceptImpl {
 
     CastingImpl(Vertex v, MindmapsTransactionImpl mindmapsGraph) {
         super(v, mindmapsGraph);
     }
 
+    /**
+     *
+     * @return The {@link RoleType} this casting is linked with
+     */
     public RoleTypeImpl getRole() {
         Concept concept = getParentIsa();
         if(concept != null)
@@ -41,6 +49,10 @@ class CastingImpl extends ConceptImpl {
             throw new NoEdgeException(toString(), DataType.BaseType.ROLE_TYPE.name());
     }
 
+    /**
+     *
+     * @return The {@link Instance} which is the roleplayer in this casting
+     */
     public InstanceImpl getRolePlayer() {
         Concept concept = getOutgoingNeighbour(DataType.EdgeLabel.ROLE_PLAYER);
         if(concept != null)
@@ -49,6 +61,12 @@ class CastingImpl extends ConceptImpl {
             return null;
     }
 
+    /**
+     * Sets thew internal index of this casting toi allow for faster lookup.
+     * @param role The {@link RoleType} this casting is linked with
+     * @param rolePlayer The {@link Instance} which is the roleplayer in this casting
+     * @return The casting itself.
+     */
     public CastingImpl setHash(RoleTypeImpl role, InstanceImpl rolePlayer){
         String hash;
         if(getMindmapsTransaction().isBatchLoadingEnabled())
@@ -59,10 +77,20 @@ class CastingImpl extends ConceptImpl {
         return this;
     }
 
+    /**
+     *
+     * @param role The {@link RoleType} this casting is linked with
+     * @param rolePlayer The {@link Instance} which is the roleplayer in this casting
+     * @return A unique hash for the casting.
+     */
     public static String generateNewHash(RoleTypeImpl role, InstanceImpl rolePlayer){
         return "Casting-Role-" + role.getId() + "-RolePlayer-" + rolePlayer.getId();
     }
 
+    /**
+     *
+     * @return All the {@link Relation} this casting is linked with.
+     */
     public Set<RelationImpl> getRelations() {
         ConceptImpl<?, ?, ?> thisRef = this;
         Set<RelationImpl> relations = new HashSet<>();

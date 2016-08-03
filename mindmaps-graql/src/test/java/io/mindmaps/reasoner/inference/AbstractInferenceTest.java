@@ -27,6 +27,7 @@ import io.mindmaps.reasoner.graphs.AbstractGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static io.mindmaps.reasoner.internal.Utility.printMatchQueryResults;
 import static org.junit.Assert.assertEquals;
 
 
@@ -50,7 +51,7 @@ public class AbstractInferenceTest {
         String queryString = "match $x isa Q;";
         MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQuery expQuery = reasoner.expandQuery(query);
-        reasoner.printMatchQueryResults(expQuery);
+        printMatchQueryResults(expQuery);
 
         String explicitQuery = "match " +
                 "{$x isa Q} or {\n" +
@@ -73,7 +74,7 @@ public class AbstractInferenceTest {
         MatchQuery expQuery = reasoner.expandQuery(query);
         String expQueryString = expQuery.toString().replace(" or ", "\nor\n").replace("};", "};\n").replace("; {", ";\n{");
         System.out.println(expQueryString);
-        reasoner.printMatchQueryResults(expQuery);
+        printMatchQueryResults(expQuery);
 
         String explicitQuery = "match " +
                                 "{$y isa Q} or {{$yy isa q} or {$yy isa t};\n" +

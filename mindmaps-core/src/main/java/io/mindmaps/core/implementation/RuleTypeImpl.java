@@ -22,6 +22,10 @@ import io.mindmaps.core.model.Rule;
 import io.mindmaps.core.model.RuleType;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+/**
+ * An ontological element used to define different types of rule.
+ * Currently supported rules include Constraint Rules and Inference Rules.
+ */
 class RuleTypeImpl extends TypeImpl<RuleType, Rule> implements RuleType {
     RuleTypeImpl(Vertex v, MindmapsTransactionImpl mindmapsGraph) {
         super(v, mindmapsGraph);

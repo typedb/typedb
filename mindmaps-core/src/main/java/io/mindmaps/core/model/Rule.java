@@ -20,33 +20,38 @@ package io.mindmaps.core.model;
 
 import java.util.Collection;
 
+/**
+ * A rule represents an instance of a Rule Type which is used to make inferences over the data instances.
+ */
 public interface Rule extends Instance{
     //------------------------------------- Modifiers ----------------------------------
     /**
      *
      * @param lhs A string representing the left hand side GraQL query.
-     * @return The rule itself
+     * @return The Rule itself
      */
     Rule setLHS(String lhs);
 
     /**
      *
      * @param rhs A string representing the right hand side GraQL query.
-     * @return The rule itself
+     * @return The Rule itself
      */
     Rule setRHS(String rhs);
 
+    //TODO: Fill out details on this method
     /**
      *
      * @param expectation
-     * @return The rule itself
+     * @return The Rule itself
      */
     Rule setExpectation(boolean expectation);
 
+    //TODO: Fill out details on this method
     /**
      *
      * @param materialise
-     * @return The rule itself
+     * @return The Rule itself
      */
     Rule setMaterialise(boolean materialise);
     //------------------------------------- Accessors ----------------------------------
@@ -62,12 +67,14 @@ public interface Rule extends Instance{
      */
     String getRHS();
 
+    //TODO: Fill out details on this method
     /**
      *
      * @return
      */
     boolean getExpectation();
 
+    //TODO: Fill out details on this method
     /**
      *
      * @return
@@ -84,13 +91,13 @@ public interface Rule extends Instance{
     /**
      *
      * @param type The concept type which this rules applies to.
-     * @return The rule itself
+     * @return The Rule itself
      */
     Rule addHypothesis(Type type);
     /**
      *
      * @param type The concept type which is the conclusion of this Rule.
-     * @return The rule itself
+     * @return The Rule itself
      */
     Rule addConclusion(Type type);
 
@@ -107,9 +114,37 @@ public interface Rule extends Instance{
     Collection<Type> getConclusionTypes();
 
     //---- Inherited Methods
+
+    /**
+     *
+     * @param id The new unique id of the instance.
+     * @return The Rule itself
+     */
     Rule setId(String id);
+
+    /**
+     *
+     * @param subject The new unique subject of the instance.
+     * @return The Rule itself
+     */
     Rule setSubject(String subject);
+
+    /**
+     *
+     * @param value The optional value of this rule
+     * @return The Rule itself
+     */
     Rule setValue(String value);
+
+    /**
+     *
+     * @return The optional value of this rule
+     */
     String getValue();
+
+    /**
+     *
+     * @return The type of this rule
+     */
     RuleType type();
 }
