@@ -62,6 +62,8 @@ public enum ErrorMessage {
     INVALID_PATH_TO_CONFIG("Unable to open config file ['%s']"),
     CREATING_ONTOLOGY_ERROR("Unable to create a new meta ontology due to ['%s']"),
     INVALID_COMPUTER("The graph computer ['%s'] is not supported"),
+    CONFIG_IGNORED("The config parameter ['%s'] with value ['%s'] is ignored for this implementation"),
+    GRAPH_COMPUTER_NOT_SUPPORTED("The backend graph ['%s'] does not have a supported graph computer"),
 
     //--------------------------------------------- Client Errors
     INVALID_ENGINE_RESPONSE("Mindmaps Engine located at ['%s'] returned response ['%s'], cannot proceed."),
@@ -120,6 +122,7 @@ public enum ErrorMessage {
     BACK_OFF_RETRY("Unexpected failure performing backoff and retry of [%s]S"),
     //Distributed loading Errors
     ERROR_IN_DISTRIBUTED_TRANSACTION("Error while sending transaction to host: [%s]. Code: [%s] Message:[%s] \n Transaction string: [%s] ");
+
 
     private final String message;
 

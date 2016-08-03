@@ -42,18 +42,6 @@ public class MindmapsTinkerGraph extends MindmapsGraphImpl {
     }
 
     /**
-     * Closes the graph making it unusable
-     */
-    @Override
-    public void close() {
-        try {
-            getGraph().close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
      * Clears the graph completely. WARNING: This will invalidate any open transactions.
      */
     @Override

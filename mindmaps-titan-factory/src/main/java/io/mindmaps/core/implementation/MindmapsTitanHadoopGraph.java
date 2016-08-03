@@ -22,9 +22,10 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 
-public class MindmapsTitanGraph extends MindmapsGraphImpl {
-    public MindmapsTitanGraph(TitanGraph graph, String engineUrl, String graphComputer){
+public class MindmapsTitanHadoopGraph extends MindmapsGraphImpl {
+    public MindmapsTitanHadoopGraph(Graph graph, String engineUrl, String graphComputer){
         super(graph, engineUrl, graphComputer);
     }
 
@@ -32,7 +33,7 @@ public class MindmapsTitanGraph extends MindmapsGraphImpl {
     public MindmapsTransaction newTransaction() {
         getGraph();
         try {
-            return new MindmapsTitanTransaction(this);
+            return new MindmapsTitanHadoopTransaction(this);
         } catch (IllegalStateException e){
             throw  new GraphRuntimeException(ErrorMessage.CLOSED.getMessage(this));
         }
@@ -43,7 +44,5 @@ public class MindmapsTitanGraph extends MindmapsGraphImpl {
         TitanGraph titanGraph = ((TitanGraph) getGraph());
         titanGraph.close();
         TitanCleanup.clear(titanGraph);
-
-        EngineCommunicator.contactEngine(getCommitLogEndPoint(), "DELETE");
     }
 }

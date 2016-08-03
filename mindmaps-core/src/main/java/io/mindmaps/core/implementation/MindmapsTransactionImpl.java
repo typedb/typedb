@@ -22,7 +22,6 @@ import io.mindmaps.constants.DataType;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.*;
-import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
@@ -117,23 +116,6 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
     public GraphTraversalSource getTinkerTraversal(){
         ReadOnlyStrategy readOnlyStrategy = ReadOnlyStrategy.instance();
         return getTinkerPopGraph().traversal().asBuilder().with(readOnlyStrategy).create(getTinkerPopGraph());
-    }
-
-    public GraphTraversalSource getTinkerTraversalWithComputer(){
-        String graphComputerType = getRootGraph().getGraphComputerType();
-
-        if(graphComputerType == null){
-            return getTinkerTraversal();
-        }
-
-        try {
-            Class<? extends GraphComputer> computerClass = (Class<? extends GraphComputer>) Class.forName(graphComputerType);
-            ReadOnlyStrategy readOnlyStrategy = ReadOnlyStrategy.instance();
-            return getTinkerPopGraph().traversal(GraphTraversalSource.computer(computerClass)).
-                    asBuilder().with(readOnlyStrategy).create(getTinkerPopGraph());
-        } catch (ClassNotFoundException e) {
-            throw new IllegalArgumentException(ErrorMessage.INVALID_COMPUTER.getMessage(getTinkerPopGraph().getClass().getName()));
-        }
     }
 
     protected void setTinkerPopGraph(Graph graph){
