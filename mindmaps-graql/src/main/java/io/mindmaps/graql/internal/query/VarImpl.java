@@ -468,6 +468,7 @@ public class VarImpl implements Var.Admin {
         playsRole.forEach(v -> properties.add("plays-role " + v.getPrintableName()));
         hasRole.forEach(v -> properties.add("has-role " + v.getPrintableName()));
         hasScope.forEach(v -> properties.add("has-scope " + v.getPrintableName()));
+        hasResourceTypes.forEach(v -> properties.add("has-resource " + v.getPrintableName()));
 
         getDatatypeName().ifPresent(d -> properties.add("datatype " + d));
 
