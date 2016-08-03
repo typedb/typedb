@@ -28,14 +28,14 @@ import io.mindmaps.graql.internal.parser.GraqlParser;
 import io.mindmaps.graql.internal.parser.MatchQueryPrinter;
 import io.mindmaps.graql.internal.parser.QueryVisitor;
 import io.mindmaps.graql.internal.validation.ErrorMessage;
-import org.antlr.v4.runtime.ANTLRInputStream;
-import org.antlr.v4.runtime.BufferedTokenStream;
-import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 
+import java.io.InputStream;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * Class for parsing query strings into valid queries
@@ -117,6 +117,15 @@ public class QueryParser {
         return parseQueryFragment(GraqlParser::patterns, QueryVisitor::visitPatterns, queryString);
     }
 
+    public Stream<Pattern> parsePatternsStream(InputStream inputStream) {
+        GraqlLexer lexer = new GraqlLexer(new UnbufferedCharStream(inputStream));
+        lexer.setTokenFactory(new CommonTokenFactory(true));
+        UnbufferedTokenStream tokens = new UnbufferedTokenStream(lexer);
+        return Stream.generate(
+                () -> parseQueryFragment(GraqlParser::patternSep, QueryVisitor::visitPatternSep, tokens)
+        );
+    }
+
     /**
      * Parse any part of a Graql query
      * @param parseRule a method on GraqlParser that yields the parse rule you want to use (e.g. GraqlParser::variable)
@@ -131,11 +140,23 @@ public class QueryParser {
     ) {
         GraqlLexer lexer = getLexer(queryString);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
+        return parseQueryFragment(parseRule, visit, tokens);
+    }
+
+    /**
+     * Parse any part of a Graql query
+     * @param parseRule a method on GraqlParser that yields the parse rule you want to use (e.g. GraqlParser::variable)
+     * @param visit a method on QueryVisitor that visits the parse rule you specified (e.g. QueryVisitor::visitVariable)
+     * @param tokens the token stream to read
+     * @param <T> The type the query is expected to parse to
+     * @param <S> The type of the parse rule being used
+     * @return the parsed result
+     */
+    private <T, S extends ParseTree> T parseQueryFragment(
+            Function<GraqlParser, S> parseRule, BiFunction<QueryVisitor, S, T> visit, TokenStream tokens
+    ) {
         GraqlParser parser = new GraqlParser(tokens);
         S tree = parseRule.apply(parser);
-
-        BufferedTokenStream allTokens = new BufferedTokenStream(getLexer(queryString));
-        allTokens.getTokens();
 
         if (parser.getNumberOfSyntaxErrors() != 0) {
             throw new IllegalArgumentException(ErrorMessage.SYNTAX_ERROR.getMessage());

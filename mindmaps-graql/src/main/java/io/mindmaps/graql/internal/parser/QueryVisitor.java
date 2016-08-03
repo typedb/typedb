@@ -463,6 +463,11 @@ public class QueryVisitor extends GraqlBaseVisitor {
         return null;
     }
 
+    @Override
+    public Pattern visitPatternSep(GraqlParser.PatternSepContext ctx) {
+        return visitPattern(ctx.pattern());
+    }
+
     private Getter visitGetter(GraqlParser.GetterContext ctx) {
         return (Getter) visit(ctx);
     }

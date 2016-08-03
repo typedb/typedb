@@ -28,6 +28,9 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.Iterator;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -64,5 +67,52 @@ public class QueryParserFragmentsTest {
 
         assertTrue(var2.isRelation());
         assertEquals(2, var2.getCastings().size());
+    }
+
+    @Test
+    public void testParsePatternsStream() throws IOException {
+        InputStream stream = new InfiniteStream("$x isa person; ($x, $y) isa has-cast;\n");
+
+        Iterator<Pattern> patterns = qp.parsePatternsStream(stream).iterator();
+
+        Var.Admin var1 = patterns.next().admin().asVar();
+        assertEquals("$x isa person", var1.toString());
+
+        Var.Admin var2 = patterns.next().admin().asVar();
+        assertTrue(var2.isRelation());
+        assertEquals(2, var2.getCastings().size());
+
+        Var.Admin var3 = patterns.next().admin().asVar();
+        assertEquals("$x isa person", var3.toString());
+
+        assertTrue(patterns.hasNext());
+    }
+
+
+    class InfiniteStream extends InputStream {
+
+        String string;
+        InputStream stream;
+
+        public InfiniteStream(String string) {
+            this.string = string;
+            resetStream();
+        }
+
+        private void resetStream() {
+            stream = new ByteArrayInputStream(string.getBytes(StandardCharsets.UTF_8));
+        }
+
+        @Override
+        public int read() throws IOException {
+            int next = stream.read();
+
+            if (next == -1) {
+                stream = new ByteArrayInputStream(string.getBytes(StandardCharsets.UTF_8));
+                return stream.read();
+            } else {
+                return next;
+            }
+        }
     }
 }
