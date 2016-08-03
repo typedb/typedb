@@ -136,15 +136,19 @@ class MatchVarValidator implements Validator {
 
         if (relationType == null) {
             errors.add(ErrorMessage.NOT_A_RELATION_TYPE.getMessage(id));
-        } else {
-
-            Set<String> validRoles = relationType.hasRoles().stream()
-                    .map(Concept::getId).collect(Collectors.toSet());
-
-            roleTypes.stream()
-                    .filter(roleName -> !validRoles.contains(roleName))
-                    .map(roleName -> ErrorMessage.NOT_ROLE_IN_RELATION.getMessage(roleName, id, validRoles))
-                    .forEach(errors::add);
+            return;
         }
+
+        Collection<RelationType> relationTypes = relationType.subTypes();
+
+        Set<String> validRoles = relationTypes.stream()
+                .flatMap(r -> r.hasRoles().stream())
+                .map(Concept::getId)
+                .collect(Collectors.toSet());
+
+        roleTypes.stream()
+                .filter(roleType -> roleType != null && !validRoles.contains(roleType))
+                .map(roleType -> ErrorMessage.NOT_ROLE_IN_RELATION.getMessage(roleType, id, validRoles))
+                .forEach(errors::add);
     }
 }
