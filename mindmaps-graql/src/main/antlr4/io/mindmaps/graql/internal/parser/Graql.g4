@@ -122,6 +122,9 @@ modifier       : 'select' selectors                               # modifierSele
                | 'order' 'by' VARIABLE ('(' 'has' id ')')? ORDER? # modifierOrderBy
                ;
 
+// This rule is used for parsing streams of patterns separated by semicolons
+patternSep     : pattern ';' ;
+
 id             : ID | STRING ;
 
 DATATYPE       : 'long' | 'double' | 'string' | 'boolean' ;
