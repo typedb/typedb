@@ -58,12 +58,14 @@ public enum ErrorMessage {
     INVALID_PATH_TO_CONFIG("Unable to open config file ['%s']"),
     CREATING_ONTOLOGY_ERROR("Unable to create a new meta ontology due to ['%s']"),
     INVALID_COMPUTER("The graph computer ['%s'] is not supported"),
+    CONFIG_IGNORED("The config parameter ['%s'] with value ['%s'] is ignored for this implementation"),
 
     //--------------------------------------------- Client Errors -----------------------------------------------
     INVALID_ENGINE_RESPONSE("Mindmaps Engine located at ['%s'] returned response ['%s'], cannot produce a graph."),
     INVALID_FACTORY("Graph Factory ['%s'] is not valid"),
     MISSING_FACTORY_DEFINITION("Graph Factor Config ['factory.internal'] missing from provided config. Cannot produce graph"),
-    CONFIG_NOT_FOUND("Mindmaps Engine located at ['%s'] did not return the config as expected, due to ['%s']");
+    CONFIG_NOT_FOUND("Mindmaps Engine located at ['%s'] did not return the config as expected, due to ['%s']"),
+    GRAPH_COMPUTER_NOT_SUPPORTED("The backend graph ['%s'] does not have a supported graph computer");
 
     private final String message;
 

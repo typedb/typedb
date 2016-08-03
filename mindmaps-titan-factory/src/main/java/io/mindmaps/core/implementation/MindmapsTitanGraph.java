@@ -40,11 +40,6 @@ public class MindmapsTitanGraph extends MindmapsGraphImpl {
     }
 
     @Override
-    public void close() {
-        ((TitanGraph) getGraph()).close();
-    }
-
-    @Override
     public void clear() {
         TitanGraph titanGraph = ((TitanGraph) getGraph());
         titanGraph.close();

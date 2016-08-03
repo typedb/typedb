@@ -18,34 +18,32 @@
 
 package io.mindmaps.core.implementation;
 
+import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.util.TitanCleanup;
 import io.mindmaps.core.dao.MindmapsTransaction;
-import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
+import io.mindmaps.core.exceptions.ErrorMessage;
+import io.mindmaps.core.exceptions.GraphRuntimeException;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 
-/**
- * A mindmaps graph which produces new transactions to work with using a Tinkergraph backend.
- * Primarily used for testing
- */
-public class MindmapsTinkerGraph extends MindmapsGraphImpl {
-    public MindmapsTinkerGraph(){
-        super(TinkerGraph.open(), null);
-        new MindmapsTinkerTransaction(this).initialiseMetaConcepts();
+public class MindmapsTitanHadoopGraph extends MindmapsGraphImpl {
+    public MindmapsTitanHadoopGraph(Graph graph, String graphComputer){
+        super(graph, graphComputer);
     }
 
-    /**
-     *
-     * @return A new transaction with a snapshot of the graph at the time of creation
-     */
     @Override
     public MindmapsTransaction newTransaction() {
         getGraph();
-        return new MindmapsTinkerTransaction(this);
+        try {
+            return new MindmapsTitanHadoopTransaction(this);
+        } catch (IllegalStateException e){
+            throw  new GraphRuntimeException(ErrorMessage.CLOSED.getMessage(this));
+        }
     }
 
-    /**
-     * Clears the graph completely. WARNING: This will invalidate any open transactions.
-     */
     @Override
     public void clear() {
-        close();
+        TitanGraph titanGraph = ((TitanGraph) getGraph());
+        titanGraph.close();
+        TitanCleanup.clear(titanGraph);
     }
 }
