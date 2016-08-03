@@ -335,6 +335,12 @@ public class MatchQueryTest {
     }
 
     @Test
+    public void testAllowedToReferToNonExistentRoleplayer() {
+        long count = qb.match(var().rel("actor", id("doesnt-exist"))).stream().count();
+        assertEquals(0, count);
+    }
+
+    @Test
     public void testRobertDeNiroNotRelatedToSelf() {
         MatchQuery query = qb.match(
                 var().rel("x").rel("y"),

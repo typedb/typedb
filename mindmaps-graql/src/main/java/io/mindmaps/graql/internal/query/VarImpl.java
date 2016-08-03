@@ -457,29 +457,31 @@ public class VarImpl implements Var.Admin {
             throw new UnsupportedOperationException("Graql strings cannot represent a query with inner variables");
         }
 
+        id.ifPresent(i -> properties.add("id " + StringConverter.valueToString(i)));
+
+        if (isRelation()) {
+            properties.add("(" + castings.stream().map(Object::toString).collect(joining(", ")) + ")");
+        }
+
         isa.ifPresent(v -> properties.add("isa " + v.getPrintableName()));
         ako.ifPresent(v -> properties.add("ako " + v.getPrintableName()));
         playsRole.forEach(v -> properties.add("plays-role " + v.getPrintableName()));
         hasRole.forEach(v -> properties.add("has-role " + v.getPrintableName()));
         hasScope.forEach(v -> properties.add("has-scope " + v.getPrintableName()));
+        hasResourceTypes.forEach(v -> properties.add("has-resource " + v.getPrintableName()));
 
-        id.ifPresent(i -> properties.add("id " + StringConverter.valueToString(i)));
+        getDatatypeName().ifPresent(d -> properties.add("datatype " + d));
+
+        if (getAbstract()) properties.add("is-abstract");
+
         values.forEach(v -> properties.add("value " + v));
 
         resources.forEach(
                 (type, predicates) -> predicates.forEach(p -> properties.add("has " + type.getId().get() + " " + p))
         );
 
-        getDatatypeName().ifPresent(d -> properties.add("datatype " + d));
-
-        if (getAbstract()) properties.add("is-abstract");
-
         lhs.ifPresent(s -> properties.add("lhs {" + s + "}"));
         rhs.ifPresent(s -> properties.add("rhs {" + s + "}"));
-
-        if (isRelation()) {
-            properties.add("(" + castings.stream().map(Object::toString).collect(joining(", ")) + ")");
-        }
 
         String name = isUserDefinedName() ? getPrintableName() + " " : "";
 

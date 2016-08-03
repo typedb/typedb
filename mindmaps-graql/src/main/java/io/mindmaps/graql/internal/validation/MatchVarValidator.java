@@ -73,6 +73,20 @@ class MatchVarValidator implements Validator {
     private Set<String> getExpectedIds() {
         Set<String> typeNames = new HashSet<>();
         var.getInnerVars().stream()
+                .flatMap(
+                        v -> {
+                            // Get everything related to this var that is definitely a type
+                            Set<Var.Admin> types = new HashSet<>();
+                            v.getType().ifPresent(types::add);
+                            v.getAko().ifPresent(types::add);
+                            v.getPlaysRoles().forEach(types::add);
+                            v.getHasRoles().forEach(types::add);
+                            v.getHasResourceTypes().forEach(types::add);
+                            v.getCastings().forEach(casting -> casting.getRoleType().ifPresent(types::add));
+                            v.getResourcePredicates().keySet().forEach(types::add);
+                            return types.stream();
+                        }
+                )
                 .filter(v -> !v.equals(var))
                 .forEach(v -> v.getId().ifPresent(typeNames::add));
 

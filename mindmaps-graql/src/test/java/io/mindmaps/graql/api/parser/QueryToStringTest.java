@@ -138,6 +138,11 @@ public class QueryToStringTest {
         );
     }
 
+    @Test
+    public void testHasResource() {
+        assertEquals("insert $x has-resource thingy;", qb.insert(var("x").hasResource("thingy")).toString());
+    }
+
     @Test(expected=UnsupportedOperationException.class)
     public void testToStringUnsupported() {
         //noinspection ResultOfMethodCallIgnored

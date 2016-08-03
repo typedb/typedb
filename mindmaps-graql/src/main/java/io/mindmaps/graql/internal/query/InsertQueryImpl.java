@@ -40,7 +40,7 @@ import static java.util.stream.Collectors.toSet;
  */
 public class InsertQueryImpl implements InsertQuery.Admin {
 
-    private final MatchQuery matchQuery;
+    private final Optional<MatchQuery> matchQuery;
     private MindmapsTransaction transaction;
     private final Collection<Var.Admin> originalVars;
     private final Collection<Var.Admin> vars;
@@ -58,7 +58,7 @@ public class InsertQueryImpl implements InsertQuery.Admin {
         this.transaction = transaction;
 
         this.originalVars = vars;
-        this.matchQuery = matchQuery;
+        this.matchQuery = Optional.ofNullable(matchQuery);
 
         // Get all variables, including ones nested in other variables
         this.vars = vars.stream().flatMap(v -> v.getInnerVars().stream()).collect(toSet());
@@ -84,6 +84,7 @@ public class InsertQueryImpl implements InsertQuery.Admin {
 
     @Override
     public InsertQuery withTransaction(MindmapsTransaction transaction) {
+        matchQuery.ifPresent(query -> query.withTransaction(transaction));
         this.transaction = Objects.requireNonNull(transaction);
         return this;
     }
@@ -98,17 +99,11 @@ public class InsertQueryImpl implements InsertQuery.Admin {
     public Stream<Concept> stream() {
         if (transaction == null) throw new IllegalStateException(ErrorMessage.NO_TRANSACTION.getMessage());
 
-        if (matchQuery == null) {
-            concepts.clear();
-            return insertAll();
-        } else {
-            return matchQuery.stream().flatMap(
-                    resultMap -> {
-                        concepts = new HashMap<>(resultMap);
-                        return insertAll();
-                    }
-            );
-        }
+        return matchQuery.map(
+                query -> query.stream().flatMap(this::insertAll)
+        ).orElseGet(
+                this::insertAll
+        );
     }
 
     @Override
@@ -118,7 +113,7 @@ public class InsertQueryImpl implements InsertQuery.Admin {
 
     @Override
     public Optional<MatchQuery> getMatchQuery() {
-        return Optional.ofNullable(matchQuery);
+        return matchQuery;
     }
 
     @Override
@@ -135,6 +130,16 @@ public class InsertQueryImpl implements InsertQuery.Admin {
      * Insert all the Vars
      */
     private Stream<Concept> insertAll() {
+        return insertAll(new HashMap<>());
+    }
+
+    /**
+     * Insert all the Vars
+     * @param results the result of a match query
+     */
+    private Stream<Concept> insertAll(Map<String, Concept> results) {
+        concepts = new HashMap<>(results);
+
         // First insert each var
         getAllVars().stream().forEach(this::insertVar);
 
