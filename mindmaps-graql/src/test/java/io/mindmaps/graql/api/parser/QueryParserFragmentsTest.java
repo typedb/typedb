@@ -34,6 +34,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class QueryParserFragmentsTest {
@@ -70,7 +71,7 @@ public class QueryParserFragmentsTest {
     }
 
     @Test
-    public void testParsePatternsStream() throws IOException {
+    public void testParseInfinitePatternsStream() throws IOException {
         InputStream stream = new InfiniteStream("$x isa person; ($x, $y) isa has-cast;\n");
 
         Iterator<Pattern> patterns = qp.parsePatternsStream(stream).iterator();
@@ -86,6 +87,23 @@ public class QueryParserFragmentsTest {
         assertEquals("$x isa person", var3.toString());
 
         assertTrue(patterns.hasNext());
+    }
+
+    @Test
+    public void testParseFinitePatternsStream() throws IOException {
+        String query = "$x isa person; ($x, $y) isa has-cast;";
+        InputStream stream = new ByteArrayInputStream(query.getBytes(StandardCharsets.UTF_8));
+
+        Iterator<Pattern> patterns = qp.parsePatternsStream(stream).iterator();
+
+        Var.Admin var1 = patterns.next().admin().asVar();
+        assertEquals("$x isa person", var1.toString());
+
+        Var.Admin var2 = patterns.next().admin().asVar();
+        assertTrue(var2.isRelation());
+        assertEquals(2, var2.getCastings().size());
+
+        assertFalse(patterns.hasNext());
     }
 
 
