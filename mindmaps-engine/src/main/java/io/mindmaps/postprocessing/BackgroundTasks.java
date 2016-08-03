@@ -60,7 +60,6 @@ public class BackgroundTasks {
         cache = Cache.getInstance();
     }
 
-    //@Scheduled(fixedDelay = 300000)
     public void performPostprocessing() {
         futures = ConcurrentHashMap.newKeySet();
 
@@ -116,7 +115,7 @@ public class BackgroundTasks {
         Set<Future<String>> duplicateAssertionsJob = ConcurrentHashMap.newKeySet();
         Set<String> uniqueAssertionHashCodes = new HashSet<>();
 
-        cache.getAssertionJobs().entrySet().parallelStream().forEach(inner -> {
+        cache.getRelationJobs().entrySet().parallelStream().forEach(inner -> {
             inner.getValue().parallelStream().forEach(assertionId -> {
                 duplicateAssertionsJob.add(postpool.submit(() -> conceptFixer.createAssertionHashCode(assertionId)));
             });
@@ -150,13 +149,7 @@ public class BackgroundTasks {
     }
 
     private void performCastingFix() {
-        currentStage = "Merging Castings";
-        cache.getCastingJobs().entrySet().parallelStream().forEach(inner -> {
-            LOG.info("Merging type [" + inner.getKey() + "] which has [" + inner.getValue().size() + "] potential casting sets . . . ");
-            inner.getValue().keySet().parallelStream().forEach(key -> futures.add(postpool.submit(() -> conceptFixer.fixElements(inner.getKey(), key))));
-        });
-        LOG.info("Waiting for casting fix to complete");
-        waitToContinue();
+        //TODO: Fix duplicate castings.
     }
 
     private void performShortcutFix() {
@@ -195,7 +188,7 @@ public class BackgroundTasks {
         while (isRunning.get()) {
             LOG.info("--------------------Current Status of Post Processing--------------------");
             dumpStatsType("Casting", cache.getCastingJobs());
-            dumpStatsType("Assertion", cache.getAssertionJobs());
+            dumpStatsType("Assertion", cache.getRelationJobs());
             LOG.info("Save in Progress: " + cache.isSaveInProgress());
             LOG.info("Current Stage: " + currentStage);
             LOG.info("-------------------------------------------------------------------------");

@@ -21,9 +21,8 @@ package io.mindmaps.api;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.RestAssured;
+import com.jayway.restassured.http.ContentType;
 import com.jayway.restassured.response.Response;
-import io.mindmaps.core.dao.MindmapsGraph;
-import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.util.ConfigProperties;
 import io.mindmaps.util.RESTUtil;
 import org.junit.Before;
@@ -31,17 +30,15 @@ import org.junit.Test;
 
 import java.util.Properties;
 
-import static com.jayway.restassured.RestAssured.get;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertTrue;
 
-public class GraphFactoryControllerTest {
+public class CommitLogControllerTest {
     private Properties prop = new Properties();
 
     @Before
     public void setUp() throws Exception {
-        new GraphFactoryController();
+        new CommitLogController();
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.INFO);
         try {
@@ -53,20 +50,23 @@ public class GraphFactoryControllerTest {
     }
 
     @Test
-    public void testConfigWorking(){
-        Response response = get(RESTUtil.WebPath.GRAPH_FACTORY_URI).then().statusCode(200).extract().response().andReturn();
-        String config = response.getBody().prettyPrint();
-        assertTrue(config.contains("factory"));
-    }
+    public void testControllerWorking(){
+        String commitLog = "{\n" +
+                "    \"concepts\":[\n" +
+                "        {\"id\":\"1\", \"type\":\"CASTING\"}, \n" +
+                "        {\"id\":\"2\", \"type\":\"CASTING\"}, \n" +
+                "        {\"id\":\"3\", \"type\":\"CASTING\"}, \n" +
+                "        {\"id\":\"4\", \"type\":\"CASTING\"}, \n" +
+                "        {\"id\":\"5\", \"type\":\"RELATION\"},\n" +
+                "        {\"id\":\"6\", \"type\":\"RELATION\"}\n" +
+                "    ]\n" +
+                "}";
 
-    @Test
-    public void testMindmapsClient(){
-        MindmapsGraph graph = MindmapsClient.getGraph("mindmapstest");
-        MindmapsGraph graph2 = MindmapsClient.getGraph("mindmapstest2");
-        MindmapsGraph graphCopy = MindmapsClient.getGraph("mindmapstest");
-        assertNotEquals(0, graph.getGraph().traversal().V().toList().size());
-        assertNotEquals(graph, graph2);
-        assertEquals(graph, graphCopy);
-        graph.close();
+        Response response = given().contentType(ContentType.JSON).body(commitLog).when().
+                post(RESTUtil.WebPath.COMMIT_LOG_URI + "?" + RESTUtil.Request.GRAPH_NAME_PARAM + "=" + "bob").
+                then().statusCode(200).extract().response().andReturn();
+
+        String result = response.getBody().prettyPrint();
+        assertTrue(result.contains("Graph [bob] now has [6] post processing jobs"));
     }
 }
