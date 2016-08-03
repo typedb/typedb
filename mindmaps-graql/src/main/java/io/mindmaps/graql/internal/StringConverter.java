@@ -44,14 +44,37 @@ public class StringConverter {
     }
 
     /**
+     * @param string a string to quote and escape
+     * @return a string, surrounded with double quotes and escaped
+     */
+    private static String quoteString(String string) {
+        return "\"" + escapeString(string) + "\"";
+    }
+
+    /**
      * @param value a value in the graph
      * @return the string representation of the value (using quotes if it is already a string)
      */
     public static String valueToString(Object value) {
         if (value instanceof String) {
-            return "\"" + escapeString((String) value) + "\"";
+            return quoteString((String) value);
         } else {
             return value.toString();
+        }
+    }
+
+    /**
+     * @param id an id of a concept
+     * @return
+     * The id of the concept correctly escaped in graql.
+     * If the ID doesn't begin with a number and is only comprised of alphanumeric characters, underscores and dashes,
+     * then it will be returned as-is, otherwise it will be quoted and escaped.
+     */
+    public static String idToString(String id) {
+        if (id.matches("^[a-zA-Z_][a-zA-Z0-9_-]*$")) {
+            return id;
+        } else {
+            return quoteString(id);
         }
     }
 }
