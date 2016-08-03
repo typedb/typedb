@@ -24,10 +24,13 @@ import io.mindmaps.core.exceptions.ConceptException;
 import java.util.Collection;
 import java.util.Map;
 
+/**
+ * A relation represents and instance of a relation type which model how different entities relate to one another.
+ */
 public interface Relation extends Instance {
     //------------------------------------- Modifiers ----------------------------------
     /**
-     * This Method will soon be deprecated.
+     *
      * @param id The new unique id of the Relation.
      * @return The Relation itself
      */

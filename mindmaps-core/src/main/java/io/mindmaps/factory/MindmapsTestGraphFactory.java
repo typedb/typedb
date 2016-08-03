@@ -21,8 +21,15 @@ package io.mindmaps.factory;
 import io.mindmaps.core.dao.MindmapsGraph;
 import io.mindmaps.core.implementation.MindmapsTinkerGraph;
 
+/**
+ * An in memory test graph. Should only be used for testing purposes.
+ */
 public class MindmapsTestGraphFactory {
 
+    /**
+     *
+     * @return An empty mindmaps graph with a tinker graph backend
+     */
     public static MindmapsGraph newEmptyGraph(){
         return new MindmapsTinkerGraph();
     }

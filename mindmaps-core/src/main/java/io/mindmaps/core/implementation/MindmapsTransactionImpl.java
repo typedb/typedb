@@ -528,7 +528,7 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
         casting.type(role);
         if(rolePlayer != null) {
             EdgeImpl castingToRolePlayer = addEdge(casting, rolePlayer, DataType.EdgeLabel.ROLE_PLAYER); // Casting to RolePlayer
-            castingToRolePlayer.setEdgePropertyRoleType(role.getId());
+            castingToRolePlayer.setProperty(DataType.EdgeProperty.ROLE_TYPE, role.getId());
         }
         return casting;
     }
@@ -542,7 +542,7 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
         }
 
         EdgeImpl assertionToCasting = addEdge(relation, foundCasting, DataType.EdgeLabel.CASTING);// Relation To Casting
-        assertionToCasting.setEdgePropertyRoleType(role.getId());
+        assertionToCasting.setProperty(DataType.EdgeProperty.ROLE_TYPE, role.getId());
 
         putShortcutEdges(relation, relation.type());
 
@@ -574,7 +574,7 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
             //Transfer assertion edges
             for(RelationImpl relation : otherCasting.getRelations()){
                 EdgeImpl assertionToCasting = addEdge(relation, mainCasting, DataType.EdgeLabel.CASTING);
-                assertionToCasting.setEdgePropertyRoleType(role.getId());
+                assertionToCasting.setProperty(DataType.EdgeProperty.ROLE_TYPE, role.getId());
             }
 
             getTinkerPopGraph().traversal().V(otherCasting.getBaseIdentifier()).next().remove();
@@ -612,22 +612,20 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
 
         if (!exists) {
             EdgeImpl edge = addEdge(fromRolePlayer, toRolePlayer, DataType.EdgeLabel.SHORTCUT);
-            edge.setEdgePropertyRelationId(relationType.getId());
+            edge.setProperty(DataType.EdgeProperty.RELATION_TYPE_ID, relationType.getId());
+            edge.setProperty(DataType.EdgeProperty.RELATION_ID, relation.getId());
 
             if (fromRolePlayer.getId() != null)
-                edge.setEdgePropertyFromId(fromRolePlayer.getId());
-            edge.setEdgePropertyFromRole(fromRole.getId());
+                edge.setProperty(DataType.EdgeProperty.FROM_ID, fromRolePlayer.getId());
+            edge.setProperty(DataType.EdgeProperty.FROM_ROLE, fromRole.getId());
 
             if (toRolePlayer.getId() != null)
-                edge.setEdgePropertyToId(toRolePlayer.getId());
-            edge.setEdgePropertyToRole(toRole.getId());
+                edge.setProperty(DataType.EdgeProperty.TO_ID, toRolePlayer.getId());
+            edge.setProperty(DataType.EdgeProperty.TO_ROLE, toRole.getId());
 
-            edge.setEdgePropertyFromType(fromRolePlayer.getParentIsa().getId());
-            edge.setEdgePropertyToType(toRolePlayer.getParentIsa().getId());
-
-            edge.setEdgePropertyBaseAssertionId(relation.getBaseIdentifier());
-
-            edge.setEdgePropertyShortcutHash(hash);
+            edge.setProperty(DataType.EdgeProperty.FROM_TYPE, fromRolePlayer.getParentIsa().getId());
+            edge.setProperty(DataType.EdgeProperty.TO_TYPE, toRolePlayer.getParentIsa().getId());
+            edge.setProperty(DataType.EdgeProperty.SHORTCUT_HASH, hash);
         }
     }
 

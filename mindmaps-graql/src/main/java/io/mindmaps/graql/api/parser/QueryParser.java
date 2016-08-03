@@ -22,17 +22,20 @@ import io.mindmaps.core.dao.MindmapsTransaction;
 import io.mindmaps.graql.api.query.AskQuery;
 import io.mindmaps.graql.api.query.DeleteQuery;
 import io.mindmaps.graql.api.query.InsertQuery;
+import io.mindmaps.graql.api.query.Pattern;
 import io.mindmaps.graql.internal.parser.GraqlLexer;
 import io.mindmaps.graql.internal.parser.GraqlParser;
 import io.mindmaps.graql.internal.parser.MatchQueryPrinter;
 import io.mindmaps.graql.internal.parser.QueryVisitor;
 import io.mindmaps.graql.internal.validation.ErrorMessage;
-import org.antlr.v4.runtime.ANTLRInputStream;
-import org.antlr.v4.runtime.BufferedTokenStream;
-import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 
+import java.io.InputStream;
+import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * Class for parsing query strings into valid queries
@@ -70,7 +73,7 @@ public class QueryParser {
      * @return the parsed match query
      */
     public MatchQueryPrinter parseMatchQuery(String queryString) {
-        return (MatchQueryPrinter) parseQuery(GraqlParser::matchEOF, queryString);
+        return parseQueryFragment(GraqlParser::matchEOF, QueryVisitor::visitMatchEOF, queryString);
     }
 
     /**
@@ -78,7 +81,7 @@ public class QueryParser {
      * @return a parsed ask query
      */
     public AskQuery parseAskQuery(String queryString) {
-        return (AskQuery) parseQuery(GraqlParser::askEOF, queryString);
+        return parseQueryFragment(GraqlParser::askEOF, QueryVisitor::visitAskEOF, queryString);
     }
 
     /**
@@ -86,7 +89,7 @@ public class QueryParser {
      * @return a parsed insert query
      */
     public InsertQuery parseInsertQuery(String queryString) {
-        return (InsertQuery) parseQuery(GraqlParser::insertEOF, queryString);
+        return parseQueryFragment(GraqlParser::insertEOF, QueryVisitor::visitInsertEOF, queryString);
     }
 
     /**
@@ -94,7 +97,7 @@ public class QueryParser {
      * @return a parsed delete query
      */
     public DeleteQuery parseDeleteQuery(String queryString) {
-        return (DeleteQuery) parseQuery(GraqlParser::deleteEOF, queryString);
+        return parseQueryFragment(GraqlParser::deleteEOF, QueryVisitor::visitDeleteEOF, queryString);
     }
 
     /**
@@ -103,23 +106,63 @@ public class QueryParser {
      * a query, the type will depend on the type of query.
      */
     public Object parseQuery(String queryString) {
-        return parseQuery(GraqlParser::queryEOF, queryString);
+        return parseQueryFragment(GraqlParser::queryEOF, QueryVisitor::visitQueryEOF, queryString);
     }
 
-    private Object parseQuery(Function<GraqlParser, ParseTree> parseRule, String queryString) {
+    /**
+     * @param queryString a string representing a list of patterns
+     * @return a list of patterns
+     */
+    public List<Pattern> parsePatterns(String queryString) {
+        return parseQueryFragment(GraqlParser::patterns, QueryVisitor::visitPatterns, queryString);
+    }
+
+    public Stream<Pattern> parsePatternsStream(InputStream inputStream) {
+        GraqlLexer lexer = new GraqlLexer(new UnbufferedCharStream(inputStream));
+        lexer.setTokenFactory(new CommonTokenFactory(true));
+        UnbufferedTokenStream tokens = new UnbufferedTokenStream(lexer);
+        return Stream.generate(
+                () -> parseQueryFragment(GraqlParser::patternSep, QueryVisitor::visitPatternSep, tokens)
+        );
+    }
+
+    /**
+     * Parse any part of a Graql query
+     * @param parseRule a method on GraqlParser that yields the parse rule you want to use (e.g. GraqlParser::variable)
+     * @param visit a method on QueryVisitor that visits the parse rule you specified (e.g. QueryVisitor::visitVariable)
+     * @param queryString the string to parse
+     * @param <T> The type the query is expected to parse to
+     * @param <S> The type of the parse rule being used
+     * @return the parsed result
+     */
+    private <T, S extends ParseTree> T parseQueryFragment(
+            Function<GraqlParser, S> parseRule, BiFunction<QueryVisitor, S, T> visit, String queryString
+    ) {
         GraqlLexer lexer = getLexer(queryString);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
-        GraqlParser parser = new GraqlParser(tokens);
-        ParseTree tree = parseRule.apply(parser);
+        return parseQueryFragment(parseRule, visit, tokens);
+    }
 
-        BufferedTokenStream allTokens = new BufferedTokenStream(getLexer(queryString));
-        allTokens.getTokens();
+    /**
+     * Parse any part of a Graql query
+     * @param parseRule a method on GraqlParser that yields the parse rule you want to use (e.g. GraqlParser::variable)
+     * @param visit a method on QueryVisitor that visits the parse rule you specified (e.g. QueryVisitor::visitVariable)
+     * @param tokens the token stream to read
+     * @param <T> The type the query is expected to parse to
+     * @param <S> The type of the parse rule being used
+     * @return the parsed result
+     */
+    private <T, S extends ParseTree> T parseQueryFragment(
+            Function<GraqlParser, S> parseRule, BiFunction<QueryVisitor, S, T> visit, TokenStream tokens
+    ) {
+        GraqlParser parser = new GraqlParser(tokens);
+        S tree = parseRule.apply(parser);
 
         if (parser.getNumberOfSyntaxErrors() != 0) {
             throw new IllegalArgumentException(ErrorMessage.SYNTAX_ERROR.getMessage());
         }
 
-        return new QueryVisitor(transaction).visit(tree);
+        return visit.apply(new QueryVisitor(transaction), tree);
     }
 
     private GraqlLexer getLexer(String queryString) {

@@ -28,6 +28,7 @@ import io.mindmaps.graql.api.query.QueryBuilder;
 import org.junit.Before;
 import org.junit.Test;
 
+import static io.mindmaps.graql.api.query.QueryBuilder.id;
 import static io.mindmaps.graql.api.query.QueryBuilder.or;
 import static io.mindmaps.graql.api.query.QueryBuilder.var;
 import static io.mindmaps.graql.api.query.ValuePredicate.lte;
@@ -114,6 +115,27 @@ public class QueryToStringTest {
     @Test
     public void testInsertQueryToString() {
         assertEquals("insert $x isa movie;", qb.insert(var("x").isa("movie")).toString());
+    }
+
+    @Test
+    public void testEscapeStrings() {
+        assertEquals("insert $x value \"hello\\nworld\";", qb.insert(var("x").value("hello\nworld")).toString());
+    }
+
+    @Test
+    public void testQuoteIds() {
+        assertEquals(
+                "match $a (\"hello\\tworld\")",
+                QueryBuilder.build().match(var("a").rel(id("hello\tworld"))).toString()
+        );
+    }
+
+    @Test
+    public void testQuoteIdsNumbers() {
+        assertEquals(
+                "match $a (\"1hi\")",
+                QueryBuilder.build().match(var("a").rel(id("1hi"))).toString()
+        );
     }
 
     @Test(expected=UnsupportedOperationException.class)

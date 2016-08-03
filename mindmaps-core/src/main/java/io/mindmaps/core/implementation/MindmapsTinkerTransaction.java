@@ -22,6 +22,9 @@ import io.mindmaps.core.dao.MindmapsGraph;
 import io.mindmaps.core.exceptions.ErrorMessage;
 import io.mindmaps.core.exceptions.MindmapsValidationException;
 
+/**
+ * A thread bound mindmaps transaction
+ */
 public class MindmapsTinkerTransaction extends MindmapsTransactionImpl {
     MindmapsTinkerGraph rootGraph;
 
@@ -30,6 +33,10 @@ public class MindmapsTinkerTransaction extends MindmapsTransactionImpl {
         this.rootGraph = graph;
     }
 
+    /**
+     * Validates and attempts to commit the graph. An exception is thrown if validation fails or if the graph cannot be persisted due to an underlying database issue.
+     * @throws MindmapsValidationException is thrown when a structural validation fails.
+     */
     @Override
     public void commit() throws MindmapsValidationException {
         validateGraph();
@@ -38,17 +45,29 @@ public class MindmapsTinkerTransaction extends MindmapsTransactionImpl {
         getTransaction().clearTransaction();
     }
 
+    /**
+     * Resets the current transaction without commiting.
+     * @throws UnsupportedOperationException due to tinkergraph not supporting refresh of transactions
+     */
     @Override
     public void refresh() throws Exception {
         throw new UnsupportedOperationException(ErrorMessage.NOT_SUPPORTED.getMessage("Tinkergraph"));
     }
 
+    /**
+     * Closes the current transaction rendering it unusable.
+     * @throws Exception
+     */
     @Override
     public void close() throws Exception {
         getTransaction().clearTransaction();
         setTinkerPopGraph(null);
     }
 
+    /**
+     *
+     * @return the root mindmaps graph of the transaction
+     */
     @Override
     public MindmapsGraph getRootGraph() {
         return rootGraph;

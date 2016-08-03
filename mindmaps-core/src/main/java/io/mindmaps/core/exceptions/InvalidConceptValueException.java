@@ -18,6 +18,9 @@
 
 package io.mindmaps.core.exceptions;
 
+/**
+ * Thrown when the value of a resource does not match the resources datatype.
+ */
 public class InvalidConceptValueException extends ConceptException {
     public InvalidConceptValueException(String message) {
         super(message);

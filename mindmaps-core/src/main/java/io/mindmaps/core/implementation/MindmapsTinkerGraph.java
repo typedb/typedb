@@ -21,18 +21,29 @@ package io.mindmaps.core.implementation;
 import io.mindmaps.core.dao.MindmapsTransaction;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
+/**
+ * A mindmaps graph which produces new transactions to work with using a Tinkergraph backend.
+ * Primarily used for testing
+ */
 public class MindmapsTinkerGraph extends MindmapsGraphImpl {
     public MindmapsTinkerGraph(){
         super(TinkerGraph.open());
         new MindmapsTinkerTransaction(this).initialiseMetaConcepts();
     }
 
+    /**
+     *
+     * @return A new transaction with a snapshot of the graph at the time of creation
+     */
     @Override
     public MindmapsTransaction newTransaction() {
         getGraph();
         return new MindmapsTinkerTransaction(this);
     }
 
+    /**
+     * Closes the graph making it unusable
+     */
     @Override
     public void close() {
         try {
@@ -42,7 +53,9 @@ public class MindmapsTinkerGraph extends MindmapsGraphImpl {
         }
     }
 
-
+    /**
+     * Clears the graph completely. WARNING: This will invalidate any open transactions.
+     */
     @Override
     public void clear() {
         close();

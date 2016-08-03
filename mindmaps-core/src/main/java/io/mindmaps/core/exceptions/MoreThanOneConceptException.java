@@ -18,6 +18,9 @@
 
 package io.mindmaps.core.exceptions;
 
+/**
+ * Thrown when two concepts are returned when using a unique id to retrieve them.
+ */
 public class MoreThanOneConceptException extends ConceptException {
     public MoreThanOneConceptException(String message) {
         super(message);

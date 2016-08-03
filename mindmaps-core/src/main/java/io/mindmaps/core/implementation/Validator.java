@@ -24,6 +24,9 @@ import io.mindmaps.core.model.RoleType;
 
 import java.util.*;
 
+/**
+ * Handles calling the relevant validation depending on the type of the concept.
+ */
 class Validator {
     private final MindmapsTransactionImpl mindmapsGraph;
     private final List<String> errorsFound = new ArrayList<>();
@@ -32,11 +35,18 @@ class Validator {
         this.mindmapsGraph = mindmapsGraph;
     }
 
-
+    /**
+     *
+     * @return Any errors found during validation
+     */
     public List<String> getErrorsFound(){
         return errorsFound;
     }
 
+    /**
+     *
+     * @return True if the data and schema conforms to our model.
+     */
     public boolean validate(){
         Set<ConceptImpl> validationList = new HashSet<>(mindmapsGraph.getModifiedConcepts());
 
@@ -57,11 +67,10 @@ class Validator {
         return errorsFound.size() == 0;
     }
 
-
-    private void logError(String error){
-        errorsFound.add(error);
-    }
-
+    /**
+     * Validation rules exclusive to relations
+     * @param relation The relation to validate
+     */
     private void validateRelation(RelationImpl relation){
         if(!ValidateGlobalRules.validateRelationshipStructure(relation)) {
             String roles = "";
@@ -72,31 +81,47 @@ class Validator {
                 if(entry.getValue() != null)
                     rolePlayers = rolePlayers + entry.getValue().getId() + ",";
             }
-            logError(ErrorMessage.VALIDATION_RELATION.getMessage(relation.getId(), relation.type().getId(),
+            errorsFound.add(ErrorMessage.VALIDATION_RELATION.getMessage(relation.getId(), relation.type().getId(),
                     roles.split(",").length, roles,
                     rolePlayers.split(",").length, roles));
         }
     }
 
+    /**
+     * Validation rules exclusive to castings
+     * @param casting The casting to validate
+     */
     private void validateCasting(CastingImpl casting){
         if(!ValidateGlobalRules.validatePlaysRoleStructure(casting)) {
             Instance rolePlayer = casting.getRolePlayer();
-            logError(ErrorMessage.VALIDATION_CASTING.getMessage(rolePlayer.type().getId(), rolePlayer.getId(), casting.getRole().getId()));
+            errorsFound.add(ErrorMessage.VALIDATION_CASTING.getMessage(rolePlayer.type().getId(), rolePlayer.getId(), casting.getRole().getId()));
         }
     }
 
+    /**
+     * Validation rules exclusive to types
+     * @param conceptType The type to validate
+     */
     private void validateType(TypeImpl conceptType){
         if(conceptType.isAbstract() && !ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(conceptType))
-            logError(ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(conceptType.getId()));
+            errorsFound.add(ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(conceptType.getId()));
     }
 
+    /**
+     * Validation rules exclusive to role types
+     * @param roleType The roleType to validate
+     */
     private void validateRoleType(RoleTypeImpl roleType){
         if(!ValidateGlobalRules.validateHasSingleIncomingHasRoleEdge(roleType))
-            logError(ErrorMessage.VALIDATION_ROLE_TYPE.getMessage(roleType.getId()));
+            errorsFound.add(ErrorMessage.VALIDATION_ROLE_TYPE.getMessage(roleType.getId()));
     }
 
+    /**
+     * Validation rules exclusive to relation types
+     * @param relationType The relationType to validate
+     */
     private void validateRelationType(RelationTypeImpl relationType){
         if(!ValidateGlobalRules.validateHasMinimumRoles(relationType))
-            logError(ErrorMessage.VALIDATION_RELATION_TYPE.getMessage(relationType.getId()));
+            errorsFound.add(ErrorMessage.VALIDATION_RELATION_TYPE.getMessage(relationType.getId()));
     }
 }

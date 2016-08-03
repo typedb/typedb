@@ -28,6 +28,10 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * The global structural rules to validate.
+ * This ensures the graph conforms to our model.
+ */
 class ValidateGlobalRules {
     private ValidateGlobalRules() {
         throw new UnsupportedOperationException();

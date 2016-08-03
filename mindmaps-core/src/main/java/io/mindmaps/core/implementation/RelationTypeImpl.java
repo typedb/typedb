@@ -27,11 +27,18 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * A Relation Type is an ontological element used to model how entity types relate to one another.
+ */
 class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
     RelationTypeImpl(Vertex v, MindmapsTransactionImpl mindmapsGraph) {
         super(v, mindmapsGraph);
     }
 
+    /**
+     *
+     * @return A list of the Role Types which make up this Relation Type.
+     */
     @Override
     public Collection<RoleType> hasRoles() {
         Set<RoleType> roleTypes = new HashSet<>();
@@ -39,12 +46,22 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
         return roleTypes;
     }
 
+    /**
+     *
+     * @param roleType A new role which is part of this relationship.
+     * @return The Relation Type itself.
+     */
     @Override
     public RelationType hasRole(RoleType roleType) {
         putEdge(getMindmapsTransaction().getElementFactory().buildRoleType(roleType), DataType.EdgeLabel.HAS_ROLE);
         return this;
     }
 
+    /**
+     *
+     * @param roleType The role type to delete from this relationship.
+     * @return The Relation Type itself.
+     */
     @Override
     public RelationType deleteHasRole(RoleType roleType) {
         deleteEdgeTo(DataType.EdgeLabel.HAS_ROLE, getMindmapsTransaction().getElementFactory().buildRoleType(roleType));

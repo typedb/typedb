@@ -20,6 +20,7 @@ package io.mindmaps.reasoner.inference;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.model.Rule;
 import io.mindmaps.graql.api.parser.QueryParser;
 import io.mindmaps.graql.api.query.MatchQuery;
 import io.mindmaps.reasoner.MindmapsReasoner;
@@ -28,17 +29,20 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static io.mindmaps.reasoner.internal.Utility.isRuleRecursive;
+import static io.mindmaps.reasoner.internal.Utility.printMatchQueryResults;
 import static org.junit.Assert.assertEquals;
 
 public class SNBInferenceTest {
 
+    private static MindmapsTransaction graph;
     private static MindmapsReasoner reasoner;
     private static QueryParser qp;
 
     @BeforeClass
     public static void setUpClass() {
 
-        MindmapsTransaction graph = SNBGraph.getTransaction();
+        graph = SNBGraph.getTransaction();
         qp = QueryParser.create(graph);
         reasoner = new MindmapsReasoner(graph);
 
@@ -47,11 +51,19 @@ public class SNBInferenceTest {
         System.out.println(query.toString().replace(" or ", "\nor\n").replace("};", "};\n").replace("; {", ";\n{"));
     }
 
+    @Test
+    public void testRecursive()
+    {
+        Rule R1 = graph.getRule("R1");
+        Rule R2 = graph.getRule("R2");
+
+        assertEquals(true, isRuleRecursive(R1) && isRuleRecursive(R2));
+    }
+
     /**
      * Tests transitivity and Bug #7343
      */
     @Test
-    @Ignore
     public void test()
     {
         String queryString = "match " +
@@ -62,7 +74,7 @@ public class SNBInferenceTest {
         MatchQuery expandedQuery = reasoner.expandQuery(query);
         printMatchQuery(expandedQuery);
 
-        reasoner.printMatchQueryResults(expandedQuery.distinct());
+        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match " +
                 "{$x isa university;$x id 'University of Cambridge'} or" +
@@ -77,7 +89,6 @@ public class SNBInferenceTest {
      * Tests transitivity and Bug #7343
      */
     @Test
-    @Ignore
     public void test2()
     {
         String queryString = " match" +
@@ -88,7 +99,7 @@ public class SNBInferenceTest {
         MatchQuery expandedQuery = reasoner.expandQuery(query);
         printMatchQuery(expandedQuery);
 
-        reasoner.printMatchQueryResults(expandedQuery.distinct());
+        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match " +
                             "{$x isa university} or {$x isa company};\n" +
@@ -116,7 +127,7 @@ public class SNBInferenceTest {
         MatchQuery expandedQuery = reasoner.expandQuery(query);
         printMatchQuery(expandedQuery);
 
-        reasoner.printMatchQueryResults(expandedQuery.distinct());
+        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match " +
                 "$x isa person;$y isa tag;" +
@@ -141,7 +152,7 @@ public class SNBInferenceTest {
         MatchQuery expandedQuery = reasoner.expandQuery(query);
         printMatchQuery(query);
 
-        reasoner.printMatchQueryResults(expandedQuery.distinct());
+        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match " +
                 "$x isa person;$y isa product;" +
@@ -167,7 +178,7 @@ public class SNBInferenceTest {
         MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQuery expandedQuery = reasoner.expandQuery(query);
         printMatchQuery(expandedQuery);
-        reasoner.printMatchQueryResults(expandedQuery.distinct());
+        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match " +
                 "$x isa person;$y isa product;" +
@@ -190,7 +201,7 @@ public class SNBInferenceTest {
         MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQuery expandedQuery = reasoner.expandQuery(query);
 
-        reasoner.printMatchQueryResults(expandedQuery.distinct());
+        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match $x isa person;$y isa tag;" +
                 "{$x id 'Charlie';{$y id 'cacophony'} or {$y id 'black-sabbath'}} or " +
@@ -215,7 +226,7 @@ public class SNBInferenceTest {
         MatchQuery expandedQuery = reasoner.expandQuery(query);
         printMatchQuery(expandedQuery);
 
-        reasoner.printMatchQueryResults(expandedQuery.distinct());
+        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match $x isa person;$y isa product;" +
                 "{$x id 'Bob';$y id 'Ducatti-1299'}";
@@ -237,7 +248,7 @@ public class SNBInferenceTest {
         MatchQuery expandedQuery = reasoner.expandQuery(query);
         printMatchQuery(expandedQuery);
 
-        reasoner.printMatchQueryResults(expandedQuery.distinct());
+        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match " +
                 "{$x id 'Frank';$y id 'Ludwig_van_Beethoven'} or" +
@@ -255,7 +266,7 @@ public class SNBInferenceTest {
         MatchQuery expandedQuery = reasoner.expandQuery(query);
         printMatchQuery(expandedQuery);
 
-        reasoner.printMatchQueryResults(expandedQuery.distinct());
+        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match {$x id 'Frank'} or {$x id 'Karl Fischer'}";
 
@@ -266,14 +277,13 @@ public class SNBInferenceTest {
      * Tests transitivity and Bug #7416
      */
     @Test
-    @Ignore
     public void testQueryConsistency() {
 
         String queryString = "match $x isa person; $y isa place; ($x, $y) isa resides;\n" +
                         "$z isa person, value \"Miguel Gonzalez\"; ($x, $z) isa knows; select $x(value), $y(value)";
         MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQuery expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
+        printMatchQueryResults(expandedQuery);
 
         System.out.println();
 
@@ -282,7 +292,7 @@ public class SNBInferenceTest {
         MatchQuery query2 = qp.parseMatchQuery(queryString2).getMatchQuery();
         MatchQuery expandedQuery2 = reasoner.expandQuery(query2);
 
-        System.out.println(expandedQuery2);
+        printMatchQueryResults(expandedQuery2);
 
     }
 
@@ -318,7 +328,7 @@ public class SNBInferenceTest {
                 "{$x isa person; $p isa product, value \"Chopin - Nocturnes\"; $t isa tag; ($t, $x), isa tagging};" +
                 "($p, $c) isa typing; select $p(value), $c(value)";
 
-        reasoner.printMatchQueryResults(expandedQuery.distinct());
+        printMatchQueryResults(expandedQuery.distinct());
 
         assertQueriesEqual(expandedQuery, qp.parseMatchQuery(explicitQuery).getMatchQuery());
         assertQueriesEqual(expandedQuery2, qp.parseMatchQuery(explicitQuery2).getMatchQuery());
@@ -344,9 +354,24 @@ public class SNBInferenceTest {
                 "{$x isa person;$tt isa tag, value 'Johann_Wolfgang_von_Goethe';($x, $tt) isa tagging;$p isa product, value 'Faust'}" +
                 ";($p, $t) isa typing; select $p(value), $t(value)";
 
-        reasoner.printMatchQueryResults(expandedQuery.distinct());
+        printMatchQueryResults(expandedQuery.distinct());
 
         assertQueriesEqual(expandedQuery, qp.parseMatchQuery(explicitQuery).getMatchQuery());
+    }
+
+    @Test
+    public void testDoubleVars() {
+
+        String queryString = "match $x isa person;{($x, $y) isa recommendation} or " +
+                "{" +
+                "$x isa person;$t isa tag, value 'Enter_the_Chicken';" +
+                "($x, $t) isa tagging;$y isa tag;{$y value 'Buckethead'} or {$y value 'Primus'}" +
+                "} select $x, $y";
+
+        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery expandedQuery = reasoner.expandQuery(query);
+        printMatchQuery(expandedQuery);
+
     }
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
         assertEquals(Sets.newHashSet(q1), Sets.newHashSet(q2));
