@@ -30,6 +30,7 @@ import java.util.function.Function;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class GraqlShellTest {
@@ -157,6 +158,37 @@ public class GraqlShellTest {
     public void testAutocompleteFill() throws IOException {
         String result = testShell("match $x isa typ\t\n");
         assertThat(result, containsString("\"relation-type\""));
+    }
+
+    @Test
+    public void testReasoner() throws IOException {
+        String result = testShell(
+                "insert man isa entity-type; person isa entity-type;\n" +
+                "insert 'felix' isa man;\n" +
+                "match $x isa person;\n" +
+                "insert my-rule isa inference-rule lhs {match $x isa man;} rhs {match $x isa person;};\n" +
+                "match $x isa person;\n"
+        );
+
+        // Make sure first 'match' query has no results and second has exactly one result
+        String[] results = result.split("\n");
+        int matchCount = 0;
+        for (int i = 0; i < results.length; i ++) {
+            if (results[i].contains("match $x isa person")) {
+
+                if (matchCount == 0) {
+                    // First 'match' result is before rule is added, so should have no results
+                    assertFalse(results[i + 1].contains("felix"));
+                } else {
+                    // Second 'match' result is after rule is added, so should have a result
+                    assertTrue(results[i + 1].contains("felix"));
+                }
+
+                matchCount ++;
+            }
+        }
+
+        assertEquals(2, matchCount);
     }
 
     @Test
