@@ -108,7 +108,7 @@ public class BlockingLoader {
 
                 QueryBuilder.build(transaction).insert(batch).execute();
                 transaction.commit();
-                cache.addCacheJob(transaction.getModifiedCastingIds(), transaction.getModifiedRelationIds());
+                cache.addCacheJobs(graphName, transaction.getModifiedCastingIds(), transaction.getModifiedRelationIds());
                 transactionsSemaphore.release();
                 return;
 

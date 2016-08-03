@@ -19,14 +19,10 @@
 package io.mindmaps.postprocessing;
 
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
-import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Relation;
 import io.mindmaps.factory.GraphFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.HashSet;
-import java.util.Set;
 
 class ConceptFixer {
     private final Logger LOG = LoggerFactory.getLogger(ConceptFixer.class);
@@ -80,32 +76,7 @@ class ConceptFixer {
     }
 
     private boolean fixCastings(String type, String key){
-        MindmapsTransactionImpl graph = (MindmapsTransactionImpl) GraphFactory.getInstance().getGraphBatchLoading("mindmaps").newTransaction();
-        boolean commitNeeded = false;
-        Set<String> castingIds = cache.getCastingJobs().get(type).get(key);
-        Set<Concept> castings = new HashSet<>();
-
-        for (String baseId : castingIds) {
-            Concept concept = graph.getConcept(baseId);
-            if(concept != null) {
-                castings.add(concept);
-            }
-        }
-
-        if (castings.size() >= 2) {
-            LOG.info("Duplicate castings found and being merged.");
-            commitNeeded = true;
-            graph.mergeCastings(castings);
-        }
-
-        if(commitNeeded){
-            if(!commitGraph(graph))
-                return false;
-        } else {
-            closeGraph(graph);
-        }
-
-        cache.deleteJobCasting(type, key);
+        //TODO: Fix duplicate castings
         return true;
     }
 

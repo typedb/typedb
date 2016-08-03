@@ -22,12 +22,12 @@ public class ImportControllerTest {
 
     @Before
     public void setUp() throws Exception {
-        graphName = prop.getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
         try {
             prop.load(ImportControllerTest.class.getClassLoader().getResourceAsStream(ConfigProperties.CONFIG_TEST_FILE));
         } catch (Exception e) {
             e.printStackTrace();
         }
+        graphName = prop.getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
         importer = new ImportController(graphName);
     }
 
