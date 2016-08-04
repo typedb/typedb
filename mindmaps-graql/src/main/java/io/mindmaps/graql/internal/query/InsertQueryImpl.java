@@ -30,6 +30,8 @@ import io.mindmaps.graql.internal.validation.ErrorMessage;
 import io.mindmaps.graql.internal.validation.InsertQueryValidator;
 
 import java.util.*;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -220,18 +222,16 @@ public class InsertQueryImpl implements InsertQuery.Admin {
             throw new IllegalStateException(ErrorMessage.INSERT_ISA_AND_AKO.getMessage(printableName));
         }
 
-        // Get explicit id or random UUID
-        String id = var.getId().orElse(UUID.randomUUID().toString());
-
         Concept concept;
 
         // If 'ako' provided, use that, else use 'isa', else get existing concept by id
         if (ako.isPresent()) {
+            String id = getTypeIdOrThrow(var.getId());
             concept = putConceptBySuperType(id, getConcept(ako.get()).asType());
         } else if (type.isPresent()) {
-            concept = putConceptByType(id, var, getConcept(type.get()).asType());
+            concept = putConceptByType(var.getId(), var, getConcept(type.get()).asType());
         } else {
-            concept = transaction.getConcept(id);
+            concept = var.getId().map(transaction::getConcept).orElse(null);
         }
 
         if (concept == null) {
@@ -279,26 +279,27 @@ public class InsertQueryImpl implements InsertQuery.Admin {
      * @param type the type of the concept
      * @return a concept with the given ID and the specified type
      */
-    private Concept putConceptByType(String id, Var.Admin var, Type type) {
+    private Concept putConceptByType(Optional<String> id, Var.Admin var, Type type) {
         String typeId = type.getId();
+
         if (typeId.equals(DataType.ConceptMeta.ENTITY_TYPE.getId())) {
-            return transaction.putEntityType(id);
+            return transaction.putEntityType(getTypeIdOrThrow(id));
         } else if (typeId.equals(DataType.ConceptMeta.RELATION_TYPE.getId())) {
-            return transaction.putRelationType(id);
+            return transaction.putRelationType(getTypeIdOrThrow(id));
         } else if (typeId.equals(DataType.ConceptMeta.ROLE_TYPE.getId())) {
-            return transaction.putRoleType(id);
+            return transaction.putRoleType(getTypeIdOrThrow(id));
         } else if (typeId.equals(DataType.ConceptMeta.RESOURCE_TYPE.getId())) {
-            return transaction.putResourceType(id, getDataType(var));
+            return transaction.putResourceType(getTypeIdOrThrow(id), getDataType(var));
         } else if (typeId.equals(DataType.ConceptMeta.RULE_TYPE.getId())) {
-            return transaction.putRuleType(id);
+            return transaction.putRuleType(getTypeIdOrThrow(id));
         } else if (type.isEntityType()) {
-            return transaction.putEntity(id, type.asEntityType());
+            return putInstance(id, type.asEntityType(), transaction::putEntity, transaction::addEntity);
         } else if (type.isRelationType()) {
-            return transaction.putRelation(id, type.asRelationType());
+            return putInstance(id, type.asRelationType(), transaction::putRelation, transaction::addRelation);
         } else if (type.isResourceType()) {
-            return transaction.putResource(id, type.asResourceType());
+            return putInstance(id, type.asResourceType(), transaction::putResource, transaction::addResource);
         } else if (type.isRuleType()) {
-            return transaction.putRule(id, type.asRuleType());
+            return putInstance(id, type.asRuleType(), transaction::putRule, transaction::addRule);
         } else {
             throw new RuntimeException("Unrecognized type " + type.getId());
         }
@@ -324,6 +325,33 @@ public class InsertQueryImpl implements InsertQuery.Admin {
         } else {
             throw new IllegalStateException(ErrorMessage.INSERT_METATYPE.getMessage(id, superType.getId()));
         }
+    }
+
+    /**
+     * Put an instance of a type which may or may not have an ID specified
+     * @param id the ID of the instance to create, or empty to not specify an ID
+     * @param type the type of the instance
+     * @param putInstance a 'put' method on a MindmapsTransaction, such as transaction::putEntity
+     * @param addInstance an 'add' method on a MindmapsTransaction such a transaction::addEntity
+     * @param <T> the class of the type of the instance, e.g. EntityType
+     * @param <S> the class of the instance, e.g. Entity
+     * @return an instance of the specified type, with the given ID if one was specified
+     */
+    private <T extends Type, S extends Instance> S putInstance(
+            Optional<String> id, T type, BiFunction<String, T, S> putInstance, Function<T, S> addInstance
+    ) {
+        return id.map(i -> putInstance.apply(i, type)).orElseGet(() -> addInstance.apply(type));
+    }
+
+    /**
+     * Get an ID from an optional for a type, throwing an exception if it is not present.
+     * This is because types must have specified IDs.
+     * @param id an optional ID to get
+     * @return the ID, if present
+     * @throws IllegalStateException if the ID was not present
+     */
+    private String getTypeIdOrThrow(Optional<String> id) throws IllegalStateException {
+        return id.orElseThrow(() -> new IllegalStateException(ErrorMessage.INSERT_TYPE_WITHOUT_ID.getMessage()));
     }
 
     /**
