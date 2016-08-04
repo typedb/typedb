@@ -335,6 +335,12 @@ public class MatchQueryTest {
     }
 
     @Test
+    public void testAllowedToReferToNonExistentRoleplayer() {
+        long count = qb.match(var().rel("actor", id("doesnt-exist"))).stream().count();
+        assertEquals(0, count);
+    }
+
+    @Test
     public void testRobertDeNiroNotRelatedToSelf() {
         MatchQuery query = qb.match(
                 var().rel("x").rel("y"),
@@ -394,5 +400,33 @@ public class MatchQueryTest {
         MatchQuery query = qb.match(var("x").isa("movie"), var("y").isa("person"));
         int numPeople = 10;
         assertEquals(QueryUtil.movies.length * numPeople, query.stream().count());
+    }
+
+    @Test
+    public void testAkoRelationType() {
+        MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
+        MindmapsTransaction transaction = graph.newTransaction();
+        QueryBuilder qb = QueryBuilder.build(transaction);
+
+        qb.insert(
+                id("ownership").isa("relation-type").hasRole("owner").hasRole("possession"),
+                id("organization-with-shares").ako("possession"),
+                id("possession").isa("role-type"),
+
+                id("share-ownership").ako("ownership").hasRole("shareholder").hasRole("organization-with-shares"),
+                id("shareholder").ako("owner"),
+                id("owner").isa("role-type"),
+
+                id("person").isa("entity-type").playsRole("shareholder"),
+                id("company").isa("entity-type").playsRole("organization-with-shares"),
+
+                id("apple").isa("company"),
+                id("bob").isa("person"),
+
+                var().rel("organization-with-shares", id("apple")).rel("shareholder", id("bob")).isa("share-ownership")
+        ).execute();
+
+        // This should work despite akos
+        qb.match(var().rel("x").rel("shareholder", "y").isa("ownership")).stream().count();
     }
 }

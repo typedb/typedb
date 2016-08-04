@@ -73,6 +73,20 @@ class MatchVarValidator implements Validator {
     private Set<String> getExpectedIds() {
         Set<String> typeNames = new HashSet<>();
         var.getInnerVars().stream()
+                .flatMap(
+                        v -> {
+                            // Get everything related to this var that is definitely a type
+                            Set<Var.Admin> types = new HashSet<>();
+                            v.getType().ifPresent(types::add);
+                            v.getAko().ifPresent(types::add);
+                            v.getPlaysRoles().forEach(types::add);
+                            v.getHasRoles().forEach(types::add);
+                            v.getHasResourceTypes().forEach(types::add);
+                            v.getCastings().forEach(casting -> casting.getRoleType().ifPresent(types::add));
+                            v.getResourcePredicates().keySet().forEach(types::add);
+                            return types.stream();
+                        }
+                )
                 .filter(v -> !v.equals(var))
                 .forEach(v -> v.getId().ifPresent(typeNames::add));
 
@@ -122,15 +136,19 @@ class MatchVarValidator implements Validator {
 
         if (relationType == null) {
             errors.add(ErrorMessage.NOT_A_RELATION_TYPE.getMessage(id));
-        } else {
-
-            Set<String> validRoles = relationType.hasRoles().stream()
-                    .map(Concept::getId).collect(Collectors.toSet());
-
-            roleTypes.stream()
-                    .filter(roleName -> !validRoles.contains(roleName))
-                    .map(roleName -> ErrorMessage.NOT_ROLE_IN_RELATION.getMessage(roleName, id, validRoles))
-                    .forEach(errors::add);
+            return;
         }
+
+        Collection<RelationType> relationTypes = relationType.subTypes();
+
+        Set<String> validRoles = relationTypes.stream()
+                .flatMap(r -> r.hasRoles().stream())
+                .map(Concept::getId)
+                .collect(Collectors.toSet());
+
+        roleTypes.stream()
+                .filter(roleType -> roleType != null && !validRoles.contains(roleType))
+                .map(roleType -> ErrorMessage.NOT_ROLE_IN_RELATION.getMessage(roleType, id, validRoles))
+                .forEach(errors::add);
     }
 }
