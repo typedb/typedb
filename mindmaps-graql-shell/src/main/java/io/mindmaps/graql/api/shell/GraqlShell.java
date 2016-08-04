@@ -36,6 +36,7 @@ import io.mindmaps.graql.internal.shell.ErrorMessage;
 import io.mindmaps.graql.internal.shell.GraQLCompleter;
 import io.mindmaps.graql.internal.shell.ShellCommandCompleter;
 import io.mindmaps.graql.internal.shell.Version;
+import io.mindmaps.reasoner.MindmapsReasoner;
 import jline.console.ConsoleReader;
 import jline.console.completer.AggregateCompleter;
 import jline.console.history.FileHistory;
@@ -91,6 +92,7 @@ public class GraqlShell implements AutoCloseable {
 
     private final MindmapsGraph graph;
     private final MindmapsTransaction transaction;
+    private final MindmapsReasoner reasoner;
 
     /**
      * Run a Graql REPL
@@ -173,6 +175,7 @@ public class GraqlShell implements AutoCloseable {
     GraqlShell(MindmapsGraph graph, InputStream in, OutputStream out, PrintStream err) throws IOException {
         this.graph = graph;
         transaction = graph.newTransaction();
+        reasoner = new MindmapsReasoner(transaction);
         console = new ConsoleReader(in, out);
         this.err = err;
     }
@@ -283,8 +286,10 @@ public class GraqlShell implements AutoCloseable {
                 printAskQuery((AskQuery) query);
             } else if (query instanceof InsertQuery) {
                 printInsertQuery((InsertQuery) query);
+                reasoner.linkConceptTypes();
             } else if (query instanceof DeleteQuery) {
                 ((DeleteQuery) query).execute();
+                reasoner.linkConceptTypes();
             } else {
                 throw new RuntimeException("Unrecognized query " + query);
             }
@@ -294,6 +299,9 @@ public class GraqlShell implements AutoCloseable {
     }
 
     private void printMatchQuery(MatchQueryPrinter matchQuery, boolean setLimit) {
+        // Expand match query with reasoner
+        matchQuery.setMatchQuery(reasoner.expandQuery(matchQuery.getMatchQuery()));
+
         Stream<String> results = matchQuery.resultsString();
         if (setLimit) results = results.limit(100);
         results.forEach(this::println);
