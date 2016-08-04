@@ -210,26 +210,8 @@ public class Query {
 
     }
 
-    private void changeAtomVarName(Atomic oldAtom, String from, String to) {
-        if (oldAtom.isRelation())
-            oldAtom.changeRelVarName(from, to);
-        else
-            oldAtom.setVarName(to);
-    }
-
-    /**NB: doesn't propagate to children if there are any*/
-    public void exchangeRelVarNames(String from, String to){
-        changeVarName(to, "temp");
-        changeVarName(from, to);
-        changeVarName("temp", from);
-    }
-
-    /**NB: doesn't propagate to children if there are any*/
-    public void changeRelVarName(String from, String to)
+    private void updateSelectedVars(String from, String to)
     {
-        if ( containsVar(to) ) changeVarName(to, "temp");
-        atomSet.stream().filter(atom -> atom.containsVar(from)).forEach(atom -> changeAtomVarName(atom, from, to));
-        changeVarName("temp", to + to);
         Set<String> selectedVars = matchQuery.admin().getSelectedNames();
         if (selectedVars.contains(from))
         {
@@ -239,17 +221,44 @@ public class Query {
         }
     }
 
+    private void exchangeRelVarNames(String from, String to){
+        changeVarName(to, "temp");
+        changeVarName(from, to);
+        changeVarName("temp", from);
+    }
+
+    public void changeRelVarNames(Map<String, String> mappings)
+    {
+        Map<String, String> appliedMappings = new HashMap<>();
+        //do bidirectional mappings if any
+        for (Map.Entry<String, String> mapping: mappings.entrySet())
+        {
+            String varToReplace = mapping.getKey();
+            String replacementVar = mapping.getValue();
+
+            if(!appliedMappings.containsKey(varToReplace) || !appliedMappings.get(varToReplace).equals(replacementVar)) {
+                /**bidirectional mapping*/
+                if (mappings.containsKey(replacementVar) && mappings.get(replacementVar).equals(varToReplace)) {
+                    exchangeRelVarNames(varToReplace, replacementVar);
+                    appliedMappings.put(varToReplace, replacementVar);
+                    appliedMappings.put(replacementVar, varToReplace);
+                }
+            }
+        }
+        mappings.entrySet().removeIf(e ->
+                appliedMappings.containsKey(e.getKey()) && appliedMappings.get(e.getKey()).equals(e.getValue()));
+
+        atomSet.forEach(atom -> atom.changeEachVarName(mappings));
+
+        for (Map.Entry<String, String> mapping : mappings.entrySet())
+            updateSelectedVars(mapping.getKey(), mapping.getValue());
+
+        }
+
     /**NB: doesn't propagate to children if there are any*/
     public void changeVarName(String from, String to) {
-        String replacement = containsVar(to) ? to + to : to;
-        atomSet.stream().filter(atom -> atom.containsVar(from)).forEach(atom -> changeAtomVarName(atom, from, replacement));
-        Set<String> selectedVars = matchQuery.admin().getSelectedNames();
-        if (selectedVars.contains(from))
-        {
-            selectedVars.remove(from);
-            selectedVars.add(replacement);
-            matchQuery.select(selectedVars);
-        }
+        atomSet.forEach(atom -> atom.changeEachVarName(from, to));
+        updateSelectedVars(from, to);
     }
 
     private Pattern.Disjunction<Pattern.Conjunction<Var.Admin>> getDNF(){
@@ -278,7 +287,7 @@ public class Query {
         Set<String> selectVars = matchQuery.admin().getSelectedNames();
         Set<AtomConjunction> conjunctions = getAtomConjunctions();
 
-        for (Atomic atom : atomSet) {
+        atomSet.forEach(atom -> {
             if (!atom.getExpansions().isEmpty())
             {
                 //find base conjunctions
@@ -299,7 +308,7 @@ public class Query {
                     });
                 }
             }
-        }
+        });
         QueryBuilder qb = QueryBuilder.build(graph);
 
         Set<Pattern.Conjunction<Var.Admin>> conjs = new HashSet<>();
@@ -343,8 +352,30 @@ public class Query {
 
     public Map<String, Type> getVarTypeMap() {
         Map<String, Type> map = new HashMap<>();
-        atomSet.stream().filter(atom -> atom.isType() && !atom.isRelation() && !atom.isResource())
-                .forEach(atom -> map.putIfAbsent(atom.getVarName(), graph.getType(atom.getTypeId())));
+
+        atomSet.forEach(atom ->
+        {
+            if (atom.isType() && !atom.isResource() ) {
+                if (!atom.isRelation())
+                {
+                    String var = atom.getVarName();
+                    Type type = graph.getType(atom.getTypeId());
+                    if (!map.containsKey(var))
+                        map.put(var, type);
+                    else
+                        map.replace(var, type);
+                }
+                else {
+                    Set<String> vars = atom.getVarNames();
+                    vars.forEach(var -> {
+                        if (!map.containsKey(var))
+                            map.put(var, null);
+                    });
+                }
+            }
+        });
+        //atomSet.stream().filter(atom -> atom.isType() && !atom.isRelation() && !atom.isResource())
+         //       .forEach(atom -> map.putIfAbsent(atom.getVarName(), graph.getType(atom.getTypeId())));
         return map;
     }
 

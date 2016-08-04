@@ -67,9 +67,9 @@ public class AbstractInferenceTest {
     public void testQuery2()
     {
         String queryString = "match " +
-                        "$y isa Q;\n" +
-                        "$x isa P;\n" +
-                        "($y, $x) isa REL; select $y";
+                        "$yy isa Q;\n" +
+                        "$y isa P;\n" +
+                        "($y, $yy) isa REL; select $yy";
         MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQuery expQuery = reasoner.expandQuery(query);
         String expQueryString = expQuery.toString().replace(" or ", "\nor\n").replace("};", "};\n").replace("; {", ";\n{");
@@ -77,11 +77,13 @@ public class AbstractInferenceTest {
         printMatchQueryResults(expQuery);
 
         String explicitQuery = "match " +
-                                "{$y isa Q} or {{$yy isa q} or {$yy isa t};\n" +
-                                "($y, $yy) isa rel;\n" +
-                                "{{$y isa p} or {$y isa s}} or {{$y isa r} or {$y isa u}}};\n" +
-                                "$x isa P;\n" +
-                                "($y, $x) isa REL; select $y";
+                                "{$yy isa Q} or {" +
+                                "{$yyy isa q} or {$yyy isa t};\n" +
+                                "($yy, $yyy) isa rel;\n" +
+                                "{{$yy isa p} or {$yy isa s}} or {{yy isa r} or {$yy isa u}}" +
+                                "};" +
+                                "$y isa P;\n" +
+                                "($y, $yy) isa REL; select $yy";
         assertQueriesEqual(expQuery, qp.parseMatchQuery(explicitQuery).getMatchQuery());
     }
 

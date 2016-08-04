@@ -218,12 +218,9 @@ public class MindmapsReasoner {
         MatchQuery sq = qp.parseMatchQuery("match $x isa inference-rule;").getMatchQuery();
 
         List<Map<String, Concept>> results = Lists.newArrayList(sq);
-        Iterator<Map<String, Concept>> it = results.iterator();
 
-        while( it.hasNext() )
-        {
-            Map<String, Concept> result = it.next();
-            for (Map.Entry<String, Concept> entry : result.entrySet() ) {
+        for (Map<String, Concept> result : results) {
+            for (Map.Entry<String, Concept> entry : result.entrySet()) {
                 Concept concept = entry.getValue();
                 rules.add((Rule) concept);
             }
@@ -264,66 +261,76 @@ public class MindmapsReasoner {
         }
     }
 
+    private String createFreshVariable(Set<String> globalVars, Set<String> childVars, String var)
+    {
+        String fresh = var;
+        while(globalVars.contains(fresh) || childVars.contains(fresh)) {
+            String valFree = fresh.replaceAll("[^0-9]", "");
+            int value = valFree.equals("") ? 0 : Integer.parseInt(valFree);
+            fresh = fresh.replaceAll("\\d+", "") + (++value);
+        }
+        return fresh;
+    }
+
+    private void resolveCaptures(Query query, Set<String> globalVars)
+    {
+        //find captures
+        Set<String> captures = new HashSet<>();
+        query.getVarSet().forEach(v -> {
+            if (v.contains("capture")) captures.add(v);
+        });
+
+        captures.forEach(cap -> {
+            String fresh = createFreshVariable(globalVars, query.getVarSet(), cap.replace("captured->", ""));
+            query.changeVarName(cap, fresh);
+        });
+
+
+    }
 
     private void makeChildRelationConsistent(RelationAtom childAtom, Query childLHS, RelationAtom parentAtom, Query parentLHS,
                                              Map<String, Type> globalVarMap) {
 
         Set<String> varsToAllocate = parentAtom.getVarNames();
-        Set<String> chRelVars = childAtom.getVarNames();
-        Set<String> pVars = parentLHS.getVarSet();
+        Set<String> childBVs = childAtom.getVarNames();
 
-        /**construct mapping between child and parent variables*/
-        Map<String, String> varMapping = new HashMap<>();
+        /**construct mapping between child and parent bound variables*/
+        Map<String, String> varMappings = new HashMap<>();
         Map<String, Pair<Type, RoleType>> childMap = childAtom.getVarTypeRoleMap();
         Map<RoleType, Pair<String, Type>> parentMap = parentAtom.getRoleVarTypeMap();
 
-        for (String chVar : chRelVars) {
+        for (String chVar : childBVs) {
             RoleType role = childMap.containsKey(chVar)? childMap.get(chVar).getValue1(): null;
             String pVar = role != null && parentMap.containsKey(role) ? parentMap.get(role).getValue0() : "";
             if (pVar.isEmpty())
                 pVar = varsToAllocate.iterator().next();
 
             if ( !chVar.equals(pVar))
-                varMapping.put(chVar, pVar);
+                varMappings.put(chVar, pVar);
 
             varsToAllocate.remove(pVar);
         }
 
-        /**
-         * apply variable change from constructed mapping
-         */
-        Map<String, String> appliedMappings = new HashMap<>();
-        for (Map.Entry<String, String> mapping: varMapping.entrySet())
-        {
-            String varToReplace = mapping.getKey();
-            String replacementVar = mapping.getValue();
+        /**do alpha-conversion*/
+        childLHS.changeRelVarNames(varMappings);
+        resolveCaptures(childLHS, globalVarMap.keySet());
 
-            if(!appliedMappings.containsKey(varToReplace) || !appliedMappings.get(varToReplace).equals(replacementVar)) {
-                /**bidirectional mapping*/
-                if (varMapping.containsKey(replacementVar) && varMapping.get(replacementVar).equals(varToReplace))
-                {
-                    childLHS.exchangeRelVarNames(varToReplace, replacementVar);
-                    appliedMappings.put(varToReplace, replacementVar);
-                    appliedMappings.put(replacementVar, varToReplace);
-                }
-                else
-                {
-                    childLHS.changeRelVarName(varToReplace, replacementVar);
-                    appliedMappings.put(varToReplace, replacementVar);
-                }
-            }
-        }
+        /**check free variables for possible captures*/
+        Set<String> childFVs = childLHS.getVarSet();
+        Set<String> parentBVs = parentAtom.getVarNames();
+        Set<String> parentVars = parentLHS.getVarSet();
+        parentBVs.forEach(childFVs::remove);
 
-        /**check variables not present in relation*/
-        Set<String> modChVars = childLHS.getVarSet();
-        Set<String> pRelVars = parentAtom.getVarNames();
-        pRelVars.forEach(chRelVar -> modChVars.remove(chRelVar));
-        for( String chVar : modChVars)
-        {
-            if (pVars.contains(chVar) || globalVarMap.containsKey(chVar))
-                childLHS.changeVarName(chVar, chVar + chVar.replace("$", ""));
+        childFVs.forEach(chVar -> {
+            // if (x e P) v (x e G)
+            // x -> fresh
+                if (parentVars.contains(chVar) || globalVarMap.containsKey(chVar)) {
+                    String freshVar = createFreshVariable(globalVarMap.keySet(), childLHS.getVarSet(), chVar);
+                    childLHS.changeVarName(chVar, freshVar);
+                }
+            });
+
         }
-    }
 
     private void makeChildConsistent(Atomic childAtom, Query childLHS, Atomic parentAtom, Query parentLHS,
                                         Type type, Map<String, Type> globalVarMap)
@@ -335,30 +342,32 @@ public class MindmapsReasoner {
             Set<String> chVars = childLHS.getVarSet();
             Set<String> pVars = parentLHS.getVarSet();
 
-            String parentVar = parentAtom.getVarName();
-            String childVar = childAtom.getVarName();
-            //if variables not equal do a var exchange
-            if (!parentVar.equals(childVar)) {
-                //if from exists in child, create a new variable for from
-                if (chVars.contains(parentVar)) {
-                    String replacement = parentVar + parentVar.replace("$", "");
-                    LOG.debug("Replacing: " + parentVar + "->" + replacement);
-                    childLHS.changeVarName(parentVar, replacement);
-                }
-
-                LOG.debug("Replacing: " + childVar + "->" + parentVar);
-                childLHS.changeVarName(childVar, parentVar);
+            String parentBV = parentAtom.getVarName();
+            String childBV = childAtom.getVarName();
+            //if bound vars not equal alpha-convert
+            if (!parentBV.equals(childBV)) {
+                LOG.debug("Replacing: " + childBV + "->" + parentBV);
+                childLHS.changeVarName(childBV, parentBV);
+                resolveCaptures(childLHS, globalVarMap.keySet());
             }
 
-            //if any of remaining child vars are contained in parent or top, create a new var
-            for (String var : chVars) {
-                if (!var.equals(parentVar) && ( pVars.contains(var) || globalVarMap.containsKey(var))) {
-                    String replacement = var + var.replace("$", "");
-                    LOG.debug("Replacing: " + var + "->" + replacement);
-                    childLHS.changeVarName(var, replacement);
+            //if any of free vars of child are contained in parent or global, create a new var
+            chVars.forEach( var -> {
+                // if (x e P) v (x e G)
+                // x -> fresh
+                if (!var.equals(parentBV) && ( pVars.contains(var) || globalVarMap.containsKey(var))) {
+                    String freshVar = createFreshVariable(globalVarMap.keySet(), chVars, var);
+                    LOG.debug("Replacing: " + var + "->" + freshVar);
+                    childLHS.changeVarName(var, freshVar);
                 }
-            }
+            });
         }
+
+        //update global vars
+        Map<String, Type> varTypeMap = childLHS.getVarTypeMap();
+        for(Map.Entry<String, Type> entry : varTypeMap.entrySet())
+            globalVarMap.putIfAbsent(entry.getKey(), entry.getValue());
+
     }
 
     private Query applyRuleToAtom(Atomic parentAtom, Query parent, Rule child, Map<String, Type> varMap)
@@ -387,38 +396,6 @@ public class MindmapsReasoner {
         LOG.debug("EXPANDED: Parent\n" + parent.toString() + "\nEXPANDED by " + child.getId() + " through type " + type.getId());
 
         return expansions;
-    }
-
-    private void expandQueryWithStack(Query q, Map<String, Type> varMap)
-    {
-        Stack<Rule> ruleStack = new Stack<>();
-        Stack<Query> queryStack = new Stack<>();
-
-        Set<Rule> topRules = getQueryChildren(q);
-        topRules.forEach(r -> {
-            ruleStack.push(r);
-            queryStack.push(q);
-        });
-
-        while(!queryStack.isEmpty())
-        {
-            Query top = queryStack.peek();
-            Rule rule = ruleStack.peek();
-
-            Set<Query> expansions = applyRuleToQuery(top, rule, varMap);
-            if(!expansions.isEmpty())
-            {
-                queryStack.pop();
-                ruleStack.pop();
-                for (Query exp : expansions) {
-                    Set<Rule> children = getQueryChildren(exp);
-                    children.forEach(r -> {
-                        ruleStack.push(r);
-                        queryStack.push(exp);
-                    });
-                }
-            }
-        }
     }
 
     private void expandQuery(Query query, Map<String, Type> varMap)

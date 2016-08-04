@@ -235,6 +235,65 @@ public class CWInferenceTest {
         assertQueriesEqual(expandedQuery, qp.parseMatchQuery(explicitQuery).getMatchQuery());
     }
 
+    @Test
+    public void testVarSub() {
+        String queryString = "match" +
+                "$y isa person;$yy isa country;$yyy isa weapon;\n" +
+                "($y, $yy, $yyy) isa transaction";
+        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery expandedQuery = reasoner.expandQuery(query);
+        printMatchQuery(expandedQuery);
+        printMatchQueryResults(expandedQuery.distinct());
+
+        String explicitQuery = "match \n" +
+                "$y isa person;\n" +
+                "$yy isa country;\n" +
+                "{$yyy isa weapon} or {\n" +
+                "{{$yyy isa missile} or {$yyy isa rocket;$yyy has propulsion 'gsp';}} or {$yyy isa rocket;$yyy has propulsion 'gsp';};\n" +
+                "};\n" +
+                "{($y, $yy, $yyy) isa transaction} or {\n" +
+                "$y isa person;\n" +
+                "$yy isa country;\n" +
+                "{{$yyy isa weapon} or {\n" +
+                "{{$yyy isa missile} or {$yyy isa rocket;$yyy has propulsion 'gsp';}} or {$yyy isa rocket;$yyy has propulsion 'gsp';};\n" +
+                "}} or {{$yyy isa missile} or {$yyy isa rocket;$yyy has propulsion 'gsp';};};\n" +
+                "($y, $yy) isa is-paid-by;\n" +
+                "($yy, $yyy) isa owns\n" +
+                "}";
+
+        assertQueriesEqual(expandedQuery, qp.parseMatchQuery(explicitQuery).getMatchQuery());
+    }
+
+    @Test
+    public void testVarSub2() {
+        String queryString = "match" +
+                "$y isa person;$z isa country;$x isa weapon;\n" +
+                "($y, $z, $x) isa transaction";
+        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery expandedQuery = reasoner.expandQuery(query);
+        printMatchQuery(expandedQuery);
+        printMatchQueryResults(expandedQuery.distinct());
+
+        String explicitQuery = "match \n" +
+                "$y isa person;\n" +
+                "$z isa country;\n" +
+                "{$x isa weapon} or {\n" +
+                "{{$x isa missile} or {$x isa rocket;$x has propulsion 'gsp';}} or {$x isa rocket;$x has propulsion 'gsp';};\n" +
+                "};\n" +
+                "{($y, $z, $x) isa transaction} or {\n" +
+                "$y isa person;\n" +
+                "$z isa country;\n" +
+                "{{$x isa weapon} or {\n" +
+                "{{$x isa missile} or {$x isa rocket;$x has propulsion 'gsp';}} or {$x isa rocket;$x has propulsion 'gsp';};\n" +
+                "}} or {{$x isa missile} or {$x isa rocket;$x has propulsion 'gsp';};};\n" +
+                "($y, $z) isa is-paid-by;\n" +
+                "($z, $x) isa owns\n" +
+                "}";
+
+        assertQueriesEqual(expandedQuery, qp.parseMatchQuery(explicitQuery).getMatchQuery());
+    }
+
+
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
         assertEquals(Sets.newHashSet(q1), Sets.newHashSet(q2));
     }

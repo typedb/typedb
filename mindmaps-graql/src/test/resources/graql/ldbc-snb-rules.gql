@@ -237,7 +237,7 @@ select $x, $y},
 rhs {match ($x, $y) isa recommendation};
 
 "R29" isa inference-rule,
-lhs {match x isa person;
+lhs {match $x isa person;
 $t isa tag, value 'Keith_Richards';
 ($x, $t) isa tagging;
 $y isa tag, value 'Rolling Stones';
