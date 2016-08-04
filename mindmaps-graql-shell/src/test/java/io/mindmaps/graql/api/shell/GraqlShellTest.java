@@ -174,7 +174,7 @@ public class GraqlShellTest {
         String[] results = result.split("\n");
         int matchCount = 0;
         for (int i = 0; i < results.length; i ++) {
-            if (results[i].contains("match $x isa person")) {
+            if (results[i].contains(">>> match $x isa person")) {
 
                 if (matchCount == 0) {
                     // First 'match' result is before rule is added, so should have no results
