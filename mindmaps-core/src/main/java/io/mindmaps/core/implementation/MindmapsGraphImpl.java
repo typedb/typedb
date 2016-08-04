@@ -31,11 +31,13 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class MindmapsGraphImpl implements MindmapsGraph {
     protected final Logger LOG = LoggerFactory.getLogger(MindmapsGraphImpl.class);
+    private final String engineUrl;
     private boolean batchLoading;
     private Graph graph;
 
-    public MindmapsGraphImpl(Graph graph){
+    public MindmapsGraphImpl(Graph graph, String engineUrl){
         this.graph = graph;
+        this.engineUrl = engineUrl;
         checkSchema((MindmapsTransactionImpl) newTransaction());
     }
 
@@ -81,6 +83,14 @@ public abstract class MindmapsGraphImpl implements MindmapsGraph {
     @Override
     public Graph getGraph() {
         return graph;
+    }
+
+    /**
+     *
+     * @return Engine's url
+     */
+    public String getEngineUrl(){
+        return engineUrl;
     }
 
     /**

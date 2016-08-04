@@ -38,7 +38,7 @@ class MindmapsTitanGraphFactory implements MindmapsGraphFactory{
     protected final Logger LOG = LoggerFactory.getLogger(MindmapsTitanGraphFactory.class);
     private final Map<String, MindmapsTitanGraph> openGraphs;
     private final static String SEARCH_KEY = "search";
-    private final static String DEFAULT_ADDRESS = "localhost";
+    private final static String DEFAULT_ADDRESS = "localhost:4567";
     private final static String DEAFULT_CONFIG = "backend-default";
 
     public MindmapsTitanGraphFactory(){
@@ -59,7 +59,7 @@ class MindmapsTitanGraphFactory implements MindmapsGraphFactory{
             }
         }
 
-        MindmapsTitanGraph mindmapsTitanGraph = new MindmapsTitanGraph(newTitanGraph(name, address, pathToConfig));
+        MindmapsTitanGraph mindmapsTitanGraph = new MindmapsTitanGraph(newTitanGraph(name, address, pathToConfig), address);
         openGraphs.put(key, mindmapsTitanGraph);
 
         System.out.println("=================================================================================================");
