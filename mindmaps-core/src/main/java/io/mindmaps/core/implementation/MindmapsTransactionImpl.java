@@ -145,27 +145,16 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
         return transaction.getModifiedConcepts();
     }
 
-    public Map<String, Set<String>> getModifiedRelationIds(){
-        Map<String, Set<String>> conceptTypes = new HashMap<>();
-        for(ConceptImpl concept: transaction.getModifiedRelations()){
-            String type = concept.getType();
-            Set<String> conceptIds = conceptTypes.computeIfAbsent(type, k -> new HashSet<>());
-            conceptIds.add(concept.getId());
-        }
-        return  conceptTypes;
+    public Set<String> getModifiedRelationIds(){
+        Set<String> relationIds = new HashSet<>();
+        transaction.getModifiedRelations().forEach(c -> relationIds.add(c.getId()));
+        return relationIds;
     }
 
-    public  Map<String, Map<String, Set<String>>> getModifiedCastingIds(){
-        Map<String, Map<String, Set<String>>> conceptTypes = new HashMap<>();
-        for(ConceptImpl concept: transaction.getModifiedCastings()){
-            CastingImpl casting = elementFactory.buildCasting(concept);
-            String type = casting.getType();
-            String key = type + "-" + casting.getRolePlayer().getBaseIdentifier();
-            Map<String, Set<String>> outerMap = conceptTypes.computeIfAbsent(type, k -> new HashMap<>());
-            Set<String> ids = outerMap.computeIfAbsent(key, (k) -> new HashSet<>());
-            ids.add(casting.getId());
-        }
-        return conceptTypes;
+    public Set<String> getModifiedCastingIds(){
+        Set<String> relationIds = new HashSet<>();
+        transaction.getModifiedCastings().forEach(c -> relationIds.add(c.getId()));
+        return relationIds;
     }
 
     public Transaction getTransaction () {
