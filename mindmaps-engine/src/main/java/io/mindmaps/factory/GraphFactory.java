@@ -18,17 +18,12 @@
 
 package io.mindmaps.factory;
 
+import io.mindmaps.util.ConfigProperties;
 import io.mindmaps.core.dao.MindmapsGraph;
-import io.mindmaps.core.implementation.MindmapsTransactionImpl;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-
-import java.io.IOException;
-import java.util.Properties;
 
 public class GraphFactory {
 
-    private String CONFIG;
-    private String DEFAULT_NAME; //TO_DO: This should be parametrised
+    private String graphConfig;
 
     private static GraphFactory instance = null;
 
@@ -43,39 +38,19 @@ public class GraphFactory {
     }
 
     private GraphFactory() {
-
-//        LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
-//        Configuration conf = ctx.getConfiguration();
-//        conf.getLoggerConfig(LogManager.ROOT_LOGGER_NAME).setLevel(Level.ERROR);
-
-
         titanGraphFactory = new MindmapsTitanGraphFactory();
-        Properties prop = new Properties();
-        try {
-            prop.load(getClass().getClassLoader().getResourceAsStream("application.properties"));
-            CONFIG = prop.getProperty("graphdatabase.config");
-            DEFAULT_NAME = prop.getProperty("graphdatabase.name");
-            System.out.println("hello config " + CONFIG);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
+        graphConfig = ConfigProperties.getInstance().getProperty(ConfigProperties.GRAPH_CONFIG_PROPERTY);
     }
 
-    public MindmapsTransactionImpl buildMindmapsGraphBatchLoading() {
-        MindmapsGraph graph = buildGraph(DEFAULT_NAME, CONFIG);
+    public synchronized MindmapsGraph getGraph(String name) {
+        return titanGraphFactory.getGraph(name, null, graphConfig);
+    }
+
+    public synchronized MindmapsGraph getGraphBatchLoading(String name) {
+        MindmapsGraph graph = titanGraphFactory.getGraph(name, null, graphConfig);
         graph.enableBatchLoading();
-        return (MindmapsTransactionImpl) graph.newTransaction();
-    }
-
-    public MindmapsTransactionImpl buildMindmapsGraph() {
-        return (MindmapsTransactionImpl) buildGraph(DEFAULT_NAME, CONFIG).newTransaction();
-    }
-
-    private synchronized MindmapsGraph buildGraph(String name, String config) {
-        MindmapsGraph mindmapsGraph = titanGraphFactory.getGraph(name, null, config);
-        Graph graph = mindmapsGraph.getGraph();
-
-        return mindmapsGraph;
+        return graph;
     }
 }
+
+

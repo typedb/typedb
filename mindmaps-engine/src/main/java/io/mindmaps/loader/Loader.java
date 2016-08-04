@@ -18,7 +18,8 @@
 
 package io.mindmaps.loader;
 
-import io.mindmaps.core.Cache;
+import io.mindmaps.util.ConfigProperties;
+import io.mindmaps.postprocessing.Cache;
 import io.mindmaps.core.exceptions.MindmapsValidationException;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.factory.GraphFactory;
@@ -40,11 +41,10 @@ public class Loader {
 
     private Cache cache;
 
-    private int NUM_THREADS = 9; // READ FROM CONFIG FILE!!
-
     private ExecutorService flushToCache;
     private static final int REPEAT_COMMITS = 5;
     private static Loader instance = null;
+    private String graphName;
 
     public static synchronized Loader getInstance() {
         if (instance == null) instance = new Loader();
@@ -55,6 +55,7 @@ public class Loader {
         flushToCache = Executors.newFixedThreadPool(10);
         queueManager = QueueManager.getInstance();
         cache = Cache.getInstance();
+        graphName= ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
     }
 
     private interface LoadableBatch {
@@ -101,7 +102,7 @@ public class Loader {
         // Attempt committing the transaction a certain number of times
         // If a transaction fails, it must be repeated from scratch because Titan is forgetful
         for (int i = 0; i < REPEAT_COMMITS; i++) {
-            MindmapsTransactionImpl gam = GraphFactory.getInstance().buildMindmapsGraphBatchLoading();
+            MindmapsTransactionImpl gam = (MindmapsTransactionImpl)GraphFactory.getInstance().getGraphBatchLoading(graphName).newTransaction();
             try {
 
                 batch.load(gam);
@@ -111,14 +112,14 @@ public class Loader {
                     return errors;
                 }
 
-                Map<String, Map<String, Set<String>>> castingIds = gam.getModifiedCastingIds();
-                Map<String, Set<String>> relationIds = gam.getModifiedRelationIds();
+                Set<String> castingIds = gam.getModifiedCastingIds();
+                Set<String> relationIds = gam.getModifiedRelationIds();
 
                 gam.commit();
 
                 //flush to cache for post processing
                 if (errors.isEmpty()) {
-                    flushToCache.submit(() -> writeNewJobsToCache(castingIds, relationIds));
+                    flushToCache.submit(() -> cache.addCacheJobs(graphName, castingIds, relationIds));
                 }
 
             } catch (MindmapsValidationException e) {
@@ -152,28 +153,5 @@ public class Loader {
             e1.printStackTrace();
         }
     }
-
-    private void writeNewJobsToCache(Map<String, Map<String, Set<String>>> futureCastingJobs, Map<String, Set<String>> futureAssertionJobs) {
-        LOG.info("Updating casting jobs . . .");
-        for (Map.Entry<String, Map<String, Set<String>>> entry : futureCastingJobs.entrySet()) {
-            String type = entry.getKey();
-            for (Map.Entry<String, Set<String>> innerEntry : entry.getValue().entrySet()) {
-                String key = innerEntry.getKey();
-                for (String value : innerEntry.getValue()) {
-                    cache.addJobCasting(type, key, value);
-                }
-            }
-        }
-
-        LOG.info("Updating assertion jobs . . .");
-        for (Map.Entry<String, Set<String>> entry : futureAssertionJobs.entrySet()) {
-            String type = entry.getKey();
-            for (String value : entry.getValue()) {
-                cache.addJobAssertion(type, value);
-            }
-        }
-    }
-
-
 }
 
