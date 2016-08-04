@@ -32,13 +32,17 @@ import java.util.stream.Stream;
  */
 public class MatchQueryPrinter {
 
-    private final MatchQuery matchQuery;
+    private MatchQuery matchQuery;
     private final Map<String, List<Getter>> getters = new HashMap<>();
 
     /**
      * @param matchQuery the match query whose results should be printed
      */
     public MatchQueryPrinter(MatchQuery matchQuery) {
+        this.matchQuery = matchQuery;
+    }
+
+    public void setMatchQuery(MatchQuery matchQuery) {
         this.matchQuery = matchQuery;
     }
 
