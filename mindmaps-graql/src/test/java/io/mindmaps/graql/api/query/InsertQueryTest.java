@@ -457,6 +457,13 @@ public class InsertQueryTest {
         qb.insert(id("thingy").isa("thingy")).execute();
     }
 
+    @Test
+    public void testErrorTypeWithoutId() {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage(allOf(containsString("type"), containsString("id")));
+        qb.insert(var().isa("entity-type")).execute();
+    }
+
     private void assertInsert(Var... vars) {
         // Make sure vars don't exist
         for (Var var : vars) {
