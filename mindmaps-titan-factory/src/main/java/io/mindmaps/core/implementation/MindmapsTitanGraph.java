@@ -25,8 +25,8 @@ import io.mindmaps.core.exceptions.ErrorMessage;
 import io.mindmaps.core.exceptions.GraphRuntimeException;
 
 public class MindmapsTitanGraph extends MindmapsGraphImpl {
-    public MindmapsTitanGraph(TitanGraph graph){
-        super(graph);
+    public MindmapsTitanGraph(TitanGraph graph, String engineUrl){
+        super(graph, engineUrl);
     }
 
     @Override
