@@ -396,6 +396,11 @@ public class QueryParserTest {
         assertTrue(query.withTransaction(transaction).stream().findAny().isPresent());
     }
 
+    @Test
+    public void testParseBoolean() {
+        assertEquals("insert has flag true;", qp.parseInsertQuery("insert has flag true;").toString());
+    }
+
     @Test(expected = IllegalArgumentException.class)
     public void testBadSyntaxThrowsIllegalArgumentException() {
         qp.parseMatchQuery("match");
