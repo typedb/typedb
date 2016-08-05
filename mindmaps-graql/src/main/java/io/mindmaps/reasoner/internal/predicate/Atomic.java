@@ -22,6 +22,7 @@ import io.mindmaps.core.dao.MindmapsTransaction;
 import io.mindmaps.graql.api.query.*;
 import io.mindmaps.reasoner.internal.container.Query;
 
+import java.util.Map;
 import java.util.Set;
 
 public interface Atomic {
@@ -44,8 +45,8 @@ public interface Atomic {
     Query getParentQuery();
     void setParentQuery(Query q);
 
-    void setVarName(String var);
-    void changeRelVarName(String from, String to);
+    void changeEachVarName(String from, String to);
+    void changeEachVarName(Map<String, String> mappings);
 
     String getVarName();
     Set<String> getVarNames();

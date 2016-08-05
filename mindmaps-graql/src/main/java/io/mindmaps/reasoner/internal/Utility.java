@@ -35,12 +35,9 @@ public class Utility {
     public static void printMatchQueryResults(MatchQuery sq)
     {
         List<Map<String, Concept>> results = Lists.newArrayList(sq);
-        Iterator<Map<String, Concept>> it = results.iterator();
 
-        while( it.hasNext() )
-        {
-            Map<String, Concept> result = it.next();
-            for (Map.Entry<String, Concept> entry : result.entrySet() ) {
+        for (Map<String, Concept> result : results) {
+            for (Map.Entry<String, Concept> entry : result.entrySet()) {
                 Concept concept = entry.getValue();
                 System.out.print(entry.getKey() + ": " + concept.getId() + " : " + concept.getValue() + " ");
             }
