@@ -147,7 +147,6 @@ public class Loader {
     }
 
     public State getStatus(UUID uuid) {
-        System.out.println("ehiiiiii status di "+uuid.toString());
         return loaderState.get(uuid);
     }
 
