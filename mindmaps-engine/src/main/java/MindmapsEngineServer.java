@@ -47,6 +47,7 @@ public class MindmapsEngineServer {
         new GraphFactoryController();
         new ImportController();
         new CommitLogController();
+        new TransactionController();
 
     }
 }

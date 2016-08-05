@@ -19,7 +19,7 @@
 package io.mindmaps.postprocessing;
 
 import io.mindmaps.factory.GraphFactory;
-import io.mindmaps.loader.QueueManager;
+import io.mindmaps.loader.Loader;
 import io.mindmaps.util.ConfigProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +60,7 @@ public class BackgroundTasks {
         cache = Cache.getInstance();
     }
 
+    //TODO: read from config backgroundTasks.post-processing-delay the interval of time between one invocation and another
     public void performPostprocessing() {
         futures = ConcurrentHashMap.newKeySet();
 
@@ -79,14 +80,14 @@ public class BackgroundTasks {
         LOG.info("Starting maintenance and locking QueueManager");
         lockQueueManager();
         performTasks();
-        QueueManager.getInstance().unlock();
+        Loader.getInstance().unlock();
         LOG.info("Maintenance completed and unlocking QueueManager");
     }
 
     private void lockQueueManager() {
         synchronized (this) {
-            QueueManager.getInstance().lock();
-            while (QueueManager.getInstance().getNumberOfCurrentJobs() != 0) {
+            Loader.getInstance().lock();
+            while (Loader.getInstance().getLoadingJobs() != 0) {
                 try {
                     wait();
                 } catch (InterruptedException e) {
@@ -166,9 +167,9 @@ public class BackgroundTasks {
         if (!canRun.get())
             return false;
 
-        long lastJob = QueueManager.getInstance().getTimeOfLastJob();
+        long lastJob = Loader.getInstance().getLastJobFinished();
         long currentTime = System.currentTimeMillis();
-        return (currentTime - lastJob) >= TIME_LAPSE && QueueManager.getInstance().getNumberOfCurrentJobs() == 0;
+        return (currentTime - lastJob) >= TIME_LAPSE && Loader.getInstance().getLoadingJobs() == 0;
     }
 
     private void waitToContinue() {

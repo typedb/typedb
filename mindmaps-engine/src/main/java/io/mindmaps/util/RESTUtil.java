@@ -16,6 +16,9 @@ public class RESTUtil {
         public static final String CONCEPTS_BY_VALUE_URI = "/concepts";
         public static final String COMMIT_LOG_URI = "/commit_log";
 
+        public static final String NEW_TRANSACTION_URI = "/transaction";
+        public static final String TRANSACTION_STATUS_URI = "/transactionStatus/:uuid";
+
     }
 
     public static class Request{
@@ -24,6 +27,7 @@ public class RESTUtil {
         public static final String VALUE_FIELD = "value";
         public static final String ID_PARAMETER = ":id";
         public static final String GRAPH_NAME_PARAM = "graphName";
+        public static final String UUID_PARAMETER = ":uuid";
 
 
     }

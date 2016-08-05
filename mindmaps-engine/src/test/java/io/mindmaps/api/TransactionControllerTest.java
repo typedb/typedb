@@ -21,12 +21,11 @@ package io.mindmaps.api;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.RestAssured;
-import com.jayway.restassured.response.Response;
 import io.mindmaps.core.dao.MindmapsGraph;
 import io.mindmaps.core.dao.MindmapsTransaction;
-import io.mindmaps.core.model.EntityType;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.util.ConfigProperties;
+import io.mindmaps.util.RESTUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,9 +33,10 @@ import org.junit.Test;
 import java.util.Properties;
 
 import static com.jayway.restassured.RestAssured.get;
+import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertTrue;
 
-public class RemoteShellControllerTest {
+public class TransactionControllerTest {
 
     Properties prop = new Properties();
     String graphName;
@@ -44,7 +44,7 @@ public class RemoteShellControllerTest {
 
     @Before
     public void setUp() throws Exception {
-        new RemoteShellController();
+        new TransactionController();
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.INFO);
         try {
@@ -55,22 +55,52 @@ public class RemoteShellControllerTest {
         graphName = prop.getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
         MindmapsGraph graph = GraphFactory.getInstance().getGraph(graphName);
         MindmapsTransaction transaction = graph.newTransaction();
-        EntityType man = transaction.putEntityType("Man");
-        transaction.putEntity("actor-123", man).setValue("Al Pacino");
+        transaction.putEntityType("Man");
         transaction.commit();
         RestAssured.baseURI = prop.getProperty("server.url");
     }
 
     @Test
-    public void existingID() {
-        Response response = get("/match?graphName=" + graphName + "&query=match $x isa Man").then().statusCode(200).extract().response().andReturn();
-        String message = response.getBody().asString();
-        assertTrue(message.contains("Al Pacino"));
+    public void insertValidQuery() {
+        String exampleInsertQuery = "insert id \"actor-123\" isa Man, value \"Al Pacino\";";
+        String transactionUUID = given().body(exampleInsertQuery).
+                when().post(RESTUtil.WebPath.NEW_TRANSACTION_URI + "?graphName=mindmapstest").body().asString();
+        int i = 0;
+        String status = "QUEUED";
+        while (i < 5 && !status.equals("FINISHED")) {
+            i++;
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            status = get("/transactionStatus/" + transactionUUID).then().extract().response().asString();
+
+        }
+        assertTrue(GraphFactory.getInstance().getGraph(graphName).newTransaction().getConcept("actor-123").asEntity().getValue().equals("Al Pacino"));
+    }
+
+    @Test
+    public void insertInvalidQuery() {
+        String exampleInvalidInsertQuery = "insert id ?Cdcs;w4. '' ervalue;";
+        String transactionUUID = given().body(exampleInvalidInsertQuery).
+                when().post(RESTUtil.WebPath.NEW_TRANSACTION_URI + "?graphName=mindmapstest").body().asString();
+        int i = 0;
+        String status = "QUEUED";
+        while (i < 1 && !status.equals("CANCELLED")) {
+            i++;
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            status = get("/transactionStatus/" + transactionUUID).then().extract().response().asString();
+        }
+        assertTrue(status.equals("CANCELLED"));
     }
 
     @After
-    public void cleanGraph(){
+    public void cleanGraph() {
         GraphFactory.getInstance().getGraph(graphName).clear();
     }
-
 }
