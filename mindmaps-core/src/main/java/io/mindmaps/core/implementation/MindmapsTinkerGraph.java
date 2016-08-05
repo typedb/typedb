@@ -27,7 +27,7 @@ import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
  */
 public class MindmapsTinkerGraph extends MindmapsGraphImpl {
     public MindmapsTinkerGraph(){
-        super(TinkerGraph.open());
+        super(TinkerGraph.open(), "localhost");
         new MindmapsTinkerTransaction(this).initialiseMetaConcepts();
     }
 
