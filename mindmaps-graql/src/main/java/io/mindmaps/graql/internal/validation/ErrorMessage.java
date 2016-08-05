@@ -56,6 +56,7 @@ public enum ErrorMessage {
     INSERT_NO_RESOURCE_RELATION("type %s cannot have resource type %s"),
     INSERT_METATYPE("%s cannot be a subtype of meta-type %s"),
     INSERT_RECURSIVE("%s should not refer to itself"),
+    INSERT_TYPE_WITHOUT_ID("attempted to insert a type without an id"),
 
     DELETE_VALUE("deleting values is not supported");
 
