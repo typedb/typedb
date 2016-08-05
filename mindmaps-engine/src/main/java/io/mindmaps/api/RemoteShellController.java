@@ -66,8 +66,8 @@ public class RemoteShellController {
 
     private String matchQuery(Request req, Response res) {
 
-        String graphNameParam = req.queryParams(RESTUtil.Request.GRAPH_NAME_PARAM);
-        String currentGraphName = (graphNameParam==null) ? defaultGraphName : graphNameParam;
+        String currentGraphName = req.queryParams(RESTUtil.Request.GRAPH_NAME_PARAM);
+        if(currentGraphName==null) currentGraphName = defaultGraphName;
 
         QueryParser parser = QueryParser.create(GraphFactory.getInstance().getGraph(currentGraphName).newTransaction());
 
