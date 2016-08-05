@@ -23,6 +23,7 @@ import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.api.parser.QueryParser;
 import io.mindmaps.postprocessing.Cache;
+import io.mindmaps.util.ConfigProperties;
 import io.mindmaps.util.ErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +47,7 @@ public class Loader {
 
     private Cache cache;
 
-    private static final int repeatCommits = 5;
+    private static int repeatCommits;
 
     private static Loader instance = null;
 
@@ -78,6 +79,7 @@ public class Loader {
         finishedJobs = new AtomicInteger();
         lastJobFinished= new AtomicLong();
         maintenanceInProcess= new AtomicBoolean(false);
+        repeatCommits = ConfigProperties.getInstance().getPropertyAsInt(ConfigProperties.LOADER_REPEAT_COMMITS);
     }
 
     public static synchronized Loader getInstance() {
