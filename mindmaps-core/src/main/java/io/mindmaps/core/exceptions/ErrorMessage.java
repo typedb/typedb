@@ -59,10 +59,10 @@ public enum ErrorMessage {
     CREATING_ONTOLOGY_ERROR("Unable to create a new meta ontology due to ['%s']"),
 
     //--------------------------------------------- Client Errors -----------------------------------------------
-    INVALID_ENGINE_RESPONSE("Mindmaps Engine located at ['%s'] returned response ['%s'], cannot produce a graph."),
+    INVALID_ENGINE_RESPONSE("Mindmaps Engine located at ['%s'] returned response ['%s'], cannot proceed."),
     INVALID_FACTORY("Graph Factory ['%s'] is not valid"),
     MISSING_FACTORY_DEFINITION("Graph Factor Config ['factory.internal'] missing from provided config. Cannot produce graph"),
-    CONFIG_NOT_FOUND("Mindmaps Engine located at ['%s'] did not return the config as expected, due to ['%s']");
+    CONFIG_NOT_FOUND("Mindmaps Engine located at ['%s'] did not return the expected response, due to ['%s']");
 
     private final String message;
 

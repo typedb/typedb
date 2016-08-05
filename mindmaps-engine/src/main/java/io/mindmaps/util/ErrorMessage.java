@@ -16,7 +16,23 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.loader;
-public enum State {
-    QUEUED, LOADING, FINISHED, ERROR, CANCELLED
+package io.mindmaps.util;
+
+public enum ErrorMessage {
+    NO_CONFIG_FILE("Cannot find config file [%s]"),
+    PARSING_EXCEPTION("Parsing exception caused by [%s]"),
+    CONCEPT_ID_NOT_FOUND("ID [%s] not found in the graph."),
+    FAILED_TRANSACTION("Could not commit to graph after %s retries"),
+    FAILED_VALIDATION("Caught exception during validation: %s"),
+    CONCEPT_POSTPROCESSING("Concept [%s] of type [%s] is doe not have anye post-processing steps");
+
+    private final String message;
+
+    ErrorMessage(String message) {
+        this.message = message;
+    }
+
+    public String getMessage(Object... args) {
+        return String.format(message, args);
+    }
 }

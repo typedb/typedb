@@ -26,6 +26,7 @@ import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import io.mindmaps.core.dao.MindmapsGraph;
 import io.mindmaps.core.implementation.DataType;
+import io.mindmaps.core.implementation.MindmapsGraphImpl;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -347,7 +348,7 @@ public class MindmapsTitanGraphFactoryTest {
 
         for (int i=0;i < start.size();i++) {
             final int j = i;
-            pLoad.submit(() -> addSpecificNodes(indexProp,graph,start.get(j),end.get(j),nodeProp,edgeLabel,edgeProp));
+            pLoad.submit(() -> addSpecificNodes(indexProp, graph, start.get(j), end.get(j), nodeProp, edgeLabel, edgeProp));
         }
         pLoad.shutdown();
         pLoad.awaitTermination(100, TimeUnit.SECONDS);
@@ -367,5 +368,11 @@ public class MindmapsTitanGraphFactoryTest {
             first.addEdge(edgeLabel, current, edgeProp, edgePropValue.toString());
         }
         transaction.commit();
+    }
+
+    @Test
+    public void testEngineUrl(){
+        MindmapsGraphImpl graph = (MindmapsGraphImpl) titanGraphFactory.getGraph(TEST_NAME, "invalid_uri", TEST_CONFIG);
+        assertEquals("invalid_uri", graph.getEngineUrl());
     }
 }

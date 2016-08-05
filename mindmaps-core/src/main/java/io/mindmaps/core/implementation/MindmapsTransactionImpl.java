@@ -18,13 +18,14 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.core.dao.MindmapsGraph;
 import io.mindmaps.core.dao.MindmapsTransaction;
 import io.mindmaps.core.exceptions.*;
 import io.mindmaps.core.model.*;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +49,7 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
         elementFactory = new ElementFactory(this);
     }
 
-    public abstract MindmapsGraph getRootGraph();
+    public abstract MindmapsGraphImpl getRootGraph();
 
     public boolean isBatchLoadingEnabled(){
         return batchLoadingEnabled;
@@ -145,27 +146,16 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
         return transaction.getModifiedConcepts();
     }
 
-    public Map<String, Set<String>> getModifiedRelationIds(){
-        Map<String, Set<String>> conceptTypes = new HashMap<>();
-        for(ConceptImpl concept: transaction.getModifiedRelations()){
-            String type = concept.getType();
-            Set<String> conceptIds = conceptTypes.computeIfAbsent(type, k -> new HashSet<>());
-            conceptIds.add(concept.getId());
-        }
-        return  conceptTypes;
+    public Set<String> getModifiedRelationIds(){
+        Set<String> relationIds = new HashSet<>();
+        transaction.getModifiedRelations().forEach(c -> relationIds.add(c.getId()));
+        return relationIds;
     }
 
-    public  Map<String, Map<String, Set<String>>> getModifiedCastingIds(){
-        Map<String, Map<String, Set<String>>> conceptTypes = new HashMap<>();
-        for(ConceptImpl concept: transaction.getModifiedCastings()){
-            CastingImpl casting = elementFactory.buildCasting(concept);
-            String type = casting.getType();
-            String key = type + "-" + casting.getRolePlayer().getBaseIdentifier();
-            Map<String, Set<String>> outerMap = conceptTypes.computeIfAbsent(type, k -> new HashMap<>());
-            Set<String> ids = outerMap.computeIfAbsent(key, (k) -> new HashSet<>());
-            ids.add(casting.getId());
-        }
-        return conceptTypes;
+    public Set<String> getModifiedCastingIds(){
+        Set<String> relationIds = new HashSet<>();
+        transaction.getModifiedCastings().forEach(c -> relationIds.add(c.getId()));
+        return relationIds;
     }
 
     public Transaction getTransaction () {
@@ -694,7 +684,31 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
             }
             throw new MindmapsValidationException(error);
         }
-        LOG.info("Graph committed.");
+    }
+
+    protected void submitCommitLogs(Map<DataType.BaseType, Set<String>> concepts){
+        String commitLogUri = getRootGraph().getEngineUrl() + "/commit_log?graphName=" +
+                getRootGraph().getGraph().configuration().getProperty("storage.cassandra.keyspace").toString();
+        LOG.info("Submitting commit logs to [" + commitLogUri + "]");
+
+        JSONArray jsonArray = new JSONArray();
+        for (Map.Entry<DataType.BaseType, Set<String>> entry : concepts.entrySet()) {
+            DataType.BaseType type = entry.getKey();
+
+            for (String conceptId : entry.getValue()) {
+                JSONObject jsonObject = new JSONObject();
+                jsonObject.put("id", conceptId);
+                jsonObject.put("type", type.name());
+                jsonArray.put(jsonObject);
+            }
+
+        }
+
+        JSONObject postObject = new JSONObject();
+        postObject.put("concepts", jsonArray);
+
+        String result = EngineCommunicator.contactEngine(commitLogUri, "POST", postObject.toString());
+        LOG.info("Response from engine [" + result + "]");
     }
 
     //------------------------------------------ Fixing Code for Postprocessing ----------------------------------------
