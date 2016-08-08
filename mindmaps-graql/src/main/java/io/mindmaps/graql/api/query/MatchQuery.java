@@ -18,6 +18,7 @@
 
 package io.mindmaps.graql.api.query;
 
+import com.google.common.collect.Sets;
 import io.mindmaps.core.dao.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Type;
@@ -44,17 +45,17 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
 
     /**
      * @param names an array of variable names to select
-     * @return this
+     * @return a new MatchQuery that selects the given variables
      */
     default MatchQuery select(String... names) {
-        return select(Arrays.asList(names));
+        return select(Sets.newHashSet(names));
     }
 
     /**
-     * @param names a collection of variable names to select
-     * @return this
+     * @param names a set of variable names to select
+     * @return a new MatchQuery that selects the given variables
      */
-    MatchQuery select(Collection<String> names);
+    MatchQuery select(Set<String> names);
 
     /**
      * @param name a variable name to get
@@ -106,32 +107,32 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
 
     /**
      * @param transaction the transaction to execute the query on
-     * @return this
+     * @return a new MatchQuery with the transaction set
      */
     MatchQuery withTransaction(MindmapsTransaction transaction);
 
     /**
      * @param limit the maximum number of results the query should return
-     * @return this
+     * @return a new MatchQuery with the limit set
      */
     MatchQuery limit(long limit);
 
     /**
      * @param offset the number of results to skip
-     * @return this
+     * @return a new MatchQuery with the offset set
      */
     MatchQuery offset(long offset);
 
     /**
      * remove any duplicate results from the query
-     * @return this
+     * @return a new MatchQuery without duplicate results
      */
     MatchQuery distinct();
 
     /**
      * Order the results by degree in ascending order
      * @param varName the variable name to order the results by
-     * @return this
+     * @return a new MatchQuery with the given ordering
      */
     default MatchQuery orderBy(String varName) {
         return orderBy(varName, true);
@@ -141,7 +142,7 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
      * Order the results by degree
      * @param varName the variable name to order the results by
      * @param asc whether to use ascending order
-     * @return this
+     * @return a new MatchQuery with the given ordering
      */
     MatchQuery orderBy(String varName, boolean asc);
 
@@ -149,7 +150,7 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
      * Order the results by a resource in ascending order
      * @param varName the variable name to order the results by
      * @param resourceType the resource type attached to the variable to use for ordering
-     * @return this
+     * @return a new MatchQuery with the given ordering
      */
     default MatchQuery orderBy(String varName, String resourceType) {
         return orderBy(varName, resourceType, true);
@@ -160,7 +161,7 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
      * @param varName the variable name to order the results by
      * @param resourceType the resource type attached to the variable to use for ordering
      * @param asc whether to use ascending order
-     * @return this
+     * @return a new MatchQuery with the given ordering
      */
     MatchQuery orderBy(String varName, String resourceType, boolean asc);
 
@@ -187,5 +188,10 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
          * @return the pattern to match in the graph
          */
         Pattern.Conjunction<Pattern.Admin> getPattern();
+
+        /**
+         * @return the transaction the query operates on, if one was provided
+         */
+        Optional<MindmapsTransaction> getTransaction();
     }
 }

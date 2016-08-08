@@ -21,10 +21,7 @@ package io.mindmaps.graql.internal.parser;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.api.query.MatchQuery;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Stream;
 
 /**
@@ -33,13 +30,14 @@ import java.util.stream.Stream;
 public class MatchQueryPrinter {
 
     private MatchQuery matchQuery;
-    private final Map<String, List<Getter>> getters = new HashMap<>();
+    private final Map<String, List<Getter>> getters;
 
     /**
      * @param matchQuery the match query whose results should be printed
      */
-    public MatchQueryPrinter(MatchQuery matchQuery) {
+    public MatchQueryPrinter(MatchQuery matchQuery, Map<String, List<Getter>> getters) {
         this.matchQuery = matchQuery;
+        this.getters = getters;
     }
 
     public void setMatchQuery(MatchQuery matchQuery) {
@@ -51,14 +49,6 @@ public class MatchQueryPrinter {
      */
     public MatchQuery getMatchQuery() {
         return matchQuery;
-    }
-
-    /**
-     * @param name the variable name to apply the getter to
-     * @param getter the getter to apply to the results of the query
-     */
-    public void addGetter(String name, Getter getter) {
-        getters.computeIfAbsent(name, k -> new ArrayList<>()).add(getter);
     }
 
     /**
@@ -81,7 +71,7 @@ public class MatchQueryPrinter {
     }
 
     private List<Getter> getGetters(String name) {
-        List<Getter> getterList = this.getters.computeIfAbsent(name, k -> new ArrayList<>());
+        List<Getter> getterList = getters.computeIfAbsent(name, k -> new ArrayList<>());
 
         // Add default getters if none provided
         if (getterList.isEmpty()) {

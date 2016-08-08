@@ -26,9 +26,9 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Stack;
+import java.util.*;
+import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 
@@ -39,7 +39,7 @@ public class QueryVisitor extends GraqlBaseVisitor {
 
     private final QueryBuilder queryBuilder;
     private final Stack<Var> patterns = new Stack<>();
-    private MatchQueryPrinter matchQuery;
+    private Map<String, List<Getter>> getters = new HashMap<>();
 
     @Override
     public Object visitQueryEOF(GraqlParser.QueryEOFContext ctx) {
@@ -76,9 +76,9 @@ public class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public MatchQueryPrinter visitMatchQuery(GraqlParser.MatchQueryContext ctx) {
         Collection<Pattern> patterns = visitPatterns(ctx.patterns());
-        matchQuery = new MatchQueryPrinter(queryBuilder.match(patterns));
-        visitModifiers(ctx.modifiers());
-        return matchQuery;
+        MatchQuery matchQuery = queryBuilder.match(patterns);
+        MatchQuery matchQueryModified = visitModifiers(ctx.modifiers()).apply(matchQuery);
+        return new MatchQueryPrinter(matchQueryModified, getters);
     }
 
     @Override
@@ -108,18 +108,17 @@ public class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Void visitSelectors(GraqlParser.SelectorsContext ctx) {
-        List<String> names = ctx.selector().stream().map(this::visitSelector).collect(toList());
-        matchQuery.getMatchQuery().select(names);
-        return null;
+    public UnaryOperator<MatchQuery> visitSelectors(GraqlParser.SelectorsContext ctx) {
+        getters.clear();
+        Set<String> names = ctx.selector().stream().map(this::visitSelector).collect(Collectors.toSet());
+        return matchQuery -> matchQuery.select(names);
     }
 
     @Override
     public String visitSelector(GraqlParser.SelectorContext ctx) {
-        List<Getter> getters = ctx.getter().stream().map(this::visitGetter).distinct().collect(toList());
         String variable = getVariable(ctx.VARIABLE());
-
-        getters.forEach(getter -> matchQuery.addGetter(variable, getter));
+        List<Getter> getters = ctx.getter().stream().map(this::visitGetter).distinct().collect(toList());
+        this.getters.put(variable, getters);
 
         return variable;
     }
@@ -419,48 +418,43 @@ public class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Void visitModifiers(GraqlParser.ModifiersContext ctx) {
-        ctx.modifier().forEach(this::visit);
-        return null;
+    public UnaryOperator<MatchQuery> visitModifiers(GraqlParser.ModifiersContext ctx) {
+        return ctx.modifier().stream().map(this::visitModifier).reduce(UnaryOperator.identity(), this::compose);
     }
 
     @Override
-    public Void visitModifierLimit(GraqlParser.ModifierLimitContext ctx) {
-        matchQuery.getMatchQuery().limit(getInteger(ctx.INTEGER()));
-        return null;
+    public UnaryOperator<MatchQuery> visitModifierLimit(GraqlParser.ModifierLimitContext ctx) {
+        return matchQuery -> matchQuery.limit(getInteger(ctx.INTEGER()));
     }
 
     @Override
-    public Void visitModifierOffset(GraqlParser.ModifierOffsetContext ctx) {
-        matchQuery.getMatchQuery().offset(getInteger(ctx.INTEGER()));
-        return null;
+    public UnaryOperator<MatchQuery> visitModifierOffset(GraqlParser.ModifierOffsetContext ctx) {
+        return matchQuery -> matchQuery.offset(getInteger(ctx.INTEGER()));
     }
 
     @Override
-    public Void visitModifierDistinct(GraqlParser.ModifierDistinctContext ctx) {
-        matchQuery.getMatchQuery().distinct();
-        return null;
+    public UnaryOperator<MatchQuery> visitModifierDistinct(GraqlParser.ModifierDistinctContext ctx) {
+        return MatchQuery::distinct;
     }
 
     @Override
-    public Void visitModifierOrderBy(GraqlParser.ModifierOrderByContext ctx) {
+    public UnaryOperator<MatchQuery> visitModifierOrderBy(GraqlParser.ModifierOrderByContext ctx) {
         // decide which ordering method to use
         String var = getVariable(ctx.VARIABLE());
         if (ctx.id() != null) {
             String type = visitId(ctx.id());
             if (ctx.ORDER() != null) {
-                matchQuery.getMatchQuery().orderBy(var, type, getOrder(ctx.ORDER()));
+                return matchQuery -> matchQuery.orderBy(var, type, getOrder(ctx.ORDER()));
             } else {
-                matchQuery.getMatchQuery().orderBy(var, type);
+                return matchQuery -> matchQuery.orderBy(var, type);
             }
         } else {
             if (ctx.ORDER() != null) {
-                matchQuery.getMatchQuery().orderBy(var, getOrder(ctx.ORDER()));
+                return matchQuery -> matchQuery.orderBy(var, getOrder(ctx.ORDER()));
             } else {
-                matchQuery.getMatchQuery().orderBy(var);
+                return matchQuery -> matchQuery.orderBy(var);
             }
         }
-        return null;
     }
 
     @Override
@@ -474,6 +468,10 @@ public class QueryVisitor extends GraqlBaseVisitor {
 
     private Pattern visitPattern(GraqlParser.PatternContext ctx) {
         return (Pattern) visit(ctx);
+    }
+
+    private UnaryOperator<MatchQuery> visitModifier(GraqlParser.ModifierContext ctx) {
+        return (UnaryOperator<MatchQuery>) visit(ctx);
     }
 
     private ValuePredicate visitPredicate(GraqlParser.PredicateContext ctx) {
@@ -498,6 +496,10 @@ public class QueryVisitor extends GraqlBaseVisitor {
         // Remove surrounding quotes
         String unquoted = string.getText().substring(1, string.getText().length() - 1);
         return StringConverter.unescapeString(unquoted);
+    }
+
+    private <T> UnaryOperator<T> compose(UnaryOperator<T> before, UnaryOperator<T> after) {
+        return x -> after.apply(before.apply(x));
     }
 
     private long getInteger(TerminalNode integer) {

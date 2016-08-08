@@ -43,8 +43,7 @@ public class AskQueryImpl implements AskQuery.Admin {
 
     @Override
     public AskQuery withTransaction(MindmapsTransaction transaction) {
-        matchQuery.withTransaction(transaction);
-        return this;
+        return new AskQueryImpl(matchQuery.withTransaction(transaction));
     }
 
     @Override
