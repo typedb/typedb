@@ -18,8 +18,7 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.core.dao.MindmapsTransaction;
-import io.mindmaps.core.exceptions.*;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.*;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Graph;

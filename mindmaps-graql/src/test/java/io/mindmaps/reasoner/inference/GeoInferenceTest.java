@@ -19,14 +19,12 @@
 package io.mindmaps.reasoner.inference;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.core.dao.MindmapsTransaction;
-import io.mindmaps.core.model.Rule;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.graql.api.parser.QueryParser;
 import io.mindmaps.graql.api.query.MatchQuery;
 import io.mindmaps.reasoner.MindmapsReasoner;
 import io.mindmaps.reasoner.graphs.GeoGraph;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static io.mindmaps.reasoner.internal.Utility.printMatchQueryResults;

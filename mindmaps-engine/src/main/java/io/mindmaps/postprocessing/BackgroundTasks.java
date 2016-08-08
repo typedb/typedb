@@ -18,7 +18,7 @@
 
 package io.mindmaps.postprocessing;
 
-import io.mindmaps.core.dao.MindmapsGraph;
+import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.loader.Loader;
 import io.mindmaps.util.ConfigProperties;

@@ -19,8 +19,8 @@
 package io.mindmaps.graql.internal.query;
 
 import com.google.common.collect.ImmutableMap;
-import io.mindmaps.core.dao.MindmapsTransaction;
-import io.mindmaps.core.exceptions.ConceptException;
+import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.core.implementation.ConceptException;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Resource;
 import io.mindmaps.graql.api.query.DeleteQuery;

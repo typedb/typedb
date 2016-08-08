@@ -19,7 +19,7 @@
 package io.mindmaps.reasoner.internal.predicate;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.graql.api.query.*;
 import io.mindmaps.reasoner.internal.container.Query;
 import org.javatuples.Pair;

@@ -18,9 +18,6 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.core.exceptions.ErrorMessage;
-import io.mindmaps.core.exceptions.MoreThanOneEdgeException;
-import io.mindmaps.core.exceptions.NoEdgeException;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.EntityType;
 import io.mindmaps.core.model.Relation;

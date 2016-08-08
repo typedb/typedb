@@ -18,7 +18,6 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.core.exceptions.ConceptException;
 import io.mindmaps.core.model.Type;
 
 public class MockConcept extends ConceptImpl {

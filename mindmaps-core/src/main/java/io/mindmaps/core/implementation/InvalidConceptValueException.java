@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.core.exceptions;
+package io.mindmaps.core.implementation;
 
 /**
  * Thrown when the value of a resource does not match the resources datatype.

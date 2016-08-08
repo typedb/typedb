@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.api.query;
 
-import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.MindmapsTransaction;
 
 import java.util.Collection;
 

@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.core.exceptions;
+package io.mindmaps.core.implementation;
 
 /**
  * Thrown when a mindmaps validation rule is broken. {@see io.mindmaps.core.implementation.Validator} for more details

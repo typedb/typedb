@@ -18,7 +18,7 @@
 
 package io.mindmaps.loader;
 
-import io.mindmaps.core.exceptions.MindmapsValidationException;
+import io.mindmaps.core.implementation.MindmapsValidationException;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.api.query.QueryBuilder;

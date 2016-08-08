@@ -18,11 +18,11 @@
 
 package io.mindmaps.factory;
 
-import io.mindmaps.core.dao.MindmapsGraph;
-import io.mindmaps.core.dao.MindmapsTransaction;
-import io.mindmaps.core.exceptions.ErrorMessage;
-import io.mindmaps.core.exceptions.GraphRuntimeException;
-import io.mindmaps.core.exceptions.MindmapsValidationException;
+import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.core.implementation.ErrorMessage;
+import io.mindmaps.core.implementation.GraphRuntimeException;
+import io.mindmaps.core.implementation.MindmapsValidationException;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.core.model.EntityType;
 import org.junit.After;

@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.internal.shell;
 
-import io.mindmaps.core.dao.MindmapsGraph;
+import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.graql.api.parser.Autocomplete;
 import jline.console.completer.Completer;
 

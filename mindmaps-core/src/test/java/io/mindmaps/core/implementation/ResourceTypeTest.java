@@ -18,9 +18,6 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.core.exceptions.ConceptException;
-import io.mindmaps.core.exceptions.ErrorMessage;
-import io.mindmaps.core.exceptions.InvalidConceptValueException;
 import io.mindmaps.core.model.Resource;
 import io.mindmaps.core.model.ResourceType;
 import io.mindmaps.factory.MindmapsTestGraphFactory;

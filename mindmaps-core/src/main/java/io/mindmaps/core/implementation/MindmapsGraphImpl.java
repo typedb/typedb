@@ -18,10 +18,8 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.core.dao.MindmapsGraph;
-import io.mindmaps.core.dao.MindmapsTransaction;
-import io.mindmaps.core.exceptions.ErrorMessage;
-import io.mindmaps.core.exceptions.MindmapsValidationException;
+import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.core.MindmapsTransaction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

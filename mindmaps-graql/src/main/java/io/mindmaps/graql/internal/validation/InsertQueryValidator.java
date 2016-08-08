@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.internal.validation;
 
-import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.graql.api.query.InsertQuery;
 
 import java.util.stream.Stream;

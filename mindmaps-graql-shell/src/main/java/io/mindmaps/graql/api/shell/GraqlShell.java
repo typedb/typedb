@@ -20,10 +20,10 @@ package io.mindmaps.graql.api.shell;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import io.mindmaps.core.dao.MindmapsGraph;
-import io.mindmaps.core.dao.MindmapsTransaction;
-import io.mindmaps.core.exceptions.InvalidConceptTypeException;
-import io.mindmaps.core.exceptions.MindmapsValidationException;
+import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.core.implementation.InvalidConceptTypeException;
+import io.mindmaps.core.implementation.MindmapsValidationException;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.graql.api.parser.QueryParser;

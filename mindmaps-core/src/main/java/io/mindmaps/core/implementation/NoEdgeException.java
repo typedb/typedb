@@ -16,20 +16,13 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.core.exceptions;
-
-import io.mindmaps.core.implementation.DataType;
-import io.mindmaps.core.model.Concept;
+package io.mindmaps.core.implementation;
 
 /**
- * This exception is thrown when two concepts attept to have the same unique id.
+ * The exception thrown when an edge is expected between two concepts.
  */
-public class ConceptIdNotUniqueException extends ConceptException {
-    public ConceptIdNotUniqueException(Concept concept, DataType.ConceptPropertyUnique type, String id) {
-        super(ErrorMessage.ID_NOT_UNIQUE.getMessage(concept.toString(), type.name(), id));
-    }
-
-    public ConceptIdNotUniqueException(Concept concept, String id){
-        super(ErrorMessage.ID_ALREADY_TAKEN.getMessage(id, concept.toString()));
+public class NoEdgeException extends GraphRuntimeException{
+    public NoEdgeException(String id, String target) {
+        super(ErrorMessage.NO_EDGE.getMessage(id, target));
     }
 }

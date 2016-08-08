@@ -20,9 +20,7 @@ package io.mindmaps.core.implementation;
 
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
-import io.mindmaps.core.dao.MindmapsTransaction;
-import io.mindmaps.core.exceptions.ErrorMessage;
-import io.mindmaps.core.exceptions.GraphRuntimeException;
+import io.mindmaps.core.MindmapsTransaction;
 
 public class MindmapsTitanGraph extends MindmapsGraphImpl {
     public MindmapsTitanGraph(TitanGraph graph, String engineUrl){

@@ -22,7 +22,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
-import io.mindmaps.core.dao.MindmapsGraph;
+import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.util.ConfigProperties;
 import io.mindmaps.util.RESTUtil;

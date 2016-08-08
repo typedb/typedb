@@ -20,8 +20,8 @@ package io.mindmaps.reasoner;
 
 import com.google.common.collect.Sets;
 import com.google.common.collect.Lists;
-import io.mindmaps.core.dao.MindmapsTransaction;
-import io.mindmaps.core.exceptions.MindmapsValidationException;
+import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.core.implementation.MindmapsValidationException;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.RoleType;
 import io.mindmaps.core.model.Rule;

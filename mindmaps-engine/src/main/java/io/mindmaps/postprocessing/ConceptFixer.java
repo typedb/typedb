@@ -18,7 +18,7 @@
 
 package io.mindmaps.postprocessing;
 
-import io.mindmaps.core.dao.MindmapsGraph;
+import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.util.ErrorMessage;
 import org.slf4j.Logger;

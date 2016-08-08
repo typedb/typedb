@@ -19,7 +19,7 @@
 package io.mindmaps.reasoner.internal.container;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Rule;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.api.parser.QueryParser;

@@ -19,7 +19,7 @@
 package io.mindmaps.graql.api.query;
 
 import com.google.common.collect.ImmutableSet;
-import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.graql.internal.AdminConverter;
 import io.mindmaps.graql.internal.query.InsertQueryImpl;
 import io.mindmaps.graql.internal.query.MatchQueryImpl;
