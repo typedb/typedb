@@ -40,33 +40,56 @@ import static java.util.stream.Collectors.toSet;
  */
 public class InsertQueryImpl implements InsertQuery.Admin {
 
-    private final Optional<MatchQuery> matchQuery;
+    private final Optional<MatchQuery.Admin> matchQuery;
     private final Optional<MindmapsTransaction> transaction;
     private final ImmutableCollection<Var.Admin> originalVars;
     private final ImmutableCollection<Var.Admin> vars;
 
     /**
-     * @param transaction the transaction to execute on
+     * At least one of transaction and matchQuery must be absent.
+     *
      * @param vars a collection of Vars to insert
      * @param matchQuery the match query to insert for each result
+     * @param transaction the transaction to execute on
      */
-    public InsertQueryImpl(ImmutableCollection<Var.Admin> vars, Optional<MatchQuery> matchQuery, Optional<MindmapsTransaction> transaction) {
+    private InsertQueryImpl(ImmutableCollection<Var.Admin> vars, Optional<MatchQuery.Admin> matchQuery, Optional<MindmapsTransaction> transaction) {
+        // match query and transaction should never both be present (should get transaction from inner match query)
+        assert(!matchQuery.isPresent() || !transaction.isPresent());
+
+        this.matchQuery = matchQuery;
         this.transaction = transaction;
 
         this.originalVars = vars;
-        this.matchQuery = matchQuery;
 
         // Get all variables, including ones nested in other variables
         this.vars = ImmutableSet.copyOf(vars.stream().flatMap(v -> v.getInnerVars().stream()).collect(toSet()));
 
+        getTransaction().ifPresent(t -> new InsertQueryValidator(this).validate(t));
+    }
 
-        transaction.ifPresent(t -> new InsertQueryValidator(this).validate(t));
+    /**
+     * @param vars a collection of Vars to insert
+     * @param matchQuery the match query to insert for each result
+     */
+    public InsertQueryImpl(ImmutableCollection<Var.Admin> vars, MatchQuery.Admin matchQuery) {
+        this(vars, Optional.of(matchQuery), Optional.empty());
+    }
+
+    /**
+     * @param transaction the transaction to execute on
+     * @param vars a collection of Vars to insert
+     */
+    public InsertQueryImpl(ImmutableCollection<Var.Admin> vars, Optional<MindmapsTransaction> transaction) {
+        this(vars, Optional.empty(), transaction);
     }
 
     @Override
     public InsertQuery withTransaction(MindmapsTransaction transaction) {
-        Optional<MatchQuery> newMatchQuery = matchQuery.map(m -> m.withTransaction(transaction));
-        return new InsertQueryImpl(vars, newMatchQuery, Optional.of(transaction));
+        return matchQuery.map(
+                m -> new InsertQueryImpl(vars, m.withTransaction(transaction).admin())
+        ).orElseGet(
+                () -> new InsertQueryImpl(vars, Optional.of(transaction))
+        );
     }
 
     @Override
@@ -78,7 +101,7 @@ public class InsertQueryImpl implements InsertQuery.Admin {
     @Override
     public Stream<Concept> stream() {
         MindmapsTransaction theTransaction =
-                transaction.orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_TRANSACTION.getMessage()));
+                getTransaction().orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_TRANSACTION.getMessage()));
 
         InsertQueryExecutor executor = new InsertQueryExecutor(vars, theTransaction);
 
@@ -95,7 +118,7 @@ public class InsertQueryImpl implements InsertQuery.Admin {
     }
 
     @Override
-    public Optional<MatchQuery> getMatchQuery() {
+    public Optional<? extends MatchQuery> getMatchQuery() {
         return matchQuery;
     }
 
@@ -111,7 +134,7 @@ public class InsertQueryImpl implements InsertQuery.Admin {
 
     @Override
     public Optional<MindmapsTransaction> getTransaction() {
-        return transaction;
+        return matchQuery.map(MatchQuery.Admin::getTransaction).orElse(transaction);
     }
 
     @Override

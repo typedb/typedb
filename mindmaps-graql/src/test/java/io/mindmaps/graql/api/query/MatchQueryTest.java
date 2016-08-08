@@ -269,7 +269,7 @@ public class MatchQueryTest {
                         and(var("y").isa("genre").value("drama"), var().rel("x").rel("y")),
                         var("x").value("The Muppets")
                 )
-        ).select("x");
+        );
 
         QueryUtil.assertResultsMatch(query, "x", "movie", "Godfather", "Apocalypse-Now", "Heat", "The-Muppets", "Chinese-Coffee");
     }

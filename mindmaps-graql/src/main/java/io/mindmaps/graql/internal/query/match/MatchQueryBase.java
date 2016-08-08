@@ -16,21 +16,24 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql.internal.query;
+package io.mindmaps.graql.internal.query.match;
 
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Type;
-import io.mindmaps.graql.api.query.*;
-import io.mindmaps.graql.internal.AdminConverter;
+import io.mindmaps.graql.api.query.MatchQuery;
+import io.mindmaps.graql.api.query.Pattern;
+import io.mindmaps.graql.api.query.Var;
 import io.mindmaps.graql.internal.gremlin.Query;
 import io.mindmaps.graql.internal.validation.ErrorMessage;
 import io.mindmaps.graql.internal.validation.MatchQueryValidator;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.*;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -38,112 +41,56 @@ import static io.mindmaps.core.implementation.DataType.ConceptPropertyUnique.ITE
 import static java.util.stream.Collectors.toSet;
 
 /**
- * Implementation of MatchQuery for finding patterns in graphs
+ * Base MatchQuery implementation that executes the gremlin traversal
  */
-public class MatchQueryImpl implements MatchQuery.Admin {
+public class MatchQueryBase implements MatchQuery.Admin {
 
-    private final Optional<ImmutableSet<String>> names;
     private final Pattern.Conjunction<Pattern.Admin> pattern;
-
-    private final Optional<Long> limit;
-    private final long offset;
-    private final boolean distinct;
-
-    private final Optional<MatchOrder> order;
-
     private final MindmapsTransaction transaction;
+    private final Optional<MatchOrder> order;
 
     /**
      * @param transaction a transaction to execute the match query on
      * @param pattern a pattern to match in the graph
      */
-    private MatchQueryImpl(Pattern.Conjunction<Pattern.Admin> pattern, MindmapsTransaction transaction, Optional<ImmutableSet<String>> names, Optional<Long> limit, long offset, boolean distinct, Optional<MatchOrder> order) {
+    private MatchQueryBase(Pattern.Conjunction<Pattern.Admin> pattern, MindmapsTransaction transaction, Optional<MatchOrder> order) {
         if (pattern.getPatterns().size() == 0) {
             throw new IllegalArgumentException(ErrorMessage.MATCH_NO_PATTERNS.getMessage());
         }
 
         this.pattern = pattern;
         this.transaction = transaction;
-        this.names = names;
-        this.limit = limit;
-        this.offset = offset;
-        this.distinct = distinct;
         this.order = order;
+
+        if (transaction != null) validate();
     }
 
-    public MatchQueryImpl(Pattern.Conjunction<Pattern.Admin> pattern, MindmapsTransaction transaction) {
-        this(pattern, transaction, Optional.empty(), Optional.empty(), 0, false, Optional.empty());
+    public MatchQueryBase(Pattern.Conjunction<Pattern.Admin> pattern, MindmapsTransaction transaction) {
+        this(pattern, transaction, Optional.empty());
     }
 
     @Override
     public Stream<Map<String, Concept>> stream() {
-        if (transaction != null) validate();
-
         GraphTraversal<Vertex, Map<String, Vertex>> traversal = getQuery().getTraversals();
         applyModifiers(traversal);
         return traversal.toStream().map(this::makeResults).sequential();
     }
 
     @Override
-    public MatchQuery select(Set<String> names) {
-        if (names.isEmpty()) {
-            throw new IllegalArgumentException(ErrorMessage.SELECT_NONE_SELECTED.getMessage());
-        }
-
-        return new MatchQueryImpl(pattern, transaction, Optional.of(ImmutableSet.copyOf(names)), limit, offset, distinct, order);
-    }
-
-    @Override
-    public Streamable<Concept> get(String name) {
-        return () -> stream().map(result -> result.get(name));
-    }
-
-    @Override
-    public AskQuery ask() {
-        return new AskQueryImpl(this);
-    }
-
-    @Override
-    public InsertQuery insert(Collection<? extends Var> vars) {
-        ImmutableSet<Var.Admin> varAdmins = ImmutableSet.copyOf(AdminConverter.getVarAdmins(vars));
-        return new InsertQueryImpl(varAdmins, Optional.of(this), Optional.ofNullable(transaction));
-    }
-
-    @Override
-    public DeleteQuery delete(Collection<? extends Var> deleters) {
-        return new DeleteQueryImpl(AdminConverter.getVarAdmins(deleters), this);
-    }
-
-    @Override
     public MatchQuery withTransaction(MindmapsTransaction transaction) {
-        return new MatchQueryImpl(pattern, transaction, names, limit, offset, distinct, order);
-    }
-
-    @Override
-    public MatchQuery limit(long limit) {
-        return new MatchQueryImpl(pattern, transaction, names, Optional.of(limit), offset, distinct, order);
-    }
-
-    @Override
-    public MatchQuery offset(long offset) {
-        return new MatchQueryImpl(pattern, transaction, names, limit, offset, distinct, order);
-    }
-
-    @Override
-    public MatchQuery distinct() {
-        return new MatchQueryImpl(pattern, transaction, names, limit, offset, true, order);
+        return new MatchQueryBase(pattern, transaction, order);
     }
 
     @Override
     public MatchQuery orderBy(String varName, boolean asc) {
         MatchOrder order = new MatchOrder(varName, Optional.empty(), asc);
-        return new MatchQueryImpl(pattern, transaction, names, limit, offset, distinct, Optional.of(order));
+        return new MatchQueryBase(pattern, transaction, Optional.of(order));
     }
 
     @Override
     public MatchQuery orderBy(String varName, String resourceType, boolean asc) {
         MatchOrder order = new MatchOrder(varName, Optional.of(resourceType), asc);
-        return new MatchQueryImpl(pattern, transaction, names, limit, offset, distinct, Optional.of(order));
+        return new MatchQueryBase(pattern, transaction, Optional.of(order));
     }
 
     @Override
@@ -158,7 +105,19 @@ public class MatchQueryImpl implements MatchQuery.Admin {
 
     @Override
     public Set<String> getSelectedNames() {
-        return names.orElseGet(this::defaultSelectedNames);
+        // Default selected names are all user defined variable names shared between disjunctions.
+        // For example, in a query of the form
+        // {..$x..$y..} or {..$x..}
+        // $x will appear in the results, but not $y because it is not guaranteed to appear in all disjunctions
+
+        // Get conjunctions within disjunction
+        Set<Pattern.Conjunction<Var.Admin>> conjunctions = pattern.getDisjunctiveNormalForm().getPatterns();
+
+        // Get all selected names from each conjunction
+        Stream<Set<String>> vars = conjunctions.stream().map(this::getDefinedNamesFromConjunction);
+
+        // Get the intersection of all conjunctions to find any variables shared between them
+        return vars.reduce(Sets::intersection).get();
     }
 
     @Override
@@ -173,27 +132,20 @@ public class MatchQueryImpl implements MatchQuery.Admin {
 
     @Override
     public String toString() {
-        String selectString = "";
-
-        if (names.isPresent()) {
-            selectString = "select " + getSelectedNames().stream().map(s -> "$" + s).collect(Collectors.joining(", "));
-        }
-
-        String modifiers = "";
-        modifiers += limit.map(l -> "limit " + l + " ").orElse("");
-        if (offset != 0) modifiers += "offset " + Long.toString(offset) + " ";
-        if (distinct) modifiers += "distinct ";
-        modifiers += order.map(MatchOrder::toString).orElse("");
-
-        return String.format("match %s %s%s", pattern, modifiers, selectString).trim();
+        String orderString = order.map(MatchOrder::toString).orElse("");
+        return String.format("match %s %s", pattern, orderString).trim();
     }
 
-    private ImmutableSet<String> defaultSelectedNames() {
-        return ImmutableSet.copyOf(pattern.getVars().stream()
-                .flatMap(v -> v.getInnerVars().stream())
+    /**
+     * @param conjunction a conjunction containing variables
+     * @return all user-defined variable names in the given conjunction
+     */
+    private Set<String> getDefinedNamesFromConjunction(Pattern.Conjunction<Var.Admin> conjunction) {
+        return conjunction.getVars().stream()
+                .flatMap(var -> var.getInnerVars().stream())
                 .filter(Var.Admin::isUserDefinedName)
                 .map(Var.Admin::getName)
-                .collect(Collectors.toSet()));
+                .collect(Collectors.toSet());
     }
 
     /**
@@ -220,11 +172,6 @@ public class MatchQueryImpl implements MatchQuery.Admin {
         } else if (namesArray.length != 0) {
             traversal.select(namesArray[0], namesArray[0], namesArray);
         }
-
-        if (distinct) traversal.dedup();
-
-        long top = limit.map(lim -> offset + lim).orElse(Long.MAX_VALUE);
-        traversal.range(offset, top);
     }
 
     /**
@@ -232,19 +179,10 @@ public class MatchQueryImpl implements MatchQuery.Admin {
      * @return a map of concepts where the key is the variable name
      */
     private Map<String, Concept> makeResults(Map<String, Vertex> vertices) {
-        Map<String, Concept> map = new HashMap<>();
-        for (String name : getSelectedNames()) {
-            Vertex vertex = vertices.get(name);
-            Concept concept = transaction.getConcept(vertex.value(ITEM_IDENTIFIER.name()));
-            if(concept != null)
-                map.put(name, concept);
-        }
-        return map;
-        //TODO: Find out why lambda fails when Titan Indices don't return anything. I.e. when concept = null. This happens when Titan indices are corrupted.
-        /*return names.stream().collect(Collectors.toMap(
+        return getSelectedNames().stream().collect(Collectors.toMap(
                 name -> name,
                 name -> transaction.getConcept(vertices.get(name).value(ITEM_IDENTIFIER.name()))
-        ));*/
+        ));
     }
 
     /**
