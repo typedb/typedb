@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
 
@@ -564,26 +563,6 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
         }
     }
 
-    public Instance mergeCastings(Set<Concept> castings){
-        Iterator<Concept> it = castings.iterator();
-        CastingImpl mainCasting = elementFactory.buildCasting(it.next());
-        RoleType role = mainCasting.getRole();
-
-        while(it.hasNext()){
-            CastingImpl otherCasting = elementFactory.buildCasting(it.next());
-
-            //Transfer assertion edges
-            for(RelationImpl relation : otherCasting.getRelations()){
-                EdgeImpl assertionToCasting = addEdge(relation, mainCasting, DataType.EdgeLabel.CASTING);
-                assertionToCasting.setProperty(DataType.EdgeProperty.ROLE_TYPE, role.getId());
-            }
-
-            getTinkerPopGraph().traversal().V(otherCasting.getBaseIdentifier()).next().remove();
-        }
-
-        return mainCasting.getRolePlayer();
-    }
-
     public void putShortcutEdges(Relation relation, RelationType relationType){
         Map<RoleType, Instance> roleMap = relation.rolePlayers();
         if(roleMap.size() > 1) {
@@ -712,21 +691,54 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
     }
 
     //------------------------------------------ Fixing Code for Postprocessing ----------------------------------------
-    public String getUniqueRelationId(Relation relation){
-        Set<CastingImpl> castings = ((RelationImpl)relation).getMappingCasting();
-        Stream<Long> castingIds = castings.stream().map(CastingImpl::getBaseIdentifier);
-        List<Long> sortedIds = castingIds.sorted().collect(Collectors.toList());
+    /**
+     * Merges duplicate castings if one is found.
+     * @param castingId The id of the casting to check for duplicates
+     * @return True
+     */
+    public boolean fixDuplicateCasting(String castingId){
+        //Get the Casting
+        ConceptImpl concept = (ConceptImpl) getConcept(castingId);
+        if(concept == null || !concept.isCasting())
+            return false;
 
-        String id = ((RelationImpl) relation).getBaseIdentifier() + "_";
-        for (Long l : sortedIds) {
-            id = id + l + ".";
+        //Check if the casting has duplicates
+        CastingImpl casting = concept.asCasting();
+        InstanceImpl rolePlayer = casting.getRolePlayer();
+        RoleType role = casting.getRole();
+
+        //Traversal here is used to take advantage of vertex centric index
+        List<Vertex> castingVertices = getTinkerPopGraph().traversal().V(rolePlayer.getBaseIdentifier()).
+                inE(DataType.EdgeLabel.ROLE_PLAYER.getLabel()).
+                has(DataType.EdgeProperty.ROLE_TYPE.name(), role.getId()).otherV().toList();
+
+        Set<CastingImpl> castings = castingVertices.stream().map(elementFactory::buildCasting).collect(Collectors.toSet());
+
+        if(castings.size() < 2){
+            return false;
         }
 
-        return id;
+        //Fix the duplicates
+        mergeCastings(castings);
+        return true;
     }
 
-    public String getQuickTypeId(Concept concept){
-        return ((ConceptImpl)concept).getType();
+    private void mergeCastings(Set<CastingImpl> castings){
+        Iterator<CastingImpl> it = castings.iterator();
+        CastingImpl mainCasting = it.next();
+        RoleType role = mainCasting.getRole();
+
+        while(it.hasNext()){
+            CastingImpl otherCasting = it.next();
+
+            //Transfer assertion edges
+            for(RelationImpl relation : otherCasting.getRelations()){
+                EdgeImpl assertionToCasting = addEdge(relation, mainCasting, DataType.EdgeLabel.CASTING);
+                assertionToCasting.setProperty(DataType.EdgeProperty.ROLE_TYPE, role.getId());
+            }
+
+            getTinkerPopGraph().traversal().V(otherCasting.getBaseIdentifier()).next().remove();
+        }
     }
 
 }

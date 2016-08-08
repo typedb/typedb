@@ -18,13 +18,14 @@
 
 package io.mindmaps.postprocessing;
 
-import io.mindmaps.factory.GraphFactory;
+import io.mindmaps.core.dao.MindmapsGraph;
+import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.loader.Loader;
 import io.mindmaps.util.ConfigProperties;
+import org.apache.tinkerpop.shaded.minlog.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.*;
@@ -32,14 +33,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BackgroundTasks {
     private static final long TIME_LAPSE = 60000;
+    private static final String CASTING_STAGE= "Scanning for duplicate castings . . .";
+    private static final String RELATION_STAGE = "Scanning for duplicate relations . . .";
 
-    private final AtomicBoolean canRun = new AtomicBoolean(true);
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
     private final Logger LOG = LoggerFactory.getLogger(BackgroundTasks.class);
     private ExecutorService postpool;
     private ExecutorService statDump;
     private Set<Future> futures;
-    private ConceptFixer conceptFixer;
     private String currentStage;
 
     private static BackgroundTasks instance = null;
@@ -54,10 +55,10 @@ public class BackgroundTasks {
     }
 
     private BackgroundTasks() {
-        conceptFixer = new ConceptFixer(cache, GraphFactory.getInstance());
         postpool = Executors.newFixedThreadPool(ConfigProperties.getInstance().getPropertyAsInt(ConfigProperties.NUM_THREADS_PROPERTY));
         statDump = Executors.newSingleThreadExecutor();
         cache = Cache.getInstance();
+        futures = ConcurrentHashMap.newKeySet();
     }
 
     //TODO: read from config backgroundTasks.post-processing-delay the interval of time between one invocation and another
@@ -99,74 +100,31 @@ public class BackgroundTasks {
     }
 
     private void performTasks() {
-        LOG.info("Checking castings . . .");
-        currentStage = "Starting. . . ";
+        currentStage = CASTING_STAGE;
+        LOG.info(currentStage);
         performCastingFix();
 
-        LOG.info("Scanning for duplicate assertions . . .");
-        performDuplicateAssertionFix();
+        waitToContinue();
 
-        LOG.info("Inserting REAL shortcuts . . .");
-        performShortcutFix();
-        currentStage = "Done";
+        currentStage = RELATION_STAGE;
+        LOG.info(currentStage);
+        performRelationFix();
     }
 
-    private void performDuplicateAssertionFix() {
-        currentStage = "Scanning for duplicate assertions";
-        Set<Future<String>> duplicateAssertionsJob = ConcurrentHashMap.newKeySet();
-        Set<String> uniqueAssertionHashCodes = new HashSet<>();
-
-        cache.getRelationJobs().entrySet().parallelStream().forEach(inner -> {
-            inner.getValue().parallelStream().forEach(assertionId -> {
-                duplicateAssertionsJob.add(postpool.submit(() -> conceptFixer.createAssertionHashCode(assertionId)));
-            });
-        });
-
-        LOG.info("Assertions scanned. Checking for duplicates . . . ");
-
-        for (Future future : duplicateAssertionsJob) {
-            try {
-                String result = (String) future.get();
-
-                String[] vals = result.split("_");
-                if (vals.length != 2)
-                    continue;
-                String assertionId = vals[0];
-                String assertionHashCode = vals[1];
-
-                if (uniqueAssertionHashCodes.contains(assertionHashCode)) {
-                    LOG.info("Deleting duplicate assertion [" + assertionId + "] which has hash-code [" + assertionHashCode + "]");
-                    futures.add(postpool.submit(() -> conceptFixer.deleteDuplicateAssertion(Long.parseLong(assertionId))));
-                } else {
-                    uniqueAssertionHashCodes.add(assertionHashCode);
-                }
-            } catch (InterruptedException | ExecutionException e) {
-                LOG.error("Error while waiting for job to complete on fixing duplicate assertions.", e);
-            }
-        }
-
-        LOG.info("Waiting for duplicate assertion fix to complete");
-        waitToContinue();
+    private void performRelationFix() {
+        //TODO: Relation and Shortcut Fix
     }
 
     private void performCastingFix() {
-        //TODO: Fix duplicate castings.
-    }
-
-    private void performShortcutFix() {
-        //TODO: Fix duplicate shortcuts which may exist.
-    }
-
-    public void cancelPostProcessing() {
-        LOG.info("Cancelling post processing . . .");
-        canRun.set(false);
-        postpool.shutdownNow();
+        cache.getCastingJobs().entrySet().parallelStream().forEach(entry -> {
+            MindmapsGraph graph = MindmapsClient.getGraph(entry.getKey());
+            for (String castingId : entry.getValue()) {
+                futures.add(postpool.submit(() -> ConceptFixer.checkCasting(graph, castingId)));
+            }
+        });
     }
 
     private boolean maintenanceAllowed() {
-        if (!canRun.get())
-            return false;
-
         long lastJob = Loader.getInstance().getLastJobFinished();
         long currentTime = System.currentTimeMillis();
         return (currentTime - lastJob) >= TIME_LAPSE && Loader.getInstance().getLoadingJobs() == 0;
@@ -189,7 +147,7 @@ public class BackgroundTasks {
         while (isRunning.get()) {
             LOG.info("--------------------Current Status of Post Processing--------------------");
             dumpStatsType("Casting", cache.getCastingJobs());
-            dumpStatsType("Assertion", cache.getRelationJobs());
+            dumpStatsType("Relation", cache.getRelationJobs());
             LOG.info("Save in Progress: " + cache.isSaveInProgress());
             LOG.info("Current Stage: " + currentStage);
             LOG.info("-------------------------------------------------------------------------");
@@ -202,21 +160,12 @@ public class BackgroundTasks {
         }
     }
 
-    private void dumpStatsType(String typeName, Map map) {
-        int total = 0;
+    private void dumpStatsType(String typeName, Map<String, Set<String>> jobs) {
+        long total = 0L;
         LOG.info(typeName + " Jobs:");
-        Set<String> keys = map.keySet();
-        for (String type : keys) {
-            Object object = map.get(type);
-            int numJobs = 0;
-            if (object instanceof Map)
-                numJobs = ((Map) object).size();
-            else if (object instanceof Set)
-                numJobs = ((Set) object).size();
-
-            total = total + numJobs;
-            if (numJobs != 0)
-                LOG.info("        " + typeName + " Type [" + type + "] has jobs : " + numJobs);
+        for (Map.Entry<String, Set<String>> entry : jobs.entrySet()) {
+            Log.info("        Post processing step [" + typeName + " for Graph [" + entry.getKey() + "] has jobs : " + entry.getValue().size());
+            total += entry.getValue().size();
         }
         LOG.info("    Total " + typeName + " Jobs: " + total);
     }
