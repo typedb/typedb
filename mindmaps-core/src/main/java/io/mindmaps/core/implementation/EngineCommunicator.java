@@ -18,8 +18,6 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.core.exceptions.ErrorMessage;
-
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;

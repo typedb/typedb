@@ -16,9 +16,9 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.core.dao;
+package io.mindmaps.core;
 
-import io.mindmaps.core.exceptions.MindmapsValidationException;
+import io.mindmaps.core.implementation.MindmapsValidationException;
 import io.mindmaps.core.implementation.Data;
 import io.mindmaps.core.model.*;
 

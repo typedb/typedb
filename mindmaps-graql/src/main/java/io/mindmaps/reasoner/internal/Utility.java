@@ -19,7 +19,7 @@
 package io.mindmaps.reasoner.internal;
 
 import com.google.common.collect.Lists;
-import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.RoleType;
 import io.mindmaps.core.model.Rule;

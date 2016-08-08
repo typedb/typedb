@@ -18,13 +18,12 @@
 
 package io.mindmaps.reasoner;
 
-import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.graql.api.parser.QueryParser;
 import io.mindmaps.graql.api.query.MatchQuery;
 import io.mindmaps.graql.api.query.QueryBuilder;
 import io.mindmaps.reasoner.graphs.SNBGraph;
 import io.mindmaps.reasoner.internal.container.Query;
-import io.mindmaps.reasoner.internal.predicate.Atom;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

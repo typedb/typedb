@@ -18,7 +18,7 @@
 
 package io.mindmaps.core.model;
 
-import io.mindmaps.core.exceptions.ConceptException;
+import io.mindmaps.core.implementation.ConceptException;
 
 /**
  * A Concept which represents anything in the graph.

@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.core.exceptions;
+package io.mindmaps.core.implementation;
 
 public enum ErrorMessage {
     NO_EDGE("Concept ['%s'] does not have any edges to a ['%s']"),

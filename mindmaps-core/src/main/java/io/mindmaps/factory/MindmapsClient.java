@@ -18,8 +18,8 @@
 
 package io.mindmaps.factory;
 
-import io.mindmaps.core.dao.MindmapsGraph;
-import io.mindmaps.core.exceptions.ErrorMessage;
+import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.core.implementation.ErrorMessage;
 import io.mindmaps.core.implementation.EngineCommunicator;
 
 import java.io.*;

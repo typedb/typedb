@@ -19,7 +19,7 @@
 package io.mindmaps.core.model;
 
 
-import io.mindmaps.core.exceptions.ConceptException;
+import io.mindmaps.core.implementation.ConceptException;
 
 import java.util.Collection;
 import java.util.Map;

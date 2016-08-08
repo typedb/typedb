@@ -19,8 +19,8 @@
 package io.mindmaps.graql.api.query;
 
 import com.google.common.collect.Lists;
-import io.mindmaps.core.dao.MindmapsGraph;
-import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.example.MovieGraphFactory;

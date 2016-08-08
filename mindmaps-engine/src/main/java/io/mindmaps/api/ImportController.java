@@ -18,11 +18,10 @@
 
 package io.mindmaps.api;
 
-import io.mindmaps.core.dao.MindmapsTransaction;
-import io.mindmaps.core.exceptions.MindmapsValidationException;
+import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.core.implementation.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.api.parser.QueryParser;
-import io.mindmaps.graql.api.query.Pattern;
 import io.mindmaps.graql.api.query.QueryBuilder;
 import io.mindmaps.graql.api.query.Var;
 import io.mindmaps.loader.BlockingLoader;
@@ -34,16 +33,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 import static spark.Spark.post;
 

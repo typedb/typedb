@@ -18,7 +18,7 @@
 
 package io.mindmaps.reasoner.internal.predicate;
 
-import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.graql.api.query.*;
 import io.mindmaps.reasoner.internal.container.Query;
 

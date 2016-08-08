@@ -19,7 +19,6 @@
 package io.mindmaps.core.implementation;
 
 import com.thinkaurelius.titan.core.TitanGraph;
-import io.mindmaps.core.exceptions.MindmapsValidationException;
 
 import java.util.HashMap;
 import java.util.Map;

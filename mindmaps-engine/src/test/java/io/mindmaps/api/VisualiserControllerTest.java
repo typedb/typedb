@@ -22,9 +22,8 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
-import io.mindmaps.core.dao.MindmapsGraph;
-import io.mindmaps.core.dao.MindmapsTransaction;
-import io.mindmaps.core.model.Entity;
+import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.EntityType;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.util.ConfigProperties;
@@ -33,7 +32,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.awt.*;
 import java.util.Properties;
 
 import static com.jayway.restassured.RestAssured.get;

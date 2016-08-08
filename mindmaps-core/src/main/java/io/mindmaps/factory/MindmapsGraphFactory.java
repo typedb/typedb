@@ -18,7 +18,7 @@
 
 package io.mindmaps.factory;
 
-import io.mindmaps.core.dao.MindmapsGraph;
+import io.mindmaps.core.MindmapsGraph;
 
 /**
  * The interface used to build new graphs from different vendors.

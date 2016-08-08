@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.internal.parser;
 
-import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.Data;
 import io.mindmaps.graql.api.query.*;
 import io.mindmaps.graql.internal.StringConverter;

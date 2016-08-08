@@ -16,16 +16,13 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.core.exceptions;
-
-import io.mindmaps.core.model.Concept;
+package io.mindmaps.core.implementation;
 
 /**
- * This exception is thrown when attempting to incorrectly cast a concept to something it is not.
- * For example when
+ * Thrown when two concepts are returned when using a unique id to retrieve them.
  */
-public class InvalidConceptTypeException extends ConceptException {
-    public InvalidConceptTypeException(Concept c, Class type) {
-        super(ErrorMessage.INVALID_OBJECT_TYPE.getMessage(c.toString(), type.getName()));
+public class MoreThanOneConceptException extends ConceptException {
+    public MoreThanOneConceptException(String message) {
+        super(message);
     }
 }

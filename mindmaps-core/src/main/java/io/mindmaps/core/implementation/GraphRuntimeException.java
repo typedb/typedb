@@ -16,13 +16,14 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.core.exceptions;
+package io.mindmaps.core.implementation;
 
 /**
- * Thrown when two concepts are returned when using a unique id to retrieve them.
+ * This exception is thrown when the graph is malformed in any way.
  */
-public class MoreThanOneConceptException extends ConceptException {
-    public MoreThanOneConceptException(String message) {
+public class GraphRuntimeException extends RuntimeException {
+    public GraphRuntimeException(String message) {
         super(message);
     }
 }
+

@@ -20,7 +20,7 @@ package io.mindmaps.graql.api.parser;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.internal.parser.GraqlLexer;
 import org.antlr.v4.runtime.ANTLRInputStream;

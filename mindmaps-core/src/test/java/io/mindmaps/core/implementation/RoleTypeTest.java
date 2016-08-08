@@ -18,8 +18,6 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.core.exceptions.ErrorMessage;
-import io.mindmaps.core.exceptions.MoreThanOneEdgeException;
 import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.junit.After;

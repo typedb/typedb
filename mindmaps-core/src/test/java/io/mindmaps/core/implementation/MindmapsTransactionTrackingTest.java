@@ -18,7 +18,6 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.core.exceptions.ConceptException;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.EntityType;
 import io.mindmaps.core.model.Instance;

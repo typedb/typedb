@@ -18,7 +18,7 @@
 
 package io.mindmaps.api;
 
-import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.util.ConfigProperties;
