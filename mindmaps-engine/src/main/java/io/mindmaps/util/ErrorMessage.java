@@ -24,7 +24,12 @@ public enum ErrorMessage {
     CONCEPT_ID_NOT_FOUND("ID [%s] not found in the graph."),
     FAILED_TRANSACTION("Could not commit to graph after %s retries"),
     FAILED_VALIDATION("Caught exception during validation: %s"),
-    CONCEPT_POSTPROCESSING("Concept [%s] of type [%s] is doe not have anye post-processing steps");
+
+    //Post processing Errors
+    CONCEPT_POSTPROCESSING("Concept [%s] of type [%s] is doe not have any post-processing steps"),
+    POSTPROCESSING_ERROR("Unexpected error during %s fix due to [%s]"),
+    UNABLE_TO_ANALYSE_CONCEPT("Unable to analyse concept [%s] due to error [%s]"),
+    BACK_OFF_RETRY("Unexpected failure performing backoff and retry of [%s]S");
 
     private final String message;
 
