@@ -18,6 +18,7 @@
 
 package io.mindmaps.graql.internal.query;
 
+import com.google.common.collect.ImmutableMap;
 import io.mindmaps.core.dao.MindmapsTransaction;
 import io.mindmaps.core.exceptions.ConceptException;
 import io.mindmaps.core.model.Concept;
@@ -35,21 +36,23 @@ import java.util.stream.Collectors;
  * A DeleteQuery that will execute deletions for every result of a MatchQuery
  */
 public class DeleteQueryImpl implements DeleteQuery.Admin {
-    private MindmapsTransaction transaction;
-    private final Map<String, Var.Admin> deleters;
-    private final MatchQuery matchQuery;
+    private final ImmutableMap<String, Var.Admin> deleters;
+    private final MatchQuery.Admin matchQuery;
 
     /**
-     * @param transaction a transaction to delete concepts from
      * @param deleters a collection of variable patterns to delete
      * @param matchQuery a pattern to match and delete for each result
      */
-    public DeleteQueryImpl(MindmapsTransaction transaction, Collection<Var.Admin> deleters, MatchQuery matchQuery) {
-        this.transaction = transaction;
-        this.deleters = deleters.stream().collect(Collectors.toMap(Var.Admin::getName, Function.identity()));
-        this.matchQuery = matchQuery;
+    public DeleteQueryImpl(Collection<Var.Admin> deleters, MatchQuery matchQuery) {
+        Map<String, Var.Admin> deletersMap =
+                deleters.stream().collect(Collectors.toMap(Var.Admin::getName, Function.identity()));
+        this.deleters = ImmutableMap.copyOf(deletersMap);
 
-        new DeleteQueryValidator(this).validate(transaction);
+        this.matchQuery = matchQuery.admin();
+
+        matchQuery.admin().getTransaction().ifPresent(
+                transaction -> new DeleteQueryValidator(this).validate(transaction)
+        );
     }
 
     @Override
@@ -59,9 +62,7 @@ public class DeleteQueryImpl implements DeleteQuery.Admin {
 
     @Override
     public DeleteQuery withTransaction(MindmapsTransaction transaction) {
-        this.transaction = Objects.requireNonNull(transaction);
-        matchQuery.withTransaction(transaction);
-        return this;
+        return new DeleteQueryImpl(deleters.values(), matchQuery.withTransaction(transaction));
     }
 
     @Override
@@ -89,19 +90,19 @@ public class DeleteQueryImpl implements DeleteQuery.Admin {
         } else {
             deleter.getHasRoles().forEach(
                     role -> role.getId().ifPresent(
-                            typeName -> transaction.getRelationType(id).deleteHasRole(transaction.getRoleType(typeName))
+                            typeName -> getTransaction().getRelationType(id).deleteHasRole(getTransaction().getRoleType(typeName))
                     )
             );
 
             deleter.getPlaysRoles().forEach(
                     role -> role.getId().ifPresent(
-                            typeName -> transaction.getType(id).deletePlaysRole(transaction.getRoleType(typeName))
+                            typeName -> getTransaction().getType(id).deletePlaysRole(getTransaction().getRoleType(typeName))
                     )
             );
 
             deleter.getScopes().forEach(
                     scope -> scope.getId().ifPresent(
-                            scopeName -> transaction.getRelation(id).deleteScope(transaction.getInstance(scopeName))
+                            scopeName -> getTransaction().getRelation(id).deleteScope(getTransaction().getInstance(scopeName))
                     )
             );
 
@@ -115,7 +116,7 @@ public class DeleteQueryImpl implements DeleteQuery.Admin {
      */
     private void deleteConcept(String id) {
         try {
-            transaction.getConcept(id).delete();
+            getTransaction().getConcept(id).delete();
         } catch (ConceptException e) {
             throw new RuntimeException(e);
         }
@@ -141,7 +142,7 @@ public class DeleteQueryImpl implements DeleteQuery.Admin {
     private Collection<Resource<?>> resources(String id) {
         // Get resources attached to a concept
         // This method is necessary because the 'resource' method appears in 3 separate interfaces
-        Concept concept = transaction.getConcept(id);
+        Concept concept = getTransaction().getConcept(id);
 
         if (concept.isEntity()) {
             return concept.asEntity().resources();
@@ -152,6 +153,10 @@ public class DeleteQueryImpl implements DeleteQuery.Admin {
         } else {
             return new HashSet<>();
         }
+    }
+
+    private MindmapsTransaction getTransaction() {
+        return matchQuery.getTransaction().get();
     }
 
     @Override

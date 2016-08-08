@@ -18,6 +18,7 @@
 
 package io.mindmaps.graql.api.parser;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import io.mindmaps.core.dao.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
@@ -39,7 +40,7 @@ import java.util.stream.Stream;
  */
 public class Autocomplete {
 
-    private final Set<String> candidates;
+    private final ImmutableSet<String> candidates;
     private final int cursorPosition;
 
     /**
@@ -73,7 +74,7 @@ public class Autocomplete {
      */
     private Autocomplete(MindmapsTransaction transaction, String query, int cursorPosition) {
         Optional<? extends Token> optToken = getCursorToken(query, cursorPosition);
-        candidates = findCandidates(transaction, query, optToken);
+        candidates = ImmutableSet.copyOf(findCandidates(transaction, query, optToken));
         this.cursorPosition = findCursorPosition(cursorPosition, optToken);
     }
 

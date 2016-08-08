@@ -41,7 +41,7 @@ public class Query {
     private final Set<Atomic> atomSet;
     private final Map<Type, Set<Atomic>> typeAtomMap;
 
-    private final MatchQuery matchQuery;
+    private MatchQuery matchQuery;
 
     private Atomic parentAtom = null;
     private Rule rule = null;
@@ -212,12 +212,12 @@ public class Query {
 
     private void updateSelectedVars(String from, String to)
     {
-        Set<String> selectedVars = matchQuery.admin().getSelectedNames();
+        Set<String> selectedVars = new HashSet<>(matchQuery.admin().getSelectedNames());
         if (selectedVars.contains(from))
         {
             selectedVars.remove(from);
             selectedVars.add(to);
-            matchQuery.select(selectedVars);
+            matchQuery = matchQuery.select(selectedVars);
         }
     }
 

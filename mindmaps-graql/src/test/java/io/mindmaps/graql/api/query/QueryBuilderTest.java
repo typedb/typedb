@@ -127,6 +127,6 @@ public class QueryBuilderTest {
     public void testValidationWhenTransactionProvided() {
         MatchQuery query = QueryBuilder.build().match(var("x").isa("not-a-thing"));
         exception.expect(IllegalStateException.class);
-        query.withTransaction(transaction);
+        query.withTransaction(transaction).stream();
     }
 }

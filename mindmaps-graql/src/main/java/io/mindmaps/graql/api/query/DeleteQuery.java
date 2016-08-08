@@ -41,7 +41,7 @@ public interface DeleteQuery {
 
     /**
      * @param transaction the transaction to execute the query on
-     * @return this
+     * @return a new DeleteQuery with the transaction set
      */
     DeleteQuery withTransaction(MindmapsTransaction transaction);
 
