@@ -16,7 +16,6 @@
   ~ You should have received a copy of the GNU General Public License
   ~ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
   -->
-
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -26,13 +25,15 @@
     <artifactId>mindmaps</artifactId>
     <packaging>pom</packaging>
     <version>0.1.0-SNAPSHOT</version>
+    <name>MindmapsDB</name>
+    <description>A distributed semantic graph database.</description>
+    <url>http://mindmaps.io/platform.html</url>    
     <modules>
         <module>mindmaps-core</module>
         <module>mindmaps-titan-factory</module>
         <module>mindmaps-graql</module>
         <module>mindmaps-graql-shell</module>
         <module>mindmaps-engine</module>
-        <module>mindmaps-dist</module>
     </modules>
 
     <properties>
@@ -50,9 +51,72 @@
         <rest-assured.version>2.7.0</rest-assured.version>
         <java-tuples.version>1.2</java-tuples.version>
         <jinjava.version>2.1.0</jinjava.version>
-
         <antlr4.visitor>true</antlr4.visitor>
     </properties>
+
+    <licenses>
+        <license>
+            <name>GNU General Public License Version 3 (GPLv3)</name>
+            <url>https://www.gnu.org/licenses/gpl.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Filipe Teixeira</name>
+            <email>filipe@mindmaps.io</email>
+            <organization>Mindmaps Research Ltd</organization>
+            <organizationUrl>http://mindmaps.io</organizationUrl>
+        </developer>
+        <developer>
+            <name>Felix Chapman</name>
+            <email>felix@mindmaps.io</email>
+            <organization>Mindmaps Research Ltd</organization>
+            <organizationUrl>http://mindmaps.io</organizationUrl>
+        </developer>
+        <developer>
+            <name>Sheldon Hall</name>
+            <email>sheldon@mindmaps.io</email>
+            <organization>Mindmaps Research Ltd</organization>
+            <organizationUrl>http://mindmaps.io</organizationUrl>
+        </developer>
+        <developer>
+            <name>Alexandra Orth</name>
+            <email>alexandra@mindmaps.io</email>
+            <organization>Mindmaps Research Ltd</organization>
+            <organizationUrl>http://mindmaps.io</organizationUrl>
+        </developer>
+        <developer>
+            <name>Jason Liu</name>
+            <email>jason@mindmaps.io</email>
+            <organization>Mindmaps Research Ltd</organization>
+            <organizationUrl>http://mindmaps.io</organizationUrl>
+        </developer>
+        <developer>
+            <name>Marco Scoppetta</name>
+            <email>marco@mindmaps.io</email>
+            <organization>Mindmaps Research Ltd</organization>
+            <organizationUrl>http://mindmaps.io</organizationUrl>
+        </developer>
+        <developer>
+            <name>Kasper Piskorski</name>
+            <email>kasper@mindmaps.io</email>
+            <organization>Mindmaps Research Ltd</organization>
+            <organizationUrl>http://mindmaps.io</organizationUrl>
+        </developer>
+        <developer>
+            <name>Denis Lobanov</name>
+            <email>denis@mindmaps.io</email>
+            <organization>Mindmaps Research Ltd</organization>
+            <organizationUrl>http://mindmaps.io</organizationUrl>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/mindmapsdb/mindmapsdb.git</connection>
+        <developerConnection>scm:git:ssh://github.com:mindmapsdb/mindmapsdb.git</developerConnection>
+        <url>https://github.com/mindmapsdb/mindmapsdb/tree/master</url>
+    </scm>
 
     <dependencies>
         <dependency>
@@ -63,6 +127,7 @@
         </dependency>
     </dependencies>
 
+<!--
     <distributionManagement>
         <repository>
             <id>releases</id>
@@ -75,7 +140,17 @@
             <url>http://maven.internal.mindmaps.io:8082/nexus/content/repositories/development-snapshots/</url>
         </snapshotRepository>
     </distributionManagement>
-
+-->
+    <distributionManagement>
+      <snapshotRepository>
+        <id>ossrh</id>
+        <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+      </snapshotRepository>
+      <repository>
+        <id>ossrh</id>
+        <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+      </repository>
+    </distributionManagement>
     <repositories>
         <!-- Internal mirror of all public repositories -->
         <repository>
@@ -102,11 +177,66 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.5.1</version>
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
                 </configuration>
             </plugin>
+            <plugin>
+               <groupId>org.apache.maven.plugins</groupId>
+               <artifactId>maven-source-plugin</artifactId>
+               <version>2.2.1</version>
+               <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.9.1</version>
+                <configuration>
+                    <additionalparam>-Xdoclint:none</additionalparam>
+                </configuration>                                        
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>            
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>1.6.7</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>ossrh</serverId>
+                <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                <autoReleaseAfterClose>true</autoReleaseAfterClose>
+              </configuration>
+            </plugin>            
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-gpg-plugin</artifactId>
+              <version>1.5</version>
+              <executions>
+                <execution>
+                  <id>sign-artifacts</id>
+                  <phase>verify</phase>
+                  <goals>
+                    <goal>sign</goal>
+                  </goals>
+                </execution>
+              </executions>
+            </plugin>            
         </plugins>
     </build>
 
