@@ -39,6 +39,7 @@ import org.junit.Test;
 
 import java.util.Properties;
 
+import static com.jayway.restassured.RestAssured.delete;
 import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -61,16 +62,7 @@ public class CommitLogControllerTest {
         }
         RestAssured.baseURI = prop.getProperty("server.url");
         cache = Cache.getInstance();
-    }
 
-    @After
-    public void takeDown(){
-        cache.getRelationJobs().clear();
-        cache.getCastingJobs().clear();
-    }
-
-    @Test
-    public void testControllerWorking(){
         String commitLog = "{\n" +
                 "    \"concepts\":[\n" +
                 "        {\"id\":\"1\", \"type\":\"CASTING\"}, \n" +
@@ -82,14 +74,21 @@ public class CommitLogControllerTest {
                 "    ]\n" +
                 "}";
 
-        Response response = given().contentType(ContentType.JSON).body(commitLog).when().
-                post(RESTUtil.WebPath.COMMIT_LOG_URI + "?" + RESTUtil.Request.GRAPH_NAME_PARAM + "=" + "bob").
+        given().contentType(ContentType.JSON).body(commitLog).when().
+                post(RESTUtil.WebPath.COMMIT_LOG_URI + "?" + RESTUtil.Request.GRAPH_NAME_PARAM + "=" + "test").
                 then().statusCode(200).extract().response().andReturn();
+    }
 
-        String result = response.getBody().prettyPrint();
+    @After
+    public void takeDown(){
+        cache.getRelationJobs().clear();
+        cache.getCastingJobs().clear();
+    }
+
+    @Test
+    public void testControllerWorking(){
         assertEquals(4, cache.getCastingJobs().values().iterator().next().size());
         assertEquals(2, cache.getRelationJobs().values().iterator().next().size());
-        assertTrue(result.contains("Graph [bob] now has [6] post processing jobs"));
     }
 
     @Test
@@ -112,6 +111,14 @@ public class CommitLogControllerTest {
 
         assertEquals(1, cache.getRelationJobs().get(TIM).size());
         assertEquals(2, cache.getCastingJobs().get(TIM).size());
+
+        MindmapsClient.getGraph(BOB).clear();
+        MindmapsClient.getGraph(TIM).clear();
+
+        assertEquals(0, cache.getRelationJobs().get(BOB).size());
+        assertEquals(0, cache.getCastingJobs().get(BOB).size());
+        assertEquals(0, cache.getRelationJobs().get(TIM).size());
+        assertEquals(0, cache.getCastingJobs().get(TIM).size());
     }
 
     private void addSomeData(MindmapsTransaction transaction) throws MindmapsValidationException {
@@ -125,5 +132,17 @@ public class CommitLogControllerTest {
         transaction.addRelation(relationType).putRolePlayer(role1, entity1).putRolePlayer(role2, entity2);
 
         transaction.commit();
+    }
+
+    @Test
+    public void testDeleteController(){
+        assertEquals(4, cache.getCastingJobs().values().iterator().next().size());
+        assertEquals(2, cache.getRelationJobs().values().iterator().next().size());
+
+        delete(RESTUtil.WebPath.COMMIT_LOG_URI + "?" + RESTUtil.Request.GRAPH_NAME_PARAM + "=" + "test").
+                then().statusCode(200).extract().response().andReturn();
+
+        assertEquals(0, cache.getCastingJobs().values().iterator().next().size());
+        assertEquals(0, cache.getRelationJobs().values().iterator().next().size());
     }
 }

@@ -66,7 +66,11 @@ public class MindmapsTitanGraphFactoryTest {
 
         titanGraphFactory = new MindmapsTitanGraphFactory();
         MindmapsGraph graph = titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG);
-        graph.clear();
+        try {
+            graph.clear();
+        } catch(IllegalArgumentException e){
+            System.out.println("Ignoring clearing commit logs");
+        }
     }
 
     @Test
