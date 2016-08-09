@@ -128,7 +128,7 @@ public interface MindmapsTransaction {
     Relation putRelation(String id, RelationType type);
 
     /**
-     * 
+     *
      * @param type The relation type of this Relation
      * @param roleMap A role map specifying the rolePlayers (Instances or Resources) in the relationship and the roles (Role Types) they play.
      * @return A new or existing relation with the provided type and role map.
@@ -467,9 +467,4 @@ public interface MindmapsTransaction {
      * @throws Exception
      */
     void close() throws Exception;
-
-    /**
-     * Resets the graph to an empty state. A commit is required for this to take affect.
-     */
-    void clearGraph();
 }

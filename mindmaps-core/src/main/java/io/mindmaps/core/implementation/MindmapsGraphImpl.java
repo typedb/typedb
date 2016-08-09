@@ -39,6 +39,11 @@ public abstract class MindmapsGraphImpl implements MindmapsGraph {
         checkSchema((MindmapsTransactionImpl) newTransaction());
     }
 
+    public String getCommitLogEndPoint(){
+        return getEngineUrl() + "/commit_log?graphName=" +
+                getGraph().configuration().getProperty("storage.cassandra.keyspace").toString();
+    }
+
     /**
      *
      * @return A new transaction with a snapshot of the graph at the time of creation

@@ -47,5 +47,7 @@ public class MindmapsTitanGraph extends MindmapsGraphImpl {
         TitanGraph titanGraph = ((TitanGraph) getGraph());
         titanGraph.close();
         TitanCleanup.clear(titanGraph);
+
+        EngineCommunicator.contactEngine(getCommitLogEndPoint(), "DELETE");
     }
 }

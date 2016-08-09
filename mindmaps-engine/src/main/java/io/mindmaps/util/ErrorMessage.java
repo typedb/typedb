@@ -24,6 +24,8 @@ public enum ErrorMessage {
     CONCEPT_ID_NOT_FOUND("ID [%s] not found in the graph."),
     FAILED_TRANSACTION("Could not commit to graph after %s retries"),
     FAILED_VALIDATION("Caught exception during validation: %s"),
+    NO_PARAMETER_PROVIDED("Required Parameter [%s] is missing for this [%s] operation"),
+
     //Post processing Errors
     CONCEPT_POSTPROCESSING("Concept [%s] of type [%s] is doe not have any post-processing steps"),
     POSTPROCESSING_ERROR("Unexpected error during %s fix due to [%s]"),

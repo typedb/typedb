@@ -55,7 +55,12 @@ public class MindmapsTitanGraphTest {
     @After
     public void cleanup(){
         MindmapsGraph mg = new MindmapsTitanGraphFactory().getGraph(TEST_NAME, TEST_URI, null);
-        mg.clear();
+
+        try {
+            mg.clear();
+        } catch(IllegalArgumentException e){
+            System.out.println("Ignoring clearing caches");
+        }
     }
 
     @Test
