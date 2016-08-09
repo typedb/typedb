@@ -71,10 +71,17 @@ public class AdminTest {
     }
 
     @Test
-    public void testGetSelectedNamesInQuery() {
+    public void testDefaultGetSelectedNamesInQuery() {
         MatchQuery query = qb.match(var("x").isa(var("y")));
 
         assertEquals(Sets.newHashSet("x", "y"), query.admin().getSelectedNames());
+    }
+
+    @Test
+    public void testExplicitGetSelectedNamesInQuery() {
+        MatchQuery query = qb.match(var("x").isa(var("y"))).select("x");
+
+        assertEquals(Sets.newHashSet("x"), query.admin().getSelectedNames());
     }
 
     @Test

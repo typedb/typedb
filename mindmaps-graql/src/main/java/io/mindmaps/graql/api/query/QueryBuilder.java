@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.graql.internal.AdminConverter;
 import io.mindmaps.graql.internal.query.InsertQueryImpl;
-import io.mindmaps.graql.internal.query.MatchQueryImpl;
+import io.mindmaps.graql.internal.query.match.MatchQueryBase;
 import io.mindmaps.graql.internal.query.VarImpl;
 
 import java.util.Arrays;
@@ -74,7 +74,7 @@ public class QueryBuilder {
      * @return a match query that will find matches of the given patterns
      */
     public MatchQuery match(Collection<? extends Pattern> patterns) {
-        return new MatchQueryImpl(Pattern.Admin.conjunction(AdminConverter.getPatternAdmins(patterns)), transaction);
+        return new MatchQueryBase(Pattern.Admin.conjunction(AdminConverter.getPatternAdmins(patterns)), transaction);
     }
 
     /**
@@ -91,7 +91,7 @@ public class QueryBuilder {
      */
     public InsertQuery insert(Collection<? extends Var> vars) {
         ImmutableSet<Var.Admin> varAdmins = ImmutableSet.copyOf(AdminConverter.getVarAdmins(vars));
-        return new InsertQueryImpl(varAdmins, Optional.empty(), Optional.ofNullable(transaction));
+        return new InsertQueryImpl(varAdmins, Optional.ofNullable(transaction));
     }
 
     /**

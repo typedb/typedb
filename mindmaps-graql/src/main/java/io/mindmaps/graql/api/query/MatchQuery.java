@@ -18,10 +18,19 @@
 
 package io.mindmaps.graql.api.query;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Type;
+import io.mindmaps.graql.internal.AdminConverter;
+import io.mindmaps.graql.internal.query.AskQueryImpl;
+import io.mindmaps.graql.internal.query.DeleteQueryImpl;
+import io.mindmaps.graql.internal.query.InsertQueryImpl;
+import io.mindmaps.graql.internal.query.match.MatchQueryDistinct;
+import io.mindmaps.graql.internal.query.match.MatchQueryLimit;
+import io.mindmaps.graql.internal.query.match.MatchQueryOffset;
+import io.mindmaps.graql.internal.query.match.MatchQuerySelect;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -55,18 +64,24 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
      * @param names a set of variable names to select
      * @return a new MatchQuery that selects the given variables
      */
-    MatchQuery select(Set<String> names);
+    default MatchQuery select(Set<String> names) {
+        return new MatchQuerySelect(admin(), ImmutableSet.copyOf(names));
+    }
 
     /**
      * @param name a variable name to get
      * @return a streamable/iterable of concepts
      */
-    Streamable<Concept> get(String name);
+    default Streamable<Concept> get(String name) {
+        return () -> stream().map(result -> result.get(name));
+    }
 
     /**
      * @return an ask query that will return true if any matches are found
      */
-    AskQuery ask();
+    default AskQuery ask() {
+        return new AskQueryImpl(this);
+    }
 
     /**
      * @param vars an array of variables to insert for each result of this match query
@@ -80,7 +95,10 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
      * @param vars a collection of variables to insert for each result of this match query
      * @return an insert query that will insert the given variables for each result of this match query
      */
-    InsertQuery insert(Collection<? extends Var> vars);
+    default InsertQuery insert(Collection<? extends Var> vars) {
+        ImmutableSet<Var.Admin> varAdmins = ImmutableSet.copyOf(AdminConverter.getVarAdmins(vars));
+        return new InsertQueryImpl(varAdmins, admin());
+    }
 
     /**
      * @param names an array of variable names to delete for each result of this match query
@@ -103,7 +121,9 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
      * @param deleters a collection of variables stating what properties to delete for each result of this match query
      * @return a delete query that will delete the given properties for each result of this match query
      */
-    DeleteQuery delete(Collection<? extends Var> deleters);
+    default DeleteQuery delete(Collection<? extends Var> deleters) {
+        return new DeleteQueryImpl(AdminConverter.getVarAdmins(deleters), this);
+    }
 
     /**
      * @param transaction the transaction to execute the query on
@@ -115,19 +135,25 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
      * @param limit the maximum number of results the query should return
      * @return a new MatchQuery with the limit set
      */
-    MatchQuery limit(long limit);
+    default MatchQuery limit(long limit) {
+        return new MatchQueryLimit(admin(), limit);
+    }
 
     /**
      * @param offset the number of results to skip
      * @return a new MatchQuery with the offset set
      */
-    MatchQuery offset(long offset);
+    default MatchQuery offset(long offset) {
+        return new MatchQueryOffset(admin(), offset);
+    }
 
     /**
      * remove any duplicate results from the query
      * @return a new MatchQuery without duplicate results
      */
-    MatchQuery distinct();
+    default MatchQuery distinct() {
+        return new MatchQueryDistinct(admin());
+    }
 
     /**
      * Order the results by degree in ascending order

@@ -136,13 +136,6 @@ public class QueryErrorTest {
     }
 
     @Test
-    public void testExceptionWhenSelectVariableNotInQuery() {
-        exception.expect(IllegalStateException.class);
-        exception.expectMessage(allOf(containsString("$x"), containsString("match")));
-        qb.match(var("y").isa("movie")).select("x").stream();
-    }
-
-    @Test
     public void testExceptionWhenNullValue() {
         exception.expect(NullPointerException.class);
         var("x").value(null);
