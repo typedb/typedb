@@ -45,6 +45,7 @@ public class TransactionControllerTest {
     @Before
     public void setUp() throws Exception {
         new TransactionController();
+        new CommitLogController();
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.INFO);
         try {

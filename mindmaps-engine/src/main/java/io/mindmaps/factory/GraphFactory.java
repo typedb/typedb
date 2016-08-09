@@ -24,6 +24,8 @@ import io.mindmaps.core.MindmapsGraph;
 public class GraphFactory {
 
     private String graphConfig;
+    private String graphBatchConfig;
+
 
     private static GraphFactory instance = null;
 
@@ -40,6 +42,8 @@ public class GraphFactory {
     private GraphFactory() {
         titanGraphFactory = new MindmapsTitanGraphFactory();
         graphConfig = ConfigProperties.getInstance().getProperty(ConfigProperties.GRAPH_CONFIG_PROPERTY);
+        graphBatchConfig = ConfigProperties.getInstance().getProperty(ConfigProperties.GRAPH_BATCH_CONFIG_PROPERTY);
+
     }
 
     public synchronized MindmapsGraph getGraph(String name) {
@@ -47,7 +51,7 @@ public class GraphFactory {
     }
 
     public synchronized MindmapsGraph getGraphBatchLoading(String name) {
-        MindmapsGraph graph = titanGraphFactory.getGraph(name, null, graphConfig);
+        MindmapsGraph graph = titanGraphFactory.getGraph(name, null, graphBatchConfig);
         graph.enableBatchLoading();
         return graph;
     }

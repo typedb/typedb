@@ -53,8 +53,8 @@ public class ImportController {
     private String graphName;
 
     //TODO: Use redis for caching LRU
-    Map<String, String> entitiesMap;
-    ArrayList<Var> relationshipsList;
+    private Map<String, String> entitiesMap;
+    private ArrayList<Var> relationshipsList;
 
     private BlockingLoader loader;
 

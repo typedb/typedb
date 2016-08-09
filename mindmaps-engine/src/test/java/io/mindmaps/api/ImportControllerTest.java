@@ -48,6 +48,7 @@ public class ImportControllerTest {
         graphName = prop.getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
         importer = new ImportController(graphName);
         new CommitLogController();
+
     }
 
     @Test
