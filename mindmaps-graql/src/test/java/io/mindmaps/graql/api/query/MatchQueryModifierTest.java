@@ -95,7 +95,7 @@ public class MatchQueryModifierTest {
                         var("y").isa("person"),
                         var("y").isa("genre").value(neq("crime"))
                 )
-        ).orderBy("y").limit(8).offset(4).select("x");
+        ).orderBy("y").offset(4).limit(8).select("x");
 
         QueryUtil.assertResultsMatch(
                 query, "x", "movie", "Hocus-Pocus", "Spy", "The-Muppets", "Godfather", "Apocalypse-Now"

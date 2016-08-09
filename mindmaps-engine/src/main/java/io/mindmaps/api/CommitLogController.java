@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 
+import static spark.Spark.delete;
 import static spark.Spark.post;
 
 /**
@@ -42,6 +43,27 @@ public class CommitLogController {
     public CommitLogController(){
         cache = Cache.getInstance();
         post(RESTUtil.WebPath.COMMIT_LOG_URI, this::submitConcepts);
+        delete(RESTUtil.WebPath.COMMIT_LOG_URI, this::deleteConcepts);
+    }
+
+    /**
+     *
+     * @param req The request which contains the graph to be post processed
+     * @param res The current response code
+     * @return The result of clearing the post processing for a single graph
+     */
+    private String deleteConcepts(Request req, Response res){
+        String graphName = req.queryParams(RESTUtil.Request.GRAPH_NAME_PARAM);
+
+        if(graphName == null){
+            res.status(400);
+           return ErrorMessage.NO_PARAMETER_PROVIDED.getMessage(RESTUtil.Request.GRAPH_NAME_PARAM, "delete");
+        }
+
+        cache.getCastingJobs().computeIfPresent(graphName, (key, set) -> {set.clear(); return set;});
+        cache.getRelationJobs().computeIfPresent(graphName, (key, set) -> {set.clear(); return set;});
+
+        return "The cache of Graph [" + graphName + "] has been cleared";
     }
 
     /**

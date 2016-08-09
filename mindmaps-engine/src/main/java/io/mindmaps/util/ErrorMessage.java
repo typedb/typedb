@@ -24,12 +24,15 @@ public enum ErrorMessage {
     CONCEPT_ID_NOT_FOUND("ID [%s] not found in the graph."),
     FAILED_TRANSACTION("Could not commit to graph after %s retries"),
     FAILED_VALIDATION("Caught exception during validation: %s"),
+    NO_PARAMETER_PROVIDED("Required Parameter [%s] is missing for this [%s] operation"),
 
     //Post processing Errors
     CONCEPT_POSTPROCESSING("Concept [%s] of type [%s] is doe not have any post-processing steps"),
     POSTPROCESSING_ERROR("Unexpected error during %s fix due to [%s]"),
     UNABLE_TO_ANALYSE_CONCEPT("Unable to analyse concept [%s] due to error [%s]"),
-    BACK_OFF_RETRY("Unexpected failure performing backoff and retry of [%s]S");
+    BACK_OFF_RETRY("Unexpected failure performing backoff and retry of [%s]S"),
+    //Distributed loading Errors
+    ERROR_IN_DISTRIBUTED_TRANSACTION("Error while sending transaction to host: [%s]. Code: [%s] Message:[%s] \n Transaction string: [%s] ");
 
     private final String message;
 

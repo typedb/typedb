@@ -107,12 +107,6 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
         return graph;
     }
 
-    @Override
-    public void clearGraph(){
-        getTinkerPopGraph().traversal().V().drop().iterate();
-        initialiseMetaConcepts();
-    }
-
     protected void setTinkerPopGraph(Graph graph){
         this.graph = graph;
     }
@@ -665,9 +659,7 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
     }
 
     protected void submitCommitLogs(Map<DataType.BaseType, Set<String>> concepts){
-        String commitLogUri = getRootGraph().getEngineUrl() + "/commit_log?graphName=" +
-                getRootGraph().getGraph().configuration().getProperty("storage.cassandra.keyspace").toString();
-        LOG.info("Submitting commit logs to [" + commitLogUri + "]");
+        LOG.info("Submitting commit logs to [" + getRootGraph().getCommitLogEndPoint() + "]");
 
         JSONArray jsonArray = new JSONArray();
         for (Map.Entry<DataType.BaseType, Set<String>> entry : concepts.entrySet()) {
@@ -685,7 +677,7 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
         JSONObject postObject = new JSONObject();
         postObject.put("concepts", jsonArray);
 
-        String result = EngineCommunicator.contactEngine(commitLogUri, "POST", postObject.toString());
+        String result = EngineCommunicator.contactEngine(getRootGraph().getCommitLogEndPoint(), "POST", postObject.toString());
         LOG.info("Response from engine [" + result + "]");
     }
 

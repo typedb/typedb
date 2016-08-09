@@ -71,6 +71,21 @@ public class BlockingLoader {
         }
     }
 
+    public void setExecutorSize(int size) {
+        try {
+            executor.shutdown();
+            executor.awaitTermination(5, TimeUnit.MINUTES);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } finally {
+            executor = Executors.newFixedThreadPool(size);
+        }
+    }
+
+    public void setBatchSize(int size){
+        batchSize = size;
+    }
+
     private void submitToExecutor(Collection<Var> vars) {
         try {
             transactionsSemaphore.acquire();

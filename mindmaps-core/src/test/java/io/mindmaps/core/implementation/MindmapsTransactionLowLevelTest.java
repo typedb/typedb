@@ -113,14 +113,6 @@ public class MindmapsTransactionLowLevelTest {
         assertNotEquals(graph1, graph2);
     }
 
-    @Test
-    public void testClearGraph(){
-        mindmapsGraph.putEntityType("Hello");
-        assertEquals(9, mindmapsGraph.getTinkerPopGraph().traversal().V().toList().size());
-        mindmapsGraph.clearGraph();
-        assertEquals(8, mindmapsGraph.getTinkerPopGraph().traversal().V().toList().size());
-    }
-
     @Test(expected=RuntimeException.class)
     public void testTooManyNodesForId() {
         Graph graph = mindmapsGraph.getTinkerPopGraph();

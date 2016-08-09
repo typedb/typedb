@@ -59,7 +59,7 @@ public interface InsertQuery extends Streamable<Concept> {
         /**
          * @return the match query that this insert query is using, if it was provided one
          */
-        Optional<MatchQuery> getMatchQuery();
+        Optional<? extends MatchQuery> getMatchQuery();
 
         /**
          * @return the variables to insert in the insert query
