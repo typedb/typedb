@@ -32,7 +32,20 @@ public class RESTUtil {
 
     }
 
+    public static class HttpConn{
+        public static final String INSERT_PREFIX = "insert ";
+        public static final int HTTP_TRANSACTION_CREATED = 201;
+        public static final String UTF8 = "UTF8";
+        public static final String CONTENT_LENGTH = "Content-Length";
+        public static final String CONTENT_TYPE = "Content-Type";
+        public static final String POST_METHOD = "POST";
+        public static final String APPLICATION_POST_TYPE = "application/POST";
+
+
+    }
+
     public static class Response{
+
         public static final String ENTITIES_JSON_FIELD = "entities";
         public static final String ROLES_JSON_FIELD = "roles";
         public static final String RELATIONS_JSON_FIELD = "relations";
