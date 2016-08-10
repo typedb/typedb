@@ -34,7 +34,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.mindmaps.core.implementation.DataType.ConceptPropertyUnique.ITEM_IDENTIFIER;
+import static io.mindmaps.constants.DataType.ConceptPropertyUnique.ITEM_IDENTIFIER;
 import static io.mindmaps.graql.api.query.QueryBuilder.or;
 import static io.mindmaps.graql.api.query.QueryBuilder.var;
 import static io.mindmaps.graql.api.query.ValuePredicate.neq;

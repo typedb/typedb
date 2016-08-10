@@ -22,7 +22,7 @@ import io.mindmaps.api.CommitLogController;
 import io.mindmaps.api.GraphFactoryController;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.core.implementation.DataType;
+import io.mindmaps.constants.DataType;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsClient;

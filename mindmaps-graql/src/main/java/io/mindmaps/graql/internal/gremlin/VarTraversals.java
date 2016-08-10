@@ -19,7 +19,7 @@
 package io.mindmaps.graql.internal.gremlin;
 
 import io.mindmaps.core.implementation.Data;
-import io.mindmaps.core.implementation.DataType;
+import io.mindmaps.constants.DataType;
 import io.mindmaps.graql.api.query.QueryBuilder;
 import io.mindmaps.graql.api.query.ValuePredicate;
 import io.mindmaps.graql.api.query.Var;
@@ -33,10 +33,10 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import static io.mindmaps.core.implementation.DataType.ConceptProperty.*;
-import static io.mindmaps.core.implementation.DataType.ConceptPropertyUnique.ITEM_IDENTIFIER;
-import static io.mindmaps.core.implementation.DataType.EdgeLabel.*;
-import static io.mindmaps.core.implementation.DataType.EdgeProperty.TO_TYPE;
+import static io.mindmaps.constants.DataType.ConceptProperty.*;
+import static io.mindmaps.constants.DataType.ConceptPropertyUnique.ITEM_IDENTIFIER;
+import static io.mindmaps.constants.DataType.EdgeLabel.*;
+import static io.mindmaps.constants.DataType.EdgeProperty.TO_TYPE;
 import static io.mindmaps.graql.api.query.ValuePredicate.eq;
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.*;
 

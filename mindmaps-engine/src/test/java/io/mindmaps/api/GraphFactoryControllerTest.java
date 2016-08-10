@@ -25,7 +25,7 @@ import com.jayway.restassured.response.Response;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.util.ConfigProperties;
-import io.mindmaps.util.RESTUtil;
+import io.mindmaps.constants.RESTUtil;
 import org.junit.Before;
 import org.junit.Test;
 

@@ -18,6 +18,8 @@
 
 package io.mindmaps.core.implementation;
 
+import io.mindmaps.constants.DataType;
+
 import java.util.HashMap;
 import java.util.Map;
 

@@ -18,11 +18,11 @@
 
 package io.mindmaps.api;
 
-import io.mindmaps.core.implementation.DataType;
+import io.mindmaps.constants.DataType;
+import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.constants.RESTUtil;
 import io.mindmaps.postprocessing.Cache;
 import io.mindmaps.util.ConfigProperties;
-import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.util.RESTUtil;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;

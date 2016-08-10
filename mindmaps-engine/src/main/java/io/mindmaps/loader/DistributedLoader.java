@@ -18,10 +18,10 @@
 
 package io.mindmaps.loader;
 
+import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.constants.RESTUtil;
 import io.mindmaps.graql.api.query.Var;
 import io.mindmaps.util.ConfigProperties;
-import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.util.RESTUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -18,6 +18,7 @@
 
 package io.mindmaps.core.implementation;
 
+import io.mindmaps.constants.DataType;
 import io.mindmaps.core.model.Entity;
 import io.mindmaps.core.model.EntityType;
 import io.mindmaps.factory.MindmapsTestGraphFactory;

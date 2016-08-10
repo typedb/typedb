@@ -34,7 +34,7 @@ import org.junit.rules.ExpectedException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static io.mindmaps.core.implementation.DataType.ConceptMeta.*;
+import static io.mindmaps.constants.DataType.ConceptMeta.*;
 import static io.mindmaps.graql.api.query.QueryBuilder.id;
 import static io.mindmaps.graql.api.query.QueryBuilder.var;
 import static io.mindmaps.graql.api.query.ValuePredicate.gt;

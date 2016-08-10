@@ -18,6 +18,7 @@
 
 package io.mindmaps.graql.internal.validation;
 
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.RelationType;

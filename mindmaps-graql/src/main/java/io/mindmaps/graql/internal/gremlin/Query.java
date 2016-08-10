@@ -18,18 +18,19 @@
 
 package io.mindmaps.graql.internal.gremlin;
 
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.graql.api.query.Pattern;
 import io.mindmaps.graql.api.query.Var;
-import io.mindmaps.graql.internal.validation.ErrorMessage;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.*;
+import static java.util.stream.Collectors.toList;
 
 /**
  * A class for building gremlin traversals from patterns.

@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.internal.gremlin;
 
-import io.mindmaps.core.implementation.DataType;
+import io.mindmaps.constants.DataType;
 import io.mindmaps.graql.api.query.ValuePredicate;
 
 /**
