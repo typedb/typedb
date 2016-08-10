@@ -18,7 +18,7 @@
 
 package io.mindmaps.reasoner.internal.predicate;
 
-import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.RoleType;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.api.query.*;
@@ -111,15 +111,34 @@ public class RelationAtom extends AtomBase{
     }
 
     @Override
-    public void setVarName(String var){
-        throw new IllegalAccessError("setVarName attempted on a relation atom!");
+    public void changeEachVarName(String from, String to)
+    {
+        castings.forEach(c -> {
+            String var = c.getRolePlayer().getName();
+            if (var.equals(from)) {
+                c.getRolePlayer().setName(to);
+            }
+            //mark captured variable
+            else if (var.equals(to)) {
+                c.getRolePlayer().setName("captured->" + var);
+            }
+        });
     }
 
     @Override
-    public void changeRelVarName(String from, String to)
+    public void changeEachVarName(Map<String, String> mappings)
     {
-        castings.stream().filter(c -> c.getRolePlayer().getName().equals(from))
-                .forEach(c -> c.getRolePlayer().setName(to));
+        castings.forEach(c -> {
+            String var = c.getRolePlayer().getName();
+            if (mappings.containsKey(var) ) {
+                String target = mappings.get(var);
+                c.getRolePlayer().setName(target);
+            }
+            //mark captured variable
+            else if (mappings.containsValue(var)) {
+                c.getRolePlayer().setName("captured->" + var);
+            }
+            });
     }
 
     @Override
@@ -143,6 +162,7 @@ public class RelationAtom extends AtomBase{
 
         if (getParentQuery() == null) return roleVarTypeMap;
 
+        MindmapsTransaction graph =  getParentQuery().getTransaction();
         String relTypeId = getTypeId();
         Set<String> vars = getVarNames();
         Map<String, Type> varTypeMap = getParentQuery().getVarTypeMap();
@@ -150,16 +170,25 @@ public class RelationAtom extends AtomBase{
         for (String var : vars)
         {
             Type type = varTypeMap.get(var);
-            if (type != null)
-            {
-                Set<RoleType> cRoles = getCompatibleRoleTypes(type.getId(), relTypeId, getParentQuery().getTransaction());
+            String roleTypeId = "";
+            for(Var.Casting c : castings) {
+                if (c.getRolePlayer().getName().equals(var))
+                    roleTypeId = c.getRoleType().flatMap(Var.Admin::getId).orElse("");
+            }
+            /**roletype explicit*/
+            if (!roleTypeId.isEmpty())
+                roleVarTypeMap.put(var, new Pair<>(type, graph.getRoleType(roleTypeId)));
+            else {
+                if (type != null) {
+                    Set<RoleType> cRoles = getCompatibleRoleTypes(type.getId(), relTypeId, getParentQuery().getTransaction());
 
-                /**if roleType is unambigous*/
-                if(cRoles.size() == 1)
-                    roleVarTypeMap.put(var, new Pair<>(type, cRoles.iterator().next()));
-                else
-                    roleVarTypeMap.put(var, new Pair<>(type, null));
+                    /**if roleType is unambigous*/
+                    if (cRoles.size() == 1)
+                        roleVarTypeMap.put(var, new Pair<>(type, cRoles.iterator().next()));
+                    else
+                        roleVarTypeMap.put(var, new Pair<>(type, null));
 
+                }
             }
         }
         return roleVarTypeMap;

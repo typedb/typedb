@@ -18,40 +18,53 @@
 
 package io.mindmaps.api;
 
-import io.mindmaps.core.implementation.MindmapsTransactionImpl;
+import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.core.model.Concept;
 import io.mindmaps.factory.GraphFactory;
+import io.mindmaps.util.ConfigProperties;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.util.RESTUtil;
+import io.mindmaps.visualiser.HALConcept;
 import spark.Request;
 import spark.Response;
-import io.mindmaps.visualiser.HALConcept;
 
 import static spark.Spark.get;
 
 public class VisualiserController {
 
-    MindmapsTransactionImpl graph;
+    private String defaultGraphName;
 
     public VisualiserController() {
 
-        graph = GraphFactory.getInstance().buildMindmapsGraph();
+        defaultGraphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
 
-        get("/concepts", this::getConceptsByValue);
+        get(RESTUtil.WebPath.CONCEPTS_BY_VALUE_URI, this::getConceptsByValue);
 
-        get("/concept/:id", this::getConceptById);
+        get(RESTUtil.WebPath.CONCEPT_BY_ID_URI, this::getConceptById);
 
     }
 
     private String getConceptsByValue(Request req, Response res) {
-        graph.getConceptsByValue(req.queryParams("value"));
-        return req.queryParams("value");
+
+        // TODO: Implement HAL builder for concepts retrieved by Value
+
+        GraphFactory.getInstance().getGraph(defaultGraphName).newTransaction().getConceptsByValue(req.queryParams(RESTUtil.Request.VALUE_FIELD));
+        return req.queryParams(RESTUtil.Request.VALUE_FIELD);
     }
 
     private String getConceptById(Request req, Response res) {
-//        graph.getConcept(req.params(":id")).getValue();
-        if (graph.getConcept(req.params(":id")) != null)
-            return new HALConcept(graph.getConcept(req.params(":id"))).render();
+
+        String graphNameParam = req.queryParams(RESTUtil.Request.GRAPH_NAME_PARAM);
+        String currentGraphName = (graphNameParam==null) ? defaultGraphName : graphNameParam;
+
+        MindmapsTransaction transaction = GraphFactory.getInstance().getGraph(currentGraphName).newTransaction();
+
+        Concept concept = transaction.getConcept(req.params(RESTUtil.Request.ID_PARAMETER));
+        if (concept != null)
+            return new HALConcept(concept).render();
         else {
             res.status(404);
-            return "ID not found in the graph.";
+            return ErrorMessage.CONCEPT_ID_NOT_FOUND.getMessage(req.params(RESTUtil.Request.ID_PARAMETER));
         }
     }
 

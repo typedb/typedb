@@ -18,8 +18,8 @@
 
 package io.mindmaps.graql.api.query;
 
-import io.mindmaps.core.dao.MindmapsGraph;
-import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.Data;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
@@ -56,21 +56,21 @@ public class QueryErrorTest {
     public void testErrorNonExistentConceptType() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage("film");
-        qb.match(var("x").isa("film"));
+        qb.match(var("x").isa("film")).stream();
     }
 
     @Test
     public void testErrorNotARole() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(containsString("role"), containsString("person"), containsString("isa person")));
-        qb.match(var("x").isa("movie"), var().rel("person", "y").rel("x"));
+        qb.match(var("x").isa("movie"), var().rel("person", "y").rel("x")).stream();
     }
 
     @Test
     public void testErrorNonExistentResourceType() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage("thingy");
-        qb.match(var("x").has("thingy", "value")).delete("x");
+        qb.match(var("x").has("thingy", "value")).delete("x").execute();
     }
 
     @Test
@@ -78,7 +78,7 @@ public class QueryErrorTest {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(
                 containsString("relation"), containsString("movie"), containsString("separate"), containsString(";")));
-        qb.match(var().isa("movie").rel("x").rel("y"));
+        qb.match(var().isa("movie").rel("x").rel("y")).stream();
     }
 
     @Test
@@ -89,7 +89,7 @@ public class QueryErrorTest {
                 containsString("production-with-cast"), containsString("character-being-played"),
                 containsString("actor")
         ));
-        qb.match(var().isa("has-cast").rel("director", "x"));
+        qb.match(var().isa("has-cast").rel("director", "x")).stream();
     }
 
     @Test
@@ -100,7 +100,7 @@ public class QueryErrorTest {
                 containsString("production-with-cast"), containsString("character-being-played"),
                 containsString("actor")
         ));
-        qb.match(var().isa("has-cast").rel("character-in-production", "x"));
+        qb.match(var().isa("has-cast").rel("character-in-production", "x")).stream();
     }
 
     @Test
@@ -118,7 +118,7 @@ public class QueryErrorTest {
         // 'has genre' is not allowed because genre is an entity type
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(containsString("genre"), containsString("resource")));
-        qb.match(var("x").isa("movie").has("genre", "Drama"));
+        qb.match(var("x").isa("movie").has("genre", "Drama")).stream();
     }
 
     @Test
@@ -133,13 +133,6 @@ public class QueryErrorTest {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(allOf(containsString("match"), containsString("pattern")));
         qb.match();
-    }
-
-    @Test
-    public void testExceptionWhenSelectVariableNotInQuery() {
-        exception.expect(IllegalStateException.class);
-        exception.expectMessage(allOf(containsString("$x"), containsString("match")));
-        qb.match(var("y").isa("movie")).select("x");
     }
 
     @Test
@@ -174,6 +167,6 @@ public class QueryErrorTest {
                 containsString("actor"),
                 containsString("role")
         ));
-        qb.match(var("x").isa("actor"));
+        qb.match(var("x").isa("actor")).stream();
     }
 }

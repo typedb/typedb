@@ -18,23 +18,24 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.core.exceptions.ConceptIdNotUniqueException;
-import io.mindmaps.core.exceptions.ErrorMessage;
-import io.mindmaps.core.exceptions.MindmapsValidationException;
 import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -102,33 +103,11 @@ public class MindmapsTransactionLowLevelTest {
     }
 
     @Test
-    public void testMergeCastings(){
-        RoleType roleType1 = mindmapsGraph.putRoleType("role 1");
-        RoleType roleType2 = mindmapsGraph.putRoleType("role 2");
-        RelationType relationType = mindmapsGraph.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
-        EntityType thing = mindmapsGraph.putEntityType("thing").playsRole(roleType1).playsRole(roleType2);
-        Instance instance1 = mindmapsGraph.putEntity("1", thing);
-        Instance instance2 = mindmapsGraph.putEntity("2", thing);
-        Instance instance3 = mindmapsGraph.putEntity("3", thing);
-
-        RelationImpl relation1 = (RelationImpl) mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
-        RelationImpl relation2 = (RelationImpl) mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType).putRolePlayer(roleType1, instance2).putRolePlayer(roleType2, instance3);
-
-        Set<CastingImpl> castings = relation1.getMappingCasting();
-        castings.addAll(relation2.getMappingCasting());
-        Set<Concept> concepts = new HashSet<>();
-        castings.forEach(concepts::add);
-
-        assertEquals(4, mindmapsGraph.getTinkerTraversal().V().hasLabel(DataType.BaseType.CASTING.name()).toList().size());
-        mindmapsGraph.mergeCastings(concepts);
-        assertEquals(1, mindmapsGraph.getTinkerTraversal().V().hasLabel(DataType.BaseType.CASTING.name()).toList().size());
-    }
-
-    @Test
-    public void getQuickTypeIdTest(){
-        EntityType thing = mindmapsGraph.putEntityType("thing");
-        Instance world = mindmapsGraph.putEntity("World", thing);
-        assertEquals("thing", mindmapsGraph.getQuickTypeId(world));
+    public void testSetTinkerPopGraph(){
+        Graph graph1 = mindmapsGraph.getTinkerPopGraph();
+        mindmapsGraph.setTinkerPopGraph(TinkerGraph.open());
+        Graph graph2 = mindmapsGraph.getTinkerPopGraph();
+        assertNotEquals(graph1, graph2);
     }
 
     @Test(expected=RuntimeException.class)
@@ -466,29 +445,6 @@ public class MindmapsTransactionLowLevelTest {
     }
 
     @Test
-    public void checkPostprocessingHelpers(){
-        EntityType movie = mindmapsGraph.putEntityType("movie");
-        EntityType actor = mindmapsGraph.putEntityType("actor");
-        RoleType movieRole = mindmapsGraph.putRoleType("movie role");
-        RoleType actorRole = mindmapsGraph.putRoleType("actorRole");
-        InstanceImpl godfather = (InstanceImpl) mindmapsGraph.putEntity("Godfather", movie);
-        InstanceImpl pacino = (InstanceImpl) mindmapsGraph.putEntity("Godfather", actor);
-        RelationTypeImpl relationType = (RelationTypeImpl) mindmapsGraph.putRelationType("Relation Type").hasRole(movieRole).hasRole(actorRole);
-        RelationImpl relation = (RelationImpl) mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType).putRolePlayer(movieRole, godfather).putRolePlayer(actorRole, pacino);
-
-        assertEquals(13, mindmapsGraph.getModifiedConcepts().size());
-        assertEquals(2, mindmapsGraph.getModifiedCastingIds().size());
-        assertEquals(1, mindmapsGraph.getModifiedRelationIds().size());
-
-        Set<CastingImpl> castings = relation.getMappingCasting();
-        Stream<Long> castingIds = castings.stream().map(CastingImpl::getBaseIdentifier);
-        List<Long> sortedIds = castingIds.sorted().collect(Collectors.toList());
-
-
-        assertEquals(relation.getBaseIdentifier() + "_" + sortedIds.get(0) + "." + sortedIds.get(1) + ".", mindmapsGraph.getUniqueRelationId(relation));
-    }
-
-    @Test
     public void testGetType(){
         EntityType a = mindmapsGraph.putEntityType("a").setValue("1");
         RoleType b = mindmapsGraph.putRoleType("b").setValue("1").setSubject("subject");
@@ -575,4 +531,41 @@ public class MindmapsTransactionLowLevelTest {
         Relation rel2 = mindmapsGraph.putRelation(relationType1, map);
     }
 
+    @Test
+    public void testMergingCasting(){
+        RoleType roleType1 = mindmapsGraph.putRoleType("role 1");
+        RoleType roleType2 = mindmapsGraph.putRoleType("role 2");
+        RelationType relationType = mindmapsGraph.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
+        EntityType thing = mindmapsGraph.putEntityType("thing").playsRole(roleType1).playsRole(roleType2);
+        InstanceImpl instance1 = (InstanceImpl) mindmapsGraph.putEntity("1", thing);
+        Instance instance2 = mindmapsGraph.putEntity("2", thing);
+        Instance instance3 = mindmapsGraph.putEntity("3", thing);
+        Instance instance4 = mindmapsGraph.putEntity("4", thing);
+
+        mindmapsGraph.addRelation(relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
+        assertEquals(1, instance1.castings().size());
+
+        CastingImpl mainCasting = (CastingImpl) instance1.castings().iterator().next();
+
+        buildDuplicateCasting(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance3);
+        buildDuplicateCasting(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance4);
+        assertEquals(3, instance1.castings().size());
+
+        mindmapsGraph.fixDuplicateCasting(mainCasting.getId());
+
+        assertEquals(1, instance1.castings().size());
+    }
+    private void buildDuplicateCasting(RelationType relationType, RoleTypeImpl mainRoleType, InstanceImpl mainInstance, RoleType otherRoleType, Instance otherInstance){
+        RelationImpl relation = (RelationImpl) mindmapsGraph.addRelation(relationType).putRolePlayer(otherRoleType, otherInstance);
+
+        //Create Fake Casting
+        Vertex castingVertex = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.CASTING.name());
+        castingVertex.addEdge(DataType.EdgeLabel.ISA.getLabel(), mainRoleType.getVertex());
+
+        Edge edge = castingVertex.addEdge(DataType.EdgeLabel.ROLE_PLAYER.getLabel(), mainInstance.getVertex());
+        edge.property(DataType.EdgeProperty.ROLE_TYPE.name(), mainRoleType.getId());
+
+        edge = relation.getVertex().addEdge(DataType.EdgeLabel.CASTING.getLabel(), castingVertex);
+        edge.property(DataType.EdgeProperty.ROLE_TYPE.name(), mainRoleType.getId());
+    }
 }

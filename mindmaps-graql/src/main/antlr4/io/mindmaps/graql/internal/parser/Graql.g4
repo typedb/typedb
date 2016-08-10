@@ -129,13 +129,13 @@ id             : ID | STRING ;
 
 DATATYPE       : 'long' | 'double' | 'string' | 'boolean' ;
 ORDER          : 'asc' | 'desc' ;
+BOOLEAN        : 'true' | 'false' ;
 VARIABLE       : '$' [a-zA-Z0-9_-]+ ;
 ID             : [a-zA-Z_] [a-zA-Z0-9_-]* ;
 STRING         : '"' (~'"' | ESCAPE_SEQ)* '"' | '\'' (~'\'' | ESCAPE_SEQ)* '\'';
 REGEX          : '/' (~'/' | '\\/')* '/' ;
 INTEGER        : ('+' | '-')? [0-9]+ ;
 REAL           : ('+' | '-')? [0-9]+ '.' [0-9]+ ;
-BOOLEAN        : 'true' | 'false' ;
 
 fragment ESCAPE_SEQ : '\\' ('\\' | '"' | '\'') ;
 

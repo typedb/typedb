@@ -18,8 +18,8 @@
 
 package io.mindmaps.graql.api.query;
 
-import io.mindmaps.core.dao.MindmapsGraph;
-import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.junit.Before;
@@ -84,6 +84,16 @@ public class QueryBuilderTest {
     }
 
     @Test
+    public void testBuildMatchInsertQueryTransactionLast() {
+        assertFalse(QueryBuilder.build(transaction).match(var().id("a-movie")).ask().execute());
+        InsertQuery query = QueryBuilder.build().
+                match(var("x").id("movie")).
+                insert(var().id("a-movie").isa("movie")).withTransaction(transaction);
+        query.execute();
+        assertTrue(QueryBuilder.build(transaction).match(var().id("a-movie")).ask().execute());
+    }
+
+    @Test
     public void testErrorExecuteMatchQueryWithoutTransaction() {
         MatchQuery query = QueryBuilder.build().match(var("x").isa("movie"));
         exception.expect(IllegalStateException.class);
@@ -117,6 +127,6 @@ public class QueryBuilderTest {
     public void testValidationWhenTransactionProvided() {
         MatchQuery query = QueryBuilder.build().match(var("x").isa("not-a-thing"));
         exception.expect(IllegalStateException.class);
-        query.withTransaction(transaction);
+        query.withTransaction(transaction).stream();
     }
 }

@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.examples;
 
-import io.mindmaps.core.dao.MindmapsGraph;
+import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.api.parser.QueryParser;
 import io.mindmaps.graql.api.query.InsertQuery;

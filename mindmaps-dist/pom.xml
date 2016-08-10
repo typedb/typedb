@@ -41,6 +41,20 @@
             <artifactId>mindmaps-graql-shell</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <!-- Cassandra uses airline for command line parsing -->
+        <dependency>
+            <groupId>io.airlift</groupId>
+            <artifactId>airline</artifactId>
+            <version>${airline.version}</version>
+
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <build>

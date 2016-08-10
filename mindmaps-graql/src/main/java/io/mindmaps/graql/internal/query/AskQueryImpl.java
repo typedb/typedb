@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.internal.query;
 
-import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.graql.api.query.AskQuery;
 import io.mindmaps.graql.api.query.MatchQuery;
 
@@ -43,8 +43,7 @@ public class AskQueryImpl implements AskQuery.Admin {
 
     @Override
     public AskQuery withTransaction(MindmapsTransaction transaction) {
-        matchQuery.withTransaction(transaction);
-        return this;
+        return new AskQueryImpl(matchQuery.withTransaction(transaction));
     }
 
     @Override

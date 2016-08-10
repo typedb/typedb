@@ -19,7 +19,10 @@
 package io.mindmaps.core.implementation;
 
 import com.thinkaurelius.titan.core.TitanGraph;
-import io.mindmaps.core.exceptions.MindmapsValidationException;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 public class MindmapsTitanTransaction extends MindmapsTransactionImpl {
     private MindmapsTitanGraph rootGraph;
@@ -32,6 +35,16 @@ public class MindmapsTitanTransaction extends MindmapsTransactionImpl {
     @Override
     public void commit() throws MindmapsValidationException {
         validateGraph();
+
+        Map<DataType.BaseType, Set<String>> modifiedConcepts = new HashMap<>();
+        Set<String> relations =  getModifiedRelationIds();
+        Set<String> castings = getModifiedCastingIds();
+
+        if(relations.size() > 0)
+            modifiedConcepts.put(DataType.BaseType.RELATION, relations);
+        if(castings.size() > 0)
+            modifiedConcepts.put(DataType.BaseType.CASTING, castings);
+
         LOG.info("Graph is valid. Committing graph . . . ");
         getTinkerPopGraph().tx().commit();
         try {
@@ -41,6 +54,9 @@ public class MindmapsTitanTransaction extends MindmapsTransactionImpl {
             e.printStackTrace();
         }
         LOG.info("Graph committed.");
+
+        if(modifiedConcepts.size() > 0)
+            submitCommitLogs(modifiedConcepts);
     }
 
     @Override

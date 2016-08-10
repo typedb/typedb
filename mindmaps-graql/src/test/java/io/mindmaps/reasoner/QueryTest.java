@@ -19,7 +19,7 @@
 package io.mindmaps.reasoner;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Rule;
 import io.mindmaps.graql.api.parser.QueryParser;
 import io.mindmaps.graql.api.query.MatchQuery;
@@ -27,7 +27,6 @@ import io.mindmaps.graql.api.query.Pattern;
 import io.mindmaps.graql.api.query.QueryBuilder;
 import io.mindmaps.graql.api.query.Var;
 import io.mindmaps.reasoner.graphs.SNBGraph;
-import io.mindmaps.reasoner.internal.predicate.Atom;
 import io.mindmaps.reasoner.internal.container.Query;
 import io.mindmaps.reasoner.internal.predicate.Atomic;
 import org.junit.BeforeClass;

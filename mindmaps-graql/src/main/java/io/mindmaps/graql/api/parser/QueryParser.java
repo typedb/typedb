@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.api.parser;
 
-import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.graql.api.query.AskQuery;
 import io.mindmaps.graql.api.query.DeleteQuery;
 import io.mindmaps.graql.api.query.InsertQuery;
@@ -32,10 +32,14 @@ import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.io.InputStream;
+import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Class for parsing query strings into valid queries
@@ -121,9 +125,38 @@ public class QueryParser {
         GraqlLexer lexer = new GraqlLexer(new UnbufferedCharStream(inputStream));
         lexer.setTokenFactory(new CommonTokenFactory(true));
         UnbufferedTokenStream tokens = new UnbufferedTokenStream(lexer);
-        return Stream.generate(
-                () -> parseQueryFragment(GraqlParser::patternSep, QueryVisitor::visitPatternSep, tokens)
-        );
+
+        // Create an iterable that will keep parsing until EOF
+        Iterable<Pattern> iterable = () -> new Iterator<Pattern>() {
+
+            private Pattern pattern = null;
+
+            private Optional<Pattern> getNext() {
+
+                if (pattern == null) {
+                    if (tokens.get(tokens.index()).getType() == Token.EOF) {
+                        return Optional.empty();
+                    }
+
+                    pattern = parseQueryFragment(GraqlParser::patternSep, QueryVisitor::visitPatternSep, tokens);
+                }
+                return Optional.of(pattern);
+            }
+
+            @Override
+            public boolean hasNext() {
+                return getNext().isPresent();
+            }
+
+            @Override
+            public Pattern next() {
+                Optional<Pattern> result = getNext();
+                pattern = null;
+                return result.orElseThrow(NoSuchElementException::new);
+            }
+        };
+
+        return StreamSupport.stream(iterable.spliterator(), false);
     }
 
     /**

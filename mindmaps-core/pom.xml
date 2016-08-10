@@ -30,6 +30,12 @@
     <artifactId>mindmaps-core</artifactId>
 
     <dependencies>
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>${json.version}</version>
+        </dependency>
+
         <!-- Tinkerpop3 core -->
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>

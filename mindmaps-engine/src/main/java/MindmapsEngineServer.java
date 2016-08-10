@@ -16,18 +16,38 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-import io.mindmaps.api.GraphFactoryController;
-import io.mindmaps.api.RestGETController;
-import io.mindmaps.api.VisualiserController;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import io.mindmaps.api.*;
+import io.mindmaps.util.ConfigProperties;
+
+import static spark.Spark.port;
 
 public class MindmapsEngineServer {
 
-
     public static void main(String[] args) {
 
-        new RestGETController();
+
+        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+        logger.setLevel(Level.INFO);
+
+
+        ConfigProperties prop = ConfigProperties.getInstance();
+
+        // Listening port
+        port(prop.getPropertyAsInt(ConfigProperties.SERVER_PORT_NUMBER));
+
+        // --------------------------------- //
+
+
+        // ----- APIs --------- //
+
+        new RemoteShellController();
         new VisualiserController();
         new GraphFactoryController();
+        new ImportController();
+        new CommitLogController();
+        new TransactionController();
 
     }
 }

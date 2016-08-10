@@ -19,8 +19,8 @@
 package io.mindmaps.graql.api.query;
 
 import com.google.common.collect.Lists;
-import io.mindmaps.core.dao.MindmapsGraph;
-import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.example.MovieGraphFactory;
@@ -95,7 +95,7 @@ public class MatchQueryModifierTest {
                         var("y").isa("person"),
                         var("y").isa("genre").value(neq("crime"))
                 )
-        ).orderBy("y").limit(8).offset(4).select("x");
+        ).orderBy("y").offset(4).limit(8).select("x");
 
         QueryUtil.assertResultsMatch(
                 query, "x", "movie", "Hocus-Pocus", "Spy", "The-Muppets", "Godfather", "Apocalypse-Now"

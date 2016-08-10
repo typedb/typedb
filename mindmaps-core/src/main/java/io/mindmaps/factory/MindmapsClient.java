@@ -18,12 +18,11 @@
 
 package io.mindmaps.factory;
 
-import io.mindmaps.core.dao.MindmapsGraph;
-import io.mindmaps.core.exceptions.ErrorMessage;
+import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.core.implementation.ErrorMessage;
+import io.mindmaps.core.implementation.EngineCommunicator;
 
 import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.MissingResourceException;
@@ -35,9 +34,8 @@ import java.util.PropertyResourceBundle;
  * The deployer of engine decides on the backend and this class will handle producing the correct graphs.
  */
 public class MindmapsClient {
-    private static final String DEFAULT_PROTOCOL = "http://";
-    private static final String DEFAULT_URI = "localhost";
-    private static final String REST_END_POINT = ":4567/graph_factory";
+    private static final String DEFAULT_URI = "localhost:4567";
+    private static final String REST_END_POINT = "/graph_factory";
     private static final Map<String, MindmapsGraphFactory> openFactories = new HashMap<>();
 
     /**
@@ -57,24 +55,8 @@ public class MindmapsClient {
      */
     public static MindmapsGraph getGraph(String name, String uri){
         try {
-            String restFactoryUri = DEFAULT_PROTOCOL + uri + REST_END_POINT;
-            URL url = new URL(restFactoryUri);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("GET");
-
-            if(connection.getResponseCode() != 200){
-                throw new IllegalArgumentException(ErrorMessage.INVALID_ENGINE_RESPONSE.getMessage(uri, connection.getResponseCode()));
-            }
-
-            //Reading from Connection
-            BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-            StringBuilder sb = new StringBuilder();
-            String line;
-            while ((line = br.readLine()) != null) {
-                sb.append("\n").append(line);
-            }
-            br.close();
-            String config = sb.toString();
+            String restFactoryUri = uri + REST_END_POINT;
+            String config = EngineCommunicator.contactEngine(restFactoryUri, "GET");
 
             //TODO: We should make config handling generic rather than through files. Using a temp file here is a bit strange
             //Creating Temp File

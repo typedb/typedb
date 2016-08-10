@@ -18,8 +18,8 @@
 
 package io.mindmaps.factory;
 
-import io.mindmaps.core.dao.MindmapsGraph;
-import io.mindmaps.core.exceptions.ErrorMessage;
+import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.core.implementation.ErrorMessage;
 import io.mindmaps.core.implementation.MindmapsTitanHadoopGraph;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
@@ -52,7 +52,7 @@ class MindmapsTitanHadoopGraphFactory implements MindmapsGraphFactory {
         if(!openGraphs.containsKey(name)){
             Graph graph = GraphFactory.open(pathToConfig);
             graph.configuration().setProperty(KEYSPACE_PROPERTY, name);
-            openGraphs.put(name, new MindmapsTitanHadoopGraph(graph, GRAPH_COMPUTER));
+            openGraphs.put(name, new MindmapsTitanHadoopGraph(graph, address, GRAPH_COMPUTER));
         }
 
         return openGraphs.get(name);
