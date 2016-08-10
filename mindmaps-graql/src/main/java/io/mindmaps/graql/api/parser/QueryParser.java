@@ -18,6 +18,7 @@
 
 package io.mindmaps.graql.api.parser;
 
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.graql.api.query.AskQuery;
 import io.mindmaps.graql.api.query.DeleteQuery;
@@ -27,7 +28,6 @@ import io.mindmaps.graql.internal.parser.GraqlLexer;
 import io.mindmaps.graql.internal.parser.GraqlParser;
 import io.mindmaps.graql.internal.parser.MatchQueryPrinter;
 import io.mindmaps.graql.internal.parser.QueryVisitor;
-import io.mindmaps.graql.internal.validation.ErrorMessage;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 

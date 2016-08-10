@@ -19,6 +19,7 @@
 package io.mindmaps.graql.internal.query.match;
 
 import com.google.common.collect.Sets;
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Type;
@@ -26,7 +27,6 @@ import io.mindmaps.graql.api.query.MatchQuery;
 import io.mindmaps.graql.api.query.Pattern;
 import io.mindmaps.graql.api.query.Var;
 import io.mindmaps.graql.internal.gremlin.Query;
-import io.mindmaps.graql.internal.validation.ErrorMessage;
 import io.mindmaps.graql.internal.validation.MatchQueryValidator;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -37,7 +37,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.mindmaps.core.implementation.DataType.ConceptPropertyUnique.ITEM_IDENTIFIER;
+import static io.mindmaps.constants.DataType.ConceptPropertyUnique.ITEM_IDENTIFIER;
 import static java.util.stream.Collectors.toSet;
 
 /**

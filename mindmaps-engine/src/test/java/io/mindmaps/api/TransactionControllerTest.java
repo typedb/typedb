@@ -25,7 +25,7 @@ import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.util.ConfigProperties;
-import io.mindmaps.util.RESTUtil;
+import io.mindmaps.constants.RESTUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

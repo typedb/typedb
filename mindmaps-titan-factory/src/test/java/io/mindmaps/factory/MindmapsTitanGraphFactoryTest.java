@@ -25,7 +25,7 @@ import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.implementation.DataType;
+import io.mindmaps.constants.DataType;
 import io.mindmaps.core.implementation.MindmapsGraphImpl;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;

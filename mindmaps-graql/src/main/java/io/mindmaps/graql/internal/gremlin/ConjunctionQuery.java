@@ -18,11 +18,11 @@
 
 package io.mindmaps.graql.internal.gremlin;
 
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.graql.api.query.Pattern;
 import io.mindmaps.graql.api.query.Var;
-import io.mindmaps.graql.internal.validation.ErrorMessage;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;

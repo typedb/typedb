@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import static io.mindmaps.core.implementation.DataType.ConceptMeta.*;
+import static io.mindmaps.constants.DataType.ConceptMeta.*;
 import static io.mindmaps.graql.api.query.QueryBuilder.*;
 import static io.mindmaps.graql.api.query.ValuePredicate.*;
 import static org.junit.Assert.*;

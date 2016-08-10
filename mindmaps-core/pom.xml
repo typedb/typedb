@@ -35,6 +35,11 @@
             <artifactId>json</artifactId>
             <version>${json.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.mindmaps</groupId>
+            <artifactId>mindmaps-base</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- Tinkerpop3 core -->
         <dependency>

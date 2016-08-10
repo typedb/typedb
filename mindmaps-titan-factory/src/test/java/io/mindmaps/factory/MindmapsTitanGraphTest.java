@@ -20,7 +20,7 @@ package io.mindmaps.factory;
 
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.core.implementation.ErrorMessage;
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.implementation.GraphRuntimeException;
 import io.mindmaps.core.implementation.MindmapsValidationException;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;

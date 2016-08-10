@@ -19,6 +19,7 @@
 package io.mindmaps.core.implementation;
 
 import com.thinkaurelius.titan.core.TitanGraph;
+import io.mindmaps.constants.DataType;
 
 import java.util.HashMap;
 import java.util.Map;

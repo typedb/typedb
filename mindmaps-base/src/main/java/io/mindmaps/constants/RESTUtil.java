@@ -1,4 +1,4 @@
-package io.mindmaps.util;
+package io.mindmaps.constants;
 
 public class RESTUtil {
 

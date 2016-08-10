@@ -25,9 +25,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
-import static io.mindmaps.core.implementation.DataType.EdgeProperty.*;
-import static io.mindmaps.core.implementation.DataType.EdgeLabel.SHORTCUT;
+import static io.mindmaps.constants.DataType.EdgeLabel.SHORTCUT;
+import static io.mindmaps.constants.DataType.EdgeProperty.*;
 
 /**
  * some {@code VarTraversals} can be represented using shortcut edges.

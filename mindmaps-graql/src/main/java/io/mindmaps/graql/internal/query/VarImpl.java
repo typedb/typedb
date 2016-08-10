@@ -32,7 +32,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static io.mindmaps.graql.internal.validation.ErrorMessage.*;
+import static io.mindmaps.constants.ErrorMessage.*;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 

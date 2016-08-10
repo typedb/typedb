@@ -37,7 +37,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 
-import static io.mindmaps.core.implementation.DataType.ConceptMeta.*;
+import static io.mindmaps.constants.DataType.ConceptMeta.*;
 import static io.mindmaps.graql.api.query.QueryBuilder.*;
 import static io.mindmaps.graql.api.query.ValuePredicate.*;
 import static org.junit.Assert.*;

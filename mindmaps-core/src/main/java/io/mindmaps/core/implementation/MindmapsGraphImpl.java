@@ -18,6 +18,8 @@
 
 package io.mindmaps.core.implementation;
 
+import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.constants.RESTUtil;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.MindmapsTransaction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -40,7 +42,7 @@ public abstract class MindmapsGraphImpl implements MindmapsGraph {
     }
 
     public String getCommitLogEndPoint(){
-        return getEngineUrl() + "/commit_log?graphName=" +
+        return getEngineUrl() + RESTUtil.WebPath.COMMIT_LOG_URI + "?" + RESTUtil.Request.GRAPH_NAME_PARAM + "=" +
                 getGraph().configuration().getProperty("storage.cassandra.keyspace").toString();
     }
 
