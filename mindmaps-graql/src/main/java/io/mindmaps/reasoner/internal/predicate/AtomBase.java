@@ -19,7 +19,7 @@
 package io.mindmaps.reasoner.internal.predicate;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.graql.api.query.*;
 import io.mindmaps.reasoner.internal.container.Query;
 import org.javatuples.Pair;
@@ -147,15 +147,30 @@ public abstract class AtomBase implements Atomic{
     @Override
     public void setParentQuery(Query q){ parent = q;}
 
-    @Override
-    public void setVarName(String var){
+    private void setVarName(String var){
         varName = var;
         atomPattern.asVar().setName(var);
     }
 
     @Override
-    public void changeRelVarName(String from, String to){
-        throw new IllegalAccessError("changeRelVarName attempted on a non-relation atom!");
+    public void changeEachVarName(String from, String to) {
+        String var = getVarName();
+        if (var.equals(from)) {
+            setVarName(to);
+        } else if (var.equals(to)) {
+            setVarName("captured->" + var);
+        }
+    }
+
+    @Override
+    public void changeEachVarName(Map<String, String> mappings){
+        String var = getVarName();
+        if (mappings.containsKey(var)) {
+            setVarName(mappings.get(var));
+        }
+        else if (mappings.containsValue(var)) {
+            setVarName("captured->" + var);
+        }
     }
 
     @Override

@@ -18,20 +18,20 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.core.dao.MindmapsTransaction;
-import io.mindmaps.core.exceptions.*;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.*;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
 
@@ -102,7 +102,7 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
         return getMetaType() != null;
     }
 
-    Graph getTinkerPopGraph(){
+    public Graph getTinkerPopGraph(){
         if(graph == null){
             throw new GraphRuntimeException(ErrorMessage.CLOSED.getMessage(this.getClass().getName()));
         }
@@ -145,27 +145,16 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
         return transaction.getModifiedConcepts();
     }
 
-    public Map<String, Set<String>> getModifiedRelationIds(){
-        Map<String, Set<String>> conceptTypes = new HashMap<>();
-        for(ConceptImpl concept: transaction.getModifiedRelations()){
-            String type = concept.getType();
-            Set<String> conceptIds = conceptTypes.computeIfAbsent(type, k -> new HashSet<>());
-            conceptIds.add(concept.getId());
-        }
-        return  conceptTypes;
+    public Set<String> getModifiedRelationIds(){
+        Set<String> relationIds = new HashSet<>();
+        transaction.getModifiedRelations().forEach(c -> relationIds.add(c.getId()));
+        return relationIds;
     }
 
-    public  Map<String, Map<String, Set<String>>> getModifiedCastingIds(){
-        Map<String, Map<String, Set<String>>> conceptTypes = new HashMap<>();
-        for(ConceptImpl concept: transaction.getModifiedCastings()){
-            CastingImpl casting = elementFactory.buildCasting(concept);
-            String type = casting.getType();
-            String key = type + "-" + casting.getRolePlayer().getBaseIdentifier();
-            Map<String, Set<String>> outerMap = conceptTypes.computeIfAbsent(type, k -> new HashMap<>());
-            Set<String> ids = outerMap.computeIfAbsent(key, (k) -> new HashSet<>());
-            ids.add(casting.getId());
-        }
-        return conceptTypes;
+    public Set<String> getModifiedCastingIds(){
+        Set<String> relationIds = new HashSet<>();
+        transaction.getModifiedCastings().forEach(c -> relationIds.add(c.getId()));
+        return relationIds;
     }
 
     public Transaction getTransaction () {
@@ -574,26 +563,6 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
         }
     }
 
-    public Instance mergeCastings(Set<Concept> castings){
-        Iterator<Concept> it = castings.iterator();
-        CastingImpl mainCasting = elementFactory.buildCasting(it.next());
-        RoleType role = mainCasting.getRole();
-
-        while(it.hasNext()){
-            CastingImpl otherCasting = elementFactory.buildCasting(it.next());
-
-            //Transfer assertion edges
-            for(RelationImpl relation : otherCasting.getRelations()){
-                EdgeImpl assertionToCasting = addEdge(relation, mainCasting, DataType.EdgeLabel.CASTING);
-                assertionToCasting.setProperty(DataType.EdgeProperty.ROLE_TYPE, role.getId());
-            }
-
-            getTinkerTraversal().V(otherCasting.getBaseIdentifier()).next().remove();
-        }
-
-        return mainCasting.getRolePlayer();
-    }
-
     public void putShortcutEdges(Relation relation, RelationType relationType){
         Map<RoleType, Instance> roleMap = relation.rolePlayers();
         if(roleMap.size() > 1) {
@@ -694,25 +663,80 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
             }
             throw new MindmapsValidationException(error);
         }
-        LOG.info("Graph committed.");
+    }
+
+    protected void submitCommitLogs(Map<DataType.BaseType, Set<String>> concepts){
+        LOG.info("Submitting commit logs to [" + getRootGraph().getCommitLogEndPoint() + "]");
+
+        JSONArray jsonArray = new JSONArray();
+        for (Map.Entry<DataType.BaseType, Set<String>> entry : concepts.entrySet()) {
+            DataType.BaseType type = entry.getKey();
+
+            for (String conceptId : entry.getValue()) {
+                JSONObject jsonObject = new JSONObject();
+                jsonObject.put("id", conceptId);
+                jsonObject.put("type", type.name());
+                jsonArray.put(jsonObject);
+            }
+
+        }
+
+        JSONObject postObject = new JSONObject();
+        postObject.put("concepts", jsonArray);
+
+        String result = EngineCommunicator.contactEngine(getRootGraph().getCommitLogEndPoint(), "POST", postObject.toString());
+        LOG.info("Response from engine [" + result + "]");
     }
 
     //------------------------------------------ Fixing Code for Postprocessing ----------------------------------------
-    public String getUniqueRelationId(Relation relation){
-        Set<CastingImpl> castings = ((RelationImpl)relation).getMappingCasting();
-        Stream<Long> castingIds = castings.stream().map(CastingImpl::getBaseIdentifier);
-        List<Long> sortedIds = castingIds.sorted().collect(Collectors.toList());
+    /**
+     * Merges duplicate castings if one is found.
+     * @param castingId The id of the casting to check for duplicates
+     * @return True
+     */
+    public boolean fixDuplicateCasting(String castingId){
+        //Get the Casting
+        ConceptImpl concept = (ConceptImpl) getConcept(castingId);
+        if(concept == null || !concept.isCasting())
+            return false;
 
-        String id = ((RelationImpl) relation).getBaseIdentifier() + "_";
-        for (Long l : sortedIds) {
-            id = id + l + ".";
+        //Check if the casting has duplicates
+        CastingImpl casting = concept.asCasting();
+        InstanceImpl rolePlayer = casting.getRolePlayer();
+        RoleType role = casting.getRole();
+
+        //Traversal here is used to take advantage of vertex centric index
+        List<Vertex> castingVertices = getTinkerPopGraph().traversal().V(rolePlayer.getBaseIdentifier()).
+                inE(DataType.EdgeLabel.ROLE_PLAYER.getLabel()).
+                has(DataType.EdgeProperty.ROLE_TYPE.name(), role.getId()).otherV().toList();
+
+        Set<CastingImpl> castings = castingVertices.stream().map(elementFactory::buildCasting).collect(Collectors.toSet());
+
+        if(castings.size() < 2){
+            return false;
         }
 
-        return id;
+        //Fix the duplicates
+        mergeCastings(castings);
+        return true;
     }
 
-    public String getQuickTypeId(Concept concept){
-        return ((ConceptImpl)concept).getType();
+    private void mergeCastings(Set<CastingImpl> castings){
+        Iterator<CastingImpl> it = castings.iterator();
+        CastingImpl mainCasting = it.next();
+        RoleType role = mainCasting.getRole();
+
+        while(it.hasNext()){
+            CastingImpl otherCasting = it.next();
+
+            //Transfer assertion edges
+            for(RelationImpl relation : otherCasting.getRelations()){
+                EdgeImpl assertionToCasting = addEdge(relation, mainCasting, DataType.EdgeLabel.CASTING);
+                assertionToCasting.setProperty(DataType.EdgeProperty.ROLE_TYPE, role.getId());
+            }
+
+            getTinkerPopGraph().traversal().V(otherCasting.getBaseIdentifier()).next().remove();
+        }
     }
 
 }

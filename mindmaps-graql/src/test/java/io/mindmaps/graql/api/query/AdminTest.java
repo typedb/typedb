@@ -19,8 +19,8 @@
 package io.mindmaps.graql.api.query;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.core.dao.MindmapsGraph;
-import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
@@ -71,10 +71,17 @@ public class AdminTest {
     }
 
     @Test
-    public void testGetSelectedNamesInQuery() {
+    public void testDefaultGetSelectedNamesInQuery() {
         MatchQuery query = qb.match(var("x").isa(var("y")));
 
         assertEquals(Sets.newHashSet("x", "y"), query.admin().getSelectedNames());
+    }
+
+    @Test
+    public void testExplicitGetSelectedNamesInQuery() {
+        MatchQuery query = qb.match(var("x").isa(var("y"))).select("x");
+
+        assertEquals(Sets.newHashSet("x"), query.admin().getSelectedNames());
     }
 
     @Test

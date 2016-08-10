@@ -18,9 +18,6 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.core.exceptions.ErrorMessage;
-import io.mindmaps.core.exceptions.MindmapsValidationException;
-
 /**
  * A thread bound mindmaps transaction
  */

@@ -18,9 +18,19 @@
 
 package io.mindmaps.graql.api.query;
 
-import io.mindmaps.core.dao.MindmapsTransaction;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Type;
+import io.mindmaps.graql.internal.AdminConverter;
+import io.mindmaps.graql.internal.query.AskQueryImpl;
+import io.mindmaps.graql.internal.query.DeleteQueryImpl;
+import io.mindmaps.graql.internal.query.InsertQueryImpl;
+import io.mindmaps.graql.internal.query.match.MatchQueryDistinct;
+import io.mindmaps.graql.internal.query.match.MatchQueryLimit;
+import io.mindmaps.graql.internal.query.match.MatchQueryOffset;
+import io.mindmaps.graql.internal.query.match.MatchQuerySelect;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -44,28 +54,34 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
 
     /**
      * @param names an array of variable names to select
-     * @return this
+     * @return a new MatchQuery that selects the given variables
      */
     default MatchQuery select(String... names) {
-        return select(Arrays.asList(names));
+        return select(Sets.newHashSet(names));
     }
 
     /**
-     * @param names a collection of variable names to select
-     * @return this
+     * @param names a set of variable names to select
+     * @return a new MatchQuery that selects the given variables
      */
-    MatchQuery select(Collection<String> names);
+    default MatchQuery select(Set<String> names) {
+        return new MatchQuerySelect(admin(), ImmutableSet.copyOf(names));
+    }
 
     /**
      * @param name a variable name to get
      * @return a streamable/iterable of concepts
      */
-    Streamable<Concept> get(String name);
+    default Streamable<Concept> get(String name) {
+        return () -> stream().map(result -> result.get(name));
+    }
 
     /**
      * @return an ask query that will return true if any matches are found
      */
-    AskQuery ask();
+    default AskQuery ask() {
+        return new AskQueryImpl(this);
+    }
 
     /**
      * @param vars an array of variables to insert for each result of this match query
@@ -79,7 +95,10 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
      * @param vars a collection of variables to insert for each result of this match query
      * @return an insert query that will insert the given variables for each result of this match query
      */
-    InsertQuery insert(Collection<? extends Var> vars);
+    default InsertQuery insert(Collection<? extends Var> vars) {
+        ImmutableSet<Var.Admin> varAdmins = ImmutableSet.copyOf(AdminConverter.getVarAdmins(vars));
+        return new InsertQueryImpl(varAdmins, admin());
+    }
 
     /**
      * @param names an array of variable names to delete for each result of this match query
@@ -102,36 +121,44 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
      * @param deleters a collection of variables stating what properties to delete for each result of this match query
      * @return a delete query that will delete the given properties for each result of this match query
      */
-    DeleteQuery delete(Collection<? extends Var> deleters);
+    default DeleteQuery delete(Collection<? extends Var> deleters) {
+        return new DeleteQueryImpl(AdminConverter.getVarAdmins(deleters), this);
+    }
 
     /**
      * @param transaction the transaction to execute the query on
-     * @return this
+     * @return a new MatchQuery with the transaction set
      */
     MatchQuery withTransaction(MindmapsTransaction transaction);
 
     /**
      * @param limit the maximum number of results the query should return
-     * @return this
+     * @return a new MatchQuery with the limit set
      */
-    MatchQuery limit(long limit);
+    default MatchQuery limit(long limit) {
+        return new MatchQueryLimit(admin(), limit);
+    }
 
     /**
      * @param offset the number of results to skip
-     * @return this
+     * @return a new MatchQuery with the offset set
      */
-    MatchQuery offset(long offset);
+    default MatchQuery offset(long offset) {
+        return new MatchQueryOffset(admin(), offset);
+    }
 
     /**
      * remove any duplicate results from the query
-     * @return this
+     * @return a new MatchQuery without duplicate results
      */
-    MatchQuery distinct();
+    default MatchQuery distinct() {
+        return new MatchQueryDistinct(admin());
+    }
 
     /**
      * Order the results by degree in ascending order
      * @param varName the variable name to order the results by
-     * @return this
+     * @return a new MatchQuery with the given ordering
      */
     default MatchQuery orderBy(String varName) {
         return orderBy(varName, true);
@@ -141,7 +168,7 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
      * Order the results by degree
      * @param varName the variable name to order the results by
      * @param asc whether to use ascending order
-     * @return this
+     * @return a new MatchQuery with the given ordering
      */
     MatchQuery orderBy(String varName, boolean asc);
 
@@ -149,7 +176,7 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
      * Order the results by a resource in ascending order
      * @param varName the variable name to order the results by
      * @param resourceType the resource type attached to the variable to use for ordering
-     * @return this
+     * @return a new MatchQuery with the given ordering
      */
     default MatchQuery orderBy(String varName, String resourceType) {
         return orderBy(varName, resourceType, true);
@@ -160,7 +187,7 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
      * @param varName the variable name to order the results by
      * @param resourceType the resource type attached to the variable to use for ordering
      * @param asc whether to use ascending order
-     * @return this
+     * @return a new MatchQuery with the given ordering
      */
     MatchQuery orderBy(String varName, String resourceType, boolean asc);
 
@@ -187,5 +214,10 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
          * @return the pattern to match in the graph
          */
         Pattern.Conjunction<Pattern.Admin> getPattern();
+
+        /**
+         * @return the transaction the query operates on, if one was provided
+         */
+        Optional<MindmapsTransaction> getTransaction();
     }
 }

@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.api.query;
 
-import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 
 import java.util.Collection;
@@ -38,7 +38,7 @@ public interface InsertQuery extends Streamable<Concept> {
 
     /**
      * @param transaction the transaction to execute the query on
-     * @return this
+     * @return a new InsertQuery with the transaction set
      */
     InsertQuery withTransaction(MindmapsTransaction transaction);
 
@@ -59,7 +59,7 @@ public interface InsertQuery extends Streamable<Concept> {
         /**
          * @return the match query that this insert query is using, if it was provided one
          */
-        Optional<MatchQuery> getMatchQuery();
+        Optional<? extends MatchQuery> getMatchQuery();
 
         /**
          * @return the variables to insert in the insert query
@@ -70,5 +70,10 @@ public interface InsertQuery extends Streamable<Concept> {
          * @return a collection of Vars to insert, including any nested vars
          */
         Collection<Var.Admin> getAllVars();
+
+        /**
+         * @return the transaction set on this query, if it was provided one
+         */
+        Optional<MindmapsTransaction> getTransaction();
     }
 }

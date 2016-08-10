@@ -18,6 +18,7 @@
 
 package io.mindmaps.graql.internal.query;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import io.mindmaps.graql.api.query.ValuePredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -32,7 +33,7 @@ public class ValuePredicateImpl implements ValuePredicate.Admin {
     private final P<Object> predicate;
     private final String repr;
     private final boolean equals;
-    private final Set<Object> innerValues;
+    private final ImmutableSet<Object> innerValues;
 
     /**
      * @param predicate the gremlin predicate to use
@@ -41,27 +42,27 @@ public class ValuePredicateImpl implements ValuePredicate.Admin {
      * @param equals true only if the predicate is an "equals" predicate
      */
     public ValuePredicateImpl(P<Object> predicate, String repr, Object innerValue, boolean equals) {
-        this(predicate, repr, equals, Collections.singleton(innerValue));
+        this(predicate, repr, equals, ImmutableSet.of(innerValue));
     }
 
-    private ValuePredicateImpl(P<Object> predicate, String repr, boolean equals, Collection<Object> innerValues) {
+    private ValuePredicateImpl(P<Object> predicate, String repr, boolean equals, ImmutableSet<Object> innerValues) {
         this.predicate = predicate;
         this.repr = repr;
         this.equals = equals;
-        this.innerValues = new HashSet<>(innerValues);
+        this.innerValues = innerValues;
     }
 
     @Override
     public ValuePredicate and(ValuePredicate other) {
         P<Object> and = predicate.and(other.admin().getPredicate());
-        Sets.SetView<Object> innerUnion = Sets.union(innerValues, other.admin().getInnerValues());
+        ImmutableSet<Object> innerUnion = ImmutableSet.copyOf(Sets.union(innerValues, other.admin().getInnerValues()));
         return new ValuePredicateImpl(and, "(" + repr + " and " + other.admin().toString() + ")", false, innerUnion);
     }
 
     @Override
     public ValuePredicate or(ValuePredicate other) {
         P<Object> or = predicate.or(other.admin().getPredicate());
-        Sets.SetView<Object> innerUnion = Sets.union(innerValues, other.admin().getInnerValues());
+        ImmutableSet<Object> innerUnion = ImmutableSet.copyOf(Sets.union(innerValues, other.admin().getInnerValues()));
         return new ValuePredicateImpl(or, "(" + repr + " or " + other.admin().toString() + ")", false, innerUnion);
     }
 

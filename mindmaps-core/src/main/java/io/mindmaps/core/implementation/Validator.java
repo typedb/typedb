@@ -18,7 +18,6 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.core.exceptions.ErrorMessage;
 import io.mindmaps.core.model.Instance;
 import io.mindmaps.core.model.RoleType;
 

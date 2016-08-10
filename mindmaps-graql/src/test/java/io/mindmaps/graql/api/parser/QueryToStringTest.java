@@ -18,8 +18,8 @@
 
 package io.mindmaps.graql.api.parser;
 
-import io.mindmaps.core.dao.MindmapsGraph;
-import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.Data;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
@@ -136,6 +136,11 @@ public class QueryToStringTest {
                 "match $a (\"1hi\")",
                 QueryBuilder.build().match(var("a").rel(id("1hi"))).toString()
         );
+    }
+
+    @Test
+    public void testHasResource() {
+        assertEquals("insert $x has-resource thingy;", qb.insert(var("x").hasResource("thingy")).toString());
     }
 
     @Test(expected=UnsupportedOperationException.class)

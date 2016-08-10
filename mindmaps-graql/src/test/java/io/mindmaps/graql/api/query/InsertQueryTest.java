@@ -19,8 +19,8 @@
 package io.mindmaps.graql.api.query;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.core.dao.MindmapsGraph;
-import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.Data;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.EntityType;
@@ -455,6 +455,13 @@ public class InsertQueryTest {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(containsString("thingy"), containsString("itself")));
         qb.insert(id("thingy").isa("thingy")).execute();
+    }
+
+    @Test
+    public void testErrorTypeWithoutId() {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage(allOf(containsString("type"), containsString("id")));
+        qb.insert(var().isa("entity-type")).execute();
     }
 
     private void assertInsert(Var... vars) {

@@ -20,8 +20,8 @@ package io.mindmaps.graql.api.parser;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import io.mindmaps.core.dao.MindmapsGraph;
-import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.Data;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
@@ -394,6 +394,11 @@ public class QueryParserTest {
         MatchQuery query = queryParserNoGraph.parseMatchQuery("match $x isa movie select $x").getMatchQuery();
         assertEquals(queryString, query.toString());
         assertTrue(query.withTransaction(transaction).stream().findAny().isPresent());
+    }
+
+    @Test
+    public void testParseBoolean() {
+        assertEquals("insert has flag true;", qp.parseInsertQuery("insert has flag true;").toString());
     }
 
     @Test(expected = IllegalArgumentException.class)

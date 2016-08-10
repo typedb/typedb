@@ -20,13 +20,11 @@ package io.mindmaps.core.implementation;
 
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
-import io.mindmaps.core.dao.MindmapsTransaction;
-import io.mindmaps.core.exceptions.ErrorMessage;
-import io.mindmaps.core.exceptions.GraphRuntimeException;
+import io.mindmaps.core.MindmapsTransaction;
 
 public class MindmapsTitanGraph extends MindmapsGraphImpl {
-    public MindmapsTitanGraph(TitanGraph graph, String graphComputer){
-        super(graph, graphComputer);
+    public MindmapsTitanGraph(TitanGraph graph, String engineUrl, String graphComputer){
+        super(graph, engineUrl, graphComputer);
     }
 
     @Override
@@ -44,5 +42,7 @@ public class MindmapsTitanGraph extends MindmapsGraphImpl {
         TitanGraph titanGraph = ((TitanGraph) getGraph());
         titanGraph.close();
         TitanCleanup.clear(titanGraph);
+
+        EngineCommunicator.contactEngine(getCommitLogEndPoint(), "DELETE");
     }
 }

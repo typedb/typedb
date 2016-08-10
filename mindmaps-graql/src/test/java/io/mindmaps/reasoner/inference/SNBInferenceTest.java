@@ -19,7 +19,7 @@
 package io.mindmaps.reasoner.inference;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Rule;
 import io.mindmaps.graql.api.parser.QueryParser;
 import io.mindmaps.graql.api.query.MatchQuery;
@@ -120,9 +120,7 @@ public class SNBInferenceTest {
     public void testTag()
     {
         String queryString = "match " +
-                "$x isa person;\n" +
-                "$y isa tag;\n" +
-                "($x, $y) isa recommendation";
+                "$x isa person;$y isa tag;($x, $y) isa recommendation";
         MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQuery expandedQuery = reasoner.expandQuery(query);
         printMatchQuery(expandedQuery);
@@ -138,6 +136,27 @@ public class SNBInferenceTest {
 
     }
 
+    @Test
+    public void testTagVarSub()
+    {
+        String queryString = "match " +
+                "$y isa person;$t isa tag;($y, $t) isa recommendation";
+        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery expandedQuery = reasoner.expandQuery(query);
+        printMatchQuery(expandedQuery);
+
+        printMatchQueryResults(expandedQuery.distinct());
+
+        String explicitQuery = "match " +
+                "$y isa person;$t isa tag;" +
+                "{$y id 'Charlie';" +
+                "{$t id 'yngwie-malmsteen'} or {$t id 'cacophony'} or {$t id 'steve-vai'} or {$t id 'black-sabbath'}} or " +
+                "{$y id 'Gary';$t id 'pink-floyd'}";
+
+        assertQueriesEqual(expandedQuery, qp.parseMatchQuery(explicitQuery).getMatchQuery());
+
+    }
+
     /**
      * Tests relation filtering and rel vars matching
      */
@@ -145,12 +164,11 @@ public class SNBInferenceTest {
     public void testProduct()
     {
         String queryString = "match " +
-                "$x isa person;\n" +
-                "$y isa product;\n" +
-                "($x, $y) isa recommendation";
+                "$x isa person;$y isa product;($x, $y) isa recommendation";
         MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQuery expandedQuery = reasoner.expandQuery(query);
         printMatchQuery(query);
+        printMatchQuery(expandedQuery);
 
         printMatchQueryResults(expandedQuery.distinct());
 
@@ -163,6 +181,91 @@ public class SNBInferenceTest {
                 "{$x id 'Frank';$y id 'nocturnes'} or" +
                 "{$x id 'Karl Fischer';{$y id 'faust'} or {$y id 'nocturnes'}} or " +
                 "{$x id 'Gary';$y id 'the-wall'}";
+
+        assertQueriesEqual(expandedQuery, qp.parseMatchQuery(explicitQuery).getMatchQuery());
+
+    }
+
+    @Test
+    public void testProductVarSub()
+    {
+        String queryString = "match " +
+                "$y isa person;$yy isa product;($y, $yy) isa recommendation";
+        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery expandedQuery = reasoner.expandQuery(query);
+        printMatchQuery(query);
+        printMatchQuery(expandedQuery);
+
+        printMatchQueryResults(expandedQuery.distinct());
+
+        String explicitQuery = "match " +
+                "$y isa person;$yy isa product;" +
+                "{$y id 'Alice';$yy id 'war-of-the-worlds'} or" +
+                "{$y id 'Bob';{$yy id 'Ducatti-1299'} or {$yy id 'The-good-the-bad-the-ugly'}} or" +
+                "{$y id 'Charlie';{$yy id 'blizzard-of-ozz'} or {$yy id 'stratocaster'}} or " +
+                "{$y id 'Denis';{$yy id 'colour-of-magic'} or {$yy id 'dorian-gray'}} or"+
+                "{$y id 'Frank';$yy id 'nocturnes'} or" +
+                "{$y id 'Karl Fischer';{$yy id 'faust'} or {$yy id 'nocturnes'}} or " +
+                "{$y id 'Gary';$yy id 'the-wall'}";
+
+        assertQueriesEqual(expandedQuery, qp.parseMatchQuery(explicitQuery).getMatchQuery());
+
+    }
+
+    @Test
+    @Ignore
+    public void testCombinedProductTag()
+    {
+        String queryString = "match " +
+                "{$x isa person;{$y isa product} or {$y isa tag};($x, $y) isa recommendation}";
+        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery expandedQuery = reasoner.expandQuery(query);
+        printMatchQuery(expandedQuery);
+
+        printMatchQueryResults(expandedQuery.distinct());
+
+        String explicitQuery = "match " +
+                "{$x isa person;$y isa product;" +
+                "{$x id 'Alice';$y id 'war-of-the-worlds'} or" +
+                "{$x id 'Bob';{$y id 'Ducatti-1299'} or {$y id 'The-good-the-bad-the-ugly'}} or" +
+                "{$x id 'Charlie';{$y id 'blizzard-of-ozz'} or {$y id 'stratocaster'}} or " +
+                "{$x id 'Denis';{$y id 'colour-of-magic'} or {$y id 'dorian-gray'}} or"+
+                "{$x id 'Frank';$y id 'nocturnes'} or" +
+                "{$x id 'Karl Fischer';{$y id 'faust'} or {$y id 'nocturnes'}} or " +
+                "{$x id 'Gary';$y id 'the-wall'}} or" +
+                "{$x isa person;$y isa tag;" +
+                "{$x id 'Charlie';{$y id 'yngwie-malmsteen'} or {$y id 'cacophony'} or {$y id 'steve-vai'} or {$y id 'black-sabbath'}} or " +
+                "{$x id 'Gary';$y id 'pink-floyd'}}";
+
+        assertQueriesEqual(expandedQuery, qp.parseMatchQuery(explicitQuery).getMatchQuery());
+
+    }
+
+    @Test
+    @Ignore
+    public void testCombinedProductTag2()
+    {
+        String queryString = "match " +
+                "{$x isa person;$y isa product;($x, $y) isa recommendation} or" +
+                "{$x isa person;$y isa tag;($x, $y) isa recommendation}";
+        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery expandedQuery = reasoner.expandQuery(query);
+        printMatchQuery(expandedQuery);
+
+        printMatchQueryResults(expandedQuery.distinct());
+
+        String explicitQuery = "match " +
+                "{$x isa person;$y isa product;" +
+                "{$x id 'Alice';$y id 'war-of-the-worlds'} or" +
+                "{$x id 'Bob';{$y id 'Ducatti-1299'} or {$y id 'The-good-the-bad-the-ugly'}} or" +
+                "{$x id 'Charlie';{$y id 'blizzard-of-ozz'} or {$y id 'stratocaster'}} or " +
+                "{$x id 'Denis';{$y id 'colour-of-magic'} or {$y id 'dorian-gray'}} or"+
+                "{$x id 'Frank';$y id 'nocturnes'} or" +
+                "{$x id 'Karl Fischer';{$y id 'faust'} or {$y id 'nocturnes'}} or " +
+                "{$x id 'Gary';$y id 'the-wall'}} or" +
+                "{$x isa person;$y isa tag;" +
+                "{$x id 'Charlie';{$y id 'yngwie-malmsteen'} or {$y id 'cacophony'} or {$y id 'steve-vai'} or {$y id 'black-sabbath'}} or " +
+                "{$x id 'Gary';$y id 'pink-floyd'}}";
 
         assertQueriesEqual(expandedQuery, qp.parseMatchQuery(explicitQuery).getMatchQuery());
 

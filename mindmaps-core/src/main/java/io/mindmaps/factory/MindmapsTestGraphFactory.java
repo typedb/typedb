@@ -18,7 +18,7 @@
 
 package io.mindmaps.factory;
 
-import io.mindmaps.core.dao.MindmapsGraph;
+import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.MindmapsTinkerGraph;
 
 /**

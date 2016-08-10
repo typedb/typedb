@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.api.query;
 
-import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.MindmapsTransaction;
 
 /**
  * A query that will return whether a match query can be found in the graph.
@@ -33,7 +33,7 @@ public interface AskQuery {
 
     /**
      * @param transaction the transaction to execute the query on
-     * @return this
+     * @return a new AskQuery with the transaction set
      */
     AskQuery withTransaction(MindmapsTransaction transaction);
 

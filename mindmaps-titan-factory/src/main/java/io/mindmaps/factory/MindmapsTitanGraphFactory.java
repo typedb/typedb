@@ -22,8 +22,8 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.schema.TitanIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
-import io.mindmaps.core.dao.MindmapsGraph;
-import io.mindmaps.core.exceptions.ErrorMessage;
+import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.core.implementation.ErrorMessage;
 import io.mindmaps.core.implementation.MindmapsTitanGraph;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.*;
@@ -38,7 +38,7 @@ class MindmapsTitanGraphFactory implements MindmapsGraphFactory{
     protected final Logger LOG = LoggerFactory.getLogger(MindmapsTitanGraphFactory.class);
     private final Map<String, MindmapsTitanGraph> openGraphs;
     private final static String SEARCH_KEY = "search";
-    private final static String DEFAULT_ADDRESS = "localhost";
+    private final static String DEFAULT_ADDRESS = "localhost:4567";
     private final static String DEFAULT_CONFIG = "backend-default";
     private final static String GRAPH_COMPUTER = "com.thinkaurelius.titan.graphdb.olap.computer.FulgoraGraphComputer";
 
@@ -60,7 +60,7 @@ class MindmapsTitanGraphFactory implements MindmapsGraphFactory{
             }
         }
 
-        MindmapsTitanGraph mindmapsTitanGraph = new MindmapsTitanGraph(newTitanGraph(name, address, pathToConfig), GRAPH_COMPUTER);
+        MindmapsTitanGraph mindmapsTitanGraph = new MindmapsTitanGraph(newTitanGraph(name, address, pathToConfig), address, GRAPH_COMPUTER);
         openGraphs.put(key, mindmapsTitanGraph);
 
         System.out.println("=================================================================================================");

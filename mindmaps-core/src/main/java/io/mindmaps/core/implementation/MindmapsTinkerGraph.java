@@ -18,7 +18,7 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.core.dao.MindmapsTransaction;
+import io.mindmaps.core.MindmapsTransaction;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
 /**
@@ -27,7 +27,7 @@ import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
  */
 public class MindmapsTinkerGraph extends MindmapsGraphImpl {
     public MindmapsTinkerGraph(){
-        super(TinkerGraph.open(), null);
+        super(TinkerGraph.open(), "localhost", null);
         new MindmapsTinkerTransaction(this).initialiseMetaConcepts();
     }
 
