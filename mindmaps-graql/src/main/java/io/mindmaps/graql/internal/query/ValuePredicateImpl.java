@@ -20,7 +20,7 @@ package io.mindmaps.graql.internal.query;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import io.mindmaps.graql.api.query.ValuePredicate;
+import io.mindmaps.graql.ValuePredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.*;

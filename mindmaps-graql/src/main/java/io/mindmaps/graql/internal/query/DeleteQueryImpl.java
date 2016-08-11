@@ -23,9 +23,9 @@ import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.ConceptException;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Resource;
-import io.mindmaps.graql.api.query.DeleteQuery;
-import io.mindmaps.graql.api.query.MatchQuery;
-import io.mindmaps.graql.api.query.Var;
+import io.mindmaps.graql.DeleteQuery;
+import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.Var;
 import io.mindmaps.graql.internal.validation.DeleteQueryValidator;
 
 import java.util.*;

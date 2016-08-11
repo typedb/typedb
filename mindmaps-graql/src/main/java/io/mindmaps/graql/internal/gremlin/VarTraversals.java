@@ -20,9 +20,9 @@ package io.mindmaps.graql.internal.gremlin;
 
 import io.mindmaps.core.implementation.Data;
 import io.mindmaps.constants.DataType;
-import io.mindmaps.graql.api.query.QueryBuilder;
-import io.mindmaps.graql.api.query.ValuePredicate;
-import io.mindmaps.graql.api.query.Var;
+import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.ValuePredicate;
+import io.mindmaps.graql.Var;
 import io.mindmaps.graql.internal.GraqlType;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -37,7 +37,7 @@ import static io.mindmaps.constants.DataType.ConceptProperty.*;
 import static io.mindmaps.constants.DataType.ConceptPropertyUnique.ITEM_IDENTIFIER;
 import static io.mindmaps.constants.DataType.EdgeLabel.*;
 import static io.mindmaps.constants.DataType.EdgeProperty.TO_TYPE;
-import static io.mindmaps.graql.api.query.ValuePredicate.eq;
+import static io.mindmaps.graql.ValuePredicate.eq;
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.*;
 
 /**

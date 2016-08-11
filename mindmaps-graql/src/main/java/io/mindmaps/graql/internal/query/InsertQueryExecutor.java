@@ -24,7 +24,7 @@ import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.Data;
 import io.mindmaps.core.model.*;
-import io.mindmaps.graql.api.query.Var;
+import io.mindmaps.graql.Var;
 import io.mindmaps.graql.internal.GraqlType;
 
 import java.util.*;

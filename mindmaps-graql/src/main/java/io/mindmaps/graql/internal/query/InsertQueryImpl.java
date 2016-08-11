@@ -23,9 +23,9 @@ import com.google.common.collect.ImmutableSet;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
-import io.mindmaps.graql.api.query.InsertQuery;
-import io.mindmaps.graql.api.query.MatchQuery;
-import io.mindmaps.graql.api.query.Var;
+import io.mindmaps.graql.InsertQuery;
+import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.Var;
 import io.mindmaps.graql.internal.validation.InsertQueryValidator;
 
 import java.util.Collection;
