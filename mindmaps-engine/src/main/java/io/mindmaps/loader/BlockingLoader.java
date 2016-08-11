@@ -123,7 +123,7 @@ public class BlockingLoader {
 
                 QueryBuilder.build(transaction).insert(batch).execute();
                 transaction.commit();
-                cache.addCacheJobs(graphName, transaction.getModifiedCastingIds(), transaction.getModifiedRelationIds());
+                cache.addJobCasting(graphName, transaction.getModifiedCastingIds());
                 transactionsSemaphore.release();
                 return;
 

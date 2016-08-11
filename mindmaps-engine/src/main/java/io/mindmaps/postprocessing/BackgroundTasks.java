@@ -147,7 +147,6 @@ public class BackgroundTasks {
         while (isRunning.get()) {
             LOG.info("--------------------Current Status of Post Processing--------------------");
             dumpStatsType("Casting", cache.getCastingJobs());
-            dumpStatsType("Relation", cache.getRelationJobs());
             LOG.info("Save in Progress: " + cache.isSaveInProgress());
             LOG.info("Current Stage: " + currentStage);
             LOG.info("-------------------------------------------------------------------------");

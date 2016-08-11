@@ -108,7 +108,7 @@ public class Loader {
             try {
                 QueryParser.create(transaction).parseInsertQuery(batch).execute();
                 transaction.commit();
-                cache.addCacheJobs(name, transaction.getModifiedCastingIds(), transaction.getModifiedRelationIds());
+                cache.addJobCasting(name, transaction.getModifiedCastingIds());
                 loaderState.put(uuid, State.FINISHED);
                 finishedJobs.incrementAndGet();
                 return;

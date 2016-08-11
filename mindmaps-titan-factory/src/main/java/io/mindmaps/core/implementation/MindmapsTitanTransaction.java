@@ -38,11 +38,8 @@ public class MindmapsTitanTransaction extends MindmapsTransactionImpl {
         validateGraph();
 
         Map<DataType.BaseType, Set<String>> modifiedConcepts = new HashMap<>();
-        Set<String> relations =  getModifiedRelationIds();
         Set<String> castings = getModifiedCastingIds();
 
-        if(relations.size() > 0)
-            modifiedConcepts.put(DataType.BaseType.RELATION, relations);
         if(castings.size() > 0)
             modifiedConcepts.put(DataType.BaseType.CASTING, castings);
 
