@@ -61,7 +61,6 @@ public class CommitLogController {
         }
 
         cache.getCastingJobs().computeIfPresent(graphName, (key, set) -> {set.clear(); return set;});
-        cache.getRelationJobs().computeIfPresent(graphName, (key, set) -> {set.clear(); return set;});
 
         return "The cache of Graph [" + graphName + "] has been cleared";
     }
@@ -88,9 +87,6 @@ public class CommitLogController {
             DataType.BaseType type = DataType.BaseType.valueOf(jsonObject.getString("type"));
 
             switch (type){
-                case RELATION:
-                    cache.addJobRelation(graphName, conceptId);
-                    break;
                 case CASTING:
                     cache.addJobCasting(graphName, conceptId);
                     break;
@@ -99,7 +95,7 @@ public class CommitLogController {
             }
         }
 
-        long numJobs =  cache.getCastingJobs().get(graphName).size() + cache.getRelationJobs().get(graphName).size();
+        long numJobs =  cache.getCastingJobs().get(graphName).size();
         return "Graph [" + graphName + "] now has [" + numJobs + "] post processing jobs";
     }
 }

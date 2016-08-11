@@ -51,7 +51,7 @@ public class GraqlShellTest {
     @Test
     public void testStartAndExitShell() throws IOException {
         // Assert simply that the shell starts and terminates without errors
-        assertTrue(testShell("exit\n").endsWith(">>> exit\n"));
+        assertTrue(testShell("exit\n").matches("[\\s\\S]*>>> exit(\r\n?|\n)"));
     }
 
     @Test
@@ -96,7 +96,7 @@ public class GraqlShellTest {
 
     @Test
     public void testMatchQuery() throws IOException {
-        String[] result = testShell("match $x isa type\nexit").split("\n");
+        String[] result = testShell("match $x isa type\nexit").split("\r\n?|\n");
 
         // Make sure we find a few results (don't be too fussy about the output here)
         assertEquals(">>> match $x isa type", result[4]);
@@ -119,7 +119,7 @@ public class GraqlShellTest {
 
     @Test
     public void testInsertOutput() throws IOException {
-        String[] result = testShell("insert a-type isa entity-type; thingy isa a-type\n").split("\n");
+        String[] result = testShell("insert a-type isa entity-type; thingy isa a-type\n").split("\r\n?|\n");
 
         // Expect ten lines output - four for the license, one for the query, four results and a new prompt
         assertEquals(10, result.length);

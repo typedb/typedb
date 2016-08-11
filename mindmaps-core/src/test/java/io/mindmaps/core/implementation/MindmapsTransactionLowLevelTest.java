@@ -23,7 +23,6 @@ import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
@@ -566,43 +565,5 @@ public class MindmapsTransactionLowLevelTest {
 
         Relation rel1 = mindmapsGraph.putRelation(relationType1, map);
         Relation rel2 = mindmapsGraph.putRelation(relationType1, map);
-    }
-
-    @Test
-    public void testMergingCasting(){
-        RoleType roleType1 = mindmapsGraph.putRoleType("role 1");
-        RoleType roleType2 = mindmapsGraph.putRoleType("role 2");
-        RelationType relationType = mindmapsGraph.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
-        EntityType thing = mindmapsGraph.putEntityType("thing").playsRole(roleType1).playsRole(roleType2);
-        InstanceImpl instance1 = (InstanceImpl) mindmapsGraph.putEntity("1", thing);
-        Instance instance2 = mindmapsGraph.putEntity("2", thing);
-        Instance instance3 = mindmapsGraph.putEntity("3", thing);
-        Instance instance4 = mindmapsGraph.putEntity("4", thing);
-
-        mindmapsGraph.addRelation(relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
-        assertEquals(1, instance1.castings().size());
-
-        CastingImpl mainCasting = (CastingImpl) instance1.castings().iterator().next();
-
-        buildDuplicateCasting(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance3);
-        buildDuplicateCasting(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance4);
-        assertEquals(3, instance1.castings().size());
-
-        mindmapsGraph.fixDuplicateCasting(mainCasting.getId());
-
-        assertEquals(1, instance1.castings().size());
-    }
-    private void buildDuplicateCasting(RelationType relationType, RoleTypeImpl mainRoleType, InstanceImpl mainInstance, RoleType otherRoleType, Instance otherInstance){
-        RelationImpl relation = (RelationImpl) mindmapsGraph.addRelation(relationType).putRolePlayer(otherRoleType, otherInstance);
-
-        //Create Fake Casting
-        Vertex castingVertex = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.CASTING.name());
-        castingVertex.addEdge(DataType.EdgeLabel.ISA.getLabel(), mainRoleType.getVertex());
-
-        Edge edge = castingVertex.addEdge(DataType.EdgeLabel.ROLE_PLAYER.getLabel(), mainInstance.getVertex());
-        edge.property(DataType.EdgeProperty.ROLE_TYPE.name(), mainRoleType.getId());
-
-        edge = relation.getVertex().addEdge(DataType.EdgeLabel.CASTING.getLabel(), castingVertex);
-        edge.property(DataType.EdgeProperty.ROLE_TYPE.name(), mainRoleType.getId());
     }
 }

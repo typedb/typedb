@@ -22,6 +22,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.http.ContentType;
+import io.mindmaps.constants.RESTUtil;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.MindmapsValidationException;
 import io.mindmaps.core.model.Entity;
@@ -31,7 +32,6 @@ import io.mindmaps.core.model.RoleType;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.postprocessing.Cache;
 import io.mindmaps.util.ConfigProperties;
-import io.mindmaps.constants.RESTUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,7 +42,6 @@ import static com.jayway.restassured.RestAssured.delete;
 import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 public class CommitLogControllerTest {
     private Properties prop = new Properties();
@@ -80,14 +79,12 @@ public class CommitLogControllerTest {
 
     @After
     public void takeDown(){
-        cache.getRelationJobs().clear();
         cache.getCastingJobs().clear();
     }
 
     @Test
     public void testControllerWorking(){
         assertEquals(4, cache.getCastingJobs().values().iterator().next().size());
-        assertEquals(2, cache.getRelationJobs().values().iterator().next().size());
     }
 
     @Test
@@ -100,23 +97,18 @@ public class CommitLogControllerTest {
 
         addSomeData(bob);
 
-        assertEquals(1, cache.getRelationJobs().get(BOB).size());
         assertEquals(2, cache.getCastingJobs().get(BOB).size());
 
-        assertNull(cache.getRelationJobs().get(TIM));
         assertNull(cache.getCastingJobs().get(TIM));
 
         addSomeData(tim);
 
-        assertEquals(1, cache.getRelationJobs().get(TIM).size());
         assertEquals(2, cache.getCastingJobs().get(TIM).size());
 
         MindmapsClient.getGraph(BOB).clear();
         MindmapsClient.getGraph(TIM).clear();
 
-        assertEquals(0, cache.getRelationJobs().get(BOB).size());
         assertEquals(0, cache.getCastingJobs().get(BOB).size());
-        assertEquals(0, cache.getRelationJobs().get(TIM).size());
         assertEquals(0, cache.getCastingJobs().get(TIM).size());
     }
 
@@ -136,12 +128,10 @@ public class CommitLogControllerTest {
     @Test
     public void testDeleteController(){
         assertEquals(4, cache.getCastingJobs().values().iterator().next().size());
-        assertEquals(2, cache.getRelationJobs().values().iterator().next().size());
 
         delete(RESTUtil.WebPath.COMMIT_LOG_URI + "?" + RESTUtil.Request.GRAPH_NAME_PARAM + "=" + "test").
                 then().statusCode(200).extract().response().andReturn();
 
         assertEquals(0, cache.getCastingJobs().values().iterator().next().size());
-        assertEquals(0, cache.getRelationJobs().values().iterator().next().size());
     }
 }

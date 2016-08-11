@@ -23,6 +23,8 @@ import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.*;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.json.JSONArray;
@@ -687,7 +689,7 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
     /**
      * Merges duplicate castings if one is found.
      * @param castingId The id of the casting to check for duplicates
-     * @return True
+     * @return true if some castings were merged
      */
     public boolean fixDuplicateCasting(String castingId){
         //Get the Casting
@@ -712,26 +714,70 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
         }
 
         //Fix the duplicates
-        mergeCastings(castings);
+        castings.remove(casting);
+        Set<RelationImpl> duplicateRelations = mergeCastings(casting, castings);
+
+        //Remove Redundant Relations
+        deleteDuplicateRelations(duplicateRelations);
+
         return true;
     }
 
-    private void mergeCastings(Set<CastingImpl> castings){
-        Iterator<CastingImpl> it = castings.iterator();
-        CastingImpl mainCasting = it.next();
+    private void deleteDuplicateRelations(Set<RelationImpl> relations){
+        for (RelationImpl relation : relations) {
+            String relationID = relation.getId();
+
+            //Kill Shortcut Edges
+            relation.rolePlayers().values().forEach(instance -> {
+                if(instance != null) {
+                    List<Edge> edges = getTinkerPopGraph().traversal().V().
+                            has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), instance.getId()).
+                            bothE(DataType.EdgeLabel.SHORTCUT.getLabel()).
+                            has(DataType.EdgeProperty.RELATION_ID.name(), relationID).toList();
+
+                    edges.forEach(Element::remove);
+                }
+            });
+
+            relation.deleteNode();
+        }
+    }
+
+    private Set<RelationImpl> mergeCastings(CastingImpl mainCasting, Set<CastingImpl> castings){
         RoleType role = mainCasting.getRole();
+        Set<RelationImpl> relations = mainCasting.getRelations();
+        Set<RelationImpl> relationsToClean = new HashSet<>();
 
-        while(it.hasNext()){
-            CastingImpl otherCasting = it.next();
-
+        for (CastingImpl otherCasting : castings) {
             //Transfer assertion edges
-            for(RelationImpl relation : otherCasting.getRelations()){
-                EdgeImpl assertionToCasting = addEdge(relation, mainCasting, DataType.EdgeLabel.CASTING);
-                assertionToCasting.setProperty(DataType.EdgeProperty.ROLE_TYPE, role.getId());
+            for(RelationImpl otherRelation : otherCasting.getRelations()){
+                boolean transferEdge = true;
+
+                //Check if an equivalent Relation is already connected to this casting. This could be a slow process
+                for(Relation originalRelation: relations){
+                    if(relationsEqual(originalRelation, otherRelation)){
+                        relationsToClean.add(otherRelation);
+                        transferEdge = false;
+                        break;
+                    }
+                }
+
+                //Perform the transfer
+                if(transferEdge) {
+                    EdgeImpl assertionToCasting = addEdge(otherRelation, mainCasting, DataType.EdgeLabel.CASTING);
+                    assertionToCasting.setProperty(DataType.EdgeProperty.ROLE_TYPE, role.getId());
+                }
             }
 
             getTinkerPopGraph().traversal().V(otherCasting.getBaseIdentifier()).next().remove();
         }
+
+        return relationsToClean;
+    }
+
+    private boolean relationsEqual(Relation mainRelation, Relation otherRelation){
+        return mainRelation.rolePlayers().equals(otherRelation.rolePlayers()) &&
+                mainRelation.type().equals(otherRelation.type());
     }
 
 }
