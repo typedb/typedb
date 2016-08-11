@@ -147,6 +147,7 @@ public class RelationAtom extends AtomBase{
         castings.forEach(c -> vars.add(c.getRolePlayer().getName()));
         return vars;
     }
+
     @Override
     public String getVal(){
         throw new IllegalAccessError("getVal() on a relation atom!");
@@ -235,4 +236,5 @@ public class RelationAtom extends AtomBase{
         }
         return roleVarTypeMap;
     }
+
 }

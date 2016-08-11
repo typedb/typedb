@@ -2,10 +2,11 @@ insert
 
 #transitivity of resides & sublocate
 "R1" isa inference-rule,
-lhs {match ($x, $y) isa resides;
+lhs {match (located-subject $x, subject-location $y) isa resides;
 (member-location $y, container-location $z) isa sublocate;
 select $x, $z},
-rhs {match ($x, $z) isa resides};
+rhs {match (located-subject $x, subject-location $z) isa resides};
+#introduces ambiguity in rule ->rhs {match ($x, $z) isa resides};
 
 # transitivity of sublocate
 "R2" isa inference-rule,

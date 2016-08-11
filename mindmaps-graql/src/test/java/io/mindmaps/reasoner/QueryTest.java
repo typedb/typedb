@@ -154,19 +154,7 @@ public class QueryTest {
         disjunction = query.getExpandedMatchQuery().admin().getPattern().getDisjunctiveNormalForm();
 
         System.out.println(disjunction.toString());
-        /*
-        Pattern.Disjunction<Pattern.Conjunction<Var.Admin>> disjunction = sq.admin().getPattern().getDisjunctiveNormalForm();
-        Query q = new Query(queryString, graph);
 
-        Pattern.Conjunction<Var.Admin> conj = disjunction.getPatterns().iterator().next();
-        Var.Admin var = conj.getPatterns().iterator().next();
-        conj.getPatterns().remove(var);
-        */
-        /*
-        for (Pattern.Conjunction<Var.Admin> pt : disjunction.getPatterns()) {
-            Var.Admin var = pt.getPatterns().iterator().next();
-        }
-        */
         }
 
     @Test
@@ -198,6 +186,20 @@ public class QueryTest {
 
         Atomic atom = query.getAtomsWithType(graph.getRelationType("recommendation")).iterator().next();
         query.expandAtomByQuery(atom, rule);
+        System.out.println(query.getExpandedMatchQuery().toString());
+
+    }
+
+    @Test
+    public void testNonHornClauseQuery()
+    {
+        String queryString = "match $x isa person;$y isa product;($x, $y) isa recommendation";
+
+        Query query = new Query(queryString, graph);
+        Query expansionQuery = new Query(graph.getRule("R7").getLHS(), graph);
+
+        Atomic atom = query.getAtomsWithType(graph.getRelationType("recommendation")).iterator().next();
+        query.expandAtomByQuery(atom, expansionQuery);
         System.out.println(query.getExpandedMatchQuery().toString());
 
     }

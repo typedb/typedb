@@ -56,7 +56,7 @@ public class MindmapsReasoner {
         linkConceptTypes();
     }
 
-    private boolean checkChildApplicableToAtomThruRelation(RelationAtom parentAtom, Query parent, Query childLHS, Query childRHS, Type relType)
+    private boolean checkChildApplicableToAtomViaRelation(RelationAtom parentAtom, Query parent, Query childLHS, Query childRHS, Type relType)
     {
         boolean relRelevant = true;
         
@@ -90,18 +90,18 @@ public class MindmapsReasoner {
         return relRelevant;
     }
 
-    private boolean checkChildApplicableThruRelation(Query parent, Query childLHS, Query childRHS, Type relType)
+    private boolean checkChildApplicableViaRelation(Query parent, Query childLHS, Query childRHS, Type relType)
     {
         boolean relRelevant = false;
         Set<Atomic> relevantAtoms = parent.getAtomsWithType(relType);
         Iterator<Atomic> it = relevantAtoms.iterator();
         while(it.hasNext() && !relRelevant)
-            relRelevant = checkChildApplicableToAtomThruRelation((RelationAtom) it.next(), parent, childLHS, childRHS, relType);
+            relRelevant = checkChildApplicableToAtomViaRelation((RelationAtom) it.next(), parent, childLHS, childRHS, relType);
 
         return relRelevant;
     }
 
-    private boolean checkChildApplicableToAtomThruResource(Atomic parent, Query childLHS, Query childRHS, Type type)
+    private boolean checkChildApplicableToAtomViaResource(Atomic parent, Query childLHS, Query childRHS, Type type)
     {
         boolean resourceApplicable = false;
 
@@ -117,14 +117,14 @@ public class MindmapsReasoner {
         return resourceApplicable;
     }
 
-    private boolean checkChildApplicableThruResource(Query parent, Query childLHS, Query childRHS, Type type)
+    private boolean checkChildApplicableViaResource(Query parent, Query childLHS, Query childRHS, Type type)
     {
         boolean resourceApplicable = false;
 
         Set<Atomic> atoms = parent.getAtomsWithType(type);
         Iterator<Atomic> it = atoms.iterator();
         while(it.hasNext() && !resourceApplicable)
-            resourceApplicable = checkChildApplicableToAtomThruResource(it.next(), childLHS, childRHS, type);
+            resourceApplicable = checkChildApplicableToAtomViaResource(it.next(), childLHS, childRHS, type);
 
         return resourceApplicable;
 
@@ -153,11 +153,11 @@ public class MindmapsReasoner {
         {
             boolean ruleRelevant = true;
             if (atom.isResource())
-                        ruleRelevant = checkChildApplicableToAtomThruResource(atom,
+                        ruleRelevant = checkChildApplicableToAtomViaResource(atom,
                                 workingMemory.get(rule.getId()), new Query(rule.getRHS(), graph), type);
             else if (atom.isRelation()) {
                 LOG.debug("Checking relevance of rule " + rule.getId());
-                ruleRelevant = checkChildApplicableToAtomThruRelation((RelationAtom) atom, parent,
+                ruleRelevant = checkChildApplicableToAtomViaRelation((RelationAtom) atom, parent,
                         workingMemory.get(rule.getId()), new Query(rule.getRHS(), graph), type);
                 if (!ruleRelevant)
                     LOG.debug("Rule " + rule.getId() + " not relevant through type " + type.getId());
@@ -179,10 +179,10 @@ public class MindmapsReasoner {
             for (Rule rule : rulesFromType) {
                 boolean ruleRelevant = true;
                 if (type.isResourceType())
-                    ruleRelevant = checkChildApplicableThruResource(workingMemory.get(parent.getId()),
+                    ruleRelevant = checkChildApplicableViaResource(workingMemory.get(parent.getId()),
                             workingMemory.get(rule.getId()), new Query(rule.getRHS(), graph), type);
                 else if (type.isRelationType())
-                    ruleRelevant = checkChildApplicableThruRelation(workingMemory.get(parent.getId()),
+                    ruleRelevant = checkChildApplicableViaRelation(workingMemory.get(parent.getId()),
                             workingMemory.get(rule.getId()), new Query(rule.getRHS(), graph), type);
 
                 if (!rule.equals(parent) && ruleRelevant ) children.add(rule);
@@ -261,6 +261,13 @@ public class MindmapsReasoner {
         }
     }
 
+    /**
+     * generate a fresh variable avoiding global variables and variables from the same query
+     * @param globalVars global variables to avoid
+     * @param childVars variables from the query var belongs to
+     * @param var variable to be generated a fresh replacement
+     * @return fresh variables
+     */
     private String createFreshVariable(Set<String> globalVars, Set<String> childVars, String var)
     {
         String fresh = var;
@@ -272,6 +279,11 @@ public class MindmapsReasoner {
         return fresh;
     }
 
+    /**
+     * finds captured variable occurrences in a query and replaces them with fresh variables
+     * @param query input query with var captures
+     * @param globalVars global variables to be avoided when creating fresh variables
+     */
     private void resolveCaptures(Query query, Set<String> globalVars)
     {
         //find captures
@@ -288,7 +300,15 @@ public class MindmapsReasoner {
 
     }
 
-    private void makeChildRelationConsistent(RelationAtom childAtom, Query childLHS, RelationAtom parentAtom, Query parentLHS,
+    /**
+     * propagate variables to child via a relation atom (atom variables are bound)
+     * @param childAtom child atom being resolved
+     * @param childLHS child query
+     * @param parentAtom parent atom (predicate) being resolved (subgoal)
+     * @param parentLHS parent query
+     * @param globalVarMap map containing global vars and their types
+     */
+    private void propagateVariablesViaRelationAtom(RelationAtom childAtom, Query childLHS, RelationAtom parentAtom, Query parentLHS,
                                              Map<String, Type> globalVarMap) {
 
         Set<String> varsToAllocate = parentAtom.getVarNames();
@@ -332,36 +352,59 @@ public class MindmapsReasoner {
 
         }
 
+    /**
+     * propagate variables to child via a non-relation atom (atom variables are bound)
+     * @param childAtom child atom being resolved
+     * @param childLHS child query
+     * @param parentAtom parent atom (predicate) being resolved (subgoal)
+     * @param parentLHS parent query
+     * @param globalVarMap map containing global vars and their types
+     */
+    private void propagateVariablesViaAtom(Atomic childAtom, Query childLHS, Atomic parentAtom, Query parentLHS,
+                                                   Map<String, Type> globalVarMap) {
+
+        Set<String> chVars = childLHS.getVarSet();
+        Set<String> pVars = parentLHS.getVarSet();
+
+        String parentBV = parentAtom.getVarName();
+        String childBV = childAtom.getVarName();
+        //if bound vars not equal alpha-convert
+        if (!parentBV.equals(childBV)) {
+            LOG.debug("Replacing: " + childBV + "->" + parentBV);
+            childLHS.changeVarName(childBV, parentBV);
+            resolveCaptures(childLHS, globalVarMap.keySet());
+        }
+
+        //if any of free vars of child are contained in parent or global, create a new var
+        chVars.forEach( var -> {
+            // if (x e P) v (x e G)
+            // x -> fresh
+            if (!var.equals(parentBV) && ( pVars.contains(var) || globalVarMap.containsKey(var))) {
+                String freshVar = createFreshVariable(globalVarMap.keySet(), chVars, var);
+                LOG.debug("Replacing: " + var + "->" + freshVar);
+                childLHS.changeVarName(var, freshVar);
+            }
+        });
+
+    }
+
+    /**
+     * make child query consistent by performing variable substitution so that parent variables are propagated
+     * @param childAtom child atom being resolved
+     * @param childLHS child query
+     * @param parentAtom parent atom (predicate) being resolved (subgoal)
+     * @param parentLHS parent query
+     * @param type type of the predicate being resolved
+     * @param globalVarMap map containing global vars and their types
+     */
     private void makeChildConsistent(Atomic childAtom, Query childLHS, Atomic parentAtom, Query parentLHS,
                                         Type type, Map<String, Type> globalVarMap)
     {
 
         if (type.isRelationType())
-            makeChildRelationConsistent((RelationAtom) childAtom, childLHS, (RelationAtom) parentAtom, parentLHS, globalVarMap);
-        else {
-            Set<String> chVars = childLHS.getVarSet();
-            Set<String> pVars = parentLHS.getVarSet();
-
-            String parentBV = parentAtom.getVarName();
-            String childBV = childAtom.getVarName();
-            //if bound vars not equal alpha-convert
-            if (!parentBV.equals(childBV)) {
-                LOG.debug("Replacing: " + childBV + "->" + parentBV);
-                childLHS.changeVarName(childBV, parentBV);
-                resolveCaptures(childLHS, globalVarMap.keySet());
-            }
-
-            //if any of free vars of child are contained in parent or global, create a new var
-            chVars.forEach( var -> {
-                // if (x e P) v (x e G)
-                // x -> fresh
-                if (!var.equals(parentBV) && ( pVars.contains(var) || globalVarMap.containsKey(var))) {
-                    String freshVar = createFreshVariable(globalVarMap.keySet(), chVars, var);
-                    LOG.debug("Replacing: " + var + "->" + freshVar);
-                    childLHS.changeVarName(var, freshVar);
-                }
-            });
-        }
+            propagateVariablesViaRelationAtom((RelationAtom) childAtom, childLHS, (RelationAtom) parentAtom, parentLHS, globalVarMap);
+        else
+            propagateVariablesViaAtom(childAtom, childLHS, parentAtom, parentLHS, globalVarMap);
 
         //update global vars
         Map<String, Type> varTypeMap = childLHS.getVarTypeMap();
@@ -378,6 +421,9 @@ public class MindmapsReasoner {
 
         Atomic childAtom = getRuleConclusionAtom(childLHS, childRHS, type);
         makeChildConsistent(childAtom, childLHS, parentAtom, parent, type, varMap);
+
+        //TODO add parent constraints
+
         parentAtom.addExpansion(childLHS);
 
         return childLHS;
@@ -398,6 +444,11 @@ public class MindmapsReasoner {
         return expansions;
     }
 
+    /**
+     * expand query by performing SLD-AL resolution
+     * @param query query to be expanded
+     * @param varMap map of global variables with their corresponding types
+     */
     private void expandQuery(Query query, Map<String, Type> varMap)
     {
         LOG.debug("expandQuery: " + (query.getRule() != null ? query.getRule().getId() : "top"));

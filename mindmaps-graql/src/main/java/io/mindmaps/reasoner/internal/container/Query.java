@@ -198,6 +198,11 @@ public class Query {
         return hasRecursiveAtoms;
     }
 
+    //TODO Does it violate Horn clause limits?
+    private void addPattern(Pattern.Admin newPattern) {
+        matchQuery.admin().getPattern().getPatterns().add(newPattern);
+    }
+
     private void replacePattern(Pattern.Admin oldPattern, Pattern.Admin newPattern) {
         Pattern.Admin toRemove = oldPattern;
 
@@ -374,8 +379,7 @@ public class Query {
                 }
             }
         });
-        //atomSet.stream().filter(atom -> atom.isType() && !atom.isRelation() && !atom.isResource())
-         //       .forEach(atom -> map.putIfAbsent(atom.getVarName(), graph.getType(atom.getTypeId())));
+
         return map;
     }
 
@@ -389,6 +393,5 @@ public class Query {
         }
         return val;
     }
-
 
 }
