@@ -18,6 +18,8 @@
 
 package io.mindmaps.core.implementation;
 
+import io.mindmaps.constants.DataType;
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
@@ -90,18 +92,18 @@ public class MindmapsTransactionHighLevelTest {
 
         //Checking it
         //Counts
-        assertEquals(20, mindmapsGraph.getTinkerTraversal().V().toList().size());
-        assertEquals(35, mindmapsGraph.getTinkerTraversal().E().toList().size());
+        assertEquals(20, mindmapsGraph.getTinkerPopGraph().traversal().V().toList().size());
+        assertEquals(35, mindmapsGraph.getTinkerPopGraph().traversal().E().toList().size());
 
         assertion.getMappingCasting().forEach(casting ->{
-            Edge edge = mindmapsGraph.getTinkerTraversal().V(casting.getBaseIdentifier()).inE(DataType.EdgeLabel.CASTING.getLabel()).next();
+            Edge edge = mindmapsGraph.getTinkerPopGraph().traversal().V(casting.getBaseIdentifier()).inE(DataType.EdgeLabel.CASTING.getLabel()).next();
             assertEquals(casting.getRole().getId(), edge.property(DataType.EdgeProperty.ROLE_TYPE.name()).value().toString());
-            edge = mindmapsGraph.getTinkerTraversal().V(casting.getBaseIdentifier()).outE(DataType.EdgeLabel.ROLE_PLAYER.getLabel()).next();
+            edge = mindmapsGraph.getTinkerPopGraph().traversal().V(casting.getBaseIdentifier()).outE(DataType.EdgeLabel.ROLE_PLAYER.getLabel()).next();
             assertEquals(casting.getRole().getId(), edge.property(DataType.EdgeProperty.ROLE_TYPE.name()).value().toString());
         });
 
         //First Check if Roles are set correctly.
-        GraphTraversal<Vertex, Vertex> traversal = mindmapsGraph.getTinkerTraversal().V(relationType.getBaseIdentifier()).out(DataType.EdgeLabel.HAS_ROLE.getLabel());
+        GraphTraversal<Vertex, Vertex> traversal = mindmapsGraph.getTinkerPopGraph().traversal().V(relationType.getBaseIdentifier()).out(DataType.EdgeLabel.HAS_ROLE.getLabel());
         List<Vertex> relationType_to_roles = traversal.toList();
 
         boolean rolesCorrect = true;
@@ -115,25 +117,25 @@ public class MindmapsTransactionHighLevelTest {
         assertTrue(rolesCorrect);
 
         //Check Roles and Role Players lead to castings
-        Vertex casting1 = mindmapsGraph.getTinkerTraversal().V(role1.getBaseIdentifier()).in(DataType.EdgeLabel.ISA.getLabel()).next();
-        Vertex casting1_copy = mindmapsGraph.getTinkerTraversal().V(rolePlayer1.getBaseIdentifier()).in(DataType.EdgeLabel.ROLE_PLAYER.getLabel()).next();
+        Vertex casting1 = mindmapsGraph.getTinkerPopGraph().traversal().V(role1.getBaseIdentifier()).in(DataType.EdgeLabel.ISA.getLabel()).next();
+        Vertex casting1_copy = mindmapsGraph.getTinkerPopGraph().traversal().V(rolePlayer1.getBaseIdentifier()).in(DataType.EdgeLabel.ROLE_PLAYER.getLabel()).next();
         assertEquals(casting1, casting1_copy);
 
-        Vertex casting2 = mindmapsGraph.getTinkerTraversal().V(role2.getBaseIdentifier()).in(DataType.EdgeLabel.ISA.getLabel()).next();
-        Vertex casting2_copy = mindmapsGraph.getTinkerTraversal().V(rolePlayer2.getBaseIdentifier()).in(DataType.EdgeLabel.ROLE_PLAYER.getLabel()).next();
+        Vertex casting2 = mindmapsGraph.getTinkerPopGraph().traversal().V(role2.getBaseIdentifier()).in(DataType.EdgeLabel.ISA.getLabel()).next();
+        Vertex casting2_copy = mindmapsGraph.getTinkerPopGraph().traversal().V(rolePlayer2.getBaseIdentifier()).in(DataType.EdgeLabel.ROLE_PLAYER.getLabel()).next();
         assertEquals(casting2, casting2_copy);
 
-        Vertex casting3 = mindmapsGraph.getTinkerTraversal().V(role3.getBaseIdentifier()).in(DataType.EdgeLabel.ISA.getLabel()).next();
-        Vertex casting3_copy = mindmapsGraph.getTinkerTraversal().V(rolePlayer3.getBaseIdentifier()).in(DataType.EdgeLabel.ROLE_PLAYER.getLabel()).next();
+        Vertex casting3 = mindmapsGraph.getTinkerPopGraph().traversal().V(role3.getBaseIdentifier()).in(DataType.EdgeLabel.ISA.getLabel()).next();
+        Vertex casting3_copy = mindmapsGraph.getTinkerPopGraph().traversal().V(rolePlayer3.getBaseIdentifier()).in(DataType.EdgeLabel.ROLE_PLAYER.getLabel()).next();
         assertEquals(casting3, casting3_copy);
 
         assertNotEquals(casting1, casting2);
         assertNotEquals(casting1, casting3);
 
         //Check all castings go to the same assertion and check assertion
-        Vertex assertion1 = mindmapsGraph.getTinkerTraversal().V(casting1.id()).in(DataType.EdgeLabel.CASTING.getLabel()).next();
-        Vertex assertion2 = mindmapsGraph.getTinkerTraversal().V(casting2.id()).in(DataType.EdgeLabel.CASTING.getLabel()).next();
-        Vertex assertion3 = mindmapsGraph.getTinkerTraversal().V(casting3.id()).in(DataType.EdgeLabel.CASTING.getLabel()).next();
+        Vertex assertion1 = mindmapsGraph.getTinkerPopGraph().traversal().V(casting1.id()).in(DataType.EdgeLabel.CASTING.getLabel()).next();
+        Vertex assertion2 = mindmapsGraph.getTinkerPopGraph().traversal().V(casting2.id()).in(DataType.EdgeLabel.CASTING.getLabel()).next();
+        Vertex assertion3 = mindmapsGraph.getTinkerPopGraph().traversal().V(casting3.id()).in(DataType.EdgeLabel.CASTING.getLabel()).next();
 
         assertEquals(assertion1, assertion2);
         assertEquals(assertion2, assertion3);
@@ -170,25 +172,39 @@ public class MindmapsTransactionHighLevelTest {
 
         //Checking it
         //Counts
-        long value = mindmapsGraph.getTinkerTraversal().V().count().next();
+        long value = mindmapsGraph.getTinkerPopGraph().traversal().V().count().next();
         assertEquals(19, value);
-        value = mindmapsGraph.getTinkerTraversal().E().count().next();
+        value = mindmapsGraph.getTinkerPopGraph().traversal().E().count().next();
         assertEquals(28, value);
 
+        //First Check if Roles are set correctly.
+        GraphTraversal<Vertex, Vertex> traversal = mindmapsGraph.getTinkerPopGraph().traversal().V(relationType.getBaseIdentifier()).out(DataType.EdgeLabel.HAS_ROLE.getLabel());
+        List<Vertex> relationType_to_roles = traversal.toList();
+
+        boolean rolesCorrect = true;
+        if(relationType_to_roles.isEmpty())
+            rolesCorrect = false;
+        for(Vertex v: relationType_to_roles){
+            if(!validVertices.contains(v.id())){
+                rolesCorrect = false;
+            }
+        }
+        assertTrue(rolesCorrect);
+
         //Check Roles and Role Players lead to castings
-        Vertex casting1 = mindmapsGraph.getTinkerTraversal().V(role1.getBaseIdentifier()).in(DataType.EdgeLabel.ISA.getLabel()).next();
-        Vertex casting1_copy = mindmapsGraph.getTinkerTraversal().V(rolePlayer1.getBaseIdentifier()).in(DataType.EdgeLabel.ROLE_PLAYER.getLabel()).next();
+        Vertex casting1 = mindmapsGraph.getTinkerPopGraph().traversal().V(role1.getBaseIdentifier()).in(DataType.EdgeLabel.ISA.getLabel()).next();
+        Vertex casting1_copy = mindmapsGraph.getTinkerPopGraph().traversal().V(rolePlayer1.getBaseIdentifier()).in(DataType.EdgeLabel.ROLE_PLAYER.getLabel()).next();
         assertEquals(casting1, casting1_copy);
 
-        Vertex casting2 = mindmapsGraph.getTinkerTraversal().V(role2.getBaseIdentifier()).in(DataType.EdgeLabel.ISA.getLabel()).next();
-        Vertex casting2_copy = mindmapsGraph.getTinkerTraversal().V(rolePlayer2.getBaseIdentifier()).in(DataType.EdgeLabel.ROLE_PLAYER.getLabel()).next();
+        Vertex casting2 = mindmapsGraph.getTinkerPopGraph().traversal().V(role2.getBaseIdentifier()).in(DataType.EdgeLabel.ISA.getLabel()).next();
+        Vertex casting2_copy = mindmapsGraph.getTinkerPopGraph().traversal().V(rolePlayer2.getBaseIdentifier()).in(DataType.EdgeLabel.ROLE_PLAYER.getLabel()).next();
         assertEquals(casting2, casting2_copy);
 
         assertNotEquals(casting1, casting2);
 
         //Check all castings go to the same assertion
-        Vertex assertion1 = mindmapsGraph.getTinkerTraversal().V(casting1.id()).in(DataType.EdgeLabel.CASTING.getLabel()).next();
-        Vertex assertion2 = mindmapsGraph.getTinkerTraversal().V(casting2.id()).in(DataType.EdgeLabel.CASTING.getLabel()).next();
+        Vertex assertion1 = mindmapsGraph.getTinkerPopGraph().traversal().V(casting1.id()).in(DataType.EdgeLabel.CASTING.getLabel()).next();
+        Vertex assertion2 = mindmapsGraph.getTinkerPopGraph().traversal().V(casting2.id()).in(DataType.EdgeLabel.CASTING.getLabel()).next();
 
         assertEquals(assertion1, assertion2);
         assertEquals(relationConcept1.getBaseIdentifier(), assertion1.id());
@@ -232,9 +248,9 @@ public class MindmapsTransactionHighLevelTest {
         assertEquals(assertion, relationFound);
 
         assertion.getMappingCasting().forEach(casting -> {
-            Edge edge = mindmapsGraph.getTinkerTraversal().V(casting.getBaseIdentifier()).inE(DataType.EdgeLabel.CASTING.getLabel()).next();
+            Edge edge = mindmapsGraph.getTinkerPopGraph().traversal().V(casting.getBaseIdentifier()).inE(DataType.EdgeLabel.CASTING.getLabel()).next();
             assertEquals(casting.getRole().getId(), edge.property(DataType.EdgeProperty.ROLE_TYPE.name()).value().toString());
-            edge = mindmapsGraph.getTinkerTraversal().V(casting.getBaseIdentifier()).outE(DataType.EdgeLabel.ROLE_PLAYER.getLabel()).next();
+            edge = mindmapsGraph.getTinkerPopGraph().traversal().V(casting.getBaseIdentifier()).outE(DataType.EdgeLabel.ROLE_PLAYER.getLabel()).next();
             assertEquals(casting.getRole().getId(), edge.property(DataType.EdgeProperty.ROLE_TYPE.name()).value().toString());
         });
 
@@ -282,8 +298,8 @@ public class MindmapsTransactionHighLevelTest {
 
         //Validation
         //Counts
-        assertEquals(37, mindmapsGraph.getTinkerTraversal().V().toList().size());
-        assertEquals(53, mindmapsGraph.getTinkerTraversal().E().toList().size());
+        assertEquals(37, mindmapsGraph.getTinkerPopGraph().traversal().V().toList().size());
+        assertEquals(53, mindmapsGraph.getTinkerPopGraph().traversal().E().toList().size());
 
         assertEdgeCountOfVertex(type, DataType.EdgeLabel.ISA, 0, 1);
         assertEdgeCountOfVertex(relationType, DataType.EdgeLabel.ISA, 0, 1);
@@ -318,7 +334,7 @@ public class MindmapsTransactionHighLevelTest {
         assertEdgeCountOfVertex(godfather, DataType.EdgeLabel.ROLE_PLAYER, 2, 0);
 
         //More Specific Checks
-        List<Vertex> assertionsTypes = mindmapsGraph.getTinkerTraversal().V(godfather.getBaseIdentifier()).in(DataType.EdgeLabel.ROLE_PLAYER.getLabel()).in(DataType.EdgeLabel.CASTING.getLabel()).out(DataType.EdgeLabel.ISA.getLabel()).toList();
+        List<Vertex> assertionsTypes = mindmapsGraph.getTinkerPopGraph().traversal().V(godfather.getBaseIdentifier()).in(DataType.EdgeLabel.ROLE_PLAYER.getLabel()).in(DataType.EdgeLabel.CASTING.getLabel()).out(DataType.EdgeLabel.ISA.getLabel()).toList();
         assertEquals(2, assertionsTypes.size());
         
         List<Object> assertTypeIds = assertionsTypes.stream().map(Vertex::id).collect(Collectors.toList());
@@ -326,7 +342,7 @@ public class MindmapsTransactionHighLevelTest {
         assertTrue(assertTypeIds.contains(cast.getBaseIdentifier()));
         assertTrue(assertTypeIds.contains(movieHasGenre.getBaseIdentifier()));
 
-        List<Vertex> collection = mindmapsGraph.getTinkerTraversal().V(cast.getBaseIdentifier(), movieHasGenre.getBaseIdentifier()).in(DataType.EdgeLabel.ISA.getLabel()).out(DataType.EdgeLabel.CASTING.getLabel()).out().toList();
+        List<Vertex> collection = mindmapsGraph.getTinkerPopGraph().traversal().V(cast.getBaseIdentifier(), movieHasGenre.getBaseIdentifier()).in(DataType.EdgeLabel.ISA.getLabel()).out(DataType.EdgeLabel.CASTING.getLabel()).out().toList();
         assertEquals(8, collection.size());
 
         HashSet<Object> uniqueCollection = new HashSet<>();
@@ -355,7 +371,7 @@ public class MindmapsTransactionHighLevelTest {
 
     }
     private void assertEdgeCountOfVertex(Concept concept , DataType.EdgeLabel type, int inCount, int outCount){
-        Vertex v= mindmapsGraph.getTinkerTraversal().V(((ConceptImpl) concept).getBaseIdentifier()).next();
+        Vertex v= mindmapsGraph.getTinkerPopGraph().traversal().V(((ConceptImpl) concept).getBaseIdentifier()).next();
         assertEquals(inCount, getIteratorCount(v.edges(Direction.IN, type.getLabel())));
         assertEquals(outCount, getIteratorCount(v.edges(Direction.OUT, type.getLabel())));
     }
@@ -506,7 +522,7 @@ public class MindmapsTransactionHighLevelTest {
         assertTrue(pacinoToOthers.contains(pacino));
         assertTrue(pacinoToOthers.contains(thing));
 
-        mindmapsGraph.getTinkerTraversal().V(pacino.getIncomingNeighbours(DataType.EdgeLabel.ROLE_PLAYER).iterator().next().getBaseIdentifier()).next().remove();
+        mindmapsGraph.getTinkerPopGraph().traversal().V(pacino.getIncomingNeighbours(DataType.EdgeLabel.ROLE_PLAYER).iterator().next().getBaseIdentifier()).next().remove();
 
         godfatherToOthers = godfather.getOutgoingNeighbours(DataType.EdgeLabel.SHORTCUT);
         pacinoToOthers = pacino.getOutgoingNeighbours(DataType.EdgeLabel.SHORTCUT);
@@ -534,10 +550,10 @@ public class MindmapsTransactionHighLevelTest {
         Instance thing2 = mindmapsGraphBatch.putEntity("Thing", type);
         Instance godfather2 = mindmapsGraphBatch.putEntity("Godfather", type);
 
-        assertEquals(0, mindmapsGraphBatch.getTinkerTraversal().V().hasLabel(DataType.BaseType.RELATION.name()).toList().size());
+        assertEquals(0, mindmapsGraphBatch.getTinkerPopGraph().traversal().V().hasLabel(DataType.BaseType.RELATION.name()).toList().size());
         RelationImpl relation = (RelationImpl) mindmapsGraphBatch.putRelation("a", cast).
                 putRolePlayer(actor, pacino).putRolePlayer(actor2, thing).putRolePlayer(actor3, godfather);
-        assertEquals(1, mindmapsGraphBatch.getTinkerTraversal().V().hasLabel(DataType.BaseType.RELATION.name()).toList().size());
+        assertEquals(1, mindmapsGraphBatch.getTinkerPopGraph().traversal().V().hasLabel(DataType.BaseType.RELATION.name()).toList().size());
         assertNotEquals(String.valueOf(relation.getBaseIdentifier()), relation.getId());
 
         //mindmapsGraph.enableBatchLoading();
@@ -565,16 +581,16 @@ public class MindmapsTransactionHighLevelTest {
         mindmapsGraph.addRelation(cast).putRolePlayer(feature, godfather2).putRolePlayer(actor, pacino);
         mindmapsGraph.addRelation(cast).putRolePlayer(feature, godfather3).putRolePlayer(actor, pacino);
 
-        Vertex pacinoVertex = mindmapsGraph.getTinkerTraversal().V(pacino.getBaseIdentifier()).next();
-        Vertex godfatherVertex = mindmapsGraph.getTinkerTraversal().V(godfather.getBaseIdentifier()).next();
-        Vertex godfather2Vertex = mindmapsGraph.getTinkerTraversal().V(godfather2.getBaseIdentifier()).next();
-        Vertex godfather3Vertex = mindmapsGraph.getTinkerTraversal().V(godfather3.getBaseIdentifier()).next();
+        Vertex pacinoVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(pacino.getBaseIdentifier()).next();
+        Vertex godfatherVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(godfather.getBaseIdentifier()).next();
+        Vertex godfather2Vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(godfather2.getBaseIdentifier()).next();
+        Vertex godfather3Vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(godfather3.getBaseIdentifier()).next();
 
-        assertEquals(3, mindmapsGraph.getTinkerTraversal().V().hasLabel(DataType.BaseType.RELATION.name()).count().next().intValue());
-        assertEquals(4, mindmapsGraph.getTinkerTraversal().V().hasLabel(DataType.BaseType.CASTING.name()).count().next().intValue());
-        assertEquals(7, mindmapsGraph.getTinkerTraversal().V().hasLabel(DataType.BaseType.ENTITY.name()).count().next().intValue());
-        assertEquals(5, mindmapsGraph.getTinkerTraversal().V().hasLabel(DataType.BaseType.ROLE_TYPE.name()).count().next().intValue());
-        assertEquals(2, mindmapsGraph.getTinkerTraversal().V().hasLabel(DataType.BaseType.RELATION_TYPE.name()).count().next().intValue());
+        assertEquals(3, mindmapsGraph.getTinkerPopGraph().traversal().V().hasLabel(DataType.BaseType.RELATION.name()).count().next().intValue());
+        assertEquals(4, mindmapsGraph.getTinkerPopGraph().traversal().V().hasLabel(DataType.BaseType.CASTING.name()).count().next().intValue());
+        assertEquals(7, mindmapsGraph.getTinkerPopGraph().traversal().V().hasLabel(DataType.BaseType.ENTITY.name()).count().next().intValue());
+        assertEquals(5, mindmapsGraph.getTinkerPopGraph().traversal().V().hasLabel(DataType.BaseType.ROLE_TYPE.name()).count().next().intValue());
+        assertEquals(2, mindmapsGraph.getTinkerPopGraph().traversal().V().hasLabel(DataType.BaseType.RELATION_TYPE.name()).count().next().intValue());
 
         Iterator<Edge> pacinoCastings = pacinoVertex.edges(Direction.IN, DataType.EdgeLabel.ROLE_PLAYER.getLabel());
         Iterator<Edge> godfatherCastings = godfatherVertex.edges(Direction.IN, DataType.EdgeLabel.ROLE_PLAYER.getLabel());
@@ -586,7 +602,7 @@ public class MindmapsTransactionHighLevelTest {
         checkEdgeCount(1, godfather2Castings);
         checkEdgeCount(1, godfather3Castings);
 
-        Vertex actorVertex = mindmapsGraph.getTinkerTraversal().V(pacino.getBaseIdentifier()).in(DataType.EdgeLabel.ROLE_PLAYER.getLabel()).out(DataType.EdgeLabel.ISA.getLabel()).next();
+        Vertex actorVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(pacino.getBaseIdentifier()).in(DataType.EdgeLabel.ROLE_PLAYER.getLabel()).out(DataType.EdgeLabel.ISA.getLabel()).next();
 
         assertEquals(actor.getBaseIdentifier(), actorVertex.id());
     }

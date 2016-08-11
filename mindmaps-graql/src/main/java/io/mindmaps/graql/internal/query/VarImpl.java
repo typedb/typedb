@@ -20,10 +20,10 @@ package io.mindmaps.graql.internal.query;
 
 import com.google.common.collect.Maps;
 import io.mindmaps.core.implementation.Data;
-import io.mindmaps.graql.api.query.Pattern;
-import io.mindmaps.graql.api.query.QueryBuilder;
-import io.mindmaps.graql.api.query.ValuePredicate;
-import io.mindmaps.graql.api.query.Var;
+import io.mindmaps.graql.Pattern;
+import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.ValuePredicate;
+import io.mindmaps.graql.Var;
 import io.mindmaps.graql.internal.StringConverter;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 import io.mindmaps.graql.internal.gremlin.VarTraversals;
@@ -32,7 +32,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static io.mindmaps.graql.internal.validation.ErrorMessage.*;
+import static io.mindmaps.constants.ErrorMessage.*;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 

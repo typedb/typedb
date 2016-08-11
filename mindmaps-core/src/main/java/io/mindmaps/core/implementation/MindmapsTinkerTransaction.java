@@ -18,6 +18,8 @@
 
 package io.mindmaps.core.implementation;
 
+
+import io.mindmaps.constants.ErrorMessage;
 /**
  * A thread bound mindmaps transaction
  */

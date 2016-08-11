@@ -18,12 +18,12 @@
 
 package io.mindmaps.api;
 
+import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.constants.RESTUtil;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.util.ConfigProperties;
-import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.util.RESTUtil;
 import io.mindmaps.visualiser.HALConcept;
 import spark.Request;
 import spark.Response;

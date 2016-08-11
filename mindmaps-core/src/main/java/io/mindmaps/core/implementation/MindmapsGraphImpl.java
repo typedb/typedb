@@ -18,6 +18,8 @@
 
 package io.mindmaps.core.implementation;
 
+import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.constants.RESTUtil;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.MindmapsTransaction;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
@@ -30,20 +32,20 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class MindmapsGraphImpl implements MindmapsGraph {
     protected final Logger LOG = LoggerFactory.getLogger(MindmapsGraphImpl.class);
-    private final String engineUrl;
     private final String graphComputerType;
+    private final String engineUrl;
     private boolean batchLoading;
     private Graph graph;
 
     public MindmapsGraphImpl(Graph graph, String engineUrl, String graphComputerType){
         this.graph = graph;
-        this.engineUrl = engineUrl;
         this.graphComputerType = graphComputerType;
+        this.engineUrl = engineUrl;
         checkSchema((MindmapsTransactionImpl) newTransaction());
     }
 
     public String getCommitLogEndPoint(){
-        return getEngineUrl() + "/commit_log?graphName=" +
+        return getEngineUrl() + RESTUtil.WebPath.COMMIT_LOG_URI + "?" + RESTUtil.Request.GRAPH_NAME_PARAM + "=" +
                 getGraph().configuration().getProperty("storage.cassandra.keyspace").toString();
     }
 

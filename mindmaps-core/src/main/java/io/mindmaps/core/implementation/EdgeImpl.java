@@ -18,6 +18,7 @@
 
 package io.mindmaps.core.implementation;
 
+import io.mindmaps.constants.DataType;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 
 /**

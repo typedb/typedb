@@ -18,6 +18,7 @@
 
 package io.mindmaps.core.implementation;
 
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.model.Resource;
 import io.mindmaps.core.model.ResourceType;
 import io.mindmaps.factory.MindmapsTestGraphFactory;

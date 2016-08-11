@@ -18,11 +18,11 @@
 
 package io.mindmaps.api;
 
-import io.mindmaps.core.implementation.DataType;
+import io.mindmaps.constants.DataType;
+import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.constants.RESTUtil;
 import io.mindmaps.postprocessing.Cache;
 import io.mindmaps.util.ConfigProperties;
-import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.util.RESTUtil;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -61,7 +61,6 @@ public class CommitLogController {
         }
 
         cache.getCastingJobs().computeIfPresent(graphName, (key, set) -> {set.clear(); return set;});
-        cache.getRelationJobs().computeIfPresent(graphName, (key, set) -> {set.clear(); return set;});
 
         return "The cache of Graph [" + graphName + "] has been cleared";
     }
@@ -88,9 +87,6 @@ public class CommitLogController {
             DataType.BaseType type = DataType.BaseType.valueOf(jsonObject.getString("type"));
 
             switch (type){
-                case RELATION:
-                    cache.addJobRelation(graphName, conceptId);
-                    break;
                 case CASTING:
                     cache.addJobCasting(graphName, conceptId);
                     break;
@@ -99,7 +95,7 @@ public class CommitLogController {
             }
         }
 
-        long numJobs =  cache.getCastingJobs().get(graphName).size() + cache.getRelationJobs().get(graphName).size();
+        long numJobs =  cache.getCastingJobs().get(graphName).size();
         return "Graph [" + graphName + "] now has [" + numJobs + "] post processing jobs";
     }
 }

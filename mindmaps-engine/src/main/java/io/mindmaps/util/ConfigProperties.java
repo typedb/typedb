@@ -23,7 +23,7 @@ import java.util.Properties;
 public class ConfigProperties {
 
     public static final String CONFIG_FILE = "application.properties";
-    public static final String CONFIG_TEST_FILE = "application-test.properties";
+    public static final String CONFIG_TEST_FILE = "application.properties";
 
     public static final String GRAPH_CONFIG_PROPERTY = "graphdatabase.config";
     public static final String GRAPH_BATCH_CONFIG_PROPERTY = "graphdatabase.batch-config";

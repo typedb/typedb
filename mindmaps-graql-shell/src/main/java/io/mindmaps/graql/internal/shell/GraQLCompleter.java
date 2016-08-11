@@ -19,7 +19,7 @@
 package io.mindmaps.graql.internal.shell;
 
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.graql.api.parser.Autocomplete;
+import io.mindmaps.graql.Autocomplete;
 import jline.console.completer.Completer;
 
 import java.util.List;

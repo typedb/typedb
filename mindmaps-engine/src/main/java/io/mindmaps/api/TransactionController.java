@@ -20,7 +20,7 @@ package io.mindmaps.api;
 
 import io.mindmaps.loader.Loader;
 import io.mindmaps.util.ConfigProperties;
-import io.mindmaps.util.RESTUtil;
+import io.mindmaps.constants.RESTUtil;
 
 import java.util.UUID;
 

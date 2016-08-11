@@ -18,9 +18,6 @@
 
 package io.mindmaps.postprocessing;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,11 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Cache {
     private final Map<String, Set<String>> castingsToPostProcess;
-    private final Map<String, Set<String>> relationsToPostProcess;
     private final AtomicBoolean saveInProgress;
-
-    private final Logger LOG = LoggerFactory.getLogger(Cache.class);
-
 
     private static Cache instance=null;
 
@@ -43,7 +36,6 @@ public class Cache {
 
     private Cache(){
         castingsToPostProcess = new ConcurrentHashMap<>();
-        relationsToPostProcess = new ConcurrentHashMap<>();
         saveInProgress = new AtomicBoolean(false);
     }
 
@@ -54,36 +46,15 @@ public class Cache {
     public Map<String, Set<String>> getCastingJobs() {
         return castingsToPostProcess;
     }
-
-    public Map<String, Set<String>> getRelationJobs() {
-        return relationsToPostProcess;
-    }
-
     public void addJobCasting(String graphName, Set<String> conceptIds) {
         getCastingJobs().computeIfAbsent(graphName, (key) -> ConcurrentHashMap.newKeySet()).addAll(conceptIds);
     }
     public void addJobCasting(String graphName, String conceptId) {
         getCastingJobs().computeIfAbsent(graphName, (key) ->  ConcurrentHashMap.newKeySet()).add(conceptId);
     }
-
-    public void addJobRelation(String graphName, Set<String> conceptIds) {
-        getCastingJobs().computeIfAbsent(graphName, (key) ->  ConcurrentHashMap.newKeySet()).addAll(conceptIds);
-    }
-    public void addJobRelation(String graphName, String conceptId) {
-        getRelationJobs().computeIfAbsent(graphName, (key) -> ConcurrentHashMap.newKeySet()).add(conceptId);
-    }
-
     public void deleteJobCasting(String graphName, String conceptId) {
         getCastingJobs().get(graphName).remove(conceptId);
     }
 
-    public void deleteJobRelation(String graphName, String conceptId) {
-        getRelationJobs().get(graphName).remove(conceptId);
-    }
-
-    public void addCacheJobs(String graphName, Set<String> castings, Set<String> relations){
-        addJobCasting(graphName, castings);
-        addJobRelation(graphName, relations);
-    }
 
 }

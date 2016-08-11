@@ -20,12 +20,13 @@ package io.mindmaps.core.implementation;
 
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 public class MindmapsTitanHadoopGraph extends MindmapsGraphImpl {
-    public MindmapsTitanHadoopGraph(Graph graph, String address, String graphComputer){
-        super(graph, address, graphComputer);
+    public MindmapsTitanHadoopGraph(Graph graph, String engineUrl, String graphComputer){
+        super(graph, engineUrl, graphComputer);
     }
 
     @Override

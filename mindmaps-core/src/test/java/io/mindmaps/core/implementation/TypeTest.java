@@ -18,6 +18,7 @@
 
 package io.mindmaps.core.implementation;
 
+import io.mindmaps.constants.DataType;
 import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.junit.After;
@@ -119,7 +120,7 @@ public class TypeTest {
         assertTrue(c1.getAkoHierarchySuperSet().contains(c3));
         assertFalse(c1.getAkoHierarchySuperSet().contains(c4));
 
-        mindmapsGraph.getTinkerTraversal().V().
+        mindmapsGraph.getTinkerPopGraph().traversal().V().
                 has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), c3.getId()).
                 outE(DataType.EdgeLabel.ISA.getLabel()).next().remove();
         c3.superType(c4);
@@ -222,7 +223,7 @@ public class TypeTest {
 
         conceptType.playsRole(roleType1).playsRole(roleType2);
         Set<RoleType> foundRoles = new HashSet<>();
-        mindmapsGraph.getTinkerTraversal().V(conceptType.getBaseIdentifier()).
+        mindmapsGraph.getTinkerPopGraph().traversal().V(conceptType.getBaseIdentifier()).
                 out(DataType.EdgeLabel.PLAYS_ROLE.getLabel()).forEachRemaining(r -> {
             foundRoles.add(mindmapsGraph.getRoleType(r.value(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name())));
         });

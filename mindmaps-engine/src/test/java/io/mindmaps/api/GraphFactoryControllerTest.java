@@ -22,10 +22,11 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
+import io.mindmaps.Util;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.util.ConfigProperties;
-import io.mindmaps.util.RESTUtil;
+import io.mindmaps.constants.RESTUtil;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -49,7 +50,7 @@ public class GraphFactoryControllerTest {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        RestAssured.baseURI = prop.getProperty("server.url");
+        Util.setRestAssuredBaseURI(prop);
     }
 
     @Test
