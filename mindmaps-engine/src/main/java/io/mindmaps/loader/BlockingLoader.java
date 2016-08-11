@@ -18,14 +18,14 @@
 
 package io.mindmaps.loader;
 
-import io.mindmaps.core.implementation.MindmapsValidationException;
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
+import io.mindmaps.core.implementation.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
-import io.mindmaps.graql.api.query.QueryBuilder;
-import io.mindmaps.graql.api.query.Var;
+import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.Var;
 import io.mindmaps.postprocessing.Cache;
 import io.mindmaps.util.ConfigProperties;
-import io.mindmaps.util.ErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -123,7 +123,7 @@ public class BlockingLoader {
 
                 QueryBuilder.build(transaction).insert(batch).execute();
                 transaction.commit();
-                cache.addCacheJobs(graphName, transaction.getModifiedCastingIds(), transaction.getModifiedRelationIds());
+                cache.addJobCasting(graphName, transaction.getModifiedCastingIds());
                 transactionsSemaphore.release();
                 return;
 

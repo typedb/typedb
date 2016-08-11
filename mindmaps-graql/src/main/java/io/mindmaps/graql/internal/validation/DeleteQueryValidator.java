@@ -19,7 +19,7 @@
 package io.mindmaps.graql.internal.validation;
 
 import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.graql.api.query.DeleteQuery;
+import io.mindmaps.graql.DeleteQuery;
 
 import java.util.stream.Stream;
 

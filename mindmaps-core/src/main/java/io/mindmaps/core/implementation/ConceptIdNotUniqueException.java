@@ -18,6 +18,8 @@
 
 package io.mindmaps.core.implementation;
 
+import io.mindmaps.constants.DataType;
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.model.Concept;
 
 /**

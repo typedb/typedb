@@ -20,7 +20,7 @@ package io.mindmaps.factory;
 
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.core.implementation.ErrorMessage;
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.implementation.GraphRuntimeException;
 import io.mindmaps.core.implementation.MindmapsValidationException;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
@@ -42,6 +42,7 @@ import static junit.framework.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
 
 public class MindmapsTitanGraphTest {
+    private final String TEST_CONFIG = "../conf/mindmaps-test.properties";
     private final String TEST_NAME = "mindmapstest";
     private final String TEST_URI = "localhost";
     private MindmapsGraph mindmapsGraph;
@@ -49,12 +50,12 @@ public class MindmapsTitanGraphTest {
     @Before
     public void setup(){
         cleanup();
-        mindmapsGraph = new MindmapsTitanGraphFactory().getGraph(TEST_NAME, TEST_URI, null);
+        mindmapsGraph = new MindmapsTitanGraphFactory().getGraph(TEST_NAME, TEST_URI, TEST_CONFIG);
     }
 
     @After
     public void cleanup(){
-        MindmapsGraph mg = new MindmapsTitanGraphFactory().getGraph(TEST_NAME, TEST_URI, null);
+        MindmapsGraph mg = new MindmapsTitanGraphFactory().getGraph(TEST_NAME, TEST_URI, TEST_CONFIG);
 
         try {
             mg.clear();
@@ -124,7 +125,7 @@ public class MindmapsTitanGraphTest {
         });
 
         MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) mindmapsGraph.newTransaction();
-        assertEquals(108, transaction.getTinkerTraversal().V().toList().size());
+        assertEquals(108, transaction.getTinkerPopGraph().traversal().V().toList().size());
     }
     private void addEntityType(MindmapsGraph mindmapsGraph){
         MindmapsTransaction mindmapsTransaction = mindmapsGraph.newTransaction();

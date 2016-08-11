@@ -19,13 +19,13 @@
 package io.mindmaps.graql.internal.query;
 
 import com.google.common.collect.ImmutableMap;
+import io.mindmaps.constants.DataType;
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.Data;
-import io.mindmaps.core.implementation.DataType;
 import io.mindmaps.core.model.*;
-import io.mindmaps.graql.api.query.Var;
+import io.mindmaps.graql.Var;
 import io.mindmaps.graql.internal.GraqlType;
-import io.mindmaps.graql.internal.validation.ErrorMessage;
 
 import java.util.*;
 import java.util.function.BiFunction;

@@ -21,11 +21,12 @@ package io.mindmaps.api;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.RestAssured;
+import io.mindmaps.Util;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.util.ConfigProperties;
-import io.mindmaps.util.RESTUtil;
+import io.mindmaps.constants.RESTUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -58,7 +59,7 @@ public class TransactionControllerTest {
         MindmapsTransaction transaction = graph.newTransaction();
         transaction.putEntityType("Man");
         transaction.commit();
-        RestAssured.baseURI = prop.getProperty("server.url");
+        Util.setRestAssuredBaseURI(prop);
     }
 
     @Test

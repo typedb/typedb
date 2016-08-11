@@ -18,6 +18,7 @@
 
 package io.mindmaps.core.implementation;
 
+import io.mindmaps.constants.DataType;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.RelationType;
 import io.mindmaps.core.model.RoleType;

@@ -25,15 +25,17 @@ import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraGraphComputer;
+import io.mindmaps.constants.DataType;
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.implementation.DataType;
 import io.mindmaps.core.implementation.MindmapsGraphImpl;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.spark.process.computer.SparkGraphComputer;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
@@ -49,7 +51,7 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.*;
 
 public class MindmapsTitanGraphFactoryTest {
-    private final String TEST_CONFIG = "../conf/mindmaps.properties";
+    private final String TEST_CONFIG = "../conf/mindmaps-test.properties";
     private final String TEST_NAME = "mindmapstest";
     private final String TEST_URI = "localhost";
 
@@ -385,10 +387,10 @@ public class MindmapsTitanGraphFactoryTest {
         assertEquals(FulgoraGraphComputer.class, graph.getGraphComputer());
     }
 
-    @Ignore
+    /*@Ignore
     @Test
     public void testGetGraphComputer2(){
         MindmapsGraphImpl graph = (MindmapsGraphImpl) new MindmapsTitanHadoopGraphFactory().getGraph(TEST_NAME, null, "../conf/mindmaps-analytics.properties");
         assertEquals(SparkGraphComputer.class, graph.getGraphComputer());
-    }
+    }*/
 }

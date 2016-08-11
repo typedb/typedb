@@ -19,7 +19,7 @@
 package io.mindmaps.graql.internal.query.match;
 
 import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.core.implementation.DataType;
+import io.mindmaps.constants.DataType;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -29,9 +29,9 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.Optional;
 
-import static io.mindmaps.core.implementation.DataType.ConceptPropertyUnique.ITEM_IDENTIFIER;
-import static io.mindmaps.core.implementation.DataType.EdgeLabel.SHORTCUT;
-import static io.mindmaps.core.implementation.DataType.EdgeProperty.TO_TYPE;
+import static io.mindmaps.constants.DataType.ConceptPropertyUnique.ITEM_IDENTIFIER;
+import static io.mindmaps.constants.DataType.EdgeLabel.SHORTCUT;
+import static io.mindmaps.constants.DataType.EdgeProperty.TO_TYPE;
 
 /**
  * A class for handling ordering match queries.
@@ -83,7 +83,7 @@ class MatchOrder {
      * @return the value of an attached resource, or nothing if there is no resource of this type
      */
     private Optional<Comparable> getResourceValue(MindmapsTransaction transaction, Object elem, String resourceTypeId, DataType.ConceptProperty value) {
-        return ((MindmapsTransactionImpl) transaction).getTinkerTraversal().V(elem)
+        return ((MindmapsTransactionImpl) transaction).getTinkerPopGraph().traversal().V(elem)
                 .outE(SHORTCUT.getLabel()).has(TO_TYPE.name(), resourceTypeId).inV().values(value.name())
                 .tryNext().map(o -> (Comparable) o);
     }

@@ -18,6 +18,8 @@
 
 package io.mindmaps.core.implementation;
 
+import io.mindmaps.constants.ErrorMessage;
+
 public class MindmapsTitanHadoopTransaction extends MindmapsTransactionImpl {
     private MindmapsTitanHadoopGraph rootGraph;
 

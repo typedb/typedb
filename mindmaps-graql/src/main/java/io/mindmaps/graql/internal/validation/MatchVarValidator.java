@@ -18,11 +18,12 @@
 
 package io.mindmaps.graql.internal.validation;
 
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.RelationType;
 import io.mindmaps.core.model.Type;
-import io.mindmaps.graql.api.query.Var;
+import io.mindmaps.graql.Var;
 
 import java.util.*;
 import java.util.stream.Collectors;

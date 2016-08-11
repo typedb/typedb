@@ -18,6 +18,8 @@
 
 package io.mindmaps.core.implementation;
 
+import io.mindmaps.constants.ErrorMessage;
+
 /**
  * The exception thrown when an edge is expected between two concepts.
  */

@@ -18,6 +18,7 @@
 
 package io.mindmaps.core.implementation;
 
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.EntityType;
@@ -84,7 +85,7 @@ public class MindmapsTinkerGraphTest {
         });
 
         MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) mindmapsGraph.newTransaction();
-        assertEquals(108, transaction.getTinkerTraversal().V().toList().size());
+        assertEquals(108, transaction.getTinkerPopGraph().traversal().V().toList().size());
     }
     private void addEntityType(MindmapsGraph mindmapsGraph){
         MindmapsTransaction mindmapsTransaction = mindmapsGraph.newTransaction();

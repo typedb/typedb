@@ -18,10 +18,13 @@
 
 package io.mindmaps.core.implementation;
 
+import io.mindmaps.constants.DataType;
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.EntityType;
 import io.mindmaps.core.model.Relation;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
 import org.junit.Before;
@@ -31,7 +34,7 @@ import org.junit.rules.ExpectedException;
 
 import java.util.UUID;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 
 public class CastingTest {
@@ -65,7 +68,9 @@ public class CastingTest {
 
     @Test
     public void testEquals() throws Exception {
-        Concept castingCopy = mindmapsGraph.getConcept(casting.getId());
+        Graph graph = mindmapsGraph.getTinkerPopGraph();
+        Vertex v = graph.traversal().V(relation.getBaseIdentifier()).out(DataType.EdgeLabel.CASTING.getLabel()).next();
+        CastingImpl castingCopy = (CastingImpl) mindmapsGraph.getConcept(v.value(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name()));
         assertEquals(casting, castingCopy);
 
         EntityType type = mindmapsGraph.putEntityType("Another entity type");
@@ -77,8 +82,44 @@ public class CastingTest {
 
     @Test
     public void hashCodeTest() throws Exception {
-        Vertex castingVertex = mindmapsGraph.getTinkerTraversal().V(casting.getBaseIdentifier()).next();
+        Vertex castingVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(casting.getBaseIdentifier()).next();
         assertEquals(casting.hashCode(), castingVertex.hashCode());
+    }
+
+    @Test
+    public void testGetRole() throws Exception {
+        assertEquals(role, casting.getRole());
+
+        String id = UUID.randomUUID().toString();
+        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.CASTING.name());
+        vertex.property(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), id);
+
+        CastingImpl casting2 = (CastingImpl) mindmapsGraph.getConcept(id);
+        boolean exceptionThrown = false;
+        try{
+            casting2.getRole();
+        } catch(NoEdgeException e){
+            exceptionThrown = true;
+        }
+        assertTrue(exceptionThrown);
+
+
+        TypeImpl c1 = (TypeImpl) mindmapsGraph.putEntityType("c1'");
+        TypeImpl c2 = (TypeImpl) mindmapsGraph.putEntityType("c2");
+        Vertex casting2_Vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(casting2.getBaseIdentifier()).next();
+        Vertex c1_Vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(c1.getBaseIdentifier()).next();
+        Vertex c2_Vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(c2.getBaseIdentifier()).next();
+
+        casting2_Vertex.addEdge(DataType.EdgeLabel.ISA.getLabel(), c1_Vertex);
+        casting2_Vertex.addEdge(DataType.EdgeLabel.ISA.getLabel(), c2_Vertex);
+
+        exceptionThrown = false;
+        try{
+            casting2.getRole();
+        } catch(MoreThanOneEdgeException e){
+            exceptionThrown = true;
+        }
+        assertTrue(exceptionThrown);
     }
 
     @Test
@@ -109,5 +150,19 @@ public class CastingTest {
         assertTrue(casting2.getRelations().contains(relationValue));
         assertThat(casting.getRelations().iterator().next(), instanceOf(Relation.class));
         assertThat(casting2.getRelations().iterator().next(), instanceOf(Relation.class));
+    }
+
+    @Test
+    public void testGetAssertionFailNoAssertion(){
+        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.CASTING.name());
+        vertex.property(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), "fc");
+        CastingImpl fakeCasting = (CastingImpl) mindmapsGraph.getConcept("fc");
+
+        expectedException.expect(NoEdgeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.NO_EDGE.getMessage(fakeCasting.toString(), DataType.BaseType.RELATION.name()))
+        ));
+
+        fakeCasting.getRelations();
     }
 }

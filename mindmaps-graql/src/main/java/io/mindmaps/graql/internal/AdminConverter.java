@@ -18,8 +18,8 @@
 
 package io.mindmaps.graql.internal;
 
-import io.mindmaps.graql.api.query.Pattern;
-import io.mindmaps.graql.api.query.Var;
+import io.mindmaps.graql.Pattern;
+import io.mindmaps.graql.Var;
 
 import java.util.Collection;
 import java.util.Set;

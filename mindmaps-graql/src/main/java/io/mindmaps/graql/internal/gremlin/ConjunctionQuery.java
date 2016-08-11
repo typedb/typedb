@@ -18,11 +18,11 @@
 
 package io.mindmaps.graql.internal.gremlin;
 
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
-import io.mindmaps.graql.api.query.Pattern;
-import io.mindmaps.graql.api.query.Var;
-import io.mindmaps.graql.internal.validation.ErrorMessage;
+import io.mindmaps.graql.Pattern;
+import io.mindmaps.graql.Var;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -73,7 +73,7 @@ class ConjunctionQuery {
      */
     GraphTraversal<Vertex, Map<String, Vertex>> getTraversal() {
         GraphTraversal<Vertex, Vertex> traversal =
-                ((MindmapsTransactionImpl) transaction).getTinkerTraversal().V();
+                ((MindmapsTransactionImpl) transaction).getTinkerPopGraph().traversal().V();
 
         Set<String> foundNames = new HashSet<>();
 

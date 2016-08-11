@@ -35,6 +35,7 @@
         <module>mindmaps-graql-shell</module>
         <module>mindmaps-engine</module>
         <module>mindmaps-dist</module>
+        <module>mindmaps-base</module>
     </modules>
 
     <properties>
@@ -51,8 +52,8 @@
         <halbuilder-standard.version>4.0.1</halbuilder-standard.version>
         <rest-assured.version>2.7.0</rest-assured.version>
         <java-tuples.version>1.2</java-tuples.version>
-        <jinjava.version>2.1.0</jinjava.version>
         <spark.version>1.5.2</spark.version>
+        <jinjava.version>2.1.0</jinjava.version>
         <airline.version>0.6</airline.version>
 
         <antlr4.visitor>true</antlr4.visitor>
@@ -186,60 +187,6 @@
                     <source>${java.version}</source>
                     <target>${java.version}</target>
                 </configuration>
-            </plugin>
-            <plugin>
-               <groupId>org.apache.maven.plugins</groupId>
-               <artifactId>maven-source-plugin</artifactId>
-               <version>2.2.1</version>
-               <executions>
-                    <execution>
-                        <id>attach-sources</id>
-                        <goals>
-                            <goal>jar-no-fork</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>2.9.1</version>
-                <configuration>
-                    <additionalparam>-Xdoclint:none</additionalparam>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.sonatype.plugins</groupId>
-                <artifactId>nexus-staging-maven-plugin</artifactId>
-                <version>1.6.7</version>
-                <extensions>true</extensions>
-                <configuration>
-                    <serverId>ossrh</serverId>
-                <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                <autoReleaseAfterClose>true</autoReleaseAfterClose>
-              </configuration>
-            </plugin>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-gpg-plugin</artifactId>
-              <version>1.5</version>
-              <executions>
-                <execution>
-                  <id>sign-artifacts</id>
-                  <phase>verify</phase>
-                  <goals>
-                    <goal>sign</goal>
-                  </goals>
-                </execution>
-              </executions>
             </plugin>
             <plugin>
                <groupId>org.apache.maven.plugins</groupId>

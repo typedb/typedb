@@ -18,8 +18,8 @@
 
 package io.mindmaps.factory;
 
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.implementation.ErrorMessage;
 import io.mindmaps.core.implementation.MindmapsTitanHadoopGraph;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
