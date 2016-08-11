@@ -19,8 +19,8 @@
 package io.mindmaps.graql.internal.query;
 
 import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.graql.api.query.AskQuery;
-import io.mindmaps.graql.api.query.MatchQuery;
+import io.mindmaps.graql.AskQuery;
+import io.mindmaps.graql.MatchQuery;
 
 /**
  * An AskQuery to check if a given pattern matches anywhere in the graph

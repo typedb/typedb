@@ -20,7 +20,7 @@ package io.mindmaps.graql.internal.parser;
 
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.Data;
-import io.mindmaps.graql.api.query.*;
+import io.mindmaps.graql.*;
 import io.mindmaps.graql.internal.StringConverter;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.misc.Interval;

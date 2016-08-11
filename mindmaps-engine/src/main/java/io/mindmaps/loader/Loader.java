@@ -22,7 +22,7 @@ import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.core.implementation.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
-import io.mindmaps.graql.api.parser.QueryParser;
+import io.mindmaps.graql.QueryParser;
 import io.mindmaps.postprocessing.Cache;
 import io.mindmaps.util.ConfigProperties;
 import org.slf4j.Logger;

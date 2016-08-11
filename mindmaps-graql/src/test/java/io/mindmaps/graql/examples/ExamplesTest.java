@@ -20,9 +20,9 @@ package io.mindmaps.graql.examples;
 
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
-import io.mindmaps.graql.api.parser.QueryParser;
-import io.mindmaps.graql.api.query.InsertQuery;
-import io.mindmaps.graql.api.query.MatchQuery;
+import io.mindmaps.graql.QueryParser;
+import io.mindmaps.graql.InsertQuery;
+import io.mindmaps.graql.MatchQuery;
 import org.junit.Before;
 import org.junit.Test;
 

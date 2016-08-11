@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.internal.shell;
 
-import io.mindmaps.graql.api.shell.GraqlShell;
+import io.mindmaps.graql.GraqlShell;
 import jline.console.completer.Completer;
 
 import java.util.List;
