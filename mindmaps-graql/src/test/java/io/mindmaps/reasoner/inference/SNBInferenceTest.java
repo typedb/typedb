@@ -64,7 +64,7 @@ public class SNBInferenceTest {
      * Tests transitivity and Bug #7343
      */
     @Test
-    public void test()
+    public void testTransitivity()
     {
         String queryString = "match " +
                 "{$x isa university} or {$x isa company};\n" +
@@ -85,11 +85,33 @@ public class SNBInferenceTest {
 
     }
 
+    @Test
+    public void testTransitivity2()
+    {
+        String queryString = "match " +
+                "{$y isa university} or {$y isa company};\n" +
+                "$x isa country;\n" +
+                "(subject-location $x, located-subject $y) isa resides";
+        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery expandedQuery = reasoner.expandQuery(query);
+        printMatchQuery(expandedQuery);
+
+        printMatchQueryResults(expandedQuery.distinct());
+
+        String explicitQuery = "match " +
+                "{$y isa university;$y id 'University of Cambridge'} or" +
+                "{$y isa company;$y id 'Mindmaps'};" +
+                "$x isa country;$x id 'UK'";
+
+        assertQueriesEqual(expandedQuery, qp.parseMatchQuery(explicitQuery).getMatchQuery());
+
+    }
+
     /**
      * Tests transitivity and Bug #7343
      */
     @Test
-    public void test2()
+    public void testTransitivity3()
     {
         String queryString = " match" +
                 "{$x isa university} or {$x isa company};\n" +

@@ -115,7 +115,7 @@ public abstract class AtomBase implements Atomic{
     }
 
     @Override
-    public boolean isValuePredicate(){ return !atomPattern.asVar().getValueEqualsPredicates().isEmpty();}
+    public boolean isValuePredicate(){ return !atomPattern.asVar().getValuePredicates().isEmpty();}
     @Override
     public boolean isResource(){ return !atomPattern.asVar().getResourcePredicates().isEmpty();}
     @Override
@@ -152,7 +152,9 @@ public abstract class AtomBase implements Atomic{
         atomPattern.asVar().setName(var);
     }
 
+
     @Override
+
     public void changeEachVarName(String from, String to) {
         String var = getVarName();
         if (var.equals(from)) {

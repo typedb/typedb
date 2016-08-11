@@ -29,23 +29,69 @@ public interface Atomic {
 
     void print();
 
+
     void addExpansion(Query query);
     void removeExpansion(Query query);
 
-    default boolean isRelation(){return false;}
-    default boolean isValuePredicate(){ return false;}
-    default boolean isResource(){ return false;}
+    /**
+     * @return true if the atom corresponds to a unary predicate
+     * */
     default boolean isType(){ return false;}
+
+    /**
+     * @return true if the atom corresponds to a non-unary predicate
+     * */
+    default boolean isRelation(){return false;}
+
+    /**
+     * @return true if the atom corresponds to a value predicate (~var substitution)
+     * */
+    default boolean isValuePredicate(){ return false;}
+
+    /**
+     * @return true if the atom corresponds to a resource predicate
+     * */
+    default boolean isResource(){ return false;}
+
+    /**
+     * @param name variable name
+     * @return true if atom contains an occurrence of the variable name
+     */
     default boolean containsVar(String name){ return false;}
 
+    /**
+     * @return the corresponding pattern
+     * */
     Pattern.Admin getPattern();
+    /**
+     * @return the corresponding pattern with all expansions
+     * */
     Pattern.Admin getExpandedPattern();
     MatchQuery getExpandedMatchQuery(MindmapsTransaction graph);
 
+    /**
+     * @return the query this atom belongs to
+     * */
     Query getParentQuery();
+
+    /**
+     * @param q query this atom is supposed to belong to
+     */
     void setParentQuery(Query q);
 
+    /**
+     * change each variable occurrence in the atom
+     * if capture occurs it is marked with a "capture-><name of the captured occurrence>" name
+     * @param from variable name to be changed
+     * @param to new variable name
+     */
     void changeEachVarName(String from, String to);
+
+    /**
+     * change each variable occurrence according to provided mappings
+     * if capture occurs it is marked with a "capture-><name of the captured occurrence>" name
+     * @param mappings contain variable mappings to be applied
+     */
     void changeEachVarName(Map<String, String> mappings);
 
     String getVarName();
