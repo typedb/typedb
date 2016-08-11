@@ -18,6 +18,7 @@
 
 package io.mindmaps.graql;
 
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.graql.internal.StringConverter;
 import io.mindmaps.graql.internal.query.ValuePredicateImpl;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -94,16 +95,16 @@ public interface ValuePredicate {
      * @param predicates an array of predicates
      * @return a predicate that returns true when all the predicates are true
      */
-    static ValuePredicate all(ValuePredicate... predicates) {
-        return Arrays.asList(predicates).stream().reduce(ValuePredicate::and).get();
+    static ValuePredicate all(ValuePredicate predicate, ValuePredicate... predicates) {
+        return Arrays.stream(predicates).reduce(predicate, ValuePredicate::and);
     }
 
     /**
      * @param predicates an array of predicates
      * @return a predicate that returns true when any of the predicates are true
      */
-    static ValuePredicate any(ValuePredicate... predicates) {
-        return Arrays.asList(predicates).stream().reduce(ValuePredicate::or).get();
+    static ValuePredicate any(ValuePredicate predicate, ValuePredicate... predicates) {
+        return Arrays.stream(predicates).reduce(predicate, ValuePredicate::or);
     }
 
     /**

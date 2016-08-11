@@ -26,7 +26,7 @@ import java.util.Set;
 
 import static org.junit.Assert.*;
 
-public class QueryUtil {
+class QueryUtil {
 
     static final String[] movies = new String[] {
         "Godfather", "The-Muppets", "Apocalypse-Now", "Heat", "Hocus-Pocus", "Spy", "Chinese-Coffee"

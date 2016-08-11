@@ -23,6 +23,7 @@ import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.Var;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -68,8 +69,8 @@ public class Query {
      * @return a gremlin traversal to execute to find results
      */
     public GraphTraversal<Vertex, Map<String, Vertex>> getTraversals() {
-        GraphTraversal[] collect =
-                innerQueries.stream().map(ConjunctionQuery::getTraversal).toArray(GraphTraversal[]::new);
+        Traversal[] collect =
+                innerQueries.stream().map(ConjunctionQuery::getTraversal).toArray(Traversal[]::new);
 
         // Because 'union' accepts an array, we can't use generics...
         //noinspection unchecked

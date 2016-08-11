@@ -44,7 +44,7 @@ import java.util.function.UnaryOperator;
  * A gremlin traversal is created from a {@code Query} by appending together fragments in order of priority, one from
  * each {@code MultiTraversal} describing the {@code Query}.
  */
-public class Fragment implements Comparable<Fragment> {
+class Fragment implements Comparable<Fragment> {
 
     private final UnaryOperator<GraphTraversal<Vertex, Vertex>> traversalFunction;
     private final FragmentPriority priority;
@@ -115,12 +115,12 @@ public class Fragment implements Comparable<Fragment> {
         return end;
     }
 
-    @Override
     /**
      * Order Fragment by priority
      */
-    // Don't want to use Jetbrain's @NotNull annotation
+    @Override
     public int compareTo(@SuppressWarnings("NullableProblems") Fragment other) {
+        // Don't want to use Jetbrain's @NotNull annotation
         if (this == other) return 0;
         return priority.compareTo(other.priority);
     }

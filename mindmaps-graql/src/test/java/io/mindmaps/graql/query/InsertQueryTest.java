@@ -106,11 +106,12 @@ public class InsertQueryTest {
         Var rel = var("r").isa("has-genre").rel("genre-of-production", "x").rel("production-with-genre", "y");
         Var x = var("x").id("Godfather").isa("movie");
         Var y = var("y").id("comedy").isa("genre");
-        Var[] patterns = new Var[] {rel, x, y};
+        Var[] vars = new Var[] {rel, x, y};
+        Pattern[] patterns = new Pattern[] {rel, x, y};
 
         assertFalse(qb.match(patterns).ask().execute());
 
-        qb.insert(patterns).execute();
+        qb.insert(vars).execute();
         assertTrue(qb.match(patterns).ask().execute());
 
         qb.match(patterns).delete("r").execute();
@@ -359,7 +360,9 @@ public class InsertQueryTest {
 
         assertEquals(1, typeQuery.stream().count());
 
-        EntityType newType = typeQuery.stream().findFirst().get().get("n").asEntityType();
+        // We checked count ahead of time
+        //noinspection OptionalGetWithoutIsPresent
+        EntityType newType = typeQuery.get("n").stream().findFirst().get().asEntityType();
 
         assertEquals("A value", newType.getValue());
         assertTrue(newType.playsRoles().contains(transaction.getRoleType("has-title-owner")));

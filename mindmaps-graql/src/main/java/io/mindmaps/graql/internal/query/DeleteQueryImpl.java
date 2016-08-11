@@ -19,6 +19,7 @@
 package io.mindmaps.graql.internal.query;
 
 import com.google.common.collect.ImmutableMap;
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.ConceptException;
 import io.mindmaps.core.model.Concept;
@@ -129,8 +130,12 @@ public class DeleteQueryImpl implements DeleteQuery.Admin {
      * @param values a set of values of resources
      */
     private void deleteResources(String id, Var.Admin type, Set<?> values) {
+        String typeId = type.getId().orElseThrow(
+                () -> new IllegalStateException(ErrorMessage.DELETE_RESOURCE_TYPE_NO_ID.getMessage(id))
+        );
+
         resources(id).stream()
-                .filter(r -> r.type().getId().equals(type.getId().get()))
+                .filter(r -> r.type().getId().equals(typeId))
                 .filter(r -> values.isEmpty() || values.contains(r.getValue()))
                 .forEach(Concept::delete);
     }
@@ -156,7 +161,9 @@ public class DeleteQueryImpl implements DeleteQuery.Admin {
     }
 
     private MindmapsTransaction getTransaction() {
-        return matchQuery.getTransaction().get();
+        return matchQuery.getTransaction().orElseThrow(
+                () -> new IllegalStateException(ErrorMessage.NO_TRANSACTION.getMessage())
+        );
     }
 
     @Override

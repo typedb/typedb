@@ -18,6 +18,7 @@
 
 package io.mindmaps.graql.internal.gremlin;
 
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.implementation.Data;
 import io.mindmaps.constants.DataType;
 import io.mindmaps.graql.QueryBuilder;
@@ -112,12 +113,16 @@ public class VarTraversals {
         });
 
         var.getResourcePredicates().forEach((type, predicates) -> {
+            // Currently it is guaranteed that resource types are specified with an ID
+            //noinspection OptionalGetWithoutIsPresent
+            String typeId = type.getId().get();
+
             if (predicates.isEmpty()) {
                 // Check that a resource of the specified type is connected
-                addResourcePattern(type);
+                addResourcePattern(typeId);
             } else {
                 // Check all predicates on connected resource's VALUE
-                predicates.forEach(predicate -> addResourcePattern(type, predicate));
+                predicates.forEach(predicate -> addResourcePattern(typeId, predicate));
             }
         });
 
@@ -131,8 +136,9 @@ public class VarTraversals {
 
         // Check identity of roleplayers and role types (if specified)
         var.getCastings().forEach(casting -> {
-            if (casting.getRoleType().isPresent()) {
-                addRelatesPattern(casting.getRoleType().get(), casting.getRolePlayer());
+            Optional<Var.Admin> roleType = casting.getRoleType();
+            if (roleType.isPresent()) {
+                addRelatesPattern(roleType.get(), casting.getRolePlayer());
             } else {
                 addRelatesPattern(casting.getRolePlayer());
             }
@@ -195,21 +201,21 @@ public class VarTraversals {
 
     /**
      * Add a pattern checking that this variable has a resource of the given type
-     * @param type a variable representing the resource type
+     * @param typeId the resource type ID
      * @return the variable name of the resource
      */
-    private String addResourcePattern(Var.Admin type) {
+    private String addResourcePattern(String typeId) {
         shortcutTraversal.setInvalid();
 
         String resource = UUID.randomUUID().toString();
 
         addPattern(
                 new Fragment(t ->
-                        t.outE(SHORTCUT.getLabel()).has(TO_TYPE.name(), type.getId().get()).inV(),
+                        t.outE(SHORTCUT.getLabel()).has(TO_TYPE.name(), typeId).inV(),
                         EDGE_UNBOUNDED, getName(), resource
                 ),
                 new Fragment(t ->
-                        t.inE(SHORTCUT.getLabel()).has(TO_TYPE.name(), type.getId().get()).outV(),
+                        t.inE(SHORTCUT.getLabel()).has(TO_TYPE.name(), typeId).outV(),
                         EDGE_UNBOUNDED, resource, getName()
                 )
         );
@@ -219,11 +225,11 @@ public class VarTraversals {
 
     /**
      * Add a pattern checking this variable has a resource of the given type matching the given predicate
-     * @param type a variable representing the resource type
+     * @param typeId the resource type ID
      * @param predicate a predicate to match on a resource's VALUE
      */
-    private void addResourcePattern(Var.Admin type, ValuePredicate.Admin predicate) {
-        String resource = addResourcePattern(type);
+    private void addResourcePattern(String typeId, ValuePredicate.Admin predicate) {
+        String resource = addResourcePattern(typeId);
         DataType.ConceptProperty value = getValuePropertyForPredicate(predicate);
         addPropertyPattern(resource, value.name(), predicate, getValuePriority(predicate));
     }
@@ -319,9 +325,11 @@ public class VarTraversals {
 
         VarTraversals roletypePattern = new VarTraversals(roleType);
 
-        if (roleType.getIdOnly().isPresent()) {
+        Optional<String> roleTypeId = roleType.getIdOnly();
+
+        if (roleTypeId.isPresent()) {
             roletypePattern.getTraversals().forEach(traversals::add);
-            shortcutTraversal.addRel(roleType.getIdOnly().get(), rolePlayer.getName());
+            shortcutTraversal.addRel(roleTypeId.get(), rolePlayer.getName());
         } else {
             innerVarTraversals.add(roletypePattern);
             shortcutTraversal.setInvalid();
@@ -360,12 +368,16 @@ public class VarTraversals {
      * @param type the resource type variable
      */
     private void addHasResourcePattern(Var.Admin type) {
-        Var owner = QueryBuilder.id(GraqlType.HAS_RESOURCE_OWNER.getId(type.getId().get()))
+        String typeId = type.getId().orElseThrow(
+                () -> new IllegalStateException(ErrorMessage.NO_ID_SPECIFIED_FOR_HAS_RESOURCE.getMessage())
+        );
+
+        Var owner = QueryBuilder.id(GraqlType.HAS_RESOURCE_OWNER.getId(typeId))
                 .isa(DataType.ConceptMeta.ROLE_TYPE.getId());
-        Var value = QueryBuilder.id(GraqlType.HAS_RESOURCE_VALUE.getId(type.getId().get()))
+        Var value = QueryBuilder.id(GraqlType.HAS_RESOURCE_VALUE.getId(typeId))
                 .isa(DataType.ConceptMeta.ROLE_TYPE.getId());
 
-        Var relationType = QueryBuilder.id(GraqlType.HAS_RESOURCE.getId(type.getId().get()))
+        Var relationType = QueryBuilder.id(GraqlType.HAS_RESOURCE.getId(typeId))
                 .isa(DataType.ConceptMeta.RELATION_TYPE.getId())
                 .hasRole(owner).hasRole(value);
 

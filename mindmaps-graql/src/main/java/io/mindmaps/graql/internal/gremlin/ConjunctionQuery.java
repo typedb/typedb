@@ -171,7 +171,10 @@ class ConjunctionQuery {
 
         while (!remainingTraversals.isEmpty()) {
             // Traversal is started from the highest priority fragment
-            Fragment highestFragment = remainingFragments.stream().min(naturalOrder()).get();
+            Optional<Fragment> optionalFragment = remainingFragments.stream().min(naturalOrder());
+            Fragment highestFragment = optionalFragment.orElseThrow(
+                    () -> new RuntimeException(ErrorMessage.FAILED_TO_BUILD_TRAVERSAL.getMessage())
+            );
             String start = highestFragment.getStart();
 
             // A queue of reachable fragments, with the highest priority fragments always on top

@@ -117,7 +117,10 @@ public class MatchQueryBase implements MatchQuery.Admin {
         Stream<Set<String>> vars = conjunctions.stream().map(this::getDefinedNamesFromConjunction);
 
         // Get the intersection of all conjunctions to find any variables shared between them
-        return vars.reduce(Sets::intersection).get();
+        // This will fail if there are no conjunctions (so the query is empty)
+        return vars.reduce(Sets::intersection).orElseThrow(
+                () -> new RuntimeException(ErrorMessage.MATCH_NO_PATTERNS.getMessage())
+        );
     }
 
     @Override

@@ -97,7 +97,7 @@ class MatchOrder {
     /**
      * A comparator that parses (optionally present) resources into the correct datatype for comparison
      */
-    static class ResourceComparator implements Comparator<Optional<Comparable>> {
+    private static class ResourceComparator implements Comparator<Optional<Comparable>> {
 
         @Override
         public int compare(Optional<Comparable> value1, Optional<Comparable> value2) {
