@@ -50,7 +50,7 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.*;
 
 public class MindmapsTitanGraphFactoryTest {
-    private final String TEST_CONFIG = "../conf/mindmaps.properties";
+    private final String TEST_CONFIG = "../conf/mindmaps-test.properties";
     private final String TEST_NAME = "mindmapstest";
     private final String TEST_URI = "localhost";
 

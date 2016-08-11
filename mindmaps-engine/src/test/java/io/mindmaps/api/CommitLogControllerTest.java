@@ -22,6 +22,8 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.http.ContentType;
+import com.jayway.restassured.response.Response;
+import io.mindmaps.Util;
 import io.mindmaps.constants.RESTUtil;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.MindmapsValidationException;
@@ -58,7 +60,7 @@ public class CommitLogControllerTest {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        RestAssured.baseURI = prop.getProperty("server.url");
+        Util.setRestAssuredBaseURI(prop);
         cache = Cache.getInstance();
 
         String commitLog = "{\n" +

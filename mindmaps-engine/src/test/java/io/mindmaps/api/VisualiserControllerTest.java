@@ -22,6 +22,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
+import io.mindmaps.Util;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.EntityType;
@@ -53,18 +54,18 @@ public class VisualiserControllerTest {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        graphName=prop.getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+        graphName="special-test-graph";
         MindmapsGraph graph = GraphFactory.getInstance().getGraph(graphName);
         MindmapsTransaction transaction = graph.newTransaction();
         EntityType man = transaction.putEntityType("Man");
         transaction.putEntity("actor-123", man).setValue("Al Pacino");
         transaction.commit();
-        RestAssured.baseURI = prop.getProperty("server.url");
+        Util.setRestAssuredBaseURI(prop);
     }
 
     @Test
      public void notExistingID() {
-        Response response = get("/concept/6573gehjio").then().statusCode(404).extract().response().andReturn();
+        Response response = get("/concept/6573gehjio?graphName="+graphName).then().statusCode(404).extract().response().andReturn();
         String  message = response.getBody().asString();
         assertTrue(message.equals("ID [6573gehjio] not found in the graph."));
     }
