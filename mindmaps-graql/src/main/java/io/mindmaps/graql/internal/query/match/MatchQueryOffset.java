@@ -27,17 +27,17 @@ import java.util.stream.Stream;
 /**
  * "Offset" modifier for match query that offsets (skips) some number of results.
  */
-public class MatchQueryOffset extends MatchQueryDefault {
+public class MatchQueryOffset<T> extends MatchQueryDefault<T, T> {
 
     private final long offset;
 
-    public MatchQueryOffset(MatchQueryMap.Admin inner, long offset) {
+    public MatchQueryOffset(Admin<T> inner, long offset) {
         super(inner);
         this.offset = offset;
     }
 
     @Override
-    protected Stream<Map<String, Concept>> transformStream(Stream<Map<String, Concept>> stream) {
+    protected Stream<T> transformStream(Stream<T> stream) {
         return stream.skip(offset);
     }
 

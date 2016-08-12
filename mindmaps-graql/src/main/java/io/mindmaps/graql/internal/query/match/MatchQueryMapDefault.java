@@ -12,37 +12,33 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU General Public License
+ * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
 package io.mindmaps.graql.internal.query.match;
 
 import io.mindmaps.core.model.Concept;
+import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.MatchQueryMap;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
-/**
- * "Limit" modifier for match query that limits the results of a query.
- */
-public class MatchQueryLimit<T> extends MatchQueryDefault<T, T> {
+public abstract class MatchQueryMapDefault
+        extends MatchQueryDefault<Map<String, Concept>, Map<String, Concept>> implements MatchQueryMap.Admin {
 
-    private final long limit;
+    protected final MatchQueryMap.Admin inner;
 
-    public MatchQueryLimit(Admin<T> inner, long limit) {
+    MatchQueryMapDefault(MatchQueryMap.Admin inner) {
         super(inner);
-        this.limit = limit;
+        this.inner = inner;
     }
 
     @Override
-    protected Stream<T> transformStream(Stream<T> stream) {
-        return stream.limit(limit);
-    }
-
-    @Override
-    public String toString() {
-        return inner.toString() + " limit " + limit;
+    public Set<String> getSelectedNames() {
+        return inner.getSelectedNames();
     }
 }

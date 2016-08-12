@@ -19,56 +19,60 @@
 
 package io.mindmaps.graql.internal.query.match;
 
-import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Type;
+import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.MatchQueryMap;
+import io.mindmaps.graql.Pattern;
 
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-/**
- * Modifier that specifies the transaction to execute the match query with.
- */
-public class MatchQueryTransaction<T> extends MatchQueryDefault<T, T> {
+public class MatchQueryWrapper implements MatchQueryMap.Admin {
 
-    private final MindmapsTransaction transaction;
+    private final MatchQuery.Admin<Map<String, Concept>> query;
+    private final MatchQueryMap.Admin queryMap;
 
-    public MatchQueryTransaction(MindmapsTransaction transaction, Admin<T> inner) {
-        super(inner);
-        this.transaction = transaction;
+    public MatchQueryWrapper(MatchQuery.Admin<Map<String, Concept>> query, MatchQueryMap.Admin queryMap) {
+        this.query = query;
+        this.queryMap = queryMap;
     }
 
     @Override
-    public Stream<T> stream(
-            Optional<MindmapsTransaction> transaction, Optional<MatchOrder> order
-    ) {
-        if (transaction.isPresent()) {
-            throw new IllegalStateException(ErrorMessage.MULTIPLE_TRANSACTION.getMessage());
-        }
-
-        return inner.stream(Optional.of(this.transaction), order);
+    public Stream<Map<String, Concept>> stream(Optional<MindmapsTransaction> transaction, Optional<MatchOrder> order) {
+        return query.stream(transaction, order);
     }
 
     @Override
-    public Optional<MindmapsTransaction> getTransaction() {
-        return Optional.of(transaction);
+    public Set<Type> getTypes(MindmapsTransaction transaction) {
+        return query.getTypes(transaction);
     }
 
     @Override
     public Set<Type> getTypes() {
-        return inner.getTypes(transaction);
+        return query.getTypes();
     }
 
     @Override
-    protected Stream<T> transformStream(Stream<T> stream) {
-        return stream;
+    public Pattern.Conjunction<Pattern.Admin> getPattern() {
+        return queryMap.getPattern();
+    }
+
+    @Override
+    public Optional<MindmapsTransaction> getTransaction() {
+        return query.getTransaction();
+    }
+
+    @Override
+    public Set<String> getSelectedNames() {
+        return queryMap.getSelectedNames();
     }
 
     @Override
     public String toString() {
-        return inner.toString();
+        return query.toString();
     }
 }

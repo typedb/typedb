@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.model.Concept;
+import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.MatchQueryMap;
 
 import java.util.Map;
@@ -32,7 +33,7 @@ import java.util.stream.Stream;
 /**
  * "Select" modifier for a match query that selects particular variables from the result.
  */
-public class MatchQuerySelect extends MatchQueryDefault {
+public class MatchQuerySelect extends MatchQueryMapDefault {
 
     private final ImmutableSet<String> names;
 

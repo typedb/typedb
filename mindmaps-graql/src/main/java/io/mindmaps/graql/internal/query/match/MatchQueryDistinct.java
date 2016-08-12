@@ -27,14 +27,14 @@ import java.util.stream.Stream;
 /**
  * "Distinct" modifier for a match query that eliminates duplicate results.
  */
-public class MatchQueryDistinct extends MatchQueryDefault {
+public class MatchQueryDistinct<T> extends MatchQueryDefault<T, T> {
 
-    public MatchQueryDistinct(MatchQueryMap.Admin inner) {
+    public MatchQueryDistinct(Admin<T> inner) {
         super(inner);
     }
 
     @Override
-    public Stream<Map<String, Concept>> transformStream(Stream<Map<String, Concept>> stream) {
+    public Stream<T> transformStream(Stream<T> stream) {
         return stream.distinct();
     }
 

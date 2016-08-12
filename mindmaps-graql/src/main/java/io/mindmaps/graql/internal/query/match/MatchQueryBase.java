@@ -73,11 +73,6 @@ public class MatchQueryBase implements MatchQueryMap.Admin {
     }
 
     @Override
-    public Admin admin() {
-        return this;
-    }
-
-    @Override
     public Set<Type> getTypes(MindmapsTransaction transaction) {
         Query query = getQuery(transaction, Optional.empty());
         return query.getConcepts().map(transaction::getType).filter(t -> t != null).collect(toSet());

@@ -21,6 +21,7 @@ package io.mindmaps.graql.internal.query.match;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Type;
+import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.MatchQueryMap;
 import io.mindmaps.graql.Pattern;
 
@@ -36,32 +37,22 @@ import java.util.stream.Stream;
  *
  * Query modifiers should extend this class and implement a stream() method that modifies the inner query.
  */
-public abstract class MatchQueryDefault implements MatchQueryMap.Admin {
+public abstract class MatchQueryDefault<S, T> implements MatchQuery.Admin<T> {
 
-    final MatchQueryMap.Admin inner;
+    final MatchQuery.Admin<S> inner;
 
-    MatchQueryDefault(MatchQueryMap.Admin inner) {
+    MatchQueryDefault(MatchQuery.Admin<S> inner) {
         this.inner = inner;
     }
 
     @Override
-    public final Admin admin() {
-        return this;
-    }
-
-    @Override
-    public Stream<Map<String, Concept>> stream(Optional<MindmapsTransaction> transaction, Optional<MatchOrder> order) {
+    public Stream<T> stream(Optional<MindmapsTransaction> transaction, Optional<MatchOrder> order) {
         return transformStream(inner.stream(transaction, order));
     }
 
     @Override
     public final Set<Type> getTypes(MindmapsTransaction transaction) {
         return inner.getTypes(transaction);
-    }
-
-    @Override
-    public Set<String> getSelectedNames() {
-        return inner.getSelectedNames();
     }
 
     @Override
@@ -84,5 +75,5 @@ public abstract class MatchQueryDefault implements MatchQueryMap.Admin {
      * @param stream the stream to transform
      * @return the transformed stream
      */
-    protected abstract Stream<Map<String, Concept>> transformStream(Stream<Map<String, Concept>> stream);
+    protected abstract Stream<T> transformStream(Stream<S> stream);
 }

@@ -30,6 +30,7 @@ import io.mindmaps.graql.internal.query.InsertQueryImpl;
 import io.mindmaps.graql.internal.query.match.*;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -42,15 +43,7 @@ import static java.util.stream.Collectors.toList;
  * Each matching subgraph will produce a map, where keys are variable names and values are concepts in the graph.
  */
 @SuppressWarnings("UnusedReturnValue")
-public interface MatchQueryMap extends Streamable<Map<String, Concept>> {
-
-    /**
-     * @return a stream of result maps, where keys are variable names and values are concepts
-     */
-    default Stream<Map<String, Concept>> stream() {
-        return admin().stream(Optional.empty(), Optional.empty());
-    }
-
+public interface MatchQueryMap extends MatchQuery<Map<String, Concept>> {
     /**
      * @param names an array of variable names to select
      * @return a new MatchQuery that selects the given variables
@@ -69,10 +62,10 @@ public interface MatchQueryMap extends Streamable<Map<String, Concept>> {
 
     /**
      * @param name a variable name to get
-     * @return a streamable/iterable of concepts
+     * @return a query of concepts
      */
-    default Streamable<Concept> get(String name) {
-        return () -> stream().map(result -> result.get(name));
+    default MatchQuery<Concept> get(String name) {
+        return new MatchQueryApplier<>(admin(), result -> result.get(name));
     }
 
     /**
@@ -125,38 +118,6 @@ public interface MatchQueryMap extends Streamable<Map<String, Concept>> {
     }
 
     /**
-     * @param transaction the transaction to execute the query on
-     * @return a new MatchQuery with the transaction set
-     */
-    default MatchQueryMap withTransaction(MindmapsTransaction transaction) {
-        return new MatchQueryTransaction(transaction, admin());
-    }
-
-    /**
-     * @param limit the maximum number of results the query should return
-     * @return a new MatchQuery with the limit set
-     */
-    default MatchQueryMap limit(long limit) {
-        return new MatchQueryLimit(admin(), limit);
-    }
-
-    /**
-     * @param offset the number of results to skip
-     * @return a new MatchQuery with the offset set
-     */
-    default MatchQueryMap offset(long offset) {
-        return new MatchQueryOffset(admin(), offset);
-    }
-
-    /**
-     * remove any duplicate results from the query
-     * @return a new MatchQuery without duplicate results
-     */
-    default MatchQueryMap distinct() {
-        return new MatchQueryDistinct(admin());
-    }
-
-    /**
      * Order the results by degree in ascending order
      * @param varName the variable name to order the results by
      * @return a new MatchQuery with the given ordering
@@ -172,7 +133,7 @@ public interface MatchQueryMap extends Streamable<Map<String, Concept>> {
      * @return a new MatchQuery with the given ordering
      */
     default MatchQueryMap orderBy(String varName, boolean asc) {
-        return new MatchQueryOrder(new MatchOrder(varName, Optional.empty(), asc), admin());
+        return new MatchQueryOrder(admin(), new MatchOrder(varName, Optional.empty(), asc));
     }
 
     /**
@@ -193,7 +154,28 @@ public interface MatchQueryMap extends Streamable<Map<String, Concept>> {
      * @return a new MatchQuery with the given ordering
      */
     default MatchQueryMap orderBy(String varName, String resourceType, boolean asc) {
-        return new MatchQueryOrder(new MatchOrder(varName, Optional.of(resourceType), asc), admin());
+        return new MatchQueryOrder(admin(), new MatchOrder(varName, Optional.of(resourceType), asc));
+    }
+
+
+    @Override
+    default MatchQueryMap withTransaction(MindmapsTransaction transaction) {
+        return new MatchQueryWrapper(MatchQuery.super.withTransaction(transaction).admin(), admin());
+    }
+
+    @Override
+    default MatchQueryMap limit(long limit) {
+        return new MatchQueryWrapper(MatchQuery.super.limit(limit).admin(), admin());
+    }
+
+    @Override
+    default MatchQueryMap offset(long offset) {
+        return new MatchQueryWrapper(MatchQuery.super.offset(offset).admin(), admin());
+    }
+
+    @Override
+    default MatchQueryMap distinct() {
+        return new MatchQueryWrapper(MatchQuery.super.distinct().admin(), admin());
     }
 
     /**
@@ -204,40 +186,16 @@ public interface MatchQueryMap extends Streamable<Map<String, Concept>> {
     /**
      * Admin class for inspecting and manipulating a MatchQuery
      */
-    interface Admin extends MatchQueryMap {
+    interface Admin extends MatchQueryMap, MatchQuery.Admin<Map<String, Concept>> {
 
-        /**
-         * Execute the query using the given transaction.
-         * @param transaction the transaction to use to execute the query
-         * @param order how to order the resulting stream
-         * @return a stream of results
-         */
-        Stream<Map<String, Concept>> stream(Optional<MindmapsTransaction> transaction, Optional<MatchOrder> order);
-
-        /**
-         * @param transaction the transaction to use to get types from the graph
-         * @return all concept types referred to explicitly in the query
-         */
-        Set<Type> getTypes(MindmapsTransaction transaction);
-
-        /**
-         * @return all concept types referred to explicitly in the query
-         */
-        Set<Type> getTypes();
+        @Override
+        default MatchQueryMap.Admin admin() {
+            return this;
+        }
 
         /**
          * @return all selected variable names in the query
          */
         Set<String> getSelectedNames();
-
-        /**
-         * @return the pattern to match in the graph
-         */
-        Pattern.Conjunction<Pattern.Admin> getPattern();
-
-        /**
-         * @return the transaction the query operates on, if one was provided
-         */
-        Optional<MindmapsTransaction> getTransaction();
     }
 }
