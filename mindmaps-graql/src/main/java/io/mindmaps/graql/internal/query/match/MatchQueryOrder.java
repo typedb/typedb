@@ -12,39 +12,51 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * You should have received a copy of the GNU General Public License
+ * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
 package io.mindmaps.graql.internal.query.match;
 
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
-import io.mindmaps.graql.MatchQuery;
 
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
- * "Limit" modifier for match query that limits the results of a query.
+ * "Order" modify that orders the underlying match query
  */
-public class MatchQueryLimit extends MatchQueryDefault {
+public class MatchQueryOrder extends MatchQueryDefault {
 
-    private final long limit;
+    private final MatchOrder order;
 
-    public MatchQueryLimit(MatchQuery.Admin inner, long limit) {
+    public MatchQueryOrder(MatchOrder order, Admin inner) {
         super(inner);
-        this.limit = limit;
+        this.order = order;
+    }
+
+    @Override
+    public Stream<Map<String, Concept>> stream(
+            Optional<MindmapsTransaction> transaction, Optional<MatchOrder> order
+    ) {
+        if (order.isPresent()) {
+            throw new IllegalStateException(ErrorMessage.MULTIPLE_ORDER.getMessage());
+        }
+
+        return inner.stream(transaction, Optional.of(this.order));
     }
 
     @Override
     protected Stream<Map<String, Concept>> transformStream(Stream<Map<String, Concept>> stream) {
-        return stream.limit(limit);
+        return stream;
     }
 
     @Override
     public String toString() {
-        return inner.toString() + " limit " + limit;
+        return inner.toString() + " " + order.toString();
     }
 }

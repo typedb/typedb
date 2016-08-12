@@ -27,10 +27,7 @@ import io.mindmaps.graql.internal.AdminConverter;
 import io.mindmaps.graql.internal.query.AskQueryImpl;
 import io.mindmaps.graql.internal.query.DeleteQueryImpl;
 import io.mindmaps.graql.internal.query.InsertQueryImpl;
-import io.mindmaps.graql.internal.query.match.MatchQueryDistinct;
-import io.mindmaps.graql.internal.query.match.MatchQueryLimit;
-import io.mindmaps.graql.internal.query.match.MatchQueryOffset;
-import io.mindmaps.graql.internal.query.match.MatchQuerySelect;
+import io.mindmaps.graql.internal.query.match.*;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -50,7 +47,9 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
     /**
      * @return a stream of result maps, where keys are variable names and values are concepts
      */
-    Stream<Map<String, Concept>> stream();
+    default Stream<Map<String, Concept>> stream() {
+        return admin().stream(Optional.empty(), Optional.empty());
+    }
 
     /**
      * @param names an array of variable names to select
@@ -129,7 +128,9 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
      * @param transaction the transaction to execute the query on
      * @return a new MatchQuery with the transaction set
      */
-    MatchQuery withTransaction(MindmapsTransaction transaction);
+    default MatchQuery withTransaction(MindmapsTransaction transaction) {
+        return new MatchQueryTransaction(transaction, admin());
+    }
 
     /**
      * @param limit the maximum number of results the query should return
@@ -170,7 +171,9 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
      * @param asc whether to use ascending order
      * @return a new MatchQuery with the given ordering
      */
-    MatchQuery orderBy(String varName, boolean asc);
+    default MatchQuery orderBy(String varName, boolean asc) {
+        return new MatchQueryOrder(new MatchOrder(varName, Optional.empty(), asc), admin());
+    }
 
     /**
      * Order the results by a resource in ascending order
@@ -189,7 +192,9 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
      * @param asc whether to use ascending order
      * @return a new MatchQuery with the given ordering
      */
-    MatchQuery orderBy(String varName, String resourceType, boolean asc);
+    default MatchQuery orderBy(String varName, String resourceType, boolean asc) {
+        return new MatchQueryOrder(new MatchOrder(varName, Optional.of(resourceType), asc), admin());
+    }
 
     /**
      * @return admin instance for inspecting and manipulating this query
@@ -200,6 +205,21 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
      * Admin class for inspecting and manipulating a MatchQuery
      */
     interface Admin extends MatchQuery {
+
+        /**
+         * Execute the query using the given transaction.
+         * @param transaction the transaction to use to execute the query
+         * @param order how to order the resulting stream
+         * @return a stream of results
+         */
+        Stream<Map<String, Concept>> stream(Optional<MindmapsTransaction> transaction, Optional<MatchOrder> order);
+
+        /**
+         * @param transaction the transaction to use to get types from the graph
+         * @return all concept types referred to explicitly in the query
+         */
+        Set<Type> getTypes(MindmapsTransaction transaction);
+
         /**
          * @return all concept types referred to explicitly in the query
          */

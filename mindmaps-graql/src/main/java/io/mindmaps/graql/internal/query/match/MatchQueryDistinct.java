@@ -18,10 +18,12 @@
 
 package io.mindmaps.graql.internal.query.match;
 
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.MatchQuery;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
@@ -34,17 +36,12 @@ public class MatchQueryDistinct extends MatchQueryDefault {
     }
 
     @Override
-    public Stream<Map<String, Concept>> stream() {
-        return inner.stream().distinct();
+    public Stream<Map<String, Concept>> transformStream(Stream<Map<String, Concept>> stream) {
+        return stream.distinct();
     }
 
     @Override
     public String toString() {
         return inner.toString() + " distinct";
-    }
-
-    @Override
-    protected MatchQuery setInner(MatchQuery.Admin inner) {
-        return new MatchQueryDistinct(inner);
     }
 }

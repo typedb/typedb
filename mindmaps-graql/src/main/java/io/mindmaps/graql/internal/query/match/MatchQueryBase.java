@@ -46,51 +46,30 @@ import static java.util.stream.Collectors.toSet;
 public class MatchQueryBase implements MatchQuery.Admin {
 
     private final Pattern.Conjunction<Pattern.Admin> pattern;
-    private final MindmapsTransaction transaction;
-    private final Optional<MatchOrder> order;
 
     /**
-     * @param transaction a transaction to execute the match query on
      * @param pattern a pattern to match in the graph
      */
-    private MatchQueryBase(Pattern.Conjunction<Pattern.Admin> pattern, MindmapsTransaction transaction, Optional<MatchOrder> order) {
+    public MatchQueryBase(Pattern.Conjunction<Pattern.Admin> pattern) {
         if (pattern.getPatterns().size() == 0) {
             throw new IllegalArgumentException(ErrorMessage.MATCH_NO_PATTERNS.getMessage());
         }
 
         this.pattern = pattern;
-        this.transaction = transaction;
-        this.order = order;
-
-        if (transaction != null) validate();
-    }
-
-    public MatchQueryBase(Pattern.Conjunction<Pattern.Admin> pattern, MindmapsTransaction transaction) {
-        this(pattern, transaction, Optional.empty());
     }
 
     @Override
-    public Stream<Map<String, Concept>> stream() {
-        GraphTraversal<Vertex, Map<String, Vertex>> traversal = getQuery().getTraversals();
-        applyModifiers(traversal);
-        return traversal.toStream().map(this::makeResults).sequential();
-    }
+    public Stream<Map<String, Concept>> stream(
+            Optional<MindmapsTransaction> optionalTransaction, Optional<MatchOrder> order
+    ) {
+        MindmapsTransaction transaction = optionalTransaction.orElseThrow(
+                () -> new IllegalStateException(ErrorMessage.NO_TRANSACTION.getMessage())
+        );
 
-    @Override
-    public MatchQuery withTransaction(MindmapsTransaction transaction) {
-        return new MatchQueryBase(pattern, transaction, order);
-    }
+        new MatchQueryValidator(admin()).validate(transaction);
 
-    @Override
-    public MatchQuery orderBy(String varName, boolean asc) {
-        MatchOrder order = new MatchOrder(varName, Optional.empty(), asc);
-        return new MatchQueryBase(pattern, transaction, Optional.of(order));
-    }
-
-    @Override
-    public MatchQuery orderBy(String varName, String resourceType, boolean asc) {
-        MatchOrder order = new MatchOrder(varName, Optional.of(resourceType), asc);
-        return new MatchQueryBase(pattern, transaction, Optional.of(order));
+        GraphTraversal<Vertex, Map<String, Vertex>> traversal = getQuery(transaction, order).getTraversals();
+        return traversal.toStream().map(vertices -> makeResults(transaction, vertices)).sequential();
     }
 
     @Override
@@ -99,8 +78,14 @@ public class MatchQueryBase implements MatchQuery.Admin {
     }
 
     @Override
+    public Set<Type> getTypes(MindmapsTransaction transaction) {
+        Query query = getQuery(transaction, Optional.empty());
+        return query.getConcepts().map(transaction::getType).filter(t -> t != null).collect(toSet());
+    }
+
+    @Override
     public Set<Type> getTypes() {
-        return getQuery().getConcepts().map(transaction::getType).filter(t -> t != null).collect(toSet());
+        throw new IllegalStateException(ErrorMessage.NO_TRANSACTION.getMessage());
     }
 
     @Override
@@ -130,13 +115,12 @@ public class MatchQueryBase implements MatchQuery.Admin {
 
     @Override
     public Optional<MindmapsTransaction> getTransaction() {
-        return Optional.ofNullable(transaction);
+        return Optional.empty();
     }
 
     @Override
     public String toString() {
-        String orderString = order.map(MatchOrder::toString).orElse("");
-        return String.format("match %s %s", pattern, orderString).trim();
+        return "match " + pattern;
     }
 
     /**
@@ -152,47 +136,24 @@ public class MatchQueryBase implements MatchQuery.Admin {
     }
 
     /**
+     * @param transaction the transaction to execute the query on
+     * @param order an optional ordering of the query
      * @return the query that will match the specified patterns
      */
-    private Query getQuery() {
-        return new Query(transaction, this.pattern);
+    private Query getQuery(MindmapsTransaction transaction, Optional<MatchOrder> order) {
+        return new Query(transaction, this.pattern, getSelectedNames(), order);
     }
 
     /**
-     * Apply query modifiers (limit, offset, distinct, order) to the graph traversal
-     * @param traversal the graph traversal to apply modifiers to
-     */
-    private void applyModifiers(GraphTraversal<Vertex, Map<String, Vertex>> traversal) {
-        order.ifPresent(o -> o.orderTraversal(transaction, traversal));
-
-        Set<String> namesSet = getSelectedNames();
-        String[] namesArray = namesSet.toArray(new String[namesSet.size()]);
-
-        // Must provide three arguments in order to pass an array to .select
-        // If ordering, select the variable to order by as well
-        if (order.isPresent()) {
-            traversal.select(order.get().getVar(), order.get().getVar(), namesArray);
-        } else if (namesArray.length != 0) {
-            traversal.select(namesArray[0], namesArray[0], namesArray);
-        }
-    }
-
-    /**
+     * @param transaction the transaction to get results from
      * @param vertices a map of vertices where the key is the variable name
      * @return a map of concepts where the key is the variable name
      */
-    private Map<String, Concept> makeResults(Map<String, Vertex> vertices) {
+    private Map<String, Concept> makeResults(MindmapsTransaction transaction, Map<String, Vertex> vertices) {
         return getSelectedNames().stream().collect(Collectors.toMap(
                 name -> name,
                 name -> transaction.getConcept(vertices.get(name).value(ITEM_IDENTIFIER.name()))
         ));
-    }
-
-    /**
-     * Validate the MatchQuery, assuming a transaction has been specified
-     */
-    private void validate() {
-        new MatchQueryValidator(admin()).validate(transaction);
     }
 }
 

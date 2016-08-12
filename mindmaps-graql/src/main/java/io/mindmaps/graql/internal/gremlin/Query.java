@@ -18,17 +18,22 @@
 
 package io.mindmaps.graql.internal.gremlin;
 
+import com.google.common.collect.ImmutableSet;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
+import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.Var;
+import io.mindmaps.graql.internal.query.match.MatchOrder;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -47,22 +52,27 @@ public class Query {
 
     private final MindmapsTransaction transaction;
     private final Collection<ConjunctionQuery> innerQueries;
+    private final ImmutableSet<String> names;
+    private final Optional<MatchOrder> order;
 
     /**
      * @param transaction the transaction to execute the query on
-     * @param patternConjunction a pattern to find in the graph
+     * @param pattern a pattern to find in the graph
+     * @param names the variable names to select
+     * @param order an optional ordering
      */
-    public Query(MindmapsTransaction transaction, Pattern.Conjunction<?> patternConjunction) {
-        Collection<Pattern.Conjunction<Var.Admin>> patterns =
-                patternConjunction.getDisjunctiveNormalForm().getPatterns();
+    public Query(MindmapsTransaction transaction, Pattern.Admin pattern, Set<String> names, Optional<MatchOrder> order) {
+        Collection<Pattern.Conjunction<Var.Admin>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
         if (transaction == null) {
             throw new IllegalStateException(ErrorMessage.NO_TRANSACTION.getMessage());
         }
 
         this.transaction = transaction;
+        this.names = ImmutableSet.copyOf(names);
+        this.order = order;
 
-        innerQueries = patterns.stream().map(pattern -> new ConjunctionQuery(transaction, pattern)).collect(toList());
+        innerQueries = patterns.stream().map(p -> new ConjunctionQuery(transaction, p)).collect(toList());
     }
 
     /**
@@ -74,7 +84,22 @@ public class Query {
 
         // Because 'union' accepts an array, we can't use generics...
         //noinspection unchecked
-        return ((MindmapsTransactionImpl) transaction).getTinkerPopGraph().traversal().V().limit(1).union(collect);
+        GraphTraversal<Vertex, Map<String, Vertex>> traversal =
+                ((MindmapsTransactionImpl) transaction).getTinkerPopGraph().traversal().V().limit(1).union(collect);
+
+        order.ifPresent(o -> o.orderTraversal(transaction, traversal));
+
+        String[] namesArray = names.toArray(new String[names.size()]);
+
+        // Must provide three arguments in order to pass an array to .select
+        // If ordering, select the variable to order by as well
+        if (order.isPresent()) {
+            traversal.select(order.get().getVar(), order.get().getVar(), namesArray);
+        } else if (namesArray.length != 0) {
+            traversal.select(namesArray[0], namesArray[0], namesArray);
+        }
+
+        return traversal;
     }
 
     /**

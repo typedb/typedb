@@ -21,10 +21,12 @@ package io.mindmaps.graql.internal.query.match;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.MatchQuery;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -47,8 +49,8 @@ public class MatchQuerySelect extends MatchQueryDefault {
     }
 
     @Override
-    public Stream<Map<String, Concept>> stream() {
-        return inner.stream().map(result -> Maps.filterKeys(result, names::contains));
+    protected Stream<Map<String, Concept>> transformStream(Stream<Map<String, Concept>> stream) {
+        return stream.map(result -> Maps.filterKeys(result, names::contains));
     }
 
     @Override
@@ -59,10 +61,5 @@ public class MatchQuerySelect extends MatchQueryDefault {
     @Override
     public Set<String> getSelectedNames() {
         return names;
-    }
-
-    @Override
-    protected MatchQuery setInner(MatchQuery.Admin inner) {
-        return new MatchQuerySelect(inner, names);
     }
 }

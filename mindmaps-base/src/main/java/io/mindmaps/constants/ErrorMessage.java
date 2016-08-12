@@ -89,6 +89,8 @@ public enum ErrorMessage {
     MATCH_NO_PATTERNS("no patterns have been provided in match query. at least one pattern must be provided"),
     SELECT_VAR_NOT_IN_MATCH("$%s does not appear in match query"),
     NO_ID_SPECIFIED_FOR_HAS_RESOURCE("no id was specified for a resource type in a 'has-resource' property"),
+    MULTIPLE_TRANSACTION("a transaction has been specified twice for this query"),
+    MULTIPLE_ORDER("an ordering has been specified twice for this query"),
 
     INSERT_GET_NON_EXISTENT_ID("no concept with id '%s' exists"),
     INSERT_UNDEFINED_VARIABLE("$%s doesn't exist and doesn't have an 'isa' or an 'ako'"),

@@ -36,7 +36,7 @@ import static io.mindmaps.constants.DataType.EdgeProperty.TO_TYPE;
 /**
  * A class for handling ordering match queries.
  */
-class MatchOrder {
+public class MatchOrder {
 
     private final String var;
     private final Optional<String> resourceType;
