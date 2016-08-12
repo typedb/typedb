@@ -196,8 +196,8 @@ public class MindmapsReasoner {
     private void linkConceptTypes(Rule rule)
     {
         LOG.debug("Linking rule " + rule.getId() + "...");
-        MatchQuery qLHS = qp.parseMatchQuery(rule.getLHS()).getMatchQuery();
-        MatchQuery qRHS = qp.parseMatchQuery(rule.getRHS()).getMatchQuery();
+        MatchQueryMap qLHS = qp.parseMatchQuery(rule.getLHS()).getMatchQuery();
+        MatchQueryMap qRHS = qp.parseMatchQuery(rule.getRHS()).getMatchQuery();
 
         Set<Type> hypothesisConceptTypes = qLHS.admin().getTypes();
         Set<Type> conclusionConceptTypes = qRHS.admin().getTypes();
@@ -213,7 +213,7 @@ public class MindmapsReasoner {
     private Set<Rule> getRules()
     {
         Set<Rule> rules = new HashSet<>();
-        MatchQuery sq = qp.parseMatchQuery("match $x isa inference-rule;").getMatchQuery();
+        MatchQueryMap sq = qp.parseMatchQuery("match $x isa inference-rule;").getMatchQuery();
 
         List<Map<String, Concept>> results = Lists.newArrayList(sq);
 
@@ -465,11 +465,11 @@ public class MindmapsReasoner {
                         boolean ruleApplied = topQuery != null;
                         if (topQuery == null) topQuery = query;
 
-                        MatchQuery Q = topQuery.getExpandedMatchQuery();
+                        MatchQueryMap Q = topQuery.getExpandedMatchQuery();
                         Set<Map<String, Concept>> Ans = Sets.newHashSet(Q.distinct());
 
                         Query qr = applyRuleToAtom(atom, query, r, varMap);
-                        MatchQuery Qstar = topQuery.getExpandedMatchQuery();
+                        MatchQueryMap Qstar = topQuery.getExpandedMatchQuery();
                         Set<Map<String, Concept>> AnsStar = Sets.newHashSet(Qstar.distinct());
 
 
@@ -501,7 +501,7 @@ public class MindmapsReasoner {
      * @param inputQuery the query string to be expanded
      * @return expanded query string
      */
-    public MatchQuery expandQuery(MatchQuery inputQuery)
+    public MatchQueryMap expandQuery(MatchQueryMap inputQuery)
     {
 
         Query query = new Query(inputQuery, graph);
@@ -509,7 +509,7 @@ public class MindmapsReasoner {
 
         expandQuery(query, varMap);
 
-        MatchQuery expandedQuery = query.getExpandedMatchQuery();
+        MatchQueryMap expandedQuery = query.getExpandedMatchQuery();
 
         LOG.debug("DNF size: " + expandedQuery.admin().getPattern().getDisjunctiveNormalForm().getPatterns().size());
 

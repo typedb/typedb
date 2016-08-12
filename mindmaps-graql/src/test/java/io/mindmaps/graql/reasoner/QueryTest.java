@@ -21,11 +21,8 @@ package io.mindmaps.graql.reasoner;
 import com.google.common.collect.Sets;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Rule;
-import io.mindmaps.graql.QueryParser;
-import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.Pattern;
-import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.graql.Var;
+import io.mindmaps.graql.*;
+import io.mindmaps.graql.MatchQueryMap;
 import io.mindmaps.graql.reasoner.graphs.SNBGraph;
 import io.mindmaps.graql.internal.reasoner.container.Query;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
@@ -116,7 +113,7 @@ public class QueryTest {
         Atomic recommendation = query.getAtomsWithType(graph.getType("recommendation")).iterator().next();
         query.expandAtomByQuery(recommendation, ruleLHS);
 
-        MatchQuery mq = query.getExpandedMatchQuery();
+        MatchQueryMap mq = query.getExpandedMatchQuery();
 
         Query queryCopy = new Query(query);
         assertQueriesEqual( queryCopy.getExpandedMatchQuery(), query.getExpandedMatchQuery());
@@ -144,7 +141,7 @@ public class QueryTest {
         Atomic recommendation = query.getAtomsWithType(graph.getType("recommendation")).iterator().next();
         query.expandAtomByQuery(recommendation, ruleLHS);
 
-        MatchQuery mq = query.getExpandedMatchQuery();
+        MatchQueryMap mq = query.getExpandedMatchQuery();
 
         Pattern.Disjunction<Pattern.Conjunction<Var.Admin>> disjunction = mq.admin().getPattern().getDisjunctiveNormalForm();
         System.out.println(disjunction.toString());
@@ -162,7 +159,7 @@ public class QueryTest {
     {
         String queryString = "match $x isa person;{$y isa product} or {$y isa tag};($x, $y) isa recommendation";
 
-        MatchQuery sq = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQueryMap sq = qp.parseMatchQuery(queryString).getMatchQuery();
         System.out.println(sq.toString());
 
         Query query = new Query(queryString, graph);
@@ -178,7 +175,7 @@ public class QueryTest {
     {
         String queryString = "match $x isa person;{$y isa product} or {$y isa tag};($x, $y) isa recommendation";
 
-        MatchQuery sq = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQueryMap sq = qp.parseMatchQuery(queryString).getMatchQuery();
         System.out.println(sq.toString());
 
         Query query = new Query(queryString, graph);
@@ -204,7 +201,7 @@ public class QueryTest {
 
     }
 
-    private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
+    private void assertQueriesEqual(MatchQueryMap q1, MatchQueryMap q2) {
         assertEquals(Sets.newHashSet(q1), Sets.newHashSet(q2));
     }
 }

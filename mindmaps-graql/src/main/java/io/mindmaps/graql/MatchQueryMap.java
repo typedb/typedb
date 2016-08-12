@@ -42,7 +42,7 @@ import static java.util.stream.Collectors.toList;
  * Each matching subgraph will produce a map, where keys are variable names and values are concepts in the graph.
  */
 @SuppressWarnings("UnusedReturnValue")
-public interface MatchQuery extends Streamable<Map<String, Concept>> {
+public interface MatchQueryMap extends Streamable<Map<String, Concept>> {
 
     /**
      * @return a stream of result maps, where keys are variable names and values are concepts
@@ -55,7 +55,7 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
      * @param names an array of variable names to select
      * @return a new MatchQuery that selects the given variables
      */
-    default MatchQuery select(String... names) {
+    default MatchQueryMap select(String... names) {
         return select(Sets.newHashSet(names));
     }
 
@@ -63,7 +63,7 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
      * @param names a set of variable names to select
      * @return a new MatchQuery that selects the given variables
      */
-    default MatchQuery select(Set<String> names) {
+    default MatchQueryMap select(Set<String> names) {
         return new MatchQuerySelect(admin(), ImmutableSet.copyOf(names));
     }
 
@@ -128,7 +128,7 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
      * @param transaction the transaction to execute the query on
      * @return a new MatchQuery with the transaction set
      */
-    default MatchQuery withTransaction(MindmapsTransaction transaction) {
+    default MatchQueryMap withTransaction(MindmapsTransaction transaction) {
         return new MatchQueryTransaction(transaction, admin());
     }
 
@@ -136,7 +136,7 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
      * @param limit the maximum number of results the query should return
      * @return a new MatchQuery with the limit set
      */
-    default MatchQuery limit(long limit) {
+    default MatchQueryMap limit(long limit) {
         return new MatchQueryLimit(admin(), limit);
     }
 
@@ -144,7 +144,7 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
      * @param offset the number of results to skip
      * @return a new MatchQuery with the offset set
      */
-    default MatchQuery offset(long offset) {
+    default MatchQueryMap offset(long offset) {
         return new MatchQueryOffset(admin(), offset);
     }
 
@@ -152,7 +152,7 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
      * remove any duplicate results from the query
      * @return a new MatchQuery without duplicate results
      */
-    default MatchQuery distinct() {
+    default MatchQueryMap distinct() {
         return new MatchQueryDistinct(admin());
     }
 
@@ -161,7 +161,7 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
      * @param varName the variable name to order the results by
      * @return a new MatchQuery with the given ordering
      */
-    default MatchQuery orderBy(String varName) {
+    default MatchQueryMap orderBy(String varName) {
         return orderBy(varName, true);
     }
 
@@ -171,7 +171,7 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
      * @param asc whether to use ascending order
      * @return a new MatchQuery with the given ordering
      */
-    default MatchQuery orderBy(String varName, boolean asc) {
+    default MatchQueryMap orderBy(String varName, boolean asc) {
         return new MatchQueryOrder(new MatchOrder(varName, Optional.empty(), asc), admin());
     }
 
@@ -181,7 +181,7 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
      * @param resourceType the resource type attached to the variable to use for ordering
      * @return a new MatchQuery with the given ordering
      */
-    default MatchQuery orderBy(String varName, String resourceType) {
+    default MatchQueryMap orderBy(String varName, String resourceType) {
         return orderBy(varName, resourceType, true);
     }
 
@@ -192,7 +192,7 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
      * @param asc whether to use ascending order
      * @return a new MatchQuery with the given ordering
      */
-    default MatchQuery orderBy(String varName, String resourceType, boolean asc) {
+    default MatchQueryMap orderBy(String varName, String resourceType, boolean asc) {
         return new MatchQueryOrder(new MatchOrder(varName, Optional.of(resourceType), asc), admin());
     }
 
@@ -204,7 +204,7 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
     /**
      * Admin class for inspecting and manipulating a MatchQuery
      */
-    interface Admin extends MatchQuery {
+    interface Admin extends MatchQueryMap {
 
         /**
          * Execute the query using the given transaction.

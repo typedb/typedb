@@ -22,7 +22,7 @@ import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.InsertQuery;
-import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.MatchQueryMap;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -107,7 +107,7 @@ public class ExamplesTest {
                 "insert Alexander has title 'Lord of Asia';"
         );
 
-        MatchQuery pharaoh = qp.parseMatchQuery("match $x has title contains 'Pharaoh'").getMatchQuery();
+        MatchQueryMap pharaoh = qp.parseMatchQuery("match $x has title contains 'Pharaoh'").getMatchQuery();
         assertEquals("Alexander", pharaoh.iterator().next().get("x").getId());
 
         load(

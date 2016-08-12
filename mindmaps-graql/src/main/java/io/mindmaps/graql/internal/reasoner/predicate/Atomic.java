@@ -19,7 +19,7 @@
 package io.mindmaps.graql.internal.reasoner.predicate;
 
 import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.MatchQueryMap;
 import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.internal.reasoner.container.Query;
 
@@ -68,7 +68,7 @@ public interface Atomic {
      * @return the corresponding pattern with all expansions
      * */
     Pattern.Admin getExpandedPattern();
-    MatchQuery getExpandedMatchQuery(MindmapsTransaction graph);
+    MatchQueryMap getExpandedMatchQuery(MindmapsTransaction graph);
 
     /**
      * @return the query this atom belongs to

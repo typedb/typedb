@@ -47,13 +47,13 @@ public class QueryBuilderTest {
 
     @Test
     public void testBuildQueryTransactionFirst() {
-        MatchQuery query = QueryBuilder.build(transaction).match(var("x").isa("movie"));
+        MatchQueryMap query = QueryBuilder.build(transaction).match(var("x").isa("movie"));
         QueryUtil.assertResultsMatch(query, "x", "movie", QueryUtil.movies);
     }
 
     @Test
     public void testBuildMatchQueryTransactionLast() {
-        MatchQuery query = QueryBuilder.build().match(var("x").isa("movie")).withTransaction(transaction);
+        MatchQueryMap query = QueryBuilder.build().match(var("x").isa("movie")).withTransaction(transaction);
         QueryUtil.assertResultsMatch(query, "x", "movie", QueryUtil.movies);
     }
 
@@ -96,7 +96,7 @@ public class QueryBuilderTest {
 
     @Test
     public void testErrorExecuteMatchQueryWithoutTransaction() {
-        MatchQuery query = QueryBuilder.build().match(var("x").isa("movie"));
+        MatchQueryMap query = QueryBuilder.build().match(var("x").isa("movie"));
         exception.expect(IllegalStateException.class);
         exception.expectMessage("transaction");
         query.iterator();
@@ -126,7 +126,7 @@ public class QueryBuilderTest {
 
     @Test
     public void testValidationWhenTransactionProvided() {
-        MatchQuery query = QueryBuilder.build().match(var("x").isa("not-a-thing"));
+        MatchQueryMap query = QueryBuilder.build().match(var("x").isa("not-a-thing"));
         exception.expect(IllegalStateException.class);
         query.withTransaction(transaction).stream();
     }

@@ -62,6 +62,6 @@ public interface DeleteQuery {
         /**
          * @return the match query this delete query is operating on
          */
-        MatchQuery getMatchQuery();
+        MatchQueryMap getMatchQuery();
     }
 }

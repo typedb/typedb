@@ -20,8 +20,8 @@ package io.mindmaps.graql.reasoner.inference;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.graql.MatchQueryMap;
 import io.mindmaps.graql.QueryParser;
-import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.MindmapsReasoner;
 import io.mindmaps.graql.reasoner.graphs.GenericGraph;
 import org.junit.Ignore;
@@ -32,7 +32,7 @@ import static org.junit.Assert.assertEquals;
 
 public class RecursiveInferenceTest {
 
-    private static void printMatchQuery(MatchQuery query) {
+    private static void printMatchQuery(MatchQueryMap query) {
         System.out.println(query.toString().replace(" or ", "\nor\n").replace("};", "};\n").replace("; {", ";\n{"));
     }
 
@@ -47,8 +47,8 @@ public class RecursiveInferenceTest {
         MindmapsReasoner reasoner = new MindmapsReasoner(graph);
 
         String queryString = "match ($x, $y) isa R;$x id 'i' select $y";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
-        MatchQuery expandedQuery = reasoner.expandQuery(query);
+        MatchQueryMap query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQueryMap expandedQuery = reasoner.expandQuery(query);
         printMatchQuery(expandedQuery);
 
         printMatchQueryResults(expandedQuery.distinct());
@@ -86,8 +86,8 @@ public class RecursiveInferenceTest {
         MindmapsReasoner reasoner = new MindmapsReasoner(graph);
 
         String queryString = "match (ancestor $X, descendant $Y) isa Ancestor;$X id 'aa' select $Y";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
-        MatchQuery expandedQuery = reasoner.expandQuery(query);
+        MatchQueryMap query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQueryMap expandedQuery = reasoner.expandQuery(query);
         printMatchQuery(expandedQuery);
 
         printMatchQueryResults(expandedQuery.distinct());
@@ -110,8 +110,8 @@ public class RecursiveInferenceTest {
         MindmapsReasoner reasoner = new MindmapsReasoner(graph);
 
         String queryString = "match ($X, $Y) isa Ancestor;$X id 'aa' select $Y";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
-        MatchQuery expandedQuery = reasoner.expandQuery(query);
+        MatchQueryMap query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQueryMap expandedQuery = reasoner.expandQuery(query);
         printMatchQuery(expandedQuery);
 
         printMatchQueryResults(expandedQuery.distinct());
@@ -133,8 +133,8 @@ public class RecursiveInferenceTest {
         MindmapsReasoner reasoner = new MindmapsReasoner(graph);
 
         String queryString = "match (person $X, ancestor-friend $Y) isa Ancestor-friend;$X id 'a' select $Y";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
-        MatchQuery expandedQuery = reasoner.expandQuery(query);
+        MatchQueryMap query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQueryMap expandedQuery = reasoner.expandQuery(query);
         printMatchQuery(expandedQuery);
 
         printMatchQueryResults(expandedQuery.distinct());
@@ -157,8 +157,8 @@ public class RecursiveInferenceTest {
         MindmapsReasoner reasoner = new MindmapsReasoner(graph);
 
         String queryString = "match (person $X, ancestor-friend $Y) isa Ancestor-friend;$Y id 'd' select $X";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
-        MatchQuery expandedQuery = reasoner.expandQuery(query);
+        MatchQueryMap query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQueryMap expandedQuery = reasoner.expandQuery(query);
         printMatchQuery(expandedQuery);
 
         printMatchQueryResults(expandedQuery.distinct());
@@ -180,8 +180,8 @@ public class RecursiveInferenceTest {
         MindmapsReasoner reasoner = new MindmapsReasoner(graph);
 
         String queryString = "match ($x, $y) isa SameGen; $x id 'a' select $y";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
-        MatchQuery expandedQuery = reasoner.expandQuery(query);
+        MatchQueryMap query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQueryMap expandedQuery = reasoner.expandQuery(query);
         printMatchQuery(expandedQuery);
 
         printMatchQueryResults(expandedQuery.distinct());
@@ -202,8 +202,8 @@ public class RecursiveInferenceTest {
         MindmapsReasoner reasoner = new MindmapsReasoner(graph);
 
         String queryString = "match ($x, $y) isa N-TC; $y id 'a' select $x";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
-        MatchQuery expandedQuery = reasoner.expandQuery(query);
+        MatchQueryMap query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQueryMap expandedQuery = reasoner.expandQuery(query);
         printMatchQuery(expandedQuery);
 
         printMatchQueryResults(expandedQuery.distinct());
@@ -215,7 +215,7 @@ public class RecursiveInferenceTest {
     }
 
 
-    private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
+    private void assertQueriesEqual(MatchQueryMap q1, MatchQueryMap q2) {
         assertEquals(Sets.newHashSet(q1), Sets.newHashSet(q2));
     }
 }

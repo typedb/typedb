@@ -49,6 +49,6 @@ public interface AskQuery {
         /**
          * @return the match query used to create this ask query
          */
-        MatchQuery getMatchQuery();
+        MatchQueryMap getMatchQuery();
     }
 }

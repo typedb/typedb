@@ -24,7 +24,7 @@ import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.RoleType;
 import io.mindmaps.core.model.Rule;
 import io.mindmaps.core.model.Type;
-import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.MatchQueryMap;
 import io.mindmaps.graql.internal.reasoner.container.Query;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 
@@ -32,7 +32,7 @@ import java.util.*;
 
 public class Utility {
 
-    public static void printMatchQueryResults(MatchQuery sq)
+    public static void printMatchQueryResults(MatchQueryMap sq)
     {
         List<Map<String, Concept>> results = Lists.newArrayList(sq);
 

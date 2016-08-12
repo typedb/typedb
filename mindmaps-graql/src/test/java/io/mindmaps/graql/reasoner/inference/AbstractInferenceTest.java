@@ -20,8 +20,8 @@ package io.mindmaps.graql.reasoner.inference;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.graql.MatchQueryMap;
 import io.mindmaps.graql.QueryParser;
-import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.MindmapsReasoner;
 import io.mindmaps.graql.reasoner.graphs.AbstractGraph;
 import org.junit.BeforeClass;
@@ -49,8 +49,8 @@ public class AbstractInferenceTest {
     public void testQuery()
     {
         String queryString = "match $x isa Q;";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
-        MatchQuery expQuery = reasoner.expandQuery(query);
+        MatchQueryMap query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQueryMap expQuery = reasoner.expandQuery(query);
         printMatchQueryResults(expQuery);
 
         String explicitQuery = "match " +
@@ -70,8 +70,8 @@ public class AbstractInferenceTest {
                         "$yy isa Q;\n" +
                         "$y isa P;\n" +
                         "($y, $yy) isa REL; select $yy";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
-        MatchQuery expQuery = reasoner.expandQuery(query);
+        MatchQueryMap query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQueryMap expQuery = reasoner.expandQuery(query);
         String expQueryString = expQuery.toString().replace(" or ", "\nor\n").replace("};", "};\n").replace("; {", ";\n{");
         System.out.println(expQueryString);
         printMatchQueryResults(expQuery);
@@ -87,7 +87,7 @@ public class AbstractInferenceTest {
         assertQueriesEqual(expQuery, qp.parseMatchQuery(explicitQuery).getMatchQuery());
     }
 
-    private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
+    private void assertQueriesEqual(MatchQueryMap q1, MatchQueryMap q2) {
         assertEquals(Sets.newHashSet(q1), Sets.newHashSet(q2));
     }
 

@@ -19,8 +19,8 @@
 package io.mindmaps.graql.reasoner;
 
 import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.graql.MatchQueryMap;
 import io.mindmaps.graql.QueryParser;
-import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.reasoner.graphs.SNBGraph;
 import io.mindmaps.graql.internal.reasoner.container.Query;
@@ -53,7 +53,7 @@ public class AtomicTest {
                 "($x1, $x2) isa recommendation";
 
         Query query = new Query(queryString, graph);
-        MatchQuery MQ = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQueryMap MQ = qp.parseMatchQuery(queryString).getMatchQuery();
         printMatchQueryResults(MQ);
 
     }

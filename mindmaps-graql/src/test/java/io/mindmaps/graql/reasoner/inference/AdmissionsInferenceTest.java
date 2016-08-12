@@ -21,7 +21,7 @@ package io.mindmaps.graql.reasoner.inference;
 import com.google.common.collect.Sets;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.graql.QueryParser;
-import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.MatchQueryMap;
 import io.mindmaps.graql.MindmapsReasoner;
 import io.mindmaps.graql.reasoner.graphs.AdmissionsGraph;
 import org.junit.BeforeClass;
@@ -50,8 +50,8 @@ public class AdmissionsInferenceTest {
     public void testConditionalAdmission()
     {
         String queryString = "match $x isa applicant; $x has admissionStatus 'conditional'";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
-        MatchQuery expandedQuery = reasoner.expandQuery(query);
+        MatchQueryMap query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQueryMap expandedQuery = reasoner.expandQuery(query);
         printMatchQueryResults(expandedQuery.distinct());
 
         assertQueriesEqual(expandedQuery, qp.parseMatchQuery("match $x isa applicant, value 'Bob'").getMatchQuery());
@@ -62,8 +62,8 @@ public class AdmissionsInferenceTest {
     public void testDeniedAdmission()
     {
         String queryString = "match $x isa applicant;$x has admissionStatus 'denied'";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
-        MatchQuery expandedQuery = reasoner.expandQuery(query);
+        MatchQueryMap query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQueryMap expandedQuery = reasoner.expandQuery(query);
         printMatchQueryResults(expandedQuery.distinct());
 
         assertQueriesEqual(expandedQuery, qp.parseMatchQuery("match $x isa applicant, value 'Alice'").getMatchQuery());
@@ -74,8 +74,8 @@ public class AdmissionsInferenceTest {
     public void testProvisionalAdmission()
     {
         String queryString = "match $x isa applicant;$x has admissionStatus 'provisional'";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
-        MatchQuery expandedQuery = reasoner.expandQuery(query);
+        MatchQueryMap query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQueryMap expandedQuery = reasoner.expandQuery(query);
         printMatchQueryResults(expandedQuery.distinct());
 
         assertQueriesEqual(expandedQuery, qp.parseMatchQuery("match $x isa applicant, value 'Denis'").getMatchQuery());
@@ -85,8 +85,8 @@ public class AdmissionsInferenceTest {
     public void testWaitForTranscriptAdmission()
     {
         String queryString = "match $x isa applicant;$x has admissionStatus 'wait for transcript'";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
-        MatchQuery expandedQuery = reasoner.expandQuery(query);
+        MatchQueryMap query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQueryMap expandedQuery = reasoner.expandQuery(query);
         printMatchQueryResults(expandedQuery.distinct());
 
         assertQueriesEqual(expandedQuery, qp.parseMatchQuery("match $x isa applicant, value 'Frank'").getMatchQuery());
@@ -96,15 +96,15 @@ public class AdmissionsInferenceTest {
     public void testFullStatusAdmission()
     {
         String queryString = "match $x isa applicant;$x has admissionStatus 'full'";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
-        MatchQuery expandedQuery = reasoner.expandQuery(query);
+        MatchQueryMap query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQueryMap expandedQuery = reasoner.expandQuery(query);
         printMatchQueryResults(expandedQuery.distinct());
 
         assertQueriesEqual(expandedQuery, qp.parseMatchQuery("match $x isa applicant; $x value 'Eva' or $x value 'Charlie'").getMatchQuery());
     }
 
 
-    private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
+    private void assertQueriesEqual(MatchQueryMap q1, MatchQueryMap q2) {
         assertEquals(Sets.newHashSet(q1), Sets.newHashSet(q2));
     }
 }

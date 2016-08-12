@@ -23,8 +23,8 @@ import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.core.model.Rule;
 import io.mindmaps.core.model.RuleType;
+import io.mindmaps.graql.MatchQueryMap;
 import io.mindmaps.graql.QueryParser;
-import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.MindmapsReasoner;
 import io.mindmaps.graql.reasoner.graphs.CWGraph;
 import org.junit.BeforeClass;
@@ -48,15 +48,15 @@ public class CWInferenceTest {
         qp = QueryParser.create(graph);
     }
 
-    private static void printMatchQuery(MatchQuery query) {
+    private static void printMatchQuery(MatchQueryMap query) {
         System.out.println(query.toString().replace(" or ", "\nor\n").replace("};", "};\n").replace("; {", ";\n{"));
     }
 
     @Test
     public void testWeapon() {
         String queryString = "match $x isa weapon";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
-        MatchQuery expandedQuery = reasoner.expandQuery(query);
+        MatchQueryMap query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQueryMap expandedQuery = reasoner.expandQuery(query);
         printMatchQuery(expandedQuery);
         printMatchQueryResults(expandedQuery.distinct());
 
@@ -74,8 +74,8 @@ public class CWInferenceTest {
                 "$x isa person;\n" +
                 "$z isa country;\n" +
                 "($x, $y, $z) isa transaction";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
-        MatchQuery expandedQuery = reasoner.expandQuery(query);
+        MatchQueryMap query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQueryMap expandedQuery = reasoner.expandQuery(query);
         printMatchQuery(expandedQuery);
         printMatchQueryResults(expandedQuery.distinct());
 
@@ -100,8 +100,8 @@ public class CWInferenceTest {
         String queryString = "match" +
                        "$x isa person;$z isa country;$y isa weapon;\n" +
                         "($x, $y, $z) isa transaction";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
-        MatchQuery expandedQuery = reasoner.expandQuery(query);
+        MatchQueryMap query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQueryMap expandedQuery = reasoner.expandQuery(query);
         printMatchQuery(expandedQuery);
         printMatchQueryResults(expandedQuery.distinct());
 
@@ -129,8 +129,8 @@ public class CWInferenceTest {
     public void testQuery()
     {
         String queryString = "match $x isa criminal;";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
-        MatchQuery expandedQuery = reasoner.expandQuery(query);
+        MatchQueryMap query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQueryMap expandedQuery = reasoner.expandQuery(query);
         printMatchQuery(expandedQuery);
         printMatchQueryResults(expandedQuery.distinct());
 
@@ -162,8 +162,8 @@ public class CWInferenceTest {
     public void testQueryWithOr()
     {
         String queryString = "match {$x isa criminal} or {$x has nationality 'American';$x isa person}";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
-        MatchQuery expandedQuery = reasoner.expandQuery(query);
+        MatchQueryMap query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQueryMap expandedQuery = reasoner.expandQuery(query);
 
         printMatchQueryResults(expandedQuery.distinct());
 
@@ -207,8 +207,8 @@ public class CWInferenceTest {
 
         reasoner.linkConceptTypes();
         String queryString = "match $x isa criminal;";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
-        MatchQuery expandedQuery = reasoner.expandQuery(query);
+        MatchQueryMap query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQueryMap expandedQuery = reasoner.expandQuery(query);
         printMatchQuery(expandedQuery);
 
         printMatchQueryResults(expandedQuery.distinct());
@@ -240,8 +240,8 @@ public class CWInferenceTest {
         String queryString = "match" +
                 "$y isa person;$yy isa country;$yyy isa weapon;\n" +
                 "($y, $yy, $yyy) isa transaction";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
-        MatchQuery expandedQuery = reasoner.expandQuery(query);
+        MatchQueryMap query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQueryMap expandedQuery = reasoner.expandQuery(query);
         printMatchQuery(expandedQuery);
         printMatchQueryResults(expandedQuery.distinct());
 
@@ -269,8 +269,8 @@ public class CWInferenceTest {
         String queryString = "match" +
                 "$y isa person;$z isa country;$x isa weapon;\n" +
                 "($y, $z, $x) isa transaction";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
-        MatchQuery expandedQuery = reasoner.expandQuery(query);
+        MatchQueryMap query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQueryMap expandedQuery = reasoner.expandQuery(query);
         printMatchQuery(expandedQuery);
         printMatchQueryResults(expandedQuery.distinct());
 
@@ -294,7 +294,7 @@ public class CWInferenceTest {
     }
 
 
-    private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
+    private void assertQueriesEqual(MatchQueryMap q1, MatchQueryMap q2) {
         assertEquals(Sets.newHashSet(q1), Sets.newHashSet(q2));
     }
 }

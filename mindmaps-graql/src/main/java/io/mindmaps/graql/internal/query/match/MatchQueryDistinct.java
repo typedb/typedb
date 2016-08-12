@@ -18,12 +18,10 @@
 
 package io.mindmaps.graql.internal.query.match;
 
-import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
-import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.MatchQueryMap;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
@@ -31,7 +29,7 @@ import java.util.stream.Stream;
  */
 public class MatchQueryDistinct extends MatchQueryDefault {
 
-    public MatchQueryDistinct(MatchQuery.Admin inner) {
+    public MatchQueryDistinct(MatchQueryMap.Admin inner) {
         super(inner);
     }
 

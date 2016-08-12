@@ -18,12 +18,10 @@
 
 package io.mindmaps.graql.internal.query.match;
 
-import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
-import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.MatchQueryMap;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
@@ -33,7 +31,7 @@ public class MatchQueryLimit extends MatchQueryDefault {
 
     private final long limit;
 
-    public MatchQueryLimit(MatchQuery.Admin inner, long limit) {
+    public MatchQueryLimit(MatchQueryMap.Admin inner, long limit) {
         super(inner);
         this.limit = limit;
     }
