@@ -41,7 +41,7 @@ public enum GraqlType {
 
     private final String name;
 
-    private GraqlType(String name) {
+    GraqlType(String name) {
         this.name = name;
     }
 

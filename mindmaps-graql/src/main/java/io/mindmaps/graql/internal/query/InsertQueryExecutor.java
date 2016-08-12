@@ -57,6 +57,8 @@ class InsertQueryExecutor {
         );
 
         // Group variables by id (if they have one defined)
+        // the 'filter' step guarantees the remaining have an ID
+        //noinspection OptionalGetWithoutIsPresent
         varsById = ImmutableMap.copyOf(
                 vars.stream()
                         .filter(var -> var.getId().isPresent())
@@ -80,7 +82,7 @@ class InsertQueryExecutor {
         concepts.putAll(new HashMap<>(results));
 
         // First insert each var
-        vars.stream().forEach(this::insertVar);
+        vars.forEach(this::insertVar);
 
         // Then add resources to each var, streaming out the results.
         // It is necessary to add resources last to be sure that any 'has-resource' information in the query has
@@ -102,9 +104,9 @@ class InsertQueryExecutor {
         var.getLhs().ifPresent(lhs -> concept.asRule().setLHS(lhs));
         var.getRhs().ifPresent(rhs -> concept.asRule().setRHS(rhs));
 
-        var.getHasRoles().stream().forEach(role -> concept.asRelationType().hasRole(getConcept(role).asRoleType()));
-        var.getPlaysRoles().stream().forEach(role -> concept.asType().playsRole(getConcept(role).asRoleType()));
-        var.getScopes().stream().forEach(scope -> concept.asRelation().scope(getConcept(scope).asInstance()));
+        var.getHasRoles().forEach(role -> concept.asRelationType().hasRole(getConcept(role).asRoleType()));
+        var.getPlaysRoles().forEach(role -> concept.asType().playsRole(getConcept(role).asRoleType()));
+        var.getScopes().forEach(scope -> concept.asRelation().scope(getConcept(scope).asInstance()));
 
         var.getHasResourceTypes().forEach(resourceType -> addResourceType(var, resourceType));
 
@@ -299,7 +301,11 @@ class InsertQueryExecutor {
     private void addCasting(Var.Admin var, Var.Casting casting) {
         Relation relation = getConcept(var).asRelation();
 
-        RoleType roleType = getConcept(casting.getRoleType().get()).asRoleType();
+        Var.Admin roleVar = casting.getRoleType().orElseThrow(
+                () -> new IllegalStateException(ErrorMessage.INSERT_RELATION_WITHOUT_ROLE_TYPE.getMessage())
+        );
+
+        RoleType roleType = getConcept(roleVar).asRoleType();
         Instance roleplayer = getConcept(casting.getRolePlayer()).asInstance();
         relation.putRolePlayer(roleType, roleplayer);
     }

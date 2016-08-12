@@ -115,6 +115,8 @@ public class VarImpl implements Var.Admin {
             playsRole.addAll(var.getPlaysRoles());
             hasScope.addAll(var.getScopes());
 
+            // Currently it is guaranteed that resource types are specified with an ID
+            //noinspection OptionalGetWithoutIsPresent
             var.getResourcePredicates().forEach(
                     (type, values) -> values.forEach(value -> has(type.getId().get(), value))
             );
@@ -328,6 +330,8 @@ public class VarImpl implements Var.Admin {
 
     @Override
     public Set<String> getResourceTypes() {
+        // Currently it is guaranteed that resource types are specified with an ID
+        //noinspection OptionalGetWithoutIsPresent
         return resources.keySet().stream().map(var -> var.getId().get()).collect(toSet());
     }
 
@@ -476,6 +480,8 @@ public class VarImpl implements Var.Admin {
 
         values.forEach(v -> properties.add("value " + v));
 
+        // Currently it is guaranteed that resource types are specified with an ID
+        //noinspection OptionalGetWithoutIsPresent
         resources.forEach(
                 (type, predicates) -> predicates.forEach(p -> properties.add("has " + type.getId().get() + " " + p))
         );

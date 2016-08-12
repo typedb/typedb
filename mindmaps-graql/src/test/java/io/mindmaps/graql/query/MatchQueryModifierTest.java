@@ -38,8 +38,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.mindmaps.constants.DataType.ConceptPropertyUnique.ITEM_IDENTIFIER;
-import static io.mindmaps.graql.QueryBuilder.or;
-import static io.mindmaps.graql.QueryBuilder.var;
 import static org.junit.Assert.*;
 
 public class MatchQueryModifierTest {

@@ -35,9 +35,9 @@ import java.util.Set;
  */
 public abstract class MatchQueryDefault implements MatchQuery.Admin {
 
-    protected final MatchQuery.Admin inner;
+    final MatchQuery.Admin inner;
 
-    protected MatchQueryDefault(MatchQuery.Admin inner) {
+    MatchQueryDefault(MatchQuery.Admin inner) {
         this.inner = inner;
     }
 

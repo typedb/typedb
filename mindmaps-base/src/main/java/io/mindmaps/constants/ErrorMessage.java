@@ -88,6 +88,7 @@ public enum ErrorMessage {
     SELECT_NONE_SELECTED("no variables have been selected. at least one variable must be selected"),
     MATCH_NO_PATTERNS("no patterns have been provided in match query. at least one pattern must be provided"),
     SELECT_VAR_NOT_IN_MATCH("$%s does not appear in match query"),
+    NO_ID_SPECIFIED_FOR_HAS_RESOURCE("no id was specified for a resource type in a 'has-resource' property"),
 
     INSERT_GET_NON_EXISTENT_ID("no concept with id '%s' exists"),
     INSERT_UNDEFINED_VARIABLE("$%s doesn't exist and doesn't have an 'isa' or an 'ako'"),
@@ -101,8 +102,12 @@ public enum ErrorMessage {
     INSERT_METATYPE("%s cannot be a subtype of meta-type %s"),
     INSERT_RECURSIVE("%s should not refer to itself"),
     INSERT_TYPE_WITHOUT_ID("attempted to insert a type without an id"),
+    INSERT_RELATION_WITHOUT_ROLE_TYPE("attempted to insert a relation without all role types specified"),
 
     DELETE_VALUE("deleting values is not supported"),
+    DELETE_RESOURCE_TYPE_NO_ID("resource type to delete from concept %s has no id specified"),
+
+    FAILED_TO_BUILD_TRAVERSAL("failed to build a traversal from the graql query"),
 
     //--------------------------------------------- Engine Errors -----------------------------------------------
     NO_CONFIG_FILE("Cannot find config file [%s]"),

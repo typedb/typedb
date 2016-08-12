@@ -110,7 +110,7 @@ public class QueryParserFragmentsTest {
 
     class InfiniteStream extends InputStream {
 
-        String string;
+        final String string;
         InputStream stream;
 
         public InfiniteStream(String string) {

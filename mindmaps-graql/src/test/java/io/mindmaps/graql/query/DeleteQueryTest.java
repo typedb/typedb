@@ -30,14 +30,12 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static io.mindmaps.constants.DataType.ConceptMeta.ENTITY_TYPE;
-import static io.mindmaps.graql.QueryBuilder.var;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.*;
 
 public class DeleteQueryTest {
 
-    private MindmapsTransaction transaction;
     private QueryBuilder qb;
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -46,7 +44,7 @@ public class DeleteQueryTest {
     public void setUp() {
         MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
-        transaction = mindmapsGraph.newTransaction();
+        MindmapsTransaction transaction = mindmapsGraph.newTransaction();
         qb = QueryBuilder.build(transaction);
     }
 

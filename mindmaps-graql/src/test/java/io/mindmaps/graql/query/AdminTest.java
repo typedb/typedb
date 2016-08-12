@@ -29,6 +29,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -115,7 +116,7 @@ public class AdminTest {
     @Test
     public void testInsertQueryWithMatchQuery() {
         InsertQuery query = qb.match(var("x").isa("movie")).insert(var().id("123").isa("movie"));
-        assertEquals("match $x isa movie", query.admin().getMatchQuery().get().toString());
+        assertEquals(Optional.of("match $x isa movie"), query.admin().getMatchQuery().map(Object::toString));
     }
 
     @Test

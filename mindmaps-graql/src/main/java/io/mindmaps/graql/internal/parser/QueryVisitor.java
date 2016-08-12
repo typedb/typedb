@@ -39,7 +39,7 @@ public class QueryVisitor extends GraqlBaseVisitor {
 
     private final QueryBuilder queryBuilder;
     private final Stack<Var> patterns = new Stack<>();
-    private Map<String, List<Getter>> getters = new HashMap<>();
+    private final Map<String, List<Getter>> getters = new HashMap<>();
 
     @Override
     public Object visitQueryEOF(GraqlParser.QueryEOFContext ctx) {
@@ -471,6 +471,8 @@ public class QueryVisitor extends GraqlBaseVisitor {
     }
 
     private UnaryOperator<MatchQuery> visitModifier(GraqlParser.ModifierContext ctx) {
+        // All modifiers return UnaryOperator<MatchQuery>
+        //noinspection unchecked
         return (UnaryOperator<MatchQuery>) visit(ctx);
     }
 

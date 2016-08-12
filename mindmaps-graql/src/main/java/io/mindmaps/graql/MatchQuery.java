@@ -105,7 +105,7 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
      * @return a delete query that will delete the given variable names for each result of this match query
      */
     default DeleteQuery delete(String... names) {
-        List<Var> deleters = Arrays.asList(names).stream().map(QueryBuilder::var).collect(toList());
+        List<Var> deleters = Arrays.stream(names).map(QueryBuilder::var).collect(toList());
         return delete(deleters);
     }
 
