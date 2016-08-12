@@ -19,12 +19,15 @@
 package io.mindmaps.graql.internal.query.match;
 
 import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.Pattern;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Default MatchQuery implementation, which contains an 'inner' MatchQuery.
@@ -42,28 +45,18 @@ public abstract class MatchQueryDefault implements MatchQuery.Admin {
     }
 
     @Override
-    public final MatchQuery withTransaction(MindmapsTransaction transaction) {
-        return setInner(inner.withTransaction(transaction).admin());
-    }
-
-    @Override
-    public final MatchQuery orderBy(String varName, boolean asc) {
-        return setInner(inner.orderBy(varName, asc).admin());
-    }
-
-    @Override
-    public final MatchQuery orderBy(String varName, String resourceType, boolean asc) {
-        return setInner(inner.orderBy(varName, resourceType, asc).admin());
-    }
-
-    @Override
     public final Admin admin() {
         return this;
     }
 
     @Override
-    public final Set<Type> getTypes() {
-        return inner.getTypes();
+    public Stream<Map<String, Concept>> stream(Optional<MindmapsTransaction> transaction, Optional<MatchOrder> order) {
+        return transformStream(inner.stream(transaction, order));
+    }
+
+    @Override
+    public final Set<Type> getTypes(MindmapsTransaction transaction) {
+        return inner.getTypes(transaction);
     }
 
     @Override
@@ -77,18 +70,19 @@ public abstract class MatchQueryDefault implements MatchQuery.Admin {
     }
 
     @Override
-    public final Optional<MindmapsTransaction> getTransaction() {
+    public Optional<MindmapsTransaction> getTransaction() {
         return inner.getTransaction();
     }
 
+    @Override
+    public Set<Type> getTypes() {
+        return inner.getTypes();
+    }
+
     /**
-     * Set the inner query of this MatchQuery.
-     *
-     * This method should be implemented by subclasses, returning an instance of that subclass with the same fields,
-     * only the 'inner' query changed.
-     *
-     * @param inner the inner query to set
-     * @return a new instance of the class
+     * Transform the given stream. Implement in subclasses to perform modifier behaviour.
+     * @param stream the stream to transform
+     * @return the transformed stream
      */
-    protected abstract MatchQuery setInner(MatchQuery.Admin inner);
+    protected abstract Stream<Map<String, Concept>> transformStream(Stream<Map<String, Concept>> stream);
 }

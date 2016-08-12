@@ -18,10 +18,12 @@
 
 package io.mindmaps.graql.internal.query.match;
 
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.MatchQuery;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
@@ -37,17 +39,12 @@ public class MatchQueryOffset extends MatchQueryDefault {
     }
 
     @Override
-    public Stream<Map<String, Concept>> stream() {
-        return inner.stream().skip(offset);
+    protected Stream<Map<String, Concept>> transformStream(Stream<Map<String, Concept>> stream) {
+        return stream.skip(offset);
     }
 
     @Override
     public String toString() {
         return inner.toString() + " offset " + offset;
-    }
-
-    @Override
-    protected MatchQuery setInner(MatchQuery.Admin inner) {
-        return new MatchQueryOffset(inner, offset);
     }
 }

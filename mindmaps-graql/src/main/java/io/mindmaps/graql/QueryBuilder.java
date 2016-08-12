@@ -40,9 +40,9 @@ import java.util.Optional;
  */
 public class QueryBuilder {
 
-    private final MindmapsTransaction transaction;
+    private final Optional<MindmapsTransaction> transaction;
 
-    private QueryBuilder(MindmapsTransaction transaction) {
+    private QueryBuilder(Optional<MindmapsTransaction> transaction) {
         this.transaction = transaction;
     }
 
@@ -51,14 +51,14 @@ public class QueryBuilder {
      * @return a query builder using the specified transaction
      */
     public static QueryBuilder build(MindmapsTransaction transaction) {
-        return new QueryBuilder(transaction);
+        return new QueryBuilder(Optional.ofNullable(transaction));
     }
 
     /**
      * @return a query builder without a transaction to operate on
      */
     public static QueryBuilder build() {
-        return new QueryBuilder(null);
+        return new QueryBuilder(Optional.empty());
     }
 
     /**
@@ -74,7 +74,8 @@ public class QueryBuilder {
      * @return a match query that will find matches of the given patterns
      */
     public MatchQuery match(Collection<? extends Pattern> patterns) {
-        return new MatchQueryBase(Pattern.Admin.conjunction(AdminConverter.getPatternAdmins(patterns)), transaction);
+        MatchQueryBase query = new MatchQueryBase(Pattern.Admin.conjunction(AdminConverter.getPatternAdmins(patterns)));
+        return transaction.map(query::withTransaction).orElse(query);
     }
 
     /**
@@ -91,7 +92,7 @@ public class QueryBuilder {
      */
     public InsertQuery insert(Collection<? extends Var> vars) {
         ImmutableSet<Var.Admin> varAdmins = ImmutableSet.copyOf(AdminConverter.getVarAdmins(vars));
-        return new InsertQueryImpl(varAdmins, Optional.ofNullable(transaction));
+        return new InsertQueryImpl(varAdmins, transaction);
     }
 
     /**
