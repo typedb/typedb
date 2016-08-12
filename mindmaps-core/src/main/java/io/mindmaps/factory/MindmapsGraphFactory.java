@@ -19,12 +19,13 @@
 package io.mindmaps.factory;
 
 import io.mindmaps.core.MindmapsGraph;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 
 /**
  * The interface used to build new graphs from different vendors.
  * Adding new vendor support means implementing this interface.
  */
-interface MindmapsGraphFactory {
+interface MindmapsGraphFactory<M extends MindmapsGraph, T extends Graph> {
     /**
      *
      * @param name The name of the graph we should be initialising
@@ -32,5 +33,14 @@ interface MindmapsGraphFactory {
      * @param pathToConfig Path to file storing optional configuration parameters. Uses defaults if left null
      * @return An instance of Mindmaps graph
      */
-    MindmapsGraph getGraph(String name, String address, String pathToConfig);
+    M getGraph(String name, String address, String pathToConfig);
+
+    /**
+     *
+     * @param name The name of the graph we should be initialising
+     * @param address The address of where the backend is. Defaults to localhost if null
+     * @param pathToConfig Path to file storing optional configuration parameters. Uses defaults if left null
+     * @return An instance of a tinker graph
+     */
+    T getTinkerPopGraph(String name, String address, String pathToConfig);
 }

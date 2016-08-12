@@ -34,40 +34,28 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.*;
 
-class MindmapsTitanGraphFactory implements MindmapsGraphFactory{
+class MindmapsTitanGraphFactory extends MindmapsGraphFactoryImpl<MindmapsTitanGraph, TitanGraph>{
     protected final Logger LOG = LoggerFactory.getLogger(MindmapsTitanGraphFactory.class);
-    private final Map<String, MindmapsTitanGraph> openGraphs;
     private final static String SEARCH_KEY = "search";
-    private final static String DEFAULT_ADDRESS = "localhost:4567";
     private final static String DEFAULT_CONFIG = "backend-default";
-    private final static String GRAPH_COMPUTER = "com.thinkaurelius.titan.graphdb.olap.computer.FulgoraGraphComputer";
 
     public MindmapsTitanGraphFactory(){
-        openGraphs = new HashMap<>();
+        super();
     }
 
     @Override
-    public MindmapsGraph getGraph(String name, String address, String pathToConfig){
-        if(address == null)
-            address = DEFAULT_ADDRESS;
+    boolean isClosed(TitanGraph innerGraph) {
+        return innerGraph.isClosed();
+    }
 
-        String key = name + "_" + address;
-        if(openGraphs.containsKey(key)){
-            MindmapsTitanGraph mindmapsTitanGraph = openGraphs.get(key);
-            TitanGraph graph = (TitanGraph) mindmapsTitanGraph.getGraph();
-            if(graph.isOpen()){
-                return mindmapsTitanGraph;
-            }
-        }
+    @Override
+    MindmapsTitanGraph buildMindmapsGraphFromTinker(TitanGraph graph, String address) {
+        return new MindmapsTitanGraph(graph, address);
+    }
 
-        MindmapsTitanGraph mindmapsTitanGraph = new MindmapsTitanGraph(newTitanGraph(name, address, pathToConfig), address, GRAPH_COMPUTER);
-        openGraphs.put(key, mindmapsTitanGraph);
-
-        System.out.println("=================================================================================================");
-        System.out.println("||||||||||||||||||||      " + openGraphs.size() + " TitanGraph(s) are instantiated for Mindmaps      |||||||||||||||||||");
-        System.out.println("=================================================================================================");
-
-        return mindmapsTitanGraph;
+    @Override
+    TitanGraph buildTinkerPopGraph(String name, String address, String pathToConfig) {
+        return newTitanGraph(name, address, pathToConfig);
     }
 
     private synchronized TitanGraph newTitanGraph(String name, String address, String pathToConfig){
@@ -219,6 +207,5 @@ class MindmapsTitanGraphFactory implements MindmapsGraphFactory{
             }
         }
     }
-
 }
 

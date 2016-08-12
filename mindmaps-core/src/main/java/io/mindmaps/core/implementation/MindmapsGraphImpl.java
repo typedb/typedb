@@ -32,14 +32,12 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class MindmapsGraphImpl implements MindmapsGraph {
     protected final Logger LOG = LoggerFactory.getLogger(MindmapsGraphImpl.class);
-    private final String graphComputerType;
     private final String engineUrl;
     private boolean batchLoading;
     private Graph graph;
 
-    public MindmapsGraphImpl(Graph graph, String engineUrl, String graphComputerType){
+    public MindmapsGraphImpl(Graph graph, String engineUrl){
         this.graph = graph;
-        this.graphComputerType = graphComputerType;
         this.engineUrl = engineUrl;
         checkSchema((MindmapsTransactionImpl) newTransaction());
     }
@@ -123,14 +121,6 @@ public abstract class MindmapsGraphImpl implements MindmapsGraph {
     }
 
     /**
-     *
-     * @return The graph computer to inject into traversals
-     */
-    protected String getGraphComputerType(){
-        return graphComputerType;
-    }
-
-    /**
      * Closes the graph making it unusable
      */
     @Override
@@ -139,23 +129,6 @@ public abstract class MindmapsGraphImpl implements MindmapsGraph {
             getGraph().close();
         } catch (Exception e) {
             e.printStackTrace();
-        }
-    }
-
-    /**
-     *
-     * @return A graph computer supported by this mindmaps graph
-     */
-    public Class<? extends GraphComputer> getGraphComputer(){
-        String graphComputerType = getGraphComputerType();
-
-        if(graphComputerType == null)
-            throw new UnsupportedOperationException(ErrorMessage.GRAPH_COMPUTER_NOT_SUPPORTED.getMessage(getGraph()));
-
-        try {
-            return (Class<? extends GraphComputer>) Class.forName(graphComputerType);
-        } catch (ClassNotFoundException e) {
-            throw new IllegalArgumentException(ErrorMessage.INVALID_COMPUTER.getMessage(graphComputerType));
         }
     }
 }

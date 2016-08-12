@@ -152,6 +152,7 @@ public class CastingTest {
         assertThat(casting2.getRelations().iterator().next(), instanceOf(Relation.class));
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void testGetAssertionFailNoAssertion(){
         Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.CASTING.name());
