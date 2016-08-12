@@ -31,16 +31,10 @@ import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.ResourceBundle;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
@@ -50,39 +44,38 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.*;
 
 public class MindmapsTitanGraphFactoryTest {
-    private final String TEST_CONFIG = "../conf/mindmaps-test.properties";
-    private final String TEST_NAME = "mindmapstest";
-    private final String TEST_URI = "localhost";
+    private final static String TEST_CONFIG = "../conf/mindmaps-test.properties";
+    private final static String TEST_URI = "localhost";
+    private final static String TEST_SHARED = "shared";
 
-    private MindmapsGraphFactory titanGraphFactory ;
+    private static TitanGraph sharedGraph;
+    private static TitanGraph noIndexGraph;
+    private static TitanGraph indexGraph;
+
+    private static MindmapsGraphFactory titanGraphFactory ;
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
-    @Before
-    @After
-    public void setup() {
+    @BeforeClass
+    public static void setupClass() throws InterruptedException {
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.OFF);
 
         titanGraphFactory = new MindmapsTitanGraphFactory();
-        MindmapsGraph graph = titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG);
-        try {
-            graph.clear();
-        } catch(IllegalArgumentException e){
-            System.out.println("Ignoring clearing commit logs");
-        }
-    }
 
-    @Test
-    public void testBuildTitanGraph() throws Exception {
-        Graph graph = titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph();
-        assertThat(graph, instanceOf(TitanGraph.class));
+        sharedGraph = (TitanGraph) titanGraphFactory.getGraph(TEST_SHARED, TEST_URI, TEST_CONFIG).getGraph();
+
+        int max = 1000;
+        noIndexGraph = getGraph();
+        createGraphTestNoIndex("", noIndexGraph, max);
+
+        indexGraph = getGraph();
+        createGraphTestVertexCentricIndex("", indexGraph, max);
     }
 
     @Test
     public void productionIndexConstructionTest() throws InterruptedException {
-        TitanGraph graph = (TitanGraph) titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph();
-        TitanManagement management = graph.openManagement();
+        TitanManagement management = sharedGraph.openManagement();
 
         assertEquals("byItemIdentifier", management.getGraphIndex("byItemIdentifier").toString());
         assertEquals("bySubjectIdentifier", management.getGraphIndex("bySubjectIdentifier").toString());
@@ -100,8 +93,7 @@ public class MindmapsTitanGraphFactoryTest {
 
     @Test
     public void testBuildIndexedGraphWithCommit() throws Exception {
-        clearGraph();
-        Graph graph = titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph();
+        Graph graph = getGraph();
         addConcepts(graph);
         graph.tx().commit();
         assertIndexCorrect(graph);
@@ -109,16 +101,14 @@ public class MindmapsTitanGraphFactoryTest {
 
     @Test
     public void testBuildIndexedGraphWithoutCommit() throws Exception {
-        clearGraph();
-        Graph graph = titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph();
+        Graph graph = getGraph();
         addConcepts(graph);
         assertIndexCorrect(graph);
     }
 
     @Test
     public void testVertexLabels(){
-        TitanGraph graph = (TitanGraph) titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph();
-        TitanManagement management = graph.openManagement();
+        TitanManagement management = sharedGraph.openManagement();
 
         ResourceBundle keys = ResourceBundle.getBundle("base-types");
         Set<String> keyString = keys.keySet();
@@ -129,8 +119,7 @@ public class MindmapsTitanGraphFactoryTest {
 
     @Test
     public void testBatchLoading(){
-        TitanGraph graph = (TitanGraph) titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph();
-        TitanManagement management = graph.openManagement();
+        TitanManagement management = sharedGraph.openManagement();
 
         ResourceBundle keys = ResourceBundle.getBundle("property-keys");
         Set<String> keyString = keys.keySet();
@@ -143,15 +132,13 @@ public class MindmapsTitanGraphFactoryTest {
         for(String label : keyString){
             assertNotNull(management.getEdgeLabel(label));
         }
-
-        graph.close();
     }
 
     @Test
     public void testSingleton(){
-        Graph graph1 = titanGraphFactory.getGraph("a", TEST_URI, TEST_CONFIG).getGraph();
+        Graph graph1 = sharedGraph;
         Graph graph2 = titanGraphFactory.getGraph("b", TEST_URI, TEST_CONFIG).getGraph();
-        Graph graph3 = titanGraphFactory.getGraph("a", TEST_URI, TEST_CONFIG).getGraph();
+        Graph graph3 = titanGraphFactory.getGraph(TEST_SHARED, TEST_URI, TEST_CONFIG).getGraph();
 
         assertEquals(graph1, graph3);
         assertNotEquals(graph2, graph1);
@@ -160,20 +147,15 @@ public class MindmapsTitanGraphFactoryTest {
     @Test
     public void testIndexedEdgesFasterThanStandardReverseOrder() throws InterruptedException {
 
-        Integer max = 10000; // set size of test graph
         int nTimes = 100; // number of times to run specific traversal
 
         // Indexed Lookup /////////////////////////////////////////////////////
-        clearGraph();
-        Graph graph = titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph();
-        createGraphTestVertexCentricIndex("",graph, max);
-
         // time the same query multiple times
-        Vertex first = graph.traversal().V().has(DataType.ConceptProperty.VALUE_STRING.name(), String.valueOf(0)).next();
+        Vertex first = indexGraph.traversal().V().has(DataType.ConceptProperty.VALUE_STRING.name(), String.valueOf(0)).next();
         List<Object> indexResult = new ArrayList<>();
         double startTime = System.nanoTime();
         for (int i=0; i<nTimes; i++) {
-            indexResult = graph.traversal().V(first).
+            indexResult = indexGraph.traversal().V(first).
                     outE(DataType.EdgeLabel.SHORTCUT.getLabel()).
                     has(DataType.EdgeProperty.TO_ROLE.name(), String.valueOf(1)).inV().
                     values(DataType.ConceptProperty.VALUE_STRING.name()).toList();
@@ -182,16 +164,12 @@ public class MindmapsTitanGraphFactoryTest {
         double indexDuration = (endTime - startTime);  // this is the difference (divide by 1000000 to get milliseconds).
 
         // Non-Indexed Lookup /////////////////////////////////////////////////////
-        clearGraph();
-        graph = titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph();
-        createGraphTestNoIndex("", graph, max);
-
         // time the same query multiple times
-        first = graph.traversal().V().has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(),String.valueOf(0)).next();
+        first = noIndexGraph.traversal().V().has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(),String.valueOf(0)).next();
         List<Object> result = new ArrayList<>();
         startTime = System.nanoTime();
         for (int i=0; i<nTimes; i++) {
-            result = graph.traversal().V(first).
+            result = noIndexGraph.traversal().V(first).
                     outE(DataType.EdgeLabel.ISA.getLabel()).
                     has(DataType.ConceptProperty.TYPE.name(), String.valueOf(1)).inV().
                     values(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name()).toList();
@@ -214,20 +192,16 @@ public class MindmapsTitanGraphFactoryTest {
         // For some reason the first query will take longer by default.
         // Therefore the query that is expected to run fastest is placed first.
 
-        Integer max = 10000; // set size of test graph
         int nTimes = 100; // number of times to run specific traversal
 
         // Gremlin Indexed Lookup ////////////////////////////////////////////////////
-        clearGraph();
-        Graph graph = titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph();
-        createGraphTestVertexCentricIndex("",graph, max);
 
         // time the same query multiple times
-        Vertex first = graph.traversal().V().has(DataType.ConceptProperty.VALUE_STRING.name(),String.valueOf(0)).next();
+        Vertex first = indexGraph.traversal().V().has(DataType.ConceptProperty.VALUE_STRING.name(),String.valueOf(0)).next();
         List<Object> gremlinIndexedTraversalResult = new ArrayList<>();
         double startTime = System.nanoTime();
         for (int i=0; i<nTimes; i++) {
-            gremlinIndexedTraversalResult = graph.traversal().V(first).
+            gremlinIndexedTraversalResult = indexGraph.traversal().V(first).
                     local(__.outE(DataType.EdgeLabel.SHORTCUT.getLabel()).order().by(DataType.EdgeProperty.TO_ROLE.name(), Order.decr).range(0, 10)).
                     inV().values(DataType.ConceptProperty.VALUE_STRING.name()).toList();
         }
@@ -235,16 +209,13 @@ public class MindmapsTitanGraphFactoryTest {
         double gremlinIndexedTraversalDuration = (endTime - startTime);  // this is the difference (divide by 1000000 to get milliseconds).
 
         // Non-Indexed Gremlin Lookup ////////////////////////////////////////////////////
-        clearGraph();
-        graph = titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph();
-        createGraphTestNoIndex("",graph,max);
 
         // time the same query multiple times
-        first = graph.traversal().V().has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), String.valueOf(0)).next();
+        first = noIndexGraph.traversal().V().has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), String.valueOf(0)).next();
         List<Object> gremlinTraversalResult = new ArrayList<>();
         startTime = System.nanoTime();
         for (int i=0; i < nTimes; i++) {
-            gremlinTraversalResult = graph.traversal().V(first).
+            gremlinTraversalResult = noIndexGraph.traversal().V(first).
                     local(__.outE(DataType.EdgeLabel.ISA.getLabel()).order().by(DataType.ConceptProperty.TYPE.name(), Order.decr).range(0, 10)).
                     inV().values(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name()).toList();
         }
@@ -264,8 +235,7 @@ public class MindmapsTitanGraphFactoryTest {
         int nTimes = 10; // number of times to run specific traversal
 
         // Gremlin Indexed Lookup ////////////////////////////////////////////////////
-        clearGraph();
-        Graph graph = titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph();
+        Graph graph = getGraph();
         createGraphTestVertexCentricIndex("rand",graph, max);
 
         Vertex first = graph.traversal().V().has(DataType.ConceptProperty.VALUE_STRING.name(),String.valueOf(0)).next();
@@ -293,15 +263,11 @@ public class MindmapsTitanGraphFactoryTest {
 
     }
 
-    private void clearGraph() {
-        Graph graph = titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph();
-        try {
-            graph.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        TitanCleanup.clear((TitanGraph) graph);
-
+    private static TitanGraph getGraph() {
+        String name = UUID.randomUUID().toString();
+        Graph graph = titanGraphFactory.getGraph(name, TEST_URI, TEST_CONFIG).getGraph();
+        assertThat(graph, instanceOf(TitanGraph.class));
+        return (TitanGraph) graph;
     }
 
     private void addConcepts(Graph graph) {
@@ -321,15 +287,15 @@ public class MindmapsTitanGraphFactoryTest {
         assertFalse(graph.traversal().V().has(DataType.ConceptProperty.VALUE_STRING.name(), "hi").hasNext());
     }
 
-    private void createGraphTestNoIndex(String indexProp,Graph graph, int max) throws InterruptedException {
+    private static void createGraphTestNoIndex(String indexProp,Graph graph, int max) throws InterruptedException {
         createGraphGeneric(indexProp, graph, max, "ITEM_IDENTIFIER", DataType.EdgeLabel.ISA.getLabel(), "TYPE");
     }
 
-    private void createGraphTestVertexCentricIndex(String indexProp,Graph graph, int max) throws InterruptedException {
+    private static void createGraphTestVertexCentricIndex(String indexProp,Graph graph, int max) throws InterruptedException {
         createGraphGeneric(indexProp,graph,max,DataType.ConceptProperty.VALUE_STRING.name(), DataType.EdgeLabel.SHORTCUT.getLabel(), DataType.EdgeProperty.TO_ROLE.name());
     }
 
-    private void createGraphGeneric(String indexProp,Graph graph,int max,String nodeProp,String edgeLabel,String edgeProp) throws InterruptedException {
+    private static void createGraphGeneric(String indexProp,Graph graph,int max,String nodeProp,String edgeLabel,String edgeProp) throws InterruptedException {
         ExecutorService pLoad = Executors.newFixedThreadPool(1000);
         int commitSize = 10;
 
@@ -358,7 +324,7 @@ public class MindmapsTitanGraphFactoryTest {
         pLoad.awaitTermination(100, TimeUnit.SECONDS);
     }
 
-    private void addSpecificNodes(String indexProp, Graph graph, int start, int end,String nodeProp,String edgeLabel,String edgeProp) {
+    private static void addSpecificNodes(String indexProp, Graph graph, int start, int end,String nodeProp,String edgeLabel,String edgeProp) {
         TitanTransaction transaction = ((TitanGraph) graph).newTransaction();
         Vertex first = transaction.traversal().V().has(nodeProp, String.valueOf("0")).next();
         Integer edgePropValue;
@@ -376,7 +342,7 @@ public class MindmapsTitanGraphFactoryTest {
 
     @Test
     public void testEngineUrl(){
-        MindmapsGraphImpl graph = (MindmapsGraphImpl) titanGraphFactory.getGraph(TEST_NAME, "invalid_uri", TEST_CONFIG);
+        MindmapsGraphImpl graph = (MindmapsGraphImpl) titanGraphFactory.getGraph("mindmapstest", "invalid_uri", TEST_CONFIG);
         assertEquals("invalid_uri", graph.getEngineUrl());
     }
 }
