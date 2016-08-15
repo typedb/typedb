@@ -39,15 +39,28 @@ import static spark.Spark.get;
 public class GraphFactoryController {
     private final Logger LOG = LoggerFactory.getLogger(GraphFactoryController.class);
 
-    private final String graphConfig;
-
     public GraphFactoryController() {
-
-        graphConfig = ConfigProperties.getInstance().getProperty(ConfigProperties.GRAPH_CONFIG_PROPERTY);
-
         get(RESTUtil.WebPath.GRAPH_FACTORY_URI, (req, res) -> {
+            String graphConfig = req.queryParams(RESTUtil.Request.GRAPH_CONFIG_PARAM);
+
             try {
-                return new String(Files.readAllBytes(Paths.get(graphConfig)));
+                if(graphConfig == null) {
+                    graphConfig = ConfigProperties.GRAPH_CONFIG_PROPERTY;
+                } else {
+                  switch (graphConfig){
+                      case RESTUtil.GraphConfig.DEFAULT:
+                          graphConfig = ConfigProperties.GRAPH_CONFIG_PROPERTY;
+                          break;
+                      case RESTUtil.GraphConfig.BATCH:
+                          graphConfig = ConfigProperties.GRAPH_BATCH_CONFIG_PROPERTY;
+                          break;
+                      case RESTUtil.GraphConfig.COMPUTER:
+                          graphConfig = ConfigProperties.GRAPH_COMPUTER_CONFIG_PROPERTY;
+                          break;
+                  }
+                }
+
+                return new String(Files.readAllBytes(Paths.get(ConfigProperties.getInstance().getProperty(graphConfig))));
             } catch (IOException e) {
                 LOG.error(ErrorMessage.NO_CONFIG_FILE.getMessage(graphConfig));
                 res.status(500);

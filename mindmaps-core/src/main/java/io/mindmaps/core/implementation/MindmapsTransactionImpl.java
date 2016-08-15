@@ -23,6 +23,8 @@ import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.*;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -111,6 +113,11 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
         return graph;
     }
 
+    public GraphTraversalSource getTinkerTraversal(){
+        ReadOnlyStrategy readOnlyStrategy = ReadOnlyStrategy.instance();
+        return getTinkerPopGraph().traversal().asBuilder().with(readOnlyStrategy).create(getTinkerPopGraph());
+    }
+
     protected void setTinkerPopGraph(Graph graph){
         this.graph = graph;
     }
@@ -161,8 +168,7 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
     //----------------------------------------------Concept Functionality-----------------------------------------------
     //------------------------------------ Construction
     private Vertex addVertex(DataType.BaseType baseType){
-        Vertex v = getTinkerPopGraph().addVertex(baseType.name());
-        return v;
+        return getTinkerPopGraph().addVertex(baseType.name());
     }
     private Vertex addInstanceVertex(DataType.BaseType baseType, Type type){
         Vertex v = addVertex(baseType);
@@ -681,8 +687,12 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
         JSONObject postObject = new JSONObject();
         postObject.put("concepts", jsonArray);
 
-        String result = EngineCommunicator.contactEngine(getRootGraph().getCommitLogEndPoint(), "POST", postObject.toString());
-        LOG.info("Response from engine [" + result + "]");
+        try {
+            String result = EngineCommunicator.contactEngine(getRootGraph().getCommitLogEndPoint(), "POST", postObject.toString());
+            LOG.info("Response from engine [" + result + "]");
+        } catch (IllegalArgumentException e) {
+            LOG.error(ErrorMessage.COULD_NOT_REACH_ENGINE.getMessage(getRootGraph().getCommitLogEndPoint()), e);
+        }
     }
 
     //------------------------------------------ Fixing Code for Postprocessing ----------------------------------------

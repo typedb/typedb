@@ -23,7 +23,6 @@ import io.mindmaps.core.model.EntityType;
 import io.mindmaps.core.model.Instance;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -52,7 +51,6 @@ public class MindmapsTransactionTrackingTest {
     @Before
     public void buildGraphAccessManager() {
         mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
-        Graph graph = mindmapsGraph.getTinkerPopGraph();
         // start standard rootGraph access manager
         mindmapsGraph.initialiseMetaConcepts();
         modifiedConcepts = new HashSet<>();

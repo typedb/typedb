@@ -29,9 +29,11 @@ import org.junit.rules.ExpectedException;
 
 import java.util.regex.PatternSyntaxException;
 
-import static junit.framework.Assert.*;
+import static junit.framework.TestCase.assertNull;
+import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 public class ResourceTypeTest {

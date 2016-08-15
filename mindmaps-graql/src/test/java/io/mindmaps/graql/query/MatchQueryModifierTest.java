@@ -180,7 +180,7 @@ public class MatchQueryModifierTest {
     }
 
     private void assertResultsOrderedById(MatchQuery query, String var, boolean asc) {
-        GraphTraversalSource g = ((MindmapsTransactionImpl) transaction).getTinkerPopGraph().traversal();
+        GraphTraversalSource g = ((MindmapsTransactionImpl) transaction).getTinkerTraversal();
         Stream<String> ids = query.stream().map(results -> results.get(var)).map(
                 result -> (String) g.V().has("ITEM_IDENTIFIER", result.getId()).values(ITEM_IDENTIFIER.name()).next()
         );

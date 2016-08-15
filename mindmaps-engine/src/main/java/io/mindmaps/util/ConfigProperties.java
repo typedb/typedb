@@ -27,6 +27,7 @@ public class ConfigProperties {
 
     public static final String GRAPH_CONFIG_PROPERTY = "graphdatabase.config";
     public static final String GRAPH_BATCH_CONFIG_PROPERTY = "graphdatabase.batch-config";
+    public static final String GRAPH_COMPUTER_CONFIG_PROPERTY = "graphdatabase.computer";
 
     public static final String DEFAULT_GRAPH_NAME_PROPERTY = "graphdatabase.default-graph-name";
 

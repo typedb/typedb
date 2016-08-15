@@ -19,9 +19,11 @@
 package io.mindmaps.loader;
 
 import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.core.implementation.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
+import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Var;
 import io.mindmaps.postprocessing.Cache;

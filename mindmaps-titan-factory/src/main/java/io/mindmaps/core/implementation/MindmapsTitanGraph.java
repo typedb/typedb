@@ -39,16 +39,15 @@ public class MindmapsTitanGraph extends MindmapsGraphImpl {
     }
 
     @Override
-    public void close() {
-        ((TitanGraph) getGraph()).close();
-    }
-
-    @Override
     public void clear() {
         TitanGraph titanGraph = ((TitanGraph) getGraph());
         titanGraph.close();
         TitanCleanup.clear(titanGraph);
 
-        EngineCommunicator.contactEngine(getCommitLogEndPoint(), "DELETE");
+        try {
+            EngineCommunicator.contactEngine(getCommitLogEndPoint(), "DELETE");
+        } catch (IllegalArgumentException e){
+            LOG.error(ErrorMessage.COULD_NOT_REACH_ENGINE.getMessage(getCommitLogEndPoint()), e);
+        }
     }
 }
