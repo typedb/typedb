@@ -137,4 +137,22 @@ public class AdminTest {
         DeleteQuery query = qb.match(var("x").isa("movie")).delete("x");
         assertEquals("match $x isa movie", query.admin().getMatchQuery().toString());
     }
+
+    @Test
+    public void testInsertQueryGetTypes() {
+        InsertQuery query = qb.insert(var("x").isa("person").has("name"), var().rel("actor", "x").isa("has-cast"));
+        Set<Type> types = Stream.of("person", "name", "actor", "has-cast").map(transaction::getType).collect(toSet());
+        assertEquals(types, query.admin().getTypes());
+    }
+
+    @Test
+    public void testMatchInsertQueryGetTypes() {
+        InsertQuery query = qb.match(var("y").isa("movie"))
+                        .insert(var("x").isa("person").has("name"), var().rel("actor", "x").isa("has-cast"));
+
+        Set<Type> types =
+                Stream.of("movie", "person", "name", "actor", "has-cast").map(transaction::getType).collect(toSet());
+
+        assertEquals(types, query.admin().getTypes());
+    }
 }
