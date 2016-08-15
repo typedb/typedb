@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableSet;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
-import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.internal.query.match.MatchOrder;
@@ -85,7 +84,7 @@ public class Query {
         // Because 'union' accepts an array, we can't use generics...
         //noinspection unchecked
         GraphTraversal<Vertex, Map<String, Vertex>> traversal =
-                ((MindmapsTransactionImpl) transaction).getTinkerPopGraph().traversal().V().limit(1).union(collect);
+                ((MindmapsTransactionImpl) transaction).getTinkerTraversal().V().limit(1).union(collect);
 
         order.ifPresent(o -> o.orderTraversal(transaction, traversal));
 

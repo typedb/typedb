@@ -18,16 +18,15 @@
 
 package io.mindmaps.factory;
 
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.implementation.GraphRuntimeException;
-import io.mindmaps.core.implementation.MindmapsValidationException;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
+import io.mindmaps.core.implementation.MindmapsValidationException;
 import io.mindmaps.core.model.EntityType;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.HashSet;
@@ -120,7 +119,7 @@ public class MindmapsTitanGraphTest {
         });
 
         MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) mindmapsGraph.newTransaction();
-        assertEquals(108, transaction.getTinkerPopGraph().traversal().V().toList().size());
+        assertEquals(108, transaction.getTinkerTraversal().V().toList().size());
     }
     private void addEntityType(MindmapsGraph mindmapsGraph){
         MindmapsTransaction mindmapsTransaction = mindmapsGraph.newTransaction();

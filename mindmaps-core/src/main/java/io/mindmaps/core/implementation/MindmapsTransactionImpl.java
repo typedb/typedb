@@ -106,7 +106,7 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
         return getMetaType() != null;
     }
 
-    public Graph getTinkerPopGraph(){
+    Graph getTinkerPopGraph(){
         if(graph == null){
             throw new GraphRuntimeException(ErrorMessage.CLOSED.getMessage(this.getClass().getName()));
         }
@@ -147,12 +147,6 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
 
     public Set<ConceptImpl> getModifiedConcepts(){
         return transaction.getModifiedConcepts();
-    }
-
-    public Set<String> getModifiedRelationIds(){
-        Set<String> relationIds = new HashSet<>();
-        transaction.getModifiedRelations().forEach(c -> relationIds.add(c.getId()));
-        return relationIds;
     }
 
     public Set<String> getModifiedCastingIds(){

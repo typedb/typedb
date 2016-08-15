@@ -35,7 +35,7 @@ class ConceptFixer {
         while(notDone) {
             try (MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) graph.newTransaction()) {
                 if (transaction.fixDuplicateCasting(castingId)) {
-                    transaction.getTinkerPopGraph().tx().commit();
+                    transaction.commit();
                 }
                 notDone = false;
             } catch (Exception e) {
