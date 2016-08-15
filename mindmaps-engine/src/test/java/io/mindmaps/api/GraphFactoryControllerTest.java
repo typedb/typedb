@@ -22,7 +22,9 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
+import io.mindmaps.MindmapsComputer;
 import io.mindmaps.Util;
+import io.mindmaps.constants.RESTUtil.GraphConfig;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.util.ConfigProperties;
@@ -33,6 +35,10 @@ import org.junit.Test;
 import java.util.Properties;
 
 import static com.jayway.restassured.RestAssured.get;
+import static io.mindmaps.constants.RESTUtil.Request.GRAPH_CONFIG_PARAM;
+import static io.mindmaps.constants.RESTUtil.WebPath.GRAPH_FACTORY_URI;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
@@ -55,9 +61,26 @@ public class GraphFactoryControllerTest {
 
     @Test
     public void testConfigWorking(){
-        Response response = get(RESTUtil.WebPath.GRAPH_FACTORY_URI).then().statusCode(200).extract().response().andReturn();
+        Response response = get(GRAPH_FACTORY_URI).then().statusCode(200).extract().response().andReturn();
         String config = response.getBody().prettyPrint();
         assertTrue(config.contains("factory"));
+    }
+
+    @Test
+    public void testSpecificConfigWorking(){
+        String endPoint = GRAPH_FACTORY_URI + "?" + GRAPH_CONFIG_PARAM + "=";
+
+        Response responseDefault = get(endPoint + GraphConfig.DEFAULT).
+                then().statusCode(200).extract().response().andReturn();
+
+        Response responseBatch = get(endPoint + GraphConfig.BATCH).
+                then().statusCode(200).extract().response().andReturn();
+
+        Response responseComputer = get(endPoint + GraphConfig.COMPUTER).
+                then().statusCode(200).extract().response().andReturn();
+
+        assertNotEquals(responseDefault, responseBatch);
+        assertNotEquals(responseComputer, responseBatch);
     }
 
     @Test
@@ -69,5 +92,7 @@ public class GraphFactoryControllerTest {
         assertNotEquals(graph, graph2);
         assertEquals(graph, graphCopy);
         graph.close();
+
+        assertThat(MindmapsClient.getGraphComputer(), instanceOf(MindmapsComputer.class));
     }
 }

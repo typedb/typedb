@@ -22,6 +22,7 @@ import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.constants.RESTUtil;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.MindmapsTransaction;
+import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,4 +120,15 @@ public abstract class MindmapsGraphImpl implements MindmapsGraph {
         }
     }
 
+    /**
+     * Closes the graph making it unusable
+     */
+    @Override
+    public void close() {
+        try {
+            getGraph().close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

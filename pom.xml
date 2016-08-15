@@ -27,7 +27,7 @@
     <version>0.1.0-SNAPSHOT</version>
     <name>MindmapsDB</name>
     <description>A distributed semantic graph database.</description>
-    <url>http://mindmaps.io/platform.html</url>    
+    <url>http://mindmaps.io/platform.html</url>
     <modules>
         <module>mindmaps-core</module>
         <module>mindmaps-titan-factory</module>
@@ -52,6 +52,7 @@
         <halbuilder-standard.version>4.0.1</halbuilder-standard.version>
         <rest-assured.version>2.7.0</rest-assured.version>
         <java-tuples.version>1.2</java-tuples.version>
+        <spark.version>1.5.2</spark.version>
         <jinjava.version>2.1.0</jinjava.version>
         <airline.version>0.6</airline.version>
 
@@ -206,7 +207,7 @@
                 <version>2.9.1</version>
                 <configuration>
                     <additionalparam>-Xdoclint:none</additionalparam>
-                </configuration>                                        
+                </configuration>
                 <executions>
                     <execution>
                         <id>attach-javadocs</id>
@@ -215,7 +216,7 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>            
+            </plugin>
             <plugin>
                 <groupId>org.sonatype.plugins</groupId>
                 <artifactId>nexus-staging-maven-plugin</artifactId>
@@ -226,7 +227,7 @@
                 <nexusUrl>https://oss.sonatype.org/</nexusUrl>
                 <autoReleaseAfterClose>true</autoReleaseAfterClose>
               </configuration>
-            </plugin>            
+            </plugin>
             <plugin>
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-gpg-plugin</artifactId>
@@ -240,7 +241,7 @@
                   </goals>
                 </execution>
               </executions>
-            </plugin>            
+            </plugin>
         </plugins>
     </build>
 

@@ -202,18 +202,6 @@ public class ConceptTest {
         assertNotEquals(concept, conceptVertex);
     }
 
-    @Test(expected = RuntimeException.class)
-    public void addLinkOnInvalidObject1(){
-        MockConcept mockConcept = new MockConcept();
-        concept.addEdge(mockConcept, DataType.EdgeLabel.AKO);
-    }
-
-    @Test(expected = RuntimeException.class)
-    public void addLinkOnInvalidObject2(){
-        MockConcept mockConcept = new MockConcept();
-        concept.addEdge(mockConcept, DataType.EdgeLabel.CASTING);
-    }
-
     @Test
     public void testGetParentIsa(){
         TypeImpl conceptParent = (TypeImpl) mindmapsGraph.putEntityType("conceptParent");

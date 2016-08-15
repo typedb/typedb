@@ -61,6 +61,9 @@ public enum ErrorMessage {
     //--------------------------------------------- Factory Errors
     INVALID_PATH_TO_CONFIG("Unable to open config file ['%s']"),
     CREATING_ONTOLOGY_ERROR("Unable to create a new meta ontology due to ['%s']"),
+    INVALID_COMPUTER("The graph computer ['%s'] is not supported"),
+    CONFIG_IGNORED("The config parameter ['%s'] with value ['%s'] is ignored for this implementation"),
+    CANNOT_PRODUCE_MINDMAPS_GRAPH("Cannot produce a Mindmaps graph using the backend ['%s']"),
 
     //--------------------------------------------- Client Errors
     INVALID_ENGINE_RESPONSE("Mindmaps Engine located at ['%s'] returned response ['%s'], cannot proceed."),
@@ -68,6 +71,7 @@ public enum ErrorMessage {
     MISSING_FACTORY_DEFINITION("Graph Factor Config ['factory.internal'] missing from provided config. " +
             "Cannot produce graph"),
     CONFIG_NOT_FOUND("Mindmaps Engine located at ['%s'] did not return the expected response, due to ['%s']"),
+    COULD_NOT_REACH_ENGINE("Could not reach Mindmaps engine at [%s] when submitting commit logs"),
 
     //--------------------------------------------- Graql Errors -----------------------------------------------
     NO_TRANSACTION("no transaction provided"),
@@ -126,6 +130,7 @@ public enum ErrorMessage {
     BACK_OFF_RETRY("Unexpected failure performing backoff and retry of [%s]S"),
     //Distributed loading Errors
     ERROR_IN_DISTRIBUTED_TRANSACTION("Error while sending transaction to host: [%s]. Code: [%s] Message:[%s] \n Transaction string: [%s] ");
+
 
     private final String message;
 

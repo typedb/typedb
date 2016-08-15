@@ -20,6 +20,8 @@ package io.mindmaps.factory;
 
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.MindmapsTinkerGraph;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,29 +31,26 @@ import java.util.Map;
 /**
  * A graph factory which provides a mindmaps graph with a tinker graph backend.
  */
-class MindmapsTinkerGraphFactory implements MindmapsGraphFactory {
-    protected final Logger LOG = LoggerFactory.getLogger(MindmapsTinkerGraphFactory.class);
-    private Map<String, MindmapsGraph> openGraphs;
+class MindmapsTinkerGraphFactory extends MindmapsGraphFactoryImpl<MindmapsTinkerGraph, TinkerGraph>{
+    private final Logger LOG = LoggerFactory.getLogger(MindmapsTinkerGraphFactory.class);
 
-    public MindmapsTinkerGraphFactory(){
-        openGraphs = new HashMap<>();
+    MindmapsTinkerGraphFactory(){
+        super();
     }
 
-    /**
-     *
-     * @param name The name of the graph we should be initialising
-     * @param address The address of where the backend is. Defaults to localhost if null
-     * @param pathToConfig Path to file storing optional configuration parameters. Uses defaults if left null
-     * @return  An instance of Mindmaps graph with a tinker graph backend
-     */
     @Override
-    public MindmapsGraph getGraph(String name, String address, String pathToConfig) {
+    boolean isClosed(TinkerGraph innerGraph) {
+        return false;
+    }
+
+    @Override
+    MindmapsTinkerGraph buildMindmapsGraphFromTinker(TinkerGraph graph, String address) {
+        return new MindmapsTinkerGraph(graph);
+    }
+
+    @Override
+    TinkerGraph buildTinkerPopGraph(String name, String address, String pathToConfig) {
         LOG.warn("In memory Tinkergraph ignores the address [" + address + "] and config path [" + pathToConfig + "]parameters");
-
-        if(!openGraphs.containsKey(name)){
-            openGraphs.put(name, new MindmapsTinkerGraph());
-        }
-
-        return openGraphs.get(name);
+        return TinkerGraph.open();
     }
 }

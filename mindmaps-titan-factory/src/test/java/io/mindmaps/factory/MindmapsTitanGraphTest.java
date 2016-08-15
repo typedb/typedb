@@ -53,6 +53,12 @@ public class MindmapsTitanGraphTest {
         mindmapsGraph = new MindmapsTitanGraphFactory().getGraph(TEST_NAME, TEST_URI, TEST_CONFIG);
     }
 
+    @After
+    public void cleanup(){
+        MindmapsGraph mg = new MindmapsTitanGraphFactory().getGraph(TEST_NAME, TEST_URI, TEST_CONFIG);
+        mg.clear();
+    }
+
     @Test
     public void testTransactionHandling() throws Exception {
         MindmapsTransaction mindmapsTransaction = mindmapsGraph.newTransaction();
