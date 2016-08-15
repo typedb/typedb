@@ -20,9 +20,11 @@ package io.mindmaps.graql;
 
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
+import io.mindmaps.core.model.Type;
 
 import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * A query for inserting data.
@@ -60,6 +62,11 @@ public interface InsertQuery extends Streamable<Concept> {
          * @return the match query that this insert query is using, if it was provided one
          */
         Optional<? extends MatchQuery> getMatchQuery();
+
+        /**
+         * @return all concept types referred to explicitly in the query
+         */
+        Set<Type> getTypes();
 
         /**
          * @return the variables to insert in the insert query

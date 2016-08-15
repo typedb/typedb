@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableSet;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
+import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.Var;
@@ -30,6 +31,7 @@ import io.mindmaps.graql.internal.validation.InsertQueryValidator;
 
 import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -120,6 +122,22 @@ public class InsertQueryImpl implements InsertQuery.Admin {
     @Override
     public Optional<? extends MatchQuery> getMatchQuery() {
         return matchQuery;
+    }
+
+    @Override
+    public Set<Type> getTypes() {
+        MindmapsTransaction theTransaction =
+                getTransaction().orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_TRANSACTION.getMessage()));
+
+        Set<Type> types = vars.stream()
+                .flatMap(v -> v.getInnerVars().stream())
+                .flatMap(v -> v.getTypeIds().stream())
+                .map(theTransaction::getType)
+                .collect(Collectors.toSet());
+
+        matchQuery.ifPresent(mq -> types.addAll(mq.getTypes()));
+
+        return types;
     }
 
     @Override
