@@ -27,6 +27,7 @@ import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.core.model.EntityType;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.HashSet;
@@ -42,26 +43,14 @@ import static junit.framework.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
 
 public class MindmapsTitanGraphTest {
-    private final String TEST_CONFIG = "../conf/mindmaps-test.properties";
-    private final String TEST_NAME = "mindmapstest";
-    private final String TEST_URI = "localhost";
+    private static final String TEST_CONFIG = "../conf/mindmaps-test.properties";
+    private static final String TEST_NAME = "mindmapstest";
+    private static final String TEST_URI = "localhost";
     private MindmapsGraph mindmapsGraph;
 
     @Before
     public void setup(){
-        cleanup();
         mindmapsGraph = new MindmapsTitanGraphFactory().getGraph(TEST_NAME, TEST_URI, TEST_CONFIG);
-    }
-
-    @After
-    public void cleanup(){
-        MindmapsGraph mg = new MindmapsTitanGraphFactory().getGraph(TEST_NAME, TEST_URI, TEST_CONFIG);
-
-        try {
-            mg.clear();
-        } catch(IllegalArgumentException e){
-            System.out.println("Ignoring clearing caches");
-        }
     }
 
     @Test
