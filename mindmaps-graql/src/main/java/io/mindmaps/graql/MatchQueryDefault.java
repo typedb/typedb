@@ -62,7 +62,7 @@ public interface MatchQueryDefault extends MatchQuery<Map<String, Concept>> {
      * @return a query of concepts
      */
     default MatchQuery<Concept> get(String name) {
-        return new MatchQueryApplier<>(admin(), result -> result.get(name));
+        return new MatchQueryMap<>(admin(), result -> result.get(name));
     }
 
     /**

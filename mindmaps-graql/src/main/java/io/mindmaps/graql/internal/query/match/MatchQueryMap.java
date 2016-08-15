@@ -29,11 +29,11 @@ import java.util.stream.Stream;
  * @param <S> The type of the results before transformation
  * @param <T> The type of the results after transformation
  */
-public class MatchQueryApplier<S, T> extends MatchQueryAbstract<S, T> {
+public class MatchQueryMap<S, T> extends MatchQueryAbstract<S, T> {
 
     private final Function<S, T> function;
 
-    public MatchQueryApplier(MatchQuery.Admin<S> inner, Function<S, T> function) {
+    public MatchQueryMap(MatchQuery.Admin<S> inner, Function<S, T> function) {
         super(inner);
         this.function = function;
     }
