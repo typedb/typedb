@@ -20,11 +20,9 @@
 package io.mindmaps.graql;
 
 import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.internal.query.match.*;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;

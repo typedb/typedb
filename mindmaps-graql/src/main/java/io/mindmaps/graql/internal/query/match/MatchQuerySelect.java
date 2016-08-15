@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.model.Concept;
-import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.MatchQueryMap;
 
 import java.util.Map;

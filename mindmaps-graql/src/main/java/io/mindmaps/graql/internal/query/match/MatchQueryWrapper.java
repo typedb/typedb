@@ -31,11 +31,19 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+/**
+ * Wrapper class that wraps up a {@link MatchQuery} into a {@link MatchQueryMap}, provided it operates on
+ * {@code Map<String, Concept>}. This is used to wrap up classes such as {@link MatchQueryLimit}.
+ */
 public class MatchQueryWrapper implements MatchQueryMap.Admin {
 
     private final MatchQuery.Admin<Map<String, Concept>> query;
     private final MatchQueryMap.Admin queryMap;
 
+    /**
+     * @param query the query to wrap
+     * @param queryMap the original {@link MatchQueryMap} that {@code query} was derived from
+     */
     public MatchQueryWrapper(MatchQuery.Admin<Map<String, Concept>> query, MatchQueryMap.Admin queryMap) {
         this.query = query;
         this.queryMap = queryMap;

@@ -18,10 +18,6 @@
 
 package io.mindmaps.graql.internal.query.match;
 
-import io.mindmaps.core.model.Concept;
-import io.mindmaps.graql.MatchQueryMap;
-
-import java.util.Map;
 import java.util.stream.Stream;
 
 /**

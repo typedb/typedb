@@ -24,6 +24,11 @@ import io.mindmaps.graql.MatchQuery;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+/**
+ * A class for performing a generic 'map' operation on a MatchQuery, transforming every result.
+ * @param <S> The type of the results before transformation
+ * @param <T> The type of the results after transformation
+ */
 public class MatchQueryApplier<S, T> extends MatchQueryDefault<S, T> {
 
     private final Function<S, T> function;

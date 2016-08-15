@@ -20,17 +20,19 @@
 package io.mindmaps.graql.internal.query.match;
 
 import io.mindmaps.core.model.Concept;
-import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.MatchQueryMap;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 
-public abstract class MatchQueryMapDefault
+/**
+ * Default MatchQueryMap implementation. Extends the default MatchQuery implementation, but provides extra behaviour
+ * to support the MatchQueryMap interface.
+ */
+abstract class MatchQueryMapDefault
         extends MatchQueryDefault<Map<String, Concept>, Map<String, Concept>> implements MatchQueryMap.Admin {
 
-    protected final MatchQueryMap.Admin inner;
+    final MatchQueryMap.Admin inner;
 
     MatchQueryMapDefault(MatchQueryMap.Admin inner) {
         super(inner);

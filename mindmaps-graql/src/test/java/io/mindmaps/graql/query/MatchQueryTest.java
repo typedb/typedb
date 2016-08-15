@@ -30,8 +30,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.text.SimpleDateFormat;
-
 import static io.mindmaps.graql.QueryBuilder.var;
 import static org.junit.Assert.assertEquals;
 

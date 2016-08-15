@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
-import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.internal.AdminConverter;
 import io.mindmaps.graql.internal.query.AskQueryImpl;
 import io.mindmaps.graql.internal.query.DeleteQueryImpl;
@@ -30,8 +29,6 @@ import io.mindmaps.graql.internal.query.InsertQueryImpl;
 import io.mindmaps.graql.internal.query.match.*;
 
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 

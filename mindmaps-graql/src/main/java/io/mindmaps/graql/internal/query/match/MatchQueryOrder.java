@@ -26,7 +26,6 @@ import io.mindmaps.graql.MatchQueryMap;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Stream;
 
 /**
