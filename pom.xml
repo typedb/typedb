@@ -50,8 +50,8 @@
         <rest-assured.version>2.7.0</rest-assured.version>
         <java-tuples.version>1.2</java-tuples.version>
         <jinjava.version>2.1.0</jinjava.version>
-
         <antlr4.visitor>true</antlr4.visitor>
+        <swagger.version>1.5.0</swagger.version>
     </properties>
 
     <dependencies>
