@@ -23,7 +23,7 @@ import java.util.stream.Stream;
 /**
  * "Limit" modifier for match query that limits the results of a query.
  */
-public class MatchQueryLimit<T> extends MatchQueryDefault<T, T> {
+public class MatchQueryLimit<T> extends MatchQueryAbstract<T, T> {
 
     private final long limit;
 

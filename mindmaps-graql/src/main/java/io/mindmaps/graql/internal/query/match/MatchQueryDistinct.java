@@ -23,7 +23,7 @@ import java.util.stream.Stream;
 /**
  * "Distinct" modifier for a match query that eliminates duplicate results.
  */
-public class MatchQueryDistinct<T> extends MatchQueryDefault<T, T> {
+public class MatchQueryDistinct<T> extends MatchQueryAbstract<T, T> {
 
     public MatchQueryDistinct(Admin<T> inner) {
         super(inner);

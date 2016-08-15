@@ -31,7 +31,7 @@ import java.util.stream.Stream;
 /**
  * "Order" modify that orders the underlying match query
  */
-public class MatchQueryOrder extends MatchQueryMapDefault {
+public class MatchQueryOrder extends MatchQueryMapAbstract {
 
     private final MatchOrder order;
 

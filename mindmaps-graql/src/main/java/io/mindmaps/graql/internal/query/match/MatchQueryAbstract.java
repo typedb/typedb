@@ -28,17 +28,17 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Default MatchQuery implementation, which contains an 'inner' MatchQuery.
+ * Abstract MatchQuery implementation, which contains an 'inner' MatchQuery.
  *
  * This class behaves like a singly-linked list, referencing another MatchQuery until it reaches a MatchQueryBase.
  *
  * Query modifiers should extend this class and implement a stream() method that modifies the inner query.
  */
-abstract class MatchQueryDefault<S, T> implements MatchQuery.Admin<T> {
+abstract class MatchQueryAbstract<S, T> implements MatchQuery.Admin<T> {
 
     final MatchQuery.Admin<S> inner;
 
-    MatchQueryDefault(MatchQuery.Admin<S> inner) {
+    MatchQueryAbstract(MatchQuery.Admin<S> inner) {
         this.inner = inner;
     }
 

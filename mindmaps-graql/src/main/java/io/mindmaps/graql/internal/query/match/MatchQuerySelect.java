@@ -32,7 +32,7 @@ import java.util.stream.Stream;
 /**
  * "Select" modifier for a match query that selects particular variables from the result.
  */
-public class MatchQuerySelect extends MatchQueryMapDefault {
+public class MatchQuerySelect extends MatchQueryMapAbstract {
 
     private final ImmutableSet<String> names;
 

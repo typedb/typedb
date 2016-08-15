@@ -26,15 +26,15 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Default MatchQueryMap implementation. Extends the default MatchQuery implementation, but provides extra behaviour
+ * Abstract MatchQueryMap implementation. Extends the abstract MatchQuery implementation, but provides extra behaviour
  * to support the MatchQueryMap interface.
  */
-abstract class MatchQueryMapDefault
-        extends MatchQueryDefault<Map<String, Concept>, Map<String, Concept>> implements MatchQueryMap.Admin {
+abstract class MatchQueryMapAbstract
+        extends MatchQueryAbstract<Map<String, Concept>, Map<String, Concept>> implements MatchQueryMap.Admin {
 
     final MatchQueryMap.Admin inner;
 
-    MatchQueryMapDefault(MatchQueryMap.Admin inner) {
+    MatchQueryMapAbstract(MatchQueryMap.Admin inner) {
         super(inner);
         this.inner = inner;
     }
