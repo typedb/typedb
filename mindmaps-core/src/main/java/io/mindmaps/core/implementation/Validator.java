@@ -51,21 +51,24 @@ class Validator {
         Set<ConceptImpl> validationList = new HashSet<>(mindmapsGraph.getModifiedConcepts());
 
         for(ConceptImpl nextToValidate: validationList){
-            if(nextToValidate.isRelation()){
-                validateRelation((RelationImpl) nextToValidate);
-            } else if(nextToValidate.isCasting()){
-                validateCasting((CastingImpl) nextToValidate);
-            } else if(nextToValidate.isType()){
-                validateType((TypeImpl) nextToValidate);
-                if(nextToValidate.isRoleType()){
-                    validateRoleType((RoleTypeImpl) nextToValidate);
-                } else if(nextToValidate.isRelationType()){
-                    validateRelationType((RelationTypeImpl) nextToValidate);
+            if(nextToValidate.isAlive()) {
+                if (nextToValidate.isRelation()) {
+                    validateRelation((RelationImpl) nextToValidate);
+                } else if (nextToValidate.isCasting()) {
+                    validateCasting((CastingImpl) nextToValidate);
+                } else if (nextToValidate.isType()) {
+                    validateType((TypeImpl) nextToValidate);
+                    if (nextToValidate.isRoleType()) {
+                        validateRoleType((RoleTypeImpl) nextToValidate);
+                    } else if (nextToValidate.isRelationType()) {
+                        validateRelationType((RelationTypeImpl) nextToValidate);
+                    }
                 }
             }
         }
         return errorsFound.size() == 0;
     }
+
 
     /**
      * Validation rules exclusive to relations

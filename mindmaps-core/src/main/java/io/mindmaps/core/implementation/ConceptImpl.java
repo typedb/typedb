@@ -795,11 +795,18 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
 
     //---------- Null Vertex Handler ---------
     /**
-     *
+     * Checks if the underlaying vertex has not been removed and if it is not a ghost
      * @return true if the underlying vertex has not been removed.
      */
     public boolean isAlive () {
-        return vertex != null;
+        if(vertex == null)
+            return false;
+
+        try {
+            return vertex.edges(Direction.BOTH).hasNext();
+        } catch (IllegalStateException e){
+            return false;
+        }
     }
     
     @Override

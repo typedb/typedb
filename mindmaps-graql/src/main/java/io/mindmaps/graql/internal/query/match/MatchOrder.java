@@ -83,7 +83,7 @@ public class MatchOrder {
      * @return the value of an attached resource, or nothing if there is no resource of this type
      */
     private Optional<Comparable> getResourceValue(MindmapsTransaction transaction, Object elem, String resourceTypeId, DataType.ConceptProperty value) {
-        return ((MindmapsTransactionImpl) transaction).getTinkerPopGraph().traversal().V(elem)
+        return ((MindmapsTransactionImpl) transaction).getTinkerTraversal().V(elem)
                 .outE(SHORTCUT.getLabel()).has(TO_TYPE.name(), resourceTypeId).inV().values(value.name())
                 .tryNext().map(o -> (Comparable) o);
     }

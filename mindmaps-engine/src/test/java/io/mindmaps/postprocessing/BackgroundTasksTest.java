@@ -20,10 +20,9 @@ package io.mindmaps.postprocessing;
 
 import io.mindmaps.api.CommitLogController;
 import io.mindmaps.api.GraphFactoryController;
+import io.mindmaps.constants.DataType;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.constants.DataType;
-import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsClient;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -108,7 +107,7 @@ public class BackgroundTasksTest {
         Relation relation = mindmapsTransaction.addRelation(relationType).putRolePlayer(otherRoleType, otherInstance);
         String relationId = relation.getId();
 
-        ((MindmapsTransactionImpl) mindmapsTransaction).getTinkerPopGraph().tx().commit();
+        mindmapsTransaction.commit();
 
         //Get Needed Vertices
         Vertex mainRoleTypeVertex = mindmapsGraph.getGraph().traversal().V().
