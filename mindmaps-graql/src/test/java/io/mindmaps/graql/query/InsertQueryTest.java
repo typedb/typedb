@@ -240,7 +240,7 @@ public class InsertQueryTest {
                 id("my-type").isa(RESOURCE_TYPE.getId()).datatype(Data.LONG)
         ).execute();
 
-        MatchQueryMap query = qb.match(var("x").id("my-type"));
+        MatchQueryDefault query = qb.match(var("x").id("my-type"));
         Data datatype = query.iterator().next().get("x").asResourceType().getDataType();
 
         assertEquals(Data.LONG, datatype);
@@ -253,7 +253,7 @@ public class InsertQueryTest {
                 id("ako-type").ako("my-type")
         ).execute();
 
-        MatchQueryMap query = qb.match(var("x").id("ako-type"));
+        MatchQueryDefault query = qb.match(var("x").id("ako-type"));
         Data datatype = query.iterator().next().get("x").asResourceType().getDataType();
 
         assertEquals(Data.STRING, datatype);
@@ -356,7 +356,7 @@ public class InsertQueryTest {
                 var().id("new-thing").isa("new-type")
         ).execute();
 
-        MatchQueryMap typeQuery = qb.match(var("n").id("new-type"));
+        MatchQueryDefault typeQuery = qb.match(var("n").id("new-type"));
 
         assertEquals(1, typeQuery.stream().count());
 

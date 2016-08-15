@@ -23,7 +23,7 @@ import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.MatchQueryMap;
+import io.mindmaps.graql.MatchQueryDefault;
 import io.mindmaps.graql.Pattern;
 
 import java.util.Map;
@@ -32,19 +32,19 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Wrapper class that wraps up a {@link MatchQuery} into a {@link MatchQueryMap}, provided it operates on
+ * Wrapper class that wraps up a {@link MatchQuery} into a {@link MatchQueryDefault}, provided it operates on
  * {@code Map<String, Concept>}. This is used to wrap up classes such as {@link MatchQueryLimit}.
  */
-public class MatchQueryWrapper implements MatchQueryMap.Admin {
+public class MatchQueryWrapper implements MatchQueryDefault.Admin {
 
     private final MatchQuery.Admin<Map<String, Concept>> query;
-    private final MatchQueryMap.Admin queryMap;
+    private final MatchQueryDefault.Admin queryMap;
 
     /**
      * @param query the query to wrap
-     * @param queryMap the original {@link MatchQueryMap} that {@code query} was derived from
+     * @param queryMap the original {@link MatchQueryDefault} that {@code query} was derived from
      */
-    public MatchQueryWrapper(MatchQuery.Admin<Map<String, Concept>> query, MatchQueryMap.Admin queryMap) {
+    public MatchQueryWrapper(MatchQuery.Admin<Map<String, Concept>> query, MatchQueryDefault.Admin queryMap) {
         this.query = query;
         this.queryMap = queryMap;
     }

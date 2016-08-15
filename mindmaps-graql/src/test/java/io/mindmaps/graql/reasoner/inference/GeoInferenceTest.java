@@ -20,7 +20,7 @@ package io.mindmaps.graql.reasoner.inference;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.graql.MatchQueryMap;
+import io.mindmaps.graql.MatchQueryDefault;
 import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.MindmapsReasoner;
 import io.mindmaps.graql.reasoner.graphs.GeoGraph;
@@ -45,7 +45,7 @@ public class GeoInferenceTest {
         qp = QueryParser.create(graph);
     }
 
-    private static void printMatchQuery(MatchQueryMap query) {
+    private static void printMatchQuery(MatchQueryDefault query) {
         System.out.println(query.toString().replace(" or ", "\nor\n").replace("};", "};\n").replace("; {", ";\n{"));
     }
 
@@ -58,9 +58,9 @@ public class GeoInferenceTest {
                         "$x isa city;\n" +
                         "(geo-entity $x, entity-location $y) isa is-located-in;\n"+
                         "$y isa country, value 'Poland'; select $x";
-        MatchQueryMap query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         printMatchQueryResults(query.distinct());
-        MatchQueryMap expandedQuery = reasoner.expandQuery(query);
+        MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
         printMatchQuery(expandedQuery);
         printMatchQueryResults(expandedQuery.distinct());
 
@@ -85,8 +85,8 @@ public class GeoInferenceTest {
                 "($x, $y) isa is-located-in;\n"+
                 "$y isa country;\n" +
                 "$y value 'Poland'; select $x";
-        MatchQueryMap query = qp.parseMatchQuery(queryString).getMatchQuery();
-        MatchQueryMap expandedQuery = reasoner.expandQuery(query);
+        MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
         printMatchQuery(expandedQuery);
         printMatchQueryResults(expandedQuery.distinct());
 
@@ -102,7 +102,7 @@ public class GeoInferenceTest {
 
     }
 
-    private void assertQueriesEqual(MatchQueryMap q1, MatchQueryMap q2) {
+    private void assertQueriesEqual(MatchQueryDefault q1, MatchQueryDefault q2) {
         assertEquals(Sets.newHashSet(q1), Sets.newHashSet(q2));
     }
 }

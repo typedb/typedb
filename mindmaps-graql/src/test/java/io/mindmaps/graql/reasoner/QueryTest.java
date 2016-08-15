@@ -112,7 +112,7 @@ public class QueryTest {
         Atomic recommendation = query.getAtomsWithType(graph.getType("recommendation")).iterator().next();
         query.expandAtomByQuery(recommendation, ruleLHS);
 
-        MatchQueryMap mq = query.getExpandedMatchQuery();
+        MatchQueryDefault mq = query.getExpandedMatchQuery();
 
         Query queryCopy = new Query(query);
         assertQueriesEqual( queryCopy.getExpandedMatchQuery(), query.getExpandedMatchQuery());
@@ -140,7 +140,7 @@ public class QueryTest {
         Atomic recommendation = query.getAtomsWithType(graph.getType("recommendation")).iterator().next();
         query.expandAtomByQuery(recommendation, ruleLHS);
 
-        MatchQueryMap mq = query.getExpandedMatchQuery();
+        MatchQueryDefault mq = query.getExpandedMatchQuery();
 
         Pattern.Disjunction<Pattern.Conjunction<Var.Admin>> disjunction = mq.admin().getPattern().getDisjunctiveNormalForm();
         System.out.println(disjunction.toString());
@@ -158,7 +158,7 @@ public class QueryTest {
     {
         String queryString = "match $x isa person;{$y isa product} or {$y isa tag};($x, $y) isa recommendation";
 
-        MatchQueryMap sq = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQueryDefault sq = qp.parseMatchQuery(queryString).getMatchQuery();
         System.out.println(sq.toString());
 
         Query query = new Query(queryString, graph);
@@ -174,7 +174,7 @@ public class QueryTest {
     {
         String queryString = "match $x isa person;{$y isa product} or {$y isa tag};($x, $y) isa recommendation";
 
-        MatchQueryMap sq = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQueryDefault sq = qp.parseMatchQuery(queryString).getMatchQuery();
         System.out.println(sq.toString());
 
         Query query = new Query(queryString, graph);
@@ -200,7 +200,7 @@ public class QueryTest {
 
     }
 
-    private void assertQueriesEqual(MatchQueryMap q1, MatchQueryMap q2) {
+    private void assertQueriesEqual(MatchQueryDefault q1, MatchQueryDefault q2) {
         assertEquals(Sets.newHashSet(q1), Sets.newHashSet(q2));
     }
 }

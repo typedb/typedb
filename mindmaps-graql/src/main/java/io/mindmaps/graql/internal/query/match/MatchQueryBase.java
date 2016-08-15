@@ -23,7 +23,7 @@ import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Type;
-import io.mindmaps.graql.MatchQueryMap;
+import io.mindmaps.graql.MatchQueryDefault;
 import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.internal.gremlin.Query;
@@ -43,7 +43,7 @@ import static java.util.stream.Collectors.toSet;
 /**
  * Base MatchQuery implementation that executes the gremlin traversal
  */
-public class MatchQueryBase implements MatchQueryMap.Admin {
+public class MatchQueryBase implements MatchQueryDefault.Admin {
 
     private final Pattern.Conjunction<Pattern.Admin> pattern;
 

@@ -67,7 +67,7 @@ public class QueryParserTest {
 
     @Test
     public void testRelationQuery() {
-        MatchQueryMap expected = qb.match(
+        MatchQueryDefault expected = qb.match(
                 QueryBuilder.var("brando").value("Marl B").isa("person"),
                 QueryBuilder.var().rel("actor", "brando").rel("char").rel("production-with-cast", "prod")
         ).select("char", "prod");
@@ -84,7 +84,7 @@ public class QueryParserTest {
 
     @Test
     public void testPredicateQuery1() {
-        MatchQueryMap expected = qb.match(
+        MatchQueryDefault expected = qb.match(
                 QueryBuilder.var("x").isa("movie")
                         .value(ValuePredicate.any(ValuePredicate.eq("Apocalypse Now"), ValuePredicate.lt("Juno").and(ValuePredicate.gt("Godfather")), ValuePredicate.eq("Spy")).and(ValuePredicate.neq("Apocalypse Now")))
         );
@@ -100,7 +100,7 @@ public class QueryParserTest {
 
     @Test
     public void testPredicateQuery2() {
-        MatchQueryMap expected = qb.match(
+        MatchQueryDefault expected = qb.match(
                 QueryBuilder.var("x").isa("movie").value(ValuePredicate.all(ValuePredicate.lte("Juno"), ValuePredicate.gte("Godfather"), ValuePredicate.neq("Heat")).or(ValuePredicate.eq("The Muppets")))
         );
 
@@ -113,7 +113,7 @@ public class QueryParserTest {
 
     @Test
     public void testPredicateQuery3() {
-        MatchQueryMap expected = qb.match(
+        MatchQueryDefault expected = qb.match(
                 QueryBuilder.var().rel("x").rel("y"),
                 QueryBuilder.var("y").isa("person").value(ValuePredicate.contains("ar").or(ValuePredicate.regex("^M.*$")))
         );
@@ -131,7 +131,7 @@ public class QueryParserTest {
 
         long date = dateFormat.parse("Mon Mar 03 00:00:00 BST 1986").getTime();
 
-        MatchQueryMap expected = qb.match(
+        MatchQueryDefault expected = qb.match(
                 QueryBuilder.var("x")
                         .has("release-date", ValuePredicate.lt(date))
                         .has("tmdb-vote-count", 100)
@@ -147,7 +147,7 @@ public class QueryParserTest {
 
     @Test
     public void testLongComparatorQuery() throws ParseException {
-        MatchQueryMap expected = qb.match(
+        MatchQueryDefault expected = qb.match(
                 QueryBuilder.var("x").has("tmdb-vote-count", ValuePredicate.lte(400))
         );
 
@@ -158,7 +158,7 @@ public class QueryParserTest {
 
     @Test
     public void testModifierQuery() {
-        MatchQueryMap expected = qb.match(
+        MatchQueryDefault expected = qb.match(
                 QueryBuilder.var().rel("x").rel("y"),
                 QueryBuilder.var("y").isa("movie")
         ).limit(4).offset(2).distinct().orderBy("y");
@@ -171,14 +171,14 @@ public class QueryParserTest {
 
     @Test
     public void testOntologyQuery() {
-        MatchQueryMap expected = qb.match(QueryBuilder.var("x").playsRole("actor")).orderBy("x");
+        MatchQueryDefault expected = qb.match(QueryBuilder.var("x").playsRole("actor")).orderBy("x");
         MatchQueryPrinter parsed = qp.parseMatchQuery("match $x plays-role actor, order by $x asc");
         assertOrderedQueriesEqual(expected, parsed);
     }
 
     @Test
     public void testGetterQuery() {
-        MatchQueryMap expected = qb.match(QueryBuilder.var("x").isa("movie"), QueryBuilder.var().rel("x").rel("y")).select("x", "y");
+        MatchQueryDefault expected = qb.match(QueryBuilder.var("x").isa("movie"), QueryBuilder.var().rel("x").rel("y")).select("x", "y");
 
         MatchQueryPrinter parsed = qp.parseMatchQuery(
                 "match $x isa movie; ($x, $y) select $x(id, has release-date), $y(value isa)"
@@ -189,28 +189,28 @@ public class QueryParserTest {
 
     @Test
     public void testOrderQuery() {
-        MatchQueryMap expected = qb.match(QueryBuilder.var("x").isa("movie")).orderBy("x", "release-date", false);
+        MatchQueryDefault expected = qb.match(QueryBuilder.var("x").isa("movie")).orderBy("x", "release-date", false);
         MatchQueryPrinter parsed = qp.parseMatchQuery("match $x isa movie order by $x(has release-date) desc");
         assertOrderedQueriesEqual(expected, parsed);
     }
 
     @Test
     public void testHasValueQuery() {
-        MatchQueryMap expected = qb.match(QueryBuilder.var("x").value());
+        MatchQueryDefault expected = qb.match(QueryBuilder.var("x").value());
         MatchQueryPrinter parsed = qp.parseMatchQuery("match $x value");
         assertQueriesEqual(expected, parsed);
     }
 
     @Test
     public void testHasTmdbVoteCountQuery() {
-        MatchQueryMap expected = qb.match(QueryBuilder.var("x").has("tmdb-vote-count"));
+        MatchQueryDefault expected = qb.match(QueryBuilder.var("x").has("tmdb-vote-count"));
         MatchQueryPrinter parsed = qp.parseMatchQuery("match $x has tmdb-vote-count");
         assertQueriesEqual(expected, parsed);
     }
 
     @Test
     public void testVariablesEverywhereQuery() {
-        MatchQueryMap expected = qb.match(
+        MatchQueryDefault expected = qb.match(
                 QueryBuilder.var().rel(QueryBuilder.var("p"), "x").rel("y"),
                 QueryBuilder.var("x").isa(QueryBuilder.var("z")),
                 QueryBuilder.var("y").value("crime"),
@@ -232,7 +232,7 @@ public class QueryParserTest {
 
     @Test
     public void testOrQuery() {
-        MatchQueryMap expected = qb.match(
+        MatchQueryDefault expected = qb.match(
                 QueryBuilder.var("x").isa("movie"),
                 QueryBuilder.or(
                         QueryBuilder.and(QueryBuilder.var("y").isa("genre").value("drama"), QueryBuilder.var().rel("x").rel("y")),
@@ -333,7 +333,7 @@ public class QueryParserTest {
 
     @Test
     public void testMatchDataTypeQuery() {
-        MatchQueryMap expected = qb.match(QueryBuilder.var("x").datatype(Data.DOUBLE));
+        MatchQueryDefault expected = qb.match(QueryBuilder.var("x").datatype(Data.DOUBLE));
         MatchQueryPrinter parsed = qp.parseMatchQuery("match $x datatype double");
 
         assertQueriesEqual(expected, parsed);
@@ -343,7 +343,7 @@ public class QueryParserTest {
     public void testInsertDataTypeQuery() {
         qp.parseInsertQuery("insert my-type isa resource-type, datatype long").execute();
 
-        MatchQueryMap query = qb.match(QueryBuilder.var("x").id("my-type"));
+        MatchQueryDefault query = qb.match(QueryBuilder.var("x").id("my-type"));
         Data datatype = query.iterator().next().get("x").asResourceType().getDataType();
 
         assertEquals(Data.LONG, datatype);
@@ -387,7 +387,7 @@ public class QueryParserTest {
     public void testQueryParserWithoutGraph() {
         QueryParser queryParserNoGraph = QueryParser.create();
         String queryString = "match $x isa movie select $x";
-        MatchQueryMap query = queryParserNoGraph.parseMatchQuery("match $x isa movie select $x").getMatchQuery();
+        MatchQueryDefault query = queryParserNoGraph.parseMatchQuery("match $x isa movie select $x").getMatchQuery();
         assertEquals(queryString, query.toString());
         assertTrue(query.withTransaction(transaction).stream().findAny().isPresent());
     }
@@ -407,14 +407,14 @@ public class QueryParserTest {
         qp.parseInsertQuery("insert $x isa movie; insert $y isa movie").execute();
     }
 
-    private void assertOrderedQueriesEqual(MatchQueryMap query, MatchQueryPrinter parsedQuery) {
+    private void assertOrderedQueriesEqual(MatchQueryDefault query, MatchQueryPrinter parsedQuery) {
         assertEquals(
                 Lists.newArrayList(query).toString(),
                 Lists.newArrayList(parsedQuery.getMatchQuery()).toString()
         );
     }
 
-    public static void assertQueriesEqual(MatchQueryMap query, MatchQueryPrinter parsedQuery) {
+    public static void assertQueriesEqual(MatchQueryDefault query, MatchQueryPrinter parsedQuery) {
         assertEquals(Sets.newHashSet(query), Sets.newHashSet(parsedQuery.getMatchQuery()));
     }
 }

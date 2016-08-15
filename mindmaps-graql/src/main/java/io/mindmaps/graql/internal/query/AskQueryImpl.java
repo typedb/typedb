@@ -20,19 +20,19 @@ package io.mindmaps.graql.internal.query;
 
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.graql.AskQuery;
-import io.mindmaps.graql.MatchQueryMap;
+import io.mindmaps.graql.MatchQueryDefault;
 
 /**
  * An AskQuery to check if a given pattern matches anywhere in the graph
  */
 public class AskQueryImpl implements AskQuery.Admin {
 
-    private final MatchQueryMap matchQuery;
+    private final MatchQueryDefault matchQuery;
 
     /**
      * @param matchQuery the match query that the ask query will search for in the graph
      */
-    public AskQueryImpl(MatchQueryMap matchQuery) {
+    public AskQueryImpl(MatchQueryDefault matchQuery) {
         this.matchQuery = matchQuery;
     }
 
@@ -57,7 +57,7 @@ public class AskQueryImpl implements AskQuery.Admin {
     }
 
     @Override
-    public MatchQueryMap getMatchQuery() {
+    public MatchQueryDefault getMatchQuery() {
         return matchQuery;
     }
 }

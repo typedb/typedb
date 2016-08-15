@@ -25,7 +25,7 @@ import io.mindmaps.core.implementation.ConceptException;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Resource;
 import io.mindmaps.graql.DeleteQuery;
-import io.mindmaps.graql.MatchQueryMap;
+import io.mindmaps.graql.MatchQueryDefault;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.internal.validation.DeleteQueryValidator;
 
@@ -38,13 +38,13 @@ import java.util.stream.Collectors;
  */
 public class DeleteQueryImpl implements DeleteQuery.Admin {
     private final ImmutableMap<String, Var.Admin> deleters;
-    private final MatchQueryMap.Admin matchQuery;
+    private final MatchQueryDefault.Admin matchQuery;
 
     /**
      * @param deleters a collection of variable patterns to delete
      * @param matchQuery a pattern to match and delete for each result
      */
-    public DeleteQueryImpl(Collection<Var.Admin> deleters, MatchQueryMap matchQuery) {
+    public DeleteQueryImpl(Collection<Var.Admin> deleters, MatchQueryDefault matchQuery) {
         Map<String, Var.Admin> deletersMap =
                 deleters.stream().collect(Collectors.toMap(Var.Admin::getName, Function.identity()));
         this.deleters = ImmutableMap.copyOf(deletersMap);
@@ -172,7 +172,7 @@ public class DeleteQueryImpl implements DeleteQuery.Admin {
     }
 
     @Override
-    public MatchQueryMap getMatchQuery() {
+    public MatchQueryDefault getMatchQuery() {
         return matchQuery;
     }
 }

@@ -76,14 +76,14 @@ public class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public MatchQueryPrinter visitMatchQuery(GraqlParser.MatchQueryContext ctx) {
         Collection<Pattern> patterns = visitPatterns(ctx.patterns());
-        MatchQueryMap matchQuery = queryBuilder.match(patterns);
-        MatchQueryMap matchQueryModified = visitModifiers(ctx.modifiers()).apply(matchQuery);
+        MatchQueryDefault matchQuery = queryBuilder.match(patterns);
+        MatchQueryDefault matchQueryModified = visitModifiers(ctx.modifiers()).apply(matchQuery);
         return new MatchQueryPrinter(matchQueryModified, getters);
     }
 
     @Override
     public AskQuery visitAskQuery(GraqlParser.AskQueryContext ctx) {
-        MatchQueryMap matchQuery = visitMatchQuery(ctx.matchQuery()).getMatchQuery();
+        MatchQueryDefault matchQuery = visitMatchQuery(ctx.matchQuery()).getMatchQuery();
         return matchQuery.ask();
     }
 
@@ -92,7 +92,7 @@ public class QueryVisitor extends GraqlBaseVisitor {
         Collection<Var> vars = visitInsertPatterns(ctx.insertPatterns());
 
         if (ctx.matchQuery() != null) {
-            MatchQueryMap matchQuery = visitMatchQuery(ctx.matchQuery()).getMatchQuery();
+            MatchQueryDefault matchQuery = visitMatchQuery(ctx.matchQuery()).getMatchQuery();
             return matchQuery.insert(vars);
         } else {
             return queryBuilder.insert(vars);
@@ -103,12 +103,12 @@ public class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public DeleteQuery visitDeleteQuery(GraqlParser.DeleteQueryContext ctx) {
         Collection<Var> getters = visitDeletePatterns(ctx.deletePatterns());
-        MatchQueryMap matchQuery = visitMatchQuery(ctx.matchQuery()).getMatchQuery();
+        MatchQueryDefault matchQuery = visitMatchQuery(ctx.matchQuery()).getMatchQuery();
         return matchQuery.delete(getters);
     }
 
     @Override
-    public UnaryOperator<MatchQueryMap> visitSelectors(GraqlParser.SelectorsContext ctx) {
+    public UnaryOperator<MatchQueryDefault> visitSelectors(GraqlParser.SelectorsContext ctx) {
         getters.clear();
         Set<String> names = ctx.selector().stream().map(this::visitSelector).collect(Collectors.toSet());
         return matchQuery -> matchQuery.select(names);
@@ -418,27 +418,27 @@ public class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public UnaryOperator<MatchQueryMap> visitModifiers(GraqlParser.ModifiersContext ctx) {
+    public UnaryOperator<MatchQueryDefault> visitModifiers(GraqlParser.ModifiersContext ctx) {
         return ctx.modifier().stream().map(this::visitModifier).reduce(UnaryOperator.identity(), this::compose);
     }
 
     @Override
-    public UnaryOperator<MatchQueryMap> visitModifierLimit(GraqlParser.ModifierLimitContext ctx) {
+    public UnaryOperator<MatchQueryDefault> visitModifierLimit(GraqlParser.ModifierLimitContext ctx) {
         return matchQuery -> matchQuery.limit(getInteger(ctx.INTEGER()));
     }
 
     @Override
-    public UnaryOperator<MatchQueryMap> visitModifierOffset(GraqlParser.ModifierOffsetContext ctx) {
+    public UnaryOperator<MatchQueryDefault> visitModifierOffset(GraqlParser.ModifierOffsetContext ctx) {
         return matchQuery -> matchQuery.offset(getInteger(ctx.INTEGER()));
     }
 
     @Override
-    public UnaryOperator<MatchQueryMap> visitModifierDistinct(GraqlParser.ModifierDistinctContext ctx) {
-        return MatchQueryMap::distinct;
+    public UnaryOperator<MatchQueryDefault> visitModifierDistinct(GraqlParser.ModifierDistinctContext ctx) {
+        return MatchQueryDefault::distinct;
     }
 
     @Override
-    public UnaryOperator<MatchQueryMap> visitModifierOrderBy(GraqlParser.ModifierOrderByContext ctx) {
+    public UnaryOperator<MatchQueryDefault> visitModifierOrderBy(GraqlParser.ModifierOrderByContext ctx) {
         // decide which ordering method to use
         String var = getVariable(ctx.VARIABLE());
         if (ctx.id() != null) {
@@ -470,10 +470,10 @@ public class QueryVisitor extends GraqlBaseVisitor {
         return (Pattern) visit(ctx);
     }
 
-    private UnaryOperator<MatchQueryMap> visitModifier(GraqlParser.ModifierContext ctx) {
+    private UnaryOperator<MatchQueryDefault> visitModifier(GraqlParser.ModifierContext ctx) {
         // All modifiers return UnaryOperator<MatchQuery>
         //noinspection unchecked
-        return (UnaryOperator<MatchQueryMap>) visit(ctx);
+        return (UnaryOperator<MatchQueryDefault>) visit(ctx);
     }
 
     private ValuePredicate visitPredicate(GraqlParser.PredicateContext ctx) {

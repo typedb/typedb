@@ -19,7 +19,7 @@
 package io.mindmaps.graql.internal.validation;
 
 import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.graql.MatchQueryMap;
+import io.mindmaps.graql.MatchQueryDefault;
 
 import java.util.stream.Stream;
 
@@ -28,12 +28,12 @@ import java.util.stream.Stream;
  */
 public class MatchQueryValidator implements Validator {
 
-    private final MatchQueryMap.Admin matchQuery;
+    private final MatchQueryDefault.Admin matchQuery;
 
     /**
      * @param matchQuery the match query to validate
      */
-    public MatchQueryValidator(MatchQueryMap.Admin matchQuery) {
+    public MatchQueryValidator(MatchQueryDefault.Admin matchQuery) {
         this.matchQuery = matchQuery;
     }
 

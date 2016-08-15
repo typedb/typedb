@@ -25,7 +25,7 @@ import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
-import io.mindmaps.graql.MatchQueryMap;
+import io.mindmaps.graql.MatchQueryDefault;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.ValuePredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
@@ -59,14 +59,14 @@ public class MatchQueryModifierTest {
 
     @Test
     public void testOffsetQuery() {
-        MatchQueryMap query = qb.match(QueryBuilder.var("x").isa("movie")).orderBy("x", false).offset(4);
+        MatchQueryDefault query = qb.match(QueryBuilder.var("x").isa("movie")).orderBy("x", false).offset(4);
 
         assertResultsOrderedById(query, "x", false);
     }
 
     @Test
     public void testLimitQuery() {
-        MatchQueryMap query = qb.match(QueryBuilder.var("x").isa("movie")).orderBy("x", true).offset(1).limit(3);
+        MatchQueryDefault query = qb.match(QueryBuilder.var("x").isa("movie")).orderBy("x", true).offset(1).limit(3);
 
         assertResultsOrderedById(query, "x", true);
         assertEquals(3, query.stream().count());
@@ -74,7 +74,7 @@ public class MatchQueryModifierTest {
 
     @Test
     public void testOrPatternOrderByResource() {
-        MatchQueryMap query = qb.match(
+        MatchQueryDefault query = qb.match(
                 QueryBuilder.var("x").isa("movie"),
                 QueryBuilder.var().rel("x").rel("y"),
                 QueryBuilder.or(
@@ -88,7 +88,7 @@ public class MatchQueryModifierTest {
 
     @Test
     public void testOrPatternOrderByUnselected() {
-        MatchQueryMap query = qb.match(
+        MatchQueryDefault query = qb.match(
                 QueryBuilder.var("x").isa("movie"),
                 QueryBuilder.var().rel("x").rel("y"),
                 QueryBuilder.or(
@@ -104,7 +104,7 @@ public class MatchQueryModifierTest {
 
     @Test
     public void testDegreeOrderedQuery() {
-        MatchQueryMap query = qb.match(QueryBuilder.var("the-movie").isa("movie")).orderBy("the-movie", false);
+        MatchQueryDefault query = qb.match(QueryBuilder.var("the-movie").isa("movie")).orderBy("the-movie", false);
 
         assertResultsOrderedById(query, "the-movie", false);
 
@@ -114,7 +114,7 @@ public class MatchQueryModifierTest {
 
     @Test
     public void testVoteCountOrderedQuery() {
-        MatchQueryMap query = qb.match(QueryBuilder.var("z").isa("movie")).orderBy("z", "tmdb-vote-count", false);
+        MatchQueryDefault query = qb.match(QueryBuilder.var("z").isa("movie")).orderBy("z", "tmdb-vote-count", false);
 
         // Make sure movies are in the correct order
         assertOrderedResultsMatch(query, "z", "movie", "Godfather", "Hocus-Pocus", "Apocalypse-Now", "The-Muppets");
@@ -125,7 +125,7 @@ public class MatchQueryModifierTest {
 
     @Test
     public void testOrPatternDistinct() {
-        MatchQueryMap query = qb.match(
+        MatchQueryDefault query = qb.match(
                 QueryBuilder.var("x").isa("movie"),
                 QueryBuilder.var().rel("x").rel("y"),
                 QueryBuilder.or(
@@ -139,7 +139,7 @@ public class MatchQueryModifierTest {
 
     @Test
     public void testNondistinctQuery() {
-        MatchQueryMap query = qb.match(
+        MatchQueryDefault query = qb.match(
                 QueryBuilder.var("x").isa("person"),
                 QueryBuilder.var("y").value("The Muppets"),
                 QueryBuilder.var().rel("x").rel("y")
@@ -152,7 +152,7 @@ public class MatchQueryModifierTest {
 
     @Test
     public void testDistinctQuery() {
-        MatchQueryMap query = qb.match(
+        MatchQueryDefault query = qb.match(
                 QueryBuilder.var("x").isa("person"),
                 QueryBuilder.var("y").value("The Muppets"),
                 QueryBuilder.var().rel("x").rel("y")
@@ -163,7 +163,7 @@ public class MatchQueryModifierTest {
         assertEquals(2, distinctResults.size());
     }
 
-    private void assertOrderedResultsMatch(MatchQueryMap query, String var, String expectedType, String... expectedIds) {
+    private void assertOrderedResultsMatch(MatchQueryDefault query, String var, String expectedType, String... expectedIds) {
         Queue<String> expectedQueue = new LinkedList<>(Arrays.asList(expectedIds));
 
         query.forEach(results -> {
@@ -179,7 +179,7 @@ public class MatchQueryModifierTest {
         assertTrue("expected ids not found: " + expectedQueue, expectedQueue.isEmpty());
     }
 
-    private void assertResultsOrderedById(MatchQueryMap query, String var, boolean asc) {
+    private void assertResultsOrderedById(MatchQueryDefault query, String var, boolean asc) {
         GraphTraversalSource g = ((MindmapsTransactionImpl) transaction).getTinkerTraversal();
         Stream<String> ids = query.stream().map(results -> results.get(var)).map(
                 result -> (String) g.V().has("ITEM_IDENTIFIER", result.getId()).values(ITEM_IDENTIFIER.name()).next()

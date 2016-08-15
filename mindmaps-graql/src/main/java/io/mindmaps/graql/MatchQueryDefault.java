@@ -40,12 +40,12 @@ import static java.util.stream.Collectors.toList;
  * Each matching subgraph will produce a map, where keys are variable names and values are concepts in the graph.
  */
 @SuppressWarnings("UnusedReturnValue")
-public interface MatchQueryMap extends MatchQuery<Map<String, Concept>> {
+public interface MatchQueryDefault extends MatchQuery<Map<String, Concept>> {
     /**
      * @param names an array of variable names to select
      * @return a new MatchQuery that selects the given variables
      */
-    default MatchQueryMap select(String... names) {
+    default MatchQueryDefault select(String... names) {
         return select(Sets.newHashSet(names));
     }
 
@@ -53,7 +53,7 @@ public interface MatchQueryMap extends MatchQuery<Map<String, Concept>> {
      * @param names a set of variable names to select
      * @return a new MatchQuery that selects the given variables
      */
-    default MatchQueryMap select(Set<String> names) {
+    default MatchQueryDefault select(Set<String> names) {
         return new MatchQuerySelect(admin(), ImmutableSet.copyOf(names));
     }
 
@@ -119,7 +119,7 @@ public interface MatchQueryMap extends MatchQuery<Map<String, Concept>> {
      * @param varName the variable name to order the results by
      * @return a new MatchQuery with the given ordering
      */
-    default MatchQueryMap orderBy(String varName) {
+    default MatchQueryDefault orderBy(String varName) {
         return orderBy(varName, true);
     }
 
@@ -129,7 +129,7 @@ public interface MatchQueryMap extends MatchQuery<Map<String, Concept>> {
      * @param asc whether to use ascending order
      * @return a new MatchQuery with the given ordering
      */
-    default MatchQueryMap orderBy(String varName, boolean asc) {
+    default MatchQueryDefault orderBy(String varName, boolean asc) {
         return new MatchQueryOrder(admin(), new MatchOrder(varName, Optional.empty(), asc));
     }
 
@@ -139,7 +139,7 @@ public interface MatchQueryMap extends MatchQuery<Map<String, Concept>> {
      * @param resourceType the resource type attached to the variable to use for ordering
      * @return a new MatchQuery with the given ordering
      */
-    default MatchQueryMap orderBy(String varName, String resourceType) {
+    default MatchQueryDefault orderBy(String varName, String resourceType) {
         return orderBy(varName, resourceType, true);
     }
 
@@ -150,28 +150,28 @@ public interface MatchQueryMap extends MatchQuery<Map<String, Concept>> {
      * @param asc whether to use ascending order
      * @return a new MatchQuery with the given ordering
      */
-    default MatchQueryMap orderBy(String varName, String resourceType, boolean asc) {
+    default MatchQueryDefault orderBy(String varName, String resourceType, boolean asc) {
         return new MatchQueryOrder(admin(), new MatchOrder(varName, Optional.of(resourceType), asc));
     }
 
 
     @Override
-    default MatchQueryMap withTransaction(MindmapsTransaction transaction) {
+    default MatchQueryDefault withTransaction(MindmapsTransaction transaction) {
         return new MatchQueryWrapper(MatchQuery.super.withTransaction(transaction).admin(), admin());
     }
 
     @Override
-    default MatchQueryMap limit(long limit) {
+    default MatchQueryDefault limit(long limit) {
         return new MatchQueryWrapper(MatchQuery.super.limit(limit).admin(), admin());
     }
 
     @Override
-    default MatchQueryMap offset(long offset) {
+    default MatchQueryDefault offset(long offset) {
         return new MatchQueryWrapper(MatchQuery.super.offset(offset).admin(), admin());
     }
 
     @Override
-    default MatchQueryMap distinct() {
+    default MatchQueryDefault distinct() {
         return new MatchQueryWrapper(MatchQuery.super.distinct().admin(), admin());
     }
 
@@ -183,10 +183,10 @@ public interface MatchQueryMap extends MatchQuery<Map<String, Concept>> {
     /**
      * Admin class for inspecting and manipulating a MatchQuery
      */
-    interface Admin extends MatchQueryMap, MatchQuery.Admin<Map<String, Concept>> {
+    interface Admin extends MatchQueryDefault, MatchQuery.Admin<Map<String, Concept>> {
 
         @Override
-        default MatchQueryMap.Admin admin() {
+        default MatchQueryDefault.Admin admin() {
             return this;
         }
 

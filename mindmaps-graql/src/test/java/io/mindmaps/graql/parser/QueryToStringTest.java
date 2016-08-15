@@ -23,7 +23,7 @@ import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.Data;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
-import io.mindmaps.graql.MatchQueryMap;
+import io.mindmaps.graql.MatchQueryDefault;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.QueryParser;
 import org.junit.Before;
@@ -57,7 +57,7 @@ public class QueryToStringTest {
 
     @Test
     public void testComplexQueryToString() {
-        MatchQueryMap query = qb.match(
+        MatchQueryDefault query = qb.match(
                 var("x").isa("movie"),
                 var().rel("x").rel("y"),
                 or(
@@ -150,7 +150,7 @@ public class QueryToStringTest {
         qb.match(var("x").isa(var().value("abc"))).toString();
     }
 
-    private void assertValidToString(MatchQueryMap query) {
+    private void assertValidToString(MatchQueryDefault query) {
         QueryParserTest.assertQueriesEqual(query, qp.parseMatchQuery(query.toString()));
     }
 }

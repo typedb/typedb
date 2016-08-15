@@ -20,7 +20,7 @@ package io.mindmaps.graql.reasoner.inference;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.graql.MatchQueryMap;
+import io.mindmaps.graql.MatchQueryDefault;
 import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.MindmapsReasoner;
 import io.mindmaps.graql.reasoner.graphs.WineGraph;
@@ -44,7 +44,7 @@ public class WineInferenceTest {
         qp = QueryParser.create(graph);
     }
 
-    private static void printMatchQuery(MatchQueryMap query) {
+    private static void printMatchQuery(MatchQueryDefault query) {
         System.out.println(query.toString().replace(" or ", "\nor\n").replace("};", "};\n").replace("; {", ";\n{"));
     }
 
@@ -52,8 +52,8 @@ public class WineInferenceTest {
     public void testRecommendation() {
 
         String queryString = "match $x isa person;$y isa wine;($x, $y) isa wine-recommendation";
-        MatchQueryMap query = qp.parseMatchQuery(queryString).getMatchQuery();
-        MatchQueryMap expandedQuery = reasoner.expandQuery(query);
+        MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
 
         printMatchQuery(expandedQuery);
         System.out.println("DNF size: " + expandedQuery.admin().getPattern().getDisjunctiveNormalForm().getPatterns().size());
@@ -71,7 +71,7 @@ public class WineInferenceTest {
 
     }
 
-    private void assertQueriesEqual(MatchQueryMap q1, MatchQueryMap q2) {
+    private void assertQueriesEqual(MatchQueryDefault q1, MatchQueryDefault q2) {
         assertEquals(Sets.newHashSet(q1), Sets.newHashSet(q2));
     }
 }
