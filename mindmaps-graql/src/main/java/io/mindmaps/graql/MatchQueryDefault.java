@@ -34,9 +34,7 @@ import static java.util.stream.Collectors.toList;
 
 /**
  * a query used for finding data in a graph that matches the given patterns.
- * <p>
- * The {@code MatchQuery} is a pattern-matching query. The patterns are described in a declarative fashion, forming a
- * subgraph, then the {@code MatchQuery} will traverse the graph in an efficient fashion to find any matching subgraphs.
+ *
  * Each matching subgraph will produce a map, where keys are variable names and values are concepts in the graph.
  */
 @SuppressWarnings("UnusedReturnValue")

@@ -27,6 +27,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+/**
+ * a query used for finding data in a graph that matches the given patterns.
+ * <p>
+ * The {@code MatchQuery} is a pattern-matching query. The patterns are described in a declarative fashion, forming a
+ * subgraph, then the {@code MatchQuery} will traverse the graph in an efficient fashion to find any matching subgraphs.
+ *
+ * @param <T> the type of the results of the query
+ */
 public interface MatchQuery<T> extends Streamable<T> {
 
     default Stream<T> stream() {

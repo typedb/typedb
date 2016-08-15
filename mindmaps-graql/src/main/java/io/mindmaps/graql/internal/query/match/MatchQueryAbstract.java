@@ -28,7 +28,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Abstract MatchQuery implementation, which contains an 'inner' MatchQuery.
+ * A MatchQuery implementation, which contains an 'inner' MatchQuery.
  *
  * This class behaves like a singly-linked list, referencing another MatchQuery until it reaches a MatchQueryBase.
  *
