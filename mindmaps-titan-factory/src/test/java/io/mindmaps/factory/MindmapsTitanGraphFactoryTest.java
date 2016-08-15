@@ -67,11 +67,7 @@ public class MindmapsTitanGraphFactoryTest {
 
         titanGraphFactory = new MindmapsTitanGraphFactory();
         MindmapsGraph graph = titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG);
-        try {
-            graph.clear();
-        } catch(IllegalArgumentException e){
-            System.out.println("Ignoring clearing commit logs");
-        }
+        graph.clear();
     }
 
     @Test
@@ -380,17 +376,4 @@ public class MindmapsTitanGraphFactoryTest {
         MindmapsGraphImpl graph = (MindmapsGraphImpl) titanGraphFactory.getGraph(TEST_NAME, "invalid_uri", TEST_CONFIG);
         assertEquals("invalid_uri", graph.getEngineUrl());
     }
-
-    @Test
-    public void testGetGraphComputer(){
-        MindmapsGraphImpl graph = (MindmapsGraphImpl) titanGraphFactory.getGraph(TEST_NAME, TEST_URI, TEST_CONFIG);
-        assertEquals(FulgoraGraphComputer.class, graph.getGraphComputer());
-    }
-
-    /*@Ignore
-    @Test
-    public void testGetGraphComputer2(){
-        MindmapsGraphImpl graph = (MindmapsGraphImpl) new MindmapsTitanHadoopGraphFactory().getGraph(TEST_NAME, null, "../conf/mindmaps-analytics.properties");
-        assertEquals(SparkGraphComputer.class, graph.getGraphComputer());
-    }*/
 }

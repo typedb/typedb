@@ -168,8 +168,7 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
     //----------------------------------------------Concept Functionality-----------------------------------------------
     //------------------------------------ Construction
     private Vertex addVertex(DataType.BaseType baseType){
-        Vertex v = getTinkerPopGraph().addVertex(baseType.name());
-        return v;
+        return getTinkerPopGraph().addVertex(baseType.name());
     }
     private Vertex addInstanceVertex(DataType.BaseType baseType, Type type){
         Vertex v = addVertex(baseType);
@@ -688,8 +687,12 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
         JSONObject postObject = new JSONObject();
         postObject.put("concepts", jsonArray);
 
-        String result = EngineCommunicator.contactEngine(getRootGraph().getCommitLogEndPoint(), "POST", postObject.toString());
-        LOG.info("Response from engine [" + result + "]");
+        try {
+            String result = EngineCommunicator.contactEngine(getRootGraph().getCommitLogEndPoint(), "POST", postObject.toString());
+            LOG.info("Response from engine [" + result + "]");
+        } catch (IllegalArgumentException e) {
+            LOG.error(ErrorMessage.COULD_NOT_REACH_ENGINE.getMessage(getRootGraph().getCommitLogEndPoint()), e);
+        }
     }
 
     //------------------------------------------ Fixing Code for Postprocessing ----------------------------------------

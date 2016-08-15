@@ -27,9 +27,14 @@ public class RESTUtil {
         public static final String VALUE_FIELD = "value";
         public static final String ID_PARAMETER = ":id";
         public static final String GRAPH_NAME_PARAM = "graphName";
+        public static final String GRAPH_CONFIG_PARAM = "graphConfig";
         public static final String UUID_PARAMETER = ":uuid";
+    }
 
-
+    public static class GraphConfig{
+        public static final String DEFAULT = "default";
+        public static final String BATCH = "batch";
+        public static final String COMPUTER = "computer";
     }
 
     public static class HttpConn{

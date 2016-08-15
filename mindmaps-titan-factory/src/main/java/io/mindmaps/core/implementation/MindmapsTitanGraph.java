@@ -24,8 +24,8 @@ import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
 
 public class MindmapsTitanGraph extends MindmapsGraphImpl {
-    public MindmapsTitanGraph(TitanGraph graph, String engineUrl, String graphComputer){
-        super(graph, engineUrl, graphComputer);
+    public MindmapsTitanGraph(TitanGraph graph, String engineUrl){
+        super(graph, engineUrl);
     }
 
     @Override
@@ -44,6 +44,10 @@ public class MindmapsTitanGraph extends MindmapsGraphImpl {
         titanGraph.close();
         TitanCleanup.clear(titanGraph);
 
-        EngineCommunicator.contactEngine(getCommitLogEndPoint(), "DELETE");
+        try {
+            EngineCommunicator.contactEngine(getCommitLogEndPoint(), "DELETE");
+        } catch (IllegalArgumentException e){
+            LOG.error(ErrorMessage.COULD_NOT_REACH_ENGINE.getMessage(getCommitLogEndPoint()), e);
+        }
     }
 }

@@ -20,6 +20,7 @@ package io.mindmaps.api;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
@@ -126,7 +127,7 @@ public class BlockingLoaderTest {
 
     @After
     public void cleanGraph() {
-        GraphFactory.getInstance().getGraph(graphName).clear();
+            GraphFactory.getInstance().getGraph(graphName).clear();
     }
 
 }

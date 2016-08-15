@@ -18,15 +18,21 @@
 
 package io.mindmaps.factory;
 
+import io.mindmaps.MindmapsComputer;
+import io.mindmaps.constants.RESTUtil;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.implementation.EngineCommunicator;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.PropertyResourceBundle;
+
+import static io.mindmaps.constants.RESTUtil.Request.GRAPH_CONFIG_PARAM;
+import static io.mindmaps.constants.RESTUtil.WebPath.GRAPH_FACTORY_URI;
 
 /**
  * A client for creating a mindmaps graph from a running engine.
@@ -35,7 +41,8 @@ import java.util.PropertyResourceBundle;
  */
 public class MindmapsClient {
     private static final String DEFAULT_URI = "localhost:4567";
-    private static final String REST_END_POINT = "/graph_factory";
+    private static final String FACTORY = "factory.internal";
+    private static final String COMPUTER = "graph.computer";
     private static final Map<String, MindmapsGraphFactory> openFactories = new HashMap<>();
 
     /**
@@ -54,8 +61,38 @@ public class MindmapsClient {
      * @return A new or existing mindmaps graph with the defined name connecting to the specified remote uri
      */
     public static MindmapsGraph getGraph(String name, String uri){
+        ConfigureFactory configuredFactory = configureGraphFactory(uri, RESTUtil.GraphConfig.DEFAULT);
+        return configuredFactory.factory.getGraph(name, uri, configuredFactory.path);
+    }
+
+    /**
+     *
+     * @return A new or existing mindmaps graph compute with the defined name
+     */
+    public static MindmapsComputer getGraphComputer() {
+        return getGraphComputer(DEFAULT_URI);
+    }
+
+    /**
+     *
+     * @param uri The remote uri fo where engine is located
+     * @return A new or existing mindmaps graph compute with the defined name
+     */
+    public static MindmapsComputer getGraphComputer(String uri) {
+        ConfigureFactory configuredFactory = configureGraphFactory(uri, RESTUtil.GraphConfig.COMPUTER);
+        Graph graph = configuredFactory.factory.getTinkerPopGraph(null, uri, configuredFactory.path);
+        return new MindmapsComputer(graph, configuredFactory.graphComputer);
+    }
+
+    /**
+     *
+     * @param uri The remote uri fo where engine is located
+     * @param graphType The type of graph to produce, default, batch, or compute
+     * @return A new or existing mindmaps graph with the defined name connecting to the specified remote uri
+     */
+    private static ConfigureFactory configureGraphFactory(String uri, String graphType){
         try {
-            String restFactoryUri = uri + REST_END_POINT;
+            String restFactoryUri = uri + GRAPH_FACTORY_URI + "?" + GRAPH_CONFIG_PARAM + "=" + graphType;
             String config = EngineCommunicator.contactEngine(restFactoryUri, "GET");
 
             //TODO: We should make config handling generic rather than through files. Using a temp file here is a bit strange
@@ -71,17 +108,23 @@ public class MindmapsClient {
             PropertyResourceBundle bundle = new PropertyResourceBundle(fis);
 
             String factoryType;
+            String computer = null;
             try {
-                factoryType = bundle.getString("factory.internal");
+                factoryType = bundle.getString(FACTORY);
+                if(bundle.containsKey(COMPUTER)){
+                    computer = bundle.getString(COMPUTER);
+                }
             } catch(MissingResourceException e){
+                fis.close();
                 throw new IllegalArgumentException(ErrorMessage.MISSING_FACTORY_DEFINITION.getMessage());
             }
-
-            return getFactory(factoryType).getGraph(name, uri, path);
+            fis.close();
+            return new ConfigureFactory(path, computer, getFactory(factoryType));
         } catch (IOException e) {
             throw new IllegalArgumentException(ErrorMessage.CONFIG_NOT_FOUND.getMessage(uri, e.getMessage()));
         }
     }
+
 
     /**
      *
@@ -100,5 +143,18 @@ public class MindmapsClient {
             openFactories.put(factoryType, mindmapsGraphFactory);
         }
         return openFactories.get(factoryType);
+    }
+
+
+    private static class ConfigureFactory {
+        String path;
+        String graphComputer;
+        MindmapsGraphFactory factory;
+
+        ConfigureFactory(String path, String graphComputer, MindmapsGraphFactory factory){
+            this.path = path;
+            this.graphComputer = graphComputer;
+            this.factory = factory;
+        }
     }
 }

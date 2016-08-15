@@ -47,7 +47,7 @@ public class MindmapsTinkerGraphFactoryTest {
         MindmapsGraph graph = tinkerGraphFactory.getGraph("test", null, null);
         MindmapsTransaction transaction = graph.newTransaction();
         assertThat(graph, instanceOf(MindmapsTinkerGraph.class));
-        assertThat(transaction, instanceOf(MindmapsTinkerTransaction.class));;
+        assertThat(transaction, instanceOf(MindmapsTinkerTransaction.class));
 
         try {
             transaction.close();

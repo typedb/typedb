@@ -26,8 +26,8 @@ import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
  * Primarily used for testing
  */
 public class MindmapsTinkerGraph extends MindmapsGraphImpl {
-    public MindmapsTinkerGraph(){
-        super(TinkerGraph.open(), "localhost", null);
+    public MindmapsTinkerGraph(TinkerGraph tinkerGraph){
+        super(tinkerGraph, "localhost");
         new MindmapsTinkerTransaction(this).initialiseMetaConcepts();
     }
 
