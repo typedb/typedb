@@ -20,7 +20,7 @@
 package io.mindmaps.graql.internal.query.match;
 
 import com.google.common.collect.ImmutableSet;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.*;
 import io.mindmaps.graql.admin.AdminConverter;

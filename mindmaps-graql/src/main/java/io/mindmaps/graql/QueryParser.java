@@ -19,7 +19,7 @@
 package io.mindmaps.graql;
 
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.graql.internal.parser.GraqlLexer;
 import io.mindmaps.graql.internal.parser.GraqlParser;
 import io.mindmaps.graql.internal.parser.MatchQueryPrinter;

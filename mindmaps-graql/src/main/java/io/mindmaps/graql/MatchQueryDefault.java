@@ -20,7 +20,7 @@
 package io.mindmaps.graql;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.admin.MatchQueryDefaultAdmin;
 

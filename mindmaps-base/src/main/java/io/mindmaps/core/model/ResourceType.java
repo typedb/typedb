@@ -14,11 +14,13 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
 package io.mindmaps.core.model;
 
-import io.mindmaps.core.implementation.Data;
+
+import io.mindmaps.core.Data;
 
 import java.util.Collection;
 

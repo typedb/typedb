@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.internal.query;
 
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.graql.AskQuery;
 import io.mindmaps.graql.MatchQueryDefault;
 import io.mindmaps.graql.admin.AskQueryAdmin;

@@ -19,7 +19,7 @@
 package io.mindmaps.graql;
 
 import com.google.common.collect.ImmutableSet;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.graql.admin.AdminConverter;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;

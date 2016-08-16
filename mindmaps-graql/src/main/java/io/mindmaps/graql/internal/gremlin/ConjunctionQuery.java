@@ -18,8 +18,8 @@
 
 package io.mindmaps.graql.internal.gremlin;
 
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.query.Conjunction;

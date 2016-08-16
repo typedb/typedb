@@ -21,7 +21,7 @@ package io.mindmaps.graql.internal.query.match;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.admin.MatchQueryDefaultAdmin;
 

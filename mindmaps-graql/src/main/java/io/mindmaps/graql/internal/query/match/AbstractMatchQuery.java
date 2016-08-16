@@ -19,7 +19,7 @@
 
 package io.mindmaps.graql.internal.query.match;
 
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.graql.Aggregate;
 import io.mindmaps.graql.AggregateQuery;
 import io.mindmaps.graql.MatchQuery;

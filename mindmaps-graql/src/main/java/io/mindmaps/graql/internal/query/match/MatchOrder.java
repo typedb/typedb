@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.internal.query.match;
 
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.constants.DataType;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;

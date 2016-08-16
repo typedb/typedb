@@ -20,7 +20,7 @@ package io.mindmaps.api;
 
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.constants.RESTUtil;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.util.ConfigProperties;

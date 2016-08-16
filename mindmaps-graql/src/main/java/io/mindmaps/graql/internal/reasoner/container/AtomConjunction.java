@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.internal.reasoner.container;
 
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.query.Conjunction;

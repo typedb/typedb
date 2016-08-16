@@ -19,7 +19,7 @@
 package io.mindmaps.graql.internal.gremlin;
 
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.implementation.Data;
+import io.mindmaps.core.Data;
 import io.mindmaps.constants.DataType;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;

@@ -19,8 +19,8 @@
 package io.mindmaps.graql.internal.gremlin;
 
 import com.google.common.collect.ImmutableSet;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;

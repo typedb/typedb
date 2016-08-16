@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.internal.validation;
 
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 
 import java.util.List;
 import java.util.stream.Collectors;

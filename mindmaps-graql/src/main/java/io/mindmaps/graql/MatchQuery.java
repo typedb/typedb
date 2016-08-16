@@ -19,7 +19,7 @@
 
 package io.mindmaps.graql;
 
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.graql.admin.MatchQueryAdmin;
 
 import java.util.Optional;

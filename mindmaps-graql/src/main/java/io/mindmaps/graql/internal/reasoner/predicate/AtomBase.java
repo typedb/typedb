@@ -19,7 +19,7 @@
 package io.mindmaps.graql.internal.reasoner.predicate;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.graql.*;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
