@@ -21,10 +21,8 @@ package io.mindmaps.graql.internal.query.match;
 
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Type;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -32,17 +30,17 @@ import java.util.stream.Stream;
 /**
  * Modifier that specifies the transaction to execute the match query with.
  */
-public class MatchQueryTransaction extends MatchQueryDefault {
+public class MatchQueryTransaction<T> extends MatchQueryAbstract<T, T> {
 
     private final MindmapsTransaction transaction;
 
-    public MatchQueryTransaction(MindmapsTransaction transaction, Admin inner) {
+    public MatchQueryTransaction(MindmapsTransaction transaction, Admin<T> inner) {
         super(inner);
         this.transaction = transaction;
     }
 
     @Override
-    public Stream<Map<String, Concept>> stream(
+    public Stream<T> stream(
             Optional<MindmapsTransaction> transaction, Optional<MatchOrder> order
     ) {
         if (transaction.isPresent()) {
@@ -63,7 +61,7 @@ public class MatchQueryTransaction extends MatchQueryDefault {
     }
 
     @Override
-    protected Stream<Map<String, Concept>> transformStream(Stream<Map<String, Concept>> stream) {
+    protected Stream<T> transformStream(Stream<T> stream) {
         return stream;
     }
 

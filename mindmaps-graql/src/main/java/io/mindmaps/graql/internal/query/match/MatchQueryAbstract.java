@@ -19,49 +19,37 @@
 package io.mindmaps.graql.internal.query.match;
 
 import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.Pattern;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Default MatchQuery implementation, which contains an 'inner' MatchQuery.
+ * A MatchQuery implementation, which contains an 'inner' MatchQuery.
  *
  * This class behaves like a singly-linked list, referencing another MatchQuery until it reaches a MatchQueryBase.
  *
  * Query modifiers should extend this class and implement a stream() method that modifies the inner query.
  */
-public abstract class MatchQueryDefault implements MatchQuery.Admin {
+abstract class MatchQueryAbstract<S, T> implements MatchQuery.Admin<T> {
 
-    final MatchQuery.Admin inner;
+    final MatchQuery.Admin<S> inner;
 
-    MatchQueryDefault(MatchQuery.Admin inner) {
+    MatchQueryAbstract(MatchQuery.Admin<S> inner) {
         this.inner = inner;
     }
 
     @Override
-    public final Admin admin() {
-        return this;
-    }
-
-    @Override
-    public Stream<Map<String, Concept>> stream(Optional<MindmapsTransaction> transaction, Optional<MatchOrder> order) {
+    public Stream<T> stream(Optional<MindmapsTransaction> transaction, Optional<MatchOrder> order) {
         return transformStream(inner.stream(transaction, order));
     }
 
     @Override
     public final Set<Type> getTypes(MindmapsTransaction transaction) {
         return inner.getTypes(transaction);
-    }
-
-    @Override
-    public Set<String> getSelectedNames() {
-        return inner.getSelectedNames();
     }
 
     @Override
@@ -84,5 +72,5 @@ public abstract class MatchQueryDefault implements MatchQuery.Admin {
      * @param stream the stream to transform
      * @return the transformed stream
      */
-    protected abstract Stream<Map<String, Concept>> transformStream(Stream<Map<String, Concept>> stream);
+    protected abstract Stream<T> transformStream(Stream<S> stream);
 }

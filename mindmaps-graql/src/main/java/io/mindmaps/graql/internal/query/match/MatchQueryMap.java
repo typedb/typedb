@@ -14,31 +14,32 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
-package io.mindmaps.graql.internal.validation;
+package io.mindmaps.graql.internal.query.match;
 
-import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.graql.MatchQueryDefault;
+import io.mindmaps.graql.MatchQuery;
 
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
- * A validator for a MatchQuery
+ * A class for performing a generic 'map' operation on a MatchQuery, transforming every result.
+ * @param <S> The type of the results before transformation
+ * @param <T> The type of the results after transformation
  */
-public class MatchQueryValidator implements Validator {
+public class MatchQueryMap<S, T> extends MatchQueryAbstract<S, T> {
 
-    private final MatchQueryDefault.Admin matchQuery;
+    private final Function<S, T> function;
 
-    /**
-     * @param matchQuery the match query to validate
-     */
-    public MatchQueryValidator(MatchQueryDefault.Admin matchQuery) {
-        this.matchQuery = matchQuery;
+    public MatchQueryMap(MatchQuery.Admin<S> inner, Function<S, T> function) {
+        super(inner);
+        this.function = function;
     }
 
     @Override
-    public Stream<String> getErrors(MindmapsTransaction transaction) {
-        return new PatternValidator(matchQuery.getPattern()).getErrors(transaction);
+    protected Stream<T> transformStream(Stream<S> stream) {
+        return stream.map(function);
     }
 }

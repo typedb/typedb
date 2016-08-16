@@ -18,7 +18,6 @@
 
 package io.mindmaps.graql;
 
-import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.graql.internal.StringConverter;
 import io.mindmaps.graql.internal.query.ValuePredicateImpl;
 import org.apache.tinkerpop.gremlin.process.traversal.P;

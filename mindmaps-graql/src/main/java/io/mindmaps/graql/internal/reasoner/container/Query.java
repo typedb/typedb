@@ -22,11 +22,7 @@ import com.google.common.collect.Sets;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Rule;
 import io.mindmaps.core.model.Type;
-import io.mindmaps.graql.QueryParser;
-import io.mindmaps.graql.Pattern;
-import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.graql.Var;
+import io.mindmaps.graql.*;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
 
@@ -41,7 +37,7 @@ public class Query {
     private final Set<Atomic> atomSet;
     private final Map<Type, Set<Atomic>> typeAtomMap;
 
-    private MatchQuery matchQuery;
+    private MatchQueryDefault matchQuery;
 
     private Atomic parentAtom = null;
     private Rule rule = null;
@@ -63,7 +59,7 @@ public class Query {
         this.rule = r;
     }
 
-    public Query(MatchQuery query, MindmapsTransaction transaction) {
+    public Query(MatchQueryDefault query, MindmapsTransaction transaction) {
         this.graph = transaction;
         this.matchQuery = query;
         this.atomSet = getAtomSet(matchQuery);
@@ -283,11 +279,11 @@ public class Query {
         return getExpandedMatchQuery().admin().getPattern().getDisjunctiveNormalForm();
     }
 
-    public MatchQuery getMatchQuery() {
+    public MatchQueryDefault getMatchQuery() {
         return matchQuery;
     }
 
-    public MatchQuery getExpandedMatchQuery() {
+    public MatchQueryDefault getExpandedMatchQuery() {
 
         Set<String> selectVars = matchQuery.admin().getSelectedNames();
         Set<AtomConjunction> conjunctions = getAtomConjunctions();
@@ -329,7 +325,7 @@ public class Query {
         return getExpandedMatchQuery().admin().getPattern();
     }
 
-    private Set<Atomic> getAtomSet(MatchQuery query) {
+    private Set<Atomic> getAtomSet(MatchQueryDefault query) {
         Set<Atomic> atoms = new HashSet<>();
 
         Set<Var.Admin> vars = query.admin().getPattern().getVars();

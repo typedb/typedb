@@ -22,7 +22,6 @@ import com.google.common.collect.Sets;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.graql.*;
 import io.mindmaps.graql.internal.reasoner.container.Query;
-import io.mindmaps.graql.*;
 import org.javatuples.Pair;
 
 import java.util.HashSet;
@@ -136,7 +135,7 @@ public abstract class AtomBase implements Atomic{
     }
 
     @Override
-    public MatchQuery getExpandedMatchQuery(MindmapsTransaction graph)
+    public MatchQueryDefault getExpandedMatchQuery(MindmapsTransaction graph)
     {
         QueryBuilder qb = QueryBuilder.build(graph);
         Set<String> selectVars = Sets.newHashSet(varName);

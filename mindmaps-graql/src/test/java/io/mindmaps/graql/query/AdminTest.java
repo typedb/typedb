@@ -59,7 +59,7 @@ public class AdminTest {
 
     @Test
     public void testGetTypesInQuery() {
-        MatchQuery query = qb.match(
+        MatchQueryDefault query = qb.match(
                 var("x").isa(id("movie").ako("production")).has("tmdb-vote-count", 400),
                 var("y").isa("character").id("123"),
                 var().rel("production-with-cast", "x").rel("y").isa("has-cast")
@@ -74,21 +74,21 @@ public class AdminTest {
 
     @Test
     public void testDefaultGetSelectedNamesInQuery() {
-        MatchQuery query = qb.match(var("x").isa(var("y")));
+        MatchQueryDefault query = qb.match(var("x").isa(var("y")));
 
         assertEquals(Sets.newHashSet("x", "y"), query.admin().getSelectedNames());
     }
 
     @Test
     public void testExplicitGetSelectedNamesInQuery() {
-        MatchQuery query = qb.match(var("x").isa(var("y"))).select("x");
+        MatchQueryDefault query = qb.match(var("x").isa(var("y"))).select("x");
 
         assertEquals(Sets.newHashSet("x"), query.admin().getSelectedNames());
     }
 
     @Test
     public void testGetPatternInQuery() {
-        MatchQuery query = qb.match(var("x").isa("movie"), var("x").value("Bob"));
+        MatchQueryDefault query = qb.match(var("x").isa("movie"), var("x").value("Bob"));
 
         Pattern.Conjunction<Pattern.Admin> conjunction = query.admin().getPattern();
         assertNotNull(conjunction);
@@ -99,7 +99,7 @@ public class AdminTest {
 
     @Test
     public void testMutateMatchQuery() {
-        MatchQuery query = qb.match(var("x").isa("movie"));
+        MatchQueryDefault query = qb.match(var("x").isa("movie"));
 
         Pattern.Conjunction<Pattern.Admin> pattern = query.admin().getPattern();
         pattern.getPatterns().add(var("x").value("Spy").admin());

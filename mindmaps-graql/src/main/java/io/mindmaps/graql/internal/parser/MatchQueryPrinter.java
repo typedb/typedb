@@ -19,7 +19,7 @@
 package io.mindmaps.graql.internal.parser;
 
 import io.mindmaps.core.model.Concept;
-import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.MatchQueryDefault;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -29,25 +29,25 @@ import java.util.stream.Stream;
  */
 public class MatchQueryPrinter {
 
-    private MatchQuery matchQuery;
+    private MatchQueryDefault matchQuery;
     private final Map<String, List<Getter>> getters;
 
     /**
      * @param matchQuery the match query whose results should be printed
      */
-    public MatchQueryPrinter(MatchQuery matchQuery, Map<String, List<Getter>> getters) {
+    public MatchQueryPrinter(MatchQueryDefault matchQuery, Map<String, List<Getter>> getters) {
         this.matchQuery = matchQuery;
         this.getters = getters;
     }
 
-    public void setMatchQuery(MatchQuery matchQuery) {
+    public void setMatchQuery(MatchQueryDefault matchQuery) {
         this.matchQuery = matchQuery;
     }
 
     /**
      * @return the MatchQuery that this printer will print
      */
-    public MatchQuery getMatchQuery() {
+    public MatchQueryDefault getMatchQuery() {
         return matchQuery;
     }
 

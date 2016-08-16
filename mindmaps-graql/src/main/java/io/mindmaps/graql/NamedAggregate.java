@@ -14,31 +14,25 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
-package io.mindmaps.graql.internal.validation;
+package io.mindmaps.graql;
 
-import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.graql.MatchQueryDefault;
+public class NamedAggregate<T, S> {
+    private final Aggregate<T, S> aggregate;
+    private final String name;
 
-import java.util.stream.Stream;
-
-/**
- * A validator for a MatchQuery
- */
-public class MatchQueryValidator implements Validator {
-
-    private final MatchQueryDefault.Admin matchQuery;
-
-    /**
-     * @param matchQuery the match query to validate
-     */
-    public MatchQueryValidator(MatchQueryDefault.Admin matchQuery) {
-        this.matchQuery = matchQuery;
+    NamedAggregate(Aggregate<T, S> aggregate, String name) {
+        this.aggregate = aggregate;
+        this.name = name;
     }
 
-    @Override
-    public Stream<String> getErrors(MindmapsTransaction transaction) {
-        return new PatternValidator(matchQuery.getPattern()).getErrors(transaction);
+    Aggregate<T, S> getAggregate() {
+        return aggregate;
+    }
+
+    String getName() {
+        return name;
     }
 }

@@ -14,31 +14,33 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
-package io.mindmaps.graql.internal.validation;
+package io.mindmaps.graql.internal.query.match;
 
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.MatchQueryDefault;
 
-import java.util.stream.Stream;
+import java.util.Map;
+import java.util.Set;
 
 /**
- * A validator for a MatchQuery
+ * Abstract MatchQueryDefault implementation. Extends the abstract MatchQuery implementation, but provides extra behaviour
+ * to support the MatchQueryDefault interface.
  */
-public class MatchQueryValidator implements Validator {
+abstract class MatchQueryDefaultAbstract
+        extends MatchQueryAbstract<Map<String, Concept>, Map<String, Concept>> implements MatchQueryDefault.Admin {
 
-    private final MatchQueryDefault.Admin matchQuery;
+    final MatchQueryDefault.Admin inner;
 
-    /**
-     * @param matchQuery the match query to validate
-     */
-    public MatchQueryValidator(MatchQueryDefault.Admin matchQuery) {
-        this.matchQuery = matchQuery;
+    MatchQueryDefaultAbstract(MatchQueryDefault.Admin inner) {
+        super(inner);
+        this.inner = inner;
     }
 
     @Override
-    public Stream<String> getErrors(MindmapsTransaction transaction) {
-        return new PatternValidator(matchQuery.getPattern()).getErrors(transaction);
+    public Set<String> getSelectedNames() {
+        return inner.getSelectedNames();
     }
 }
