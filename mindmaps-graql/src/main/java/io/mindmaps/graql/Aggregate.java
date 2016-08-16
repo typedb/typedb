@@ -27,7 +27,6 @@ import java.util.stream.Stream;
  * @param <S> the type of the result of the aggregate operation
  */
 public interface Aggregate<T, S> {
-
     /**
      * The function to apply to the stream of results to produce the aggregate result.
      * @param stream a stream of query results
@@ -40,8 +39,5 @@ public interface Aggregate<T, S> {
      * @param name the name of the aggregate
      * @return a new named aggregate
      */
-    default NamedAggregate<T, S> as(String name) {
-        return new NamedAggregate<>(this, name);
-    }
-
+    NamedAggregate<T, S> as(String name);
 }

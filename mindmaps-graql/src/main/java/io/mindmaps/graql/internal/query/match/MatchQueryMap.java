@@ -29,7 +29,7 @@ import java.util.stream.Stream;
  * @param <S> The type of the results before transformation
  * @param <T> The type of the results after transformation
  */
-public class MatchQueryMap<S, T> extends MatchQueryAbstract<S, T> {
+public class MatchQueryMap<S, T> extends MatchQueryModifier<S, T> {
 
     private final Function<S, T> function;
 

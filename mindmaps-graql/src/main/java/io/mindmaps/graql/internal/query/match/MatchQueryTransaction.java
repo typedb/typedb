@@ -31,7 +31,7 @@ import java.util.stream.Stream;
 /**
  * Modifier that specifies the transaction to execute the match query with.
  */
-public class MatchQueryTransaction<T> extends MatchQueryAbstract<T, T> {
+public class MatchQueryTransaction<T> extends MatchQueryModifier<T, T> {
 
     private final MindmapsTransaction transaction;
 

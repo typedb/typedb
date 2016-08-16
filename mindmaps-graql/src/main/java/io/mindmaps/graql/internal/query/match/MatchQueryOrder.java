@@ -31,7 +31,7 @@ import java.util.stream.Stream;
 /**
  * "Order" modify that orders the underlying match query
  */
-public class MatchQueryOrder extends MatchQueryDefaultAbstract {
+public class MatchQueryOrder extends MatchQueryDefaultModifier {
 
     private final MatchOrder order;
 
@@ -49,11 +49,6 @@ public class MatchQueryOrder extends MatchQueryDefaultAbstract {
         }
 
         return inner.stream(transaction, Optional.of(this.order));
-    }
-
-    @Override
-    protected Stream<Map<String, Concept>> transformStream(Stream<Map<String, Concept>> stream) {
-        return stream;
     }
 
     @Override

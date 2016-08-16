@@ -19,14 +19,12 @@
 
 package io.mindmaps.graql.internal.query.aggregate;
 
-import io.mindmaps.graql.Aggregate;
-
 import java.util.stream.Stream;
 
 /**
  * Aggregate that counts results of a match query.
  */
-public class CountAggregate implements Aggregate<Object, Long> {
+public class CountAggregate extends AbstractAggregate<Object, Long> {
     @Override
     public Long apply(Stream<?> stream) {
         return stream.count();

@@ -35,11 +35,11 @@ import java.util.stream.Stream;
  *
  * Query modifiers should extend this class and implement a stream() method that modifies the inner query.
  */
-abstract class MatchQueryAbstract<S, T> implements MatchQueryAdmin<T> {
+abstract class MatchQueryModifier<S, T> extends AbstractMatchQuery<T> {
 
     final MatchQueryAdmin<S> inner;
 
-    MatchQueryAbstract(MatchQueryAdmin<S> inner) {
+    MatchQueryModifier(MatchQueryAdmin<S> inner) {
         this.inner = inner;
     }
 

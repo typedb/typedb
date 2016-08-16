@@ -25,7 +25,7 @@ import java.util.stream.Stream;
 /**
  * "Offset" modifier for match query that offsets (skips) some number of results.
  */
-public class MatchQueryOffset<T> extends MatchQueryAbstract<T, T> {
+public class MatchQueryOffset<T> extends MatchQueryModifier<T, T> {
 
     private final long offset;
 

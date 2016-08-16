@@ -14,32 +14,26 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
 package io.mindmaps.graql;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
-import io.mindmaps.graql.internal.admin.AdminConverter;
 import io.mindmaps.graql.internal.admin.MatchQueryDefaultAdmin;
-import io.mindmaps.graql.internal.admin.VarAdmin;
-import io.mindmaps.graql.internal.query.AskQueryImpl;
-import io.mindmaps.graql.internal.query.DeleteQueryImpl;
-import io.mindmaps.graql.internal.query.InsertQueryImpl;
-import io.mindmaps.graql.internal.query.match.*;
 
-import java.util.*;
-
-import static java.util.stream.Collectors.toList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * a query used for finding data in a graph that matches the given patterns.
  *
  * Each matching subgraph will produce a map, where keys are variable names and values are concepts in the graph.
  */
-@SuppressWarnings("UnusedReturnValue")
 public interface MatchQueryDefault extends MatchQuery<Map<String, Concept>> {
     /**
      * @param names an array of variable names to select
@@ -53,24 +47,18 @@ public interface MatchQueryDefault extends MatchQuery<Map<String, Concept>> {
      * @param names a set of variable names to select
      * @return a new MatchQuery that selects the given variables
      */
-    default MatchQueryDefault select(Set<String> names) {
-        return new MatchQuerySelect(admin(), ImmutableSet.copyOf(names));
-    }
+    MatchQueryDefault select(Set<String> names);
 
     /**
      * @param name a variable name to get
      * @return a query of concepts
      */
-    default MatchQuery<Concept> get(String name) {
-        return new MatchQueryMap<>(admin(), result -> result.get(name));
-    }
+    MatchQuery<Concept> get(String name);
 
     /**
      * @return an ask query that will return true if any matches are found
      */
-    default AskQuery ask() {
-        return new AskQueryImpl(this);
-    }
+    AskQuery ask();
 
     /**
      * @param vars an array of variables to insert for each result of this match query
@@ -84,19 +72,13 @@ public interface MatchQueryDefault extends MatchQuery<Map<String, Concept>> {
      * @param vars a collection of variables to insert for each result of this match query
      * @return an insert query that will insert the given variables for each result of this match query
      */
-    default InsertQuery insert(Collection<? extends Var> vars) {
-        ImmutableSet<VarAdmin> varAdmins = ImmutableSet.copyOf(AdminConverter.getVarAdmins(vars));
-        return new InsertQueryImpl(varAdmins, admin());
-    }
+    InsertQuery insert(Collection<? extends Var> vars);
 
     /**
      * @param names an array of variable names to delete for each result of this match query
      * @return a delete query that will delete the given variable names for each result of this match query
      */
-    default DeleteQuery delete(String... names) {
-        List<Var> deleters = Arrays.stream(names).map(Graql::var).collect(toList());
-        return delete(deleters);
-    }
+    DeleteQuery delete(String... names);
 
     /**
      * @param deleters an array of variables stating what properties to delete for each result of this match query
@@ -110,9 +92,7 @@ public interface MatchQueryDefault extends MatchQuery<Map<String, Concept>> {
      * @param deleters a collection of variables stating what properties to delete for each result of this match query
      * @return a delete query that will delete the given properties for each result of this match query
      */
-    default DeleteQuery delete(Collection<? extends Var> deleters) {
-        return new DeleteQueryImpl(AdminConverter.getVarAdmins(deleters), this);
-    }
+    DeleteQuery delete(Collection<? extends Var> deleters);
 
     /**
      * Order the results by degree in ascending order
@@ -129,9 +109,7 @@ public interface MatchQueryDefault extends MatchQuery<Map<String, Concept>> {
      * @param asc whether to use ascending order
      * @return a new MatchQuery with the given ordering
      */
-    default MatchQueryDefault orderBy(String varName, boolean asc) {
-        return new MatchQueryOrder(admin(), new MatchOrder(varName, Optional.empty(), asc));
-    }
+    MatchQueryDefault orderBy(String varName, boolean asc);
 
     /**
      * Order the results by a resource in ascending order
@@ -150,34 +128,22 @@ public interface MatchQueryDefault extends MatchQuery<Map<String, Concept>> {
      * @param asc whether to use ascending order
      * @return a new MatchQuery with the given ordering
      */
-    default MatchQueryDefault orderBy(String varName, String resourceType, boolean asc) {
-        return new MatchQueryOrder(admin(), new MatchOrder(varName, Optional.of(resourceType), asc));
-    }
-
+    MatchQueryDefault orderBy(String varName, String resourceType, boolean asc);
 
     @Override
-    default MatchQueryDefault withTransaction(MindmapsTransaction transaction) {
-        return new MatchQueryWrapper(MatchQuery.super.withTransaction(transaction).admin(), admin());
-    }
+    MatchQueryDefault withTransaction(MindmapsTransaction transaction);
 
     @Override
-    default MatchQueryDefault limit(long limit) {
-        return new MatchQueryWrapper(MatchQuery.super.limit(limit).admin(), admin());
-    }
+    MatchQueryDefault limit(long limit);
 
     @Override
-    default MatchQueryDefault offset(long offset) {
-        return new MatchQueryWrapper(MatchQuery.super.offset(offset).admin(), admin());
-    }
+    MatchQueryDefault offset(long offset);
 
     @Override
-    default MatchQueryDefault distinct() {
-        return new MatchQueryWrapper(MatchQuery.super.distinct().admin(), admin());
-    }
+    MatchQueryDefault distinct();
 
     /**
      * @return admin instance for inspecting and manipulating this query
      */
     MatchQueryDefaultAdmin admin();
-
 }
