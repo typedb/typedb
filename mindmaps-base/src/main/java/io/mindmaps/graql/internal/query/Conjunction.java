@@ -17,20 +17,22 @@
  *
  */
 
-package io.mindmaps.graql;
+package io.mindmaps.graql.internal.query;
 
-import io.mindmaps.graql.internal.query.match.AbstractMatchQuery;
+import io.mindmaps.graql.admin.PatternAdmin;
+import io.mindmaps.graql.admin.VarAdmin;
+
+import java.util.Set;
 
 /**
- * An aggregate query produced from a {@link AbstractMatchQuery}.
- *
- * @param <T> the type of the result of the aggregate query
+ * A class representing a conjunction (and) of patterns. All inner patterns must match in a query
  */
-public interface AggregateQuery<T> {
-
+public interface Conjunction<T extends PatternAdmin> extends PatternAdmin {
     /**
-     * Execute the aggregate query.
-     * @return the result of the aggregate query
+     * @return the patterns within this conjunction
      */
-    T execute();
+    Set<T> getPatterns();
+
+    @Override
+    Disjunction<Conjunction<VarAdmin>> getDisjunctiveNormalForm();
 }

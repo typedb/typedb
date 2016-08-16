@@ -71,12 +71,12 @@ public abstract class AbstractMatchQueryDefault extends AbstractMatchQuery<Map<S
 
     @Override
     public final MatchQueryDefault orderBy(String varName, boolean asc) {
-        return new MatchQueryOrder(admin(), new MatchOrder(varName, Optional.empty(), asc));
+        return new MatchQueryOrder(admin(), new MatchOrderImpl(varName, Optional.empty(), asc));
     }
 
     @Override
     public final MatchQueryDefault orderBy(String varName, String resourceType, boolean asc) {
-        return new MatchQueryOrder(admin(), new MatchOrder(varName, Optional.of(resourceType), asc));
+        return new MatchQueryOrder(admin(), new MatchOrderImpl(varName, Optional.of(resourceType), asc));
     }
 
     @Override

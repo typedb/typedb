@@ -22,6 +22,7 @@ package io.mindmaps;
 import io.mindmaps.core.Data;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.*;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 
 import java.util.Collection;
 import java.util.Map;
@@ -70,6 +71,8 @@ public interface MindmapsTransaction {
      * @return new or existing Role Type with the provided Id.
      */
     RoleType putRoleType(String id);
+
+    GraphTraversalSource getTinkerTraversal();
 
     /**
      *

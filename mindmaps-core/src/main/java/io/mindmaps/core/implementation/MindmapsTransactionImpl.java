@@ -117,6 +117,7 @@ public class MindmapsTransactionImpl implements MindmapsTransaction, AutoCloseab
         return transaction;
     }
 
+    @Override
     public GraphTraversalSource getTinkerTraversal(){
         ReadOnlyStrategy readOnlyStrategy = ReadOnlyStrategy.instance();
         return getTinkerPopGraph().traversal().asBuilder().with(readOnlyStrategy).create(getTinkerPopGraph());

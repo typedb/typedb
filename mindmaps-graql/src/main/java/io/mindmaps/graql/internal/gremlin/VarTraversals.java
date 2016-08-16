@@ -170,14 +170,14 @@ public class VarTraversals {
      * @param fragments some Fragments to put into a MultiTraversal and attach to this object
      */
     private void addPattern(Fragment... fragments) {
-        traversals.add(new MultiTraversal(fragments));
+        traversals.add(new MultiTraversalImpl(fragments));
     }
 
     /**
      * Add a pattern checking this variable has a VALUE property
      */
     private void addHasValuePattern() {
-        addPattern(new Fragment(
+        addPattern(new FragmentImpl(
                 t -> t.or(
                         __.has(VALUE_STRING.name()),
                         __.has(VALUE_LONG.name()),
@@ -197,7 +197,7 @@ public class VarTraversals {
     private void addPropertyPattern(
             String name, String property, ValuePredicateAdmin predicate, FragmentPriority priority
     ) {
-        addPattern(new Fragment(t -> t.has(property, predicate.getPredicate()), priority, name));
+        addPattern(new FragmentImpl(t -> t.has(property, predicate.getPredicate()), priority, name));
     }
 
     /**
@@ -211,11 +211,11 @@ public class VarTraversals {
         String resource = UUID.randomUUID().toString();
 
         addPattern(
-                new Fragment(t ->
+                new FragmentImpl(t ->
                         t.outE(SHORTCUT.getLabel()).has(TO_TYPE.name(), typeId).inV(),
                         EDGE_UNBOUNDED, getName(), resource
                 ),
-                new Fragment(t ->
+                new FragmentImpl(t ->
                         t.inE(SHORTCUT.getLabel()).has(TO_TYPE.name(), typeId).outV(),
                         EDGE_UNBOUNDED, resource, getName()
                 )
@@ -254,13 +254,13 @@ public class VarTraversals {
         if (edgeLabel == ISA) {
             // Traverse inferred 'isa's by 'ako' edges
             addPattern(
-                    new Fragment(t -> t
+                    new FragmentImpl(t -> t
                             .union(__.identity(), __.repeat(__.out(AKO.getLabel())).emit()).unfold()
                             .out(ISA.getLabel())
                             .union(__.identity(), __.repeat(__.out(AKO.getLabel())).emit()).unfold(),
                             getEdgePriority(edgeLabel, true), getName(), other
                     ),
-                    new Fragment(t -> t
+                    new FragmentImpl(t -> t
                             .union(__.identity(), __.repeat(__.in(AKO.getLabel())).emit()).unfold()
                             .in(ISA.getLabel())
                             .union(__.identity(), __.repeat(__.in(AKO.getLabel())).emit()).unfold(),
@@ -270,11 +270,11 @@ public class VarTraversals {
         } else if (edgeLabel == AKO) {
             // Traverse inferred 'ako' edges
             addPattern(
-                    new Fragment(
+                    new FragmentImpl(
                             t -> t.union(__.identity(), __.repeat(__.out(AKO.getLabel())).emit()).unfold(),
                             getEdgePriority(edgeLabel, true), getName(), other
                     ),
-                    new Fragment(
+                    new FragmentImpl(
                             t -> t.union(__.identity(), __.repeat(__.in(AKO.getLabel())).emit()).unfold(),
                             getEdgePriority(edgeLabel, false), other, getName()
                     )
@@ -282,8 +282,8 @@ public class VarTraversals {
         } else {
             String edge = edgeLabel.getLabel();
             addPattern(
-                    new Fragment(t -> t.out(edge), getEdgePriority(edgeLabel, true), getName(), other),
-                    new Fragment(t -> t.in(edge), getEdgePriority(edgeLabel, false), other, getName())
+                    new FragmentImpl(t -> t.out(edge), getEdgePriority(edgeLabel, true), getName(), other),
+                    new FragmentImpl(t -> t.in(edge), getEdgePriority(edgeLabel, false), other, getName())
             );
         }
 
@@ -302,14 +302,14 @@ public class VarTraversals {
 
         // Pattern between relation and casting
         addPattern(
-                new Fragment(t -> t.out(CASTING.getLabel()), EDGE_BOUNDED, getName(), casting),
-                new Fragment(t -> t.in(CASTING.getLabel()), EDGE_UNBOUNDED, casting, getName())
+                new FragmentImpl(t -> t.out(CASTING.getLabel()), EDGE_BOUNDED, getName(), casting),
+                new FragmentImpl(t -> t.in(CASTING.getLabel()), EDGE_UNBOUNDED, casting, getName())
         );
 
         // Pattern between casting and roleplayer
         addPattern(
-                new Fragment(t -> t.out(ROLE_PLAYER.getLabel()), EDGE_UNIQUE, casting, other),
-                new Fragment(t -> t.in(ROLE_PLAYER.getLabel()), EDGE_BOUNDED, other, casting)
+                new FragmentImpl(t -> t.out(ROLE_PLAYER.getLabel()), EDGE_UNIQUE, casting, other),
+                new FragmentImpl(t -> t.in(ROLE_PLAYER.getLabel()), EDGE_BOUNDED, other, casting)
         );
 
         innerVarTraversals.add(new VarTraversals(rolePlayer));
@@ -340,20 +340,20 @@ public class VarTraversals {
 
         // Pattern between relation and casting
         addPattern(
-                new Fragment(t -> t.out(CASTING.getLabel()), EDGE_BOUNDED, getName(), casting),
-                new Fragment(t -> t.in(CASTING.getLabel()), EDGE_UNBOUNDED, casting, getName())
+                new FragmentImpl(t -> t.out(CASTING.getLabel()), EDGE_BOUNDED, getName(), casting),
+                new FragmentImpl(t -> t.in(CASTING.getLabel()), EDGE_UNBOUNDED, casting, getName())
         );
 
         // Pattern between casting and roleplayer
         addPattern(
-                new Fragment(t -> t.out(ROLE_PLAYER.getLabel()), EDGE_UNIQUE, casting, roleplayerName),
-                new Fragment(t -> t.in(ROLE_PLAYER.getLabel()), EDGE_BOUNDED, roleplayerName, casting)
+                new FragmentImpl(t -> t.out(ROLE_PLAYER.getLabel()), EDGE_UNIQUE, casting, roleplayerName),
+                new FragmentImpl(t -> t.in(ROLE_PLAYER.getLabel()), EDGE_BOUNDED, roleplayerName, casting)
         );
 
         // Pattern between casting and role type
         addPattern(
-                new Fragment(t -> t.out(ISA.getLabel()), EDGE_UNIQUE, casting, roletypeName),
-                new Fragment(t -> t.in(ISA.getLabel()), EDGE_UNBOUNDED, roletypeName, casting)
+                new FragmentImpl(t -> t.out(ISA.getLabel()), EDGE_UNIQUE, casting, roletypeName),
+                new FragmentImpl(t -> t.in(ISA.getLabel()), EDGE_UNBOUNDED, roletypeName, casting)
         );
 
         innerVarTraversals.add(new VarTraversals(rolePlayer));
@@ -397,7 +397,7 @@ public class VarTraversals {
      */
     private void addTypeNamePattern(String typeName) {
         addPattern(
-                new Fragment(t -> t.has(ITEM_IDENTIFIER.name(), typeName), TYPE_ID, getName())
+                new FragmentImpl(t -> t.has(ITEM_IDENTIFIER.name(), typeName), TYPE_ID, getName())
         );
     }
 
@@ -425,7 +425,7 @@ public class VarTraversals {
      * @return a MultiTraversal that indicates two castings are unique
      */
     private MultiTraversal makeDistinctCastingPattern(String casting, String otherCastingId) {
-        return new MultiTraversal(new Fragment(t -> t.where(P.neq(otherCastingId)), DISTINCT_CASTING, casting));
+        return new MultiTraversalImpl(new FragmentImpl(t -> t.where(P.neq(otherCastingId)), DISTINCT_CASTING, casting));
     }
 
     /**

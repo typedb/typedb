@@ -25,10 +25,7 @@ import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.admin.AdminConverter;
 import io.mindmaps.graql.internal.StringConverter;
 import io.mindmaps.graql.admin.PatternAdmin;
-import io.mindmaps.graql.internal.query.Conjunction;
-import io.mindmaps.graql.internal.query.Disjunction;
-import io.mindmaps.graql.internal.query.ValuePredicateImpl;
-import io.mindmaps.graql.internal.query.VarImpl;
+import io.mindmaps.graql.internal.query.*;
 import io.mindmaps.graql.internal.query.aggregate.CountAggregate;
 import io.mindmaps.graql.internal.query.aggregate.GroupAggregate;
 import io.mindmaps.graql.internal.query.aggregate.ListAggregate;
@@ -128,8 +125,7 @@ public class Graql {
      * @return a pattern that will match only when all contained patterns match
      */
     public static Pattern and(Collection<? extends Pattern> patterns) {
-        Conjunction<PatternAdmin> conjunction =
-                PatternAdmin.conjunction(AdminConverter.getPatternAdmins(patterns));
+        Conjunction<PatternAdmin> conjunction = new ConjunctionImpl<>(AdminConverter.getPatternAdmins(patterns));
 
         return () -> conjunction;
     }
@@ -147,8 +143,7 @@ public class Graql {
      * @return a pattern that will match when any contained pattern matches
      */
     public static Pattern or(Collection<? extends Pattern> patterns) {
-        Disjunction<PatternAdmin> disjunction =
-                PatternAdmin.disjunction(AdminConverter.getPatternAdmins(patterns));
+        Disjunction<PatternAdmin> disjunction = new DisjunctionImpl<>(AdminConverter.getPatternAdmins(patterns));
 
         return () -> disjunction;
     }

@@ -33,9 +33,9 @@ import java.util.stream.Stream;
  */
 public class MatchQueryOrder extends MatchQueryDefaultModifier {
 
-    private final MatchOrder order;
+    private final MatchOrderImpl order;
 
-    public MatchQueryOrder(MatchQueryDefaultAdmin inner, MatchOrder order) {
+    public MatchQueryOrder(MatchQueryDefaultAdmin inner, MatchOrderImpl order) {
         super(inner);
         this.order = order;
     }

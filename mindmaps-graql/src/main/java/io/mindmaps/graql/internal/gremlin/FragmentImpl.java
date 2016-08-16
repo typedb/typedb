@@ -14,6 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
 package io.mindmaps.graql.internal.gremlin;
@@ -24,27 +25,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
 
-/**
- * represents a graph traversal, with one start point and optionally an end point
- * <p>
- * A fragment is composed of four things:
- * <ul>
- *     <li>A gremlin traversal function, that takes a gremlin traversal and appends some new gremlin steps</li>
- *     <li>A starting variable name, where the gremlin traversal must start from</li>
- *     <li>An optional ending variable name, if the gremlin traversal navigates to a new Graql variable</li>
- *     <li>A priority, that describes how efficient this traversal is to help with ordering the traversals</li>
- * </ul>
- *
- * Variable names refer to Graql variables. Some of these variable names may be randomly-generated UUIDs, such as for
- * castings.
- * <p>
- * A {@code Fragment} is usually contained in a {@code MultiTraversal}, which contains multiple fragments describing
- * the different directions the traversal can be followed in, with different starts and ends.
- * <p>
- * A gremlin traversal is created from a {@code Query} by appending together fragments in order of priority, one from
- * each {@code MultiTraversal} describing the {@code Query}.
- */
-class Fragment implements Comparable<Fragment> {
+class FragmentImpl implements Fragment {
 
     private final UnaryOperator<GraphTraversal<Vertex, Vertex>> traversalFunction;
     private final FragmentPriority priority;
@@ -57,7 +38,7 @@ class Fragment implements Comparable<Fragment> {
      * @param priority the priority of this fragment, describing how expensive the traversal is expected to be
      * @param start the variable name that this fragment starts from in the query
      */
-    public Fragment(UnaryOperator<GraphTraversal<Vertex, Vertex>> traversal, FragmentPriority priority, String start) {
+    public FragmentImpl(UnaryOperator<GraphTraversal<Vertex, Vertex>> traversal, FragmentPriority priority, String start) {
         this.traversalFunction = traversal;
         this.priority = priority;
         this.start = start;
@@ -70,7 +51,7 @@ class Fragment implements Comparable<Fragment> {
      * @param start the variable name that this fragment starts from in the query
      * @param end the variable name that this fragment ends at in the query
      */
-    public Fragment(
+    public FragmentImpl(
             UnaryOperator<GraphTraversal<Vertex, Vertex>> traversal,
             FragmentPriority priority, String start, String end
     ) {
@@ -80,39 +61,34 @@ class Fragment implements Comparable<Fragment> {
         this.end = Optional.of(end);
     }
 
-    /**
-     * @return the MultiTraversal that contains this Fragment
-     */
+    @Override
     public MultiTraversal getMultiTraversal() {
         return multiTraversal;
     }
 
-    /**
-     * @param multiTraversal the MultiTraversal that contains this Fragment
-     */
-    void setMultiTraversal(MultiTraversal multiTraversal) {
+    @Override
+    public void setMultiTraversal(MultiTraversal multiTraversal) {
         this.multiTraversal = multiTraversal;
     }
 
-    /**
-     * @param traversal the traversal to extend with this Fragment
-     */
+    @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
         traversalFunction.apply(traversal);
     }
 
-    /**
-     * @return the variable name that this fragment starts from in the query
-     */
+    @Override
     public String getStart() {
         return start;
     }
 
-    /**
-     * @return the variable name that this fragment ends at in the query, if this query has an end variable
-     */
+    @Override
     public Optional<String> getEnd() {
         return end;
+    }
+
+    @Override
+    public FragmentPriority getPriority() {
+        return priority;
     }
 
     /**
@@ -122,6 +98,6 @@ class Fragment implements Comparable<Fragment> {
     public int compareTo(@SuppressWarnings("NullableProblems") Fragment other) {
         // Don't want to use Jetbrain's @NotNull annotation
         if (this == other) return 0;
-        return priority.compareTo(other.priority);
+        return priority.compareTo(other.getPriority());
     }
 }

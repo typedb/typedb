@@ -21,8 +21,8 @@ package io.mindmaps.graql;
 import com.google.common.collect.ImmutableSet;
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.graql.admin.AdminConverter;
-import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.query.ConjunctionImpl;
 import io.mindmaps.graql.internal.query.InsertQueryImpl;
 import io.mindmaps.graql.internal.query.match.MatchQueryBase;
 
@@ -63,7 +63,7 @@ public class QueryBuilder {
      * @return a match query that will find matches of the given patterns
      */
     public MatchQueryDefault match(Collection<? extends Pattern> patterns) {
-        MatchQueryBase query = new MatchQueryBase(PatternAdmin.conjunction(AdminConverter.getPatternAdmins(patterns)));
+        MatchQueryBase query = new MatchQueryBase(new ConjunctionImpl<>(AdminConverter.getPatternAdmins(patterns)));
         return transaction.map(query::withTransaction).orElse(query);
     }
 

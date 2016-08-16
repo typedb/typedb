@@ -21,9 +21,7 @@ package io.mindmaps.graql.query;
 import com.google.common.collect.Sets;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.query.Conjunction;
-import io.mindmaps.graql.internal.query.Disjunction;
-import io.mindmaps.graql.internal.query.VarImpl;
+import io.mindmaps.graql.internal.query.*;
 import org.junit.Test;
 
 import java.util.HashSet;
@@ -89,7 +87,7 @@ public class PatternImplTest {
     @Test
     public void testDNFIdentity() {
         Set disjunction = set(conjunction(x, y, z), conjunction(a, b, c));
-        assertHasDNF(disjunction, PatternAdmin.disjunction(disjunction));
+        assertHasDNF(disjunction, new DisjunctionImpl<>(disjunction));
     }
 
     @Test
@@ -105,11 +103,11 @@ public class PatternImplTest {
     }
 
     private <T extends PatternAdmin> Conjunction<T> conjunction(T... patterns) {
-        return PatternAdmin.conjunction(Sets.newHashSet(patterns));
+        return new ConjunctionImpl<>(Sets.newHashSet(patterns));
     }
 
     private <T extends PatternAdmin> Disjunction<T> disjunction(T... patterns) {
-        return PatternAdmin.disjunction(Sets.newHashSet(patterns));
+        return new DisjunctionImpl<>(Sets.newHashSet(patterns));
     }
 
     private <T extends PatternAdmin> Set<T> set(T... patterns) {
