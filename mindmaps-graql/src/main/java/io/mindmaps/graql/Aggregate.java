@@ -19,15 +19,17 @@
 
 package io.mindmaps.graql;
 
+import com.google.common.collect.ImmutableSet;
 import io.mindmaps.core.model.Concept;
+import io.mindmaps.graql.internal.query.aggregate.CountAggregate;
+import io.mindmaps.graql.internal.query.aggregate.GroupAggregate;
+import io.mindmaps.graql.internal.query.aggregate.ListAggregate;
+import io.mindmaps.graql.internal.query.aggregate.SelectAggregate;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collector;
+import java.util.Set;
 import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.*;
 
 /**
  * An aggregate operation to perform on a query.
@@ -56,7 +58,7 @@ public interface Aggregate<T, S> {
      * Create an aggregate that will count the results of a query.
      */
     static Aggregate<Object, Long> count() {
-        return Stream::count;
+        return new CountAggregate();
     }
 
     /**
@@ -64,7 +66,7 @@ public interface Aggregate<T, S> {
      * @param varName the variable name to group results by
      */
     static Aggregate<Map<String, Concept>, Map<Concept, List<Map<String, Concept>>>> group(String varName) {
-        return stream -> stream.collect(groupingBy(result -> result.get(varName)));
+        return group(varName, new ListAggregate<>());
     }
 
     /**
@@ -73,13 +75,9 @@ public interface Aggregate<T, S> {
      * @param aggregate the aggregate to apply to each group
      * @param <T> the type the aggregate returns
      */
-    static <T> Aggregate<Map<String, Concept>, Map<Concept, T>> group(String varName, Aggregate<? super Map<String, Concept>, T> aggregate) {
-        return stream -> {
-            Collector<Map<String, Concept>, ?, T> applyAggregate =
-                    collectingAndThen(toList(), x -> aggregate.apply(x.stream()));
-
-            return stream.collect(groupingBy(result -> result.get(varName), applyAggregate));
-        };
+    static <T> Aggregate<Map<String, Concept>, Map<Concept, T>> group(
+            String varName, Aggregate<? super Map<String, Concept>, T> aggregate) {
+        return new GroupAggregate<>(varName, aggregate);
     }
 
     /**
@@ -88,18 +86,18 @@ public interface Aggregate<T, S> {
      * @param <S> the type that the query returns
      * @param <T> the type that each aggregate returns
      */
+    @SafeVarargs
     static <S, T> Aggregate<S, Map<String, T>> select(NamedAggregate<? super S, ? extends T>... aggregates) {
-        return stream -> {
+        return select(ImmutableSet.copyOf(aggregates));
+    }
 
-            List<? extends S> list = stream.collect(toList());
-
-            Map<String, T> map = new HashMap<>();
-
-            for (NamedAggregate<? super S, ? extends T> aggregate : aggregates) {
-                map.put(aggregate.getName(), aggregate.getAggregate().apply(list.stream()));
-            }
-
-            return map;
-        };
+    /**
+     * Create an aggregate that will collect together several named aggregates into a map.
+     * @param aggregates the aggregates to join together
+     * @param <S> the type that the query returns
+     * @param <T> the type that each aggregate returns
+     */
+    static <S, T> Aggregate<S, Map<String, T>> select(Set<NamedAggregate<? super S, ? extends T>> aggregates) {
+        return new SelectAggregate<>(ImmutableSet.copyOf(aggregates));
     }
 }

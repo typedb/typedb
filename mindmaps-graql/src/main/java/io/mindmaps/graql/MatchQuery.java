@@ -21,9 +21,9 @@ package io.mindmaps.graql;
 
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Type;
+import io.mindmaps.graql.internal.query.aggregate.AggregateQueryImpl;
 import io.mindmaps.graql.internal.query.match.*;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -80,17 +80,8 @@ public interface MatchQuery<T> extends Streamable<T> {
      * @param <S> the type of the aggregate result
      * @return a query that will yield the aggregate result
      */
-    default <S> MatchQuery<S> aggregate(Aggregate<? super T, S> aggregate) {
-        return new MatchQueryAggregate<>(admin(), aggregate);
-    }
-
-    /**
-     * Apply several aggregate operations to a query
-     * @param aggregates the aggregate operations to apply
-     * @return a query that will yield the aggregate results in a map
-     */
-    default MatchQuery<Map<String, Object>> aggregate(NamedAggregate<? super T, ?>... aggregates) {
-        return new MatchQueryAggregate<>(admin(), Aggregate.select(aggregates));
+    default <S> AggregateQuery<S> aggregate(Aggregate<? super T, S> aggregate) {
+        return new AggregateQueryImpl<>(admin(), aggregate);
     }
 
     /**
