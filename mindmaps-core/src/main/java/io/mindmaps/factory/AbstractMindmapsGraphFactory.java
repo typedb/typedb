@@ -18,27 +18,26 @@
 
 package io.mindmaps.factory;
 
-import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.core.implementation.AbstractMindmapsGraph;
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.util.function.TriFunction;
 
 import java.util.HashMap;
 import java.util.Map;
 
-abstract class MindmapsGraphFactoryImpl<M extends MindmapsGraph, T extends Graph> implements MindmapsGraphFactory<M, T>{
-    final Map<String, M> openMindmapsGraphs;
-    final Map<String, T> openGraphs;
+abstract class AbstractMindmapsGraphFactory<M extends AbstractMindmapsGraph<G>, G extends Graph> implements MindmapsGraphFactory<M, G>{
+    private final Map<String, M> openMindmapsGraphs;
+    private final Map<String, G> openGraphs;
 
-    MindmapsGraphFactoryImpl(){
+    AbstractMindmapsGraphFactory(){
         openMindmapsGraphs = new HashMap<>();
         openGraphs = new HashMap<>();
     }
 
-    abstract boolean isClosed(T innerGraph);
+    abstract boolean isClosed(G innerGraph);
 
-    abstract M buildMindmapsGraphFromTinker(T graph, String engineUrl);
+    abstract M buildMindmapsGraphFromTinker(G graph, String name, String engineUrl);
 
-    abstract T buildTinkerPopGraph(String name, String address, String pathToConfig);
+    abstract G buildTinkerPopGraph(String name, String address, String pathToConfig);
 
     @Override
     public M getGraph(String name, String address, String pathToConfig){
@@ -51,7 +50,7 @@ abstract class MindmapsGraphFactoryImpl<M extends MindmapsGraph, T extends Graph
     }
 
     @Override
-    public T getTinkerPopGraph(String name, String address, String pathToConfig){
+    public G getTinkerPopGraph(String name, String address, String pathToConfig){
         String key = name + address;
         if(!openGraphs.containsKey(key) || isClosed(openGraphs.get(key))){
             openGraphs.put(key, buildTinkerPopGraph(name, address, pathToConfig));
@@ -60,8 +59,7 @@ abstract class MindmapsGraphFactoryImpl<M extends MindmapsGraph, T extends Graph
     }
 
     private boolean isClosed(M mindmapsGraph) {
-        //TODO: Maybe add this generic to mindmaps graph
-        T innerGraph = (T) mindmapsGraph.getGraph();
+        G innerGraph = mindmapsGraph.getGraph();
         return isClosed(innerGraph);
     }
 
@@ -72,6 +70,6 @@ abstract class MindmapsGraphFactoryImpl<M extends MindmapsGraph, T extends Graph
             openGraphs.put(key, this.buildTinkerPopGraph(name, address, pathToConfig));
         }
 
-        return buildMindmapsGraphFromTinker(openGraphs.get(key), address);
+        return buildMindmapsGraphFromTinker(openGraphs.get(key), name, address);
     }
 }

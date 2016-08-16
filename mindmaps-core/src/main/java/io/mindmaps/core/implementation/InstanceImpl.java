@@ -33,7 +33,7 @@ import java.util.Set;
  * @param <D> The data type of the value in the concept.
  */
 abstract class InstanceImpl<T extends Instance, V extends Type, D> extends ConceptImpl<T, V, D> implements Instance {
-    InstanceImpl(Vertex v, MindmapsTransactionImpl mindmapsGraph) {
+    InstanceImpl(Vertex v, AbstractMindmapsTransaction mindmapsGraph) {
         super(v, mindmapsGraph);
     }
 
@@ -47,10 +47,10 @@ abstract class InstanceImpl<T extends Instance, V extends Type, D> extends Conce
         deleteNode();
         for(CastingImpl casting: castings){
             Set<RelationImpl> relations = casting.getRelations();
-            getMindmapsTransaction().getTransaction().putConcept(casting);
+            getMindmapsTransaction().getConceptLog().putConcept(casting);
 
             for(RelationImpl relation : relations) {
-                getMindmapsTransaction().getTransaction().putConcept(relation);
+                getMindmapsTransaction().getConceptLog().putConcept(relation);
                 relation.cleanUp();
             }
 

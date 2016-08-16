@@ -20,7 +20,7 @@ package io.mindmaps.postprocessing;
 
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.implementation.MindmapsTransactionImpl;
+import io.mindmaps.core.implementation.AbstractMindmapsTransaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +33,7 @@ class ConceptFixer {
         int retry = 0;
 
         while(notDone) {
-            try (MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) graph.newTransaction()) {
+            try (AbstractMindmapsTransaction transaction = (AbstractMindmapsTransaction) graph.newTransaction()) {
                 if (transaction.fixDuplicateCasting(castingId)) {
                     transaction.commit();
                 }

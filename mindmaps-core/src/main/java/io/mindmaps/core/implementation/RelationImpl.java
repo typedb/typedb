@@ -33,7 +33,7 @@ import java.util.*;
  * A relation represents and instance of a relation type which model how different entities relate to one another.
  */
 class RelationImpl extends InstanceImpl<Relation, RelationType, String> implements Relation {
-    RelationImpl(Vertex v, MindmapsTransactionImpl mindmapsGraph) {
+    RelationImpl(Vertex v, AbstractMindmapsTransaction mindmapsGraph) {
         super(v, mindmapsGraph);
     }
 
@@ -192,9 +192,9 @@ class RelationImpl extends InstanceImpl<Relation, RelationType, String> implemen
         // tracking
         rolePlayers.forEach(r -> {
             if(r != null)
-                getMindmapsTransaction().getTransaction().putConcept(getMindmapsTransaction().getElementFactory().buildSpecificInstance(r));
+                getMindmapsTransaction().getConceptLog().putConcept(getMindmapsTransaction().getElementFactory().buildSpecificInstance(r));
         });
-        this.getMappingCasting().forEach(c -> getMindmapsTransaction().getTransaction().putConcept(c));
+        this.getMappingCasting().forEach(c -> getMindmapsTransaction().getConceptLog().putConcept(c));
 
         for(Instance instance : rolePlayers){
             if(instance != null && (instance.getId() != null || instance.getSubject() != null)){

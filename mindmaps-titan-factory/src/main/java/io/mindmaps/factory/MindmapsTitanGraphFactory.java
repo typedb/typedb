@@ -22,7 +22,6 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.schema.TitanIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
-import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.implementation.MindmapsTitanGraph;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
@@ -34,7 +33,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.*;
 
-class MindmapsTitanGraphFactory extends MindmapsGraphFactoryImpl<MindmapsTitanGraph, TitanGraph>{
+class MindmapsTitanGraphFactory extends AbstractMindmapsGraphFactory<MindmapsTitanGraph, TitanGraph> {
     protected final Logger LOG = LoggerFactory.getLogger(MindmapsTitanGraphFactory.class);
     private final static String SEARCH_KEY = "search";
     private final static String DEFAULT_CONFIG = "backend-default";
@@ -49,8 +48,8 @@ class MindmapsTitanGraphFactory extends MindmapsGraphFactoryImpl<MindmapsTitanGr
     }
 
     @Override
-    MindmapsTitanGraph buildMindmapsGraphFromTinker(TitanGraph graph, String address) {
-        return new MindmapsTitanGraph(graph, address);
+    MindmapsTitanGraph buildMindmapsGraphFromTinker(TitanGraph graph, String name, String address) {
+        return new MindmapsTitanGraph(graph, name, address);
     }
 
     @Override

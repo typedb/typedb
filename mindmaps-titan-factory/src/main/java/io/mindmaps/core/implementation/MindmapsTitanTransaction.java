@@ -19,64 +19,24 @@
 package io.mindmaps.core.implementation;
 
 import com.thinkaurelius.titan.core.TitanGraph;
-import io.mindmaps.constants.DataType;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-
-public class MindmapsTitanTransaction extends MindmapsTransactionImpl {
+public class MindmapsTitanTransaction extends AbstractMindmapsTransaction {
     private MindmapsTitanGraph rootGraph;
 
     public MindmapsTitanTransaction(MindmapsTitanGraph graph) {
-        super(((TitanGraph) graph.getGraph()).newTransaction(), graph.isBatchLoadingEnabled());
+        super(graph.getGraph().newTransaction(), graph.isBatchLoadingEnabled());
         rootGraph = graph;
     }
 
     @Override
-    public void commit() throws MindmapsValidationException {
-        validateGraph();
-
-        Map<DataType.BaseType, Set<String>> modifiedConcepts = new HashMap<>();
-        Set<String> castings = getModifiedCastingIds();
-
-        if(castings.size() > 0)
-            modifiedConcepts.put(DataType.BaseType.CASTING, castings);
-
-        LOG.info("Graph is valid. Committing graph . . . ");
-        getTinkerPopGraph().tx().commit();
-        try {
-            refreshTransaction();
-        } catch (Exception e) {
-            LOG.error("Failed to create new transaction after committing", e);
-            e.printStackTrace();
-        }
-        LOG.info("Graph committed.");
-
-        if(modifiedConcepts.size() > 0)
-            submitCommitLogs(modifiedConcepts);
-    }
-
-    @Override
-    public void refresh() throws Exception {
-        close();
-        refreshTransaction();
-    }
-
-    @Override
-    public void close() throws Exception {
-        getTinkerPopGraph().close();
-        setTinkerPopGraph(null);
-    }
-
-    private void refreshTransaction() throws Exception {
-        getTinkerPopGraph().close();
-        setTinkerPopGraph(((TitanGraph) rootGraph.getGraph()).newTransaction());
-        getTransaction().clearTransaction();
-    }
-
-    @Override
-    public MindmapsGraphImpl getRootGraph() {
+    public AbstractMindmapsGraph getRootGraph() {
         return rootGraph;
+    }
+
+    @Override
+    protected Graph getNewTransaction() {
+        AbstractMindmapsGraph mg = getRootGraph();
+        return ((TitanGraph) mg.getGraph()).newTransaction();
     }
 }

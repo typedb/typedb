@@ -43,14 +43,14 @@ import static org.junit.Assert.*;
 
 public class MindmapsTransactionLowLevelTest {
 
-    private MindmapsTransactionImpl mindmapsGraph;
+    private AbstractMindmapsTransaction mindmapsGraph;
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void buildGraphAccessManager(){
-        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
+        mindmapsGraph = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
         mindmapsGraph.initialiseMetaConcepts();
     }
     @After

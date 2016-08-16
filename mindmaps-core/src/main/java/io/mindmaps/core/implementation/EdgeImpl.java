@@ -26,9 +26,9 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  */
 class EdgeImpl {
     private Edge edge;
-    private final MindmapsTransactionImpl mindmapsGraph;
+    private final AbstractMindmapsTransaction mindmapsGraph;
 
-    EdgeImpl(org.apache.tinkerpop.gremlin.structure.Edge e, MindmapsTransactionImpl mindmapsGraph){
+    EdgeImpl(org.apache.tinkerpop.gremlin.structure.Edge e, AbstractMindmapsTransaction mindmapsGraph){
         edge = e;
         this.mindmapsGraph = mindmapsGraph;
     }
@@ -37,8 +37,8 @@ class EdgeImpl {
      * Deletes the edge between two concepts and adds both those concepts for re-validation in case something goes wrong
      */
     public void delete(){
-        mindmapsGraph.getTransaction().putConcept(getTarget());
-        mindmapsGraph.getTransaction().putConcept(getSource());
+        mindmapsGraph.getConceptLog().putConcept(getTarget());
+        mindmapsGraph.getConceptLog().putConcept(getSource());
 
         edge.remove();
         edge = null;

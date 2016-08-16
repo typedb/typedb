@@ -22,7 +22,7 @@ import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.GraphRuntimeException;
-import io.mindmaps.core.implementation.MindmapsTransactionImpl;
+import io.mindmaps.core.implementation.AbstractMindmapsTransaction;
 import io.mindmaps.core.implementation.MindmapsValidationException;
 import io.mindmaps.core.model.EntityType;
 import org.junit.After;
@@ -118,7 +118,7 @@ public class MindmapsTitanGraphTest {
             }
         });
 
-        MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) mindmapsGraph.newTransaction();
+        AbstractMindmapsTransaction transaction = (AbstractMindmapsTransaction) mindmapsGraph.newTransaction();
         assertEquals(108, transaction.getTinkerTraversal().V().toList().size());
     }
     private void addEntityType(MindmapsGraph mindmapsGraph){

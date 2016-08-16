@@ -23,14 +23,13 @@ import com.thinkaurelius.titan.core.util.TitanCleanup;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
 
-public class MindmapsTitanGraph extends MindmapsGraphImpl {
-    public MindmapsTitanGraph(TitanGraph graph, String engineUrl){
-        super(graph, engineUrl);
+public class MindmapsTitanGraph extends AbstractMindmapsGraph<TitanGraph> {
+    public MindmapsTitanGraph(TitanGraph graph, String name, String engineUrl){
+        super(graph, name, engineUrl);
     }
 
     @Override
     public MindmapsTransaction newTransaction() {
-        getGraph();
         try {
             return new MindmapsTitanTransaction(this);
         } catch (IllegalStateException e){
@@ -40,7 +39,7 @@ public class MindmapsTitanGraph extends MindmapsGraphImpl {
 
     @Override
     public void clear() {
-        TitanGraph titanGraph = ((TitanGraph) getGraph());
+        TitanGraph titanGraph = getGraph();
         titanGraph.close();
         TitanCleanup.clear(titanGraph);
 
