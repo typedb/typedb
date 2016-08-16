@@ -25,7 +25,7 @@ import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Instance;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
-import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.AggregateQuery;
 import io.mindmaps.graql.QueryBuilder;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,6 +35,7 @@ import java.util.Map;
 
 import static io.mindmaps.graql.Aggregate.count;
 import static io.mindmaps.graql.Aggregate.group;
+import static io.mindmaps.graql.Aggregate.select;
 import static io.mindmaps.graql.QueryBuilder.var;
 import static io.mindmaps.graql.query.QueryUtil.movies;
 import static org.junit.Assert.assertEquals;
@@ -54,21 +55,19 @@ public class AggregateTest {
 
     @Test
     public void testCount() {
-        MatchQuery<Long> countQuery = qb.match(var("x").isa("movie")).aggregate(count());
+        AggregateQuery<Long> countQuery = qb.match(var("x").isa("movie")).aggregate(count());
 
-        long count = countQuery.iterator().next();
+        long count = countQuery.execute();
 
         assertEquals(movies.length, count);
     }
 
     @Test
     public void testGroup() {
-        MatchQuery<Map<Concept, List<Map<String, Concept>>>> groupQuery =
+        AggregateQuery<Map<Concept, List<Map<String, Concept>>>> groupQuery =
                 qb.match(var("x").isa("movie"), var("y").isa("person"), var().rel("x").rel("y")).aggregate(group("x"));
 
-        assertEquals(new Long(1), groupQuery.aggregate(count()).iterator().next());
-
-        Map<Concept, List<Map<String, Concept>>> groups = groupQuery.iterator().next();
+        Map<Concept, List<Map<String, Concept>>> groups = groupQuery.execute();
 
         assertEquals(movies.length, groups.size());
 
@@ -82,10 +81,10 @@ public class AggregateTest {
 
     @Test
     public void testGroupCount() {
-        MatchQuery<Map<Concept, Long>> groupCountQuery =
+        AggregateQuery<Map<Concept, Long>> groupCountQuery =
                 qb.match(var("x").isa("movie"), var().rel("x")).aggregate(group("x", count()));
 
-        Map<Concept, Long> groupCount = groupCountQuery.iterator().next();
+        Map<Concept, Long> groupCount = groupCountQuery.execute();
 
         Instance godfather = transaction.getInstance("Godfather");
 
@@ -94,12 +93,14 @@ public class AggregateTest {
 
     @Test
     public void testCountAndGroup() {
-        MatchQuery<Map<String, Object>> query =
-                qb.match(var("x").isa("movie"), var().rel("x").rel("y")).aggregate(count().as("c"), group("x").as("g"));
+        AggregateQuery<Map<String, Object>> query = qb.match(var("x").isa("movie"), var().rel("x").rel("y"))
+                        .aggregate(select(count().as("c"), group("x").as("g")));
 
-        Map<String, Object> results = query.iterator().next();
+        Map<String, Object> results = query.execute();
 
         long count = (long) results.get("c");
+
+        //noinspection unchecked
         Map<Concept, List<Map<String, Concept>>> groups = (Map<Concept, List<Map<String, Concept>>>) results.get("g");
 
         assertEquals(movies.length, groups.size());

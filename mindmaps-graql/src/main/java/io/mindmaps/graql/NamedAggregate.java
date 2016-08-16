@@ -19,6 +19,11 @@
 
 package io.mindmaps.graql;
 
+/**
+ * An aggregate operation with an associated name. Used when combining aggregates using the 'select' aggregate.
+ * @param <T> the type of the query to perform the aggregate operation on
+ * @param <S> the type of the result of the aggregate operation
+ */
 public class NamedAggregate<T, S> {
     private final Aggregate<T, S> aggregate;
     private final String name;
@@ -28,11 +33,19 @@ public class NamedAggregate<T, S> {
         this.name = name;
     }
 
-    Aggregate<T, S> getAggregate() {
+    /**
+     * Get the aggregate this named aggregate represents.
+     * @return the aggregate this named aggregate represents
+     */
+    public Aggregate<T, S> getAggregate() {
         return aggregate;
     }
 
-    String getName() {
+    /**
+     * Get the name of this aggregate.
+     * @return the name of this aggregate
+     */
+    public String getName() {
         return name;
     }
 }

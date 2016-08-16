@@ -17,24 +17,21 @@
  *
  */
 
-package io.mindmaps.graql.internal.query.match;
+package io.mindmaps.graql.internal.query.aggregate;
 
 import io.mindmaps.graql.Aggregate;
-import io.mindmaps.graql.MatchQuery;
 
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class MatchQueryAggregate<S, T> extends MatchQueryAbstract<S, T> {
-
-    private final Aggregate<? super S, T> aggregate;
-
-    public MatchQueryAggregate(MatchQuery.Admin<S> inner, Aggregate<? super S, T> aggregate) {
-        super(inner);
-        this.aggregate = aggregate;
-    }
-
+/**
+ * An aggregate that changes match query results into a list.
+ * @param <T> the type of the results of the match query
+ */
+public class ListAggregate<T> implements Aggregate<T, List<T>> {
     @Override
-    protected Stream<T> transformStream(Stream<S> stream) {
-        return Stream.of(aggregate.apply(stream));
+    public List<T> apply(Stream<? extends T> stream) {
+        return stream.collect(Collectors.toList());
     }
 }
