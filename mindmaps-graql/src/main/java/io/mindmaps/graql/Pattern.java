@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql;
 
-import io.mindmaps.graql.internal.admin.PatternAdmin;
+import io.mindmaps.graql.admin.PatternAdmin;
 
 /**
  * A pattern describing a subgraph.

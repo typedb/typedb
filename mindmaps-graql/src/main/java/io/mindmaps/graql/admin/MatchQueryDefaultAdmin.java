@@ -17,17 +17,26 @@
  *
  */
 
-package io.mindmaps.graql.internal.admin;
+package io.mindmaps.graql.admin;
 
-import io.mindmaps.graql.AskQuery;
+import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.MatchQueryDefault;
 
+import java.util.Map;
+import java.util.Set;
+
 /**
- * Admin class for inspecting and manipulating an AskQuery
+ * Admin class for inspecting and manipulating a MatchQuery
  */
-public interface AskQueryAdmin extends AskQuery {
+public interface MatchQueryDefaultAdmin extends MatchQueryDefault, MatchQueryAdmin<Map<String, Concept>> {
+
+    @Override
+    default MatchQueryDefaultAdmin admin() {
+        return this;
+    }
+
     /**
-     * @return the match query used to create this ask query
+     * @return all selected variable names in the query
      */
-    MatchQueryDefault getMatchQuery();
+    Set<String> getSelectedNames();
 }

@@ -17,29 +17,17 @@
  *
  */
 
-package io.mindmaps.graql.internal.query.match;
+package io.mindmaps.graql.admin;
 
-import io.mindmaps.graql.admin.MatchQueryAdmin;
-
-import java.util.function.Function;
-import java.util.stream.Stream;
+import io.mindmaps.graql.AskQuery;
+import io.mindmaps.graql.MatchQueryDefault;
 
 /**
- * A class for performing a generic 'map' operation on a MatchQuery, transforming every result.
- * @param <S> The type of the results before transformation
- * @param <T> The type of the results after transformation
+ * Admin class for inspecting and manipulating an AskQuery
  */
-public class MatchQueryMap<S, T> extends MatchQueryModifier<S, T> {
-
-    private final Function<S, T> function;
-
-    public MatchQueryMap(MatchQueryAdmin<S> inner, Function<S, T> function) {
-        super(inner);
-        this.function = function;
-    }
-
-    @Override
-    protected Stream<T> transformStream(Stream<S> stream) {
-        return stream.map(function);
-    }
+public interface AskQueryAdmin extends AskQuery {
+    /**
+     * @return the match query used to create this ask query
+     */
+    MatchQueryDefault getMatchQuery();
 }

@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.internal.query.match;
 
-import io.mindmaps.graql.internal.admin.MatchQueryAdmin;
+import io.mindmaps.graql.admin.MatchQueryAdmin;
 
 import java.util.stream.Stream;
 

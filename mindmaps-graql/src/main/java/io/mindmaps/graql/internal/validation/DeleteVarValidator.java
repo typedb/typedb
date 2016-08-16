@@ -20,7 +20,7 @@ package io.mindmaps.graql.internal.validation;
 
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.graql.internal.admin.VarAdmin;
+import io.mindmaps.graql.admin.VarAdmin;
 
 import java.util.ArrayList;
 import java.util.List;

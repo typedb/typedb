@@ -20,7 +20,7 @@ package io.mindmaps.graql.internal.reasoner.predicate;
 
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.graql.MatchQueryDefault;
-import io.mindmaps.graql.internal.admin.PatternAdmin;
+import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.internal.reasoner.container.Query;
 
 import java.util.Map;

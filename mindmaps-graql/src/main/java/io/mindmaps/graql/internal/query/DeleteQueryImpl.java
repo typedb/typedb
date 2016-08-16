@@ -26,9 +26,9 @@ import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Resource;
 import io.mindmaps.graql.DeleteQuery;
 import io.mindmaps.graql.MatchQueryDefault;
-import io.mindmaps.graql.internal.admin.DeleteQueryAdmin;
-import io.mindmaps.graql.internal.admin.MatchQueryDefaultAdmin;
-import io.mindmaps.graql.internal.admin.VarAdmin;
+import io.mindmaps.graql.admin.DeleteQueryAdmin;
+import io.mindmaps.graql.admin.MatchQueryDefaultAdmin;
+import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.validation.DeleteQueryValidator;
 
 import java.util.*;

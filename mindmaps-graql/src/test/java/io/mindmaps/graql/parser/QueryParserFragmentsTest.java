@@ -24,7 +24,7 @@ import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.QueryParser;
-import io.mindmaps.graql.internal.admin.VarAdmin;
+import io.mindmaps.graql.admin.VarAdmin;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;

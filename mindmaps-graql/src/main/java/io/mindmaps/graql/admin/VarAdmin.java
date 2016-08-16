@@ -17,7 +17,7 @@
  *
  */
 
-package io.mindmaps.graql.internal.admin;
+package io.mindmaps.graql.admin;
 
 import io.mindmaps.core.implementation.Data;
 import io.mindmaps.graql.Var;

@@ -20,8 +20,8 @@ package io.mindmaps.graql.internal.query.match;
 
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Type;
-import io.mindmaps.graql.internal.admin.MatchQueryAdmin;
-import io.mindmaps.graql.internal.admin.PatternAdmin;
+import io.mindmaps.graql.admin.MatchQueryAdmin;
+import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.internal.query.Conjunction;
 
 import java.util.Optional;

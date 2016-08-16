@@ -22,7 +22,7 @@ package io.mindmaps.graql;
 import com.google.common.collect.Sets;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
-import io.mindmaps.graql.internal.admin.MatchQueryDefaultAdmin;
+import io.mindmaps.graql.admin.MatchQueryDefaultAdmin;
 
 import java.util.Arrays;
 import java.util.Collection;

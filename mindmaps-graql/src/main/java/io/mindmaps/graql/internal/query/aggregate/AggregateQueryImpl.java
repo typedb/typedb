@@ -21,7 +21,7 @@ package io.mindmaps.graql.internal.query.aggregate;
 
 import io.mindmaps.graql.Aggregate;
 import io.mindmaps.graql.AggregateQuery;
-import io.mindmaps.graql.internal.admin.MatchQueryAdmin;
+import io.mindmaps.graql.admin.MatchQueryAdmin;
 
 /**
  * Implementation of AggregateQuery

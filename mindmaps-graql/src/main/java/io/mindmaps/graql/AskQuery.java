@@ -19,7 +19,7 @@
 package io.mindmaps.graql;
 
 import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.graql.internal.admin.AskQueryAdmin;
+import io.mindmaps.graql.admin.AskQueryAdmin;
 
 /**
  * A query that will return whether a match query can be found in the graph.

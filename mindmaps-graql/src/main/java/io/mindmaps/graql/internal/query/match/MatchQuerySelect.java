@@ -23,7 +23,7 @@ import com.google.common.collect.Maps;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
-import io.mindmaps.graql.internal.admin.MatchQueryDefaultAdmin;
+import io.mindmaps.graql.admin.MatchQueryDefaultAdmin;
 
 import java.util.Map;
 import java.util.Optional;

@@ -20,8 +20,8 @@
 package io.mindmaps.graql.internal.query;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.graql.internal.admin.PatternAdmin;
-import io.mindmaps.graql.internal.admin.VarAdmin;
+import io.mindmaps.graql.admin.PatternAdmin;
+import io.mindmaps.graql.admin.VarAdmin;
 
 import java.util.List;
 import java.util.Set;

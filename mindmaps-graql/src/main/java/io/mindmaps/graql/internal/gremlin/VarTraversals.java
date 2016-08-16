@@ -22,10 +22,10 @@ import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.implementation.Data;
 import io.mindmaps.constants.DataType;
 import io.mindmaps.graql.Graql;
-import io.mindmaps.graql.internal.admin.ValuePredicateAdmin;
+import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.internal.GraqlType;
-import io.mindmaps.graql.internal.admin.VarAdmin;
+import io.mindmaps.graql.admin.VarAdmin;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 

@@ -25,7 +25,7 @@ import io.mindmaps.core.model.Type;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.*;
-import io.mindmaps.graql.internal.admin.PatternAdmin;
+import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.internal.query.Conjunction;
 import org.junit.Before;
 import org.junit.BeforeClass;

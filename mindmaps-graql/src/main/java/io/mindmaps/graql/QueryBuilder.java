@@ -20,9 +20,9 @@ package io.mindmaps.graql;
 
 import com.google.common.collect.ImmutableSet;
 import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.graql.internal.admin.AdminConverter;
-import io.mindmaps.graql.internal.admin.PatternAdmin;
-import io.mindmaps.graql.internal.admin.VarAdmin;
+import io.mindmaps.graql.admin.AdminConverter;
+import io.mindmaps.graql.admin.PatternAdmin;
+import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.query.InsertQueryImpl;
 import io.mindmaps.graql.internal.query.match.MatchQueryBase;
 

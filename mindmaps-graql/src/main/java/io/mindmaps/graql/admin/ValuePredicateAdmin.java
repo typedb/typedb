@@ -17,24 +17,35 @@
  *
  */
 
-package io.mindmaps.graql.internal.admin;
+package io.mindmaps.graql.admin;
 
-import io.mindmaps.graql.DeleteQuery;
-import io.mindmaps.graql.MatchQueryDefault;
+import io.mindmaps.graql.ValuePredicate;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 
-import java.util.Collection;
+import java.util.Optional;
+import java.util.Set;
 
 /**
- * Admin class for inspecting and manipulating a DeleteQuery
+ * Admin class for inspecting a ValuePredicate
  */
-public interface DeleteQueryAdmin extends DeleteQuery {
+public interface ValuePredicateAdmin extends ValuePredicate {
     /**
-     * @return the variables to delete
+     * @return whether this predicate is specific (e.g. "eq" is specific, "regex" is not)
      */
-    Collection<VarAdmin> getDeleters();
+    boolean isSpecific();
 
     /**
-     * @return the match query this delete query is operating on
+     * @return the value comparing against, if this is an "equality" predicate, otherwise nothing
      */
-    MatchQueryDefault getMatchQuery();
+    Optional<Object> equalsValue();
+
+    /**
+     * @return all values referred to in the predicate (including within 'ors' and 'ands')
+     */
+    Set<Object> getInnerValues();
+
+    /**
+     * @return the gremlin predicate object this ValuePredicate wraps
+     */
+    P<Object> getPredicate();
 }

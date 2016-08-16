@@ -23,7 +23,7 @@ import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.graql.Aggregate;
 import io.mindmaps.graql.AggregateQuery;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.internal.admin.MatchQueryAdmin;
+import io.mindmaps.graql.admin.MatchQueryAdmin;
 import io.mindmaps.graql.internal.query.aggregate.AggregateQueryImpl;
 
 public abstract class AbstractMatchQuery<T> implements MatchQueryAdmin<T> {

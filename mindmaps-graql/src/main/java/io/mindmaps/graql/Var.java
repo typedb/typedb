@@ -19,7 +19,7 @@
 package io.mindmaps.graql;
 
 import io.mindmaps.core.implementation.Data;
-import io.mindmaps.graql.internal.admin.VarAdmin;
+import io.mindmaps.graql.admin.VarAdmin;
 
 import java.util.Optional;
 

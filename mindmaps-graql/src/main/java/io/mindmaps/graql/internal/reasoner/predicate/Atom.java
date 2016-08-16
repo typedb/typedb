@@ -17,8 +17,8 @@
  */
 package io.mindmaps.graql.internal.reasoner.predicate;
 
-import io.mindmaps.graql.internal.admin.ValuePredicateAdmin;
-import io.mindmaps.graql.internal.admin.VarAdmin;
+import io.mindmaps.graql.admin.ValuePredicateAdmin;
+import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.reasoner.container.Query;
 
 import java.util.*;

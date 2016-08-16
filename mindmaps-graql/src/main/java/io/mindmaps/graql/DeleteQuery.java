@@ -19,7 +19,7 @@
 package io.mindmaps.graql;
 
 import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.graql.internal.admin.DeleteQueryAdmin;
+import io.mindmaps.graql.admin.DeleteQueryAdmin;
 
 /**
  * A query for deleting concepts from a match query.

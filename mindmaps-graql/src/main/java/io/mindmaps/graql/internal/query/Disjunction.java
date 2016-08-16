@@ -19,8 +19,8 @@
 
 package io.mindmaps.graql.internal.query;
 
-import io.mindmaps.graql.internal.admin.PatternAdmin;
-import io.mindmaps.graql.internal.admin.VarAdmin;
+import io.mindmaps.graql.admin.PatternAdmin;
+import io.mindmaps.graql.admin.VarAdmin;
 
 import java.util.Set;
 import java.util.stream.Collectors;

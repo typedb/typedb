@@ -17,26 +17,24 @@
  *
  */
 
-package io.mindmaps.graql.internal.admin;
+package io.mindmaps.graql.admin;
 
-import io.mindmaps.core.model.Concept;
+import io.mindmaps.graql.DeleteQuery;
 import io.mindmaps.graql.MatchQueryDefault;
 
-import java.util.Map;
-import java.util.Set;
+import java.util.Collection;
 
 /**
- * Admin class for inspecting and manipulating a MatchQuery
+ * Admin class for inspecting and manipulating a DeleteQuery
  */
-public interface MatchQueryDefaultAdmin extends MatchQueryDefault, MatchQueryAdmin<Map<String, Concept>> {
-
-    @Override
-    default MatchQueryDefaultAdmin admin() {
-        return this;
-    }
+public interface DeleteQueryAdmin extends DeleteQuery {
+    /**
+     * @return the variables to delete
+     */
+    Collection<VarAdmin> getDeleters();
 
     /**
-     * @return all selected variable names in the query
+     * @return the match query this delete query is operating on
      */
-    Set<String> getSelectedNames();
+    MatchQueryDefault getMatchQuery();
 }

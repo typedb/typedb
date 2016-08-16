@@ -19,7 +19,7 @@
 package io.mindmaps.graql.internal.gremlin;
 
 import io.mindmaps.constants.DataType;
-import io.mindmaps.graql.internal.admin.ValuePredicateAdmin;
+import io.mindmaps.graql.admin.ValuePredicateAdmin;
 
 /**
  * represents the priority of a {@code Fragment}.

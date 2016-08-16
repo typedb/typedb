@@ -20,7 +20,7 @@ package io.mindmaps.graql;
 
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
-import io.mindmaps.graql.internal.admin.InsertQueryAdmin;
+import io.mindmaps.graql.admin.InsertQueryAdmin;
 
 /**
  * A query for inserting data.

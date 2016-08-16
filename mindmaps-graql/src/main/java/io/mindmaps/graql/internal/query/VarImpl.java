@@ -22,9 +22,9 @@ import com.google.common.collect.Maps;
 import io.mindmaps.core.implementation.Data;
 import io.mindmaps.graql.*;
 import io.mindmaps.graql.internal.StringConverter;
-import io.mindmaps.graql.internal.admin.PatternAdmin;
-import io.mindmaps.graql.internal.admin.ValuePredicateAdmin;
-import io.mindmaps.graql.internal.admin.VarAdmin;
+import io.mindmaps.graql.admin.PatternAdmin;
+import io.mindmaps.graql.admin.ValuePredicateAdmin;
+import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 import io.mindmaps.graql.internal.gremlin.VarTraversals;
 

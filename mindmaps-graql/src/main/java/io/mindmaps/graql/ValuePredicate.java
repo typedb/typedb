@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql;
 
-import io.mindmaps.graql.internal.admin.ValuePredicateAdmin;
+import io.mindmaps.graql.admin.ValuePredicateAdmin;
 
 /**
  * a predicate on a value in a query.

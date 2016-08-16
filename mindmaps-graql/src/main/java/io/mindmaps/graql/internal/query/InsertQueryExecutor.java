@@ -26,7 +26,7 @@ import io.mindmaps.core.implementation.Data;
 import io.mindmaps.core.model.*;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.internal.GraqlType;
-import io.mindmaps.graql.internal.admin.VarAdmin;
+import io.mindmaps.graql.admin.VarAdmin;
 
 import java.util.*;
 import java.util.function.BiFunction;

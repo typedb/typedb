@@ -26,9 +26,9 @@ import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.MatchQueryDefault;
-import io.mindmaps.graql.internal.admin.InsertQueryAdmin;
-import io.mindmaps.graql.internal.admin.MatchQueryDefaultAdmin;
-import io.mindmaps.graql.internal.admin.VarAdmin;
+import io.mindmaps.graql.admin.InsertQueryAdmin;
+import io.mindmaps.graql.admin.MatchQueryDefaultAdmin;
+import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.validation.InsertQueryValidator;
 
 import java.util.Collection;

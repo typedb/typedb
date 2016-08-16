@@ -23,7 +23,7 @@ import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.RelationType;
 import io.mindmaps.core.model.Type;
-import io.mindmaps.graql.internal.admin.VarAdmin;
+import io.mindmaps.graql.admin.VarAdmin;
 
 import java.util.*;
 import java.util.stream.Collectors;
