@@ -39,8 +39,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import static io.mindmaps.constants.DataType.ConceptMeta.*;
-import static io.mindmaps.graql.QueryBuilder.*;
-import static io.mindmaps.graql.ValuePredicate.*;
+import static io.mindmaps.graql.Graql.*;
 import static org.junit.Assert.*;
 
 public class MatchQueryDefaultTest {
@@ -59,7 +58,7 @@ public class MatchQueryDefaultTest {
 
     @Before
     public void setUp() {
-        qb = QueryBuilder.build(transaction);
+        qb = withTransaction(transaction);
     }
 
     @Test
@@ -409,7 +408,7 @@ public class MatchQueryDefaultTest {
     public void testAkoRelationType() {
         MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
         MindmapsTransaction transaction = graph.getTransaction();
-        QueryBuilder qb = QueryBuilder.build(transaction);
+        QueryBuilder qb = withTransaction(transaction);
 
         qb.insert(
                 id("ownership").isa("relation-type").hasRole("owner").hasRole("possession"),

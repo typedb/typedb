@@ -137,7 +137,7 @@ public abstract class AtomBase implements Atomic{
     @Override
     public MatchQueryDefault getExpandedMatchQuery(MindmapsTransaction graph)
     {
-        QueryBuilder qb = QueryBuilder.build(graph);
+        QueryBuilder qb = Graql.withTransaction(graph);
         Set<String> selectVars = Sets.newHashSet(varName);
         return qb.match(getExpandedPattern()).select(selectVars);
     }

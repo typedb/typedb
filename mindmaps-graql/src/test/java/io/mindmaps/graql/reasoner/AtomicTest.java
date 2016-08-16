@@ -19,17 +19,16 @@
 package io.mindmaps.graql.reasoner;
 
 import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQueryDefault;
-import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.graql.reasoner.graphs.SNBGraph;
+import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.internal.reasoner.container.Query;
+import io.mindmaps.graql.reasoner.graphs.SNBGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static io.mindmaps.graql.internal.reasoner.Utility.printMatchQueryResults;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class AtomicTest {
     private static MindmapsTransaction graph;
@@ -41,7 +40,7 @@ public class AtomicTest {
 
         graph = SNBGraph.getTransaction();
         qp = QueryParser.create(graph);
-        qb = QueryBuilder.build(graph);
+        qb = Graql.withTransaction(graph);
     }
 
     @Test

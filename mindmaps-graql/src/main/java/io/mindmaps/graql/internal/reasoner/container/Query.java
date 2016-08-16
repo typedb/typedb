@@ -310,7 +310,7 @@ public class Query {
                 }
             }
         });
-        QueryBuilder qb = QueryBuilder.build(graph);
+        QueryBuilder qb = Graql.withTransaction(graph);
 
         Set<Pattern.Conjunction<Var.Admin>> conjs = new HashSet<>();
         conjunctions.forEach(conj -> conjs.add(conj.getConjunction()));

@@ -28,7 +28,7 @@ import java.util.Set;
 /**
  * A wildcard variable to refers to a concept in a query.
  * <p>
- * A {@code Var} may be given a variable name, or left as an "anonymous" variable. {@code QueryBuilder} provides
+ * A {@code Var} may be given a variable name, or left as an "anonymous" variable. {@link Graql} provides
  * static methods for constructing {@code Var} objects.
  * <p>
  * The methods on {@code Var} are used to set its properties. A {@code Var} behaves differently depending on the type of
@@ -56,7 +56,7 @@ public interface Var extends Pattern {
      * @return this
      */
     default Var value(Object value) {
-        return value(ValuePredicate.eq(value));
+        return value(Graql.eq(value));
     }
 
     /**
@@ -79,7 +79,7 @@ public interface Var extends Pattern {
      * @return this
      */
     default Var has(String type, Object value) {
-        return has(type, ValuePredicate.eq(value));
+        return has(type, Graql.eq(value));
     }
 
     /**
@@ -96,7 +96,7 @@ public interface Var extends Pattern {
      * @return this
      */
     default Var isa(String type) {
-        return isa(QueryBuilder.id(type));
+        return isa(Graql.id(type));
     }
 
     /**
@@ -110,7 +110,7 @@ public interface Var extends Pattern {
      * @return this
      */
     default Var ako(String type) {
-        return ako(QueryBuilder.id(type));
+        return ako(Graql.id(type));
     }
 
     /**
@@ -124,7 +124,7 @@ public interface Var extends Pattern {
      * @return this
      */
     default Var hasRole(String type) {
-        return hasRole(QueryBuilder.id(type));
+        return hasRole(Graql.id(type));
     }
 
     /**
@@ -138,7 +138,7 @@ public interface Var extends Pattern {
      * @return this
      */
     default Var playsRole(String type) {
-        return playsRole(QueryBuilder.id(type));
+        return playsRole(Graql.id(type));
     }
 
     /**
@@ -166,7 +166,7 @@ public interface Var extends Pattern {
      * @return this
      */
     default Var rel(String roleplayer) {
-        return rel(QueryBuilder.var(roleplayer));
+        return rel(Graql.var(roleplayer));
     }
 
     /**
@@ -185,7 +185,7 @@ public interface Var extends Pattern {
      * @return this
      */
     default Var rel(String roletype, String roleplayer) {
-        return rel(QueryBuilder.id(roletype), QueryBuilder.var(roleplayer));
+        return rel(Graql.id(roletype), Graql.var(roleplayer));
     }
 
     /**
@@ -196,7 +196,7 @@ public interface Var extends Pattern {
      * @return this
      */
     default Var rel(Var roletype, String roleplayer) {
-        return rel(roletype, QueryBuilder.var(roleplayer));
+        return rel(roletype, Graql.var(roleplayer));
     }
 
     /**
@@ -207,7 +207,7 @@ public interface Var extends Pattern {
      * @return this
      */
     default Var rel(String roletype, Var roleplayer) {
-        return rel(QueryBuilder.id(roletype), roleplayer);
+        return rel(Graql.id(roletype), roleplayer);
     }
 
     /**

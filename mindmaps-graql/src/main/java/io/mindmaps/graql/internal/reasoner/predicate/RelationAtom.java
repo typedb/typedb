@@ -21,6 +21,7 @@ package io.mindmaps.graql.internal.reasoner.predicate;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.RoleType;
 import io.mindmaps.core.model.Type;
+import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQueryDefault;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Var;
@@ -107,7 +108,7 @@ public class RelationAtom extends AtomBase{
     @Override
     public MatchQueryDefault getExpandedMatchQuery(MindmapsTransaction graph)
     {
-        QueryBuilder qb = QueryBuilder.build(graph);
+        QueryBuilder qb = Graql.withTransaction(graph);
         Set<String> selectVars = getVarNames();
         return qb.match(getExpandedPattern()).select(selectVars);
     }

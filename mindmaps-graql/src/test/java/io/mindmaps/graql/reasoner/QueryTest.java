@@ -43,7 +43,7 @@ public class QueryTest {
 
         graph = SNBGraph.getTransaction();
         qp = QueryParser.create(graph);
-        qb = QueryBuilder.build(graph);
+        qb = Graql.withTransaction(graph);
     }
 
     @Test

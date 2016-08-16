@@ -19,16 +19,6 @@
 
 package io.mindmaps.graql;
 
-import com.google.common.collect.ImmutableSet;
-import io.mindmaps.core.model.Concept;
-import io.mindmaps.graql.internal.query.aggregate.CountAggregate;
-import io.mindmaps.graql.internal.query.aggregate.GroupAggregate;
-import io.mindmaps.graql.internal.query.aggregate.ListAggregate;
-import io.mindmaps.graql.internal.query.aggregate.SelectAggregate;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -54,50 +44,4 @@ public interface Aggregate<T, S> {
         return new NamedAggregate<>(this, name);
     }
 
-    /**
-     * Create an aggregate that will count the results of a query.
-     */
-    static Aggregate<Object, Long> count() {
-        return new CountAggregate();
-    }
-
-    /**
-     * Create an aggregate that will group a query by a variable name.
-     * @param varName the variable name to group results by
-     */
-    static Aggregate<Map<String, Concept>, Map<Concept, List<Map<String, Concept>>>> group(String varName) {
-        return group(varName, new ListAggregate<>());
-    }
-
-    /**
-     * Create an aggregate that will group a query by a variable name and apply the given aggregate to each group
-     * @param varName the variable name to group results by
-     * @param aggregate the aggregate to apply to each group
-     * @param <T> the type the aggregate returns
-     */
-    static <T> Aggregate<Map<String, Concept>, Map<Concept, T>> group(
-            String varName, Aggregate<? super Map<String, Concept>, T> aggregate) {
-        return new GroupAggregate<>(varName, aggregate);
-    }
-
-    /**
-     * Create an aggregate that will collect together several named aggregates into a map.
-     * @param aggregates the aggregates to join together
-     * @param <S> the type that the query returns
-     * @param <T> the type that each aggregate returns
-     */
-    @SafeVarargs
-    static <S, T> Aggregate<S, Map<String, T>> select(NamedAggregate<? super S, ? extends T>... aggregates) {
-        return select(ImmutableSet.copyOf(aggregates));
-    }
-
-    /**
-     * Create an aggregate that will collect together several named aggregates into a map.
-     * @param aggregates the aggregates to join together
-     * @param <S> the type that the query returns
-     * @param <T> the type that each aggregate returns
-     */
-    static <S, T> Aggregate<S, Map<String, T>> select(Set<NamedAggregate<? super S, ? extends T>> aggregates) {
-        return new SelectAggregate<>(ImmutableSet.copyOf(aggregates));
-    }
 }

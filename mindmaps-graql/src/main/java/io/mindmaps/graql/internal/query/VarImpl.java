@@ -20,10 +20,7 @@ package io.mindmaps.graql.internal.query;
 
 import com.google.common.collect.Maps;
 import io.mindmaps.core.implementation.Data;
-import io.mindmaps.graql.Pattern;
-import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.graql.ValuePredicate;
-import io.mindmaps.graql.Var;
+import io.mindmaps.graql.*;
 import io.mindmaps.graql.internal.StringConverter;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 import io.mindmaps.graql.internal.gremlin.VarTraversals;
@@ -150,14 +147,14 @@ public class VarImpl implements Var.Admin {
 
     @Override
     public Var has(String type) {
-        Var.Admin resourceVar = QueryBuilder.id(Objects.requireNonNull(type)).admin();
+        Var.Admin resourceVar = Graql.id(Objects.requireNonNull(type)).admin();
         resources.putIfAbsent(resourceVar, new HashSet<>());
         return this;
     }
 
     @Override
     public Var has(String type, ValuePredicate predicate) {
-        Var.Admin resourceVar = QueryBuilder.id(Objects.requireNonNull(type)).admin();
+        Var.Admin resourceVar = Graql.id(Objects.requireNonNull(type)).admin();
         resources.computeIfAbsent(resourceVar, k -> new HashSet<>()).add(predicate.admin());
         return this;
     }
@@ -207,7 +204,7 @@ public class VarImpl implements Var.Admin {
 
     @Override
     public Var hasResource(String type) {
-        hasResourceTypes.add(QueryBuilder.id(type).admin());
+        hasResourceTypes.add(Graql.id(type).admin());
         return this;
     }
 

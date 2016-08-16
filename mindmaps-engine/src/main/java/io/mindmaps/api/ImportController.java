@@ -18,15 +18,14 @@
 
 package io.mindmaps.api;
 
+import io.mindmaps.constants.RESTUtil;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.QueryParser;
-import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Var;
 import io.mindmaps.loader.BlockingLoader;
 import io.mindmaps.util.ConfigProperties;
-import io.mindmaps.constants.RESTUtil;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.LoggerFactory;
@@ -39,6 +38,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static io.mindmaps.graql.Graql.insert;
 import static spark.Spark.post;
 
 /**
@@ -143,7 +143,7 @@ public class ImportController {
         LOG.info("Loading new ontology .. ");
 
         QueryParser.create().parsePatternsStream(new FileInputStream(ontologyFile)).map(x->x.admin().asVar()).forEach(ontologyBatch::add);
-        QueryBuilder.build(transaction).insert(ontologyBatch).execute();
+        insert(ontologyBatch).withTransaction(transaction).execute();
         transaction.commit();
 
         LOG.info("Ontology loaded. ");

@@ -28,7 +28,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static io.mindmaps.graql.QueryBuilder.var;
+import static io.mindmaps.graql.Graql.var;
+import static io.mindmaps.graql.Graql.withTransaction;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -43,7 +44,7 @@ public class AskQueryTest {
         MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
         MindmapsTransaction transaction = mindmapsGraph.getTransaction();
-        qb = QueryBuilder.build(transaction);
+        qb = withTransaction(transaction);
     }
 
     @Test

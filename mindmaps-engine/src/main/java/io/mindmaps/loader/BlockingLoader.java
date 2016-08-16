@@ -22,7 +22,6 @@ import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
-import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Var;
 import io.mindmaps.postprocessing.Cache;
 import io.mindmaps.util.ConfigProperties;
@@ -36,6 +35,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+
+import static io.mindmaps.graql.Graql.insert;
 
 public class BlockingLoader {
 
@@ -121,7 +122,7 @@ public class BlockingLoader {
             MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) GraphFactory.getInstance().getGraphBatchLoading(name).getTransaction();
             try {
 
-                QueryBuilder.build(transaction).insert(batch).execute();
+                insert(batch).withTransaction(transaction).execute();
                 transaction.commit();
                 cache.addJobCasting(graphName, transaction.getModifiedCastingIds());
                 transactionsSemaphore.release();

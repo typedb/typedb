@@ -21,7 +21,7 @@ package io.mindmaps.graql.internal.gremlin;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.implementation.Data;
 import io.mindmaps.constants.DataType;
-import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.ValuePredicate;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.internal.GraqlType;
@@ -38,7 +38,7 @@ import static io.mindmaps.constants.DataType.ConceptProperty.*;
 import static io.mindmaps.constants.DataType.ConceptPropertyUnique.ITEM_IDENTIFIER;
 import static io.mindmaps.constants.DataType.EdgeLabel.*;
 import static io.mindmaps.constants.DataType.EdgeProperty.TO_TYPE;
-import static io.mindmaps.graql.ValuePredicate.eq;
+import static io.mindmaps.graql.Graql.eq;
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.*;
 
 /**
@@ -372,12 +372,12 @@ public class VarTraversals {
                 () -> new IllegalStateException(ErrorMessage.NO_ID_SPECIFIED_FOR_HAS_RESOURCE.getMessage())
         );
 
-        Var owner = QueryBuilder.id(GraqlType.HAS_RESOURCE_OWNER.getId(typeId))
+        Var owner = Graql.id(GraqlType.HAS_RESOURCE_OWNER.getId(typeId))
                 .isa(DataType.ConceptMeta.ROLE_TYPE.getId());
-        Var value = QueryBuilder.id(GraqlType.HAS_RESOURCE_VALUE.getId(typeId))
+        Var value = Graql.id(GraqlType.HAS_RESOURCE_VALUE.getId(typeId))
                 .isa(DataType.ConceptMeta.ROLE_TYPE.getId());
 
-        Var relationType = QueryBuilder.id(GraqlType.HAS_RESOURCE.getId(typeId))
+        Var relationType = Graql.id(GraqlType.HAS_RESOURCE.getId(typeId))
                 .isa(DataType.ConceptMeta.RELATION_TYPE.getId())
                 .hasRole(owner).hasRole(value);
 

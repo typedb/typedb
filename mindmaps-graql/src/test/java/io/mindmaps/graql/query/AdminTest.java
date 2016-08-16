@@ -33,8 +33,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static io.mindmaps.graql.QueryBuilder.id;
-import static io.mindmaps.graql.QueryBuilder.var;
+import static io.mindmaps.graql.Graql.*;
+import static io.mindmaps.graql.Graql.id;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
@@ -54,7 +54,7 @@ public class AdminTest {
 
     @Before
     public void setUp() {
-        qb = QueryBuilder.build(transaction);
+        qb = withTransaction(transaction);
     }
 
     @Test

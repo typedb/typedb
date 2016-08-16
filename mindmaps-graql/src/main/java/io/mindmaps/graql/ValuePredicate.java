@@ -18,12 +18,8 @@
 
 package io.mindmaps.graql;
 
-import io.mindmaps.graql.internal.StringConverter;
-import io.mindmaps.graql.internal.query.ValuePredicateImpl;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
-import java.util.Arrays;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -35,104 +31,6 @@ import java.util.Set;
  * Predicates can be combined together using the methods {@code and}, {@code or}, {@code any} and {@code all}.
  */
 public interface ValuePredicate {
-
-    /**
-     * @param value the value
-     * @return a predicate that is true when a value equals the specified value
-     */
-    static ValuePredicate eq(Object value) {
-        Objects.requireNonNull(value);
-        return new ValuePredicateImpl(P.eq(value), StringConverter.valueToString(value), value, true);
-    }
-
-    /**
-     * @param value the value
-     * @return a predicate that is true when a value does not equal the specified value
-     */
-    static ValuePredicate neq(Object value) {
-        Objects.requireNonNull(value);
-        return new ValuePredicateImpl(P.neq(value), "!= " + StringConverter.valueToString(value), value, false);
-    }
-
-    /**
-     * @param value the value
-     * @return a predicate that is true when a value is strictly greater than the specified value
-     */
-    static ValuePredicate gt(Comparable value) {
-        Objects.requireNonNull(value);
-        return new ValuePredicateImpl(P.gt(value), "> " + StringConverter.valueToString(value), value, false);
-    }
-
-    /**
-     * @param value the value
-     * @return a predicate that is true when a value is greater or equal to the specified value
-     */
-    static ValuePredicate gte(Comparable value) {
-        Objects.requireNonNull(value);
-        return new ValuePredicateImpl(P.gte(value), ">= " + StringConverter.valueToString(value), value, false);
-    }
-
-    /**
-     * @param value the value
-     * @return a predicate that is true when a value is strictly less than the specified value
-     */
-    static ValuePredicate lt(Comparable value) {
-        Objects.requireNonNull(value);
-        return new ValuePredicateImpl(P.lt(value), "< " + StringConverter.valueToString(value), value, false);
-    }
-
-    /**
-     * @param value the value
-     * @return a predicate that is true when a value is less or equal to the specified value
-     */
-    static ValuePredicate lte(Comparable value) {
-        Objects.requireNonNull(value);
-        return new ValuePredicateImpl(P.lte(value), "<= " + StringConverter.valueToString(value), value, false);
-    }
-
-    /**
-     * @param predicates an array of predicates
-     * @return a predicate that returns true when all the predicates are true
-     */
-    static ValuePredicate all(ValuePredicate predicate, ValuePredicate... predicates) {
-        return Arrays.stream(predicates).reduce(predicate, ValuePredicate::and);
-    }
-
-    /**
-     * @param predicates an array of predicates
-     * @return a predicate that returns true when any of the predicates are true
-     */
-    static ValuePredicate any(ValuePredicate predicate, ValuePredicate... predicates) {
-        return Arrays.stream(predicates).reduce(predicate, ValuePredicate::or);
-    }
-
-    /**
-     * @param pattern a regex pattern
-     * @return a predicate that returns true when a value matches the given regular expression
-     */
-    static ValuePredicate regex(String pattern) {
-        Objects.requireNonNull(pattern);
-        return new ValuePredicateImpl(
-                new P<>((value, p) -> java.util.regex.Pattern.matches((String) p, (String) value), pattern),
-                "/" + pattern + "/",
-                pattern,
-                false
-        );
-    }
-
-    /**
-     * @param substring a substring to match
-     * @return a predicate that returns true when a value contains the given substring
-     */
-    static ValuePredicate contains(String substring) {
-        Objects.requireNonNull(substring);
-        return new ValuePredicateImpl(
-                new P<>((value, s) -> ((String) value).contains((String) s), substring),
-                "contains " + StringConverter.valueToString(substring),
-                substring,
-                false
-        );
-    }
 
     /**
      * @param other the other predicate

@@ -23,11 +23,9 @@ import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.graql.internal.AdminConverter;
 import io.mindmaps.graql.internal.query.InsertQueryImpl;
 import io.mindmaps.graql.internal.query.match.MatchQueryBase;
-import io.mindmaps.graql.internal.query.VarImpl;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -42,23 +40,12 @@ public class QueryBuilder {
 
     private final Optional<MindmapsTransaction> transaction;
 
-    private QueryBuilder(Optional<MindmapsTransaction> transaction) {
-        this.transaction = transaction;
+    QueryBuilder() {
+        this.transaction = Optional.empty();
     }
 
-    /**
-     * @param transaction  the transaction to operate the query on
-     * @return a query builder using the specified transaction
-     */
-    public static QueryBuilder build(MindmapsTransaction transaction) {
-        return new QueryBuilder(Optional.ofNullable(transaction));
-    }
-
-    /**
-     * @return a query builder without a transaction to operate on
-     */
-    public static QueryBuilder build() {
-        return new QueryBuilder(Optional.empty());
+    QueryBuilder(MindmapsTransaction transaction) {
+        this.transaction = Optional.of(transaction);
     }
 
     /**
@@ -95,64 +82,4 @@ public class QueryBuilder {
         return new InsertQueryImpl(varAdmins, transaction);
     }
 
-    /**
-     * @param name the name of the variable
-     * @return a new query variable
-     */
-    public static Var var(String name) {
-        return new VarImpl(Objects.requireNonNull(name));
-    }
-
-    /**
-     * @return a new, anonymous query variable
-     */
-    public static Var var() {
-        return new VarImpl();
-    }
-
-    /**
-     * @param id the id of a concept
-     * @return a query variable that identifies a concept by id
-     */
-    public static Var id(String id) {
-        return var().id(id);
-    }
-
-    /**
-     * @param patterns an array of patterns to match
-     * @return a pattern that will match only when all contained patterns match
-     */
-    public static Pattern and(Pattern... patterns) {
-        return and(Arrays.asList(patterns));
-    }
-
-    /**
-     * @param patterns a collection of patterns to match
-     * @return a pattern that will match only when all contained patterns match
-     */
-    public static Pattern and(Collection<? extends Pattern> patterns) {
-        Pattern.Conjunction<Pattern.Admin> conjunction =
-                Pattern.Admin.conjunction(AdminConverter.getPatternAdmins(patterns));
-
-        return () -> conjunction;
-    }
-
-    /**
-     * @param patterns an array of patterns to match
-     * @return a pattern that will match when any contained pattern matches
-     */
-    public static Pattern or(Pattern... patterns) {
-        return or(Arrays.asList(patterns));
-    }
-
-    /**
-     * @param patterns a collection of patterns to match
-     * @return a pattern that will match when any contained pattern matches
-     */
-    public static Pattern or(Collection<? extends Pattern> patterns) {
-        Pattern.Disjunction<Pattern.Admin> disjunction =
-                Pattern.Admin.disjunction(AdminConverter.getPatternAdmins(patterns));
-
-        return () -> disjunction;
-    }
 }

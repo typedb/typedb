@@ -29,11 +29,7 @@ import io.mindmaps.graql.QueryParser;
 import org.junit.Before;
 import org.junit.Test;
 
-import static io.mindmaps.graql.QueryBuilder.id;
-import static io.mindmaps.graql.QueryBuilder.or;
-import static io.mindmaps.graql.QueryBuilder.var;
-import static io.mindmaps.graql.ValuePredicate.lte;
-import static io.mindmaps.graql.ValuePredicate.neq;
+import static io.mindmaps.graql.Graql.*;
 import static org.junit.Assert.assertEquals;
 
 public class QueryToStringTest {
@@ -46,7 +42,7 @@ public class QueryToStringTest {
         MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
         MindmapsTransaction transaction = mindmapsGraph.getTransaction();
-        qb = QueryBuilder.build(transaction);
+        qb = withTransaction(transaction);
         qp = QueryParser.create(transaction);
     }
 
@@ -127,7 +123,7 @@ public class QueryToStringTest {
     public void testQuoteIds() {
         assertEquals(
                 "match $a (\"hello\\tworld\")",
-                QueryBuilder.build().match(var("a").rel(id("hello\tworld"))).toString()
+                match(var("a").rel(id("hello\tworld"))).toString()
         );
     }
 
@@ -135,7 +131,7 @@ public class QueryToStringTest {
     public void testQuoteIdsNumbers() {
         assertEquals(
                 "match $a (\"1hi\")",
-                QueryBuilder.build().match(var("a").rel(id("1hi"))).toString()
+                match(var("a").rel(id("1hi"))).toString()
         );
     }
 
