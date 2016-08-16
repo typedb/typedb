@@ -34,11 +34,6 @@ public class MindmapsTinkerTransactionTest {
         mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
     }
 
-    @Test(expected=UnsupportedOperationException.class)
-    public void testRefresh() throws Exception {
-        mindmapsGraph.newTransaction().refresh();
-    }
-
     @Test
     public void testGetRootGraph() throws Exception {
         MindmapsTinkerTransaction tinkerTransaction = (MindmapsTinkerTransaction) mindmapsGraph.newTransaction();

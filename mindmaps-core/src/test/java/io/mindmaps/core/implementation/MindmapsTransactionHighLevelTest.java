@@ -41,7 +41,7 @@ import static org.junit.Assert.*;
 
 public class MindmapsTransactionHighLevelTest {
 
-    private MindmapsTransactionImpl mindmapsGraph;
+    private AbstractMindmapsTransaction mindmapsGraph;
     EntityType type;
     RelationTypeImpl relationType;
     RoleTypeImpl role1;
@@ -56,7 +56,7 @@ public class MindmapsTransactionHighLevelTest {
 
     @Before
     public void buildGraphAccessManager(){
-        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
+        mindmapsGraph = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
         mindmapsGraph.initialiseMetaConcepts();
 
         type = mindmapsGraph.putEntityType("Test");
@@ -535,7 +535,7 @@ public class MindmapsTransactionHighLevelTest {
     public void testPutRelationSimple(){
         MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
         graph.enableBatchLoading();
-        MindmapsTransactionImpl mindmapsGraphBatch = (MindmapsTransactionImpl) graph.newTransaction();
+        AbstractMindmapsTransaction mindmapsGraphBatch = (AbstractMindmapsTransaction) graph.newTransaction();
 
         EntityType type = mindmapsGraphBatch.putEntityType("Test");
         RoleType actor = mindmapsGraphBatch.putRoleType("Actor");

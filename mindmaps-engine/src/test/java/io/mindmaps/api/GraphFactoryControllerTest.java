@@ -20,15 +20,14 @@ package io.mindmaps.api;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
 import io.mindmaps.MindmapsComputer;
 import io.mindmaps.Util;
 import io.mindmaps.constants.RESTUtil.GraphConfig;
 import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.core.implementation.AbstractMindmapsGraph;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.util.ConfigProperties;
-import io.mindmaps.constants.RESTUtil;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -39,9 +38,7 @@ import static io.mindmaps.constants.RESTUtil.Request.GRAPH_CONFIG_PARAM;
 import static io.mindmaps.constants.RESTUtil.WebPath.GRAPH_FACTORY_URI;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class GraphFactoryControllerTest {
     private Properties prop = new Properties();
@@ -88,7 +85,7 @@ public class GraphFactoryControllerTest {
         MindmapsGraph graph = MindmapsClient.getGraph("mindmapstest");
         MindmapsGraph graph2 = MindmapsClient.getGraph("mindmapstest2");
         MindmapsGraph graphCopy = MindmapsClient.getGraph("mindmapstest");
-        assertNotEquals(0, graph.getGraph().traversal().V().toList().size());
+        assertNotEquals(0, ((AbstractMindmapsGraph) graph).getGraph().traversal().V().toList().size());
         assertNotEquals(graph, graph2);
         assertEquals(graph, graphCopy);
         graph.close();

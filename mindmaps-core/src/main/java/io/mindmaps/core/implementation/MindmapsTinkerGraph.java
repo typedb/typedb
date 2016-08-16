@@ -25,9 +25,9 @@ import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
  * A mindmaps graph which produces new transactions to work with using a Tinkergraph backend.
  * Primarily used for testing
  */
-public class MindmapsTinkerGraph extends MindmapsGraphImpl {
-    public MindmapsTinkerGraph(TinkerGraph tinkerGraph){
-        super(tinkerGraph, "localhost");
+public class MindmapsTinkerGraph extends AbstractMindmapsGraph<TinkerGraph> {
+    public MindmapsTinkerGraph(TinkerGraph tinkerGraph, String name){
+        super(tinkerGraph, name, "localhost");
         new MindmapsTinkerTransaction(this).initialiseMetaConcepts();
     }
 

@@ -44,13 +44,13 @@ import static org.junit.Assert.assertTrue;
 
 public class MindmapsTransactionTrackingTest {
 
-    private MindmapsTransactionImpl mindmapsGraph;
+    private AbstractMindmapsTransaction mindmapsGraph;
     private Set<ConceptImpl> modifiedConcepts;
     private Stack<Concept> newConcepts;
 
     @Before
     public void buildGraphAccessManager() {
-        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
+        mindmapsGraph = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
         // start standard rootGraph access manager
         mindmapsGraph.initialiseMetaConcepts();
         modifiedConcepts = new HashSet<>();

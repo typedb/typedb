@@ -30,7 +30,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 public class PostprocessingTest {
-    private MindmapsTransactionImpl transaction;
+    private AbstractMindmapsTransaction transaction;
     private RoleType roleType1;
     private RoleType roleType2;
     private RelationType relationType;
@@ -43,7 +43,7 @@ public class PostprocessingTest {
 
     @Before
     public void buildGraphAccessManager(){
-        transaction = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
+        transaction = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
         transaction.initialiseMetaConcepts();
 
         roleType1 = transaction.putRoleType("role 1");

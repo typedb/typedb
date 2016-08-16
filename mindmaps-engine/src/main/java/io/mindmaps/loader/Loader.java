@@ -19,7 +19,7 @@
 package io.mindmaps.loader;
 
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.implementation.MindmapsTransactionImpl;
+import io.mindmaps.core.implementation.AbstractMindmapsTransaction;
 import io.mindmaps.core.implementation.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.QueryParser;
@@ -103,7 +103,7 @@ public class Loader {
         enqueuedJobs.decrementAndGet();
 
         for (int i = 0; i < repeatCommits; i++) {
-            MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) GraphFactory.getInstance().getGraphBatchLoading(name).newTransaction();
+            AbstractMindmapsTransaction transaction = (AbstractMindmapsTransaction) GraphFactory.getInstance().getGraphBatchLoading(name).newTransaction();
 
             try {
                 QueryParser.create(transaction).parseInsertQuery(batch).execute();

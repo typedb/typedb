@@ -39,13 +39,13 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
         return (T) this;
     }
 
-    final MindmapsTransactionImpl mindmapsTransaction;
+    final AbstractMindmapsTransaction mindmapsTransaction;
     private Vertex vertex;
 
-    ConceptImpl(Vertex v, MindmapsTransactionImpl mindmapsTransaction){
+    ConceptImpl(Vertex v, AbstractMindmapsTransaction mindmapsTransaction){
         this.vertex = v;
         this.mindmapsTransaction = mindmapsTransaction;
-        mindmapsTransaction.getTransaction().putConcept(this);
+        mindmapsTransaction.getConceptLog().putConcept(this);
     }
 
     /**
@@ -149,10 +149,10 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
         vertex.edges(Direction.BOTH).
                 forEachRemaining(
                         e -> {
-                            mindmapsTransaction.getTransaction().putConcept(getMindmapsTransaction().getElementFactory().buildUnknownConcept(e.inVertex()));
-                            mindmapsTransaction.getTransaction().putConcept(getMindmapsTransaction().getElementFactory().buildUnknownConcept(e.outVertex()));}
+                            mindmapsTransaction.getConceptLog().putConcept(getMindmapsTransaction().getElementFactory().buildUnknownConcept(e.inVertex()));
+                            mindmapsTransaction.getConceptLog().putConcept(getMindmapsTransaction().getElementFactory().buildUnknownConcept(e.outVertex()));}
                 );
-        mindmapsTransaction.getTransaction().removeConcept(this);
+        mindmapsTransaction.getConceptLog().removeConcept(this);
         // delete node
         vertex.remove();
         vertex = null;
@@ -435,7 +435,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
 
         //Put any castings back into tracking to make sure the type is still valid
         getIncomingNeighbours(DataType.EdgeLabel.ROLE_PLAYER).forEach(casting -> {
-            mindmapsTransaction.getTransaction().putConcept(casting);
+            mindmapsTransaction.getConceptLog().putConcept(casting);
         });
 
         return getThis();
@@ -700,7 +700,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
      *
      * @return The mindmaps transaction this concept is bound to.
      */
-    MindmapsTransactionImpl getMindmapsTransaction() {return mindmapsTransaction;}
+    AbstractMindmapsTransaction getMindmapsTransaction() {return mindmapsTransaction;}
 
     //--------- Create Links -------//
     /**
@@ -721,8 +721,8 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
      * @return The edge created
      */
     public EdgeImpl addEdge(ConceptImpl toConcept, DataType.EdgeLabel type) {
-        mindmapsTransaction.getTransaction().putConcept(this);
-        mindmapsTransaction.getTransaction().putConcept(toConcept);
+        mindmapsTransaction.getConceptLog().putConcept(this);
+        mindmapsTransaction.getConceptLog().putConcept(toConcept);
 
         return getMindmapsTransaction().getElementFactory().buildEdge(toConcept.addEdgeFrom(this.vertex, type.getLabel()), mindmapsTransaction);
     }
@@ -737,9 +737,9 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
         vertex.edges(direction, type.getLabel()).
                 forEachRemaining(
                         e -> {
-                            mindmapsTransaction.getTransaction().putConcept(
+                            mindmapsTransaction.getConceptLog().putConcept(
                                     getMindmapsTransaction().getElementFactory().buildUnknownConcept(e.inVertex()));
-                            mindmapsTransaction.getTransaction().putConcept(
+                            mindmapsTransaction.getConceptLog().putConcept(
                                     getMindmapsTransaction().getElementFactory().buildUnknownConcept(e.outVertex()));
                         }
                 );

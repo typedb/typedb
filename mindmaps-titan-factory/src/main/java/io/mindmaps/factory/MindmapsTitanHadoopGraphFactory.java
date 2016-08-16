@@ -18,15 +18,14 @@
 
 package io.mindmaps.factory;
 
-import com.esotericsoftware.minlog.Log;
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.core.implementation.AbstractMindmapsGraph;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MindmapsTitanHadoopGraphFactory extends MindmapsGraphFactoryImpl<MindmapsGraph, HadoopGraph>{
+public class MindmapsTitanHadoopGraphFactory extends AbstractMindmapsGraphFactory<AbstractMindmapsGraph<HadoopGraph>, HadoopGraph> {
     private final Logger LOG = LoggerFactory.getLogger(MindmapsTitanHadoopGraphFactory.class);
 
     @Override
@@ -35,7 +34,7 @@ public class MindmapsTitanHadoopGraphFactory extends MindmapsGraphFactoryImpl<Mi
     }
 
     @Override
-    MindmapsGraph buildMindmapsGraphFromTinker(HadoopGraph graph, String engineUrl) {
+    AbstractMindmapsGraph<HadoopGraph> buildMindmapsGraphFromTinker(HadoopGraph graph, String name, String engineUrl) {
         throw new UnsupportedOperationException(ErrorMessage.CANNOT_PRODUCE_MINDMAPS_GRAPH.getMessage(graph.getClass().getName()));
     }
 

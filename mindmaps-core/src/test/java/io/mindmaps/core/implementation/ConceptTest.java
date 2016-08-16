@@ -40,7 +40,7 @@ import static org.junit.Assert.*;
 
 public class ConceptTest {
 
-    private MindmapsTransactionImpl mindmapsGraph;
+    private AbstractMindmapsTransaction mindmapsGraph;
     private ConceptImpl concept;
 
     @Rule
@@ -48,7 +48,7 @@ public class ConceptTest {
 
     @Before
     public void setUp(){
-        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
+        mindmapsGraph = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
         mindmapsGraph.initialiseMetaConcepts();
         concept = (ConceptImpl) mindmapsGraph.putEntityType("main_concept");
     }

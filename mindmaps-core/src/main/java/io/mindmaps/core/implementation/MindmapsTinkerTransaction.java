@@ -20,11 +20,13 @@ package io.mindmaps.core.implementation;
 
 
 import io.mindmaps.constants.ErrorMessage;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+
 /**
  * A thread bound mindmaps transaction
  */
-public class MindmapsTinkerTransaction extends MindmapsTransactionImpl {
-    MindmapsTinkerGraph rootGraph;
+public class MindmapsTinkerTransaction extends AbstractMindmapsTransaction {
+    private MindmapsTinkerGraph rootGraph;
 
     public MindmapsTinkerTransaction(MindmapsTinkerGraph graph) {
         super(graph.getGraph(), graph.isBatchLoadingEnabled());
@@ -32,42 +34,24 @@ public class MindmapsTinkerTransaction extends MindmapsTransactionImpl {
     }
 
     /**
-     * Validates and attempts to commit the graph. An exception is thrown if validation fails or if the graph cannot be persisted due to an underlying database issue.
-     * @throws MindmapsValidationException is thrown when a structural validation fails.
-     */
-    @Override
-    public void commit() throws MindmapsValidationException {
-        validateGraph();
-        getTransaction().clearTransaction();
-        LOG.warn(ErrorMessage.TINKERGRAPH_WARNING.getMessage());
-        getTransaction().clearTransaction();
-    }
-
-    /**
-     * Resets the current transaction without commiting.
-     * @throws UnsupportedOperationException due to tinkergraph not supporting refresh of transactions
-     */
-    @Override
-    public void refresh() throws Exception {
-        throw new UnsupportedOperationException(ErrorMessage.NOT_SUPPORTED.getMessage("Tinkergraph"));
-    }
-
-    /**
-     * Closes the current transaction rendering it unusable.
-     * @throws Exception
-     */
-    @Override
-    public void close() throws Exception {
-        getTransaction().clearTransaction();
-        setTinkerPopGraph(null);
-    }
-
-    /**
      *
      * @return the root mindmaps graph of the transaction
      */
     @Override
-    public MindmapsGraphImpl getRootGraph() {
+    public AbstractMindmapsGraph getRootGraph() {
         return rootGraph;
+    }
+
+    @Override
+    protected Graph getNewTransaction() {
+        return getRootGraph().getGraph();
+    }
+
+    /**
+     * Tinker graph is in memory and does not abstract away commits
+     */
+    @Override
+    protected void persistGraph() {
+        LOG.warn(ErrorMessage.TINKERGRAPH_WARNING.getMessage());
     }
 }

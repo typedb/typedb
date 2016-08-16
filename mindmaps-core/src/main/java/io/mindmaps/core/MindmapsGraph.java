@@ -18,8 +18,6 @@
 
 package io.mindmaps.core;
 
-import org.apache.tinkerpop.gremlin.structure.Graph;
-
 /**
  * A mindmaps graph which produces new transactions to work with
  */
@@ -41,12 +39,6 @@ public interface MindmapsGraph {
     void clear();
 
     /**
-     *
-     * @return Returns the underlaying gremlin graph.
-     */
-    Graph getGraph();
-
-    /**
      * Enables batch loading which skips redundancy checks.
      * With this mode enabled duplicate concepts and relations maybe created.
      * Faster writing at the cost of consistency.
@@ -64,4 +56,10 @@ public interface MindmapsGraph {
      * @return A flag indicating if this transaction is batch loading or not
      */
     boolean isBatchLoadingEnabled();
+
+    /**
+     *
+     * @return The name of the graph you are operating on.
+     */
+    String getName();
 }

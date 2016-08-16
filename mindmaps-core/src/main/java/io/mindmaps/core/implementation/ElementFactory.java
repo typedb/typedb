@@ -26,87 +26,87 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
  * Internal factory to produce different types of concepts
  */
 final class ElementFactory {
-    private final MindmapsTransactionImpl mindmapsGraph;
+    private final AbstractMindmapsTransaction mindmapsTransaction;
 
-    public ElementFactory(MindmapsTransactionImpl mindmapsGraph){
-        this.mindmapsGraph = mindmapsGraph;
+    public ElementFactory(AbstractMindmapsTransaction mindmapsTransaction){
+        this.mindmapsTransaction = mindmapsTransaction;
     }
 
     public RelationImpl buildRelation(Vertex v){
-        return new RelationImpl(v, mindmapsGraph);
+        return new RelationImpl(v, mindmapsTransaction);
     }
     public RelationImpl buildRelation(Concept c){
         return buildRelation(((ConceptImpl) c).getVertex());
     }
 
     public CastingImpl buildCasting(Vertex v){
-        return new CastingImpl(v, mindmapsGraph);
+        return new CastingImpl(v, mindmapsTransaction);
     }
     public CastingImpl buildCasting(Concept c){
         return buildCasting(((ConceptImpl) c).getVertex());
     }
 
     public TypeImpl buildConceptType(Vertex v){
-        return  new TypeImpl(v, mindmapsGraph);
+        return  new TypeImpl(v, mindmapsTransaction);
     }
     public TypeImpl buildConceptType(Concept c){
         return buildConceptType(((ConceptImpl) c).getVertex());
     }
 
     public RuleTypeImpl buildRuleType(Vertex v){
-        return  new RuleTypeImpl(v, mindmapsGraph);
+        return  new RuleTypeImpl(v, mindmapsTransaction);
     }
     public RuleTypeImpl buildRuleType(Concept c){
         return buildRuleType(((ConceptImpl) c).getVertex());
     }
 
     public RoleTypeImpl buildRoleType(Vertex v){
-        return new RoleTypeImpl(v, mindmapsGraph);
+        return new RoleTypeImpl(v, mindmapsTransaction);
     }
     public RoleTypeImpl buildRoleType(Concept c){
         return buildRoleType(((ConceptImpl) c).getVertex());
     }
 
     public <V> ResourceTypeImpl<V> buildResourceType(Vertex v){
-        return new ResourceTypeImpl<>(v, mindmapsGraph);
+        return new ResourceTypeImpl<>(v, mindmapsTransaction);
     }
     public <V> ResourceTypeImpl<V> buildResourceType(Vertex v, Data<V> type){
-        return new ResourceTypeImpl<>(v, mindmapsGraph, type);
+        return new ResourceTypeImpl<>(v, mindmapsTransaction, type);
     }
     public <V> ResourceTypeImpl<V> buildResourceType(Concept c, Data<V> type){
         return buildResourceType(((ConceptImpl) c).getVertex(), type);
     }
 
     public RelationTypeImpl buildRelationType(Vertex v){
-        return  new RelationTypeImpl(v, mindmapsGraph);
+        return  new RelationTypeImpl(v, mindmapsTransaction);
     }
     public RelationTypeImpl buildRelationType(Concept c){
         return buildRelationType(((ConceptImpl) c).getVertex());
     }
 
     public EntityTypeImpl buildEntityType(Vertex v){
-        return  new EntityTypeImpl(v, mindmapsGraph);
+        return  new EntityTypeImpl(v, mindmapsTransaction);
     }
     public EntityTypeImpl buildEntityType(Concept c){
         return buildEntityType(((ConceptImpl) c).getVertex());
     }
 
     public EntityImpl buildEntity(Vertex v){
-        return  new EntityImpl(v, mindmapsGraph);
+        return  new EntityImpl(v, mindmapsTransaction);
     }
     public EntityImpl buildEntity(Concept c){
         return buildEntity(((ConceptImpl) c).getVertex());
     }
 
     public <V> ResourceImpl <V> buildResource(Vertex v){
-        return  new ResourceImpl<>(v, mindmapsGraph);
+        return  new ResourceImpl<>(v, mindmapsTransaction);
     }
     public <V> ResourceImpl <V> buildResource(Concept c){
         return  buildResource(((ConceptImpl) c).getVertex());
     }
 
     public RuleImpl buildRule(Vertex v){
-        return  new RuleImpl(v, mindmapsGraph);
+        return  new RuleImpl(v, mindmapsTransaction);
     }
     public RuleImpl buildRule(Concept c){
         return  buildRule(((ConceptImpl) c).getVertex());
@@ -216,7 +216,7 @@ final class ElementFactory {
         return conceptInstance;
     }
 
-    public EdgeImpl buildEdge(org.apache.tinkerpop.gremlin.structure.Edge edge, MindmapsTransactionImpl mindmapsGraph){
+    public EdgeImpl buildEdge(org.apache.tinkerpop.gremlin.structure.Edge edge, AbstractMindmapsTransaction mindmapsGraph){
         return new EdgeImpl(edge, mindmapsGraph);
     }
 }

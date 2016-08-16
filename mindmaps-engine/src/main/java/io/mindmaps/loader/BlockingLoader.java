@@ -19,11 +19,9 @@
 package io.mindmaps.loader;
 
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.core.implementation.MindmapsTransactionImpl;
+import io.mindmaps.core.implementation.AbstractMindmapsTransaction;
 import io.mindmaps.core.implementation.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
-import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Var;
 import io.mindmaps.postprocessing.Cache;
@@ -120,7 +118,7 @@ public class BlockingLoader {
     private void loadData(String name, Collection<Var> batch) {
 
         for (int i = 0; i < repeatCommits; i++) {
-            MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) GraphFactory.getInstance().getGraphBatchLoading(name).newTransaction();
+            AbstractMindmapsTransaction transaction = (AbstractMindmapsTransaction) GraphFactory.getInstance().getGraphBatchLoading(name).newTransaction();
             try {
 
                 QueryBuilder.build(transaction).insert(batch).execute();

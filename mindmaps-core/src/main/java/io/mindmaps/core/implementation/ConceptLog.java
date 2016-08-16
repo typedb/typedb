@@ -32,12 +32,12 @@ import java.util.stream.Collectors;
  *      edge cases, for example, relationship where a new role player is added.
  *
  */
-class Transaction {
+class ConceptLog {
     private Set<ConceptImpl> modifiedConcepts;
     private Set<ConceptImpl> modifiedCastings;
     private Set<ConceptImpl> modifiedRelations;
 
-    Transaction () {
+    ConceptLog() {
         modifiedCastings = new HashSet<>();
         modifiedConcepts = new HashSet<>();
         modifiedRelations = new HashSet<>();

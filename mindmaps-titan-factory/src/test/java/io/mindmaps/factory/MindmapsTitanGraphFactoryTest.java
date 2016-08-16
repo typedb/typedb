@@ -23,16 +23,16 @@ import ch.qos.logback.classic.Logger;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
-import com.thinkaurelius.titan.core.util.TitanCleanup;
-import com.thinkaurelius.titan.graphdb.olap.computer.FulgoraGraphComputer;
 import io.mindmaps.constants.DataType;
-import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.implementation.MindmapsGraphImpl;
+import io.mindmaps.core.implementation.AbstractMindmapsGraph;
+import io.mindmaps.core.implementation.MindmapsTitanGraph;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.*;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.*;
@@ -64,7 +64,7 @@ public class MindmapsTitanGraphFactoryTest {
 
         titanGraphFactory = new MindmapsTitanGraphFactory();
 
-        sharedGraph = (TitanGraph) titanGraphFactory.getGraph(TEST_SHARED, TEST_URI, TEST_CONFIG).getGraph();
+        sharedGraph = ((MindmapsTitanGraph)titanGraphFactory.getGraph(TEST_SHARED, TEST_URI, TEST_CONFIG)).getGraph();
 
         int max = 1000;
         noIndexGraph = getGraph();
@@ -138,8 +138,8 @@ public class MindmapsTitanGraphFactoryTest {
     @Test
     public void testSingleton(){
         Graph graph1 = sharedGraph;
-        Graph graph2 = titanGraphFactory.getGraph("b", TEST_URI, TEST_CONFIG).getGraph();
-        Graph graph3 = titanGraphFactory.getGraph(TEST_SHARED, TEST_URI, TEST_CONFIG).getGraph();
+        Graph graph2 = ((MindmapsTitanGraph) titanGraphFactory.getGraph("b", TEST_URI, TEST_CONFIG)).getGraph();
+        Graph graph3 = ((MindmapsTitanGraph) titanGraphFactory.getGraph(TEST_SHARED, TEST_URI, TEST_CONFIG)).getGraph();
 
         assertEquals(graph1, graph3);
         assertNotEquals(graph2, graph1);
@@ -266,7 +266,7 @@ public class MindmapsTitanGraphFactoryTest {
 
     private static TitanGraph getGraph() {
         String name = UUID.randomUUID().toString();
-        Graph graph = titanGraphFactory.getGraph(name, TEST_URI, TEST_CONFIG).getGraph();
+        Graph graph = ((MindmapsTitanGraph) titanGraphFactory.getGraph(name, TEST_URI, TEST_CONFIG)).getGraph();
         assertThat(graph, instanceOf(TitanGraph.class));
         return (TitanGraph) graph;
     }
@@ -343,7 +343,7 @@ public class MindmapsTitanGraphFactoryTest {
 
     @Test
     public void testEngineUrl(){
-        MindmapsGraphImpl graph = (MindmapsGraphImpl) titanGraphFactory.getGraph("mindmapstest", "invalid_uri", TEST_CONFIG);
+        AbstractMindmapsGraph graph = (AbstractMindmapsGraph) titanGraphFactory.getGraph("mindmapstest", "invalid_uri", TEST_CONFIG);
         assertEquals("invalid_uri", graph.getEngineUrl());
     }
 }

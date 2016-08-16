@@ -22,7 +22,6 @@ import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.constants.RESTUtil;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.MindmapsTransaction;
-import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,21 +29,22 @@ import org.slf4j.LoggerFactory;
 /**
  * A mindmaps graph which produces new transactions to work with
  */
-public abstract class MindmapsGraphImpl implements MindmapsGraph {
-    protected final Logger LOG = LoggerFactory.getLogger(MindmapsGraphImpl.class);
+public abstract class AbstractMindmapsGraph<G extends Graph> implements MindmapsGraph {
+    protected final Logger LOG = LoggerFactory.getLogger(AbstractMindmapsGraph.class);
     private final String engineUrl;
+    private final String graphName;
     private boolean batchLoading;
-    private Graph graph;
+    private G graph;
 
-    public MindmapsGraphImpl(Graph graph, String engineUrl){
+    public AbstractMindmapsGraph(G graph, String graphName, String engineUrl){
         this.graph = graph;
+        this.graphName = graphName;
         this.engineUrl = engineUrl;
-        checkSchema((MindmapsTransactionImpl) newTransaction());
+        checkSchema((AbstractMindmapsTransaction) newTransaction());
     }
 
     public String getCommitLogEndPoint(){
-        return getEngineUrl() + RESTUtil.WebPath.COMMIT_LOG_URI + "?" + RESTUtil.Request.GRAPH_NAME_PARAM + "=" +
-                getGraph().configuration().getProperty("storage.cassandra.keyspace").toString();
+        return getEngineUrl() + RESTUtil.WebPath.COMMIT_LOG_URI + "?" + RESTUtil.Request.GRAPH_NAME_PARAM + "=" + getName();
     }
 
     /**
@@ -84,10 +84,18 @@ public abstract class MindmapsGraphImpl implements MindmapsGraph {
 
     /**
      *
-     * @return Returns the underlaying gremlin graph.
+     * @return The name of the graph you are operating on.
      */
     @Override
-    public Graph getGraph() {
+    public String getName(){
+        return graphName;
+    }
+
+    /**
+     *
+     * @return Returns the underlaying gremlin graph.
+     */
+    public G getGraph() {
         return graph;
     }
 
@@ -103,7 +111,7 @@ public abstract class MindmapsGraphImpl implements MindmapsGraph {
      * Checks if the schema exists if not it creates and commits it.
      * @param mindmapsTransaction A transaction to use to check the schema
      */
-    private void checkSchema(MindmapsTransactionImpl mindmapsTransaction){
+    private void checkSchema(AbstractMindmapsTransaction mindmapsTransaction){
         if(!mindmapsTransaction.isMetaOntologyInitialised()){
             mindmapsTransaction.initialiseMetaConcepts();
             try {

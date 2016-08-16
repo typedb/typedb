@@ -21,7 +21,7 @@ package io.mindmaps.graql.query;
 import com.google.common.collect.Lists;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.core.implementation.MindmapsTransactionImpl;
+import io.mindmaps.core.implementation.AbstractMindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
@@ -180,7 +180,7 @@ public class MatchQueryModifierTest {
     }
 
     private void assertResultsOrderedById(MatchQueryDefault query, String var, boolean asc) {
-        GraphTraversalSource g = ((MindmapsTransactionImpl) transaction).getTinkerTraversal();
+        GraphTraversalSource g = ((AbstractMindmapsTransaction) transaction).getTinkerTraversal();
         Stream<String> ids = query.stream().map(results -> results.get(var)).map(
                 result -> (String) g.V().has("ITEM_IDENTIFIER", result.getId()).values(ITEM_IDENTIFIER.name()).next()
         );
