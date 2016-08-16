@@ -19,7 +19,7 @@
 package io.mindmaps.graql.internal.validation;
 
 import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.graql.DeleteQuery;
+import io.mindmaps.graql.internal.admin.DeleteQueryAdmin;
 
 import java.util.stream.Stream;
 
@@ -28,12 +28,12 @@ import java.util.stream.Stream;
  */
 public class DeleteQueryValidator implements Validator {
 
-    private final DeleteQuery.Admin deleteQuery;
+    private final DeleteQueryAdmin deleteQuery;
 
     /**
      * @param deleteQuery the delete query to validate
      */
-    public DeleteQueryValidator(DeleteQuery.Admin deleteQuery) {
+    public DeleteQueryValidator(DeleteQueryAdmin deleteQuery) {
         this.deleteQuery = deleteQuery;
     }
 

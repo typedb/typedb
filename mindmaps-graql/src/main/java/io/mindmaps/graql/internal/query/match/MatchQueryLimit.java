@@ -18,6 +18,8 @@
 
 package io.mindmaps.graql.internal.query.match;
 
+import io.mindmaps.graql.internal.admin.MatchQueryAdmin;
+
 import java.util.stream.Stream;
 
 /**
@@ -27,7 +29,7 @@ public class MatchQueryLimit<T> extends MatchQueryAbstract<T, T> {
 
     private final long limit;
 
-    public MatchQueryLimit(Admin<T> inner, long limit) {
+    public MatchQueryLimit(MatchQueryAdmin<T> inner, long limit) {
         super(inner);
         this.limit = limit;
     }

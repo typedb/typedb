@@ -19,8 +19,7 @@
 package io.mindmaps.graql;
 
 import io.mindmaps.core.MindmapsTransaction;
-
-import java.util.Collection;
+import io.mindmaps.graql.internal.admin.DeleteQueryAdmin;
 
 /**
  * A query for deleting concepts from a match query.
@@ -48,20 +47,5 @@ public interface DeleteQuery {
     /**
      * @return admin instance for inspecting and manipulating this query
      */
-    Admin admin();
-
-    /**
-     * Admin class for inspecting and manipulating a DeleteQuery
-     */
-    interface Admin extends DeleteQuery {
-        /**
-         * @return the variables to delete
-         */
-        Collection<Var.Admin> getDeleters();
-
-        /**
-         * @return the match query this delete query is operating on
-         */
-        MatchQueryDefault getMatchQuery();
-    }
+    DeleteQueryAdmin admin();
 }

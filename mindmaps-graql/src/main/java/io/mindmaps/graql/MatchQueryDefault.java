@@ -22,7 +22,9 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
-import io.mindmaps.graql.internal.AdminConverter;
+import io.mindmaps.graql.internal.admin.AdminConverter;
+import io.mindmaps.graql.internal.admin.MatchQueryDefaultAdmin;
+import io.mindmaps.graql.internal.admin.VarAdmin;
 import io.mindmaps.graql.internal.query.AskQueryImpl;
 import io.mindmaps.graql.internal.query.DeleteQueryImpl;
 import io.mindmaps.graql.internal.query.InsertQueryImpl;
@@ -83,7 +85,7 @@ public interface MatchQueryDefault extends MatchQuery<Map<String, Concept>> {
      * @return an insert query that will insert the given variables for each result of this match query
      */
     default InsertQuery insert(Collection<? extends Var> vars) {
-        ImmutableSet<Var.Admin> varAdmins = ImmutableSet.copyOf(AdminConverter.getVarAdmins(vars));
+        ImmutableSet<VarAdmin> varAdmins = ImmutableSet.copyOf(AdminConverter.getVarAdmins(vars));
         return new InsertQueryImpl(varAdmins, admin());
     }
 
@@ -176,21 +178,6 @@ public interface MatchQueryDefault extends MatchQuery<Map<String, Concept>> {
     /**
      * @return admin instance for inspecting and manipulating this query
      */
-    Admin admin();
+    MatchQueryDefaultAdmin admin();
 
-    /**
-     * Admin class for inspecting and manipulating a MatchQuery
-     */
-    interface Admin extends MatchQueryDefault, MatchQuery.Admin<Map<String, Concept>> {
-
-        @Override
-        default MatchQueryDefault.Admin admin() {
-            return this;
-        }
-
-        /**
-         * @return all selected variable names in the query
-         */
-        Set<String> getSelectedNames();
-    }
 }

@@ -20,7 +20,7 @@
 package io.mindmaps.graql.internal.query.match;
 
 import io.mindmaps.core.model.Concept;
-import io.mindmaps.graql.MatchQueryDefault;
+import io.mindmaps.graql.internal.admin.MatchQueryDefaultAdmin;
 
 import java.util.Map;
 import java.util.Set;
@@ -30,11 +30,11 @@ import java.util.Set;
  * to support the MatchQueryDefault interface.
  */
 abstract class MatchQueryDefaultAbstract
-        extends MatchQueryAbstract<Map<String, Concept>, Map<String, Concept>> implements MatchQueryDefault.Admin {
+        extends MatchQueryAbstract<Map<String, Concept>, Map<String, Concept>> implements MatchQueryDefaultAdmin {
 
-    final MatchQueryDefault.Admin inner;
+    final MatchQueryDefaultAdmin inner;
 
-    MatchQueryDefaultAbstract(MatchQueryDefault.Admin inner) {
+    MatchQueryDefaultAbstract(MatchQueryDefaultAdmin inner) {
         super(inner);
         this.inner = inner;
     }

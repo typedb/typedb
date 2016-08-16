@@ -14,9 +14,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
-package io.mindmaps.graql.internal;
+package io.mindmaps.graql.internal.admin;
 
 import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.Var;
@@ -35,7 +36,7 @@ public class AdminConverter {
      * @param patterns a collection of patterns to change to admin
      * @return a collection of Pattern.Admin from the given patterns
      */
-    public static Set<Pattern.Admin> getPatternAdmins(Collection<? extends Pattern> patterns) {
+    public static Set<PatternAdmin> getPatternAdmins(Collection<? extends Pattern> patterns) {
         return patterns.stream().map(Pattern::admin).collect(toSet());
     }
 
@@ -43,7 +44,7 @@ public class AdminConverter {
      * @param patterns a collection of vars to change to admin
      * @return a collection of Var.Admin from the given patterns
      */
-    public static Set<Var.Admin> getVarAdmins(Collection<? extends Var> patterns) {
+    public static Set<VarAdmin> getVarAdmins(Collection<? extends Var> patterns) {
         return patterns.stream().map(Var::admin).collect(toSet());
     }
 }

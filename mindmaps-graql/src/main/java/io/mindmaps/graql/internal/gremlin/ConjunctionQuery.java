@@ -21,8 +21,8 @@ package io.mindmaps.graql.internal.gremlin;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
-import io.mindmaps.graql.Pattern;
-import io.mindmaps.graql.Var;
+import io.mindmaps.graql.internal.admin.VarAdmin;
+import io.mindmaps.graql.internal.query.Conjunction;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -49,14 +49,14 @@ import static java.util.stream.Collectors.toSet;
  */
 class ConjunctionQuery {
 
-    private final Set<Var.Admin> vars;
+    private final Set<VarAdmin> vars;
     private final Set<List<Fragment>> fragments;
     private final MindmapsTransaction transaction;
 
     /**
      * @param patternConjunction a pattern containing no disjunctions to find in the graph
      */
-    ConjunctionQuery(MindmapsTransaction transaction, Pattern.Conjunction<Var.Admin> patternConjunction) {
+    ConjunctionQuery(MindmapsTransaction transaction, Conjunction<VarAdmin> patternConjunction) {
         this.transaction = transaction;
         vars = patternConjunction.getPatterns();
 

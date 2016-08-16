@@ -22,6 +22,7 @@ package io.mindmaps.graql.internal.query.match;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Type;
+import io.mindmaps.graql.internal.admin.MatchQueryAdmin;
 
 import java.util.Optional;
 import java.util.Set;
@@ -34,7 +35,7 @@ public class MatchQueryTransaction<T> extends MatchQueryAbstract<T, T> {
 
     private final MindmapsTransaction transaction;
 
-    public MatchQueryTransaction(MindmapsTransaction transaction, Admin<T> inner) {
+    public MatchQueryTransaction(MindmapsTransaction transaction, MatchQueryAdmin<T> inner) {
         super(inner);
         this.transaction = transaction;
     }

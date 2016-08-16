@@ -18,10 +18,7 @@
 
 package io.mindmaps.graql;
 
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-
-import java.util.Optional;
-import java.util.Set;
+import io.mindmaps.graql.internal.admin.ValuePredicateAdmin;
 
 /**
  * a predicate on a value in a query.
@@ -47,30 +44,6 @@ public interface ValuePredicate {
     /**
      * @return an Admin class allowing inspection of this predicate
      */
-    Admin admin();
+    ValuePredicateAdmin admin();
 
-    /**
-     * Admin class for inspecting a ValuePredicate
-     */
-    interface Admin extends ValuePredicate {
-        /**
-         * @return whether this predicate is specific (e.g. "eq" is specific, "regex" is not)
-         */
-        boolean isSpecific();
-
-        /**
-         * @return the value comparing against, if this is an "equality" predicate, otherwise nothing
-         */
-        Optional<Object> equalsValue();
-
-        /**
-         * @return all values referred to in the predicate (including within 'ors' and 'ands')
-         */
-        Set<Object> getInnerValues();
-
-        /**
-         * @return the gremlin predicate object this ValuePredicate wraps
-         */
-        P<Object> getPredicate();
-    }
 }

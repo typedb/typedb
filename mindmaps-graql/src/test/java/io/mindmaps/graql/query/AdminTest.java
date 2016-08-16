@@ -25,6 +25,8 @@ import io.mindmaps.core.model.Type;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.*;
+import io.mindmaps.graql.internal.admin.PatternAdmin;
+import io.mindmaps.graql.internal.query.Conjunction;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -90,10 +92,10 @@ public class AdminTest {
     public void testGetPatternInQuery() {
         MatchQueryDefault query = qb.match(var("x").isa("movie"), var("x").value("Bob"));
 
-        Pattern.Conjunction<Pattern.Admin> conjunction = query.admin().getPattern();
+        Conjunction<PatternAdmin> conjunction = query.admin().getPattern();
         assertNotNull(conjunction);
 
-        Set<Pattern.Admin> patterns = conjunction.getPatterns();
+        Set<PatternAdmin> patterns = conjunction.getPatterns();
         assertEquals(2, patterns.size());
     }
 
@@ -101,7 +103,7 @@ public class AdminTest {
     public void testMutateMatchQuery() {
         MatchQueryDefault query = qb.match(var("x").isa("movie"));
 
-        Pattern.Conjunction<Pattern.Admin> pattern = query.admin().getPattern();
+        Conjunction<PatternAdmin> pattern = query.admin().getPattern();
         pattern.getPatterns().add(var("x").value("Spy").admin());
 
         assertEquals(1, query.stream().count());

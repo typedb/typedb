@@ -14,32 +14,38 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
-package io.mindmaps.graql;
+package io.mindmaps.graql.internal.admin;
 
-import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.graql.internal.admin.AskQueryAdmin;
+import io.mindmaps.graql.ValuePredicate;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+
+import java.util.Optional;
+import java.util.Set;
 
 /**
- * A query that will return whether a match query can be found in the graph.
- * <p>
- * An {@code AskQuery} is created from a {@code MatchQuery}, which describes what patterns it should find.
+ * Admin class for inspecting a ValuePredicate
  */
-public interface AskQuery {
+public interface ValuePredicateAdmin extends ValuePredicate {
     /**
-     * @return whether the given patterns can be found in the graph
+     * @return whether this predicate is specific (e.g. "eq" is specific, "regex" is not)
      */
-    boolean execute();
+    boolean isSpecific();
 
     /**
-     * @param transaction the transaction to execute the query on
-     * @return a new AskQuery with the transaction set
+     * @return the value comparing against, if this is an "equality" predicate, otherwise nothing
      */
-    AskQuery withTransaction(MindmapsTransaction transaction);
+    Optional<Object> equalsValue();
 
     /**
-     * @return admin instance for inspecting and manipulating this query
+     * @return all values referred to in the predicate (including within 'ors' and 'ands')
      */
-    AskQueryAdmin admin();
+    Set<Object> getInnerValues();
+
+    /**
+     * @return the gremlin predicate object this ValuePredicate wraps
+     */
+    P<Object> getPredicate();
 }

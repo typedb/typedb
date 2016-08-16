@@ -18,6 +18,8 @@
 
 package io.mindmaps.graql.internal.query.match;
 
+import io.mindmaps.graql.internal.admin.MatchQueryAdmin;
+
 import java.util.stream.Stream;
 
 /**
@@ -25,7 +27,7 @@ import java.util.stream.Stream;
  */
 public class MatchQueryDistinct<T> extends MatchQueryAbstract<T, T> {
 
-    public MatchQueryDistinct(Admin<T> inner) {
+    public MatchQueryDistinct(MatchQueryAdmin<T> inner) {
         super(inner);
     }
 

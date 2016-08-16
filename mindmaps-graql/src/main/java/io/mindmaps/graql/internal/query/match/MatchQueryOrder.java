@@ -22,7 +22,7 @@ package io.mindmaps.graql.internal.query.match;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
-import io.mindmaps.graql.MatchQueryDefault;
+import io.mindmaps.graql.internal.admin.MatchQueryDefaultAdmin;
 
 import java.util.Map;
 import java.util.Optional;
@@ -35,7 +35,7 @@ public class MatchQueryOrder extends MatchQueryDefaultAbstract {
 
     private final MatchOrder order;
 
-    public MatchQueryOrder(MatchQueryDefault.Admin inner, MatchOrder order) {
+    public MatchQueryOrder(MatchQueryDefaultAdmin inner, MatchOrder order) {
         super(inner);
         this.order = order;
     }

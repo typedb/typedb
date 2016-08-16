@@ -20,12 +20,11 @@
 package io.mindmaps.graql;
 
 import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.core.model.Type;
+import io.mindmaps.graql.internal.admin.MatchQueryAdmin;
 import io.mindmaps.graql.internal.query.aggregate.AggregateQueryImpl;
 import io.mindmaps.graql.internal.query.match.*;
 
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -87,45 +86,6 @@ public interface MatchQuery<T> extends Streamable<T> {
     /**
      * @return admin instance for inspecting and manipulating this query
      */
-    Admin<T> admin();
+    MatchQueryAdmin<T> admin();
 
-    /**
-     * Admin class for inspecting and manipulating a MatchQuery
-     */
-    interface Admin<T> extends MatchQuery<T> {
-
-        @Override
-        default Admin<T> admin() {
-            return this;
-        }
-
-        /**
-         * Execute the query using the given transaction.
-         * @param transaction the transaction to use to execute the query
-         * @param order how to order the resulting stream
-         * @return a stream of results
-         */
-        Stream<T> stream(Optional<MindmapsTransaction> transaction, Optional<MatchOrder> order);
-
-        /**
-         * @param transaction the transaction to use to get types from the graph
-         * @return all concept types referred to explicitly in the query
-         */
-        Set<Type> getTypes(MindmapsTransaction transaction);
-
-        /**
-         * @return all concept types referred to explicitly in the query
-         */
-        Set<Type> getTypes();
-
-        /**
-         * @return the pattern to match in the graph
-         */
-        Pattern.Conjunction<Pattern.Admin> getPattern();
-
-        /**
-         * @return the transaction the query operates on, if one was provided
-         */
-        Optional<MindmapsTransaction> getTransaction();
-    }
 }

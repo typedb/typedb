@@ -20,11 +20,7 @@ package io.mindmaps.graql;
 
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
-import io.mindmaps.core.model.Type;
-
-import java.util.Collection;
-import java.util.Optional;
-import java.util.Set;
+import io.mindmaps.graql.internal.admin.InsertQueryAdmin;
 
 /**
  * A query for inserting data.
@@ -52,35 +48,6 @@ public interface InsertQuery extends Streamable<Concept> {
     /**
      * @return admin instance for inspecting and manipulating this query
      */
-    Admin admin();
+    InsertQueryAdmin admin();
 
-    /**
-     * Admin class for inspecting and manipulating an InsertQuery
-     */
-    interface Admin extends InsertQuery {
-        /**
-         * @return the match query that this insert query is using, if it was provided one
-         */
-        Optional<? extends MatchQueryDefault> getMatchQuery();
-
-        /**
-         * @return all concept types referred to explicitly in the query
-         */
-        Set<Type> getTypes();
-
-        /**
-         * @return the variables to insert in the insert query
-         */
-        Collection<Var.Admin> getVars();
-
-        /**
-         * @return a collection of Vars to insert, including any nested vars
-         */
-        Collection<Var.Admin> getAllVars();
-
-        /**
-         * @return the transaction set on this query, if it was provided one
-         */
-        Optional<MindmapsTransaction> getTransaction();
-    }
 }

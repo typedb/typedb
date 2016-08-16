@@ -14,34 +14,27 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
-package io.mindmaps.graql.internal.validation;
+package io.mindmaps.graql.internal.admin;
 
-import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.graql.internal.admin.PatternAdmin;
-import io.mindmaps.graql.internal.admin.VarAdmin;
+import io.mindmaps.graql.DeleteQuery;
+import io.mindmaps.graql.MatchQueryDefault;
 
 import java.util.Collection;
-import java.util.stream.Stream;
 
 /**
- * A validator for a collection of vars
+ * Admin class for inspecting and manipulating a DeleteQuery
  */
-public class PatternValidator implements Validator {
-
-    private final Collection<VarAdmin> vars;
+public interface DeleteQueryAdmin extends DeleteQuery {
+    /**
+     * @return the variables to delete
+     */
+    Collection<VarAdmin> getDeleters();
 
     /**
-     * @param pattern A collection of vars
+     * @return the match query this delete query is operating on
      */
-    public PatternValidator(PatternAdmin pattern) {
-        this.vars = pattern.getVars();
-    }
-
-    @Override
-    public Stream<String> getErrors(MindmapsTransaction transaction) {
-        Stream<Validator> validators = vars.stream().map(MatchVarValidator::new);
-        return Validator.getAggregateValidator(validators).getErrors(transaction);
-    }
+    MatchQueryDefault getMatchQuery();
 }

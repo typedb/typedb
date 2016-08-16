@@ -24,7 +24,7 @@ import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.QueryParser;
-import io.mindmaps.graql.Var;
+import io.mindmaps.graql.internal.admin.VarAdmin;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -62,8 +62,8 @@ public class QueryParserFragmentsTest {
         assertTrue(patterns.get(0).admin().isVar());
         assertTrue(patterns.get(1).admin().isVar());
 
-        Var.Admin var1 = patterns.get(0).admin().asVar();
-        Var.Admin var2 = patterns.get(1).admin().asVar();
+        VarAdmin var1 = patterns.get(0).admin().asVar();
+        VarAdmin var2 = patterns.get(1).admin().asVar();
 
         assertEquals("$x isa person", var1.toString());
 
@@ -77,14 +77,14 @@ public class QueryParserFragmentsTest {
 
         Iterator<Pattern> patterns = qp.parsePatternsStream(stream).iterator();
 
-        Var.Admin var1 = patterns.next().admin().asVar();
+        VarAdmin var1 = patterns.next().admin().asVar();
         assertEquals("$x isa person", var1.toString());
 
-        Var.Admin var2 = patterns.next().admin().asVar();
+        VarAdmin var2 = patterns.next().admin().asVar();
         assertTrue(var2.isRelation());
         assertEquals(2, var2.getCastings().size());
 
-        Var.Admin var3 = patterns.next().admin().asVar();
+        VarAdmin var3 = patterns.next().admin().asVar();
         assertEquals("$x isa person", var3.toString());
 
         assertTrue(patterns.hasNext());
@@ -97,10 +97,10 @@ public class QueryParserFragmentsTest {
 
         Iterator<Pattern> patterns = qp.parsePatternsStream(stream).iterator();
 
-        Var.Admin var1 = patterns.next().admin().asVar();
+        VarAdmin var1 = patterns.next().admin().asVar();
         assertEquals("$x isa person", var1.toString());
 
-        Var.Admin var2 = patterns.next().admin().asVar();
+        VarAdmin var2 = patterns.next().admin().asVar();
         assertTrue(var2.isRelation());
         assertEquals(2, var2.getCastings().size());
 

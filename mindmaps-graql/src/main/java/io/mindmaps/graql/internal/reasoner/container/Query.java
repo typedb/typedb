@@ -23,6 +23,10 @@ import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Rule;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.*;
+import io.mindmaps.graql.internal.admin.PatternAdmin;
+import io.mindmaps.graql.internal.admin.VarAdmin;
+import io.mindmaps.graql.internal.query.Conjunction;
+import io.mindmaps.graql.internal.query.Disjunction;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
 
@@ -164,8 +168,8 @@ public class Query {
 
     public void removeExpansionFromAtom(Atomic atom, Query query) {
         atomSet.stream().filter(a -> a.equals(atom)).forEach(a -> {
-            Pattern.Admin atomPattern = a.getPattern();
-            Pattern.Admin expandedAtomPattern = a.getExpandedPattern();
+            PatternAdmin atomPattern = a.getPattern();
+            PatternAdmin expandedAtomPattern = a.getExpandedPattern();
             a.removeExpansion(query);
 
             replacePattern(expandedAtomPattern, atomPattern);
@@ -195,14 +199,14 @@ public class Query {
     }
 
     //TODO Does it violate Horn clause limits?
-    private void addPattern(Pattern.Admin newPattern) {
+    private void addPattern(PatternAdmin newPattern) {
         matchQuery.admin().getPattern().getPatterns().add(newPattern);
     }
 
-    private void replacePattern(Pattern.Admin oldPattern, Pattern.Admin newPattern) {
-        Pattern.Admin toRemove = oldPattern;
+    private void replacePattern(PatternAdmin oldPattern, PatternAdmin newPattern) {
+        PatternAdmin toRemove = oldPattern;
 
-        for(Pattern.Admin pat : matchQuery.admin().getPattern().getPatterns())
+        for(PatternAdmin pat : matchQuery.admin().getPattern().getPatterns())
             if(pat.equals(oldPattern))
                 toRemove = pat;
 
@@ -262,7 +266,7 @@ public class Query {
         updateSelectedVars(from, to);
     }
 
-    private Pattern.Disjunction<Pattern.Conjunction<Var.Admin>> getDNF(){
+    private Disjunction<Conjunction<VarAdmin>> getDNF(){
         return matchQuery.admin().getPattern().getDisjunctiveNormalForm();}
 
     private Set<AtomConjunction> getAtomConjunctions() {
@@ -275,7 +279,7 @@ public class Query {
         getExpandedDNF().getPatterns().forEach(c -> conj.add(new AtomConjunction(c)));
         return conj;
     }
-    private Pattern.Disjunction<Pattern.Conjunction<Var.Admin>> getExpandedDNF() {
+    private Disjunction<Conjunction<VarAdmin>> getExpandedDNF() {
         return getExpandedMatchQuery().admin().getPattern().getDisjunctiveNormalForm();
     }
 
@@ -312,23 +316,23 @@ public class Query {
         });
         QueryBuilder qb = Graql.withTransaction(graph);
 
-        Set<Pattern.Conjunction<Var.Admin>> conjs = new HashSet<>();
+        Set<Conjunction<VarAdmin>> conjs = new HashSet<>();
         conjunctions.forEach(conj -> conjs.add(conj.getConjunction()));
-        return qb.match(Pattern.Admin.disjunction(conjs)).select(selectVars);
+        return qb.match(PatternAdmin.disjunction(conjs)).select(selectVars);
 
     }
 
-    public Pattern.Admin getPattern() {
+    public PatternAdmin getPattern() {
         return getMatchQuery().admin().getPattern();
     }
-    public Pattern.Admin getExpandedPattern() {
+    public PatternAdmin getExpandedPattern() {
         return getExpandedMatchQuery().admin().getPattern();
     }
 
     private Set<Atomic> getAtomSet(MatchQueryDefault query) {
         Set<Atomic> atoms = new HashSet<>();
 
-        Set<Var.Admin> vars = query.admin().getPattern().getVars();
+        Set<VarAdmin> vars = query.admin().getPattern().getVars();
         vars.forEach(var ->
         {
             Atomic atom = AtomicFactory.create(var, this);

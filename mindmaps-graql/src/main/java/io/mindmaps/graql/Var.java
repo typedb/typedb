@@ -19,11 +19,9 @@
 package io.mindmaps.graql;
 
 import io.mindmaps.core.implementation.Data;
-import io.mindmaps.graql.internal.gremlin.MultiTraversal;
+import io.mindmaps.graql.internal.admin.VarAdmin;
 
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * A wildcard variable to refers to a concept in a query.
@@ -246,173 +244,7 @@ public interface Var extends Pattern {
     /**
      * @return an Admin class to allow inspection of this Var
      */
-    Admin admin();
-
-    /**
-     * Admin class for inspecting a Var
-     */
-    interface Admin extends Pattern.Admin, Var {
-
-        @Override
-        default boolean isVar() {
-            return true;
-        }
-
-        @Override
-        default Var.Admin asVar() {
-            return this;
-        }
-
-        /**
-         * @return the variable name of this variable
-         */
-        String getName();
-
-        /**
-         * @param name the new variable name of this variable
-         */
-        void setName(String name);
-
-        /**
-         * @return whether the user specified a name for this variable
-         */
-        boolean isUserDefinedName();
-
-        /**
-         * @return the type of this variable, if it has one specified
-         */
-        Optional<Var.Admin> getType();
-
-        /**
-         * @return the ako (supertype) of this type, if it has one specified
-         */
-        Optional<Var.Admin> getAko();
-
-        /**
-         * @return all roles this relation type has
-         */
-        Set<Var.Admin> getHasRoles();
-
-        /**
-         * @return all roles this type can play
-         */
-        Set<Var.Admin> getPlaysRoles();
-
-        /**
-         * @return all scopes this relation has
-         */
-        Set<Var.Admin> getScopes();
-
-        /**
-         * @return all resource types that this type's instances can have
-         */
-        Set<Var.Admin> getHasResourceTypes();
-
-        /**
-         * @return the datatype of this resource type, if one is set
-         */
-        Optional<Data<?>> getDatatype();
-
-        /**
-         * @return whether this variable is an abstract type
-         */
-        boolean getAbstract();
-
-        /**
-         * @return the ID this variable represents, if it represents something with a specific ID
-         */
-        Optional<String> getId();
-
-        /**
-         * @return if this var has only an ID set and no other properties, return that ID, else return nothing
-         */
-        Optional<String> getIdOnly();
-
-        /**
-         * @return all variables that this variable references
-         */
-        Set<Var.Admin> getInnerVars();
-
-        /**
-         * @return all type IDs that this variable refers to
-         */
-        Set<String> getTypeIds();
-
-        /**
-         * @return all role types that this variable refers to
-         */
-        Set<String> getRoleTypes();
-
-        /**
-         * @return whether this variable represents a relation
-         */
-        boolean isRelation();
-
-        /**
-         * @return all resource types that this variable refers to
-         */
-        Set<String> getResourceTypes();
-
-        /**
-         * @return the name of this variable, as it would be referenced in a native Graql query (e.g. '$x', 'movie')
-         */
-        String getPrintableName();
-
-        /**
-         * @return true if this variable has no properties set
-         */
-        boolean hasNoProperties();
-
-        /**
-         * @return whether this variable is specified to have a value
-         */
-        boolean hasValue();
-
-        /**
-         * @return all predicates on the value of this variable
-         */
-        Set<ValuePredicate.Admin> getValuePredicates();
-
-        /**
-         * @return the values that this variable must have
-         */
-        Set<?> getValueEqualsPredicates();
-
-        /**
-         * @return the left-hand side that this rule must have
-         */
-        Optional<String> getLhs();
-
-        /**
-         * @return the right-hand side that this rule must have
-         */
-        Optional<String> getRhs();
-
-        /**
-         * @return all predicates on resources of this variable (where the key is the resource type)
-         */
-        Map<Var.Admin, Set<ValuePredicate.Admin>> getResourcePredicates();
-
-        /**
-         * @return all values of resources on this variable (where the key is the resource type)
-         */
-        Map<Var.Admin, Set<?>> getResourceEqualsPredicates();
-
-        /**
-         * @return whether this variable uses any predicate that is not equality
-         */
-        boolean usesNonEqualPredicate();
-
-        /**
-         * @return all castings described on this relation (that is, pairs of role types and role players)
-         */
-        Set<Casting> getCastings();
-
-        /**
-         * @return the gremlin traversals that describe this variable
-         */
-        Set<MultiTraversal> getMultiTraversals();
-    }
+    VarAdmin admin();
 
     /**
      * A casting, a pair of role type and role player (where the role type may not be present)
@@ -421,11 +253,11 @@ public interface Var extends Pattern {
         /**
          * @return the role type, if specified
          */
-        Optional<Admin> getRoleType();
+        Optional<VarAdmin> getRoleType();
 
         /**
          * @return the role player
          */
-        Admin getRolePlayer();
+        VarAdmin getRolePlayer();
     }
 }

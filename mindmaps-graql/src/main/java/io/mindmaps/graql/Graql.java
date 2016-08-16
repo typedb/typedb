@@ -22,8 +22,11 @@ package io.mindmaps.graql;
 import com.google.common.collect.ImmutableSet;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
-import io.mindmaps.graql.internal.AdminConverter;
+import io.mindmaps.graql.internal.admin.AdminConverter;
 import io.mindmaps.graql.internal.StringConverter;
+import io.mindmaps.graql.internal.admin.PatternAdmin;
+import io.mindmaps.graql.internal.query.Conjunction;
+import io.mindmaps.graql.internal.query.Disjunction;
 import io.mindmaps.graql.internal.query.ValuePredicateImpl;
 import io.mindmaps.graql.internal.query.VarImpl;
 import io.mindmaps.graql.internal.query.aggregate.CountAggregate;
@@ -125,8 +128,8 @@ public class Graql {
      * @return a pattern that will match only when all contained patterns match
      */
     public static Pattern and(Collection<? extends Pattern> patterns) {
-        Pattern.Conjunction<Pattern.Admin> conjunction =
-                Pattern.Admin.conjunction(AdminConverter.getPatternAdmins(patterns));
+        Conjunction<PatternAdmin> conjunction =
+                PatternAdmin.conjunction(AdminConverter.getPatternAdmins(patterns));
 
         return () -> conjunction;
     }
@@ -144,8 +147,8 @@ public class Graql {
      * @return a pattern that will match when any contained pattern matches
      */
     public static Pattern or(Collection<? extends Pattern> patterns) {
-        Pattern.Disjunction<Pattern.Admin> disjunction =
-                Pattern.Admin.disjunction(AdminConverter.getPatternAdmins(patterns));
+        Disjunction<PatternAdmin> disjunction =
+                PatternAdmin.disjunction(AdminConverter.getPatternAdmins(patterns));
 
         return () -> disjunction;
     }

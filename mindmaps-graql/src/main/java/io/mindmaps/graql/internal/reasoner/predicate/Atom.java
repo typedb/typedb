@@ -17,8 +17,8 @@
  */
 package io.mindmaps.graql.internal.reasoner.predicate;
 
-import io.mindmaps.graql.ValuePredicate;
-import io.mindmaps.graql.Var;
+import io.mindmaps.graql.internal.admin.ValuePredicateAdmin;
+import io.mindmaps.graql.internal.admin.VarAdmin;
 import io.mindmaps.graql.internal.reasoner.container.Query;
 
 import java.util.*;
@@ -27,13 +27,13 @@ public class Atom extends AtomBase{
 
     private final String val;
 
-    public Atom(Var.Admin pattern)
+    public Atom(VarAdmin pattern)
     {
         super(pattern);
         this.val = extractValue(pattern);
     }
 
-    public Atom(Var.Admin pattern, Query par)
+    public Atom(VarAdmin pattern, Query par)
     {
         super(pattern, par);
         this.val = extractValue(pattern);
@@ -76,23 +76,23 @@ public class Atom extends AtomBase{
     @Override
     public String getVal(){ return val;}
 
-    private String extractValue(Var.Admin var) {
+    private String extractValue(VarAdmin var) {
 
         String value = "";
 
-        Map<Var.Admin, Set<ValuePredicate.Admin>> resourceMap = var.getResourcePredicates();
+        Map<VarAdmin, Set<ValuePredicateAdmin>> resourceMap = var.getResourcePredicates();
 
         if (resourceMap.size() != 0) {
             if (resourceMap.size() != 1)
                 throw new IllegalArgumentException("Multiple resource types in extractData");
 
-            Map.Entry<Var.Admin, Set<ValuePredicate.Admin>> entry = resourceMap.entrySet().iterator().next();
+            Map.Entry<VarAdmin, Set<ValuePredicateAdmin>> entry = resourceMap.entrySet().iterator().next();
             value = entry.getValue().iterator().hasNext()? entry.getValue().iterator().next().getPredicate().getValue().toString() : "";
         }
         else {
             if ( isValuePredicate() )
             {
-                Set<ValuePredicate.Admin> valuePredicates = var.admin().getValuePredicates();
+                Set<ValuePredicateAdmin> valuePredicates = var.admin().getValuePredicates();
                 if (valuePredicates.size() != 1)
                     throw new IllegalArgumentException("More than one value predicate in extractAtomFromVar\n"
                             + atomPattern.toString());

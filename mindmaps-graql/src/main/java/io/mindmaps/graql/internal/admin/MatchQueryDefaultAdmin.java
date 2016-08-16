@@ -17,29 +17,26 @@
  *
  */
 
-package io.mindmaps.graql.internal.query.match;
+package io.mindmaps.graql.internal.admin;
 
-import io.mindmaps.graql.internal.admin.MatchQueryAdmin;
+import io.mindmaps.core.model.Concept;
+import io.mindmaps.graql.MatchQueryDefault;
 
-import java.util.function.Function;
-import java.util.stream.Stream;
+import java.util.Map;
+import java.util.Set;
 
 /**
- * A class for performing a generic 'map' operation on a MatchQuery, transforming every result.
- * @param <S> The type of the results before transformation
- * @param <T> The type of the results after transformation
+ * Admin class for inspecting and manipulating a MatchQuery
  */
-public class MatchQueryMap<S, T> extends MatchQueryAbstract<S, T> {
-
-    private final Function<S, T> function;
-
-    public MatchQueryMap(MatchQueryAdmin<S> inner, Function<S, T> function) {
-        super(inner);
-        this.function = function;
-    }
+public interface MatchQueryDefaultAdmin extends MatchQueryDefault, MatchQueryAdmin<Map<String, Concept>> {
 
     @Override
-    protected Stream<T> transformStream(Stream<S> stream) {
-        return stream.map(function);
+    default MatchQueryDefaultAdmin admin() {
+        return this;
     }
+
+    /**
+     * @return all selected variable names in the query
+     */
+    Set<String> getSelectedNames();
 }
