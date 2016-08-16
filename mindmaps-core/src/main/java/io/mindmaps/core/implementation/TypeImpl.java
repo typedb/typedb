@@ -142,9 +142,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type, S
      */
     private Collection<TypeImpl> getSubConceptTypes(){
         Collection<TypeImpl> subSet = new HashSet<>();
-        getIncomingNeighbours(DataType.EdgeLabel.AKO).forEach(concept -> {
-            subSet.add(getMindmapsTransaction().getElementFactory().buildSpecificConceptType(concept));
-        });
+        getIncomingNeighbours(DataType.EdgeLabel.AKO).forEach(concept -> subSet.add(getMindmapsTransaction().getElementFactory().buildSpecificConceptType(concept)));
         return subSet;
     }
 
@@ -191,9 +189,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type, S
     @Override
     public Collection<Rule> getRulesOfHypothesis() {
         Set<Rule> rules = new HashSet<>();
-        getIncomingNeighbours(DataType.EdgeLabel.HYPOTHESIS).forEach(concept -> {
-            rules.add(getMindmapsTransaction().getElementFactory().buildRule(concept));
-        });
+        getIncomingNeighbours(DataType.EdgeLabel.HYPOTHESIS).forEach(concept -> rules.add(getMindmapsTransaction().getElementFactory().buildRule(concept)));
         return rules;
     }
 
@@ -204,9 +200,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type, S
     @Override
     public Collection<Rule> getRulesOfConclusion() {
         Set<Rule> rules = new HashSet<>();
-        getIncomingNeighbours(DataType.EdgeLabel.CONCLUSION).forEach(concept -> {
-            rules.add(getMindmapsTransaction().getElementFactory().buildRule(concept));
-        });
+        getIncomingNeighbours(DataType.EdgeLabel.CONCLUSION).forEach(concept -> rules.add(getMindmapsTransaction().getElementFactory().buildRule(concept)));
         return rules;
     }
 

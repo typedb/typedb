@@ -44,8 +44,6 @@ public class CastingTest {
     private RoleTypeImpl role;
     private RelationImpl relation;
     private InstanceImpl rolePlayer;
-    private RelationTypeImpl relationType;
-    private EntityTypeImpl conceptType;
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -55,9 +53,9 @@ public class CastingTest {
         mindmapsGraph = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
         mindmapsGraph.initialiseMetaConcepts();
         role = (RoleTypeImpl) mindmapsGraph.putRoleType("Role");
-        conceptType = (EntityTypeImpl) mindmapsGraph.putEntityType("A thing");
+        EntityTypeImpl conceptType = (EntityTypeImpl) mindmapsGraph.putEntityType("A thing");
         rolePlayer = (InstanceImpl) mindmapsGraph.putEntity("role player main", conceptType);
-        relationType = (RelationTypeImpl) mindmapsGraph.putRelationType("A type");
+        RelationTypeImpl relationType = (RelationTypeImpl) mindmapsGraph.putRelationType("A type");
         relation = (RelationImpl) mindmapsGraph.putRelation("a relation", relationType);
         casting = mindmapsGraph.putCasting(role, rolePlayer, relation);
     }

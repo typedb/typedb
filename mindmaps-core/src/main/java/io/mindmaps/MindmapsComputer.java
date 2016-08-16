@@ -40,6 +40,7 @@ public class MindmapsComputer {
      *
      * @return A graph compute supported by this mindmaps graph
      */
+    @SuppressWarnings("unchecked")
     private Class<? extends GraphComputer> getGraphComputer(String graphComputerType){
         try {
             return (Class<? extends GraphComputer>) Class.forName(graphComputerType);

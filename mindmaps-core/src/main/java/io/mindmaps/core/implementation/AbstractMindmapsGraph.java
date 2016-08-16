@@ -112,7 +112,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
      * @param mindmapsTransaction A transaction to use to check the schema
      */
     private void checkSchema(AbstractMindmapsTransaction mindmapsTransaction){
-        if(!mindmapsTransaction.isMetaOntologyInitialised()){
+        if(mindmapsTransaction.isMetaOntologyNotInitialised()){
             mindmapsTransaction.initialiseMetaConcepts();
             try {
                 mindmapsTransaction.commit();

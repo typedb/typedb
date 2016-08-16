@@ -88,14 +88,10 @@ class RelationImpl extends InstanceImpl<Relation, RelationType, String> implemen
         HashMap<RoleType, Instance> roleMap = new HashMap<>();
 
         //Gets roles based on all roles of the relation type
-        type().hasRoles().forEach(roleType -> {
-            roleMap.put(roleType, null);
-        });
+        type().hasRoles().forEach(roleType -> roleMap.put(roleType, null));
 
         //Get roles based on availiable castings
-        castings.forEach(casting -> {
-            roleMap.put(casting.getRole(), casting.getRolePlayer());
-        });
+        castings.forEach(casting -> roleMap.put(casting.getRole(), casting.getRolePlayer()));
 
         return roleMap;
     }

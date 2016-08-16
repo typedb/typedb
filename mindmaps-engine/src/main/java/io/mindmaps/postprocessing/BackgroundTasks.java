@@ -105,14 +105,6 @@ public class BackgroundTasks {
         performCastingFix();
 
         waitToContinue();
-
-        currentStage = RELATION_STAGE;
-        LOG.info(currentStage);
-        performRelationFix();
-    }
-
-    private void performRelationFix() {
-        //TODO: Relation and Shortcut Fix
     }
 
     private void performCastingFix() {

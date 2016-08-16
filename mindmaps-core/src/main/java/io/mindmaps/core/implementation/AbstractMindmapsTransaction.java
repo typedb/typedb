@@ -61,7 +61,7 @@ public abstract class AbstractMindmapsTransaction implements MindmapsTransaction
 
     @SuppressWarnings("unchecked")
     public void initialiseMetaConcepts(){
-        if(!isMetaOntologyInitialised()){
+        if(isMetaOntologyNotInitialised()){
             LOG.info("Initialising new transaction . . .");
 
             TypeImpl type = elementFactory.buildConceptType(addVertex(DataType.BaseType.TYPE));
@@ -102,8 +102,8 @@ public abstract class AbstractMindmapsTransaction implements MindmapsTransaction
         }
     }
 
-    public boolean isMetaOntologyInitialised(){
-        return getMetaType() != null;
+    public boolean isMetaOntologyNotInitialised(){
+        return getMetaType() == null;
     }
 
     Graph getTinkerPopGraph(){

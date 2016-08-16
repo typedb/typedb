@@ -20,7 +20,6 @@ package io.mindmaps.api;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import com.jayway.restassured.RestAssured;
 import io.mindmaps.Util;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.MindmapsTransaction;

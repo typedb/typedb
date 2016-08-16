@@ -122,15 +122,15 @@ class MindmapsTitanGraphFactory extends AbstractMindmapsGraphFactory<MindmapsTit
             String properties = keys.getString(edgeLabel);
             if(properties.length() > 0){
                 String[] propertyKey = keys.getString(edgeLabel).split(",");
-                for(int i = 0; i < propertyKey.length; i ++){
-                    PropertyKey key = management.getPropertyKey(propertyKey[i]);
-                    if(key==null)
-                        throw new RuntimeException("Trying to create edge index on label [" + edgeLabel + "] but the property [" + propertyKey[i] + "] does not exist");
+                for (String aPropertyKey : propertyKey) {
+                    PropertyKey key = management.getPropertyKey(aPropertyKey);
+                    if (key == null)
+                        throw new RuntimeException("Trying to create edge index on label [" + edgeLabel + "] but the property [" + aPropertyKey + "] does not exist");
 
                     RelationType relationType = management.getRelationType(edgeLabel);
-                    if(management.getRelationIndex(relationType, edgeLabel + "by" + propertyKey[i]) == null)
-                        management.buildEdgeIndex(label, edgeLabel + "by" + propertyKey[i], Direction.OUT, Order.decr, key);
-                 }
+                    if (management.getRelationIndex(relationType, edgeLabel + "by" + aPropertyKey) == null)
+                        management.buildEdgeIndex(label, edgeLabel + "by" + aPropertyKey, Direction.OUT, Order.decr, key);
+                }
             }
         }
     }

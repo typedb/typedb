@@ -35,8 +35,9 @@ import java.util.UUID;
 public class MovieGraphFactory {
     private static MindmapsTransaction mindmapsTransaction;
     private static EntityType movie, person, genre, character, cluster;
-    private static ResourceType<String> title, gender, realName;
-    private static ResourceType<Long> tmdbVoteCount, releaseDate, runtime;
+    private static ResourceType<String> title;
+    private static ResourceType<Long> tmdbVoteCount;
+    private static ResourceType<Long> releaseDate;
     private static ResourceType<Double> tmdbVoteAverage;
     private static RelationType hasCast, directedBy, hasGenre, hasCluster;
     private static RoleType productionBeingDirected, director, productionWithCast, actor, characterBeingPlayed;
@@ -104,9 +105,9 @@ public class MovieGraphFactory {
         tmdbVoteCount = mindmapsTransaction.putResourceType("tmdb-vote-count", Data.LONG);
         tmdbVoteAverage = mindmapsTransaction.putResourceType("tmdb-vote-average", Data.DOUBLE);
         releaseDate = mindmapsTransaction.putResourceType("release-date", Data.LONG);
-        runtime = mindmapsTransaction.putResourceType("runtime", Data.LONG);
-        gender = mindmapsTransaction.putResourceType("gender", Data.STRING);
-        realName = mindmapsTransaction.putResourceType("real-name", Data.STRING);
+        ResourceType<Long> runtime = mindmapsTransaction.putResourceType("runtime", Data.LONG);
+        ResourceType<String> gender = mindmapsTransaction.putResourceType("gender", Data.STRING);
+        ResourceType<String> realName = mindmapsTransaction.putResourceType("real-name", Data.STRING);
 
         EntityType production = mindmapsTransaction.putEntityType("production").setValue("production")
                 .playsRole(productionWithCluster).playsRole(productionBeingDirected).playsRole(productionWithCast)
