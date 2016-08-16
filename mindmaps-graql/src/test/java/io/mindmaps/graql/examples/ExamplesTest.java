@@ -37,7 +37,7 @@ public class ExamplesTest {
     @Before
     public void setUp() {
         MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
-        qp = QueryParser.create(graph.newTransaction());
+        qp = QueryParser.create(graph.getTransaction());
     }
 
     @Test

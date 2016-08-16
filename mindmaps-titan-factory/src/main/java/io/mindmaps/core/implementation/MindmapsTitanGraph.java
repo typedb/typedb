@@ -29,12 +29,8 @@ public class MindmapsTitanGraph extends AbstractMindmapsGraph<TitanGraph> {
     }
 
     @Override
-    public MindmapsTransaction newTransaction() {
-        try {
-            return new MindmapsTitanTransaction(this);
-        } catch (IllegalStateException e){
-            throw  new GraphRuntimeException(ErrorMessage.CLOSED.getMessage(this));
-        }
+    protected MindmapsTransaction buildTransaction() {
+        return new MindmapsTitanTransaction(this);
     }
 
     @Override

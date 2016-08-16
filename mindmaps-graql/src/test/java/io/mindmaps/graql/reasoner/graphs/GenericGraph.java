@@ -37,7 +37,7 @@ public class GenericGraph {
 
     public static MindmapsTransaction getTransaction(String graqlFile) {
         MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
-        mindmaps = graph.newTransaction();
+        mindmaps = graph.getTransaction();
         buildGraph(graqlFile);
 
         try {
@@ -51,7 +51,7 @@ public class GenericGraph {
 
     public static MindmapsTransaction getTransaction(String ontologyFile, String ruleFile, String dataFile) {
             MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
-            mindmaps = graph.newTransaction();
+            mindmaps = graph.getTransaction();
             buildGraph(ontologyFile, ruleFile, dataFile);
 
             try {

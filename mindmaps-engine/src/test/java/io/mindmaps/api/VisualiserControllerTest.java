@@ -55,7 +55,7 @@ public class VisualiserControllerTest {
         }
         graphName="special-test-graph";
         MindmapsGraph graph = GraphFactory.getInstance().getGraph(graphName);
-        MindmapsTransaction transaction = graph.newTransaction();
+        MindmapsTransaction transaction = graph.getTransaction();
         EntityType man = transaction.putEntityType("Man");
         transaction.putEntity("actor-123", man).setValue("Al Pacino");
         transaction.commit();

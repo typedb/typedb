@@ -50,7 +50,7 @@ public class MindmapsTransactionTrackingTest {
 
     @Before
     public void buildGraphAccessManager() {
-        mindmapsGraph = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
+        mindmapsGraph = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
         // start standard rootGraph access manager
         mindmapsGraph.initialiseMetaConcepts();
         modifiedConcepts = new HashSet<>();

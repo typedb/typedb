@@ -48,7 +48,7 @@ public class ConceptTest {
 
     @Before
     public void setUp(){
-        mindmapsGraph = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
+        mindmapsGraph = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
         mindmapsGraph.initialiseMetaConcepts();
         concept = (ConceptImpl) mindmapsGraph.putEntityType("main_concept");
     }

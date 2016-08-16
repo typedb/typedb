@@ -56,7 +56,7 @@ public class MindmapsTransactionHighLevelTest {
 
     @Before
     public void buildGraphAccessManager(){
-        mindmapsGraph = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
+        mindmapsGraph = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
         mindmapsGraph.initialiseMetaConcepts();
 
         type = mindmapsGraph.putEntityType("Test");
@@ -535,7 +535,7 @@ public class MindmapsTransactionHighLevelTest {
     public void testPutRelationSimple(){
         MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
         graph.enableBatchLoading();
-        AbstractMindmapsTransaction mindmapsGraphBatch = (AbstractMindmapsTransaction) graph.newTransaction();
+        AbstractMindmapsTransaction mindmapsGraphBatch = (AbstractMindmapsTransaction) graph.getTransaction();
 
         EntityType type = mindmapsGraphBatch.putEntityType("Test");
         RoleType actor = mindmapsGraphBatch.putRoleType("Actor");

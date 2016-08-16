@@ -38,7 +38,7 @@ public class GraQLCompleter implements Completer {
 
     @Override
     public int complete(String buffer, int cursor, List<CharSequence> candidates) {
-        Autocomplete autocomplete = Autocomplete.create(graph.newTransaction(), buffer, cursor);
+        Autocomplete autocomplete = Autocomplete.create(graph.getTransaction(), buffer, cursor);
         candidates.addAll(autocomplete.getCandidates());
         return autocomplete.getCursorPosition();
     }

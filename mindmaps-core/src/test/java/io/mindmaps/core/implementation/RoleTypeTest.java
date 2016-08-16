@@ -44,7 +44,7 @@ public class RoleTypeTest {
 
     @Before
     public void buildGraph(){
-        mindmapsGraph = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
+        mindmapsGraph = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
         mindmapsGraph.initialiseMetaConcepts();
 
         roleType = mindmapsGraph.putRoleType("RoleType");

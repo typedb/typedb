@@ -48,7 +48,7 @@ public class PokemonGraphFactory{
     private static RelationType superEffective;
 
     public static void loadGraph(MindmapsGraph mindmapsGraph) {
-        MindmapsTransaction transaction = mindmapsGraph.newTransaction();
+        MindmapsTransaction transaction = mindmapsGraph.getTransaction();
         buildGraph(transaction);
 
         try {

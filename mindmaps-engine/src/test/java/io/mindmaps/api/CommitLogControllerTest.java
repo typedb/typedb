@@ -92,8 +92,8 @@ public class CommitLogControllerTest {
         final String BOB = "bob";
         final String TIM = "tim";
 
-        MindmapsTransaction bob = MindmapsClient.getGraph(BOB).newTransaction();
-        MindmapsTransaction tim = MindmapsClient.getGraph(TIM).newTransaction();
+        MindmapsTransaction bob = MindmapsClient.getGraph(BOB).getTransaction();
+        MindmapsTransaction tim = MindmapsClient.getGraph(TIM).getTransaction();
 
         addSomeData(bob);
 

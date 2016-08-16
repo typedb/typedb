@@ -57,7 +57,7 @@ public class MovieGraphFactory {
     }
 
     public static void loadGraph(MindmapsGraph mindmapsGraph) {
-        mindmapsTransaction = mindmapsGraph.newTransaction();
+        mindmapsTransaction = mindmapsGraph.getTransaction();
         buildGraph();
 
         try {

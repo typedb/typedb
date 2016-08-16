@@ -58,7 +58,7 @@ public class BackgroundTasksTest {
     @Test
     public void testMergingCastings() throws Exception {
         //Create Scenario
-        MindmapsTransaction mindmapsTransaction = mindmapsGraph.newTransaction();
+        MindmapsTransaction mindmapsTransaction = mindmapsGraph.getTransaction();
         RoleType roleType1 = mindmapsTransaction.putRoleType("role 1");
         RoleType roleType2 = mindmapsTransaction.putRoleType("role 2");
         RelationType relationType = mindmapsTransaction.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
@@ -97,7 +97,7 @@ public class BackgroundTasksTest {
         assertEquals(4, ((AbstractMindmapsGraph) mindmapsGraph).getGraph().traversal().V().hasLabel(DataType.BaseType.CASTING.name()).toList().size());
     }
     private void buildDuplicateCasting(String relationTypeId, String mainRoleTypeId, String mainInstanceId, String otherRoleTypeId, String otherInstanceId) throws Exception {
-        MindmapsTransaction mindmapsTransaction = mindmapsGraph.newTransaction();
+        MindmapsTransaction mindmapsTransaction = mindmapsGraph.getTransaction();
 
         //Get Needed Mindmaps Objects
         RelationType relationType = mindmapsTransaction.getRelationType(relationTypeId);

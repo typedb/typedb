@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
  * A mindmaps graph which produces new transactions to work with
  */
 public abstract class AbstractMindmapsGraph<G extends Graph> implements MindmapsGraph {
+    protected final ThreadLocal<MindmapsTransaction> context = new ThreadLocal<>();
     protected final Logger LOG = LoggerFactory.getLogger(AbstractMindmapsGraph.class);
     private final String engineUrl;
     private final String graphName;
@@ -40,10 +41,10 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         this.graph = graph;
         this.graphName = graphName;
         this.engineUrl = engineUrl;
-        checkSchema((AbstractMindmapsTransaction) newTransaction());
+        checkSchema((AbstractMindmapsTransaction) getTransaction());
     }
 
-    public String getCommitLogEndPoint(){
+    String getCommitLogEndPoint(){
         return getEngineUrl() + RESTUtil.WebPath.COMMIT_LOG_URI + "?" + RESTUtil.Request.GRAPH_NAME_PARAM + "=" + getName();
     }
 
@@ -52,7 +53,15 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
      * @return A new transaction with a snapshot of the graph at the time of creation
      */
     @Override
-    public abstract MindmapsTransaction newTransaction();
+    public MindmapsTransaction getTransaction(){
+        MindmapsTransaction transaction = context.get();
+        if(transaction == null){
+            context.set(transaction = buildTransaction());
+        }
+        return transaction;
+    }
+
+    protected abstract MindmapsTransaction buildTransaction();
 
     /**
      * Enables batch loading which skips redundancy checks.
@@ -134,9 +143,14 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     @Override
     public void close() {
         try {
+            clearTransaction();
             getGraph().close();
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public void clearTransaction(){
+        context.remove();
     }
 }

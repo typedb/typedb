@@ -49,7 +49,7 @@ public class MatchQueryModifierTest {
     public static void setUpClass() {
         MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
-        transaction = mindmapsGraph.newTransaction();
+        transaction = mindmapsGraph.getTransaction();
     }
 
     @Before

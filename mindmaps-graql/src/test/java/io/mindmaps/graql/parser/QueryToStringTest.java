@@ -45,7 +45,7 @@ public class QueryToStringTest {
     public void setUp() {
         MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
-        MindmapsTransaction transaction = mindmapsGraph.newTransaction();
+        MindmapsTransaction transaction = mindmapsGraph.getTransaction();
         qb = QueryBuilder.build(transaction);
         qp = QueryParser.create(transaction);
     }

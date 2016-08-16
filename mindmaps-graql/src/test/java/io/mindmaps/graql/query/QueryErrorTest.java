@@ -45,7 +45,7 @@ public class QueryErrorTest {
     public static void setUpClass() {
         MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
-        transaction = mindmapsGraph.newTransaction();
+        transaction = mindmapsGraph.getTransaction();
     }
 
     @Before
@@ -145,7 +145,7 @@ public class QueryErrorTest {
     @Test
     public void testExceptionWhenNoHasResourceRelation() {
         // Create a fresh graph, with no has-resource between person and name
-        MindmapsTransaction empty = MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
+        MindmapsTransaction empty = MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
 
         QueryBuilder emptyQb = QueryBuilder.build(empty);
         emptyQb.insert(

@@ -48,7 +48,7 @@ public class VisualiserController {
 
         // TODO: Implement HAL builder for concepts retrieved by Value
 
-        GraphFactory.getInstance().getGraph(defaultGraphName).newTransaction().getConceptsByValue(req.queryParams(RESTUtil.Request.VALUE_FIELD));
+        GraphFactory.getInstance().getGraph(defaultGraphName).getTransaction().getConceptsByValue(req.queryParams(RESTUtil.Request.VALUE_FIELD));
         return req.queryParams(RESTUtil.Request.VALUE_FIELD);
     }
 
@@ -57,7 +57,7 @@ public class VisualiserController {
         String graphNameParam = req.queryParams(RESTUtil.Request.GRAPH_NAME_PARAM);
         String currentGraphName = (graphNameParam==null) ? defaultGraphName : graphNameParam;
 
-        MindmapsTransaction transaction = GraphFactory.getInstance().getGraph(currentGraphName).newTransaction();
+        MindmapsTransaction transaction = GraphFactory.getInstance().getGraph(currentGraphName).getTransaction();
 
         Concept concept = transaction.getConcept(req.params(RESTUtil.Request.ID_PARAMETER));
         if (concept != null)

@@ -53,7 +53,7 @@ public class RemoteShellController {
 
     private String buildMetaTypeInstancesObject(Request req, Response res){
 
-        AbstractMindmapsTransaction transaction = (AbstractMindmapsTransaction) GraphFactory.getInstance().getGraph(defaultGraphName).newTransaction();
+        AbstractMindmapsTransaction transaction = (AbstractMindmapsTransaction) GraphFactory.getInstance().getGraph(defaultGraphName).getTransaction();
 
         JSONObject responseObj = new JSONObject();
         responseObj.put(RESTUtil.Response.ROLES_JSON_FIELD, new JSONArray(transaction.getMetaRoleType().instances().stream().map(x -> x.getId()).toArray()));
@@ -69,7 +69,7 @@ public class RemoteShellController {
         String currentGraphName = req.queryParams(RESTUtil.Request.GRAPH_NAME_PARAM);
         if(currentGraphName==null) currentGraphName = defaultGraphName;
 
-        QueryParser parser = QueryParser.create(GraphFactory.getInstance().getGraph(currentGraphName).newTransaction());
+        QueryParser parser = QueryParser.create(GraphFactory.getInstance().getGraph(currentGraphName).getTransaction());
 
         LOG.info("Received match query: \"" + req.queryParams(RESTUtil.Request.QUERY_FIELD) + "\"");
 

@@ -41,7 +41,7 @@ public class PostprocessingTest {
 
     @Before
     public void buildGraphAccessManager(){
-        transaction = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
+        transaction = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
         transaction.initialiseMetaConcepts();
 
         roleType1 = transaction.putRoleType("role 1");

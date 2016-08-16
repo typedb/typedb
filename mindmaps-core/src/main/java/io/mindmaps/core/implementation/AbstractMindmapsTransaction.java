@@ -630,7 +630,6 @@ public abstract class AbstractMindmapsTransaction implements MindmapsTransaction
         return hash;
     }
 
-    //------------------------------------ getRelation
     @Override
     public Relation getRelation(RelationType relationType, Map<RoleType, Instance> roleMap){
         String hash = RelationImpl.generateNewHash(relationType, roleMap);
@@ -666,6 +665,7 @@ public abstract class AbstractMindmapsTransaction implements MindmapsTransaction
     public void close() throws Exception {
         getConceptLog().clearTransaction();
         setTinkerPopGraph(null);
+        getRootGraph().clearTransaction();
     }
 
     /**

@@ -37,7 +37,7 @@ public class AutocompleteTest {
     public static void setUpClass() {
         MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(graph);
-        transaction = graph.newTransaction();
+        transaction = graph.getTransaction();
     }
 
     @Test

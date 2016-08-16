@@ -118,7 +118,7 @@ public class BlockingLoader {
     private void loadData(String name, Collection<Var> batch) {
 
         for (int i = 0; i < repeatCommits; i++) {
-            AbstractMindmapsTransaction transaction = (AbstractMindmapsTransaction) GraphFactory.getInstance().getGraphBatchLoading(name).newTransaction();
+            AbstractMindmapsTransaction transaction = (AbstractMindmapsTransaction) GraphFactory.getInstance().getGraphBatchLoading(name).getTransaction();
             try {
 
                 QueryBuilder.build(transaction).insert(batch).execute();

@@ -24,7 +24,7 @@ public class MindmapsTitanTransaction extends AbstractMindmapsTransaction {
     private MindmapsTitanGraph rootGraph;
 
     public MindmapsTitanTransaction(MindmapsTitanGraph graph) {
-        super(graph.getGraph().newTransaction(), graph.isBatchLoadingEnabled());
+        super(graph.getGraph(), graph.isBatchLoadingEnabled());
         rootGraph = graph;
     }
 
@@ -35,6 +35,6 @@ public class MindmapsTitanTransaction extends AbstractMindmapsTransaction {
 
     @Override
     protected Graph getNewTransaction() {
-        return rootGraph.getGraph().newTransaction();
+        return rootGraph.getGraph();
     }
 }
