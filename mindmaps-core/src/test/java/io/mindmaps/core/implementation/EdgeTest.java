@@ -38,7 +38,7 @@ public class EdgeTest {
 
     @Before
     public void setUp(){
-        mindmapsTransaction = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
+        mindmapsTransaction = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
         entityType = mindmapsTransaction.putEntityType("My Entity Type");
         entity = mindmapsTransaction.putEntity("My entity", entityType);
         Edge tinkerEdge = mindmapsTransaction.getTinkerTraversal().V().has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), entity.getId()).outE().next();

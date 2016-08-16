@@ -41,7 +41,7 @@ public class MovieGraphFactoryTest {
     public static void setUp() throws IOException {
         AbstractMindmapsGraph mindmapsGraph = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
-        dao = mindmapsGraph.newTransaction();
+        dao = mindmapsGraph.getTransaction();
         graph = mindmapsGraph.getGraph();
     }
 

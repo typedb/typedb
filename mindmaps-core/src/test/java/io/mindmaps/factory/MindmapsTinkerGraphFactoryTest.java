@@ -45,7 +45,7 @@ public class MindmapsTinkerGraphFactoryTest {
     @Test
     public void testBuildTinkerGraph() throws Exception {
         MindmapsGraph graph = tinkerGraphFactory.getGraph("test", null, null);
-        MindmapsTransaction transaction = graph.newTransaction();
+        MindmapsTransaction transaction = graph.getTransaction();
         assertThat(graph, instanceOf(MindmapsTinkerGraph.class));
         assertThat(transaction, instanceOf(MindmapsTinkerTransaction.class));
 

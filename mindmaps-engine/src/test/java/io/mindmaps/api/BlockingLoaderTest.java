@@ -100,11 +100,11 @@ public class BlockingLoaderTest {
         LOG.info("First load time " + firstLoadingTime + ". Second load time " + secondLoadingTime);
 
         Assert.assertTrue(secondLoadingTime < firstLoadingTime);
-        Assert.assertNotNull(GraphFactory.getInstance().getGraph(graphName).newTransaction().getConcept("X546f736869616b69204b61776173616b69").getId());
+        Assert.assertNotNull(GraphFactory.getInstance().getGraph(graphName).getTransaction().getConcept("X546f736869616b69204b61776173616b69").getId());
     }
 
     private void loadOntology() {
-        MindmapsTransaction transaction = GraphFactory.getInstance().getGraph(graphName).newTransaction();
+        MindmapsTransaction transaction = GraphFactory.getInstance().getGraph(graphName).getTransaction();
         List<Var> ontologyBatch = new ArrayList<>();
         ClassLoader classLoader = getClass().getClassLoader();
 

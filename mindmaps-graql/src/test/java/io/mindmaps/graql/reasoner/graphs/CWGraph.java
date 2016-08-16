@@ -50,7 +50,7 @@ public class CWGraph {
 
     public static MindmapsTransaction getTransaction() {
         MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
-        mindmaps = graph.newTransaction();
+        mindmaps = graph.getTransaction();
         buildGraph();
 
         try {

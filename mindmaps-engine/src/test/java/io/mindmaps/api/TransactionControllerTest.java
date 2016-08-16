@@ -55,7 +55,7 @@ public class TransactionControllerTest {
         }
         graphName = prop.getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
         MindmapsGraph graph = GraphFactory.getInstance().getGraph(graphName);
-        MindmapsTransaction transaction = graph.newTransaction();
+        MindmapsTransaction transaction = graph.getTransaction();
         transaction.putEntityType("Man");
         transaction.commit();
         Util.setRestAssuredBaseURI(prop);
@@ -78,7 +78,7 @@ public class TransactionControllerTest {
             status = get("/transactionStatus/" + transactionUUID).then().extract().response().asString();
 
         }
-        assertTrue(GraphFactory.getInstance().getGraph(graphName).newTransaction().getConcept("actor-123").asEntity().getValue().equals("Al Pacino"));
+        assertTrue(GraphFactory.getInstance().getGraph(graphName).getTransaction().getConcept("actor-123").asEntity().getValue().equals("Al Pacino"));
     }
 
     @Test

@@ -34,7 +34,7 @@ public class ElementFactoryTest {
 
     @Before
     public void buildGraphAccessManager(){
-        mindmapsGraph = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
+        mindmapsGraph = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
     }
 
     @Test

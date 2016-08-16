@@ -103,7 +103,7 @@ public class Loader {
         enqueuedJobs.decrementAndGet();
 
         for (int i = 0; i < repeatCommits; i++) {
-            AbstractMindmapsTransaction transaction = (AbstractMindmapsTransaction) GraphFactory.getInstance().getGraphBatchLoading(name).newTransaction();
+            AbstractMindmapsTransaction transaction = (AbstractMindmapsTransaction) GraphFactory.getInstance().getGraphBatchLoading(name).getTransaction();
 
             try {
                 QueryParser.create(transaction).parseInsertQuery(batch).execute();

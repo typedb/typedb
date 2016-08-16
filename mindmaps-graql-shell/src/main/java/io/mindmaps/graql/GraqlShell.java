@@ -169,7 +169,7 @@ public class GraqlShell implements AutoCloseable {
      */
     GraqlShell(MindmapsGraph graph, InputStream in, OutputStream out, PrintStream err) throws IOException {
         this.graph = graph;
-        transaction = graph.newTransaction();
+        transaction = graph.getTransaction();
         reasoner = new MindmapsReasoner(transaction);
         console = new ConsoleReader(in, out);
         this.err = err;

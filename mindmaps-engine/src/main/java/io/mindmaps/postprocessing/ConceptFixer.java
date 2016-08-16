@@ -33,7 +33,7 @@ class ConceptFixer {
         int retry = 0;
 
         while(notDone) {
-            try (AbstractMindmapsTransaction transaction = (AbstractMindmapsTransaction) graph.newTransaction()) {
+            try (AbstractMindmapsTransaction transaction = (AbstractMindmapsTransaction) graph.getTransaction()) {
                 if (transaction.fixDuplicateCasting(castingId)) {
                     transaction.commit();
                 }

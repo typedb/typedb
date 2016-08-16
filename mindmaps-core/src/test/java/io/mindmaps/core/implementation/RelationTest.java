@@ -59,7 +59,7 @@ public class RelationTest {
 
     @Before
     public void buildGraph(){
-        mindmapsGraph = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
+        mindmapsGraph = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
         mindmapsGraph.initialiseMetaConcepts();
 
         type = mindmapsGraph.putEntityType("Main concept Type");

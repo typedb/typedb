@@ -32,20 +32,15 @@ public class MindmapsTinkerGraph extends AbstractMindmapsGraph<TinkerGraph> {
     }
 
     /**
-     *
-     * @return A new transaction with a snapshot of the graph at the time of creation
-     */
-    @Override
-    public MindmapsTransaction newTransaction() {
-        getGraph();
-        return new MindmapsTinkerTransaction(this);
-    }
-
-    /**
      * Clears the graph completely. WARNING: This will invalidate any open transactions.
      */
     @Override
     public void clear() {
         close();
+    }
+
+    @Override
+    protected MindmapsTransaction buildTransaction() {
+        return new MindmapsTinkerTransaction(this);
     }
 }

@@ -42,7 +42,7 @@ public class QueryBuilderTest {
     public void setUp() {
         MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
-        transaction = mindmapsGraph.newTransaction();
+        transaction = mindmapsGraph.getTransaction();
     }
 
     @Test

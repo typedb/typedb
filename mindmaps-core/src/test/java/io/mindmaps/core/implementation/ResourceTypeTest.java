@@ -46,7 +46,7 @@ public class ResourceTypeTest {
 
     @Before
     public void buildGraph() {
-        mindmapsGraph = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
+        mindmapsGraph = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
         mindmapsGraph.initialiseMetaConcepts();
         resourceType = mindmapsGraph.putResourceType("Resource Type", Data.STRING);
     }

@@ -36,7 +36,7 @@ public class MindmapsTinkerTransactionTest {
 
     @Test
     public void testGetRootGraph() throws Exception {
-        MindmapsTinkerTransaction tinkerTransaction = (MindmapsTinkerTransaction) mindmapsGraph.newTransaction();
+        MindmapsTinkerTransaction tinkerTransaction = (MindmapsTinkerTransaction) mindmapsGraph.getTransaction();
         assertThat(tinkerTransaction.getRootGraph(), instanceOf(MindmapsTinkerGraph.class));
     }
 }

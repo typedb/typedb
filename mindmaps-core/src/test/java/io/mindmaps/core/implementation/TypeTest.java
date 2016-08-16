@@ -38,7 +38,7 @@ public class TypeTest {
 
     @Before
     public void buildGraph(){
-        mindmapsGraph = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
+        mindmapsGraph = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
         mindmapsGraph.initialiseMetaConcepts();
         EntityType top = mindmapsGraph.putEntityType("top");
         EntityType middle1 = mindmapsGraph.putEntityType("mid1");

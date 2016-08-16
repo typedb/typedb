@@ -20,7 +20,6 @@ package io.mindmaps.api;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
 import io.mindmaps.Util;
 import io.mindmaps.core.MindmapsGraph;
@@ -55,7 +54,7 @@ public class RemoteShellControllerTest {
         }
         graphName = prop.getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
         MindmapsGraph graph = GraphFactory.getInstance().getGraph(graphName);
-        MindmapsTransaction transaction = graph.newTransaction();
+        MindmapsTransaction transaction = graph.getTransaction();
         EntityType man = transaction.putEntityType("Man");
         transaction.putEntity("actor-123", man).setValue("Al Pacino");
         transaction.commit();

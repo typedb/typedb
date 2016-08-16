@@ -24,9 +24,9 @@ package io.mindmaps.core;
 public interface MindmapsGraph {
     /**
      *
-     * @return A new transaction with a snapshot of the graph at the time of creation
+     * @return the thread bound transaction. If this is called by a different thread a new transaction is created.
      */
-    MindmapsTransaction newTransaction();
+    MindmapsTransaction getTransaction();
 
     /**
      * Closes the graph making it unusable

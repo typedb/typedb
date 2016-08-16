@@ -37,7 +37,7 @@ public class PokemonGraphFactoryTest {
     public void setup(){
         MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         PokemonGraphFactory.loadGraph(mindmapsGraph);
-        transaction = mindmapsGraph.newTransaction();
+        transaction = mindmapsGraph.getTransaction();
     }
 
     @Test

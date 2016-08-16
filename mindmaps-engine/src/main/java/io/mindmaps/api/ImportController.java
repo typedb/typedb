@@ -137,7 +137,7 @@ public class ImportController {
 
     public void importOntologyFromFile(String ontologyFile) throws IOException, MindmapsValidationException {
 
-        MindmapsTransaction transaction = GraphFactory.getInstance().getGraph(graphName).newTransaction();
+        MindmapsTransaction transaction = GraphFactory.getInstance().getGraph(graphName).getTransaction();
         List<Var> ontologyBatch = new ArrayList<>();
 
         LOG.info("Loading new ontology .. ");

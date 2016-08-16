@@ -50,7 +50,7 @@ public class OntologyMutationTest {
 
     @Before
     public void buildGraph() throws MindmapsValidationException {
-        mindmapsGraph = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
+        mindmapsGraph = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
 
         //spouse = mindmapsTransaction.putRoleType("Spouse");
         husband = mindmapsGraph.putRoleType("Husband");//.superType(spouse);

@@ -45,7 +45,7 @@ public class ValidatorTest {
 
     @Before
     public void buildGraphAccessManager(){
-        mindmapsGraph = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
+        mindmapsGraph = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
     }
     @After
     public void destroyGraphAccessManager()  throws Exception{
