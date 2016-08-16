@@ -34,12 +34,10 @@ public class PostprocessingTest {
     private RoleType roleType1;
     private RoleType roleType2;
     private RelationType relationType;
-    private EntityType thing;
     private InstanceImpl instance1;
     private InstanceImpl instance2;
     private InstanceImpl instance3;
     private InstanceImpl instance4;
-    private Relation relation;
 
     @Before
     public void buildGraphAccessManager(){
@@ -49,13 +47,13 @@ public class PostprocessingTest {
         roleType1 = transaction.putRoleType("role 1");
         roleType2 = transaction.putRoleType("role 2");
         relationType = transaction.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
-        thing = transaction.putEntityType("thing").playsRole(roleType1).playsRole(roleType2);
+        EntityType thing = transaction.putEntityType("thing").playsRole(roleType1).playsRole(roleType2);
         instance1 = (InstanceImpl) transaction.putEntity("1", thing);
         instance2 = (InstanceImpl) transaction.putEntity("2", thing);
         instance3 = (InstanceImpl) transaction.putEntity("3", thing);
         instance4 = (InstanceImpl) transaction.putEntity("4", thing);
 
-        relation = transaction.addRelation(relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
+        transaction.addRelation(relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
         assertEquals(1, instance1.castings().size());
         assertEquals(2, transaction.getTinkerPopGraph().traversal().E().
                 hasLabel(DataType.EdgeLabel.SHORTCUT.getLabel()).toList().size());

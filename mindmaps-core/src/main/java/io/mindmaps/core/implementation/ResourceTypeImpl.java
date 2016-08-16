@@ -99,9 +99,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
      * Gets rid of all indices for this type's resource children
      */
     private void resetInstanceIndices(){
-        instances().forEach(resource -> {
-            ((ResourceImpl<D>) resource).setUniqueProperty(DataType.ConceptPropertyUnique.INDEX, null);
-        });
+        instances().forEach(resource -> ((ResourceImpl<D>) resource).setUniqueProperty(DataType.ConceptPropertyUnique.INDEX, null));
     }
 
     /**

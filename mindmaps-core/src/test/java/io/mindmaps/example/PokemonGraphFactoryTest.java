@@ -31,12 +31,11 @@ import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertTrue;
 
 public class PokemonGraphFactoryTest {
-    private MindmapsGraph mindmapsGraph;
     private MindmapsTransaction transaction;
 
     @Before
     public void setup(){
-        mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
+        MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         PokemonGraphFactory.loadGraph(mindmapsGraph);
         transaction = mindmapsGraph.newTransaction();
     }

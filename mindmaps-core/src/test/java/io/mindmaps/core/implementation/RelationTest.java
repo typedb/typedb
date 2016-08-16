@@ -244,7 +244,7 @@ public class RelationTest {
         Instance instance2 = mindmapsGraph.putEntity("instance2", type);
 
         RelationImpl relation = (RelationImpl) mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType);
-        assertTrue(relation.getIndex().startsWith("RelationBaseId_" + ((RelationImpl) relation).getBaseIdentifier()));
+        assertTrue(relation.getIndex().startsWith("RelationBaseId_" + relation.getBaseIdentifier()));
 
         relation.putRolePlayer(roleType1, instance1);
         roleMap.put(roleType1, instance1);

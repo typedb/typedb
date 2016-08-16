@@ -35,7 +35,6 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 public class BackgroundTasksTest {
-    private Cache cache;
     private BackgroundTasks backgroundTasks;
     private MindmapsGraph mindmapsGraph;
 
@@ -46,7 +45,6 @@ public class BackgroundTasksTest {
 
         Thread.sleep(2000);
 
-        cache = Cache.getInstance();
         backgroundTasks = BackgroundTasks.getInstance();
         MindmapsClient.getGraph("mindmapstesting").clear();
         mindmapsGraph = MindmapsClient.getGraph("mindmapstesting");

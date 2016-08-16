@@ -36,12 +36,7 @@ public class OntologyMutationTest {
     private AbstractMindmapsTransaction mindmapsGraph;
     private RoleType husband;
     private RoleType wife;
-    private RoleType driver;
-    private RoleType driven;
-    //private RoleType spouse;
     private RelationType marriage;
-    //private RelationType union;
-    private RelationType carBeingDrivenBy;
     private EntityType person;
     private EntityType woman;
     private EntityType man;
@@ -60,12 +55,12 @@ public class OntologyMutationTest {
         //spouse = mindmapsTransaction.putRoleType("Spouse");
         husband = mindmapsGraph.putRoleType("Husband");//.superType(spouse);
         wife = mindmapsGraph.putRoleType("Wife");
-        driver = mindmapsGraph.putRoleType("Driver");
-        driven = mindmapsGraph.putRoleType("Driven");
+        RoleType driver = mindmapsGraph.putRoleType("Driver");
+        RoleType driven = mindmapsGraph.putRoleType("Driven");
 
         //union = mindmapsTransaction.putRelationType("Union").hasRole(spouse).hasRole(wife);
         marriage = mindmapsGraph.putRelationType("marriage").hasRole(husband).hasRole(wife);
-        carBeingDrivenBy = mindmapsGraph.putRelationType("car being driven by").hasRole(driven).hasRole(driver);
+        RelationType carBeingDrivenBy = mindmapsGraph.putRelationType("car being driven by").hasRole(driven).hasRole(driver);
 
         person = mindmapsGraph.putEntityType("Person").playsRole(husband).playsRole(wife);
         man = mindmapsGraph.putEntityType("Man").superType(person);

@@ -434,9 +434,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
         setType(String.valueOf(type.getId()));
 
         //Put any castings back into tracking to make sure the type is still valid
-        getIncomingNeighbours(DataType.EdgeLabel.ROLE_PLAYER).forEach(casting -> {
-            mindmapsTransaction.getConceptLog().putConcept(casting);
-        });
+        getIncomingNeighbours(DataType.EdgeLabel.ROLE_PLAYER).forEach(casting -> mindmapsTransaction.getConceptLog().putConcept(casting));
 
         return getThis();
     }
@@ -512,9 +510,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
     protected Set<ConceptImpl> getOutgoingNeighbours(DataType.EdgeLabel edgeType){
         Set<ConceptImpl> outgoingNeighbours = new HashSet<>();
 
-        getEdgesOfType(Direction.OUT, edgeType).forEach(edge -> {
-            outgoingNeighbours.add(edge.getTarget());
-        });
+        getEdgesOfType(Direction.OUT, edgeType).forEach(edge -> outgoingNeighbours.add(edge.getTarget()));
         return outgoingNeighbours;
     }
 
@@ -540,9 +536,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
      */
     protected Set<ConceptImpl> getIncomingNeighbours(DataType.EdgeLabel edgeType){
         Set<ConceptImpl> incomingNeighbours = new HashSet<>();
-        getEdgesOfType(Direction.IN, edgeType).forEach(edge -> {
-            incomingNeighbours.add(edge.getSource());
-        });
+        getEdgesOfType(Direction.IN, edgeType).forEach(edge -> incomingNeighbours.add(edge.getSource()));
         return incomingNeighbours;
     }
 

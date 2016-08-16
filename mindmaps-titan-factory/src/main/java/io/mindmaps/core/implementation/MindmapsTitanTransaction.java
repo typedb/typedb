@@ -18,7 +18,6 @@
 
 package io.mindmaps.core.implementation;
 
-import com.thinkaurelius.titan.core.TitanGraph;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 public class MindmapsTitanTransaction extends AbstractMindmapsTransaction {
@@ -36,7 +35,6 @@ public class MindmapsTitanTransaction extends AbstractMindmapsTransaction {
 
     @Override
     protected Graph getNewTransaction() {
-        AbstractMindmapsGraph mg = getRootGraph();
-        return ((TitanGraph) mg.getGraph()).newTransaction();
+        return rootGraph.getGraph().newTransaction();
     }
 }

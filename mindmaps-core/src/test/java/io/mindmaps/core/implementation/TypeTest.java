@@ -31,6 +31,7 @@ import java.util.Set;
 
 import static org.junit.Assert.*;
 
+@SuppressWarnings("unchecked")
 public class TypeTest {
 
     private AbstractMindmapsTransaction mindmapsGraph;
@@ -224,9 +225,7 @@ public class TypeTest {
         conceptType.playsRole(roleType1).playsRole(roleType2);
         Set<RoleType> foundRoles = new HashSet<>();
         mindmapsGraph.getTinkerPopGraph().traversal().V(conceptType.getBaseIdentifier()).
-                out(DataType.EdgeLabel.PLAYS_ROLE.getLabel()).forEachRemaining(r -> {
-            foundRoles.add(mindmapsGraph.getRoleType(r.value(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name())));
-        });
+                out(DataType.EdgeLabel.PLAYS_ROLE.getLabel()).forEachRemaining(r -> foundRoles.add(mindmapsGraph.getRoleType(r.value(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name()))));
 
         assertEquals(2, foundRoles.size());
         assertTrue(foundRoles.contains(roleType1));

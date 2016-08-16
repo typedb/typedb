@@ -44,7 +44,6 @@ import static spark.Spark.post;
 /**
  * Class that provides methods to import ontologies and data from a Graql file to a graph.
  */
-
 public class ImportController {
 
     private final org.slf4j.Logger LOG = LoggerFactory.getLogger(ImportController.class);
@@ -54,8 +53,6 @@ public class ImportController {
 
     //TODO: Use redis for caching LRU
     private Map<String, String> entitiesMap;
-    private ArrayList<Var> relationshipsList;
-
     private BlockingLoader loader;
 
 
@@ -95,7 +92,6 @@ public class ImportController {
         });
 
         entitiesMap = new ConcurrentHashMap<>();
-        relationshipsList = new ArrayList<>();
         graphName = graphNameInit;
         loader = new BlockingLoader(graphName);
 
