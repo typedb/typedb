@@ -19,6 +19,7 @@ public abstract class Loader {
 
     protected Collection<Var> batch;
     protected int batchSize;
+    protected int threadNumber;
 
     public Loader(){
         enqueuedJobs = new AtomicInteger();
@@ -71,6 +72,10 @@ public abstract class Loader {
      */
     public void setBatchSize(int size){
         this.batchSize = size;
+    }
+
+    public void setThreadNumber(int number){
+        this.threadNumber = number;
     }
 
     /**

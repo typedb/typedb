@@ -25,7 +25,6 @@ import io.mindmaps.util.ConfigProperties;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.nio.ch.IOUtil;
 
 import javax.xml.ws.http.HTTPException;
 import java.io.IOException;
@@ -34,6 +33,8 @@ import java.net.URL;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
+
+import static io.mindmaps.loader.TransactionState.State;
 
 /**
  * RESTLoader that distributes computation to multiple Mindmaps Engine instances
@@ -59,9 +60,11 @@ public class DistributedLoader extends Loader {
         hostsArray = hosts.toArray(new String[hosts.size()]);
         currentHost = 0;
 
+        threadNumber = prop.getPropertyAsInt(ConfigProperties.NUM_THREADS_PROPERTY);
+
         // create availability map
         availability = new HashMap<>();
-        hosts.forEach(h -> availability.put(h, new Semaphore(100)));
+        hosts.forEach(h -> availability.put(h, new Semaphore(threadNumber * 3)));
 
         // instantiate transactions map
         transactions = new HashMap<>();
@@ -174,10 +177,10 @@ public class DistributedLoader extends Loader {
      * @param transaction transaction to check if has finished
      * @return if the given transaction has finished
      */
-    private State getState(String host, String transaction) {
+    private TransactionState getState(String host, String transaction) {
 
         String url = "http://" + host + ":" + ConfigProperties.getInstance().getProperty(ConfigProperties.SERVER_PORT_NUMBER) +
-                "/transactionStatus/" + transaction + "?" + RESTUtil.Request.GRAPH_NAME_PARAM + "=" + graphName;
+                RESTUtil.WebPath.TRANSACTION_STATUS_URI + transaction + "?" + RESTUtil.Request.GRAPH_NAME_PARAM + "=" + graphName;
 
         HttpURLConnection urlConn = null;
         try {
@@ -185,29 +188,21 @@ public class DistributedLoader extends Loader {
             urlConn.setDoOutput(true);
 
             String response = IOUtils.toString(urlConn.getInputStream());
-
-
-            if (response.equals(State.FINISHED.name())) {
-                return State.FINISHED;
-            } else if(response.equals(State.ERROR.name())
-                    || response.equals(State.CANCELLED.name())){
-                return State.ERROR;
-            }
+            return new TransactionState(response);
         } catch (IOException e) {
             e.printStackTrace();
-            return State.ERROR;
+            return new TransactionState(State.CANCELLED);
         } finally {
             urlConn.disconnect();
         }
-
-        return null;
     }
 
     /**
      * Check if all transactions are finished
+     *
      * @return true if all transactions have finished
      */
-    private boolean transactionsIsEmpty(){
+    private boolean transactionsIsEmpty() {
         return transactions.values().stream().allMatch(Set::isEmpty);
     }
 
@@ -239,18 +234,19 @@ public class DistributedLoader extends Loader {
                 // loop through the transactions of each host
                 for (String transaction : new ArrayList<>(transactions.get(host))) {
 
-                    State state = getState(host, transaction);
+                    TransactionState state = getState(host, transaction);
 
-                    if(state == State.FINISHED) {
+                    if(state.getState() == State.FINISHED) {
                         availability.get(host).release();
                         transactions.get(host).remove(transaction);
 
                         markAsFinished(transaction);
-                    } else if(state == State.ERROR ){
+                    } else if(state.getState() == State.ERROR ){
                         availability.get(host).release();
                         transactions.get(host).remove(transaction);
 
                         markAsError(transaction);
+                        LOG.error(state.getException());
                     }
                 }
             }

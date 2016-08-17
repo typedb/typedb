@@ -50,19 +50,18 @@ public class BlockingLoader extends Loader {
     private Cache cache;
     private static Semaphore transactionsSemaphore;
     private static int repeatCommits;
-    private int numThreads;
     private String graphName;
 
     public BlockingLoader(String graphNameInit) {
 
         ConfigProperties prop = ConfigProperties.getInstance();
-        numThreads = prop.getPropertyAsInt(ConfigProperties.NUM_THREADS_PROPERTY);
+        threadNumber = prop.getPropertyAsInt(ConfigProperties.NUM_THREADS_PROPERTY);
         batchSize = prop.getPropertyAsInt(ConfigProperties.BATCH_SIZE_PROPERTY);
         repeatCommits = prop.getPropertyAsInt(ConfigProperties.LOADER_REPEAT_COMMITS);
         graphName = graphNameInit;
         cache = Cache.getInstance();
-        executor = Executors.newFixedThreadPool(numThreads);
-        transactionsSemaphore = new Semaphore(numThreads * 3);
+        executor = Executors.newFixedThreadPool(threadNumber);
+        transactionsSemaphore = new Semaphore(threadNumber * 3);
         batch = new HashSet<>();
     }
 
@@ -97,7 +96,7 @@ public class BlockingLoader extends Loader {
             throw new RuntimeException(e);
         } finally {
             LOG.info("ALL TASKS DONE!");
-            executor = Executors.newFixedThreadPool(numThreads);
+            executor = Executors.newFixedThreadPool(threadNumber);
         }
     }
 
