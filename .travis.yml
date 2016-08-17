@@ -5,3 +5,5 @@ jdk:
   - oraclejdk8
 notifications:
   slack: mindmapsdb:3M1bWW0kGQ7LdniMmKeaY3o5
+after_success:
+    - mvn clean test jacoco:report coveralls:report

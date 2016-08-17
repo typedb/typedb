@@ -745,7 +745,7 @@ public class MindmapsTransactionImpl implements MindmapsTransaction, AutoCloseab
             String result = EngineCommunicator.contactEngine(mindmapsGraph.getCommitLogEndPoint(), "POST", postObject.toString());
             LOG.info("Response from engine [" + result + "]");
         } catch (IllegalArgumentException e) {
-            LOG.error(ErrorMessage.COULD_NOT_REACH_ENGINE.getMessage(mindmapsGraph.getCommitLogEndPoint()), e);
+            LOG.error(ErrorMessage.COULD_NOT_REACH_ENGINE.getMessage(mindmapsGraph.getCommitLogEndPoint()));
         }
     }
 
