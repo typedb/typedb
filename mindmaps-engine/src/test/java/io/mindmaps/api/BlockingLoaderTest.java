@@ -27,10 +27,7 @@ import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.Var;
 import io.mindmaps.loader.BlockingLoader;
 import io.mindmaps.util.ConfigProperties;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
@@ -60,8 +57,8 @@ public class BlockingLoaderTest {
         graphName = prop.getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
         loader = new BlockingLoader(graphName);
         new CommitLogController();
-
     }
+
 
     @Test
     public void testLoadOntologyAndData() {

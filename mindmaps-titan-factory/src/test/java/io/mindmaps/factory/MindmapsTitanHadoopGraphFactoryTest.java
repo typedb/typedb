@@ -35,11 +35,6 @@ public class MindmapsTitanHadoopGraphFactoryTest {
         factory = new MindmapsTitanHadoopGraphFactory();
     }
 
-    @Test
-    public void isClosed() throws Exception {
-
-    }
-
     @Test(expected=UnsupportedOperationException.class)
     public void buildMindmapsGraphFromTinker() throws Exception {
         factory.getGraph("rubbish", "rubbish", TEST_CONFIG);

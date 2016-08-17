@@ -36,7 +36,7 @@ public class MindmapsTitanGraph extends AbstractMindmapsGraph<TitanGraph> {
         try {
             EngineCommunicator.contactEngine(getCommitLogEndPoint(), "DELETE");
         } catch (IllegalArgumentException e){
-            LOG.error(ErrorMessage.COULD_NOT_REACH_ENGINE.getMessage(getCommitLogEndPoint()), e);
+            LOG.error(ErrorMessage.COULD_NOT_REACH_ENGINE.getMessage(getCommitLogEndPoint()));
         }
     }
 }

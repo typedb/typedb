@@ -23,14 +23,14 @@ import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.core.model.Rule;
 import io.mindmaps.core.model.RuleType;
+import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.MatchQueryDefault;
-import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.MindmapsReasoner;
+import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.reasoner.graphs.CWGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static io.mindmaps.graql.internal.reasoner.Utility.printMatchQueryResults;
 import static org.junit.Assert.assertEquals;
 
 
@@ -48,17 +48,11 @@ public class CWInferenceTest {
         qp = QueryParser.create(graph);
     }
 
-    private static void printMatchQuery(MatchQueryDefault query) {
-        System.out.println(query.toString().replace(" or ", "\nor\n").replace("};", "};\n").replace("; {", ";\n{"));
-    }
-
     @Test
     public void testWeapon() {
         String queryString = "match $x isa weapon";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
-        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match \n" +
                 "{$x isa weapon} or {\n" +
@@ -76,8 +70,6 @@ public class CWInferenceTest {
                 "($x, $y, $z) isa transaction";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
-        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match \n" +
                 "$x isa person;\n" +
@@ -102,8 +94,6 @@ public class CWInferenceTest {
                         "($x, $y, $z) isa transaction";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
-        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match \n" +
                 "$x isa person;\n" +
@@ -131,8 +121,6 @@ public class CWInferenceTest {
         String queryString = "match $x isa criminal;";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
-        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match " +
                 "{$x isa criminal} or {" +
@@ -165,7 +153,6 @@ public class CWInferenceTest {
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
 
-        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match " +
             "{{$x isa criminal} or {$x has nationality 'American';\n" +
@@ -209,9 +196,6 @@ public class CWInferenceTest {
         String queryString = "match $x isa criminal;";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
-
-        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match " +
                 "{$x isa criminal} or {\n" +
@@ -242,8 +226,6 @@ public class CWInferenceTest {
                 "($y, $yy, $yyy) isa transaction";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
-        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match \n" +
                 "$y isa person;\n" +
@@ -271,8 +253,6 @@ public class CWInferenceTest {
                 "($y, $z, $x) isa transaction";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
-        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match \n" +
                 "$y isa person;\n" +

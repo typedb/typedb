@@ -21,20 +21,15 @@ package io.mindmaps.graql.reasoner.inference;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.graql.MatchQueryDefault;
-import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.MindmapsReasoner;
+import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.reasoner.graphs.GenericGraph;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static io.mindmaps.graql.internal.reasoner.Utility.printMatchQueryResults;
 import static org.junit.Assert.assertEquals;
 
 public class RecursiveInferenceTest {
-
-    private static void printMatchQuery(MatchQueryDefault query) {
-        System.out.println(query.toString().replace(" or ", "\nor\n").replace("};", "};\n").replace("; {", ";\n{"));
-    }
 
     /**Misses one expansion of R2 hence not complete result*/
     /**from Vieille - Recursive Axioms in Deductive Databases p. 192*/
@@ -49,9 +44,6 @@ public class RecursiveInferenceTest {
         String queryString = "match ($x, $y) isa R;$x id 'i' select $y";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
-
-        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match $x id 'i';" +
                                "{($x, $y) isa E} or" +
@@ -88,9 +80,6 @@ public class RecursiveInferenceTest {
         String queryString = "match (ancestor $X, descendant $Y) isa Ancestor;$X id 'aa' select $Y";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
-
-        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match $Y isa Person;" +
                 "{$Y id 'aaa'} or {$Y id 'aab'} or {$Y id 'aaaa'}";
@@ -112,9 +101,6 @@ public class RecursiveInferenceTest {
         String queryString = "match ($X, $Y) isa Ancestor;$X id 'aa' select $Y";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
-
-        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match $Y isa Person;" +
                 "{$Y id 'a'} or {$Y id 'aaa'} or {$Y id 'aab'} or {$Y id 'aaaa'}";
@@ -135,9 +121,6 @@ public class RecursiveInferenceTest {
         String queryString = "match (person $X, ancestor-friend $Y) isa Ancestor-friend;$X id 'a' select $Y";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
-
-        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match $X id 'a';" +
                                 "{isa Friend, ($Y, $X)} or " +
@@ -159,9 +142,6 @@ public class RecursiveInferenceTest {
         String queryString = "match (person $X, ancestor-friend $Y) isa Ancestor-friend;$Y id 'd' select $X";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
-
-        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match $Y id 'd';" +
                 "{$X id 'a'} or {$X id 'b'} or {$X id 'c'} select $X";
@@ -182,9 +162,6 @@ public class RecursiveInferenceTest {
         String queryString = "match ($x, $y) isa SameGen; $x id 'a' select $y";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
-
-        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match {$y id 'f'} or {$y id 'h'};";
 
@@ -204,9 +181,6 @@ public class RecursiveInferenceTest {
         String queryString = "match ($x, $y) isa N-TC; $y id 'a' select $x";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
-
-        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match {$x id 'a1'} or {$x id 'a2'};";
 
