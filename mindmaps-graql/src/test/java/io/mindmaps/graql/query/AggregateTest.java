@@ -20,7 +20,7 @@
 package io.mindmaps.graql.query;
 
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Instance;
 import io.mindmaps.example.MovieGraphFactory;

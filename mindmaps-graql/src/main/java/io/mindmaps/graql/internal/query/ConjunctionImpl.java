@@ -30,20 +30,15 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
-/**
- * A class representing a conjunction (and) of patterns. All inner patterns must match in a query
- */
-public class Conjunction<T extends PatternAdmin> implements PatternAdmin {
+public class ConjunctionImpl<T extends PatternAdmin> implements Conjunction<T> {
 
     private final Set<T> patterns;
 
-    public Conjunction(Set<T> patterns) {
+    public ConjunctionImpl(Set<T> patterns) {
         this.patterns = patterns;
     }
 
-    /**
-     * @return the patterns within this conjunction
-     */
+    @Override
     public Set<T> getPatterns() {
         return patterns;
     }
@@ -59,10 +54,10 @@ public class Conjunction<T extends PatternAdmin> implements PatternAdmin {
         // in other words, this puts the 'ands' on the inside and the 'ors' on the outside
         // e.g. (A or B) and (C or D)  <=>  (A and C) or (A and D) or (B and C) or (B and D)
         Set<Conjunction<VarAdmin>> dnf = Sets.cartesianProduct(disjunctionsOfConjunctions).stream()
-                .map(Conjunction::fromConjunctions)
+                .map(ConjunctionImpl::fromConjunctions)
                 .collect(toSet());
 
-        return PatternAdmin.disjunction(dnf);
+        return new DisjunctionImpl<>(dnf);
 
         // Wasn't that a horrible function? Here it is in Haskell:
         //     dnf = map fromConjunctions . sequence . map getDisjunctiveNormalForm . patterns
@@ -80,12 +75,12 @@ public class Conjunction<T extends PatternAdmin> implements PatternAdmin {
 
     private static <U extends PatternAdmin> Conjunction<U> fromConjunctions(List<Conjunction<U>> conjunctions) {
         Set<U> patterns = conjunctions.stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return new Conjunction<>(patterns);
+        return new ConjunctionImpl<>(patterns);
     }
 
     @Override
     public boolean equals(Object obj) {
-        return (obj instanceof Conjunction) && patterns.equals(((Conjunction) obj).patterns);
+        return (obj instanceof ConjunctionImpl) && patterns.equals(((ConjunctionImpl) obj).patterns);
     }
 
     @Override

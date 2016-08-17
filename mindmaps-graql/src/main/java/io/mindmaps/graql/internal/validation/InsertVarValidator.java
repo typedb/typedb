@@ -19,7 +19,7 @@
 package io.mindmaps.graql.internal.validation;
 
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.graql.admin.VarAdmin;
 
 import java.util.ArrayList;
@@ -37,7 +37,7 @@ class InsertVarValidator implements Validator {
     /**
      * @param var the Var in an insert query to validate
      */
-    public InsertVarValidator(VarAdmin var) {
+    InsertVarValidator(VarAdmin var) {
         this.var = var;
     }
 

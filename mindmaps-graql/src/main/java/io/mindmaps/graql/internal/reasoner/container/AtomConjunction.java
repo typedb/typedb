@@ -18,10 +18,11 @@
 
 package io.mindmaps.graql.internal.reasoner.container;
 
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.query.Conjunction;
+import io.mindmaps.graql.internal.query.ConjunctionImpl;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
 
@@ -90,6 +91,6 @@ public class AtomConjunction {
     public Conjunction<VarAdmin> getConjunction(){
         Set<VarAdmin> vars = new HashSet<>();
         atomSet.forEach(a -> vars.add(a.getPattern().asVar()));
-        return PatternAdmin.conjunction(vars);
+        return new ConjunctionImpl<>(vars);
     }
 }

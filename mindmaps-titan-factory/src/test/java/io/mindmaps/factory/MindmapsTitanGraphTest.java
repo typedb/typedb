@@ -18,8 +18,8 @@
 
 package io.mindmaps.factory;
 
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import org.junit.After;

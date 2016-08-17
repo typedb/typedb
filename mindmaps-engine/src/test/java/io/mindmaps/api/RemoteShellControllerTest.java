@@ -23,7 +23,7 @@ import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.response.Response;
 import io.mindmaps.Util;
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.EntityType;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.util.ConfigProperties;

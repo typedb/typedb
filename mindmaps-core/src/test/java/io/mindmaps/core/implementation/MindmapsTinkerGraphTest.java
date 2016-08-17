@@ -18,9 +18,9 @@
 
 package io.mindmaps.core.implementation;
 
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.exception.GraphRuntimeException;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.EntityType;

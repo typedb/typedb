@@ -19,7 +19,7 @@
 package io.mindmaps.graql.reasoner;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.Rule;
 import io.mindmaps.graql.*;
 import io.mindmaps.graql.admin.VarAdmin;

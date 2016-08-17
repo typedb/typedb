@@ -21,7 +21,7 @@ package io.mindmaps.graql.internal.query.match;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.admin.MatchQueryDefaultAdmin;
 
@@ -34,11 +34,11 @@ import java.util.stream.Stream;
 /**
  * "Select" modifier for a match query that selects particular variables from the result.
  */
-public class MatchQuerySelect extends MatchQueryDefaultModifier {
+class MatchQuerySelect extends MatchQueryDefaultModifier {
 
     private final ImmutableSet<String> names;
 
-    public MatchQuerySelect(MatchQueryDefaultAdmin inner, ImmutableSet<String> names) {
+    MatchQuerySelect(MatchQueryDefaultAdmin inner, ImmutableSet<String> names) {
         super(inner);
 
         if (names.isEmpty()) {

@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.internal.validation;
 
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 
@@ -28,14 +28,14 @@ import java.util.stream.Stream;
 /**
  * A validator for a collection of vars
  */
-public class PatternValidator implements Validator {
+class PatternValidator implements Validator {
 
     private final Collection<VarAdmin> vars;
 
     /**
      * @param pattern A collection of vars
      */
-    public PatternValidator(PatternAdmin pattern) {
+    PatternValidator(PatternAdmin pattern) {
         this.vars = pattern.getVars();
     }
 

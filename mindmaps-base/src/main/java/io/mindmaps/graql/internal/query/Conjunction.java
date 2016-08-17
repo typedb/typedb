@@ -14,32 +14,25 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
-package io.mindmaps.graql;
+package io.mindmaps.graql.internal.query;
 
-import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.graql.admin.AskQueryAdmin;
+import io.mindmaps.graql.admin.PatternAdmin;
+import io.mindmaps.graql.admin.VarAdmin;
+
+import java.util.Set;
 
 /**
- * A query that will return whether a match query can be found in the graph.
- * <p>
- * An {@code AskQuery} is created from a {@code MatchQuery}, which describes what patterns it should find.
+ * A class representing a conjunction (and) of patterns. All inner patterns must match in a query
  */
-public interface AskQuery {
+public interface Conjunction<T extends PatternAdmin> extends PatternAdmin {
     /**
-     * @return whether the given patterns can be found in the graph
+     * @return the patterns within this conjunction
      */
-    boolean execute();
+    Set<T> getPatterns();
 
-    /**
-     * @param transaction the transaction to execute the query on
-     * @return a new AskQuery with the transaction set
-     */
-    AskQuery withTransaction(MindmapsTransaction transaction);
-
-    /**
-     * @return admin instance for inspecting and manipulating this query
-     */
-    AskQueryAdmin admin();
+    @Override
+    Disjunction<Conjunction<VarAdmin>> getDisjunctiveNormalForm();
 }

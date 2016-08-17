@@ -14,13 +14,15 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
-package io.mindmaps.core;
+package io.mindmaps;
 
+import io.mindmaps.core.Data;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.implementation.Data;
 import io.mindmaps.core.model.*;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 
 import java.util.Collection;
 import java.util.Map;
@@ -69,6 +71,8 @@ public interface MindmapsTransaction {
      * @return new or existing Role Type with the provided Id.
      */
     RoleType putRoleType(String id);
+
+    GraphTraversalSource getTinkerTraversal();
 
     /**
      *

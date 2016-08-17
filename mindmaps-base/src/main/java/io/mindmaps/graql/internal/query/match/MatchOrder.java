@@ -17,20 +17,23 @@
  *
  */
 
-package io.mindmaps.graql;
+package io.mindmaps.graql.internal.query.match;
 
-import io.mindmaps.graql.internal.query.match.AbstractMatchQuery;
+import io.mindmaps.MindmapsTransaction;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+
+import java.util.Map;
 
 /**
- * An aggregate query produced from a {@link AbstractMatchQuery}.
- *
- * @param <T> the type of the result of the aggregate query
+ * An interface for handling ordering match queries.
  */
-public interface AggregateQuery<T> {
+public interface MatchOrder {
+    String getVar();
 
     /**
-     * Execute the aggregate query.
-     * @return the result of the aggregate query
+     * Order the traversal
+     * @param traversal the traversal to order
      */
-    T execute();
+    void orderTraversal(MindmapsTransaction transaction, GraphTraversal<Vertex, Map<String, Vertex>> traversal);
 }

@@ -52,21 +52,21 @@ class ShortcutTraversal {
     /**
      * @return true if a shortcut edge can be used in the traversal
      */
-    public boolean isValid() {
+    boolean isValid() {
         return valid && (roleplayers.size() == 2);
     }
 
     /**
      * Make this ShortcutTraversal invalid, so it will not be used in the traversal
      */
-    public void setInvalid() {
+    void setInvalid() {
         valid = false;
     }
 
     /**
      * @return a MultiTraversal that follows shortcut edges
      */
-    public MultiTraversal getMultiTraversal() {
+    MultiTraversal getMultiTraversal() {
         if (multiTraversal == null) makeMultiTraversal();
         return multiTraversal;
     }
@@ -80,9 +80,9 @@ class ShortcutTraversal {
         Optional<String> roleB = roletypes.get(1);
         String playerB = roleplayers.get(1);
 
-        multiTraversal = new MultiTraversal(
-                new Fragment(t -> makeTraversal(t, roleA, roleB), FragmentPriority.EDGE_RELATION, playerA, playerB),
-                new Fragment(t -> makeTraversal(t, roleB, roleA), FragmentPriority.EDGE_RELATION, playerB, playerA)
+        multiTraversal = new MultiTraversalImpl(
+                new FragmentImpl(t -> makeTraversal(t, roleA, roleB), FragmentPriority.EDGE_RELATION, playerA, playerB),
+                new FragmentImpl(t -> makeTraversal(t, roleB, roleA), FragmentPriority.EDGE_RELATION, playerB, playerA)
         );
     }
 
@@ -116,7 +116,7 @@ class ShortcutTraversal {
     /**
      * @param roleplayer a roleplayer of the relation that this ShortcutTraversal represents
      */
-    public void addRel(String roleplayer) {
+    void addRel(String roleplayer) {
         roletypes.add(Optional.empty());
         roleplayers.add(roleplayer);
     }
@@ -125,7 +125,7 @@ class ShortcutTraversal {
      * @param roletype the role type of the given roleplayer
      * @param roleplayer a roleplayer of the relation that this ShortcutTraversal represents
      */
-    public void addRel(String roletype, String roleplayer) {
+    void addRel(String roletype, String roleplayer) {
         roletypes.add(Optional.of(roletype));
         roleplayers.add(roleplayer);
     }

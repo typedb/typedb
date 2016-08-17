@@ -22,7 +22,7 @@ package io.mindmaps.graql.internal.query.aggregate;
 import io.mindmaps.graql.Aggregate;
 import io.mindmaps.graql.NamedAggregate;
 
-public abstract class AbstractAggregate<T, S> implements Aggregate<T, S> {
+abstract class AbstractAggregate<T, S> implements Aggregate<T, S> {
 
     @Override
     public final NamedAggregate<T, S> as(String name) {

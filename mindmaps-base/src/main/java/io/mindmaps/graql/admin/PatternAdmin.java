@@ -23,7 +23,6 @@ import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.internal.query.Conjunction;
 import io.mindmaps.graql.internal.query.Disjunction;
 
-import java.util.Objects;
 import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
@@ -93,21 +92,5 @@ public interface PatternAdmin extends Pattern {
         return getDisjunctiveNormalForm().getPatterns().stream()
                 .flatMap(conj -> conj.getPatterns().stream())
                 .collect(toSet());
-    }
-
-    /**
-     * @param patterns the patterns to join into a conjunction
-     * @return a conjunction of the given patterns
-     */
-    static <T extends PatternAdmin> Conjunction<T> conjunction(Set<T> patterns) {
-        return new Conjunction<>(Objects.requireNonNull(patterns));
-    }
-
-    /**
-     * @param patterns the patterns to join into a disjunction
-     * @return a disjunction of the given patterns
-     */
-    static <T extends PatternAdmin> Disjunction<T> disjunction(Set<T> patterns) {
-        return new Disjunction<>(Objects.requireNonNull(patterns));
     }
 }

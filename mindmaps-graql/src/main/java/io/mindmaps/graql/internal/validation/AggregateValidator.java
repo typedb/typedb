@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.internal.validation;
 
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 
 import java.util.Collection;
 import java.util.stream.Stream;
@@ -32,7 +32,7 @@ class AggregateValidator implements Validator {
     /**
      * @param validators the validators to combine into one validator
      */
-    public AggregateValidator(Collection<? extends Validator> validators) {
+    AggregateValidator(Collection<? extends Validator> validators) {
         this.validators = validators;
     }
 
