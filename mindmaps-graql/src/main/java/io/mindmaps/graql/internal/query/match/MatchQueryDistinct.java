@@ -18,14 +18,16 @@
 
 package io.mindmaps.graql.internal.query.match;
 
+import io.mindmaps.graql.admin.MatchQueryAdmin;
+
 import java.util.stream.Stream;
 
 /**
  * "Distinct" modifier for a match query that eliminates duplicate results.
  */
-public class MatchQueryDistinct<T> extends MatchQueryAbstract<T, T> {
+public class MatchQueryDistinct<T> extends MatchQueryModifier<T, T> {
 
-    public MatchQueryDistinct(Admin<T> inner) {
+    public MatchQueryDistinct(MatchQueryAdmin<T> inner) {
         super(inner);
     }
 

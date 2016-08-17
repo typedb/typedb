@@ -19,8 +19,10 @@
 
 package io.mindmaps.graql;
 
+import io.mindmaps.graql.internal.query.match.AbstractMatchQuery;
+
 /**
- * An aggregate query produced from a {@link MatchQuery}.
+ * An aggregate query produced from a {@link AbstractMatchQuery}.
  *
  * @param <T> the type of the result of the aggregate query
  */

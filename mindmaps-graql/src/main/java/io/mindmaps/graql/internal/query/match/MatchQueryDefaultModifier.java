@@ -19,24 +19,45 @@
 
 package io.mindmaps.graql.internal.query.match;
 
-import io.mindmaps.core.model.Concept;
-import io.mindmaps.graql.MatchQueryDefault;
+import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.core.model.Type;
+import io.mindmaps.graql.admin.MatchQueryDefaultAdmin;
+import io.mindmaps.graql.admin.PatternAdmin;
+import io.mindmaps.graql.internal.query.Conjunction;
 
-import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
  * Abstract MatchQueryDefault implementation. Extends the abstract MatchQuery implementation, but provides extra behaviour
  * to support the MatchQueryDefault interface.
  */
-abstract class MatchQueryDefaultAbstract
-        extends MatchQueryAbstract<Map<String, Concept>, Map<String, Concept>> implements MatchQueryDefault.Admin {
+abstract class MatchQueryDefaultModifier extends AbstractMatchQueryDefault {
 
-    final MatchQueryDefault.Admin inner;
+    final MatchQueryDefaultAdmin inner;
 
-    MatchQueryDefaultAbstract(MatchQueryDefault.Admin inner) {
-        super(inner);
+    MatchQueryDefaultModifier(MatchQueryDefaultAdmin inner) {
         this.inner = inner;
+    }
+
+    @Override
+    public Set<Type> getTypes(MindmapsTransaction transaction) {
+        return inner.getTypes(transaction);
+    }
+
+    @Override
+    public Set<Type> getTypes() {
+        return inner.getTypes();
+    }
+
+    @Override
+    public Conjunction<PatternAdmin> getPattern() {
+        return inner.getPattern();
+    }
+
+    @Override
+    public Optional<MindmapsTransaction> getTransaction() {
+        return inner.getTransaction();
     }
 
     @Override

@@ -21,6 +21,7 @@ package io.mindmaps.graql.internal.query;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import io.mindmaps.graql.ValuePredicate;
+import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.*;
@@ -28,7 +29,7 @@ import java.util.*;
 /**
  * Implementation of ValuePredicate
  */
-public class ValuePredicateImpl implements ValuePredicate.Admin {
+public class ValuePredicateImpl implements ValuePredicateAdmin {
 
     private final P<Object> predicate;
     private final String repr;
@@ -67,7 +68,7 @@ public class ValuePredicateImpl implements ValuePredicate.Admin {
     }
 
     @Override
-    public Admin admin() {
+    public ValuePredicateAdmin admin() {
         return this;
     }
 

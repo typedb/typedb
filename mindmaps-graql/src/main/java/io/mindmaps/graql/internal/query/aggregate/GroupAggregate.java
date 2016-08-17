@@ -32,7 +32,7 @@ import static java.util.stream.Collectors.*;
  * Aggregate that groups results of a match query by variable name, applying an aggregate to each group.
  * @param <T> the type of each group
  */
-public class GroupAggregate<T> implements Aggregate<Map<String, Concept>, Map<Concept, T>> {
+public class GroupAggregate<T> extends AbstractAggregate<Map<String, Concept>, Map<Concept, T>> {
 
     private final String varName;
     private final Aggregate<? super Map<String, Concept>, T> innerAggregate;

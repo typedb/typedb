@@ -24,7 +24,6 @@ import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.QueryParser;
-import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Var;
 import io.mindmaps.loader.DistributedLoader;
 import io.mindmaps.util.ConfigProperties;
@@ -41,6 +40,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+
+import static io.mindmaps.graql.Graql.insert;
 
 public class DistributedLoaderTest {
 
@@ -97,7 +98,7 @@ public class DistributedLoaderTest {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        QueryBuilder.build(transaction).insert(ontologyBatch).execute();
+        insert(ontologyBatch).withTransaction(transaction).execute();
         try {
             transaction.commit();
         } catch (MindmapsValidationException e) {

@@ -33,10 +33,7 @@ import org.junit.Test;
 import java.util.List;
 import java.util.Map;
 
-import static io.mindmaps.graql.Aggregate.count;
-import static io.mindmaps.graql.Aggregate.group;
-import static io.mindmaps.graql.Aggregate.select;
-import static io.mindmaps.graql.QueryBuilder.var;
+import static io.mindmaps.graql.Graql.*;
 import static io.mindmaps.graql.query.QueryUtil.movies;
 import static org.junit.Assert.assertEquals;
 
@@ -50,7 +47,7 @@ public class AggregateTest {
         MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
         transaction = mindmapsGraph.getTransaction();
-        qb = QueryBuilder.build(transaction);
+        qb = withTransaction(transaction);
     }
 
     @Test

@@ -20,7 +20,6 @@
 package io.mindmaps.graql.internal.query.aggregate;
 
 import com.google.common.collect.ImmutableSet;
-import io.mindmaps.graql.Aggregate;
 import io.mindmaps.graql.NamedAggregate;
 
 import java.util.HashMap;
@@ -35,7 +34,7 @@ import static java.util.stream.Collectors.toList;
  * @param <S> the type of the match query results
  * @param <T> the type of the aggregate results
  */
-public class SelectAggregate<S, T> implements Aggregate<S, Map<String, T>> {
+public class SelectAggregate<S, T> extends AbstractAggregate<S, Map<String, T>> {
 
     private final ImmutableSet<NamedAggregate<? super S, ? extends T>> aggregates;
 

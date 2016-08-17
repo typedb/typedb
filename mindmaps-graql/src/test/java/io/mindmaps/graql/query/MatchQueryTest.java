@@ -24,13 +24,14 @@ import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
+import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static io.mindmaps.graql.QueryBuilder.var;
+import static io.mindmaps.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 
 public class MatchQueryTest {
@@ -47,7 +48,7 @@ public class MatchQueryTest {
 
     @Before
     public void setUp() {
-        qb = QueryBuilder.build(transaction);
+        qb = Graql.withTransaction(transaction);
     }
 
     @Test

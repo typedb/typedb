@@ -19,6 +19,7 @@
 package io.mindmaps.graql;
 
 import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.graql.admin.AskQueryAdmin;
 
 /**
  * A query that will return whether a match query can be found in the graph.
@@ -40,15 +41,5 @@ public interface AskQuery {
     /**
      * @return admin instance for inspecting and manipulating this query
      */
-    Admin admin();
-
-    /**
-     * Admin class for inspecting and manipulating an AskQuery
-     */
-    interface Admin extends AskQuery {
-        /**
-         * @return the match query used to create this ask query
-         */
-        MatchQueryDefault getMatchQuery();
-    }
+    AskQueryAdmin admin();
 }

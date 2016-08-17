@@ -19,16 +19,16 @@
 package io.mindmaps.graql.query;
 
 import io.mindmaps.graql.Pattern;
-import io.mindmaps.graql.QueryBuilder;
 import org.junit.Test;
 
+import static io.mindmaps.graql.Graql.*;
 import static org.junit.Assert.*;
 
 public class PatternTest {
 
     @Test
     public void testVarPattern() {
-        Pattern x = QueryBuilder.var("x");
+        Pattern x = var("x");
 
         assertTrue(x.admin().isVar());
         assertFalse(x.admin().isDisjunction());
@@ -39,7 +39,7 @@ public class PatternTest {
 
     @Test
     public void testDisjunction() {
-        Pattern disjunction = QueryBuilder.or();
+        Pattern disjunction = or();
 
         assertFalse(disjunction.admin().isVar());
         assertTrue(disjunction.admin().isDisjunction());
@@ -51,7 +51,7 @@ public class PatternTest {
 
     @Test
     public void testConjunction() {
-        Pattern conjunction = QueryBuilder.and();
+        Pattern conjunction = and();
 
         assertFalse(conjunction.admin().isVar());
         assertFalse(conjunction.admin().isDisjunction());

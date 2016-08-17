@@ -21,7 +21,7 @@ package io.mindmaps.graql.internal.query.aggregate;
 
 import io.mindmaps.graql.Aggregate;
 import io.mindmaps.graql.AggregateQuery;
-import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.admin.MatchQueryAdmin;
 
 /**
  * Implementation of AggregateQuery
@@ -30,10 +30,10 @@ import io.mindmaps.graql.MatchQuery;
  */
 public class AggregateQueryImpl<S, T> implements AggregateQuery<T> {
 
-    private final MatchQuery.Admin<S> matchQuery;
+    private final MatchQueryAdmin<S> matchQuery;
     private final Aggregate<? super S, T> aggregate;
 
-    public AggregateQueryImpl(MatchQuery.Admin<S> matchQuery, Aggregate<? super S, T> aggregate) {
+    public AggregateQueryImpl(MatchQueryAdmin<S> matchQuery, Aggregate<? super S, T> aggregate) {
         this.matchQuery = matchQuery;
         this.aggregate = aggregate;
     }

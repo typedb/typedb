@@ -36,8 +36,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static io.mindmaps.constants.DataType.ConceptMeta.*;
-import static io.mindmaps.graql.QueryBuilder.id;
-import static io.mindmaps.graql.QueryBuilder.var;
+import static io.mindmaps.graql.Graql.*;
+import static io.mindmaps.graql.Graql.id;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.*;
@@ -54,7 +54,7 @@ public class InsertQueryTest {
         MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
         transaction = mindmapsGraph.getTransaction();
-        qb = QueryBuilder.build(transaction);
+        qb = withTransaction(transaction);
     }
 
     @Test
@@ -319,7 +319,7 @@ public class InsertQueryTest {
     public void testErrorWhenInsertWithPredicate() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(containsString("predicate"));
-        qb.insert(var().id("123").value(ValuePredicate.gt(3))).execute();
+        qb.insert(var().id("123").value(gt(3))).execute();
     }
 
     @Test

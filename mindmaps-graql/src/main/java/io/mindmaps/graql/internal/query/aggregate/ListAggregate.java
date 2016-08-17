@@ -19,8 +19,6 @@
 
 package io.mindmaps.graql.internal.query.aggregate;
 
-import io.mindmaps.graql.Aggregate;
-
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -29,7 +27,7 @@ import java.util.stream.Stream;
  * An aggregate that changes match query results into a list.
  * @param <T> the type of the results of the match query
  */
-public class ListAggregate<T> implements Aggregate<T, List<T>> {
+public class ListAggregate<T> extends AbstractAggregate<T, List<T>> {
     @Override
     public List<T> apply(Stream<? extends T> stream) {
         return stream.collect(Collectors.toList());

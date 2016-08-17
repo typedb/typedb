@@ -19,7 +19,7 @@
 package io.mindmaps.graql.internal.gremlin;
 
 import io.mindmaps.constants.DataType;
-import io.mindmaps.graql.ValuePredicate;
+import io.mindmaps.graql.admin.ValuePredicateAdmin;
 
 /**
  * represents the priority of a {@code Fragment}.
@@ -106,7 +106,7 @@ public enum FragmentPriority {
      * @param predicate the predicate to get the priority of checking
      * @return the priority of checking the given value predicate in a gremlin traversal
      */
-    public static FragmentPriority getValuePriority(ValuePredicate.Admin predicate) {
+    public static FragmentPriority getValuePriority(ValuePredicateAdmin predicate) {
         if (predicate.isSpecific()) {
             return VALUE_SPECIFIC;
         } else {

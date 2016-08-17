@@ -23,10 +23,10 @@ import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Type;
-import io.mindmaps.graql.MatchQueryDefault;
-import io.mindmaps.graql.Pattern;
-import io.mindmaps.graql.Var;
+import io.mindmaps.graql.admin.PatternAdmin;
+import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.Query;
+import io.mindmaps.graql.internal.query.Conjunction;
 import io.mindmaps.graql.internal.validation.MatchQueryValidator;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -43,14 +43,14 @@ import static java.util.stream.Collectors.toSet;
 /**
  * Base MatchQuery implementation that executes the gremlin traversal
  */
-public class MatchQueryBase implements MatchQueryDefault.Admin {
+public class MatchQueryBase extends AbstractMatchQueryDefault {
 
-    private final Pattern.Conjunction<Pattern.Admin> pattern;
+    private final Conjunction<PatternAdmin> pattern;
 
     /**
      * @param pattern a pattern to match in the graph
      */
-    public MatchQueryBase(Pattern.Conjunction<Pattern.Admin> pattern) {
+    public MatchQueryBase(Conjunction<PatternAdmin> pattern) {
         if (pattern.getPatterns().size() == 0) {
             throw new IllegalArgumentException(ErrorMessage.MATCH_NO_PATTERNS.getMessage());
         }
@@ -91,7 +91,7 @@ public class MatchQueryBase implements MatchQueryDefault.Admin {
         // $x will appear in the results, but not $y because it is not guaranteed to appear in all disjunctions
 
         // Get conjunctions within disjunction
-        Set<Pattern.Conjunction<Var.Admin>> conjunctions = pattern.getDisjunctiveNormalForm().getPatterns();
+        Set<Conjunction<VarAdmin>> conjunctions = pattern.getDisjunctiveNormalForm().getPatterns();
 
         // Get all selected names from each conjunction
         Stream<Set<String>> vars = conjunctions.stream().map(this::getDefinedNamesFromConjunction);
@@ -104,7 +104,7 @@ public class MatchQueryBase implements MatchQueryDefault.Admin {
     }
 
     @Override
-    public Pattern.Conjunction<Pattern.Admin> getPattern() {
+    public Conjunction<PatternAdmin> getPattern() {
         return pattern;
     }
 
@@ -122,11 +122,11 @@ public class MatchQueryBase implements MatchQueryDefault.Admin {
      * @param conjunction a conjunction containing variables
      * @return all user-defined variable names in the given conjunction
      */
-    private Set<String> getDefinedNamesFromConjunction(Pattern.Conjunction<Var.Admin> conjunction) {
+    private Set<String> getDefinedNamesFromConjunction(Conjunction<VarAdmin> conjunction) {
         return conjunction.getVars().stream()
                 .flatMap(var -> var.getInnerVars().stream())
-                .filter(Var.Admin::isUserDefinedName)
-                .map(Var.Admin::getName)
+                .filter(VarAdmin::isUserDefinedName)
+                .map(VarAdmin::getName)
                 .collect(Collectors.toSet());
     }
 

@@ -22,6 +22,9 @@ import com.google.common.collect.Sets;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.model.Rule;
 import io.mindmaps.graql.*;
+import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.query.Conjunction;
+import io.mindmaps.graql.internal.query.Disjunction;
 import io.mindmaps.graql.reasoner.graphs.SNBGraph;
 import io.mindmaps.graql.internal.reasoner.container.Query;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
@@ -43,7 +46,7 @@ public class QueryTest {
 
         graph = SNBGraph.getTransaction();
         qp = QueryParser.create(graph);
-        qb = QueryBuilder.build(graph);
+        qb = Graql.withTransaction(graph);
     }
 
     @Test
@@ -142,7 +145,7 @@ public class QueryTest {
 
         MatchQueryDefault mq = query.getExpandedMatchQuery();
 
-        Pattern.Disjunction<Pattern.Conjunction<Var.Admin>> disjunction = mq.admin().getPattern().getDisjunctiveNormalForm();
+        Disjunction<Conjunction<VarAdmin>> disjunction = mq.admin().getPattern().getDisjunctiveNormalForm();
         System.out.println(disjunction.toString());
 
         query.changeVarName("y", "z");

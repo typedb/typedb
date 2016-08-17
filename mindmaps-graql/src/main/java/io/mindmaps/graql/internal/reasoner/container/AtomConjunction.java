@@ -19,8 +19,9 @@
 package io.mindmaps.graql.internal.reasoner.container;
 
 import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.graql.Pattern;
-import io.mindmaps.graql.Var;
+import io.mindmaps.graql.admin.PatternAdmin;
+import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.query.Conjunction;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
 
@@ -34,17 +35,17 @@ public class AtomConjunction {
 
     private final Set<Atomic> atomSet;
 
-    public AtomConjunction(Pattern.Conjunction<Var.Admin> conj){
+    public AtomConjunction(Conjunction<VarAdmin> conj){
         this.atomSet = getAtomSet(conj);
     }
     private AtomConjunction(Set<Atomic> aSet){
         this.atomSet = aSet;
     }
 
-    private Set<Atomic> getAtomSet(Pattern.Admin pattern) {
+    private Set<Atomic> getAtomSet(PatternAdmin pattern) {
         Set<Atomic> atoms = new HashSet<>();
 
-        Set<Var.Admin> vars = pattern.getVars();
+        Set<VarAdmin> vars = pattern.getVars();
         vars.forEach(var ->
         {
             Atomic atom = AtomicFactory.create(var);
@@ -86,9 +87,9 @@ public class AtomConjunction {
         conj.getAtoms().forEach(atom -> atoms.add(AtomicFactory.create(atom)) );
         return new AtomConjunction(atoms);
     }
-    public Pattern.Conjunction<Var.Admin> getConjunction(){
-        Set<Var.Admin> vars = new HashSet<>();
+    public Conjunction<VarAdmin> getConjunction(){
+        Set<VarAdmin> vars = new HashSet<>();
         atomSet.forEach(a -> vars.add(a.getPattern().asVar()));
-        return Pattern.Admin.conjunction(vars);
+        return PatternAdmin.conjunction(vars);
     }
 }

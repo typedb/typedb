@@ -20,12 +20,9 @@
 package io.mindmaps.graql;
 
 import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.core.model.Type;
-import io.mindmaps.graql.internal.query.aggregate.AggregateQueryImpl;
-import io.mindmaps.graql.internal.query.match.*;
+import io.mindmaps.graql.admin.MatchQueryAdmin;
 
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -46,33 +43,25 @@ public interface MatchQuery<T> extends Streamable<T> {
      * @param transaction the transaction to execute the query on
      * @return a new MatchQuery with the transaction set
      */
-    default MatchQuery<T> withTransaction(MindmapsTransaction transaction) {
-        return new MatchQueryTransaction<>(transaction, admin());
-    }
+    MatchQuery<T> withTransaction(MindmapsTransaction transaction);
 
     /**
      * @param limit the maximum number of results the query should return
      * @return a new MatchQuery with the limit set
      */
-    default MatchQuery<T> limit(long limit) {
-        return new MatchQueryLimit<>(admin(), limit);
-    }
+    MatchQuery<T> limit(long limit);
 
     /**
      * @param offset the number of results to skip
      * @return a new MatchQuery with the offset set
      */
-    default MatchQuery<T> offset(long offset) {
-        return new MatchQueryOffset<>(admin(), offset);
-    }
+    MatchQuery<T> offset(long offset);
 
     /**
      * remove any duplicate results from the query
      * @return a new MatchQuery without duplicate results
      */
-    default MatchQuery<T> distinct() {
-        return new MatchQueryDistinct<>(admin());
-    }
+    MatchQuery<T> distinct();
 
     /**
      * Aggregate results of a query.
@@ -80,52 +69,10 @@ public interface MatchQuery<T> extends Streamable<T> {
      * @param <S> the type of the aggregate result
      * @return a query that will yield the aggregate result
      */
-    default <S> AggregateQuery<S> aggregate(Aggregate<? super T, S> aggregate) {
-        return new AggregateQueryImpl<>(admin(), aggregate);
-    }
+    <S> AggregateQuery<S> aggregate(Aggregate<? super T, S> aggregate);
 
     /**
      * @return admin instance for inspecting and manipulating this query
      */
-    Admin<T> admin();
-
-    /**
-     * Admin class for inspecting and manipulating a MatchQuery
-     */
-    interface Admin<T> extends MatchQuery<T> {
-
-        @Override
-        default Admin<T> admin() {
-            return this;
-        }
-
-        /**
-         * Execute the query using the given transaction.
-         * @param transaction the transaction to use to execute the query
-         * @param order how to order the resulting stream
-         * @return a stream of results
-         */
-        Stream<T> stream(Optional<MindmapsTransaction> transaction, Optional<MatchOrder> order);
-
-        /**
-         * @param transaction the transaction to use to get types from the graph
-         * @return all concept types referred to explicitly in the query
-         */
-        Set<Type> getTypes(MindmapsTransaction transaction);
-
-        /**
-         * @return all concept types referred to explicitly in the query
-         */
-        Set<Type> getTypes();
-
-        /**
-         * @return the pattern to match in the graph
-         */
-        Pattern.Conjunction<Pattern.Admin> getPattern();
-
-        /**
-         * @return the transaction the query operates on, if one was provided
-         */
-        Optional<MindmapsTransaction> getTransaction();
-    }
+    MatchQueryAdmin<T> admin();
 }

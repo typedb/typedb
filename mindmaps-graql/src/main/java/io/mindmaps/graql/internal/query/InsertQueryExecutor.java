@@ -26,6 +26,7 @@ import io.mindmaps.core.implementation.Data;
 import io.mindmaps.core.model.*;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.internal.GraqlType;
+import io.mindmaps.graql.admin.VarAdmin;
 
 import java.util.*;
 import java.util.function.BiFunction;
@@ -41,19 +42,19 @@ import java.util.stream.Stream;
 class InsertQueryExecutor {
 
     private final MindmapsTransaction transaction;
-    private final Collection<Var.Admin> vars;
+    private final Collection<VarAdmin> vars;
     private final Map<String, Concept> concepts = new HashMap<>();
     private final Stack<String> visitedVars = new Stack<>();
-    private final ImmutableMap<String, List<Var.Admin>> varsByName;
-    private final ImmutableMap<String, List<Var.Admin>> varsById;
+    private final ImmutableMap<String, List<VarAdmin>> varsByName;
+    private final ImmutableMap<String, List<VarAdmin>> varsById;
 
-    public InsertQueryExecutor(Collection<Var.Admin> vars, MindmapsTransaction transaction) {
+    public InsertQueryExecutor(Collection<VarAdmin> vars, MindmapsTransaction transaction) {
         this.vars = vars;
         this.transaction = transaction;
 
         // Group variables by name
         varsByName = ImmutableMap.copyOf(
-                vars.stream().collect(Collectors.groupingBy(Var.Admin::getName))
+                vars.stream().collect(Collectors.groupingBy(VarAdmin::getName))
         );
 
         // Group variables by id (if they have one defined)
@@ -94,7 +95,7 @@ class InsertQueryExecutor {
     /**
      * @param var the Var to insert into the graph
      */
-    private Concept insertVar(Var.Admin var) {
+    private Concept insertVar(VarAdmin var) {
         Concept concept = getConcept(var);
 
         if (var.getAbstract()) concept.asType().setAbstract(true);
@@ -119,7 +120,7 @@ class InsertQueryExecutor {
      * Add all the resources of the given var
      * @param var the var to add resources to
      */
-    private Concept insertVarResources(Var.Admin var) {
+    private Concept insertVarResources(VarAdmin var) {
         Concept concept = getConcept(var);
 
         if (!var.getResourceEqualsPredicates().isEmpty()) {
@@ -134,7 +135,7 @@ class InsertQueryExecutor {
      * @param var the Var that is represented by a concept in the graph
      * @return the same as addConcept, but using an internal map to remember previous calls
      */
-    private Concept getConcept(Var.Admin var) {
+    private Concept getConcept(VarAdmin var) {
         String name = var.getName();
         if (visitedVars.contains(name)) {
             throw new IllegalStateException(ErrorMessage.INSERT_RECURSIVE.getMessage(var.getPrintableName()));
@@ -150,11 +151,11 @@ class InsertQueryExecutor {
      * @param var the Var that is to be added into the graph
      * @return the concept representing the given Var, creating it if it doesn't exist
      */
-    private Concept addConcept(Var.Admin var) {
+    private Concept addConcept(VarAdmin var) {
         var = mergeVar(var);
 
-        Optional<Var.Admin> type = var.getType();
-        Optional<Var.Admin> ako = var.getAko();
+        Optional<VarAdmin> type = var.getType();
+        Optional<VarAdmin> ako = var.getAko();
 
         if (type.isPresent() && ako.isPresent()) {
             String printableName = var.getPrintableName();
@@ -189,9 +190,9 @@ class InsertQueryExecutor {
      * @param var the variable to merge
      * @return the merged variable
      */
-    private Var.Admin mergeVar(Var.Admin var) {
+    private VarAdmin mergeVar(VarAdmin var) {
         boolean changed = true;
-        Set<Var.Admin> varsToMerge = new HashSet<>();
+        Set<VarAdmin> varsToMerge = new HashSet<>();
 
         // Keep merging until the set of merged variables stops changing
         // This handles cases when variables are referred to with multiple degrees of separation
@@ -218,7 +219,7 @@ class InsertQueryExecutor {
      * @param type the type of the concept
      * @return a concept with the given ID and the specified type
      */
-    private Concept putConceptByType(Optional<String> id, Var.Admin var, Type type) {
+    private Concept putConceptByType(Optional<String> id, VarAdmin var, Type type) {
         String typeId = type.getId();
 
         if (typeId.equals(DataType.ConceptMeta.ENTITY_TYPE.getId())) {
@@ -298,10 +299,10 @@ class InsertQueryExecutor {
      * @param var the variable representing the relation
      * @param casting a casting between a role type and role player
      */
-    private void addCasting(Var.Admin var, Var.Casting casting) {
+    private void addCasting(VarAdmin var, Var.Casting casting) {
         Relation relation = getConcept(var).asRelation();
 
-        Var.Admin roleVar = casting.getRoleType().orElseThrow(
+        VarAdmin roleVar = casting.getRoleType().orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.INSERT_RELATION_WITHOUT_ROLE_TYPE.getMessage())
         );
 
@@ -314,7 +315,7 @@ class InsertQueryExecutor {
      * Set the values specified in the Var, on the concept represented by the given Var
      * @param var the Var containing values to set on the concept
      */
-    private void setValue(Var.Admin var) {
+    private void setValue(VarAdmin var) {
         Iterator<?> values = var.getValueEqualsPredicates().iterator();
 
         if (values.hasNext()) {
@@ -348,7 +349,7 @@ class InsertQueryExecutor {
      * Get the datatype of a Var if specified, else throws an IllegalStateException
      * @return the datatype of the given var
      */
-    private Data<?> getDataType(Var.Admin var) {
+    private Data<?> getDataType(VarAdmin var) {
         return var.getDatatype().orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.INSERT_NO_DATATYPE.getMessage(var.getPrintableName()))
         );
@@ -358,7 +359,7 @@ class InsertQueryExecutor {
      * @param var the var representing a type that can own the given resource type
      * @param resourceVar the var representing the resource type
      */
-    private void addResourceType(Var.Admin var, Var.Admin resourceVar) {
+    private void addResourceType(VarAdmin var, VarAdmin resourceVar) {
         Type type = getConcept(var).asType();
         ResourceType resourceType = getConcept(resourceVar).asResourceType();
 
@@ -378,7 +379,7 @@ class InsertQueryExecutor {
      * @param values a set of values to set on the resource instances
      * @param <D> the type of the resources
      */
-    private <D> void addResources(Instance instance, Var.Admin resourceType, Set<D> values) {
+    private <D> void addResources(Instance instance, VarAdmin resourceType, Set<D> values) {
         // We assume the resource type has the correct datatype. If it does not, core will catch the problem
         //noinspection unchecked
         ResourceType<D> type = getConcept(resourceType).asResourceType();
