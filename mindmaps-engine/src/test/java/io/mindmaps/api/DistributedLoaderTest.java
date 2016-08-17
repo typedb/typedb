@@ -42,7 +42,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class DistributedLoaderTest {
 
@@ -68,7 +70,7 @@ public class DistributedLoaderTest {
     @Test
     public void testLoadOntologyAndData() {
         Logger logger = (Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.OFF);
+        logger.setLevel(Level.INFO);
 
         loadOntology();
 
@@ -82,8 +84,6 @@ public class DistributedLoaderTest {
         }
 
         loader.waitToFinish();
-        System.out.println(GraphFactory.getInstance().getGraph(graphName).newTransaction().getMetaEntityType().instances().size());
-
         MindmapsTransaction transaction = GraphFactory.getInstance().getGraph(graphName).newTransaction();
 
         assertNotNull(transaction.getConcept("X4d616e75656c20417a656e6861").getId());
@@ -92,6 +92,9 @@ public class DistributedLoaderTest {
         assertNotNull(transaction.getConcept("X416e6472657720522e2057656262").getId());
         assertNotNull(transaction.getConcept("X4a752d4d696e205a68616f").getId());
         assertNotNull(transaction.getConcept("X546f736869616b69204b61776173616b69").getId());
+
+        int size = transaction.getEntityType("name_tag").instances().size();
+        assertEquals(size, 1000);
     }
 
     private void loadOntology(){

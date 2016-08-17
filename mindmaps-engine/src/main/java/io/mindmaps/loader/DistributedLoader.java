@@ -32,9 +32,7 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 /**
@@ -44,10 +42,12 @@ public class DistributedLoader extends Loader {
 
     private final Logger LOG = LoggerFactory.getLogger(DistributedLoader.class);
     private static ExecutorService executor = Executors.newSingleThreadExecutor();
+    private Future f;
 
     private String graphName;
     private int currentHost;
     private String[] hostsArray;
+    private boolean checkingStatus;
 
     private Map<String, Semaphore> availability;
     private Map<String, Set<String>> transactions;
@@ -68,12 +68,16 @@ public class DistributedLoader extends Loader {
         transactions = new HashMap<>();
         hosts.forEach(h -> transactions.put(h, new HashSet<>()));
 
-        executor.submit(this::checkForStatusLoop);
+        checkingStatus = false;
     }
 
-    public void waitToFinish(){
+    /**
+     * Block the main thread until all of the transactions have finished loading
+     */
+    public void waitToFinish() {
+        System.out.println("waiting for loading to finish");
         flush();
-        while(!transactions.values().stream().allMatch(Set::isEmpty)){
+        while (!transactionsIsEmpty()) {
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {
@@ -107,6 +111,10 @@ public class DistributedLoader extends Loader {
             String transactionId = IOUtils.toString(currentConn.getInputStream());
             transactions.get(hostsArray[currentHost]).add(transactionId);
 
+            if(!checkingStatus){
+                startCheckingStatus();
+            }
+
         } catch (HTTPException e) {
             LOG.error(ErrorMessage.ERROR_IN_DISTRIBUTED_TRANSACTION.getMessage(currentConn.getURL().toString(), e.getStatusCode(), respMessage, batchedString));
             e.printStackTrace();
@@ -116,6 +124,11 @@ public class DistributedLoader extends Loader {
         }
     }
 
+    /**
+     * Block until there is a host available
+     *
+     * @return the available http connection
+     */
     private HttpURLConnection acquireNextHost() {
         String host = nextHost();
 
@@ -161,33 +174,6 @@ public class DistributedLoader extends Loader {
         return urlConn;
     }
 
-    public void checkForStatusLoop(){
-        try {
-            while (true) {
-
-                // loop through the hosts
-                for (String host : transactions.keySet()) {
-
-                    // loop through the transactions of each host
-                    Iterator<String> transactionsIter = transactions.get(host).iterator();
-                    while(transactionsIter.hasNext()){
-                        String transaction = transactionsIter.next();
-
-                        if (isFinished(host, transaction)) {
-                            availability.get(host).release();
-                            transactionsIter.remove();
-                        }
-                    }
-                }
-
-                Thread.sleep(500);
-            }
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     /**
      * Check if transaction is finished
      *
@@ -205,19 +191,55 @@ public class DistributedLoader extends Loader {
             urlConn.setDoOutput(true);
 
             String response = IOUtils.toString(urlConn.getInputStream());
+
             if (response.equals(State.FINISHED.name())) {
-                System.out.println("finished " + transaction);
                 return true;
             }
-        }
-        catch (IOException e){
+        } catch (IOException e) {
             LOG.error(e.getMessage());
             return true;
-        }
-        finally {
+        } finally {
             urlConn.disconnect();
         }
 
         return false;
+    }
+
+    /**
+     * Check if all transactions are finished
+     * @return true if all transactions have finished
+     */
+    private boolean transactionsIsEmpty(){
+        return transactions.values().stream().allMatch(Set::isEmpty);
+    }
+
+    private void startCheckingStatus() {
+        executor.submit(this::checkForStatusLoop);
+        checkingStatus = true;
+    }
+
+    private void stopCheckingStatus() {
+        executor.shutdownNow();
+        executor = Executors.newSingleThreadExecutor();
+        checkingStatus = false;
+    }
+
+    public void checkForStatusLoop() {
+        while (!transactionsIsEmpty() && checkingStatus) {
+
+            // loop through the hosts
+            for (String host : transactions.keySet()) {
+
+                // loop through the transactions of each host
+                for (String transaction : new ArrayList<>(transactions.get(host))) {
+                    if (isFinished(host, transaction)) {
+                        availability.get(host).release();
+                        transactions.get(host).remove(transaction);
+                    }
+                }
+            }
+        }
+
+        stopCheckingStatus();
     }
 }
