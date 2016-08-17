@@ -42,12 +42,11 @@ public class DistributedLoader extends Loader {
 
     private final Logger LOG = LoggerFactory.getLogger(DistributedLoader.class);
     private static ExecutorService executor = Executors.newSingleThreadExecutor();
-    private Future f;
+    private Future future;
 
     private String graphName;
     private int currentHost;
     private String[] hostsArray;
-    private boolean checkingStatus;
 
     private Map<String, Semaphore> availability;
     private Map<String, Set<String>> transactions;
@@ -62,29 +61,23 @@ public class DistributedLoader extends Loader {
 
         // create availability map
         availability = new HashMap<>();
-        hosts.forEach(h -> availability.put(h, new Semaphore(1)));
+        hosts.forEach(h -> availability.put(h, new Semaphore(100)));
 
         // instantiate transactions map
         transactions = new HashMap<>();
         hosts.forEach(h -> transactions.put(h, new HashSet<>()));
-
-        checkingStatus = false;
     }
 
     /**
      * Block the main thread until all of the transactions have finished loading
      */
     public void waitToFinish() {
-        System.out.println("waiting for loading to finish");
         flush();
-        while (!transactionsIsEmpty()) {
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+        try {
+            future.get();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
         }
-
         System.out.println("Done!");
     }
 
@@ -110,8 +103,9 @@ public class DistributedLoader extends Loader {
 
             String transactionId = IOUtils.toString(currentConn.getInputStream());
             transactions.get(hostsArray[currentHost]).add(transactionId);
+            markAsLoading(transactionId);
 
-            if(!checkingStatus){
+            if(future == null){
                 startCheckingStatus();
             }
 
@@ -133,7 +127,7 @@ public class DistributedLoader extends Loader {
         String host = nextHost();
 
         // check availability
-        while (availability.get(host).availablePermits() == 0) {
+        while (!availability.get(host).tryAcquire()) {
             host = nextHost();
         }
 
@@ -180,7 +174,7 @@ public class DistributedLoader extends Loader {
      * @param transaction transaction to check if has finished
      * @return if the given transaction has finished
      */
-    private boolean isFinished(String host, String transaction) {
+    private State getState(String host, String transaction) {
 
         String url = "http://" + host + ":" + ConfigProperties.getInstance().getProperty(ConfigProperties.SERVER_PORT_NUMBER) +
                 "/transactionStatus/" + transaction + "?" + RESTUtil.Request.GRAPH_NAME_PARAM + "=" + graphName;
@@ -192,17 +186,21 @@ public class DistributedLoader extends Loader {
 
             String response = IOUtils.toString(urlConn.getInputStream());
 
+
             if (response.equals(State.FINISHED.name())) {
-                return true;
+                return State.FINISHED;
+            } else if(response.equals(State.ERROR.name())
+                    || response.equals(State.CANCELLED.name())){
+                return State.ERROR;
             }
         } catch (IOException e) {
-            LOG.error(e.getMessage());
-            return true;
+            e.printStackTrace();
+            return State.ERROR;
         } finally {
             urlConn.disconnect();
         }
 
-        return false;
+        return null;
     }
 
     /**
@@ -213,30 +211,55 @@ public class DistributedLoader extends Loader {
         return transactions.values().stream().allMatch(Set::isEmpty);
     }
 
+    /**
+     * Start checking the status of the transactions in another thread.
+     */
     private void startCheckingStatus() {
-        executor.submit(this::checkForStatusLoop);
-        checkingStatus = true;
+        future = executor.submit(this::checkForStatusLoop);
     }
 
+    /**
+     * Re-sets the executor and indicates the system is no longer checking the status of the transactions
+     */
     private void stopCheckingStatus() {
         executor.shutdownNow();
         executor = Executors.newSingleThreadExecutor();
-        checkingStatus = false;
+        future = null;
     }
 
+    /**
+     *
+     */
     public void checkForStatusLoop() {
-        while (!transactionsIsEmpty() && checkingStatus) {
+        while (!transactionsIsEmpty()) {
 
             // loop through the hosts
             for (String host : transactions.keySet()) {
 
                 // loop through the transactions of each host
                 for (String transaction : new ArrayList<>(transactions.get(host))) {
-                    if (isFinished(host, transaction)) {
+
+                    State state = getState(host, transaction);
+
+                    if(state == State.FINISHED) {
                         availability.get(host).release();
                         transactions.get(host).remove(transaction);
+
+                        markAsFinished(transaction);
+                    } else if(state == State.ERROR ){
+                        availability.get(host).release();
+                        transactions.get(host).remove(transaction);
+
+                        markAsError(transaction);
                     }
                 }
+            }
+            printLoaderState();
+
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
 

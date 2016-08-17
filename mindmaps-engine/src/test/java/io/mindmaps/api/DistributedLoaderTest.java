@@ -20,6 +20,7 @@ package io.mindmaps.api;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
@@ -27,9 +28,9 @@ import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Var;
 import io.mindmaps.loader.DistributedLoader;
+import io.mindmaps.loader.Loader;
 import io.mindmaps.util.ConfigProperties;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
@@ -44,48 +45,45 @@ import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 public class DistributedLoaderTest {
 
-    Properties prop = new Properties();
-    String graphName;
-    DistributedLoader loader;
-    private final org.slf4j.Logger LOG = LoggerFactory.getLogger(DistributedLoaderTest.class);
+    private final Logger LOG = (Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
 
+    private MindmapsGraph graph;
+
+    private Properties prop = new Properties();
+    private Loader loader;
 
     @Before
     public void setUp() throws Exception {
+        LOG.setLevel(Level.OFF);
+
+        // set up engine
         new TransactionController();
+        new CommitLogController();
+
         try {
             prop.load(DistributedLoaderTest.class.getClassLoader().getResourceAsStream(ConfigProperties.CONFIG_TEST_FILE));
         } catch (Exception e) {
             e.printStackTrace();
         }
-        graphName = prop.getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
-        loader= new DistributedLoader(graphName, Collections.singletonList("localhost"));
-        new CommitLogController();
+        String graphName = prop.getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+
+        loader = new DistributedLoader(graphName, Collections.singletonList("localhost"));
+        graph = GraphFactory.getInstance().getGraph(graphName);
     }
 
     @Test
-    public void testLoadOntologyAndData() {
-        Logger logger = (Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.INFO);
-
-        loadOntology();
-
+    public void testLoad1000() {
         ClassLoader classLoader = getClass().getClassLoader();
-        File fileData= new File(classLoader.getResource("small_nametags.gql").getFile());
-        loader.setBatchSize(50);
-        try {
-            QueryParser.create().parsePatternsStream(new FileInputStream(fileData)).forEach(pattern -> loader.addToQueue(pattern.admin().asVar()));
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
+        File ontology = new File(classLoader.getResource("dblp-ontology.gql").getFile());
+        File data= new File(classLoader.getResource("small_nametags.gql").getFile());
 
-        loader.waitToFinish();
-        MindmapsTransaction transaction = GraphFactory.getInstance().getGraph(graphName).newTransaction();
+        loadOntologyFromFile(ontology);
+        loadDataFromFile(data);
 
+        MindmapsTransaction transaction = graph.newTransaction();
         assertNotNull(transaction.getConcept("X4d616e75656c20417a656e6861").getId());
         assertNotNull(transaction.getConcept("X44616e69656c61204675696f726561").getId());
         assertNotNull(transaction.getConcept("X422e20476174686d616e6e").getId());
@@ -97,22 +95,57 @@ public class DistributedLoaderTest {
         assertEquals(size, 1000);
     }
 
-    private void loadOntology(){
-        MindmapsTransaction transaction = GraphFactory.getInstance().getGraph(graphName).newTransaction();
-        List<Var> ontologyBatch = new ArrayList<>();
-        ClassLoader classLoader = getClass().getClassLoader();
+    @Test
+    public void testLoad1000000(){
 
-        LOG.info("Loading new ontology .. ");
+        ClassLoader classLoader = getClass().getClassLoader();
+        File ontology = new File(classLoader.getResource("dblp-ontology.gql").getFile());
+        File data= new File(classLoader.getResource("large_nametags.gql").getFile());
+
+        loadOntologyFromFile(ontology);
+        loadDataFromFile(data);
+
+        MindmapsTransaction transaction = graph.newTransaction();
+        assertNotNull(transaction.getConcept("X4d616e75656c20417a656e6861").getId());
+        assertNotNull(transaction.getConcept("X44616e69656c61204675696f726561").getId());
+        assertNotNull(transaction.getConcept("X422e20476174686d616e6e").getId());
+        assertNotNull(transaction.getConcept("X416e6472657720522e2057656262").getId());
+        assertNotNull(transaction.getConcept("X4a752d4d696e205a68616f").getId());
+        assertNotNull(transaction.getConcept("X546f736869616b69204b61776173616b69").getId());
+
+        int size = transaction.getEntityType("name_tag").instances().size();
+        assertEquals(size, 1000000);
+    }
+
+    public void loadDataFromFile(File file){
+        loader.setBatchSize(50);
         try {
-            QueryParser.create().parsePatternsStream(new FileInputStream(classLoader.getResource("dblp-ontology.gql").getFile())).map(x->x.admin().asVar()).forEach(ontologyBatch::add);
+            QueryParser.create()
+                    .parsePatternsStream(new FileInputStream(file))
+                    .forEach(pattern -> loader.addToQueue(pattern.admin().asVar()));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        QueryBuilder.build(transaction).insert(ontologyBatch).execute();
+
+        loader.waitToFinish();
+    }
+
+    private void loadOntologyFromFile(File file){
+        List<Var> ontologyBatch = new ArrayList<>();
+
+        LOG.info("Loading new ontology .. ");
         try {
+            QueryParser.create()
+                    .parsePatternsStream(new FileInputStream(file))
+                    .map(x -> x.admin().asVar())
+                    .forEach(ontologyBatch::add);
+
+            MindmapsTransaction transaction = graph.newTransaction();
+            QueryBuilder.build(transaction).insert(ontologyBatch).execute();
             transaction.commit();
-        } catch (MindmapsValidationException e) {
-            e.printStackTrace();
+
+        } catch (FileNotFoundException|MindmapsValidationException e) {
+            throw new RuntimeException(e);
         }
 
         LOG.info("Ontology loaded. ");
@@ -120,7 +153,6 @@ public class DistributedLoaderTest {
 
     @After
     public void cleanGraph(){
-        GraphFactory.getInstance().getGraph(graphName).clear();
+        graph.clear();
     }
-
 }

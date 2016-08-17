@@ -4,14 +4,28 @@ import io.mindmaps.graql.Var;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * RESTLoader to perform bulk loading into the graph
  */
 public abstract class Loader {
 
+    private AtomicInteger enqueuedJobs;
+    private AtomicInteger loadingJobs;
+    private AtomicInteger finishedJobs;
+    private AtomicInteger errorJobs;
+
     protected Collection<Var> batch;
     protected int batchSize;
+
+    public Loader(){
+        enqueuedJobs = new AtomicInteger();
+        loadingJobs = new AtomicInteger();
+        errorJobs = new AtomicInteger();
+        finishedJobs = new AtomicInteger();
+    }
 
     /**
      * Method to load data into the graph. Implementation depends on the type of the loader.
@@ -67,5 +81,37 @@ public abstract class Loader {
             submitBatch(batch);
             batch.clear();
         }
+    }
+
+    /**
+     * Method that prints current state of loading transactions to standard out
+     */
+    public void printLoaderState(){
+        String state =
+                "QUEUE:     " + enqueuedJobs.get() + "\n" +
+                "LOADING:   " + loadingJobs.get() + "\n" +
+                "FINISHED:  " + finishedJobs.get() + "\n" +
+                "ERROR:     " + errorJobs.get() + "\n" +
+                "---" + "\n";
+
+        System.out.print(state);
+    }
+
+    public void markAsQueued(String transaction){
+        enqueuedJobs.incrementAndGet();
+    }
+
+    public void markAsLoading(String transaction){
+        loadingJobs.incrementAndGet();
+    }
+
+    public void markAsFinished(String transaction){
+        loadingJobs.decrementAndGet();
+        finishedJobs.incrementAndGet();
+    }
+
+    public void markAsError(String transaction){
+        loadingJobs.decrementAndGet();
+        errorJobs.incrementAndGet();
     }
 }
