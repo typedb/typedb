@@ -18,16 +18,12 @@
 
 package io.mindmaps.factory;
 
-import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.core.implementation.GraphRuntimeException;
-import io.mindmaps.core.implementation.AbstractMindmapsTransaction;
-import io.mindmaps.core.implementation.MindmapsValidationException;
-import io.mindmaps.core.model.EntityType;
+import io.mindmaps.core.implementation.MindmapsTransactionImpl;
+import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashSet;
@@ -38,8 +34,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import static junit.framework.Assert.assertNull;
-import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -61,50 +55,6 @@ public class MindmapsTitanGraphTest {
         mg.clear();
     }
 
-    @Ignore
-    @Test
-    public void testTransactionHandling() throws Exception {
-        MindmapsTransaction mindmapsTransaction = mindmapsGraph.getTransaction();
-
-        mindmapsTransaction.putEntityType("1");
-        mindmapsTransaction.close();
-
-        boolean thrown = false;
-        try {
-            mindmapsTransaction.getEntityType("1");
-        } catch (GraphRuntimeException e){
-            assertEquals(ErrorMessage.CLOSED.getMessage(mindmapsTransaction.getClass().getName()), e.getMessage());
-            thrown = true;
-        }
-        assertTrue(thrown);
-
-        mindmapsTransaction = mindmapsGraph.getTransaction();
-        assertNull(mindmapsTransaction.getConcept("1"));
-        EntityType entityType = mindmapsTransaction.putEntityType("1");
-        mindmapsTransaction.commit();
-
-        MindmapsTransaction mindmapsTransaction2 = mindmapsGraph.getTransaction();
-        assertEquals(entityType, mindmapsTransaction2.getEntityType("1"));
-        mindmapsGraph.close();
-
-        thrown = false;
-        try {
-            mindmapsTransaction.getEntityType("1");
-        } catch (IllegalStateException e){
-            thrown = true;
-        }
-        assertTrue(thrown);
-
-        thrown = false;
-        try{
-            mindmapsGraph.getTransaction();
-        } catch (GraphRuntimeException e){
-            thrown = true;
-            assertEquals(ErrorMessage.CLOSED.getMessage(mindmapsGraph), e.getMessage());
-        }
-        assertTrue(thrown);
-    }
-
     @Test
     public void testMultithreading(){
         Set<Future> futures = new HashSet<>();
@@ -122,7 +72,7 @@ public class MindmapsTitanGraphTest {
             }
         });
 
-        AbstractMindmapsTransaction transaction = (AbstractMindmapsTransaction) mindmapsGraph.getTransaction();
+        MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) mindmapsGraph.getTransaction();
         assertEquals(108, transaction.getTinkerTraversal().V().toList().size());
     }
     private void addEntityType(MindmapsGraph mindmapsGraph){
@@ -155,7 +105,7 @@ public class MindmapsTitanGraphTest {
     public void testTestThreadLocal(){
         ExecutorService pool = Executors.newFixedThreadPool(10);
         Set<Future> futures = new HashSet<>();
-        AbstractMindmapsTransaction transcation = (AbstractMindmapsTransaction) mindmapsGraph.getTransaction();
+        MindmapsTransactionImpl transcation = (MindmapsTransactionImpl) mindmapsGraph.getTransaction();
         transcation.putEntityType(UUID.randomUUID().toString());
         assertEquals(9, transcation.getTinkerTraversal().V().toList().size());
 

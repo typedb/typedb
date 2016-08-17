@@ -21,6 +21,8 @@ package io.mindmaps.core.implementation;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.core.implementation.exception.GraphRuntimeException;
+import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.EntityType;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.junit.Before;
@@ -83,7 +85,7 @@ public class MindmapsTinkerGraphTest {
             }
         });
 
-        AbstractMindmapsTransaction transaction = (AbstractMindmapsTransaction) mindmapsGraph.getTransaction();
+        MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) mindmapsGraph.getTransaction();
         assertEquals(108, transaction.getTinkerPopGraph().traversal().V().toList().size());
     }
     private void addEntityType(MindmapsGraph mindmapsGraph){
@@ -115,7 +117,7 @@ public class MindmapsTinkerGraphTest {
     public void testTestThreadLocal(){
         ExecutorService pool = Executors.newFixedThreadPool(10);
         Set<Future> futures = new HashSet<>();
-        AbstractMindmapsTransaction transcation = (AbstractMindmapsTransaction) mindmapsGraph.getTransaction();
+        MindmapsTransactionImpl transcation = (MindmapsTransactionImpl) mindmapsGraph.getTransaction();
         transcation.putEntityType(UUID.randomUUID().toString());
         assertEquals(9, transcation.getTinkerTraversal().V().toList().size());
 

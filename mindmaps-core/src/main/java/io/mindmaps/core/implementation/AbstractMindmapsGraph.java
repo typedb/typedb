@@ -22,6 +22,7 @@ import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.constants.RESTUtil;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * A mindmaps graph which produces new transactions to work with
  */
 public abstract class AbstractMindmapsGraph<G extends Graph> implements MindmapsGraph {
-    protected final ThreadLocal<MindmapsTransaction> context = new ThreadLocal<>();
+    protected final ThreadLocal<MindmapsTransactionImpl> context = new ThreadLocal<>();
     protected final Logger LOG = LoggerFactory.getLogger(AbstractMindmapsGraph.class);
     private final String engineUrl;
     private final String graphName;
@@ -41,7 +42,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         this.graph = graph;
         this.graphName = graphName;
         this.engineUrl = engineUrl;
-        checkSchema((AbstractMindmapsTransaction) getTransaction());
+        checkSchema((MindmapsTransactionImpl) getTransaction());
     }
 
     String getCommitLogEndPoint(){
@@ -54,14 +55,17 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
      */
     @Override
     public MindmapsTransaction getTransaction(){
-        MindmapsTransaction transaction = context.get();
+        MindmapsTransactionImpl transaction = context.get();
         if(transaction == null){
             context.set(transaction = buildTransaction());
         }
+        transaction.setBatchLoadingEnabled(batchLoading);
         return transaction;
     }
 
-    protected abstract MindmapsTransaction buildTransaction();
+    private MindmapsTransactionImpl buildTransaction() {
+        return new MindmapsTransactionImpl(this);
+    }
 
     /**
      * Enables batch loading which skips redundancy checks.
@@ -120,7 +124,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
      * Checks if the schema exists if not it creates and commits it.
      * @param mindmapsTransaction A transaction to use to check the schema
      */
-    private void checkSchema(AbstractMindmapsTransaction mindmapsTransaction){
+    private void checkSchema(MindmapsTransactionImpl mindmapsTransaction){
         if(mindmapsTransaction.isMetaOntologyNotInitialised()){
             mindmapsTransaction.initialiseMetaConcepts();
             try {
@@ -150,7 +154,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         }
     }
 
-    public void clearTransaction(){
+    void clearTransaction(){
         context.remove();
     }
 }

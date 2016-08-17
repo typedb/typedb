@@ -24,9 +24,11 @@ import io.mindmaps.constants.DataType;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.AbstractMindmapsGraph;
+import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsClient;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
 import org.junit.Before;
@@ -97,7 +99,7 @@ public class BackgroundTasksTest {
         assertEquals(4, ((AbstractMindmapsGraph) mindmapsGraph).getGraph().traversal().V().hasLabel(DataType.BaseType.CASTING.name()).toList().size());
     }
     private void buildDuplicateCasting(String relationTypeId, String mainRoleTypeId, String mainInstanceId, String otherRoleTypeId, String otherInstanceId) throws Exception {
-        MindmapsTransaction mindmapsTransaction = mindmapsGraph.getTransaction();
+        MindmapsTransactionImpl mindmapsTransaction = (MindmapsTransactionImpl) mindmapsGraph.getTransaction();
 
         //Get Needed Mindmaps Objects
         RelationType relationType = mindmapsTransaction.getRelationType(relationTypeId);
@@ -108,18 +110,20 @@ public class BackgroundTasksTest {
 
         mindmapsTransaction.commit();
 
+        Graph rawGraph = ((AbstractMindmapsGraph) mindmapsGraph).getGraph();
+
         //Get Needed Vertices
-        Vertex mainRoleTypeVertex = ((AbstractMindmapsGraph) mindmapsGraph).getGraph().traversal().V().
+        Vertex mainRoleTypeVertex = rawGraph.traversal().V().
                 has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), mainRoleTypeId).next();
 
-        Vertex relationVertex = ((AbstractMindmapsGraph) mindmapsGraph).getGraph().traversal().V().
+        Vertex relationVertex = rawGraph.traversal().V().
                 has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), relationId).next();
 
-        Vertex mainInstanceVertex = ((AbstractMindmapsGraph) mindmapsGraph).getGraph().traversal().V().
+        Vertex mainInstanceVertex = rawGraph.traversal().V().
                 has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), mainInstanceId).next();
 
         //Create Fake Casting
-        Vertex castingVertex = ((AbstractMindmapsGraph) mindmapsGraph).getGraph().addVertex(DataType.BaseType.CASTING.name());
+        Vertex castingVertex = rawGraph.addVertex(DataType.BaseType.CASTING.name());
         castingVertex.addEdge(DataType.EdgeLabel.ISA.getLabel(), mainRoleTypeVertex);
 
         Edge edge = castingVertex.addEdge(DataType.EdgeLabel.ROLE_PLAYER.getLabel(), mainInstanceVertex);
@@ -128,7 +132,6 @@ public class BackgroundTasksTest {
         edge = relationVertex.addEdge(DataType.EdgeLabel.CASTING.getLabel(), castingVertex);
         edge.property(DataType.EdgeProperty.ROLE_TYPE.name(), mainRoleTypeId);
 
-        mindmapsTransaction.close();
-        ((AbstractMindmapsGraph) mindmapsGraph).getGraph().tx().commit();
+        rawGraph.tx().commit();
     }
 }

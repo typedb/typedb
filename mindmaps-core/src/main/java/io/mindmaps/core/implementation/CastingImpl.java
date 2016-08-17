@@ -19,6 +19,7 @@
 package io.mindmaps.core.implementation;
 
 import io.mindmaps.constants.DataType;
+import io.mindmaps.core.implementation.exception.NoEdgeException;
 import io.mindmaps.core.model.*;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -33,7 +34,7 @@ import java.util.stream.Collectors;
  */
 class CastingImpl extends ConceptImpl {
 
-    CastingImpl(Vertex v, AbstractMindmapsTransaction mindmapsGraph) {
+    CastingImpl(Vertex v, MindmapsTransactionImpl mindmapsGraph) {
         super(v, mindmapsGraph);
     }
 

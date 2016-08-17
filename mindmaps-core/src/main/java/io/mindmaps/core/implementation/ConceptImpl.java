@@ -20,6 +20,10 @@ package io.mindmaps.core.implementation;
 
 import io.mindmaps.constants.DataType;
 import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.core.implementation.exception.ConceptException;
+import io.mindmaps.core.implementation.exception.ConceptIdNotUniqueException;
+import io.mindmaps.core.implementation.exception.InvalidConceptTypeException;
+import io.mindmaps.core.implementation.exception.MoreThanOneEdgeException;
 import io.mindmaps.core.model.*;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.*;
@@ -39,10 +43,10 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
         return (T) this;
     }
 
-    final AbstractMindmapsTransaction mindmapsTransaction;
+    final MindmapsTransactionImpl mindmapsTransaction;
     private Vertex vertex;
 
-    ConceptImpl(Vertex v, AbstractMindmapsTransaction mindmapsTransaction){
+    ConceptImpl(Vertex v, MindmapsTransactionImpl mindmapsTransaction){
         this.vertex = v;
         this.mindmapsTransaction = mindmapsTransaction;
         mindmapsTransaction.getConceptLog().putConcept(this);
@@ -694,7 +698,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
      *
      * @return The mindmaps transaction this concept is bound to.
      */
-    AbstractMindmapsTransaction getMindmapsTransaction() {return mindmapsTransaction;}
+    MindmapsTransactionImpl getMindmapsTransaction() {return mindmapsTransaction;}
 
     //--------- Create Links -------//
     /**

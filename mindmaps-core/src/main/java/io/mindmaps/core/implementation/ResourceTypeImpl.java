@@ -20,6 +20,8 @@ package io.mindmaps.core.implementation;
 
 import io.mindmaps.constants.DataType;
 import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.core.implementation.exception.ConceptException;
+import io.mindmaps.core.implementation.exception.InvalidConceptValueException;
 import io.mindmaps.core.model.Resource;
 import io.mindmaps.core.model.ResourceType;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -35,11 +37,11 @@ import java.util.regex.Pattern;
  */
 class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> implements ResourceType<D> {
 
-    ResourceTypeImpl(Vertex v, AbstractMindmapsTransaction mindmapsGraph) {
+    ResourceTypeImpl(Vertex v, MindmapsTransactionImpl mindmapsGraph) {
         super(v, mindmapsGraph);
     }
 
-    ResourceTypeImpl(Vertex v, AbstractMindmapsTransaction mindmapsGraph, Data<D> type) {
+    ResourceTypeImpl(Vertex v, MindmapsTransactionImpl mindmapsGraph, Data<D> type) {
         super(v, mindmapsGraph);
         setDataType(type);
     }

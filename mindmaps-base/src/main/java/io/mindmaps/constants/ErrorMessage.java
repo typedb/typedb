@@ -44,7 +44,7 @@ public enum ErrorMessage {
     INVALID_EDGE("The edge ['%s'] between concept ['%s'] and ['%s'] is invalid"),
     NOT_SUPPORTED("Not supported with a ['%s'] backend"),
     CLOSED("The ['%s'] has been permanently closed"),
-    TINKERGRAPH_WARNING("Tinkergraph does not actually support commits. The graph was only validated"),
+    TRANSACTIONS_NOT_SUPPORTED("The graph backend [%s] does not actually support transactions. The graph was not committed or refreshed."),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),

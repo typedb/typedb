@@ -20,6 +20,7 @@ package io.mindmaps.core.implementation;
 
 import io.mindmaps.constants.DataType;
 import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.core.implementation.exception.ConceptException;
 import io.mindmaps.core.model.Instance;
 import io.mindmaps.core.model.Relation;
 import io.mindmaps.core.model.RelationType;
@@ -33,7 +34,7 @@ import java.util.*;
  * A relation represents and instance of a relation type which model how different entities relate to one another.
  */
 class RelationImpl extends InstanceImpl<Relation, RelationType, String> implements Relation {
-    RelationImpl(Vertex v, AbstractMindmapsTransaction mindmapsGraph) {
+    RelationImpl(Vertex v, MindmapsTransactionImpl mindmapsGraph) {
         super(v, mindmapsGraph);
     }
 
