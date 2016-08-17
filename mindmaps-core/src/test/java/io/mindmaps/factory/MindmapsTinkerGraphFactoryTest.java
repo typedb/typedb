@@ -21,7 +21,7 @@ package io.mindmaps.factory;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.MindmapsTinkerGraph;
-import io.mindmaps.core.implementation.MindmapsTinkerTransaction;
+import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -47,7 +47,7 @@ public class MindmapsTinkerGraphFactoryTest {
         MindmapsGraph graph = tinkerGraphFactory.getGraph("test", null, null);
         MindmapsTransaction transaction = graph.getTransaction();
         assertThat(graph, instanceOf(MindmapsTinkerGraph.class));
-        assertThat(transaction, instanceOf(MindmapsTinkerTransaction.class));
+        assertThat(transaction, instanceOf(MindmapsTransactionImpl.class));
 
         try {
             transaction.close();

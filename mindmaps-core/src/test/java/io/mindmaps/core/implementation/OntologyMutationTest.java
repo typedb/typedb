@@ -19,6 +19,7 @@
 package io.mindmaps.core.implementation;
 
 import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.junit.After;
@@ -33,7 +34,7 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.core.StringContains.containsString;
 
 public class OntologyMutationTest {
-    private AbstractMindmapsTransaction mindmapsGraph;
+    private MindmapsTransactionImpl mindmapsGraph;
     private RoleType husband;
     private RoleType wife;
     private RelationType marriage;
@@ -50,7 +51,7 @@ public class OntologyMutationTest {
 
     @Before
     public void buildGraph() throws MindmapsValidationException {
-        mindmapsGraph = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
+        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
 
         //spouse = mindmapsTransaction.putRoleType("Spouse");
         husband = mindmapsGraph.putRoleType("Husband");//.superType(spouse);

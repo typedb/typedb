@@ -19,7 +19,7 @@
 package io.mindmaps.api;
 
 import io.mindmaps.util.ConfigProperties;
-import io.mindmaps.core.implementation.AbstractMindmapsTransaction;
+import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.QueryParser;
 import io.mindmaps.constants.RESTUtil;
@@ -53,7 +53,7 @@ public class RemoteShellController {
 
     private String buildMetaTypeInstancesObject(Request req, Response res){
 
-        AbstractMindmapsTransaction transaction = (AbstractMindmapsTransaction) GraphFactory.getInstance().getGraph(defaultGraphName).getTransaction();
+        MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) GraphFactory.getInstance().getGraph(defaultGraphName).getTransaction();
 
         JSONObject responseObj = new JSONObject();
         responseObj.put(RESTUtil.Response.ROLES_JSON_FIELD, new JSONArray(transaction.getMetaRoleType().instances().stream().map(x -> x.getId()).toArray()));

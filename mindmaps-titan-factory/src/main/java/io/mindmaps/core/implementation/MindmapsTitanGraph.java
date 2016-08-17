@@ -21,16 +21,10 @@ package io.mindmaps.core.implementation;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.MindmapsTransaction;
 
 public class MindmapsTitanGraph extends AbstractMindmapsGraph<TitanGraph> {
     public MindmapsTitanGraph(TitanGraph graph, String name, String engineUrl){
         super(graph, name, engineUrl);
-    }
-
-    @Override
-    protected MindmapsTransaction buildTransaction() {
-        return new MindmapsTitanTransaction(this);
     }
 
     @Override

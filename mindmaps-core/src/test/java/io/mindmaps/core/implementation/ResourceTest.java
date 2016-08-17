@@ -34,14 +34,14 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ResourceTest {
 
-    private AbstractMindmapsTransaction mindmapsGraph;
+    private MindmapsTransactionImpl mindmapsGraph;
 
     @org.junit.Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void buildGraph() {
-        mindmapsGraph = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
+        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
         mindmapsGraph.initialiseMetaConcepts();
     }
 

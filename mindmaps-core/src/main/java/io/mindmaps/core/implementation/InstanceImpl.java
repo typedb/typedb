@@ -33,7 +33,7 @@ import java.util.Set;
  * @param <D> The data type of the value in the concept.
  */
 abstract class InstanceImpl<T extends Instance, V extends Type, D> extends ConceptImpl<T, V, D> implements Instance {
-    InstanceImpl(Vertex v, AbstractMindmapsTransaction mindmapsGraph) {
+    InstanceImpl(Vertex v, MindmapsTransactionImpl mindmapsGraph) {
         super(v, mindmapsGraph);
     }
 

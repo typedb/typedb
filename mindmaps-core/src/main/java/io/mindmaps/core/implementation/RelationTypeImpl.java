@@ -32,7 +32,7 @@ import java.util.Set;
  * A Relation Type is an ontological element used to model how entity types relate to one another.
  */
 class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
-    RelationTypeImpl(Vertex v, AbstractMindmapsTransaction mindmapsGraph) {
+    RelationTypeImpl(Vertex v, MindmapsTransactionImpl mindmapsGraph) {
         super(v, mindmapsGraph);
     }
 

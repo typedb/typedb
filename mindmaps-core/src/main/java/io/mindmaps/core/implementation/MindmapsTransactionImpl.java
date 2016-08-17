@@ -21,39 +21,42 @@ package io.mindmaps.core.implementation;
 import io.mindmaps.constants.DataType;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.core.implementation.exception.*;
 import io.mindmaps.core.model.*;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
 
-public abstract class AbstractMindmapsTransaction implements MindmapsTransaction, AutoCloseable {
-    protected final Logger LOG = LoggerFactory.getLogger(AbstractMindmapsTransaction.class);
+public class MindmapsTransactionImpl implements MindmapsTransaction, AutoCloseable {
+    protected final Logger LOG = LoggerFactory.getLogger(MindmapsTransactionImpl.class);
     private final ElementFactory elementFactory;
     private final ConceptLog conceptLog;
-    private final boolean batchLoadingEnabled;
+    private final AbstractMindmapsGraph mindmapsGraph;
+    private boolean batchLoadingEnabled;
     private Graph transaction;
 
-    public AbstractMindmapsTransaction(Graph transaction, boolean batchLoadingEnabled) {
-        this.transaction = transaction;
-        this.batchLoadingEnabled = batchLoadingEnabled;
+    public MindmapsTransactionImpl(AbstractMindmapsGraph mindmapsGraph) {
+        this.mindmapsGraph = mindmapsGraph;
+        this.transaction = mindmapsGraph.getGraph();
+        this.batchLoadingEnabled = false;
         conceptLog = new ConceptLog();
         elementFactory = new ElementFactory(this);
     }
 
-    public abstract AbstractMindmapsGraph getRootGraph();
+    public void setBatchLoadingEnabled(boolean batchLoadingEnabled){
+        this.batchLoadingEnabled = batchLoadingEnabled;
+    }
 
     public boolean isBatchLoadingEnabled(){
         return batchLoadingEnabled;
@@ -648,14 +651,20 @@ public abstract class AbstractMindmapsTransaction implements MindmapsTransaction
             return null;
     }
 
-    @Override
-    public void refresh() throws Exception {
-        close();
-        getConceptLog().clearTransaction();
-        setTinkerPopGraph(getNewTransaction());
+    public void handleTransaction(Consumer<Transaction> method){
+        try {
+            method.accept(getTinkerPopGraph().tx());
+        } catch (UnsupportedOperationException e){
+            LOG.warn(ErrorMessage.TRANSACTIONS_NOT_SUPPORTED.getMessage(mindmapsGraph.getClass().getName()));
+        }
     }
 
-    protected abstract Graph getNewTransaction();
+    @Override
+    public void refresh() throws Exception {
+        handleTransaction(Transaction::rollback);
+        getConceptLog().clearTransaction();
+        LOG.info("Transaction refreshed");
+    }
 
     /**
      * Closes the current transaction rendering it unusable.
@@ -663,9 +672,11 @@ public abstract class AbstractMindmapsTransaction implements MindmapsTransaction
      */
     @Override
     public void close() throws Exception {
+        handleTransaction(Transaction::rollback);
         getConceptLog().clearTransaction();
+        mindmapsGraph.clearTransaction();
         setTinkerPopGraph(null);
-        getRootGraph().clearTransaction();
+        LOG.info("Transaction closed");
     }
 
     /**
@@ -683,7 +694,7 @@ public abstract class AbstractMindmapsTransaction implements MindmapsTransaction
             modifiedConcepts.put(DataType.BaseType.CASTING, castings);
 
         LOG.info("Graph is valid. Committing graph . . . ");
-        persistGraph();
+        handleTransaction(Transaction::commit);
 
         try {
             refresh();
@@ -691,14 +702,11 @@ public abstract class AbstractMindmapsTransaction implements MindmapsTransaction
             LOG.error("Failed to create new transaction after committing", e);
             e.printStackTrace();
         }
+
         LOG.info("Graph committed.");
 
         if(modifiedConcepts.size() > 0)
             submitCommitLogs(modifiedConcepts);
-    }
-
-    protected void persistGraph(){
-        getTinkerPopGraph().tx().commit();
     }
 
     protected void validateGraph() throws MindmapsValidationException {
@@ -715,7 +723,7 @@ public abstract class AbstractMindmapsTransaction implements MindmapsTransaction
     }
 
     protected void submitCommitLogs(Map<DataType.BaseType, Set<String>> concepts){
-        LOG.info("Submitting commit logs to [" + getRootGraph().getCommitLogEndPoint() + "]");
+        LOG.info("Submitting commit logs to [" + mindmapsGraph.getCommitLogEndPoint() + "]");
 
         JSONArray jsonArray = new JSONArray();
         for (Map.Entry<DataType.BaseType, Set<String>> entry : concepts.entrySet()) {
@@ -734,10 +742,10 @@ public abstract class AbstractMindmapsTransaction implements MindmapsTransaction
         postObject.put("concepts", jsonArray);
 
         try {
-            String result = EngineCommunicator.contactEngine(getRootGraph().getCommitLogEndPoint(), "POST", postObject.toString());
+            String result = EngineCommunicator.contactEngine(mindmapsGraph.getCommitLogEndPoint(), "POST", postObject.toString());
             LOG.info("Response from engine [" + result + "]");
         } catch (IllegalArgumentException e) {
-            LOG.error(ErrorMessage.COULD_NOT_REACH_ENGINE.getMessage(getRootGraph().getCommitLogEndPoint()), e);
+            LOG.error(ErrorMessage.COULD_NOT_REACH_ENGINE.getMessage(mindmapsGraph.getCommitLogEndPoint()), e);
         }
     }
 

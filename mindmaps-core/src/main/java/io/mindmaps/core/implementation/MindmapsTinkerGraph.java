@@ -18,7 +18,6 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.core.MindmapsTransaction;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
 /**
@@ -28,7 +27,7 @@ import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 public class MindmapsTinkerGraph extends AbstractMindmapsGraph<TinkerGraph> {
     public MindmapsTinkerGraph(TinkerGraph tinkerGraph, String name){
         super(tinkerGraph, name, "localhost");
-        new MindmapsTinkerTransaction(this).initialiseMetaConcepts();
+        new MindmapsTransactionImpl(this).initialiseMetaConcepts();
     }
 
     /**
@@ -37,10 +36,5 @@ public class MindmapsTinkerGraph extends AbstractMindmapsGraph<TinkerGraph> {
     @Override
     public void clear() {
         close();
-    }
-
-    @Override
-    protected MindmapsTransaction buildTransaction() {
-        return new MindmapsTinkerTransaction(this);
     }
 }

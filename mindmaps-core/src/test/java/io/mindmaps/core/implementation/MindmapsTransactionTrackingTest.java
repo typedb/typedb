@@ -18,6 +18,7 @@
 
 package io.mindmaps.core.implementation;
 
+import io.mindmaps.core.implementation.exception.ConceptException;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.EntityType;
 import io.mindmaps.core.model.Instance;
@@ -44,13 +45,13 @@ import static org.junit.Assert.assertTrue;
 
 public class MindmapsTransactionTrackingTest {
 
-    private AbstractMindmapsTransaction mindmapsGraph;
+    private MindmapsTransactionImpl mindmapsGraph;
     private Set<ConceptImpl> modifiedConcepts;
     private Stack<Concept> newConcepts;
 
     @Before
     public void buildGraphAccessManager() {
-        mindmapsGraph = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
+        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
         // start standard rootGraph access manager
         mindmapsGraph.initialiseMetaConcepts();
         modifiedConcepts = new HashSet<>();

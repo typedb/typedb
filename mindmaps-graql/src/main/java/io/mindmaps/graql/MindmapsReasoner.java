@@ -21,7 +21,7 @@ package io.mindmaps.graql;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Lists;
 import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.core.implementation.MindmapsValidationException;
+import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.RoleType;
 import io.mindmaps.core.model.Rule;

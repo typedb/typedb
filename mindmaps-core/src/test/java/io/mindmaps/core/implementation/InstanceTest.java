@@ -19,6 +19,7 @@
 package io.mindmaps.core.implementation;
 
 import io.mindmaps.constants.DataType;
+import io.mindmaps.core.implementation.exception.ConceptException;
 import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.junit.After;
@@ -34,14 +35,14 @@ import static junit.framework.Assert.assertNull;
 import static org.junit.Assert.*;
 
 public class InstanceTest {
-    private AbstractMindmapsTransaction mindmapsGraph;
+    private MindmapsTransactionImpl mindmapsGraph;
 
     @org.junit.Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void buildGraph(){
-        mindmapsGraph = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
+        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
         mindmapsGraph.initialiseMetaConcepts();
     }
     @After
@@ -50,7 +51,7 @@ public class InstanceTest {
     }
 
     @Test
-    public void testDeleteScope() throws ConceptException{
+    public void testDeleteScope() throws ConceptException {
         EntityType entityType = mindmapsGraph.putEntityType("entity type");
         RelationType relationType = mindmapsGraph.putRelationType("RelationType");
         Instance scope = mindmapsGraph.putEntity("scope", entityType);

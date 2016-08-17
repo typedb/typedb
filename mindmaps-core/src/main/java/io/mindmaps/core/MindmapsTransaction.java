@@ -18,7 +18,7 @@
 
 package io.mindmaps.core;
 
-import io.mindmaps.core.implementation.MindmapsValidationException;
+import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.implementation.Data;
 import io.mindmaps.core.model.*;
 

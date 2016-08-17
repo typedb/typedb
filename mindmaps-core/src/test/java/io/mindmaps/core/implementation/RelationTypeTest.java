@@ -19,6 +19,7 @@
 package io.mindmaps.core.implementation;
 
 import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.core.implementation.exception.ConceptException;
 import io.mindmaps.core.model.RelationType;
 import io.mindmaps.core.model.RoleType;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
@@ -36,7 +37,7 @@ import static org.junit.Assert.*;
 
 public class RelationTypeTest {
 
-    private AbstractMindmapsTransaction mindmapsGraph;
+    private MindmapsTransactionImpl mindmapsGraph;
     private RelationType relationType;
     private RoleType role1;
     private RoleType role2;
@@ -47,7 +48,7 @@ public class RelationTypeTest {
 
     @Before
     public void setUp() throws ConceptException {
-        mindmapsGraph = (AbstractMindmapsTransaction) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
+        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
         mindmapsGraph.initialiseMetaConcepts();
 
         //Building

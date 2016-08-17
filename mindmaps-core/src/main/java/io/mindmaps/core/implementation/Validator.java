@@ -28,10 +28,10 @@ import java.util.*;
  * Handles calling the relevant validation depending on the type of the concept.
  */
 class Validator {
-    private final AbstractMindmapsTransaction mindmapsGraph;
+    private final MindmapsTransactionImpl mindmapsGraph;
     private final List<String> errorsFound = new ArrayList<>();
 
-    public Validator(AbstractMindmapsTransaction mindmapsGraph){
+    public Validator(MindmapsTransactionImpl mindmapsGraph){
         this.mindmapsGraph = mindmapsGraph;
     }
 

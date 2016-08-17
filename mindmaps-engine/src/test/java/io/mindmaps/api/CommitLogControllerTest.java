@@ -24,7 +24,7 @@ import com.jayway.restassured.http.ContentType;
 import io.mindmaps.Util;
 import io.mindmaps.constants.RESTUtil;
 import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.core.implementation.MindmapsValidationException;
+import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.Entity;
 import io.mindmaps.core.model.EntityType;
 import io.mindmaps.core.model.RelationType;
