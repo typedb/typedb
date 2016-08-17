@@ -1,0 +1,62 @@
+<!--
+  ~ MindmapsDB - A Distributed Semantic Database
+  ~ Copyright (C) 2016  Mindmaps Research Ltd
+  ~
+  ~ MindmapsDB is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ MindmapsDB is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+  -->
+
+<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2 http://maven.apache.org/xsd/component-1.1.2.xsd">
+    <id>dist</id>
+    <formats>
+        <format>zip</format>
+    </formats>
+
+    <fileSets>
+        <fileSet>
+            <outputDirectory>bin</outputDirectory>
+            <directory>${basedir}/src/bin/</directory>
+            <includes>
+                <include>*</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <outputDirectory>conf</outputDirectory>
+            <directory>${basedir}/src/conf/</directory>
+            <includes>
+                <include>**</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <outputDirectory>conf</outputDirectory>
+            <directory>${project.parent.basedir}/conf/</directory>
+            <includes>
+                <include>**</include>
+            </includes>
+        </fileSet>
+    </fileSets>
+
+    <dependencySets>
+        <dependencySet>
+            <outputDirectory>lib</outputDirectory>
+            <unpack>false</unpack>
+            <scope>runtime</scope>
+            <useProjectArtifact>false</useProjectArtifact>
+            <includes>
+                <include>*:*:jar:*</include>
+            </includes>
+        </dependencySet>
+    </dependencySets>
+
+</assembly>
