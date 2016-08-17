@@ -52,7 +52,7 @@ public class RESTLoader {
     private static RESTLoader instance = null;
 
     private ExecutorService executor;
-    private final Map<UUID, State> loaderState;
+    private final Map<UUID, TransactionState> loaderState;
 
     private AtomicBoolean maintenanceInProcess;
     private AtomicInteger enqueuedJobs;
@@ -87,9 +87,36 @@ public class RESTLoader {
         return instance;
     }
 
+    private class TransactionState{
+        private State currentState;
+        private String exception;
+
+        public TransactionState(State state){
+            currentState=state;
+        }
+        public void setException(String exceptionParam){
+            exception=exceptionParam;
+        }
+
+        public void setState(State stateParam){ currentState=stateParam;}
+
+        public State getState(){
+            return currentState;
+        }
+
+        public String getException(){return exception;}
+
+
+        @Override
+        public String toString() {
+            return "{ \"state\":\"" + currentState + "\", " +
+                    " \"exception\":\"" + exception + "\"}";
+        }
+    }
+
     public UUID addJob(String name, String queryString) {
         UUID newUUID = UUID.randomUUID();
-        loaderState.put(newUUID, State.QUEUED);
+        loaderState.put(newUUID, new TransactionState(State.QUEUED));
         executor.submit(() -> loadData(name, queryString, newUUID));
         enqueuedJobs.incrementAndGet();
         return newUUID;
@@ -98,7 +125,7 @@ public class RESTLoader {
     public void loadData(String name, String batch, UUID uuid) {
         // Attempt committing the transaction a certain number of times
         // If a transaction fails, it must be repeated from scratch because Titan is forgetful
-        loaderState.put(uuid, State.LOADING);
+        loaderState.put(uuid, new TransactionState(State.LOADING));
         loadingJobs.incrementAndGet();
         enqueuedJobs.decrementAndGet();
 
@@ -109,20 +136,22 @@ public class RESTLoader {
                 QueryParser.create(transaction).parseInsertQuery(batch).execute();
                 transaction.commit();
                 cache.addJobCasting(name, transaction.getModifiedCastingIds());
-                loaderState.put(uuid, State.FINISHED);
+                loaderState.get(uuid).setState(State.FINISHED);
                 finishedJobs.incrementAndGet();
                 return;
 
             } catch (MindmapsValidationException e) {
                 //If it's a validation exception there is no point in re-trying
                 LOG.error(ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));
-                loaderState.put(uuid, State.CANCELLED);
+                loaderState.get(uuid).setState(State.ERROR);
+                loaderState.get(uuid).setException(ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));
                 errorJobs.incrementAndGet();
                 return;
             } catch (IllegalArgumentException e) {
                 //If it's a parsing exception there is no point in re-trying
                 LOG.error(ErrorMessage.PARSING_EXCEPTION.getMessage(e.getMessage()));
-                loaderState.put(uuid, State.CANCELLED);
+                loaderState.get(uuid).setState(State.ERROR);
+                loaderState.get(uuid).setException(ErrorMessage.PARSING_EXCEPTION.getMessage(e.getMessage()));
                 errorJobs.incrementAndGet();
                 return;
             } catch (Exception e) {
@@ -140,14 +169,15 @@ public class RESTLoader {
         }
 
         LOG.error(ErrorMessage.FAILED_TRANSACTION.getMessage(repeatCommits));
-        loaderState.put(uuid, State.CANCELLED);
+        loaderState.get(uuid).setState(State.ERROR);
+        loaderState.get(uuid).setException(ErrorMessage.FAILED_TRANSACTION.getMessage(repeatCommits));
         errorJobs.incrementAndGet();
 
         //TODO: log the errors to a log file.
     }
 
-    public State getStatus(UUID uuid) {
-        return loaderState.get(uuid);
+    public String getStatus(UUID uuid) {
+        return loaderState.get(uuid).toString();
     }
 
     private void handleError(Exception e, int i) {

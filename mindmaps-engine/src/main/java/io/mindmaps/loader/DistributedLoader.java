@@ -25,14 +25,15 @@ import io.mindmaps.util.ConfigProperties;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.nio.ch.IOUtil;
 
 import javax.xml.ws.http.HTTPException;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.stream.Collectors;
 
 /**
@@ -42,7 +43,6 @@ public class DistributedLoader extends Loader {
 
     private final Logger LOG = LoggerFactory.getLogger(DistributedLoader.class);
     private static ExecutorService executor = Executors.newSingleThreadExecutor();
-    private Future f;
 
     private String graphName;
     private int currentHost;
@@ -111,7 +111,7 @@ public class DistributedLoader extends Loader {
             String transactionId = IOUtils.toString(currentConn.getInputStream());
             transactions.get(hostsArray[currentHost]).add(transactionId);
 
-            if(!checkingStatus){
+            if (!checkingStatus) {
                 startCheckingStatus();
             }
 
@@ -207,9 +207,10 @@ public class DistributedLoader extends Loader {
 
     /**
      * Check if all transactions are finished
+     *
      * @return true if all transactions have finished
      */
-    private boolean transactionsIsEmpty(){
+    private boolean transactionsIsEmpty() {
         return transactions.values().stream().allMatch(Set::isEmpty);
     }
 

@@ -61,7 +61,7 @@ public class TransactionController {
             notes = "The body of the request must only contain the insert Graql strings.",
             response = String.class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "graphName", value = "Name of graph tu use", dataType = "string", paramType = "query")
+            @ApiImplicitParam(name = "graphName", value = "Name of graph to use", dataType = "string", paramType = "query")
     })
     private String newTransactionREST(Request req, Response res){
         String currentGraphName = req.queryParams(RESTUtil.Request.GRAPH_NAME_PARAM);
@@ -86,7 +86,7 @@ public class TransactionController {
     })
     private String checkTransactionStatusREST(Request req, Response res){
         try {
-            return loader.getStatus(UUID.fromString(req.params(RESTUtil.Request.UUID_PARAMETER))).toString();
+            return loader.getStatus(UUID.fromString(req.params(RESTUtil.Request.UUID_PARAMETER)));
         } catch (Exception e) {
             e.printStackTrace();
             res.status(400);
