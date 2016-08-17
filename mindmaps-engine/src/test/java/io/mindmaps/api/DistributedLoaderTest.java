@@ -42,6 +42,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
+import static org.junit.Assert.assertNotNull;
+
 public class DistributedLoaderTest {
 
     Properties prop = new Properties();
@@ -66,13 +68,13 @@ public class DistributedLoaderTest {
     @Test
     public void testLoadOntologyAndData() {
         Logger logger = (Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.INFO);
+        logger.setLevel(Level.OFF);
 
         loadOntology();
 
         ClassLoader classLoader = getClass().getClassLoader();
         File fileData= new File(classLoader.getResource("small_nametags.gql").getFile());
-        loader.setBatchSize(10);
+        loader.setBatchSize(50);
         try {
             QueryParser.create().parsePatternsStream(new FileInputStream(fileData)).forEach(pattern -> loader.addToQueue(pattern.admin().asVar()));
         } catch (FileNotFoundException e) {
@@ -80,7 +82,16 @@ public class DistributedLoaderTest {
         }
 
         loader.waitToFinish();
-        Assert.assertNotNull(GraphFactory.getInstance().getGraph(graphName).newTransaction().getConcept("X546f736869616b69204b61776173616b69").getId());
+        System.out.println(GraphFactory.getInstance().getGraph(graphName).newTransaction().getMetaEntityType().instances().size());
+
+        MindmapsTransaction transaction = GraphFactory.getInstance().getGraph(graphName).newTransaction();
+
+        assertNotNull(transaction.getConcept("X4d616e75656c20417a656e6861").getId());
+        assertNotNull(transaction.getConcept("X44616e69656c61204675696f726561").getId());
+        assertNotNull(transaction.getConcept("X422e20476174686d616e6e").getId());
+        assertNotNull(transaction.getConcept("X416e6472657720522e2057656262").getId());
+        assertNotNull(transaction.getConcept("X4a752d4d696e205a68616f").getId());
+        assertNotNull(transaction.getConcept("X546f736869616b69204b61776173616b69").getId());
     }
 
     private void loadOntology(){

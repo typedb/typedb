@@ -72,8 +72,8 @@ public class DistributedLoader extends Loader {
     }
 
     public void waitToFinish(){
+        flush();
         while(!transactions.values().stream().allMatch(Set::isEmpty)){
-            System.out.println(transactions);
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {
@@ -165,17 +165,17 @@ public class DistributedLoader extends Loader {
         try {
             while (true) {
 
-                System.out.println("looping");
-
+                // loop through the hosts
                 for (String host : transactions.keySet()) {
-                    for (String transaction : transactions.get(host)) {
 
-                        System.out.println("checking " + host + " " + transaction);
+                    // loop through the transactions of each host
+                    Iterator<String> transactionsIter = transactions.get(host).iterator();
+                    while(transactionsIter.hasNext()){
+                        String transaction = transactionsIter.next();
 
                         if (isFinished(host, transaction)) {
                             availability.get(host).release();
-                            transactions.get(host).remove(transaction);
-                            System.out.println("released " + host);
+                            transactionsIter.remove();
                         }
                     }
                 }
@@ -191,8 +191,8 @@ public class DistributedLoader extends Loader {
     /**
      * Check if transaction is finished
      *
-     * @param transaction
-     * @return
+     * @param transaction transaction to check if has finished
+     * @return if the given transaction has finished
      */
     private boolean isFinished(String host, String transaction) {
 
@@ -205,22 +205,19 @@ public class DistributedLoader extends Loader {
             urlConn.setDoOutput(true);
 
             String response = IOUtils.toString(urlConn.getInputStream());
-            System.out.println("get back " + response);
             if (response.equals(State.FINISHED.name())) {
                 System.out.println("finished " + transaction);
                 return true;
             }
         }
         catch (IOException e){
-            System.out.println("error");
-            System.out.println(e);
+            LOG.error(e.getMessage());
             return true;
         }
         finally {
             urlConn.disconnect();
         }
 
-        System.out.println("false");
         return false;
     }
 }
