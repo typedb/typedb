@@ -20,7 +20,7 @@ package io.mindmaps.postprocessing;
 
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.factory.MindmapsClient;
-import io.mindmaps.loader.Loader;
+import io.mindmaps.loader.RESTLoader;
 import io.mindmaps.util.ConfigProperties;
 import org.apache.tinkerpop.shaded.minlog.Log;
 import org.slf4j.Logger;
@@ -81,14 +81,14 @@ public class BackgroundTasks {
         LOG.info("Starting maintenance and locking QueueManager");
         lockQueueManager();
         performTasks();
-        Loader.getInstance().unlock();
+        RESTLoader.getInstance().unlock();
         LOG.info("Maintenance completed and unlocking QueueManager");
     }
 
     private void lockQueueManager() {
         synchronized (this) {
-            Loader.getInstance().lock();
-            while (Loader.getInstance().getLoadingJobs() != 0) {
+            RESTLoader.getInstance().lock();
+            while (RESTLoader.getInstance().getLoadingJobs() != 0) {
                 try {
                     wait();
                 } catch (InterruptedException e) {
@@ -125,9 +125,9 @@ public class BackgroundTasks {
     }
 
     private boolean maintenanceAllowed() {
-        long lastJob = Loader.getInstance().getLastJobFinished();
+        long lastJob = RESTLoader.getInstance().getLastJobFinished();
         long currentTime = System.currentTimeMillis();
-        return (currentTime - lastJob) >= TIME_LAPSE && Loader.getInstance().getLoadingJobs() == 0;
+        return (currentTime - lastJob) >= TIME_LAPSE && RESTLoader.getInstance().getLoadingJobs() == 0;
     }
 
     private void waitToContinue() {

@@ -39,14 +39,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-public class BlockingLoader {
+/**
+ * RESTLoader that submits tasks to locally running engine and performs basic load balancing.
+ */
+public class BlockingLoader extends Loader {
 
     private final Logger LOG = LoggerFactory.getLogger(BlockingLoader.class);
 
     private ExecutorService executor;
     private Cache cache;
-    private Collection<Var> batch;
-    private int batchSize;
     private static Semaphore transactionsSemaphore;
     private static int repeatCommits;
     private int numThreads;
@@ -65,14 +66,6 @@ public class BlockingLoader {
         batch = new HashSet<>();
     }
 
-    public void addToQueue(Collection<Var> vars) {
-        batch.addAll(vars);
-        if (batch.size() >= batchSize) {
-            submitToExecutor(batch);
-            batch = new HashSet<>();
-        }
-    }
-
     public void setExecutorSize(int size) {
         try {
             executor.shutdown();
@@ -84,11 +77,7 @@ public class BlockingLoader {
         }
     }
 
-    public void setBatchSize(int size){
-        batchSize = size;
-    }
-
-    private void submitToExecutor(Collection<Var> vars) {
+    protected void submitBatch(Collection<Var> vars) {
         try {
             transactionsSemaphore.acquire();
             executor.submit(() -> loadData(graphName, vars));
@@ -97,14 +86,9 @@ public class BlockingLoader {
         }
     }
 
-    public void addToQueue(Var var) {
-        addToQueue(Collections.singletonList(var));
-    }
-
     public void waitToFinish() {
-        if (batch.size() > 0) {
-            executor.submit(() -> loadData(graphName, batch));
-        }
+        flush();
+
         try {
             executor.shutdown();
             executor.awaitTermination(5, TimeUnit.MINUTES);

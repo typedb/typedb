@@ -18,7 +18,7 @@
 
 package io.mindmaps.api;
 
-import io.mindmaps.loader.Loader;
+import io.mindmaps.loader.RESTLoader;
 import io.mindmaps.util.ConfigProperties;
 import io.mindmaps.constants.RESTUtil;
 
@@ -29,18 +29,18 @@ import static spark.Spark.post;
 
 public class TransactionController {
 
-    Loader loader;
+    RESTLoader RESTLoader;
     String defaultGraphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
 
     public TransactionController() {
 
-        loader = Loader.getInstance();
+        RESTLoader = RESTLoader.getInstance();
 
         post(RESTUtil.WebPath.NEW_TRANSACTION_URI, (req, res) -> {
 
             String currentGraphName = req.queryParams(RESTUtil.Request.GRAPH_NAME_PARAM);
             if (currentGraphName == null) currentGraphName = defaultGraphName;
-            UUID uuid = loader.addJob(currentGraphName, req.body());
+            UUID uuid = RESTLoader.addJob(currentGraphName, req.body());
 
             if (uuid != null) {
                 res.status(201);
@@ -53,7 +53,7 @@ public class TransactionController {
 
         get(RESTUtil.WebPath.TRANSACTION_STATUS_URI, (req, res) -> {
             try {
-                return loader.getStatus(UUID.fromString(req.params(RESTUtil.Request.UUID_PARAMETER))).toString();
+                return RESTLoader.getStatus(UUID.fromString(req.params(RESTUtil.Request.UUID_PARAMETER))).toString();
             } catch (Exception e) {
                 e.printStackTrace();
                 res.status(400);
