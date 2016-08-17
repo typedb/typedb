@@ -38,7 +38,7 @@ class FragmentImpl implements Fragment {
      * @param priority the priority of this fragment, describing how expensive the traversal is expected to be
      * @param start the variable name that this fragment starts from in the query
      */
-    public FragmentImpl(UnaryOperator<GraphTraversal<Vertex, Vertex>> traversal, FragmentPriority priority, String start) {
+    FragmentImpl(UnaryOperator<GraphTraversal<Vertex, Vertex>> traversal, FragmentPriority priority, String start) {
         this.traversalFunction = traversal;
         this.priority = priority;
         this.start = start;
@@ -51,7 +51,7 @@ class FragmentImpl implements Fragment {
      * @param start the variable name that this fragment starts from in the query
      * @param end the variable name that this fragment ends at in the query
      */
-    public FragmentImpl(
+    FragmentImpl(
             UnaryOperator<GraphTraversal<Vertex, Vertex>> traversal,
             FragmentPriority priority, String start, String end
     ) {

@@ -36,7 +36,7 @@ class DeleteVarValidator implements Validator {
     /**
      * @param var a deleter Var in a delete query
      */
-    public DeleteVarValidator(VarAdmin var) {
+    DeleteVarValidator(VarAdmin var) {
         this.var = var;
     }
 

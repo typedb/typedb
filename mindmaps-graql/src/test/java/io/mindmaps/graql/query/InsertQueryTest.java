@@ -37,7 +37,6 @@ import java.util.stream.Collectors;
 
 import static io.mindmaps.constants.DataType.ConceptMeta.*;
 import static io.mindmaps.graql.Graql.*;
-import static io.mindmaps.graql.Graql.id;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.*;
@@ -47,7 +46,7 @@ public class InsertQueryTest {
     private MindmapsTransaction transaction;
     private QueryBuilder qb;
     @Rule
-    public final ExpectedException exception = ExpectedException.none();
+    private final ExpectedException exception = ExpectedException.none();
 
     @Before
     public void setUp() {

@@ -622,7 +622,7 @@ public class VarImpl implements VarAdmin {
          * A casting without a role type specified
          * @param rolePlayer the role player of the casting
          */
-        public Casting(VarAdmin rolePlayer) {
+        Casting(VarAdmin rolePlayer) {
             this.roleType = Optional.empty();
             this.rolePlayer = rolePlayer;
         }
@@ -631,7 +631,7 @@ public class VarImpl implements VarAdmin {
          * @param roletype the role type of the casting
          * @param rolePlayer the role player of the casting
          */
-        public Casting(VarAdmin roletype, VarAdmin rolePlayer) {
+        Casting(VarAdmin roletype, VarAdmin rolePlayer) {
             this.roleType = Optional.of(roletype);
             this.rolePlayer = rolePlayer;
         }

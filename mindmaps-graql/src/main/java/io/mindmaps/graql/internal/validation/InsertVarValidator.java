@@ -37,7 +37,7 @@ class InsertVarValidator implements Validator {
     /**
      * @param var the Var in an insert query to validate
      */
-    public InsertVarValidator(VarAdmin var) {
+    InsertVarValidator(VarAdmin var) {
         this.var = var;
     }
 

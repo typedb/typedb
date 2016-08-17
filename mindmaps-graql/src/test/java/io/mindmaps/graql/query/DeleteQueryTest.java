@@ -40,7 +40,7 @@ public class DeleteQueryTest {
 
     private QueryBuilder qb;
     @Rule
-    public final ExpectedException exception = ExpectedException.none();
+    private final ExpectedException exception = ExpectedException.none();
 
     @Before
     public void setUp() {

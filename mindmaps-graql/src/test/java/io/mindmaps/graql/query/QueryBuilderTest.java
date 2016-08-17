@@ -35,7 +35,7 @@ import static org.junit.Assert.assertTrue;
 public class QueryBuilderTest {
 
     @Rule
-    public final ExpectedException exception = ExpectedException.none();
+    private final ExpectedException exception = ExpectedException.none();
     private static MindmapsTransaction transaction;
 
     @Before

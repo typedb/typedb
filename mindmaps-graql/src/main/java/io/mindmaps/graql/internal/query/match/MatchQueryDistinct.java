@@ -25,9 +25,9 @@ import java.util.stream.Stream;
 /**
  * "Distinct" modifier for a match query that eliminates duplicate results.
  */
-public class MatchQueryDistinct<T> extends MatchQueryModifier<T, T> {
+class MatchQueryDistinct<T> extends MatchQueryModifier<T, T> {
 
-    public MatchQueryDistinct(MatchQueryAdmin<T> inner) {
+    MatchQueryDistinct(MatchQueryAdmin<T> inner) {
         super(inner);
     }
 

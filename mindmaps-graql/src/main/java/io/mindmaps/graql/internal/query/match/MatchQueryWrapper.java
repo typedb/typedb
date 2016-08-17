@@ -36,7 +36,7 @@ import java.util.stream.Stream;
  * Wrapper class that wraps up a {@link AbstractMatchQuery} into a {@link AbstractMatchQueryDefault}, provided it operates on
  * {@code Map<String, Concept>}. This is used to wrap up classes such as {@link MatchQueryLimit}.
  */
-public class MatchQueryWrapper extends AbstractMatchQueryDefault {
+class MatchQueryWrapper extends AbstractMatchQueryDefault {
 
     private final MatchQueryAdmin<Map<String, Concept>> query;
     private final MatchQueryDefaultAdmin queryMap;
@@ -45,7 +45,7 @@ public class MatchQueryWrapper extends AbstractMatchQueryDefault {
      * @param query the query to wrap
      * @param queryMap the original {@link AbstractMatchQueryDefault} that {@code query} was derived from
      */
-    public MatchQueryWrapper(MatchQueryAdmin<Map<String, Concept>> query, MatchQueryDefaultAdmin queryMap) {
+    MatchQueryWrapper(MatchQueryAdmin<Map<String, Concept>> query, MatchQueryDefaultAdmin queryMap) {
         this.query = query;
         this.queryMap = queryMap;
     }

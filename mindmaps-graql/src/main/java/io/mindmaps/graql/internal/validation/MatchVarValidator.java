@@ -42,7 +42,7 @@ class MatchVarValidator implements Validator {
     /**
      * @param var the Var in a MatchQuery to validate
      */
-    public MatchVarValidator(VarAdmin var) {
+    MatchVarValidator(VarAdmin var) {
         this.var = var;
     }
 

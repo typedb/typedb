@@ -32,7 +32,7 @@ class AggregateValidator implements Validator {
     /**
      * @param validators the validators to combine into one validator
      */
-    public AggregateValidator(Collection<? extends Validator> validators) {
+    AggregateValidator(Collection<? extends Validator> validators) {
         this.validators = validators;
     }
 

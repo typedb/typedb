@@ -35,7 +35,7 @@ import java.util.*;
 import static java.util.stream.Collectors.toList;
 
 @SuppressWarnings("UnusedReturnValue")
-public abstract class AbstractMatchQueryDefault extends AbstractMatchQuery<Map<String, Concept>> implements MatchQueryDefaultAdmin {
+abstract class AbstractMatchQueryDefault extends AbstractMatchQuery<Map<String, Concept>> implements MatchQueryDefaultAdmin {
 
     @Override
     public final MatchQueryDefault select(Set<String> names) {

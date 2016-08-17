@@ -34,7 +34,7 @@ class ResourceValidator implements Validator {
     /**
      * @param resourceTypes a list of resource type IDs to validate
      */
-    public ResourceValidator(Collection<String> resourceTypes) {
+    ResourceValidator(Collection<String> resourceTypes) {
         this.resourceTypes = resourceTypes;
     }
 

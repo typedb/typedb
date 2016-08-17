@@ -34,11 +34,11 @@ import java.util.stream.Stream;
 /**
  * "Select" modifier for a match query that selects particular variables from the result.
  */
-public class MatchQuerySelect extends MatchQueryDefaultModifier {
+class MatchQuerySelect extends MatchQueryDefaultModifier {
 
     private final ImmutableSet<String> names;
 
-    public MatchQuerySelect(MatchQueryDefaultAdmin inner, ImmutableSet<String> names) {
+    MatchQuerySelect(MatchQueryDefaultAdmin inner, ImmutableSet<String> names) {
         super(inner);
 
         if (names.isEmpty()) {
