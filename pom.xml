@@ -68,6 +68,18 @@
 
     <developers>
         <developer>
+            <name>Haikal Pribadi</name>
+            <email>haikal@mindmaps.io</email>
+            <organization>Mindmaps Research Ltd</organization>
+            <organizationUrl>http://mindmaps.io</organizationUrl>
+        </developer>
+        <developer>
+            <name>Borislav Iordanov</name>
+            <email>borislav@mindmaps.io</email>
+            <organization>Mindmaps Research Ltd</organization>
+            <organizationUrl>http://mindmaps.io</organizationUrl>
+        </developer>
+        <developer>
             <name>Filipe Teixeira</name>
             <email>filipe@mindmaps.io</email>
             <organization>Mindmaps Research Ltd</organization>
