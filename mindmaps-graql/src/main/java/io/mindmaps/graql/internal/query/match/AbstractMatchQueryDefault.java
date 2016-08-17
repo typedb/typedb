@@ -20,7 +20,7 @@
 package io.mindmaps.graql.internal.query.match;
 
 import com.google.common.collect.ImmutableSet;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.*;
 import io.mindmaps.graql.admin.AdminConverter;
@@ -35,7 +35,7 @@ import java.util.*;
 import static java.util.stream.Collectors.toList;
 
 @SuppressWarnings("UnusedReturnValue")
-public abstract class AbstractMatchQueryDefault extends AbstractMatchQuery<Map<String, Concept>> implements MatchQueryDefaultAdmin {
+abstract class AbstractMatchQueryDefault extends AbstractMatchQuery<Map<String, Concept>> implements MatchQueryDefaultAdmin {
 
     @Override
     public final MatchQueryDefault select(Set<String> names) {
@@ -71,12 +71,12 @@ public abstract class AbstractMatchQueryDefault extends AbstractMatchQuery<Map<S
 
     @Override
     public final MatchQueryDefault orderBy(String varName, boolean asc) {
-        return new MatchQueryOrder(admin(), new MatchOrder(varName, Optional.empty(), asc));
+        return new MatchQueryOrder(admin(), new MatchOrderImpl(varName, Optional.empty(), asc));
     }
 
     @Override
     public final MatchQueryDefault orderBy(String varName, String resourceType, boolean asc) {
-        return new MatchQueryOrder(admin(), new MatchOrder(varName, Optional.of(resourceType), asc));
+        return new MatchQueryOrder(admin(), new MatchOrderImpl(varName, Optional.of(resourceType), asc));
     }
 
     @Override

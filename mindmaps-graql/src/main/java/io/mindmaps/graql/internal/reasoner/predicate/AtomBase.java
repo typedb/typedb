@@ -19,11 +19,12 @@
 package io.mindmaps.graql.internal.reasoner.predicate;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.graql.*;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.query.DisjunctionImpl;
 import io.mindmaps.graql.internal.reasoner.container.Query;
 import org.javatuples.Pair;
 
@@ -134,7 +135,7 @@ public abstract class AtomBase implements Atomic{
         Set<PatternAdmin> expandedPattern = new HashSet<>();
         expandedPattern.add(atomPattern);
         expansions.forEach(q -> expandedPattern.add(q.getExpandedPattern()));
-        return PatternAdmin.disjunction(expandedPattern);
+        return new DisjunctionImpl<>(expandedPattern);
     }
 
     @Override

@@ -18,7 +18,7 @@
 
 package io.mindmaps.example;
 
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.implementation.AbstractMindmapsGraph;
 import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsTestGraphFactory;

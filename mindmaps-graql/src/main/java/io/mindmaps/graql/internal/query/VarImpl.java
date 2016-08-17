@@ -19,12 +19,12 @@
 package io.mindmaps.graql.internal.query;
 
 import com.google.common.collect.Maps;
-import io.mindmaps.core.implementation.Data;
-import io.mindmaps.graql.*;
-import io.mindmaps.graql.internal.StringConverter;
-import io.mindmaps.graql.admin.PatternAdmin;
+import io.mindmaps.core.Data;
+import io.mindmaps.graql.ValuePredicate;
+import io.mindmaps.graql.Var;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.StringConverter;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 import io.mindmaps.graql.internal.gremlin.VarTraversals;
 
@@ -33,6 +33,8 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static io.mindmaps.constants.ErrorMessage.*;
+import static io.mindmaps.graql.Graql.eq;
+import static io.mindmaps.graql.Graql.var;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
@@ -143,6 +145,11 @@ public class VarImpl implements VarAdmin {
     }
 
     @Override
+    public Var value(Object value) {
+        return value(eq(value));
+    }
+
+    @Override
     public Var value(ValuePredicate predicate) {
         values.add(predicate.admin());
         return this;
@@ -150,16 +157,26 @@ public class VarImpl implements VarAdmin {
 
     @Override
     public Var has(String type) {
-        VarAdmin resourceVar = Graql.id(Objects.requireNonNull(type)).admin();
+        VarAdmin resourceVar = var().id(Objects.requireNonNull(type)).admin();
         resources.putIfAbsent(resourceVar, new HashSet<>());
         return this;
     }
 
     @Override
+    public Var has(String type, Object value) {
+        return has(type, eq(value));
+    }
+
+    @Override
     public Var has(String type, ValuePredicate predicate) {
-        VarAdmin resourceVar = Graql.id(Objects.requireNonNull(type)).admin();
+        VarAdmin resourceVar = var().id(Objects.requireNonNull(type)).admin();
         resources.computeIfAbsent(resourceVar, k -> new HashSet<>()).add(predicate.admin());
         return this;
+    }
+
+    @Override
+    public Var isa(String type) {
+        return isa(var().id(type));
     }
 
     @Override
@@ -182,15 +199,30 @@ public class VarImpl implements VarAdmin {
     }
 
     @Override
+    public Var ako(String type) {
+        return ako(var().id(type));
+    }
+
+    @Override
     public Var ako(Var type) {
         ako = Optional.of(type.admin());
         return this;
     }
 
     @Override
+    public Var hasRole(String type) {
+        return hasRole(var().id(type));
+    }
+
+    @Override
     public Var hasRole(Var type) {
         hasRole.add(type.admin());
         return this;
+    }
+
+    @Override
+    public Var playsRole(String type) {
+        return playsRole(var().id(type));
     }
 
     @Override
@@ -207,14 +239,34 @@ public class VarImpl implements VarAdmin {
 
     @Override
     public Var hasResource(String type) {
-        hasResourceTypes.add(Graql.id(type).admin());
+        hasResourceTypes.add(var().id(type).admin());
         return this;
+    }
+
+    @Override
+    public Var rel(String roleplayer) {
+        return rel(var(roleplayer));
     }
 
     @Override
     public Var rel(Var roleplayer) {
         castings.add(new Casting(roleplayer.admin()));
         return this;
+    }
+
+    @Override
+    public Var rel(String roletype, String roleplayer) {
+        return rel(var().id(roletype), var(roleplayer));
+    }
+
+    @Override
+    public Var rel(Var roletype, String roleplayer) {
+        return rel(roletype, var(roleplayer));
+    }
+
+    @Override
+    public Var rel(String roletype, Var roleplayer) {
+        return rel(var().id(roletype), roleplayer);
     }
 
     @Override
@@ -555,8 +607,8 @@ public class VarImpl implements VarAdmin {
     @Override
     public Disjunction<Conjunction<VarAdmin>> getDisjunctiveNormalForm() {
         // a disjunction containing only one option
-        Conjunction<VarAdmin> conjunction = PatternAdmin.conjunction(Collections.singleton(this));
-        return PatternAdmin.disjunction(Collections.singleton(conjunction));
+        Conjunction<VarAdmin> conjunction = new ConjunctionImpl<>(Collections.singleton(this));
+        return new DisjunctionImpl<>(Collections.singleton(conjunction));
     }
 
     /**
@@ -570,7 +622,7 @@ public class VarImpl implements VarAdmin {
          * A casting without a role type specified
          * @param rolePlayer the role player of the casting
          */
-        public Casting(VarAdmin rolePlayer) {
+        Casting(VarAdmin rolePlayer) {
             this.roleType = Optional.empty();
             this.rolePlayer = rolePlayer;
         }
@@ -579,7 +631,7 @@ public class VarImpl implements VarAdmin {
          * @param roletype the role type of the casting
          * @param rolePlayer the role player of the casting
          */
-        public Casting(VarAdmin roletype, VarAdmin rolePlayer) {
+        Casting(VarAdmin roletype, VarAdmin rolePlayer) {
             this.roleType = Optional.of(roletype);
             this.rolePlayer = rolePlayer;
         }

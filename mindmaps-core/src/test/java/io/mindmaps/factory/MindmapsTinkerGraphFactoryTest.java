@@ -19,7 +19,7 @@
 package io.mindmaps.factory;
 
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.implementation.MindmapsTinkerGraph;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import org.junit.Before;

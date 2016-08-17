@@ -27,20 +27,15 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toSet;
 
-/**
- * A class representing a disjunction (or) of patterns. Any inner pattern must match in a query
- */
-public class Disjunction<T extends PatternAdmin> implements PatternAdmin {
+public class DisjunctionImpl<T extends PatternAdmin> implements Disjunction<T> {
 
     private final Set<T> patterns;
 
-    public Disjunction(Set<T> patterns) {
+    public DisjunctionImpl(Set<T> patterns) {
         this.patterns = patterns;
     }
 
-    /**
-     * @return the patterns within this disjunction
-     */
+    @Override
     public Set<T> getPatterns() {
         return patterns;
     }
@@ -52,7 +47,7 @@ public class Disjunction<T extends PatternAdmin> implements PatternAdmin {
                 .flatMap(p -> p.getDisjunctiveNormalForm().getPatterns().stream())
                 .collect(toSet());
 
-        return PatternAdmin.disjunction(dnf);
+        return new DisjunctionImpl<>(dnf);
     }
 
     @Override
@@ -67,7 +62,7 @@ public class Disjunction<T extends PatternAdmin> implements PatternAdmin {
 
     @Override
     public boolean equals(Object obj) {
-        return (obj instanceof Disjunction) && patterns.equals(((Disjunction) obj).patterns);
+        return (obj instanceof DisjunctionImpl) && patterns.equals(((DisjunctionImpl) obj).patterns);
     }
 
     @Override

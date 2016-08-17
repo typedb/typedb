@@ -19,7 +19,7 @@
 package io.mindmaps.graql.internal.reasoner.container;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.Rule;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.*;
@@ -27,6 +27,7 @@ import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.query.Conjunction;
 import io.mindmaps.graql.internal.query.Disjunction;
+import io.mindmaps.graql.internal.query.DisjunctionImpl;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
 
@@ -318,7 +319,7 @@ public class Query {
 
         Set<Conjunction<VarAdmin>> conjs = new HashSet<>();
         conjunctions.forEach(conj -> conjs.add(conj.getConjunction()));
-        return qb.match(PatternAdmin.disjunction(conjs)).select(selectVars);
+        return qb.match(new DisjunctionImpl<>(conjs)).select(selectVars);
 
     }
 

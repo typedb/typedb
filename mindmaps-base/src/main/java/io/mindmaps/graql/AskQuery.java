@@ -18,34 +18,28 @@
 
 package io.mindmaps.graql;
 
-import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.graql.admin.DeleteQueryAdmin;
+import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.graql.admin.AskQueryAdmin;
 
 /**
- * A query for deleting concepts from a match query.
+ * A query that will return whether a match query can be found in the graph.
  * <p>
- * A {@code DeleteQuery} is built from a {@code MatchQuery} and will perform a delete operation for every result of
- * the @{code MatchQuery}.
- * <p>
- * The delete operation to perform is based on what {@code Var} objects are provided to it. If only variable names
- * are provided, then the delete query will delete the concept bound to each given variable name. If property flags
- * are provided, e.g. {@code var("x").has("name")} then only those properties are deleted.
+ * An {@code AskQuery} is created from a {@code MatchQuery}, which describes what patterns it should find.
  */
-public interface DeleteQuery {
-
+public interface AskQuery {
     /**
-     * Execute the delete query
+     * @return whether the given patterns can be found in the graph
      */
-    void execute();
+    boolean execute();
 
     /**
      * @param transaction the transaction to execute the query on
-     * @return a new DeleteQuery with the transaction set
+     * @return a new AskQuery with the transaction set
      */
-    DeleteQuery withTransaction(MindmapsTransaction transaction);
+    AskQuery withTransaction(MindmapsTransaction transaction);
 
     /**
      * @return admin instance for inspecting and manipulating this query
      */
-    DeleteQueryAdmin admin();
+    AskQueryAdmin admin();
 }

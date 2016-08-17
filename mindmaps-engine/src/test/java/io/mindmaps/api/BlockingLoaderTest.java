@@ -20,7 +20,7 @@ package io.mindmaps.api;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.QueryParser;
@@ -59,8 +59,7 @@ public class BlockingLoaderTest {
         new CommitLogController();
     }
 
-    //TODO: This fails with code coverage enabled. Need to investigate
-    @Ignore
+
     @Test
     public void testLoadOntologyAndData() {
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);

@@ -19,9 +19,8 @@
 package io.mindmaps.graql.internal.gremlin;
 
 import com.google.common.collect.ImmutableSet;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.query.Conjunction;
@@ -85,7 +84,7 @@ public class Query {
         // Because 'union' accepts an array, we can't use generics...
         //noinspection unchecked
         GraphTraversal<Vertex, Map<String, Vertex>> traversal =
-                ((MindmapsTransactionImpl) transaction).getTinkerTraversal().V().limit(1).union(collect);
+                transaction.getTinkerTraversal().V().limit(1).union(collect);
 
         order.ifPresent(o -> o.orderTraversal(transaction, traversal));
 

@@ -22,7 +22,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import io.mindmaps.Util;
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.util.ConfigProperties;
 import io.mindmaps.constants.RESTUtil;

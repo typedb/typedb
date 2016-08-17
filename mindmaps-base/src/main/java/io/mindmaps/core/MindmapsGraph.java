@@ -18,6 +18,8 @@
 
 package io.mindmaps.core;
 
+import io.mindmaps.MindmapsTransaction;
+
 /**
  * A mindmaps graph which produces new transactions to work with
  */

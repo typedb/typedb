@@ -19,7 +19,7 @@
 package io.mindmaps.graql.reasoner.inference;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.graql.MatchQueryDefault;
 import io.mindmaps.graql.MindmapsReasoner;
 import io.mindmaps.graql.QueryParser;

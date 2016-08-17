@@ -19,15 +19,11 @@
 
 package io.mindmaps.graql;
 
-import com.google.common.collect.Sets;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.admin.MatchQueryDefaultAdmin;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * a query used for finding data in a graph that matches the given patterns.
@@ -40,7 +36,7 @@ public interface MatchQueryDefault extends MatchQuery<Map<String, Concept>> {
      * @return a new MatchQuery that selects the given variables
      */
     default MatchQueryDefault select(String... names) {
-        return select(Sets.newHashSet(names));
+        return select(new HashSet<>(Arrays.asList(names)));
     }
 
     /**

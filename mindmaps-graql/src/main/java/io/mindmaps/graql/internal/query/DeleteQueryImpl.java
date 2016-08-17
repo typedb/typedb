@@ -19,8 +19,8 @@
 package io.mindmaps.graql.internal.query;
 
 import com.google.common.collect.ImmutableMap;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.exception.ConceptException;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Resource;
@@ -31,7 +31,10 @@ import io.mindmaps.graql.admin.MatchQueryDefaultAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.validation.DeleteQueryValidator;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 

@@ -25,11 +25,11 @@ import java.util.stream.Stream;
 /**
  * "Limit" modifier for match query that limits the results of a query.
  */
-public class MatchQueryLimit<T> extends MatchQueryModifier<T, T> {
+class MatchQueryLimit<T> extends MatchQueryModifier<T, T> {
 
     private final long limit;
 
-    public MatchQueryLimit(MatchQueryAdmin<T> inner, long limit) {
+    MatchQueryLimit(MatchQueryAdmin<T> inner, long limit) {
         super(inner);
         this.limit = limit;
     }

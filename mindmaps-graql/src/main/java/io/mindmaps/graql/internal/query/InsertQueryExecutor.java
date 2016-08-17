@@ -21,8 +21,8 @@ package io.mindmaps.graql.internal.query;
 import com.google.common.collect.ImmutableMap;
 import io.mindmaps.constants.DataType;
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.core.implementation.Data;
+import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.core.Data;
 import io.mindmaps.core.model.*;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.internal.GraqlType;
@@ -48,7 +48,7 @@ class InsertQueryExecutor {
     private final ImmutableMap<String, List<VarAdmin>> varsByName;
     private final ImmutableMap<String, List<VarAdmin>> varsById;
 
-    public InsertQueryExecutor(Collection<VarAdmin> vars, MindmapsTransaction transaction) {
+    InsertQueryExecutor(Collection<VarAdmin> vars, MindmapsTransaction transaction) {
         this.vars = vars;
         this.transaction = transaction;
 
@@ -70,7 +70,7 @@ class InsertQueryExecutor {
     /**
      * Insert all the Vars
      */
-    public Stream<Concept> insertAll() {
+    Stream<Concept> insertAll() {
         return insertAll(new HashMap<>());
     }
 
@@ -78,7 +78,7 @@ class InsertQueryExecutor {
      * Insert all the Vars
      * @param results the result of a match query
      */
-    public Stream<Concept> insertAll(Map<String, Concept> results) {
+    Stream<Concept> insertAll(Map<String, Concept> results) {
         concepts.clear();
         concepts.putAll(new HashMap<>(results));
 

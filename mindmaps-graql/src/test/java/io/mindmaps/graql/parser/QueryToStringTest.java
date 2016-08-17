@@ -19,8 +19,8 @@
 package io.mindmaps.graql.parser;
 
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.core.implementation.Data;
+import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.core.Data;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.MatchQueryDefault;

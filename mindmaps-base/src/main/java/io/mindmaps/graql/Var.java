@@ -14,11 +14,12 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
 package io.mindmaps.graql;
 
-import io.mindmaps.core.implementation.Data;
+import io.mindmaps.core.Data;
 import io.mindmaps.graql.admin.VarAdmin;
 
 import java.util.Optional;
@@ -53,9 +54,7 @@ public interface Var extends Pattern {
      * @param value a value that this variable's value must exactly match
      * @return this
      */
-    default Var value(Object value) {
-        return value(Graql.eq(value));
-    }
+    Var value(Object value);
 
     /**
      * @param predicate a predicate this variable's value must match
@@ -76,9 +75,7 @@ public interface Var extends Pattern {
      * @param value a value of a resource
      * @return this
      */
-    default Var has(String type, Object value) {
-        return has(type, Graql.eq(value));
-    }
+    Var has(String type, Object value);
 
     /**
      * the variable must have a resource or name of the given type that matches the given predicate
@@ -93,9 +90,7 @@ public interface Var extends Pattern {
      * @param type a concept type id that the variable must be of this type
      * @return this
      */
-    default Var isa(String type) {
-        return isa(Graql.id(type));
-    }
+    Var isa(String type);
 
     /**
      * @param type a concept type that this variable must be an instance of
@@ -107,9 +102,7 @@ public interface Var extends Pattern {
      * @param type a concept type id that this variable must be a kind of
      * @return this
      */
-    default Var ako(String type) {
-        return ako(Graql.id(type));
-    }
+    Var ako(String type);
 
     /**
      * @param type a concept type that this variable must be a kind of
@@ -121,9 +114,7 @@ public interface Var extends Pattern {
      * @param type a role type id that this relation type variable must have
      * @return this
      */
-    default Var hasRole(String type) {
-        return hasRole(Graql.id(type));
-    }
+    Var hasRole(String type);
 
     /**
      * @param type a role type that this relation type variable must have
@@ -135,9 +126,7 @@ public interface Var extends Pattern {
      * @param type a role type id that this concept type variable must play
      * @return this
      */
-    default Var playsRole(String type) {
-        return playsRole(Graql.id(type));
-    }
+    Var playsRole(String type);
 
     /**
      * @param type a role type that this concept type variable must play
@@ -163,9 +152,7 @@ public interface Var extends Pattern {
      * @param roleplayer a variable representing a roleplayer
      * @return this
      */
-    default Var rel(String roleplayer) {
-        return rel(Graql.var(roleplayer));
-    }
+    Var rel(String roleplayer);
 
     /**
      * the variable must be a relation with the given roleplayer
@@ -182,9 +169,7 @@ public interface Var extends Pattern {
      * @param roleplayer a variable representing a roleplayer
      * @return this
      */
-    default Var rel(String roletype, String roleplayer) {
-        return rel(Graql.id(roletype), Graql.var(roleplayer));
-    }
+    Var rel(String roletype, String roleplayer);
 
     /**
      * the variable must be a relation with the given roleplayer playing the given roletype
@@ -193,9 +178,7 @@ public interface Var extends Pattern {
      * @param roleplayer a variable representing a roleplayer
      * @return this
      */
-    default Var rel(Var roletype, String roleplayer) {
-        return rel(roletype, Graql.var(roleplayer));
-    }
+    Var rel(Var roletype, String roleplayer);
 
     /**
      * the variable must be a relation with the given roleplayer playing the given roletype
@@ -204,9 +187,7 @@ public interface Var extends Pattern {
      * @param roleplayer a variable representing a roleplayer
      * @return this
      */
-    default Var rel(String roletype, Var roleplayer) {
-        return rel(Graql.id(roletype), roleplayer);
-    }
+    Var rel(String roletype, Var roleplayer);
 
     /**
      * the variable must be a relation with the given roleplayer playing the given roletype
