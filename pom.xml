@@ -26,8 +26,8 @@
     <packaging>pom</packaging>
     <version>0.1.0-SNAPSHOT</version>
     <name>MindmapsDB</name>
-    <description>A distributed semantic transaction database.</description>
-    <url>http://mindmaps.io/platform.html</url>
+    <description>A distributed semantic graph database.</description>
+    <url>http://mindmaps.io/platform.html</url>    
     <modules>
         <module>mindmaps-core</module>
         <module>mindmaps-titan-factory</module>
