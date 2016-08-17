@@ -71,27 +71,27 @@ public class DistributedLoader extends Loader {
         executor.submit(this::checkForStatusLoop);
     }
 
-    public void waitToFinish(){
+    public void waitToFinish() {
 
     }
 
     public void submitBatch(Collection<Var> batch) {
         String batchedString = batch.stream().map(Object::toString).collect(Collectors.joining(";"));
 
-        if (batchedString.length() == 0){
+        if (batchedString.length() == 0) {
             return;
         }
 
         HttpURLConnection currentConn = acquireNextHost();
         int respCode;
-        String respMessage= null;
+        String respMessage = null;
         try {
             String query = RESTUtil.HttpConn.INSERT_PREFIX + batchedString;
             currentConn.setRequestProperty(RESTUtil.HttpConn.CONTENT_LENGTH, Integer.toString(query.length()));
             currentConn.getOutputStream().write(query.getBytes(RESTUtil.HttpConn.UTF8));
             respCode = currentConn.getResponseCode();
             respMessage = currentConn.getResponseMessage();
-            if (respCode != RESTUtil.HttpConn.HTTP_TRANSACTION_CREATED){
+            if (respCode != RESTUtil.HttpConn.HTTP_TRANSACTION_CREATED) {
                 throw new HTTPException(respCode);
             }
 
@@ -101,17 +101,17 @@ public class DistributedLoader extends Loader {
         } catch (HTTPException e) {
             LOG.error(ErrorMessage.ERROR_IN_DISTRIBUTED_TRANSACTION.getMessage(currentConn.getURL().toString(), e.getStatusCode(), respMessage, batchedString));
             e.printStackTrace();
-        } catch(IOException e){}
-        finally {
+        } catch (IOException e) {
+        } finally {
             currentConn.disconnect();
         }
     }
 
-    private HttpURLConnection acquireNextHost(){
+    private HttpURLConnection acquireNextHost() {
         String host = nextHost();
 
         // check availability
-        while(availability.get(host).availablePermits() == 0) {
+        while (availability.get(host).availablePermits() == 0) {
             host = nextHost();
         }
 
@@ -120,11 +120,12 @@ public class DistributedLoader extends Loader {
 
     /**
      * Return the string ip of the next host
+     *
      * @return ip of the next host
      */
-    private String nextHost(){
+    private String nextHost() {
         currentHost++;
-        if (currentHost == hostsArray.length){
+        if (currentHost == hostsArray.length) {
             currentHost = 0;
         }
 
@@ -133,13 +134,14 @@ public class DistributedLoader extends Loader {
 
     /**
      * Get a HTTP Connection to the engine instance running on the ip of the given host
+     *
      * @param host ip of the machine where engine is running
      * @return http connection to the machine where engine is running
      */
     private HttpURLConnection getHost(String host) {
         HttpURLConnection urlConn = null;
         try {
-            String url = "http://" + host + ":"+ConfigProperties.getInstance().getProperty(ConfigProperties.SERVER_PORT_NUMBER)+RESTUtil.WebPath.NEW_TRANSACTION_URI+"?" + RESTUtil.Request.GRAPH_NAME_PARAM + "=" + graphName;
+            String url = "http://" + host + ":" + ConfigProperties.getInstance().getProperty(ConfigProperties.SERVER_PORT_NUMBER) + RESTUtil.WebPath.NEW_TRANSACTION_URI + "?" + RESTUtil.Request.GRAPH_NAME_PARAM + "=" + graphName;
             urlConn = (HttpURLConnection) new URL(url).openConnection();
             urlConn.setDoOutput(true);
             urlConn.setRequestMethod(RESTUtil.HttpConn.POST_METHOD);
@@ -150,13 +152,13 @@ public class DistributedLoader extends Loader {
         return urlConn;
     }
 
-    public void checkForStatusLoop(){
-        while(true){
+    public void checkForStatusLoop() {
+        while (true) {
 
-            for(String host:transactions.keySet()){
-                for(String transaction:transactions.get(host)){
+            for (String host : transactions.keySet()) {
+                for (String transaction : transactions.get(host)) {
 
-                    if(isFinished(host, transaction)){
+                    if (isFinished(host, transaction)) {
                         availability.get(host).release();
                         transactions.get(host).remove(transaction);
                     }
@@ -173,13 +175,14 @@ public class DistributedLoader extends Loader {
 
     /**
      * Check if transaction is finished
+     *
      * @param transaction
      * @return
      */
-    private boolean isFinished(String host, String transaction){
+    private boolean isFinished(String host, String transaction) {
 
         String url = "http://" + host + ":" + ConfigProperties.getInstance().getProperty(ConfigProperties.SERVER_PORT_NUMBER) +
-                "/transactionStatus/" + transaction +  "?" + RESTUtil.Request.GRAPH_NAME_PARAM + "=" + graphName;
+                "/transactionStatus/" + transaction + "?" + RESTUtil.Request.GRAPH_NAME_PARAM + "=" + graphName;
 
         System.out.println("URL" + url);
 
@@ -195,9 +198,8 @@ public class DistributedLoader extends Loader {
                 System.out.println("finished " + transaction);
                 return true;
             }
-        }
-        catch (IOException e){}
-        finally {
+        } catch (IOException e) {
+        } finally {
             urlConn.disconnect();
         }
 

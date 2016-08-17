@@ -64,7 +64,7 @@ public class RemoteShellControllerTest {
 
     @Test
     public void existingID() {
-        Response response = get("/match?graphName=" + graphName + "&query=match $x isa Man").then().statusCode(200).extract().response().andReturn();
+        Response response = get("/shell/match?graphName=" + graphName + "&query=match $x isa Man").then().statusCode(200).extract().response().andReturn();
         String message = response.getBody().asString();
         assertTrue(message.contains("Al Pacino"));
     }

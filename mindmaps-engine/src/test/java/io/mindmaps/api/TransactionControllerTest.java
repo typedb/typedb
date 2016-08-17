@@ -76,7 +76,7 @@ public class TransactionControllerTest {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            status = get("/transactionStatus/" + transactionUUID).then().extract().response().asString();
+            status = get("/transaction/status/" + transactionUUID).then().extract().response().asString();
 
         }
         assertTrue(GraphFactory.getInstance().getGraph(graphName).newTransaction().getConcept("actor-123").asEntity().getValue().equals("Al Pacino"));
@@ -96,7 +96,7 @@ public class TransactionControllerTest {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            status = get("/transactionStatus/" + transactionUUID).then().extract().response().asString();
+            status = get("/transaction/status/" + transactionUUID).then().extract().response().asString();
         }
         assertTrue(status.equals("CANCELLED"));
     }

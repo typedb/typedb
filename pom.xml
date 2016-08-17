@@ -55,8 +55,8 @@
         <spark.version>1.5.2</spark.version>
         <jinjava.version>2.1.0</jinjava.version>
         <airline.version>0.6</airline.version>
-
         <antlr4.visitor>true</antlr4.visitor>
+        <swagger.version>1.5.0</swagger.version>
     </properties>
 
     <licenses>
