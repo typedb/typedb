@@ -21,13 +21,12 @@ package io.mindmaps.graql.reasoner.inference;
 import com.google.common.collect.Sets;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.graql.MatchQueryDefault;
-import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.MindmapsReasoner;
+import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.reasoner.graphs.WineGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static io.mindmaps.graql.internal.reasoner.Utility.printMatchQueryResults;
 import static org.junit.Assert.assertEquals;
 
 
@@ -44,20 +43,12 @@ public class WineInferenceTest {
         qp = QueryParser.create(graph);
     }
 
-    private static void printMatchQuery(MatchQueryDefault query) {
-        System.out.println(query.toString().replace(" or ", "\nor\n").replace("};", "};\n").replace("; {", ";\n{"));
-    }
-
     @Test
     public void testRecommendation() {
 
         String queryString = "match $x isa person;$y isa wine;($x, $y) isa wine-recommendation";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-
-        printMatchQuery(expandedQuery);
-        System.out.println("DNF size: " + expandedQuery.admin().getPattern().getDisjunctiveNormalForm().getPatterns().size());
-        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match $x isa person;$y isa wine;" +
                                "{$x value 'Alice';$y value 'Cabernet Sauvignion'} or" +

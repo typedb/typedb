@@ -21,13 +21,12 @@ package io.mindmaps.graql.reasoner.inference;
 import com.google.common.collect.Sets;
 import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.graql.MatchQueryDefault;
-import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.MindmapsReasoner;
+import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.reasoner.graphs.AbstractGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static io.mindmaps.graql.internal.reasoner.Utility.printMatchQueryResults;
 import static org.junit.Assert.assertEquals;
 
 
@@ -51,7 +50,6 @@ public class AbstractInferenceTest {
         String queryString = "match $x isa Q;";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expQuery = reasoner.expandQuery(query);
-        printMatchQueryResults(expQuery);
 
         String explicitQuery = "match " +
                 "{$x isa Q} or {\n" +
@@ -72,9 +70,6 @@ public class AbstractInferenceTest {
                         "($y, $yy) isa REL; select $yy";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expQuery = reasoner.expandQuery(query);
-        String expQueryString = expQuery.toString().replace(" or ", "\nor\n").replace("};", "};\n").replace("; {", ";\n{");
-        System.out.println(expQueryString);
-        printMatchQueryResults(expQuery);
 
         String explicitQuery = "match " +
                                 "{$yy isa Q} or {" +

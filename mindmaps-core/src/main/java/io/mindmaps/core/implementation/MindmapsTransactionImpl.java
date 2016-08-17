@@ -65,8 +65,6 @@ public class MindmapsTransactionImpl implements MindmapsTransaction, AutoCloseab
     @SuppressWarnings("unchecked")
     public void initialiseMetaConcepts(){
         if(isMetaOntologyNotInitialised()){
-            LOG.info("Initialising new transaction . . .");
-
             TypeImpl type = elementFactory.buildConceptType(addVertex(DataType.BaseType.TYPE));
             TypeImpl entityType = elementFactory.buildConceptType(addVertex(DataType.BaseType.TYPE));
             TypeImpl relationType = elementFactory.buildConceptType(addVertex(DataType.BaseType.TYPE));
@@ -710,7 +708,6 @@ public class MindmapsTransactionImpl implements MindmapsTransaction, AutoCloseab
     }
 
     protected void validateGraph() throws MindmapsValidationException {
-        LOG.info("Validating transaction . . . ");
         Validator validator = new Validator(this);
         if (!validator.validate()) {
             List<String> errors = validator.getErrorsFound();
@@ -723,8 +720,6 @@ public class MindmapsTransactionImpl implements MindmapsTransaction, AutoCloseab
     }
 
     protected void submitCommitLogs(Map<DataType.BaseType, Set<String>> concepts){
-        LOG.info("Submitting commit logs to [" + mindmapsGraph.getCommitLogEndPoint() + "]");
-
         JSONArray jsonArray = new JSONArray();
         for (Map.Entry<DataType.BaseType, Set<String>> entry : concepts.entrySet()) {
             DataType.BaseType type = entry.getKey();
