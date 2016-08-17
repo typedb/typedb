@@ -71,8 +71,17 @@ public class DistributedLoader extends Loader {
         executor.submit(this::checkForStatusLoop);
     }
 
-    public void waitToFinish() {
+    public void waitToFinish(){
+        while(!transactions.values().stream().allMatch(Set::isEmpty)){
+            System.out.println(transactions);
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
 
+        System.out.println("Done!");
     }
 
     public void submitBatch(Collection<Var> batch) {
@@ -152,24 +161,30 @@ public class DistributedLoader extends Loader {
         return urlConn;
     }
 
-    public void checkForStatusLoop() {
-        while (true) {
+    public void checkForStatusLoop(){
+        try {
+            while (true) {
 
-            for (String host : transactions.keySet()) {
-                for (String transaction : transactions.get(host)) {
+                System.out.println("looping");
 
-                    if (isFinished(host, transaction)) {
-                        availability.get(host).release();
-                        transactions.get(host).remove(transaction);
+                for (String host : transactions.keySet()) {
+                    for (String transaction : transactions.get(host)) {
+
+                        System.out.println("checking " + host + " " + transaction);
+
+                        if (isFinished(host, transaction)) {
+                            availability.get(host).release();
+                            transactions.get(host).remove(transaction);
+                            System.out.println("released " + host);
+                        }
                     }
                 }
-            }
 
-            try {
                 Thread.sleep(500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
             }
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -184,10 +199,7 @@ public class DistributedLoader extends Loader {
         String url = "http://" + host + ":" + ConfigProperties.getInstance().getProperty(ConfigProperties.SERVER_PORT_NUMBER) +
                 "/transactionStatus/" + transaction + "?" + RESTUtil.Request.GRAPH_NAME_PARAM + "=" + graphName;
 
-        System.out.println("URL" + url);
-
         HttpURLConnection urlConn = null;
-
         try {
             urlConn = (HttpURLConnection) new URL(url).openConnection();
             urlConn.setDoOutput(true);
@@ -198,11 +210,17 @@ public class DistributedLoader extends Loader {
                 System.out.println("finished " + transaction);
                 return true;
             }
-        } catch (IOException e) {
-        } finally {
+        }
+        catch (IOException e){
+            System.out.println("error");
+            System.out.println(e);
+            return true;
+        }
+        finally {
             urlConn.disconnect();
         }
 
+        System.out.println("false");
         return false;
     }
 }

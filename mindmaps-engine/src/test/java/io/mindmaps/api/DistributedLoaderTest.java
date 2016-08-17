@@ -78,11 +78,8 @@ public class DistributedLoaderTest {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        try {
-            Thread.sleep(20000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+
+        loader.waitToFinish();
         Assert.assertNotNull(GraphFactory.getInstance().getGraph(graphName).newTransaction().getConcept("X546f736869616b69204b61776173616b69").getId());
     }
 
