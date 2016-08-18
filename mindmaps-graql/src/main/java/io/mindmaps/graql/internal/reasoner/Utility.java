@@ -71,6 +71,7 @@ public class Utility {
 
     public static boolean isAtomRecursive(Atomic atom, MindmapsTransaction graph)
     {
+        if (atom.isResource()) return false;
         boolean atomRecursive = false;
 
         String typeId = atom.getTypeId();

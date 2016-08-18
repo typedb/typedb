@@ -27,6 +27,8 @@ entity plays-role SG-role-A, plays-role SG-role-B;
 "d" isa Human;
 "e" isa entity;
 "f" isa entity;
+"g" isa entity;
+"h" isa entity;
 
 (parent 'a', child 'b') isa Parent;
 (parent 'a', child 'c') isa Parent;

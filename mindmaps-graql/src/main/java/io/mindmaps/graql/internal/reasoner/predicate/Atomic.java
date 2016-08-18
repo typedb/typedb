@@ -34,8 +34,14 @@ public interface Atomic {
     void addExpansion(Query query);
     void removeExpansion(Query query);
 
+
     /**
      * @return true if the atom corresponds to a unary predicate
+     * */
+    default boolean isUnary(){ return false;}
+
+    /**
+     * @return true if the atom corresponds to a predicate
      * */
     default boolean isType(){ return false;}
 
@@ -45,7 +51,7 @@ public interface Atomic {
     default boolean isRelation(){return false;}
 
     /**
-     * @return true if the atom corresponds to a value predicate (~var substitution)
+     * @return true if the atom corresponds to a value predicate (~unifier)
      * */
     default boolean isValuePredicate(){ return false;}
 
@@ -53,6 +59,11 @@ public interface Atomic {
      * @return true if the atom corresponds to a resource predicate
      * */
     default boolean isResource(){ return false;}
+
+    /**
+     * @return true if atom alpha-equivalent
+     */
+    default boolean isEquivalent(Object obj){ return false;}
 
     /**
      * @param name variable name
@@ -67,7 +78,16 @@ public interface Atomic {
     /**
      * @return the corresponding pattern with all expansions
      * */
+
     PatternAdmin getExpandedPattern();
+
+    /**
+     *
+     * @param graph transaction
+     * @return match query obtained by selecting free variables
+     */
+    MatchQueryDefault getMatchQuery(MindmapsTransaction graph);
+
     MatchQueryDefault getExpandedMatchQuery(MindmapsTransaction graph);
 
     /**
@@ -101,5 +121,9 @@ public interface Atomic {
     String getVal();
 
     Set<Query> getExpansions();
+
+    Set<Atomic> getSubstitutions();
+
+    Map<String, Set<Atomic>> getVarSubMap();
 
 }

@@ -90,6 +90,21 @@ public class Query {
         this.typeAtomMap = getTypeAtomMap(atomSet);
     }
 
+    //atomic conversion
+    public Query(Atomic atom) {
+        if (atom.getParentQuery() == null)
+            throw new IllegalArgumentException("Attempting conversion to query on atom without parent");
+        this.graph = atom.getParentQuery().getTransaction();
+        this.matchQuery = atom.getMatchQuery(graph);
+
+        atomSet = new HashSet<>();
+        atomSet.add(atom);
+        atomSet.addAll(atom.getSubstitutions());
+        //this.atomSet = getAtomSet(matchQuery);
+
+        this.typeAtomMap = getTypeAtomMap(atomSet);
+    }
+
     @Override
     public String toString() {
         return matchQuery.toString();
@@ -113,6 +128,11 @@ public class Query {
     public Query getParentQuery(){
         return parentAtom != null? parentAtom.getParentQuery() : null;
     }
+
+    /**
+     * @param rl rule instance
+     * @return top query in the tree corresponding to body of rule rl
+     */
     public Query getTopQueryWithRule(Rule rl)
     {
         Query topQuery = null;
@@ -129,6 +149,9 @@ public class Query {
         return topQuery;
     }
 
+    /**
+     * @return top atom of this branch
+     */
     public Atomic getTopAtom() {
 
         Atomic top = getParentAtom();
@@ -141,6 +164,9 @@ public class Query {
         return top;
     }
 
+    /**
+     * @return top query in the tree
+     */
     public Query getTopQuery()
     {
         if (getParentQuery() == null) return this;
@@ -188,6 +214,14 @@ public class Query {
     }
 
     public boolean containsAtom(Atomic atom){ return atomSet.contains(atom);}
+    public boolean containsEquivalentAtom(Atomic atom){
+        boolean isContained = false;
+        Iterator<Atomic> it = atomSet.iterator();
+        while( it.hasNext() && !isContained)
+            isContained = atom.isEquivalent(it.next());
+
+        return isContained;
+    }
 
     public boolean hasRecursiveAtoms()
     {
@@ -213,17 +247,18 @@ public class Query {
 
         matchQuery.admin().getPattern().getPatterns().remove(toRemove);
         matchQuery.admin().getPattern().getPatterns().add(newPattern);
-
     }
 
     private void updateSelectedVars(String from, String to)
     {
         Set<String> selectedVars = new HashSet<>(matchQuery.admin().getSelectedNames());
+        Conjunction<PatternAdmin> pattern = matchQuery.admin().getPattern();
         if (selectedVars.contains(from))
         {
             selectedVars.remove(from);
             selectedVars.add(to);
-            matchQuery = matchQuery.select(selectedVars);
+            QueryBuilder qb = Graql.withTransaction(graph);
+            matchQuery = qb.match(pattern).select(selectedVars);
         }
     }
 
@@ -261,25 +296,33 @@ public class Query {
 
         }
 
-    /**NB: doesn't propagate to children if there are any*/
     public void changeVarName(String from, String to) {
         atomSet.forEach(atom -> atom.changeEachVarName(from, to));
         updateSelectedVars(from, to);
     }
 
+
     private Disjunction<Conjunction<VarAdmin>> getDNF(){
         return matchQuery.admin().getPattern().getDisjunctiveNormalForm();}
 
+    /**
+     * @return set of conjunctions from the DNF
+     */
     private Set<AtomConjunction> getAtomConjunctions() {
         Set<AtomConjunction> conj = new HashSet<>();
         getDNF().getPatterns().forEach(c -> conj.add(new AtomConjunction(c)));
         return conj;
     }
+
+    /**
+     * @return set of conjunctions from the DNF taking into account atom expansions
+     */
     private Set<AtomConjunction> getExpandedAtomConjunctions() {
         Set<AtomConjunction> conj = new HashSet<>();
         getExpandedDNF().getPatterns().forEach(c -> conj.add(new AtomConjunction(c)));
         return conj;
     }
+
     private Disjunction<Conjunction<VarAdmin>> getExpandedDNF() {
         return getExpandedMatchQuery().admin().getPattern().getDisjunctiveNormalForm();
     }
@@ -393,6 +436,49 @@ public class Query {
                 if(!atom.getVal().isEmpty() ) val = atom.getVal();
         }
         return val;
+    }
+
+    public void addAtom(Atomic atom)
+    {
+        atomSet.add(atom);
+        matchQuery.admin().getPattern().getPatterns().add(atom.getPattern());
+    }
+
+    /**
+     * atom selection function
+     * @return selected atoms
+     */
+    public Set<Atomic> selectAtoms()
+    {
+        Set<Atomic> genAtoms = new HashSet<>();
+
+        atomSet.forEach(atom -> {
+            if (!atom.isValuePredicate() && !atom.isUnary()) genAtoms.add(atom);
+        });
+
+        //TODO
+        //find most instantiated atom
+        //follow neighbours
+        //partitions the query into subqueries (generalised queries) and returns as a set
+        //type atoms should be kept together with corresponding relations (single isa allowed atm, otherwise type gen/spec through akos)
+        //no instantiations -> favour type atoms
+        return genAtoms;
+    }
+
+    /**
+     * @param q query to be compared with
+     * @return true if two queries are alpha-equivalent
+     */
+    public boolean isEquivalent(Query q)
+    {
+        boolean equivalent = true;
+        if(atomSet.size() != q.getAtoms().size()) return false;
+
+        Iterator<Atomic> it = atomSet.iterator();
+        while (it.hasNext() && equivalent)
+            equivalent = q.containsEquivalentAtom(it.next());
+
+        return equivalent;
     }
 
 }

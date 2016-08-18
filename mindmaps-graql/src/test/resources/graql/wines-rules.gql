@@ -23,13 +23,13 @@ rhs {match  $x has recommended-generic-wine-type 'sparkling wine'};
 
 ###############Champagne###############
 "R5" isa inference-rule,
-lhs {match 
+lhs {match
 $x isa person;
 $x has recommended-generic-wine-type 'sparkling wine';},
 rhs {match  $x has recommended-generic-wine-type 'Champagne'};
 
 "R6" isa inference-rule,
-lhs {match 
+lhs {match
 $x isa person;
 $x has recommended-generic-wine-type 'Champagne';
 $x has preferred-colour 'white';

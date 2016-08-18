@@ -46,12 +46,23 @@ public class Atom extends AtomBase{
     }
 
     @Override
+    public boolean isUnary(){ return true;}
+
+    @Override
     public boolean equals(Object obj)
     {
         if (!(obj instanceof Atom)) return false;
         Atom a2 = (Atom) obj;
         return this.getTypeId().equals(a2.getTypeId()) && this.getVarName().equals(a2.getVarName())
                 && this.getVal().equals(a2.getVal());
+    }
+
+    @Override
+    public boolean isEquivalent(Object obj)
+    {
+        if (!(obj instanceof Atom)) return false;
+        Atom a2 = (Atom) obj;
+        return this.getTypeId().equals(a2.getTypeId()) && this.getVal().equals(a2.getVal());
     }
 
     @Override

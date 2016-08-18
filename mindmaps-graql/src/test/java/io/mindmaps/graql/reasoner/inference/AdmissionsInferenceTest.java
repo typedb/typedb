@@ -21,8 +21,8 @@ package io.mindmaps.graql.reasoner.inference;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.graql.MatchQueryDefault;
-import io.mindmaps.graql.MindmapsReasoner;
 import io.mindmaps.graql.QueryParser;
+import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.reasoner.graphs.AdmissionsGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -33,14 +33,14 @@ import static org.junit.Assert.assertEquals;
 public class AdmissionsInferenceTest {
 
     private static MindmapsTransaction graph;
-    private static MindmapsReasoner reasoner;
+    private static Reasoner reasoner;
     private static QueryParser qp;
 
     @BeforeClass
     public static void setUpClass() {
 
         graph = AdmissionsGraph.getTransaction();
-        reasoner = new MindmapsReasoner(graph);
+        reasoner = new Reasoner(graph);
         qp = QueryParser.create(graph);
 
     }
