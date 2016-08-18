@@ -40,4 +40,9 @@ class NamedAggregateImpl<T, S> implements NamedAggregate<T, S> {
     public String getName() {
         return name;
     }
+
+    @Override
+    public String toString() {
+        return getAggregate() + " as " + getName();
+    }
 }

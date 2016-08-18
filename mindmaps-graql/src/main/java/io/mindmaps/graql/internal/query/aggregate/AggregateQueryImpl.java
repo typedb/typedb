@@ -42,4 +42,9 @@ public class AggregateQueryImpl<S, T> implements AggregateQuery<T> {
     public T execute() {
         return aggregate.apply(matchQuery.stream());
     }
+
+    @Override
+    public String toString() {
+        return matchQuery.toString() + " aggregate " + aggregate.toString();
+    }
 }

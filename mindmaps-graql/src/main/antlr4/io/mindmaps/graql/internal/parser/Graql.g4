@@ -1,17 +1,19 @@
 grammar Graql;
 
 queryEOF       : query EOF ;
-query          : matchQuery | askQuery | insertQuery | deleteQuery ;
+query          : matchQuery | askQuery | insertQuery | deleteQuery | aggregateQuery ;
 
 matchEOF       : matchQuery EOF ;
 askEOF         : askQuery EOF ;
 insertEOF      : insertQuery EOF ;
 deleteEOF      : deleteQuery EOF ;
+aggregateEOF   : aggregateQuery EOF ;
 
 matchQuery     : 'match' patterns modifiers ;
 askQuery       : matchQuery 'ask' ;
 insertQuery    : matchQuery? 'insert' insertPatterns ;
 deleteQuery    : matchQuery 'delete' deletePatterns ;
+aggregateQuery : matchQuery 'aggregate' aggregate ;
 
 selectors      : selector (',' selector)* ;
 selector       : VARIABLE ('(' (getter ','?)* ')')? ;
@@ -22,6 +24,14 @@ getter         : 'isa'      # getterIsa
                | 'lhs'      # getterLhs
                | 'rhs'      # getterRhs
                ;
+
+aggregate      : id argument*                     # customAgg
+               | '(' namedAgg (',' namedAgg)* ')' # selectAgg
+               ;
+argument       : VARIABLE  # variableArgument
+               | aggregate # aggregateArgument
+               ;
+namedAgg       : aggregate 'as' id ;
 
 patterns       : pattern (';' pattern)* ';'? ;
 pattern        : variable? property (','? property)*  # varPattern

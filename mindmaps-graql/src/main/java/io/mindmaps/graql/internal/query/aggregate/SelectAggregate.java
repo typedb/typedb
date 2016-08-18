@@ -25,6 +25,7 @@ import io.mindmaps.graql.NamedAggregate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -53,5 +54,10 @@ public class SelectAggregate<S, T> extends AbstractAggregate<S, Map<String, T>> 
         }
 
         return map;
+    }
+
+    @Override
+    public String toString() {
+        return "(" + aggregates.stream().map(Object::toString).collect(Collectors.joining(", ")) + ")";
     }
 }
