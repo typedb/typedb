@@ -23,6 +23,9 @@ CASSANDRA_STARTUP_TIMEOUT_S=60
 SLEEP_INTERVAL_S=2
 NODETOOL=`dirname $path`/nodetool
 
+CASSANDRA_PS=/tmp/mindmaps-cassandra.pid
+ENGINE_PS=/tmp/mindmaps-engine.pid
+
 # from titan
 wait_for_cassandra() {
     local now_s=`date '+%s'`
@@ -71,24 +74,24 @@ case "$1" in
 start)
 
 
-    if [ -e /tmp/mindmaps-cassandra.pid ] && ps -p `cat /tmp/mindmaps-cassandra.pid` > /dev/null ; then
+    if [ -e $CASSANDRA_PS ] && ps -p `cat $CASSANDRA_PS` > /dev/null ; then
         echo "Cassandra already running"
     else
         # cassandra has not already started
         echo -n "Starting cassandra"
         # we hide errors because of a java bug that prints "Cass JavaLaunchHelper is implemented in both..."
-        `dirname $path`/cassandra -p /tmp/mindmaps-cassandra.pid > /dev/null 2> /dev/null
+        `dirname $path`/cassandra -p $CASSANDRA_PS > /dev/null 2> /dev/null
 
         if ! wait_for_cassandra ; then exit 1 ; fi
     fi
 
-    if [ -e /tmp/mindmaps-engine.pid ] && ps -p `cat /tmp/mindmaps-engine.pid` > /dev/null ; then
+    if [ -e $ENGINE_PS ] && ps -p `cat $ENGINE_PS` > /dev/null ; then
         echo "Engine already running"
     else
         # engine has not already started
         echo -n "Starting engine"
         java -cp "`dirname $path`/../lib/*" MindmapsEngineServer > /dev/null &
-        echo $!>/tmp/mindmaps-engine.pid
+        echo $!>$ENGINE_PS
         wait_for_engine
     fi
     ;;
@@ -96,20 +99,35 @@ start)
 stop)
 
     echo "Stopping engine"
-    if [[ -e /tmp/mindmaps-engine.pid ]]; then
-        kill `cat /tmp/mindmaps-engine.pid`
-        rm /tmp/mindmaps-engine.pid
+    if [[ -e $ENGINE_PS ]]; then
+        kill `cat $ENGINE_PS`
+        rm $ENGINE_PS
     fi
 
     echo "Stopping casasndra"
-    if [[ -e /tmp/mindmaps-cassandra.pid ]]; then
-        kill `cat /tmp/mindmaps-cassandra.pid`
-        rm /tmp/mindmaps-cassandra.pid
+    if [[ -e $CASSANDRA_PS ]]; then
+        kill `cat $CASSANDRA_PS`
+        rm $CASSANDRA_PS
+    fi
+    ;;
+
+status)
+
+    if [ -e $CASSANDRA_PS ] && ps -p `cat $CASSANDRA_PS` > /dev/null ; then
+        echo "Cassandra is running"
+    else
+        echo "Cassandra has stopped"
+    fi
+
+    if [ -e $ENGINE_PS ] && ps -p `cat $ENGINE_PS` > /dev/null ; then
+        echo "Engine is running"
+    else
+        echo "Engine has stopped"
     fi
     ;;
 
 *)
-    echo "Usage: $0 {start|stop}"
+    echo "Usage: $0 {start|stop|status}"
     ;;
 
 esac
