@@ -29,4 +29,9 @@ public class CountAggregate extends AbstractAggregate<Object, Long> {
     public Long apply(Stream<?> stream) {
         return stream.count();
     }
+
+    @Override
+    public String toString() {
+        return "count";
+    }
 }

@@ -18,8 +18,9 @@
 
 package io.mindmaps.graql;
 
-import io.mindmaps.constants.ErrorMessage;
+import com.google.common.collect.ImmutableMap;
 import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.graql.internal.parser.GraqlLexer;
 import io.mindmaps.graql.internal.parser.GraqlParser;
 import io.mindmaps.graql.internal.parser.MatchQueryPrinter;
@@ -28,10 +29,7 @@ import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.io.InputStream;
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -43,12 +41,14 @@ import java.util.stream.StreamSupport;
 public class QueryParser {
 
     private final Optional<MindmapsTransaction> transaction;
+    private final Map<String, Function<List<Object>, Aggregate>> aggregateMethods = new HashMap<>();
 
     /**
      * Create a query parser with no specified graph
      */
     private QueryParser() {
         this.transaction = Optional.empty();
+        registerDefaultAggregates();
     }
 
     /**
@@ -57,6 +57,7 @@ public class QueryParser {
      */
     private QueryParser(MindmapsTransaction transaction) {
         this.transaction = Optional.of(transaction);
+        registerDefaultAggregates();
     }
 
     /**
@@ -73,6 +74,10 @@ public class QueryParser {
      */
     public static QueryParser create(MindmapsTransaction transaction) {
         return new QueryParser(transaction);
+    }
+
+    public void registerAggregate(String name, Function<List<Object>, Aggregate> aggregateMethod) {
+        aggregateMethods.put(name, aggregateMethod);
     }
 
     /**
@@ -198,12 +203,32 @@ public class QueryParser {
             throw new IllegalArgumentException(ErrorMessage.SYNTAX_ERROR.getMessage());
         }
 
-        QueryVisitor queryVisitor = transaction.map(QueryVisitor::new).orElseGet(QueryVisitor::new);
-        return visit.apply(queryVisitor, tree);
+        return visit.apply(getQueryVisitor(), tree);
     }
 
     private GraqlLexer getLexer(String queryString) {
         ANTLRInputStream input = new ANTLRInputStream(queryString);
         return new GraqlLexer(input);
+    }
+
+    private QueryVisitor getQueryVisitor() {
+        ImmutableMap<String, Function<List<Object>, Aggregate>> immutableAggregates =
+                ImmutableMap.copyOf(aggregateMethods);
+
+        return transaction
+                .map(t -> new QueryVisitor(immutableAggregates, t))
+                .orElseGet(() -> new QueryVisitor(immutableAggregates));
+    }
+
+    private void registerDefaultAggregates() {
+        registerAggregate("count", args -> Graql.count());
+
+        registerAggregate("group", args -> {
+            if (args.size() < 2) {
+                return Graql.group((String) args.get(0));
+            } else {
+                return Graql.group((String) args.get(0), (Aggregate) args.get(1));
+            }
+        });
     }
 }

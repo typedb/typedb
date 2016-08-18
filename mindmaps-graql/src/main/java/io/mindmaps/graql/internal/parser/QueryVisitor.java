@@ -18,6 +18,7 @@
 
 package io.mindmaps.graql.internal.parser;
 
+import com.google.common.collect.ImmutableMap;
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.Data;
 import io.mindmaps.graql.*;
@@ -27,10 +28,11 @@ import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * ANTLR visitor class for parsing a query
@@ -40,6 +42,7 @@ public class QueryVisitor extends GraqlBaseVisitor {
     private final QueryBuilder queryBuilder;
     private final Stack<Var> patterns = new Stack<>();
     private final Map<String, List<Getter>> getters = new HashMap<>();
+    private final ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods;
 
     @Override
     public Object visitQueryEOF(GraqlParser.QueryEOFContext ctx) {
@@ -66,14 +69,22 @@ public class QueryVisitor extends GraqlBaseVisitor {
         return visitDeleteQuery(ctx.deleteQuery());
     }
 
-    public QueryVisitor() {
+    @Override
+    public Object visitAggregateEOF(GraqlParser.AggregateEOFContext ctx) {
+        return visitAggregateQuery(ctx.aggregateQuery());
+    }
+
+    public QueryVisitor(ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods) {
+        this.aggregateMethods = aggregateMethods;
         queryBuilder = Graql.withoutTransaction();
     }
 
     /**
      * @param transaction the transaction that the parsed query should use
      */
-    public QueryVisitor(MindmapsTransaction transaction) {
+    public QueryVisitor(
+            ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods, MindmapsTransaction transaction) {
+        this.aggregateMethods = aggregateMethods;
         queryBuilder = Graql.withTransaction(transaction);
     }
 
@@ -112,9 +123,51 @@ public class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
+    public Object visitAggregateQuery(GraqlParser.AggregateQueryContext ctx) {
+        Aggregate aggregate = visitAggregate(ctx.aggregate());
+        MatchQueryDefault matchQuery = visitMatchQuery(ctx.matchQuery()).getMatchQuery();
+        return matchQuery.aggregate(aggregate);
+    }
+
+    @Override
+    public Aggregate<?, ?> visitCustomAgg(GraqlParser.CustomAggContext ctx) {
+        String name = visitId(ctx.id());
+        Function<List<Object>, Aggregate> aggregateMethod = aggregateMethods.get(name);
+
+        List<Object> arguments = ctx.argument().stream().map(this::visit).collect(toList());
+
+        return aggregateMethod.apply(arguments);
+    }
+
+    @Override
+    public Aggregate<?, ? extends Map<String, ?>> visitSelectAgg(GraqlParser.SelectAggContext ctx) {
+        Set aggregates = ctx.namedAgg().stream().map(this::visitNamedAgg).collect(toSet());
+
+        // We can't handle cases when the aggregate types are wrong, because the user can provide custom aggregates
+        //noinspection unchecked
+        return Graql.select(aggregates);
+    }
+
+    @Override
+    public String visitVariableArgument(GraqlParser.VariableArgumentContext ctx) {
+        return getVariable(ctx.VARIABLE());
+    }
+
+    @Override
+    public Aggregate<?, ?> visitAggregateArgument(GraqlParser.AggregateArgumentContext ctx) {
+        return visitAggregate(ctx.aggregate());
+    }
+
+    @Override
+    public NamedAggregate<?, ?> visitNamedAgg(GraqlParser.NamedAggContext ctx) {
+        String name = visitId(ctx.id());
+        return visitAggregate(ctx.aggregate()).as(name);
+    }
+
+    @Override
     public UnaryOperator<MatchQueryDefault> visitSelectors(GraqlParser.SelectorsContext ctx) {
         getters.clear();
-        Set<String> names = ctx.selector().stream().map(this::visitSelector).collect(Collectors.toSet());
+        Set<String> names = ctx.selector().stream().map(this::visitSelector).collect(toSet());
         return matchQuery -> matchQuery.select(names);
     }
 
@@ -468,6 +521,10 @@ public class QueryVisitor extends GraqlBaseVisitor {
 
     private Getter visitGetter(GraqlParser.GetterContext ctx) {
         return (Getter) visit(ctx);
+    }
+
+    private Aggregate<?, ?> visitAggregate(GraqlParser.AggregateContext ctx) {
+        return (Aggregate) visit(ctx);
     }
 
     private Pattern visitPattern(GraqlParser.PatternContext ctx) {

@@ -49,4 +49,13 @@ public class GroupAggregate<T> extends AbstractAggregate<Map<String, Concept>, M
 
         return stream.collect(groupingBy(result -> result.get(varName), applyAggregate));
     }
+
+    @Override
+    public String toString() {
+        if (innerAggregate instanceof ListAggregate) {
+            return "group $" + varName;
+        } else {
+            return "group $" + varName + " " + innerAggregate.toString();
+        }
+    }
 }

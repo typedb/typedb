@@ -20,13 +20,15 @@ package io.mindmaps.graql.parser;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.Data;
+import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.core.model.Concept;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.*;
 import io.mindmaps.graql.internal.parser.MatchQueryPrinter;
+import io.mindmaps.graql.internal.query.aggregate.AbstractAggregate;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -34,6 +36,8 @@ import org.junit.Test;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Stream;
 
 import static io.mindmaps.constants.DataType.ConceptMeta.*;
 import static io.mindmaps.graql.Graql.*;
@@ -396,6 +400,47 @@ public class QueryParserTest {
     @Test
     public void testParseBoolean() {
         assertEquals("insert has flag true;", qp.parseInsertQuery("insert has flag true;").toString());
+    }
+
+    @Test
+    public void testParseAggregate() {
+        //noinspection unchecked
+        AggregateQuery<Map<String, Object>> query = (AggregateQuery<Map<String, Object>>)
+                qp.parseQuery("match $x isa movie aggregate (count as c, group $x as g)");
+
+        Map<String, Object> result = query.execute();
+
+        assertTrue(result.get("c") instanceof Long);
+        assertTrue(result.get("g") instanceof Map);
+    }
+
+    @Test
+    public void testParseAggregateToString() {
+        String query = "match $x isa movie aggregate group $x (count as c)";
+        assertEquals(query, qp.parseQuery(query).toString());
+    }
+
+    @Test
+    public void testCustomAggregate() {
+        QueryParser qp = QueryParser.create(transaction);
+
+        qp.registerAggregate(
+                "get-any", args -> new AbstractAggregate<Map<String, Concept>, Concept>() {
+                    @Override
+                    public Concept apply(Stream<? extends Map<String, Concept>> stream) {
+                        //noinspection OptionalGetWithoutIsPresent,SuspiciousMethodCalls
+                        return stream.findAny().get().get(args.get(0));
+                    }
+                }
+        );
+
+        //noinspection unchecked
+        AggregateQuery<Concept> query =
+                (AggregateQuery<Concept>) qp.parseQuery("match $x isa movie aggregate get-any $x");
+
+        Concept result = query.execute();
+
+        assertEquals("movie", result.type().getId());
     }
 
     @Test(expected = IllegalArgumentException.class)
