@@ -25,10 +25,7 @@ public class GraphFactory {
 
     private String graphConfig;
     private String graphBatchConfig;
-
-
     private static GraphFactory instance = null;
-
     private MindmapsGraphFactory titanGraphFactory;
 
 
@@ -43,7 +40,6 @@ public class GraphFactory {
         titanGraphFactory = new MindmapsTitanGraphFactory();
         graphConfig = ConfigProperties.getInstance().getProperty(ConfigProperties.GRAPH_CONFIG_PROPERTY);
         graphBatchConfig = ConfigProperties.getInstance().getProperty(ConfigProperties.GRAPH_BATCH_CONFIG_PROPERTY);
-
     }
 
     public synchronized MindmapsGraph getGraph(String name) {

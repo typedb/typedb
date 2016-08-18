@@ -71,7 +71,7 @@ public enum ErrorMessage {
     MISSING_FACTORY_DEFINITION("Graph Factor Config ['factory.internal'] missing from provided config. " +
             "Cannot produce graph"),
     CONFIG_NOT_FOUND("Mindmaps Engine located at ['%s'] did not return the expected response, due to ['%s']"),
-    COULD_NOT_REACH_ENGINE("Could not reach Mindmaps engine at [%s] when submitting commit logs"),
+    COULD_NOT_REACH_ENGINE("Could not reach Mindmaps engine at [%s]"),
 
     //--------------------------------------------- Graql Errors -----------------------------------------------
     NO_TRANSACTION("no transaction provided"),

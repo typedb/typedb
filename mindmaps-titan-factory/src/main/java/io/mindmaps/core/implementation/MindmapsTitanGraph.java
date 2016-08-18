@@ -20,7 +20,6 @@ package io.mindmaps.core.implementation;
 
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
-import io.mindmaps.constants.ErrorMessage;
 
 public class MindmapsTitanGraph extends AbstractMindmapsGraph<TitanGraph> {
     public MindmapsTitanGraph(TitanGraph graph, String name, String engineUrl){
@@ -32,11 +31,6 @@ public class MindmapsTitanGraph extends AbstractMindmapsGraph<TitanGraph> {
         TitanGraph titanGraph = getGraph();
         titanGraph.close();
         TitanCleanup.clear(titanGraph);
-
-        try {
-            EngineCommunicator.contactEngine(getCommitLogEndPoint(), "DELETE");
-        } catch (IllegalArgumentException e){
-            LOG.error(ErrorMessage.COULD_NOT_REACH_ENGINE.getMessage(getCommitLogEndPoint()));
-        }
+        EngineCommunicator.contactEngine(getCommitLogEndPoint(), "DELETE");
     }
 }

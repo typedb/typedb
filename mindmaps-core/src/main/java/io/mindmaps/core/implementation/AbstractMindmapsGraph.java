@@ -46,6 +46,8 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     }
 
     String getCommitLogEndPoint(){
+        if(getEngineUrl() == null)
+            return null;
         return getEngineUrl() + RESTUtil.WebPath.COMMIT_LOG_URI + "?" + RESTUtil.Request.GRAPH_NAME_PARAM + "=" + getName();
     }
 
