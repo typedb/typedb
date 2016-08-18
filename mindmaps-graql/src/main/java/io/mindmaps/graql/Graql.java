@@ -23,13 +23,10 @@ import com.google.common.collect.ImmutableSet;
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.admin.AdminConverter;
-import io.mindmaps.graql.internal.StringConverter;
 import io.mindmaps.graql.admin.PatternAdmin;
+import io.mindmaps.graql.internal.StringConverter;
 import io.mindmaps.graql.internal.query.*;
-import io.mindmaps.graql.internal.query.aggregate.CountAggregate;
-import io.mindmaps.graql.internal.query.aggregate.GroupAggregate;
-import io.mindmaps.graql.internal.query.aggregate.ListAggregate;
-import io.mindmaps.graql.internal.query.aggregate.SelectAggregate;
+import io.mindmaps.graql.internal.query.aggregate.*;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.*;
@@ -156,6 +153,13 @@ public class Graql {
      */
     public static Aggregate<Object, Long> count() {
         return new CountAggregate();
+    }
+
+    /**
+     * Create an aggregate that will sum the values of a variable.
+     */
+    public static Aggregate<Map<String, Concept>, Number> sum(String varName) {
+        return new SumAggregate(varName);
     }
 
     /**
