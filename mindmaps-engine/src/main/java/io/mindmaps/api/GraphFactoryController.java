@@ -62,9 +62,9 @@ public class GraphFactoryController {
 
                 return new String(Files.readAllBytes(Paths.get(ConfigProperties.getInstance().getProperty(graphConfig))));
             } catch (IOException e) {
-                LOG.error(ErrorMessage.NO_CONFIG_FILE.getMessage(graphConfig));
+                LOG.error(ErrorMessage.NO_CONFIG_FILE.getMessage(ConfigProperties.getInstance().getProperty(graphConfig)));
                 res.status(500);
-                return ErrorMessage.NO_CONFIG_FILE.getMessage(graphConfig);
+                return ErrorMessage.NO_CONFIG_FILE.getMessage(ConfigProperties.getInstance().getProperty(graphConfig));
             }
         });
 

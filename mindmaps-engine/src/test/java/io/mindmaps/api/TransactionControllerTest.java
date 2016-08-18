@@ -26,6 +26,8 @@ import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.util.ConfigProperties;
 import io.mindmaps.constants.RESTUtil;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -72,11 +74,12 @@ public class TransactionControllerTest {
             i++;
             try {
                 Thread.sleep(500);
+                status = new JSONObject(get("/transaction/status/" + transactionUUID).then().extract().response().asString()).getString("state");
             } catch (InterruptedException e) {
                 e.printStackTrace();
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
-            status = get("/transactionStatus/" + transactionUUID).then().extract().response().asString();
-
         }
         assertTrue(GraphFactory.getInstance().getGraph(graphName).getTransaction().getConcept("actor-123").asEntity().getValue().equals("Al Pacino"));
     }
@@ -88,16 +91,19 @@ public class TransactionControllerTest {
                 when().post(RESTUtil.WebPath.NEW_TRANSACTION_URI + "?graphName=mindmapstest").body().asString();
         int i = 0;
         String status = "QUEUED";
-        while (i < 1 && !status.equals("CANCELLED")) {
+        while (i < 1 && !status.equals("ERROR")) {
             i++;
             try {
                 Thread.sleep(500);
+                System.out.println(get("/transaction/status/" + transactionUUID).then().extract().response().asString());
+                status = new JSONObject(get("/transaction/status/" + transactionUUID).then().extract().response().asString()).getString("state");
+            } catch (JSONException e) {
+                e.printStackTrace();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            status = get("/transactionStatus/" + transactionUUID).then().extract().response().asString();
         }
-        assertTrue(status.equals("CANCELLED"));
+        assertTrue(status.equals("ERROR"));
     }
 
     @After

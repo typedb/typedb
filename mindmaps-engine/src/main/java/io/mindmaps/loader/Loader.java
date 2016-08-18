@@ -1,174 +1,121 @@
-/*
- * MindmapsDB - A Distributed Semantic Database
- * Copyright (C) 2016  Mindmaps Research Ltd
- *
- * MindmapsDB is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * MindmapsDB is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- */
-
 package io.mindmaps.loader;
 
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.implementation.MindmapsTransactionImpl;
-import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.factory.GraphFactory;
-import io.mindmaps.graql.QueryParser;
-import io.mindmaps.postprocessing.Cache;
-import io.mindmaps.util.ConfigProperties;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.mindmaps.graql.Var;
 
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Singleton class that handles insert queries received via REST end point.
- * It also maintains the statistics about the loading jobs.
+ * RESTLoader to perform bulk loading into the graph
  */
+public abstract class Loader {
 
-public class Loader {
-    private final Logger LOG = LoggerFactory.getLogger(Loader.class);
-
-    private Cache cache;
-
-    private static int repeatCommits;
-
-    private static Loader instance = null;
-
-    private ExecutorService executor;
-    private final Map<UUID, State> loaderState;
-
-    private AtomicBoolean maintenanceInProcess;
     private AtomicInteger enqueuedJobs;
     private AtomicInteger loadingJobs;
     private AtomicInteger finishedJobs;
-    private AtomicLong lastJobFinished;
     private AtomicInteger errorJobs;
-    private AtomicBoolean maintenanceInProgress;
 
-    public long getLastJobFinished() {
-        return lastJobFinished.get();
-    }
-    public int getLoadingJobs() {
-        return loadingJobs.get();
-    }
+    protected Collection<Var> batch;
+    protected int batchSize;
+    protected int threadsNumber;
 
-    private Loader() {
-        cache = Cache.getInstance();
-        executor = Executors.newFixedThreadPool(8);
-        loaderState = new ConcurrentHashMap<>();
+    public Loader(){
         enqueuedJobs = new AtomicInteger();
         loadingJobs = new AtomicInteger();
         errorJobs = new AtomicInteger();
         finishedJobs = new AtomicInteger();
-        lastJobFinished= new AtomicLong();
-        maintenanceInProcess= new AtomicBoolean(false);
-        repeatCommits = ConfigProperties.getInstance().getPropertyAsInt(ConfigProperties.LOADER_REPEAT_COMMITS);
     }
 
-    public static synchronized Loader getInstance() {
-        if (instance == null) instance = new Loader();
-        return instance;
+    /**
+     * Method to load data into the graph. Implementation depends on the type of the loader.
+     */
+    protected abstract void submitBatch(Collection<Var> batch);
+
+    /**
+     * Wait for all loading to terminate.
+     */
+    public abstract void waitToFinish();
+
+    /**
+     * Add a single var to the queue
+     * @param var to be loaded
+     */
+    public void addToQueue(Var var){
+        addToQueue(Collections.singleton(var));
     }
 
-    public UUID addJob(String name, String queryString) {
-        UUID newUUID = UUID.randomUUID();
-        loaderState.put(newUUID, State.QUEUED);
-        executor.submit(() -> loadData(name, queryString, newUUID));
+    /**
+     * Add the given query to the queue to load
+     * @param vars to be loaded
+     */
+    public void addToQueue(String vars){
+
+    }
+
+    /**
+     * Add multiple vars to the queue. These should be inserted in one transaction.
+     * @param vars to be loaded
+     */
+    public void addToQueue(Collection<Var> vars){
+        batch.addAll(vars);
+        if(batch.size() > batchSize){
+            submitBatch(batch);
+            batch.clear();
+        }
+    }
+
+    /**
+     * Set the size of the each transaction in terms of number of vars.
+     * @param size number of vars in each transaction
+     */
+    public void setBatchSize(int size){
+        this.batchSize = size;
+    }
+
+    public void setThreadsNumber(int number){
+        this.threadsNumber = number;
+    }
+
+    /**
+     * Load any remaining batches in the queue.
+     */
+    public void flush(){
+        if(batch.size() > 0){
+            submitBatch(batch);
+            batch.clear();
+        }
+    }
+
+    /**
+     * Method that prints current state of loading transactions to standard out
+     */
+    public void printLoaderState(){
+        String state =
+                "QUEUE:     " + enqueuedJobs.get() + "\n" +
+                "LOADING:   " + loadingJobs.get() + "\n" +
+                "FINISHED:  " + finishedJobs.get() + "\n" +
+                "ERROR:     " + errorJobs.get() + "\n" +
+                "---" + "\n";
+
+        System.out.print(state);
+    }
+
+    public void markAsQueued(String transaction){
         enqueuedJobs.incrementAndGet();
-        return newUUID;
     }
 
-    public void loadData(String name, String batch, UUID uuid) {
-        // Attempt committing the transaction a certain number of times
-        // If a transaction fails, it must be repeated from scratch because Titan is forgetful
-        loaderState.put(uuid, State.LOADING);
+    public void markAsLoading(String transaction){
         loadingJobs.incrementAndGet();
-        enqueuedJobs.decrementAndGet();
+    }
 
-        for (int i = 0; i < repeatCommits; i++) {
-            MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) GraphFactory.getInstance().getGraphBatchLoading(name).getTransaction();
+    public void markAsFinished(String transaction){
+        loadingJobs.decrementAndGet();
+        finishedJobs.incrementAndGet();
+    }
 
-            try {
-                QueryParser.create(transaction).parseInsertQuery(batch).execute();
-                transaction.commit();
-                cache.addJobCasting(name, transaction.getModifiedCastingIds());
-                loaderState.put(uuid, State.FINISHED);
-                finishedJobs.incrementAndGet();
-                return;
-
-            } catch (MindmapsValidationException e) {
-                //If it's a validation exception there is no point in re-trying
-                LOG.error(ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));
-                loaderState.put(uuid, State.CANCELLED);
-                errorJobs.incrementAndGet();
-                return;
-            } catch (IllegalArgumentException e) {
-                //If it's a parsing exception there is no point in re-trying
-                LOG.error(ErrorMessage.PARSING_EXCEPTION.getMessage(e.getMessage()));
-                loaderState.put(uuid, State.CANCELLED);
-                errorJobs.incrementAndGet();
-                return;
-            } catch (Exception e) {
-                //If it's not a validation exception we need to remain in the for loop
-                handleError(e, 1);
-            } finally {
-                try {
-                    transaction.close();
-                    loadingJobs.decrementAndGet();
-                    lastJobFinished.set(System.currentTimeMillis());
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        LOG.error(ErrorMessage.FAILED_TRANSACTION.getMessage(repeatCommits));
-        loaderState.put(uuid, State.CANCELLED);
+    public void markAsError(String transaction){
+        loadingJobs.decrementAndGet();
         errorJobs.incrementAndGet();
-
-        //TODO: log the errors to a log file.
     }
-
-    public State getStatus(UUID uuid) {
-        return loaderState.get(uuid);
-    }
-
-    private void handleError(Exception e, int i) {
-        LOG.error("Caught exception ", e);
-        e.printStackTrace();
-
-        try {
-            Thread.sleep((i + 2) * 1000);
-        } catch (InterruptedException e1) {
-            e1.printStackTrace();
-        }
-    }
-
-    public synchronized void unlock(){
-        maintenanceInProcess.set(false);
-        notifyAll();
-        LOG.info("Unlocking QueueManager [" + this + "]");
-    }
-    public void lock(){
-        maintenanceInProcess.set(true);
-        LOG.info("Locking QueueManager [" + this + "] for external maintenance");
-    }
-
 }

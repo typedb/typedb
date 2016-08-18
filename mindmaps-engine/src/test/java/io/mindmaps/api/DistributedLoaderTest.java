@@ -21,13 +21,17 @@ package io.mindmaps.api;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.Var;
 import io.mindmaps.loader.DistributedLoader;
+import io.mindmaps.loader.Loader;
 import io.mindmaps.util.ConfigProperties;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
@@ -39,77 +43,95 @@ import java.util.List;
 import java.util.Properties;
 
 import static io.mindmaps.graql.Graql.insert;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class DistributedLoaderTest {
 
-    Properties prop = new Properties();
-    String graphName;
-    DistributedLoader loader;
-    private final org.slf4j.Logger LOG = LoggerFactory.getLogger(DistributedLoaderTest.class);
+    private final Logger LOG = (Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
 
+    private MindmapsGraph graph;
+
+    private Properties prop = new Properties();
+    private Loader loader;
 
     @Before
     public void setUp() throws Exception {
+        LOG.setLevel(Level.OFF);
+
+        // set up engine
         new TransactionController();
+        new CommitLogController();
+
         try {
             prop.load(DistributedLoaderTest.class.getClassLoader().getResourceAsStream(ConfigProperties.CONFIG_TEST_FILE));
         } catch (Exception e) {
             e.printStackTrace();
         }
-        graphName = prop.getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
-        loader= new DistributedLoader(graphName, Collections.singletonList("localhost"));
-        new CommitLogController();
+        String graphName = prop.getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+
+        loader = new DistributedLoader(graphName, Collections.singletonList("localhost"));
+        graph = GraphFactory.getInstance().getGraph(graphName);
     }
 
-    //TODO: This fails with code coverage enabled. Need to investigate
-    @Ignore
     @Test
-    public void testLoadOntologyAndData() {
-        Logger logger = (Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.INFO);
-
-        loadOntology();
-
+    public void testLoad1000() {
         ClassLoader classLoader = getClass().getClassLoader();
-        File fileData= new File(classLoader.getResource("small_nametags.gql").getFile());
-        loader.setBatchSize(10);
+        File ontology = new File(classLoader.getResource("dblp-ontology.gql").getFile());
+        File data = new File(classLoader.getResource("small_nametags.gql").getFile());
+
+        loadOntologyFromFile(ontology);
+        loadDataFromFile(data);
+
+        MindmapsTransaction transaction = graph.getTransaction();
+        assertNotNull(transaction.getConcept("X4d616e75656c20417a656e6861").getId());
+        assertNotNull(transaction.getConcept("X44616e69656c61204675696f726561").getId());
+        assertNotNull(transaction.getConcept("X422e20476174686d616e6e").getId());
+        assertNotNull(transaction.getConcept("X416e6472657720522e2057656262").getId());
+        assertNotNull(transaction.getConcept("X4a752d4d696e205a68616f").getId());
+        assertNotNull(transaction.getConcept("X546f736869616b69204b61776173616b69").getId());
+
+        int size = transaction.getEntityType("name_tag").instances().size();
+        assertEquals(size, 1000);
+    }
+
+
+    public void loadDataFromFile(File file) {
+        loader.setBatchSize(50);
         try {
-            QueryParser.create().parsePatternsStream(new FileInputStream(fileData)).forEach(pattern -> loader.addToQueue(pattern.admin().asVar()));
+            QueryParser.create()
+                    .parsePatternsStream(new FileInputStream(file))
+                    .forEach(pattern -> loader.addToQueue(pattern.admin().asVar()));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        try {
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        Assert.assertNotNull(GraphFactory.getInstance().getGraph(graphName).getTransaction().getConcept("X546f736869616b69204b61776173616b69").getId());
+
+        loader.waitToFinish();
     }
 
-    private void loadOntology(){
-        MindmapsTransaction transaction = GraphFactory.getInstance().getGraph(graphName).getTransaction();
+    private void loadOntologyFromFile(File file) {
         List<Var> ontologyBatch = new ArrayList<>();
-        ClassLoader classLoader = getClass().getClassLoader();
 
         LOG.info("Loading new ontology .. ");
         try {
-            QueryParser.create().parsePatternsStream(new FileInputStream(classLoader.getResource("dblp-ontology.gql").getFile())).map(x->x.admin().asVar()).forEach(ontologyBatch::add);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-        insert(ontologyBatch).withTransaction(transaction).execute();
-        try {
+            QueryParser.create()
+                    .parsePatternsStream(new FileInputStream(file))
+                    .map(x -> x.admin().asVar())
+                    .forEach(ontologyBatch::add);
+
+            MindmapsTransaction transaction = graph.getTransaction();
+            insert(ontologyBatch).withTransaction(transaction).execute();
             transaction.commit();
-        } catch (MindmapsValidationException e) {
-            e.printStackTrace();
+
+        } catch (FileNotFoundException | MindmapsValidationException e) {
+            throw new RuntimeException(e);
         }
 
         LOG.info("Ontology loaded. ");
     }
 
     @After
-    public void cleanGraph(){
-        GraphFactory.getInstance().getGraph(graphName).clear();
+    public void cleanGraph() {
+        graph.clear();
     }
-
 }
