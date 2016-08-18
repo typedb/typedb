@@ -87,7 +87,7 @@ public class GraqlShell implements AutoCloseable {
 
     private final MindmapsGraph graph;
     private final MindmapsTransaction transaction;
-    private final MindmapsReasoner reasoner;
+    private final Reasoner reasoner;
 
     /**
      * Run a Graql REPL
@@ -170,7 +170,7 @@ public class GraqlShell implements AutoCloseable {
     GraqlShell(MindmapsGraph graph, InputStream in, OutputStream out, PrintStream err) throws IOException {
         this.graph = graph;
         transaction = graph.getTransaction();
-        reasoner = new MindmapsReasoner(transaction);
+        reasoner = new Reasoner(transaction);
         console = new ConsoleReader(in, out);
         this.err = err;
     }
