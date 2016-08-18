@@ -25,7 +25,10 @@ import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQueryDefault;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Var;
+import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.query.ConjunctionImpl;
+import io.mindmaps.graql.internal.query.DisjunctionImpl;
 import io.mindmaps.graql.internal.reasoner.container.Query;
 import org.javatuples.Pair;
 
@@ -33,38 +36,46 @@ import java.util.*;
 
 import static io.mindmaps.graql.internal.reasoner.Utility.getCompatibleRoleTypes;
 
-public class RelationAtom extends AtomBase{
+public class Relation extends AtomBase{
 
     private final Set<Var.Casting> castings = new HashSet<>();
 
-    public RelationAtom(VarAdmin pattern)
-    {
+
+    public Relation(VarAdmin pattern){
         super(pattern);
         castings.addAll(pattern.getCastings());
     }
 
-    public RelationAtom(VarAdmin pattern, Query par)
+
+    public Relation(VarAdmin pattern, Query par)
     {
         super(pattern, par);
         castings.addAll(pattern.getCastings());
     }
 
-    public RelationAtom(RelationAtom a)
+    public Relation(Relation a)
     {
         super(a);
         castings.addAll(a.getPattern().asVar().getCastings());
 
-        for(Query exp : expansions)
-            removeExpansion(exp);
+        expansions.forEach(this::removeExpansion);
         a.expansions.forEach(exp -> expansions.add(new Query(exp)));
     }
 
     @Override
     public boolean equals(Object obj)
     {
-        if (!(obj instanceof RelationAtom)) return false;
-        RelationAtom a2 = (RelationAtom) obj;
+        if (!(obj instanceof Relation)) return false;
+        Relation a2 = (Relation) obj;
         return this.getTypeId().equals(a2.getTypeId()) && this.getVarNames().equals(a2.getVarNames());
+    }
+
+    @Override
+    public boolean isEquivalent(Object obj)
+    {
+        if (!(obj instanceof Relation)) return false;
+        Relation a2 = (Relation) obj;
+        return this.getTypeId().equals(a2.getTypeId());
     }
 
     @Override
@@ -104,6 +115,31 @@ public class RelationAtom extends AtomBase{
             varFound = it.next().getRolePlayer().getName().equals(name);
 
         return varFound;
+    }
+
+    @Override
+    public MatchQueryDefault getMatchQuery(MindmapsTransaction graph)
+    {
+        QueryBuilder qb = Graql.withTransaction(graph);
+        MatchQueryDefault matchQuery = qb.match(getPattern());
+
+        //add substitutions
+        Map<String, Set<Atomic>> varSubMap = getVarSubMap();
+        Set<String> selectVars = getVarNames();
+        //form a disjunction of each set of subs for a given variable and add to query
+        varSubMap.forEach( (key, val) -> {
+            //selectVars.remove(key);
+            Set<PatternAdmin> patterns = new HashSet<>();
+            val.forEach(sub -> patterns.add(sub.getPattern()));
+            matchQuery.admin().getPattern().getPatterns().add(new DisjunctionImpl<>(patterns));
+        });
+
+        //add constraints
+        Set<PatternAdmin> patterns = new HashSet<>();
+        getTypeConstraints().forEach(c -> patterns.add(c.getPattern()));
+        matchQuery.admin().getPattern().getPatterns().add(new ConjunctionImpl<>(patterns));
+
+        return matchQuery.select(selectVars);
     }
 
     @Override
@@ -239,6 +275,26 @@ public class RelationAtom extends AtomBase{
             }
         }
         return roleVarTypeMap;
+    }
+
+    public Set<Atomic> getTypeConstraints(){
+        Set<Atomic> typeConstraints = new HashSet<>();
+        getParentQuery().getAtoms().forEach(atom ->{
+            if (atom.isType() && containsVar(atom.getVarName())) typeConstraints.add(atom);
+        });
+        return typeConstraints;
+    }
+
+    public Set<Atomic> getRelatedAtoms(){
+        Set<Atomic> relatedAtoms = new HashSet<>();
+        getParentQuery().getAtoms().forEach(atom ->{
+            if(atom.isRelation()){
+                Set<String> intersection = new HashSet<>(getVarNames());
+                intersection.retainAll(atom.getVarNames());
+                if (!intersection.isEmpty()) relatedAtoms.add(atom);
+            }
+        });
+        return relatedAtoms;
     }
 
 }

@@ -28,6 +28,7 @@ import io.mindmaps.graql.internal.query.DisjunctionImpl;
 import io.mindmaps.graql.internal.reasoner.container.Query;
 import org.javatuples.Pair;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -119,8 +120,6 @@ public abstract class AtomBase implements Atomic{
     }
 
     @Override
-    public boolean isValuePredicate(){ return !atomPattern.asVar().getValuePredicates().isEmpty();}
-    @Override
     public boolean isResource(){ return !atomPattern.asVar().getResourcePredicates().isEmpty();}
     @Override
     public boolean isType(){ return !typeId.isEmpty();}
@@ -136,6 +135,26 @@ public abstract class AtomBase implements Atomic{
         expandedPattern.add(atomPattern);
         expansions.forEach(q -> expandedPattern.add(q.getExpandedPattern()));
         return new DisjunctionImpl<>(expandedPattern);
+    }
+
+    @Override
+    public MatchQueryDefault getMatchQuery(MindmapsTransaction graph)
+    {
+        QueryBuilder qb = Graql.withTransaction(graph);
+        MatchQueryDefault matchQuery = qb.match(getPattern());
+
+        //add substitutions
+        Map<String, Set<Atomic>> varSubMap = getVarSubMap();
+        Set<String> selectVars = getVarNames();
+        //form a disjunction of each set of subs for a given variable and add to query
+        varSubMap.forEach( (key, val) -> {
+            //selectVars.remove(key);
+            Set<PatternAdmin> patterns = new HashSet<>();
+            val.forEach(sub -> patterns.add(sub.getPattern()));
+            matchQuery.admin().getPattern().getPatterns().add(new DisjunctionImpl<>(patterns));
+        });
+
+        return qb.match(getExpandedPattern()).select(selectVars);
     }
 
     @Override
@@ -158,7 +177,6 @@ public abstract class AtomBase implements Atomic{
 
 
     @Override
-
     public void changeEachVarName(String from, String to) {
         String var = getVarName();
         if (var.equals(from)) {
@@ -192,6 +210,31 @@ public abstract class AtomBase implements Atomic{
 
     @Override
     public Set<Query> getExpansions(){ return expansions;}
+
+    @Override
+    public Set<Atomic> getSubstitutions() {
+        Set<Atomic> subs = new HashSet<>();
+        getParentQuery().getAtoms().forEach( atom ->{
+            if(atom.isValuePredicate() && containsVar(atom.getVarName()) )
+                subs.add(atom);
+        });
+        return subs;
+    }
+
+    @Override
+    public Map<String, Set<Atomic>> getVarSubMap()
+    {
+        Map<String, Set<Atomic>> map = new HashMap<>();
+        getSubstitutions().forEach( sub -> {
+            String var = sub.getVarName();
+            if (map.containsKey(var))
+                map.get(var).add(sub);
+            else
+                map.put(var, Sets.newHashSet(sub));
+        });
+        return map;
+    }
+
 
     private Pair<String, String> getDataFromVar(VarAdmin var) {
 

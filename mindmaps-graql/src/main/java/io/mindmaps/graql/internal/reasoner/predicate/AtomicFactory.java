@@ -31,7 +31,9 @@ public class AtomicFactory {
 
         VarAdmin var = pattern.asVar();
         if(var.isRelation())
-            return new RelationAtom(var);
+            return new Relation(var);
+        else if (!var.getValuePredicates().isEmpty() || var.getId().isPresent())
+            return new Substitution(var);
         else
             return new Atom(var);
     }
@@ -43,13 +45,18 @@ public class AtomicFactory {
 
         VarAdmin var = pattern.asVar();
         if(var.isRelation())
-            return new RelationAtom(var, parent);
+            return new Relation(var, parent);
+        else if (!var.getValuePredicates().isEmpty() || var.getId().isPresent())
+            return new Substitution(var, parent);
         else
             return new Atom(var, parent);
     }
 
     public static Atomic create(Atomic atom) {
-        if(atom.isRelation()) return new RelationAtom((RelationAtom) atom);
+        if(atom.isRelation())
+            return new Relation((Relation) atom);
+        else if (atom.isValuePredicate())
+            return new Substitution((Substitution) atom);
         else return new Atom((Atom)atom);
     }
 
