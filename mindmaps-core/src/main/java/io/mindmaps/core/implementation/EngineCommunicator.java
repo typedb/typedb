@@ -19,6 +19,8 @@
 package io.mindmaps.core.implementation;
 
 import io.mindmaps.constants.ErrorMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -31,16 +33,20 @@ import java.net.URL;
  * Class dedicated to talking with Mindmaps Engine. Currently used to retrieve factory config and submit commit logs
  */
 public class EngineCommunicator {
+    private static final Logger LOG = LoggerFactory.getLogger(EngineCommunicator.class);
     private static final String DEFAULT_PROTOCOL = "http://";
 
     /**
      *
      * @param engineUrl The location of engine.
-     * @param restType The type of resquest to make to engine.
+     * @param restType The type of request to make to engine.
      * @param body The body to attach to the request
      * @return The result of the request
      */
     public static String contactEngine(String engineUrl, String restType, String body){
+        if(engineUrl == null)
+            return "Engine Not Contacted";
+
         try {
             URL url = new URL(DEFAULT_PROTOCOL + engineUrl);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -70,7 +76,8 @@ public class EngineCommunicator {
             return sb.toString();
 
         } catch (IOException e) {
-            throw new IllegalArgumentException(ErrorMessage.CONFIG_NOT_FOUND.getMessage(engineUrl, e.getMessage()));
+            LOG.error(ErrorMessage.COULD_NOT_REACH_ENGINE.getMessage(engineUrl), e);
+            return "Failed to contact Engine";
         }
     }
 
