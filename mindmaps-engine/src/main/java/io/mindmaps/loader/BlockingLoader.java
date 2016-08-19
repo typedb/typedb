@@ -19,25 +19,24 @@
 package io.mindmaps.loader;
 
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
-import io.mindmaps.core.implementation.MindmapsValidationException;
+import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
-import io.mindmaps.factory.MindmapsClient;
-import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Var;
 import io.mindmaps.postprocessing.Cache;
 import io.mindmaps.util.ConfigProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+
+public class BlockingLoader {
 
 /**
  * RESTLoader that submits tasks to locally running engine and performs basic load balancing.
@@ -55,13 +54,13 @@ public class BlockingLoader extends Loader {
     public BlockingLoader(String graphNameInit) {
 
         ConfigProperties prop = ConfigProperties.getInstance();
-        threadNumber = prop.getPropertyAsInt(ConfigProperties.NUM_THREADS_PROPERTY);
+        numThreads = prop.getPropertyAsInt(ConfigProperties.NUM_THREADS_PROPERTY);
         batchSize = prop.getPropertyAsInt(ConfigProperties.BATCH_SIZE_PROPERTY);
         repeatCommits = prop.getPropertyAsInt(ConfigProperties.LOADER_REPEAT_COMMITS);
         graphName = graphNameInit;
         cache = Cache.getInstance();
-        executor = Executors.newFixedThreadPool(threadNumber);
-        transactionsSemaphore = new Semaphore(threadNumber * 3);
+        executor = Executors.newFixedThreadPool(numThreads);
+        transactionsSemaphore = new Semaphore(numThreads * 3);
         batch = new HashSet<>();
     }
 
@@ -79,7 +78,8 @@ public class BlockingLoader extends Loader {
     protected void submitBatch(Collection<Var> vars) {
         try {
             transactionsSemaphore.acquire();
-            executor.submit(() -> loadData(graphName, vars));
+            Collection<Var> deepCopy = new ArrayList<>(vars);
+            executor.submit(() -> loadData(graphName, deepCopy));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -96,17 +96,17 @@ public class BlockingLoader extends Loader {
             throw new RuntimeException(e);
         } finally {
             LOG.info("ALL TASKS DONE!");
-            executor = Executors.newFixedThreadPool(threadNumber);
+            executor = Executors.newFixedThreadPool(numThreads);
         }
     }
 
     private void loadData(String name, Collection<Var> batch) {
 
         for (int i = 0; i < repeatCommits; i++) {
-            MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) GraphFactory.getInstance().getGraphBatchLoading(name).newTransaction();
+            MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) GraphFactory.getInstance().getGraphBatchLoading(name).getTransaction();
             try {
 
-                QueryBuilder.build(transaction).insert(batch).execute();
+                insert(batch).withTransaction(transaction).execute();
                 transaction.commit();
                 cache.addJobCasting(graphName, transaction.getModifiedCastingIds());
                 transactionsSemaphore.release();

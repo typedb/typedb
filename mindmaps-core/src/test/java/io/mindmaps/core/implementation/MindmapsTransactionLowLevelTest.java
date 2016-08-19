@@ -20,6 +20,9 @@ package io.mindmaps.core.implementation;
 
 import io.mindmaps.constants.DataType;
 import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.core.Data;
+import io.mindmaps.core.implementation.exception.ConceptIdNotUniqueException;
+import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
@@ -50,7 +53,7 @@ public class MindmapsTransactionLowLevelTest {
 
     @Before
     public void buildGraphAccessManager(){
-        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
+        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
         mindmapsGraph.initialiseMetaConcepts();
     }
     @After

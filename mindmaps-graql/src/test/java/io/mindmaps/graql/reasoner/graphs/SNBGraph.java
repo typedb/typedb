@@ -19,9 +19,9 @@
 package io.mindmaps.graql.reasoner.graphs;
 
 
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.core.implementation.MindmapsValidationException;
+import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.QueryParser;
 
@@ -37,7 +37,7 @@ public class SNBGraph {
 
     public static MindmapsTransaction getTransaction() {
         MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
-        mindmaps = graph.newTransaction();
+        mindmaps = graph.getTransaction();
         buildGraph();
 
         try {

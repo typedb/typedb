@@ -210,6 +210,7 @@ public class DistributedLoader extends Loader {
         while (!availability.get(host).tryAcquire()) {
             host = nextHost();
         }
+    }
 
         return getHost(host, POST);
     }

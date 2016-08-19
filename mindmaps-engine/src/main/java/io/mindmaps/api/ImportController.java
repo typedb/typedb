@@ -18,12 +18,11 @@
 
 package io.mindmaps.api;
 
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.constants.RESTUtil;
-import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.core.implementation.MindmapsValidationException;
+import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.QueryParser;
-import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Var;
 import io.mindmaps.loader.BlockingLoader;
 import io.mindmaps.util.ConfigProperties;
@@ -48,6 +47,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static io.mindmaps.graql.Graql.insert;
 import static spark.Spark.post;
 
 /**
@@ -179,16 +179,17 @@ public class ImportController {
 
     void importOntologyFromFile(String ontologyFile) throws IOException, MindmapsValidationException {
 
-        MindmapsTransaction transaction = GraphFactory.getInstance().getGraph(graphName).newTransaction();
+        MindmapsTransaction transaction = GraphFactory.getInstance().getGraph(graphName).getTransaction();
         List<Var> ontologyBatch = new ArrayList<>();
 
         LOG.info("Loading new ontology .. ");
 
-        QueryParser.create().parsePatternsStream(new FileInputStream(ontologyFile)).map(x -> x.admin().asVar()).forEach(ontologyBatch::add);
-        QueryBuilder.build(transaction).insert(ontologyBatch).execute();
+        QueryParser.create().parsePatternsStream(new FileInputStream(ontologyFile)).map(x->x.admin().asVar()).forEach(ontologyBatch::add);
+        insert(ontologyBatch).withTransaction(transaction).execute();
         transaction.commit();
 
         LOG.info("Ontology loaded. ");
+
 
     }
 }

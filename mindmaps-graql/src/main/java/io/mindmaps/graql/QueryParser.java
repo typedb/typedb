@@ -19,7 +19,7 @@
 package io.mindmaps.graql;
 
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.graql.internal.parser.GraqlLexer;
 import io.mindmaps.graql.internal.parser.GraqlParser;
 import io.mindmaps.graql.internal.parser.MatchQueryPrinter;
@@ -42,21 +42,28 @@ import java.util.stream.StreamSupport;
  */
 public class QueryParser {
 
-    private final MindmapsTransaction transaction;
+    private final Optional<MindmapsTransaction> transaction;
+
+    /**
+     * Create a query parser with no specified graph
+     */
+    private QueryParser() {
+        this.transaction = Optional.empty();
+    }
 
     /**
      * Create a query parser with the specified graph
      *  @param transaction  the transaction to operate the query on
      */
     private QueryParser(MindmapsTransaction transaction) {
-        this.transaction = transaction;
+        this.transaction = Optional.of(transaction);
     }
 
     /**
      *  @return a query parser with no graph specified
      */
     public static QueryParser create() {
-        return new QueryParser(null);
+        return new QueryParser();
     }
 
     /**
@@ -191,7 +198,8 @@ public class QueryParser {
             throw new IllegalArgumentException(ErrorMessage.SYNTAX_ERROR.getMessage());
         }
 
-        return visit.apply(new QueryVisitor(transaction), tree);
+        QueryVisitor queryVisitor = transaction.map(QueryVisitor::new).orElseGet(QueryVisitor::new);
+        return visit.apply(queryVisitor, tree);
     }
 
     private GraqlLexer getLexer(String queryString) {

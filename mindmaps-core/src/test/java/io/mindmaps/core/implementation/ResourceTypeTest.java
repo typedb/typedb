@@ -19,6 +19,9 @@
 package io.mindmaps.core.implementation;
 
 import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.core.Data;
+import io.mindmaps.core.implementation.exception.ConceptException;
+import io.mindmaps.core.implementation.exception.InvalidConceptValueException;
 import io.mindmaps.core.model.Resource;
 import io.mindmaps.core.model.ResourceType;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
@@ -46,7 +49,7 @@ public class ResourceTypeTest {
 
     @Before
     public void buildGraph() {
-        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
+        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
         mindmapsGraph.initialiseMetaConcepts();
         resourceType = mindmapsGraph.putResourceType("Resource Type", Data.STRING);
     }

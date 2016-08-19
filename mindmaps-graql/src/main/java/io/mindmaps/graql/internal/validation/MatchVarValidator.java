@@ -19,11 +19,11 @@
 package io.mindmaps.graql.internal.validation;
 
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.RelationType;
 import io.mindmaps.core.model.Type;
-import io.mindmaps.graql.Var;
+import io.mindmaps.graql.admin.VarAdmin;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -34,7 +34,7 @@ import java.util.stream.Stream;
  */
 class MatchVarValidator implements Validator {
 
-    private final Var.Admin var;
+    private final VarAdmin var;
 
     private MindmapsTransaction transaction;
     private List<String> errors = new ArrayList<>();
@@ -42,7 +42,7 @@ class MatchVarValidator implements Validator {
     /**
      * @param var the Var in a MatchQuery to validate
      */
-    public MatchVarValidator(Var.Admin var) {
+    MatchVarValidator(VarAdmin var) {
         this.var = var;
     }
 
@@ -51,12 +51,12 @@ class MatchVarValidator implements Validator {
         this.transaction = transaction;
         errors = new ArrayList<>();
 
-        var.getType().flatMap(Var.Admin::getIdOnly).ifPresent(this::validateType);
+        var.getType().flatMap(VarAdmin::getIdOnly).ifPresent(this::validateType);
 
         getExpectedIds().forEach(this::validateIdExists);
         var.getRoleTypes().forEach(this::validateRoleTypeExists);
 
-        Optional<String> optType = var.getType().flatMap(Var.Admin::getId);
+        Optional<String> optType = var.getType().flatMap(VarAdmin::getId);
         optType.ifPresent(type -> {
             if (var.isRelation()) {
                 validateRelation(type, var.getRoleTypes());
@@ -77,7 +77,7 @@ class MatchVarValidator implements Validator {
                 .flatMap(
                         v -> {
                             // Get everything related to this var that is definitely a type
-                            Set<Var.Admin> types = new HashSet<>();
+                            Set<VarAdmin> types = new HashSet<>();
                             v.getType().ifPresent(types::add);
                             v.getAko().ifPresent(types::add);
                             v.getPlaysRoles().forEach(types::add);

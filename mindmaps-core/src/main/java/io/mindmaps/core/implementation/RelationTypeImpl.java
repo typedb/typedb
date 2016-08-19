@@ -67,7 +67,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     public RelationType deleteHasRole(RoleType roleType) {
         deleteEdgeTo(DataType.EdgeLabel.HAS_ROLE, getMindmapsTransaction().getElementFactory().buildRoleType(roleType));
         //Add castings of roleType to make sure relations are still valid
-        ((RoleTypeImpl) roleType).castings().forEach(casting -> mindmapsTransaction.getTransaction().putConcept(casting));
+        ((RoleTypeImpl) roleType).castings().forEach(casting -> mindmapsTransaction.getConceptLog().putConcept(casting));
         return this;
     }
 }

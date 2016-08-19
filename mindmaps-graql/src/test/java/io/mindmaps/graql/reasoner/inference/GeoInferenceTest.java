@@ -19,7 +19,7 @@
 package io.mindmaps.graql.reasoner.inference;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.graql.MatchQueryDefault;
 import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.MindmapsReasoner;
@@ -45,11 +45,6 @@ public class GeoInferenceTest {
         qp = QueryParser.create(graph);
     }
 
-    private static void printMatchQuery(MatchQueryDefault query) {
-        System.out.println(query.toString().replace(" or ", "\nor\n").replace("};", "};\n").replace("; {", ";\n{"));
-    }
-
-
     @Test
     public void testQuery()
     {
@@ -61,8 +56,6 @@ public class GeoInferenceTest {
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         printMatchQueryResults(query.distinct());
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
-        printMatchQueryResults(expandedQuery.distinct());
 
 
         String explicitQuery = "match " +
@@ -87,9 +80,6 @@ public class GeoInferenceTest {
                 "$y value 'Poland'; select $x";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
-        printMatchQueryResults(expandedQuery.distinct());
-
 
         String explicitQuery = "match " +
                 "$x isa university;\n" +

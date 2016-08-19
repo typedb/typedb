@@ -20,13 +20,14 @@ package io.mindmaps.api;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import com.jayway.restassured.RestAssured;
 import io.mindmaps.Util;
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.factory.GraphFactory;
+import io.mindmaps.loader.TransactionState;
 import io.mindmaps.util.ConfigProperties;
 import io.mindmaps.constants.RESTUtil;
+import mjson.Json;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.junit.After;
@@ -58,7 +59,7 @@ public class TransactionControllerTest {
         }
         graphName = prop.getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
         MindmapsGraph graph = GraphFactory.getInstance().getGraph(graphName);
-        MindmapsTransaction transaction = graph.newTransaction();
+        MindmapsTransaction transaction = graph.getTransaction();
         transaction.putEntityType("Man");
         transaction.commit();
         Util.setRestAssuredBaseURI(prop);
@@ -82,7 +83,7 @@ public class TransactionControllerTest {
                 e.printStackTrace();
             }
         }
-        assertTrue(GraphFactory.getInstance().getGraph(graphName).newTransaction().getConcept("actor-123").asEntity().getValue().equals("Al Pacino"));
+        assertTrue(GraphFactory.getInstance().getGraph(graphName).getTransaction().getConcept("actor-123").asEntity().getValue().equals("Al Pacino"));
     }
 
     @Test
@@ -105,6 +106,15 @@ public class TransactionControllerTest {
             }
         }
         assertTrue(status.equals("ERROR"));
+    }
+
+    @Test
+    public void checkLoaderStateTest() {
+        String exampleInvalidInsertQuery = "insert id ?Cdcs;w4. '' ervalue;";
+        given().body(exampleInvalidInsertQuery).
+                when().post(RESTUtil.WebPath.NEW_TRANSACTION_URI + "?graphName=mindmapstest").body().asString();
+        Json resultObj = Json.make(get(RESTUtil.WebPath.LOADER_STATE_URI).then().statusCode(200).and().extract().body().asString());
+        System.out.println(resultObj.toString());
     }
 
     @After

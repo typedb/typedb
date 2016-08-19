@@ -44,7 +44,7 @@ public enum ErrorMessage {
     INVALID_EDGE("The edge ['%s'] between concept ['%s'] and ['%s'] is invalid"),
     NOT_SUPPORTED("Not supported with a ['%s'] backend"),
     CLOSED("The ['%s'] has been permanently closed"),
-    TINKERGRAPH_WARNING("Tinkergraph does not actually support commits. The graph was only validated"),
+    TRANSACTIONS_NOT_SUPPORTED("The graph backend [%s] does not actually support transactions. The graph was not committed or refreshed."),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
@@ -71,7 +71,7 @@ public enum ErrorMessage {
     MISSING_FACTORY_DEFINITION("Graph Factor Config ['factory.internal'] missing from provided config. " +
             "Cannot produce graph"),
     CONFIG_NOT_FOUND("Mindmaps Engine located at ['%s'] did not return the expected response, due to ['%s']"),
-    COULD_NOT_REACH_ENGINE("Could not reach Mindmaps engine at [%s] when submitting commit logs"),
+    COULD_NOT_REACH_ENGINE("Could not reach Mindmaps engine at [%s]"),
 
     //--------------------------------------------- Graql Errors -----------------------------------------------
     NO_TRANSACTION("no transaction provided"),

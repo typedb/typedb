@@ -19,8 +19,8 @@
 package io.mindmaps.graql.internal.validation;
 
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.graql.Var;
+import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.graql.admin.VarAdmin;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,12 +31,12 @@ import java.util.stream.Stream;
  */
 class DeleteVarValidator implements Validator {
 
-    private final Var.Admin var;
+    private final VarAdmin var;
 
     /**
      * @param var a deleter Var in a delete query
      */
-    public DeleteVarValidator(Var.Admin var) {
+    DeleteVarValidator(VarAdmin var) {
         this.var = var;
     }
 

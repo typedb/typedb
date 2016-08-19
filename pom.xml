@@ -27,7 +27,7 @@
     <version>0.1.0-SNAPSHOT</version>
     <name>MindmapsDB</name>
     <description>A distributed semantic graph database.</description>
-    <url>http://mindmaps.io/platform.html</url>
+    <url>http://mindmaps.io/platform.html</url>    
     <modules>
         <module>mindmaps-core</module>
         <module>mindmaps-titan-factory</module>
@@ -67,6 +67,18 @@
     </licenses>
 
     <developers>
+        <developer>
+            <name>Haikal Pribadi</name>
+            <email>haikal@mindmaps.io</email>
+            <organization>Mindmaps Research Ltd</organization>
+            <organizationUrl>http://mindmaps.io</organizationUrl>
+        </developer>
+        <developer>
+            <name>Borislav Iordanov</name>
+            <email>borislav@mindmaps.io</email>
+            <organization>Mindmaps Research Ltd</organization>
+            <organizationUrl>http://mindmaps.io</organizationUrl>
+        </developer>
         <developer>
             <name>Filipe Teixeira</name>
             <email>filipe@mindmaps.io</email>
@@ -177,8 +189,30 @@
         </repository>
     </repositories>
 
+
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.eluder.coveralls</groupId>
+                <artifactId>coveralls-maven-plugin</artifactId>
+                <version>4.2.0</version>
+                <configuration>
+                    <sourceEncoding>UTF-8</sourceEncoding>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.7.6.201602180812</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -228,21 +262,37 @@
                 <autoReleaseAfterClose>true</autoReleaseAfterClose>
               </configuration>
             </plugin>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-gpg-plugin</artifactId>
-              <version>1.5</version>
-              <executions>
-                <execution>
-                  <id>sign-artifacts</id>
-                  <phase>verify</phase>
-                  <goals>
-                    <goal>sign</goal>
-                  </goals>
-                </execution>
-              </executions>
-            </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>release-sign-artifacts</id>
+            <activation>
+                <property>
+                    <name>performRelease</name>
+                    <value>true</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>1.4</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>

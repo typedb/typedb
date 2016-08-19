@@ -18,12 +18,14 @@
 
 package io.mindmaps.graql.internal.reasoner.predicate;
 
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.RoleType;
 import io.mindmaps.core.model.Type;
+import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQueryDefault;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Var;
+import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.reasoner.container.Query;
 import org.javatuples.Pair;
 
@@ -35,13 +37,13 @@ public class RelationAtom extends AtomBase{
 
     private final Set<Var.Casting> castings = new HashSet<>();
 
-    public RelationAtom(Var.Admin pattern)
+    public RelationAtom(VarAdmin pattern)
     {
         super(pattern);
         castings.addAll(pattern.getCastings());
     }
 
-    public RelationAtom(Var.Admin pattern, Query par)
+    public RelationAtom(VarAdmin pattern, Query par)
     {
         super(pattern, par);
         castings.addAll(pattern.getCastings());
@@ -107,7 +109,7 @@ public class RelationAtom extends AtomBase{
     @Override
     public MatchQueryDefault getExpandedMatchQuery(MindmapsTransaction graph)
     {
-        QueryBuilder qb = QueryBuilder.build(graph);
+        QueryBuilder qb = Graql.withTransaction(graph);
         Set<String> selectVars = getVarNames();
         return qb.match(getExpandedPattern()).select(selectVars);
     }
@@ -176,7 +178,7 @@ public class RelationAtom extends AtomBase{
             String roleTypeId = "";
             for(Var.Casting c : castings) {
                 if (c.getRolePlayer().getName().equals(var))
-                    roleTypeId = c.getRoleType().flatMap(Var.Admin::getId).orElse("");
+                    roleTypeId = c.getRoleType().flatMap(VarAdmin::getId).orElse("");
             }
             /**roletype explicit*/
             if (!roleTypeId.isEmpty())
@@ -218,7 +220,7 @@ public class RelationAtom extends AtomBase{
             String roleTypeId = "";
             for(Var.Casting c : castings) {
                 if (c.getRolePlayer().getName().equals(var))
-                    roleTypeId = c.getRoleType().flatMap(Var.Admin::getId).orElse("");
+                    roleTypeId = c.getRoleType().flatMap(VarAdmin::getId).orElse("");
             }
 
             /**roletype explicit*/

@@ -20,6 +20,10 @@ package io.mindmaps.core.implementation;
 
 import io.mindmaps.constants.DataType;
 import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.core.implementation.exception.ConceptException;
+import io.mindmaps.core.implementation.exception.ConceptIdNotUniqueException;
+import io.mindmaps.core.implementation.exception.InvalidConceptTypeException;
+import io.mindmaps.core.implementation.exception.MoreThanOneEdgeException;
 import io.mindmaps.core.model.*;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.*;
@@ -45,7 +49,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
     ConceptImpl(Vertex v, MindmapsTransactionImpl mindmapsTransaction){
         this.vertex = v;
         this.mindmapsTransaction = mindmapsTransaction;
-        mindmapsTransaction.getTransaction().putConcept(this);
+        mindmapsTransaction.getConceptLog().putConcept(this);
     }
 
     /**
@@ -149,10 +153,10 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
         vertex.edges(Direction.BOTH).
                 forEachRemaining(
                         e -> {
-                            mindmapsTransaction.getTransaction().putConcept(getMindmapsTransaction().getElementFactory().buildUnknownConcept(e.inVertex()));
-                            mindmapsTransaction.getTransaction().putConcept(getMindmapsTransaction().getElementFactory().buildUnknownConcept(e.outVertex()));}
+                            mindmapsTransaction.getConceptLog().putConcept(getMindmapsTransaction().getElementFactory().buildUnknownConcept(e.inVertex()));
+                            mindmapsTransaction.getConceptLog().putConcept(getMindmapsTransaction().getElementFactory().buildUnknownConcept(e.outVertex()));}
                 );
-        mindmapsTransaction.getTransaction().removeConcept(this);
+        mindmapsTransaction.getConceptLog().removeConcept(this);
         // delete node
         vertex.remove();
         vertex = null;
@@ -434,9 +438,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
         setType(String.valueOf(type.getId()));
 
         //Put any castings back into tracking to make sure the type is still valid
-        getIncomingNeighbours(DataType.EdgeLabel.ROLE_PLAYER).forEach(casting -> {
-            mindmapsTransaction.getTransaction().putConcept(casting);
-        });
+        getIncomingNeighbours(DataType.EdgeLabel.ROLE_PLAYER).forEach(casting -> mindmapsTransaction.getConceptLog().putConcept(casting));
 
         return getThis();
     }
@@ -512,9 +514,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
     protected Set<ConceptImpl> getOutgoingNeighbours(DataType.EdgeLabel edgeType){
         Set<ConceptImpl> outgoingNeighbours = new HashSet<>();
 
-        getEdgesOfType(Direction.OUT, edgeType).forEach(edge -> {
-            outgoingNeighbours.add(edge.getTarget());
-        });
+        getEdgesOfType(Direction.OUT, edgeType).forEach(edge -> outgoingNeighbours.add(edge.getTarget()));
         return outgoingNeighbours;
     }
 
@@ -540,9 +540,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
      */
     protected Set<ConceptImpl> getIncomingNeighbours(DataType.EdgeLabel edgeType){
         Set<ConceptImpl> incomingNeighbours = new HashSet<>();
-        getEdgesOfType(Direction.IN, edgeType).forEach(edge -> {
-            incomingNeighbours.add(edge.getSource());
-        });
+        getEdgesOfType(Direction.IN, edgeType).forEach(edge -> incomingNeighbours.add(edge.getSource()));
         return incomingNeighbours;
     }
 
@@ -721,8 +719,8 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
      * @return The edge created
      */
     public EdgeImpl addEdge(ConceptImpl toConcept, DataType.EdgeLabel type) {
-        mindmapsTransaction.getTransaction().putConcept(this);
-        mindmapsTransaction.getTransaction().putConcept(toConcept);
+        mindmapsTransaction.getConceptLog().putConcept(this);
+        mindmapsTransaction.getConceptLog().putConcept(toConcept);
 
         return getMindmapsTransaction().getElementFactory().buildEdge(toConcept.addEdgeFrom(this.vertex, type.getLabel()), mindmapsTransaction);
     }
@@ -737,9 +735,9 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
         vertex.edges(direction, type.getLabel()).
                 forEachRemaining(
                         e -> {
-                            mindmapsTransaction.getTransaction().putConcept(
+                            mindmapsTransaction.getConceptLog().putConcept(
                                     getMindmapsTransaction().getElementFactory().buildUnknownConcept(e.inVertex()));
-                            mindmapsTransaction.getTransaction().putConcept(
+                            mindmapsTransaction.getConceptLog().putConcept(
                                     getMindmapsTransaction().getElementFactory().buildUnknownConcept(e.outVertex()));
                         }
                 );

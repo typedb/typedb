@@ -20,6 +20,9 @@ package io.mindmaps.core.implementation;
 
 import io.mindmaps.constants.DataType;
 import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.core.Data;
+import io.mindmaps.core.implementation.exception.ConceptException;
+import io.mindmaps.core.implementation.exception.InvalidConceptValueException;
 import io.mindmaps.core.model.Resource;
 import io.mindmaps.core.model.ResourceType;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -99,9 +102,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
      * Gets rid of all indices for this type's resource children
      */
     private void resetInstanceIndices(){
-        instances().forEach(resource -> {
-            ((ResourceImpl<D>) resource).setUniqueProperty(DataType.ConceptPropertyUnique.INDEX, null);
-        });
+        instances().forEach(resource -> ((ResourceImpl<D>) resource).setUniqueProperty(DataType.ConceptPropertyUnique.INDEX, null));
     }
 
     /**

@@ -18,16 +18,18 @@
 
 package io.mindmaps.graql.internal.query.match;
 
+import io.mindmaps.graql.admin.MatchQueryAdmin;
+
 import java.util.stream.Stream;
 
 /**
  * "Offset" modifier for match query that offsets (skips) some number of results.
  */
-public class MatchQueryOffset<T> extends MatchQueryAbstract<T, T> {
+class MatchQueryOffset<T> extends MatchQueryModifier<T, T> {
 
     private final long offset;
 
-    public MatchQueryOffset(Admin<T> inner, long offset) {
+    MatchQueryOffset(MatchQueryAdmin<T> inner, long offset) {
         super(inner);
         this.offset = offset;
     }

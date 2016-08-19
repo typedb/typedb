@@ -47,10 +47,10 @@ abstract class InstanceImpl<T extends Instance, V extends Type, D> extends Conce
         deleteNode();
         for(CastingImpl casting: castings){
             Set<RelationImpl> relations = casting.getRelations();
-            getMindmapsTransaction().getTransaction().putConcept(casting);
+            getMindmapsTransaction().getConceptLog().putConcept(casting);
 
             for(RelationImpl relation : relations) {
-                getMindmapsTransaction().getTransaction().putConcept(relation);
+                getMindmapsTransaction().getConceptLog().putConcept(relation);
                 relation.cleanUp();
             }
 
@@ -87,9 +87,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type, D> extends Conce
      */
     public Set<CastingImpl> castings(){
         Set<CastingImpl> castings = new HashSet<>();
-        getIncomingNeighbours(DataType.EdgeLabel.ROLE_PLAYER).forEach(casting -> {
-            castings.add((CastingImpl) casting);
-        });
+        getIncomingNeighbours(DataType.EdgeLabel.ROLE_PLAYER).forEach(casting -> castings.add((CastingImpl) casting));
         return castings;
     }
 
@@ -129,9 +127,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type, D> extends Conce
     public Collection<RoleType> playsRoles() {
         Set<RoleType> roleTypes = new HashSet<>();
         ConceptImpl<?, ?, ?> parent = this;
-        parent.getIncomingNeighbours(DataType.EdgeLabel.ROLE_PLAYER).forEach(c -> {
-            roleTypes.add(getMindmapsTransaction().getElementFactory().buildCasting(c).getRole());
-        });
+        parent.getIncomingNeighbours(DataType.EdgeLabel.ROLE_PLAYER).forEach(c -> roleTypes.add(getMindmapsTransaction().getElementFactory().buildCasting(c).getRole()));
         return roleTypes;
     }
 }

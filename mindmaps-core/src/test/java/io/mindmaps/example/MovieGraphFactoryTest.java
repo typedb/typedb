@@ -18,8 +18,8 @@
 
 package io.mindmaps.example;
 
-import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.core.implementation.AbstractMindmapsGraph;
 import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -39,9 +39,9 @@ public class MovieGraphFactoryTest {
 
     @BeforeClass
     public static void setUp() throws IOException {
-        MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
+        AbstractMindmapsGraph mindmapsGraph = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
-        dao = mindmapsGraph.newTransaction();
+        dao = mindmapsGraph.getTransaction();
         graph = mindmapsGraph.getGraph();
     }
 

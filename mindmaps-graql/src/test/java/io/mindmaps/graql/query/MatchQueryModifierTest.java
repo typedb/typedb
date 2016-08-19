@@ -19,15 +19,14 @@
 package io.mindmaps.graql.query;
 
 import com.google.common.collect.Lists;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.MindmapsTransaction;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.MatchQueryDefault;
 import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.graql.ValuePredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -38,6 +37,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.mindmaps.constants.DataType.ConceptPropertyUnique.ITEM_IDENTIFIER;
+import static io.mindmaps.graql.Graql.*;
 import static org.junit.Assert.*;
 
 public class MatchQueryModifierTest {
@@ -49,24 +49,24 @@ public class MatchQueryModifierTest {
     public static void setUpClass() {
         MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
-        transaction = mindmapsGraph.newTransaction();
+        transaction = mindmapsGraph.getTransaction();
     }
 
     @Before
     public void setUp() {
-        qb = QueryBuilder.build(transaction);
+        qb = withTransaction(transaction);
     }
 
     @Test
     public void testOffsetQuery() {
-        MatchQueryDefault query = qb.match(QueryBuilder.var("x").isa("movie")).orderBy("x", false).offset(4);
+        MatchQueryDefault query = qb.match(var("x").isa("movie")).orderBy("x", false).offset(4);
 
         assertResultsOrderedById(query, "x", false);
     }
 
     @Test
     public void testLimitQuery() {
-        MatchQueryDefault query = qb.match(QueryBuilder.var("x").isa("movie")).orderBy("x", true).offset(1).limit(3);
+        MatchQueryDefault query = qb.match(var("x").isa("movie")).orderBy("x", true).offset(1).limit(3);
 
         assertResultsOrderedById(query, "x", true);
         assertEquals(3, query.stream().count());
@@ -75,11 +75,11 @@ public class MatchQueryModifierTest {
     @Test
     public void testOrPatternOrderByResource() {
         MatchQueryDefault query = qb.match(
-                QueryBuilder.var("x").isa("movie"),
-                QueryBuilder.var().rel("x").rel("y"),
-                QueryBuilder.or(
-                        QueryBuilder.var("y").isa("person").id("Marlon-Brando"),
-                        QueryBuilder.var("y").isa("genre").value("crime")
+                var("x").isa("movie"),
+                var().rel("x").rel("y"),
+                or(
+                        var("y").isa("person").id("Marlon-Brando"),
+                        var("y").isa("genre").value("crime")
                 )
         ).orderBy("x", "tmdb-vote-count", false).select("x");
 
@@ -89,11 +89,11 @@ public class MatchQueryModifierTest {
     @Test
     public void testOrPatternOrderByUnselected() {
         MatchQueryDefault query = qb.match(
-                QueryBuilder.var("x").isa("movie"),
-                QueryBuilder.var().rel("x").rel("y"),
-                QueryBuilder.or(
-                        QueryBuilder.var("y").isa("person"),
-                        QueryBuilder.var("y").isa("genre").value(ValuePredicate.neq("crime"))
+                var("x").isa("movie"),
+                var().rel("x").rel("y"),
+                or(
+                        var("y").isa("person"),
+                        var("y").isa("genre").value(neq("crime"))
                 )
         ).orderBy("y").offset(4).limit(8).select("x");
 
@@ -104,7 +104,7 @@ public class MatchQueryModifierTest {
 
     @Test
     public void testDegreeOrderedQuery() {
-        MatchQueryDefault query = qb.match(QueryBuilder.var("the-movie").isa("movie")).orderBy("the-movie", false);
+        MatchQueryDefault query = qb.match(var("the-movie").isa("movie")).orderBy("the-movie", false);
 
         assertResultsOrderedById(query, "the-movie", false);
 
@@ -114,7 +114,7 @@ public class MatchQueryModifierTest {
 
     @Test
     public void testVoteCountOrderedQuery() {
-        MatchQueryDefault query = qb.match(QueryBuilder.var("z").isa("movie")).orderBy("z", "tmdb-vote-count", false);
+        MatchQueryDefault query = qb.match(var("z").isa("movie")).orderBy("z", "tmdb-vote-count", false);
 
         // Make sure movies are in the correct order
         assertOrderedResultsMatch(query, "z", "movie", "Godfather", "Hocus-Pocus", "Apocalypse-Now", "The-Muppets");
@@ -126,11 +126,11 @@ public class MatchQueryModifierTest {
     @Test
     public void testOrPatternDistinct() {
         MatchQueryDefault query = qb.match(
-                QueryBuilder.var("x").isa("movie"),
-                QueryBuilder.var().rel("x").rel("y"),
-                QueryBuilder.or(
-                        QueryBuilder.var("y").isa("genre").value("crime"),
-                        QueryBuilder.var("y").isa("person").id("Marlon-Brando")
+                var("x").isa("movie"),
+                var().rel("x").rel("y"),
+                or(
+                        var("y").isa("genre").value("crime"),
+                        var("y").isa("person").id("Marlon-Brando")
                 )
         ).select("x").orderBy("x", false).distinct();
 
@@ -140,9 +140,9 @@ public class MatchQueryModifierTest {
     @Test
     public void testNondistinctQuery() {
         MatchQueryDefault query = qb.match(
-                QueryBuilder.var("x").isa("person"),
-                QueryBuilder.var("y").value("The Muppets"),
-                QueryBuilder.var().rel("x").rel("y")
+                var("x").isa("person"),
+                var("y").value("The Muppets"),
+                var().rel("x").rel("y")
         ).select("x");
         List<Map<String, Concept>> nondistinctResults = Lists.newArrayList(query);
 
@@ -153,9 +153,9 @@ public class MatchQueryModifierTest {
     @Test
     public void testDistinctQuery() {
         MatchQueryDefault query = qb.match(
-                QueryBuilder.var("x").isa("person"),
-                QueryBuilder.var("y").value("The Muppets"),
-                QueryBuilder.var().rel("x").rel("y")
+                var("x").isa("person"),
+                var("y").value("The Muppets"),
+                var().rel("x").rel("y")
         ).distinct().select("x");
         List<Map<String, Concept>> distinctResults = Lists.newArrayList(query);
 

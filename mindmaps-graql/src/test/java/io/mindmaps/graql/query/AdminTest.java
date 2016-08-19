@@ -20,11 +20,13 @@ package io.mindmaps.graql.query;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.*;
+import io.mindmaps.graql.admin.PatternAdmin;
+import io.mindmaps.graql.internal.query.Conjunction;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -33,8 +35,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static io.mindmaps.graql.QueryBuilder.id;
-import static io.mindmaps.graql.QueryBuilder.var;
+import static io.mindmaps.graql.Graql.*;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
@@ -49,12 +50,12 @@ public class AdminTest {
     public static void setUpClass() {
         MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
-        transaction = mindmapsGraph.newTransaction();
+        transaction = mindmapsGraph.getTransaction();
     }
 
     @Before
     public void setUp() {
-        qb = QueryBuilder.build(transaction);
+        qb = withTransaction(transaction);
     }
 
     @Test
@@ -90,10 +91,10 @@ public class AdminTest {
     public void testGetPatternInQuery() {
         MatchQueryDefault query = qb.match(var("x").isa("movie"), var("x").value("Bob"));
 
-        Pattern.Conjunction<Pattern.Admin> conjunction = query.admin().getPattern();
+        Conjunction<PatternAdmin> conjunction = query.admin().getPattern();
         assertNotNull(conjunction);
 
-        Set<Pattern.Admin> patterns = conjunction.getPatterns();
+        Set<PatternAdmin> patterns = conjunction.getPatterns();
         assertEquals(2, patterns.size());
     }
 
@@ -101,7 +102,7 @@ public class AdminTest {
     public void testMutateMatchQuery() {
         MatchQueryDefault query = qb.match(var("x").isa("movie"));
 
-        Pattern.Conjunction<Pattern.Admin> pattern = query.admin().getPattern();
+        Conjunction<PatternAdmin> pattern = query.admin().getPattern();
         pattern.getPatterns().add(var("x").value("Spy").admin());
 
         assertEquals(1, query.stream().count());

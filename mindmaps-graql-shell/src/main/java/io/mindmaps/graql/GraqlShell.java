@@ -21,10 +21,10 @@ package io.mindmaps.graql;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.sun.corba.se.impl.util.Version;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.core.implementation.InvalidConceptTypeException;
-import io.mindmaps.core.implementation.MindmapsValidationException;
+import io.mindmaps.core.implementation.exception.InvalidConceptTypeException;
+import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.graql.internal.parser.ANSI;
@@ -169,7 +169,7 @@ public class GraqlShell implements AutoCloseable {
      */
     GraqlShell(MindmapsGraph graph, InputStream in, OutputStream out, PrintStream err) throws IOException {
         this.graph = graph;
-        transaction = graph.newTransaction();
+        transaction = graph.getTransaction();
         reasoner = new MindmapsReasoner(transaction);
         console = new ConsoleReader(in, out);
         this.err = err;

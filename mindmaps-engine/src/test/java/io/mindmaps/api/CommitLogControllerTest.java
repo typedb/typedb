@@ -20,13 +20,11 @@ package io.mindmaps.api;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.http.ContentType;
-import com.jayway.restassured.response.Response;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.Util;
 import io.mindmaps.constants.RESTUtil;
-import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.core.implementation.MindmapsValidationException;
+import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.Entity;
 import io.mindmaps.core.model.EntityType;
 import io.mindmaps.core.model.RelationType;
@@ -94,8 +92,8 @@ public class CommitLogControllerTest {
         final String BOB = "bob";
         final String TIM = "tim";
 
-        MindmapsTransaction bob = MindmapsClient.getGraph(BOB).newTransaction();
-        MindmapsTransaction tim = MindmapsClient.getGraph(TIM).newTransaction();
+        MindmapsTransaction bob = MindmapsClient.getGraph(BOB).getTransaction();
+        MindmapsTransaction tim = MindmapsClient.getGraph(TIM).getTransaction();
 
         addSomeData(bob);
 

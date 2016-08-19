@@ -20,19 +20,14 @@ package io.mindmaps.api;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.core.implementation.MindmapsValidationException;
+import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.QueryParser;
-import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Var;
 import io.mindmaps.loader.BlockingLoader;
 import io.mindmaps.util.ConfigProperties;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
@@ -41,6 +36,8 @@ import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+
+import static io.mindmaps.graql.Graql.insert;
 
 public class BlockingLoaderTest {
 
@@ -60,8 +57,8 @@ public class BlockingLoaderTest {
         graphName = prop.getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
         loader = new BlockingLoader(graphName);
         new CommitLogController();
-
     }
+
 
     @Test
     public void testLoadOntologyAndData() {
@@ -101,11 +98,11 @@ public class BlockingLoaderTest {
         LOG.info("First load time " + firstLoadingTime + ". Second load time " + secondLoadingTime);
 
         Assert.assertTrue(secondLoadingTime < firstLoadingTime);
-        Assert.assertNotNull(GraphFactory.getInstance().getGraph(graphName).newTransaction().getConcept("X546f736869616b69204b61776173616b69").getId());
+        Assert.assertNotNull(GraphFactory.getInstance().getGraph(graphName).getTransaction().getConcept("X546f736869616b69204b61776173616b69").getId());
     }
 
     private void loadOntology() {
-        MindmapsTransaction transaction = GraphFactory.getInstance().getGraph(graphName).newTransaction();
+        MindmapsTransaction transaction = GraphFactory.getInstance().getGraph(graphName).getTransaction();
         List<Var> ontologyBatch = new ArrayList<>();
         ClassLoader classLoader = getClass().getClassLoader();
 
@@ -115,7 +112,7 @@ public class BlockingLoaderTest {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
-        QueryBuilder.build(transaction).insert(ontologyBatch).execute();
+        insert(ontologyBatch).withTransaction(transaction).execute();
         try {
             transaction.commit();
         } catch (MindmapsValidationException e) {

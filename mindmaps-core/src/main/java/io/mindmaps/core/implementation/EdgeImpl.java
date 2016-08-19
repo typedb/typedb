@@ -37,8 +37,8 @@ class EdgeImpl {
      * Deletes the edge between two concepts and adds both those concepts for re-validation in case something goes wrong
      */
     public void delete(){
-        mindmapsGraph.getTransaction().putConcept(getTarget());
-        mindmapsGraph.getTransaction().putConcept(getSource());
+        mindmapsGraph.getConceptLog().putConcept(getTarget());
+        mindmapsGraph.getConceptLog().putConcept(getSource());
 
         edge.remove();
         edge = null;

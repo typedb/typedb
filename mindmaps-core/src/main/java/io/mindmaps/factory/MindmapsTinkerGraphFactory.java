@@ -18,20 +18,16 @@
 
 package io.mindmaps.factory;
 
-import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.MindmapsTinkerGraph;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * A graph factory which provides a mindmaps graph with a tinker graph backend.
  */
-class MindmapsTinkerGraphFactory extends MindmapsGraphFactoryImpl<MindmapsTinkerGraph, TinkerGraph>{
+class MindmapsTinkerGraphFactory extends AbstractMindmapsGraphFactory<MindmapsTinkerGraph, TinkerGraph> {
     private final Logger LOG = LoggerFactory.getLogger(MindmapsTinkerGraphFactory.class);
 
     MindmapsTinkerGraphFactory(){
@@ -44,8 +40,8 @@ class MindmapsTinkerGraphFactory extends MindmapsGraphFactoryImpl<MindmapsTinker
     }
 
     @Override
-    MindmapsTinkerGraph buildMindmapsGraphFromTinker(TinkerGraph graph, String address) {
-        return new MindmapsTinkerGraph(graph);
+    MindmapsTinkerGraph buildMindmapsGraphFromTinker(TinkerGraph graph, String name, String address) {
+        return new MindmapsTinkerGraph(graph, name);
     }
 
     @Override

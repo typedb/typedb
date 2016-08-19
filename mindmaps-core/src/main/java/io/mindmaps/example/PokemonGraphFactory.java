@@ -18,10 +18,10 @@
 
 package io.mindmaps.example;
 
+import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.core.Data;
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.core.implementation.MindmapsValidationException;
-import io.mindmaps.core.implementation.Data;
+import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.*;
 
 /**
@@ -48,7 +48,7 @@ public class PokemonGraphFactory{
     private static RelationType superEffective;
 
     public static void loadGraph(MindmapsGraph mindmapsGraph) {
-        MindmapsTransaction transaction = mindmapsGraph.newTransaction();
+        MindmapsTransaction transaction = mindmapsGraph.getTransaction();
         buildGraph(transaction);
 
         try {

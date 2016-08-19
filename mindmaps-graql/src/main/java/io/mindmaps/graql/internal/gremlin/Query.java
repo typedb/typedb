@@ -19,11 +19,11 @@
 package io.mindmaps.graql.internal.gremlin;
 
 import com.google.common.collect.ImmutableSet;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.core.implementation.MindmapsTransactionImpl;
-import io.mindmaps.graql.Pattern;
-import io.mindmaps.graql.Var;
+import io.mindmaps.graql.admin.PatternAdmin;
+import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.query.Conjunction;
 import io.mindmaps.graql.internal.query.match.MatchOrder;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -60,8 +60,8 @@ public class Query {
      * @param names the variable names to select
      * @param order an optional ordering
      */
-    public Query(MindmapsTransaction transaction, Pattern.Admin pattern, Set<String> names, Optional<MatchOrder> order) {
-        Collection<Pattern.Conjunction<Var.Admin>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
+    public Query(MindmapsTransaction transaction, PatternAdmin pattern, Set<String> names, Optional<MatchOrder> order) {
+        Collection<Conjunction<VarAdmin>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
         if (transaction == null) {
             throw new IllegalStateException(ErrorMessage.NO_TRANSACTION.getMessage());
@@ -84,7 +84,7 @@ public class Query {
         // Because 'union' accepts an array, we can't use generics...
         //noinspection unchecked
         GraphTraversal<Vertex, Map<String, Vertex>> traversal =
-                ((MindmapsTransactionImpl) transaction).getTinkerTraversal().V().limit(1).union(collect);
+                transaction.getTinkerTraversal().V().limit(1).union(collect);
 
         order.ifPresent(o -> o.orderTraversal(transaction, traversal));
 

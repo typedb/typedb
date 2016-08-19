@@ -18,16 +18,18 @@
 
 package io.mindmaps.graql.internal.query.match;
 
+import io.mindmaps.graql.admin.MatchQueryAdmin;
+
 import java.util.stream.Stream;
 
 /**
  * "Limit" modifier for match query that limits the results of a query.
  */
-public class MatchQueryLimit<T> extends MatchQueryAbstract<T, T> {
+class MatchQueryLimit<T> extends MatchQueryModifier<T, T> {
 
     private final long limit;
 
-    public MatchQueryLimit(Admin<T> inner, long limit) {
+    MatchQueryLimit(MatchQueryAdmin<T> inner, long limit) {
         super(inner);
         this.limit = limit;
     }

@@ -20,6 +20,8 @@ package io.mindmaps.core.implementation;
 
 import io.mindmaps.constants.DataType;
 import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.core.Data;
+import io.mindmaps.core.implementation.exception.ConceptException;
 import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -59,7 +61,7 @@ public class RelationTest {
 
     @Before
     public void buildGraph(){
-        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
+        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
         mindmapsGraph.initialiseMetaConcepts();
 
         type = mindmapsGraph.putEntityType("Main concept Type");
@@ -244,7 +246,7 @@ public class RelationTest {
         Instance instance2 = mindmapsGraph.putEntity("instance2", type);
 
         RelationImpl relation = (RelationImpl) mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType);
-        assertTrue(relation.getIndex().startsWith("RelationBaseId_" + ((RelationImpl) relation).getBaseIdentifier()));
+        assertTrue(relation.getIndex().startsWith("RelationBaseId_" + relation.getBaseIdentifier()));
 
         relation.putRolePlayer(roleType1, instance1);
         roleMap.put(roleType1, instance1);

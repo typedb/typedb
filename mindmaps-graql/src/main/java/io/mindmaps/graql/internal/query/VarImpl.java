@@ -19,11 +19,11 @@
 package io.mindmaps.graql.internal.query;
 
 import com.google.common.collect.Maps;
-import io.mindmaps.core.implementation.Data;
-import io.mindmaps.graql.Pattern;
-import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.core.Data;
 import io.mindmaps.graql.ValuePredicate;
 import io.mindmaps.graql.Var;
+import io.mindmaps.graql.admin.ValuePredicateAdmin;
+import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.StringConverter;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 import io.mindmaps.graql.internal.gremlin.VarTraversals;
@@ -33,13 +33,15 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static io.mindmaps.constants.ErrorMessage.*;
+import static io.mindmaps.graql.Graql.eq;
+import static io.mindmaps.graql.Graql.var;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
 /**
  * Implementation of Var interface
  */
-public class VarImpl implements Var.Admin {
+public class VarImpl implements VarAdmin {
 
     private String name;
     private final boolean userDefinedName;
@@ -50,20 +52,20 @@ public class VarImpl implements Var.Admin {
     private Optional<String> id = Optional.empty();
 
     private boolean valueFlag = false;
-    private final Set<ValuePredicate.Admin> values = new HashSet<>();
+    private final Set<ValuePredicateAdmin> values = new HashSet<>();
 
     private Optional<String> lhs = Optional.empty();
     private Optional<String> rhs = Optional.empty();
 
-    private Optional<Var.Admin> isa = Optional.empty();
-    private Optional<Var.Admin> ako = Optional.empty();
+    private Optional<VarAdmin> isa = Optional.empty();
+    private Optional<VarAdmin> ako = Optional.empty();
 
-    private final Set<Var.Admin> hasRole = new HashSet<>();
-    private final Set<Var.Admin> playsRole = new HashSet<>();
-    private final Set<Var.Admin> hasScope = new HashSet<>();
-    private final Set<Var.Admin> hasResourceTypes = new HashSet<>();
+    private final Set<VarAdmin> hasRole = new HashSet<>();
+    private final Set<VarAdmin> playsRole = new HashSet<>();
+    private final Set<VarAdmin> hasScope = new HashSet<>();
+    private final Set<VarAdmin> hasResourceTypes = new HashSet<>();
 
-    private final Map<Var.Admin, Set<ValuePredicate.Admin>> resources = new HashMap<>();
+    private final Map<VarAdmin, Set<ValuePredicateAdmin>> resources = new HashMap<>();
 
     private final Set<Var.Casting> castings = new HashSet<>();
 
@@ -89,14 +91,14 @@ public class VarImpl implements Var.Admin {
      * Create a variable by combining a collection of other variables
      * @param vars a collection of variables to combine
      */
-    VarImpl(Collection<Var.Admin> vars) {
-        Var.Admin first = vars.iterator().next();
+    VarImpl(Collection<VarAdmin> vars) {
+        VarAdmin first = vars.iterator().next();
         this.name = first.getName();
         this.userDefinedName = first.isUserDefinedName();
 
         valueFlag = false;
 
-        for (Var.Admin var : vars) {
+        for (VarAdmin var : vars) {
             if (var.isUserDefinedName()) {
                 this.name = var.getName();
             }
@@ -143,6 +145,11 @@ public class VarImpl implements Var.Admin {
     }
 
     @Override
+    public Var value(Object value) {
+        return value(eq(value));
+    }
+
+    @Override
     public Var value(ValuePredicate predicate) {
         values.add(predicate.admin());
         return this;
@@ -150,21 +157,31 @@ public class VarImpl implements Var.Admin {
 
     @Override
     public Var has(String type) {
-        Var.Admin resourceVar = QueryBuilder.id(Objects.requireNonNull(type)).admin();
+        VarAdmin resourceVar = var().id(Objects.requireNonNull(type)).admin();
         resources.putIfAbsent(resourceVar, new HashSet<>());
         return this;
     }
 
     @Override
+    public Var has(String type, Object value) {
+        return has(type, eq(value));
+    }
+
+    @Override
     public Var has(String type, ValuePredicate predicate) {
-        Var.Admin resourceVar = QueryBuilder.id(Objects.requireNonNull(type)).admin();
+        VarAdmin resourceVar = var().id(Objects.requireNonNull(type)).admin();
         resources.computeIfAbsent(resourceVar, k -> new HashSet<>()).add(predicate.admin());
         return this;
     }
 
     @Override
+    public Var isa(String type) {
+        return isa(var().id(type));
+    }
+
+    @Override
     public Var isa(Var type) {
-        Var.Admin var = type.admin();
+        VarAdmin var = type.admin();
 
         isa.ifPresent(
                 other -> {
@@ -182,15 +199,30 @@ public class VarImpl implements Var.Admin {
     }
 
     @Override
+    public Var ako(String type) {
+        return ako(var().id(type));
+    }
+
+    @Override
     public Var ako(Var type) {
         ako = Optional.of(type.admin());
         return this;
     }
 
     @Override
+    public Var hasRole(String type) {
+        return hasRole(var().id(type));
+    }
+
+    @Override
     public Var hasRole(Var type) {
         hasRole.add(type.admin());
         return this;
+    }
+
+    @Override
+    public Var playsRole(String type) {
+        return playsRole(var().id(type));
     }
 
     @Override
@@ -207,14 +239,34 @@ public class VarImpl implements Var.Admin {
 
     @Override
     public Var hasResource(String type) {
-        hasResourceTypes.add(QueryBuilder.id(type).admin());
+        hasResourceTypes.add(var().id(type).admin());
         return this;
+    }
+
+    @Override
+    public Var rel(String roleplayer) {
+        return rel(var(roleplayer));
     }
 
     @Override
     public Var rel(Var roleplayer) {
         castings.add(new Casting(roleplayer.admin()));
         return this;
+    }
+
+    @Override
+    public Var rel(String roletype, String roleplayer) {
+        return rel(var().id(roletype), var(roleplayer));
+    }
+
+    @Override
+    public Var rel(Var roletype, String roleplayer) {
+        return rel(roletype, var(roleplayer));
+    }
+
+    @Override
+    public Var rel(String roletype, Var roleplayer) {
+        return rel(var().id(roletype), roleplayer);
     }
 
     @Override
@@ -248,13 +300,13 @@ public class VarImpl implements Var.Admin {
     }
 
     @Override
-    public Var.Admin admin() {
+    public VarAdmin admin() {
         return this;
     }
 
 
     @Override
-    public Optional<Var.Admin> getType() {
+    public Optional<VarAdmin> getType() {
         return isa;
     }
 
@@ -270,7 +322,7 @@ public class VarImpl implements Var.Admin {
 
     @Override
     public boolean usesNonEqualPredicate() {
-        Stream<ValuePredicate.Admin> predicates = Stream.of(
+        Stream<ValuePredicateAdmin> predicates = Stream.of(
                 values.stream(),
                 resources.values().stream().flatMap(Collection::stream)
         ).flatMap(Function.identity());
@@ -294,27 +346,27 @@ public class VarImpl implements Var.Admin {
     }
 
     @Override
-    public Optional<Var.Admin> getAko() {
+    public Optional<VarAdmin> getAko() {
         return ako;
     }
 
     @Override
-    public Set<Var.Admin> getHasRoles() {
+    public Set<VarAdmin> getHasRoles() {
         return hasRole;
     }
 
     @Override
-    public Set<Var.Admin> getPlaysRoles() {
+    public Set<VarAdmin> getPlaysRoles() {
         return playsRole;
     }
 
     @Override
-    public Set<Var.Admin> getScopes() {
+    public Set<VarAdmin> getScopes() {
         return hasScope;
     }
 
     @Override
-    public Set<Var.Admin> getHasResourceTypes() {
+    public Set<VarAdmin> getHasResourceTypes() {
         return hasResourceTypes;
     }
 
@@ -380,7 +432,7 @@ public class VarImpl implements Var.Admin {
     }
 
     @Override
-    public Set<ValuePredicate.Admin> getValuePredicates() {
+    public Set<ValuePredicateAdmin> getValuePredicates() {
         return values;
     }
 
@@ -395,12 +447,12 @@ public class VarImpl implements Var.Admin {
     }
 
     @Override
-    public Map<Var.Admin, Set<?>> getResourceEqualsPredicates() {
+    public Map<VarAdmin, Set<?>> getResourceEqualsPredicates() {
         return Maps.transformValues(resources, this::getEqualsPredicatesUnknownType);
     }
 
     @Override
-    public Map<Var.Admin, Set<ValuePredicate.Admin>> getResourcePredicates() {
+    public Map<VarAdmin, Set<ValuePredicateAdmin>> getResourcePredicates() {
         return resources;
     }
 
@@ -414,14 +466,14 @@ public class VarImpl implements Var.Admin {
     }
 
     @Override
-    public Set<Var.Admin> getInnerVars() {
-        Stack<Var.Admin> newVars = new Stack<>();
-        Set<Var.Admin> vars = new HashSet<>();
+    public Set<VarAdmin> getInnerVars() {
+        Stack<VarAdmin> newVars = new Stack<>();
+        Set<VarAdmin> vars = new HashSet<>();
 
         newVars.add(this);
 
         while (!newVars.isEmpty()) {
-            Var.Admin var = newVars.pop();
+            VarAdmin var = newVars.pop();
             vars.add(var);
 
             var.getType().ifPresent(newVars::add);
@@ -454,7 +506,7 @@ public class VarImpl implements Var.Admin {
     public String toString() {
         Set<String> properties = new HashSet<>();
 
-        Set<Var.Admin> innerVars = getInnerVars();
+        Set<VarAdmin> innerVars = getInnerVars();
         innerVars.remove(this);
 
         if (!innerVars.stream().allMatch(v -> v.getIdOnly().isPresent() || v.hasNoProperties())) {
@@ -519,8 +571,8 @@ public class VarImpl implements Var.Admin {
      * @param vars a stream of variables
      * @return the IDs of all variables that refer to things by id in the graph
      */
-    private Set<String> getIdNames(Stream<Var.Admin> vars) {
-        return vars.map(Var.Admin::getId).flatMap(this::optionalToStream).collect(toSet());
+    private Set<String> getIdNames(Stream<VarAdmin> vars) {
+        return vars.map(VarAdmin::getId).flatMap(this::optionalToStream).collect(toSet());
     }
 
     /**
@@ -536,9 +588,9 @@ public class VarImpl implements Var.Admin {
      * @param predicates a collection of predicates of an unknown type
      * @return all values of predicates in the collection which are simple 'equals' predicates
      */
-    private Set<?> getEqualsPredicatesUnknownType(Collection<ValuePredicate.Admin> predicates) {
+    private Set<?> getEqualsPredicatesUnknownType(Collection<ValuePredicateAdmin> predicates) {
         return predicates.stream()
-                .map(ValuePredicate.Admin::equalsValue)
+                .map(ValuePredicateAdmin::equalsValue)
                 .flatMap(this::optionalToStream)
                 .collect(toSet());
     }
@@ -553,24 +605,24 @@ public class VarImpl implements Var.Admin {
     }
 
     @Override
-    public Disjunction<Conjunction<Var.Admin>> getDisjunctiveNormalForm() {
+    public Disjunction<Conjunction<VarAdmin>> getDisjunctiveNormalForm() {
         // a disjunction containing only one option
-        Conjunction<Var.Admin> conjunction = Pattern.Admin.conjunction(Collections.singleton(this));
-        return Pattern.Admin.disjunction(Collections.singleton(conjunction));
+        Conjunction<VarAdmin> conjunction = new ConjunctionImpl<>(Collections.singleton(this));
+        return new DisjunctionImpl<>(Collections.singleton(conjunction));
     }
 
     /**
      * A casting is the pairing of roletype and roleplayer in a relation, where the roletype may be unknown
      */
     public class Casting implements Var.Casting {
-        private final Optional<Var.Admin> roleType;
-        private final Var.Admin rolePlayer;
+        private final Optional<VarAdmin> roleType;
+        private final VarAdmin rolePlayer;
 
         /**
          * A casting without a role type specified
          * @param rolePlayer the role player of the casting
          */
-        public Casting(Var.Admin rolePlayer) {
+        Casting(VarAdmin rolePlayer) {
             this.roleType = Optional.empty();
             this.rolePlayer = rolePlayer;
         }
@@ -579,18 +631,18 @@ public class VarImpl implements Var.Admin {
          * @param roletype the role type of the casting
          * @param rolePlayer the role player of the casting
          */
-        public Casting(Var.Admin roletype, Var.Admin rolePlayer) {
+        Casting(VarAdmin roletype, VarAdmin rolePlayer) {
             this.roleType = Optional.of(roletype);
             this.rolePlayer = rolePlayer;
         }
 
         @Override
-        public Optional<Var.Admin> getRoleType() {
+        public Optional<VarAdmin> getRoleType() {
             return roleType;
         }
 
         @Override
-        public Var.Admin getRolePlayer() {
+        public VarAdmin getRolePlayer() {
             return rolePlayer;
         }
 

@@ -18,42 +18,46 @@
 
 package io.mindmaps.core.implementation;
 
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.constants.DataType;
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.core.Data;
+import io.mindmaps.core.implementation.exception.*;
 import io.mindmaps.core.model.*;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
 
-public abstract class MindmapsTransactionImpl implements MindmapsTransaction, AutoCloseable {
+public class MindmapsTransactionImpl implements MindmapsTransaction, AutoCloseable {
     protected final Logger LOG = LoggerFactory.getLogger(MindmapsTransactionImpl.class);
     private final ElementFactory elementFactory;
-    private Graph graph;
-    private final Transaction transaction;
-    private final boolean batchLoadingEnabled;
+    private final ConceptLog conceptLog;
+    private final AbstractMindmapsGraph mindmapsGraph;
+    private boolean batchLoadingEnabled;
+    private Graph transaction;
 
-    public MindmapsTransactionImpl(Graph graph, boolean batchLoadingEnabled) {
-        this.graph = graph;
-        this.batchLoadingEnabled = batchLoadingEnabled;
-        transaction = new Transaction();
+    public MindmapsTransactionImpl(AbstractMindmapsGraph mindmapsGraph) {
+        this.mindmapsGraph = mindmapsGraph;
+        this.transaction = mindmapsGraph.getGraph();
+        this.batchLoadingEnabled = false;
+        conceptLog = new ConceptLog();
         elementFactory = new ElementFactory(this);
     }
 
-    public abstract MindmapsGraphImpl getRootGraph();
+    public void setBatchLoadingEnabled(boolean batchLoadingEnabled){
+        this.batchLoadingEnabled = batchLoadingEnabled;
+    }
 
     public boolean isBatchLoadingEnabled(){
         return batchLoadingEnabled;
@@ -61,9 +65,7 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
 
     @SuppressWarnings("unchecked")
     public void initialiseMetaConcepts(){
-        if(!isMetaOntologyInitialised()){
-            LOG.info("Initialising new graph . . .");
-
+        if(isMetaOntologyNotInitialised()){
             TypeImpl type = elementFactory.buildConceptType(addVertex(DataType.BaseType.TYPE));
             TypeImpl entityType = elementFactory.buildConceptType(addVertex(DataType.BaseType.TYPE));
             TypeImpl relationType = elementFactory.buildConceptType(addVertex(DataType.BaseType.TYPE));
@@ -102,24 +104,25 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
         }
     }
 
-    public boolean isMetaOntologyInitialised(){
-        return getMetaType() != null;
+    public boolean isMetaOntologyNotInitialised(){
+        return getMetaType() == null;
     }
 
     Graph getTinkerPopGraph(){
-        if(graph == null){
+        if(transaction == null){
             throw new GraphRuntimeException(ErrorMessage.CLOSED.getMessage(this.getClass().getName()));
         }
-        return graph;
+        return transaction;
     }
 
+    @Override
     public GraphTraversalSource getTinkerTraversal(){
         ReadOnlyStrategy readOnlyStrategy = ReadOnlyStrategy.instance();
         return getTinkerPopGraph().traversal().asBuilder().with(readOnlyStrategy).create(getTinkerPopGraph());
     }
 
     protected void setTinkerPopGraph(Graph graph){
-        this.graph = graph;
+        this.transaction = graph;
     }
 
     public ElementFactory getElementFactory(){
@@ -132,7 +135,7 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
     }
 
     public ConceptImpl getConcept(DataType.ConceptPropertyUnique key, String value) {
-        Iterator<Vertex> vertices = getTinkerPopGraph().traversal().V().has(key.name(), value);
+        Iterator<Vertex> vertices = getTinkerTraversal().V().has(key.name(), value);
 
         if(vertices.hasNext()){
             Vertex vertex = vertices.next();
@@ -146,17 +149,17 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
 
 
     public Set<ConceptImpl> getModifiedConcepts(){
-        return transaction.getModifiedConcepts();
+        return conceptLog.getModifiedConcepts();
     }
 
     public Set<String> getModifiedCastingIds(){
         Set<String> relationIds = new HashSet<>();
-        transaction.getModifiedCastings().forEach(c -> relationIds.add(c.getId()));
+        conceptLog.getModifiedCastings().forEach(c -> relationIds.add(c.getId()));
         return relationIds;
     }
 
-    public Transaction getTransaction () {
-        return transaction;
+    public ConceptLog getConceptLog() {
+        return conceptLog;
     }
 
     //----------------------------------------------Concept Functionality-----------------------------------------------
@@ -292,7 +295,7 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
         return null;
     }
     public ConceptImpl getConceptByBaseIdentifier(long baseIdentifier) {
-        GraphTraversal<Vertex, Vertex> traversal = getTinkerPopGraph().traversal().V(baseIdentifier);
+        GraphTraversal<Vertex, Vertex> traversal = getTinkerTraversal().V(baseIdentifier);
         if (traversal.hasNext()) {
             return elementFactory.buildUnknownConcept(traversal.next());
         } else {
@@ -345,7 +348,7 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
     private <T extends Concept> HashSet<T> getConceptsByValue(Object value, Class type, Data dataType){
         HashSet<T> concepts = new HashSet<>();
 
-        getTinkerPopGraph().traversal().V().has(dataType.getConceptProperty().name(), value).
+        getTinkerTraversal().V().has(dataType.getConceptProperty().name(), value).
                 forEachRemaining(v -> {
                     T concept = validConceptOfType(elementFactory.buildUnknownConcept(v), type);
                     if (concept != null)
@@ -583,7 +586,7 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
 
     private void putShortcutEdge(RelationImpl  relation, RelationTypeImpl  relationType, RoleTypeImpl  fromRole, InstanceImpl fromRolePlayer, RoleTypeImpl  toRole, InstanceImpl toRolePlayer){
         String hash = calculateShortcutHash(relation, relationType, fromRole, fromRolePlayer, toRole, toRolePlayer);
-        boolean exists = getTinkerPopGraph().traversal().V(fromRolePlayer.getBaseIdentifier()).
+        boolean exists = getTinkerTraversal().V(fromRolePlayer.getBaseIdentifier()).
                     local(outE(DataType.EdgeLabel.SHORTCUT.getLabel()).has(DataType.EdgeProperty.SHORTCUT_HASH.name(), hash)).
                     hasNext();
 
@@ -630,7 +633,6 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
         return hash;
     }
 
-    //------------------------------------ getRelation
     @Override
     public Relation getRelation(RelationType relationType, Map<RoleType, Instance> roleMap){
         String hash = RelationImpl.generateNewHash(relationType, roleMap);
@@ -649,8 +651,63 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
             return null;
     }
 
+    public void handleTransaction(Consumer<Transaction> method){
+        try {
+            method.accept(getTinkerPopGraph().tx());
+        } catch (UnsupportedOperationException e){
+            LOG.warn(ErrorMessage.TRANSACTIONS_NOT_SUPPORTED.getMessage(mindmapsGraph.getClass().getName()));
+        }
+    }
+
+    @Override
+    public void refresh() throws Exception {
+        handleTransaction(Transaction::rollback);
+        getConceptLog().clearTransaction();
+    }
+
+    /**
+     * Closes the current transaction rendering it unusable.
+     * @throws Exception
+     */
+    @Override
+    public void close() throws Exception {
+        handleTransaction(Transaction::rollback);
+        getConceptLog().clearTransaction();
+        mindmapsGraph.clearTransaction();
+        setTinkerPopGraph(null);
+    }
+
+    /**
+     * Commits the graph
+     * @throws MindmapsValidationException when the graph does not conform to the object model
+     */
+    @Override
+    public void commit() throws MindmapsValidationException {
+        validateGraph();
+
+        Map<DataType.BaseType, Set<String>> modifiedConcepts = new HashMap<>();
+        Set<String> castings = getModifiedCastingIds();
+
+        if(castings.size() > 0)
+            modifiedConcepts.put(DataType.BaseType.CASTING, castings);
+
+        LOG.info("Graph is valid. Committing graph . . . ");
+        handleTransaction(Transaction::commit);
+
+        try {
+            refresh();
+        } catch (Exception e) {
+            LOG.error("Failed to create new transaction after committing", e);
+            e.printStackTrace();
+        }
+
+        LOG.info("Graph committed.");
+
+        if(modifiedConcepts.size() > 0)
+            submitCommitLogs(modifiedConcepts);
+    }
+
     protected void validateGraph() throws MindmapsValidationException {
-        LOG.info("Validating graph . . . ");
         Validator validator = new Validator(this);
         if (!validator.validate()) {
             List<String> errors = validator.getErrorsFound();
@@ -663,8 +720,6 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
     }
 
     protected void submitCommitLogs(Map<DataType.BaseType, Set<String>> concepts){
-        LOG.info("Submitting commit logs to [" + getRootGraph().getCommitLogEndPoint() + "]");
-
         JSONArray jsonArray = new JSONArray();
         for (Map.Entry<DataType.BaseType, Set<String>> entry : concepts.entrySet()) {
             DataType.BaseType type = entry.getKey();
@@ -681,12 +736,8 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
         JSONObject postObject = new JSONObject();
         postObject.put("concepts", jsonArray);
 
-        try {
-            String result = EngineCommunicator.contactEngine(getRootGraph().getCommitLogEndPoint(), "POST", postObject.toString());
-            LOG.info("Response from engine [" + result + "]");
-        } catch (IllegalArgumentException e) {
-            LOG.error(ErrorMessage.COULD_NOT_REACH_ENGINE.getMessage(getRootGraph().getCommitLogEndPoint()), e);
-        }
+        String result = EngineCommunicator.contactEngine(mindmapsGraph.getCommitLogEndPoint(), "POST", postObject.toString());
+        LOG.info("Response from engine [" + result + "]");
     }
 
     //------------------------------------------ Fixing Code for Postprocessing ----------------------------------------
@@ -707,7 +758,7 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
         RoleType role = casting.getRole();
 
         //Traversal here is used to take advantage of vertex centric index
-        List<Vertex> castingVertices = getTinkerPopGraph().traversal().V(rolePlayer.getBaseIdentifier()).
+        List<Vertex> castingVertices = getTinkerTraversal().V(rolePlayer.getBaseIdentifier()).
                 inE(DataType.EdgeLabel.ROLE_PLAYER.getLabel()).
                 has(DataType.EdgeProperty.ROLE_TYPE.name(), role.getId()).otherV().toList();
 
@@ -734,7 +785,7 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
             //Kill Shortcut Edges
             relation.rolePlayers().values().forEach(instance -> {
                 if(instance != null) {
-                    List<Edge> edges = getTinkerPopGraph().traversal().V().
+                    List<Edge> edges = getTinkerTraversal().V().
                             has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), instance.getId()).
                             bothE(DataType.EdgeLabel.SHORTCUT.getLabel()).
                             has(DataType.EdgeProperty.RELATION_ID.name(), relationID).toList();
@@ -773,7 +824,7 @@ public abstract class MindmapsTransactionImpl implements MindmapsTransaction, Au
                 }
             }
 
-            getTinkerPopGraph().traversal().V(otherCasting.getBaseIdentifier()).next().remove();
+            getTinkerTraversal().V(otherCasting.getBaseIdentifier()).next().remove();
         }
 
         return relationsToClean;

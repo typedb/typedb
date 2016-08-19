@@ -19,7 +19,7 @@
 package io.mindmaps.graql.reasoner.inference;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.Rule;
 import io.mindmaps.graql.MatchQueryDefault;
 import io.mindmaps.graql.QueryParser;
@@ -47,9 +47,6 @@ public class SNBInferenceTest {
         reasoner = new MindmapsReasoner(graph);
 
     }
-    private static void printMatchQuery(MatchQueryDefault query) {
-        System.out.println(query.toString().replace(" or ", "\nor\n").replace("};", "};\n").replace("; {", ";\n{"));
-    }
 
     @Test
     public void testRecursive()
@@ -72,9 +69,6 @@ public class SNBInferenceTest {
                 "($x, $y) isa resides";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
-
-        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match " +
                 "{$x isa university;$x id 'University of Cambridge'} or" +
@@ -94,7 +88,6 @@ public class SNBInferenceTest {
                 "(subject-location $x, located-subject $y) isa resides";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
 
         printMatchQueryResults(expandedQuery.distinct());
 
@@ -119,9 +112,7 @@ public class SNBInferenceTest {
                 "($x, $y) isa resides";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
 
-        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match " +
                             "{$x isa university} or {$x isa company};\n" +
@@ -145,9 +136,7 @@ public class SNBInferenceTest {
                 "$x isa person;$y isa tag;($x, $y) isa recommendation";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
 
-        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match " +
                 "$x isa person;$y isa tag;" +
@@ -165,9 +154,6 @@ public class SNBInferenceTest {
                 "$y isa person;$t isa tag;($y, $t) isa recommendation";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
-
-        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match " +
                 "$y isa person;$t isa tag;" +
@@ -189,8 +175,6 @@ public class SNBInferenceTest {
                 "$x isa person;$y isa product;($x, $y) isa recommendation";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(query);
-        printMatchQuery(expandedQuery);
 
         printMatchQueryResults(expandedQuery.distinct());
 
@@ -215,8 +199,6 @@ public class SNBInferenceTest {
                 "$y isa person;$yy isa product;($y, $yy) isa recommendation";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(query);
-        printMatchQuery(expandedQuery);
 
         printMatchQueryResults(expandedQuery.distinct());
 
@@ -242,9 +224,6 @@ public class SNBInferenceTest {
                 "{$x isa person;{$y isa product} or {$y isa tag};($x, $y) isa recommendation}";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
-
-        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match " +
                 "{$x isa person;$y isa product;" +
@@ -272,9 +251,6 @@ public class SNBInferenceTest {
                 "{$x isa person;$y isa tag;($x, $y) isa recommendation}";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
-
-        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match " +
                 "{$x isa person;$y isa product;" +
@@ -302,8 +278,6 @@ public class SNBInferenceTest {
                 "($y, $c) isa typing; select $x, $y";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
-        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match " +
                 "$x isa person;$y isa product;" +
@@ -326,8 +300,6 @@ public class SNBInferenceTest {
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
 
-        printMatchQueryResults(expandedQuery.distinct());
-
         String explicitQuery = "match $x isa person;$y isa tag;" +
                 "{$x id 'Charlie';{$y id 'cacophony'} or {$y id 'black-sabbath'}} or " +
                 "{$x id 'Gary';$y id 'pink-floyd'}";
@@ -349,9 +321,6 @@ public class SNBInferenceTest {
 
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
-
-        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match $x isa person;$y isa product;" +
                 "{$x id 'Bob';$y id 'Ducatti-1299'}";
@@ -371,9 +340,6 @@ public class SNBInferenceTest {
 
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
-
-        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match " +
                 "{$x id 'Frank';$y id 'Ludwig_van_Beethoven'} or" +
@@ -389,9 +355,6 @@ public class SNBInferenceTest {
         String queryString = "match $x isa person;$pr isa product, value \"Chopin - Nocturnes\";($x, $pr) isa recommendation; select $x(value)";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
-
-        printMatchQueryResults(expandedQuery.distinct());
 
         String explicitQuery = "match {$x id 'Frank'} or {$x id 'Karl Fischer'}";
 
@@ -434,7 +397,6 @@ public class SNBInferenceTest {
                         "($x, $p) isa recommendation; ($p, $t) isa typing; select $p(value), $t(value)";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
 
         String queryString2 = "match $p isa product; $x isa person, value \"Karl Fischer\";" +
                         "($p, $c) isa typing; ($x, $p) isa recommendation; select $p(value), $c(value)";
@@ -453,8 +415,6 @@ public class SNBInferenceTest {
                 "{$x isa person; $p isa product, value \"Chopin - Nocturnes\"; $t isa tag; ($t, $x), isa tagging};" +
                 "($p, $c) isa typing; select $p(value), $c(value)";
 
-        printMatchQueryResults(expandedQuery.distinct());
-
         assertQueriesEqual(expandedQuery, qp.parseMatchQuery(explicitQuery).getMatchQuery());
         assertQueriesEqual(expandedQuery2, qp.parseMatchQuery(explicitQuery2).getMatchQuery());
     }
@@ -471,7 +431,6 @@ public class SNBInferenceTest {
                 "$x isa person, value \"Karl Fischer\"; ($p, $x) isa recommendation; ($p, $t) isa typing; select $p(value), $t(value)";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
 
         String explicitQuery = "match $p isa product;" +
                 "$x isa person, value 'Karl Fischer';{($x, $p) isa recommendation} or" +
@@ -495,7 +454,6 @@ public class SNBInferenceTest {
 
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
-        printMatchQuery(expandedQuery);
 
     }
     private void assertQueriesEqual(MatchQueryDefault q1, MatchQueryDefault q2) {

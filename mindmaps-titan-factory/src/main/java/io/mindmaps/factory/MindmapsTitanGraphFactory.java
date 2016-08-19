@@ -22,7 +22,6 @@ import com.thinkaurelius.titan.core.*;
 import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.schema.TitanIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
-import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.implementation.MindmapsTitanGraph;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
@@ -34,7 +33,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.*;
 
-class MindmapsTitanGraphFactory extends MindmapsGraphFactoryImpl<MindmapsTitanGraph, TitanGraph>{
+class MindmapsTitanGraphFactory extends AbstractMindmapsGraphFactory<MindmapsTitanGraph, TitanGraph> {
     protected final Logger LOG = LoggerFactory.getLogger(MindmapsTitanGraphFactory.class);
     private final static String SEARCH_KEY = "search";
     private final static String DEFAULT_CONFIG = "backend-default";
@@ -49,8 +48,8 @@ class MindmapsTitanGraphFactory extends MindmapsGraphFactoryImpl<MindmapsTitanGr
     }
 
     @Override
-    MindmapsTitanGraph buildMindmapsGraphFromTinker(TitanGraph graph, String address) {
-        return new MindmapsTitanGraph(graph, address);
+    MindmapsTitanGraph buildMindmapsGraphFromTinker(TitanGraph graph, String name, String address) {
+        return new MindmapsTitanGraph(graph, name, address);
     }
 
     @Override
@@ -123,15 +122,15 @@ class MindmapsTitanGraphFactory extends MindmapsGraphFactoryImpl<MindmapsTitanGr
             String properties = keys.getString(edgeLabel);
             if(properties.length() > 0){
                 String[] propertyKey = keys.getString(edgeLabel).split(",");
-                for(int i = 0; i < propertyKey.length; i ++){
-                    PropertyKey key = management.getPropertyKey(propertyKey[i]);
-                    if(key==null)
-                        throw new RuntimeException("Trying to create edge index on label [" + edgeLabel + "] but the property [" + propertyKey[i] + "] does not exist");
+                for (String aPropertyKey : propertyKey) {
+                    PropertyKey key = management.getPropertyKey(aPropertyKey);
+                    if (key == null)
+                        throw new RuntimeException("Trying to create edge index on label [" + edgeLabel + "] but the property [" + aPropertyKey + "] does not exist");
 
                     RelationType relationType = management.getRelationType(edgeLabel);
-                    if(management.getRelationIndex(relationType, edgeLabel + "by" + propertyKey[i]) == null)
-                        management.buildEdgeIndex(label, edgeLabel + "by" + propertyKey[i], Direction.OUT, Order.decr, key);
-                 }
+                    if (management.getRelationIndex(relationType, edgeLabel + "by" + aPropertyKey) == null)
+                        management.buildEdgeIndex(label, edgeLabel + "by" + aPropertyKey, Direction.OUT, Order.decr, key);
+                }
             }
         }
     }

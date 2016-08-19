@@ -18,8 +18,8 @@
 
 package io.mindmaps.graql.internal.validation;
 
-import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.graql.InsertQuery;
+import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.graql.admin.InsertQueryAdmin;
 
 import java.util.stream.Stream;
 
@@ -28,12 +28,12 @@ import java.util.stream.Stream;
  */
 public class InsertQueryValidator implements Validator {
 
-    private final InsertQuery.Admin insertQuery;
+    private final InsertQueryAdmin insertQuery;
 
     /**
      * @param insertQuery the insert query to validate
      */
-    public InsertQueryValidator(InsertQuery.Admin insertQuery) {
+    public InsertQueryValidator(InsertQueryAdmin insertQuery) {
         this.insertQuery = insertQuery;
     }
 

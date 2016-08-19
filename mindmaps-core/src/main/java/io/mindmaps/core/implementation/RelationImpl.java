@@ -20,6 +20,7 @@ package io.mindmaps.core.implementation;
 
 import io.mindmaps.constants.DataType;
 import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.core.implementation.exception.ConceptException;
 import io.mindmaps.core.model.Instance;
 import io.mindmaps.core.model.Relation;
 import io.mindmaps.core.model.RelationType;
@@ -88,14 +89,10 @@ class RelationImpl extends InstanceImpl<Relation, RelationType, String> implemen
         HashMap<RoleType, Instance> roleMap = new HashMap<>();
 
         //Gets roles based on all roles of the relation type
-        type().hasRoles().forEach(roleType -> {
-            roleMap.put(roleType, null);
-        });
+        type().hasRoles().forEach(roleType -> roleMap.put(roleType, null));
 
         //Get roles based on availiable castings
-        castings.forEach(casting -> {
-            roleMap.put(casting.getRole(), casting.getRolePlayer());
-        });
+        castings.forEach(casting -> roleMap.put(casting.getRole(), casting.getRolePlayer()));
 
         return roleMap;
     }
@@ -192,9 +189,9 @@ class RelationImpl extends InstanceImpl<Relation, RelationType, String> implemen
         // tracking
         rolePlayers.forEach(r -> {
             if(r != null)
-                getMindmapsTransaction().getTransaction().putConcept(getMindmapsTransaction().getElementFactory().buildSpecificInstance(r));
+                getMindmapsTransaction().getConceptLog().putConcept(getMindmapsTransaction().getElementFactory().buildSpecificInstance(r));
         });
-        this.getMappingCasting().forEach(c -> getMindmapsTransaction().getTransaction().putConcept(c));
+        this.getMappingCasting().forEach(c -> getMindmapsTransaction().getConceptLog().putConcept(c));
 
         for(Instance instance : rolePlayers){
             if(instance != null && (instance.getId() != null || instance.getSubject() != null)){

@@ -20,9 +20,9 @@
 package io.mindmaps.graql.internal.query.match;
 
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
-import io.mindmaps.graql.MatchQueryDefault;
+import io.mindmaps.graql.admin.MatchQueryDefaultAdmin;
 
 import java.util.Map;
 import java.util.Optional;
@@ -31,11 +31,11 @@ import java.util.stream.Stream;
 /**
  * "Order" modify that orders the underlying match query
  */
-public class MatchQueryOrder extends MatchQueryDefaultAbstract {
+class MatchQueryOrder extends MatchQueryDefaultModifier {
 
-    private final MatchOrder order;
+    private final MatchOrderImpl order;
 
-    public MatchQueryOrder(MatchQueryDefault.Admin inner, MatchOrder order) {
+    MatchQueryOrder(MatchQueryDefaultAdmin inner, MatchOrderImpl order) {
         super(inner);
         this.order = order;
     }
@@ -49,11 +49,6 @@ public class MatchQueryOrder extends MatchQueryDefaultAbstract {
         }
 
         return inner.stream(transaction, Optional.of(this.order));
-    }
-
-    @Override
-    protected Stream<Map<String, Concept>> transformStream(Stream<Map<String, Concept>> stream) {
-        return stream;
     }
 
     @Override

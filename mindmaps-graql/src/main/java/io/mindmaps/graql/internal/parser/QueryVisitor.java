@@ -18,8 +18,8 @@
 
 package io.mindmaps.graql.internal.parser;
 
-import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.core.implementation.Data;
+import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.core.Data;
 import io.mindmaps.graql.*;
 import io.mindmaps.graql.internal.StringConverter;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -66,11 +66,15 @@ public class QueryVisitor extends GraqlBaseVisitor {
         return visitDeleteQuery(ctx.deleteQuery());
     }
 
+    public QueryVisitor() {
+        queryBuilder = Graql.withoutTransaction();
+    }
+
     /**
      * @param transaction the transaction that the parsed query should use
      */
     public QueryVisitor(MindmapsTransaction transaction) {
-        queryBuilder = QueryBuilder.build(transaction);
+        queryBuilder = Graql.withTransaction(transaction);
     }
 
     @Override
@@ -162,12 +166,12 @@ public class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public Pattern visitOrPattern(GraqlParser.OrPatternContext ctx) {
-        return QueryBuilder.or(ctx.pattern().stream().map(this::visitPattern).collect(toList()));
+        return Graql.or(ctx.pattern().stream().map(this::visitPattern).collect(toList()));
     }
 
     @Override
     public Pattern visitAndPattern(GraqlParser.AndPatternContext ctx) {
-        return QueryBuilder.and(visitPatterns(ctx.patterns()));
+        return Graql.and(visitPatterns(ctx.patterns()));
     }
 
     @Override
@@ -334,9 +338,9 @@ public class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public Var visitVariable(GraqlParser.VariableContext ctx) {
         if (ctx == null) {
-            return QueryBuilder.var();
+            return Graql.var();
         } else if (ctx.id() != null) {
-            return QueryBuilder.id(visitId(ctx.id()));
+            return Graql.id(visitId(ctx.id()));
         } else {
             return buildVar(ctx.VARIABLE());
         }
@@ -344,42 +348,42 @@ public class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public ValuePredicate visitPredicateEq(GraqlParser.PredicateEqContext ctx) {
-        return ValuePredicate.eq(visitValue(ctx.value()));
+        return Graql.eq(visitValue(ctx.value()));
     }
 
     @Override
     public ValuePredicate visitPredicateNeq(GraqlParser.PredicateNeqContext ctx) {
-        return ValuePredicate.neq(visitValue(ctx.value()));
+        return Graql.neq(visitValue(ctx.value()));
     }
 
     @Override
     public ValuePredicate visitPredicateGt(GraqlParser.PredicateGtContext ctx) {
-        return ValuePredicate.gt(visitValue(ctx.value()));
+        return Graql.gt(visitValue(ctx.value()));
     }
 
     @Override
     public ValuePredicate visitPredicateGte(GraqlParser.PredicateGteContext ctx) {
-        return ValuePredicate.gte(visitValue(ctx.value()));
+        return Graql.gte(visitValue(ctx.value()));
     }
 
     @Override
     public ValuePredicate visitPredicateLt(GraqlParser.PredicateLtContext ctx) {
-        return ValuePredicate.lt(visitValue(ctx.value()));
+        return Graql.lt(visitValue(ctx.value()));
     }
 
     @Override
     public ValuePredicate visitPredicateLte(GraqlParser.PredicateLteContext ctx) {
-        return ValuePredicate.lte(visitValue(ctx.value()));
+        return Graql.lte(visitValue(ctx.value()));
     }
 
     @Override
     public ValuePredicate visitPredicateContains(GraqlParser.PredicateContainsContext ctx) {
-        return ValuePredicate.contains(getString(ctx.STRING()));
+        return Graql.contains(getString(ctx.STRING()));
     }
 
     @Override
     public ValuePredicate visitPredicateRegex(GraqlParser.PredicateRegexContext ctx) {
-        return ValuePredicate.regex(getRegex(ctx.REGEX()));
+        return Graql.regex(getRegex(ctx.REGEX()));
     }
 
     @Override
@@ -530,9 +534,9 @@ public class QueryVisitor extends GraqlBaseVisitor {
     private Var buildVar(TerminalNode variable) {
         Var var;
         if (variable != null) {
-            var = QueryBuilder.var(getVariable(variable));
+            var = Graql.var(getVariable(variable));
         } else {
-            var = QueryBuilder.var();
+            var = Graql.var();
         }
         return var;
     }

@@ -19,6 +19,7 @@
 package io.mindmaps.core.implementation;
 
 import io.mindmaps.constants.DataType;
+import io.mindmaps.core.implementation.exception.NoEdgeException;
 import io.mindmaps.core.model.*;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 

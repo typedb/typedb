@@ -19,34 +19,39 @@
 package io.mindmaps.graql.internal.query;
 
 import com.google.common.collect.ImmutableMap;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.core.implementation.ConceptException;
+import io.mindmaps.core.implementation.exception.ConceptException;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Resource;
 import io.mindmaps.graql.DeleteQuery;
 import io.mindmaps.graql.MatchQueryDefault;
-import io.mindmaps.graql.Var;
+import io.mindmaps.graql.admin.DeleteQueryAdmin;
+import io.mindmaps.graql.admin.MatchQueryDefaultAdmin;
+import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.validation.DeleteQueryValidator;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
  * A DeleteQuery that will execute deletions for every result of a MatchQuery
  */
-public class DeleteQueryImpl implements DeleteQuery.Admin {
-    private final ImmutableMap<String, Var.Admin> deleters;
-    private final MatchQueryDefault.Admin matchQuery;
+public class DeleteQueryImpl implements DeleteQueryAdmin {
+    private final ImmutableMap<String, VarAdmin> deleters;
+    private final MatchQueryDefaultAdmin matchQuery;
 
     /**
      * @param deleters a collection of variable patterns to delete
      * @param matchQuery a pattern to match and delete for each result
      */
-    public DeleteQueryImpl(Collection<Var.Admin> deleters, MatchQueryDefault matchQuery) {
-        Map<String, Var.Admin> deletersMap =
-                deleters.stream().collect(Collectors.toMap(Var.Admin::getName, Function.identity()));
+    public DeleteQueryImpl(Collection<VarAdmin> deleters, MatchQueryDefault matchQuery) {
+        Map<String, VarAdmin> deletersMap =
+                deleters.stream().collect(Collectors.toMap(VarAdmin::getName, Function.identity()));
         this.deleters = ImmutableMap.copyOf(deletersMap);
 
         this.matchQuery = matchQuery.admin();
@@ -67,7 +72,7 @@ public class DeleteQueryImpl implements DeleteQuery.Admin {
     }
 
     @Override
-    public Admin admin() {
+    public DeleteQueryAdmin admin() {
         return this;
     }
 
@@ -78,7 +83,7 @@ public class DeleteQueryImpl implements DeleteQuery.Admin {
      * @param result the concept that matches the variable in the graph
      */
     private void deleteResult(String name, Concept result) {
-        Var.Admin deleter = deleters.get(name);
+        VarAdmin deleter = deleters.get(name);
 
         // Check if this has been requested to be deleted
         if (deleter == null) return;
@@ -129,7 +134,7 @@ public class DeleteQueryImpl implements DeleteQuery.Admin {
      * @param type a variable representing the resource type
      * @param values a set of values of resources
      */
-    private void deleteResources(String id, Var.Admin type, Set<?> values) {
+    private void deleteResources(String id, VarAdmin type, Set<?> values) {
         String typeId = type.getId().orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.DELETE_RESOURCE_TYPE_NO_ID.getMessage(id))
         );
@@ -167,7 +172,7 @@ public class DeleteQueryImpl implements DeleteQuery.Admin {
     }
 
     @Override
-    public Collection<Var.Admin> getDeleters() {
+    public Collection<VarAdmin> getDeleters() {
         return deleters.values();
     }
 

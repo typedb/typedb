@@ -20,7 +20,7 @@ package io.mindmaps.api;
 
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.constants.RESTUtil;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.util.ConfigProperties;
@@ -48,7 +48,7 @@ public class VisualiserController {
 
         // TODO: Implement HAL builder for concepts retrieved by Value, this still does not work.
 
-        GraphFactory.getInstance().getGraph(defaultGraphName).newTransaction().getConceptsByValue(req.queryParams(RESTUtil.Request.VALUE_FIELD));
+        GraphFactory.getInstance().getGraph(defaultGraphName).getTransaction().getConceptsByValue(req.queryParams(RESTUtil.Request.VALUE_FIELD));
         return req.queryParams(RESTUtil.Request.VALUE_FIELD);
     }
 
@@ -57,7 +57,7 @@ public class VisualiserController {
         String graphNameParam = req.queryParams(RESTUtil.Request.GRAPH_NAME_PARAM);
         String currentGraphName = (graphNameParam==null) ? defaultGraphName : graphNameParam;
 
-        MindmapsTransaction transaction = GraphFactory.getInstance().getGraph(currentGraphName).newTransaction();
+        MindmapsTransaction transaction = GraphFactory.getInstance().getGraph(currentGraphName).getTransaction();
 
         Concept concept = transaction.getConcept(req.params(RESTUtil.Request.ID_PARAMETER));
         if (concept != null)

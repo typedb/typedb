@@ -21,10 +21,12 @@ package io.mindmaps.graql.internal.query.match;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
-import io.mindmaps.graql.MatchQueryDefault;
+import io.mindmaps.graql.admin.MatchQueryDefaultAdmin;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -32,11 +34,11 @@ import java.util.stream.Stream;
 /**
  * "Select" modifier for a match query that selects particular variables from the result.
  */
-public class MatchQuerySelect extends MatchQueryDefaultAbstract {
+class MatchQuerySelect extends MatchQueryDefaultModifier {
 
     private final ImmutableSet<String> names;
 
-    public MatchQuerySelect(MatchQueryDefault.Admin inner, ImmutableSet<String> names) {
+    MatchQuerySelect(MatchQueryDefaultAdmin inner, ImmutableSet<String> names) {
         super(inner);
 
         if (names.isEmpty()) {
@@ -47,8 +49,8 @@ public class MatchQuerySelect extends MatchQueryDefaultAbstract {
     }
 
     @Override
-    protected Stream<Map<String, Concept>> transformStream(Stream<Map<String, Concept>> stream) {
-        return stream.map(result -> Maps.filterKeys(result, names::contains));
+    public Stream<Map<String, Concept>> stream(Optional<MindmapsTransaction> transaction, Optional<MatchOrder> order) {
+        return inner.stream(transaction, order).map(result -> Maps.filterKeys(result, names::contains));
     }
 
     @Override

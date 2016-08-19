@@ -20,6 +20,8 @@ package io.mindmaps.core.implementation;
 
 import io.mindmaps.constants.DataType;
 import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.core.implementation.exception.MoreThanOneEdgeException;
+import io.mindmaps.core.implementation.exception.NoEdgeException;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.EntityType;
 import io.mindmaps.core.model.Relation;
@@ -44,20 +46,18 @@ public class CastingTest {
     private RoleTypeImpl role;
     private RelationImpl relation;
     private InstanceImpl rolePlayer;
-    private RelationTypeImpl relationType;
-    private EntityTypeImpl conceptType;
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void setUp() {
-        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
+        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
         mindmapsGraph.initialiseMetaConcepts();
         role = (RoleTypeImpl) mindmapsGraph.putRoleType("Role");
-        conceptType = (EntityTypeImpl) mindmapsGraph.putEntityType("A thing");
+        EntityTypeImpl conceptType = (EntityTypeImpl) mindmapsGraph.putEntityType("A thing");
         rolePlayer = (InstanceImpl) mindmapsGraph.putEntity("role player main", conceptType);
-        relationType = (RelationTypeImpl) mindmapsGraph.putRelationType("A type");
+        RelationTypeImpl relationType = (RelationTypeImpl) mindmapsGraph.putRelationType("A type");
         relation = (RelationImpl) mindmapsGraph.putRelation("a relation", relationType);
         casting = mindmapsGraph.putCasting(role, rolePlayer, relation);
     }

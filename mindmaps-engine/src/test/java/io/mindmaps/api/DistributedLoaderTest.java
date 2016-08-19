@@ -21,11 +21,11 @@ package io.mindmaps.api;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.core.implementation.MindmapsValidationException;
+import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.QueryParser;
-import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Var;
 import io.mindmaps.loader.DistributedLoader;
 import io.mindmaps.loader.Loader;
@@ -43,6 +43,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+import static io.mindmaps.graql.Graql.insert;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -78,12 +82,12 @@ public class DistributedLoaderTest {
     public void testLoad1000() {
         ClassLoader classLoader = getClass().getClassLoader();
         File ontology = new File(classLoader.getResource("dblp-ontology.gql").getFile());
-        File data= new File(classLoader.getResource("small_nametags.gql").getFile());
+        File data = new File(classLoader.getResource("small_nametags.gql").getFile());
 
         loadOntologyFromFile(ontology);
         loadDataFromFile(data);
 
-        MindmapsTransaction transaction = graph.newTransaction();
+        MindmapsTransaction transaction = graph.getTransaction();
         assertNotNull(transaction.getConcept("X4d616e75656c20417a656e6861").getId());
         assertNotNull(transaction.getConcept("X44616e69656c61204675696f726561").getId());
         assertNotNull(transaction.getConcept("X422e20476174686d616e6e").getId());
@@ -95,29 +99,8 @@ public class DistributedLoaderTest {
         assertEquals(size, 1000);
     }
 
-    @Test
-    public void testLoad1000000(){
 
-        ClassLoader classLoader = getClass().getClassLoader();
-        File ontology = new File(classLoader.getResource("dblp-ontology.gql").getFile());
-        File data= new File(classLoader.getResource("large_nametags.gql").getFile());
-
-        loadOntologyFromFile(ontology);
-        loadDataFromFile(data);
-
-        MindmapsTransaction transaction = graph.newTransaction();
-        assertNotNull(transaction.getConcept("X4d616e75656c20417a656e6861").getId());
-        assertNotNull(transaction.getConcept("X44616e69656c61204675696f726561").getId());
-        assertNotNull(transaction.getConcept("X422e20476174686d616e6e").getId());
-        assertNotNull(transaction.getConcept("X416e6472657720522e2057656262").getId());
-        assertNotNull(transaction.getConcept("X4a752d4d696e205a68616f").getId());
-        assertNotNull(transaction.getConcept("X546f736869616b69204b61776173616b69").getId());
-
-        int size = transaction.getEntityType("name_tag").instances().size();
-        assertEquals(size, 1000000);
-    }
-
-    public void loadDataFromFile(File file){
+    public void loadDataFromFile(File file) {
         loader.setBatchSize(50);
         try {
             QueryParser.create()

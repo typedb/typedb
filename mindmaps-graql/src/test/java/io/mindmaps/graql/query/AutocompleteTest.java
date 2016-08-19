@@ -20,7 +20,7 @@ package io.mindmaps.graql.query;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.Autocomplete;
@@ -37,7 +37,7 @@ public class AutocompleteTest {
     public static void setUpClass() {
         MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(graph);
-        transaction = graph.newTransaction();
+        transaction = graph.getTransaction();
     }
 
     @Test

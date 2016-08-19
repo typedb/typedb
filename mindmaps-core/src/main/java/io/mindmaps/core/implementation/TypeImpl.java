@@ -20,7 +20,11 @@ package io.mindmaps.core.implementation;
 
 import io.mindmaps.constants.DataType;
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.model.*;
+import io.mindmaps.core.implementation.exception.ConceptException;
+import io.mindmaps.core.model.Concept;
+import io.mindmaps.core.model.RoleType;
+import io.mindmaps.core.model.Rule;
+import io.mindmaps.core.model.Type;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -142,9 +146,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type, S
      */
     private Collection<TypeImpl> getSubConceptTypes(){
         Collection<TypeImpl> subSet = new HashSet<>();
-        getIncomingNeighbours(DataType.EdgeLabel.AKO).forEach(concept -> {
-            subSet.add(getMindmapsTransaction().getElementFactory().buildSpecificConceptType(concept));
-        });
+        getIncomingNeighbours(DataType.EdgeLabel.AKO).forEach(concept -> subSet.add(getMindmapsTransaction().getElementFactory().buildSpecificConceptType(concept)));
         return subSet;
     }
 
@@ -191,9 +193,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type, S
     @Override
     public Collection<Rule> getRulesOfHypothesis() {
         Set<Rule> rules = new HashSet<>();
-        getIncomingNeighbours(DataType.EdgeLabel.HYPOTHESIS).forEach(concept -> {
-            rules.add(getMindmapsTransaction().getElementFactory().buildRule(concept));
-        });
+        getIncomingNeighbours(DataType.EdgeLabel.HYPOTHESIS).forEach(concept -> rules.add(getMindmapsTransaction().getElementFactory().buildRule(concept)));
         return rules;
     }
 
@@ -204,9 +204,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type, S
     @Override
     public Collection<Rule> getRulesOfConclusion() {
         Set<Rule> rules = new HashSet<>();
-        getIncomingNeighbours(DataType.EdgeLabel.CONCLUSION).forEach(concept -> {
-            rules.add(getMindmapsTransaction().getElementFactory().buildRule(concept));
-        });
+        getIncomingNeighbours(DataType.EdgeLabel.CONCLUSION).forEach(concept -> rules.add(getMindmapsTransaction().getElementFactory().buildRule(concept)));
         return rules;
     }
 
@@ -222,7 +220,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type, S
             currentSuperType.instances().forEach(concept -> {
                 if(concept.isInstance()){
                     ((InstanceImpl<?, ?, ?>) concept).castings().forEach(
-                            instance -> mindmapsTransaction.getTransaction().putConcept(instance));
+                            instance -> mindmapsTransaction.getConceptLog().putConcept(instance));
                 }
             });
         }
@@ -256,7 +254,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type, S
         //Add castings to tracking to make sure they can still be played.
         instances().forEach(concept -> {
             if (concept.isInstance()) {
-                ((InstanceImpl<?, ?, ?>) concept).castings().forEach(casting -> mindmapsTransaction.getTransaction().putConcept(casting));
+                ((InstanceImpl<?, ?, ?>) concept).castings().forEach(casting -> mindmapsTransaction.getConceptLog().putConcept(casting));
             }
         });
 
@@ -280,7 +278,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type, S
     public T setAbstract(Boolean isAbstract) {
         setProperty(DataType.ConceptProperty.IS_ABSTRACT, isAbstract);
         if(isAbstract)
-            mindmapsTransaction.getTransaction().putConcept(this);
+            mindmapsTransaction.getConceptLog().putConcept(this);
         return getThis();
     }
 }

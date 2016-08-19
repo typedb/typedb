@@ -18,14 +18,15 @@
 
 package io.mindmaps.graql.internal.query;
 
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.graql.AskQuery;
 import io.mindmaps.graql.MatchQueryDefault;
+import io.mindmaps.graql.admin.AskQueryAdmin;
 
 /**
  * An AskQuery to check if a given pattern matches anywhere in the graph
  */
-public class AskQueryImpl implements AskQuery.Admin {
+public class AskQueryImpl implements AskQueryAdmin {
 
     private final MatchQueryDefault matchQuery;
 
@@ -47,7 +48,7 @@ public class AskQueryImpl implements AskQuery.Admin {
     }
 
     @Override
-    public Admin admin() {
+    public AskQueryAdmin admin() {
         return this;
     }
 

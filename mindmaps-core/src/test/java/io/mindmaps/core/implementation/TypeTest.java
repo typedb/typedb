@@ -19,6 +19,7 @@
 package io.mindmaps.core.implementation;
 
 import io.mindmaps.constants.DataType;
+import io.mindmaps.core.implementation.exception.ConceptException;
 import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.junit.After;
@@ -31,13 +32,14 @@ import java.util.Set;
 
 import static org.junit.Assert.*;
 
+@SuppressWarnings("unchecked")
 public class TypeTest {
 
     private MindmapsTransactionImpl mindmapsGraph;
 
     @Before
     public void buildGraph(){
-        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
+        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
         mindmapsGraph.initialiseMetaConcepts();
         EntityType top = mindmapsGraph.putEntityType("top");
         EntityType middle1 = mindmapsGraph.putEntityType("mid1");
@@ -224,9 +226,7 @@ public class TypeTest {
         conceptType.playsRole(roleType1).playsRole(roleType2);
         Set<RoleType> foundRoles = new HashSet<>();
         mindmapsGraph.getTinkerPopGraph().traversal().V(conceptType.getBaseIdentifier()).
-                out(DataType.EdgeLabel.PLAYS_ROLE.getLabel()).forEachRemaining(r -> {
-            foundRoles.add(mindmapsGraph.getRoleType(r.value(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name())));
-        });
+                out(DataType.EdgeLabel.PLAYS_ROLE.getLabel()).forEachRemaining(r -> foundRoles.add(mindmapsGraph.getRoleType(r.value(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name()))));
 
         assertEquals(2, foundRoles.size());
         assertTrue(foundRoles.contains(roleType1));

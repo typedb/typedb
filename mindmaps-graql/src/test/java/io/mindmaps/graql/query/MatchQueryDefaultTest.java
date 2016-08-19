@@ -20,8 +20,8 @@ package io.mindmaps.graql.query;
 
 import com.google.common.collect.Lists;
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.core.implementation.Data;
+import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.core.Data;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
@@ -39,8 +39,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import static io.mindmaps.constants.DataType.ConceptMeta.*;
-import static io.mindmaps.graql.QueryBuilder.*;
-import static io.mindmaps.graql.ValuePredicate.*;
+import static io.mindmaps.graql.Graql.*;
 import static org.junit.Assert.*;
 
 public class MatchQueryDefaultTest {
@@ -54,12 +53,12 @@ public class MatchQueryDefaultTest {
     public static void setUpClass() {
         MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
-        transaction = mindmapsGraph.newTransaction();
+        transaction = mindmapsGraph.getTransaction();
     }
 
     @Before
     public void setUp() {
-        qb = QueryBuilder.build(transaction);
+        qb = withTransaction(transaction);
     }
 
     @Test
@@ -408,8 +407,8 @@ public class MatchQueryDefaultTest {
     @Test
     public void testAkoRelationType() {
         MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
-        MindmapsTransaction transaction = graph.newTransaction();
-        QueryBuilder qb = QueryBuilder.build(transaction);
+        MindmapsTransaction transaction = graph.getTransaction();
+        QueryBuilder qb = withTransaction(transaction);
 
         qb.insert(
                 id("ownership").isa("relation-type").hasRole("owner").hasRole("possession"),

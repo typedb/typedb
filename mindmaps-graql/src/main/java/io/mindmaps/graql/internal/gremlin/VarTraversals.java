@@ -19,12 +19,13 @@
 package io.mindmaps.graql.internal.gremlin;
 
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.implementation.Data;
+import io.mindmaps.core.Data;
 import io.mindmaps.constants.DataType;
-import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.graql.ValuePredicate;
+import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.internal.GraqlType;
+import io.mindmaps.graql.admin.VarAdmin;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 
@@ -38,7 +39,7 @@ import static io.mindmaps.constants.DataType.ConceptProperty.*;
 import static io.mindmaps.constants.DataType.ConceptPropertyUnique.ITEM_IDENTIFIER;
 import static io.mindmaps.constants.DataType.EdgeLabel.*;
 import static io.mindmaps.constants.DataType.EdgeProperty.TO_TYPE;
-import static io.mindmaps.graql.ValuePredicate.eq;
+import static io.mindmaps.graql.Graql.eq;
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.*;
 
 /**
@@ -51,7 +52,7 @@ import static io.mindmaps.graql.internal.gremlin.FragmentPriority.*;
  */
 public class VarTraversals {
 
-    private final Var.Admin var;
+    private final VarAdmin var;
     private final ShortcutTraversal shortcutTraversal = new ShortcutTraversal();
     private final Collection<MultiTraversal> traversals = new HashSet<>();
     private final Collection<VarTraversals> innerVarTraversals = new HashSet<>();
@@ -61,7 +62,7 @@ public class VarTraversals {
      * Create VarTraversals to represent a Var
      * @param var the variable that this VarTraversal will represent
      */
-    public VarTraversals(Var.Admin var) {
+    public VarTraversals(VarAdmin var) {
         this.var = var;
 
         // If the user has provided a variable name, it can't be represented with a shortcut edge because it may be
@@ -136,7 +137,7 @@ public class VarTraversals {
 
         // Check identity of roleplayers and role types (if specified)
         var.getCastings().forEach(casting -> {
-            Optional<Var.Admin> roleType = casting.getRoleType();
+            Optional<VarAdmin> roleType = casting.getRoleType();
             if (roleType.isPresent()) {
                 addRelatesPattern(roleType.get(), casting.getRolePlayer());
             } else {
@@ -169,14 +170,14 @@ public class VarTraversals {
      * @param fragments some Fragments to put into a MultiTraversal and attach to this object
      */
     private void addPattern(Fragment... fragments) {
-        traversals.add(new MultiTraversal(fragments));
+        traversals.add(new MultiTraversalImpl(fragments));
     }
 
     /**
      * Add a pattern checking this variable has a VALUE property
      */
     private void addHasValuePattern() {
-        addPattern(new Fragment(
+        addPattern(new FragmentImpl(
                 t -> t.or(
                         __.has(VALUE_STRING.name()),
                         __.has(VALUE_LONG.name()),
@@ -194,9 +195,9 @@ public class VarTraversals {
      * @param priority the priority of the fragment
      */
     private void addPropertyPattern(
-            String name, String property, ValuePredicate.Admin predicate, FragmentPriority priority
+            String name, String property, ValuePredicateAdmin predicate, FragmentPriority priority
     ) {
-        addPattern(new Fragment(t -> t.has(property, predicate.getPredicate()), priority, name));
+        addPattern(new FragmentImpl(t -> t.has(property, predicate.getPredicate()), priority, name));
     }
 
     /**
@@ -210,11 +211,11 @@ public class VarTraversals {
         String resource = UUID.randomUUID().toString();
 
         addPattern(
-                new Fragment(t ->
+                new FragmentImpl(t ->
                         t.outE(SHORTCUT.getLabel()).has(TO_TYPE.name(), typeId).inV(),
                         EDGE_UNBOUNDED, getName(), resource
                 ),
-                new Fragment(t ->
+                new FragmentImpl(t ->
                         t.inE(SHORTCUT.getLabel()).has(TO_TYPE.name(), typeId).outV(),
                         EDGE_UNBOUNDED, resource, getName()
                 )
@@ -228,7 +229,7 @@ public class VarTraversals {
      * @param typeId the resource type ID
      * @param predicate a predicate to match on a resource's VALUE
      */
-    private void addResourcePattern(String typeId, ValuePredicate.Admin predicate) {
+    private void addResourcePattern(String typeId, ValuePredicateAdmin predicate) {
         String resource = addResourcePattern(typeId);
         DataType.ConceptProperty value = getValuePropertyForPredicate(predicate);
         addPropertyPattern(resource, value.name(), predicate, getValuePriority(predicate));
@@ -240,7 +241,7 @@ public class VarTraversals {
      * @param var the variable expected at the end of the edge
      */
     @SuppressWarnings("unchecked")
-    private void addEdgePattern(DataType.EdgeLabel edgeLabel, Var.Admin var) {
+    private void addEdgePattern(DataType.EdgeLabel edgeLabel, VarAdmin var) {
         String other = var.getName();
         Optional<String> typeName = var.getId();
 
@@ -253,13 +254,13 @@ public class VarTraversals {
         if (edgeLabel == ISA) {
             // Traverse inferred 'isa's by 'ako' edges
             addPattern(
-                    new Fragment(t -> t
+                    new FragmentImpl(t -> t
                             .union(__.identity(), __.repeat(__.out(AKO.getLabel())).emit()).unfold()
                             .out(ISA.getLabel())
                             .union(__.identity(), __.repeat(__.out(AKO.getLabel())).emit()).unfold(),
                             getEdgePriority(edgeLabel, true), getName(), other
                     ),
-                    new Fragment(t -> t
+                    new FragmentImpl(t -> t
                             .union(__.identity(), __.repeat(__.in(AKO.getLabel())).emit()).unfold()
                             .in(ISA.getLabel())
                             .union(__.identity(), __.repeat(__.in(AKO.getLabel())).emit()).unfold(),
@@ -269,11 +270,11 @@ public class VarTraversals {
         } else if (edgeLabel == AKO) {
             // Traverse inferred 'ako' edges
             addPattern(
-                    new Fragment(
+                    new FragmentImpl(
                             t -> t.union(__.identity(), __.repeat(__.out(AKO.getLabel())).emit()).unfold(),
                             getEdgePriority(edgeLabel, true), getName(), other
                     ),
-                    new Fragment(
+                    new FragmentImpl(
                             t -> t.union(__.identity(), __.repeat(__.in(AKO.getLabel())).emit()).unfold(),
                             getEdgePriority(edgeLabel, false), other, getName()
                     )
@@ -281,8 +282,8 @@ public class VarTraversals {
         } else {
             String edge = edgeLabel.getLabel();
             addPattern(
-                    new Fragment(t -> t.out(edge), getEdgePriority(edgeLabel, true), getName(), other),
-                    new Fragment(t -> t.in(edge), getEdgePriority(edgeLabel, false), other, getName())
+                    new FragmentImpl(t -> t.out(edge), getEdgePriority(edgeLabel, true), getName(), other),
+                    new FragmentImpl(t -> t.in(edge), getEdgePriority(edgeLabel, false), other, getName())
             );
         }
 
@@ -293,7 +294,7 @@ public class VarTraversals {
      * Add some patterns where this variable is a relation and the given variable is a roleplayer of that relation
      * @param rolePlayer a variable that is a roleplayer of this relation
      */
-    private void addRelatesPattern(Var.Admin rolePlayer) {
+    private void addRelatesPattern(VarAdmin rolePlayer) {
         String other = rolePlayer.getName();
         shortcutTraversal.addRel(other);
 
@@ -301,14 +302,14 @@ public class VarTraversals {
 
         // Pattern between relation and casting
         addPattern(
-                new Fragment(t -> t.out(CASTING.getLabel()), EDGE_BOUNDED, getName(), casting),
-                new Fragment(t -> t.in(CASTING.getLabel()), EDGE_UNBOUNDED, casting, getName())
+                new FragmentImpl(t -> t.out(CASTING.getLabel()), EDGE_BOUNDED, getName(), casting),
+                new FragmentImpl(t -> t.in(CASTING.getLabel()), EDGE_UNBOUNDED, casting, getName())
         );
 
         // Pattern between casting and roleplayer
         addPattern(
-                new Fragment(t -> t.out(ROLE_PLAYER.getLabel()), EDGE_UNIQUE, casting, other),
-                new Fragment(t -> t.in(ROLE_PLAYER.getLabel()), EDGE_BOUNDED, other, casting)
+                new FragmentImpl(t -> t.out(ROLE_PLAYER.getLabel()), EDGE_UNIQUE, casting, other),
+                new FragmentImpl(t -> t.in(ROLE_PLAYER.getLabel()), EDGE_BOUNDED, other, casting)
         );
 
         innerVarTraversals.add(new VarTraversals(rolePlayer));
@@ -319,7 +320,7 @@ public class VarTraversals {
      * @param roleType a variable that is the roletype of the given roleplayer
      * @param rolePlayer a variable that is a roleplayer of this relation
      */
-    private void addRelatesPattern(Var.Admin roleType, Var.Admin rolePlayer) {
+    private void addRelatesPattern(VarAdmin roleType, VarAdmin rolePlayer) {
         String roletypeName = roleType.getName();
         String roleplayerName = rolePlayer.getName();
 
@@ -339,20 +340,20 @@ public class VarTraversals {
 
         // Pattern between relation and casting
         addPattern(
-                new Fragment(t -> t.out(CASTING.getLabel()), EDGE_BOUNDED, getName(), casting),
-                new Fragment(t -> t.in(CASTING.getLabel()), EDGE_UNBOUNDED, casting, getName())
+                new FragmentImpl(t -> t.out(CASTING.getLabel()), EDGE_BOUNDED, getName(), casting),
+                new FragmentImpl(t -> t.in(CASTING.getLabel()), EDGE_UNBOUNDED, casting, getName())
         );
 
         // Pattern between casting and roleplayer
         addPattern(
-                new Fragment(t -> t.out(ROLE_PLAYER.getLabel()), EDGE_UNIQUE, casting, roleplayerName),
-                new Fragment(t -> t.in(ROLE_PLAYER.getLabel()), EDGE_BOUNDED, roleplayerName, casting)
+                new FragmentImpl(t -> t.out(ROLE_PLAYER.getLabel()), EDGE_UNIQUE, casting, roleplayerName),
+                new FragmentImpl(t -> t.in(ROLE_PLAYER.getLabel()), EDGE_BOUNDED, roleplayerName, casting)
         );
 
         // Pattern between casting and role type
         addPattern(
-                new Fragment(t -> t.out(ISA.getLabel()), EDGE_UNIQUE, casting, roletypeName),
-                new Fragment(t -> t.in(ISA.getLabel()), EDGE_UNBOUNDED, roletypeName, casting)
+                new FragmentImpl(t -> t.out(ISA.getLabel()), EDGE_UNIQUE, casting, roletypeName),
+                new FragmentImpl(t -> t.in(ISA.getLabel()), EDGE_UNBOUNDED, roletypeName, casting)
         );
 
         innerVarTraversals.add(new VarTraversals(rolePlayer));
@@ -367,17 +368,17 @@ public class VarTraversals {
      *
      * @param type the resource type variable
      */
-    private void addHasResourcePattern(Var.Admin type) {
+    private void addHasResourcePattern(VarAdmin type) {
         String typeId = type.getId().orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.NO_ID_SPECIFIED_FOR_HAS_RESOURCE.getMessage())
         );
 
-        Var owner = QueryBuilder.id(GraqlType.HAS_RESOURCE_OWNER.getId(typeId))
+        Var owner = Graql.id(GraqlType.HAS_RESOURCE_OWNER.getId(typeId))
                 .isa(DataType.ConceptMeta.ROLE_TYPE.getId());
-        Var value = QueryBuilder.id(GraqlType.HAS_RESOURCE_VALUE.getId(typeId))
+        Var value = Graql.id(GraqlType.HAS_RESOURCE_VALUE.getId(typeId))
                 .isa(DataType.ConceptMeta.ROLE_TYPE.getId());
 
-        Var relationType = QueryBuilder.id(GraqlType.HAS_RESOURCE.getId(typeId))
+        Var relationType = Graql.id(GraqlType.HAS_RESOURCE.getId(typeId))
                 .isa(DataType.ConceptMeta.RELATION_TYPE.getId())
                 .hasRole(owner).hasRole(value);
 
@@ -396,7 +397,7 @@ public class VarTraversals {
      */
     private void addTypeNamePattern(String typeName) {
         addPattern(
-                new Fragment(t -> t.has(ITEM_IDENTIFIER.name(), typeName), TYPE_ID, getName())
+                new FragmentImpl(t -> t.has(ITEM_IDENTIFIER.name(), typeName), TYPE_ID, getName())
         );
     }
 
@@ -424,7 +425,7 @@ public class VarTraversals {
      * @return a MultiTraversal that indicates two castings are unique
      */
     private MultiTraversal makeDistinctCastingPattern(String casting, String otherCastingId) {
-        return new MultiTraversal(new Fragment(t -> t.where(P.neq(otherCastingId)), DISTINCT_CASTING, casting));
+        return new MultiTraversalImpl(new FragmentImpl(t -> t.where(P.neq(otherCastingId)), DISTINCT_CASTING, casting));
     }
 
     /**
@@ -438,7 +439,7 @@ public class VarTraversals {
      * @param predicate a predicate to test on a vertex
      * @return the correct VALUE property to check on the vertex for the given predicate
      */
-    private DataType.ConceptProperty getValuePropertyForPredicate(ValuePredicate.Admin predicate) {
+    private DataType.ConceptProperty getValuePropertyForPredicate(ValuePredicateAdmin predicate) {
         Object value = predicate.getInnerValues().iterator().next();
         return Data.SUPPORTED_TYPES.get(value.getClass().getTypeName()).getConceptProperty();
     }

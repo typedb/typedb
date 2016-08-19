@@ -19,8 +19,8 @@
 package io.mindmaps.graql.query;
 
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.core.implementation.Data;
+import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.core.Data;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.QueryBuilder;
@@ -30,8 +30,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static io.mindmaps.graql.QueryBuilder.id;
-import static io.mindmaps.graql.QueryBuilder.var;
+import static io.mindmaps.graql.Graql.*;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.StringContains.containsString;
 
@@ -45,12 +44,12 @@ public class QueryErrorTest {
     public static void setUpClass() {
         MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
-        transaction = mindmapsGraph.newTransaction();
+        transaction = mindmapsGraph.getTransaction();
     }
 
     @Before
     public void setUp() {
-        qb = QueryBuilder.build(transaction);
+        qb = withTransaction(transaction);
     }
 
     @Test
@@ -145,9 +144,9 @@ public class QueryErrorTest {
     @Test
     public void testExceptionWhenNoHasResourceRelation() {
         // Create a fresh graph, with no has-resource between person and name
-        MindmapsTransaction empty = MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
+        MindmapsTransaction empty = MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
 
-        QueryBuilder emptyQb = QueryBuilder.build(empty);
+        QueryBuilder emptyQb = withTransaction(empty);
         emptyQb.insert(
                 id("person").isa("entity-type"),
                 id("name").isa("resource-type").datatype(Data.STRING)

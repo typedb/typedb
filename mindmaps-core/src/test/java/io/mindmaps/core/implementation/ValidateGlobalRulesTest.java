@@ -42,7 +42,7 @@ public class ValidateGlobalRulesTest {
 
     @Before
     public void buildGraphAccessManager() {
-        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().newTransaction();
+        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
     }
 
     @After

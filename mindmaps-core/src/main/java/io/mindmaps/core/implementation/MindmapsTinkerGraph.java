@@ -18,27 +18,17 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
 /**
  * A mindmaps graph which produces new transactions to work with using a Tinkergraph backend.
  * Primarily used for testing
  */
-public class MindmapsTinkerGraph extends MindmapsGraphImpl {
-    public MindmapsTinkerGraph(TinkerGraph tinkerGraph){
-        super(tinkerGraph, "localhost");
-        new MindmapsTinkerTransaction(this).initialiseMetaConcepts();
-    }
-
-    /**
-     *
-     * @return A new transaction with a snapshot of the graph at the time of creation
-     */
-    @Override
-    public MindmapsTransaction newTransaction() {
-        getGraph();
-        return new MindmapsTinkerTransaction(this);
+public class MindmapsTinkerGraph extends AbstractMindmapsGraph<TinkerGraph> {
+    public MindmapsTinkerGraph(TinkerGraph tinkerGraph, String name){
+        super(tinkerGraph, name, "localhost");
+        new MindmapsTransactionImpl(this).initialiseMetaConcepts();
     }
 
     /**

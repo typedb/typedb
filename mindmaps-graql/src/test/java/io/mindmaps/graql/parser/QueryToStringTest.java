@@ -19,8 +19,8 @@
 package io.mindmaps.graql.parser;
 
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.MindmapsTransaction;
-import io.mindmaps.core.implementation.Data;
+import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.core.Data;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.MatchQueryDefault;
@@ -29,11 +29,7 @@ import io.mindmaps.graql.QueryParser;
 import org.junit.Before;
 import org.junit.Test;
 
-import static io.mindmaps.graql.QueryBuilder.id;
-import static io.mindmaps.graql.QueryBuilder.or;
-import static io.mindmaps.graql.QueryBuilder.var;
-import static io.mindmaps.graql.ValuePredicate.lte;
-import static io.mindmaps.graql.ValuePredicate.neq;
+import static io.mindmaps.graql.Graql.*;
 import static org.junit.Assert.assertEquals;
 
 public class QueryToStringTest {
@@ -45,8 +41,8 @@ public class QueryToStringTest {
     public void setUp() {
         MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
-        MindmapsTransaction transaction = mindmapsGraph.newTransaction();
-        qb = QueryBuilder.build(transaction);
+        MindmapsTransaction transaction = mindmapsGraph.getTransaction();
+        qb = withTransaction(transaction);
         qp = QueryParser.create(transaction);
     }
 
@@ -127,7 +123,7 @@ public class QueryToStringTest {
     public void testQuoteIds() {
         assertEquals(
                 "match $a (\"hello\\tworld\")",
-                QueryBuilder.build().match(var("a").rel(id("hello\tworld"))).toString()
+                match(var("a").rel(id("hello\tworld"))).toString()
         );
     }
 
@@ -135,7 +131,7 @@ public class QueryToStringTest {
     public void testQuoteIdsNumbers() {
         assertEquals(
                 "match $a (\"1hi\")",
-                QueryBuilder.build().match(var("a").rel(id("1hi"))).toString()
+                match(var("a").rel(id("1hi"))).toString()
         );
     }
 

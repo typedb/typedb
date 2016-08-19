@@ -19,7 +19,7 @@
 package io.mindmaps.graql.internal.validation;
 
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 
 import java.util.Collection;
 import java.util.stream.Stream;
@@ -34,7 +34,7 @@ class ResourceValidator implements Validator {
     /**
      * @param resourceTypes a list of resource type IDs to validate
      */
-    public ResourceValidator(Collection<String> resourceTypes) {
+    ResourceValidator(Collection<String> resourceTypes) {
         this.resourceTypes = resourceTypes;
     }
 

@@ -19,7 +19,7 @@
 package io.mindmaps.example;
 
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.MindmapsTransaction;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.junit.Before;
@@ -31,14 +31,13 @@ import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertTrue;
 
 public class PokemonGraphFactoryTest {
-    private MindmapsGraph mindmapsGraph;
     private MindmapsTransaction transaction;
 
     @Before
     public void setup(){
-        mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
+        MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         PokemonGraphFactory.loadGraph(mindmapsGraph);
-        transaction = mindmapsGraph.newTransaction();
+        transaction = mindmapsGraph.getTransaction();
     }
 
     @Test
