@@ -20,10 +20,12 @@ package io.mindmaps.api;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
+import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.Var;
 import io.mindmaps.loader.DistributedLoader;
@@ -42,7 +44,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
-import static io.mindmaps.graql.Graql.insert;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -109,7 +110,7 @@ public class DistributedLoaderTest {
         loader.waitToFinish();
     }
 
-    private void loadOntologyFromFile(File file) {
+    private void loadOntologyFromFile(File file){
         List<Var> ontologyBatch = new ArrayList<>();
 
         LOG.info("Loading new ontology .. ");
@@ -120,10 +121,10 @@ public class DistributedLoaderTest {
                     .forEach(ontologyBatch::add);
 
             MindmapsTransaction transaction = graph.getTransaction();
-            insert(ontologyBatch).withTransaction(transaction).execute();
+            Graql.withTransaction(transaction).insert(ontologyBatch).execute();
             transaction.commit();
 
-        } catch (FileNotFoundException | MindmapsValidationException e) {
+        } catch (FileNotFoundException|MindmapsValidationException e) {
             throw new RuntimeException(e);
         }
 
@@ -131,7 +132,7 @@ public class DistributedLoaderTest {
     }
 
     @After
-    public void cleanGraph() {
+    public void cleanGraph(){
         graph.clear();
     }
 }

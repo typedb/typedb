@@ -22,6 +22,7 @@ import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.constants.RESTUtil;
 import io.mindmaps.graql.Var;
 import io.mindmaps.util.ConfigProperties;
+import mjson.Json;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +51,16 @@ public class DistributedLoader extends Loader {
     private String[] hostsArray;
 
     private Map<String, Semaphore> availability;
-    private Map<String, Set<String>> transactions;
+    private Map<String, Integer> jobsFinished;
+
+    private static final String POST = "http://%s:" +
+            ConfigProperties.getInstance().getProperty(ConfigProperties.SERVER_PORT_NUMBER) +
+            RESTUtil.WebPath.NEW_TRANSACTION_URI + "?" +
+            RESTUtil.Request.GRAPH_NAME_PARAM + "=%s";
+
+    private static final String GET = "http://%s:" +
+            ConfigProperties.getInstance().getProperty(ConfigProperties.SERVER_PORT_NUMBER) +
+            "/transaction/loaderState";
 
     public DistributedLoader(String graphNameInit, Collection<String> hosts) {
         ConfigProperties prop = ConfigProperties.getInstance();
@@ -60,15 +70,14 @@ public class DistributedLoader extends Loader {
         hostsArray = hosts.toArray(new String[hosts.size()]);
         currentHost = 0;
 
-        threadsNumber = prop.getPropertyAsInt(ConfigProperties.NUM_THREADS_PROPERTY);
+        threadsNumber = prop.getPropertyAsInt(ConfigProperties.NUM_THREADS_PROPERTY) * 3;
 
         // create availability map
         availability = new HashMap<>();
-        hosts.forEach(h -> availability.put(h, new Semaphore(threadsNumber * 3)));
+        hosts.forEach(h -> availability.put(h, new Semaphore(threadsNumber)));
 
-        // instantiate transactions map
-        transactions = new HashMap<>();
-        hosts.forEach(h -> transactions.put(h, new HashSet<>()));
+        jobsFinished = new HashMap<>();
+        hosts.forEach(h -> jobsFinished.put(h, 0));
     }
 
     /**
@@ -79,46 +88,120 @@ public class DistributedLoader extends Loader {
         try {
             future.get();
         } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+            LOG.error(e.getMessage());
         }
-        System.out.println("Done!");
+        LOG.info("Done!");
     }
 
     public void submitBatch(Collection<Var> batch) {
         String batchedString = batch.stream().map(Object::toString).collect(Collectors.joining(";"));
 
-        if (batchedString.length() == 0) {
-            return;
-        }
+        if (batchedString.length() == 0) { return; }
 
         HttpURLConnection currentConn = acquireNextHost();
-        int respCode;
-        String respMessage = null;
-        try {
-            String query = RESTUtil.HttpConn.INSERT_PREFIX + batchedString;
-            currentConn.setRequestProperty(RESTUtil.HttpConn.CONTENT_LENGTH, Integer.toString(query.length()));
-            currentConn.getOutputStream().write(query.getBytes(RESTUtil.HttpConn.UTF8));
-            respCode = currentConn.getResponseCode();
-            respMessage = currentConn.getResponseMessage();
-            if (respCode != RESTUtil.HttpConn.HTTP_TRANSACTION_CREATED) {
-                throw new HTTPException(respCode);
-            }
+        String query = RESTUtil.HttpConn.INSERT_PREFIX + batchedString;
 
-            String transactionId = IOUtils.toString(currentConn.getInputStream());
-            transactions.get(hostsArray[currentHost]).add(transactionId);
-            markAsLoading(transactionId);
+        executePost(currentConn, query);
 
-            if(future == null){
-                startCheckingStatus();
-            }
-
-        } catch (HTTPException e) {
-            LOG.error(ErrorMessage.ERROR_IN_DISTRIBUTED_TRANSACTION.getMessage(currentConn.getURL().toString(), e.getStatusCode(), respMessage, batchedString));
-            e.printStackTrace();
-        } catch (IOException e) {
-        } finally {
-            currentConn.disconnect();
+        int responseCode = getResponseCode(currentConn);
+        if (responseCode != RESTUtil.HttpConn.HTTP_TRANSACTION_CREATED) {
+            throw new HTTPException(responseCode);
         }
+
+        markAsLoading(getResponseBody(currentConn));
+        System.out.println("Transaction sent to host: " + hostsArray[currentHost]);
+
+        if(future == null){ startCheckingStatus(); }
+
+        currentConn.disconnect();
+    }
+
+    /**
+     * Get the state of a given host
+     * @param host host to check the state of
+     * @return if the given transaction has finished
+     */
+    private String getHostState(String host) {
+        HttpURLConnection connection = getHost(host, GET);
+        String response = getResponseBody(connection);
+        connection.disconnect();
+
+        return response;
+    }
+
+    /**
+     * Check if all transactions are finished
+     *
+     * @return true if all transactions have finished
+     */
+    private boolean transactionsIsEmpty() {
+        return availability.values().stream().allMatch(a -> a.availablePermits() == threadsNumber);
+    }
+
+    /**
+     * Start checking the status of the transactions in another thread.
+     */
+    private void startCheckingStatus() {
+        future = executor.submit(this::checkForStatusLoop);
+    }
+
+    /**
+     * Re-sets the executor and indicates the system is no longer checking the status of the transactions
+     */
+    private void stopCheckingStatus() {
+        executor.shutdownNow();
+        executor = Executors.newSingleThreadExecutor();
+        future = null;
+    }
+
+    /**
+     * Loop checking the status of the hosts every 30 seconds.
+     * This method updates the semaphore availability.
+     */
+    public void checkForStatusLoop() {
+        while (!transactionsIsEmpty()) {
+
+            int runningQueued = 0;
+            int runningLoading = 0;
+            int runningError = 0;
+            int runningFinished = 0;
+
+            // loop through the hosts
+            for (String host : availability.keySet()) {
+
+                Json state = Json.read(getHostState(host));
+                System.out.println(state);
+
+                int queued = state.at(State.QUEUED.name()).asInteger();
+                int loading = state.at(State.LOADING.name()).asInteger();
+                int error = state.at(State.ERROR.name()).asInteger();
+                int finished = state.at(State.FINISHED.name()).asInteger();
+
+                int permitsToRelease = finished - jobsFinished.get(host);
+                availability.get(host).release(permitsToRelease);
+                jobsFinished.put(host, finished);
+
+                runningQueued += queued;
+                runningLoading += loading;
+                runningError += error;
+                runningFinished += finished;
+            }
+
+            enqueuedJobs.set(runningQueued);
+            loadingJobs.set(runningLoading);
+            errorJobs.set(runningError);
+            finishedJobs.set(runningFinished);
+
+            printLoaderState();
+
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        stopCheckingStatus();
     }
 
     /**
@@ -134,7 +217,7 @@ public class DistributedLoader extends Loader {
             host = nextHost();
         }
 
-        return getHost(host);
+        return getHost(host, POST);
     }
 
     /**
@@ -157,108 +240,85 @@ public class DistributedLoader extends Loader {
      * @param host ip of the machine where engine is running
      * @return http connection to the machine where engine is running
      */
-    private HttpURLConnection getHost(String host) {
+    private HttpURLConnection getHost(String host, String format) {
         HttpURLConnection urlConn = null;
         try {
-            String url = "http://" + host + ":" + ConfigProperties.getInstance().getProperty(ConfigProperties.SERVER_PORT_NUMBER) + RESTUtil.WebPath.NEW_TRANSACTION_URI + "?" + RESTUtil.Request.GRAPH_NAME_PARAM + "=" + graphName;
+            String url = String.format(format, host, graphName);
             urlConn = (HttpURLConnection) new URL(url).openConnection();
             urlConn.setDoOutput(true);
-            urlConn.setRequestMethod(RESTUtil.HttpConn.POST_METHOD);
-            urlConn.addRequestProperty(RESTUtil.HttpConn.CONTENT_TYPE, RESTUtil.HttpConn.APPLICATION_POST_TYPE);
         } catch (IOException e) {
             e.printStackTrace();
         }
         return urlConn;
     }
 
-    /**
-     * Check if transaction is finished
-     *
-     * @param transaction transaction to check if has finished
-     * @return if the given transaction has finished
-     */
-    private TransactionState getState(String host, String transaction) {
+    private String executePost(HttpURLConnection connection, String body){
 
-        String url = "http://" + host + ":" + ConfigProperties.getInstance().getProperty(ConfigProperties.SERVER_PORT_NUMBER) +
-                RESTUtil.WebPath.TRANSACTION_STATUS_URI + transaction + "?" + RESTUtil.Request.GRAPH_NAME_PARAM + "=" + graphName;
-
-        HttpURLConnection urlConn = null;
         try {
-            urlConn = (HttpURLConnection) new URL(url).openConnection();
-            urlConn.setDoOutput(true);
+            // create post
+            connection.setRequestMethod(RESTUtil.HttpConn.POST_METHOD);
+            connection.addRequestProperty(RESTUtil.HttpConn.CONTENT_TYPE, RESTUtil.HttpConn.APPLICATION_POST_TYPE);
 
-            String response = IOUtils.toString(urlConn.getInputStream());
-            return new TransactionState(response);
+            // add body and execute
+            connection.setRequestProperty(RESTUtil.HttpConn.CONTENT_LENGTH, Integer.toString(body.length()));
+            connection.getOutputStream().write(body.getBytes(RESTUtil.HttpConn.UTF8));
+
+            // get response
+            return connection.getResponseMessage();
+        }
+        catch (HTTPException e){
+            LOG.error(ErrorMessage.ERROR_IN_DISTRIBUTED_TRANSACTION.getMessage(
+                    connection.getURL().toString(),
+                    e.getStatusCode(),
+                    getResponseMessage(connection),
+                    body));
+        }
+        catch (IOException e){
+            LOG.error("Exception thrown with " + connection.getURL().toString());
+        }
+
+        return null;
+    }
+
+    /**
+     * Get the response message from an http connection
+     * @param connection to get response message from
+     * @return the response message
+     */
+    private String getResponseMessage(HttpURLConnection connection){
+        try {
+            return connection.getResponseMessage();
         } catch (IOException e) {
             e.printStackTrace();
-            return new TransactionState(State.CANCELLED);
-        } finally {
-            urlConn.disconnect();
         }
+        return null;
     }
 
     /**
-     * Check if all transactions are finished
-     *
-     * @return true if all transactions have finished
+     * Get the response body from an HTTP connection safely
+     * @param connection to get response body from
+     * @return the response body
      */
-    private boolean transactionsIsEmpty() {
-        return transactions.values().stream().allMatch(Set::isEmpty);
-    }
-
-    /**
-     * Start checking the status of the transactions in another thread.
-     */
-    private void startCheckingStatus() {
-        future = executor.submit(this::checkForStatusLoop);
-    }
-
-    /**
-     * Re-sets the executor and indicates the system is no longer checking the status of the transactions
-     */
-    private void stopCheckingStatus() {
-        executor.shutdownNow();
-        executor = Executors.newSingleThreadExecutor();
-        future = null;
-    }
-
-    /**
-     *
-     */
-    public void checkForStatusLoop() {
-        while (!transactionsIsEmpty()) {
-
-            // loop through the hosts
-            for (String host : transactions.keySet()) {
-
-                // loop through the transactions of each host
-                for (String transaction : new ArrayList<>(transactions.get(host))) {
-
-                    TransactionState state = getState(host, transaction);
-
-                    if(state.getState() == State.FINISHED) {
-                        availability.get(host).release();
-                        transactions.get(host).remove(transaction);
-
-                        markAsFinished(transaction);
-                    } else if(state.getState() == State.ERROR ){
-                        availability.get(host).release();
-                        transactions.get(host).remove(transaction);
-
-                        markAsError(transaction);
-                        LOG.error(state.getException());
-                    }
-                }
-            }
-            printLoaderState();
-
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+    private String getResponseBody(HttpURLConnection connection){
+        try {
+            return IOUtils.toString(connection.getInputStream());
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+        return null;
+    }
 
-        stopCheckingStatus();
+    /**
+     * Get the response code from an HTTP Connection safely
+     * @param connection to get response code from
+     * @return response code
+     */
+    private int getResponseCode(HttpURLConnection connection){
+        try {
+            return connection.getResponseCode();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return 0;
     }
 }

@@ -11,10 +11,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public abstract class Loader {
 
-    private AtomicInteger enqueuedJobs;
-    private AtomicInteger loadingJobs;
-    private AtomicInteger finishedJobs;
-    private AtomicInteger errorJobs;
+    protected AtomicInteger enqueuedJobs;
+    protected AtomicInteger loadingJobs;
+    protected AtomicInteger finishedJobs;
+    protected AtomicInteger errorJobs;
 
     protected Collection<Var> batch;
     protected int batchSize;

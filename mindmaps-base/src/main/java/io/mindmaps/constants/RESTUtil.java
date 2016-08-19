@@ -18,6 +18,7 @@ public class RESTUtil {
 
         public static final String NEW_TRANSACTION_URI = "/transaction/new";
         public static final String TRANSACTION_STATUS_URI = "/transaction/status/";
+        public static final String LOADER_STATE_URI = "/transaction/loaderState";
 
     }
 

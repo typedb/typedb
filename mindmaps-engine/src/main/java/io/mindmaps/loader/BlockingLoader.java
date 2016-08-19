@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 
 import static io.mindmaps.graql.Graql.insert;
 
+
 /**
  * RESTLoader that submits tasks to locally running engine and performs basic load balancing.
  */

@@ -25,9 +25,17 @@ import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.QueryParser;
 import io.mindmaps.postprocessing.Cache;
 import io.mindmaps.util.ConfigProperties;
+import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -63,10 +71,12 @@ public class RESTLoader {
     private AtomicLong lastJobFinished;
     private AtomicInteger errorJobs;
     private AtomicBoolean maintenanceInProgress;
+    private String loggingFilePath;
 
     public long getLastJobFinished() {
         return lastJobFinished.get();
     }
+
     public int getLoadingJobs() {
         return loadingJobs.get();
     }
@@ -79,8 +89,9 @@ public class RESTLoader {
         loadingJobs = new AtomicInteger();
         errorJobs = new AtomicInteger();
         finishedJobs = new AtomicInteger();
-        lastJobFinished= new AtomicLong();
-        maintenanceInProcess= new AtomicBoolean(false);
+        lastJobFinished = new AtomicLong();
+        maintenanceInProcess = new AtomicBoolean(false);
+        loggingFilePath = ConfigProperties.getInstance().getProperty(ConfigProperties.LOGGING_FILE_PATH);
         repeatCommits = ConfigProperties.getInstance().getPropertyAsInt(ConfigProperties.LOADER_REPEAT_COMMITS);
     }
 
@@ -88,6 +99,14 @@ public class RESTLoader {
         if (instance == null) instance = new RESTLoader();
         return instance;
     }
+
+    public String getLoaderState() {
+        return Json.object().set(State.QUEUED.name(), enqueuedJobs.get())
+                .set(State.LOADING.name(), loadingJobs.get())
+                .set(State.ERROR.name(), errorJobs.get())
+                .set(State.FINISHED.name(), finishedJobs.get()).toString();
+    }
+
 
     public UUID addJob(String name, String queryString) {
         UUID newUUID = UUID.randomUUID();
@@ -104,10 +123,13 @@ public class RESTLoader {
         loadingJobs.incrementAndGet();
         enqueuedJobs.decrementAndGet();
 
-        for (int i = 0; i < repeatCommits; i++) {
-            MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) GraphFactory.getInstance().getGraphBatchLoading(name).getTransaction();
+        System.out.println(batch);
 
+        for (int i = 0; i < repeatCommits; i++) {
+
+            MindmapsTransactionImpl transaction = null;
             try {
+                transaction = (MindmapsTransactionImpl) GraphFactory.getInstance().getGraphBatchLoading(name).getTransaction();
                 QueryParser.create(transaction).parseInsertQuery(batch).execute();
                 transaction.commit();
                 cache.addJobCasting(name, transaction.getModifiedCastingIds());
@@ -118,15 +140,17 @@ public class RESTLoader {
             } catch (MindmapsValidationException e) {
                 //If it's a validation exception there is no point in re-trying
                 LOG.error(ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));
+                logToFile(batch, ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));
                 loaderState.get(uuid).setState(State.ERROR);
                 loaderState.get(uuid).setException(ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));
                 errorJobs.incrementAndGet();
                 return;
             } catch (IllegalArgumentException e) {
                 //If it's a parsing exception there is no point in re-trying
-                LOG.error(ErrorMessage.PARSING_EXCEPTION.getMessage(e.getMessage()));
+                LOG.error(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION.getMessage(e.getMessage()));
+                logToFile(batch, ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION.getMessage(e.getMessage()));
                 loaderState.get(uuid).setState(State.ERROR);
-                loaderState.get(uuid).setException(ErrorMessage.PARSING_EXCEPTION.getMessage(e.getMessage()));
+                loaderState.get(uuid).setException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION.getMessage(e.getMessage()));
                 errorJobs.incrementAndGet();
                 return;
             } catch (Exception e) {
@@ -134,7 +158,8 @@ public class RESTLoader {
                 handleError(e, 1);
             } finally {
                 try {
-                    transaction.close();
+                    if(transaction!=null)
+                        transaction.close();
                     loadingJobs.decrementAndGet();
                     lastJobFinished.set(System.currentTimeMillis());
                 } catch (Exception e) {
@@ -144,11 +169,13 @@ public class RESTLoader {
         }
 
         LOG.error(ErrorMessage.FAILED_TRANSACTION.getMessage(repeatCommits));
+        logToFile(batch, ErrorMessage.FAILED_TRANSACTION.getMessage(repeatCommits));
+
         loaderState.get(uuid).setState(State.ERROR);
         loaderState.get(uuid).setException(ErrorMessage.FAILED_TRANSACTION.getMessage(repeatCommits));
         errorJobs.incrementAndGet();
 
-        //TODO: log the errors to a log file.
+        //TODO: log the errors to a log file in a proper way.
     }
 
     public String getStatus(UUID uuid) {
@@ -166,12 +193,44 @@ public class RESTLoader {
         }
     }
 
-    public synchronized void unlock(){
+    private synchronized void logToFile(String input, String errorMessage) {
+        DateFormat dateFormat = new SimpleDateFormat(ConfigProperties.DATE_FORMAT);
+        Date date = new Date();
+        BufferedWriter bw = null;
+
+        try {
+            File file = new File(loggingFilePath);
+            file.createNewFile();
+            bw = new BufferedWriter(new FileWriter(file, true));
+            bw.write(dateFormat.format(date) + ":: " + "===================================== NEW EXCEPTION ============================================");
+            bw.newLine();
+            bw.write(dateFormat.format(date) + ":: " + "INPUT: "+input);
+            bw.newLine();
+            bw.write(dateFormat.format(date) + ":: " +  "MESSAGE: "+ errorMessage);
+            bw.newLine();
+            bw.write(dateFormat.format(date) + ":: " + "================================================================================================");
+            bw.newLine();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (bw != null)
+                try {
+                    bw.close();
+                } catch (IOException ioe2) {
+                    ioe2.printStackTrace();
+                }
+        }
+
+    }
+
+    public synchronized void unlock() {
         maintenanceInProcess.set(false);
         notifyAll();
         LOG.info("Unlocking QueueManager [" + this + "]");
     }
-    public void lock(){
+
+    public void lock() {
         maintenanceInProcess.set(true);
         LOG.info("Locking QueueManager [" + this + "] for external maintenance");
     }

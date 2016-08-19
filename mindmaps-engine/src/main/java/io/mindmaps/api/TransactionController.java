@@ -52,6 +52,7 @@ public class TransactionController {
 
         post(RESTUtil.WebPath.NEW_TRANSACTION_URI, this::newTransactionREST);
         get(RESTUtil.WebPath.TRANSACTION_STATUS_URI+RESTUtil.Request.UUID_PARAMETER, this::checkTransactionStatusREST);
+        get(RESTUtil.WebPath.LOADER_STATE_URI, this::loaderState);
 
     }
     @POST
@@ -64,6 +65,7 @@ public class TransactionController {
             @ApiImplicitParam(name = "graphName", value = "Name of graph to use", dataType = "string", paramType = "query")
     })
     private String newTransactionREST(Request req, Response res){
+        System.out.println(req.body());
         String currentGraphName = req.queryParams(RESTUtil.Request.GRAPH_NAME_PARAM);
         if (currentGraphName == null) currentGraphName = defaultGraphName;
         UUID uuid = loader.addJob(currentGraphName, req.body());
@@ -90,6 +92,21 @@ public class TransactionController {
         } catch (Exception e) {
             e.printStackTrace();
             res.status(400);
+            return e.getMessage();
+        }
+    }
+
+    @GET
+    @Path("/loaderState")
+    @ApiOperation(
+            value = "Returns the state of the RESTLoader.",
+            response = String.class)
+    private String loaderState(Request req, Response res){
+        try {
+            return loader.getLoaderState();
+        } catch (Exception e) {
+            e.printStackTrace();
+            res.status(500);
             return e.getMessage();
         }
     }
