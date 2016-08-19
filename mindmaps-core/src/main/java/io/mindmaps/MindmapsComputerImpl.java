@@ -23,15 +23,16 @@ import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
-public class MindmapsComputer {
+public class MindmapsComputerImpl implements MindmapsComputer {
     private final Graph graph;
     private final Class<? extends GraphComputer> graphComputer;
 
-    public MindmapsComputer(Graph graph, String graphComputerType){
+    public MindmapsComputerImpl(Graph graph, String graphComputerType){
         this.graph = graph;
         this.graphComputer = getGraphComputer(graphComputerType);
     }
 
+    @Override
     public void compute(VertexProgram program){
         //TODO: Run the program I guess ?
     }
