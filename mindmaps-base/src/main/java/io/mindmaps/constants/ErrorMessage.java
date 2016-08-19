@@ -129,8 +129,16 @@ public enum ErrorMessage {
     UNABLE_TO_ANALYSE_CONCEPT("Unable to analyse concept [%s] due to error [%s]"),
     BACK_OFF_RETRY("Unexpected failure performing backoff and retry of [%s]S"),
     //Distributed loading Errors
-    ERROR_IN_DISTRIBUTED_TRANSACTION("Error while sending transaction to host: [%s]. Code: [%s] Message:[%s] \n Transaction string: [%s] ");
+    ERROR_IN_DISTRIBUTED_TRANSACTION("Error while sending transaction to host: [%s]. Code: [%s] Message:[%s] \n Transaction string: [%s] "),
 
+
+    //--------------------------------------------- Reasoner Errors -----------------------------------------------
+    NON_HORN_RULE("The specified rule %s is not a Horn rule"),
+    PARENT_MISSING("Attempted operation on atom %s that does not have a parent"),
+    PATTERN_NOT_VAR("The pattern %s is not a var"),
+    MULTIPLE_RESOURCES("Multiple resource types found during data extraction in atom %s"),
+    MULTIPLE_VALUE_PREDICATES("Multiple value predicates found during data extraction in atom %s"),
+    NO_VAL_IN_RELATION("Attempted to return value from a relation atom");
 
     private final String message;
 

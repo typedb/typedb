@@ -295,7 +295,7 @@ public class GraqlShell implements AutoCloseable {
 
     private void printMatchQuery(MatchQueryPrinter matchQuery, boolean setLimit) {
         // Expand match query with reasoner
-        matchQuery.setMatchQuery(reasoner.expandQuery(matchQuery.getMatchQuery()));
+        matchQuery.setMatchQuery(reasoner.expand(matchQuery.getMatchQuery()));
 
         Stream<String> results = matchQuery.resultsString();
         if (setLimit) results = results.limit(100);

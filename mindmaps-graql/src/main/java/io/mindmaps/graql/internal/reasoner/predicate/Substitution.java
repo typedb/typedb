@@ -1,12 +1,13 @@
 package io.mindmaps.graql.internal.reasoner.predicate;
 
 
+import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.reasoner.container.Query;
 
-import java.util.Map;
 import java.util.Set;
 
 public class Substitution extends AtomBase{
@@ -31,10 +32,10 @@ public class Substitution extends AtomBase{
         this.val = extractValue(a.getPattern().asVar());
     }
 
-    public Substitution(String name, String value)
+    public Substitution(String name, Concept con)
     {
-        super(Graql.var(name).id(value).admin().asVar());
-        this.val = value;
+        super(Graql.var(name).id(con.getId()).admin().asVar());
+        this.val = con.getId();
     }
 
     @Override
@@ -71,20 +72,10 @@ public class Substitution extends AtomBase{
 
         String value = "";
 
-        Map<VarAdmin, Set<ValuePredicateAdmin>> resourceMap = var.getResourcePredicates();
-
-        if (resourceMap.size() != 0) {
-            if (resourceMap.size() != 1)
-                throw new IllegalArgumentException("Multiple resource types in extractData");
-
-            Map.Entry<VarAdmin, Set<ValuePredicateAdmin>> entry = resourceMap.entrySet().iterator().next();
-            value = entry.getValue().iterator().hasNext()? entry.getValue().iterator().next().getPredicate().getValue().toString() : "";
-        }
-        else if (!var.admin().getValuePredicates().isEmpty()){
+        if (!var.admin().getValuePredicates().isEmpty()){
             Set<ValuePredicateAdmin> valuePredicates = var.admin().getValuePredicates();
             if (valuePredicates.size() != 1)
-                throw new IllegalArgumentException("More than one value predicate in extractAtomFromVar\n"
-                        + atomPattern.toString());
+                throw new IllegalArgumentException(ErrorMessage.MULTIPLE_VALUE_PREDICATES.getMessage(atomPattern.toString()));
             else
                 value = valuePredicates.iterator().next().getPredicate().getValue().toString();
         }
@@ -93,7 +84,5 @@ public class Substitution extends AtomBase{
         return value;
 
     }
-
-
 
 }

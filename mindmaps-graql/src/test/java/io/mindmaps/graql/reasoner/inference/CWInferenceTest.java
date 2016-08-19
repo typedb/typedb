@@ -20,7 +20,6 @@ package io.mindmaps.graql.reasoner.inference;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsTransaction;
-import io.mindmaps.core.model.Type;
 import io.mindmaps.core.model.Rule;
 import io.mindmaps.core.model.RuleType;
 import io.mindmaps.graql.MatchQueryDefault;
@@ -61,7 +60,7 @@ public class CWInferenceTest {
                 "{{$x isa missile} or {$x isa rocket;$x has propulsion 'gsp';}} or {$x isa rocket;$x has propulsion 'gsp';}\n" +
                 "}";
 
-        assertQueriesEqual(reasoner.expandQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
+        assertQueriesEqual(reasoner.expand(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
 
     }
 
@@ -86,7 +85,7 @@ public class CWInferenceTest {
                 "($z, $y) isa owns\n" +
                 "}";
 
-        assertQueriesEqual(reasoner.expandQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
+        assertQueriesEqual(reasoner.expand(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
     }
 
     @Test
@@ -112,7 +111,7 @@ public class CWInferenceTest {
                 "($z, $y) isa owns\n" +
                 "}";
 
-        assertQueriesEqual(reasoner.expandQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
+        assertQueriesEqual(reasoner.expand(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
 
     }
 
@@ -143,7 +142,7 @@ public class CWInferenceTest {
                 "$z isa country\n" +
                 "}; select $x";
 
-        assertQueriesEqual(reasoner.expandQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
+        assertQueriesEqual(reasoner.expand(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
     }
 
     @Test
@@ -171,7 +170,7 @@ public class CWInferenceTest {
             "$x isa person;\n" +
             "$z isa country}} or {$x has nationality 'American';$x isa person} select $x";
 
-        assertQueriesEqual(reasoner.expandQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
+        assertQueriesEqual(reasoner.expand(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
 
     }
 
@@ -194,7 +193,7 @@ public class CWInferenceTest {
         String queryString = "match $x isa criminal;";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
 
-        MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
+        MatchQueryDefault expandedQuery = reasoner.expand(query);
 
         //printMatchQuery(expandedQuery);
 
@@ -244,7 +243,7 @@ public class CWInferenceTest {
                 "($yy, $yyy) isa owns\n" +
                 "}";
 
-        assertQueriesEqual(reasoner.expandQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
+        assertQueriesEqual(reasoner.expand(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
     }
 
     @Test
@@ -270,7 +269,7 @@ public class CWInferenceTest {
                 "($z, $x) isa owns\n" +
                 "}";
 
-        assertQueriesEqual(reasoner.expandQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
+        assertQueriesEqual(reasoner.expand(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
     }
 
 

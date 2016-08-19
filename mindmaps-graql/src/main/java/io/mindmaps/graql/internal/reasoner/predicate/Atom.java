@@ -17,6 +17,7 @@
  */
 package io.mindmaps.graql.internal.reasoner.predicate;
 
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.reasoner.container.Query;
@@ -95,21 +96,10 @@ public class Atom extends AtomBase{
 
         if (resourceMap.size() != 0) {
             if (resourceMap.size() != 1)
-                throw new IllegalArgumentException("Multiple resource types in extractData");
+                throw new IllegalArgumentException(ErrorMessage.PATTERN_NOT_VAR.getMessage(this.toString()));
 
             Map.Entry<VarAdmin, Set<ValuePredicateAdmin>> entry = resourceMap.entrySet().iterator().next();
             value = entry.getValue().iterator().hasNext()? entry.getValue().iterator().next().getPredicate().getValue().toString() : "";
-        }
-        else {
-            if ( isValuePredicate() )
-            {
-                Set<ValuePredicateAdmin> valuePredicates = var.admin().getValuePredicates();
-                if (valuePredicates.size() != 1)
-                    throw new IllegalArgumentException("More than one value predicate in extractAtomFromVar\n"
-                            + atomPattern.toString());
-                else
-                    value = valuePredicates.iterator().next().getPredicate().getValue().toString();
-            }
         }
 
         return value;
