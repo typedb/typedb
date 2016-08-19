@@ -52,6 +52,7 @@ public class TransactionController {
 
         post(RESTUtil.WebPath.NEW_TRANSACTION_URI, this::newTransactionREST);
         get(RESTUtil.WebPath.TRANSACTION_STATUS_URI+RESTUtil.Request.UUID_PARAMETER, this::checkTransactionStatusREST);
+        get(RESTUtil.WebPath.LOADER_STATE_URI, this::loaderState);
 
     }
     @POST
@@ -90,6 +91,21 @@ public class TransactionController {
         } catch (Exception e) {
             e.printStackTrace();
             res.status(400);
+            return e.getMessage();
+        }
+    }
+
+    @GET
+    @Path("/loaderState")
+    @ApiOperation(
+            value = "Returns the state of the RESTLoader.",
+            response = String.class)
+    private String loaderState(Request req, Response res){
+        try {
+            return loader.getLoaderState();
+        } catch (Exception e) {
+            e.printStackTrace();
+            res.status(500);
             return e.getMessage();
         }
     }

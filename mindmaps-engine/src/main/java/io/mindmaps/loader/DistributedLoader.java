@@ -191,7 +191,7 @@ public class DistributedLoader extends Loader {
             return new TransactionState(response);
         } catch (IOException e) {
             e.printStackTrace();
-            return new TransactionState(State.CANCELLED);
+            return new TransactionState(State.ERROR);
         } finally {
             urlConn.disconnect();
         }
@@ -244,7 +244,6 @@ public class DistributedLoader extends Loader {
                     } else if(state.getState() == State.ERROR ){
                         availability.get(host).release();
                         transactions.get(host).remove(transaction);
-
                         markAsError(transaction);
                         LOG.error(state.getException());
                     }

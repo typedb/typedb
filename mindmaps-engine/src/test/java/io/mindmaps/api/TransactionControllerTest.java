@@ -24,8 +24,10 @@ import io.mindmaps.Util;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.factory.GraphFactory;
+import io.mindmaps.loader.TransactionState;
 import io.mindmaps.util.ConfigProperties;
 import io.mindmaps.constants.RESTUtil;
+import mjson.Json;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.junit.After;
@@ -104,6 +106,15 @@ public class TransactionControllerTest {
             }
         }
         assertTrue(status.equals("ERROR"));
+    }
+
+    @Test
+    public void checkLoaderStateTest() {
+        String exampleInvalidInsertQuery = "insert id ?Cdcs;w4. '' ervalue;";
+        given().body(exampleInvalidInsertQuery).
+                when().post(RESTUtil.WebPath.NEW_TRANSACTION_URI + "?graphName=mindmapstest").body().asString();
+        Json resultObj = Json.make(get(RESTUtil.WebPath.LOADER_STATE_URI).then().statusCode(200).and().extract().body().asString());
+        System.out.println(resultObj.toString());
     }
 
     @After
