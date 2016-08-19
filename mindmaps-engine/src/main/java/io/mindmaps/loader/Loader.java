@@ -5,21 +5,20 @@ import io.mindmaps.graql.Var;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * RESTLoader to perform bulk loading into the graph
  */
 public abstract class Loader {
 
-    private AtomicInteger enqueuedJobs;
-    private AtomicInteger loadingJobs;
-    private AtomicInteger finishedJobs;
-    private AtomicInteger errorJobs;
+    protected AtomicInteger enqueuedJobs;
+    protected AtomicInteger loadingJobs;
+    protected AtomicInteger finishedJobs;
+    protected AtomicInteger errorJobs;
 
     protected Collection<Var> batch;
     protected int batchSize;
-    protected int threadNumber;
+    protected int threadsNumber;
 
     public Loader(){
         enqueuedJobs = new AtomicInteger();
@@ -74,8 +73,8 @@ public abstract class Loader {
         this.batchSize = size;
     }
 
-    public void setThreadNumber(int number){
-        this.threadNumber = number;
+    public void setThreadsNumber(int number){
+        this.threadsNumber = number;
     }
 
     /**
