@@ -106,4 +106,22 @@ public class AggregateTest {
 
         assertEquals(groupedResults, count);
     }
+
+    @Test
+    public void testSumLong() {
+        AggregateQuery<Number> query = qb
+                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count"))
+                .aggregate(sum("y"));
+
+        assertEquals(1940L, query.execute());
+    }
+
+    @Test
+    public void testSumDouble() {
+        AggregateQuery<Number> query = qb
+                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-average"))
+                .aggregate(sum("y"));
+
+        assertEquals(27.7d, query.execute().doubleValue(), 0.01d);
+    }
 }
