@@ -21,7 +21,7 @@ package io.mindmaps.api;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.response.Response;
-import io.mindmaps.MindmapsComputer;
+import io.mindmaps.MindmapsComputerImpl;
 import io.mindmaps.Util;
 import io.mindmaps.constants.RESTUtil.GraphConfig;
 import io.mindmaps.core.MindmapsGraph;
@@ -90,6 +90,6 @@ public class GraphFactoryControllerTest {
         assertEquals(graph, graphCopy);
         graph.close();
 
-        assertThat(MindmapsClient.getGraphComputer(), instanceOf(MindmapsComputer.class));
+        assertThat(MindmapsClient.getGraphComputer(), instanceOf(MindmapsComputerImpl.class));
     }
 }

@@ -19,9 +19,10 @@
 package io.mindmaps.factory;
 
 import io.mindmaps.MindmapsComputer;
+import io.mindmaps.MindmapsComputerImpl;
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.constants.RESTUtil;
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.implementation.EngineCommunicator;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
@@ -81,7 +82,7 @@ public class MindmapsClient {
     public static MindmapsComputer getGraphComputer(String uri) {
         ConfigureFactory configuredFactory = configureGraphFactory(uri, RESTUtil.GraphConfig.COMPUTER);
         Graph graph = configuredFactory.factory.getTinkerPopGraph(null, uri, configuredFactory.path);
-        return new MindmapsComputer(graph, configuredFactory.graphComputer);
+        return new MindmapsComputerImpl(graph, configuredFactory.graphComputer);
     }
 
     /**
