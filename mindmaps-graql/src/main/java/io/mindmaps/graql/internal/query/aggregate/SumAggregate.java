@@ -40,6 +40,7 @@ public class SumAggregate extends AbstractAggregate<Map<String, Concept>, Number
     }
 
     private Number add(Number x, Number y) {
+        // This method is necessary because Number doesn't support '+' because java!
         if (x instanceof Long || y instanceof Long) {
             return x.longValue() + y.longValue();
         } else {
