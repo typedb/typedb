@@ -114,6 +114,7 @@ public class TransactionControllerTest {
         given().body(exampleInvalidInsertQuery).
                 when().post(RESTUtil.WebPath.NEW_TRANSACTION_URI + "?graphName=mindmapstest").body().asString();
         Json resultObj = Json.make(get(RESTUtil.WebPath.LOADER_STATE_URI).then().statusCode(200).and().extract().body().asString());
+        System.out.println(resultObj.has("QUEUED"));
         System.out.println(resultObj.toString());
     }
 
