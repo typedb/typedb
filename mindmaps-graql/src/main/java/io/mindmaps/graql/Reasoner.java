@@ -445,9 +445,7 @@ public class Reasoner {
     private Set<Map<String, Concept>> DBlookup(Query query)
     {
         Set<Map<String, Concept>> answers = new HashSet<>();
-
-        List<Map<String, Concept>> results = Lists.newArrayList(query.getMatchQuery().distinct());
-        results.forEach(answers::add);
+        Lists.newArrayList(query.getMatchQuery().distinct()).forEach(answers::add);
 
         return answers;
     }
