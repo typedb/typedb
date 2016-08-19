@@ -18,6 +18,7 @@
 
 package io.mindmaps.graql.internal.reasoner.predicate;
 
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.reasoner.container.Query;
@@ -27,7 +28,7 @@ public class AtomicFactory {
     public static Atomic create(PatternAdmin pattern)
     {
         if (!pattern.isVar() )
-            throw new IllegalArgumentException("Attempted to create an atom from pattern that is not a var: " + pattern.toString());
+            throw new IllegalArgumentException(ErrorMessage.PATTERN_NOT_VAR.getMessage(pattern.toString()));
 
         VarAdmin var = pattern.asVar();
         if(var.isRelation())
@@ -41,7 +42,7 @@ public class AtomicFactory {
     public static Atomic create(PatternAdmin pattern, Query parent)
     {
         if (!pattern.isVar() )
-        throw new IllegalArgumentException("Attempted to create an atom from pattern that is not a var: " + pattern.toString());
+        throw new IllegalArgumentException(ErrorMessage.PATTERN_NOT_VAR.getMessage(pattern.toString()));
 
         VarAdmin var = pattern.asVar();
         if(var.isRelation())

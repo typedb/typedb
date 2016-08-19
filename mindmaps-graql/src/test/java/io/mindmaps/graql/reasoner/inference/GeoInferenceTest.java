@@ -55,7 +55,7 @@ public class GeoInferenceTest {
                         "$y isa country, value 'Poland'; select $x";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         printMatchQueryResults(query.distinct());
-        MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
+        MatchQueryDefault expandedQuery = reasoner.expand(query);
 
 
         String explicitQuery = "match " +
@@ -79,7 +79,7 @@ public class GeoInferenceTest {
                 "$y isa country;\n" +
                 "$y value 'Poland'; select $x";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
-        MatchQueryDefault expandedQuery = reasoner.expandQuery(query);
+        MatchQueryDefault expandedQuery = reasoner.expand(query);
 
         String explicitQuery = "match " +
                 "$x isa university;\n" +

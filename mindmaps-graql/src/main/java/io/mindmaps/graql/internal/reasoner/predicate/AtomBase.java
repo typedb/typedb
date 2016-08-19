@@ -20,6 +20,7 @@ package io.mindmaps.graql.internal.reasoner.predicate;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.graql.*;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
@@ -53,7 +54,7 @@ public abstract class AtomBase implements Atomic{
     public AtomBase(VarAdmin pattern)
     {
         this.atomPattern = pattern;
-        Pair<String, String> varData = getDataFromVar(atomPattern.asVar());
+        Pair<String, String> varData = extractDataFromVar(atomPattern.asVar());
         this.varName = varData.getValue0();
         this.typeId = varData.getValue1();
     }
@@ -61,7 +62,7 @@ public abstract class AtomBase implements Atomic{
     public AtomBase(VarAdmin pattern, Query par)
     {
         this.atomPattern = pattern;
-        Pair<String, String> varData = getDataFromVar(atomPattern.asVar());
+        Pair<String, String> varData = extractDataFromVar(atomPattern.asVar());
         this.varName = varData.getValue0();
         this.typeId = varData.getValue1();
         this.parent = par;
@@ -70,7 +71,7 @@ public abstract class AtomBase implements Atomic{
     public AtomBase(AtomBase a)
     {
         this.atomPattern = a.atomPattern;
-        Pair<String, String> varData = getDataFromVar(atomPattern.asVar());
+        Pair<String, String> varData = extractDataFromVar(atomPattern.asVar());
         varName = varData.getValue0();
         typeId = varData.getValue1();
         a.expansions.forEach(exp -> expansions.add(new Query(exp)));
@@ -137,8 +138,7 @@ public abstract class AtomBase implements Atomic{
         return new DisjunctionImpl<>(expandedPattern);
     }
 
-    @Override
-    public MatchQueryDefault getMatchQuery(MindmapsTransaction graph)
+    protected MatchQueryDefault getBaseMatchQuery(MindmapsTransaction graph)
     {
         QueryBuilder qb = Graql.withTransaction(graph);
         MatchQueryDefault matchQuery = qb.match(getPattern());
@@ -154,7 +154,12 @@ public abstract class AtomBase implements Atomic{
             matchQuery.admin().getPattern().getPatterns().add(new DisjunctionImpl<>(patterns));
         });
 
-        return qb.match(getExpandedPattern()).select(selectVars);
+        return matchQuery.admin().select(selectVars);
+    }
+
+    @Override
+    public MatchQueryDefault getMatchQuery(MindmapsTransaction graph) {
+        return getBaseMatchQuery(graph);
     }
 
     @Override
@@ -236,7 +241,7 @@ public abstract class AtomBase implements Atomic{
     }
 
 
-    private Pair<String, String> getDataFromVar(VarAdmin var) {
+    private Pair<String, String> extractDataFromVar(VarAdmin var) {
 
         String vTypeId;
         String vName = var.getName();
@@ -245,7 +250,7 @@ public abstract class AtomBase implements Atomic{
 
         if (resourceMap.size() != 0) {
             if (resourceMap.size() != 1)
-                throw new IllegalArgumentException("Multiple resource types in extractData");
+                throw new IllegalArgumentException(ErrorMessage.MULTIPLE_RESOURCES.getMessage(var.toString()));
 
             Map.Entry<VarAdmin, Set<ValuePredicateAdmin>> entry = resourceMap.entrySet().iterator().next();
             vTypeId = entry.getKey().getId().get();

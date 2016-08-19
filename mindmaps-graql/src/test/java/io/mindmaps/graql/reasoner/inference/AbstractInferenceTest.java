@@ -49,7 +49,7 @@ public class AbstractInferenceTest {
     {
         String queryString = "match $x isa Q;";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
-        MatchQueryDefault expQuery = reasoner.expandQuery(query);
+        MatchQueryDefault expQuery = reasoner.expand(query);
 
         String explicitQuery = "match " +
                 "{$x isa Q} or {\n" +
@@ -69,7 +69,7 @@ public class AbstractInferenceTest {
                         "$y isa P;\n" +
                         "($y, $yy) isa REL; select $yy";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
-        MatchQueryDefault expQuery = reasoner.expandQuery(query);
+        MatchQueryDefault expQuery = reasoner.expand(query);
 
         String explicitQuery = "match " +
                                 "{$yy isa Q} or {" +

@@ -20,6 +20,7 @@ package io.mindmaps.graql.internal.reasoner.container;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.model.Rule;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.*;
@@ -33,7 +34,6 @@ import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
 
 import java.util.*;
 
-import static io.mindmaps.graql.internal.reasoner.Utility.isAtomRecursive;
 
 public class Query {
 
@@ -42,41 +42,49 @@ public class Query {
     private final Set<Atomic> atomSet;
     private final Map<Type, Set<Atomic>> typeAtomMap;
 
-    private MatchQueryDefault matchQuery;
-
     private Atomic parentAtom = null;
     private Rule rule = null;
+
+    private final Set<String> selectVars;
+    private final Conjunction<PatternAdmin> pattern;
 
     public Query(String query, MindmapsTransaction transaction) {
         this.graph = transaction;
         QueryParser qp = QueryParser.create(graph);
-        this.matchQuery = qp.parseMatchQuery(query).getMatchQuery();
-        this.atomSet = getAtomSet(matchQuery);
+        MatchQueryDefault matchQuery = qp.parseMatchQuery(query).getMatchQuery();
+        this.pattern = matchQuery.admin().getPattern();
+        this.selectVars = Sets.newHashSet(matchQuery.admin().getSelectedNames());
+
+        this.atomSet = getAtomSet(pattern);
         this.typeAtomMap = getTypeAtomMap(atomSet);
     }
 
     public Query(String query, Rule r, MindmapsTransaction transaction) {
-        this.graph = transaction;
-        QueryParser qp = QueryParser.create(graph);
-        this.matchQuery = qp.parseMatchQuery(query).getMatchQuery();
-        this.atomSet = getAtomSet(matchQuery);
-        this.typeAtomMap = getTypeAtomMap(atomSet);
+        this(query, transaction);
         this.rule = r;
     }
 
     public Query(MatchQueryDefault query, MindmapsTransaction transaction) {
         this.graph = transaction;
-        this.matchQuery = query;
-        this.atomSet = getAtomSet(matchQuery);
+
+        this.pattern = query.admin().getPattern();
+        this.selectVars = Sets.newHashSet(query.admin().getSelectedNames());
+
+        this.atomSet = getAtomSet(pattern);
         this.typeAtomMap = getTypeAtomMap(atomSet);
     }
 
     public Query(Query q) {
         this.graph = q.graph;
         QueryParser qp = QueryParser.create(graph);
-        this.matchQuery = qp.parseMatchQuery(q.toString()).getMatchQuery();
-        this.atomSet = getAtomSet(matchQuery);
 
+        MatchQueryDefault matchQuery = qp.parseMatchQuery(q.toString()).getMatchQuery();
+        this.pattern = matchQuery.admin().getPattern();
+        this.selectVars = Sets.newHashSet(matchQuery.admin().getSelectedNames());
+
+        this.atomSet = getAtomSet(pattern);
+
+        //copy expansions
         for (Atomic qAtom : q.atomSet) {
             Set<Query> expansions = qAtom.getExpansions();
             for (Query exp : expansions) {
@@ -93,33 +101,21 @@ public class Query {
     //atomic conversion
     public Query(Atomic atom) {
         if (atom.getParentQuery() == null)
-            throw new IllegalArgumentException("Attempting conversion to query on atom without parent");
+            throw new IllegalArgumentException(ErrorMessage.PARENT_MISSING.getMessage(atom.toString()));
         this.graph = atom.getParentQuery().getTransaction();
-        this.matchQuery = atom.getMatchQuery(graph);
+        MatchQueryDefault matchQuery = atom.getMatchQuery(graph);
+        this.pattern = matchQuery.admin().getPattern();
+        this.selectVars = Sets.newHashSet(matchQuery.admin().getSelectedNames());
 
         atomSet = new HashSet<>();
         atomSet.add(atom);
         atomSet.addAll(atom.getSubstitutions());
-        //this.atomSet = getAtomSet(matchQuery);
 
         this.typeAtomMap = getTypeAtomMap(atomSet);
     }
 
     @Override
-    public String toString() {
-        return matchQuery.toString();
-    }
-
-    public void printAtoms() {
-        atomSet.forEach(Atomic::print);
-    }
-
-    public void printTypeAtomMap() {
-        for (Map.Entry<Type, Set<Atomic>> entry : typeAtomMap.entrySet()) {
-            System.out.println("type: " + entry.getKey());
-            entry.getValue().forEach(a -> System.out.println("atom: " + a.toString()));
-        }
-    }
+    public String toString() { return getMatchQuery().toString();}
 
     public MindmapsTransaction getTransaction(){ return graph;}
     public Rule getRule(){ return rule;}
@@ -183,6 +179,7 @@ public class Query {
         return typeAtomMap.get(type);
     }
 
+    public Set<String> getSelectVars(){ return selectVars;}
     public Set<String> getVarSet() {
         Set<String> vars = new HashSet<>();
         atomSet.forEach(atom -> vars.addAll(atom.getVarNames()));
@@ -216,6 +213,7 @@ public class Query {
     public boolean containsAtom(Atomic atom){ return atomSet.contains(atom);}
     public boolean containsEquivalentAtom(Atomic atom){
         boolean isContained = false;
+
         Iterator<Atomic> it = atomSet.iterator();
         while( it.hasNext() && !isContained)
             isContained = atom.isEquivalent(it.next());
@@ -223,42 +221,22 @@ public class Query {
         return isContained;
     }
 
-    public boolean hasRecursiveAtoms()
-    {
-        boolean hasRecursiveAtoms = false;
-        Iterator<Atomic> it = atomSet.iterator();
-        while(it.hasNext() && !hasRecursiveAtoms)
-            hasRecursiveAtoms = isAtomRecursive(it.next(), graph);
-
-        return hasRecursiveAtoms;
-    }
-
-    //TODO Does it violate Horn clause limits?
-    private void addPattern(PatternAdmin newPattern) {
-        matchQuery.admin().getPattern().getPatterns().add(newPattern);
-    }
 
     private void replacePattern(PatternAdmin oldPattern, PatternAdmin newPattern) {
         PatternAdmin toRemove = oldPattern;
 
-        for(PatternAdmin pat : matchQuery.admin().getPattern().getPatterns())
+        for(PatternAdmin pat : pattern.getPatterns())
             if(pat.equals(oldPattern))
                 toRemove = pat;
 
-        matchQuery.admin().getPattern().getPatterns().remove(toRemove);
-        matchQuery.admin().getPattern().getPatterns().add(newPattern);
+        pattern.getPatterns().remove(toRemove);
+        pattern.getPatterns().add(newPattern);
     }
 
-    private void updateSelectedVars(String from, String to)
-    {
-        Set<String> selectedVars = new HashSet<>(matchQuery.admin().getSelectedNames());
-        Conjunction<PatternAdmin> pattern = matchQuery.admin().getPattern();
-        if (selectedVars.contains(from))
-        {
-            selectedVars.remove(from);
-            selectedVars.add(to);
-            QueryBuilder qb = Graql.withTransaction(graph);
-            matchQuery = qb.match(pattern).select(selectedVars);
+    private void updateSelectedVars(String from, String to) {
+        if (selectVars.contains(from)) {
+            selectVars.remove(from);
+            selectVars.add(to);
         }
     }
 
@@ -303,7 +281,7 @@ public class Query {
 
 
     private Disjunction<Conjunction<VarAdmin>> getDNF(){
-        return matchQuery.admin().getPattern().getDisjunctiveNormalForm();}
+        return pattern.getDisjunctiveNormalForm();}
 
     /**
      * @return set of conjunctions from the DNF
@@ -327,13 +305,10 @@ public class Query {
         return getExpandedMatchQuery().admin().getPattern().getDisjunctiveNormalForm();
     }
 
-    public MatchQueryDefault getMatchQuery() {
-        return matchQuery;
-    }
+    public MatchQueryDefault getMatchQuery() { return Graql.match(pattern).select(selectVars).withTransaction(graph);}
 
     public MatchQueryDefault getExpandedMatchQuery() {
 
-        Set<String> selectVars = matchQuery.admin().getSelectedNames();
         Set<AtomConjunction> conjunctions = getAtomConjunctions();
 
         atomSet.forEach(atom -> {
@@ -366,17 +341,17 @@ public class Query {
 
     }
 
-    public PatternAdmin getPattern() {
-        return getMatchQuery().admin().getPattern();
+    public Conjunction<PatternAdmin> getPattern() {
+        return pattern;
     }
     public PatternAdmin getExpandedPattern() {
         return getExpandedMatchQuery().admin().getPattern();
     }
 
-    private Set<Atomic> getAtomSet(MatchQueryDefault query) {
+    private Set<Atomic> getAtomSet(Conjunction<PatternAdmin> pat) {
         Set<Atomic> atoms = new HashSet<>();
 
-        Set<VarAdmin> vars = query.admin().getPattern().getVars();
+        Set<VarAdmin> vars = pat.getVars();
         vars.forEach(var ->
         {
             Atomic atom = AtomicFactory.create(var, this);
@@ -441,7 +416,12 @@ public class Query {
     public void addAtom(Atomic atom)
     {
         atomSet.add(atom);
-        matchQuery.admin().getPattern().getPatterns().add(atom.getPattern());
+        pattern.getPatterns().add(atom.getPattern());
+    }
+    public void removeAtom(Atomic atom)
+    {
+        atomSet.remove(atom);
+        pattern.getPatterns().remove(atom.getPattern());
     }
 
     /**

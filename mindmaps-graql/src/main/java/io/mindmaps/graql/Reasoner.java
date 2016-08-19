@@ -26,6 +26,8 @@ import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.RoleType;
 import io.mindmaps.core.model.Rule;
 import io.mindmaps.core.model.Type;
+import io.mindmaps.graql.admin.PatternAdmin;
+import io.mindmaps.graql.internal.query.Conjunction;
 import io.mindmaps.graql.internal.reasoner.container.Query;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.Relation;
@@ -440,56 +442,86 @@ public class Reasoner {
         return expansions;
     }
 
-    private Set<Set<Substitution>> DBlookup(Query query)
+    private Set<Map<String, Concept>> DBlookup(Query query)
     {
-        Set<Set<Substitution>> answers = new HashSet<>();
+        Set<Map<String, Concept>> answers = new HashSet<>();
 
-        List<Map<String, Concept>> results = Lists.newArrayList(query.getMatchQuery());
-
-        results.forEach(result -> {
-            Set<Substitution> sub = new HashSet<>();
-            result.forEach( (k,v) -> sub.add(new Substitution(k, v.getId())) );
-            answers.add(sub);
-        });
+        List<Map<String, Concept>> results = Lists.newArrayList(query.getMatchQuery().distinct());
+        results.forEach(answers::add);
 
         return answers;
     }
 
-    private Set<Set<Substitution>> joinSubstitutions(Set<Set<Substitution>> subs, Set<Set<Substitution>> localSubs)
-    {
-        if(localSubs.isEmpty()) return subs;
+    private void materializeAnswers(Query atomicQuery, Set<Map<String, Concept>> answers){
 
-        Set<Set<Substitution>> join = new HashSet<>();
-        if(subs.isEmpty()) {
-            join.addAll(localSubs);
-            return join;
+        Set<String> vars = atomicQuery.getSelectVars();
+
+        Set<Map<String, Concept>> incompleteAnswers = new HashSet<>();
+        for(Map<String, Concept> answer : answers){
+            boolean isComplete = true;
+            Iterator<String> it = vars.iterator();
+            while(it.hasNext() && isComplete)
+                isComplete = answer.containsKey(it.next());
+
+            if (isComplete) {
+                Set<String> toRemove = new HashSet<>();
+                answer.keySet().forEach(var -> {
+                    if (!vars.contains(var)) toRemove.add(var);
+                });
+                toRemove.forEach(answer::remove);
+            }
+            else incompleteAnswers.add(answer);
         }
 
-        //TODO work with maps
-        for( Set<Substitution> lanswer : localSubs)
-        {
-            for (Set<Substitution> answer : subs) {
+        answers.removeAll(incompleteAnswers);
 
+        answers.forEach(answer -> {
+            Set<Substitution> subs = new HashSet<>();
+            answer.forEach((var, con) -> {
+                Substitution sub = new Substitution(var, con);
+                if (!atomicQuery.containsAtom(sub))
+                    subs.add(sub);
+            });
+            subs.forEach(atomicQuery::addAtom);
+            if (!atomicQuery.getMatchQuery().ask().execute()) {
+                InsertQuery insert = Graql.insert(atomicQuery.getPattern().getVars()).withTransaction(graph);
+                insert.execute();
+                if (!atomicQuery.getMatchQuery().ask().execute())
+                    throw new IllegalStateException("Insert query failed");
+            }
+
+            subs.forEach(atomicQuery::removeAtom);
+
+        });
+
+    }
+
+    private Set<Map<String, Concept>> joinSubstitutions(Set<Map<String, Concept>> tuples, Set<Map<String, Concept>> localTuples)
+    {
+        if(localTuples.isEmpty()) return tuples;
+
+        if(tuples.isEmpty()) {
+            return Sets.newHashSet(localTuples);
+        }
+
+        Set<Map<String, Concept>> join = new HashSet<>();
+        for( Map<String, Concept> lanswer : localTuples){
+            for (Map<String, Concept> answer : tuples){
                 boolean isCompatible = true;
-
-                Iterator<Substitution> itl = lanswer.iterator();
-                while( itl.hasNext() && isCompatible)
-                {
-                    Substitution lsub = itl.next();
-                    Iterator<Substitution> its = answer.iterator();
-                    while (its.hasNext() && isCompatible) {
-                        Substitution sub = its.next();
-                        if (lsub.getVarName().equals(sub.getVarName()) &&
-                                !lsub.getVal().equals(sub.getVal()))
-                            isCompatible = false;
-                    }
+                Iterator<Map.Entry<String, Concept>> it = lanswer.entrySet().iterator();
+                while(it.hasNext() && isCompatible) {
+                    Map.Entry<String, Concept> entry = it.next();
+                    String var = entry.getKey();
+                    Concept concept = entry.getValue();
+                    if(answer.containsKey(var) && !concept.equals(answer.get(var)))
+                        isCompatible = false;
                 }
 
                 if (isCompatible) {
-                    Set<Substitution> janswer = new HashSet<>();
-                    janswer.addAll(lanswer);
-                    janswer.addAll(answer);
-                    join.add(janswer);
+                    Map<String, Concept> merged = new HashMap<>();
+                    merged.putAll(lanswer);
+                    merged.putAll(answer);
+                    join.add(merged);
                 }
             }
         }
@@ -498,12 +530,12 @@ public class Reasoner {
 
     }
 
-    private Set<Set<Substitution>> Answer(Atomic atom, Set<Query> subGoals, Map<String, Type> varMap)
+    private Set<Map<String, Concept>> Answer(Atomic atom, Set<Query> subGoals, Map<String, Type> varMap)
     {
         //corresponding atomic query
         Query query = new Query(atom);
 
-        Set<Set<Substitution>> allSubs = DBlookup(query);
+        Set<Map<String, Concept>> allSubs = DBlookup(query);
 
         //check whether query was already computed
         boolean queryAdmissible = true;
@@ -521,57 +553,65 @@ public class Reasoner {
                 atom.getSubstitutions().forEach(sub -> {
                     if (ruleBody.containsVar(sub.getVarName())) ruleBody.addAtom(sub);
                 });
-                //add constraints
-                if(atom.isRelation())
-                    ((Relation) atom).getTypeConstraints().forEach(c -> {
-                        if (ruleBody.containsVar(c.getVarName())) ruleBody.addAtom(c);
-                    });
 
-                Set<Set<Substitution>> subs = new HashSet<>();
+                Set<Map<String, Concept>> subs = new HashSet<>();
 
                 //go through each unified atom
                 Set<Atomic> atoms = ruleBody.selectAtoms();
                 for( Atomic at : atoms)
                 {
                     subGoals.add(query);
-                    Set<Set<Substitution>> localSubs = Answer(at, subGoals, varMap);
-
-                    //TODO materialize/store results if needed
+                    Set<Map<String, Concept>> localSubs = Answer(at, subGoals, varMap);
 
                     subs = joinSubstitutions(subs, localSubs);
                 }
+
+                //materialize inferred results in subs if needed
+                materializeAnswers(query, subs);
 
                 //merge results
                 allSubs.addAll(subs);
             }
         }
-        //TODO materialize/store results if needed
 
         return allSubs;
     }
 
-
-    private Set<Map<String, Concept>> resolveQuery(Query query, Map<String, Type> varMap)
+    private Set<Map<String, Concept>> resolveAtomicQuery(Atomic atom)
     {
-        Set<Set<Substitution>> answers = new HashSet<>();
+        Set<Map<String, Concept>> subAnswers = new HashSet<>();
+        int dAns = 0;
+        do {
+            Set<Query> subGoals = new HashSet<>();
+            Map<String, Type> varMap = atom.getParentQuery().getVarTypeMap();
+            dAns = subAnswers.size();
+            subAnswers = Answer(atom, subGoals, varMap);
+
+            dAns = subAnswers.size() - dAns;
+        } while(dAns != 0);
+
+        return subAnswers;
+    }
+
+
+    private Set<Map<String, Concept>> resolveQuery(Query query)
+    {
+        Set<Map<String, Concept>> answers = new HashSet<>();
         Set<Atomic> atoms = query.selectAtoms();
 
         for(Atomic atom: atoms){
-            //TODO do until no new answers are produced
-            Set<Query> subGoals = new HashSet<>();
-            Set<Set<Substitution>> subs = Answer(atom, subGoals, varMap);
-
-            answers = joinSubstitutions(answers, subs);
+            Set<Map<String, Concept>> subAnswers = resolveAtomicQuery(atom);
+            answers = joinSubstitutions(answers, subAnswers);
         }
 
-        //compile answers
+        //filter answers
         Set<String> selectVars = query.getMatchQuery().admin().getSelectedNames();
         Set<Map<String, Concept>> results =  new HashSet<>();
         answers.forEach(answer -> {
             Map<String, Concept> map = new HashMap<>();
-            answer.forEach(sub -> {
-                if(selectVars.contains(sub.getVarName()))
-                    map.put(sub.getVarName(), graph.getConcept(sub.getVal()));
+            answer.forEach((var, concept) -> {
+                if(selectVars.contains(var))
+                    map.put(var, concept);
             });
             if (!map.isEmpty()) results.add(map);
         });
@@ -622,12 +662,10 @@ public class Reasoner {
      * @param inputQuery the query string to be expanded
      * @return set of answers
      */
-    public Set<Map<String, Concept>> resolveQuery(MatchQueryDefault inputQuery)
+    public Set<Map<String, Concept>> resolve(MatchQueryDefault inputQuery)
     {
         Query query = new Query(inputQuery, graph);
-        Map<String, Type> varMap = query.getVarTypeMap();
-
-        return resolveQuery(query, varMap);
+        return resolveQuery(query);
     }
 
     /**
@@ -635,9 +673,8 @@ public class Reasoner {
      * @param inputQuery the query string to be expanded
      * @return expanded query string
      */
-    public MatchQueryDefault expandQuery(MatchQueryDefault inputQuery)
+    public MatchQueryDefault expand(MatchQueryDefault inputQuery)
     {
-
         Query query = new Query(inputQuery, graph);
         Map<String, Type> varMap = query.getVarTypeMap();
 

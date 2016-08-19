@@ -19,16 +19,14 @@
 package io.mindmaps.graql.internal.reasoner.predicate;
 
 import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.model.RoleType;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQueryDefault;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Var;
-import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.query.ConjunctionImpl;
-import io.mindmaps.graql.internal.query.DisjunctionImpl;
 import io.mindmaps.graql.internal.reasoner.container.Query;
 import org.javatuples.Pair;
 
@@ -118,31 +116,6 @@ public class Relation extends AtomBase{
     }
 
     @Override
-    public MatchQueryDefault getMatchQuery(MindmapsTransaction graph)
-    {
-        QueryBuilder qb = Graql.withTransaction(graph);
-        MatchQueryDefault matchQuery = qb.match(getPattern());
-
-        //add substitutions
-        Map<String, Set<Atomic>> varSubMap = getVarSubMap();
-        Set<String> selectVars = getVarNames();
-        //form a disjunction of each set of subs for a given variable and add to query
-        varSubMap.forEach( (key, val) -> {
-            //selectVars.remove(key);
-            Set<PatternAdmin> patterns = new HashSet<>();
-            val.forEach(sub -> patterns.add(sub.getPattern()));
-            matchQuery.admin().getPattern().getPatterns().add(new DisjunctionImpl<>(patterns));
-        });
-
-        //add constraints
-        Set<PatternAdmin> patterns = new HashSet<>();
-        getTypeConstraints().forEach(c -> patterns.add(c.getPattern()));
-        matchQuery.admin().getPattern().getPatterns().add(new ConjunctionImpl<>(patterns));
-
-        return matchQuery.select(selectVars);
-    }
-
-    @Override
     public MatchQueryDefault getExpandedMatchQuery(MindmapsTransaction graph)
     {
         QueryBuilder qb = Graql.withTransaction(graph);
@@ -190,7 +163,7 @@ public class Relation extends AtomBase{
 
     @Override
     public String getVal(){
-        throw new IllegalAccessError("getVal() on a relation atom!");
+        throw new IllegalAccessError(ErrorMessage.NO_VAL_IN_RELATION.getMessage());
     }
 
     /**

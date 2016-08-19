@@ -20,6 +20,7 @@ package io.mindmaps.graql.internal.reasoner;
 
 import com.google.common.collect.Lists;
 import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.RoleType;
 import io.mindmaps.core.model.Rule;
@@ -45,6 +46,17 @@ public class Utility {
         }
     }
 
+    public static void printAnswers(Set<Map<String, Concept>> answers)
+    {
+        for (Map<String, Concept> result : answers) {
+            for (Map.Entry<String, Concept> entry : result.entrySet()) {
+                Concept concept = entry.getValue();
+                System.out.print(entry.getKey() + ": " + concept.getId() + " : " + concept.getValue() + " ");
+            }
+            System.out.println();
+        }
+    }
+
     public static Type getRuleConclusionType(Rule rule)
     {
         Set<Type> types = new HashSet<>();
@@ -53,7 +65,7 @@ public class Utility {
             if (!type.isRoleType()) types.add(type);
 
         if (types.size() > 1)
-            throw new IllegalArgumentException("Found more than single conclusion type!");
+            throw new IllegalArgumentException(ErrorMessage.NON_HORN_RULE.getMessage(rule.getId()));
 
         return types.iterator().next();
     }
@@ -62,7 +74,7 @@ public class Utility {
     {
         Set<Atomic> atoms = ruleRHS.getAtomsWithType(type);
         if (atoms.size() > 1)
-            throw new IllegalArgumentException("Found more than single relevant conclusion atom!");
+            throw new IllegalArgumentException(ErrorMessage.NON_HORN_RULE.getMessage(ruleLHS.getRule().getId()));
 
         Atomic atom = atoms.iterator().next();
         atom.setParentQuery(ruleLHS);
