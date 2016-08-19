@@ -65,6 +65,7 @@ public class TransactionController {
             @ApiImplicitParam(name = "graphName", value = "Name of graph to use", dataType = "string", paramType = "query")
     })
     private String newTransactionREST(Request req, Response res){
+        System.out.println(req.body());
         String currentGraphName = req.queryParams(RESTUtil.Request.GRAPH_NAME_PARAM);
         if (currentGraphName == null) currentGraphName = defaultGraphName;
         UUID uuid = loader.addJob(currentGraphName, req.body());

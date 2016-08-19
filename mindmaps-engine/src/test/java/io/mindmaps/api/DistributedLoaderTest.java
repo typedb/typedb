@@ -22,9 +22,10 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.MindmapsTransaction;
-import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
+import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.Var;
 import io.mindmaps.loader.DistributedLoader;
@@ -43,10 +44,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
-import static io.mindmaps.graql.Graql.insert;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -123,8 +120,8 @@ public class DistributedLoaderTest {
                     .map(x -> x.admin().asVar())
                     .forEach(ontologyBatch::add);
 
-            MindmapsTransaction transaction = graph.newTransaction();
-            QueryBuilder.build(transaction).insert(ontologyBatch).execute();
+            MindmapsTransaction transaction = graph.getTransaction();
+            Graql.withTransaction(transaction).insert(ontologyBatch).execute();
             transaction.commit();
 
         } catch (FileNotFoundException|MindmapsValidationException e) {

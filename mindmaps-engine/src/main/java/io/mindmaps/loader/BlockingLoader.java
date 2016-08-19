@@ -36,7 +36,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-public class BlockingLoader {
+import static io.mindmaps.graql.Graql.insert;
+
 
 /**
  * RESTLoader that submits tasks to locally running engine and performs basic load balancing.
@@ -54,13 +55,13 @@ public class BlockingLoader extends Loader {
     public BlockingLoader(String graphNameInit) {
 
         ConfigProperties prop = ConfigProperties.getInstance();
-        numThreads = prop.getPropertyAsInt(ConfigProperties.NUM_THREADS_PROPERTY);
+        threadsNumber = prop.getPropertyAsInt(ConfigProperties.NUM_THREADS_PROPERTY);
         batchSize = prop.getPropertyAsInt(ConfigProperties.BATCH_SIZE_PROPERTY);
         repeatCommits = prop.getPropertyAsInt(ConfigProperties.LOADER_REPEAT_COMMITS);
         graphName = graphNameInit;
         cache = Cache.getInstance();
-        executor = Executors.newFixedThreadPool(numThreads);
-        transactionsSemaphore = new Semaphore(numThreads * 3);
+        executor = Executors.newFixedThreadPool(threadsNumber);
+        transactionsSemaphore = new Semaphore(threadsNumber * 3);
         batch = new HashSet<>();
     }
 
@@ -96,7 +97,7 @@ public class BlockingLoader extends Loader {
             throw new RuntimeException(e);
         } finally {
             LOG.info("ALL TASKS DONE!");
-            executor = Executors.newFixedThreadPool(numThreads);
+            executor = Executors.newFixedThreadPool(threadsNumber);
         }
     }
 

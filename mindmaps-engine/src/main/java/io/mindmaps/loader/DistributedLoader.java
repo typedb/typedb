@@ -51,6 +51,7 @@ public class DistributedLoader extends Loader {
     private String[] hostsArray;
 
     private Map<String, Semaphore> availability;
+    private Map<String, Integer> jobsFinished;
 
     private static final String POST = "http://%s:" +
             ConfigProperties.getInstance().getProperty(ConfigProperties.SERVER_PORT_NUMBER) +
@@ -74,6 +75,9 @@ public class DistributedLoader extends Loader {
         // create availability map
         availability = new HashMap<>();
         hosts.forEach(h -> availability.put(h, new Semaphore(threadsNumber)));
+
+        jobsFinished = new HashMap<>();
+        hosts.forEach(h -> jobsFinished.put(h, 0));
     }
 
     /**
@@ -131,7 +135,7 @@ public class DistributedLoader extends Loader {
      * @return true if all transactions have finished
      */
     private boolean transactionsIsEmpty() {
-        return availability.values().stream().allMatch(a -> a.availablePermits() == 0);
+        return availability.values().stream().allMatch(a -> a.availablePermits() == threadsNumber);
     }
 
     /**
@@ -166,14 +170,16 @@ public class DistributedLoader extends Loader {
             for (String host : availability.keySet()) {
 
                 Json state = Json.read(getHostState(host));
+                System.out.println(state);
 
                 int queued = state.at(State.QUEUED.name()).asInteger();
-                int loading = state.at(State.QUEUED.name()).asInteger();
-                int error = state.at(State.QUEUED.name()).asInteger();
-                int finished = state.at(State.QUEUED.name()).asInteger();
+                int loading = state.at(State.LOADING.name()).asInteger();
+                int error = state.at(State.ERROR.name()).asInteger();
+                int finished = state.at(State.FINISHED.name()).asInteger();
 
-                int permitsToRelease = threadsNumber - queued - loading;
+                int permitsToRelease = finished - jobsFinished.get(host);
                 availability.get(host).release(permitsToRelease);
+                jobsFinished.put(host, finished);
 
                 runningQueued += queued;
                 runningLoading += loading;
@@ -210,7 +216,6 @@ public class DistributedLoader extends Loader {
         while (!availability.get(host).tryAcquire()) {
             host = nextHost();
         }
-    }
 
         return getHost(host, POST);
     }

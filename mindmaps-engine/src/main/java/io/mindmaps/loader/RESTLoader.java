@@ -33,8 +33,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -46,7 +44,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static io.mindmaps.loader.TransactionState.State;
 
@@ -126,10 +123,13 @@ public class RESTLoader {
         loadingJobs.incrementAndGet();
         enqueuedJobs.decrementAndGet();
 
-        for (int i = 0; i < repeatCommits; i++) {
-            MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) GraphFactory.getInstance().getGraphBatchLoading(name).getTransaction();
+        System.out.println(batch);
 
+        for (int i = 0; i < repeatCommits; i++) {
+
+            MindmapsTransactionImpl transaction = null;
             try {
+                transaction = (MindmapsTransactionImpl) GraphFactory.getInstance().getGraphBatchLoading(name).getTransaction();
                 QueryParser.create(transaction).parseInsertQuery(batch).execute();
                 transaction.commit();
                 cache.addJobCasting(name, transaction.getModifiedCastingIds());
@@ -147,10 +147,10 @@ public class RESTLoader {
                 return;
             } catch (IllegalArgumentException e) {
                 //If it's a parsing exception there is no point in re-trying
-                LOG.error(ErrorMessage.PARSING_EXCEPTION.getMessage(e.getMessage()));
-                logToFile(batch, ErrorMessage.PARSING_EXCEPTION.getMessage(e.getMessage()));
+                LOG.error(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION.getMessage(e.getMessage()));
+                logToFile(batch, ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION.getMessage(e.getMessage()));
                 loaderState.get(uuid).setState(State.ERROR);
-                loaderState.get(uuid).setException(ErrorMessage.PARSING_EXCEPTION.getMessage(e.getMessage()));
+                loaderState.get(uuid).setException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION.getMessage(e.getMessage()));
                 errorJobs.incrementAndGet();
                 return;
             } catch (Exception e) {
