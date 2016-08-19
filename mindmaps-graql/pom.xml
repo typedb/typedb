@@ -56,8 +56,8 @@
             <groupId>io.mindmaps</groupId>
             <artifactId>mindmaps-core</artifactId>
             <version>${project.version}</version>
-            <scope>test</scope>
         </dependency>
+
     </dependencies>
 
     <build>
