@@ -83,7 +83,6 @@ public class RESTLoader {
 
     private RESTLoader() {
         cache = Cache.getInstance();
-        executor = Executors.newFixedThreadPool(8);
         loaderState = new ConcurrentHashMap<>();
         enqueuedJobs = new AtomicInteger();
         loadingJobs = new AtomicInteger();
@@ -93,6 +92,9 @@ public class RESTLoader {
         maintenanceInProcess = new AtomicBoolean(false);
         loggingFilePath = ConfigProperties.getInstance().getProperty(ConfigProperties.LOGGING_FILE_PATH);
         repeatCommits = ConfigProperties.getInstance().getPropertyAsInt(ConfigProperties.LOADER_REPEAT_COMMITS);
+
+        int numberThreads = ConfigProperties.getInstance().getPropertyAsInt(ConfigProperties.NUM_THREADS_PROPERTY);
+        executor = Executors.newFixedThreadPool(numberThreads);
     }
 
     public static synchronized RESTLoader getInstance() {
@@ -122,8 +124,6 @@ public class RESTLoader {
         loaderState.put(uuid, new TransactionState(State.LOADING));
         loadingJobs.incrementAndGet();
         enqueuedJobs.decrementAndGet();
-
-        System.out.println(batch);
 
         for (int i = 0; i < repeatCommits; i++) {
 

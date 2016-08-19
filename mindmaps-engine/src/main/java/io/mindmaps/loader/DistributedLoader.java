@@ -80,6 +80,14 @@ public class DistributedLoader extends Loader {
         hosts.forEach(h -> jobsFinished.put(h, 0));
     }
 
+    @Override
+    public void setThreadsNumber(int number){
+        this.threadsNumber = number;
+
+        // create availability map
+        availability.keySet().forEach(h -> availability.put(h, new Semaphore(threadsNumber)));
+    }
+
     /**
      * Block the main thread until all of the transactions have finished loading
      */
@@ -195,7 +203,7 @@ public class DistributedLoader extends Loader {
             printLoaderState();
 
             try {
-                Thread.sleep(3000);
+                Thread.sleep(30000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
