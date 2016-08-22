@@ -20,6 +20,7 @@ package io.mindmaps.graql.reasoner.inference;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.MatchQueryDefault;
 import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.Reasoner;
@@ -27,6 +28,10 @@ import io.mindmaps.graql.reasoner.graphs.GenericGraph;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.Map;
+import java.util.Set;
+
+import static io.mindmaps.graql.internal.reasoner.Utility.printAnswers;
 import static org.junit.Assert.assertEquals;
 
 public class RecursiveInferenceTest {
@@ -151,6 +156,27 @@ public class RecursiveInferenceTest {
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
 
         String explicitQuery = "match $x id 'a2';";
+
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
+    }
+
+    @Test
+    public void testReachability(){
+        MindmapsTransaction graph = GenericGraph.getTransaction("reachability-test.gql");
+        QueryParser qp = QueryParser.create(graph);
+        Reasoner reasoner = new Reasoner(graph);
+
+        String queryString = "match (reach-from $x, reach-to $y) isa reachable";
+        MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
+
+        String explicitQuery = "match $x isa vertex;$y isa vertex;" +
+                "{$x id 'a';$y id 'b'} or" +
+                "{$x id 'b';$y id 'c'} or" +
+                "{$x id 'c';$y id 'c'} or" +
+                "{$x id 'c';$y id 'd'} or" +
+                "{$x id 'a';$y id 'c'} or" +
+                "{$x id 'b';$y id 'd'} or" +
+                "{$x id 'a';$y id 'd'}";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }

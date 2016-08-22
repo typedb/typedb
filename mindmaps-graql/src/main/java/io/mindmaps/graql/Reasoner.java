@@ -514,7 +514,6 @@ public class Reasoner {
                     subGoals.add(atomicQuery);
                     Set<Map<String, Concept>> localSubs = Answer(at, subGoals, varMap);
                     subs = joinSubstitutions(subs, localSubs);
-                    System.out.println();
                 }
 
                 materializeAnswers(atomicQuery, subs);
