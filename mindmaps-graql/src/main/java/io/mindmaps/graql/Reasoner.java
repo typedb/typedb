@@ -522,7 +522,7 @@ public class Reasoner {
             }
         }
 
-        return allSubs.stream().distinct().collect(Collectors.toSet());
+        return allSubs;
     }
 
     private Set<Map<String, Concept>> resolveAtomicQuery(Atomic atom) {
@@ -536,7 +536,7 @@ public class Reasoner {
             dAns = subAnswers.size() - dAns;
         } while(dAns != 0);
 
-        return subAnswers.stream().distinct().collect(Collectors.toSet());
+        return subAnswers;
     }
 
     private Set<Map<String, Concept>> filterAnswers(Query query, Set<Map<String, Concept>> answers) {
