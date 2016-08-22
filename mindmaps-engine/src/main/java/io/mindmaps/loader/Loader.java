@@ -1,5 +1,8 @@
 package io.mindmaps.loader;
 
+import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.Var;
 
 import java.util.Collection;
@@ -50,14 +53,14 @@ public abstract class Loader {
      * @param vars to be loaded
      */
     public void addToQueue(String vars){
-
+        addToQueue(QueryParser.create().parseInsertQuery(vars).admin().getVars());
     }
 
     /**
      * Add multiple vars to the queue. These should be inserted in one transaction.
      * @param vars to be loaded
      */
-    public void addToQueue(Collection<Var> vars){
+    public void addToQueue(Collection<? extends Var> vars){
         batch.addAll(vars);
         if(batch.size() > batchSize){
             submitBatch(batch);
