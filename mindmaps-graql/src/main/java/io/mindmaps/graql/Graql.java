@@ -163,6 +163,38 @@ public class Graql {
     }
 
     /**
+     * Create an aggregate that will find the maximum of a variable's values.
+     * @param varName the variable to find the maximum of
+     */
+    public static Aggregate<Map<String, Concept>, Optional<?>> max(String varName) {
+        return new MaxAggregate(varName);
+    }
+
+    /**
+     * Create an aggregate that will find the minimum of a variable's values.
+     * @param varName the variable to find the maximum of
+     */
+    public static Aggregate<Map<String, Concept>, Optional<?>> min(String varName) {
+        return new MinAggregate(varName);
+    }
+
+    /**
+     * Create an aggregate that will find the mean of a variable's values.
+     * @param varName the variable to find the mean of
+     */
+    public static Aggregate<Map<String, Concept>, Optional<Double>> average(String varName) {
+        return new AverageAggregate(varName);
+    }
+
+    /**
+     * Create an aggregate that will find the median of a variable's values.
+     * @param varName the variable to find the median of
+     */
+    public static Aggregate<Map<String, Concept>, Optional<Number>> median(String varName) {
+        return new MedianAggregate(varName);
+    }
+
+    /**
      * Create an aggregate that will group a query by a variable name.
      * @param varName the variable name to group results by
      */
