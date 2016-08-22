@@ -18,14 +18,19 @@
 
 package io.mindmaps;
 
+import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
+import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
 
 public interface MindmapsComputer {
 
     /**
-     *
      * @param program
      */
-    public void compute(VertexProgram program);
+    ComputerResult compute(VertexProgram program);
 
+    /**
+     * @param mapReduce
+     */
+    ComputerResult compute(MapReduce mapReduce);
 }
