@@ -35,6 +35,8 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static io.mindmaps.graql.Graql.*;
+
 /**
  * Class for parsing query strings into valid queries
  */
@@ -221,13 +223,18 @@ public class QueryParser {
     }
 
     private void registerDefaultAggregates() {
-        registerAggregate("count", args -> Graql.count());
+        registerAggregate("count", args -> count());
+        registerAggregate("sum", args -> sum((String) args.get(0)));
+        registerAggregate("max", args -> max((String) args.get(0)));
+        registerAggregate("min", args -> min((String) args.get(0)));
+        registerAggregate("average", args -> average((String) args.get(0)));
+        registerAggregate("median", args -> median((String) args.get(0)));
 
         registerAggregate("group", args -> {
             if (args.size() < 2) {
-                return Graql.group((String) args.get(0));
+                return group((String) args.get(0));
             } else {
-                return Graql.group((String) args.get(0), (Aggregate) args.get(1));
+                return group((String) args.get(0), (Aggregate) args.get(1));
             }
         });
     }

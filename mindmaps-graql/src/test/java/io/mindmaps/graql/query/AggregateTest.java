@@ -19,8 +19,8 @@
 
 package io.mindmaps.graql.query;
 
-import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Instance;
 import io.mindmaps.example.MovieGraphFactory;
@@ -32,6 +32,7 @@ import org.junit.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static io.mindmaps.graql.Graql.*;
 import static io.mindmaps.graql.query.QueryUtil.movies;
@@ -123,5 +124,67 @@ public class AggregateTest {
                 .aggregate(sum("y"));
 
         assertEquals(27.7d, query.execute().doubleValue(), 0.01d);
+    }
+
+    @Test
+    public void testMaxLong() {
+        AggregateQuery<Optional<?>> query = qb
+                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count"))
+                .aggregate(max("y"));
+
+        assertEquals(Optional.of(1000L), query.execute());
+    }
+
+    @Test
+    public void testMaxDouble() {
+        AggregateQuery<Optional<?>> query = qb
+                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-average"))
+                .aggregate(max("y"));
+
+        assertEquals(Optional.of(8.6d), query.execute());
+    }
+
+    @Test
+    public void testMaxString() {
+        AggregateQuery<Optional<?>> query = qb.match(var("x").isa("movie")).aggregate(max("x"));
+        assertEquals(Optional.of("The Muppets"), query.execute());
+    }
+
+    @Test
+    public void testMinLong() {
+        AggregateQuery<Optional<?>> query = qb
+                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count"))
+                .aggregate(min("y"));
+
+        assertEquals(Optional.of(5L), query.execute());
+    }
+
+    @Test
+    public void testAverageDouble() {
+        AggregateQuery<Optional<Double>> query = qb
+                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-average"))
+                .aggregate(average("y"));
+
+        //noinspection OptionalGetWithoutIsPresent
+        assertEquals((8.6d + 7.6d + 8.4d + 3.1d) / 4d, query.execute().get(), 0.01d);
+    }
+
+    @Test
+    public void testMedianLong() {
+        AggregateQuery<Optional<Number>> query = qb
+                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-count"))
+                .aggregate(median("y"));
+
+        assertEquals(Optional.of(400L), query.execute());
+    }
+
+    @Test
+    public void testMedianDouble() {
+        AggregateQuery<Optional<Number>> query = qb
+                .match(var("x").isa("movie"), var().rel("x").rel("y"), var("y").isa("tmdb-vote-average"))
+                .aggregate(median("y"));
+
+        //noinspection OptionalGetWithoutIsPresent
+        assertEquals(8.0d, query.execute().get().doubleValue(), 0.01d);
     }
 }

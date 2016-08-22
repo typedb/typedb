@@ -1,0 +1,64 @@
+/*
+ * MindmapsDB - A Distributed Semantic Database
+ * Copyright (C) 2016  Mindmaps Research Ltd
+ *
+ * MindmapsDB is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * MindmapsDB is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
+
+package io.mindmaps.graql.internal.query.aggregate;
+
+import io.mindmaps.core.model.Concept;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toList;
+
+/**
+ * Aggregate that finds median of a match query.
+ */
+public class MedianAggregate extends AbstractAggregate<Map<String, Concept>, Optional<Number>> {
+
+    private final String varName;
+
+    public MedianAggregate(String varName) {
+        this.varName = varName;
+    }
+
+    @Override
+    public Optional<Number> apply(Stream<? extends Map<String, Concept>> stream) {
+        List<Number> results = stream.map(result -> ((Number) result.get(varName).getValue())).sorted().collect(toList());
+
+        int size = results.size();
+        int halveFloor = Math.floorDiv(size - 1, 2);
+        int halveCeiling = (int) Math.ceil((size - 1) / 2.0);
+
+        if (size == 0) {
+            return Optional.empty();
+        } else if (size % 2 == 1) {
+            // Take exact middle result
+            return Optional.of(results.get(halveFloor));
+        } else {
+            // Take average of middle results
+            return Optional.of((results.get(halveFloor).doubleValue() + results.get(halveCeiling).doubleValue()) / 2);
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "median $" + varName;
+    }
+}
