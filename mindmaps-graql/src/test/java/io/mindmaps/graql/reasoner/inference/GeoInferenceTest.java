@@ -27,9 +27,9 @@ import io.mindmaps.graql.reasoner.graphs.GeoGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static io.mindmaps.graql.internal.reasoner.Utility.printAnswers;
 import static io.mindmaps.graql.internal.reasoner.Utility.printMatchQueryResults;
 import static org.junit.Assert.assertEquals;
-
 
 public class GeoInferenceTest {
 
@@ -39,57 +39,37 @@ public class GeoInferenceTest {
 
     @BeforeClass
     public static void setUpClass() {
-
         graph = GeoGraph.getTransaction();
         reasoner = new Reasoner(graph);
         qp = QueryParser.create(graph);
     }
 
     @Test
-    public void testQuery()
-    {
-        //show me all cities in Poland
+    public void testQuery() {
         String queryString = "match " +
-                        "$x isa city;\n" +
-                        "(geo-entity $x, entity-location $y) isa is-located-in;\n"+
-                        "$y isa country, value 'Poland'; select $x";
+                        "$x isa city;(geo-entity $x, entity-location $y) isa is-located-in;\n"+
+                        "$y isa country;$y id 'Poland'; select $x";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         printMatchQueryResults(query.distinct());
-        MatchQueryDefault expandedQuery = reasoner.expand(query);
-
 
         String explicitQuery = "match " +
-                "$x isa city;\n" +
-                "(geo-entity $x, entity-location $y) isa is-located-in or"+
-                "{(geo-entity $x, entity-location $z) isa is-located-in; (geo-entity $z, entity-location $y) isa is-located-in};\n" +
-                "$y isa country;\n" +
-                "$y value 'Poland'; select $x";
+                "$x isa city;{$x id 'Warsaw'} or {$x id 'Wroclaw'};" +
+                "$y isa country;$y id 'Poland'; select $x";
 
-        assertQueriesEqual(expandedQuery, qp.parseMatchQuery(explicitQuery).getMatchQuery());
-
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
     @Test
-    public void testQuery2()
-    {
-        //show me all universities in Poland
+    public void testQuery2() {
         String queryString = "match " +
-                "$x isa university;\n" +
-                "($x, $y) isa is-located-in;\n"+
-                "$y isa country;\n" +
-                "$y value 'Poland'; select $x";
+                "$x isa university;(geo-entity $x, entity-location $y) isa is-located-in;"+
+                "$y isa country;$y id 'Poland' select $x";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
-        MatchQueryDefault expandedQuery = reasoner.expand(query);
-
         String explicitQuery = "match " +
-                "$x isa university;\n" +
-                "($x, $y) isa is-located-in or"+
-                "{($x, $zz) isa is-located-in; ($zz, $z) isa is-located-in;($z, $y) isa is-located-in};\n" +
-                "$y isa country;\n" +
-                "$y value 'Poland'; select $x";
+                "$x isa university;{$x id 'University-of-Warsaw'} or {$x id 'Warsaw-Polytechnics'};" +
+                "$y isa country;$y id 'Poland'; select $x";
 
-        assertQueriesEqual(expandedQuery, qp.parseMatchQuery(explicitQuery).getMatchQuery());
-
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
     private void assertQueriesEqual(MatchQueryDefault q1, MatchQueryDefault q2) {

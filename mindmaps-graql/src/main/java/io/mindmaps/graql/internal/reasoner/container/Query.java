@@ -21,21 +21,27 @@ package io.mindmaps.graql.internal.reasoner.container;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.core.model.RelationType;
+import io.mindmaps.core.model.RoleType;
 import io.mindmaps.core.model.Rule;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.*;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.query.Conjunction;
+import io.mindmaps.graql.internal.query.ConjunctionImpl;
 import io.mindmaps.graql.internal.query.Disjunction;
 import io.mindmaps.graql.internal.query.DisjunctionImpl;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
+import io.mindmaps.graql.internal.reasoner.predicate.Relation;
+import io.mindmaps.graql.internal.reasoner.predicate.Substitution;
 
 import java.util.*;
 
+import static io.mindmaps.graql.internal.reasoner.Utility.computeRoleCombinations;
 
-public class Query {
+public class  Query {
 
     private final MindmapsTransaction graph;
 
@@ -81,7 +87,6 @@ public class Query {
         MatchQueryDefault matchQuery = qp.parseMatchQuery(q.toString()).getMatchQuery();
         this.pattern = matchQuery.admin().getPattern();
         this.selectVars = Sets.newHashSet(matchQuery.admin().getSelectedNames());
-
         this.atomSet = getAtomSet(pattern);
 
         //copy expansions
@@ -94,22 +99,20 @@ public class Query {
                 });
             }
         }
-
         this.typeAtomMap = getTypeAtomMap(atomSet);
     }
 
-    //atomic conversion
     public Query(Atomic atom) {
         if (atom.getParentQuery() == null)
             throw new IllegalArgumentException(ErrorMessage.PARENT_MISSING.getMessage(atom.toString()));
         this.graph = atom.getParentQuery().getTransaction();
-        MatchQueryDefault matchQuery = atom.getMatchQuery(graph);
-        this.pattern = matchQuery.admin().getPattern();
-        this.selectVars = Sets.newHashSet(matchQuery.admin().getSelectedNames());
+        this.pattern = new ConjunctionImpl<>(Sets.newHashSet());
+        this.selectVars = Sets.newHashSet(atom.getMatchQuery(graph).admin().getSelectedNames());
 
         atomSet = new HashSet<>();
-        atomSet.add(atom);
-        atomSet.addAll(atom.getSubstitutions());
+        addAtom(atom);
+        atom.getSubstitutions().forEach(this::addAtom);
+        if(atom.isRelation()) atom.getTypeConstraints().forEach(this::addAtom);
 
         this.typeAtomMap = getTypeAtomMap(atomSet);
     }
@@ -129,15 +132,13 @@ public class Query {
      * @param rl rule instance
      * @return top query in the tree corresponding to body of rule rl
      */
-    public Query getTopQueryWithRule(Rule rl)
-    {
+    public Query getTopQueryWithRule(Rule rl) {
         Query topQuery = null;
         if (rule != null && rule.equals(rl)) topQuery = this;
 
         Query query = getParentQuery();
 
-        while(query != null)
-        {
+        while(query != null){
             Rule currentRule = query.getRule();
             if (currentRule != null && currentRule.equals(rl)) topQuery = query;
             query = query.getParentQuery();
@@ -149,11 +150,9 @@ public class Query {
      * @return top atom of this branch
      */
     public Atomic getTopAtom() {
-
         Atomic top = getParentAtom();
         Query parentQuery = top != null? top.getParentQuery() : null;
-        while (parentQuery != null && parentQuery.getParentQuery() != null)
-        {
+        while (parentQuery != null && parentQuery.getParentQuery() != null) {
             parentQuery = parentQuery.getParentQuery();
             if(parentQuery.getParentAtom() != null) top = parentQuery.getParentAtom();
         }
@@ -163,10 +162,8 @@ public class Query {
     /**
      * @return top query in the tree
      */
-    public Query getTopQuery()
-    {
+    public Query getTopQuery() {
         if (getParentQuery() == null) return this;
-
         Query query = getParentQuery();
         while(query.getParentQuery() != null)
             query = query.getParentQuery();
@@ -198,7 +195,6 @@ public class Query {
 
             replacePattern(expandedAtomPattern, atomPattern);
         });
-
     }
 
     public boolean containsVar(String var) {
@@ -221,10 +217,8 @@ public class Query {
         return isContained;
     }
 
-
     private void replacePattern(PatternAdmin oldPattern, PatternAdmin newPattern) {
         PatternAdmin toRemove = oldPattern;
-
         for(PatternAdmin pat : pattern.getPatterns())
             if(pat.equals(oldPattern))
                 toRemove = pat;
@@ -246,12 +240,10 @@ public class Query {
         changeVarName("temp", from);
     }
 
-    public void changeRelVarNames(Map<String, String> mappings)
-    {
+    public void changeRelVarNames(Map<String, String> mappings) {
         Map<String, String> appliedMappings = new HashMap<>();
         //do bidirectional mappings if any
-        for (Map.Entry<String, String> mapping: mappings.entrySet())
-        {
+        for (Map.Entry<String, String> mapping: mappings.entrySet()) {
             String varToReplace = mapping.getKey();
             String replacementVar = mapping.getValue();
 
@@ -271,8 +263,7 @@ public class Query {
 
         for (Map.Entry<String, String> mapping : mappings.entrySet())
             updateSelectedVars(mapping.getKey(), mapping.getValue());
-
-        }
+    }
 
     public void changeVarName(String from, String to) {
         atomSet.forEach(atom -> atom.changeEachVarName(from, to));
@@ -308,12 +299,9 @@ public class Query {
     public MatchQueryDefault getMatchQuery() { return Graql.match(pattern).select(selectVars).withTransaction(graph);}
 
     public MatchQueryDefault getExpandedMatchQuery() {
-
         Set<AtomConjunction> conjunctions = getAtomConjunctions();
-
         atomSet.forEach(atom -> {
-            if (!atom.getExpansions().isEmpty())
-            {
+            if (!atom.getExpansions().isEmpty()) {
                 //find base conjunctions
                 Set<AtomConjunction> baseConjunctions = new HashSet<>();
                 conjunctions.forEach(conj -> {
@@ -338,7 +326,6 @@ public class Query {
         Set<Conjunction<VarAdmin>> conjs = new HashSet<>();
         conjunctions.forEach(conj -> conjs.add(conj.getConjunction()));
         return qb.match(new DisjunctionImpl<>(conjs)).select(selectVars);
-
     }
 
     public Conjunction<PatternAdmin> getPattern() {
@@ -352,8 +339,7 @@ public class Query {
         Set<Atomic> atoms = new HashSet<>();
 
         Set<VarAdmin> vars = pat.getVars();
-        vars.forEach(var ->
-        {
+        vars.forEach(var -> {
             Atomic atom = AtomicFactory.create(var, this);
             atoms.add(atom);
         });
@@ -371,17 +357,14 @@ public class Query {
                 map.put(type, Sets.newHashSet(atom));
         }
         return map;
-
     }
 
     public Map<String, Type> getVarTypeMap() {
         Map<String, Type> map = new HashMap<>();
 
-        atomSet.forEach(atom ->
-        {
+        atomSet.forEach(atom -> {
             if (atom.isType() && !atom.isResource() ) {
-                if (!atom.isRelation())
-                {
+                if (!atom.isRelation()) {
                     String var = atom.getVarName();
                     Type type = graph.getType(atom.getTypeId());
                     if (!map.containsKey(var))
@@ -402,36 +385,45 @@ public class Query {
         return map;
     }
 
-    public String getValue(String var)
-    {
+    public String getValue(String var) {
         String val ="";
-        for(Atomic atom : atomSet)
-        {
+        for(Atomic atom : atomSet) {
             if(atom.getVarName().equals(var))
                 if(!atom.getVal().isEmpty() ) val = atom.getVal();
         }
         return val;
     }
 
-    public void addAtom(Atomic atom)
-    {
-        atomSet.add(atom);
-        pattern.getPatterns().add(atom.getPattern());
+    private void addAtom(Atomic atom) {
+        if(!containsAtom(atom)) {
+            atomSet.add(atom);
+            pattern.getPatterns().add(atom.getPattern());
+        }
     }
-    public void removeAtom(Atomic atom)
-    {
+
+    private void removeAtom(Atomic atom) {
         atomSet.remove(atom);
         pattern.getPatterns().remove(atom.getPattern());
+    }
+
+    public void addSubstitutions(Set<Atomic> subs){
+        subs.forEach(sub -> {
+            if (containsVar(sub.getVarName())) addAtom(sub);
+        });
+    }
+
+    public void addTypeConstraints(Set<Atomic> types) {
+        types.forEach(c -> {
+            if (containsVar(c.getVarName())) addAtom(c);
+        });
     }
 
     /**
      * atom selection function
      * @return selected atoms
      */
-    public Set<Atomic> selectAtoms()
-    {
+    public Set<Atomic> selectAtoms() {
         Set<Atomic> genAtoms = new HashSet<>();
-
         atomSet.forEach(atom -> {
             if (!atom.isValuePredicate() && !atom.isUnary()) genAtoms.add(atom);
         });
@@ -439,7 +431,6 @@ public class Query {
         //TODO
         //find most instantiated atom
         //follow neighbours
-        //partitions the query into subqueries (generalised queries) and returns as a set
         //type atoms should be kept together with corresponding relations (single isa allowed atm, otherwise type gen/spec through akos)
         //no instantiations -> favour type atoms
         return genAtoms;
@@ -449,8 +440,7 @@ public class Query {
      * @param q query to be compared with
      * @return true if two queries are alpha-equivalent
      */
-    public boolean isEquivalent(Query q)
-    {
+    public boolean isEquivalent(Query q) {
         boolean equivalent = true;
         if(atomSet.size() != q.getAtoms().size()) return false;
 
@@ -459,6 +449,42 @@ public class Query {
             equivalent = q.containsEquivalentAtom(it.next());
 
         return equivalent;
+    }
+
+    private void materialize() {
+        if (!getMatchQuery().ask().execute()) {
+            InsertQuery insert = Graql.insert(getPattern().getVars()).withTransaction(graph);
+            insert.execute();
+        }
+    }
+
+    public void materialize(Set<Substitution> subs) {
+        subs.forEach(this::addAtom);
+
+        //extrapolate if needed
+        Atomic atom = selectAtoms().iterator().next();
+        if(atom.isRelation() && ((Relation) atom).getRoleVarTypeMap().isEmpty()){
+            String relTypeId = atom.getTypeId();
+            RelationType relType = graph.getRelationType(relTypeId);
+            Set<String> vars = atom.getVarNames();
+            Set<RoleType> roles = Sets.newHashSet(relType.hasRoles());
+
+            Set<Map<String, String>> roleMaps = new HashSet<>();
+            computeRoleCombinations(vars, roles, new HashMap<>(), roleMaps);
+
+            removeAtom(atom);
+            roleMaps.forEach( map -> {
+                Relation relationWithRoles = new Relation(relTypeId, map);
+                addAtom(relationWithRoles);
+                materialize();
+                removeAtom(relationWithRoles);
+            });
+            addAtom(atom);
+        }
+        else
+            materialize();
+
+        subs.forEach(this::removeAtom);
     }
 
 }

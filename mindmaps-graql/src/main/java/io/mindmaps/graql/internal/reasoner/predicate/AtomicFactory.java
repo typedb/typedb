@@ -25,8 +25,7 @@ import io.mindmaps.graql.internal.reasoner.container.Query;
 
 public class AtomicFactory {
 
-    public static Atomic create(PatternAdmin pattern)
-    {
+    public static Atomic create(PatternAdmin pattern) {
         if (!pattern.isVar() )
             throw new IllegalArgumentException(ErrorMessage.PATTERN_NOT_VAR.getMessage(pattern.toString()));
 
@@ -39,8 +38,7 @@ public class AtomicFactory {
             return new Atom(var);
     }
 
-    public static Atomic create(PatternAdmin pattern, Query parent)
-    {
+    public static Atomic create(PatternAdmin pattern, Query parent) {
         if (!pattern.isVar() )
         throw new IllegalArgumentException(ErrorMessage.PATTERN_NOT_VAR.getMessage(pattern.toString()));
 

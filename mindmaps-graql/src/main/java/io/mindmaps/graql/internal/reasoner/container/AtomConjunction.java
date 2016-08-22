@@ -47,8 +47,7 @@ public class AtomConjunction {
         Set<Atomic> atoms = new HashSet<>();
 
         Set<VarAdmin> vars = pattern.getVars();
-        vars.forEach(var ->
-        {
+        vars.forEach(var -> {
             Atomic atom = AtomicFactory.create(var);
             atoms.add(atom);
         });
@@ -66,17 +65,17 @@ public class AtomConjunction {
         atoms.add(atom);
         return new AtomConjunction(atoms);
     }
+
     public AtomConjunction remove(Atomic atom){
         Set<Atomic> atoms = new HashSet<>();
         atomSet.forEach(a -> atoms.add(AtomicFactory.create(a)));
         atoms.remove(atom);
         return new AtomConjunction(atoms);
     }
-    public AtomConjunction conjunction(AtomConjunction conj, MindmapsTransaction graph) {
 
+    public AtomConjunction conjunction(AtomConjunction conj, MindmapsTransaction graph) {
         boolean isCompatible = true;
-        for (Atomic cAtom : conj.getAtoms() )
-        {
+        for (Atomic cAtom : conj.getAtoms() ) {
             Iterator<Atomic> it = atomSet.iterator();
             while(it.hasNext() && isCompatible)
                 isCompatible = checkAtomsCompatible(it.next(), cAtom, graph);
@@ -88,6 +87,7 @@ public class AtomConjunction {
         conj.getAtoms().forEach(atom -> atoms.add(AtomicFactory.create(atom)) );
         return new AtomConjunction(atoms);
     }
+
     public Conjunction<VarAdmin> getConjunction(){
         Set<VarAdmin> vars = new HashSet<>();
         atomSet.forEach(a -> vars.add(a.getPattern().asVar()));

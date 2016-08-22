@@ -28,20 +28,17 @@ public class Atom extends AtomBase{
 
     private final String val;
 
-    public Atom(VarAdmin pattern)
-    {
+    public Atom(VarAdmin pattern) {
         super(pattern);
         this.val = extractValue(pattern);
     }
 
-    public Atom(VarAdmin pattern, Query par)
-    {
+    public Atom(VarAdmin pattern, Query par) {
         super(pattern, par);
         this.val = extractValue(pattern);
     }
 
-    public Atom(Atom a)
-    {
+    public Atom(Atom a) {
         super(a);
         this.val = extractValue(a.getPattern().asVar());
     }
@@ -50,8 +47,7 @@ public class Atom extends AtomBase{
     public boolean isUnary(){ return true;}
 
     @Override
-    public boolean equals(Object obj)
-    {
+    public boolean equals(Object obj) {
         if (!(obj instanceof Atom)) return false;
         Atom a2 = (Atom) obj;
         return this.getTypeId().equals(a2.getTypeId()) && this.getVarName().equals(a2.getVarName())
@@ -59,16 +55,14 @@ public class Atom extends AtomBase{
     }
 
     @Override
-    public boolean isEquivalent(Object obj)
-    {
+    public boolean isEquivalent(Object obj) {
         if (!(obj instanceof Atom)) return false;
         Atom a2 = (Atom) obj;
         return this.getTypeId().equals(a2.getTypeId()) && this.getVal().equals(a2.getVal());
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         int hashCode = 1;
         hashCode = hashCode * 37 + this.typeId.hashCode();
         hashCode = hashCode * 37 + this.val.hashCode();
@@ -77,8 +71,7 @@ public class Atom extends AtomBase{
     }
 
     @Override
-    public void print()
-    {
+    public void print() {
         System.out.println("atom: \npattern: " + toString());
         System.out.println("varName: " + varName + " typeId: " + typeId + " val: " + val);
         if (isValuePredicate()) System.out.println("isValuePredicate");
@@ -89,11 +82,8 @@ public class Atom extends AtomBase{
     public String getVal(){ return val;}
 
     private String extractValue(VarAdmin var) {
-
         String value = "";
-
         Map<VarAdmin, Set<ValuePredicateAdmin>> resourceMap = var.getResourcePredicates();
-
         if (resourceMap.size() != 0) {
             if (resourceMap.size() != 1)
                 throw new IllegalArgumentException(ErrorMessage.PATTERN_NOT_VAR.getMessage(this.toString()));
@@ -101,10 +91,7 @@ public class Atom extends AtomBase{
             Map.Entry<VarAdmin, Set<ValuePredicateAdmin>> entry = resourceMap.entrySet().iterator().next();
             value = entry.getValue().iterator().hasNext()? entry.getValue().iterator().next().getPredicate().getValue().toString() : "";
         }
-
         return value;
-
     }
-
 }
 

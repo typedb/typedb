@@ -89,9 +89,6 @@ public class AdmissionsGraph {
 
     private static RoleType hasResourceTarget, hasResourceValue;
 
-    private AdmissionsGraph() {
-    }
-
     public static MindmapsTransaction getTransaction() {
         MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
         mindmaps = graph.getTransaction();
@@ -199,8 +196,6 @@ public class AdmissionsGraph {
 
         admissionStatus = mindmaps.putResourceType("admissionStatus", Data.STRING).playsRole(hasResourceValue);
         decisionType = mindmaps.putResourceType("decisionType", Data.STRING).playsRole(hasResourceValue);
-
-
     }
 
     private static void buildInstances() {
@@ -247,11 +242,9 @@ public class AdmissionsGraph {
         putResource(Frank, transcript, "unavailable", transcriptRelation, transcriptTarget, transcriptValue);
         putResource(Frank, specialHonours, "none", specialHonoursRelation, specialHonoursTarget, specialHonoursValue);
         putResource(Frank, GRE, 100L, GRErelation, GREtarget, GREvalue);
-
     }
 
-    private static void addRules()
-    {
+    private static void addRules() {
         QueryParser qp = QueryParser.create(mindmaps);
         try {
             List<String> lines = Files.readAllLines(Paths.get("src/test/resources/graql/admission-rules.gql"), StandardCharsets.UTF_8);
@@ -261,7 +254,6 @@ public class AdmissionsGraph {
         catch (IOException e){
             e.printStackTrace();
         }
-
     }
 
     private static Instance putEntity(EntityType type, String name) {

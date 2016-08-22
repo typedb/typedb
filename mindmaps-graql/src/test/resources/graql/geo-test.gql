@@ -1,0 +1,84 @@
+insert
+
+###################################################
+####################Ontology######################
+#################################################
+
+"entity" isa entity-type, is-abstract;
+
+"city" ako entity;
+"region" ako entity;
+"country" ako entity;
+"continent" ako entity;
+"university" ako entity;
+
+"geo-entity" isa role-type;
+"entity-location" isa role-type;
+"is-located-in" isa relation-type, has-role geo-entity, has-role entity-location;
+entity plays-role geo-entity, plays-role entity-location;
+
+"role1" isa role-type;
+"role2" isa role-type;
+"role3" isa role-type;
+"ternary-relation-test" isa relation-type, has-role role1, has-role role2, has-role role3;
+entity plays-role role1, plays-role role2, plays-role role3;
+
+####################################################
+##################DATA#############################
+####################################################
+
+"Europe" isa continent;
+"NorthAmerica" isa continent;
+
+"Poland" isa country;
+"England" isa country;
+"Germany" isa country;
+"France" isa country;
+"Italy" isa country;
+
+"Masovia" isa region;
+"Silesia" isa region;
+"GreaterLondon" isa region;
+"Bavaria" isa region;
+"IleDeFrance" isa region;
+"Lombardy" isa region;
+
+"Warsaw" isa city;
+"Wroclaw" isa city;
+"London" isa city;
+"Munich" isa city;
+"Paris" isa city;
+"Milan" isa city;
+
+"University-of-Warsaw" isa university;
+"Warsaw-Polytechnics" isa university;
+"Imperial-College-London" isa university;
+"University-College-London" isa university;
+"University-of-Munich" isa university;
+
+(geo-entity 'Warsaw-Polytechnics', entity-location 'Warsaw') isa is-located-in;
+(geo-entity 'University-of-Warsaw', entity-location 'Warsaw') isa is-located-in;
+(geo-entity 'Imperial-College-London', entity-location 'London') isa is-located-in;
+(geo-entity 'University-College-London', entity-location 'London') isa is-located-in;
+
+(geo-entity 'Warsaw', entity-location 'Masovia') isa is-located-in;
+(geo-entity 'Masovia', entity-location 'Poland') isa is-located-in;
+(geo-entity 'Wroclaw', entity-location 'Silesia') isa is-located-in;
+(geo-entity 'Silesia', entity-location 'Poland') isa is-located-in;
+(geo-entity 'Poland', entity-location 'Europe') isa is-located-in;
+
+(geo-entity 'London', entity-location 'GreaterLondon') isa is-located-in;
+(geo-entity 'GreaterLondon', entity-location 'England') isa is-located-in;
+(geo-entity 'England', entity-location 'Europe') isa is-located-in;
+
+(geo-entity 'Munich', entity-location 'Bavaria') isa is-located-in;
+(geo-entity 'Bavaria', entity-location 'Germany') isa is-located-in;
+(geo-entity 'Germany', entity-location 'Europe') isa is-located-in;
+
+(geo-entity 'Milan', entity-location 'Lombardy') isa is-located-in;
+(geo-entity 'Lombardy', entity-location 'Italy') isa is-located-in;
+(geo-entity 'Italy', entity-location 'Europe') isa is-located-in;
+
+(geo-entity 'Paris', entity-location 'IleDeFrance') isa is-located-in;
+(geo-entity 'IleDeFrance', entity-location 'France') isa is-located-in;
+(geo-entity 'France', entity-location 'Europe') isa is-located-in;

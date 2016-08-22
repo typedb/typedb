@@ -30,10 +30,8 @@ public interface Atomic {
 
     void print();
 
-
     void addExpansion(Query query);
     void removeExpansion(Query query);
-
 
     /**
      * @return true if the atom corresponds to a unary predicate
@@ -123,6 +121,7 @@ public interface Atomic {
     Set<Query> getExpansions();
 
     Set<Atomic> getSubstitutions();
+    Set<Atomic> getTypeConstraints();
 
     Map<String, Set<Atomic>> getVarSubMap();
 

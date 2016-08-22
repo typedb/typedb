@@ -51,7 +51,6 @@ public class QueryTest {
 
     @Test
     public void testValuePredicate(){
-
         String queryString = "match $x isa person;$x value 'Bob'";
 
         Query query = new Query(queryString, graph);
@@ -60,8 +59,8 @@ public class QueryTest {
             if (atom.toString().equals("$x value \"Bob\"")) containsAtom = true;
         assertTrue(containsAtom);
         assertEquals(query.getValue("x"), "Bob");
-
     }
+
     @Test
     public void testCopyConstructor(){
 
@@ -81,8 +80,7 @@ public class QueryTest {
     }
 
     @Test
-    public void testExpansion()
-    {
+    public void testExpansion() {
         String queryString = "match $x isa person;$y isa product;($x, $y) isa recommendation";
 
         String LHS = "match $x isa person;$t isa tag, value 'Michelangelo';\n" +
@@ -101,8 +99,7 @@ public class QueryTest {
     }
 
     @Test
-    public void testExpansion2()
-    {
+    public void testExpansion2() {
         String queryString = "match $x isa person;$y isa product;($x, $y) isa recommendation";
 
         String LHS = "match $x isa person;$t isa tag, value 'Michelangelo';\n" +
@@ -130,8 +127,7 @@ public class QueryTest {
     }
 
     @Test
-    public void testDisjunctiveNormalForm()
-    {
+    public void testDisjunctiveNormalForm() {
         String queryString = "match $x isa person;$y isa product;($x, $y) isa recommendation";
 
         String LHS = "match $x isa person;$t isa tag, value 'Michelangelo';\n" +
@@ -157,8 +153,7 @@ public class QueryTest {
         }
 
     @Test
-    public void testDisjunctiveQuery()
-    {
+    public void testDisjunctiveQuery() {
         String queryString = "match $x isa person;{$y isa product} or {$y isa tag};($x, $y) isa recommendation";
 
         MatchQueryDefault sq = qp.parseMatchQuery(queryString).getMatchQuery();
@@ -173,8 +168,7 @@ public class QueryTest {
     }
 
     @Test
-    public void testDisjunctiveRule()
-    {
+    public void testDisjunctiveRule() {
         String queryString = "match $x isa person;{$y isa product} or {$y isa tag};($x, $y) isa recommendation";
 
         MatchQueryDefault sq = qp.parseMatchQuery(queryString).getMatchQuery();
@@ -190,8 +184,7 @@ public class QueryTest {
     }
 
     @Test
-    public void testNonHornClauseQuery()
-    {
+    public void testNonHornClauseQuery() {
         String queryString = "match $x isa person;$y isa product;($x, $y) isa recommendation";
 
         Query query = new Query(queryString, graph);
@@ -200,12 +193,10 @@ public class QueryTest {
         Atomic atom = query.getAtomsWithType(graph.getRelationType("recommendation")).iterator().next();
         query.expandAtomByQuery(atom, expansionQuery);
         System.out.println(query.getExpandedMatchQuery().toString());
-
     }
 
     @Test
-    public void testAlphaEquivalence()
-    {
+    public void testAlphaEquivalence() {
         String queryString = "match $x isa person;$t isa tag;$t value 'Michelangelo';" +
             "($x, $t) isa tagging;" +
             "$y isa product;$y value 'Michelangelo - The Last Judgement'; select $x, $y";
@@ -218,7 +209,6 @@ public class QueryTest {
         Query query2 = new Query(queryString2, graph);
 
         assertTrue(query.isEquivalent(query2));
-
     }
 
     private void assertQueriesEqual(MatchQueryDefault q1, MatchQueryDefault q2) {

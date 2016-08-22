@@ -42,20 +42,15 @@ public class GeoGraph {
     private static Instance Poland, England, Germany, France, Italy;
     private static Instance UW, PW, Imperial, UniversityOfMunich, UCL;
 
-    private GeoGraph() {
-    }
-
     public static MindmapsTransaction getTransaction() {
         MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
         mindmaps = graph.getTransaction();
         buildGraph();
-
         try {
             mindmaps.commit();
         } catch (MindmapsValidationException e) {
             System.out.println(e.getMessage());
         }
-
         return mindmaps;
     }
 
@@ -67,7 +62,6 @@ public class GeoGraph {
     }
 
     private static void buildOntology() {
-
         hasResourceTarget = mindmaps.putRoleType("has-resource-target");
         hasResourceValue = mindmaps.putRoleType("has-resource-value");
         hasResource = mindmaps.putRelationType("has-resource")
@@ -91,7 +85,6 @@ public class GeoGraph {
                 .playsRole(geoEntity).playsRole(entityLocation);
         university = mindmaps.putEntityType("university").setValue("university")
                         .playsRole(geoEntity);
-
     }
 
     private static void buildInstances() {
@@ -128,7 +121,6 @@ public class GeoGraph {
     }
 
     private static void buildRelations() {
-
         mindmaps.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, PW)
                 .putRolePlayer(entityLocation, Warsaw);
@@ -157,8 +149,6 @@ public class GeoGraph {
         mindmaps.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Poland)
                 .putRolePlayer(entityLocation, Europe);
-
-
 
         mindmaps.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, London)
@@ -202,7 +192,6 @@ public class GeoGraph {
 
     }
     private static void buildRules() {
-
         RuleType inferenceRule = mindmaps.getMetaRuleInference();
 
         Rule transitivity = mindmaps.putRule("transitivity", inferenceRule);

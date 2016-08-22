@@ -37,16 +37,13 @@ public class AbstractInferenceTest {
 
     @BeforeClass
     public static void setUpClass() {
-
         MindmapsTransaction graph = AbstractGraph.getTransaction();
         reasoner = new Reasoner(graph);
         qp = QueryParser.create(graph);
     }
 
-
     @Test
-    public void testQuery()
-    {
+    public void testQuery() {
         String queryString = "match $x isa Q;";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expQuery = reasoner.expand(query);
@@ -62,8 +59,7 @@ public class AbstractInferenceTest {
     }
 
     @Test
-    public void testQuery2()
-    {
+    public void testQuery2() {
         String queryString = "match " +
                         "$yy isa Q;\n" +
                         "$y isa P;\n" +

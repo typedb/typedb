@@ -37,7 +37,6 @@ public class WineInferenceTest {
 
     @BeforeClass
     public static void setUpClass() {
-
         MindmapsTransaction graph = WineGraph.getTransaction();
         reasoner = new Reasoner(graph);
         qp = QueryParser.create(graph);
@@ -45,7 +44,6 @@ public class WineInferenceTest {
 
     @Test
     public void testRecommendation() {
-
         String queryString = "match $x isa person;$y isa wine;($x, $y) isa wine-recommendation";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expand(query);
@@ -59,7 +57,6 @@ public class WineInferenceTest {
                 "{$x value 'Frank';$y value 'Riojo Blanco CVNE 2003'}";
 
         assertQueriesEqual(expandedQuery, qp.parseMatchQuery(explicitQuery).getMatchQuery());
-
     }
 
     private void assertQueriesEqual(MatchQueryDefault q1, MatchQueryDefault q2) {

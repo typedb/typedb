@@ -19,6 +19,8 @@
 package io.mindmaps.graql.internal.reasoner;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.model.Concept;
@@ -33,8 +35,7 @@ import java.util.*;
 
 public class Utility {
 
-    public static void printMatchQueryResults(MatchQueryDefault sq)
-    {
+    public static void printMatchQueryResults(MatchQueryDefault sq) {
         List<Map<String, Concept>> results = Lists.newArrayList(sq);
 
         for (Map<String, Concept> result : results) {
@@ -46,8 +47,7 @@ public class Utility {
         }
     }
 
-    public static void printAnswers(Set<Map<String, Concept>> answers)
-    {
+    public static void printAnswers(Set<Map<String, Concept>> answers) {
         for (Map<String, Concept> result : answers) {
             for (Map.Entry<String, Concept> entry : result.entrySet()) {
                 Concept concept = entry.getValue();
@@ -57,8 +57,7 @@ public class Utility {
         }
     }
 
-    public static Type getRuleConclusionType(Rule rule)
-    {
+    public static Type getRuleConclusionType(Rule rule) {
         Set<Type> types = new HashSet<>();
         Collection<Type> unfilteredTypes = rule.getConclusionTypes();
         for(Type type : unfilteredTypes)
@@ -70,8 +69,7 @@ public class Utility {
         return types.iterator().next();
     }
 
-    public static Atomic getRuleConclusionAtom(Query ruleLHS, Query ruleRHS, Type type)
-    {
+    public static Atomic getRuleConclusionAtom(Query ruleLHS, Query ruleRHS, Type type) {
         Set<Atomic> atoms = ruleRHS.getAtomsWithType(type);
         if (atoms.size() > 1)
             throw new IllegalArgumentException(ErrorMessage.NON_HORN_RULE.getMessage(ruleLHS.getRule().getId()));
@@ -81,8 +79,7 @@ public class Utility {
         return atom;
     }
 
-    public static boolean isAtomRecursive(Atomic atom, MindmapsTransaction graph)
-    {
+    public static boolean isAtomRecursive(Atomic atom, MindmapsTransaction graph) {
         if (atom.isResource()) return false;
         boolean atomRecursive = false;
 
@@ -98,8 +95,7 @@ public class Utility {
         return atomRecursive;
     }
 
-    public static  boolean isRuleRecursive(Rule rule)
-    {
+    public static  boolean isRuleRecursive(Rule rule) {
         boolean ruleRecursive = false;
 
         Type RHStype = getRuleConclusionType(rule);
@@ -109,8 +105,7 @@ public class Utility {
         return ruleRecursive;
     }
 
-    public static Set<RoleType> getCompatibleRoleTypes(String typeId, String relId, MindmapsTransaction graph)
-    {
+    public static Set<RoleType> getCompatibleRoleTypes(String typeId, String relId, MindmapsTransaction graph) {
         Set<RoleType> cRoles = new HashSet<>();
 
         Collection<RoleType> typeRoles = graph.getType(typeId).playsRoles();
@@ -119,8 +114,7 @@ public class Utility {
         return cRoles;
     }
 
-    public static boolean checkAtomsCompatible(Atomic a, Atomic b, MindmapsTransaction graph)
-    {
+    public static boolean checkAtomsCompatible(Atomic a, Atomic b, MindmapsTransaction graph) {
         if (!(a.isType() && b.isType()) || (a.isRelation() || b.isRelation())
            || !a.getVarName().equals(b.getVarName()) || a.isResource() || b.isResource()) return true;
         String aTypeId = a.getTypeId();
@@ -131,6 +125,28 @@ public class Utility {
         return checkTypesCompatible(aType, bType) && (a.getVal().isEmpty() || b.getVal().isEmpty() || a.getVal().equals(b.getVal()) );
     }
 
+    //rolePlayer-roleType maps
+    public static void computeRoleCombinations(Set<String> vars, Set<RoleType> roles, Map<String, String> roleMap,
+                                        Set<Map<String, String>> roleMaps){
+        Set<String> tempVars = Sets.newHashSet(vars);
+        Set<RoleType> tempRoles = Sets.newHashSet(roles);
+        String var = vars.iterator().next();
+
+        roles.forEach(role -> {
+            tempVars.remove(var);
+            tempRoles.remove(role);
+            roleMap.put(var, role.getId());
+            if (!tempVars.isEmpty() && !tempRoles.isEmpty())
+                computeRoleCombinations(tempVars, tempRoles, roleMap, roleMaps);
+            else {
+                if (!roleMap.isEmpty())
+                    roleMaps.add(Maps.newHashMap(roleMap));
+                roleMap.remove(var);
+            }
+            tempVars.add(var);
+            tempRoles.add(role);
+        });
+    }
 
     public static boolean checkTypesCompatible(Type aType, Type bType) {
         return aType.equals(bType) || aType.subTypes().contains(bType) || bType.subTypes().contains(aType);

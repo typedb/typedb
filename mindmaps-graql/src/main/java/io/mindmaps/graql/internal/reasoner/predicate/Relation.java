@@ -34,25 +34,26 @@ import java.util.*;
 
 import static io.mindmaps.graql.internal.reasoner.Utility.getCompatibleRoleTypes;
 
-public class Relation extends AtomBase{
+public class Relation extends AtomBase {
 
     private final Set<Var.Casting> castings = new HashSet<>();
 
-
-    public Relation(VarAdmin pattern){
+    public Relation(VarAdmin pattern) {
         super(pattern);
         castings.addAll(pattern.getCastings());
     }
 
-
-    public Relation(VarAdmin pattern, Query par)
-    {
+    public Relation(VarAdmin pattern, Query par) {
         super(pattern, par);
         castings.addAll(pattern.getCastings());
     }
 
-    public Relation(Relation a)
-    {
+    public Relation(String id, Map<String, String> roleMap){
+        super(constructRelPattern(id, roleMap));
+        castings.addAll(getPattern().asVar().getCastings());
+    }
+
+    public Relation(Relation a) {
         super(a);
         castings.addAll(a.getPattern().asVar().getCastings());
 
@@ -60,25 +61,31 @@ public class Relation extends AtomBase{
         a.expansions.forEach(exp -> expansions.add(new Query(exp)));
     }
 
+    //rolePlayer-roleType
+    static private VarAdmin constructRelPattern(String id, Map<String, String> roleMap) {
+        Var var = Graql.var().isa(id);
+        roleMap.forEach( (player, role) -> var.rel(role, player));
+        return var.admin().asVar();
+    }
+
     @Override
-    public boolean equals(Object obj)
-    {
+    public boolean equals(Object obj) {
         if (!(obj instanceof Relation)) return false;
         Relation a2 = (Relation) obj;
+
+        //TODO need to compare roles and roleplayers
         return this.getTypeId().equals(a2.getTypeId()) && this.getVarNames().equals(a2.getVarNames());
     }
 
     @Override
-    public boolean isEquivalent(Object obj)
-    {
+    public boolean isEquivalent(Object obj) {
         if (!(obj instanceof Relation)) return false;
         Relation a2 = (Relation) obj;
         return this.getTypeId().equals(a2.getTypeId());
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         int hashCode = 1;
         hashCode = hashCode * 37 + this.typeId.hashCode();
         hashCode = hashCode * 37 + getVarNames().hashCode();
@@ -86,8 +93,7 @@ public class Relation extends AtomBase{
     }
 
     @Override
-    public void print()
-    {
+    public void print() {
         System.out.println("atom: \npattern: " + toString());
         System.out.println("varName: " + varName + " typeId: " + typeId);
         System.out.print("Castings: ");
@@ -104,34 +110,28 @@ public class Relation extends AtomBase{
     @Override
     public boolean isType(){ return true;}
     @Override
-    public boolean containsVar(String name)
-    {
+    public boolean containsVar(String name) {
         boolean varFound = false;
-
         Iterator<Var.Casting> it = castings.iterator();
         while(it.hasNext() && !varFound)
             varFound = it.next().getRolePlayer().getName().equals(name);
-
         return varFound;
     }
 
     @Override
-    public MatchQueryDefault getExpandedMatchQuery(MindmapsTransaction graph)
-    {
+    public MatchQueryDefault getExpandedMatchQuery(MindmapsTransaction graph) {
         QueryBuilder qb = Graql.withTransaction(graph);
         Set<String> selectVars = getVarNames();
         return qb.match(getExpandedPattern()).select(selectVars);
     }
 
     @Override
-    public void changeEachVarName(String from, String to)
-    {
+    public void changeEachVarName(String from, String to) {
         castings.forEach(c -> {
             String var = c.getRolePlayer().getName();
             if (var.equals(from)) {
                 c.getRolePlayer().setName(to);
             }
-            //mark captured variable
             else if (var.equals(to)) {
                 c.getRolePlayer().setName("captured->" + var);
             }
@@ -139,15 +139,13 @@ public class Relation extends AtomBase{
     }
 
     @Override
-    public void changeEachVarName(Map<String, String> mappings)
-    {
+    public void changeEachVarName(Map<String, String> mappings) {
         castings.forEach(c -> {
             String var = c.getRolePlayer().getName();
             if (mappings.containsKey(var) ) {
                 String target = mappings.get(var);
                 c.getRolePlayer().setName(target);
             }
-            //mark captured variable
             else if (mappings.containsValue(var)) {
                 c.getRolePlayer().setName("captured->" + var);
             }
@@ -170,10 +168,8 @@ public class Relation extends AtomBase{
      * Attempts to infer the implicit roleTypes of vars in a relAtom
      * @return map containing a varName - varType, varRoleType triple
      */
-    public Map<String, Pair<Type, RoleType>> getVarTypeRoleMap()
-    {
+    public Map<String, Pair<Type, RoleType>> getVarTypeRoleMap() {
         Map<String, Pair<Type, RoleType>> roleVarTypeMap = new HashMap<>();
-
         if (getParentQuery() == null) return roleVarTypeMap;
 
         MindmapsTransaction graph =  getParentQuery().getTransaction();
@@ -181,8 +177,7 @@ public class Relation extends AtomBase{
         Set<String> vars = getVarNames();
         Map<String, Type> varTypeMap = getParentQuery().getVarTypeMap();
 
-        for (String var : vars)
-        {
+        for (String var : vars) {
             Type type = varTypeMap.get(var);
             String roleTypeId = "";
             for(Var.Casting c : castings) {
@@ -212,8 +207,7 @@ public class Relation extends AtomBase{
      * Attempts to infer the implicit roleTypes and matching types
      * @return map containing a RoleType-Type pair
      */
-    public Map<RoleType, Pair<String, Type>> getRoleVarTypeMap()
-    {
+    public Map<RoleType, Pair<String, Type>> getRoleVarTypeMap() {
         Map<RoleType, Pair<String, Type>> roleVarTypeMap = new HashMap<>();
 
         if (getParentQuery() == null) return roleVarTypeMap;
@@ -223,8 +217,7 @@ public class Relation extends AtomBase{
         Set<String> relVars = getVarNames();
         Map<String, Type> varTypeMap = getParentQuery().getVarTypeMap();
 
-        for (String var : relVars)
-        {
+        for (String var : relVars) {
             Type type = varTypeMap.get(var);
             String roleTypeId = "";
             for(Var.Casting c : castings) {

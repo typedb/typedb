@@ -45,9 +45,6 @@ public class CWGraph {
 
     private static Instance colonelWest, Nono, America, Tomahawk;
 
-    private CWGraph() {
-    }
-
     public static MindmapsTransaction getTransaction() {
         MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
         mindmaps = graph.getTransaction();
@@ -70,7 +67,6 @@ public class CWGraph {
     }
 
     private static void buildOntology() {
-
         hasResourceTarget = mindmaps.putRoleType("has-resource-target");
         hasResourceValue = mindmaps.putRoleType("has-resource-value");
         hasResource = mindmaps.putRelationType("has-resource")
@@ -126,7 +122,6 @@ public class CWGraph {
     }
 
     private static void buildInstances() {
-
         colonelWest = putEntity(person, "colonelWest");
         Nono = putEntity(country, "Nono");
         America = putEntity(country, "America");
@@ -138,7 +133,6 @@ public class CWGraph {
     }
 
     private static void buildRelations() {
-
         //Enemy(Nono, America)
         mindmaps.addRelation(isEnemyOf)
                 .putRolePlayer(enemySource, Nono)
@@ -156,7 +150,6 @@ public class CWGraph {
 
     }
     private static void buildRules() {
-
         RuleType inferenceRule = mindmaps.getMetaRuleInference();
 
         Rule r1 = mindmaps.putRule("R1", inferenceRule);

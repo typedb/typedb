@@ -34,9 +34,6 @@ public class AbstractGraph {
 
     private static Instance instanceU, instanceT, instanceP;
 
-    private AbstractGraph() {
-    }
-
     public static MindmapsTransaction getTransaction() {
         MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
         mindmaps = graph.getTransaction();
@@ -59,7 +56,6 @@ public class AbstractGraph {
     }
 
     private static void buildOntology() {
-
         relRoleA = mindmaps.putRoleType("rel-roleA");
         relRoleB = mindmaps.putRoleType("rel-roleB");
         rel = mindmaps.putRelationType("rel").hasRole(relRoleA).hasRole(relRoleB);
@@ -76,7 +72,6 @@ public class AbstractGraph {
         s = mindmaps.putEntityType("s").setValue("s").playsRole(relRoleB).playsRole(RELRoleB);
         u = mindmaps.putEntityType("u").setValue("u").playsRole(relRoleA).playsRole(RELRoleA);
         t = mindmaps.putEntityType("t").setValue("t").playsRole(relRoleB).playsRole(RELRoleB);
-
     }
 
     private static void buildInstances() {
@@ -95,7 +90,6 @@ public class AbstractGraph {
 
     }
     private static void buildRules() {
-
         RuleType inferenceRule = mindmaps.getMetaRuleInference();
 
         Rule r1 = mindmaps.putRule("R1", inferenceRule);
@@ -131,10 +125,7 @@ public class AbstractGraph {
         String R5_RHS = "match $x isa r";
         r5.setLHS(R5_LHS);
         r5.setRHS(R5_RHS);
-
-
     }
-
 
     private static Instance putEntity(EntityType type, String name) {
         return mindmaps.putEntity(name.replaceAll(" ", "-").replaceAll("\\.", ""), type).setValue(name);

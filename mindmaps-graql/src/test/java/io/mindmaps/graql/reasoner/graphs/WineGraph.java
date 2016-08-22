@@ -55,7 +55,6 @@ public class WineGraph {
     }
 
     private static void addOntology(){
-
         QueryParser qp = QueryParser.create(mindmaps);
         try {
             List<String> lines = Files.readAllLines(Paths.get("src/test/resources/graql/wines-ontology.gql"), StandardCharsets.UTF_8);
@@ -68,7 +67,6 @@ public class WineGraph {
 
     }
     private static void addInstances() {
-
         QueryParser qp = QueryParser.create(mindmaps);
         try {
             List<String> lines = Files.readAllLines(Paths.get("src/test/resources/graql/wines-data.gql"), StandardCharsets.UTF_8);
@@ -81,9 +79,7 @@ public class WineGraph {
 
     }
 
-    private static void addRules()
-    {
-
+    private static void addRules() {
         QueryParser qp = QueryParser.create(mindmaps);
         try {
             List<String> lines = Files.readAllLines(Paths.get("src/test/resources/graql/wines-rules.gql"), StandardCharsets.UTF_8);
@@ -93,7 +89,6 @@ public class WineGraph {
         catch (IOException e){
             e.printStackTrace();
         }
-
     }
 
 }

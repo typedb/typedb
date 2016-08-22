@@ -74,17 +74,17 @@ entity plays-role H-role-A, plays-role H-role-B;
 
 "R1" isa inference-rule,
 lhs {match
-($x, $y) isa E},
+(E-role-A $x, E-role-B $y) isa E},
 rhs {match
-($x, $y) isa R};
+(R-role-A $x, R-role-B $y) isa R};
 
 "R2" isa inference-rule,
 lhs {match
-($x, $t) isa F;
-($t, $u) isa R;
-($u, $v) isa G;
-($v, $w) isa R;
-($w, $y) isa H select $x, $y},
+(F-role-A $x, F-role-B $t) isa F;
+(R-role-A $t, R-role-B $u) isa R;
+(G-role-A $u, G-role-B $v) isa G;
+(R-role-A $v, R-role-B $w) isa R;
+(H-role-A $w, H-role-B $y) isa H select $x, $y},
 rhs {match
-($x, $y) isa R};
+(R-role-A $x, R-role-B $y) isa R};
 
