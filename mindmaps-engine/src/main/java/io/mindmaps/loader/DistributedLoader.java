@@ -42,7 +42,6 @@ import static io.mindmaps.loader.TransactionState.State;
  */
 public class DistributedLoader extends Loader {
 
-    private final Logger LOG = LoggerFactory.getLogger(DistributedLoader.class);
     private static ExecutorService executor = Executors.newSingleThreadExecutor();
     private Future future;
 
@@ -98,7 +97,7 @@ public class DistributedLoader extends Loader {
         } catch (InterruptedException | ExecutionException e) {
             LOG.error(e.getMessage());
         }
-        LOG.info("Done!");
+        LOG.info("All tasks done!");
     }
 
     public void submitBatch(Collection<Var> batch) {

@@ -2,6 +2,9 @@ package io.mindmaps.loader;
 
 import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.Var;
+import mjson.Json;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -20,6 +23,9 @@ public abstract class Loader {
     protected Collection<Var> batch;
     protected int batchSize;
     protected int threadsNumber;
+
+    final Logger LOG = LoggerFactory.getLogger(Loader.class);
+
 
     public Loader(){
         enqueuedJobs = new AtomicInteger();
@@ -95,17 +101,13 @@ public abstract class Loader {
     }
 
     /**
-     * Method that prints current state of loading transactions to standard out
+     * Method that logs the current state of loading transactions
      */
     public void printLoaderState(){
-        String state =
-                "QUEUE:     " + enqueuedJobs.get() + "\n" +
-                "LOADING:   " + loadingJobs.get() + "\n" +
-                "FINISHED:  " + finishedJobs.get() + "\n" +
-                "ERROR:     " + errorJobs.get() + "\n" +
-                "---" + "\n";
-
-        System.out.print(state);
+        LOG.info(Json.object().set(TransactionState.State.QUEUED.name(), enqueuedJobs.get())
+                .set(TransactionState.State.LOADING.name(), loadingJobs.get())
+                .set(TransactionState.State.ERROR.name(), errorJobs.get())
+                .set(TransactionState.State.FINISHED.name(), finishedJobs.get()).toString());
     }
 
     public void markAsQueued(String transaction){

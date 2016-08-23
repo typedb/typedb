@@ -44,8 +44,6 @@ import static io.mindmaps.graql.Graql.insert;
  */
 public class BlockingLoader extends Loader {
 
-    private final Logger LOG = LoggerFactory.getLogger(BlockingLoader.class);
-
     private ExecutorService executor;
     private Cache cache;
     private static Semaphore transactionsSemaphore;
@@ -96,7 +94,7 @@ public class BlockingLoader extends Loader {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         } finally {
-            LOG.info("ALL TASKS DONE!");
+            LOG.info("All tasks done!");
             executor = Executors.newFixedThreadPool(threadsNumber);
         }
     }

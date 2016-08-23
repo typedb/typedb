@@ -202,13 +202,11 @@ public class RESTLoader {
             File file = new File(loggingFilePath);
             file.createNewFile();
             bw = new BufferedWriter(new FileWriter(file, true));
-            bw.write(dateFormat.format(date) + ":: " + "===================================== NEW EXCEPTION ============================================");
+            bw.write(dateFormat.format(date) + ":: " + "-- NEW EXCEPTION ---");
             bw.newLine();
             bw.write(dateFormat.format(date) + ":: " + "INPUT: "+input);
             bw.newLine();
             bw.write(dateFormat.format(date) + ":: " +  "MESSAGE: "+ errorMessage);
-            bw.newLine();
-            bw.write(dateFormat.format(date) + ":: " + "================================================================================================");
             bw.newLine();
 
         } catch (IOException e) {
