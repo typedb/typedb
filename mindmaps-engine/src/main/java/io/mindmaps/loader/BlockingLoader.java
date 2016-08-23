@@ -28,8 +28,8 @@ import io.mindmaps.util.ConfigProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -38,38 +38,29 @@ import java.util.concurrent.TimeUnit;
 
 import static io.mindmaps.graql.Graql.insert;
 
-public class BlockingLoader {
 
-    private final Logger LOG = LoggerFactory.getLogger(BlockingLoader.class);
+/**
+ * RESTLoader that submits tasks to locally running engine and performs basic load balancing.
+ */
+public class BlockingLoader extends Loader {
 
     private ExecutorService executor;
     private Cache cache;
-    private Collection<Var> batch;
-    private int batchSize;
     private static Semaphore transactionsSemaphore;
     private static int repeatCommits;
-    private int numThreads;
     private String graphName;
 
     public BlockingLoader(String graphNameInit) {
 
         ConfigProperties prop = ConfigProperties.getInstance();
-        numThreads = prop.getPropertyAsInt(ConfigProperties.NUM_THREADS_PROPERTY);
+        threadsNumber = prop.getPropertyAsInt(ConfigProperties.NUM_THREADS_PROPERTY);
         batchSize = prop.getPropertyAsInt(ConfigProperties.BATCH_SIZE_PROPERTY);
         repeatCommits = prop.getPropertyAsInt(ConfigProperties.LOADER_REPEAT_COMMITS);
         graphName = graphNameInit;
         cache = Cache.getInstance();
-        executor = Executors.newFixedThreadPool(numThreads);
-        transactionsSemaphore = new Semaphore(numThreads * 3);
+        executor = Executors.newFixedThreadPool(threadsNumber);
+        transactionsSemaphore = new Semaphore(threadsNumber * 3);
         batch = new HashSet<>();
-    }
-
-    public void addToQueue(Collection<Var> vars) {
-        batch.addAll(vars);
-        if (batch.size() >= batchSize) {
-            submitToExecutor(batch);
-            batch = new HashSet<>();
-        }
     }
 
     public void setExecutorSize(int size) {
@@ -83,27 +74,19 @@ public class BlockingLoader {
         }
     }
 
-    public void setBatchSize(int size){
-        batchSize = size;
-    }
-
-    private void submitToExecutor(Collection<Var> vars) {
+    protected void submitBatch(Collection<Var> vars) {
         try {
             transactionsSemaphore.acquire();
-            executor.submit(() -> loadData(graphName, vars));
+            Collection<Var> deepCopy = new ArrayList<>(vars);
+            executor.submit(() -> loadData(graphName, deepCopy));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public void addToQueue(Var var) {
-        addToQueue(Collections.singletonList(var));
-    }
-
     public void waitToFinish() {
-        if (batch.size() > 0) {
-            executor.submit(() -> loadData(graphName, batch));
-        }
+        flush();
+
         try {
             executor.shutdown();
             executor.awaitTermination(5, TimeUnit.MINUTES);
@@ -111,8 +94,8 @@ public class BlockingLoader {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         } finally {
-            LOG.info("ALL TASKS DONE!");
-            executor = Executors.newFixedThreadPool(numThreads);
+            LOG.info("All tasks done!");
+            executor = Executors.newFixedThreadPool(threadsNumber);
         }
     }
 

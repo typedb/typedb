@@ -179,4 +179,4 @@ $x has GPR >2.99;
 $x has specialHonours 'none';
 $x has GRE >1099;
 $x has vGRE <400},
-rhs {match $x has admissionStatus 'admit at department\\'s discretion'};
+rhs {match $x has admissionStatus 'admit at department\'s discretion'};

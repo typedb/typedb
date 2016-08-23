@@ -43,6 +43,8 @@ public class ConfigProperties {
     public static final String LOADER_REPEAT_COMMITS = "loader.repeat-commits";
 
     public static final String MAINTENANCE_ITERATION = "backgroundTasks.maintenance-iteration";
+    public static final String LOGGING_FILE_PATH= "logging.file";
+    public static final String DATE_FORMAT = "yyyy/MM/dd HH:mm:ss";
 
 
     private Properties prop;

@@ -74,7 +74,7 @@ public class ImportControllerTest {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        Assert.assertNotNull(GraphFactory.getInstance().getGraph(graphName).getTransaction().getConcept("X546f736869616b69204b61776173616b69").getId());
+        Assert.assertNotNull(GraphFactory.getInstance().getGraph(graphName).getTransaction().getConcept("X506965727265204162656c").getId());
     }
 
     @After

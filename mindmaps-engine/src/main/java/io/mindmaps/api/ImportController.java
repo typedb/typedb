@@ -26,10 +26,16 @@ import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.Var;
 import io.mindmaps.loader.BlockingLoader;
 import io.mindmaps.util.ConfigProperties;
+import io.swagger.annotations.*;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.LoggerFactory;
+import spark.Request;
+import spark.Response;
 
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -41,9 +47,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import static io.mindmaps.graql.Graql.insert;
 import static spark.Spark.post;
 
-/**
- * Class that provides methods to import ontologies and data from a Graql file to a graph.
- */
+
+@Api(value = "/import", description = "Endpoints to import data and ontologies from Graqlfiles to a graph.")
+@Path("/import")
+@Produces("text/plain")
+
 public class ImportController {
 
     private final org.slf4j.Logger LOG = LoggerFactory.getLogger(ImportController.class);
@@ -53,6 +61,8 @@ public class ImportController {
 
     //TODO: Use redis for caching LRU
     private Map<String, String> entitiesMap;
+    private ArrayList<Var> relationshipsList;
+
     private BlockingLoader loader;
 
 
@@ -60,44 +70,64 @@ public class ImportController {
         new ImportController(ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY));
     }
 
+
     public ImportController(String graphNameInit) {
 
-        post(RESTUtil.WebPath.IMPORT_DATA_URI, (req, res) -> {
-            try {
-                JSONObject bodyObject = new JSONObject(req.body());
-                importDataFromFile(bodyObject.get(RESTUtil.Request.PATH_FIELD).toString());
-            } catch (JSONException j) {
-                res.status(400);
-                return j.getMessage();
-            } catch (Exception e) {
-                res.status(500);
-                return e.getMessage();
-            }
-            return "";
-        });
-
-        post(RESTUtil.WebPath.IMPORT_ONTOLOGY_URI, (req, res) -> {
-            try {
-                JSONObject bodyObject = new JSONObject(req.body());
-                importOntologyFromFile(bodyObject.get(RESTUtil.Request.PATH_FIELD).toString());
-            } catch (JSONException j) {
-                res.status(400);
-                return j.getMessage();
-            } catch (Exception e) {
-                e.printStackTrace();
-                res.status(500);
-                return e.getMessage();
-            }
-            return "";
-        });
+        post(RESTUtil.WebPath.IMPORT_DATA_URI, this::importDataREST);
+        post(RESTUtil.WebPath.IMPORT_ONTOLOGY_URI, this::importOntologyREST);
 
         entitiesMap = new ConcurrentHashMap<>();
+        relationshipsList = new ArrayList<>();
         graphName = graphNameInit;
         loader = new BlockingLoader(graphName);
 
     }
 
-    public void importDataFromFile(String dataFile) throws IOException {
+
+    @POST
+    @Path("/data")
+    @ApiOperation(
+            value = "Import data from a Graql file. It performs batch loading.",
+            notes = "This is a separate import from ontology, since a batch loading is performed to optimise the loading speed. ")
+    @ApiImplicitParam(name = "path", value = "File path on the server.", required = true, dataType = "string", paramType = "body")
+
+    private String importDataREST(Request req, Response res) {
+        try {
+            String filePath = new JSONObject(req.body()).getString(RESTUtil.Request.PATH_FIELD);
+            importDataFromFile(filePath);
+        } catch (JSONException j) {
+            res.status(400);
+            return j.getMessage();
+        } catch (Exception e) {
+            res.status(500);
+            return e.getMessage();
+        }
+        return "";
+    }
+
+    @POST
+    @Path("/ontology")
+    @ApiOperation(
+            value = "Import ontology from a Graql file. It does not perform any batching.",
+            notes = "This is a separate import from data, since a batch loading is not performed in this case. The ontology must be loaded in one single transaction. ")
+    @ApiImplicitParam(name = "path", value = "File path on the server.", required = true, dataType = "string", paramType = "body")
+
+    private String importOntologyREST(Request req, Response res) {
+        try {
+            JSONObject bodyObject = new JSONObject(req.body());
+            importOntologyFromFile(bodyObject.get(RESTUtil.Request.PATH_FIELD).toString());
+        } catch (JSONException j) {
+            res.status(400);
+            return j.getMessage();
+        } catch (Exception e) {
+            e.printStackTrace();
+            res.status(500);
+            return e.getMessage();
+        }
+        return "";
+    }
+
+    void importDataFromFile(String dataFile) throws IOException {
         QueryParser.create().parsePatternsStream(new FileInputStream(dataFile)).forEach(pattern -> consumeEntity(pattern.admin().asVar()));
         loader.waitToFinish();
         QueryParser.create().parsePatternsStream(new FileInputStream(dataFile)).forEach(pattern -> consumeRelation(pattern.admin().asVar()));
@@ -132,10 +162,10 @@ public class ImportController {
                 }
             }
         }
-        if(ready) loader.addToQueue(var);
+        if (ready) loader.addToQueue(var);
     }
 
-    public void importOntologyFromFile(String ontologyFile) throws IOException, MindmapsValidationException {
+    void importOntologyFromFile(String ontologyFile) throws IOException, MindmapsValidationException {
 
         MindmapsTransaction transaction = GraphFactory.getInstance().getGraph(graphName).getTransaction();
         List<Var> ontologyBatch = new ArrayList<>();
@@ -147,6 +177,7 @@ public class ImportController {
         transaction.commit();
 
         LOG.info("Ontology loaded. ");
+
 
     }
 }
