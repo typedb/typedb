@@ -45,12 +45,13 @@ public class DistributedLoader extends Loader {
     private static ExecutorService executor = Executors.newSingleThreadExecutor();
     private Future future;
 
+    private int pollingFrequency;
     private String graphName;
     private int currentHost;
     private String[] hostsArray;
 
     private Map<String, Semaphore> availability;
-    private Map<String, Integer> jobsFinished;
+    private Map<String, Integer> jobsTerminated;
 
     private static final String POST = "http://%s:" +
             ConfigProperties.getInstance().getProperty(ConfigProperties.SERVER_PORT_NUMBER) +
@@ -75,8 +76,8 @@ public class DistributedLoader extends Loader {
         availability = new HashMap<>();
         hosts.forEach(h -> availability.put(h, new Semaphore(threadsNumber)));
 
-        jobsFinished = new HashMap<>();
-        hosts.forEach(h -> jobsFinished.put(h, 0));
+        jobsTerminated = new HashMap<>();
+        hosts.forEach(h -> jobsTerminated.put(h, 0));
     }
 
     @Override
@@ -185,9 +186,11 @@ public class DistributedLoader extends Loader {
                 int error = state.at(State.ERROR.name()).asInteger();
                 int finished = state.at(State.FINISHED.name()).asInteger();
 
-                int permitsToRelease = finished - jobsFinished.get(host);
+                int terminated = finished + error;
+
+                int permitsToRelease = terminated - jobsTerminated.get(host);
                 availability.get(host).release(permitsToRelease);
-                jobsFinished.put(host, finished);
+                jobsTerminated.put(host, terminated);
 
                 runningQueued += queued;
                 runningLoading += loading;
@@ -203,7 +206,7 @@ public class DistributedLoader extends Loader {
             printLoaderState();
 
             try {
-                Thread.sleep(30000);
+                Thread.sleep(pollingFrequency);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
