@@ -57,7 +57,7 @@ public class DistributedLoaderTest {
 
     @Before
     public void setUp() throws Exception {
-        LOG.setLevel(Level.OFF);
+        LOG.setLevel(Level.INFO);
 
         // set up engine
         new TransactionController();

@@ -38,7 +38,7 @@ public class TransactionState{
     @Override
     public String toString() {
         return Json.object()
-                .set(STATE_FIELD, currentState)
+                .set(STATE_FIELD, currentState.toString())
                 .set(EXCEPTION_FIELD, exception)
                 .toString();
     }

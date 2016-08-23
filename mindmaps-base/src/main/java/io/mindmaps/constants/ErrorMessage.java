@@ -124,7 +124,7 @@ public enum ErrorMessage {
     NO_PARAMETER_PROVIDED("Required Parameter [%s] is missing for this [%s] operation"),
 
     //Post processing Errors
-    CONCEPT_POSTPROCESSING("Concept [%s] of type [%s] is doe not have any post-processing steps"),
+    CONCEPT_POSTPROCESSING("Concept [%s] of type [%s] does not have any post-processing steps"),
     POSTPROCESSING_ERROR("Unexpected error during %s fix due to [%s]"),
     UNABLE_TO_ANALYSE_CONCEPT("Unable to analyse concept [%s] due to error [%s]"),
     BACK_OFF_RETRY("Unexpected failure performing backoff and retry of [%s]S"),
