@@ -796,4 +796,76 @@ public class AnalyticsTest {
             isSeen=false;
         }
     }
+
+    @Ignore
+    @Test
+    public void testDegreeIsCorrectAssertionAboutAssertion() throws MindmapsValidationException, ExecutionException, InterruptedException {
+        // create a simple graph
+        RoleType pet = transaction.putRoleType("pet");
+        RoleType owner = transaction.putRoleType("owner");
+        RelationType mansBestFriend = transaction.putRelationType("mans-best-friend").hasRole(pet).hasRole(owner);
+        RoleType target = transaction.putRoleType("target");
+        RoleType value = transaction.putRoleType("value");
+        RelationType hasName = transaction.putRelationType("has-name").hasRole(value).hasRole(target);
+        EntityType person = transaction.putEntityType("person").playsRole(owner);
+        EntityType animal = transaction.putEntityType("animal").playsRole(pet).playsRole(target);
+        ResourceType<String> name = transaction.putResourceType("name", Data.STRING).playsRole(value);
+        ResourceType<String> altName = transaction.putResourceType("alternate-name", Data.STRING).playsRole(value);
+        RoleType ownership = transaction.putRoleType("ownership");
+        RoleType ownershipResource = transaction.putRoleType("ownership-resource");
+        RelationType hasOwnershipResource = transaction.putRelationType("has-ownership-resource").hasRole(ownership).hasRole(ownershipResource);
+        ResourceType<String> startDate = transaction.putResourceType("start-date",Data.STRING).playsRole(ownershipResource);
+        mansBestFriend.playsRole(ownership);
+
+        // add data to the graph
+        Entity coco = transaction.putEntity("coco", animal);
+        Entity dave = transaction.putEntity("dave", person);
+        Resource coconut = transaction.putResource("coconut",name);
+        Resource stinky = transaction.putResource("stinky",altName);
+        Relation daveOwnsCoco = transaction.addRelation(mansBestFriend).putRolePlayer(owner,dave).putRolePlayer(pet,coco);
+        transaction.addRelation(hasName).putRolePlayer(target,coco).putRolePlayer(value,coconut);
+        transaction.addRelation(hasName).putRolePlayer(target,coco).putRolePlayer(value,stinky);
+        Resource sd = transaction.putResource("01/01/01",startDate);
+        Relation ownsFrom = transaction.addRelation(hasOwnershipResource).putRolePlayer(ownershipResource,sd).putRolePlayer(ownership,daveOwnsCoco);
+
+        // manually compute the degree
+        Map<String,Long> referenceDegrees1 = new HashMap<>();
+        referenceDegrees1.put(coco.getId(),1L);
+        referenceDegrees1.put(dave.getId(),1L);
+        referenceDegrees1.put(daveOwnsCoco.getId(),3L);
+        referenceDegrees1.put(sd.getId(),1L);
+        referenceDegrees1.put(ownsFrom.getId(),2L);
+
+        // manually compute degrees
+        Map<String,Long> referenceDegrees2 = new HashMap<>();
+        referenceDegrees2.put(coco.getId(),1L);
+        referenceDegrees2.put(dave.getId(),1L);
+        referenceDegrees2.put(daveOwnsCoco.getId(),2L);
+
+        transaction.commit();
+
+        mansBestFriend = transaction.getRelationType("mans-best-friend");
+        person = transaction.getEntityType("person");
+        animal = transaction.getEntityType("animal");
+        startDate = transaction.getResourceType("start-date");
+        hasOwnershipResource = transaction.getRelationType("has-ownership-resource");
+
+        // create a subgraph with assertion on assertion
+        Set<Type> ct = new HashSet<>();
+        ct.add(animal);
+        ct.add(person);
+        ct.add(mansBestFriend);
+        ct.add(startDate);
+        ct.add(hasOwnershipResource);
+        Analytics analytics = new Analytics(ct);
+        assertEquals(referenceDegrees1, analytics.degrees());
+
+        // create subgraph without assertion on assertion
+        ct.clear();
+        ct.add(animal);
+        ct.add(person);
+        ct.add(mansBestFriend);
+        analytics = new Analytics(ct);
+        assertEquals(referenceDegrees2, analytics.degrees());
+    }
 }
