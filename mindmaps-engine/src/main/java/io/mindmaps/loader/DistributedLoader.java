@@ -69,6 +69,7 @@ public class DistributedLoader extends Loader {
         batch = new HashSet<>();
         hostsArray = hosts.toArray(new String[hosts.size()]);
         currentHost = 0;
+        pollingFrequency = 30000;
 
         threadsNumber = prop.getPropertyAsInt(ConfigProperties.NUM_THREADS_PROPERTY) * 3;
 
@@ -86,6 +87,10 @@ public class DistributedLoader extends Loader {
 
         // create availability map
         availability.keySet().forEach(h -> availability.put(h, new Semaphore(threadsNumber)));
+    }
+
+    public void setPollingFrequency(int number){
+        this.pollingFrequency = number;
     }
 
     /**
@@ -143,7 +148,7 @@ public class DistributedLoader extends Loader {
      * @return true if all transactions have finished
      */
     private boolean transactionsIsEmpty() {
-        return availability.values().stream().allMatch(a -> a.availablePermits() == threadsNumber);
+        return loadingJobs.get() + enqueuedJobs.get() == 0;
     }
 
     /**

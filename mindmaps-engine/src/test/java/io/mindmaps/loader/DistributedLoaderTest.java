@@ -53,7 +53,7 @@ public class DistributedLoaderTest {
     private MindmapsGraph graph;
 
     private Properties prop = new Properties();
-    private Loader loader;
+    private DistributedLoader loader;
 
     @Before
     public void setUp() throws Exception {
@@ -97,6 +97,7 @@ public class DistributedLoaderTest {
 
     public void loadDataFromFile(File file) {
         loader.setBatchSize(50);
+        loader.setPollingFrequency(1000);
         try {
             QueryParser.create()
                     .parsePatternsStream(new FileInputStream(file))
