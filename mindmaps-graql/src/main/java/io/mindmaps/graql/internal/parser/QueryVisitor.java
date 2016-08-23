@@ -21,6 +21,11 @@ package io.mindmaps.graql.internal.parser;
 import com.google.common.collect.ImmutableMap;
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.Data;
+import io.mindmaps.core.model.Instance;
+import io.mindmaps.core.model.RelationType;
+import io.mindmaps.core.model.ResourceType;
+import io.mindmaps.core.model.RoleType;
+import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.graql.*;
 import io.mindmaps.graql.internal.StringConverter;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -29,6 +34,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.concurrent.ExecutionException;
 import java.util.function.UnaryOperator;
 
 import static java.util.stream.Collectors.toList;
@@ -43,6 +49,12 @@ public class QueryVisitor extends GraqlBaseVisitor {
     private final Stack<Var> patterns = new Stack<>();
     private final Map<String, List<Getter>> getters = new HashMap<>();
     private final ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods;
+
+    public QueryVisitor(
+            ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods, QueryBuilder queryBuilder) {
+        this.aggregateMethods = aggregateMethods;
+        this.queryBuilder = queryBuilder;
+    }
 
     @Override
     public Object visitQueryEOF(GraqlParser.QueryEOFContext ctx) {
@@ -70,22 +82,13 @@ public class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
+    public Object visitComputeEOF(GraqlParser.ComputeEOFContext ctx) {
+        return visitComputeQuery(ctx.computeQuery());
+    }
+
+    @Override
     public Object visitAggregateEOF(GraqlParser.AggregateEOFContext ctx) {
         return visitAggregateQuery(ctx.aggregateQuery());
-    }
-
-    public QueryVisitor(ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods) {
-        this.aggregateMethods = aggregateMethods;
-        queryBuilder = Graql.withoutTransaction();
-    }
-
-    /**
-     * @param transaction the transaction that the parsed query should use
-     */
-    public QueryVisitor(
-            ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods, MindmapsTransaction transaction) {
-        this.aggregateMethods = aggregateMethods;
-        queryBuilder = Graql.withTransaction(transaction);
     }
 
     @Override
@@ -120,6 +123,26 @@ public class QueryVisitor extends GraqlBaseVisitor {
         Collection<Var> getters = visitDeletePatterns(ctx.deletePatterns());
         MatchQueryDefault matchQuery = visitMatchQuery(ctx.matchQuery()).getMatchQuery();
         return matchQuery.delete(getters);
+    }
+
+    @Override
+    public Object visitComputeQuery(GraqlParser.ComputeQueryContext ctx) {
+        // TODO: Allow registering additional compute methods
+        try {
+            switch (visitId(ctx.id())) {
+                case "count":
+                    return new Analytics().count();
+                case "degrees":
+                    return new Analytics().degrees();
+                case "degreesAndPersist":
+                    new Analytics().degreesAndPersist();
+                    return null;
+                default:
+                    throw new RuntimeException("Unrecognized compute method");
+            }
+        } catch (ExecutionException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

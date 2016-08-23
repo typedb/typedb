@@ -26,6 +26,7 @@ import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.InvalidConceptTypeException;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.Concept;
+import io.mindmaps.core.model.Instance;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.graql.internal.parser.ANSI;
 import io.mindmaps.graql.internal.parser.MatchQueryPrinter;
@@ -285,6 +286,15 @@ public class GraqlShell implements AutoCloseable {
             } else if (query instanceof DeleteQuery) {
                 ((DeleteQuery) query).execute();
                 reasoner.linkConceptTypes();
+            } else if (query instanceof Long) {
+                // Count query
+                print(query.toString()+"\n");
+            } else if (query instanceof Map) {
+                // Degree query
+                //noinspection unchecked
+                ((Map<Instance, Long>) query).forEach((instance, degree) -> print(instance.getId() + "\t" + degree+"\n"));
+            } else if (query == null) {
+                print("Degrees have been persisted.\n");
             } else {
                 throw new RuntimeException("Unrecognized query " + query);
             }

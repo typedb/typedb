@@ -18,6 +18,8 @@
 
 package io.mindmaps.postprocessing;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import io.mindmaps.api.CommitLogController;
 import io.mindmaps.api.GraphFactoryController;
 import io.mindmaps.constants.DataType;
@@ -32,6 +34,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -39,6 +42,13 @@ import static org.junit.Assert.assertEquals;
 public class BackgroundTasksTest {
     private BackgroundTasks backgroundTasks;
     private MindmapsGraph mindmapsGraph;
+
+    @BeforeClass
+    public static void startController() {
+        // Disable horrid cassandra logs
+        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+        logger.setLevel(Level.INFO);
+    }
 
     @Before
     public void setUp() throws Exception {

@@ -21,10 +21,7 @@ package io.mindmaps.api;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 
@@ -37,6 +34,13 @@ public class ImportControllerTest {
     ImportController importer;
     Properties prop = new Properties();
     String graphName;
+
+    @BeforeClass
+    public static void startController() {
+        // Disable horrid cassandra logs
+        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+        logger.setLevel(Level.INFO);
+    }
 
     @Before
     public void setUp() throws Exception {

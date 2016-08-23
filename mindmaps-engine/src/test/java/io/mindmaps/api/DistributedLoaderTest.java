@@ -47,6 +47,12 @@ public class DistributedLoaderTest {
     DistributedLoader loader;
     private final org.slf4j.Logger LOG = LoggerFactory.getLogger(DistributedLoaderTest.class);
 
+    @BeforeClass
+    public static void startController() {
+        // Disable horrid cassandra logs
+        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+        logger.setLevel(Level.INFO);
+    }
 
     @Before
     public void setUp() throws Exception {
@@ -65,9 +71,6 @@ public class DistributedLoaderTest {
     @Ignore
     @Test
     public void testLoadOntologyAndData() {
-        Logger logger = (Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.INFO);
-
         loadOntology();
 
         ClassLoader classLoader = getClass().getClassLoader();

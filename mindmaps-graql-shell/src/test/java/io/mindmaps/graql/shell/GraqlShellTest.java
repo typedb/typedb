@@ -22,17 +22,17 @@ import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.GraqlShell;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.*;
 import java.util.Arrays;
+import java.util.Random;
 import java.util.function.Function;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class GraqlShellTest {
 
@@ -198,6 +198,30 @@ public class GraqlShellTest {
         testShell("insert movie isa entity-type; moon isa movie; europa isa moon\n", err);
 
         assertThat(err.toString(), allOf(containsString("moon"), containsString("not"), containsString("type")));
+    }
+
+    @Ignore
+    @Test
+    public void testComputeCount() throws IOException {
+        String result = testShell("insert X isa entity-type; a isa X; b isa X; c isa X;\ncommit\ncompute count()\n");
+        assertThat(result, containsString("\n3\n"));
+    }
+
+    @Test
+    public void fuzzTest() throws IOException {
+        int repeats = 1000;
+        for (int i = 0; i < repeats; i ++) {
+            testShell(randomString(i));
+        }
+    }
+
+    private String randomString(int length) {
+        Random random = new Random();
+        StringBuilder sb = new StringBuilder();
+
+        random.ints().limit(length).forEach(i -> sb.append((char) i));
+
+        return sb.toString();
     }
 
     private String testShell(String input, String... args) throws IOException {
