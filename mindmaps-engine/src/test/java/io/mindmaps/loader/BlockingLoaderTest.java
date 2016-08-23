@@ -16,16 +16,16 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.api;
+package io.mindmaps.loader;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.api.CommitLogController;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.Var;
-import io.mindmaps.loader.BlockingLoader;
 import io.mindmaps.util.ConfigProperties;
 import org.junit.*;
 import org.slf4j.LoggerFactory;
@@ -85,7 +85,7 @@ public class BlockingLoaderTest {
         loadOntology();
 
         loader.setExecutorSize(16);
-        loader.setBatchSize(60);
+        loader.setBatchSize(10);
         startTime = System.currentTimeMillis();
         try {
             QueryParser.create().parsePatternsStream(new FileInputStream(fileData)).forEach(pattern -> loader.addToQueue(pattern.admin().asVar()));
@@ -98,7 +98,7 @@ public class BlockingLoaderTest {
         LOG.info("First load time " + firstLoadingTime + ". Second load time " + secondLoadingTime);
 
         Assert.assertTrue(secondLoadingTime < firstLoadingTime);
-        Assert.assertNotNull(GraphFactory.getInstance().getGraph(graphName).getTransaction().getConcept("X546f736869616b69204b61776173616b69").getId());
+        Assert.assertNotNull(GraphFactory.getInstance().getGraph(graphName).getTransaction().getConcept("X506965727265204162656c").getId());
     }
 
     private void loadOntology() {

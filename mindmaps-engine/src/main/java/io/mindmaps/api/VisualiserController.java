@@ -46,7 +46,7 @@ public class VisualiserController {
 
     private String getConceptsByValue(Request req, Response res) {
 
-        // TODO: Implement HAL builder for concepts retrieved by Value
+        // TODO: Implement HAL builder for concepts retrieved by Value, this still does not work.
 
         GraphFactory.getInstance().getGraph(defaultGraphName).getTransaction().getConceptsByValue(req.queryParams(RESTUtil.Request.VALUE_FIELD));
         return req.queryParams(RESTUtil.Request.VALUE_FIELD);
