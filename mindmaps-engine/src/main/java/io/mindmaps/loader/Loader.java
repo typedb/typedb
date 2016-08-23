@@ -1,7 +1,5 @@
 package io.mindmaps.loader;
 
-import io.mindmaps.graql.Graql;
-import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.Var;
 
@@ -53,7 +51,13 @@ public abstract class Loader {
      * @param vars to be loaded
      */
     public void addToQueue(String vars){
-        addToQueue(QueryParser.create().parseInsertQuery(vars).admin().getVars());
+        try {
+            addToQueue(QueryParser.create().parseInsertQuery(vars).admin().getVars());
+        }
+        catch (IllegalArgumentException e){
+            System.out.println(vars);
+            e.printStackTrace();
+        }
     }
 
     /**
