@@ -124,48 +124,49 @@ public class RESTLoader {
         loaderState.put(uuid, new TransactionState(State.LOADING));
         enqueuedJobs.decrementAndGet();
 
-        for (int i = 0; i < repeatCommits; i++) {
+        loadingJobs.incrementAndGet();
 
-            loadingJobs.incrementAndGet();
-            MindmapsTransactionImpl transaction = null;
-            try {
-                transaction = (MindmapsTransactionImpl) GraphFactory.getInstance().getGraphBatchLoading(name).getTransaction();
-                QueryParser.create(transaction).parseInsertQuery(batch).execute();
-                transaction.commit();
-                cache.addJobCasting(name, transaction.getModifiedCastingIds());
-                loaderState.get(uuid).setState(State.FINISHED);
-                finishedJobs.incrementAndGet();
-                return;
+        try {
+            for (int i = 0; i < repeatCommits; i++) {
 
-            } catch (MindmapsValidationException e) {
-                //If it's a validation exception there is no point in re-trying
-                LOG.error(ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));
-                logToFile(batch, ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));
-                loaderState.get(uuid).setState(State.ERROR);
-                loaderState.get(uuid).setException(ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));
-                errorJobs.incrementAndGet();
-                return;
-            } catch (IllegalArgumentException e) {
-                //If it's an illegal argument exception there is no point in re-trying
-                LOG.error(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION.getMessage(e.getMessage()));
-                logToFile(batch, ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION.getMessage(e.getMessage()));
-                loaderState.get(uuid).setState(State.ERROR);
-                loaderState.get(uuid).setException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION.getMessage(e.getMessage()));
-                errorJobs.incrementAndGet();
-                return;
-            } catch (Exception e) {
-                //If it's not a validation exception we need to remain in the for loop
-                handleError(e, 1);
-            } finally {
+                MindmapsTransactionImpl transaction= null;
                 try {
-                    if(transaction!=null)
-                        transaction.close();
-                    loadingJobs.decrementAndGet();
-                    lastJobFinished.set(System.currentTimeMillis());
+                    transaction = (MindmapsTransactionImpl) GraphFactory.getInstance().getGraphBatchLoading(name).getTransaction();
+                    QueryParser.create(transaction).parseInsertQuery(batch).execute();
+                    transaction.commit();
+                    cache.addJobCasting(name, transaction.getModifiedCastingIds());
+                    loaderState.get(uuid).setState(State.FINISHED);
+                    finishedJobs.incrementAndGet();
+                    return;
+
+                } catch (MindmapsValidationException e) {
+                    //If it's a validation exception there is no point in re-trying
+                    LOG.error(ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));
+                    logToFile(batch, ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));
+                    loaderState.get(uuid).setState(State.ERROR);
+                    loaderState.get(uuid).setException(ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));
+                    errorJobs.incrementAndGet();
+                    return;
+                } catch (IllegalArgumentException e) {
+                    //If it's an illegal argument exception there is no point in re-trying
+                    LOG.error(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION.getMessage(e.getMessage()));
+                    logToFile(batch, ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION.getMessage(e.getMessage()));
+                    loaderState.get(uuid).setState(State.ERROR);
+                    loaderState.get(uuid).setException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION.getMessage(e.getMessage()));
+                    errorJobs.incrementAndGet();
+                    return;
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    //If it's not a validation exception we need to remain in the for loop
+                    handleError(e, 1);
+                } finally {
+                    lastJobFinished.set(System.currentTimeMillis());
+                    if (transaction != null) {
+                        transaction.close();
+                    }
                 }
             }
+        } finally {
+            loadingJobs.decrementAndGet();
         }
 
         LOG.error(ErrorMessage.FAILED_TRANSACTION.getMessage(repeatCommits));
