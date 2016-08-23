@@ -47,6 +47,13 @@ public class BlockingLoaderTest {
     private final org.slf4j.Logger LOG = LoggerFactory.getLogger(BlockingLoaderTest.class);
 
 
+    @BeforeClass
+    public static void startController() {
+        // Disable horrid cassandra logs
+        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+        logger.setLevel(Level.INFO);
+    }
+
     @Before
     public void setUp() throws Exception {
         try {
@@ -62,9 +69,6 @@ public class BlockingLoaderTest {
 
     @Test
     public void testLoadOntologyAndData() {
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.INFO);
-
         loadOntology();
 
         ClassLoader classLoader = getClass().getClassLoader();

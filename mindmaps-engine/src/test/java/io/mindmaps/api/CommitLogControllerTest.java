@@ -34,6 +34,7 @@ import io.mindmaps.postprocessing.Cache;
 import io.mindmaps.util.ConfigProperties;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Properties;
@@ -47,12 +48,17 @@ public class CommitLogControllerTest {
     private Properties prop = new Properties();
     private Cache cache;
 
+    @BeforeClass
+    public static void startController() {
+        // Disable horrid cassandra logs
+        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+        logger.setLevel(Level.INFO);
+    }
+
     @Before
     public void setUp() throws Exception {
         new CommitLogController();
         new GraphFactoryController();
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.INFO);
         try {
             prop.load(ImportControllerTest.class.getClassLoader().getResourceAsStream(ConfigProperties.CONFIG_TEST_FILE));
         } catch (Exception e) {

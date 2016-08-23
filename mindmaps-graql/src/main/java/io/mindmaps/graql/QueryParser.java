@@ -42,14 +42,14 @@ import static io.mindmaps.graql.Graql.*;
  */
 public class QueryParser {
 
-    private final Optional<MindmapsTransaction> transaction;
+    private final QueryBuilder queryBuilder;
     private final Map<String, Function<List<Object>, Aggregate>> aggregateMethods = new HashMap<>();
 
     /**
      * Create a query parser with no specified graph
      */
     private QueryParser() {
-        this.transaction = Optional.empty();
+        queryBuilder = withoutTransaction();
         registerDefaultAggregates();
     }
 
@@ -58,7 +58,7 @@ public class QueryParser {
      *  @param transaction  the transaction to operate the query on
      */
     private QueryParser(MindmapsTransaction transaction) {
-        this.transaction = Optional.of(transaction);
+        queryBuilder = withTransaction(transaction);
         registerDefaultAggregates();
     }
 
@@ -217,9 +217,7 @@ public class QueryParser {
         ImmutableMap<String, Function<List<Object>, Aggregate>> immutableAggregates =
                 ImmutableMap.copyOf(aggregateMethods);
 
-        return transaction
-                .map(t -> new QueryVisitor(immutableAggregates, t))
-                .orElseGet(() -> new QueryVisitor(immutableAggregates));
+        return new QueryVisitor(immutableAggregates, queryBuilder);
     }
 
     private void registerDefaultAggregates() {

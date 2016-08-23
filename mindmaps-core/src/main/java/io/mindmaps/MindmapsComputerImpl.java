@@ -19,30 +19,54 @@
 package io.mindmaps;
 
 import io.mindmaps.constants.ErrorMessage;
+import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
+import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+
+import java.util.concurrent.ExecutionException;
 
 public class MindmapsComputerImpl implements MindmapsComputer {
     private final Graph graph;
     private final Class<? extends GraphComputer> graphComputer;
 
-    public MindmapsComputerImpl(Graph graph, String graphComputerType){
+    public MindmapsComputerImpl(Graph graph, String graphComputerType) {
         this.graph = graph;
         this.graphComputer = getGraphComputer(graphComputerType);
     }
 
     @Override
-    public void compute(VertexProgram program){
-        //TODO: Run the program I guess ?
+    public ComputerResult compute(VertexProgram program) {
+        try {
+            ComputerResult result = graph.compute(graphComputer).program(program).submit().get();
+            return result;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    @Override
+    public ComputerResult compute(MapReduce mapReduce) {
+        try {
+            ComputerResult result = graph.compute(graphComputer).mapReduce(mapReduce).submit().get();
+            return result;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     /**
-     *
      * @return A graph compute supported by this mindmaps graph
      */
     @SuppressWarnings("unchecked")
-    private Class<? extends GraphComputer> getGraphComputer(String graphComputerType){
+    private Class<? extends GraphComputer> getGraphComputer(String graphComputerType) {
         try {
             return (Class<? extends GraphComputer>) Class.forName(graphComputerType);
         } catch (ClassNotFoundException e) {

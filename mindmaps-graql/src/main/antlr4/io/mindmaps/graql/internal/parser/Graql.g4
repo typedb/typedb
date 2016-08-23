@@ -1,19 +1,21 @@
 grammar Graql;
 
 queryEOF       : query EOF ;
-query          : matchQuery | askQuery | insertQuery | deleteQuery | aggregateQuery ;
+query          : matchQuery | askQuery | insertQuery | deleteQuery | aggregateQuery | computeQuery ;
 
 matchEOF       : matchQuery EOF ;
 askEOF         : askQuery EOF ;
 insertEOF      : insertQuery EOF ;
 deleteEOF      : deleteQuery EOF ;
 aggregateEOF   : aggregateQuery EOF ;
+computeEOF     : computeQuery EOF ;
 
 matchQuery     : 'match' patterns modifiers ;
 askQuery       : matchQuery 'ask' ;
 insertQuery    : matchQuery? 'insert' insertPatterns ;
 deleteQuery    : matchQuery 'delete' deletePatterns ;
 aggregateQuery : matchQuery 'aggregate' aggregate ;
+computeQuery   : 'compute' id '(' ')' ;
 
 selectors      : selector (',' selector)* ;
 selector       : VARIABLE ('(' (getter ','?)* ')')? ;
