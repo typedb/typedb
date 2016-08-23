@@ -36,7 +36,7 @@ public class HALConcept {
 
     public HALConcept(Concept concept) {
 
-        //builging HAL concepts using: https://github.com/HalBuilder/halbuilder-core
+        //building HAL concepts using: https://github.com/HalBuilder/halbuilder-core
 
         int separationDegrees = ConfigProperties.getInstance().getPropertyAsInt(ConfigProperties.HAL_DEGREE_PROPERTY);
         resourceLinkPrefix=ConfigProperties.getInstance().getProperty(ConfigProperties.HAL_RESOURCE_PREFIX);

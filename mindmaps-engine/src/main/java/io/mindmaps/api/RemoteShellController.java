@@ -18,11 +18,11 @@
 
 package io.mindmaps.api;
 
-import io.mindmaps.util.ConfigProperties;
+import io.mindmaps.constants.RESTUtil;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.QueryParser;
-import io.mindmaps.constants.RESTUtil;
+import io.mindmaps.util.ConfigProperties;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
@@ -76,22 +76,27 @@ public class RemoteShellController {
         String currentGraphName = req.queryParams(RESTUtil.Request.GRAPH_NAME_PARAM);
         if (currentGraphName == null) currentGraphName = defaultGraphName;
 
-        MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) GraphFactory.getInstance().getGraph(currentGraphName).getTransaction();
+        try {
+            MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) GraphFactory.getInstance().getGraph(currentGraphName).getTransaction();
 
-        JSONObject responseObj = new JSONObject();
-        responseObj.put(RESTUtil.Response.ROLES_JSON_FIELD, new JSONArray(transaction.getMetaRoleType().instances().stream().map(x -> x.getId()).toArray()));
-        responseObj.put(RESTUtil.Response.ENTITIES_JSON_FIELD, new JSONArray(transaction.getMetaEntityType().instances().stream().map(x -> x.getId()).toArray()));
-        responseObj.put(RESTUtil.Response.RELATIONS_JSON_FIELD, new JSONArray(transaction.getMetaRelationType().instances().stream().map(x -> x.getId()).toArray()));
-        responseObj.put(RESTUtil.Response.RESOURCES_JSON_FIELD, new JSONArray(transaction.getMetaResourceType().instances().stream().map(x -> x.getId()).toArray()));
+            JSONObject responseObj = new JSONObject();
+            responseObj.put(RESTUtil.Response.ROLES_JSON_FIELD, new JSONArray(transaction.getMetaRoleType().instances().stream().map(x -> x.getId()).toArray()));
+            responseObj.put(RESTUtil.Response.ENTITIES_JSON_FIELD, new JSONArray(transaction.getMetaEntityType().instances().stream().map(x -> x.getId()).toArray()));
+            responseObj.put(RESTUtil.Response.RELATIONS_JSON_FIELD, new JSONArray(transaction.getMetaRelationType().instances().stream().map(x -> x.getId()).toArray()));
+            responseObj.put(RESTUtil.Response.RESOURCES_JSON_FIELD, new JSONArray(transaction.getMetaResourceType().instances().stream().map(x -> x.getId()).toArray()));
 
-        return responseObj.toString();
+            return responseObj.toString();
+        }catch(Exception e){
+            e.printStackTrace();
+            res.status(500);
+            return e.getMessage();
+        }
     }
 
     @GET
     @Path("/match")
     @ApiOperation(
-            value = "Executes match query on the server and produces a result string.",
-            response = String.class)
+            value = "Executes match query on the server and produces a result string.")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "graphName", value = "Name of graph to use", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "query", value = "Match query to execute", required = true,dataType = "string", paramType = "query")
@@ -101,17 +106,19 @@ public class RemoteShellController {
         String currentGraphName = req.queryParams(RESTUtil.Request.GRAPH_NAME_PARAM);
         if(currentGraphName==null) currentGraphName = defaultGraphName;
 
-        QueryParser parser = QueryParser.create(GraphFactory.getInstance().getGraph(currentGraphName).getTransaction());
-
         LOG.info("Received match query: \"" + req.queryParams(RESTUtil.Request.QUERY_FIELD) + "\"");
 
+
         try {
+            QueryParser parser = QueryParser.create(GraphFactory.getInstance().getGraph(currentGraphName).getTransaction());
+
             return parser.parseMatchQuery(req.queryParams(RESTUtil.Request.QUERY_FIELD))
                     .resultsString()
                     .map(x -> x.replaceAll("\u001B\\[\\d+[m]", ""))
                     .collect(Collectors.joining("\n"));
         } catch (Exception e) {
-            res.status(400);
+            e.printStackTrace();
+            res.status(500);
             return e.getMessage();
         }
     }

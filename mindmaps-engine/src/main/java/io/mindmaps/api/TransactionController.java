@@ -50,17 +50,16 @@ public class TransactionController {
 
         loader = RESTLoader.getInstance();
 
+        get(RESTUtil.WebPath.LOADER_STATE_URI, this::loaderState);
         post(RESTUtil.WebPath.NEW_TRANSACTION_URI, this::newTransactionREST);
         get(RESTUtil.WebPath.TRANSACTION_STATUS_URI+RESTUtil.Request.UUID_PARAMETER, this::checkTransactionStatusREST);
-        get(RESTUtil.WebPath.LOADER_STATE_URI, this::loaderState);
 
     }
     @POST
     @Path("/new")
     @ApiOperation(
             value = "Load a new transaction made of Graql insert queries into the graph.",
-            notes = "The body of the request must only contain the insert Graql strings.",
-            response = String.class)
+            notes = "The body of the request must only contain the insert Graql strings.")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "graphName", value = "Name of graph to use", dataType = "string", paramType = "query")
     })
@@ -80,8 +79,7 @@ public class TransactionController {
     @GET
     @Path("/status/:uuid")
     @ApiOperation(
-            value = "Returns the status of the transaction associated to the given UUID.",
-            response = String.class)
+            value = "Returns the status of the transaction associated to the given UUID.")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "uuid", value = "UUID of the transaction", required = true, dataType = "string", paramType = "path")
     })
@@ -98,8 +96,7 @@ public class TransactionController {
     @GET
     @Path("/loaderState")
     @ApiOperation(
-            value = "Returns the state of the RESTLoader.",
-            response = String.class)
+            value = "Returns the state of the RESTLoader.")
     private String loaderState(Request req, Response res){
         try {
             return loader.getLoaderState();

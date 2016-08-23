@@ -122,11 +122,11 @@ public class RESTLoader {
         // Attempt committing the transaction a certain number of times
         // If a transaction fails, it must be repeated from scratch because Titan is forgetful
         loaderState.put(uuid, new TransactionState(State.LOADING));
-        loadingJobs.incrementAndGet();
         enqueuedJobs.decrementAndGet();
 
         for (int i = 0; i < repeatCommits; i++) {
 
+            loadingJobs.incrementAndGet();
             MindmapsTransactionImpl transaction = null;
             try {
                 transaction = (MindmapsTransactionImpl) GraphFactory.getInstance().getGraphBatchLoading(name).getTransaction();
@@ -146,7 +146,7 @@ public class RESTLoader {
                 errorJobs.incrementAndGet();
                 return;
             } catch (IllegalArgumentException e) {
-                //If it's a parsing exception there is no point in re-trying
+                //If it's an illegal argument exception there is no point in re-trying
                 LOG.error(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION.getMessage(e.getMessage()));
                 logToFile(batch, ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION.getMessage(e.getMessage()));
                 loaderState.get(uuid).setState(State.ERROR);

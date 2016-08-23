@@ -60,7 +60,7 @@ public class DistributedLoader extends Loader {
 
     private static final String GET = "http://%s:" +
             ConfigProperties.getInstance().getProperty(ConfigProperties.SERVER_PORT_NUMBER) +
-            "/transaction/loaderState";
+            RESTUtil.WebPath.LOADER_STATE_URI;
 
     public DistributedLoader(String graphNameInit, Collection<String> hosts) {
         ConfigProperties prop = ConfigProperties.getInstance();
@@ -117,7 +117,7 @@ public class DistributedLoader extends Loader {
         }
 
         markAsLoading(getResponseBody(currentConn));
-        System.out.println("Transaction sent to host: " + hostsArray[currentHost]);
+        LOG.info("Transaction sent to host: " + hostsArray[currentHost]);
 
         if(future == null){ startCheckingStatus(); }
 
@@ -178,7 +178,8 @@ public class DistributedLoader extends Loader {
             for (String host : availability.keySet()) {
 
                 Json state = Json.read(getHostState(host));
-                System.out.println(state);
+                LOG.info("State from host ["+host+"]:");
+                LOG.info(state.toString());
 
                 int queued = state.at(State.QUEUED.name()).asInteger();
                 int loading = state.at(State.LOADING.name()).asInteger();
@@ -229,7 +230,7 @@ public class DistributedLoader extends Loader {
     }
 
     /**
-     * Return the string ip of the next host
+     * Return the string ip of the next host using round-robin technique
      *
      * @return ip of the next host
      */
@@ -282,7 +283,7 @@ public class DistributedLoader extends Loader {
                     body));
         }
         catch (IOException e){
-            LOG.error("Exception thrown with " + connection.getURL().toString());
+            LOG.error(ErrorMessage.ERROR_COMMUNICATING_TO_HOST.getMessage(connection.getURL().toString()));
         }
 
         return null;

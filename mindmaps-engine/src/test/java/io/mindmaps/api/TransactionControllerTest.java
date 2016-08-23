@@ -20,16 +20,14 @@ package io.mindmaps.api;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import io.mindmaps.Util;
-import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.Util;
+import io.mindmaps.constants.RESTUtil;
+import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.loader.TransactionState;
 import io.mindmaps.util.ConfigProperties;
-import io.mindmaps.constants.RESTUtil;
-import mjson.Json;
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
+import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -79,8 +77,6 @@ public class TransactionControllerTest {
                 status = new JSONObject(get("/transaction/status/" + transactionUUID).then().extract().response().asString()).getString("state");
             } catch (InterruptedException e) {
                 e.printStackTrace();
-            } catch (JSONException e) {
-                e.printStackTrace();
             }
         }
         assertTrue(GraphFactory.getInstance().getGraph(graphName).getTransaction().getConcept("actor-123").asEntity().getValue().equals("Al Pacino"));
@@ -99,8 +95,6 @@ public class TransactionControllerTest {
                 Thread.sleep(500);
                 System.out.println(get("/transaction/status/" + transactionUUID).then().extract().response().asString());
                 status = new JSONObject(get("/transaction/status/" + transactionUUID).then().extract().response().asString()).getString("state");
-            } catch (JSONException e) {
-                e.printStackTrace();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -113,9 +107,12 @@ public class TransactionControllerTest {
         String exampleInvalidInsertQuery = "insert id ?Cdcs;w4. '' ervalue;";
         given().body(exampleInvalidInsertQuery).
                 when().post(RESTUtil.WebPath.NEW_TRANSACTION_URI + "?graphName=mindmapstest").body().asString();
-        Json resultObj = Json.make(get(RESTUtil.WebPath.LOADER_STATE_URI).then().statusCode(200).and().extract().body().asString());
-        System.out.println(resultObj.has("QUEUED"));
-        System.out.println(resultObj.toString());
+        JSONObject resultObj = new JSONObject(get(RESTUtil.WebPath.LOADER_STATE_URI).then().statusCode(200).and().extract().body().asString());
+        assertTrue(resultObj.has(TransactionState.State.QUEUED.name()));
+        assertTrue(resultObj.has(TransactionState.State.ERROR.name()));
+        assertTrue(resultObj.has(TransactionState.State.FINISHED.name()));
+        assertTrue(resultObj.has(TransactionState.State.LOADING.name()));
+
     }
 
     @After

@@ -130,6 +130,7 @@ public enum ErrorMessage {
     BACK_OFF_RETRY("Unexpected failure performing backoff and retry of [%s]S"),
     //Distributed loading Errors
     ERROR_IN_DISTRIBUTED_TRANSACTION("Error while sending transaction to host: [%s]. Code: [%s] Message:[%s] \n Transaction string: [%s] "),
+    ERROR_COMMUNICATING_TO_HOST("Exception thrown while trying to communicate with host [%s]"),
 
 
     //--------------------------------------------- Reasoner Errors -----------------------------------------------
