@@ -89,10 +89,9 @@ public class DistributedLoaderTest {
         assertNotNull(transaction.getConcept("X422e20476174686d616e6e").getId());
         assertNotNull(transaction.getConcept("X416e6472657720522e2057656262").getId());
         assertNotNull(transaction.getConcept("X4a752d4d696e205a68616f").getId());
-        assertNotNull(transaction.getConcept("X546f736869616b69204b61776173616b69").getId());
 
         int size = transaction.getEntityType("name_tag").instances().size();
-        assertEquals(size, 1000);
+        assertEquals(size, 100);
     }
 
 
