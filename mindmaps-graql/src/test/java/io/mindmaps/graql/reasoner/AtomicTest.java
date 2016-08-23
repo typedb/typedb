@@ -18,44 +18,92 @@
 
 package io.mindmaps.graql.reasoner;
 
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsTransaction;
-import io.mindmaps.graql.Graql;
-import io.mindmaps.graql.MatchQueryDefault;
-import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.graql.QueryParser;
+import io.mindmaps.core.model.RelationType;
+import io.mindmaps.core.model.RoleType;
+import io.mindmaps.core.model.Type;
+import io.mindmaps.graql.*;
 import io.mindmaps.graql.internal.reasoner.container.Query;
+import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
+import io.mindmaps.graql.internal.reasoner.predicate.Relation;
+import io.mindmaps.graql.reasoner.graphs.GenericGraph;
 import io.mindmaps.graql.reasoner.graphs.SNBGraph;
-import org.junit.BeforeClass;
+import org.javatuples.Pair;
 import org.junit.Test;
 
-import static io.mindmaps.graql.internal.reasoner.Utility.printMatchQueryResults;
+import java.util.*;
+
+import static io.mindmaps.graql.internal.reasoner.Utility.*;
 
 public class AtomicTest {
-    private static MindmapsTransaction graph;
-    private static QueryParser qp;
-    private static QueryBuilder qb;
-
-    @BeforeClass
-    public static void setUpClass() {
-
-        graph = SNBGraph.getTransaction();
-        qp = QueryParser.create(graph);
-        qb = Graql.withTransaction(graph);
-    }
 
     @Test
     public void testValuePredicate(){
-
+        MindmapsTransaction graph = SNBGraph.getTransaction();
+        QueryParser qp = QueryParser.create(graph);
         String queryString = "match " +
                 "$x1 isa person;\n" +
                 "$x2 isa tag;\n" +
                 "($x1, $x2) isa recommendation";
 
-        Query query = new Query(queryString, graph);
         MatchQueryDefault MQ = qp.parseMatchQuery(queryString).getMatchQuery();
         printMatchQueryResults(MQ);
-
     }
+
+    @Test
+    public void testRelationConstructor(){
+        MindmapsTransaction graph = GenericGraph.getTransaction("geo-test.gql");
+        QueryParser qp = QueryParser.create(graph);
+
+        String queryString = "match (geo-entity $x, entity-location $y) isa is-located-in;";
+
+        MatchQueryDefault MQ = qp.parseMatchQuery(queryString).getMatchQuery();
+        Query query = new Query(MQ, graph);
+
+        Atomic atom = query.selectAtoms().iterator().next();
+        Set<String> vars = atom.getVarNames();
+
+        String relTypeId = atom.getTypeId();
+        RelationType relType = graph.getRelationType(relTypeId);
+        Set<RoleType> roles = Sets.newHashSet(relType.hasRoles());
+
+        Set<Map<String, String>> roleMaps = new HashSet<>();
+        computeRoleCombinations(vars, roles, new HashMap<>(), roleMaps);
+
+        Collection<Relation> rels = new LinkedList<>();
+        roleMaps.forEach( map -> rels.add(new Relation(relTypeId, map)));
+    }
+
+    @Test
+    public void testRelationConstructor2(){
+        MindmapsTransaction graph = GenericGraph.getTransaction("geo-test.gql");
+        QueryParser qp = QueryParser.create(graph);
+
+        String queryString = "match ($x, $y, $z) isa ternary-relation-test";
+
+        MatchQueryDefault MQ = qp.parseMatchQuery(queryString).getMatchQuery();
+        Query query = new Query(MQ, graph);
+
+        Atomic atom = query.selectAtoms().iterator().next();
+        Map<RoleType, Pair<String, Type>> rmap = ((Relation) atom).getRoleVarTypeMap();
+
+        Set<String> vars = atom.getVarNames();
+
+        String relTypeId = atom.getTypeId();
+        RelationType relType = graph.getRelationType(relTypeId);
+        Set<RoleType> roles = Sets.newHashSet(relType.hasRoles());
+
+        Set<Map<String, String>> roleMaps = new HashSet<>();
+        computeRoleCombinations(vars, roles, new HashMap<>(), roleMaps);
+
+        Collection<Relation> rels = new LinkedList<>();
+        roleMaps.forEach( map -> rels.add(new Relation(relTypeId, map)));
+    }
+
+
+
 
 
 }

@@ -55,8 +55,7 @@ public class SNBGraph {
         addRules();
     }
 
-    private static void addOntology()
-    {
+    private static void addOntology() {
         QueryParser qp = QueryParser.create(mindmaps);
         try {
             List<String> lines = Files.readAllLines(Paths.get("src/test/resources/graql/ldbc-snb-ontology.gql"), StandardCharsets.UTF_8);
@@ -75,11 +74,9 @@ public class SNBGraph {
         catch (IOException e){
             e.printStackTrace();
         }
-
     }
 
-    private static void addRules()
-    {
+    private static void addRules() {
         QueryParser qp = QueryParser.create(mindmaps);
         try {
             List<String> lines = Files.readAllLines(Paths.get("src/test/resources/graql/ldbc-snb-rules.gql"), StandardCharsets.UTF_8);
@@ -89,11 +86,9 @@ public class SNBGraph {
         catch (IOException e){
             e.printStackTrace();
         }
-
     }
 
-    private static void addData()
-    {
+    private static void addData() {
         QueryParser qp = QueryParser.create(mindmaps);
         try {
             List<String> lines = Files.readAllLines(Paths.get("src/test/resources/graql/ldbc-snb-data.gql"), StandardCharsets.UTF_8);
@@ -112,7 +107,6 @@ public class SNBGraph {
         catch (IOException e){
             e.printStackTrace();
         }
-
     }
 
 }

@@ -1,5 +1,22 @@
-package io.mindmaps.graql.internal.reasoner.predicate;
+/*
+ * MindmapsDB - A Distributed Semantic Database
+ * Copyright (C) 2016  Mindmaps Research Ltd
+ *
+ * MindmapsDB is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * MindmapsDB is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
 
+package io.mindmaps.graql.internal.reasoner.predicate;
 
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.model.Concept;
@@ -14,26 +31,22 @@ public class Substitution extends AtomBase{
 
     private final String val;
 
-    public Substitution(VarAdmin pattern)
-    {
+    public Substitution(VarAdmin pattern) {
         super(pattern);
         this.val = extractValue(pattern);
     }
 
-    public Substitution(VarAdmin pattern, Query par)
-    {
+    public Substitution(VarAdmin pattern, Query par) {
         super(pattern, par);
         this.val = extractValue(pattern);
     }
 
-    public Substitution(Substitution a)
-    {
+    public Substitution(Substitution a) {
         super(a);
         this.val = extractValue(a.getPattern().asVar());
     }
 
-    public Substitution(String name, Concept con)
-    {
+    public Substitution(String name, Concept con) {
         super(Graql.var(name).id(con.getId()).admin().asVar());
         this.val = con.getId();
     }
@@ -42,8 +55,7 @@ public class Substitution extends AtomBase{
     public boolean isValuePredicate(){ return true;}
 
     @Override
-    public boolean equals(Object obj)
-    {
+    public boolean equals(Object obj) {
         if (!(obj instanceof Substitution)) return false;
         Substitution a2 = (Substitution) obj;
         return this.getVarName().equals(a2.getVarName()) && this.getVal().equals(a2.getVal());
@@ -69,7 +81,6 @@ public class Substitution extends AtomBase{
     public String getVal(){ return val;}
 
     private String extractValue(VarAdmin var) {
-
         String value = "";
 
         if (!var.admin().getValuePredicates().isEmpty()){
@@ -80,9 +91,7 @@ public class Substitution extends AtomBase{
                 value = valuePredicates.iterator().next().getPredicate().getValue().toString();
         }
         else if(var.admin().getId().isPresent()) value = var.admin().getId().get();
-
         return value;
-
     }
 
 }

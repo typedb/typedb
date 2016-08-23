@@ -38,65 +38,49 @@ public class AdmissionsInferenceTest {
 
     @BeforeClass
     public static void setUpClass() {
-
         graph = AdmissionsGraph.getTransaction();
         reasoner = new Reasoner(graph);
         qp = QueryParser.create(graph);
-
     }
 
     @Test
-    public void testConditionalAdmission()
-    {
+    public void testConditionalAdmission() {
         String queryString = "match $x isa applicant; $x has admissionStatus 'conditional'";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
-        MatchQueryDefault expandedQuery = reasoner.expand(query);
-
-        assertQueriesEqual(expandedQuery, qp.parseMatchQuery("match $x isa applicant, value 'Bob'").getMatchQuery());
-
+        assertQueriesEqual(reasoner.expand(query), qp.parseMatchQuery("match $x isa applicant, value 'Bob'").getMatchQuery());
     }
 
     @Test
-    public void testDeniedAdmission()
-    {
+    public void testDeniedAdmission() {
         String queryString = "match $x isa applicant;$x has admissionStatus 'denied'";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expand(query);
-
         assertQueriesEqual(expandedQuery, qp.parseMatchQuery("match $x isa applicant, value 'Alice'").getMatchQuery());
-
     }
 
     @Test
-    public void testProvisionalAdmission()
-    {
+    public void testProvisionalAdmission() {
         String queryString = "match $x isa applicant;$x has admissionStatus 'provisional'";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expand(query);
-
         assertQueriesEqual(expandedQuery, qp.parseMatchQuery("match $x isa applicant, value 'Denis'").getMatchQuery());
     }
 
     @Test
-    public void testWaitForTranscriptAdmission()
-    {
+    public void testWaitForTranscriptAdmission() {
         String queryString = "match $x isa applicant;$x has admissionStatus 'wait for transcript'";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expand(query);
-
         assertQueriesEqual(expandedQuery, qp.parseMatchQuery("match $x isa applicant, value 'Frank'").getMatchQuery());
     }
 
     @Test
-    public void testFullStatusAdmission()
-    {
+    public void testFullStatusAdmission() {
         String queryString = "match $x isa applicant;$x has admissionStatus 'full'";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expandedQuery = reasoner.expand(query);
-
         assertQueriesEqual(expandedQuery, qp.parseMatchQuery("match $x isa applicant; $x value 'Eva' or $x value 'Charlie'").getMatchQuery());
     }
-
 
     private void assertQueriesEqual(MatchQueryDefault q1, MatchQueryDefault q2) {
         assertEquals(Sets.newHashSet(q1), Sets.newHashSet(q2));

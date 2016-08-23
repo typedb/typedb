@@ -40,7 +40,6 @@ public class CWInferenceTest {
 
     @BeforeClass
     public static void setUpClass() {
-
         graph = CWGraph.getTransaction();
         reasoner = new Reasoner(graph);
         qp = QueryParser.create(graph);
@@ -112,12 +111,10 @@ public class CWInferenceTest {
                 "}";
 
         assertQueriesEqual(reasoner.expand(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
-
     }
 
     @Test
-    public void testQuery()
-    {
+    public void testQuery() {
         String queryString = "match $x isa criminal;";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
 
@@ -146,8 +143,7 @@ public class CWInferenceTest {
     }
 
     @Test
-    public void testQueryWithOr()
-    {
+    public void testQueryWithOr() {
         String queryString = "match {$x isa criminal} or {$x has nationality 'American';$x isa person}";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
 
@@ -171,13 +167,11 @@ public class CWInferenceTest {
             "$z isa country}} or {$x has nationality 'American';$x isa person} select $x";
 
         assertQueriesEqual(reasoner.expand(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
-
     }
 
 
     @Test
-    public void testGraphCase()
-    {
+    public void testGraphCase() {
         RuleType inferenceRule = graph.getRuleType("inference-rule");
         Rule R6 = graph.putRule("R6", inferenceRule);
 
@@ -194,9 +188,6 @@ public class CWInferenceTest {
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
 
         MatchQueryDefault expandedQuery = reasoner.expand(query);
-
-        //printMatchQuery(expandedQuery);
-
 
         String explicitQuery = "match " +
                 "{$x isa criminal} or {\n" +
