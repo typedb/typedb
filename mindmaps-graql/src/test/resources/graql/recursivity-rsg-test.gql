@@ -1,0 +1,92 @@
+insert
+
+###################################################
+####################Ontology######################
+#################################################
+
+"person" isa entity-type;
+
+"parent" isa role-type;
+"child" isa role-type;
+"Parent" isa relation-type, has-role parent, has-role child;
+person plays-role parent, plays-role child;
+
+"RSG-from" isa role-type;
+"RSG-to" isa role-type;
+"RevSG" isa relation-type, has-role RSG-from, has-role RSG-to;
+person plays-role RSG-from, plays-role RSG-to;
+
+"up-from" isa role-type;
+"up-to" isa role-type;
+"up" isa relation-type, has-role up-from, has-role up-to;
+person plays-role up-from, plays-role up-to;
+
+"down-from" isa role-type;
+"down-to" isa role-type;
+"down" isa relation-type, has-role down-from, has-role down-to;
+person plays-role down-from, plays-role down-to;
+
+"flat-from" isa role-type;
+"flat-to" isa role-type;
+"flat" isa relation-type, has-role flat-to, has-role flat-from;
+person plays-role flat-from, plays-role flat-to;
+
+####################################################
+##################DATA#############################
+####################################################
+
+"a" isa person;
+"b" isa person;
+"c" isa person;
+"d" isa person;
+"e" isa person;
+"f" isa person;
+"g" isa person;
+"h" isa person;
+"i" isa person;
+"j" isa person;
+"k" isa person;
+"l" isa person;
+"m" isa person;
+"n" isa person;
+"o" isa person;
+"p" isa person;
+
+(up-from 'a', up-to 'e') isa up;
+(up-from 'a', up-to 'f') isa up;
+(up-from 'f', up-to 'm') isa up;
+(up-from 'g', up-to 'n') isa up;
+(up-from 'h', up-to 'n') isa up;
+(up-from 'i', up-to 'o') isa up;
+(up-from 'j', up-to 'o') isa up;
+
+(flat-from 'g', flat-to 'f') isa flat;
+(flat-from 'm', flat-to 'n') isa flat;
+(flat-from 'm', flat-to 'o') isa flat;
+(flat-from 'p', flat-to 'm') isa flat;
+
+(down-from 'l', down-to 'f') isa down;
+(down-from 'm', down-to 'f') isa down;
+(down-from 'g', down-to 'b') isa down;
+(down-from 'h', down-to 'c') isa down;
+(down-from 'i', down-to 'd') isa down;
+(down-from 'p', down-to 'k') isa down;
+
+####################################################
+##################RULES#############################
+####################################################
+
+"R1" isa inference-rule,
+lhs {match
+(flat-from $x, flat-to $y) isa flat},
+rhs {match
+(RSG-from $x, RSG-to $y) isa RevSG};
+
+"R2" isa inference-rule,
+lhs {match
+(up-from $x, up-to $x1) isa up;
+(RSG-from $y1, RSG-to $x1) isa RevSG;
+(down-from $y1, down-to $y) isa down;
+select $x, $y},
+rhs {match
+($x, $y) isa RevSG};

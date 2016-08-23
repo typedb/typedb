@@ -443,6 +443,7 @@ public class Reasoner {
 
         answers.removeAll(incompleteAnswers);
 
+        LOG.debug("Materializing...");
         answers.forEach(answer -> {
             Set<Substitution> subs = new HashSet<>();
             answer.forEach((var, con) -> {
@@ -451,8 +452,9 @@ public class Reasoner {
                     subs.add(sub);
             });
             atomicQuery.materialize(subs);
-
         });
+        LOG.debug("Materialized: " + answers.size());
+
     }
 
     private Set<Map<String, Concept>> joinSubstitutions(Set<Map<String, Concept>> tuples, Set<Map<String, Concept>> localTuples) {
@@ -492,7 +494,6 @@ public class Reasoner {
 
         Set<Map<String, Concept>> allSubs = DBlookup(atomicQuery);
 
-        //check whether query was already computed
         boolean queryAdmissible = true;
         Iterator<Query> it = subGoals.iterator();
         while( it.hasNext() && queryAdmissible)
@@ -501,21 +502,27 @@ public class Reasoner {
         if(queryAdmissible) {
             Set<Rule> rules = getAtomChildren(atom);
             for (Rule rule : rules) {
-                //unify rule
+
+                //TODO make it return the unified head as well
                 Query ruleBody = unifyRule(rule, atom, varMap);
-                ruleBody.addSubstitutions(atom.getSubstitutions());
+
+                ruleBody.addAtomConstraints(atom.getSubstitutions());
                 if(atom.isRelation())
-                    ruleBody.addTypeConstraints(atom.getTypeConstraints());
+                    ruleBody.addAtomConstraints(atom.getTypeConstraints());
 
                 Set<Map<String, Concept>> subs = new HashSet<>();
                 Set<Atomic> atoms = ruleBody.selectAtoms();
-                //TODO do until localSubs !empty
-                for( Atomic at : atoms) {
+
+                Iterator<Atomic> atIt = atoms.iterator();
+                do {
+                    Atomic at = atIt.next();
                     subGoals.add(atomicQuery);
                     Set<Map<String, Concept>> localSubs = Answer(at, subGoals, varMap);
                     subs = joinSubstitutions(subs, localSubs);
                 }
+                while (!subs.isEmpty() && atIt.hasNext());
 
+                //TODO pass unified rule head and materialise it
                 materializeAnswers(atomicQuery, subs);
                 allSubs.addAll(subs);
             }
@@ -527,13 +534,15 @@ public class Reasoner {
     private Set<Map<String, Concept>> resolveAtomicQuery(Atomic atom) {
         Set<Map<String, Concept>> subAnswers = new HashSet<>();
         int dAns;
+        int iter = 0;
         do {
             Set<Query> subGoals = new HashSet<>();
             Map<String, Type> varMap = atom.getParentQuery().getVarTypeMap();
             dAns = subAnswers.size();
+            LOG.debug("iter: " + iter++ + " answers: " + dAns);
             subAnswers = Answer(atom, subGoals, varMap);
             dAns = subAnswers.size() - dAns;
-        } while(dAns != 0);
+        } while(dAns != 0 );
 
         return subAnswers;
     }

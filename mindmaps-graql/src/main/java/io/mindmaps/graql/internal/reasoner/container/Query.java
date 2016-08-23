@@ -406,15 +406,9 @@ public class  Query {
         pattern.getPatterns().remove(atom.getPattern());
     }
 
-    public void addSubstitutions(Set<Atomic> subs){
+    public void addAtomConstraints(Set<Atomic> subs){
         subs.forEach(sub -> {
             if (containsVar(sub.getVarName())) addAtom(sub);
-        });
-    }
-
-    public void addTypeConstraints(Set<Atomic> types) {
-        types.forEach(c -> {
-            if (containsVar(c.getVarName())) addAtom(c);
         });
     }
 

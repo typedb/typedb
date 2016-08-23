@@ -1,0 +1,63 @@
+insert
+
+###################################################
+####################Ontology######################
+#################################################
+
+"entity" isa entity-type;
+"a-entity" ako entity;
+"b-entity" ako entity;
+"S" ako entity;
+
+"R-rA" isa role-type;
+"R-rB" isa role-type;
+"R" isa relation-type, has-role R-rA, has-role R-rB;
+entity plays-role R-rA plays-role R-rB;
+
+"N-rA" isa role-type;
+"N-rB" isa role-type;
+"N" isa relation-type, has-role N-rA, has-role N-rB;
+entity plays-role N-rA plays-role N-rB;
+
+"Q-rA" isa role-type;
+"Q-rB" isa role-type;
+"Q" isa relation-type, has-role Q-rA, has-role Q-rB;
+entity plays-role Q-rA plays-role Q-rB;
+
+"P-rA" isa role-type;
+"P-rB" isa role-type;
+"P" isa relation-type, has-role P-rA, has-role P-rB;
+entity plays-role P-rA plays-role P-rB;
+
+####################################################
+##################DATA#############################
+####################################################
+
+"c" isa entity;
+"d" isa entity;
+"e" isa entity;
+
+####################################################
+##################RULES#############################
+####################################################
+
+"R1" isa inference-rule,
+lhs {match
+(R-rA $x, R-rB $y) isa R},
+rhs {match
+(N-rA $x, N-rB $y) isa N};
+
+"R2" isa inference-rule,
+lhs {match
+(P-rA $x, P-rB $z) isa P;
+(N-rA $z, N-rB $w) isa N;
+(Q-rA $w, Q-rB $y) isa Q},
+rhs {match
+(N-rA $x, N-rB $y) isa N};
+
+"R3" isa inference-rule,
+lhs {match
+(N-rA $x, N-rB $y) isa N;
+$x id 'c'},
+rhs {match
+$y isa S};

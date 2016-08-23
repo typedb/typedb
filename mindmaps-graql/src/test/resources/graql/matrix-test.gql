@@ -1,0 +1,84 @@
+insert
+
+###################################################
+####################Ontology######################
+#################################################
+
+"entity" isa entity-type;
+"a-entity" ako entity;
+"b-entity" ako entity;
+
+"R1-from" isa role-type;
+"R1-to" isa role-type;
+"R1" isa relation-type, has-role R1-from, has-role R1-to;
+entity plays-role R1-from plays-role R1-to;
+
+"R2-from" isa role-type;
+"R2-to" isa role-type;
+"R2" isa relation-type, has-role R2-from, has-role R2-to;
+entity plays-role R2-from plays-role R2-to;
+
+"Q1-from" isa role-type;
+"Q1-to" isa role-type;
+"Q1" isa relation-type, has-role Q1-from, has-role Q1-to;
+entity plays-role Q1-from plays-role Q1-to;
+
+"Q2-from" isa role-type;
+"Q2-to" isa role-type;
+"Q2" isa relation-type, has-role Q2-from, has-role Q2-to;
+entity plays-role Q2-from plays-role Q2-to;
+
+"P-from" isa role-type;
+"P-to" isa role-type;
+"P" isa relation-type, has-role P-from, has-role P-to;
+entity plays-role P-from plays-role P-to;
+
+####################################################
+##################DATA#############################
+####################################################
+
+"c" isa entity;
+"d" isa entity;
+"e" isa entity;
+
+####################################################
+##################RULES#############################
+####################################################
+
+"rule1" isa inference-rule,
+lhs {match
+(R1-from $x, R1-to $y) isa R1},
+rhs {match
+(Q1-from $x, Q1-to $y) isa Q1};
+
+"rule2" isa inference-rule,
+lhs {match
+(R1-from $x, R1-to $z) isa R1;
+(Q1-from $z, Q1-to $y) isa Q1},
+rhs {match
+(Q1-from $x, Q1-to $y) isa Q1};
+
+"rule3" isa inference-rule,
+lhs {match
+(R2-from $x, R2-to $y) isa R2},
+rhs {match
+(Q2-from $x, Q2-to $y) isa Q2};
+
+"rule4" isa inference-rule,
+lhs {match
+(R2-from $x, R2-to $z) isa R2;
+(Q2-from $z, Q2-to $y) isa Q2},
+rhs {match
+(Q2-from $x, Q2-to $y) isa Q2};
+
+"rule5" isa inference-rule,
+lhs {match
+(Q1-from $x, Q1-to $y) isa Q1},
+rhs {match
+(P-from $x, P-to $y) isa P};
+
+"rule6" isa inference-rule,
+lhs {match
+(Q1-from $x, Q1-to $y) isa Q6},
+rhs {match
+(P-from $x, P-to $y) isa P};
