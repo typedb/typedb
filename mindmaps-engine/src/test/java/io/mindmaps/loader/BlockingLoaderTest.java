@@ -16,16 +16,16 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.api;
+package io.mindmaps.loader;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.api.CommitLogController;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.Var;
-import io.mindmaps.loader.BlockingLoader;
 import io.mindmaps.util.ConfigProperties;
 import org.junit.*;
 import org.slf4j.LoggerFactory;

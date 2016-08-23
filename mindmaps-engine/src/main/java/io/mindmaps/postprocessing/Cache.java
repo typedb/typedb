@@ -47,7 +47,6 @@ public class Cache {
         return castingsToPostProcess;
     }
     public void addJobCasting(String graphName, Set<String> conceptIds) {
-        System.out.print("g");
         getCastingJobs().computeIfAbsent(graphName, (key) -> ConcurrentHashMap.newKeySet()).addAll(conceptIds);
     }
     public void addJobCasting(String graphName, String conceptId) {

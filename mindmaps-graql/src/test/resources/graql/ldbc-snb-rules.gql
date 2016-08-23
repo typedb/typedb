@@ -109,7 +109,7 @@ rhs {match ($x, $y) isa recommendation};
 lhs {match $x isa person;
 $t isa tag, value 'Lewis_Carroll';
 ($x, $t) isa tagging;
-$y isa product, value 'Alice\\'s Adventures in Wonderland';
+$y isa product, value 'Alice\'s Adventures in Wonderland';
 select $x, $y},
 rhs {match ($x, $y) isa recommendation};
 
