@@ -23,6 +23,7 @@ import ch.qos.logback.classic.Logger;
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.api.CommitLogController;
 import io.mindmaps.api.GraphFactoryController;
+import io.mindmaps.core.Data;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.*;
@@ -1062,7 +1063,7 @@ public class AnalyticsTest {
         RoleType value = transaction.putRoleType("value");
         RoleType target = transaction.putRoleType("target");
         RelationType hasResource = transaction.putRelationType("has-resource").hasRole(target).hasRole(value);
-        ResourceType<Long> degreeResource = transaction.putResourceType("degree-resource",Data.LONG).playsRole(value);
+        ResourceType<Long> degreeResource = transaction.putResourceType("degree-resource", Data.LONG).playsRole(value);
 
         Set<Type> ct = new HashSet<>();
 
