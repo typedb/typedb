@@ -858,7 +858,11 @@ public class AnalyticsTest {
         ct.add(startDate);
         ct.add(hasOwnershipResource);
         Analytics analytics = new Analytics(ct);
-        assertEquals(referenceDegrees1, analytics.degrees());
+        Map<Instance, Long> degrees = analytics.degrees();
+        assertFalse(degrees.isEmpty());
+        degrees.entrySet().forEach(entry -> {
+            assertEquals(referenceDegrees1.get(entry.getKey().getId()),entry.getValue());
+        });
 
         // create subgraph without assertion on assertion
         ct.clear();
@@ -866,6 +870,371 @@ public class AnalyticsTest {
         ct.add(person);
         ct.add(mansBestFriend);
         analytics = new Analytics(ct);
-        assertEquals(referenceDegrees2, analytics.degrees());
+        degrees = analytics.degrees();
+        assertFalse(degrees.isEmpty());
+        degrees.entrySet().forEach(entry -> {
+            assertEquals(referenceDegrees2.get(entry.getKey().getId()),entry.getValue());
+        });
+    }
+
+    @Test
+    public void testDegreeIsCorrectTernaryRelationships() throws MindmapsValidationException, ExecutionException, InterruptedException {
+
+        // make relation
+        RoleType productionWithCast = transaction.putRoleType("production-with-cast");
+        RoleType actor = transaction.putRoleType("actor");
+        RoleType characterBeingPlayed = transaction.putRoleType("character-being-played");
+        RelationType hasCast = transaction.putRelationType("has-cast")
+                .hasRole(productionWithCast)
+                .hasRole(actor)
+                .hasRole(characterBeingPlayed);
+
+        EntityType movie = transaction.putEntityType("movie").playsRole(productionWithCast);
+        EntityType person = transaction.putEntityType("person").playsRole(actor);
+        EntityType character = transaction.putEntityType("character").playsRole(characterBeingPlayed);
+
+        Entity godfather = transaction.putEntity("Godfather", movie);
+        Entity marlonBrando = transaction.putEntity("Marlon-Brando", person);
+        String marlonId = marlonBrando.getId();
+        Entity donVitoCorleone = transaction.putEntity("Don-Vito-Corleone", character);
+
+        Relation relation = transaction.addRelation(hasCast)
+                .putRolePlayer(productionWithCast,godfather)
+                .putRolePlayer(actor,marlonBrando)
+                .putRolePlayer(characterBeingPlayed,donVitoCorleone);
+        String relationId = relation.getId();
+
+        transaction.commit();
+
+        Analytics analytics = new Analytics();
+        Map<Instance, Long> degrees = analytics.degrees();
+        assertTrue(degrees.get(transaction.getRelation(relationId)).equals(3L));
+        assertTrue(degrees.get(transaction.getEntity(marlonId)).equals(1L));
+    }
+
+    @Test
+    public void testDegreeIsCorrectOneRoleplayerMultipleRoles() throws MindmapsValidationException, ExecutionException, InterruptedException {
+        // create a simple graph
+        RoleType pet = transaction.putRoleType("pet");
+        RoleType owner = transaction.putRoleType("owner");
+        RoleType breeder = transaction.putRoleType("breeder");
+        RelationType mansBestFriend = transaction.putRelationType("mans-best-friend").hasRole(pet).hasRole(owner).hasRole(breeder);
+        EntityType person = transaction.putEntityType("person").playsRole(owner).playsRole(breeder);
+        EntityType animal = transaction.putEntityType("animal").playsRole(pet);
+
+        // make one person breeder and owner
+        Entity coco = transaction.putEntity("coco", animal);
+        Entity dave = transaction.putEntity("dave", person);
+
+        Relation daveBreedsAndOwnsCoco = transaction.addRelation(mansBestFriend)
+                .putRolePlayer(pet, coco)
+                .putRolePlayer(owner,dave)
+                .putRolePlayer(breeder,dave);
+
+        // manual degrees
+        Map<String,Long> referenceDegrees = new HashMap<>();
+        referenceDegrees.put(coco.getId(),1L);
+        referenceDegrees.put(dave.getId(),2L);
+        referenceDegrees.put(daveBreedsAndOwnsCoco.getId(),3L);
+
+        // validate
+        transaction.commit();
+
+        Analytics analytics = new Analytics();
+        Map<Instance, Long> degrees = analytics.degrees();
+        assertFalse(degrees.isEmpty());
+        degrees.entrySet().forEach(entry -> {
+            assertEquals(referenceDegrees.get(entry.getKey().getId()),entry.getValue());
+        });
+    }
+
+    @Test
+    public void testDegreeIsCorrectMissingRoleplayer() throws MindmapsValidationException, ExecutionException, InterruptedException {
+
+        // create a simple graph
+        RoleType pet = transaction.putRoleType("pet");
+        RoleType owner = transaction.putRoleType("owner");
+        RoleType breeder = transaction.putRoleType("breeder");
+        RelationType mansBestFriend = transaction.putRelationType("mans-best-friend").hasRole(pet).hasRole(owner).hasRole(breeder);
+        EntityType person = transaction.putEntityType("person").playsRole(owner).playsRole(breeder);
+        EntityType animal = transaction.putEntityType("animal").playsRole(pet);
+
+        // make one person breeder and owner
+        Entity coco = transaction.putEntity("coco", animal);
+        Entity dave = transaction.putEntity("dave", person);
+        Relation daveBreedsAndOwnsCoco = transaction.addRelation(mansBestFriend)
+                .putRolePlayer(pet,coco).putRolePlayer(owner,dave);
+
+        // manual degrees
+        Map<String,Long> referenceDegrees = new HashMap<>();
+        referenceDegrees.put(coco.getId(),1L);
+        referenceDegrees.put(dave.getId(),1L);
+        referenceDegrees.put(daveBreedsAndOwnsCoco.getId(),2L);
+
+        // validate
+        transaction.commit();
+
+        Analytics analytics = new Analytics();
+        Map<Instance, Long> degrees = analytics.degrees();
+        assertFalse(degrees.isEmpty());
+        degrees.entrySet().forEach(entry -> {
+            assertEquals(referenceDegrees.get(entry.getKey().getId()),entry.getValue());
+        });
+    }
+
+    @Ignore
+    @Test
+    public void testDegreeIsCorrectRoleplayerWrongType() throws MindmapsValidationException, ExecutionException, InterruptedException {
+
+        // create a simple graph
+        RoleType pet = transaction.putRoleType("pet");
+        RoleType owner = transaction.putRoleType("owner");
+        RoleType breeder = transaction.putRoleType("breeder");
+        RelationType mansBestFriend = transaction.putRelationType("mans-best-friend").hasRole(pet).hasRole(owner).hasRole(breeder);
+        EntityType person = transaction.putEntityType("person").playsRole(owner).playsRole(breeder);
+        EntityType dog = transaction.putEntityType("dog").playsRole(pet);
+        EntityType cat = transaction.putEntityType("cat").playsRole(pet);
+
+        // make one person breeder and owner of a dog and a cat
+        Entity beast = transaction.putEntity("beast", dog);
+        Entity coco = transaction.putEntity("coco", cat);
+        Entity dave = transaction.putEntity("dave", person);
+        Relation daveBreedsAndOwnsCoco = transaction.addRelation(mansBestFriend)
+                .putRolePlayer(owner,dave).putRolePlayer(breeder,dave).putRolePlayer(pet,coco);
+        Relation daveBreedsAndOwnsBeast = transaction.addRelation(mansBestFriend)
+                .putRolePlayer(owner,dave).putRolePlayer(breeder,dave).putRolePlayer(pet,beast);
+
+        // manual degrees
+        Map<String,Long> referenceDegrees = new HashMap<>();
+        referenceDegrees.put(coco.getId(),1L);
+        referenceDegrees.put(dave.getId(),4L);
+        referenceDegrees.put(daveBreedsAndOwnsCoco.getId(),3L);
+        referenceDegrees.put(daveBreedsAndOwnsBeast.getId(),2L);
+
+        // validate
+        transaction.commit();
+
+        // check degree for dave owning cats
+        //TODO: should we count the relationship even if there is no cat attached?
+        mansBestFriend = transaction.getRelationType("mans-best-friend");
+        person = transaction.getEntityType("person");
+        cat = transaction.getEntityType("cat");
+
+        Set<Type> ct = new HashSet<>();
+        ct.add(mansBestFriend);
+        ct.add(person);
+        ct.add(cat);
+        Analytics analytics = new Analytics(ct);
+        Map<Instance, Long> degrees = analytics.degrees();
+        assertFalse(degrees.isEmpty());
+        degrees.entrySet().forEach(entry -> {
+            assertEquals(referenceDegrees.get(entry.getKey().getId()),entry.getValue());
+        });
+    }
+
+    @Ignore
+    @Test
+    public void testDegreeIsPersisted() throws MindmapsValidationException {
+        // create a simple graph
+        RoleType pet = transaction.putRoleType("pet");
+        RoleType owner = transaction.putRoleType("owner");
+        RoleType breeder = transaction.putRoleType("breeder");
+        RelationType mansBestFriend = transaction.putRelationType("mans-best-friend").hasRole(pet).hasRole(owner).hasRole(breeder);
+        EntityType person = transaction.putEntityType("person").playsRole(owner).playsRole(breeder);
+        EntityType animal = transaction.putEntityType("animal").playsRole(pet);
+
+        // make one person breeder and owner
+        Entity coco = transaction.putEntity("coco", animal);
+        Entity dave = transaction.putEntity("dave", person);
+        Map<RoleType,Instance> roleMap = new HashMap<>();
+        roleMap.put(pet,coco);
+        roleMap.put(owner,dave);
+
+        Relation daveBreedsAndOwnsCoco = transaction.putRelation(mansBestFriend,roleMap);
+
+        // manual degrees
+        Map<String,Long> referenceDegrees = new HashMap<>();
+        referenceDegrees.put(coco.getId(),1L);
+        referenceDegrees.put(dave.getId(),1L);
+        referenceDegrees.put(daveBreedsAndOwnsCoco.getId(),2L);
+
+        // create resource to persist on
+        RoleType value = transaction.putRoleType("value");
+        RoleType target = transaction.putRoleType("target");
+        RelationType hasResource = transaction.putRelationType("has-resource").hasRole(target).hasRole(value);
+        ResourceType<Long> degreeResource = transaction.putResourceType("degree-resource",Data.LONG).playsRole(value);
+
+        Set<Type> ct = new HashSet<>();
+
+        // validate
+        transaction.commit();
+
+        mansBestFriend = transaction.getRelationType("mans-best-friend");
+        person = transaction.getEntityType("person");
+        animal = transaction.getEntityType("animal");
+        ct.clear();
+        ct.add(mansBestFriend);
+        ct.add(person);
+        ct.add(animal);
+
+        // compute and persist degrees
+        Analytics analytics = new Analytics(ct);
+        value = transaction.getRoleType("value");
+        degreeResource = transaction.getResourceType("degree-resource");
+//        analytics.degreesAndPersist(value, degreeResource);
+
+        // check degrees are correct
+        referenceDegrees.entrySet().forEach(entry->{
+            Instance instance = transaction.getInstance(entry.getKey());
+            if (instance.isEntity()) {
+                assertTrue(instance.asEntity().resources().iterator().next().getValue().equals(entry.getValue()));
+            } else if (instance.isRelation()) {
+                assertTrue(instance.asRelation().resources().iterator().next().getValue().equals(entry.getValue()));
+            }
+        });
+
+        // check only expected resources exist
+        Collection<String> allConcepts = new ArrayList<>();
+        ResourceType<Long> rt = transaction.getResourceType("degree-resource");
+        Collection<Resource<Long>> degrees = rt.instances();
+        degrees.forEach(i->i.ownerInstances().iterator().forEachRemaining(r ->
+                allConcepts.add(r.getId())));
+
+        Map<String,Long> allResources = new HashMap<>();
+//        Set<String> nodesWithDegree = sg.getInstanceIds();
+        Collection<Resource<?>> resources=null;
+//        for (String id : nodesWithDegree) {
+//            Instance instance = transaction.getInstance(id);
+//            if (instance.isRelation()) {
+//                resources = instance.asRelation().resources();
+//            } else if (instance.isEntity()) {
+//                resources = instance.asEntity().resources();
+//            }
+//            for (Resource<?> resource : resources) {
+//                if (resource.type().equals(degreeResource)) {
+//                    allResources.put(resource.getId(), ((Resource<Long>) resource).getValue());
+//                }
+//            }
+//        }
+
+        // check all resources exist and no more
+        assertTrue(CollectionUtils.isEqualCollection(allResources.values(), referenceDegrees.values()));
+
+        // persist again and check again
+//        sg.degreesAndPersist(value, degreeResource);
+
+        // check only expected resources exist
+        rt = transaction.getResourceType("degree-resource");
+        degrees = rt.instances();
+        degrees.forEach(i->i.ownerInstances().iterator().forEachRemaining(r ->
+                allConcepts.add(r.getId())));
+
+        allResources.clear();
+//        nodesWithDegree = sg.getInstanceIds();
+        resources.clear();
+//        for (String id : nodesWithDegree) {
+//            Instance instance = transaction.getInstance(id);
+//            if (instance.isRelation()) {
+//                resources = instance.asRelation().resources();
+//            } else if (instance.isEntity()) {
+//                resources = instance.asEntity().resources();
+//            }
+//            for (Resource<?> resource : resources) {
+//                if (resource.type().equals(degreeResource)) {
+//                    allResources.put(resource.getId(), ((Resource<Long>) resource).getValue());
+//                }
+//            }
+//        }
+
+        // check all resources exist and no more
+        assertTrue(CollectionUtils.isEqualCollection(allResources.values(),referenceDegrees.values()));
+    }
+
+    @Ignore
+    @Test
+    public void testDegreeIsPersistedInPresenceOfOtherResource() throws MindmapsValidationException {
+        // create a simple graph
+        RoleType pet = transaction.putRoleType("pet");
+        RoleType owner = transaction.putRoleType("owner");
+        RoleType breeder = transaction.putRoleType("breeder");
+        RelationType mansBestFriend = transaction.putRelationType("mans-best-friend").hasRole(pet).hasRole(owner).hasRole(breeder);
+        EntityType person = transaction.putEntityType("person").playsRole(owner).playsRole(breeder);
+        EntityType animal = transaction.putEntityType("animal").playsRole(pet);
+
+        // make one person breeder and owner
+        Entity coco = transaction.putEntity("coco", animal);
+        Entity dave = transaction.putEntity("dave", person);
+        Map<RoleType, Instance> roleMap = new HashMap<>();
+        roleMap.put(pet, coco);
+        roleMap.put(owner, dave);
+
+        Relation daveBreedsAndOwnsCoco = transaction.putRelation(mansBestFriend, roleMap);
+
+        // manual degrees
+        Map<String, Long> referenceDegrees = new HashMap<>();
+        referenceDegrees.put(coco.getId(), 1L);
+        referenceDegrees.put(dave.getId(), 1L);
+        referenceDegrees.put(daveBreedsAndOwnsCoco.getId(), 2L);
+
+        // create resource to persist on
+        RoleType value = transaction.putRoleType("value");
+        RoleType target = transaction.putRoleType("target");
+        RelationType hasResource = transaction.putRelationType("has-resource").hasRole(target).hasRole(value);
+        ResourceType<Long> degreeResource = transaction.putResourceType("degree-resource", Data.LONG).playsRole(value);
+
+        // create a decoy resource
+        ResourceType<Long> decoyResourceType = transaction.putResourceType("decoy-resource", Data.LONG).playsRole(value);
+        roleMap.clear();
+        Resource<Long> decoyResource = transaction.putResource(UUID.randomUUID().toString(),decoyResourceType);
+        decoyResource.setValue(100L);
+        roleMap.put(value,decoyResource);
+        roleMap.put(target,coco);
+        transaction.putRelation(hasResource,roleMap);
+        animal.playsRole(target);
+
+        // validate
+        transaction.commit();
+
+        mansBestFriend = transaction.getRelationType("mans-best-friend");
+        person = transaction.getEntityType("person");
+        animal = transaction.getEntityType("animal");
+        Set<Type> ct = new HashSet<>();
+        ct.add(mansBestFriend);
+        ct.add(person);
+        ct.add(animal);
+
+        // compute and persist degrees
+        Analytics analytics = new Analytics(ct);
+        value = transaction.getRoleType("value");
+        degreeResource = transaction.getResourceType("degree-resource");
+//        sg.degreesAndPersist(value, degreeResource);
+
+        // check degrees are correct
+        boolean isSeen = false;
+        for (Map.Entry<String,Long> entry : referenceDegrees.entrySet()) {
+            Instance instance = transaction.getInstance(entry.getKey());
+            if (instance.isEntity()) {
+                for (Resource<?> resource : instance.asEntity().resources()) {
+                    if (resource.type().equals(degreeResource)) {
+                        // check value is correct
+                        assertTrue(resource.getValue().equals(entry.getValue()));
+                        // ensure a resource of this type is seen
+                        isSeen = true;
+                    }
+                }
+            } else if (instance.isRelation()) {
+                for (Resource<?> resource : instance.asRelation().resources()) {
+                    if (resource.type().equals(degreeResource)) {
+                        // check value
+                        assertTrue(resource.getValue().equals(entry.getValue()));
+                        // ensure exists
+                        isSeen = true;
+                    }
+                }
+            }
+            // fails if a resource is not found for everything in the referenceDegree map
+            assertTrue(isSeen);
+            isSeen=false;
+        }
     }
 }
