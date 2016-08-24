@@ -36,6 +36,7 @@ public class HALConcept {
 
     public HALConcept(Concept concept) {
 
+        //building HAL concepts using: https://github.com/HalBuilder/halbuilder-core
 
         int separationDegrees = ConfigProperties.getInstance().getPropertyAsInt(ConfigProperties.HAL_DEGREE_PROPERTY);
         resourceLinkPrefix=ConfigProperties.getInstance().getProperty(ConfigProperties.HAL_RESOURCE_PREFIX);
@@ -43,13 +44,16 @@ public class HALConcept {
         factory = new StandardRepresentationFactory();
         halResource = factory.newRepresentation(resourceLinkPrefix + concept.getId());
 
+        //Regardless of the type of concept, we generate the state of the current node.
         generateState(halResource, concept);
+
+        //Depending on the type of concept we generate different embedded.
         if (concept.isEntity()) {
-            entityResources(halResource, concept.asEntity()); // put resources as state variables
+            entityResources(halResource, concept.asEntity()); // If it's an instance we put resources as state variables
             generateInstanceEmbedded(halResource, concept, separationDegrees);
         }
         if (concept.isRelation()) {
-            relationResources(halResource, concept.asRelation()); // put resources as state variables
+            relationResources(halResource, concept.asRelation()); // Also if it's a relation we put resources as state variables (e.g. some relations in Moogi have "billingNumber" as resource of relation.)
             generateRelationEmbedded(halResource, concept.asRelation());
         }
         if (concept.isType()) {
@@ -83,6 +87,9 @@ public class HALConcept {
 
 
     // populate _embedded field for Instance
+    //In the embedded of an instance we put all the assertions in which the current instance is a role player.
+    //In each of these assertions we also put the role players of that assertion (including the current instance),
+    //we recursively fetch assertions and their role player, until separationDegree becomes 0
     private void generateInstanceEmbedded(Representation halResource, Concept concept, int separationDegree) {
 
         if (separationDegree == 0) return;
@@ -105,10 +112,10 @@ public class HALConcept {
                 halResource.withRepresentation(rolePlayedByCurrentConcept[0], relationResource);
             }
         }
-
-        //
     }
 
+    //If an assertion connects the current instance to a resource we dont put it in the embedded of the instance.
+    //(since all the resources are represented as properties of the state of the instance.)
     private boolean isRelationToResource(Relation rel) {
         boolean isResource = false;
         for (RoleType role : rel.rolePlayers().keySet()) {
@@ -120,6 +127,7 @@ public class HALConcept {
 
 
     // populate _embedded field for a Relation
+    //For now we just put the role players in the relation's embedded
     private void generateRelationEmbedded(Representation halResource, Relation rel) {
 
         rel.rolePlayers().forEach((roleType, instance) -> {
@@ -131,6 +139,7 @@ public class HALConcept {
     }
 
     // populate _embedded field for Type
+    // In the embedded we put all the instances of a given type for now.
     private void generateTypeEmbedded(Representation halResource, Type type) {
 
         type.instances().forEach(instance -> {

@@ -20,12 +20,14 @@ package io.mindmaps.api;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import io.mindmaps.Util;
-import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.MindmapsTransaction;
-import io.mindmaps.factory.GraphFactory;
-import io.mindmaps.util.ConfigProperties;
+import io.mindmaps.Util;
 import io.mindmaps.constants.RESTUtil;
+import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.factory.GraphFactory;
+import io.mindmaps.loader.TransactionState;
+import io.mindmaps.util.ConfigProperties;
+import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -72,11 +74,10 @@ public class TransactionControllerTest {
             i++;
             try {
                 Thread.sleep(500);
+                status = new JSONObject(get("/transaction/status/" + transactionUUID).then().extract().response().asString()).getString("state");
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            status = get("/transactionStatus/" + transactionUUID).then().extract().response().asString();
-
         }
         assertTrue(GraphFactory.getInstance().getGraph(graphName).getTransaction().getConcept("actor-123").asEntity().getValue().equals("Al Pacino"));
     }
@@ -88,16 +89,30 @@ public class TransactionControllerTest {
                 when().post(RESTUtil.WebPath.NEW_TRANSACTION_URI + "?graphName=mindmapstest").body().asString();
         int i = 0;
         String status = "QUEUED";
-        while (i < 1 && !status.equals("CANCELLED")) {
+        while (i < 1 && !status.equals("ERROR")) {
             i++;
             try {
                 Thread.sleep(500);
+                System.out.println(get("/transaction/status/" + transactionUUID).then().extract().response().asString());
+                status = new JSONObject(get("/transaction/status/" + transactionUUID).then().extract().response().asString()).getString("state");
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            status = get("/transactionStatus/" + transactionUUID).then().extract().response().asString();
         }
-        assertTrue(status.equals("CANCELLED"));
+        assertTrue(status.equals("ERROR"));
+    }
+
+    @Test
+    public void checkLoaderStateTest() {
+        String exampleInvalidInsertQuery = "insert id ?Cdcs;w4. '' ervalue;";
+        given().body(exampleInvalidInsertQuery).
+                when().post(RESTUtil.WebPath.NEW_TRANSACTION_URI + "?graphName=mindmapstest").body().asString();
+        JSONObject resultObj = new JSONObject(get(RESTUtil.WebPath.LOADER_STATE_URI).then().statusCode(200).and().extract().body().asString());
+        assertTrue(resultObj.has(TransactionState.State.QUEUED.name()));
+        assertTrue(resultObj.has(TransactionState.State.ERROR.name()));
+        assertTrue(resultObj.has(TransactionState.State.FINISHED.name()));
+        assertTrue(resultObj.has(TransactionState.State.LOADING.name()));
+
     }
 
     @After
