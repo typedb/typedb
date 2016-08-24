@@ -159,9 +159,14 @@ public class RESTLoader {
                     //If it's not a validation exception we need to remain in the for loop
                     handleError(e, 1);
                 } finally {
-                    lastJobFinished.set(System.currentTimeMillis());
-                    if (transaction != null) {
-                        transaction.close();
+                    try {
+                        lastJobFinished.set(System.currentTimeMillis());
+                        if (transaction != null) {
+                            transaction.close();
+                        }
+                    }
+                    catch (Exception e){
+                        e.printStackTrace();
                     }
                 }
             }
