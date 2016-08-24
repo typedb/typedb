@@ -18,7 +18,6 @@
 
 package io.mindmaps.graql.reasoner;
 
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.RelationType;

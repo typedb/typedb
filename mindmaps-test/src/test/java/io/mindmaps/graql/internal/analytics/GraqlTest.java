@@ -5,7 +5,6 @@ import ch.qos.logback.classic.Logger;
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.api.CommitLogController;
 import io.mindmaps.api.GraphFactoryController;
-import io.mindmaps.core.Data;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.*;
@@ -48,13 +47,10 @@ public class GraqlTest {
     RoleType relation1;
     RoleType relation2;
     RelationType related;
-    RoleType degreeTarget;
-    RoleType degreeValue;
-    RelationType hasDegree;
-    ResourceType degreeResource;
 
     @BeforeClass
-    public static void startController() throws InterruptedException, TTransportException, ConfigurationException, IOException {
+    public static void startController()
+            throws InterruptedException, TTransportException, ConfigurationException, IOException {
         // Disable horrid cassandra logs
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.OFF);
@@ -74,8 +70,6 @@ public class GraqlTest {
 
     @Before
     public void setUp() throws InterruptedException {
-        System.out.println();
-        System.out.println("Clearing the graph");
         graph = MindmapsClient.getGraph(TEST_KEYSPACE);
         graph.clear();
         graph = MindmapsClient.getGraph(TEST_KEYSPACE);
@@ -194,9 +188,6 @@ public class GraqlTest {
                 .putRolePlayer(relation1, entity2)
                 .putRolePlayer(relation2, entity4);
 
-        // create ontology for persisting
-        persistOntology();
-
         transaction.commit();
 
         // compute degrees
@@ -204,7 +195,7 @@ public class GraqlTest {
 
         // assert persisted degrees are correct
         instantiateSimpleConcepts();
-        persistOntology();
+
         Map<Instance, Long> correctDegrees = new HashMap<>();
         correctDegrees.put(entity1, 1l);
         correctDegrees.put(entity2, 3l);
@@ -224,16 +215,5 @@ public class GraqlTest {
             }
             assertTrue(resources.iterator().next().getValue().equals(degree.getValue()));
         });
-    }
-
-    private void persistOntology() {
-        degreeResource = transaction.putResourceType("degree-resource", Data.LONG);
-        degreeTarget = transaction.putRoleType("degree-target");
-        degreeValue = transaction.putRoleType("degree-value");
-        hasDegree = transaction.putRelationType("has-degree")
-                .hasRole(degreeTarget).hasRole(degreeValue);
-        thing.playsRole(degreeTarget);
-        related.playsRole(degreeTarget);
-        degreeResource.playsRole(degreeValue);
     }
 }

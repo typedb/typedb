@@ -40,11 +40,11 @@ import java.util.Set;
 
 public class DegreeVertexProgram implements VertexProgram<Long> {
 
-    private MessageScope.Local<Long> countMessageScopeIn = MessageScope.Local.of(__::inE);
-    private MessageScope.Local<Long> countMessageScopeOut = MessageScope.Local.of(__::outE);
+    private final MessageScope.Local<Long> countMessageScopeIn = MessageScope.Local.of(__::inE);
+    private final MessageScope.Local<Long> countMessageScopeOut = MessageScope.Local.of(__::outE);
 
     public static final String DEGREE_VALUE_TYPE = DataType.ConceptProperty.VALUE_LONG.name();
-    private HashSet<String> baseTypes = Sets.newHashSet(
+    private final HashSet<String> baseTypes = Sets.newHashSet(
             DataType.BaseType.ENTITY.name(),
             DataType.BaseType.RELATION.name(),
             DataType.BaseType.RESOURCE.name());

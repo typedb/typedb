@@ -37,13 +37,13 @@ import java.util.Map;
  *
  */
 
-public class CountMapReduce implements MapReduce<Serializable, Long, Serializable, Long, Map<Serializable, Long>> {
+class CountMapReduce implements MapReduce<Serializable, Long, Serializable, Long, Map<Serializable, Long>> {
 
     public static final String COUNT_MEMORY_KEY = "analytics.countMapReduce.memoryKey";
     public static final String DEFAULT_KEY = "count";
 
     private String memoryKey = DEFAULT_KEY;
-    private HashSet<String> baseTypes = Sets.newHashSet(
+    private final HashSet<String> baseTypes = Sets.newHashSet(
             DataType.BaseType.ENTITY.name(),
             DataType.BaseType.RELATION.name(),
             DataType.BaseType.RESOURCE.name());

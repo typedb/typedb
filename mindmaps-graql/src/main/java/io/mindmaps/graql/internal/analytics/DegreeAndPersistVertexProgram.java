@@ -19,18 +19,12 @@
 package io.mindmaps.graql.internal.analytics;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.constants.DataType;
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsClient;
-import io.mindmaps.graql.internal.GraqlType;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.*;
-import org.apache.tinkerpop.gremlin.process.computer.util.ConfigurationTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
@@ -45,13 +39,13 @@ import java.util.*;
 
 public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
 
-    private MessageScope.Local<Long> countMessageScopeIn = MessageScope.Local.of(__::inE);
-    private MessageScope.Local<Long> countMessageScopeOut = MessageScope.Local.of(__::outE);
+    private final MessageScope.Local<Long> countMessageScopeIn = MessageScope.Local.of(__::inE);
+    private final MessageScope.Local<Long> countMessageScopeOut = MessageScope.Local.of(__::outE);
     private MindmapsGraph mindmapsGraph;
 
 //    public static final String DEGREE = "analytics.degreeAndPersistVertexProgram.degree";
 
-    private HashSet<String> baseTypes = Sets.newHashSet(
+    private final HashSet<String> baseTypes = Sets.newHashSet(
             DataType.BaseType.ENTITY.name(),
             DataType.BaseType.RELATION.name(),
             DataType.BaseType.RESOURCE.name());
