@@ -5,6 +5,8 @@ import ch.qos.logback.classic.Logger;
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.api.CommitLogController;
 import io.mindmaps.api.GraphFactoryController;
+import io.mindmaps.api.ImportController;
+import io.mindmaps.api.TransactionController;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.EntityType;
@@ -58,6 +60,8 @@ public class ScalingTestIT {
         EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra-embedded.yaml");
         new GraphFactoryController();
         new CommitLogController();
+        new ImportController();
+        new TransactionController();
 
         sleep(5000);
     }
@@ -78,7 +82,7 @@ public class ScalingTestIT {
     }
 
     @Test
-    public void testAll() throws InterruptedException, ExecutionException {
+    public void testAll() throws InterruptedException, ExecutionException, MindmapsValidationException {
         PrintWriter writer = null;
         try {
             writer = new PrintWriter("scale-times.txt", "UTF-8");
@@ -97,7 +101,7 @@ public class ScalingTestIT {
             writer.flush();
             generateSimpleGraph(numberOfSuperNodes, scale);
             writer.println("stop generate graph " + System.nanoTime());
-            sleep(5000);
+            sleep(60000);
 
             Analytics computer = new Analytics();
             writer.println("start count " + System.nanoTime());
@@ -105,33 +109,29 @@ public class ScalingTestIT {
             writer.println("count: " + computer.count());
             writer.println("stop count " + System.nanoTime());
             writer.flush();
-            writer.println("start degree " + System.nanoTime());
-            writer.flush();
-            computer.degrees();
-            writer.println("stop degree " + System.nanoTime());
-            writer.flush();
-            writer.println("start persist degree " + System.nanoTime());
-            writer.flush();
-            computer.degreesAndPersist();
-            writer.println("stop persist degree " + System.nanoTime());
-            writer.flush();
+//            writer.println("start degree " + System.nanoTime());
+//            writer.flush();
+//            computer.degrees();
+//            writer.println("stop degree " + System.nanoTime());
+//            writer.flush();
+//            writer.println("start persist degree " + System.nanoTime());
+//            writer.flush();
+//            computer.degreesAndPersist();
+//            writer.println("stop persist degree " + System.nanoTime());
+//            writer.flush();
             writer.println("start clean graph " + System.nanoTime());
             writer.flush();
             graph.clear();
             writer.println("stop clean graph " + System.nanoTime());
-            Thread.sleep(10000);
+            Thread.sleep(5000);
             graph = MindmapsClient.getGraph(TEST_KEYSPACE);
             transaction = graph.getTransaction();
         }
     }
 
-    private void generateSimpleGraph(long numberOfSupernodes, long numberOfNodes) {
+    private void generateSimpleGraph(long numberOfSupernodes, long numberOfNodes) throws MindmapsValidationException, InterruptedException {
         simpleOntology();
-        try {
-            transaction.commit();
-        } catch (MindmapsValidationException e) {
-            e.printStackTrace();
-        }
+        transaction.commit();
 
         // make the supernodes
         refreshOntology();
@@ -139,26 +139,21 @@ public class ScalingTestIT {
         for (long i = 0; i < numberOfSupernodes; i++) {
             superNodes.add(transaction.addEntity(thing).getId());
         }
-        try {
-            transaction.commit();
-        } catch (MindmapsValidationException e) {
-            e.printStackTrace();
-        }
+        transaction.commit();
 
         // batch in the nodes
-        int batchSize = 100;
-        int currentBatch = 0;
-        int m = 0;
         refreshOntology();
 
         DistributedLoader distributedLoader = new DistributedLoader(TEST_KEYSPACE,
                 Arrays.asList(HOST_NAME));
-        distributedLoader.setBatchSize(40);
+        distributedLoader.setBatchSize(10);
 
         for (int nodeIndex = 0; nodeIndex < numberOfNodes; nodeIndex++) {
             String nodeId = "node-" + nodeIndex;
             distributedLoader.addToQueue(var().isa("thing").id(nodeId));
         }
+
+        sleep(60000);
 
         for (String supernodeId : superNodes) {
             for (int nodeIndex = 0; nodeIndex < numberOfNodes; nodeIndex++) {
