@@ -25,9 +25,13 @@ import io.mindmaps.graql.MatchQueryDefault;
 import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.reasoner.graphs.GenericGraph;
+import io.mindmaps.graql.reasoner.graphs.MatrixGraph;
+import io.mindmaps.graql.reasoner.graphs.NguyenGraph;
+import io.mindmaps.graql.reasoner.graphs.PathGraph;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -179,6 +183,97 @@ public class RecursiveInferenceTest {
                 "{$x id 'a';$y id 'd'}";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
+    }
+
+    @Test
+    public void testPath(){
+        final int N = 5;
+        MindmapsTransaction graph = PathGraph.getTransaction(N, N);
+        QueryParser qp = QueryParser.create(graph);
+        Reasoner reasoner = new Reasoner(graph);
+
+        String queryString = "match (path-from $x, path-to $y) isa path;$x id 'a0' select $y";
+        MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
+        String explicitQuery = "match $y isa vertex";
+
+        Set<Map<String, Concept>> answers = reasoner.resolve(query);
+        Map<String, Concept> a0result = new HashMap<>();
+        a0result.put("y", graph.getInstance("a0"));
+        answers.add(a0result);
+
+        assertEquals(answers, Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
+    }
+
+    @Test
+    public void testReverseSameGeneration(){
+        MindmapsTransaction graph = GenericGraph.getTransaction("recursivity-rsg-test.gql");
+        QueryParser qp = QueryParser.create(graph);
+        Reasoner reasoner = new Reasoner(graph);
+
+        String queryString = "match (RSG-from $x, RSG-to $y) isa RevSG;$x id 'a' select $y";
+        MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
+        String explicitQuery = "match $y isa person;" +
+                                "{$y id 'b'} or {$y id 'c'} or {$y id 'd'}";
+
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
+
+        queryString = "match (RSG-from $x, RSG-to $y) isa RevSG";
+        query = qp.parseMatchQuery(queryString).getMatchQuery();
+
+        explicitQuery = "match " +
+                "{$x id 'a';$y id 'b'} or {$x id 'a';$y id 'c'} or {$x id 'a';$y id 'd'} or" +
+                "{$x id 'm';$y id 'n'} or {$x id 'm';$y id 'o'} or {$x id 'p';$y id 'm'} or" +
+                "{$x id 'g';$y id 'f'} or {$x id 'h';$y id 'f'} or {$x id 'i';$y id 'f'} or" +
+                "{$x id 'j';$y id 'f'} or {$x id 'f';$y id 'k'}";
+
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
+    }
+
+    @Test
+    //TODO need to add handling unary predicates to capture match $x isa S
+    public void testNguqyen(){
+        final int N = 9;
+        MindmapsTransaction graph = NguyenGraph.getTransaction(N);
+        QueryParser qp = QueryParser.create(graph);
+        Reasoner reasoner = new Reasoner(graph);
+
+        String queryString = "match (N-rA $x, N-rB $y) isa N; $x id 'c' select $y";
+        MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
+        String explicitQuery = "match $y isa a-entity";
+
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
+    }
+
+    @Test
+    public void testMatrix(){
+        final int N = 5;
+        MindmapsTransaction graph = MatrixGraph.getTransaction(N, N);
+        QueryParser qp = QueryParser.create(graph);
+        Reasoner reasoner = new Reasoner(graph);
+
+        String queryString = "match (Q1-from $x, Q1-to $y) isa Q1; $x id 'a0' select $y";
+        MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
+        String explicitQuery = "match $y isa a-entity";
+
+        Set<Map<String, Concept>> answers = reasoner.resolve(query);
+        Map<String, Concept> a0result = new HashMap<>();
+        a0result.put("y", graph.getInstance("a0"));
+        answers.add(a0result);
+
+        assertEquals(answers, Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
+
+        queryString = "match (Q2-from $x, Q2-to $y) isa Q2; $x id 'a0' select $y";
+        query = qp.parseMatchQuery(queryString).getMatchQuery();
+        explicitQuery = "match $y isa b-entity";
+
+        answers = reasoner.resolve(query);
+        Set<Map<String, Concept>> explicitAnswers = Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery());
+
+        Map<String, Concept> amresult = new HashMap<>();
+        amresult.put("y", graph.getInstance("a" + N));
+        explicitAnswers.add(amresult);
+
+        assertEquals(answers, explicitAnswers);
     }
 
     private void assertQueriesEqual(MatchQueryDefault q1, MatchQueryDefault q2) {

@@ -32,7 +32,7 @@ import java.util.List;
 
 public class GenericGraph {
 
-    private static MindmapsTransaction mindmaps;
+    protected static MindmapsTransaction mindmaps;
     private static String filePath = "src/test/resources/graql/";
 
     public static MindmapsTransaction getTransaction(String graqlFile) {
