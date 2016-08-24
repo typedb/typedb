@@ -20,11 +20,7 @@ package io.mindmaps.graql;
 
 import com.google.common.collect.ImmutableMap;
 import io.mindmaps.MindmapsTransaction;
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.graql.internal.parser.GraqlLexer;
-import io.mindmaps.graql.internal.parser.GraqlParser;
-import io.mindmaps.graql.internal.parser.MatchQueryPrinter;
-import io.mindmaps.graql.internal.parser.QueryVisitor;
+import io.mindmaps.graql.internal.parser.*;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 
@@ -182,8 +178,14 @@ public class QueryParser {
             Function<GraqlParser, S> parseRule, BiFunction<QueryVisitor, S, T> visit, String queryString
     ) {
         GraqlLexer lexer = getLexer(queryString);
+
+        GraqlErrorListener errorListener = new GraqlErrorListener(queryString);
+        lexer.removeErrorListeners();
+        lexer.addErrorListener(errorListener);
+
         CommonTokenStream tokens = new CommonTokenStream(lexer);
-        return parseQueryFragment(parseRule, visit, tokens);
+
+        return parseQueryFragment(parseRule, visit, errorListener, tokens);
     }
 
     /**
@@ -198,11 +200,33 @@ public class QueryParser {
     private <T, S extends ParseTree> T parseQueryFragment(
             Function<GraqlParser, S> parseRule, BiFunction<QueryVisitor, S, T> visit, TokenStream tokens
     ) {
+        GraqlErrorListener errorListener = new GraqlErrorListener(tokens.getText());
+        return parseQueryFragment(parseRule, visit, errorListener, tokens);
+    }
+
+    /**
+     * Parse any part of a Graql query
+     * @param parseRule a method on GraqlParser that yields the parse rule you want to use (e.g. GraqlParser::variable)
+     * @param visit a method on QueryVisitor that visits the parse rule you specified (e.g. QueryVisitor::visitVariable)
+     * @param errorListener an object that will listen for errors in the lexer or parser
+     * @param tokens the token stream to read
+     * @param <T> The type the query is expected to parse to
+     * @param <S> The type of the parse rule being used
+     * @return the parsed result
+     */
+    private <T, S extends ParseTree> T parseQueryFragment(
+            Function<GraqlParser, S> parseRule, BiFunction<QueryVisitor, S, T> visit,
+            GraqlErrorListener errorListener, TokenStream tokens
+    ) {
         GraqlParser parser = new GraqlParser(tokens);
+
+        parser.removeErrorListeners();
+        parser.addErrorListener(errorListener);
+
         S tree = parseRule.apply(parser);
 
-        if (parser.getNumberOfSyntaxErrors() != 0) {
-            throw new IllegalArgumentException(ErrorMessage.SYNTAX_ERROR.getMessage());
+        if (errorListener.hasErrors()) {
+            throw new IllegalArgumentException(errorListener.toString());
         }
 
         return visit.apply(getQueryVisitor(), tree);
