@@ -46,6 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -95,10 +96,17 @@ public class GraqlShell implements AutoCloseable {
      * @param args arguments to the Graql shell. Possible arguments can be listed by running {@code graql.sh --help}
      */
     public static void main(String[] args) {
-        runShell(args, MindmapsClient::getGraph, Version.VERSION, System.in, System.out, System.err);
+        InputStream in = System.in;
+        PrintStream out = System.out;
+        PrintStream err = System.err;
+        runShell(args, MindmapsClient::getGraph, MindmapsClient::getGraph, Version.VERSION, in, out, err);
     }
 
-    public static void runShell(String[] args, Function<String, MindmapsGraph> factory, String version, InputStream in, PrintStream out, PrintStream err) {
+    public static void runShell(
+            String[] args,
+            Function<String, MindmapsGraph> localFactory, BiFunction<String, String, MindmapsGraph> remoteFactory,
+            String version, InputStream in, PrintStream out, PrintStream err
+    ) {
         // Disable horrid cassandra logs
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.OFF);
@@ -107,6 +115,7 @@ public class GraqlShell implements AutoCloseable {
         options.addOption("n", "name", true, "name of the graph");
         options.addOption("e", "execute", true, "query to execute");
         options.addOption("f", "file", true, "graql file path to execute");
+        options.addOption("u", "uri", true, "uri to connect to engine");
         options.addOption("h", "help", false, "print usage message");
         options.addOption("v", "version", false, "print version");
 
@@ -141,7 +150,14 @@ public class GraqlShell implements AutoCloseable {
         }
 
         String namespace = cmd.getOptionValue("n", NAMESPACE);
-        MindmapsGraph graph = factory.apply(namespace);
+
+        MindmapsGraph graph;
+
+        if (cmd.hasOption("u")) {
+            graph = remoteFactory.apply(cmd.getOptionValue("u"), namespace);
+        } else {
+            graph = localFactory.apply(namespace);
+        }
 
         try(GraqlShell shell = new GraqlShell(graph, in, out, err)) {
             if (filePath != null) {
