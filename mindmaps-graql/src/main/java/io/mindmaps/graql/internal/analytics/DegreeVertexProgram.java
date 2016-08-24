@@ -20,6 +20,7 @@ package io.mindmaps.graql.internal.analytics;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.constants.DataType;
+import io.mindmaps.core.model.Type;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.*;
 import org.apache.tinkerpop.gremlin.process.computer.util.ConfigurationTraversal;
@@ -32,7 +33,11 @@ import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import static io.mindmaps.graql.internal.analytics.Analytics.*;
 
 /**
  *
@@ -43,25 +48,43 @@ public class DegreeVertexProgram implements VertexProgram<Long> {
     private final MessageScope.Local<Long> countMessageScopeIn = MessageScope.Local.of(__::inE);
     private final MessageScope.Local<Long> countMessageScopeOut = MessageScope.Local.of(__::outE);
 
-    public static final String DEGREE_VALUE_TYPE = DataType.ConceptProperty.VALUE_LONG.name();
-    private final HashSet<String> baseTypes = Sets.newHashSet(
-            DataType.BaseType.ENTITY.name(),
-            DataType.BaseType.RELATION.name(),
-            DataType.BaseType.RESOURCE.name());
+    public static final String DEGREE = "analytics.degreeVertexProgram.degree";
 
     private static final String TRAVERSAL_SUPPLIER = "analytics.degreeVertexProgram.traversalSupplier";
 
     private ConfigurationTraversal<Vertex, Edge> configurationTraversal;
 
-    private static final Set<String> COMPUTE_KEYS = new HashSet<>(Arrays.asList(DEGREE_VALUE_TYPE));
+    private static final Set<String> COMPUTE_KEYS = new HashSet<>(Arrays.asList(DEGREE));
+
+    private HashSet<String> baseTypes = Sets.newHashSet(
+            DataType.BaseType.ENTITY.name(),
+            DataType.BaseType.RELATION.name(),
+            DataType.BaseType.RESOURCE.name());
+
+    private Set<String> selectedTypes = null;
+
+    public DegreeVertexProgram() {
+    }
+
+    public DegreeVertexProgram(Set<Type> types) {
+        selectedTypes = types.stream().map(Type::getId).collect(Collectors.toSet());
+    }
 
     @Override
     public void loadState(final Graph graph, final Configuration configuration) {
+        this.selectedTypes = new HashSet<>();
+        configuration.getKeys(TYPE).forEachRemaining(key -> selectedTypes.add(configuration.getString(key)));
     }
 
     @Override
     public void storeState(final Configuration configuration) {
         configuration.setProperty(VERTEX_PROGRAM, DegreeVertexProgram.class.getName());
+        Iterator iterator = selectedTypes.iterator();
+        int count = 0;
+        while (iterator.hasNext()) {
+            configuration.addProperty(TYPE + "." + count, iterator.next());
+            count++;
+        }
     }
 
     @Override
@@ -104,10 +127,10 @@ public class DegreeVertexProgram implements VertexProgram<Long> {
 
     @Override
     public void execute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
-        if (memory.isInitialIteration()) {
+        if (memory.getIteration() == 0) {
             if (vertex.label().equals(DataType.BaseType.RELATION.name()) &&
-                    !Analytics.isAnalyticsElement(vertex)) {
-
+                    selectedTypes.contains(getVertextType(vertex)) &&
+                    !isAnalyticsElement(vertex)) {
                 messenger.sendMessage(this.countMessageScopeOut, 1L);
             }
         } else if (memory.getIteration() == 1) {
@@ -118,9 +141,9 @@ public class DegreeVertexProgram implements VertexProgram<Long> {
             }
         } else if (memory.getIteration() == 2) {
             if (baseTypes.contains(vertex.label()) &&
-                    !Analytics.isAnalyticsElement(vertex)) {
+                    !isAnalyticsElement(vertex)) {
                 long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
-                vertex.property(DEGREE_VALUE_TYPE, edgeCount);
+                vertex.property(DEGREE, edgeCount);
             }
         }
     }

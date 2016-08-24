@@ -20,18 +20,20 @@ package io.mindmaps.graql.internal.analytics;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.constants.DataType;
+import io.mindmaps.core.model.Type;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static io.mindmaps.graql.internal.analytics.Analytics.*;
 
 /**
  *
@@ -40,26 +42,42 @@ import java.util.Map;
 class CountMapReduce implements MapReduce<Serializable, Long, Serializable, Long, Map<Serializable, Long>> {
 
     public static final String COUNT_MEMORY_KEY = "analytics.countMapReduce.memoryKey";
-    public static final String DEFAULT_KEY = "count";
+    public static final String DEFAULT_MEMORY_KEY = "count";
 
-    private String memoryKey = DEFAULT_KEY;
-    private final HashSet<String> baseTypes = Sets.newHashSet(
+    private String memoryKey = DEFAULT_MEMORY_KEY;
+
+    private Set<String> baseTypes = Sets.newHashSet(
             DataType.BaseType.ENTITY.name(),
             DataType.BaseType.RELATION.name(),
             DataType.BaseType.RESOURCE.name());
 
+    private Set<String> selectedTypes = null;
+
     public CountMapReduce() {
+
+    }
+
+    public CountMapReduce(Set<Type> types) {
+        selectedTypes = types.stream().map(Type::getId).collect(Collectors.toSet());
     }
 
     @Override
     public void storeState(final Configuration configuration) {
         configuration.setProperty(COUNT_MEMORY_KEY, this.memoryKey);
         configuration.setProperty(MAP_REDUCE, CountMapReduce.class.getName());
+        Iterator iterator = selectedTypes.iterator();
+        int count = 0;
+        while (iterator.hasNext()) {
+            configuration.addProperty(TYPE + "." + count, iterator.next());
+            count++;
+        }
     }
 
     @Override
     public void loadState(final Graph graph, final Configuration configuration) {
-        this.memoryKey = configuration.getString(COUNT_MEMORY_KEY, DEFAULT_KEY);
+        this.memoryKey = configuration.getString(COUNT_MEMORY_KEY, DEFAULT_MEMORY_KEY);
+        this.selectedTypes = new HashSet<>();
+        configuration.getKeys(TYPE).forEachRemaining(key -> selectedTypes.add(configuration.getString(key)));
     }
 
     @Override
@@ -69,8 +87,13 @@ class CountMapReduce implements MapReduce<Serializable, Long, Serializable, Long
 
     @Override
     public void map(final Vertex vertex, final MapEmitter<Serializable, Long> emitter) {
-        if (baseTypes.contains(vertex.label()))
+        if (selectedTypes != null) {
+            if (selectedTypes.contains(getVertextType(vertex))) {
+                emitter.emit(this.memoryKey, 1l);
+            }
+        } else if (baseTypes.contains(vertex.label())) {
             emitter.emit(this.memoryKey, 1l);
+        }
     }
 
     @Override
@@ -80,11 +103,7 @@ class CountMapReduce implements MapReduce<Serializable, Long, Serializable, Long
 
     @Override
     public void reduce(final Serializable key, final Iterator<Long> values, final ReduceEmitter<Serializable, Long> emitter) {
-        long count = 0l;
-        while (values.hasNext()) {
-            count = count + values.next();
-        }
-        emitter.emit(key, count);
+        emitter.emit(key, IteratorUtils.reduce(values, 0L, (a, b) -> a + b));
     }
 
     @Override

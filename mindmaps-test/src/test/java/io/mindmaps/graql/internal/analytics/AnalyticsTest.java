@@ -146,9 +146,10 @@ public class AnalyticsTest {
         System.out.println();
         System.out.println("Creating 3 instances");
         EntityType thing = transaction.putEntityType("thing");
+        EntityType anotherThing = transaction.putEntityType("another");
         transaction.putEntity("1", thing);
         transaction.putEntity("2", thing);
-        transaction.putEntity("3", thing);
+        transaction.putEntity("3", anotherThing);
         transaction.commit();
 
         // assert computer returns the correct count of instances
@@ -157,6 +158,9 @@ public class AnalyticsTest {
         computer = new Analytics();
         startTime = System.currentTimeMillis();
         Assert.assertEquals(3, computer.count());
+
+        computer = new Analytics(Collections.singleton(transaction.getType("thing")));
+        Assert.assertEquals(2, computer.count());
         System.out.println();
         System.out.println(System.currentTimeMillis() - startTime + " ms");
     }
@@ -219,7 +223,7 @@ public class AnalyticsTest {
 
     private void instantiateSimpleConcepts() {
 
-        // create 3 instances
+        // create instances
         thing = transaction.putEntityType("thing");
         entity1 = transaction.putEntity("1", thing);
         entity2 = transaction.putEntity("2", thing);
