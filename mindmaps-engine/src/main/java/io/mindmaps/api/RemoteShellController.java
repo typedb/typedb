@@ -56,12 +56,12 @@ public class RemoteShellController {
     String defaultGraphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
 
     public RemoteShellController() {
+        webSocket(RESTUtil.WebPath.REMOTE_SHELL_URI, RemoteShell.class);
 
         redirect.get(RESTUtil.WebPath.HOME_URI, RESTUtil.WebPath.MATCH_QUERY_URI);
 
         get(RESTUtil.WebPath.MATCH_QUERY_URI, this::matchQuery);
         get(RESTUtil.WebPath.META_TYPE_INSTANCES_URI, this::buildMetaTypeInstancesObject);
-        webSocket(RESTUtil.WebPath.REMOTE_SHELL_URI, RemoteShell.class);
     }
     @GET
     @Path("/metaTypeInstances")

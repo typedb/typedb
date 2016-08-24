@@ -21,24 +21,18 @@ package io.mindmaps.graql;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.sun.corba.se.impl.util.Version;
-import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.implementation.exception.InvalidConceptTypeException;
-import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.Concept;
-import io.mindmaps.core.model.Instance;
 import io.mindmaps.factory.MindmapsClient;
-import io.mindmaps.graql.internal.parser.ANSI;
-import io.mindmaps.graql.internal.parser.MatchQueryPrinter;
 import io.mindmaps.graql.internal.shell.ErrorMessage;
-import io.mindmaps.graql.internal.shell.GraQLCompleter;
-import io.mindmaps.graql.internal.shell.ShellCommandCompleter;
 import jline.console.ConsoleReader;
-import jline.console.completer.AggregateCompleter;
 import jline.console.history.FileHistory;
 import org.apache.commons.cli.*;
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 
 import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -50,7 +44,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
+import static io.mindmaps.constants.RESTUtil.WebPath.REMOTE_SHELL_URI;
 
 /**
  * A Graql REPL shell that can be run from the command line
@@ -88,19 +83,16 @@ public class GraqlShell implements AutoCloseable {
     private ConsoleReader console;
     private PrintStream err;
 
-    private final MindmapsGraph graph;
-    private final MindmapsTransaction transaction;
-    private final Reasoner reasoner;
+    private final GraqlWebSocket socket;
 
     /**
      * Run a Graql REPL
      * @param args arguments to the Graql shell. Possible arguments can be listed by running {@code graql.sh --help}
      */
     public static void main(String[] args) {
-        InputStream in = System.in;
-        PrintStream out = System.out;
-        PrintStream err = System.err;
-        runShell(args, MindmapsClient::getGraph, MindmapsClient::getGraph, Version.VERSION, in, out, err);
+        runShell(args, MindmapsClient::getGraph, MindmapsClient::getGraph, Version.VERSION, System.in, System.out, System.err);
+
+        System.out.println("hello");
     }
 
     public static void runShell(
@@ -160,7 +152,7 @@ public class GraqlShell implements AutoCloseable {
             graph = localFactory.apply(namespace);
         }
 
-        try(GraqlShell shell = new GraqlShell(graph, in, out, err)) {
+        try(GraqlShell shell = new GraqlShell(in, out, err)) {
             if (filePath != null) {
                 query = loadQuery(filePath);
             }
@@ -183,19 +175,38 @@ public class GraqlShell implements AutoCloseable {
 
     /**
      * Create a new Graql shell
-     * @param graph the graph to operate on
      */
-    GraqlShell(MindmapsGraph graph, InputStream in, OutputStream out, PrintStream err) throws IOException {
-        this.graph = graph;
-        transaction = graph.getTransaction();
-        reasoner = new Reasoner(transaction);
+    GraqlShell(InputStream in, OutputStream out, PrintStream err) throws IOException {
         console = new ConsoleReader(in, out);
         this.err = err;
+        try {
+            this.socket = connect(new URI("ws://localhost:4567" + REMOTE_SHELL_URI));
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private GraqlWebSocket connect(URI uri) {
+        WebSocketClient client = new WebSocketClient();
+        GraqlWebSocket socket = new GraqlWebSocket("hello");
+
+        try {
+            client.start();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        ClientUpgradeRequest request = new ClientUpgradeRequest();
+        try {
+            client.connect(socket, uri, request);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return socket;
     }
 
     @Override
     public void close() throws IOException {
-        graph.close();
         console.flush();
     }
 
@@ -224,7 +235,7 @@ public class GraqlShell implements AutoCloseable {
         console.setHistory(history);
 
         // Add all autocompleters
-        console.addCompleter(new AggregateCompleter(new GraQLCompleter(graph), new ShellCommandCompleter()));
+        // console.addCompleter(new AggregateCompleter(new GraQLCompleter(graph), new ShellCommandCompleter()));
 
         String queryString;
 
@@ -287,36 +298,10 @@ public class GraqlShell implements AutoCloseable {
     }
 
     private void executeQuery(String queryString, boolean setLimit) {
-        Object query;
-
         try {
-            QueryParser parser = QueryParser.create(transaction);
-            query = parser.parseQuery(queryString);
-
-            if (query instanceof MatchQueryPrinter) {
-                printMatchQuery((MatchQueryPrinter) query, setLimit);
-            } else if (query instanceof AskQuery) {
-                printAskQuery((AskQuery) query);
-            } else if (query instanceof InsertQuery) {
-                printInsertQuery((InsertQuery) query);
-                reasoner.linkConceptTypes();
-            } else if (query instanceof DeleteQuery) {
-                ((DeleteQuery) query).execute();
-                reasoner.linkConceptTypes();
-            } else if (query instanceof ComputeQuery) {
-                Object result = ((ComputeQuery) query).execute(graph);
-                if (result instanceof Map) {
-                    // Degree query
-                    ((Map<Instance, Long>) result).forEach((instance, degree) -> print(instance.getId() + "\t" + degree + "\n"));
-                } else {
-                    // Persist and Count query
-                    println(result.toString());
-                }
-            } else {
-                throw new RuntimeException("Unrecognized query " + query);
-            }
-        } catch (Exception e) {
-            err.println(e.getMessage());
+            socket.sendQuery(queryString).forEach(this::println);
+        } catch (IOException | InterruptedException | ExecutionException e) {
+            e.printStackTrace();
         }
     }
 
@@ -346,9 +331,9 @@ public class GraqlShell implements AutoCloseable {
 
     private void commit() {
         try {
-            transaction.commit();
-        } catch (MindmapsValidationException e) {
-            err.println(e.getMessage());
+            socket.commit();
+        } catch (IOException | InterruptedException | ExecutionException e) {
+            e.printStackTrace();
         }
     }
 

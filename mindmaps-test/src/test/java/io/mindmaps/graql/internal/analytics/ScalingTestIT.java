@@ -1,8 +1,7 @@
 package io.mindmaps.graql.internal.analytics;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.core.Data;
 import io.mindmaps.api.CommitLogController;
 import io.mindmaps.api.GraphFactoryController;
 import io.mindmaps.api.ImportController;
@@ -24,12 +23,13 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
+import static io.mindmaps.IntegrationUtils.hideLogs;
+import static io.mindmaps.IntegrationUtils.startTestEngine;
 import static io.mindmaps.graql.Graql.all;
 import static io.mindmaps.graql.Graql.var;
 import static java.lang.Thread.sleep;
@@ -51,18 +51,9 @@ public class ScalingTestIT {
 
 
     @BeforeClass
-    public static void startController()
-            throws InterruptedException, TTransportException, ConfigurationException, IOException {
-        // Disable horrid cassandra logs
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.OFF);
-
-        EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra-embedded.yaml");
-        new GraphFactoryController();
-        new CommitLogController();
-        new TransactionController();
-
-        sleep(5000);
+    public static void startController() throws Exception {
+        hideLogs();
+        startTestEngine();
     }
 
     @Before

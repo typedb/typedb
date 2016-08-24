@@ -22,6 +22,7 @@ public class RESTUtil {
         public static final String TRANSACTION_STATUS_URI = "/transaction/status/";
         public static final String LOADER_STATE_URI = "/transaction/loaderState";
 
+        public static final String REMOTE_SHELL_URI = "/shell/remote";
     }
 
     public static class Request{
@@ -48,8 +49,6 @@ public class RESTUtil {
         public static final String CONTENT_TYPE = "Content-Type";
         public static final String POST_METHOD = "POST";
         public static final String APPLICATION_POST_TYPE = "application/POST";
-
-
     }
 
     public static class Response{
@@ -59,5 +58,18 @@ public class RESTUtil {
         public static final String RELATIONS_JSON_FIELD = "relations";
         public static final String RESOURCES_JSON_FIELD = "resources";
 
+    }
+
+    public static class RemoteShell {
+        public static final String ACTION = "action";
+        public static final String ACTION_NAMESPACE = "namespace";
+        public static final String ACTION_QUERY = "query";
+        public static final String ACTION_COMMIT = "query";
+
+        public static final String NAMESPACE = "namespace";
+        public static final String QUERY = "query";
+        public static final String QUERY_ID = "id";
+        public static final String QUERY_END = "end";
+        public static final String QUERY_LINES = "lines";
     }
 }

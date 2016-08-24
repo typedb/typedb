@@ -1,10 +1,9 @@
 package io.mindmaps.graql.internal.analytics;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.api.CommitLogController;
 import io.mindmaps.api.GraphFactoryController;
+import io.mindmaps.core.Data;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.*;
@@ -12,25 +11,21 @@ import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.QueryParser;
-import org.apache.cassandra.exceptions.ConfigurationException;
-import org.apache.thrift.transport.TTransportException;
-import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
-import static io.mindmaps.graql.Graql.or;
-import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.graql.Graql.withTransaction;
-import static java.lang.Thread.sleep;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static io.mindmaps.IntegrationUtils.hideLogs;
+import static io.mindmaps.IntegrationUtils.startTestEngine;
+import static io.mindmaps.graql.Graql.*;
+import static org.junit.Assert.*;
 
 public class GraqlTest {
 
@@ -51,23 +46,9 @@ public class GraqlTest {
     RelationType related;
 
     @BeforeClass
-    public static void startController()
-            throws InterruptedException, TTransportException, ConfigurationException, IOException {
-        // Disable horrid cassandra logs
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.OFF);
-
-        EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra-embedded.yaml");
-        new GraphFactoryController();
-        new CommitLogController();
-
-        sleep(5000);
-    }
-
-
-    @AfterClass
-    public static void stopController() {
-        EmbeddedCassandraServerHelper.stopEmbeddedCassandra();
+    public static void startController() throws Exception {
+        hideLogs();
+        startTestEngine();
     }
 
     @Before
