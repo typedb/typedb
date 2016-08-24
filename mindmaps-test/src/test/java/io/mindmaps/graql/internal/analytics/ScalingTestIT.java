@@ -15,6 +15,7 @@ import io.mindmaps.core.model.RoleType;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.loader.DistributedLoader;
 import org.apache.cassandra.exceptions.ConfigurationException;
+import org.apache.commons.configuration.Configuration;
 import org.apache.thrift.transport.TTransportException;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.junit.AfterClass;
@@ -60,7 +61,6 @@ public class ScalingTestIT {
         EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra-embedded.yaml");
         new GraphFactoryController();
         new CommitLogController();
-        new ImportController();
         new TransactionController();
 
         sleep(5000);
@@ -91,38 +91,38 @@ public class ScalingTestIT {
         }
 
         long numberOfSuperNodes = 10L;
-        long[] scales = new long[]{10L, 100L, 1000L};
+//        long[] scales = new long[]{10L, 100L, 1000L, 10000L};
+        long[] scales = new long[]{10000L};
 
         for (long scale : scales) {
             writer.println("current scale - super " + numberOfSuperNodes + " - nodes " + scale);
 
 
-            writer.println("start generate graph " + System.nanoTime());
+            writer.println("start generate graph " + System.nanoTime()/1000000000L + "s");
             writer.flush();
             generateSimpleGraph(numberOfSuperNodes, scale);
-            writer.println("stop generate graph " + System.nanoTime());
-            sleep(60000);
+            writer.println("stop generate graph " + System.nanoTime()/1000000000L + "s");
 
             Analytics computer = new Analytics();
-            writer.println("start count " + System.nanoTime());
+            writer.println("start count " + System.nanoTime()/1000000000L + "s");
             writer.flush();
             writer.println("count: " + computer.count());
-            writer.println("stop count " + System.nanoTime());
+            writer.println("stop count " + System.nanoTime()/1000000000L + "s");
             writer.flush();
-//            writer.println("start degree " + System.nanoTime());
+//            writer.println("start degree " + System.nanoTime()/1000000000L + "s");
 //            writer.flush();
 //            computer.degrees();
-//            writer.println("stop degree " + System.nanoTime());
+//            writer.println("stop degree " + System.nanoTime()/1000000000L + "s");
 //            writer.flush();
-//            writer.println("start persist degree " + System.nanoTime());
+//            writer.println("start persist degree " + System.nanoTime()/1000000000L + "s");
 //            writer.flush();
 //            computer.degreesAndPersist();
-//            writer.println("stop persist degree " + System.nanoTime());
+//            writer.println("stop persist degree " + System.nanoTime()/1000000000L + "s");
 //            writer.flush();
-            writer.println("start clean graph " + System.nanoTime());
+            writer.println("start clean graph " + System.nanoTime()/1000000000L + "s");
             writer.flush();
             graph.clear();
-            writer.println("stop clean graph " + System.nanoTime());
+            writer.println("stop clean graph " + System.nanoTime()/1000000000L + "s");
             Thread.sleep(5000);
             graph = MindmapsClient.getGraph(TEST_KEYSPACE);
             transaction = graph.getTransaction();
@@ -146,14 +146,14 @@ public class ScalingTestIT {
 
         DistributedLoader distributedLoader = new DistributedLoader(TEST_KEYSPACE,
                 Arrays.asList(HOST_NAME));
-        distributedLoader.setBatchSize(10);
+        distributedLoader.setBatchSize(100);
 
         for (int nodeIndex = 0; nodeIndex < numberOfNodes; nodeIndex++) {
             String nodeId = "node-" + nodeIndex;
             distributedLoader.addToQueue(var().isa("thing").id(nodeId));
         }
 
-        sleep(60000);
+        distributedLoader.waitToFinish();
 
         for (String supernodeId : superNodes) {
             for (int nodeIndex = 0; nodeIndex < numberOfNodes; nodeIndex++) {
@@ -163,6 +163,8 @@ public class ScalingTestIT {
                         .rel("relation2", var().id(supernodeId)));
             }
         }
+
+        distributedLoader.waitToFinish();
 
     }
 
