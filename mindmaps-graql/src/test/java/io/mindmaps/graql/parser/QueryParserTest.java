@@ -31,7 +31,9 @@ import io.mindmaps.graql.internal.parser.MatchQueryPrinter;
 import io.mindmaps.graql.internal.query.aggregate.AbstractAggregate;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -41,6 +43,8 @@ import java.util.stream.Stream;
 
 import static io.mindmaps.constants.DataType.ConceptMeta.*;
 import static io.mindmaps.graql.Graql.*;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.core.AllOf.allOf;
 import static org.junit.Assert.*;
 
 public class QueryParserTest {
@@ -48,6 +52,8 @@ public class QueryParserTest {
     private static MindmapsTransaction transaction;
     private QueryParser qp;
     private QueryBuilder qb;
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
 
     @BeforeClass
     public static void setUpClass() {
@@ -443,9 +449,25 @@ public class QueryParserTest {
         assertEquals("movie", result.type().getId());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testBadSyntaxThrowsIllegalArgumentException() {
-        qp.parseMatchQuery("match");
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(allOf(
+                containsString("syntax error"), containsString("line 1"),
+                containsString("\nmatch $x isa "),
+                containsString("\n             ^"), containsString("EOF")
+        ));
+        qp.parseMatchQuery("match $x isa ");
+    }
+
+    @Test
+    public void testSyntaxErrorPointer() {
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(allOf(
+                containsString("\nmatch $x is"),
+                containsString("\n         ^")
+        ));
+        qp.parseMatchQuery("match $x is");
     }
 
     @Test(expected = IllegalArgumentException.class)

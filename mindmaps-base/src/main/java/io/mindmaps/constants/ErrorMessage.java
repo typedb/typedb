@@ -76,7 +76,7 @@ public enum ErrorMessage {
     //--------------------------------------------- Graql Errors -----------------------------------------------
     NO_TRANSACTION("no transaction provided"),
 
-    SYNTAX_ERROR("syntax error"),
+    SYNTAX_ERROR("syntax error at line %s: \n%s\n%s\n%s"),
 
     MUST_BE_RESOURCE_TYPE("type '%s' must be a resource-type"),
     ID_NOT_FOUND("id '%s' not found"),
