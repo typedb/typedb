@@ -30,6 +30,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
+import org.relaxng.datatype.Datatype;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -58,7 +59,7 @@ public class DegreeVertexProgram implements VertexProgram<Long> {
 
     private HashSet<String> baseTypes = Sets.newHashSet(
             DataType.BaseType.ENTITY.name(),
-            DataType.BaseType.RELATION.name(),
+//            DataType.BaseType.RELATION.name(),
             DataType.BaseType.RESOURCE.name());
 
     private Set<String> selectedTypes = null;
@@ -127,30 +128,89 @@ public class DegreeVertexProgram implements VertexProgram<Long> {
 
     @Override
     public void execute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
-        if (memory.getIteration() == 0) {
-            if (vertex.label().equals(DataType.BaseType.RELATION.name()) &&
-                    selectedTypes.contains(getVertextType(vertex)) &&
-                    !isAnalyticsElement(vertex)) {
-                messenger.sendMessage(this.countMessageScopeOut, 1L);
-            }
-        } else if (memory.getIteration() == 1) {
-            if (vertex.label().equals(DataType.BaseType.CASTING.name())) {
-                long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
-                messenger.sendMessage(this.countMessageScopeOut, edgeCount);
-                messenger.sendMessage(this.countMessageScopeIn, 1L);
-            }
-        } else if (memory.getIteration() == 2) {
-            if (baseTypes.contains(vertex.label()) &&
-                    !isAnalyticsElement(vertex)) {
-                long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
-                vertex.property(DEGREE, edgeCount);
-            }
+        switch (memory.getIteration()) {
+            case 0:
+                if (baseTypes.contains(vertex.label())) {
+                    if (selectedTypes.contains(getVertextType(vertex)) && !isAnalyticsElement(vertex)) {
+                        messenger.sendMessage(this.countMessageScopeIn, 1L);
+                        System.out.println("base type, step 1");
+                    }
+//                } else if (vertex.label().equals(DataType.BaseType.ROLE_TYPE.name())) {
+//                    System.out.println("role type, step 1");
+//                    messenger.sendMessage(this.countMessageScopeIn, 1L);
+                }
+                break;
+            case 1:
+                if (vertex.label().equals(DataType.BaseType.CASTING.name())) {
+                    long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
+                    if (edgeCount > 0) {
+                        messenger.sendMessage(this.countMessageScopeIn, -1L);
+                        System.out.println("casting type step 2");
+                    }
+//                } else if (vertex.label().equals(DataType.BaseType.RELATION_TYPE.name())) {
+//                    long roleCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
+//                    messenger.sendMessage(this.countMessageScopeIn, roleCount);
+//                    System.out.println("relation type step 2, role count = " + roleCount);
+                }
+                break;
+            case 2:
+                if (vertex.label().equals(DataType.BaseType.RELATION.name()) &&
+                        selectedTypes.contains(getVertextType(vertex)) &&
+                        !isAnalyticsElement(vertex)) {
+                    messenger.sendMessage(this.countMessageScopeOut, 1L);
+                    long roleCount = 0;
+                    long rolePlayerCount = 0;
+                    Iterator<Long> iterator = messenger.receiveMessages();
+                    while (iterator.hasNext()) {
+                        long message = iterator.next();
+                        if (message > 0) roleCount = message;
+                        else rolePlayerCount++;
+                    }
+//                    vertex.property(DEGREE, Math.min(roleCount, rolePlayerCount));
+                    vertex.property(DEGREE, rolePlayerCount);
+                }
+                break;
+            case 3:
+                if (vertex.label().equals(DataType.BaseType.CASTING.name())) {
+                    long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
+                    messenger.sendMessage(this.countMessageScopeOut, edgeCount);
+                }
+                break;
+            case 4:
+                if (baseTypes.contains(vertex.label()) &&
+                        !isAnalyticsElement(vertex)) {
+                    long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
+                    vertex.property(DEGREE, edgeCount);
+                }
+                break;
         }
+
+//
+//        if (memory.getIteration() == 0) {
+//            if (vertex.label().equals(DataType.BaseType.RELATION.name()) &&
+//                    selectedTypes.contains(getVertextType(vertex)) &&
+//                    !isAnalyticsElement(vertex)) {
+//                messenger.sendMessage(this.countMessageScopeOut, 1L);
+//            }
+//        } else if (memory.getIteration() == 1) {
+//            if (vertex.label().equals(DataType.BaseType.CASTING.name())) {
+//                long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
+//                messenger.sendMessage(this.countMessageScopeOut, edgeCount);
+//                messenger.sendMessage(this.countMessageScopeIn, 1L);
+//            }
+//        } else if (memory.getIteration() == 2) {
+//            if (baseTypes.contains(vertex.label()) &&
+//                    !isAnalyticsElement(vertex)) {
+//                long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
+//                vertex.property(DEGREE, edgeCount);
+//            }
+//        }
     }
 
     @Override
     public boolean terminate(final Memory memory) {
-        return memory.getIteration() == 2;
+        System.out.println("memory.getIteration() = " + memory.getIteration());
+        return memory.getIteration() == 4;
     }
 
     @Override

@@ -203,9 +203,13 @@ public class AnalyticsTest {
         Map<Instance, Long> degrees = computer.degrees();
 
         assertTrue(!degrees.isEmpty());
+        System.out.println("degrees = " + degrees.values());
         degrees.entrySet().forEach(degree -> {
             assertTrue(correctDegrees.containsKey(degree.getKey()));
-            assertTrue(correctDegrees.get(degree.getKey()).equals(degree.getValue()));
+            System.out.println("degree.getKey() = " + degree.getKey());
+            System.out.println("correctDegrees.get(degree.getKey()) = " + correctDegrees.get(degree.getKey()));
+            System.out.println("degree.getValue() = " + degree.getValue());
+            assertEquals(correctDegrees.get(degree.getKey()), degree.getValue());
         });
 
         // compute degrees again after persisting degrees
