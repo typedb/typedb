@@ -28,6 +28,7 @@ import org.junit.Test;
 import java.io.*;
 import java.util.Arrays;
 import java.util.Random;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -36,17 +37,22 @@ import static org.junit.Assert.*;
 
 public class GraqlShellTest {
 
-    private Function<String, MindmapsGraph> graphFactory;
+    private Function<String, MindmapsGraph> localFactory;
+    private BiFunction<String, String, MindmapsGraph> remoteFactory;
 
+    private String providedUri;
     private String providedNamespace;
     private String expectedVersion = "graql-9.9.9";
 
     @Before
     public void setUp() {
-        graphFactory = namespace -> {
+        remoteFactory = (uri, namespace) -> {
+            providedUri = uri;
             providedNamespace = namespace;
             return MindmapsTestGraphFactory.newEmptyGraph();
         };
+
+        localFactory = namespace -> remoteFactory.apply("default-test", namespace);
     }
 
     @Test
@@ -85,6 +91,18 @@ public class GraqlShellTest {
     public void testSpecifiedNamespace() throws IOException {
         testShell("", "-n", "myspace");
         assertEquals("myspace", providedNamespace);
+    }
+
+    @Test
+    public void testDefaultUri() throws IOException {
+        testShell("");
+        assertEquals("default-test", providedUri);
+    }
+
+    @Test
+    public void testSpecifiedUri() throws IOException {
+        testShell("", "-u", "1.2.3.4:5678");
+        assertEquals("1.2.3.4:5678", providedUri);
     }
 
     @Test
@@ -236,7 +254,7 @@ public class GraqlShellTest {
         PrintStream pout = new PrintStream(bout);
         PrintStream perr = new PrintStream(err);
 
-        GraqlShell.runShell(args, graphFactory, expectedVersion, in, pout, perr);
+        GraqlShell.runShell(args, localFactory, remoteFactory, expectedVersion, in, pout, perr);
 
         pout.flush();
         perr.flush();
