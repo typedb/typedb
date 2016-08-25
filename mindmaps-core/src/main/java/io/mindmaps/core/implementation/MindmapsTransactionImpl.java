@@ -660,17 +660,16 @@ public class MindmapsTransactionImpl implements MindmapsTransaction, AutoCloseab
     }
 
     @Override
-    public void refresh() throws Exception {
+    public void refresh() {
         handleTransaction(Transaction::rollback);
         getConceptLog().clearTransaction();
     }
 
     /**
      * Closes the current transaction rendering it unusable.
-     * @throws Exception
      */
     @Override
-    public void close() throws Exception {
+    public void close() {
         handleTransaction(Transaction::rollback);
         getConceptLog().clearTransaction();
         mindmapsGraph.clearTransaction();

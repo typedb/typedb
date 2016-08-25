@@ -462,13 +462,11 @@ public interface MindmapsTransaction {
 
     /**
      * Resets the current transaction without commiting.
-     * @throws Exception
      */
-    void refresh() throws Exception;
+    void refresh();
 
     /**
      * Closes the current transaction rendering it unusable.
-     * @throws Exception
      */
-    void close() throws Exception;
+    void close();
 }
