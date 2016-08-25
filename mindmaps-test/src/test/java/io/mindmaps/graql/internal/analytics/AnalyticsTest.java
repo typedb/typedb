@@ -88,8 +88,8 @@ public class AnalyticsTest {
 
     @Before
     public void setUp() throws InterruptedException {
-        System.out.println();
-        System.out.println("Clearing the graph");
+//        System.out.println();
+//        System.out.println("Clearing the graph");
         graph = MindmapsClient.getGraph(TEST_KEYSPACE);
         graph.clear();
         graph = MindmapsClient.getGraph(TEST_KEYSPACE);
@@ -278,13 +278,12 @@ public class AnalyticsTest {
         correctDegrees.put(entity1, 1l);
         correctDegrees.put(entity2, 3l);
         correctDegrees.put(entity3, 1l);
-        correctDegrees.put(entity4, 1l);
         correctDegrees.put(transaction.getRelation(id1), 2l);
         correctDegrees.put(transaction.getRelation(id2), 2l);
-        correctDegrees.put(transaction.getRelation(id3), 2l);
+        correctDegrees.put(transaction.getRelation(id3), 1l);
 
-        // compute degrees
-        Analytics computer = new Analytics();
+        // compute degrees on subgraph
+        Analytics computer = new Analytics(Sets.newHashSet(thing, related));
         computer.degreesAndPersist();
 
         // assert persisted degrees are correct
@@ -301,25 +300,60 @@ public class AnalyticsTest {
             assertTrue(resources.iterator().next().getValue().equals(degree.getValue()));
         });
 
-        long numVertices = computer.count();
+        long numVertices = 0;
 
-        // compute again
-        computer.degreesAndPersist();
+        // compute again and again ...
+        for (int i = 0; i < 3; i++) {
+            computer.degreesAndPersist();
 
-        correctDegrees.entrySet().forEach(degree -> {
-            Instance instance = degree.getKey();
-            Collection<Resource<?>> resources = null;
-            if (instance.isEntity()) {
-                resources = instance.asEntity().resources();
-            } else if (instance.isRelation()) {
-                resources = instance.asRelation().resources();
+            correctDegrees.entrySet().forEach(degree -> {
+                Instance instance = degree.getKey();
+                Collection<Resource<?>> resources = null;
+                if (instance.isEntity()) {
+                    resources = instance.asEntity().resources();
+                } else if (instance.isRelation()) {
+                    resources = instance.asRelation().resources();
+                }
+                assert resources != null;
+                assertTrue(resources.iterator().next().getValue().equals(degree.getValue()));
+            });
+
+            // assert the number of vertices remain the same
+            if (i == 0) {
+                numVertices = new Analytics().count();
+            } else {
+                assertEquals(numVertices, new Analytics().count());
             }
-            assert resources != null;
-            assertTrue(resources.iterator().next().getValue().equals(degree.getValue()));
-        });
+        }
 
-        // assert the number of vertices remain the same
-        assertEquals(numVertices, computer.count());
+        // compute degrees on all types, again and again ...
+        for (int i = 0; i < 3; i++) {
+            computer = new Analytics();
+            computer.degreesAndPersist();
+
+            correctDegrees.put(entity4, 1l);
+            correctDegrees.put(transaction.getRelation(id3), 2l);
+
+            correctDegrees.entrySet().forEach(degree -> {
+                Instance instance = degree.getKey();
+                Collection<Resource<?>> resources = null;
+                if (instance.isEntity()) {
+                    resources = instance.asEntity().resources();
+                } else if (instance.isRelation()) {
+                    resources = instance.asRelation().resources();
+                }
+                assert resources != null;
+                assertEquals(resources.iterator().next().getValue(), degree.getValue());
+            });
+
+            // assert the number of vertices remain the same
+            if (i == 0) {
+                assertEquals(2, computer.count() - numVertices);
+                numVertices = computer.count();
+            } else {
+                assertEquals(numVertices, computer.count());
+            }
+        }
     }
 
     @Ignore

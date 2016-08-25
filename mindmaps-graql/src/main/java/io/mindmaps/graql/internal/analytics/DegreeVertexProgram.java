@@ -32,10 +32,7 @@ import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.relaxng.datatype.Datatype;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.mindmaps.graql.internal.analytics.Analytics.*;
@@ -55,7 +52,7 @@ public class DegreeVertexProgram implements VertexProgram<Long> {
 
     private ConfigurationTraversal<Vertex, Edge> configurationTraversal;
 
-    private static final Set<String> COMPUTE_KEYS = new HashSet<>(Arrays.asList(DEGREE));
+    private static final Set<String> COMPUTE_KEYS = Collections.singleton(DEGREE);
 
     private HashSet<String> baseTypes = Sets.newHashSet(
             DataType.BaseType.ENTITY.name(),
@@ -129,11 +126,9 @@ public class DegreeVertexProgram implements VertexProgram<Long> {
     public void execute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
         switch (memory.getIteration()) {
             case 0:
-
                 if (selectedTypes.contains(getVertextType(vertex)) && !isAnalyticsElement(vertex)) {
                     if (baseTypes.contains(vertex.label())) {
                         messenger.sendMessage(this.countMessageScopeIn, 1L);
-                        System.out.println("base type, step 1");
                     } else if (vertex.label().equals(DataType.BaseType.RELATION.name())) {
                         messenger.sendMessage(this.countMessageScopeOut, -1L);
                     }
@@ -169,7 +164,6 @@ public class DegreeVertexProgram implements VertexProgram<Long> {
 
     @Override
     public boolean terminate(final Memory memory) {
-        System.out.println("memory.getIteration() = " + memory.getIteration());
         return memory.getIteration() == 2;
     }
 

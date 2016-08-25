@@ -154,7 +154,7 @@ public class Analytics {
      */
     private void degreesAndPersist(String resourceType) {
         insertOntology(resourceType, Data.LONG);
-        computer.compute(new DegreeAndPersistVertexProgram());
+        computer.compute(new DegreeAndPersistVertexProgram(allTypes));
     }
 
     public void degreesAndPersist() throws ExecutionException, InterruptedException {
@@ -180,6 +180,7 @@ public class Analytics {
             e.printStackTrace();
         }
 
+        //TODO: need a proper way to store this information
         addAnalyticsElements(resourceName);
     }
 
@@ -204,20 +205,17 @@ public class Analytics {
         RoleType resourceValue = transaction.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceName));
         RelationType relationType = transaction.getRelationType(GraqlType.HAS_RESOURCE.getId(resourceName));
 
-        Instance instance = transaction.getInstance(vertex.value(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name()));
+        Instance instance =
+                transaction.getInstance(vertex.value(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name()));
 
         //TODO: remove the deletion of resource. This should be done by core.
         instance.relations(resourceOwner).stream()
                 .filter(relation ->
-                        relation.rolePlayers().get(resourceValue).type().getId()
-                                .equals(GraqlType.HAS_RESOURCE_VALUE.getId(resourceName)))
+                        relation.rolePlayers().get(resourceValue).type().getId().equals(resourceName))
                 .forEach(relation -> {
                     relation.rolePlayers().get(resourceValue).delete();
                     relation.delete();
                 });
-
-//        instance.relations(resourceOwner).forEach(relation -> relation.rolePlayers().get(resourceValue).delete());
-//        instance.relations(resourceOwner).forEach(Concept::delete);
 
         Resource<Long> resource = transaction.addResource(resourceType).setValue(value);
         transaction.addRelation(relationType)
