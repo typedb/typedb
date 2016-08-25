@@ -21,6 +21,7 @@ package io.mindmaps.graql.internal.analytics;
 import com.google.common.collect.Sets;
 import io.mindmaps.constants.DataType;
 import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.core.model.Type;
 import io.mindmaps.factory.MindmapsClient;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.*;
@@ -30,12 +31,13 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-import static io.mindmaps.graql.internal.analytics.Analytics.TYPE;
-import static io.mindmaps.graql.internal.analytics.Analytics.getVertextType;
-import static io.mindmaps.graql.internal.analytics.Analytics.isAnalyticsElement;
+import static io.mindmaps.graql.internal.analytics.Analytics.*;
 
 /**
  *
@@ -159,24 +161,6 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
                 }
                 break;
         }
-//        if (memory.isInitialIteration()) {
-//            if (vertex.label().equals(DataType.BaseType.RELATION.name()) &&
-//                    !Analytics.isAnalyticsElement(vertex)) {
-//                messenger.sendMessage(this.countMessageScopeOut, 1L);
-//            }
-//        } else if (memory.getIteration() == 1) {
-//            if (vertex.label().equals(DataType.BaseType.CASTING.name())) {
-//                long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
-//                messenger.sendMessage(this.countMessageScopeOut, edgeCount);
-//                messenger.sendMessage(this.countMessageScopeIn, 1L);
-//            }
-//        } else if (memory.getIteration() == 2) {
-//            if (baseTypes.contains(vertex.label()) &&
-//                    !Analytics.isAnalyticsElement(vertex)) {
-//                long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
-//                Analytics.persistResource(mindmapsGraph, vertex, Analytics.degree, edgeCount);
-//            }
-//        }
     }
 
     @Override

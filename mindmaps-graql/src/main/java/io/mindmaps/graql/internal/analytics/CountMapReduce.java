@@ -33,7 +33,8 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.mindmaps.graql.internal.analytics.Analytics.*;
+import static io.mindmaps.graql.internal.analytics.Analytics.TYPE;
+import static io.mindmaps.graql.internal.analytics.Analytics.getVertextType;
 
 /**
  *
