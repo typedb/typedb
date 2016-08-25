@@ -494,7 +494,7 @@ public class Reasoner {
         return join;
     }
 
-    private Set<Map<String, Concept>> Answer(Atomic atom, Set<Query> subGoals, Map<Query, Set<Map<String, Concept>>> matAnswers, Map<String, Type> varMap) {
+    private Set<Map<String, Concept>> Answer(Atomic atom, Set<Query> subGoals, Map<String, Type> varMap) {
         Query atomicQuery = new Query(atom);
 
         Set<Map<String, Concept>> allSubs = DBlookup(atomicQuery);
@@ -525,7 +525,7 @@ public class Reasoner {
                 do {
                     Atomic at = atIt.next();
                     subGoals.add(atomicQuery);
-                    Set<Map<String, Concept>> localSubs = Answer(at, subGoals, matAnswers, varMap);
+                    Set<Map<String, Concept>> localSubs = Answer(at, subGoals, varMap);
                     subs = joinSubstitutions(subs, localSubs);
                 }
                 while (!subs.isEmpty() && atIt.hasNext());
@@ -544,14 +544,12 @@ public class Reasoner {
         int dAns;
         int iter = 0;
 
-        Map<Query, Set<Map<String, Concept>>> matAnswers = new HashMap<>();
-
         do {
             Set<Query> subGoals = new HashSet<>();
             Map<String, Type> varMap = atom.getParentQuery().getVarTypeMap();
             dAns = subAnswers.size();
             LOG.debug("iter: " + iter++ + " answers: " + dAns);
-            subAnswers = Answer(atom, subGoals, matAnswers, varMap);
+            subAnswers = Answer(atom, subGoals, varMap);
             dAns = subAnswers.size() - dAns;
         } while(dAns != 0 );
 
