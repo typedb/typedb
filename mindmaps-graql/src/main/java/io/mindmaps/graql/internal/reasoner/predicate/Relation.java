@@ -28,7 +28,7 @@ import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.reasoner.container.Query;
-import org.javatuples.Pair;
+import javafx.util.Pair;
 
 import java.util.*;
 
@@ -251,16 +251,5 @@ public class Relation extends AtomBase {
         return typeConstraints;
     }
 
-    public Set<Atomic> getRelatedAtoms(){
-        Set<Atomic> relatedAtoms = new HashSet<>();
-        getParentQuery().getAtoms().forEach(atom ->{
-            if(atom.isRelation()){
-                Set<String> intersection = new HashSet<>(getVarNames());
-                intersection.retainAll(atom.getVarNames());
-                if (!intersection.isEmpty()) relatedAtoms.add(atom);
-            }
-        });
-        return relatedAtoms;
-    }
 
 }

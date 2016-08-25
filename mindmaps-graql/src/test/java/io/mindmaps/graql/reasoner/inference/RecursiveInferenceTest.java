@@ -24,10 +24,7 @@ import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.MatchQueryDefault;
 import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.Reasoner;
-import io.mindmaps.graql.reasoner.graphs.GenericGraph;
-import io.mindmaps.graql.reasoner.graphs.MatrixGraph;
-import io.mindmaps.graql.reasoner.graphs.NguyenGraph;
-import io.mindmaps.graql.reasoner.graphs.PathGraph;
+import io.mindmaps.graql.reasoner.graphs.*;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -35,7 +32,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static io.mindmaps.graql.internal.reasoner.Utility.printAnswers;
 import static org.junit.Assert.assertEquals;
 
 public class RecursiveInferenceTest {
@@ -83,9 +79,7 @@ public class RecursiveInferenceTest {
     }
 
     /**as above but both directions*/
-    //produces surplus relation due to role confusion
     @Test
-    @Ignore
     public void testAncestor2() {
         MindmapsTransaction graph = GenericGraph.getTransaction("ancestor-test.gql");
         QueryParser qp = QueryParser.create(graph);
@@ -185,6 +179,7 @@ public class RecursiveInferenceTest {
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
+    /**test 6.10 from Cao p. 82*/
     @Test
     public void testPath(){
         final int N = 5;
@@ -204,6 +199,7 @@ public class RecursiveInferenceTest {
         assertEquals(answers, Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
+    /**from Abiteboul - Foundations of databases p. 312/Cao test 6.14 p. 89*/
     @Test
     public void testReverseSameGeneration(){
         MindmapsTransaction graph = GenericGraph.getTransaction("recursivity-rsg-test.gql");
@@ -216,22 +212,30 @@ public class RecursiveInferenceTest {
                                 "{$y id 'b'} or {$y id 'c'} or {$y id 'd'}";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
+    }
+    @Test
+    public void testReverseSameGeneration2() {
+        MindmapsTransaction graph = GenericGraph.getTransaction("recursivity-rsg-test.gql");
+        QueryParser qp = QueryParser.create(graph);
+        Reasoner reasoner = new Reasoner(graph);
 
-        queryString = "match (RSG-from $x, RSG-to $y) isa RevSG";
-        query = qp.parseMatchQuery(queryString).getMatchQuery();
+        String queryString = "match (RSG-from $x, RSG-to $y) isa RevSG";
+        MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
+        Set<Map<String, Concept>> answers = reasoner.resolve(query);
 
-        explicitQuery = "match " +
+        String explicitQuery = "match " +
                 "{$x id 'a';$y id 'b'} or {$x id 'a';$y id 'c'} or {$x id 'a';$y id 'd'} or" +
                 "{$x id 'm';$y id 'n'} or {$x id 'm';$y id 'o'} or {$x id 'p';$y id 'm'} or" +
                 "{$x id 'g';$y id 'f'} or {$x id 'h';$y id 'f'} or {$x id 'i';$y id 'f'} or" +
                 "{$x id 'j';$y id 'f'} or {$x id 'f';$y id 'k'}";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
+        assertEquals(answers, Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
+    /**test3 from Nguyen*/
     @Test
     //TODO need to add handling unary predicates to capture match $x isa S
-    public void testNguqyen(){
+    public void testNguyen(){
         final int N = 9;
         MindmapsTransaction graph = NguyenGraph.getTransaction(N);
         QueryParser qp = QueryParser.create(graph);
@@ -244,6 +248,7 @@ public class RecursiveInferenceTest {
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
+    /** test 6.1 from Cao p 71*/
     @Test
     public void testMatrix(){
         final int N = 5;
@@ -276,7 +281,22 @@ public class RecursiveInferenceTest {
         assertEquals(answers, explicitAnswers);
     }
 
-    private void assertQueriesEqual(MatchQueryDefault q1, MatchQueryDefault q2) {
-        assertEquals(Sets.newHashSet(q1), Sets.newHashSet(q2));
+    /** test 6.3 from Cao p 75*/
+    @Test
+    public void testTailRecursion(){
+        final int N = 10;
+        final int M = 5;
+        MindmapsTransaction graph = TailRecursionGraph.getTransaction(N, M);
+        QueryParser qp = QueryParser.create(graph);
+        Reasoner reasoner = new Reasoner(graph);
+
+        String queryString = "match (P-from $x, P-to $y) isa P; $x id 'a0' select $y";
+        MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
+        String explicitQuery = "match $y isa b-entity";
+
+        Set<Map<String, Concept>> answers = reasoner.resolve(query);
+
+        assertEquals(answers, Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
+
 }
