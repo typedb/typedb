@@ -439,7 +439,7 @@ public class  Query {
             if (current.getNeighbours().size() == 1) start = current;
         }
         if (start == null )
-            throw new IllegalStateException("Unable to find suitable starting atom (loop?)");
+            throw new IllegalStateException(ErrorMessage.LOOP_CLAUSE.getMessage());
 
         selectedAtoms.add(start);
 

@@ -383,7 +383,6 @@ public class Reasoner {
         for(Map.Entry<String, Type> entry : varTypeMap.entrySet())
             globalVarMap.putIfAbsent(entry.getKey(), entry.getValue());
 
-        ruleHead.getVarSet().forEach(v -> { if (v.contains("capture")) throw new IllegalArgumentException("capture in head!");});
         return new Pair<>(ruleBody, ruleHead);
     }
 
