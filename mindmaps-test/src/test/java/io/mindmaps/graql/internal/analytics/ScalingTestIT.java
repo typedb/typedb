@@ -86,8 +86,8 @@ public class ScalingTestIT {
 
         // compute the sample of graph sizes
         int MAX_SIZE = 10000;
-        int NUM_DIVS = 3;
-        int REPEAT = 1;
+        int NUM_DIVS = 10;
+        int REPEAT = 5;
 
         int STEP_SIZE = MAX_SIZE/NUM_DIVS;
         List<Integer> graphSizes = new ArrayList<>();
@@ -157,8 +157,11 @@ public class ScalingTestIT {
             countTime /= REPEAT*1000;
             degreeTime /= REPEAT*1000;
             degreeAndPersistTime /= REPEAT*1000;
+            System.out.println("time to count: "+countTime);
             scaleToAverageTimeCount.put(graphSize,countTime);
+            System.out.println("time to degrees: "+countTime);
             scaleToAverageTimeDegree.put(graphSize,degreeTime);
+            System.out.println("time to degreesAndPersist: "+countTime);
             scaleToAverageTimeDegreeAndPersist.put(graphSize,degreeAndPersistTime);
         }
 
