@@ -45,10 +45,10 @@ import static io.mindmaps.constants.DataType.ConceptPropertyUnique.ITEM_IDENTIFI
 
 public class Analytics {
 
-    public static String keySpace = "mindmapsanalyticstest";
+    public static final String keySpace = "mindmapsanalyticstest";
 
     public static final String degree = "degree";
-    public static Set<String> analyticsElements =
+    private static Set<String> analyticsElements =
             Sets.newHashSet(degree, GraqlType.HAS_RESOURCE.getId(degree));
 
     /**
@@ -59,12 +59,12 @@ public class Analytics {
     /**
      * The current transaction in use.
      */
-    private MindmapsTransaction transaction;
+    private final MindmapsTransaction transaction;
 
     /**
      * The graph computer.
      */
-    private MindmapsComputer computer;
+    private final MindmapsComputer computer;
 
     /**
      * The concept types that define which instances appear in the subgraph.
@@ -104,12 +104,11 @@ public class Analytics {
      * the <code>types</code> argument. All subtypes of the given types are included when deciding whether to include an
      * instance.
      *
-     * @param mindmapsGraph the graph that the computer operates on
      * @param types         the set of types the computer will use to filter instances
      */
-    public Analytics(MindmapsGraph mindmapsGraph, Set<Type> types) {
-        graph = mindmapsGraph;
-        transaction = mindmapsGraph.getTransaction();
+    public Analytics(Set<Type> types) {
+
+        this();
 
         // use ako relations to add subtypes of the provided types
         for (Type t : types) {
@@ -133,7 +132,7 @@ public class Analytics {
      *
      * @return a map from each instance to its degree
      */
-    public Map<Instance, Long> degrees() throws ExecutionException, InterruptedException {
+    public Map<Instance, Long> degrees() {
         Map<Instance, Long> allDegrees = new HashMap<>();
         ComputerResult result = computer.compute(new DegreeVertexProgram());
         result.graph().traversal().V().forEachRemaining(v -> {
@@ -151,7 +150,7 @@ public class Analytics {
      *
      * @param resourceType the type of the resource that will contain the degree
      */
-    private void degreesAndPersist(String resourceType) throws ExecutionException, InterruptedException {
+    private void degreesAndPersist(String resourceType) {
         insertOntology(resourceType, Data.LONG);
         computer.compute(new DegreeAndPersistVertexProgram());
     }
@@ -198,14 +197,21 @@ public class Analytics {
     public static void persistResource(MindmapsGraph mindmapsGraph, Vertex vertex,
                                        String resourceName, long value) {
         MindmapsTransaction transaction = mindmapsGraph.getTransaction();
+
         ResourceType<Long> resourceType = transaction.getResourceType(resourceName);
         RoleType resourceOwner = transaction.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceName));
         RoleType resourceValue = transaction.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceName));
         RelationType relationType = transaction.getRelationType(GraqlType.HAS_RESOURCE.getId(resourceName));
 
         Instance instance = transaction.getInstance(vertex.value(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name()));
-        Resource<Long> resource = transaction.putResource(UUID.randomUUID().toString(), resourceType).setValue(value);
-        transaction.putRelation(UUID.randomUUID().toString(), relationType)
+
+        //TODO: remove the deletion of resource. This should be done by core.
+        instance.relations(resourceOwner).forEach(relation -> relation.rolePlayers().get(resourceValue).delete());
+
+        instance.relations(resourceOwner).forEach(Concept::delete);
+
+        Resource<Long> resource = transaction.addResource(resourceType).setValue(value);
+        transaction.addRelation(relationType)
                 .putRolePlayer(resourceOwner, instance)
                 .putRolePlayer(resourceValue, resource);
 

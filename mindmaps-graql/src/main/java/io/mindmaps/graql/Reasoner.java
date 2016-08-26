@@ -26,8 +26,6 @@ import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.RoleType;
 import io.mindmaps.core.model.Rule;
 import io.mindmaps.core.model.Type;
-import io.mindmaps.graql.admin.PatternAdmin;
-import io.mindmaps.graql.internal.query.Conjunction;
 import io.mindmaps.graql.internal.reasoner.container.Query;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.Relation;
@@ -37,7 +35,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static io.mindmaps.graql.internal.reasoner.Utility.*;
 
