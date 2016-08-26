@@ -361,7 +361,6 @@ public class AnalyticsTest {
         }
     }
 
-    @Ignore
     @Test
     public void testDegreeIsCorrect() throws MindmapsValidationException, ExecutionException, InterruptedException {
         // create a simple graph
@@ -806,7 +805,6 @@ public class AnalyticsTest {
         });
     }
 
-    @Ignore
     @Test
     public void testDegreeIsCorrectRoleplayerWrongType() throws MindmapsValidationException, ExecutionException, InterruptedException {
 
