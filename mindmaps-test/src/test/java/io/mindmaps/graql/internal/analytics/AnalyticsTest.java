@@ -157,10 +157,15 @@ public class AnalyticsTest {
         // assert computer returns the correct count of instances
         System.out.println();
         System.out.println("Counting");
-        computer = new Analytics();
         startTime = System.currentTimeMillis();
+        computer = new Analytics();
         Assert.assertEquals(3, computer.count());
+        System.out.println();
+        System.out.println(System.currentTimeMillis() - startTime + " ms");
 
+        System.out.println();
+        System.out.println("Counting");
+        startTime = System.currentTimeMillis();
         computer = new Analytics(Collections.singleton(transaction.getType("thing")));
         Assert.assertEquals(2, computer.count());
         System.out.println();
