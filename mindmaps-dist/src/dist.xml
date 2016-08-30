@@ -16,8 +16,9 @@
   ~ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
   -->
 
-<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-           xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2 http://maven.apache.org/xsd/component-1.1.2.xsd">
+<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/component/1.1.2 http://maven.apache.org/xsd/component-1.1.2.xsd">
     <id>dist</id>
     <formats>
         <format>zip</format>
@@ -53,11 +54,13 @@
             </includes>
         </fileSet>
         <fileSet>
+            <directory>.</directory>
             <outputDirectory>logs</outputDirectory>
-            <directory>${project.parent.basedir}/logs/</directory>
+            <excludes>
+                <exclude>*/**</exclude>
+            </excludes>
         </fileSet>
     </fileSets>
-
     <dependencySets>
         <dependencySet>
             <outputDirectory>lib</outputDirectory>

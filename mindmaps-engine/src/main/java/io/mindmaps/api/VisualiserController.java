@@ -23,14 +23,34 @@ import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.constants.RESTUtil;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.factory.GraphFactory;
+import io.mindmaps.graql.QueryParser;
 import io.mindmaps.util.ConfigProperties;
 import io.mindmaps.visualiser.HALConcept;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
+import io.swagger.annotations.ApiOperation;
+import mjson.Json;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+
+import java.util.stream.Collectors;
+
 import static spark.Spark.get;
 
+
+@Path("/graph")
+@Api(value = "/graph", description = "Endpoints used to query the graph by ID or Gralq match query and build HAL objects.")
+@Produces({"application/json", "text/plain"})
 public class VisualiserController {
+
+    private final Logger LOG = LoggerFactory.getLogger(VisualiserController.class);
 
     private String defaultGraphName;
 
@@ -39,9 +59,14 @@ public class VisualiserController {
         defaultGraphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
 
         get(RESTUtil.WebPath.CONCEPT_BY_ID_URI + RESTUtil.Request.ID_PARAMETER, this::getConceptById);
-
+        get(RESTUtil.WebPath.GRAPH_MATCH_QUERY_URI, this::matchQuery);
     }
 
+    @GET
+    @Path("/concept/:uuid")
+    @ApiOperation(
+            value = "Return the HAL representation of a given concept.")
+    @ApiImplicitParam(name = "id", value = "ID of the concept", required = true, dataType = "string", paramType = "path")
     private String getConceptById(Request req, Response res) {
 
         String graphNameParam = req.queryParams(RESTUtil.Request.GRAPH_NAME_PARAM);
@@ -55,6 +80,34 @@ public class VisualiserController {
         else {
             res.status(404);
             return ErrorMessage.CONCEPT_ID_NOT_FOUND.getMessage(req.params(RESTUtil.Request.ID_PARAMETER));
+        }
+    }
+
+    @GET
+    @Path("/match")
+    @ApiOperation(
+            value = "Executes match query on the server and build HAL representation for each concept in the query result.")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "graphName", value = "Name of graph to use", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "query", value = "Match query to execute", required = true,dataType = "string", paramType = "query")
+    })
+    private String matchQuery(Request req, Response res) {
+
+        String currentGraphName = req.queryParams(RESTUtil.Request.GRAPH_NAME_PARAM);
+        if(currentGraphName==null) currentGraphName = defaultGraphName;
+
+        LOG.info("Received match query: \"" + req.queryParams(RESTUtil.Request.QUERY_FIELD) + "\"");
+
+        try {
+            QueryParser parser = QueryParser.create(GraphFactory.getInstance().getGraph(currentGraphName).getTransaction());
+            final Json halArray = Json.array();
+            parser.parseMatchQuery(req.queryParams(RESTUtil.Request.QUERY_FIELD))
+                    .getMatchQuery().stream().forEach(x-> x.values().forEach(concept->halArray.add(Json.make(new HALConcept(concept).render()))));
+            return halArray.toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+            res.status(500);
+            return e.getMessage();
         }
     }
 
