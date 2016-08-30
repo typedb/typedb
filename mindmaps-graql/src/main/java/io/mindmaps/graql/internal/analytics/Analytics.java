@@ -93,6 +93,12 @@ public class Analytics {
         excludedTypes.addAll(transaction.getMetaRoleType().instances());
         excludedTypes.addAll(transaction.getMetaRuleType().instances());
 
+        // collect analytics resource type to exclude
+        analyticsElements.stream()
+                .filter(element -> transaction.getType(element) != null)
+                .map(transaction::getType)
+                .forEach(excludedTypes::add);
+
         // fetch all types
         allTypes.addAll(transaction.getMetaType().instances().stream()
                 .filter(concept -> !excludedTypes.contains(concept))

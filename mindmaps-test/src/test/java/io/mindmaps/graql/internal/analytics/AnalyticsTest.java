@@ -361,6 +361,7 @@ public class AnalyticsTest {
         }
     }
 
+
     @Test
     public void testDegreeIsCorrect() throws MindmapsValidationException, ExecutionException, InterruptedException {
         // create a simple graph
@@ -877,17 +878,12 @@ public class AnalyticsTest {
         assertEquals(3L, analytics.count());
         analytics.degreesAndPersist();
 
-        // add some more
-        Entity beast = transaction.putEntity("beast", dog);
-        dave = transaction.putEntity("dave", person);
-        transaction.addRelation(mansBestFriend)
-                .putRolePlayer(owner,dave).putRolePlayer(pet,beast);
+        analytics = new Analytics();
+        assertEquals(3L, analytics.count());
+        analytics.degreesAndPersist();
 
-        // validate
-        transaction.commit();
-
-        // count and persist on the old analytics object
-        assertEquals(5L, analytics.count());
+        analytics = new Analytics();
+        assertEquals(3L, analytics.count());
         analytics.degreesAndPersist();
     }
 }
