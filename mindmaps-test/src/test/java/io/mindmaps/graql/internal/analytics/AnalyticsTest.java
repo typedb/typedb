@@ -20,6 +20,7 @@ package io.mindmaps.graql.internal.analytics;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.api.CommitLogController;
 import io.mindmaps.api.GraphFactoryController;
@@ -55,6 +56,7 @@ public class AnalyticsTest {
 
     // concepts
     EntityType thing;
+    EntityType anotherThing;
     Entity entity1;
     Entity entity2;
     Entity entity3;
@@ -86,8 +88,8 @@ public class AnalyticsTest {
 
     @Before
     public void setUp() throws InterruptedException {
-        System.out.println();
-        System.out.println("Clearing the graph");
+//        System.out.println();
+//        System.out.println("Clearing the graph");
         graph = MindmapsClient.getGraph(TEST_KEYSPACE);
         graph.clear();
         graph = MindmapsClient.getGraph(TEST_KEYSPACE);
@@ -145,18 +147,27 @@ public class AnalyticsTest {
         // create 3 instances
         System.out.println();
         System.out.println("Creating 3 instances");
-        EntityType thing = transaction.putEntityType("thing");
+        thing = transaction.putEntityType("thing");
+        anotherThing = transaction.putEntityType("another");
         transaction.putEntity("1", thing);
         transaction.putEntity("2", thing);
-        transaction.putEntity("3", thing);
+        transaction.putEntity("3", anotherThing);
         transaction.commit();
 
         // assert computer returns the correct count of instances
         System.out.println();
         System.out.println("Counting");
-        computer = new Analytics();
         startTime = System.currentTimeMillis();
+        computer = new Analytics();
         Assert.assertEquals(3, computer.count());
+        System.out.println();
+        System.out.println(System.currentTimeMillis() - startTime + " ms");
+
+        System.out.println();
+        System.out.println("Counting");
+        startTime = System.currentTimeMillis();
+        computer = new Analytics(Collections.singleton(transaction.getType("thing")));
+        Assert.assertEquals(2, computer.count());
         System.out.println();
         System.out.println(System.currentTimeMillis() - startTime + " ms");
     }
@@ -201,7 +212,7 @@ public class AnalyticsTest {
         assertTrue(!degrees.isEmpty());
         degrees.entrySet().forEach(degree -> {
             assertTrue(correctDegrees.containsKey(degree.getKey()));
-            assertTrue(correctDegrees.get(degree.getKey()).equals(degree.getValue()));
+            assertEquals(correctDegrees.get(degree.getKey()), degree.getValue());
         });
 
         // compute degrees again after persisting degrees
@@ -215,22 +226,35 @@ public class AnalyticsTest {
             assertTrue(correctDegrees.containsKey(degree.getKey()));
             assertTrue(correctDegrees.get(degree.getKey()).equals(degree.getValue()));
         });
+
+        // compute degrees on subgraph
+        computer = new Analytics(Sets.newHashSet(thing, related));
+        degrees = computer.degrees();
+
+        correctDegrees.put(transaction.getRelation(id3), 1l);
+
+        assertTrue(!degrees.isEmpty());
+        degrees.entrySet().forEach(degree -> {
+            assertTrue(correctDegrees.containsKey(degree.getKey()));
+            assertEquals(correctDegrees.get(degree.getKey()), degree.getValue());
+        });
     }
 
     private void instantiateSimpleConcepts() {
-
-        // create 3 instances
+        // create instances
         thing = transaction.putEntityType("thing");
+        anotherThing = transaction.putEntityType("another");
+
         entity1 = transaction.putEntity("1", thing);
         entity2 = transaction.putEntity("2", thing);
         entity3 = transaction.putEntity("3", thing);
-        entity4 = transaction.putEntity("4", thing);
+        entity4 = transaction.putEntity("4", anotherThing);
 
         relation1 = transaction.putRoleType("relation1");
         relation2 = transaction.putRoleType("relation2");
         thing.playsRole(relation1).playsRole(relation2);
+        anotherThing.playsRole(relation1).playsRole(relation2);
         related = transaction.putRelationType("related").hasRole(relation1).hasRole(relation2);
-
     }
 
     @Test
@@ -259,13 +283,12 @@ public class AnalyticsTest {
         correctDegrees.put(entity1, 1l);
         correctDegrees.put(entity2, 3l);
         correctDegrees.put(entity3, 1l);
-        correctDegrees.put(entity4, 1l);
         correctDegrees.put(transaction.getRelation(id1), 2l);
         correctDegrees.put(transaction.getRelation(id2), 2l);
-        correctDegrees.put(transaction.getRelation(id3), 2l);
+        correctDegrees.put(transaction.getRelation(id3), 1l);
 
-        // compute degrees
-        Analytics computer = new Analytics();
+        // compute degrees on subgraph
+        Analytics computer = new Analytics(Sets.newHashSet(thing, related));
         computer.degreesAndPersist();
 
         // assert persisted degrees are correct
@@ -282,28 +305,63 @@ public class AnalyticsTest {
             assertTrue(resources.iterator().next().getValue().equals(degree.getValue()));
         });
 
-        long numVertices = computer.count();
+        long numVertices = 0;
 
-        // compute again
-        computer.degreesAndPersist();
+        // compute again and again ...
+        for (int i = 0; i < 3; i++) {
+            computer.degreesAndPersist();
 
-        correctDegrees.entrySet().forEach(degree -> {
-            Instance instance = degree.getKey();
-            Collection<Resource<?>> resources = null;
-            if (instance.isEntity()) {
-                resources = instance.asEntity().resources();
-            } else if (instance.isRelation()) {
-                resources = instance.asRelation().resources();
+            correctDegrees.entrySet().forEach(degree -> {
+                Instance instance = degree.getKey();
+                Collection<Resource<?>> resources = null;
+                if (instance.isEntity()) {
+                    resources = instance.asEntity().resources();
+                } else if (instance.isRelation()) {
+                    resources = instance.asRelation().resources();
+                }
+                assert resources != null;
+                assertTrue(resources.iterator().next().getValue().equals(degree.getValue()));
+            });
+
+            // assert the number of vertices remain the same
+            if (i == 0) {
+                numVertices = computer.count();
+            } else {
+                assertEquals(numVertices, computer.count());
             }
-            assert resources != null;
-            assertTrue(resources.iterator().next().getValue().equals(degree.getValue()));
-        });
+        }
 
-        // assert the number of vertices remain the same
-        assertEquals(numVertices, computer.count());
+        // compute degrees on all types, again and again ...
+        for (int i = 0; i < 3; i++) {
+            computer = new Analytics();
+            computer.degreesAndPersist();
+
+            correctDegrees.put(entity4, 1l);
+            correctDegrees.put(transaction.getRelation(id3), 2l);
+
+            correctDegrees.entrySet().forEach(degree -> {
+                Instance instance = degree.getKey();
+                Collection<Resource<?>> resources = null;
+                if (instance.isEntity()) {
+                    resources = instance.asEntity().resources();
+                } else if (instance.isRelation()) {
+                    resources = instance.asRelation().resources();
+                }
+                assert resources != null;
+                assertEquals(resources.iterator().next().getValue(), degree.getValue());
+            });
+
+            // assert the number of vertices remain the same
+            if (i == 0) {
+                assertEquals(1, computer.count() - numVertices);
+                numVertices = computer.count();
+            } else {
+                assertEquals(numVertices, computer.count());
+            }
+        }
     }
 
-    @Ignore
+
     @Test
     public void testDegreeIsCorrect() throws MindmapsValidationException, ExecutionException, InterruptedException {
         // create a simple graph
@@ -316,41 +374,41 @@ public class AnalyticsTest {
         EntityType person = transaction.putEntityType("person").playsRole(owner);
         EntityType animal = transaction.putEntityType("animal").playsRole(pet).playsRole(target);
         ResourceType<String> name = transaction.putResourceType("name", Data.STRING).playsRole(value);
-        ResourceType<String> altName = transaction.putResourceType("alternate-name",Data.STRING).playsRole(value);
+        ResourceType<String> altName = transaction.putResourceType("alternate-name", Data.STRING).playsRole(value);
 
         // add data to the graph
         Entity coco = transaction.putEntity("coco", animal);
         Entity dave = transaction.putEntity("dave", person);
-        Resource coconut = transaction.putResource("coconut",name);
-        Resource stinky = transaction.putResource("stinky",altName);
-        Relation daveOwnsCoco = transaction.addRelation(mansBestFriend).putRolePlayer(owner,dave).putRolePlayer(pet,coco);
-        Relation cocoName = transaction.addRelation(hasName).putRolePlayer(target,coco).putRolePlayer(value,coconut);
-        Relation cocoAltName = transaction.addRelation(hasName).putRolePlayer(target,coco).putRolePlayer(value,stinky);
+        Resource coconut = transaction.putResource("coconut", name);
+        Resource stinky = transaction.putResource("stinky", altName);
+        Relation daveOwnsCoco = transaction.addRelation(mansBestFriend).putRolePlayer(owner, dave).putRolePlayer(pet, coco);
+        Relation cocoName = transaction.addRelation(hasName).putRolePlayer(target, coco).putRolePlayer(value, coconut);
+        Relation cocoAltName = transaction.addRelation(hasName).putRolePlayer(target, coco).putRolePlayer(value, stinky);
 
         // manually compute the degree for small graph
-        Map<String,Long> subGraphReferenceDegrees = new HashMap<>();
-        subGraphReferenceDegrees.put(coco.getId(),1L);
-        subGraphReferenceDegrees.put(dave.getId(),1L);
-        subGraphReferenceDegrees.put(daveOwnsCoco.getId(),2L);
+        Map<String, Long> subGraphReferenceDegrees = new HashMap<>();
+        subGraphReferenceDegrees.put(coco.getId(), 1L);
+        subGraphReferenceDegrees.put(dave.getId(), 1L);
+        subGraphReferenceDegrees.put(daveOwnsCoco.getId(), 2L);
 
         // manually compute degree for almost full graph
-        Map<String,Long> almostFullReferenceDegrees = new HashMap<>();
-        almostFullReferenceDegrees.put(coco.getId(),3L);
-        almostFullReferenceDegrees.put(dave.getId(),1L);
-        almostFullReferenceDegrees.put(daveOwnsCoco.getId(),2L);
-        almostFullReferenceDegrees.put(cocoName.getId(),2L);
-        almostFullReferenceDegrees.put(cocoAltName.getId(),1L);
-        almostFullReferenceDegrees.put(coconut.getId(),1L);
+        Map<String, Long> almostFullReferenceDegrees = new HashMap<>();
+        almostFullReferenceDegrees.put(coco.getId(), 3L);
+        almostFullReferenceDegrees.put(dave.getId(), 1L);
+        almostFullReferenceDegrees.put(daveOwnsCoco.getId(), 2L);
+        almostFullReferenceDegrees.put(cocoName.getId(), 2L);
+        almostFullReferenceDegrees.put(cocoAltName.getId(), 1L);
+        almostFullReferenceDegrees.put(coconut.getId(), 1L);
 
         // manually compute degrees
-        Map<String,Long> referenceDegrees = new HashMap<>();
-        referenceDegrees.put(coco.getId(),3L);
-        referenceDegrees.put(dave.getId(),1L);
-        referenceDegrees.put(coconut.getId(),1L);
-        referenceDegrees.put(stinky.getId(),1L);
-        referenceDegrees.put(daveOwnsCoco.getId(),2L);
-        referenceDegrees.put(cocoName.getId(),2L);
-        referenceDegrees.put(cocoAltName.getId(),2L);
+        Map<String, Long> referenceDegrees = new HashMap<>();
+        referenceDegrees.put(coco.getId(), 3L);
+        referenceDegrees.put(dave.getId(), 1L);
+        referenceDegrees.put(coconut.getId(), 1L);
+        referenceDegrees.put(stinky.getId(), 1L);
+        referenceDegrees.put(daveOwnsCoco.getId(), 2L);
+        referenceDegrees.put(cocoName.getId(), 2L);
+        referenceDegrees.put(cocoAltName.getId(), 2L);
 
         transaction.commit();
 
@@ -370,7 +428,7 @@ public class AnalyticsTest {
         Map<Instance, Long> degrees = analytics.degrees();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> {
-            assertEquals(subGraphReferenceDegrees.get(entry.getKey().getId()),entry.getValue());
+            assertEquals(subGraphReferenceDegrees.get(entry.getKey().getId()), entry.getValue());
         });
 
         // create a subgraph excluding resource type only
@@ -385,7 +443,7 @@ public class AnalyticsTest {
         degrees = analytics.degrees();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> {
-            assertEquals(almostFullReferenceDegrees.get(entry.getKey().getId()),entry.getValue());
+            assertEquals(almostFullReferenceDegrees.get(entry.getKey().getId()), entry.getValue());
         });
 
         // full graph
@@ -393,11 +451,176 @@ public class AnalyticsTest {
         degrees = analytics.degrees();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> {
-            assertEquals(referenceDegrees.get(entry.getKey().getId()),entry.getValue());
+            assertEquals(referenceDegrees.get(entry.getKey().getId()), entry.getValue());
         });
     }
 
+    @Test
+    public void testDegreeIsPersisted() throws Exception {
+        // create a simple graph
+        RoleType pet = transaction.putRoleType("pet");
+        RoleType owner = transaction.putRoleType("owner");
+        RoleType breeder = transaction.putRoleType("breeder");
+        RelationType mansBestFriend = transaction.putRelationType("mans-best-friend").hasRole(pet).hasRole(owner).hasRole(breeder);
+        EntityType person = transaction.putEntityType("person").playsRole(owner).playsRole(breeder);
+        EntityType animal = transaction.putEntityType("animal").playsRole(pet);
+
+        // make one person breeder and owner
+        Entity coco = transaction.putEntity("coco", animal);
+        Entity dave = transaction.putEntity("dave", person);
+        Relation daveBreedsAndOwnsCoco = transaction.addRelation(mansBestFriend)
+                .putRolePlayer(pet,coco).putRolePlayer(owner,dave);
+
+        // manual degrees
+        Map<String,Long> referenceDegrees = new HashMap<>();
+        referenceDegrees.put(coco.getId(),1L);
+        referenceDegrees.put(dave.getId(),1L);
+        referenceDegrees.put(daveBreedsAndOwnsCoco.getId(),2L);
+
+        // validate
+        transaction.commit();
+
+        // compute and persist degrees
+        Analytics analytics = new Analytics();
+        analytics.degreesAndPersist();
+
+        // check degrees are correct
+        referenceDegrees.entrySet().forEach(entry->{
+            Instance instance = transaction.getInstance(entry.getKey());
+            if (instance.isEntity()) {
+                assertTrue(instance.asEntity().resources().iterator().next().getValue().equals(entry.getValue()));
+            } else if (instance.isRelation()) {
+                assertTrue(instance.asRelation().resources().iterator().next().getValue().equals(entry.getValue()));
+            }
+        });
+
+        // check only expected resources exist
+        Collection<String> allConcepts = new ArrayList<>();
+        ResourceType<Long> rt = transaction.getResourceType(Analytics.degree);
+        Collection<Resource<Long>> degrees = rt.instances();
+        Map<Instance,Long> currentDegrees = new HashMap<>();
+        degrees.forEach(degree -> {
+            Long degreeValue = degree.getValue();
+            degree.ownerInstances().forEach(instance -> {
+                currentDegrees.put(instance,degreeValue);
+            });
+        });
+
+        // check all resources exist and no more
+        assertTrue(CollectionUtils.isEqualCollection(currentDegrees.values(), referenceDegrees.values()));
+
+        // persist again and check again
+        analytics.degreesAndPersist();
+
+        // check only expected resources exist
+        transaction.refresh();
+        rt = transaction.getResourceType(Analytics.degree);
+        degrees = rt.instances();
+        degrees.forEach(i->i.ownerInstances().iterator().forEachRemaining(r ->
+                allConcepts.add(r.getId())));
+
+        // check degrees are correct
+        referenceDegrees.entrySet().forEach(entry->{
+            Instance instance = transaction.getInstance(entry.getKey());
+            if (instance.isEntity()) {
+                assertTrue(instance.asEntity().resources().iterator().next().getValue().equals(entry.getValue()));
+            } else if (instance.isRelation()) {
+                assertTrue(instance.asRelation().resources().iterator().next().getValue().equals(entry.getValue()));
+            }
+        });
+
+        degrees = rt.instances();
+        currentDegrees.clear();
+        degrees.forEach(degree -> {
+            Long degreeValue = degree.getValue();
+            degree.ownerInstances().forEach(instance -> {
+                currentDegrees.put(instance,degreeValue);
+            });
+        });
+
+        // check all resources exist and no more
+        assertTrue(CollectionUtils.isEqualCollection(currentDegrees.values(),referenceDegrees.values()));
+    }
+
     @Ignore
+    @Test
+    public void testDegreeIsPersistedInPresenceOfOtherResource() throws MindmapsValidationException, ExecutionException, InterruptedException {
+        // create a simple graph
+        RoleType pet = transaction.putRoleType("pet");
+        RoleType owner = transaction.putRoleType("owner");
+        RoleType breeder = transaction.putRoleType("breeder");
+        RelationType mansBestFriend = transaction.putRelationType("mans-best-friend").hasRole(pet).hasRole(owner).hasRole(breeder);
+        EntityType person = transaction.putEntityType("person").playsRole(owner).playsRole(breeder);
+        EntityType animal = transaction.putEntityType("animal").playsRole(pet);
+
+        // make one person breeder and owner
+        Entity coco = transaction.putEntity("coco", animal);
+        Entity dave = transaction.putEntity("dave", person);
+        Relation daveBreedsAndOwnsCoco = transaction.addRelation(mansBestFriend)
+                .putRolePlayer(pet,coco).putRolePlayer(owner,dave);
+
+        // manual degrees
+        Map<String, Long> referenceDegrees = new HashMap<>();
+        referenceDegrees.put(coco.getId(), 1L);
+        referenceDegrees.put(dave.getId(), 1L);
+        referenceDegrees.put(daveBreedsAndOwnsCoco.getId(), 2L);
+
+        // create a decoy resource using same relationship
+        RoleType degreeOwner = transaction.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(Analytics.degree));
+        RoleType degreeValue = transaction.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(Analytics.degree));
+        RelationType hasResource = transaction.putRelationType(GraqlType.HAS_RESOURCE.getId(Analytics.degree))
+                .hasRole(degreeOwner).hasRole(degreeValue);
+        ResourceType<Long> decoyResourceType = transaction.putResourceType("decoy-resource", Data.LONG).playsRole(degreeValue);
+        Resource<Long> decoyResource = transaction.putResource(UUID.randomUUID().toString(),decoyResourceType);
+        decoyResource.setValue(100L);
+        transaction.addRelation(hasResource).putRolePlayer(degreeOwner,coco).putRolePlayer(degreeValue,decoyResource);
+        animal.playsRole(degreeOwner);
+
+        // validate
+        transaction.commit();
+
+        ResourceType<Long> degreeResource = transaction.getResourceType(Analytics.degree);
+        mansBestFriend = transaction.getRelationType("mans-best-friend");
+        person = transaction.getEntityType("person");
+        animal = transaction.getEntityType("animal");
+        Set<Type> ct = new HashSet<>();
+        ct.add(mansBestFriend);
+        ct.add(person);
+        ct.add(animal);
+
+        // compute and persist degrees
+        Analytics analytics = new Analytics(ct);
+        analytics.degreesAndPersist();
+
+        // check degrees are correct
+        boolean isSeen = false;
+        for (Map.Entry<String, Long> entry : referenceDegrees.entrySet()) {
+            Instance instance = transaction.getInstance(entry.getKey());
+            if (instance.isEntity()) {
+                for (Resource<?> resource : instance.asEntity().resources()) {
+                    if (resource.type().equals(degreeResource)) {
+                        // check value is correct
+                        assertTrue(resource.getValue().equals(entry.getValue()));
+                        // ensure a resource of this type is seen
+                        isSeen = true;
+                    }
+                }
+            } else if (instance.isRelation()) {
+                for (Resource<?> resource : instance.asRelation().resources()) {
+                    if (resource.type().equals(degreeResource)) {
+                        // check value
+                        assertTrue(resource.getValue().equals(entry.getValue()));
+                        // ensure exists
+                        isSeen = true;
+                    }
+                }
+            }
+            // fails if a resource is not found for everything in the referenceDegree map
+            assertTrue(isSeen);
+            isSeen=false;
+        }
+    }
+
     @Test
     public void testDegreeIsCorrectAssertionAboutAssertion() throws MindmapsValidationException, ExecutionException, InterruptedException {
         // create a simple graph
@@ -582,7 +805,6 @@ public class AnalyticsTest {
         });
     }
 
-    @Ignore
     @Test
     public void testDegreeIsCorrectRoleplayerWrongType() throws MindmapsValidationException, ExecutionException, InterruptedException {
 
@@ -633,168 +855,35 @@ public class AnalyticsTest {
     }
 
     @Test
-    public void testDegreeIsPersisted() throws Exception {
+    public void testMultipleExecutionOfDegreeAndPersistWhileAddingNodes() throws MindmapsValidationException, ExecutionException, InterruptedException {
         // create a simple graph
         RoleType pet = transaction.putRoleType("pet");
         RoleType owner = transaction.putRoleType("owner");
-        RoleType breeder = transaction.putRoleType("breeder");
-        RelationType mansBestFriend = transaction.putRelationType("mans-best-friend").hasRole(pet).hasRole(owner).hasRole(breeder);
-        EntityType person = transaction.putEntityType("person").playsRole(owner).playsRole(breeder);
-        EntityType animal = transaction.putEntityType("animal").playsRole(pet);
+        RelationType mansBestFriend = transaction.putRelationType("mans-best-friend").hasRole(pet).hasRole(owner);
+        EntityType person = transaction.putEntityType("person").playsRole(owner);
+        EntityType dog = transaction.putEntityType("dog").playsRole(pet);
+        EntityType cat = transaction.putEntityType("cat").playsRole(pet);
 
-        // make one person breeder and owner
-        Entity coco = transaction.putEntity("coco", animal);
+        // make one person breeder and owner of a dog and a cat
+        Entity coco = transaction.putEntity("coco", cat);
         Entity dave = transaction.putEntity("dave", person);
-        Relation daveBreedsAndOwnsCoco = transaction.addRelation(mansBestFriend)
-                .putRolePlayer(pet,coco).putRolePlayer(owner,dave);
-
-        // manual degrees
-        Map<String,Long> referenceDegrees = new HashMap<>();
-        referenceDegrees.put(coco.getId(),1L);
-        referenceDegrees.put(dave.getId(),1L);
-        referenceDegrees.put(daveBreedsAndOwnsCoco.getId(),2L);
+        transaction.addRelation(mansBestFriend)
+                .putRolePlayer(owner, dave).putRolePlayer(pet, coco);
 
         // validate
         transaction.commit();
 
-        // compute and persist degrees
+        // count and persist
         Analytics analytics = new Analytics();
+        assertEquals(3L, analytics.count());
         analytics.degreesAndPersist();
 
-        // check degrees are correct
-        referenceDegrees.entrySet().forEach(entry->{
-            Instance instance = transaction.getInstance(entry.getKey());
-            if (instance.isEntity()) {
-                assertTrue(instance.asEntity().resources().iterator().next().getValue().equals(entry.getValue()));
-            } else if (instance.isRelation()) {
-                assertTrue(instance.asRelation().resources().iterator().next().getValue().equals(entry.getValue()));
-            }
-        });
-
-        // check only expected resources exist
-        Collection<String> allConcepts = new ArrayList<>();
-        ResourceType<Long> rt = transaction.getResourceType(Analytics.degree);
-        Collection<Resource<Long>> degrees = rt.instances();
-        Map<Instance,Long> currentDegrees = new HashMap<>();
-        degrees.forEach(degree -> {
-            Long degreeValue = degree.getValue();
-            degree.ownerInstances().forEach(instance -> {
-                currentDegrees.put(instance,degreeValue);
-            });
-        });
-
-        // check all resources exist and no more
-        assertTrue(CollectionUtils.isEqualCollection(currentDegrees.values(), referenceDegrees.values()));
-
-        // persist again and check again
+        analytics = new Analytics();
+        assertEquals(3L, analytics.count());
         analytics.degreesAndPersist();
 
-        // check only expected resources exist
-        transaction.refresh();
-        rt = transaction.getResourceType(Analytics.degree);
-        degrees = rt.instances();
-        degrees.forEach(i->i.ownerInstances().iterator().forEachRemaining(r ->
-                allConcepts.add(r.getId())));
-
-        // check degrees are correct
-        referenceDegrees.entrySet().forEach(entry->{
-            Instance instance = transaction.getInstance(entry.getKey());
-            if (instance.isEntity()) {
-                assertTrue(instance.asEntity().resources().iterator().next().getValue().equals(entry.getValue()));
-            } else if (instance.isRelation()) {
-                assertTrue(instance.asRelation().resources().iterator().next().getValue().equals(entry.getValue()));
-            }
-        });
-
-        degrees = rt.instances();
-        currentDegrees.clear();
-        degrees.forEach(degree -> {
-            Long degreeValue = degree.getValue();
-            degree.ownerInstances().forEach(instance -> {
-                currentDegrees.put(instance,degreeValue);
-            });
-        });
-
-        // check all resources exist and no more
-        assertTrue(CollectionUtils.isEqualCollection(currentDegrees.values(),referenceDegrees.values()));
-    }
-
-    @Ignore
-    @Test
-    public void testDegreeIsPersistedInPresenceOfOtherResource() throws MindmapsValidationException, ExecutionException, InterruptedException {
-        // create a simple graph
-        RoleType pet = transaction.putRoleType("pet");
-        RoleType owner = transaction.putRoleType("owner");
-        RoleType breeder = transaction.putRoleType("breeder");
-        RelationType mansBestFriend = transaction.putRelationType("mans-best-friend").hasRole(pet).hasRole(owner).hasRole(breeder);
-        EntityType person = transaction.putEntityType("person").playsRole(owner).playsRole(breeder);
-        EntityType animal = transaction.putEntityType("animal").playsRole(pet);
-
-        // make one person breeder and owner
-        Entity coco = transaction.putEntity("coco", animal);
-        Entity dave = transaction.putEntity("dave", person);
-        Relation daveBreedsAndOwnsCoco = transaction.addRelation(mansBestFriend)
-                .putRolePlayer(pet,coco).putRolePlayer(owner,dave);
-
-        // manual degrees
-        Map<String, Long> referenceDegrees = new HashMap<>();
-        referenceDegrees.put(coco.getId(), 1L);
-        referenceDegrees.put(dave.getId(), 1L);
-        referenceDegrees.put(daveBreedsAndOwnsCoco.getId(), 2L);
-
-        // create a decoy resource using same relationship
-        RoleType degreeOwner = transaction.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(Analytics.degree));
-        RoleType degreeValue = transaction.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(Analytics.degree));
-        RelationType hasResource = transaction.putRelationType(GraqlType.HAS_RESOURCE.getId(Analytics.degree))
-                .hasRole(degreeOwner).hasRole(degreeValue);
-        ResourceType<Long> decoyResourceType = transaction.putResourceType("decoy-resource", Data.LONG).playsRole(degreeValue);
-        Resource<Long> decoyResource = transaction.putResource(UUID.randomUUID().toString(),decoyResourceType);
-        decoyResource.setValue(100L);
-        transaction.addRelation(hasResource).putRolePlayer(degreeOwner,coco).putRolePlayer(degreeValue,decoyResource);
-        animal.playsRole(degreeOwner);
-
-        // validate
-        transaction.commit();
-
-        ResourceType<Long> degreeResource = transaction.getResourceType(Analytics.degree);
-        mansBestFriend = transaction.getRelationType("mans-best-friend");
-        person = transaction.getEntityType("person");
-        animal = transaction.getEntityType("animal");
-        Set<Type> ct = new HashSet<>();
-        ct.add(mansBestFriend);
-        ct.add(person);
-        ct.add(animal);
-
-        // compute and persist degrees
-        Analytics analytics = new Analytics(ct);
+        analytics = new Analytics();
+        assertEquals(3L, analytics.count());
         analytics.degreesAndPersist();
-
-        // check degrees are correct
-        boolean isSeen = false;
-        for (Map.Entry<String,Long> entry : referenceDegrees.entrySet()) {
-            Instance instance = transaction.getInstance(entry.getKey());
-            if (instance.isEntity()) {
-                for (Resource<?> resource : instance.asEntity().resources()) {
-                    if (resource.type().equals(degreeResource)) {
-                        // check value is correct
-                        assertTrue(resource.getValue().equals(entry.getValue()));
-                        // ensure a resource of this type is seen
-                        isSeen = true;
-                    }
-                }
-            } else if (instance.isRelation()) {
-                for (Resource<?> resource : instance.asRelation().resources()) {
-                    if (resource.type().equals(degreeResource)) {
-                        // check value
-                        assertTrue(resource.getValue().equals(entry.getValue()));
-                        // ensure exists
-                        isSeen = true;
-                    }
-                }
-            }
-            // fails if a resource is not found for everything in the referenceDegree map
-            assertTrue(isSeen);
-            isSeen=false;
-        }
     }
 }
