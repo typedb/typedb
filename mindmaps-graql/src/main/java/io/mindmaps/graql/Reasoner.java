@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static io.mindmaps.graql.internal.reasoner.Utility.*;
 
@@ -437,7 +438,6 @@ public class Reasoner {
 
     private void recordAnswers(Query query, Set<Map<String, Concept>> answers, Map<Query, Set<Map<String, Concept>>> matAnswers) {
         Query equivalentQuery = findEquivalentQuery(query, matAnswers.keySet());
-
         if (equivalentQuery != null)
             matAnswers.get(equivalentQuery).addAll(answers);
         else
@@ -445,7 +445,6 @@ public class Reasoner {
     }
 
     private void materializeAnswers(Query atomicQuery, Set<Map<String, Concept>> answers){
-
         LOG.debug("Materializing...");
         answers.forEach(answer -> {
             Set<Substitution> subs = new HashSet<>();
@@ -457,7 +456,6 @@ public class Reasoner {
             atomicQuery.materialize(subs);
         });
         LOG.debug("Materialized: " + answers.size());
-
     }
 
     private Set<Map<String, Concept>> joinSubstitutions(Set<Map<String, Concept>> tuples, Set<Map<String, Concept>> localTuples) {
