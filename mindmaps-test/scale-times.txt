@@ -1,22 +1,2 @@
 current scale - super 10 - nodes 1000
-start generate graph 1472551089s
-stop generate graph 1472551131s
-repeat number: 0
-count: 11010
-degree
-persist degree
-repeat number: 1
-count: 11010
-degree
-persist degree
-current scale - super 10 - nodes 2000
-start generate graph 1472551514s
-stop generate graph 1472551546s
-repeat number: 0
-count: 44030
-degree
-persist degree
-repeat number: 1
-count: 66030
-degree
-persist degree
+start generate graph 1472553111s

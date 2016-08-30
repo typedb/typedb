@@ -854,7 +854,40 @@ public class AnalyticsTest {
     }
 
     @Test
-    public void testMultipleExecutionOfDegreeAndPersistWhileAddingNodes() {
+    public void testMultipleExecutionOfDegreeAndPersistWhileAddingNodes() throws MindmapsValidationException, ExecutionException, InterruptedException {
+        // create a simple graph
+        RoleType pet = transaction.putRoleType("pet");
+        RoleType owner = transaction.putRoleType("owner");
+        RelationType mansBestFriend = transaction.putRelationType("mans-best-friend").hasRole(pet).hasRole(owner);
+        EntityType person = transaction.putEntityType("person").playsRole(owner);
+        EntityType dog = transaction.putEntityType("dog").playsRole(pet);
+        EntityType cat = transaction.putEntityType("cat").playsRole(pet);
 
+        // make one person breeder and owner of a dog and a cat
+        Entity coco = transaction.putEntity("coco", cat);
+        Entity dave = transaction.putEntity("dave", person);
+        transaction.addRelation(mansBestFriend)
+                .putRolePlayer(owner, dave).putRolePlayer(pet, coco);
+
+        // validate
+        transaction.commit();
+
+        // count and persist
+        Analytics analytics = new Analytics();
+        assertEquals(3L, analytics.count());
+        analytics.degreesAndPersist();
+
+        // add some more
+        Entity beast = transaction.putEntity("beast", dog);
+        dave = transaction.putEntity("dave", person);
+        transaction.addRelation(mansBestFriend)
+                .putRolePlayer(owner,dave).putRolePlayer(pet,beast);
+
+        // validate
+        transaction.commit();
+
+        // count and persist on the old analytics object
+        assertEquals(5L, analytics.count());
+        analytics.degreesAndPersist();
     }
 }

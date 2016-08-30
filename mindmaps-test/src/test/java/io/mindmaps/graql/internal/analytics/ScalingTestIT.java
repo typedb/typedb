@@ -140,12 +140,12 @@ public class ScalingTestIT {
                 writer.flush();
                 stopTime = System.currentTimeMillis();
                 countTime+=stopTime-startTime;
-                writer.println("degree");
-                writer.flush();
-                startTime = System.currentTimeMillis();
-                computer.degrees();
-                stopTime = System.currentTimeMillis();
-                degreeTime+=stopTime-startTime;
+//                writer.println("degree");
+//                writer.flush();
+//                startTime = System.currentTimeMillis();
+//                computer.degrees();
+//                stopTime = System.currentTimeMillis();
+//                degreeTime+=stopTime-startTime;
                 writer.println("persist degree");
                 writer.flush();
                 startTime = System.currentTimeMillis();
