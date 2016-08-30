@@ -38,9 +38,8 @@ public class GraphFactory {
 
     private GraphFactory() {
         titanGraphFactory = new MindmapsTitanGraphFactory();
-        //TODO: check if the config path specified in the .properties is not absolute path.
-        graphConfig = ConfigProperties.getProjectPath()+ConfigProperties.getInstance().getProperty(ConfigProperties.GRAPH_CONFIG_PROPERTY);
-        graphBatchConfig = ConfigProperties.getProjectPath()+ConfigProperties.getInstance().getProperty(ConfigProperties.GRAPH_BATCH_CONFIG_PROPERTY);
+        graphConfig = ConfigProperties.getInstance().getPath(ConfigProperties.GRAPH_CONFIG_PROPERTY);
+        graphBatchConfig = ConfigProperties.getInstance().getPath(ConfigProperties.GRAPH_BATCH_CONFIG_PROPERTY);
     }
 
     public synchronized MindmapsGraph getGraph(String name) {
