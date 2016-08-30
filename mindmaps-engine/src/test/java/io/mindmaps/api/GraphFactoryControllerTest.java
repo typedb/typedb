@@ -31,8 +31,6 @@ import io.mindmaps.util.ConfigProperties;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Properties;
-
 import static com.jayway.restassured.RestAssured.get;
 import static io.mindmaps.constants.RESTUtil.Request.GRAPH_CONFIG_PARAM;
 import static io.mindmaps.constants.RESTUtil.WebPath.GRAPH_FACTORY_URI;
@@ -41,19 +39,15 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.*;
 
 public class GraphFactoryControllerTest {
-    private Properties prop = new Properties();
-
     @Before
     public void setUp() throws Exception {
+        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
+
         new GraphFactoryController();
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.INFO);
-        try {
-            prop.load(ImportControllerTest.class.getClassLoader().getResourceAsStream(ConfigProperties.CONFIG_TEST_FILE));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        Util.setRestAssuredBaseURI(prop);
+        Util.setRestAssuredBaseURI(ConfigProperties.getInstance().getProperties());
+
     }
 
     @Test

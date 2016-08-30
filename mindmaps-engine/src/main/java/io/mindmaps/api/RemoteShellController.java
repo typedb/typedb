@@ -65,7 +65,7 @@ public class RemoteShellController {
     @Path("/metaTypeInstances")
     @ApiOperation(
             value = "Produces a JSONObject containing meta-ontology types instances.",
-            notes = "The built JSONObject will contain instances of roles, entities, relations and resources.",
+            notes = "The built JSONObject will contain ontology nodes divided in roles, entities, relations and resources.",
             response = JSONObject.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "graphName", value = "Name of graph tu use", dataType = "string", paramType = "query")

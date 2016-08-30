@@ -32,11 +32,13 @@ import io.mindmaps.core.model.RoleType;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.postprocessing.Cache;
 import io.mindmaps.util.ConfigProperties;
+import org.apache.hadoop.hdfs.DFSClient;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.Enumeration;
 import java.util.Properties;
 
 import static com.jayway.restassured.RestAssured.delete;
@@ -45,7 +47,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 public class CommitLogControllerTest {
-    private Properties prop = new Properties();
     private Cache cache;
 
     @BeforeClass
@@ -53,18 +54,15 @@ public class CommitLogControllerTest {
         // Disable horrid cassandra logs
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.INFO);
+        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
     }
 
     @Before
     public void setUp() throws Exception {
         new CommitLogController();
         new GraphFactoryController();
-        try {
-            prop.load(ImportControllerTest.class.getClassLoader().getResourceAsStream(ConfigProperties.CONFIG_TEST_FILE));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        Util.setRestAssuredBaseURI(prop);
+        Util.setRestAssuredBaseURI(ConfigProperties.getInstance().getProperties());
+
         cache = Cache.getInstance();
 
         String commitLog = "{\n" +
@@ -84,12 +82,12 @@ public class CommitLogControllerTest {
     }
 
     @After
-    public void takeDown(){
+    public void takeDown() {
         cache.getCastingJobs().clear();
     }
 
     @Test
-    public void testControllerWorking(){
+    public void testControllerWorking() {
         assertEquals(4, cache.getCastingJobs().values().iterator().next().size());
     }
 
@@ -132,7 +130,7 @@ public class CommitLogControllerTest {
     }
 
     @Test
-    public void testDeleteController(){
+    public void testDeleteController() {
         assertEquals(4, cache.getCastingJobs().values().iterator().next().size());
 
         delete(RESTUtil.WebPath.COMMIT_LOG_URI + "?" + RESTUtil.Request.GRAPH_NAME_PARAM + "=" + "test").

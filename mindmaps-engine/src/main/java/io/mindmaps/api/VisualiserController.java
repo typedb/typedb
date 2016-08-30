@@ -18,9 +18,9 @@
 
 package io.mindmaps.api;
 
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.constants.RESTUtil;
-import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.util.ConfigProperties;
@@ -38,24 +38,14 @@ public class VisualiserController {
 
         defaultGraphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
 
-        get(RESTUtil.WebPath.CONCEPTS_BY_VALUE_URI, this::getConceptsByValue);
+        get(RESTUtil.WebPath.CONCEPT_BY_ID_URI + RESTUtil.Request.ID_PARAMETER, this::getConceptById);
 
-        get(RESTUtil.WebPath.CONCEPT_BY_ID_URI, this::getConceptById);
-
-    }
-
-    private String getConceptsByValue(Request req, Response res) {
-
-        // TODO: Implement HAL builder for concepts retrieved by Value, this still does not work.
-
-        GraphFactory.getInstance().getGraph(defaultGraphName).getTransaction().getConceptsByValue(req.queryParams(RESTUtil.Request.VALUE_FIELD));
-        return req.queryParams(RESTUtil.Request.VALUE_FIELD);
     }
 
     private String getConceptById(Request req, Response res) {
 
         String graphNameParam = req.queryParams(RESTUtil.Request.GRAPH_NAME_PARAM);
-        String currentGraphName = (graphNameParam==null) ? defaultGraphName : graphNameParam;
+        String currentGraphName = (graphNameParam == null) ? defaultGraphName : graphNameParam;
 
         MindmapsTransaction transaction = GraphFactory.getInstance().getGraph(currentGraphName).getTransaction();
 

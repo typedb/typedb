@@ -21,8 +21,13 @@ package io.mindmaps.visualiser;
 import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
-import io.mindmaps.util.ConfigProperties;
+import io.mindmaps.constants.RESTUtil;
 import io.mindmaps.core.model.*;
+import io.mindmaps.util.ConfigProperties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Map;
 
 
 public class HALConcept {
@@ -31,125 +36,159 @@ public class HALConcept {
 
     Representation halResource;
 
-    String resourceLinkPrefix;
+    private final String resourceLinkPrefix;
+    private final Logger LOG = LoggerFactory.getLogger(HALConcept.class);
 
+
+    //TODO: check if separationDegree can go below 0
 
     public HALConcept(Concept concept) {
 
         //building HAL concepts using: https://github.com/HalBuilder/halbuilder-core
 
-        int separationDegrees = ConfigProperties.getInstance().getPropertyAsInt(ConfigProperties.HAL_DEGREE_PROPERTY);
-        resourceLinkPrefix=ConfigProperties.getInstance().getProperty(ConfigProperties.HAL_RESOURCE_PREFIX);
+        ConfigProperties prop = ConfigProperties.getInstance();
+        int separationDegree = prop.getPropertyAsInt(ConfigProperties.HAL_DEGREE_PROPERTY);
+        resourceLinkPrefix = "http://" + prop.getProperty(ConfigProperties.SERVER_HOST_NAME) + ":"
+                + prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER)
+                + RESTUtil.WebPath.CONCEPT_BY_ID_URI;
 
         factory = new StandardRepresentationFactory();
         halResource = factory.newRepresentation(resourceLinkPrefix + concept.getId());
 
-        //Regardless of the type of concept, we generate the state of the current node.
-        generateState(halResource, concept);
-
-        //Depending on the type of concept we generate different embedded.
-        if (concept.isEntity()) {
-            entityResources(halResource, concept.asEntity()); // If it's an instance we put resources as state variables
-            generateInstanceEmbedded(halResource, concept, separationDegrees);
+        try {
+            dispatchConcept(halResource, concept, separationDegree);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        if (concept.isRelation()) {
-            relationResources(halResource, concept.asRelation()); // Also if it's a relation we put resources as state variables (e.g. some relations in Moogi have "billingNumber" as resource of relation.)
-            generateRelationEmbedded(halResource, concept.asRelation());
-        }
-        if (concept.isType()) {
-            generateTypeEmbedded(halResource, concept.asType());
-        }
-
-
-    }
-
-    private void entityResources(Representation resource, Entity entity) {
-        entity.resources().forEach(resource1 -> {
-            resource.withProperty(resource1.type().getId(), resource1.getValue());
-        });
-    }
-
-    private void relationResources(Representation resource, Relation rel) {
-        rel.resources().forEach(resource1 -> {
-            resource.withProperty(resource1.getId(), resource1.getValue());
-        });
     }
 
     private void generateState(Representation resource, Concept concept) {
         resource.withProperty("_id", concept.getId())
-                .withProperty("_value", (concept.getValue() != null) ? concept.getValue().toString() : "")
                 .withProperty("_type", concept.type().getId())
                 .withProperty("_baseType", concept.type().type().getId());
     }
 
-    private void generateLinks() {
-    }
+    private void dispatchConcept(Representation halResource, Concept concept, int separationDegree) {
 
-
-    // populate _embedded field for Instance
-    //In the embedded of an instance we put all the assertions in which the current instance is a role player.
-    //In each of these assertions we also put the role players of that assertion (including the current instance),
-    //we recursively fetch assertions and their role player, until separationDegree becomes 0
-    private void generateInstanceEmbedded(Representation halResource, Concept concept, int separationDegree) {
+        generateState(halResource, concept);
 
         if (separationDegree == 0) return;
 
-        for (Relation rel : concept.asInstance().relations()) {
-            final String[] rolePlayedByCurrentConcept = {""};
+        // If it's an instance we put resources as state variables
+        if (concept.isEntity()) {
+            generateEntityLinks(halResource, concept.asEntity());
+            entityResources(halResource, concept.asEntity());
+            generateEntityEmbedded(halResource, concept.asEntity(), separationDegree);
+        }
+        if (concept.isRelation()) {
+            generateRelationLinks(halResource, concept.asRelation());
+            relationResources(halResource, concept.asRelation());
+            generateRelationEmbedded(halResource, concept.asRelation(), separationDegree);
+        }
 
+        if (concept.isType()) {
+            generateTypeLinks(halResource, concept.asType());
+            generateTypeEmbedded(halResource, concept.asType(), separationDegree);
+        }
+
+    }
+
+    // ================================ resources as HAL state properties ========================= //
+
+    private void entityResources(Representation resource, Entity entity) {
+        entity.resources().forEach(resource1 -> resource.withProperty(resource1.type().getId(), resource1.getValue()));
+    }
+
+    private void relationResources(Representation resource, Relation rel) {
+        rel.resources().forEach(resource1 -> resource.withProperty(resource1.getId(), resource1.getValue()));
+    }
+
+    // ======================================= _links =============================================== //
+
+    private void generateTypeLinks(Representation halResource, Type type) {
+        if (!type.getId().equals("type")) {
+            type.instances().forEach(instance -> halResource.withLink(instance.getId(), resourceLinkPrefix + instance.getId()));
+        }
+        type.subTypes().forEach(instance -> {
+            // let's not put the current type in its own embedded
+            if (!instance.getId().equals(type.getId())) {
+                halResource.withLink(instance.getId(), resourceLinkPrefix + instance.getId());
+            }
+        });
+    }
+
+    private void generateRelationLinks(Representation halResource, Relation rel) {
+        rel.rolePlayers().forEach((roleType, instance) -> {
+            halResource.withLink(roleType.getId(), resourceLinkPrefix + instance.getId());
+        });
+    }
+
+    private void generateEntityLinks(Representation halResource, Entity entity) {
+        for (Relation rel : entity.relations()) {
+            String rolePlayedByCurrentConcept = null;
+            for (Map.Entry<RoleType, Instance> entry : rel.rolePlayers().entrySet()) {
+                if (entry.getValue().getId().equals(entity.getId()))
+                    rolePlayedByCurrentConcept = entry.getKey().getId();
+            }
+            halResource.withLink(rolePlayedByCurrentConcept, resourceLinkPrefix + rel.getId());
+        }
+    }
+
+    // ======================================= _embedded ================================================//
+
+
+    private void generateEntityEmbedded(Representation halResource, Entity entity, int separationDegree) {
+
+        if (separationDegree == 0) return;
+
+        for (Relation rel : entity.relations()) {
+            //generate embedded for role
             Representation relationResource = factory.newRepresentation(resourceLinkPrefix + rel.getId());
             generateState(relationResource, rel);
+            generateRelationLinks(relationResource, rel);
 
-            if (!isRelationToResource(rel)) {
-                rel.rolePlayers().forEach((roleType, instance) -> {
-                    Representation roleResource = factory.newRepresentation(resourceLinkPrefix + instance.getId());
-                    HALConcept.this.generateState(roleResource, instance);
-                    if (instance.getId().equals(concept.getId())) rolePlayedByCurrentConcept[0] = roleType.getId();
-                    relationResource.withRepresentation(instance.getId(), roleResource);
-                });
-
-                generateInstanceEmbedded(halResource, rel, separationDegree - 1);
-                halResource.withRepresentation(rolePlayedByCurrentConcept[0], relationResource);
+            //find the role played by the current instance in the current relation and use the role type as key in the embedded
+            String rolePlayedByCurrentConcept = null;
+            for (Map.Entry<RoleType, Instance> entry : rel.rolePlayers().entrySet()) {
+                if (entry.getValue().getId().equals(entity.getId()))
+                    rolePlayedByCurrentConcept = entry.getKey().getId();
             }
+            generateRelationEmbedded(relationResource, rel, separationDegree - 1);
+            halResource.withRepresentation(rolePlayedByCurrentConcept, relationResource);
         }
     }
 
-    //If an assertion connects the current instance to a resource we dont put it in the embedded of the instance.
-    //(since all the resources are represented as properties of the state of the instance.)
-    private boolean isRelationToResource(Relation rel) {
-        boolean isResource = false;
-        for (RoleType role : rel.rolePlayers().keySet()) {
-            Instance instance = rel.rolePlayers().get(role);
-            if (instance.isResource()) isResource = true;
+
+    private void generateRelationEmbedded(Representation halResource, Relation rel, int separationDegree) {
+        if (separationDegree == 0) return;
+        try {
+            rel.rolePlayers().forEach((roleType, instance) -> {
+                Representation roleResource = factory.newRepresentation(resourceLinkPrefix + instance.getId());
+                dispatchConcept(roleResource, instance, separationDegree - 1);
+                halResource.withRepresentation(roleType.getId(), roleResource);
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        return isResource;
     }
 
-
-    // populate _embedded field for a Relation
-    //For now we just put the role players in the relation's embedded
-    private void generateRelationEmbedded(Representation halResource, Relation rel) {
-
-        rel.rolePlayers().forEach((roleType, instance) -> {
-            Representation roleResource = factory.newRepresentation(resourceLinkPrefix + instance.getId());
-            generateState(roleResource, instance);
-            halResource.withRepresentation(roleType.getId(), roleResource);
+    private void generateTypeEmbedded(Representation halResource, Type type, int separationDegree) {
+        if (!type.getId().equals("type")) {
+            type.instances().forEach(instance -> {
+                Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId());
+                dispatchConcept(instanceResource, instance, separationDegree - 1);
+                halResource.withRepresentation(instance.getId(), instanceResource);
+            });
+        }
+        type.subTypes().forEach(instance -> {
+            // let's not put the current type in its own embedded
+            if (!instance.getId().equals(type.getId())) {
+                Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId());
+                dispatchConcept(instanceResource, instance, separationDegree - 1);
+                halResource.withRepresentation(instance.getId(), instanceResource);
+            }
         });
-
     }
-
-    // populate _embedded field for Type
-    // In the embedded we put all the instances of a given type for now.
-    private void generateTypeEmbedded(Representation halResource, Type type) {
-
-        type.instances().forEach(instance -> {
-            Representation roleResource = factory.newRepresentation(resourceLinkPrefix + instance.getId());
-            generateState(roleResource, instance);
-            halResource.withRepresentation(instance.getId(), roleResource);
-        });
-
-    }
-
 
     public String render() {
         return halResource.toString(RepresentationFactory.HAL_JSON);

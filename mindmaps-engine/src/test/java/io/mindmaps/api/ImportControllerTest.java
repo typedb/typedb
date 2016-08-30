@@ -18,12 +18,12 @@
 
 package io.mindmaps.api;
 
-import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.util.ConfigProperties;
-import io.mindmaps.factory.GraphFactory;
-import org.junit.*;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import io.mindmaps.core.implementation.exception.MindmapsValidationException;
+import io.mindmaps.factory.GraphFactory;
+import io.mindmaps.util.ConfigProperties;
+import org.junit.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,7 +32,6 @@ import java.util.Properties;
 public class ImportControllerTest {
 
     ImportController importer;
-    Properties prop = new Properties();
     String graphName;
 
     @BeforeClass
@@ -40,16 +39,12 @@ public class ImportControllerTest {
         // Disable horrid cassandra logs
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.INFO);
+        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
     }
 
     @Before
     public void setUp() throws Exception {
-        try {
-            prop.load(ImportControllerTest.class.getClassLoader().getResourceAsStream(ConfigProperties.CONFIG_TEST_FILE));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        graphName = prop.getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+        graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
         importer = new ImportController(graphName);
         new CommitLogController();
 

@@ -21,24 +21,25 @@ import ch.qos.logback.classic.Logger;
 import io.mindmaps.api.*;
 import io.mindmaps.util.ConfigProperties;
 
+import java.net.URISyntaxException;
+
 import static spark.Spark.port;
+import static spark.Spark.staticFileLocation;
+import static spark.Spark.staticFiles;
 
 public class MindmapsEngineServer {
 
     public static void main(String[] args) {
 
-
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.INFO);
-
 
         ConfigProperties prop = ConfigProperties.getInstance();
 
         // Listening port
         port(prop.getPropertyAsInt(ConfigProperties.SERVER_PORT_NUMBER));
-
-        // --------------------------------- //
-
+        //TODO: ADD ABSOLUTE PATHHHHHHHH
+        staticFiles.externalLocation(prop.getProperty(ConfigProperties.STATIC_FILES_PATH));
 
         // ----- APIs --------- //
 

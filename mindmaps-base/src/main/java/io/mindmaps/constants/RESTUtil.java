@@ -12,8 +12,8 @@ public class RESTUtil {
         public static final String MATCH_QUERY_URI = "/shell/match";
         public static final String HOME_URI = "/";
 
-        public static final String CONCEPT_BY_ID_URI = "/concept/:id" ;
-        public static final String CONCEPTS_BY_VALUE_URI = "/concepts";
+        public static final String CONCEPT_BY_ID_URI = "/graph/concept/" ;
+
         public static final String COMMIT_LOG_URI = "/commit_log";
 
         public static final String NEW_TRANSACTION_URI = "/transaction/new";

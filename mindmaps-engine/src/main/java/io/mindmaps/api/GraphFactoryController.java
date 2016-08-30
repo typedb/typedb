@@ -40,31 +40,33 @@ public class GraphFactoryController {
     private final Logger LOG = LoggerFactory.getLogger(GraphFactoryController.class);
 
     public GraphFactoryController() {
+        ConfigProperties prop = ConfigProperties.getInstance();
+
+
         get(RESTUtil.WebPath.GRAPH_FACTORY_URI, (req, res) -> {
             String graphConfig = req.queryParams(RESTUtil.Request.GRAPH_CONFIG_PARAM);
 
             try {
-                if(graphConfig == null) {
+                if (graphConfig == null) {
                     graphConfig = ConfigProperties.GRAPH_CONFIG_PROPERTY;
                 } else {
-                  switch (graphConfig){
-                      case RESTUtil.GraphConfig.DEFAULT:
-                          graphConfig = ConfigProperties.GRAPH_CONFIG_PROPERTY;
-                          break;
-                      case RESTUtil.GraphConfig.BATCH:
-                          graphConfig = ConfigProperties.GRAPH_BATCH_CONFIG_PROPERTY;
-                          break;
-                      case RESTUtil.GraphConfig.COMPUTER:
-                          graphConfig = ConfigProperties.GRAPH_COMPUTER_CONFIG_PROPERTY;
-                          break;
-                  }
+                    switch (graphConfig) {
+                        case RESTUtil.GraphConfig.DEFAULT:
+                            graphConfig = ConfigProperties.GRAPH_CONFIG_PROPERTY;
+                            break;
+                        case RESTUtil.GraphConfig.BATCH:
+                            graphConfig = ConfigProperties.GRAPH_BATCH_CONFIG_PROPERTY;
+                            break;
+                        case RESTUtil.GraphConfig.COMPUTER:
+                            graphConfig = ConfigProperties.GRAPH_COMPUTER_CONFIG_PROPERTY;
+                            break;
+                    }
                 }
-
-                return new String(Files.readAllBytes(Paths.get(ConfigProperties.getInstance().getProperty(graphConfig))));
+                return new String(Files.readAllBytes(Paths.get(ConfigProperties.getProjectPath() + prop.getProperty(graphConfig))));
             } catch (IOException e) {
-                LOG.error(ErrorMessage.NO_CONFIG_FILE.getMessage(ConfigProperties.getInstance().getProperty(graphConfig)));
+                LOG.error(ErrorMessage.NO_CONFIG_FILE.getMessage(ConfigProperties.getProjectPath() + prop.getProperty(graphConfig)));
                 res.status(500);
-                return ErrorMessage.NO_CONFIG_FILE.getMessage(ConfigProperties.getInstance().getProperty(graphConfig));
+                return ErrorMessage.NO_CONFIG_FILE.getMessage(ConfigProperties.getProjectPath() + prop.getProperty(graphConfig));
             }
         });
 

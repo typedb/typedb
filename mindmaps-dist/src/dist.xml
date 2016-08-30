@@ -45,6 +45,17 @@
                 <include>**</include>
             </includes>
         </fileSet>
+        <fileSet>
+            <outputDirectory>assets</outputDirectory>
+            <directory>${project.parent.basedir}/assets/</directory>
+            <includes>
+                <include>**</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <outputDirectory>logs</outputDirectory>
+            <directory>${project.parent.basedir}/logs/</directory>
+        </fileSet>
     </fileSets>
 
     <dependencySets>

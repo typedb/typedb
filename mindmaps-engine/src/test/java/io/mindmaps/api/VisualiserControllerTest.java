@@ -20,8 +20,10 @@ package io.mindmaps.api;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
 import io.mindmaps.Util;
+import io.mindmaps.constants.RESTUtil;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.EntityType;
@@ -30,8 +32,10 @@ import io.mindmaps.util.ConfigProperties;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.Enumeration;
 import java.util.Properties;
 
 import static com.jayway.restassured.RestAssured.get;
@@ -39,49 +43,43 @@ import static org.junit.Assert.assertTrue;
 
 public class VisualiserControllerTest {
 
-    Properties prop = new Properties();
-    String graphName;
+    static String graphName;
 
 
     @Before
     public void setUp() throws Exception {
+        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
+
         new VisualiserController();
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.INFO);
-        try {
-            prop.load(VisualiserControllerTest.class.getClassLoader().getResourceAsStream(ConfigProperties.CONFIG_TEST_FILE));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
         graphName="special-test-graph";
         MindmapsGraph graph = GraphFactory.getInstance().getGraph(graphName);
         MindmapsTransaction transaction = graph.getTransaction();
         EntityType man = transaction.putEntityType("Man");
         transaction.putEntity("actor-123", man).setValue("Al Pacino");
         transaction.commit();
-        Util.setRestAssuredBaseURI(prop);
+        Util.setRestAssuredBaseURI(ConfigProperties.getInstance().getProperties());
     }
 
     @Test
      public void notExistingID() {
-        Response response = get("/concept/6573gehjio?graphName="+graphName).then().statusCode(404).extract().response().andReturn();
+        Response response = get(RESTUtil.WebPath.CONCEPT_BY_ID_URI+"6573gehjio?graphName="+graphName).then().statusCode(404).extract().response().andReturn();
         String  message = response.getBody().asString();
         assertTrue(message.equals("ID [6573gehjio] not found in the graph."));
     }
 
     @Test
     public void getConceptByID() {
-        Response response = get("/concept/actor-123?graphName="+graphName).then().statusCode(200).extract().response().andReturn();
+        Response response = get(RESTUtil.WebPath.CONCEPT_BY_ID_URI+"actor-123?graphName="+graphName).then().statusCode(200).extract().response().andReturn();
         JSONObject message = new JSONObject(response.getBody().asString());
         assertTrue(message.getString("_type").equals("Man"));
-        assertTrue(message.getString("_value").equals("Al Pacino"));
         assertTrue(message.getString("_id").equals("actor-123"));
-
     }
 
     @Test
     public void notExistingIDInDefaultGraph() {
-        get("/concept/actor-123").then().statusCode(404).extract().response().andReturn();
+        get("/graph/concept/actor-123").then().statusCode(404).extract().response().andReturn();
     }
 
     @After
