@@ -151,6 +151,7 @@ public class ImportController {
 
     private void consumeRelation(Var var) {
         boolean ready = false;
+
         if (var.admin().isRelation()) {
             ready = true;
             //If one of the role players is defined using a variable name and the variable name is not in our cache we cannot insert the relation.

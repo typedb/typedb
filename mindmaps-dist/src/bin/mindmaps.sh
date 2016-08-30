@@ -90,7 +90,8 @@ start)
     else
         # engine has not already started
         echo -n "Starting engine"
-        java -cp "`dirname $path`/../lib/*" MindmapsEngineServer > /dev/null &
+        SCRIPTPATH=`cd "$(dirname "$0")" && pwd -P`
+        java -cp "`dirname $path`/../lib/*" -Dmindmaps.dir=$SCRIPTPATH io.mindmaps.MindmapsEngineServer > /dev/null &
         echo $!>$ENGINE_PS
         wait_for_engine
     fi
@@ -104,7 +105,7 @@ stop)
         rm $ENGINE_PS
     fi
 
-    echo "Stopping casasndra"
+    echo "Stopping cassandra"
     if [[ -e $CASSANDRA_PS ]]; then
         kill `cat $CASSANDRA_PS`
         rm $CASSANDRA_PS

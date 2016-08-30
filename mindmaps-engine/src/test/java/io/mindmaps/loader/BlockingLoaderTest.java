@@ -35,13 +35,11 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 
 import static io.mindmaps.graql.Graql.insert;
 
 public class BlockingLoaderTest {
 
-    Properties prop = new Properties();
     String graphName;
     BlockingLoader loader;
     private final org.slf4j.Logger LOG = LoggerFactory.getLogger(BlockingLoaderTest.class);
@@ -52,16 +50,14 @@ public class BlockingLoaderTest {
         // Disable horrid cassandra logs
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.INFO);
+        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
+
     }
 
     @Before
     public void setUp() throws Exception {
-        try {
-            prop.load(BlockingLoaderTest.class.getClassLoader().getResourceAsStream(ConfigProperties.CONFIG_TEST_FILE));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        graphName = prop.getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+
+        graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
         loader = new BlockingLoader(graphName);
         new CommitLogController();
     }

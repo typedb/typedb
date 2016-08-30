@@ -23,7 +23,6 @@ import io.mindmaps.loader.RESTLoader;
 import io.mindmaps.util.ConfigProperties;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import spark.Request;
 import spark.Response;
@@ -60,9 +59,7 @@ public class TransactionController {
     @ApiOperation(
             value = "Load a new transaction made of Graql insert queries into the graph.",
             notes = "The body of the request must only contain the insert Graql strings.")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "graphName", value = "Name of graph to use", dataType = "string", paramType = "query")
-    })
+    @ApiImplicitParam(name = "graphName", value = "Name of graph to use", dataType = "string", paramType = "query")
     private String newTransactionREST(Request req, Response res){
         String currentGraphName = req.queryParams(RESTUtil.Request.GRAPH_NAME_PARAM);
         if (currentGraphName == null) currentGraphName = defaultGraphName;
@@ -80,9 +77,7 @@ public class TransactionController {
     @Path("/status/:uuid")
     @ApiOperation(
             value = "Returns the status of the transaction associated to the given UUID.")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "uuid", value = "UUID of the transaction", required = true, dataType = "string", paramType = "path")
-    })
+    @ApiImplicitParam(name = "uuid", value = "UUID of the transaction", required = true, dataType = "string", paramType = "path")
     private String checkTransactionStatusREST(Request req, Response res){
         try {
             return loader.getStatus(UUID.fromString(req.params(RESTUtil.Request.UUID_PARAMETER)));

@@ -18,12 +18,13 @@
 
 package io.mindmaps.util;
 
+import java.io.FileInputStream;
 import java.util.Properties;
 
 public class ConfigProperties {
 
-    public static final String CONFIG_FILE = "application.properties";
-    public static final String CONFIG_TEST_FILE = "application.properties";
+    public static final String CONFIG_FILE = "../conf/mindmaps-engine.properties";
+    public static final String TEST_CONFIG_FILE = "../conf/mindmaps-engine-test.properties";
 
     public static final String GRAPH_CONFIG_PROPERTY = "graphdatabase.config";
     public static final String GRAPH_BATCH_CONFIG_PROPERTY = "graphdatabase.batch-config";
@@ -38,35 +39,54 @@ public class ConfigProperties {
     public static final String SERVER_PORT_NUMBER = "server.port";
 
     public static final String HAL_DEGREE_PROPERTY = "halBuilder.degree";
-    public static final String HAL_RESOURCE_PREFIX = "halBuilder.resource-prefix";
 
     public static final String LOADER_REPEAT_COMMITS = "loader.repeat-commits";
 
     public static final String MAINTENANCE_ITERATION = "backgroundTasks.maintenance-iteration";
-    public static final String LOGGING_FILE_PATH= "logging.file";
+
+    public static final String LOGGING_FILE_PATH = "logging.file";
     public static final String DATE_FORMAT = "yyyy/MM/dd HH:mm:ss";
+    public static final String STATIC_FILES_PATH = "server.static-file-dir";
+
+    public static final String CURRENT_DIR_SYSTEM_PROPERTY = "mindmaps.dir";
+    public static final String CONFIG_FILE_SYSTEM_PROPERTY = "mindmaps.conf";
 
 
     private Properties prop;
     private static ConfigProperties instance = null;
 
-
-    public synchronized static ConfigProperties getInstance(){
-        if(instance==null) instance=new ConfigProperties();
+    public synchronized static ConfigProperties getInstance() {
+        if (instance == null) instance = new ConfigProperties();
         return instance;
     }
 
-    private ConfigProperties(){
+
+    public static String getProjectPath() {
+        return (System.getProperty(CURRENT_DIR_SYSTEM_PROPERTY) != null) ? System.getProperty(CURRENT_DIR_SYSTEM_PROPERTY) + "/" : System.getProperty("user.dir") + "/";
+    }
+
+    public String getConfigFilePath() {
+        return (System.getProperty(CONFIG_FILE_SYSTEM_PROPERTY) != null) ? System.getProperty(CONFIG_FILE_SYSTEM_PROPERTY) : ConfigProperties.CONFIG_FILE;
+    }
+
+    private ConfigProperties() {
         prop = new Properties();
         try {
-            prop.load(getClass().getClassLoader().getResourceAsStream(ConfigProperties.CONFIG_FILE));
+            prop.load(new FileInputStream(getProjectPath() + getConfigFilePath()));
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public String getProperty(String property){
+    public Properties getProperties() {
+        return prop;
+    }
+
+    public String getProperty(String property) {
         return prop.getProperty(property);
     }
-    public int getPropertyAsInt(String property) {return Integer.parseInt(prop.getProperty(property));}
+
+    public int getPropertyAsInt(String property) {
+        return Integer.parseInt(prop.getProperty(property));
+    }
 }

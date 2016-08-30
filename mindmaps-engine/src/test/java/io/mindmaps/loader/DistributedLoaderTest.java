@@ -20,10 +20,10 @@ package io.mindmaps.loader;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.api.CommitLogController;
 import io.mindmaps.api.TransactionController;
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.Graql;
@@ -41,7 +41,6 @@ import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -52,23 +51,18 @@ public class DistributedLoaderTest {
 
     private MindmapsGraph graph;
 
-    private Properties prop = new Properties();
     private DistributedLoader loader;
 
     @Before
     public void setUp() throws Exception {
         LOG.setLevel(Level.INFO);
+        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
 
         // set up engine
         new TransactionController();
         new CommitLogController();
 
-        try {
-            prop.load(DistributedLoaderTest.class.getClassLoader().getResourceAsStream(ConfigProperties.CONFIG_TEST_FILE));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        String graphName = prop.getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+        String graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
 
         loader = new DistributedLoader(graphName, Collections.singletonList("localhost"));
         graph = GraphFactory.getInstance().getGraph(graphName);
@@ -109,7 +103,7 @@ public class DistributedLoaderTest {
         loader.waitToFinish();
     }
 
-    private void loadOntologyFromFile(File file){
+    private void loadOntologyFromFile(File file) {
         List<Var> ontologyBatch = new ArrayList<>();
 
         LOG.info("Loading new ontology .. ");
@@ -123,7 +117,7 @@ public class DistributedLoaderTest {
             Graql.withTransaction(transaction).insert(ontologyBatch).execute();
             transaction.commit();
 
-        } catch (FileNotFoundException|MindmapsValidationException e) {
+        } catch (FileNotFoundException | MindmapsValidationException e) {
             throw new RuntimeException(e);
         }
 
@@ -131,7 +125,7 @@ public class DistributedLoaderTest {
     }
 
     @After
-    public void cleanGraph(){
+    public void cleanGraph() {
         graph.clear();
     }
 }

@@ -77,10 +77,15 @@ public class BlockingLoader extends Loader {
     protected void submitBatch(Collection<Var> vars) {
         try {
             transactionsSemaphore.acquire();
-            Collection<Var> deepCopy = new ArrayList<>(vars);
-            executor.submit(() -> loadData(graphName, deepCopy));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
+        }
+        Collection<Var> deepCopy = new ArrayList<>(vars);
+        try {
+            executor.submit(() -> loadData(graphName, deepCopy));
+        }catch(Exception e ){
+            e.printStackTrace();
+            transactionsSemaphore.release();
         }
     }
 
@@ -101,33 +106,34 @@ public class BlockingLoader extends Loader {
 
     private void loadData(String name, Collection<Var> batch) {
 
-        for (int i = 0; i < repeatCommits; i++) {
-            MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) GraphFactory.getInstance().getGraphBatchLoading(name).getTransaction();
-            try {
-
-                insert(batch).withTransaction(transaction).execute();
-                transaction.commit();
-                cache.addJobCasting(graphName, transaction.getModifiedCastingIds());
-                transactionsSemaphore.release();
-                return;
-
-            } catch (MindmapsValidationException e) {
-                //If it's a validation exception there is no point in re-trying
-                LOG.error(ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));
-                transactionsSemaphore.release();
-            } catch (Exception e) {
-                //If it's not a validation exception we need to remain in the for loop
-                handleError(e, 1);
-            } finally {
+        try {
+            for (int i = 0; i < repeatCommits; i++) {
+                MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) GraphFactory.getInstance().getGraphBatchLoading(name).getTransaction();
                 try {
-                    transaction.close();
+
+                    insert(batch).withTransaction(transaction).execute();
+                    transaction.commit();
+                    cache.addJobCasting(graphName, transaction.getModifiedCastingIds());
+                    return;
+
+                } catch (MindmapsValidationException e) {
+                    //If it's a validation exception there is no point in re-trying
+                    LOG.error(ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));
+                    return;
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    //If it's not a validation exception we need to remain in the for loop
+                    handleError(e, 1);
+                } finally {
+                    try {
+                        transaction.close();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
             }
+        }finally {
+            transactionsSemaphore.release();
         }
-
-        transactionsSemaphore.release();
         LOG.error(ErrorMessage.FAILED_TRANSACTION.getMessage(repeatCommits));
 
         //TODO: set a proper file appender to log all exceptions to file.
