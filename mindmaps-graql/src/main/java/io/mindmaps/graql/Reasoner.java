@@ -446,7 +446,6 @@ public class Reasoner {
     }
 
     private void materializeAnswers(Query atomicQuery, Set<Map<String, Concept>> answers){
-
         LOG.debug("Materializing...");
         answers.forEach(answer -> {
             Set<Substitution> subs = new HashSet<>();
@@ -458,7 +457,6 @@ public class Reasoner {
             atomicQuery.materialize(subs);
         });
         LOG.debug("Materialized: " + answers.size());
-
     }
 
     private Set<Map<String, Concept>> joinSubstitutions(Set<Map<String, Concept>> tuples, Set<Map<String, Concept>> localTuples) {
