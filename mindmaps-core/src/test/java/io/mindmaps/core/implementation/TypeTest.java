@@ -20,11 +20,13 @@ package io.mindmaps.core.implementation;
 
 import io.mindmaps.constants.DataType;
 import io.mindmaps.core.implementation.exception.ConceptException;
+import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -36,6 +38,9 @@ import static org.junit.Assert.*;
 public class TypeTest {
 
     private MindmapsTransactionImpl mindmapsGraph;
+
+    @org.junit.Rule
+    public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void buildGraph(){
@@ -330,5 +335,19 @@ public class TypeTest {
 
         assertTrue(data.contains(godfather));
         assertTrue(data.contains(musicVideo));
+    }
+
+    @Test(expected=ConceptException.class)
+    public void testCircularAKO(){
+        EntityType entityType = mindmapsGraph.putEntityType("Entity");
+        entityType.superType(entityType);
+        entityType.type();
+    }
+
+    @Test(expected=ConceptException.class)
+    public void testCircularAKOCommit() throws MindmapsValidationException {
+        EntityType entityType = mindmapsGraph.putEntityType("Entity");
+        entityType.superType(entityType);
+        mindmapsGraph.commit();
     }
 }
