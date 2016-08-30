@@ -226,18 +226,25 @@ public class MindmapsTransactionImpl implements MindmapsTransaction {
     }
 
     @Override
-    public <V> Resource<V> putResource(String itemIdentifier, ResourceType<V> type) {
-        ResourceImpl<V> resource = elementFactory.buildResource(putVertex(itemIdentifier, DataType.BaseType.RESOURCE));
-        resource.type(type);
+    public <V> Resource<V> putResource(V value, ResourceType<V> type) {
+        ResourceImpl<V> resource;
+        String index = ResourceImpl.generateResourceIndex(type.getId(), value.toString());
+        ConceptImpl concept = getConcept(DataType.ConceptPropertyUnique.INDEX, index);
+
+        if(concept == null){
+            resource = elementFactory.buildResource(addInstanceVertex(DataType.BaseType.RESOURCE, type));
+            resource.type(type);
+            resource.setValue(value);
+        } else {
+            if(concept.isResource()) {
+                resource = (ResourceImpl<V>) concept.asResource();
+            } else {
+                throw new ConceptException(ErrorMessage.RESOURCE_INDEX_ALREADY_TAKEN.getMessage(index, concept));
+            }
+        }
         return resource;
     }
 
-    @Override
-    public <V> Resource<V> addResource(ResourceType<V> type) {
-        ResourceImpl<V> resource = elementFactory.buildResource(addInstanceVertex(DataType.BaseType.RESOURCE, type));
-        resource.type(type);
-        return resource;
-    }
 
     @Override
     public RuleType putRuleType(String itemIdentifier) {

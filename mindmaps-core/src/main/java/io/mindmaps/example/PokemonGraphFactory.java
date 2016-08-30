@@ -183,14 +183,14 @@ public class PokemonGraphFactory{
     }
 
     private static void addResource(MindmapsTransaction mt, Entity pokemon, String s, ResourceType<String> type) {
-            Resource<String> resource = mt.addResource(type).setValue(s);
+            Resource<String> resource = mt.putResource(s, type);
         mt.addRelation(hasResource)
                 .putRolePlayer(hasResourceTarget, pokemon)
                 .putRolePlayer(hasResourceValue, resource);
     }
 
     private static void addResource(MindmapsTransaction mt, Entity pokemon, Long l, ResourceType<Long> type) {
-            Resource<Long> resource = mt.addResource(type).setValue(l);
+            Resource<Long> resource = mt.putResource(l, type);
         mt.addRelation(hasResource)
                 .putRolePlayer(hasResourceTarget, pokemon)
                 .putRolePlayer(hasResourceValue, resource);

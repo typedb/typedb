@@ -30,7 +30,6 @@ import java.util.UUID;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
-import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -52,18 +51,6 @@ public class ResourceTest {
         ResourceType resourceType = mindmapsGraph.putResourceType("resourceType", Data.STRING);
         Resource resource = mindmapsGraph.putResource("resource", resourceType);
         assertEquals(Data.STRING, resource.dataType());
-    }
-
-    @Test
-    public void testOverride(){
-        ResourceType resourceType = mindmapsGraph.putResourceType("resourceType", Data.STRING);
-
-        expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.ID_ALREADY_TAKEN.getMessage("resourceType", resourceType.toString()))
-        ));
-
-        Resource resource = mindmapsGraph.putResource("resourceType", resourceType);
     }
 
     @Test
@@ -105,78 +92,53 @@ public class ResourceTest {
         ResourceType<Double> doubles = mindmapsGraph.putResourceType("Double Type", Data.DOUBLE);
         ResourceType<Boolean> booleans = mindmapsGraph.putResourceType("Boolean Type", Data.BOOLEAN);
 
-        mindmapsGraph.putResource("1", strings).setValue("1");
-        mindmapsGraph.putResource("2", longs).setValue(1L);
-        mindmapsGraph.putResource("3", doubles).setValue(1.0);
-        mindmapsGraph.putResource("4", booleans).setValue(true);
+        Resource<String> resource1 = mindmapsGraph.putResource("1", strings);
+        Resource<Long> resource2 = mindmapsGraph.putResource(1L, longs);
+        Resource<Double> resource3 = mindmapsGraph.putResource(1.0, doubles);
+        Resource<Boolean> resource4 = mindmapsGraph.putResource(true, booleans);
 
-        mindmapsGraph.putResource("5", strings).setValue("1");
-        mindmapsGraph.putResource("6", longs).setValue(1L);
-        mindmapsGraph.putResource("7", doubles).setValue(1.0);
-        mindmapsGraph.putResource("8", booleans).setValue(true);
+        Resource<String> resource5 = mindmapsGraph.putResource("5", strings);
+        Resource<Long> resource6 = mindmapsGraph.putResource(1L, longs);
+        Resource<Double> resource7 = mindmapsGraph.putResource(1.0, doubles);
+        Resource<Boolean> resource8 = mindmapsGraph.putResource(true, booleans);
 
-        assertEquals("1", mindmapsGraph.getResource("1").getValue());
-        assertEquals(1L, mindmapsGraph.getResource("2").getValue());
-        assertEquals(1.0, mindmapsGraph.getResource("3").getValue());
-        assertEquals(true, mindmapsGraph.getResource("4").getValue());
+        assertEquals("1", mindmapsGraph.getResource(resource1.getId()).getValue());
+        assertEquals(1L, mindmapsGraph.getResource(resource2.getId()).getValue());
+        assertEquals(1.0, mindmapsGraph.getResource(resource3.getId()).getValue());
+        assertEquals(true, mindmapsGraph.getResource(resource4.getId()).getValue());
 
-        assertThat(mindmapsGraph.getResource("1").getValue(), instanceOf(String.class));
-        assertThat(mindmapsGraph.getResource("2").getValue(), instanceOf(Long.class));
-        assertThat(mindmapsGraph.getResource("3").getValue(), instanceOf(Double.class));
-        assertThat(mindmapsGraph.getResource("4").getValue(), instanceOf(Boolean.class));
+        assertThat(mindmapsGraph.getResource(resource1.getId()).getValue(), instanceOf(String.class));
+        assertThat(mindmapsGraph.getResource(resource2.getId()).getValue(), instanceOf(Long.class));
+        assertThat(mindmapsGraph.getResource(resource3.getId()).getValue(), instanceOf(Double.class));
+        assertThat(mindmapsGraph.getResource(resource4.getId()).getValue(), instanceOf(Boolean.class));
 
-        assertEquals(2, mindmapsGraph.getResourcesByValue("1").size());
-        assertEquals(2, mindmapsGraph.getResourcesByValue(1L).size());
-        assertEquals(2, mindmapsGraph.getResourcesByValue(1.0).size());
-        assertEquals(2, mindmapsGraph.getResourcesByValue(true).size());
+        assertEquals(1, mindmapsGraph.getResourcesByValue("1").size());
+        assertEquals(1, mindmapsGraph.getResourcesByValue(1L).size());
+        assertEquals(1, mindmapsGraph.getResourcesByValue(1.0).size());
+        assertEquals(1, mindmapsGraph.getResourcesByValue(true).size());
     }
 
     @Test
     public void setInvalidResourceTest (){
-        ResourceType<Long> longResourceType = mindmapsGraph.putResourceType("long", Data.LONG);
+        ResourceType longResourceType = mindmapsGraph.putResourceType("long", Data.LONG);
+        expectedException.expect(RuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.INVALID_DATATYPE.getMessage("Invalid Thing", Long.class.getName()))
+        ));
         Resource invalidThing = mindmapsGraph.putResource("Invalid Thing", longResourceType);
-
-        expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.INVALID_DATATYPE.getMessage("Bad Type", invalidThing.toString(), Data.LONG.getName()))
-        ));
-
-        invalidThing.setValue("Bad Type");
-    }
-
-    @Test
-    public void datatypeTest(){
-        ResourceType<Long> longResourceType = mindmapsGraph.putResourceType("longType", Data.LONG);
-        Resource thing = mindmapsGraph.putResource("long", longResourceType);
-        thing.setValue(2);
-
-        assertEquals(2L, thing.getValue());
-
-        expectedException.expect(RuntimeException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.INVALID_DATATYPE.getMessage("2.0", thing, Data.LONG.getName()))
-        ));
-
-        thing.setValue(2.0);
     }
 
     @Test
     public void datatypeTest2(){
         ResourceType<Double> doubleResourceType = mindmapsGraph.putResourceType("doubleType", Data.DOUBLE);
-        Resource thing = mindmapsGraph.putResource("double", doubleResourceType);
-        thing.setValue(2);
+        Resource thing = mindmapsGraph.putResource(2.0, doubleResourceType);
         assertEquals(2.0, thing.getValue());
     }
 
     @Test
     public void testToString() {
-        EntityType concept = mindmapsGraph.putEntityType("a").setSubject("b");
-        Instance concept2 = mindmapsGraph.putEntity("concept2", concept);
-
-        assertTrue(concept.toString().contains("Subject Identifier"));
-        assertTrue(concept.toString().contains("Value"));
-        assertFalse(concept2.toString().contains("ConceptType"));
-        assertFalse(concept2.toString().contains("Subject Identifier"));
-        assertFalse(concept2.toString().contains("Subject Locator"));
+        ResourceType<String> concept = mindmapsGraph.putResourceType("a", Data.STRING).setSubject("b");
+        Resource<String> concept2 = mindmapsGraph.putResource("concept2", concept);
+        assertTrue(concept2.toString().contains("Value"));
     }
 }

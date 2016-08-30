@@ -20,7 +20,6 @@ package io.mindmaps.core.implementation;
 
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.Data;
-import io.mindmaps.core.implementation.exception.ConceptException;
 import io.mindmaps.core.implementation.exception.InvalidConceptValueException;
 import io.mindmaps.core.model.Resource;
 import io.mindmaps.core.model.ResourceType;
@@ -33,11 +32,9 @@ import org.junit.rules.ExpectedException;
 import java.util.regex.PatternSyntaxException;
 
 import static junit.framework.TestCase.assertNull;
-import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 
 public class ResourceTypeTest {
 
@@ -86,84 +83,22 @@ public class ResourceTypeTest {
     @Test
     public void testRegexInstance(){
         resourceType.setRegex("[abc]");
-        Resource<String> thing = mindmapsGraph.putResource("Random ID", resourceType);
-        thing.setValue("a");
+        mindmapsGraph.putResource("a", resourceType);
         expectedException.expect(InvalidConceptValueException.class);
         expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage("[abc]", thing.toString()))
+                containsString("regular expressions")
         ));
-        thing.setValue("1");
+        mindmapsGraph.putResource("1", resourceType);
     }
 
     @Test
     public void testRegexInstanceChangeRegexWithInstances(){
-        Resource<String> thing = mindmapsGraph.putResource("Random ID", resourceType);
-        thing.setValue("1");
+        Resource<String> thing = mindmapsGraph.putResource("1", resourceType);
         expectedException.expect(InvalidConceptValueException.class);
         expectedException.expectMessage(allOf(
                 containsString(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage("[abc]", thing.toString()))
         ));
         resourceType.setRegex("[abc]");
-    }
-
-    @Test
-    public void testSetUniqueInvalid() throws Exception {
-        assertFalse(resourceType.isUnique());
-
-        mindmapsGraph.addResource(resourceType).setValue("a");
-        mindmapsGraph.addResource(resourceType).setValue("a");
-
-        expectedException.expect(ConceptException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.RESOURCE_TYPE_CANNOT_BE_UNIQUE.getMessage(resourceType))
-        ));
-
-        resourceType.setUnique(true);
-    }
-
-    @Test
-    public void testSetUniqueValid(){
-        assertFalse(resourceType.isUnique());
-        resourceType.setUnique(true);
-        assertTrue(resourceType.isUnique());
-
-        Resource<String> resource1 = mindmapsGraph.addResource(resourceType).setValue("a");
-        Resource<String> resource2 = mindmapsGraph.addResource(resourceType).setValue("b");
-
-        resource1.setValue("a");
-
-        boolean errorThrown = false;
-        try {
-            resource2.setValue("a");
-        } catch (InvalidConceptValueException e){
-            assertEquals(ErrorMessage.RESOURCE_CANNOT_HAVE_VALUE.getMessage("a", resource2, resource1), e.getMessage());
-            errorThrown = true;
-        }
-
-        assertTrue(errorThrown);
-
-        resourceType.setUnique(false);
-        resource2.setValue("a");
-
-        assertNull(((ResourceImpl) resource1).getIndex());
-        assertNull(((ResourceImpl) resource2).getIndex());
-    }
-
-    @Test
-    public void testSetUniqueValidThenCreateInvalidResource(){
-        Resource<String> resource1 = mindmapsGraph.addResource(resourceType).setValue("a");
-        mindmapsGraph.addResource(resourceType).setValue("b");
-
-        resourceType.setUnique(true);
-
-        Resource<String> resource3 = mindmapsGraph.addResource(resourceType);
-
-        expectedException.expect(InvalidConceptValueException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.RESOURCE_CANNOT_HAVE_VALUE.getMessage("a", resource3, resource1))
-        ));
-
-        resource3.setValue("a");
     }
 
     @Test

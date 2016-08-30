@@ -102,22 +102,13 @@ public interface MindmapsTransaction extends AutoCloseable{
 
     /**
      *
-     * @param id A unique Id for the Resource
-     * @param type The resource type of this resource.
      * @param <V> The data type of both the ResourceType and the Resource.
      *           Supported types include: String, Long, Double, Boolean.
+     * @param value A value for the Resource which is unique to it's type
+     * @param type The resource type of this resource.
      * @return new or existing Resource with the provided Id.
      */
-    <V> Resource <V> putResource(String id, ResourceType<V> type);
-
-    /**
-     *
-     * @param type The resource type of this resource.
-     * @param <V> The data type of both the ResourceType and the Resource.
-     *           Supported types include: String, Long, Double, Boolean.
-     * @return a new resource.
-     */
-    <V> Resource <V> addResource(ResourceType<V> type);
+    <V> Resource <V> putResource(V value, ResourceType<V> type);
 
     /**
      *

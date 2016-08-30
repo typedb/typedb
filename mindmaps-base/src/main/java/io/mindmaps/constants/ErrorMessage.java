@@ -29,7 +29,7 @@ public enum ErrorMessage {
     ID_ALREADY_TAKEN("The id ['%s'] is already taken by concept ['%s']"),
     TOO_MANY_CONCEPTS("Too many concepts found for key ['%s'] and value ['%s']"),
     TOO_MANY_CASTINGS("More than one casting found between Role ['%s'] and Instance ['%s']"),
-    INVALID_DATATYPE("The value ['%s'] on concept ['%s'] must be of datatype ['%s']"),
+    INVALID_DATATYPE("The value ['%s'] must be of datatype ['%s']"),
     INVALID_OBJECT_TYPE("The concept ['%s'] is not of type ['%s']"),
     REGEX_INSTANCE_FAILURE("The regex ['%s'] cannot be applied because instance ['%s'] of the Resource Type does not " +
             "conform to the regular expressions"),
@@ -37,14 +37,13 @@ public enum ErrorMessage {
     RELATION_EXISTS("The Relation with the provided role players already exists ['%s']."),
     ID_RESERVED("The ID ['%s'] is reserved and cannot be used"),
     ROLE_IS_NULL("The provided role cannot be null with roleplayer ['%s']"),
-    RESOURCE_CANNOT_HAVE_VALUE("The value ['%s'] cannot be set to the resource ['%s'] because its type is set to be " +
-            "unique and another resource ['%s'] already has that value. "),
     RESOURCE_TYPE_CANNOT_BE_UNIQUE("The resource type ['%s'] cannot be set to unique because it's resources have " +
             "duplicate values"),
     INVALID_EDGE("The edge ['%s'] between concept ['%s'] and ['%s'] is invalid"),
     NOT_SUPPORTED("Not supported with a ['%s'] backend"),
     CLOSED("The ['%s'] has been permanently closed"),
     TRANSACTIONS_NOT_SUPPORTED("The graph backend [%s] does not actually support transactions. The graph was not committed or refreshed."),
+    RESOURCE_INDEX_ALREADY_TAKEN("The resource index [%s] is already taken by concept [%s]"),
     IMMUTABLE_VALUE("The value [%s] of concept [%s] cannot be changed to [%s] due to the property [%s] being immutable"),
     NULL_VALUE("The value of [%s] cannot be set to [null]"),
     CANNOT_LOAD_EXAMPLE("Cannot load example to this graph. Please try a new empty graph."),

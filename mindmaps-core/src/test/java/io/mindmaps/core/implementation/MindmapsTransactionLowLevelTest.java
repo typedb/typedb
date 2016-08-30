@@ -260,19 +260,18 @@ public class MindmapsTransactionLowLevelTest {
     public void testGetResourcesByValue(){
         assertEquals(0, mindmapsGraph.getResourcesByValue("Bob").size());
         ResourceType type = mindmapsGraph.putResourceType("Parent", Data.STRING);
-        Resource c1= mindmapsGraph.putResource("c1", type);
-        c1.setValue("Bob");
+        ResourceType type2 = mindmapsGraph.putResourceType("Parent 2", Data.STRING);
 
-        Resource c2= mindmapsGraph.putResource("c2", type);
-        c2.setValue("Bob");
+        Resource c1 = mindmapsGraph.putResource("Bob", type);
+        Resource c2 = mindmapsGraph.putResource("Bob", type2);
+        Resource c3 = mindmapsGraph.putResource("Bob", type);
 
-        Resource c3= mindmapsGraph.putResource("c3", type);
-        c3.setValue("Bob");
-
-        assertEquals(3, mindmapsGraph.getResourcesByValue("Bob").size());
+        assertEquals(2, mindmapsGraph.getResourcesByValue("Bob").size());
         assertTrue(mindmapsGraph.getResourcesByValue("Bob").contains(c1));
         assertTrue(mindmapsGraph.getResourcesByValue("Bob").contains(c2));
         assertTrue(mindmapsGraph.getResourcesByValue("Bob").contains(c3));
+        assertEquals(c1, c3);
+        assertNotEquals(c1, c2);
     }
 
     @Test
@@ -349,11 +348,11 @@ public class MindmapsTransactionLowLevelTest {
         assertNull(mindmapsGraph.getResourceBySubject("Bob"));
         assertNull(mindmapsGraph.getResource("Bob"));
         ResourceType type = mindmapsGraph.putResourceType("Type", Data.STRING);
-        Resource c1 = mindmapsGraph.putResource("Bob1", type).setSubject("Bob").setValue("1");
-        Resource c2 = mindmapsGraph.putResource("Bob", type).setValue("1");
+        Resource c1 = mindmapsGraph.putResource("1", type).setSubject("Bob");
+        Resource c2 = mindmapsGraph.putResource("1", type);
         assertEquals(c1, mindmapsGraph.getResourceBySubject("Bob"));
-        assertEquals(c2, mindmapsGraph.getResource("Bob"));
-        assertEquals(2, mindmapsGraph.getResourcesByValue("1").size());
+        assertEquals(c2, mindmapsGraph.getResourcesByValue("1").iterator().next());
+        assertEquals(1, mindmapsGraph.getResourcesByValue("1").size());
     }
 
     @Test
@@ -446,7 +445,7 @@ public class MindmapsTransactionLowLevelTest {
 
         Entity instanceA = mindmapsGraph.putEntity("instanceA", a);
         Relation instanceB = mindmapsGraph.putRelation(UUID.randomUUID().toString(), b).setSubject("subject");
-        mindmapsGraph.putResource("instanceC", c).setValue("1");
+        mindmapsGraph.putResource("1", c);
 
         assertEquals(instanceA, mindmapsGraph.getInstance("instanceA"));
         assertEquals(instanceB, mindmapsGraph.getInstanceBySubject("subject"));
