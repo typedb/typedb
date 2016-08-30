@@ -438,7 +438,6 @@ public class Reasoner {
 
     private void recordAnswers(Query query, Set<Map<String, Concept>> answers, Map<Query, Set<Map<String, Concept>>> matAnswers) {
         Query equivalentQuery = findEquivalentQuery(query, matAnswers.keySet());
-
         if (equivalentQuery != null)
             matAnswers.get(equivalentQuery).addAll(answers);
         else

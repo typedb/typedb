@@ -19,12 +19,7 @@
 package io.mindmaps.graql.internal.parser;
 
 import com.google.common.collect.ImmutableMap;
-import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.Data;
-import io.mindmaps.core.model.Instance;
-import io.mindmaps.core.model.RelationType;
-import io.mindmaps.core.model.ResourceType;
-import io.mindmaps.core.model.RoleType;
 import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.graql.*;
 import io.mindmaps.graql.internal.StringConverter;

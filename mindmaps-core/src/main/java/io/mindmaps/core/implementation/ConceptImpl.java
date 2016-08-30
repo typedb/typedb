@@ -801,7 +801,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
             return false;
 
         try {
-            return vertex.edges(Direction.BOTH).hasNext();
+            return vertex.property(DataType.BaseType.TYPE.name()).isPresent();
         } catch (IllegalStateException e){
             return false;
         }

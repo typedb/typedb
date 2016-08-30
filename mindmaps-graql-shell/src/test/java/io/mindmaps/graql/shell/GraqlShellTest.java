@@ -227,17 +227,26 @@ public class GraqlShellTest {
 
     @Test
     public void fuzzTest() throws IOException {
-        int repeats = 1000;
+        int repeats = 100;
+        int maxCommands = 10;
+        int maxLength = 100;
+
         for (int i = 0; i < repeats; i ++) {
-            testShell(randomString(i));
+            testShell(randomString(maxCommands, maxLength));
         }
     }
 
-    private String randomString(int length) {
+    private String randomString(int maxCommands, int maxLength) {
         Random random = new Random();
         StringBuilder sb = new StringBuilder();
 
-        random.ints().limit(length).forEach(i -> sb.append((char) i));
+        int commands = random.nextInt(maxCommands);
+
+        for (int i = 0; i < commands; i ++) {
+            int length = random.nextInt(maxLength);
+            random.ints().limit(length).forEach(c -> sb.append((char) c));
+            sb.append("\n");
+        }
 
         return sb.toString();
     }

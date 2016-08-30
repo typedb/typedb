@@ -23,6 +23,7 @@ public enum ErrorMessage {
     NO_EDGE("Concept ['%s'] does not have any edges to a ['%s']"),
     CANNOT_DELETE("Concept ['%s'] cannot be deleted as it still has edges"),
     LOOP_DETECTED("Concept ['%s'] loops when following edges of type ['%s']"),
+    NO_TYPE("Concept ['%s'] does not have any type"),
     MORE_THAN_ONE_EDGE("Concept ['%s'] has more than one edge of type ['%s']"),
     ID_NOT_UNIQUE("Failed to change the Id of Concept ['%s'] due to another concept already having an id of " +
             "type ['%s'] with value ['%s']"),
@@ -76,7 +77,7 @@ public enum ErrorMessage {
     //--------------------------------------------- Graql Errors -----------------------------------------------
     NO_TRANSACTION("no transaction provided"),
 
-    SYNTAX_ERROR("syntax error"),
+    SYNTAX_ERROR("syntax error at line %s: \n%s\n%s\n%s"),
 
     MUST_BE_RESOURCE_TYPE("type '%s' must be a resource-type"),
     ID_NOT_FOUND("id '%s' not found"),

@@ -28,3 +28,5 @@ db/
 hs_err_pid*
 
 # junk files #
+mindmaps-engine/transaction-manager.log
+

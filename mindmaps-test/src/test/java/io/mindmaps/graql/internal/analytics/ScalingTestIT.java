@@ -5,12 +5,10 @@ import ch.qos.logback.classic.Logger;
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.api.CommitLogController;
 import io.mindmaps.api.GraphFactoryController;
-import io.mindmaps.core.Data;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.EntityType;
 import io.mindmaps.core.model.RelationType;
-import io.mindmaps.core.model.ResourceType;
 import io.mindmaps.core.model.RoleType;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.loader.DistributedLoader;
@@ -39,7 +37,7 @@ public class ScalingTestIT {
     private static final String[] HOST_NAME =
             {"localhost"};
 
-    String TEST_KEYSPACE = "mindmapsanalyticstest";
+    String TEST_KEYSPACE = Analytics.keySpace;
     MindmapsGraph graph;
     MindmapsTransaction transaction;
 
@@ -48,14 +46,11 @@ public class ScalingTestIT {
     RoleType relation1;
     RoleType relation2;
     RelationType related;
-    RoleType degreeTarget;
-    RoleType degreeValue;
-    RelationType hasDegree;
-    ResourceType degreeResource;
 
 
     @BeforeClass
-    public static void startController() throws InterruptedException, TTransportException, ConfigurationException, IOException {
+    public static void startController()
+            throws InterruptedException, TTransportException, ConfigurationException, IOException {
         // Disable horrid cassandra logs
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.OFF);
@@ -87,14 +82,12 @@ public class ScalingTestIT {
         PrintWriter writer = null;
         try {
             writer = new PrintWriter("scale-times.txt", "UTF-8");
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (UnsupportedEncodingException e) {
+        } catch (FileNotFoundException | UnsupportedEncodingException e) {
             e.printStackTrace();
         }
 
         long numberOfSuperNodes = 10L;
-        long[] scales = new long[]{10L,100L,1000L};
+        long[] scales = new long[]{10L, 100L, 1000L};
 
         for (long scale : scales) {
             writer.println("current scale - super " + numberOfSuperNodes + " - nodes " + scale);
@@ -184,15 +177,6 @@ public class ScalingTestIT {
         relation2 = transaction.putRoleType("relation2");
         thing.playsRole(relation1).playsRole(relation2);
         related = transaction.putRelationType("related").hasRole(relation1).hasRole(relation2);
-
-        degreeResource = transaction.putResourceType("degree-resource", Data.LONG);
-        degreeTarget = transaction.putRoleType("degree-target");
-        degreeValue = transaction.putRoleType("degree-value");
-        hasDegree = transaction.putRelationType("has-degree")
-                .hasRole(degreeTarget).hasRole(degreeValue);
-        thing.playsRole(degreeTarget);
-        related.playsRole(degreeTarget);
-        degreeResource.playsRole(degreeValue);
     }
 
     private void refreshOntology() {
@@ -200,11 +184,6 @@ public class ScalingTestIT {
         relation1 = transaction.getRoleType("relation1");
         relation2 = transaction.getRoleType("relation2");
         related = transaction.getRelationType("related");
-
-        degreeResource = transaction.getResourceType("degree-resource");
-        degreeTarget = transaction.getRoleType("degree-target");
-        degreeValue = transaction.getRoleType("degree-value");
-        hasDegree = transaction.getRelationType("has-degree");
     }
 
 }
