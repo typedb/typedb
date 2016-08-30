@@ -1,4 +1,4 @@
-/*
+package io.mindmaps;/*
  * MindmapsDB - A Distributed Semantic Database
  * Copyright (C) 2016  Mindmaps Research Ltd
  *
@@ -38,8 +38,7 @@ public class MindmapsEngineServer {
 
         // Listening port
         port(prop.getPropertyAsInt(ConfigProperties.SERVER_PORT_NUMBER));
-        //TODO: ADD ABSOLUTE PATHHHHHHHH
-        staticFiles.externalLocation(prop.getProperty(ConfigProperties.STATIC_FILES_PATH));
+        staticFiles.externalLocation(ConfigProperties.getProjectPath()+prop.getProperty(ConfigProperties.STATIC_FILES_PATH));
 
         // ----- APIs --------- //
 
