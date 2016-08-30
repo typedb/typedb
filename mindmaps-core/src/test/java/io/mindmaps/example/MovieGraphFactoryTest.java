@@ -110,13 +110,6 @@ public class MovieGraphFactoryTest {
     }
 
     @Test
-    public void testGraphHasGodfather() {
-        Collection<Entity> concepts = dao.getEntitiesByValue("Godfather");
-        assertEquals(1, concepts.size());
-        assertEquals("Godfather", concepts.iterator().next().getId());
-    }
-
-    @Test
     public void testGodfatherHasResource() {
         ResourceType tmdbVoteCount = dao.getResourceType("tmdb-vote-count");
         Entity godfather = dao.getEntity("Godfather");

@@ -30,9 +30,8 @@ import java.util.Set;
  * This represents an instance of a Type. It represents data in the graph.
  * @param <T> The leaf interface of the object model. For example an EntityType, Entity, RelationType etc . . .
  * @param <V> The type of the concept.
- * @param <D> The data type of the value in the concept.
  */
-abstract class InstanceImpl<T extends Instance, V extends Type, D> extends ConceptImpl<T, V, D> implements Instance {
+abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptImpl<T, V> implements Instance {
     InstanceImpl(Vertex v, MindmapsTransactionImpl mindmapsGraph) {
         super(v, mindmapsGraph);
     }
@@ -42,7 +41,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type, D> extends Conce
      */
     @Override
     public void innerDelete() {
-        InstanceImpl<?, ?, ?> parent = this;
+        InstanceImpl<?, ?> parent = this;
         Set<CastingImpl> castings = parent.castings();
         deleteNode();
         for(CastingImpl casting: castings){
@@ -104,7 +103,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type, D> extends Conce
             roleTypeItemIdentifier.add(roleType.getId());
         }
 
-        InstanceImpl<?, ?, ?> parent = this;
+        InstanceImpl<?, ?> parent = this;
 
         parent.castings().forEach(c -> {
             CastingImpl casting = getMindmapsTransaction().getElementFactory().buildCasting(c);
@@ -126,7 +125,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type, D> extends Conce
     @Override
     public Collection<RoleType> playsRoles() {
         Set<RoleType> roleTypes = new HashSet<>();
-        ConceptImpl<?, ?, ?> parent = this;
+        ConceptImpl<?, ?> parent = this;
         parent.getIncomingNeighbours(DataType.EdgeLabel.ROLE_PLAYER).forEach(c -> roleTypes.add(getMindmapsTransaction().getElementFactory().buildCasting(c).getRole()));
         return roleTypes;
     }

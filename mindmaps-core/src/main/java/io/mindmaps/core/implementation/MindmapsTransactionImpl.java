@@ -303,10 +303,6 @@ public class MindmapsTransactionImpl implements MindmapsTransaction {
     public Concept getConceptBySubject(String subject) {
         return getConcept(DataType.ConceptPropertyUnique.SUBJECT_IDENTIFIER, subject);
     }
-    @Override
-    public <V> Collection<Concept> getConceptsByValue(V value) {
-        return getConceptsByValue(value, ConceptImpl.class, Data.SUPPORTED_TYPES.get(value.getClass().getTypeName()));
-    }
 
     @Override
     public Type getType(String id) {
@@ -316,11 +312,6 @@ public class MindmapsTransactionImpl implements MindmapsTransaction {
     @Override
     public Type getTypeBySubject(String subject) {
         return validConceptOfType(getConceptBySubject(subject), TypeImpl.class);
-    }
-
-    @Override
-    public Collection<Type> getTypesByValue(String value) {
-        return getConceptsByValue(value, TypeImpl.class, Data.STRING);
     }
 
     @Override
@@ -334,35 +325,12 @@ public class MindmapsTransactionImpl implements MindmapsTransaction {
     }
 
     @Override
-    public <V> Collection<Instance> getInstancesByValue(V value) {
-        return getConceptsByValue(value, InstanceImpl.class, Data.STRING);
-    }
-
-    private <T extends Concept> HashSet<T> getConceptsByValue(Object value, Class type, Data dataType){
-        HashSet<T> concepts = new HashSet<>();
-
-        getTinkerTraversal().V().has(dataType.getConceptProperty().name(), value).
-                forEachRemaining(v -> {
-                    T concept = validConceptOfType(elementFactory.buildUnknownConcept(v), type);
-                    if (concept != null)
-                        concepts.add(concept);
-                });
-
-        return concepts;
-    }
-
-    @Override
     public Entity getEntity(String id) {
         return validConceptOfType(getConcept(id), EntityImpl.class);
     }
     @Override
     public Entity getEntityBySubject(String subject) {
         return validConceptOfType(getConceptBySubject(subject), EntityImpl.class);
-    }
-
-    @Override
-    public Collection<Entity> getEntitiesByValue(String value) {
-       return getConceptsByValue(value, EntityImpl.class, Data.STRING);
     }
 
     @Override
@@ -377,7 +345,17 @@ public class MindmapsTransactionImpl implements MindmapsTransaction {
 
     @Override
     public <V> Collection<Resource<V>> getResourcesByValue(V value) {
-        return getConceptsByValue(value, ResourceImpl.class, Data.SUPPORTED_TYPES.get(value.getClass().getTypeName()));
+        HashSet<Resource<V>> resources = new HashSet<>();
+        Data dataType = Data.SUPPORTED_TYPES.get(value.getClass().getTypeName());
+
+        getTinkerTraversal().V().has(dataType.getConceptProperty().name(), value).
+                forEachRemaining(v -> {
+                    Concept resource = validConceptOfType(elementFactory.buildUnknownConcept(v), ResourceImpl.class);
+                    if(resource != null && resource.isResource())
+                        resources.add(resource.asResource());
+                });
+
+        return resources;
     }
 
     @Override
@@ -391,11 +369,6 @@ public class MindmapsTransactionImpl implements MindmapsTransaction {
     }
 
     @Override
-    public Collection<Rule> getRulesByValue(String value) {
-        return getConceptsByValue(value, RuleImpl.class, Data.STRING);
-    }
-
-    @Override
     public EntityType getEntityType(String id) {
         return validConceptOfType(getConcept(id), EntityTypeImpl.class);
     }
@@ -403,11 +376,6 @@ public class MindmapsTransactionImpl implements MindmapsTransaction {
     @Override
     public EntityType getEntityTypeBySubject(String subject) {
         return validConceptOfType(getConceptBySubject(subject), EntityTypeImpl.class);
-    }
-
-    @Override
-    public Collection<EntityType> getEntityTypesByValue(String value) {
-        return getConceptsByValue(value, EntityTypeImpl.class, Data.STRING);
     }
 
     @Override
@@ -421,11 +389,6 @@ public class MindmapsTransactionImpl implements MindmapsTransaction {
     }
 
     @Override
-    public Collection<RelationType> getRelationTypesByValue(String value) {
-        return getConceptsByValue(value, RelationTypeImpl.class, Data.STRING);
-    }
-
-    @Override
     public <V> ResourceType<V> getResourceType(String id) {
         return validConceptOfType(getConcept(id), ResourceTypeImpl.class);
     }
@@ -433,11 +396,6 @@ public class MindmapsTransactionImpl implements MindmapsTransaction {
     @Override
     public <V> ResourceType<V> getResourceTypeBySubject(String subject) {
         return validConceptOfType(getConceptBySubject(subject), ResourceTypeImpl.class);
-    }
-
-    @Override
-    public <V> Collection<ResourceType<V>> getResourceTypesByValue(String value) {
-        return getConceptsByValue(value, ResourceTypeImpl.class, Data.STRING);
     }
 
     @Override
@@ -451,11 +409,6 @@ public class MindmapsTransactionImpl implements MindmapsTransaction {
     }
 
     @Override
-    public Collection<RoleType> getRoleTypesByValue(String value) {
-        return getConceptsByValue(value, RoleTypeImpl.class, Data.STRING);
-    }
-
-    @Override
     public RuleType getRuleType(String id) {
         return validConceptOfType(getConcept(id), RuleTypeImpl.class);
     }
@@ -463,11 +416,6 @@ public class MindmapsTransactionImpl implements MindmapsTransaction {
     @Override
     public RuleType getRuleTypeBySubject(String subject) {
         return validConceptOfType(getConceptBySubject(subject), RuleTypeImpl.class);
-    }
-
-    @Override
-    public Collection<RuleType> getRuleTypesByValue(String value) {
-        return getConceptsByValue(value, RuleTypeImpl.class, Data.STRING);
     }
 
     private Type getConceptType(String id){

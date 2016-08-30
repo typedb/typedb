@@ -118,7 +118,7 @@ public class MovieGraphFactory {
         ResourceType<String> gender = mindmapsTransaction.putResourceType("gender", Data.STRING);
         ResourceType<String> realName = mindmapsTransaction.putResourceType("real-name", Data.STRING);
 
-        EntityType production = mindmapsTransaction.putEntityType("production").setValue("production")
+        EntityType production = mindmapsTransaction.putEntityType("production")
                 .playsRole(productionWithCluster).playsRole(productionBeingDirected).playsRole(productionWithCast)
                 .playsRole(productionWithGenre);
 
@@ -128,19 +128,19 @@ public class MovieGraphFactory {
         hasResource(production, releaseDate);
         hasResource(production, runtime);
 
-        movie = mindmapsTransaction.putEntityType("movie").setValue("movie").superType(production);
+        movie = mindmapsTransaction.putEntityType("movie").superType(production);
 
-        mindmapsTransaction.putEntityType("tv-show").setValue("tv show").superType(production);
+        mindmapsTransaction.putEntityType("tv-show").superType(production);
 
-        person = mindmapsTransaction.putEntityType("person").setValue("person")
+        person = mindmapsTransaction.putEntityType("person")
                 .playsRole(director).playsRole(actor).playsRole(characterBeingPlayed);
 
         hasResource(person, gender);
         hasResource(person, realName);
 
-        genre = mindmapsTransaction.putEntityType("genre").setValue("genre").playsRole(genreOfProduction);
+        genre = mindmapsTransaction.putEntityType("genre").playsRole(genreOfProduction);
 
-        character = mindmapsTransaction.putEntityType("character").setValue("character")
+        character = mindmapsTransaction.putEntityType("character")
                 .playsRole(characterBeingPlayed);
 
         mindmapsTransaction.putEntityType("award");
@@ -272,7 +272,7 @@ public class MovieGraphFactory {
     }
 
     private static Entity putEntity(EntityType type, String name) {
-        return mindmapsTransaction.putEntity(name.replaceAll(" ", "-").replaceAll("\\.", ""), type).setValue(name);
+        return mindmapsTransaction.putEntity(name.replaceAll(" ", "-").replaceAll("\\.", ""), type);
     }
 
     private static void hasResource(Type type, ResourceType<?> resourceType) {

@@ -34,13 +34,6 @@ public interface RoleType extends Type {
 
     /**
      *
-     * @param value The String value to store in the Role Type
-     * @return The Role Type itself
-     */
-    RoleType setValue(String value);
-
-    /**
-     *
      * @param isAbstract  Specifies if the Role Type is abstract (true) or not (false).
      *                    If the Role Type is abstract it is not allowed to have any instances.
      * @return The Role Type itself

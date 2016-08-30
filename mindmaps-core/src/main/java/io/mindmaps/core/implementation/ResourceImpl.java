@@ -36,7 +36,7 @@ import java.util.regex.Pattern;
  * A concept which represents a resource.
  * @param <D> The data type of this resource. Supported Types include: String, Long, Double, and Boolean
  */
-class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>, D> implements Resource<D> {
+class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> implements Resource<D> {
     ResourceImpl(Vertex v, MindmapsTransactionImpl mindmapsGraph) {
         super(v, mindmapsGraph);
     }
@@ -84,7 +84,7 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>, D> impl
             //If the value has to be unique some additional checks are in order
             if(type().isUnique()){
                 String index = generateResourceIndex(value);
-                ConceptImpl<?, ?, ?> conceptByIndex = mindmapsTransaction.getConcept(DataType.ConceptPropertyUnique.INDEX, index);
+                ConceptImpl<?, ?> conceptByIndex = mindmapsTransaction.getConcept(DataType.ConceptPropertyUnique.INDEX, index);
                 if(conceptByIndex != null && !conceptByIndex.getId().equals(getId())){
                     throw new InvalidConceptValueException(ErrorMessage.RESOURCE_CANNOT_HAVE_VALUE.getMessage(value, this, conceptByIndex));
                 } else {
@@ -133,5 +133,10 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>, D> impl
     @Override
     public D getValue(){
         return (D) getProperty(dataType().getConceptProperty());
+    }
+
+    @Override
+    public String toString(){
+        return super.toString() + "- Value [" + getValue() + "] ";
     }
 }

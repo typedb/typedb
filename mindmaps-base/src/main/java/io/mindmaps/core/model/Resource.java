@@ -40,7 +40,7 @@ public interface Resource<D> extends Instance{
     /**
      *
      * @param value The value to store on the resource
-     * @return The Resource itself
+     * @return The ResouResource c1= mindmapsGraph.putResource("c1", type);rce itself
      */
     Resource<D> setValue(D value);
 

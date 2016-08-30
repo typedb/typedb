@@ -35,9 +35,8 @@ import java.util.Set;
  * A concept which can represent anything in the graph
  * @param <T> The leaf interface of the object model. For example an EntityType, Entity, RelationType etc . . .
  * @param <V> The type of the concept.
- * @param <D> The data type of the value in the concept.
  */
-abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Concept {
+abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept {
     @SuppressWarnings("unchecked")
     T getThis(){
         return (T) this;
@@ -590,15 +589,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
         return setProperty(DataType.ConceptProperty.TYPE, type);
     }
 
-    /**
-     *
-     * @param value The value of this concept
-     * @return The concept itself casted to the correct interface
-     */
-    public T setValue(D value) {
-        return setProperty(DataType.ConceptProperty.VALUE_STRING, value);
-    }
-
     //------------ Getters ------------
     /**
      *
@@ -640,15 +630,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
      */
     public String getType(){
         return String.valueOf(getProperty(DataType.ConceptProperty.TYPE));
-    }
-
-    /**
-     *
-     * @return The value of this concept
-     */
-    @SuppressWarnings("unchecked")
-    public D getValue() {
-        return (D) getProperty(DataType.ConceptProperty.VALUE_STRING);
     }
 
     /**
@@ -771,8 +752,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
             message = message +  "- Subject Identifier [" + getSubject() + "] ";
         if(getId() != null)
             message = message + "- Item Identifier [" + getId() + "] ";
-        if(getValue() != null)
-            message = message + "- Value [" + getValue() + "] ";
 
         return message;
     }

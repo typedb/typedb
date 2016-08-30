@@ -36,13 +36,6 @@ public interface RuleType extends Type {
 
     /**
      *
-     * @param value The String value to store in the type
-     * @return The Rule Type itself
-     */
-    RuleType setValue(String value);
-
-    /**
-     *
      * @param isAbstract  Specifies if the concept is abstract (true) or not (false).
      *                    If the concept type is abstract it is not allowed to have any instances.
      * @return The Rule Type itself

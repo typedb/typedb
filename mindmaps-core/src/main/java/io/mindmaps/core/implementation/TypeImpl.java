@@ -41,7 +41,7 @@ import java.util.Set;
  * @param <T> The leaf interface of the object model. For example an EntityType, Entity, RelationType etc . . .
  * @param <V> The type of the instances of this concept type.
  */
-class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type, String> implements Type {
+class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> implements Type {
     TypeImpl(Vertex v, MindmapsTransactionImpl mindmapsGraph) {
         super(v, mindmapsGraph);
     }
@@ -219,7 +219,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type, S
         if(currentSuperType != null){
             currentSuperType.instances().forEach(concept -> {
                 if(concept.isInstance()){
-                    ((InstanceImpl<?, ?, ?>) concept).castings().forEach(
+                    ((InstanceImpl<?, ?>) concept).castings().forEach(
                             instance -> mindmapsTransaction.getConceptLog().putConcept(instance));
                 }
             });
@@ -255,7 +255,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type, S
         //Add castings to tracking to make sure they can still be played.
         instances().forEach(concept -> {
             if (concept.isInstance()) {
-                ((InstanceImpl<?, ?, ?>) concept).castings().forEach(casting -> mindmapsTransaction.getConceptLog().putConcept(casting));
+                ((InstanceImpl<?, ?>) concept).castings().forEach(casting -> mindmapsTransaction.getConceptLog().putConcept(casting));
             }
         });
 

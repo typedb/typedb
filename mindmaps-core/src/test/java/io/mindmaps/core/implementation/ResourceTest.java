@@ -30,6 +30,7 @@ import java.util.UUID;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
+import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -124,8 +125,6 @@ public class ResourceTest {
         assertThat(mindmapsGraph.getResource("3").getValue(), instanceOf(Double.class));
         assertThat(mindmapsGraph.getResource("4").getValue(), instanceOf(Boolean.class));
 
-        assertEquals(2, mindmapsGraph.getConceptsByValue("1").size());
-        assertEquals(2, mindmapsGraph.getConceptsByValue(1).size());
         assertEquals(2, mindmapsGraph.getResourcesByValue("1").size());
         assertEquals(2, mindmapsGraph.getResourcesByValue(1L).size());
         assertEquals(2, mindmapsGraph.getResourcesByValue(1.0).size());
@@ -167,5 +166,17 @@ public class ResourceTest {
         Resource thing = mindmapsGraph.putResource("double", doubleResourceType);
         thing.setValue(2);
         assertEquals(2.0, thing.getValue());
+    }
+
+    @Test
+    public void testToString() {
+        EntityType concept = mindmapsGraph.putEntityType("a").setSubject("b");
+        Instance concept2 = mindmapsGraph.putEntity("concept2", concept);
+
+        assertTrue(concept.toString().contains("Subject Identifier"));
+        assertTrue(concept.toString().contains("Value"));
+        assertFalse(concept2.toString().contains("ConceptType"));
+        assertFalse(concept2.toString().contains("Subject Identifier"));
+        assertFalse(concept2.toString().contains("Subject Locator"));
     }
 }

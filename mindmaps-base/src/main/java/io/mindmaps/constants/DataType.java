@@ -80,7 +80,7 @@ public final class DataType {
      * The concepts which represent our internal schema
      */
     public enum ConceptMeta {
-        TYPE("type"),
+        TYPE("concept-type"),
         ENTITY_TYPE("entity-type"),
         ROLE_TYPE("role-type"),
         RESOURCE_TYPE("resource-type"),

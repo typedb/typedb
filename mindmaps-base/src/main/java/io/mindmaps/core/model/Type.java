@@ -35,13 +35,6 @@ public interface Type extends Concept {
 
     /**
      *
-     * @param value The String value to store in the type
-     * @return The Type itself
-     */
-    Type setValue(String value);
-
-    /**
-     *
      * @param isAbstract  Specifies if the concept is abstract (true) or not (false).
      *                    If the concept type is abstract it is not allowed to have any instances.
      * @return The concept itself
@@ -56,11 +49,6 @@ public interface Type extends Concept {
     Type playsRole(RoleType roleType);
 
     //------------------------------------- Accessors ----------------------------------
-    /**
-     *
-     * @return The string value stored in the concept
-     */
-    String getValue();
 
     /**
      * @return A list of Role Types which instances of this Type can play.

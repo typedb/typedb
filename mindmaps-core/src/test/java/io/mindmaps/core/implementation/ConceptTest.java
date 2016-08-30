@@ -62,7 +62,7 @@ public class ConceptTest {
 
     @Test(expected=MoreThanOneEdgeException.class)
     public void testGetEdgeOutgoingOfType(){
-        ConceptImpl<?, ?, ?> concept = (ConceptImpl<?, ?, ?>) mindmapsGraph.putEntityType("Thing");
+        ConceptImpl<?, ?> concept = (ConceptImpl<?, ?>) mindmapsGraph.putEntityType("Thing");
         assertNull(concept.getEdgeOutgoingOfType(DataType.EdgeLabel.AKO));
 
         TypeImpl type1 = (TypeImpl) mindmapsGraph.putEntityType("Type 1");
@@ -108,44 +108,6 @@ public class ConceptTest {
         concept.setType("test_type");
         Vertex conceptVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
         assertEquals(concept.getType(), conceptVertex.property(DataType.ConceptProperty.TYPE.name()).value());
-    }
-
-    @Test
-    public void testGetValue(){
-        String valueString = "Test";
-        concept.setValue(valueString);
-        Vertex vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
-        assertEquals("Test", vertex.property(DataType.ConceptProperty.VALUE_STRING.name()).value().toString());
-
-        int valueInt = 1;
-        concept.setValue(valueInt);
-        vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
-        assertEquals(valueInt, vertex.property(DataType.ConceptProperty.VALUE_STRING.name()).value());
-
-        long valueLong = 1;
-        concept.setValue(valueLong);
-        vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
-        assertEquals(valueLong, vertex.property(DataType.ConceptProperty.VALUE_STRING.name()).value());
-
-        float valueFloat = 1;
-        concept.setValue(valueFloat);
-        vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
-        assertEquals(valueFloat, vertex.property(DataType.ConceptProperty.VALUE_STRING.name()).value());
-
-        double valueDouble = 1;
-        concept.setValue(valueDouble);
-        vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
-        assertEquals(valueDouble, vertex.property(DataType.ConceptProperty.VALUE_STRING.name()).value());
-
-        concept.setValue(true);
-        vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
-        assertEquals(true, vertex.property(DataType.ConceptProperty.VALUE_STRING.name()).value());
-
-        char valueChar = 'c';
-        concept.setValue(valueChar);
-        vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
-        assertEquals(valueChar, vertex.property(DataType.ConceptProperty.VALUE_STRING.name()).value());
-
     }
 
     @Test(expected=ConceptException.class)
@@ -216,15 +178,12 @@ public class ConceptTest {
     @Test
     public void testToString() {
         EntityType concept = mindmapsGraph.putEntityType("a").setSubject("b");
-        concept.setValue("e");
         Instance concept2 = mindmapsGraph.putEntity("concept2", concept);
 
         assertTrue(concept.toString().contains("Subject Identifier"));
-        assertTrue(concept.toString().contains("Value"));
         assertFalse(concept2.toString().contains("ConceptType"));
         assertFalse(concept2.toString().contains("Subject Identifier"));
         assertFalse(concept2.toString().contains("Subject Locator"));
-        assertFalse(concept2.toString().contains("Value"));
     }
 
     @Test
@@ -479,8 +438,8 @@ public class ConceptTest {
     public void reservedTest(){
         expectedException.expect(ConceptException.class);
         expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.ID_RESERVED.getMessage("type"))
+                containsString(ErrorMessage.ID_RESERVED.getMessage("concept-type"))
         ));
-        mindmapsGraph.putEntityType("type");
+        mindmapsGraph.putEntityType("concept-type");
     }
 }
