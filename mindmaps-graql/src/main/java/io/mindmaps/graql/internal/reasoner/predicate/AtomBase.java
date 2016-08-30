@@ -218,6 +218,19 @@ public abstract class AtomBase implements Atomic{
         throw new IllegalArgumentException(ErrorMessage.NO_TYPE_CONSTRAINTS.getMessage());
     }
 
+    public Set<Atomic> getNeighbours(){
+        Set<Atomic> neighbours = new HashSet<>();
+        getParentQuery().getAtoms().forEach(atom ->{
+            //TODO allow unary predicates
+            if (!atom.equals(this) && !atom.isValuePredicate() && !atom.isUnary()) {
+                Set<String> intersection = new HashSet<>(getVarNames());
+                intersection.retainAll(atom.getVarNames());
+                if (!intersection.isEmpty()) neighbours.add(atom);
+            }
+        });
+        return neighbours;
+    }
+
     @Override
     public Map<String, Set<Atomic>> getVarSubMap() {
         Map<String, Set<Atomic>> map = new HashMap<>();

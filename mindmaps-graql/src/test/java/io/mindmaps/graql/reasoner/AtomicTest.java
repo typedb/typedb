@@ -29,7 +29,7 @@ import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.Relation;
 import io.mindmaps.graql.reasoner.graphs.GenericGraph;
 import io.mindmaps.graql.reasoner.graphs.SNBGraph;
-import org.javatuples.Pair;
+import javafx.util.Pair;
 import org.junit.Test;
 
 import java.util.*;

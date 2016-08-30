@@ -1,0 +1,37 @@
+insert
+
+###################################################
+####################Ontology######################
+#################################################
+
+"entity" isa entity-type;
+"a-entity" ako entity;
+"b-entity" ako entity;
+
+"P-from" isa role-type;
+"P-to" isa role-type;
+"P" isa relation-type, has-role P-from, has-role P-to;
+entity plays-role P-from plays-role P-to;
+
+"Q-from" isa role-type;
+"Q-to" isa role-type;
+"Q" isa relation-type, has-role Q-from, has-role Q-to;
+entity plays-role Q-from plays-role Q-to;
+
+
+####################################################
+##################RULES#############################
+####################################################
+
+"R1" isa inference-rule,
+lhs {match
+(Q-from $x, Q-to $y) isa Q},
+rhs {match
+(P-from $x, P-to $y) isa P};
+
+"R2" isa inference-rule,
+lhs {match
+(Q-from $x, Q-to $z) isa Q;
+(P-from $z, P-to $y) isa P},
+rhs {match
+(P-from $x, P-to $y) isa P};

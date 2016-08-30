@@ -69,8 +69,8 @@ public class Utility {
         return types.iterator().next();
     }
 
-    public static Atomic getRuleConclusionAtom(Query ruleLHS, Query ruleRHS, Type type) {
-        Set<Atomic> atoms = ruleRHS.getAtomsWithType(type);
+    public static Atomic getRuleConclusionAtom(Query ruleLHS, Query ruleRHS) {
+        Set<Atomic> atoms = ruleRHS.getAtoms();
         if (atoms.size() > 1)
             throw new IllegalArgumentException(ErrorMessage.NON_HORN_RULE.getMessage(ruleLHS.getRule().getId()));
 
@@ -105,6 +105,16 @@ public class Utility {
         return ruleRecursive;
     }
 
+    public static Query findEquivalentQuery(Query query, Set<Query> queries) {
+        Query equivalentQuery = null;
+        Iterator<Query> it = queries.iterator();
+        while( it.hasNext() && equivalentQuery == null) {
+            Query current = it.next();
+            if (query.isEquivalent(current));
+            equivalentQuery = current;
+        }
+        return equivalentQuery;
+    }
     public static Set<RoleType> getCompatibleRoleTypes(String typeId, String relId, MindmapsTransaction graph) {
         Set<RoleType> cRoles = new HashSet<>();
 

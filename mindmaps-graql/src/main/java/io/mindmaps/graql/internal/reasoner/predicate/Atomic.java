@@ -122,6 +122,7 @@ public interface Atomic {
 
     Set<Atomic> getSubstitutions();
     Set<Atomic> getTypeConstraints();
+    Set<Atomic> getNeighbours();
 
     Map<String, Set<Atomic>> getVarSubMap();
 

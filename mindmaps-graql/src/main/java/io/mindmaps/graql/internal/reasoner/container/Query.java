@@ -38,6 +38,7 @@ import io.mindmaps.graql.internal.reasoner.predicate.Relation;
 import io.mindmaps.graql.internal.reasoner.predicate.Substitution;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static io.mindmaps.graql.internal.reasoner.Utility.computeRoleCombinations;
 
@@ -111,8 +112,8 @@ public class  Query {
 
         atomSet = new HashSet<>();
         addAtom(atom);
-        atom.getSubstitutions().forEach(this::addAtom);
-        if(atom.isRelation()) atom.getTypeConstraints().forEach(this::addAtom);
+        addAtomConstraints(atom.getSubstitutions());
+        if(atom.isRelation()) addAtomConstraints(atom.getTypeConstraints());
 
         this.typeAtomMap = getTypeAtomMap(atomSet);
     }
@@ -407,8 +408,13 @@ public class  Query {
     }
 
     public void addAtomConstraints(Set<Atomic> subs){
-        subs.forEach(sub -> {
-            if (containsVar(sub.getVarName())) addAtom(sub);
+        subs.forEach(con -> {
+            if (containsVar(con.getVarName())){
+                //Atomic lcon = AtomicFactory.create(con);
+                addAtom(con);
+                if (con.isValuePredicate())
+                    selectVars.remove(con.getVarName());
+            }
         });
     }
 
@@ -417,17 +423,41 @@ public class  Query {
      * @return selected atoms
      */
     public Set<Atomic> selectAtoms() {
-        Set<Atomic> genAtoms = new HashSet<>();
-        atomSet.forEach(atom -> {
-            if (!atom.isValuePredicate() && !atom.isUnary()) genAtoms.add(atom);
-        });
+        Set<Atomic> selectedAtoms = new LinkedHashSet<>();
+        //TODO allow unary predicates
+        Set<Atomic> atoms = new HashSet<>(atomSet).stream()
+                .filter(atom -> !atom.isValuePredicate())
+                .filter(atom -> !atom.isUnary())
+                .collect(Collectors.toSet());
+        if (atoms.size() == 1) return atoms;
+
+        //find starting atom
+        Atomic start = null;
+        Iterator<Atomic> it = atoms.iterator();
+        while(it.hasNext() && start == null) {
+            Atomic current = it.next();
+            if (current.getNeighbours().size() == 1) start = current;
+        }
+        if (start == null )
+            throw new IllegalStateException(ErrorMessage.LOOP_CLAUSE.getMessage());
+
+        selectedAtoms.add(start);
+
+        Atomic current = start;
+        Set<Atomic> nbhs;
+        do{
+            nbhs = current.getNeighbours();
+            nbhs.removeAll(selectedAtoms);
+            if (nbhs.size() == 1 ){
+                current = nbhs.iterator().next();
+                selectedAtoms.add(current);
+            }
+        } while(!nbhs.isEmpty());
 
         //TODO
         //find most instantiated atom
-        //follow neighbours
-        //type atoms should be kept together with corresponding relations (single isa allowed atm, otherwise type gen/spec through akos)
         //no instantiations -> favour type atoms
-        return genAtoms;
+        return selectedAtoms;
     }
 
     /**
@@ -452,6 +482,7 @@ public class  Query {
         }
     }
 
+    //only for atomic queries
     public void materialize(Set<Substitution> subs) {
         subs.forEach(this::addAtom);
 
