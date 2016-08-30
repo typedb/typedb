@@ -129,6 +129,7 @@ public class DegreeVertexProgram implements VertexProgram<Long> {
                     if (baseTypes.contains(vertex.label())) {
                         messenger.sendMessage(this.countMessageScopeIn, 1L);
                     } else if (vertex.label().equals(DataType.BaseType.RELATION.name())) {
+                        messenger.sendMessage(this.countMessageScopeIn, 1L);
                         messenger.sendMessage(this.countMessageScopeOut, -1L);
                     }
                 }

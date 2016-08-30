@@ -134,6 +134,7 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
                         messenger.sendMessage(this.countMessageScopeIn, 1L);
                     } else if (vertex.label().equals(DataType.BaseType.RELATION.name())) {
                         messenger.sendMessage(this.countMessageScopeOut, -1L);
+                        messenger.sendMessage(this.countMessageScopeIn, 1L);
                     }
                 }
                 break;

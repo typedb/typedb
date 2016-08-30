@@ -210,6 +210,7 @@ public class Analytics {
 
         //TODO: remove the deletion of resource. This should be done by core.
         instance.relations(resourceOwner).stream()
+                .filter(relation -> relation.rolePlayers().size() == 2)
                 .filter(relation ->
                         relation.rolePlayers().get(resourceValue).type().getId().equals(resourceName))
                 .forEach(relation -> {

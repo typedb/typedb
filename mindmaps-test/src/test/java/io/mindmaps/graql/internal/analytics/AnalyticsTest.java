@@ -620,7 +620,6 @@ public class AnalyticsTest {
         }
     }
 
-    @Ignore
     @Test
     public void testDegreeIsCorrectAssertionAboutAssertion() throws MindmapsValidationException, ExecutionException, InterruptedException {
         // create a simple graph
