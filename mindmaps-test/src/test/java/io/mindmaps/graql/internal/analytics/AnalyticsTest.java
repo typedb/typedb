@@ -852,4 +852,9 @@ public class AnalyticsTest {
             assertEquals(referenceDegrees.get(entry.getKey().getId()),entry.getValue());
         });
     }
+
+    @Test
+    public void testMultipleExecutionOfDegreeAndPersistWhileAddingNodes() {
+
+    }
 }

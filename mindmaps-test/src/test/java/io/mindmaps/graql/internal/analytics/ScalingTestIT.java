@@ -87,7 +87,7 @@ public class ScalingTestIT {
         // compute the sample of graph sizes
         int MAX_SIZE = 10000;
         int NUM_DIVS = 10;
-        int REPEAT = 5;
+        int REPEAT = 2;
 
         int STEP_SIZE = MAX_SIZE/NUM_DIVS;
         List<Integer> graphSizes = new ArrayList<>();
@@ -140,18 +140,18 @@ public class ScalingTestIT {
                 writer.flush();
                 stopTime = System.currentTimeMillis();
                 countTime+=stopTime-startTime;
-//                writer.println("degree");
-//                writer.flush();
-//                startTime = System.currentTimeMillis();
-//                computer.degrees();
-//                stopTime = System.currentTimeMillis();
-//                degreeTime+=stopTime-startTime;
-//                writer.println("persist degree");
-//                writer.flush();
-//                startTime = System.currentTimeMillis();
-//                computer.degreesAndPersist();
-//                stopTime = System.currentTimeMillis();
-//                degreeAndPersistTime+=stopTime-startTime;
+                writer.println("degree");
+                writer.flush();
+                startTime = System.currentTimeMillis();
+                computer.degrees();
+                stopTime = System.currentTimeMillis();
+                degreeTime+=stopTime-startTime;
+                writer.println("persist degree");
+                writer.flush();
+                startTime = System.currentTimeMillis();
+                computer.degreesAndPersist();
+                stopTime = System.currentTimeMillis();
+                degreeAndPersistTime+=stopTime-startTime;
             }
 
             countTime /= REPEAT*1000;
@@ -159,9 +159,9 @@ public class ScalingTestIT {
             degreeAndPersistTime /= REPEAT*1000;
             System.out.println("time to count: "+countTime);
             scaleToAverageTimeCount.put(graphSize,countTime);
-            System.out.println("time to degrees: "+countTime);
+            System.out.println("time to degrees: "+degreeTime);
             scaleToAverageTimeDegree.put(graphSize,degreeTime);
-            System.out.println("time to degreesAndPersist: "+countTime);
+            System.out.println("time to degreesAndPersist: "+degreeAndPersistTime);
             scaleToAverageTimeDegreeAndPersist.put(graphSize,degreeAndPersistTime);
         }
 
