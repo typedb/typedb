@@ -325,9 +325,9 @@ public class AnalyticsTest {
 
             // assert the number of vertices remain the same
             if (i == 0) {
-                numVertices = new Analytics().count();
+                numVertices = computer.count();
             } else {
-                assertEquals(numVertices, new Analytics().count());
+                assertEquals(numVertices, computer.count());
             }
         }
 
@@ -353,7 +353,7 @@ public class AnalyticsTest {
 
             // assert the number of vertices remain the same
             if (i == 0) {
-                assertEquals(2, computer.count() - numVertices);
+                assertEquals(1, computer.count() - numVertices);
                 numVertices = computer.count();
             } else {
                 assertEquals(numVertices, computer.count());
