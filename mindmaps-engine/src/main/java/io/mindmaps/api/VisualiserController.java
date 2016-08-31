@@ -30,7 +30,8 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
-import mjson.Json;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -39,8 +40,6 @@ import spark.Response;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-
-import java.util.stream.Collectors;
 
 import static spark.Spark.get;
 
@@ -100,9 +99,13 @@ public class VisualiserController {
 
         try {
             QueryParser parser = QueryParser.create(GraphFactory.getInstance().getGraph(currentGraphName).getTransaction());
-            final Json halArray = Json.array();
+            final JSONArray halArray = new JSONArray();
+
             parser.parseMatchQuery(req.queryParams(RESTUtil.Request.QUERY_FIELD))
-                    .getMatchQuery().stream().forEach(x-> x.values().forEach(concept->halArray.add(Json.make(new HALConcept(concept).render()))));
+                    .getMatchQuery().stream()
+                    .forEach(x-> x.values()
+                        .forEach(concept->halArray.put(new JSONObject(new HALConcept(concept).render()))));
+
             return halArray.toString();
         } catch (Exception e) {
             e.printStackTrace();

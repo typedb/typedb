@@ -5,6 +5,8 @@ import ch.qos.logback.classic.Logger;
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.api.CommitLogController;
 import io.mindmaps.api.GraphFactoryController;
+import io.mindmaps.api.ImportController;
+import io.mindmaps.api.TransactionController;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.EntityType;
@@ -13,6 +15,7 @@ import io.mindmaps.core.model.RoleType;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.loader.DistributedLoader;
 import org.apache.cassandra.exceptions.ConfigurationException;
+import org.apache.commons.configuration.Configuration;
 import org.apache.thrift.transport.TTransportException;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.junit.AfterClass;
@@ -24,11 +27,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
+import static io.mindmaps.graql.Graql.all;
 import static io.mindmaps.graql.Graql.var;
 import static java.lang.Thread.sleep;
 
@@ -58,13 +60,9 @@ public class ScalingTestIT {
         EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra-embedded.yaml");
         new GraphFactoryController();
         new CommitLogController();
+        new TransactionController();
 
         sleep(5000);
-    }
-
-    @AfterClass
-    public static void stopController() {
-        EmbeddedCassandraServerHelper.stopEmbeddedCassandra();
     }
 
     @Before
@@ -78,7 +76,7 @@ public class ScalingTestIT {
     }
 
     @Test
-    public void testAll() throws InterruptedException, ExecutionException {
+    public void testAll() throws InterruptedException, ExecutionException, MindmapsValidationException {
         PrintWriter writer = null;
         try {
             writer = new PrintWriter("scale-times.txt", "UTF-8");
@@ -86,88 +84,122 @@ public class ScalingTestIT {
             e.printStackTrace();
         }
 
-        long numberOfSuperNodes = 10L;
-        long[] scales = new long[]{10L, 100L, 1000L};
+        // compute the sample of graph sizes
+        int MAX_SIZE = 10000;
+        int NUM_DIVS = 10;
+        int REPEAT = 2;
 
-        for (long scale : scales) {
-            writer.println("current scale - super " + numberOfSuperNodes + " - nodes " + scale);
+        int STEP_SIZE = MAX_SIZE/NUM_DIVS;
+        List<Integer> graphSizes = new ArrayList<>();
+        for (int i = 1;i < NUM_DIVS;i++) graphSizes.add(i*STEP_SIZE);
+        graphSizes.add(MAX_SIZE);
 
+        Map<Integer, Long> scaleToAverageTimeCount = new HashMap<>();
+        Map<Integer, Long> scaleToAverageTimeDegree = new HashMap<>();
+        Map<Integer, Long> scaleToAverageTimeDegreeAndPersist = new HashMap<>();
 
-            writer.println("start generate graph " + System.nanoTime());
-            writer.flush();
-            generateSimpleGraph(numberOfSuperNodes, scale);
-            writer.println("stop generate graph " + System.nanoTime());
-            sleep(5000);
+        int NUM_SUPER_NODES = 10;
 
-            Analytics computer = new Analytics();
-            writer.println("start count " + System.nanoTime());
-            writer.flush();
-            writer.println("count: " + computer.count());
-            writer.println("stop count " + System.nanoTime());
-            writer.flush();
-            writer.println("start degree " + System.nanoTime());
-            writer.flush();
-            computer.degrees();
-            writer.println("stop degree " + System.nanoTime());
-            writer.flush();
-            writer.println("start persist degree " + System.nanoTime());
-            writer.flush();
-            computer.degreesAndPersist();
-            writer.println("stop persist degree " + System.nanoTime());
-            writer.flush();
-            writer.println("start clean graph " + System.nanoTime());
-            writer.flush();
-            graph.clear();
-            writer.println("stop clean graph " + System.nanoTime());
-            Thread.sleep(10000);
-            graph = MindmapsClient.getGraph(TEST_KEYSPACE);
-            transaction = graph.getTransaction();
-        }
-    }
-
-    private void generateSimpleGraph(long numberOfSupernodes, long numberOfNodes) {
+        // Insert super nodes into graph
         simpleOntology();
-        try {
-            transaction.commit();
-        } catch (MindmapsValidationException e) {
-            e.printStackTrace();
-        }
+        transaction.commit();
 
         // make the supernodes
         refreshOntology();
         Set<String> superNodes = new HashSet<>();
-        for (long i = 0; i < numberOfSupernodes; i++) {
+        for (int i = 0; i < NUM_SUPER_NODES; i++) {
             superNodes.add(transaction.addEntity(thing).getId());
         }
-        try {
-            transaction.commit();
-        } catch (MindmapsValidationException e) {
-            e.printStackTrace();
+        transaction.commit();
+
+
+        int previousGraphSize = 0;
+        for (int graphSize : graphSizes) {
+            writer.println("current scale - super " + NUM_SUPER_NODES + " - nodes " + graphSize);
+
+
+            writer.println("start generate graph " + System.currentTimeMillis()/1000L + "s");
+            writer.flush();
+            addNodes(superNodes, previousGraphSize, graphSize);
+            previousGraphSize = graphSize;
+            writer.println("stop generate graph " + System.currentTimeMillis()/1000L + "s");
+
+            Analytics computer = new Analytics();
+
+            Long countTime = 0L;
+            Long degreeTime = 0L;
+            Long degreeAndPersistTime = 0L;
+            Long startTime = 0L;
+            Long stopTime = 0L;
+
+            for (int i=0;i<REPEAT;i++) {
+                writer.println("repeat number: "+i);
+                writer.flush();
+                startTime = System.currentTimeMillis();
+                writer.println("count: " + computer.count());
+                writer.flush();
+                stopTime = System.currentTimeMillis();
+                countTime+=stopTime-startTime;
+//                writer.println("degree");
+//                writer.flush();
+//                startTime = System.currentTimeMillis();
+//                computer.degrees();
+//                stopTime = System.currentTimeMillis();
+//                degreeTime+=stopTime-startTime;
+                writer.println("persist degree");
+                writer.flush();
+                startTime = System.currentTimeMillis();
+                computer.degreesAndPersist();
+                stopTime = System.currentTimeMillis();
+                degreeAndPersistTime+=stopTime-startTime;
+            }
+
+            countTime /= REPEAT*1000;
+            degreeTime /= REPEAT*1000;
+            degreeAndPersistTime /= REPEAT*1000;
+            System.out.println("time to count: "+countTime);
+            scaleToAverageTimeCount.put(graphSize,countTime);
+            System.out.println("time to degrees: "+degreeTime);
+            scaleToAverageTimeDegree.put(graphSize,degreeTime);
+            System.out.println("time to degreesAndPersist: "+degreeAndPersistTime);
+            scaleToAverageTimeDegreeAndPersist.put(graphSize,degreeAndPersistTime);
         }
 
-        // batch in the nodes
-        int batchSize = 100;
-        int currentBatch = 0;
-        int m = 0;
-        refreshOntology();
+        writer.println("start clean graph " + System.currentTimeMillis()/1000L + "s");
+        writer.flush();
+        graph.clear();
+        writer.println("stop clean graph " + System.currentTimeMillis()/1000L + "s");
 
+        System.out.println("counts: " + scaleToAverageTimeCount);
+        System.out.println("degrees: " + scaleToAverageTimeCount);
+        System.out.println("degreesAndPersist: " + scaleToAverageTimeCount);
+    }
+
+    private void addNodes(Set<String> superNodes, int startRange, int endRange) throws MindmapsValidationException, InterruptedException {
+        // batch in the nodes
         DistributedLoader distributedLoader = new DistributedLoader(TEST_KEYSPACE,
                 Arrays.asList(HOST_NAME));
-        distributedLoader.setBatchSize(40);
+        distributedLoader.setThreadsNumber(30);
+        distributedLoader.setPollingFrequency(1000);
+        distributedLoader.setBatchSize(100);
 
-        for (int nodeIndex = 0; nodeIndex < numberOfNodes; nodeIndex++) {
+        for (int nodeIndex = startRange; nodeIndex < endRange; nodeIndex++) {
             String nodeId = "node-" + nodeIndex;
             distributedLoader.addToQueue(var().isa("thing").id(nodeId));
         }
 
+        distributedLoader.waitToFinish();
+
         for (String supernodeId : superNodes) {
-            for (int nodeIndex = 0; nodeIndex < numberOfNodes; nodeIndex++) {
+            for (int nodeIndex = startRange; nodeIndex < endRange; nodeIndex++) {
                 String nodeId = "node-" + nodeIndex;
                 distributedLoader.addToQueue(var().isa("related")
                         .rel("relation1", var().id(nodeId))
                         .rel("relation2", var().id(supernodeId)));
             }
         }
+
+        distributedLoader.waitToFinish();
 
     }
 

@@ -21,17 +21,25 @@ package io.mindmaps.graql.internal.analytics;
 import com.google.common.collect.Sets;
 import io.mindmaps.constants.DataType;
 import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.core.model.Type;
 import io.mindmaps.factory.MindmapsClient;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.*;
+import org.apache.tinkerpop.gremlin.process.computer.util.ConfigurationTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+import static io.mindmaps.graql.internal.analytics.Analytics.*;
 
 /**
  *
@@ -43,26 +51,40 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
     private final MessageScope.Local<Long> countMessageScopeOut = MessageScope.Local.of(__::outE);
     private MindmapsGraph mindmapsGraph;
 
-//    public static final String DEGREE = "analytics.degreeAndPersistVertexProgram.degree";
+    public static final String DEGREE = "analytics.degreeAndPersistVertexProgram.degree";
+
+    private static final String TRAVERSAL_SUPPLIER = "analytics.degreeAndPersistVertexProgram.traversalSupplier";
+
+    private ConfigurationTraversal<Vertex, Edge> configurationTraversal;
 
     private final HashSet<String> baseTypes = Sets.newHashSet(
             DataType.BaseType.ENTITY.name(),
-            DataType.BaseType.RELATION.name(),
             DataType.BaseType.RESOURCE.name());
 
-//    private static final String TRAVERSAL_SUPPLIER = "analytics.degreeAndPersistVertexProgram.traversalSupplier";
+    private Set<String> selectedTypes = null;
 
-//    private ConfigurationTraversal<Vertex, Edge> configurationTraversal;
+    public DegreeAndPersistVertexProgram() {
+    }
 
-//    private static final Set<String> COMPUTE_KEYS = new HashSet<>(Arrays.asList(DEGREE));
+    public DegreeAndPersistVertexProgram(Set<Type> types) {
+        selectedTypes = types.stream().map(Type::getId).collect(Collectors.toSet());
+    }
 
     @Override
     public void loadState(final Graph graph, final Configuration configuration) {
+        this.selectedTypes = new HashSet<>();
+        configuration.getKeys(TYPE).forEachRemaining(key -> selectedTypes.add(configuration.getString(key)));
     }
 
     @Override
     public void storeState(final Configuration configuration) {
         configuration.setProperty(VERTEX_PROGRAM, DegreeAndPersistVertexProgram.class.getName());
+        Iterator iterator = selectedTypes.iterator();
+        int count = 0;
+        while (iterator.hasNext()) {
+            configuration.addProperty(TYPE + "." + count, iterator.next());
+            count++;
+        }
     }
 
     @Override
@@ -105,23 +127,42 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
 
     @Override
     public void execute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
-        if (memory.isInitialIteration()) {
-            if (vertex.label().equals(DataType.BaseType.RELATION.name()) &&
-                    !Analytics.isAnalyticsElement(vertex)) {
-                messenger.sendMessage(this.countMessageScopeOut, 1L);
-            }
-        } else if (memory.getIteration() == 1) {
-            if (vertex.label().equals(DataType.BaseType.CASTING.name())) {
-                long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
-                messenger.sendMessage(this.countMessageScopeOut, edgeCount);
-                messenger.sendMessage(this.countMessageScopeIn, 1L);
-            }
-        } else if (memory.getIteration() == 2) {
-            if (baseTypes.contains(vertex.label()) &&
-                    !Analytics.isAnalyticsElement(vertex)) {
-                long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
-                Analytics.persistResource(mindmapsGraph, vertex, Analytics.degree, edgeCount);
-            }
+        switch (memory.getIteration()) {
+            case 0:
+                if (selectedTypes.contains(getVertextType(vertex)) && !isAnalyticsElement(vertex)) {
+                    if (baseTypes.contains(vertex.label())) {
+                        messenger.sendMessage(this.countMessageScopeIn, 1L);
+                    } else if (vertex.label().equals(DataType.BaseType.RELATION.name())) {
+                        messenger.sendMessage(this.countMessageScopeOut, -1L);
+                        messenger.sendMessage(this.countMessageScopeIn, 1L);
+                    }
+                }
+                break;
+            case 1:
+                if (vertex.label().equals(DataType.BaseType.CASTING.name())) {
+                    boolean hasRolePlayer = false;
+                    long assertionCount = 0;
+                    Iterator<Long> iterator = messenger.receiveMessages();
+                    while (iterator.hasNext()) {
+                        long message = iterator.next();
+                        if (message < 0) assertionCount++;
+                        else hasRolePlayer = true;
+                    }
+                    if (hasRolePlayer) {
+                        messenger.sendMessage(this.countMessageScopeIn, 1L);
+                        messenger.sendMessage(this.countMessageScopeOut, assertionCount);
+                    }
+                }
+                break;
+            case 2:
+                if (!isAnalyticsElement(vertex) && selectedTypes.contains(getVertextType(vertex))) {
+                    if (baseTypes.contains(vertex.label()) ||
+                            vertex.label().equals(DataType.BaseType.RELATION.name())) {
+                        long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
+                        Analytics.persistResource(mindmapsGraph, vertex, Analytics.degree, edgeCount);
+                    }
+                }
+                break;
         }
     }
 

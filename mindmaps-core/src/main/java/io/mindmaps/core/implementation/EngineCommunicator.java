@@ -61,7 +61,6 @@ public class EngineCommunicator {
             }
 
             if(connection.getResponseCode() != 200){
-                System.out.println("ehiii"+ connection.getResponseMessage());
                 throw new IllegalArgumentException(ErrorMessage.INVALID_ENGINE_RESPONSE.getMessage(engineUrl, connection.getResponseCode()));
             }
 
