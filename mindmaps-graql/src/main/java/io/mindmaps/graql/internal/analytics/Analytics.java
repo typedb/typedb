@@ -22,6 +22,7 @@ import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsComputer;
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.constants.DataType;
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.Data;
 import io.mindmaps.core.MindmapsGraph;
 
@@ -45,7 +46,7 @@ import static io.mindmaps.constants.DataType.ConceptPropertyUnique.ITEM_IDENTIFI
 
 public class Analytics {
 
-    public static final String keySpace = "mindmapsanalyticstest";
+    public static final String keySpace = "mindmaps";
     public static final String TYPE = "type";
 
     public static final String degree = "degree";
@@ -183,7 +184,7 @@ public class Analytics {
         try {
             transaction.commit();
         } catch (MindmapsValidationException e) {
-            e.printStackTrace();
+            throw new RuntimeException(ErrorMessage.ONTOLOGY_MUTATION.getMessage(e.toString()));
         }
 
         //TODO: need a proper way to store this information
@@ -232,7 +233,7 @@ public class Analytics {
         try {
             transaction.commit();
         } catch (MindmapsValidationException e) {
-            e.printStackTrace();
+            throw new RuntimeException(ErrorMessage.BULK_PERSIST.getMessage(resourceName,e.toString()));
         }
     }
 

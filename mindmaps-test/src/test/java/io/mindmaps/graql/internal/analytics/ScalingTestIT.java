@@ -133,6 +133,7 @@ public class ScalingTestIT {
             Long stopTime = 0L;
 
             for (int i=0;i<REPEAT;i++) {
+                System.out.println("gremlin count is: "+transaction.getTinkerTraversal().V().count().next());
                 writer.println("repeat number: "+i);
                 writer.flush();
                 startTime = System.currentTimeMillis();
@@ -140,18 +141,23 @@ public class ScalingTestIT {
                 writer.flush();
                 stopTime = System.currentTimeMillis();
                 countTime+=stopTime-startTime;
-//                writer.println("degree");
-//                writer.flush();
-//                startTime = System.currentTimeMillis();
-//                computer.degrees();
-//                stopTime = System.currentTimeMillis();
-//                degreeTime+=stopTime-startTime;
-                writer.println("persist degree");
+                System.out.println("count time: "+countTime/((i+1)*1000));
+
+                writer.println("degree");
                 writer.flush();
                 startTime = System.currentTimeMillis();
-                computer.degreesAndPersist();
+                computer.degrees();
                 stopTime = System.currentTimeMillis();
-                degreeAndPersistTime+=stopTime-startTime;
+                degreeTime+=stopTime-startTime;
+                System.out.println("degree time: "+degreeTime/((i+1)*1000));
+
+//                writer.println("persist degree");
+//                writer.flush();
+//                startTime = System.currentTimeMillis();
+//                computer.degreesAndPersist();
+//                stopTime = System.currentTimeMillis();
+//                degreeAndPersistTime+=stopTime-startTime;
+//                System.out.println("persist time: "+degreeAndPersistTime/((i+1)*1000));
             }
 
             countTime /= REPEAT*1000;
