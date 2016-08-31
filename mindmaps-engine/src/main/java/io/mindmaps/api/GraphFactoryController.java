@@ -42,7 +42,6 @@ public class GraphFactoryController {
     public GraphFactoryController() {
         ConfigProperties prop = ConfigProperties.getInstance();
 
-
         get(RESTUtil.WebPath.GRAPH_FACTORY_URI, (req, res) -> {
             String graphConfig = req.queryParams(RESTUtil.Request.GRAPH_CONFIG_PARAM);
 
@@ -62,11 +61,11 @@ public class GraphFactoryController {
                             break;
                     }
                 }
-                return new String(Files.readAllBytes(Paths.get(ConfigProperties.getProjectPath() + prop.getProperty(graphConfig))));
+                return new String(Files.readAllBytes(Paths.get(prop.getPath(graphConfig))));
             } catch (IOException e) {
-                LOG.error(ErrorMessage.NO_CONFIG_FILE.getMessage(ConfigProperties.getProjectPath() + prop.getProperty(graphConfig)));
+                LOG.error(ErrorMessage.NO_CONFIG_FILE.getMessage(prop.getPath(graphConfig)));
                 res.status(500);
-                return ErrorMessage.NO_CONFIG_FILE.getMessage(ConfigProperties.getProjectPath() + prop.getProperty(graphConfig));
+                return ErrorMessage.NO_CONFIG_FILE.getMessage(prop.getPath(graphConfig));
             }
         });
 

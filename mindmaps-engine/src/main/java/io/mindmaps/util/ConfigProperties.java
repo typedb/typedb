@@ -19,6 +19,7 @@
 package io.mindmaps.util;
 
 import java.io.FileInputStream;
+import java.nio.file.Paths;
 import java.util.Properties;
 
 public class ConfigProperties {
@@ -54,25 +55,40 @@ public class ConfigProperties {
 
     private Properties prop;
     private static ConfigProperties instance = null;
+    private String configFilePath = null;
 
     public synchronized static ConfigProperties getInstance() {
         if (instance == null) instance = new ConfigProperties();
         return instance;
     }
 
+    public String getPath(String path) {
+        String propertyPath = prop.getProperty(path);
+        if (Paths.get(propertyPath).isAbsolute())
+            return propertyPath;
 
-    public static String getProjectPath() {
+        return getProjectPath() + propertyPath;
+    }
+
+    private static String getProjectPath() {
         return (System.getProperty(CURRENT_DIR_SYSTEM_PROPERTY) != null) ? System.getProperty(CURRENT_DIR_SYSTEM_PROPERTY) + "/" : System.getProperty("user.dir") + "/";
     }
 
-    public String getConfigFilePath() {
-        return (System.getProperty(CONFIG_FILE_SYSTEM_PROPERTY) != null) ? System.getProperty(CONFIG_FILE_SYSTEM_PROPERTY) : ConfigProperties.CONFIG_FILE;
+    String getConfigFilePath() {
+        if (configFilePath == null) setConfigFilePath();
+        return configFilePath;
+    }
+
+    private void setConfigFilePath() {
+        configFilePath = (System.getProperty(CONFIG_FILE_SYSTEM_PROPERTY) != null) ? System.getProperty(CONFIG_FILE_SYSTEM_PROPERTY) : ConfigProperties.CONFIG_FILE;
+        if (!Paths.get(configFilePath).isAbsolute())
+            configFilePath = getProjectPath() + configFilePath;
     }
 
     private ConfigProperties() {
         prop = new Properties();
         try {
-            prop.load(new FileInputStream(getProjectPath() + getConfigFilePath()));
+            prop.load(new FileInputStream(getConfigFilePath()));
         } catch (Exception e) {
             e.printStackTrace();
         }
