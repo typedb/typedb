@@ -27,6 +27,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -44,7 +46,7 @@ public class MindmapsTinkerGraphFactoryTest {
 
     @Test
     public void testBuildTinkerGraph() throws Exception {
-        MindmapsGraph graph = tinkerGraphFactory.getGraph("test", null, null);
+        MindmapsGraph graph = tinkerGraphFactory.getGraph("test", null, null, false);
         MindmapsTransaction transaction = graph.getTransaction();
         assertThat(graph, instanceOf(MindmapsTinkerGraph.class));
         assertThat(transaction, instanceOf(MindmapsTransactionImpl.class));
@@ -59,11 +61,22 @@ public class MindmapsTinkerGraphFactoryTest {
 
     @Test
     public void testFactoryMap(){
-        MindmapsGraph graph1 = tinkerGraphFactory.getGraph("graph1", null, null);
-        MindmapsGraph graph2 = tinkerGraphFactory.getGraph("graph2", null, null);
-        MindmapsGraph graph1_copy = tinkerGraphFactory.getGraph("graph1", null, null);
+        MindmapsGraph graph1 = tinkerGraphFactory.getGraph("graph1", null, null, false);
+        MindmapsGraph graph2 = tinkerGraphFactory.getGraph("graph2", null, null, false);
+        MindmapsGraph graph1_copy = tinkerGraphFactory.getGraph("graph1", null, null, false);
 
         assertNotEquals(graph1, graph2);
         assertEquals(graph1, graph1_copy);
+    }
+
+    @Test
+    public void testSimpleBuild(){
+        MindmapsTinkerGraph mg1 = (MindmapsTinkerGraph) tinkerGraphFactory.getGraph("test", null, null, true);
+        MindmapsTinkerGraph mg2 = (MindmapsTinkerGraph) tinkerGraphFactory.getGraph("test", null, null, false);
+
+        assertTrue(mg1.isBatchLoadingEnabled());
+        assertFalse(mg2.isBatchLoadingEnabled());
+        assertNotEquals(mg1, mg2);
+        assertNotEquals(mg1.getGraph(), mg2.getGraph());
     }
 }

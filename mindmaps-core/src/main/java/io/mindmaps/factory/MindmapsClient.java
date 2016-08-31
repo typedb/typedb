@@ -58,12 +58,32 @@ public class MindmapsClient {
     /**
      *
      * @param name The desired name for the mindmaps graph
+     * @return A new or existing mindmaps graph with the defined name connecting to the specified remote uri with batch loading enabled
+     */
+    public static MindmapsGraph getGraphBatchLoading(String name){
+        return getGraphBatchLoading(name, DEFAULT_URI);
+    }
+
+    /**
+     *
+     * @param name The desired name for the mindmaps graph
      * @param uri The remote uri fo where engine is located
      * @return A new or existing mindmaps graph with the defined name connecting to the specified remote uri
      */
     public static MindmapsGraph getGraph(String name, String uri){
         ConfigureFactory configuredFactory = configureGraphFactory(uri, RESTUtil.GraphConfig.DEFAULT);
-        return configuredFactory.factory.getGraph(name, uri, configuredFactory.path);
+        return configuredFactory.factory.getGraph(name, uri, configuredFactory.path, false);
+    }
+
+    /**
+     *
+     * @param name The desired name for the mindmaps graph
+     * @param uri The remote uri fo where engine is located
+     * @return A new or existing mindmaps graph with the defined name connecting to the specified remote uri with batch loading enabled
+     */
+    public static MindmapsGraph getGraphBatchLoading(String name, String uri){
+        ConfigureFactory configuredFactory = configureGraphFactory(uri, RESTUtil.GraphConfig.BATCH);
+        return configuredFactory.factory.getGraph(name, uri, configuredFactory.path, true);
     }
 
     /**
@@ -81,7 +101,7 @@ public class MindmapsClient {
      */
     public static MindmapsComputer getGraphComputer(String uri) {
         ConfigureFactory configuredFactory = configureGraphFactory(uri, RESTUtil.GraphConfig.COMPUTER);
-        Graph graph = configuredFactory.factory.getTinkerPopGraph(null, uri, configuredFactory.path);
+        Graph graph = configuredFactory.factory.getTinkerPopGraph(null, uri, configuredFactory.path, false);
         return new MindmapsComputerImpl(graph, configuredFactory.graphComputer);
     }
 

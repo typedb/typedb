@@ -24,8 +24,8 @@ import java.util.Properties;
 
 public class ConfigProperties {
 
-    public static final String CONFIG_FILE = "../conf/mindmaps-engine.properties";
-    public static final String TEST_CONFIG_FILE = "../conf/mindmaps-engine-test.properties";
+    public static final String CONFIG_FILE = "../conf/main/mindmaps-engine.properties";
+    public static final String TEST_CONFIG_FILE = "../conf/test/mindmaps-engine-test.properties";
 
     public static final String GRAPH_CONFIG_PROPERTY = "graphdatabase.config";
     public static final String GRAPH_BATCH_CONFIG_PROPERTY = "graphdatabase.batch-config";

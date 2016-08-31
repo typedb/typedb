@@ -34,6 +34,14 @@ public class MindmapsTestGraphFactory {
      * @return An empty mindmaps graph with a tinker graph backend
      */
     public static MindmapsGraph newEmptyGraph(){
-        return new MindmapsTinkerGraph(TinkerGraph.open(), UUID.randomUUID().toString());
+        return new MindmapsTinkerGraph(TinkerGraph.open(), UUID.randomUUID().toString(), false);
+    }
+
+    /**
+     *
+     * @return An empty mindmaps graph with a tinker graph backend which has batch loading enabled
+     */
+    public static MindmapsGraph newBatchLoadingEmptyGraph(){
+        return new MindmapsTinkerGraph(TinkerGraph.open(), UUID.randomUUID().toString(), true);
     }
 }

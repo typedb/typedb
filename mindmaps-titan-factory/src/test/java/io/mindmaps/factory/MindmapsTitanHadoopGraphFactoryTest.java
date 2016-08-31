@@ -26,7 +26,7 @@ import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.*;
 
 public class MindmapsTitanHadoopGraphFactoryTest {
-    private final String TEST_CONFIG = "../conf/mindmaps-analytics.properties";
+    private final String TEST_CONFIG = "../conf/main/mindmaps-analytics.properties";
 
     private MindmapsTitanHadoopGraphFactory factory;
 
@@ -37,12 +37,12 @@ public class MindmapsTitanHadoopGraphFactoryTest {
 
     @Test(expected=UnsupportedOperationException.class)
     public void buildMindmapsGraphFromTinker() throws Exception {
-        factory.getGraph("rubbish", "rubbish", TEST_CONFIG);
+        factory.getGraph("rubbish", "rubbish", TEST_CONFIG, false);
     }
 
     @Test
     public void buildTinkerPopGraph() throws Exception {
-        assertThat(factory.getTinkerPopGraph("rubbish", "Rubbish", TEST_CONFIG), instanceOf(HadoopGraph.class));
+        assertThat(factory.getTinkerPopGraph("rubbish", "Rubbish", TEST_CONFIG, false), instanceOf(HadoopGraph.class));
     }
 
 }

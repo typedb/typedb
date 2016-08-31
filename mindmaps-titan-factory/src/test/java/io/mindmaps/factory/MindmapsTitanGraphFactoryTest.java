@@ -35,19 +35,29 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ResourceBundle;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class MindmapsTitanGraphFactoryTest {
-    private final static String TEST_CONFIG = "../conf/mindmaps-test.properties";
+    private final static String TEST_CONFIG = "../conf/test/mindmaps-test.properties";
     private final static String TEST_URI = "localhost";
     private final static String TEST_SHARED = "shared";
+    private static final boolean TEST_BATCH_LOADING = false;
 
     private static TitanGraph sharedGraph;
     private static TitanGraph noIndexGraph;
@@ -64,7 +74,7 @@ public class MindmapsTitanGraphFactoryTest {
 
         titanGraphFactory = new MindmapsTitanGraphFactory();
 
-        sharedGraph = ((MindmapsTitanGraph)titanGraphFactory.getGraph(TEST_SHARED, TEST_URI, TEST_CONFIG)).getGraph();
+        sharedGraph = ((MindmapsTitanGraph) titanGraphFactory.getGraph(TEST_SHARED, TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING)).getGraph();
 
         int max = 1000;
         noIndexGraph = getGraph();
@@ -90,6 +100,17 @@ public class MindmapsTitanGraphFactoryTest {
         assertEquals("VALUE_LONG", management.getPropertyKey("VALUE_LONG").toString());
         assertEquals("VALUE_BOOLEAN", management.getPropertyKey("VALUE_BOOLEAN").toString());
         assertEquals("VALUE_DOUBLE", management.getPropertyKey("VALUE_DOUBLE").toString());
+    }
+
+    @Test
+    public void testSimpleBuild(){
+        MindmapsTitanGraph mg1 = (MindmapsTitanGraph) titanGraphFactory.getGraph(TEST_SHARED, TEST_URI, TEST_CONFIG, true);
+        MindmapsTitanGraph mg2 = (MindmapsTitanGraph) titanGraphFactory.getGraph(TEST_SHARED, TEST_URI, TEST_CONFIG, false);
+
+        assertTrue(mg1.isBatchLoadingEnabled());
+        assertFalse(mg2.isBatchLoadingEnabled());
+        assertNotEquals(mg1, mg2);
+        assertNotEquals(mg1.getGraph(), mg2.getGraph());
     }
 
     @Test
@@ -138,8 +159,8 @@ public class MindmapsTitanGraphFactoryTest {
     @Test
     public void testSingleton(){
         Graph graph1 = sharedGraph;
-        Graph graph2 = ((MindmapsTitanGraph) titanGraphFactory.getGraph("b", TEST_URI, TEST_CONFIG)).getGraph();
-        Graph graph3 = ((MindmapsTitanGraph) titanGraphFactory.getGraph(TEST_SHARED, TEST_URI, TEST_CONFIG)).getGraph();
+        Graph graph2 = ((MindmapsTitanGraph) titanGraphFactory.getGraph("b", TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING)).getGraph();
+        Graph graph3 = ((MindmapsTitanGraph) titanGraphFactory.getGraph(TEST_SHARED, TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING)).getGraph();
 
         assertEquals(graph1, graph3);
         assertNotEquals(graph2, graph1);
@@ -266,7 +287,7 @@ public class MindmapsTitanGraphFactoryTest {
 
     private static TitanGraph getGraph() {
         String name = UUID.randomUUID().toString();
-        Graph graph = ((MindmapsTitanGraph) titanGraphFactory.getGraph(name, TEST_URI, TEST_CONFIG)).getGraph();
+        Graph graph = ((MindmapsTitanGraph) titanGraphFactory.getGraph(name, TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING)).getGraph();
         assertThat(graph, instanceOf(TitanGraph.class));
         return (TitanGraph) graph;
     }
@@ -343,7 +364,7 @@ public class MindmapsTitanGraphFactoryTest {
 
     @Test
     public void testEngineUrl(){
-        AbstractMindmapsGraph graph = (AbstractMindmapsGraph) titanGraphFactory.getGraph("mindmapstest", "invalid_uri", TEST_CONFIG);
+        AbstractMindmapsGraph graph = (AbstractMindmapsGraph) titanGraphFactory.getGraph("mindmapstest", "invalid_uri", TEST_CONFIG, TEST_BATCH_LOADING);
         assertEquals("invalid_uri", graph.getEngineUrl());
     }
 }

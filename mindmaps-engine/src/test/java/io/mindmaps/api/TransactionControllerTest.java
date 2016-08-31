@@ -32,8 +32,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Properties;
-
 import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertTrue;
@@ -53,7 +51,7 @@ public class TransactionControllerTest {
         logger.setLevel(Level.INFO);
 
         graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
-        MindmapsGraph graph = GraphFactory.getInstance().getGraph(graphName);
+        MindmapsGraph graph = GraphFactory.getInstance().getGraphBatchLoading(graphName);
         MindmapsTransaction transaction = graph.getTransaction();
         transaction.putEntityType("Man");
         transaction.commit();
@@ -76,7 +74,7 @@ public class TransactionControllerTest {
                 e.printStackTrace();
             }
         }
-        assertTrue(GraphFactory.getInstance().getGraph(graphName).getTransaction().getConcept("actor-123").asEntity().getValue().equals("Al Pacino"));
+        assertTrue(GraphFactory.getInstance().getGraphBatchLoading(graphName).getTransaction().getConcept("actor-123").asEntity().getValue().equals("Al Pacino"));
     }
 
     @Test
@@ -114,6 +112,6 @@ public class TransactionControllerTest {
 
     @After
     public void cleanGraph() {
-        GraphFactory.getInstance().getGraph(graphName).clear();
+        GraphFactory.getInstance().getGraphBatchLoading(graphName).clear();
     }
 }

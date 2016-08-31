@@ -22,8 +22,8 @@ import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
 
 public class MindmapsTitanGraph extends AbstractMindmapsGraph<TitanGraph> {
-    public MindmapsTitanGraph(TitanGraph graph, String name, String engineUrl){
-        super(graph, name, engineUrl);
+    public MindmapsTitanGraph(TitanGraph graph, String name, String engineUrl, boolean batchLoading){
+        super(graph, name, engineUrl, batchLoading);
     }
 
     @Override

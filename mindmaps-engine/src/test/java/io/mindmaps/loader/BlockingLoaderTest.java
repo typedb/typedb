@@ -56,7 +56,6 @@ public class BlockingLoaderTest {
 
     @Before
     public void setUp() throws Exception {
-
         graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
         loader = new BlockingLoader(graphName);
         new CommitLogController();
@@ -98,11 +97,11 @@ public class BlockingLoaderTest {
         LOG.info("First load time " + firstLoadingTime + ". Second load time " + secondLoadingTime);
 
         Assert.assertTrue(secondLoadingTime < firstLoadingTime);
-        Assert.assertNotNull(GraphFactory.getInstance().getGraph(graphName).getTransaction().getConcept("X506965727265204162656c").getId());
+        Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getTransaction().getConcept("X506965727265204162656c").getId());
     }
 
     private void loadOntology() {
-        MindmapsTransaction transaction = GraphFactory.getInstance().getGraph(graphName).getTransaction();
+        MindmapsTransaction transaction = GraphFactory.getInstance().getGraphBatchLoading(graphName).getTransaction();
         List<Var> ontologyBatch = new ArrayList<>();
         ClassLoader classLoader = getClass().getClassLoader();
 
@@ -124,7 +123,7 @@ public class BlockingLoaderTest {
 
     @After
     public void cleanGraph() {
-            GraphFactory.getInstance().getGraph(graphName).clear();
+            GraphFactory.getInstance().getGraphBatchLoading(graphName).clear();
     }
 
 }

@@ -23,11 +23,14 @@ import ch.qos.logback.classic.Logger;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.util.ConfigProperties;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Properties;
 
 public class ImportControllerTest {
 
@@ -69,12 +72,12 @@ public class ImportControllerTest {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        Assert.assertNotNull(GraphFactory.getInstance().getGraph(graphName).getTransaction().getConcept("X506965727265204162656c").getId());
+        Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getTransaction().getConcept("X506965727265204162656c").getId());
     }
 
     @After
     public void cleanGraph(){
-        GraphFactory.getInstance().getGraph(graphName).clear();
+        GraphFactory.getInstance().getGraphBatchLoading(graphName).clear();
     }
 
 }

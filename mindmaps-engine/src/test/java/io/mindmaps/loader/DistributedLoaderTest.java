@@ -65,7 +65,7 @@ public class DistributedLoaderTest {
         String graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
 
         loader = new DistributedLoader(graphName, Collections.singletonList("localhost"));
-        graph = GraphFactory.getInstance().getGraph(graphName);
+        graph = GraphFactory.getInstance().getGraphBatchLoading(graphName);
     }
 
     @Test

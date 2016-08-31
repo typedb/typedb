@@ -34,7 +34,7 @@ public class MindmapsTitanHadoopGraphFactory extends AbstractMindmapsGraphFactor
     }
 
     @Override
-    AbstractMindmapsGraph<HadoopGraph> buildMindmapsGraphFromTinker(HadoopGraph graph, String name, String engineUrl) {
+    AbstractMindmapsGraph<HadoopGraph> buildMindmapsGraphFromTinker(HadoopGraph graph, String name, String engineUrl, boolean batchLoading) {
         throw new UnsupportedOperationException(ErrorMessage.CANNOT_PRODUCE_MINDMAPS_GRAPH.getMessage(graph.getClass().getName()));
     }
 

@@ -35,13 +35,14 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     protected final Logger LOG = LoggerFactory.getLogger(AbstractMindmapsGraph.class);
     private final String engineUrl;
     private final String graphName;
-    private boolean batchLoading;
+    private final boolean batchLoading;
     private G graph;
 
-    public AbstractMindmapsGraph(G graph, String graphName, String engineUrl){
+    public AbstractMindmapsGraph(G graph, String graphName, String engineUrl, boolean batchLoading){
         this.graph = graph;
         this.graphName = graphName;
         this.engineUrl = engineUrl;
+        this.batchLoading = batchLoading;
         checkSchema((MindmapsTransactionImpl) getTransaction());
     }
 
@@ -61,31 +62,11 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         if(transaction == null){
             context.set(transaction = buildTransaction());
         }
-        transaction.setBatchLoadingEnabled(batchLoading);
         return transaction;
     }
 
     private MindmapsTransactionImpl buildTransaction() {
         return new MindmapsTransactionImpl(this);
-    }
-
-    /**
-     * Enables batch loading which skips redundancy checks.
-     * With this mode enabled duplicate concepts and relations maybe created.
-     * Faster writing at the cost of consistency.
-     */
-    @Override
-    public void enableBatchLoading() {
-        batchLoading = true;
-    }
-
-    /**
-     * Disables batch loading which prevents the creation of duplicate castings.
-     * Immediate constancy at the cost of writing speed.
-     */
-    @Override
-    public void disableBatchLoading() {
-        batchLoading = false;
     }
 
     /**
