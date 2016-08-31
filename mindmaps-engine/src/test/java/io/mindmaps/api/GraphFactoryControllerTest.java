@@ -94,7 +94,7 @@ public class GraphFactoryControllerTest {
         assertEquals(graph, graphCopy);
         graph.close();
 
-        assertThat(MindmapsClient.getGraphComputer(), instanceOf(MindmapsComputerImpl.class));
+        assertThat(MindmapsClient.getGraphComputer("Keyspace"), instanceOf(MindmapsComputerImpl.class));
 
         MindmapsGraph batch = MindmapsClient.getGraphBatchLoading("mindmapstest");
         assertTrue(batch.isBatchLoadingEnabled());

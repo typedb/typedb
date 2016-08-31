@@ -90,8 +90,8 @@ public class MindmapsClient {
      *
      * @return A new or existing mindmaps graph compute with the defined name
      */
-    public static MindmapsComputer getGraphComputer() {
-        return getGraphComputer(DEFAULT_URI);
+    public static MindmapsComputer getGraphComputer(String name) {
+        return getGraphComputer(name, DEFAULT_URI);
     }
 
     /**
@@ -99,9 +99,9 @@ public class MindmapsClient {
      * @param uri The remote uri fo where engine is located
      * @return A new or existing mindmaps graph compute with the defined name
      */
-    public static MindmapsComputer getGraphComputer(String uri) {
+    public static MindmapsComputer getGraphComputer(String name, String uri) {
         ConfigureFactory configuredFactory = configureGraphFactory(uri, RESTUtil.GraphConfig.COMPUTER);
-        Graph graph = configuredFactory.factory.getTinkerPopGraph(null, uri, configuredFactory.path, false);
+        Graph graph = configuredFactory.factory.getTinkerPopGraph(name, uri, configuredFactory.path, false);
         return new MindmapsComputerImpl(graph, configuredFactory.graphComputer);
     }
 

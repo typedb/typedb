@@ -23,7 +23,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThat;
 
 public class MindmapsTitanHadoopGraphFactoryTest {
     private final String TEST_CONFIG = "../conf/main/mindmaps-analytics.properties";
@@ -43,6 +44,16 @@ public class MindmapsTitanHadoopGraphFactoryTest {
     @Test
     public void buildTinkerPopGraph() throws Exception {
         assertThat(factory.getTinkerPopGraph("rubbish", "Rubbish", TEST_CONFIG, false), instanceOf(HadoopGraph.class));
+    }
+
+    @Test
+    public void testSingleton(){
+        HadoopGraph graph1 = factory.getTinkerPopGraph("keyspace1", "rubbish", TEST_CONFIG, false);
+        HadoopGraph graph2 = factory.getTinkerPopGraph("keyspace2", "rubbish", TEST_CONFIG, false);
+        HadoopGraph graph3 = factory.getTinkerPopGraph("keyspace3", "rubbish", TEST_CONFIG, false);
+
+        assertNotEquals(graph1, graph2);
+        assertNotEquals(graph1, graph3);
     }
 
 }
