@@ -22,10 +22,14 @@ import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.concurrent.ExecutionException;
 
 public interface GraqlClient {
-    void setSession(Session session) throws IOException;
+
+    void connect(GraqlShell shell, URI uri);
+
+    void setSession(Session session, String namespace) throws IOException;
 
     void close() throws ExecutionException, InterruptedException;
 

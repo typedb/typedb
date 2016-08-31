@@ -17,49 +17,72 @@
  */
 
 import io.mindmaps.graql.GraqlClient;
+import io.mindmaps.graql.GraqlShell;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.net.URI;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
-public class GraqlClientMock implements GraqlClient {
+class GraqlClientMock implements GraqlClient {
 
-    private Optional<Session> session = Optional.empty();
+    private Optional<GraqlShell> shell = Optional.empty();
+    private Optional<URI> uri = Optional.empty();
+    private final SessionMock session = new SessionMock();
+    private boolean sessionProvided = false;
     private boolean closed = false;
-    private final List<Json> requests = new ArrayList<>();
+    private Optional<String> namespace = Optional.empty();
 
-    public Optional<Session> getSession() {
-        return session;
+    Optional<String> getNamespace() {
+        return namespace;
     }
 
-    public boolean isClosed() {
+    boolean isClosed() {
         return closed;
     }
 
-    public List<Json> getRequests() {
-        return requests;
+    @Override
+    public void connect(GraqlShell shell, URI uri) {
+        assert !closed;
+        assert !sessionProvided;
+        assert !this.shell.isPresent();
+        assert !this.uri.isPresent();
+        assert !this.namespace.isPresent();
+
+        this.shell = Optional.of(shell);
+        this.uri = Optional.of(uri);
+
+        try {
+            shell.onConnect(session);
+        } catch (IOException | InterruptedException | ExecutionException e) {
+            fail();
+        }
     }
 
     @Override
-    public void setSession(Session session) throws IOException {
-        assertFalse(this.session.isPresent());
-        this.session = Optional.of(session);
+    public void setSession(Session session, String namespace) throws IOException {
+        assert !closed;
+        assert !sessionProvided;
+        assert !this.namespace.isPresent();
+        assertEquals(session, this.session);
+
+        sessionProvided = true;
+        this.namespace = Optional.of(namespace);
     }
 
     @Override
     public void close() throws ExecutionException, InterruptedException {
-        assertFalse(closed);
+        assert !closed;
         closed = true;
     }
 
     @Override
     public void sendJson(Json json) throws IOException, ExecutionException, InterruptedException {
-        requests.add(json);
+        assert !closed;
     }
 }

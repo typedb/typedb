@@ -32,8 +32,6 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
 
 import java.io.*;
 import java.net.URI;
@@ -174,25 +172,9 @@ public class GraqlShell implements AutoCloseable {
         console = new ConsoleReader(in, out);
         this.err = err;
         try {
-            connect(new URI("ws://localhost:4567" + REMOTE_SHELL_URI));
+            client.connect(this, new URI("ws://localhost:4567" + REMOTE_SHELL_URI));
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
-        }
-    }
-
-    private void connect(URI uri) {
-        WebSocketClient client = new WebSocketClient();
-
-        try {
-            client.start();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        ClientUpgradeRequest request = new ClientUpgradeRequest();
-        try {
-            client.connect(this, uri, request);
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
@@ -292,7 +274,7 @@ public class GraqlShell implements AutoCloseable {
     @OnWebSocketConnect
     public void onConnect(Session session) throws IOException, ExecutionException, InterruptedException {
         System.out.println("CONNECTED CLIENT");
-        client.setSession(session);
+        client.setSession(session, "HIYA");
     }
 
     @OnWebSocketClose

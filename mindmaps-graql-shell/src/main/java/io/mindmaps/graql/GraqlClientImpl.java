@@ -20,8 +20,10 @@ package io.mindmaps.graql;
 
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.client.WebSocketClient;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -32,8 +34,24 @@ public class GraqlClientImpl implements GraqlClient {
     private final CompletableFuture<Session> session = new CompletableFuture<>();
 
     @Override
-    public void setSession(Session session) throws IOException {
-        sendJson(Json.object(ACTION, ACTION_NAMESPACE, NAMESPACE, "HELLOOOOOO"), session);
+    public void connect(GraqlShell shell, URI uri) {
+        WebSocketClient client = new WebSocketClient();
+
+        try {
+            client.start();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            client.connect(shell, uri);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void setSession(Session session, String namespace) throws IOException {
+        sendJson(Json.object(ACTION, ACTION_NAMESPACE, NAMESPACE, namespace), session);
         this.session.complete(session);
     }
 
