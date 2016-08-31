@@ -111,6 +111,7 @@ public enum ErrorMessage {
     INSERT_RECURSIVE("%s should not refer to itself"),
     INSERT_TYPE_WITHOUT_ID("attempted to insert a type without an id"),
     INSERT_RELATION_WITHOUT_ROLE_TYPE("attempted to insert a relation without all role types specified"),
+    INSERT_RESOURCE_WITHOUT_VALUE("cannot insert a resource without specifying a value"),
 
     DELETE_VALUE("deleting values is not supported"),
     DELETE_RESOURCE_TYPE_NO_ID("resource type to delete from concept %s has no id specified"),

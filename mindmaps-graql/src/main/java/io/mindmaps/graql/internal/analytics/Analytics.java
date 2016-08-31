@@ -223,7 +223,7 @@ public class Analytics {
                     relation.delete();
                 });
 
-        Resource<Long> resource = transaction.addResource(resourceType).setValue(value);
+        Resource<Long> resource = transaction.putResource(value, resourceType);
         transaction.addRelation(relationType)
                 .putRolePlayer(resourceOwner, instance)
                 .putRolePlayer(resourceValue, resource);

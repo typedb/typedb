@@ -4,23 +4,17 @@ insert
 "entity" isa entity-type, is-abstract; # generic type for a lot of resources
 "place" ako entity;
 "organization" ako entity;
-"language" ako entity;
 "tag" ako entity;
 "category" ako entity;
 "forum" ako entity;
 
 # generic resources
-"name" isa resource-type, datatype string;
-"creation-date" isa resource-type, datatype string;
-"browser-used" isa resource-type, datatype string;
-"location-ip" isa resource-type, datatype string;
 
 # a generic relationship for resources of entity
 "entity-resource-owner" isa role-type;
 "entity-resource-value" isa role-type;
 "entity-resource" isa relation-type, has-role entity-resource-value, has-role entity-resource-owner;
 entity plays-role entity-resource-owner;
-name plays-role entity-resource-value;
 
 # a generic relationship for resources of relation
 "relation" isa relation-type, is-abstract;
@@ -28,7 +22,6 @@ name plays-role entity-resource-value;
 "relation-resource-value" isa role-type;
 "relation-resource" isa relation-type, has-role relation-resource-value, has-role relation-resource-owner;
 relation plays-role relation-resource-owner;
-creation-date plays-role relation-resource-value;
 
 "subject-location" ako location;
 "located-subject" isa role-type;
@@ -55,21 +48,21 @@ organization plays-role located-subject;
 # person
 "person" isa entity-type;
 
-"person-resource-owner" isa role-type;
-"person-resource-value" isa role-type;
-"person-resource" isa relation-type, has-role person-resource-value, has-role person-resource-owner;
-person plays-role person-resource-owner;
-language plays-role person-resource-value;
-creation-date plays-role person-resource-value;
-browser-used plays-role person-resource-value;
-location-ip plays-role person-resource-value;
+person
+    has-resource firstname,
+    has-resource lastname,
+    has-resource gender,
+    has-resource birthday,
+    has-resource email,
+    has-resource age;
 
-"firstname" isa resource-type, datatype string, plays-role person-resource-value;
-"lastname" isa resource-type, datatype string, plays-role person-resource-value;
-"gender" isa resource-type, datatype string, plays-role person-resource-value;
-"birthday" isa resource-type, datatype string, plays-role person-resource-value;
-"email" isa resource-type, datatype string, plays-role person-resource-value;
-"age" isa resource-type, datatype long, plays-role person-resource-value;
+
+"firstname" isa resource-type, datatype string;
+"lastname" isa resource-type, datatype string;
+"gender" isa resource-type, datatype string;
+"birthday" isa resource-type, datatype string;
+"email" isa resource-type, datatype string;
+"age" isa resource-type, datatype long;
 
 person plays-role located-subject;
 
@@ -112,9 +105,6 @@ employment-startdate plays-role employment-resource-value;
 "message-resource-value" isa role-type;
 "message-resource" isa relation-type, has-role message-resource-value, has-role message-resource-owner;
 message plays-role message-resource-owner;
-creation-date plays-role message-resource-value;
-browser-used plays-role message-resource-value;
-location-ip plays-role message-resource-value;
 
 "content" isa resource-type, datatype string, plays-role message-resource-value;
 "length" isa resource-type, datatype string, plays-role message-resource-value;
@@ -147,7 +137,6 @@ message plays-role reply-owner;
 "post-resource-value" isa role-type;
 "post-resource" isa relation-type, has-role post-resource-owner, has-role post-resource-value;
 post plays-role post-resource-owner;
-language plays-role post-resource-value;
 
 "image-file" isa resource-type, datatype string, plays-role post-resource-value;
 
@@ -156,7 +145,6 @@ language plays-role post-resource-value;
 "forum-resource-value" isa role-type;
 "forum-resource" isa relation-type, has-role forum-resource-value, has-role forum-resource-owner;
 forum plays-role forum-resource-owner;
-creation-date plays-role forum-resource-value;
 
 "moderator" isa role-type;
 "moderated" isa role-type;

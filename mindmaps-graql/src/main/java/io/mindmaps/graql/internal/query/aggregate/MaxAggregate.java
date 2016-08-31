@@ -39,7 +39,7 @@ public class MaxAggregate extends AbstractAggregate<Map<String, Concept>, Option
 
     @Override
     public Optional<?> apply(Stream<? extends Map<String, Concept>> stream) {
-        return stream.map(result -> (Comparable) result.get(varName).getValue()).max(naturalOrder());
+        return stream.map(result -> (Comparable) result.get(varName).asResource().getValue()).max(naturalOrder());
     }
 
     @Override

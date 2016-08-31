@@ -172,7 +172,7 @@ public class CWInferenceTest {
     public void testGraphCase() {
         RuleType inferenceRule = graph.getRuleType("inference-rule");
 
-        graph.putEntityType("region").setValue("region");
+        graph.putEntityType("region");
 
         String R6_LHS = "match $x isa region";
         String R6_RHS = "match $x isa country";

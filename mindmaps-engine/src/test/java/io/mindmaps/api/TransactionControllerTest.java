@@ -35,6 +35,7 @@ import org.junit.Test;
 
 import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.given;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class TransactionControllerTest {
@@ -63,7 +64,7 @@ public class TransactionControllerTest {
 
     @Test
     public void insertValidQuery() {
-        String exampleInsertQuery = "insert id \"actor-123\" isa Man, value \"Al Pacino\";";
+        String exampleInsertQuery = "insert id \"actor-123\" isa Man";
         String transactionUUID = given().body(exampleInsertQuery).
                 when().post(RESTUtil.WebPath.NEW_TRANSACTION_URI + "?graphName=mindmapstest").body().asString();
         int i = 0;
@@ -80,7 +81,7 @@ public class TransactionControllerTest {
         //check that post processing starts periodically, in this case at least once.
         while(!BackgroundTasks.getInstance().isPostProcessingRunning())
 
-        assertTrue(GraphFactory.getInstance().getGraphBatchLoading(graphName).getTransaction().getConcept("actor-123").asEntity().getValue().equals("Al Pacino"));
+        assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getTransaction().getConcept("actor-123"));
     }
 
     @Test

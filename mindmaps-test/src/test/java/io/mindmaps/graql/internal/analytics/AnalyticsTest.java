@@ -543,8 +543,7 @@ public class AnalyticsTest {
         RelationType hasResource = transaction.putRelationType(GraqlType.HAS_RESOURCE.getId(Analytics.degree))
                 .hasRole(degreeOwner).hasRole(degreeValue);
         ResourceType<Long> decoyResourceType = transaction.putResourceType("decoy-resource", Data.LONG).playsRole(degreeValue);
-        Resource<Long> decoyResource = transaction.putResource(UUID.randomUUID().toString(),decoyResourceType);
-        decoyResource.setValue(100L);
+        Resource<Long> decoyResource = transaction.putResource(100L, decoyResourceType);
         transaction.addRelation(hasResource).putRolePlayer(degreeOwner,coco).putRolePlayer(degreeValue,decoyResource);
         animal.playsRole(degreeOwner);
 

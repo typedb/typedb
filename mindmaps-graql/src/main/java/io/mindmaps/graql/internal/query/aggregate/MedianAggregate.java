@@ -40,7 +40,10 @@ public class MedianAggregate extends AbstractAggregate<Map<String, Concept>, Opt
 
     @Override
     public Optional<Number> apply(Stream<? extends Map<String, Concept>> stream) {
-        List<Number> results = stream.map(result -> ((Number) result.get(varName).getValue())).sorted().collect(toList());
+        List<Number> results = stream
+                .map(result -> ((Number) result.get(varName).asResource().getValue()))
+                .sorted()
+                .collect(toList());
 
         int size = results.size();
         int halveFloor = Math.floorDiv(size - 1, 2);

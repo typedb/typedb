@@ -20,7 +20,6 @@ package io.mindmaps.graql.reasoner.graphs;
 
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.EntityType;
-import io.mindmaps.core.model.Instance;
 import io.mindmaps.core.model.RelationType;
 import io.mindmaps.core.model.RoleType;
 
@@ -48,10 +47,10 @@ public class NguyenGraph extends GenericGraph{
         RelationType P = mindmaps.getRelationType("P");
         RelationType Q = mindmaps.getRelationType("Q");
 
-        putEntity(aEntity, "a" + (n+1));
+        mindmaps.putEntity("a" + (n+1), aEntity);
         for(int i = 0 ; i <= n ;i++) {
-            putEntity(aEntity, "a" + i);
-            putEntity(bEntity, "b" + i);
+            mindmaps.putEntity("a" + i, aEntity);
+            mindmaps.putEntity("b" + i, bEntity);
         }
 
         mindmaps.addRelation(R)
@@ -81,9 +80,5 @@ public class NguyenGraph extends GenericGraph{
                     .putRolePlayer(Qto, mindmaps.getInstance("a" + (i+1)));
         }
 
-    }
-
-    private static Instance putEntity(EntityType type, String name) {
-        return mindmaps.putEntity(name.replaceAll(" ", "-").replaceAll("\\.", ""), type).setValue(name);
     }
 }

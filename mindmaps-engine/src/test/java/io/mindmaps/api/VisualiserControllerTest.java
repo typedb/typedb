@@ -20,25 +20,21 @@ package io.mindmaps.api;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.Util;
 import io.mindmaps.constants.RESTUtil;
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.EntityType;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.util.ConfigProperties;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.Enumeration;
-import java.util.Properties;
-
 import static com.jayway.restassured.RestAssured.get;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class VisualiserControllerTest {
@@ -57,7 +53,7 @@ public class VisualiserControllerTest {
         MindmapsGraph graph = GraphFactory.getInstance().getGraph(graphName);
         MindmapsTransaction transaction = graph.getTransaction();
         EntityType man = transaction.putEntityType("Man");
-        transaction.putEntity("actor-123", man).setValue("Al Pacino");
+        transaction.putEntity("actor-123", man);
         transaction.commit();
         Util.setRestAssuredBaseURI(ConfigProperties.getInstance().getProperties());
     }
@@ -74,6 +70,7 @@ public class VisualiserControllerTest {
         Response response = get(RESTUtil.WebPath.CONCEPT_BY_ID_URI+"actor-123?graphName="+graphName).then().statusCode(200).extract().response().andReturn();
         JSONObject message = new JSONObject(response.getBody().asString());
         assertTrue(message.getString("_type").equals("Man"));
+        assertFalse(message.has("_value"));
         assertTrue(message.getString("_id").equals("actor-123"));
     }
 

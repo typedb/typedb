@@ -68,7 +68,7 @@ public class InsertQueryTest {
 
     @Test
     public void testInsertIsa() {
-        assertInsert(var("x").value("Titanic").isa("movie"));
+        assertInsert(var("x").id("Titanic").isa("movie"));
     }
 
     @Test
@@ -80,7 +80,7 @@ public class InsertQueryTest {
     public void testInsertMultiple() {
         assertInsert(
                 var("x").id("123").isa("person"),
-                var("y").value(123L).id("321").isa("runtime"),
+                var("y").value(123L).isa("runtime"),
                 var("z").isa("language")
         );
     }
@@ -119,19 +119,16 @@ public class InsertQueryTest {
 
     @Test
     public void testInsertSameVarName() {
-        qb.insert(var("x").id("123"), var("x").value("Star Wars").has("title", "Star Wars").isa("movie")).execute();
+        qb.insert(var("x").id("123"), var("x").has("title", "Star Wars").isa("movie")).execute();
 
         assertTrue(qb.match(var().isa("movie").id("123")).ask().execute());
-        assertTrue(qb.match(var().value("Star Wars").has("title", "Star Wars")).ask().execute());
-        assertTrue(qb.match(var().isa("movie").id("123").value("Star Wars").has("title", "Star Wars")).ask().execute());
-
-        qb.match(var("x").value("Star Wars")).delete("x");
-        qb.match(var("x").id("123")).delete("x");
+        assertTrue(qb.match(var().has("title", "Star Wars")).ask().execute());
+        assertTrue(qb.match(var().isa("movie").id("123").has("title", "Star Wars")).ask().execute());
     }
 
     @Test
     public void testInsertRepeat() {
-        Var language = var("x").value("123").isa("language");
+        Var language = var("x").has("name", "123").isa("language");
         InsertQuery query = qb.insert(language);
 
         assertEquals(0, qb.match(language).stream().count());
@@ -155,9 +152,9 @@ public class InsertQueryTest {
         assertTrue(qb.match(language1).ask().execute());
         assertTrue(qb.match(language2).ask().execute());
 
-        qb.match(var("x").isa("language")).insert(var("x").value("HELLO")).execute();
-        assertTrue(qb.match(var().isa("language").id("123").value("HELLO")).ask().execute());
-        assertTrue(qb.match(var().isa("language").id("456").value("HELLO")).ask().execute());
+        qb.match(var("x").isa("language")).insert(var("x").has("name", "HELLO")).execute();
+        assertTrue(qb.match(var().isa("language").id("123").has("name", "HELLO")).ask().execute());
+        assertTrue(qb.match(var().isa("language").id("456").has("name", "HELLO")).ask().execute());
 
         qb.match(var("x").isa("language")).delete("x").execute();
         assertFalse(qb.match(language1).ask().execute());
@@ -205,21 +202,6 @@ public class InsertQueryTest {
                 var("z").id("Raichu").isa("pokemon"),
                 var().rel("evolves-from", "y").rel("evolves-to", "z").isa("evolution")
         ).ask().execute());
-    }
-
-    @Test
-    public void testChangeValue() {
-        qb.insert(var().id("123").value("abc").isa("character")).execute();
-
-        assertTrue(qb.match(var().id("123").value("abc")).ask().execute());
-
-        qb.insert(var().id("123").value("def").isa("language")).execute();
-
-        assertFalse(qb.match(var().id("123").value("abc")).ask().execute());
-        assertTrue(qb.match(var().id("123").value("def")).ask().execute());
-
-        qb.match(var("x").id("123")).delete("x").execute();
-        assertFalse(qb.match(var().id("123")).ask().execute());
     }
 
     @Test
@@ -304,12 +286,11 @@ public class InsertQueryTest {
     public void testIterateInsertResults() {
         InsertQuery insert = qb.insert(
                 var("x").id("123").isa("person"),
-                var("y").value(123L).id("321").isa("runtime"),
                 var("z").id("xyz").isa("language")
         );
 
         Set<String> addedIds = insert.stream().map(Concept::getId).collect(Collectors.toSet());
-        Set<String> expectedIds = Sets.newHashSet("123", "person", "321", "runtime", "xyz", "language");
+        Set<String> expectedIds = Sets.newHashSet("123", "person", "xyz", "language");
 
         assertEquals(expectedIds, addedIds);
     }
@@ -332,7 +313,7 @@ public class InsertQueryTest {
     public void testErrorWhenInsertWithMultipleValues() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(containsString("value"), containsString("123"), containsString("456")));
-        qb.insert(var().value("123").value("456").isa("person")).execute();
+        qb.insert(var().value("123").value("456").isa("title")).execute();
     }
 
     @Test
@@ -350,7 +331,7 @@ public class InsertQueryTest {
     public void testInsertReferenceById() {
         qb.insert(
                 var().id("new-type").isa(ENTITY_TYPE.getId()),
-                id("new-type").value("A value"),
+                id("new-type").isAbstract(),
                 var().id("new-type").playsRole("has-title-owner"),
                 var().id("new-thing").isa("new-type")
         ).execute();
@@ -363,7 +344,7 @@ public class InsertQueryTest {
         //noinspection OptionalGetWithoutIsPresent
         EntityType newType = typeQuery.get("n").stream().findFirst().get().asEntityType();
 
-        assertEquals("A value", newType.getValue());
+        assertTrue(newType.asEntityType().isAbstract());
         assertTrue(newType.playsRoles().contains(transaction.getRoleType("has-title-owner")));
 
         assertTrue(qb.match(var().isa("new-type")).ask().execute());
@@ -430,7 +411,7 @@ public class InsertQueryTest {
         );
         qb.insert(
                 var().rel("genre-of-production", "x").rel("production-with-genre", "y").isa("has-genre"),
-                var("x").isa("genre").value("drama")
+                var("x").isa("genre").has("name", "drama")
         ).execute();
     }
 
@@ -464,6 +445,13 @@ public class InsertQueryTest {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(containsString("type"), containsString("id")));
         qb.insert(var().isa("entity-type")).execute();
+    }
+
+    @Test
+    public void testErrorInsertResourceWithoutValue() {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage(allOf(containsString("resource"), containsString("value")));
+        qb.insert(var("x").isa("name")).execute();
     }
 
     private void assertInsert(Var... vars) {

@@ -100,8 +100,6 @@ class InsertQueryExecutor {
 
         if (var.getAbstract()) concept.asType().setAbstract(true);
 
-        setValue(var);
-
         var.getHasRoles().forEach(role -> concept.asRelationType().hasRole(getConcept(role).asRoleType()));
         var.getPlaysRoles().forEach(role -> concept.asType().playsRole(getConcept(role).asRoleType()));
         var.getScopes().forEach(scope -> concept.asRelation().scope(getConcept(scope).asInstance()));
@@ -219,6 +217,11 @@ class InsertQueryExecutor {
     private Concept putConceptByType(Optional<String> id, VarAdmin var, Type type) {
         String typeId = type.getId();
 
+        if (!type.isResourceType() && !var.getValuePredicates().isEmpty()) {
+            // TODO: Deal with this properly
+            throw new RuntimeException("RUH-ROH " + type);
+        }
+
         if (typeId.equals(DataType.ConceptMeta.ENTITY_TYPE.getId())) {
             return transaction.putEntityType(getTypeIdOrThrow(id));
         } else if (typeId.equals(DataType.ConceptMeta.RELATION_TYPE.getId())) {
@@ -234,7 +237,7 @@ class InsertQueryExecutor {
         } else if (type.isRelationType()) {
             return putInstance(id, type.asRelationType(), transaction::putRelation, transaction::addRelation);
         } else if (type.isResourceType()) {
-            return putInstance(id, type.asResourceType(), transaction::putResource, transaction::addResource);
+            return transaction.putResource(getValue(var), type.asResourceType());
         } else if (type.isRuleType()) {
             String lhs = var.getLhs().get();
             String rhs = var.getRhs().get();
@@ -315,11 +318,7 @@ class InsertQueryExecutor {
         relation.putRolePlayer(roleType, roleplayer);
     }
 
-    /**
-     * Set the values specified in the Var, on the concept represented by the given Var
-     * @param var the Var containing values to set on the concept
-     */
-    private void setValue(VarAdmin var) {
+    private Object getValue(VarAdmin var) {
         Iterator<?> values = var.getValueEqualsPredicates().iterator();
 
         if (values.hasNext()) {
@@ -329,23 +328,9 @@ class InsertQueryExecutor {
                 throw new IllegalStateException(ErrorMessage.INSERT_MULTIPLE_VALUES.getMessage(value, values.next()));
             }
 
-            Concept concept = getConcept(var);
-
-            if (concept.isType()) {
-                concept.asType().setValue((String) value);
-            } else if (concept.isEntity()) {
-                concept.asEntity().setValue((String) value);
-            } else if (concept.isRelation()) {
-                concept.asRelation().setValue((String) value);
-            } else if (concept.isRule()) {
-                concept.asRule().setValue((String) value);
-            } else if (concept.isResource()) {
-                // If the value we provide is not supported by this resource, core will throw an exception back
-                //noinspection unchecked
-                concept.asResource().setValue(value);
-            } else {
-                throw new RuntimeException("Unrecognized type " + concept.type().getId());
-            }
+            return value;
+        } else {
+            throw new IllegalStateException(ErrorMessage.INSERT_RESOURCE_WITHOUT_VALUE.getMessage());
         }
     }
 
@@ -398,7 +383,7 @@ class InsertQueryExecutor {
      * @param <D> the type of the resource
      */
     private <D> void addResource(Instance instance, ResourceType<D> type, D value) {
-        Resource resource = transaction.addResource(type).setValue(value);
+        Resource resource = transaction.putResource(value, type);
 
         RelationType hasResource = transaction.getRelationType(GraqlType.HAS_RESOURCE.getId(type.getId()));
         RoleType hasResourceTarget = transaction.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(type.getId()));

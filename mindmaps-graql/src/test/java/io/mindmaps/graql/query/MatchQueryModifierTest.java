@@ -79,7 +79,7 @@ public class MatchQueryModifierTest {
                 var().rel("x").rel("y"),
                 or(
                         var("y").isa("person").id("Marlon-Brando"),
-                        var("y").isa("genre").value("crime")
+                        var("y").isa("genre").has("name", "crime")
                 )
         ).orderBy("x", "tmdb-vote-count", false).select("x");
 
@@ -129,7 +129,7 @@ public class MatchQueryModifierTest {
                 var("x").isa("movie"),
                 var().rel("x").rel("y"),
                 or(
-                        var("y").isa("genre").value("crime"),
+                        var("y").isa("genre").has("name", "crime"),
                         var("y").isa("person").id("Marlon-Brando")
                 )
         ).select("x").orderBy("x", false).distinct();
@@ -141,7 +141,7 @@ public class MatchQueryModifierTest {
     public void testNondistinctQuery() {
         MatchQueryDefault query = qb.match(
                 var("x").isa("person"),
-                var("y").value("The Muppets"),
+                var("y").has("title", "The Muppets"),
                 var().rel("x").rel("y")
         ).select("x");
         List<Map<String, Concept>> nondistinctResults = Lists.newArrayList(query);
@@ -154,7 +154,7 @@ public class MatchQueryModifierTest {
     public void testDistinctQuery() {
         MatchQueryDefault query = qb.match(
                 var("x").isa("person"),
-                var("y").value("The Muppets"),
+                var("y").has("title", "The Muppets"),
                 var().rel("x").rel("y")
         ).distinct().select("x");
         List<Map<String, Concept>> distinctResults = Lists.newArrayList(query);
