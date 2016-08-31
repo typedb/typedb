@@ -20,8 +20,6 @@ package io.mindmaps;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import io.mindmaps.api.CommitLogController;
-import io.mindmaps.api.GraphFactoryController;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,8 +29,6 @@ import static java.lang.Thread.sleep;
 public class IntegrationUtils {
 
     private static AtomicBoolean ENGINE_ON = new AtomicBoolean(false);
-    private static GraphFactoryController graphFactoryController;
-    private static CommitLogController commitLogController;
 
     public static void hideLogs() {
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);

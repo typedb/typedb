@@ -18,11 +18,16 @@
 
 package io.mindmaps.graql.internal.shell;
 
-import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.graql.Autocomplete;
+import io.mindmaps.graql.GraqlShell;
 import jline.console.completer.Completer;
+import mjson.Json;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+
+import static io.mindmaps.constants.RESTUtil.RemoteShell.AUTOCOMPLETE_CANDIDATES;
+import static io.mindmaps.constants.RESTUtil.RemoteShell.AUTOCOMPLETE_CURSOR;
 
 /**
  * An autocompleter for Graql.
@@ -30,16 +35,23 @@ import java.util.List;
  */
 public class GraQLCompleter implements Completer {
 
-    private final MindmapsGraph graph;
+    private final GraqlShell shell;
 
-    public GraQLCompleter(MindmapsGraph graph) {
-        this.graph = graph;
+    public GraQLCompleter(GraqlShell shell) {
+        this.shell = shell;
     }
 
     @Override
     public int complete(String buffer, int cursor, List<CharSequence> candidates) {
-        Autocomplete autocomplete = Autocomplete.create(graph.getTransaction(), buffer, cursor);
-        candidates.addAll(autocomplete.getCandidates());
-        return autocomplete.getCursorPosition();
+        Json json = null;
+
+        try {
+            json = shell.getAutocompleteCandidates(buffer, cursor);
+        } catch (InterruptedException | ExecutionException | IOException e) {
+            e.printStackTrace();
+        }
+
+        json.at(AUTOCOMPLETE_CANDIDATES).asJsonList().forEach(candidate -> candidates.add(candidate.asString()));
+        return json.at(AUTOCOMPLETE_CURSOR).asInteger();
     }
 }

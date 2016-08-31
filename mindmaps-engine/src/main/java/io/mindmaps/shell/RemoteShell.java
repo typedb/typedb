@@ -20,10 +20,13 @@ package io.mindmaps.shell;
 
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.core.implementation.exception.InvalidConceptTypeException;
+import io.mindmaps.core.model.Concept;
 import io.mindmaps.factory.GraphFactory;
-import io.mindmaps.graql.QueryParser;
+import io.mindmaps.graql.*;
+import io.mindmaps.graql.internal.parser.ANSI;
+import io.mindmaps.graql.internal.parser.MatchQueryPrinter;
 import mjson.Json;
-import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
@@ -33,14 +36,15 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Stream;
 
 import static io.mindmaps.constants.RESTUtil.RemoteShell.*;
 
 @WebSocket
 public class RemoteShell {
-
-    private final Map<Session, MindmapsGraph> graphs = new HashMap<>();
+    private final Map<Session, GraqlSession> sessions = new HashMap<>();
 
     @OnWebSocketConnect
     public void onConnect(Session session) {
@@ -48,69 +52,147 @@ public class RemoteShell {
 
     @OnWebSocketClose
     public void onClose(Session session, int statusCode, String reason) {
-        graphs.get(session).close();
-        graphs.remove(session);
+        sessions.remove(session).close();
     }
 
     @OnWebSocketMessage
     public void onMessage(Session session, String message) {
-        System.out.println("RECEIVED: " + message);
+        System.out.println("SERVER RECEIVED: " + message);
 
         Json json = Json.read(message);
 
         switch (json.at(ACTION).asString()) {
             case ACTION_NAMESPACE:
-                setNamespace(session, json.at(NAMESPACE).asString());
+                String namespace = json.at(NAMESPACE).asString();
+                GraqlSession graqlSession = new GraqlSession(session, namespace);
+                sessions.put(session, graqlSession);
                 break;
             case ACTION_QUERY:
-                executeQuery(session, json);
+                sessions.get(session).executeQuery(json);
+                break;
+            case ACTION_AUTOCOMPLETE:
+                sessions.get(session).autocomplete(json);
                 break;
         }
     }
+}
 
-    private void setNamespace(Session session, String namespace) {
-        MindmapsGraph graph = GraphFactory.getInstance().getGraph(namespace);
-        graphs.put(session, graph);
+class GraqlSession {
+    private final Session session;
+    private final MindmapsGraph graph;
+    private final ExecutorService queryExecutor = Executors.newSingleThreadExecutor();
+
+    GraqlSession(Session session, String namespace) {
+        this.session = session;
+        graph = GraphFactory.getInstance().getGraph(namespace);
     }
 
-    private void executeQuery(Session session, Json json) {
-        int queryId = json.at(QUERY_ID).asInteger();
-
-        MindmapsTransaction transaction = graphs.get(session).getTransaction();
-        QueryParser parser = QueryParser.create(transaction);
-        String queryString = json.at(QUERY).asString();
-
-        RemoteEndpoint remote = session.getRemote();
-
-        Stream<String> results = parser.parseMatchQuery(queryString).resultsString();
-
-        results.forEach(result -> sendQueryResult(remote, queryId, result));
-        sendQueryEnd(remote, queryId);
+    void close() {
+        queryExecutor.submit(graph::close);
     }
 
-    private void sendQueryResult(RemoteEndpoint remote, int queryId, String result) {
-        Json response = Json.object(
-                ACTION, ACTION_QUERY,
-                QUERY_ID, queryId,
-                QUERY_LINES, Json.array(result)
-        );
+    void executeQuery(Json json) {
+        queryExecutor.submit(() -> {
 
-        try {
-            remote.sendString(response.toString());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            String errorMessage = null;
+
+            try {
+                MindmapsTransaction transaction = graph.getTransaction();
+                QueryParser parser = QueryParser.create(transaction);
+                String queryString = json.at(QUERY).asString();
+
+                Object query = parser.parseQuery(queryString);
+
+                Stream<String> results = Stream.empty();
+
+                if (query instanceof MatchQueryPrinter) {
+                    results = streamMatchQuery((MatchQueryPrinter) query);
+                } else if (query instanceof AskQuery) {
+                    results = streamAskQuery((AskQuery) query);
+                } else if (query instanceof InsertQuery) {
+                    results = streamInsertQuery((InsertQuery) query);
+                } else if (query instanceof DeleteQuery) {
+                    executeDeleteQuery((DeleteQuery) query);
+                } else if (query instanceof Long) {
+                    results = Stream.of(query.toString());
+                } else if (query instanceof Map) {
+                    results = ((Map<?, ?>) query).entrySet().stream().map(entry -> entry.getKey() + "\t" + entry.getValue());
+                }
+
+                results.forEach(this::sendQueryResult);
+            } catch (IllegalArgumentException | IllegalStateException | InvalidConceptTypeException e) {
+                errorMessage = e.getMessage();
+            } catch (Exception e) {
+                errorMessage = "An unexpected error occurred";
+                e.printStackTrace();
+            } finally {
+                if (errorMessage != null) {
+                    sendQueryError(errorMessage);
+                } else {
+                    sendQueryEnd();
+                }
+            }
+        });
+    }
+
+    void autocomplete(Json json) {
+        queryExecutor.submit(() -> {
+            String queryString = json.at(QUERY).asString();
+            int cursor = json.at(AUTOCOMPLETE_CURSOR).asInteger();
+            Autocomplete autocomplete = Autocomplete.create(graph.getTransaction(), queryString, cursor);
+            sendAutocomplete(autocomplete);
+        });
+    }
+
+    private Stream<String> streamMatchQuery(MatchQueryPrinter query) {
+        return query.resultsString();
+    }
+
+    private Stream<String> streamAskQuery(AskQuery query) {
+        if (query.execute()) {
+            return Stream.of(ANSI.color("True", ANSI.GREEN));
+        } else {
+            return Stream.of(ANSI.color("False", ANSI.RED));
         }
     }
 
-    private void sendQueryEnd(RemoteEndpoint remote, int queryId) {
-        Json response = Json.object(
-                ACTION, ACTION_QUERY,
-                QUERY_ID, queryId,
-                QUERY_END, true
-        );
+    private Stream<String> streamInsertQuery(InsertQuery query) {
+        return query.stream().map(Concept::getId);
+    }
 
+    private void executeDeleteQuery(DeleteQuery query) {
+        query.execute();
+    }
+
+    private void sendQueryResult(String result) {
+        sendJson(Json.object(
+                ACTION, ACTION_QUERY,
+                QUERY_LINES, Json.array(result)
+        ));
+    }
+
+    private void sendQueryEnd() {
+        sendJson(Json.object(ACTION, ACTION_QUERY_END));
+    }
+
+    private void sendQueryError(String errorMessage) {
+        sendJson(Json.object(
+                ACTION, ACTION_QUERY_END,
+                ERROR, errorMessage
+        ));
+    }
+
+    private void sendAutocomplete(Autocomplete autocomplete) {
+        sendJson(Json.object(
+                ACTION, ACTION_AUTOCOMPLETE,
+                AUTOCOMPLETE_CANDIDATES, autocomplete.getCandidates(),
+                AUTOCOMPLETE_CURSOR, autocomplete.getCursorPosition()
+        ));
+    }
+
+    private void sendJson(Json json) {
         try {
-            remote.sendString(response.toString());
+            session.getRemote().sendString(json.toString());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

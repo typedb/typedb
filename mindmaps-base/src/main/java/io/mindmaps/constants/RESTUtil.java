@@ -64,12 +64,15 @@ public class RESTUtil {
         public static final String ACTION = "action";
         public static final String ACTION_NAMESPACE = "namespace";
         public static final String ACTION_QUERY = "query";
+        public static final String ACTION_QUERY_END = "queryEnd";
         public static final String ACTION_COMMIT = "query";
+        public static final String ACTION_AUTOCOMPLETE = "autocomplete";
 
         public static final String NAMESPACE = "namespace";
         public static final String QUERY = "query";
-        public static final String QUERY_ID = "id";
-        public static final String QUERY_END = "end";
         public static final String QUERY_LINES = "lines";
+        public static final String AUTOCOMPLETE_CANDIDATES = "candidates";
+        public static final String AUTOCOMPLETE_CURSOR = "cursor";
+        public static final String ERROR = "error";
     }
 }
