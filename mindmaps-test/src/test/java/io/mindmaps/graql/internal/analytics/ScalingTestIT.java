@@ -87,7 +87,7 @@ public class ScalingTestIT {
         // compute the sample of graph sizes
         int MAX_SIZE = 10000;
         int NUM_DIVS = 10;
-        int REPEAT = 2;
+        int REPEAT = 10;
 
         int STEP_SIZE = MAX_SIZE/NUM_DIVS;
         List<Integer> graphSizes = new ArrayList<>();
