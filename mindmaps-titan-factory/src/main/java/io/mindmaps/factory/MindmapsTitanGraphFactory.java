@@ -48,8 +48,8 @@ class MindmapsTitanGraphFactory extends AbstractMindmapsGraphFactory<MindmapsTit
     }
 
     @Override
-    MindmapsTitanGraph buildMindmapsGraphFromTinker(TitanGraph graph, String name, String address) {
-        return new MindmapsTitanGraph(graph, name, address);
+    MindmapsTitanGraph buildMindmapsGraphFromTinker(TitanGraph graph, String name, String address, boolean batchLoading) {
+        return new MindmapsTitanGraph(graph, name, address, batchLoading);
     }
 
     @Override

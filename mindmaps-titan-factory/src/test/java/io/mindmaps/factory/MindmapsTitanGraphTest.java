@@ -39,19 +39,20 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 public class MindmapsTitanGraphTest {
-    private static final String TEST_CONFIG = "../conf/mindmaps-test.properties";
+    private static final String TEST_CONFIG = "../conf/test/mindmaps-test.properties";
     private static final String TEST_NAME = "mindmapstest";
     private static final String TEST_URI = "localhost";
+    private static final boolean TEST_BATCH_LOADING = false;
     private MindmapsGraph mindmapsGraph;
 
     @Before
     public void setup(){
-        mindmapsGraph = new MindmapsTitanGraphFactory().getGraph(TEST_NAME, TEST_URI, TEST_CONFIG);
+        mindmapsGraph = new MindmapsTitanGraphFactory().getGraph(TEST_NAME, TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING);
     }
 
     @After
     public void cleanup(){
-        MindmapsGraph mg = new MindmapsTitanGraphFactory().getGraph(TEST_NAME, TEST_URI, TEST_CONFIG);
+        MindmapsGraph mg = new MindmapsTitanGraphFactory().getGraph(TEST_NAME, TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING);
         mg.clear();
     }
 

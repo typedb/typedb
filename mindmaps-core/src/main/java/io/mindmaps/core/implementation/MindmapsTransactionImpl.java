@@ -44,23 +44,17 @@ public class MindmapsTransactionImpl implements MindmapsTransaction, AutoCloseab
     private final ElementFactory elementFactory;
     private final ConceptLog conceptLog;
     private final AbstractMindmapsGraph mindmapsGraph;
-    private boolean batchLoadingEnabled;
     private Graph transaction;
 
     public MindmapsTransactionImpl(AbstractMindmapsGraph mindmapsGraph) {
         this.mindmapsGraph = mindmapsGraph;
         this.transaction = mindmapsGraph.getGraph();
-        this.batchLoadingEnabled = false;
         conceptLog = new ConceptLog();
         elementFactory = new ElementFactory(this);
     }
 
-    public void setBatchLoadingEnabled(boolean batchLoadingEnabled){
-        this.batchLoadingEnabled = batchLoadingEnabled;
-    }
-
     public boolean isBatchLoadingEnabled(){
-        return batchLoadingEnabled;
+        return mindmapsGraph.isBatchLoadingEnabled();
     }
 
     @SuppressWarnings("unchecked")

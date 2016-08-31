@@ -36,7 +36,10 @@ import static io.mindmaps.constants.RESTUtil.Request.GRAPH_CONFIG_PARAM;
 import static io.mindmaps.constants.RESTUtil.WebPath.GRAPH_FACTORY_URI;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 public class GraphFactoryControllerTest {
     @Before
@@ -75,15 +78,28 @@ public class GraphFactoryControllerTest {
     }
 
     @Test
+    public void testMindmapsClientBatch(){
+        MindmapsGraph batch = MindmapsClient.getGraphBatchLoading("mindmapstest");
+        assertTrue(batch.isBatchLoadingEnabled());
+    }
+
+    @Test
     public void testMindmapsClient(){
         MindmapsGraph graph = MindmapsClient.getGraph("mindmapstest");
         MindmapsGraph graph2 = MindmapsClient.getGraph("mindmapstest2");
         MindmapsGraph graphCopy = MindmapsClient.getGraph("mindmapstest");
         assertNotEquals(0, ((AbstractMindmapsGraph) graph).getGraph().traversal().V().toList().size());
+        assertFalse(graph.isBatchLoadingEnabled());
         assertNotEquals(graph, graph2);
         assertEquals(graph, graphCopy);
         graph.close();
 
         assertThat(MindmapsClient.getGraphComputer(), instanceOf(MindmapsComputerImpl.class));
+
+        MindmapsGraph batch = MindmapsClient.getGraphBatchLoading("mindmapstest");
+        assertTrue(batch.isBatchLoadingEnabled());
+        assertNotEquals(graph, batch);
+
     }
+
 }

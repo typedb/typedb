@@ -43,12 +43,11 @@ public class GraphFactory {
     }
 
     public synchronized MindmapsGraph getGraph(String name) {
-        return titanGraphFactory.getGraph(name, null, graphConfig);
+        return titanGraphFactory.getGraph(name, null, graphConfig, false);
     }
 
     public synchronized MindmapsGraph getGraphBatchLoading(String name) {
-        MindmapsGraph graph = titanGraphFactory.getGraph(name, null, graphBatchConfig);
-        graph.enableBatchLoading();
+        MindmapsGraph graph = titanGraphFactory.getGraph(name, null, graphBatchConfig, true);
         return graph;
     }
 }

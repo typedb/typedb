@@ -535,8 +535,7 @@ public class MindmapsTransactionHighLevelTest {
 
     @Test
     public void testPutRelationSimple(){
-        MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
-        graph.enableBatchLoading();
+        MindmapsGraph graph = MindmapsTestGraphFactory.newBatchLoadingEmptyGraph();
         MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) graph.getTransaction();
 
         EntityType type = transaction.putEntityType("Test");

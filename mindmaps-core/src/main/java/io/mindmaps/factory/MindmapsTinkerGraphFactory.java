@@ -40,8 +40,8 @@ class MindmapsTinkerGraphFactory extends AbstractMindmapsGraphFactory<MindmapsTi
     }
 
     @Override
-    MindmapsTinkerGraph buildMindmapsGraphFromTinker(TinkerGraph graph, String name, String address) {
-        return new MindmapsTinkerGraph(graph, name);
+    MindmapsTinkerGraph buildMindmapsGraphFromTinker(TinkerGraph graph, String name, String address, boolean batchLoading) {
+        return new MindmapsTinkerGraph(graph, name, batchLoading);
     }
 
     @Override
