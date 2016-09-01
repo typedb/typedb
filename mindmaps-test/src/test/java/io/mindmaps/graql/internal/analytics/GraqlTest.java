@@ -32,7 +32,7 @@ import static org.junit.Assert.assertTrue;
 
 public class GraqlTest {
 
-    String TEST_KEYSPACE = Analytics.keySpace;
+    String TEST_KEYSPACE = "mindmaps-test";
     MindmapsGraph graph;
     MindmapsTransaction transaction;
     private QueryParser qp;
@@ -87,7 +87,7 @@ public class GraqlTest {
     public void testGraqlCount() throws MindmapsValidationException, InterruptedException {
 
         // assert the graph is empty
-        Analytics computer = new Analytics();
+        Analytics computer = new Analytics(TEST_KEYSPACE);
         assertEquals(0, computer.count());
 
         // create 3 instances

@@ -46,7 +46,7 @@ import static io.mindmaps.constants.DataType.ConceptPropertyUnique.ITEM_IDENTIFI
 
 public class Analytics {
 
-    public static final String keySpace = "mindmaps";
+    public final String keySpace;
     public static final String TYPE = DataType.ConceptMeta.TYPE.getId();
 
     public static final String degree = "degree";
@@ -71,10 +71,11 @@ public class Analytics {
     /**
      * Create a graph computer from a Mindmaps Graph. The computer operates on all instances in the graph.
      */
-    public Analytics() {
-        graph = MindmapsClient.getGraph(keySpace);
+    public Analytics(String keySpace) {
+        this.keySpace = keySpace;
+        graph = MindmapsClient.getGraph(this.keySpace);
         MindmapsTransaction transaction = graph.getTransaction();
-        computer = MindmapsClient.getGraphComputer(keySpace);
+        computer = MindmapsClient.getGraphComputer(this.keySpace);
 
         // collect meta-types to exclude them as they do not have instances
         Set<Concept> excludedTypes = new HashSet<>();
@@ -109,10 +110,11 @@ public class Analytics {
      *
      * @param types the set of types the computer will use to filter instances
      */
-    public Analytics(Set<Type> types) {
-        graph = MindmapsClient.getGraph(keySpace);
+    public Analytics(String keySpace, Set<Type> types) {
+        this.keySpace = keySpace;
+        graph = MindmapsClient.getGraph(this.keySpace);
         MindmapsTransaction transaction = graph.getTransaction();
-        computer = MindmapsClient.getGraphComputer(keySpace);
+        computer = MindmapsClient.getGraphComputer(this.keySpace);
 
         // use ako relations to add subtypes of the provided types
         for (Type t : types) {
@@ -156,7 +158,7 @@ public class Analytics {
      */
     private void degreesAndPersist(String resourceType) {
         insertOntology(resourceType, Data.LONG);
-        computer.compute(new DegreeAndPersistVertexProgram(allTypes));
+        computer.compute(new DegreeAndPersistVertexProgram(keySpace, allTypes));
     }
 
     public void degreesAndPersist() throws ExecutionException, InterruptedException {

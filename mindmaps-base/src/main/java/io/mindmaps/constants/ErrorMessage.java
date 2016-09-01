@@ -116,6 +116,8 @@ public enum ErrorMessage {
 
     FAILED_TO_BUILD_TRAVERSAL("failed to build a traversal from the graql query"),
 
+    NO_ANALYTICS_METHOD("No compute method exists with the name [%s]"),
+
     //--------------------------------------------- Engine Errors -----------------------------------------------
     NO_CONFIG_FILE("Cannot find config file [%s]"),
     ILLEGAL_ARGUMENT_EXCEPTION("Illegal argument exception caused by [%s]"),

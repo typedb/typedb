@@ -50,7 +50,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class AnalyticsTest {
 
-    String TEST_KEYSPACE = Analytics.keySpace;
+    String TEST_KEYSPACE = "mindmaps-test";
     MindmapsGraph graph;
     MindmapsTransaction transaction;
 
@@ -121,7 +121,7 @@ public class AnalyticsTest {
         ct.add(animal);
         ct.add(mansBestFriend);
 
-        Analytics analytics = new Analytics(ct);
+        Analytics analytics = new Analytics(TEST_KEYSPACE,ct);
         analytics.degreesAndPersist();
 
         // check that dog has a degree to confirm ako has been inferred
@@ -136,7 +136,7 @@ public class AnalyticsTest {
         // assert the graph is empty
         System.out.println();
         System.out.println("Counting");
-        Analytics computer = new Analytics();
+        Analytics computer = new Analytics(TEST_KEYSPACE);
         startTime = System.currentTimeMillis();
         Assert.assertEquals(0, computer.count());
         System.out.println();
@@ -156,7 +156,7 @@ public class AnalyticsTest {
         System.out.println();
         System.out.println("Counting");
         startTime = System.currentTimeMillis();
-        computer = new Analytics();
+        computer = new Analytics(TEST_KEYSPACE);
         Assert.assertEquals(3, computer.count());
         System.out.println();
         System.out.println(System.currentTimeMillis() - startTime + " ms");
@@ -164,7 +164,7 @@ public class AnalyticsTest {
         System.out.println();
         System.out.println("Counting");
         startTime = System.currentTimeMillis();
-        computer = new Analytics(Collections.singleton(transaction.getType("thing")));
+        computer = new Analytics(TEST_KEYSPACE,Collections.singleton(transaction.getType("thing")));
         Assert.assertEquals(2, computer.count());
         System.out.println();
         System.out.println(System.currentTimeMillis() - startTime + " ms");
@@ -204,7 +204,7 @@ public class AnalyticsTest {
         correctDegrees.put(transaction.getRelation(id3), 2l);
 
         // compute degrees
-        Analytics computer = new Analytics();
+        Analytics computer = new Analytics(TEST_KEYSPACE);
         Map<Instance, Long> degrees = computer.degrees();
 
         assertTrue(!degrees.isEmpty());
@@ -226,7 +226,7 @@ public class AnalyticsTest {
         });
 
         // compute degrees on subgraph
-        computer = new Analytics(Sets.newHashSet(thing, related));
+        computer = new Analytics(TEST_KEYSPACE,Sets.newHashSet(thing, related));
         degrees = computer.degrees();
 
         correctDegrees.put(transaction.getRelation(id3), 1l);
@@ -286,7 +286,7 @@ public class AnalyticsTest {
         correctDegrees.put(transaction.getRelation(id3), 1l);
 
         // compute degrees on subgraph
-        Analytics computer = new Analytics(Sets.newHashSet(thing, related));
+        Analytics computer = new Analytics(TEST_KEYSPACE,Sets.newHashSet(thing, related));
         computer.degreesAndPersist();
 
         // assert persisted degrees are correct
@@ -331,7 +331,7 @@ public class AnalyticsTest {
 
         // compute degrees on all types, again and again ...
         for (int i = 0; i < 3; i++) {
-            computer = new Analytics();
+            computer = new Analytics(TEST_KEYSPACE);
             computer.degreesAndPersist();
 
             correctDegrees.put(entity4, 1l);
@@ -422,7 +422,7 @@ public class AnalyticsTest {
         subGraphTypes.add(person);
         subGraphTypes.add(mansBestFriend);
 
-        Analytics analytics = new Analytics(subGraphTypes);
+        Analytics analytics = new Analytics(TEST_KEYSPACE,subGraphTypes);
         Map<Instance, Long> degrees = analytics.degrees();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> {
@@ -437,7 +437,7 @@ public class AnalyticsTest {
         almostFullTypes.add(hasName);
         almostFullTypes.add(name);
 
-        analytics = new Analytics(almostFullTypes);
+        analytics = new Analytics(TEST_KEYSPACE,almostFullTypes);
         degrees = analytics.degrees();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> {
@@ -445,7 +445,7 @@ public class AnalyticsTest {
         });
 
         // full graph
-        analytics = new Analytics();
+        analytics = new Analytics(TEST_KEYSPACE);
         degrees = analytics.degrees();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> {
@@ -479,7 +479,7 @@ public class AnalyticsTest {
         transaction.commit();
 
         // compute and persist degrees
-        Analytics analytics = new Analytics();
+        Analytics analytics = new Analytics(TEST_KEYSPACE);
         analytics.degreesAndPersist();
 
         // check degrees are correct
@@ -585,7 +585,7 @@ public class AnalyticsTest {
         ct.add(animal);
 
         // compute and persist degrees
-        Analytics analytics = new Analytics(ct);
+        Analytics analytics = new Analytics(TEST_KEYSPACE,ct);
         analytics.degreesAndPersist();
         ResourceType<Long> degreeResource = transaction.getResourceType(Analytics.degree);
 
@@ -677,7 +677,7 @@ public class AnalyticsTest {
         ct.add(mansBestFriend);
         ct.add(startDate);
         ct.add(hasOwnershipResource);
-        Analytics analytics = new Analytics(ct);
+        Analytics analytics = new Analytics(TEST_KEYSPACE,ct);
         Map<Instance, Long> degrees = analytics.degrees();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> {
@@ -689,7 +689,7 @@ public class AnalyticsTest {
         ct.add(animal);
         ct.add(person);
         ct.add(mansBestFriend);
-        analytics = new Analytics(ct);
+        analytics = new Analytics(TEST_KEYSPACE,ct);
         degrees = analytics.degrees();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> {
@@ -726,7 +726,7 @@ public class AnalyticsTest {
 
         transaction.commit();
 
-        Analytics analytics = new Analytics();
+        Analytics analytics = new Analytics(TEST_KEYSPACE);
         Map<Instance, Long> degrees = analytics.degrees();
         assertTrue(degrees.get(transaction.getRelation(relationId)).equals(3L));
         assertTrue(degrees.get(transaction.getEntity(marlonId)).equals(1L));
@@ -760,7 +760,7 @@ public class AnalyticsTest {
         // validate
         transaction.commit();
 
-        Analytics analytics = new Analytics();
+        Analytics analytics = new Analytics(TEST_KEYSPACE);
         Map<Instance, Long> degrees = analytics.degrees();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> {
@@ -794,7 +794,7 @@ public class AnalyticsTest {
         // validate
         transaction.commit();
 
-        Analytics analytics = new Analytics();
+        Analytics analytics = new Analytics(TEST_KEYSPACE);
         Map<Instance, Long> degrees = analytics.degrees();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> {
@@ -843,7 +843,7 @@ public class AnalyticsTest {
         ct.add(mansBestFriend);
         ct.add(person);
         ct.add(cat);
-        Analytics analytics = new Analytics(ct);
+        Analytics analytics = new Analytics(TEST_KEYSPACE,ct);
         Map<Instance, Long> degrees = analytics.degrees();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> {
@@ -871,15 +871,15 @@ public class AnalyticsTest {
         transaction.commit();
 
         // count and persist
-        Analytics analytics = new Analytics();
+        Analytics analytics = new Analytics(TEST_KEYSPACE);
         assertEquals(3L, analytics.count());
         analytics.degreesAndPersist();
 
-        analytics = new Analytics();
+        analytics = new Analytics(TEST_KEYSPACE);
         assertEquals(3L, analytics.count());
         analytics.degreesAndPersist();
 
-        analytics = new Analytics();
+        analytics = new Analytics(TEST_KEYSPACE);
         assertEquals(3L, analytics.count());
         analytics.degreesAndPersist();
     }

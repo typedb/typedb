@@ -56,6 +56,8 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
 
     private static final String TRAVERSAL_SUPPLIER = "analytics.degreeAndPersistVertexProgram.traversalSupplier";
 
+    private static final String KEYSPACE = "analytics.degreeAndPersistVertexProgram.keySpace";
+
     private ConfigurationTraversal<Vertex, Edge> configurationTraversal;
 
     private final HashSet<String> baseTypes = Sets.newHashSet(
@@ -64,10 +66,13 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
 
     private Set<String> selectedTypes = null;
 
+    private String keySpace;
+
     public DegreeAndPersistVertexProgram() {
     }
 
-    public DegreeAndPersistVertexProgram(Set<Type> types) {
+    public DegreeAndPersistVertexProgram(String keySpace, Set<Type> types) {
+        this.keySpace = keySpace;
         selectedTypes = types.stream().map(Type::getId).collect(Collectors.toSet());
     }
 
@@ -75,6 +80,7 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
     public void loadState(final Graph graph, final Configuration configuration) {
         this.selectedTypes = new HashSet<>();
         configuration.getKeys(TYPE).forEachRemaining(key -> selectedTypes.add(configuration.getString(key)));
+        keySpace = configuration.getKeys(KEYSPACE).next();
     }
 
     @Override
@@ -86,6 +92,7 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
             configuration.addProperty(TYPE + "." + count, iterator.next());
             count++;
         }
+        configuration.setProperty(KEYSPACE,keySpace);
     }
 
     @Override
@@ -179,7 +186,6 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
 
     @Override
     public void workerIterationStart(Memory memory) {
-        //TODO: wait for Filipe to provide a method in core so we don't specify keySpace
-        mindmapsGraph = MindmapsClient.getGraph(Analytics.keySpace);
+        mindmapsGraph = MindmapsClient.getGraph(keySpace);
     }
 }

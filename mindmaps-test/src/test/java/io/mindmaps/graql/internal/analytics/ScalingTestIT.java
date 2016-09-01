@@ -39,7 +39,7 @@ public class ScalingTestIT {
     private static final String[] HOST_NAME =
             {"localhost"};
 
-    String TEST_KEYSPACE = Analytics.keySpace;
+    String TEST_KEYSPACE = "mindmaps-test";
     MindmapsGraph graph;
     MindmapsTransaction transaction;
 
@@ -122,7 +122,7 @@ public class ScalingTestIT {
             previousGraphSize = graphSize;
             writer.println("stop generate graph " + System.currentTimeMillis()/1000L + "s");
 
-            Analytics computer = new Analytics();
+            Analytics computer = new Analytics(TEST_KEYSPACE);
 
             Long countTime = 0L;
             Long degreeTime = 0L;

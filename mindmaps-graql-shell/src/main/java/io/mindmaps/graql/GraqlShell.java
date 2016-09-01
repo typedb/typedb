@@ -46,6 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
+import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -302,19 +303,22 @@ public class GraqlShell implements AutoCloseable {
             } else if (query instanceof DeleteQuery) {
                 ((DeleteQuery) query).execute();
                 reasoner.linkConceptTypes();
-            } else if (query instanceof Long) {
-                // Count query
-                print(query.toString()+"\n");
-            } else if (query instanceof Map) {
-                // Degree query
-                //noinspection unchecked
-                ((Map<Instance, Long>) query).forEach((instance, degree) -> print(instance.getId() + "\t" + degree+"\n"));
-            } else if (query == null) {
-                print("Degrees have been persisted.\n");
+            } else if (query instanceof ComputeQuery) {
+                Object result = ((ComputeQuery) query).execute(graph);
+                if (result instanceof Long) {
+                    // Count query
+                    print(result.toString() + "\n");
+                } else if (result instanceof Map) {
+                    // Degree query
+                    ((Map<Instance, Long>) result).forEach((instance, degree) -> print(instance.getId() + "\t" + degree + "\n"));
+                } else if (result == null) {
+                    // Persist query
+                    print(result + "\n");
+                }
             } else {
                 throw new RuntimeException("Unrecognized query " + query);
             }
-        } catch (IllegalArgumentException | IllegalStateException | InvalidConceptTypeException e) {
+        } catch (IllegalArgumentException | IllegalStateException | InvalidConceptTypeException | InterruptedException | ExecutionException e) {
             err.println(e.getMessage());
         }
     }
