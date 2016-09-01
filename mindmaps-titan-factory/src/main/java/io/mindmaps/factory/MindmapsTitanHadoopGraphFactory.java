@@ -20,12 +20,19 @@ package io.mindmaps.factory;
 
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.implementation.AbstractMindmapsGraph;
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+
 public class MindmapsTitanHadoopGraphFactory extends AbstractMindmapsGraphFactory<AbstractMindmapsGraph<HadoopGraph>, HadoopGraph> {
+    private static final String CLUSTER_KEYSPACE = "titanmr.ioformat.conf.storage.cassandra.keyspace";
+    private static final String INPUT_KEYSPACE = "cassandra.input.keyspace";
     private final Logger LOG = LoggerFactory.getLogger(MindmapsTitanHadoopGraphFactory.class);
 
     @Override
@@ -40,7 +47,18 @@ public class MindmapsTitanHadoopGraphFactory extends AbstractMindmapsGraphFactor
 
     @Override
     HadoopGraph buildTinkerPopGraph(String name, String address, String pathToConfig) {
-        LOG.warn("Hadoop graph ignores parameters name [" + name + "] and address [" + address + "]");
-        return (HadoopGraph) GraphFactory.open(pathToConfig);
+        LOG.warn("Hadoop graph ignores parameter address [" + address + "]");
+        return (HadoopGraph) GraphFactory.open(buildConfig(name, pathToConfig));
+    }
+
+    private static Configuration buildConfig(String name, String pathToConfig){
+        try {
+            PropertiesConfiguration properties = new PropertiesConfiguration(new File(pathToConfig));
+            properties.setProperty(CLUSTER_KEYSPACE, name);
+            properties.setProperty(INPUT_KEYSPACE, name);
+            return properties;
+        } catch (ConfigurationException e) {
+            throw new IllegalArgumentException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(pathToConfig), e);
+        }
     }
 }

@@ -78,7 +78,7 @@ public class Analytics {
     public Analytics() {
         graph = MindmapsClient.getGraph(keySpace);
         transaction = graph.getTransaction();
-        computer = MindmapsClient.getGraphComputer();
+        computer = MindmapsClient.getGraphComputer(keySpace);
 
         // collect meta-types to exclude them as they do not have instances
         Set<Concept> excludedTypes = new HashSet<>();
@@ -116,7 +116,7 @@ public class Analytics {
     public Analytics(Set<Type> types) {
         graph = MindmapsClient.getGraph(keySpace);
         transaction = graph.getTransaction();
-        computer = MindmapsClient.getGraphComputer();
+        computer = MindmapsClient.getGraphComputer(keySpace);
 
         // use ako relations to add subtypes of the provided types
         for (Type t : types) {
