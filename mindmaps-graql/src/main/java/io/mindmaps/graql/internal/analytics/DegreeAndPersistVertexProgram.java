@@ -54,11 +54,15 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
 
     public static final String DEGREE = "analytics.degreeAndPersistVertexProgram.degree";
 
+    public static final String OLD_ASSERTION_ID = "analytics.degreeAndPersistVertexProgram.oldAssertionId";
+
     private static final String TRAVERSAL_SUPPLIER = "analytics.degreeAndPersistVertexProgram.traversalSupplier";
 
     private static final String KEYSPACE = "analytics.degreeAndPersistVertexProgram.keySpace";
 
     private ConfigurationTraversal<Vertex, Edge> configurationTraversal;
+
+    private static final Set<String> COMPUTE_KEYS = Collections.singleton(OLD_ASSERTION_ID);
 
     private final HashSet<String> baseTypes = Sets.newHashSet(
             DataType.BaseType.ENTITY.name(),
@@ -102,12 +106,12 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
 
     @Override
     public GraphComputer.Persist getPreferredPersist() {
-        return GraphComputer.Persist.NOTHING;
+        return GraphComputer.Persist.VERTEX_PROPERTIES;
     }
 
     @Override
     public Set<String> getElementComputeKeys() {
-        return Collections.emptySet();
+        return COMPUTE_KEYS;
     }
 
     @Override
@@ -167,10 +171,20 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
                     if (baseTypes.contains(vertex.label()) ||
                             vertex.label().equals(DataType.BaseType.RELATION.name())) {
                         long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
-                        Analytics.persistResource(mindmapsGraph, vertex, Analytics.degree, edgeCount);
+                        String oldAssertionId = Analytics.persistResource(mindmapsGraph, vertex, Analytics.degree, edgeCount);
+                        if (oldAssertionId != null) {
+                            vertex.property(OLD_ASSERTION_ID, oldAssertionId);
+                        }
                     }
                 }
                 break;
+//            case 3:
+////                Graph graph = mindmapsGraph.getTransaction().getTinkerTraversal().V().
+//                if (vertex.keys().contains(OLD_ASSERTION_ID)) {
+//                    long oldDegree = vertex.value(OLD_ASSERTION_ID);
+//                    deleteOldResourceAssertion(mindmapsGraph, vertex, Analytics.degree, oldDegree);
+//                }
+//                break;
         }
     }
 
@@ -185,6 +199,7 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
     }
 
     @Override
+
     public void workerIterationStart(Memory memory) {
         mindmapsGraph = MindmapsClient.getGraph(keySpace);
     }
