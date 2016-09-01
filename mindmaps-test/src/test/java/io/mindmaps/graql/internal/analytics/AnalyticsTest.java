@@ -88,8 +88,6 @@ public class AnalyticsTest {
 
     @Before
     public void setUp() throws InterruptedException {
-//        System.out.println();
-//        System.out.println("Clearing the graph");
         graph = MindmapsClient.getGraph(TEST_KEYSPACE);
         graph.clear();
         graph = MindmapsClient.getGraph(TEST_KEYSPACE);
@@ -542,7 +540,6 @@ public class AnalyticsTest {
         assertTrue(CollectionUtils.isEqualCollection(currentDegrees.values(),referenceDegrees.values()));
     }
 
-    @Ignore
     @Test
     public void testDegreeIsPersistedInPresenceOfOtherResource() throws MindmapsValidationException, ExecutionException, InterruptedException {
         // create a simple graph
@@ -579,7 +576,6 @@ public class AnalyticsTest {
         // validate
         transaction.commit();
 
-        ResourceType<Long> degreeResource = transaction.getResourceType(Analytics.degree);
         mansBestFriend = transaction.getRelationType("mans-best-friend");
         person = transaction.getEntityType("person");
         animal = transaction.getEntityType("animal");
@@ -591,6 +587,7 @@ public class AnalyticsTest {
         // compute and persist degrees
         Analytics analytics = new Analytics(ct);
         analytics.degreesAndPersist();
+        ResourceType<Long> degreeResource = transaction.getResourceType(Analytics.degree);
 
         // check degrees are correct
         boolean isSeen = false;

@@ -47,7 +47,7 @@ import static io.mindmaps.constants.DataType.ConceptPropertyUnique.ITEM_IDENTIFI
 public class Analytics {
 
     public static final String keySpace = "mindmaps";
-    public static final String TYPE = "type";
+    public static final String TYPE = DataType.ConceptMeta.TYPE.getId();
 
     public static final String degree = "degree";
     private static Set<String> analyticsElements =
