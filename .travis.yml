@@ -9,4 +9,5 @@ cache:
 notifications:
   slack: mindmapsdb:3M1bWW0kGQ7LdniMmKeaY3o5
 after_success:
+    - ./send_webhook.sh   # explicitly update github before running coveralls
     - mvn clean test jacoco:report coveralls:report -q
