@@ -16,73 +16,46 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
+import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.GraqlClient;
 import io.mindmaps.graql.GraqlShell;
-import mjson.Json;
-import org.eclipse.jetty.websocket.api.Session;
+import io.mindmaps.shell.RemoteShell;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 class GraqlClientMock implements GraqlClient {
 
-    private Optional<GraqlShell> shell = Optional.empty();
-    private Optional<URI> uri = Optional.empty();
-    private final SessionMock session = new SessionMock();
-    private boolean sessionProvided = false;
-    private boolean closed = false;
-    private Optional<String> namespace = Optional.empty();
+    private RemoteShell server = new RemoteShell(namespace -> {
+        this.namespace = namespace;
+        return MindmapsTestGraphFactory.newEmptyGraph();
+    });
 
-    Optional<String> getNamespace() {
+    private String namespace = null;
+
+    String getNamespace() {
         return namespace;
     }
 
-    boolean isClosed() {
-        return closed;
+    URI getURI() {
+        return null;
     }
 
     @Override
-    public void connect(GraqlShell shell, URI uri) {
-        assert !closed;
-        assert !sessionProvided;
-        assert !this.shell.isPresent();
-        assert !this.uri.isPresent();
-        assert !this.namespace.isPresent();
+    public void connect(Object websocket, URI uri) {
+        GraqlShell client = (GraqlShell) websocket;
 
-        this.shell = Optional.of(shell);
-        this.uri = Optional.of(uri);
+        SessionMock serverSession = new SessionMock(client::onMessage);
+        server.onConnect(serverSession);
 
+        SessionMock clientSession = new SessionMock(serverSession, server::onMessage);
         try {
-            shell.onConnect(session);
+            client.onConnect(clientSession);
         } catch (IOException | InterruptedException | ExecutionException e) {
             fail();
         }
-    }
-
-    @Override
-    public void setSession(Session session, String namespace) throws IOException {
-        assert !closed;
-        assert !sessionProvided;
-        assert !this.namespace.isPresent();
-        assertEquals(session, this.session);
-
-        sessionProvided = true;
-        this.namespace = Optional.of(namespace);
-    }
-
-    @Override
-    public void close() throws ExecutionException, InterruptedException {
-        assert !closed;
-        closed = true;
-    }
-
-    @Override
-    public void sendJson(Json json) throws IOException, ExecutionException, InterruptedException {
-        assert !closed;
     }
 }

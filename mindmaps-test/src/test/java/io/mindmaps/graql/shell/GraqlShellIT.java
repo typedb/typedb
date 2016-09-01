@@ -18,20 +18,15 @@
 
 package io.mindmaps.graql.shell;
 
-import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.GraqlClientImpl;
 import io.mindmaps.graql.GraqlShell;
-import org.junit.Before;
-import org.junit.Ignore;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.*;
 import java.util.Arrays;
 import java.util.Random;
-import java.util.function.Function;
 
-import static io.mindmaps.IntegrationUtils.hideLogs;
 import static io.mindmaps.IntegrationUtils.startTestEngine;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -39,20 +34,13 @@ import static org.junit.Assert.*;
 
 public class GraqlShellIT {
 
-    private Function<String, MindmapsGraph> graphFactory;
-
-    private String providedNamespace;
     private String expectedVersion = "graql-9.9.9";
 
-    @Before
-    public void setUp() throws Exception {
-        hideLogs();
-        startTestEngine();
+    private char namespaceCounter = 'A';
 
-        graphFactory = namespace -> {
-            providedNamespace = namespace;
-            return MindmapsTestGraphFactory.newEmptyGraph();
-        };
+    @BeforeClass
+    public static void setUpClass() throws Exception {
+        startTestEngine();
     }
 
     @Test
@@ -79,18 +67,6 @@ public class GraqlShellIT {
     public void testVersionOption() throws IOException {
         String result = testShell("", "--version");
         assertThat(result, containsString(expectedVersion));
-    }
-
-    @Test
-    public void testDefaultNamespace() throws IOException {
-        testShell("");
-        assertEquals("mindmaps", providedNamespace);
-    }
-
-    @Test
-    public void testSpecifiedNamespace() throws IOException {
-        testShell("", "-n", "myspace");
-        assertEquals("myspace", providedNamespace);
     }
 
     @Test
@@ -206,7 +182,6 @@ public class GraqlShellIT {
         assertThat(err.toString(), allOf(containsString("moon"), containsString("not"), containsString("type")));
     }
 
-    @Ignore
     @Test
     public void testComputeCount() throws IOException {
         String result = testShell("insert X isa entity-type; a isa X; b isa X; c isa X;\ncommit\ncompute count()\n");
@@ -235,17 +210,44 @@ public class GraqlShellIT {
         return testShell(input, err, args);
     }
 
-    private String testShell(String input, ByteArrayOutputStream err, String... args) throws IOException {
+    private String testShell(String input, ByteArrayOutputStream berr, String... args) throws IOException {
+
+        // Use a random namespace every time for a fresh graph
+        String namespace = Character.toString(namespaceCounter);
+        namespaceCounter += 1;
+
+        String[] newArgs = Arrays.copyOf(args, args.length + 2);
+        newArgs[newArgs.length-2] = "-n";
+        newArgs[newArgs.length-1] = namespace;
+
         InputStream in = new ByteArrayInputStream(input.getBytes());
 
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
-        PrintStream pout = new PrintStream(bout);
-        PrintStream perr = new PrintStream(err);
+        PrintStream out = new PrintStream(bout);
+        PrintStream err = new PrintStream(berr);
 
-        GraqlShell.runShell(args, expectedVersion, in, pout, perr, new GraqlClientImpl());
+        InputStream trueIn = System.in;
+        PrintStream trueOut = System.out;
+        PrintStream trueErr = System.err;
+        System.setIn(in);
+        System.setOut(out);
+        System.setErr(err);
 
-        pout.flush();
-        perr.flush();
+        try {
+            GraqlShell.runShell(newArgs, expectedVersion, new GraqlClientImpl());
+        } catch (Exception e) {
+            System.setErr(trueErr);
+            e.printStackTrace();
+            err.flush();
+            fail(berr.toString());
+        }
+
+        System.setIn(trueIn);
+        System.setOut(trueOut);
+        System.setErr(trueErr);
+
+        out.flush();
+        err.flush();
 
         return bout.toString();
     }

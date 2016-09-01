@@ -18,20 +18,9 @@
 
 package io.mindmaps.graql;
 
-import mjson.Json;
-import org.eclipse.jetty.websocket.api.Session;
-
-import java.io.IOException;
 import java.net.URI;
-import java.util.concurrent.ExecutionException;
 
+@FunctionalInterface
 public interface GraqlClient {
-
-    void connect(GraqlShell shell, URI uri);
-
-    void setSession(Session session, String namespace) throws IOException;
-
-    void close() throws ExecutionException, InterruptedException;
-
-    void sendJson(Json json) throws IOException, ExecutionException, InterruptedException;
+    void connect(Object websocket, URI uri);
 }

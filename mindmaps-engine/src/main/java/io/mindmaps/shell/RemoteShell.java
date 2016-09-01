@@ -21,6 +21,7 @@ package io.mindmaps.shell;
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.InvalidConceptTypeException;
+import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.*;
@@ -38,6 +39,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static io.mindmaps.constants.RESTUtil.RemoteShell.*;
@@ -45,6 +47,17 @@ import static io.mindmaps.constants.RESTUtil.RemoteShell.*;
 @WebSocket
 public class RemoteShell {
     private final Map<Session, GraqlSession> sessions = new HashMap<>();
+    private final Function<String, MindmapsGraph> getGraph;
+
+    // This constructor is magically invoked by spark's websocket stuff
+    @SuppressWarnings("unused")
+    public RemoteShell() {
+        this(GraphFactory.getInstance()::getGraph);
+    }
+
+    public RemoteShell(Function<String, MindmapsGraph> getGraph) {
+        this.getGraph = getGraph;
+    }
 
     @OnWebSocketConnect
     public void onConnect(Session session) {
@@ -57,22 +70,29 @@ public class RemoteShell {
 
     @OnWebSocketMessage
     public void onMessage(Session session, String message) {
-        System.out.println("SERVER RECEIVED: " + message);
+        try {
+            Json json = Json.read(message);
 
-        Json json = Json.read(message);
-
-        switch (json.at(ACTION).asString()) {
-            case ACTION_NAMESPACE:
-                String namespace = json.at(NAMESPACE).asString();
-                GraqlSession graqlSession = new GraqlSession(session, namespace);
-                sessions.put(session, graqlSession);
-                break;
-            case ACTION_QUERY:
-                sessions.get(session).executeQuery(json);
-                break;
-            case ACTION_AUTOCOMPLETE:
-                sessions.get(session).autocomplete(json);
-                break;
+            switch (json.at(ACTION).asString()) {
+                case ACTION_NAMESPACE:
+                    String namespace = json.at(NAMESPACE).asString();
+                    MindmapsGraph graph = getGraph.apply(namespace);
+                    GraqlSession graqlSession = new GraqlSession(session, graph);
+                    sessions.put(session, graqlSession);
+                    break;
+                case ACTION_QUERY:
+                    sessions.get(session).executeQuery(json);
+                    break;
+                case ACTION_COMMIT:
+                    sessions.get(session).commit();
+                    break;
+                case ACTION_AUTOCOMPLETE:
+                    sessions.get(session).autocomplete(json);
+                    break;
+            }
+        } catch (Throwable e) {
+            e.printStackTrace();
+            throw e;
         }
     }
 }
@@ -80,11 +100,13 @@ public class RemoteShell {
 class GraqlSession {
     private final Session session;
     private final MindmapsGraph graph;
+    private final Reasoner reasoner;
     private final ExecutorService queryExecutor = Executors.newSingleThreadExecutor();
 
-    GraqlSession(Session session, String namespace) {
+    GraqlSession(Session session, MindmapsGraph graph) {
         this.session = session;
-        graph = GraphFactory.getInstance().getGraph(namespace);
+        this.graph = graph;
+        reasoner = new Reasoner(graph.getTransaction());
     }
 
     void close() {
@@ -111,8 +133,10 @@ class GraqlSession {
                     results = streamAskQuery((AskQuery) query);
                 } else if (query instanceof InsertQuery) {
                     results = streamInsertQuery((InsertQuery) query);
+                    reasoner.linkConceptTypes();
                 } else if (query instanceof DeleteQuery) {
                     executeDeleteQuery((DeleteQuery) query);
+                    reasoner.linkConceptTypes();
                 } else if (query instanceof Long) {
                     results = Stream.of(query.toString());
                 } else if (query instanceof Map) {
@@ -122,7 +146,7 @@ class GraqlSession {
                 results.forEach(this::sendQueryResult);
             } catch (IllegalArgumentException | IllegalStateException | InvalidConceptTypeException e) {
                 errorMessage = e.getMessage();
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 errorMessage = "An unexpected error occurred";
                 e.printStackTrace();
             } finally {
@@ -131,6 +155,16 @@ class GraqlSession {
                 } else {
                     sendQueryEnd();
                 }
+            }
+        });
+    }
+
+    void commit() {
+        queryExecutor.submit(() -> {
+            try {
+                graph.getTransaction().commit();
+            } catch (MindmapsValidationException e) {
+                sendCommitError(e.getMessage());
             }
         });
     }
@@ -145,6 +179,8 @@ class GraqlSession {
     }
 
     private Stream<String> streamMatchQuery(MatchQueryPrinter query) {
+        // Expand match query with reasoner
+        query.setMatchQuery(reasoner.expand(query.getMatchQuery()));
         return query.resultsString();
     }
 
@@ -178,6 +214,13 @@ class GraqlSession {
     private void sendQueryError(String errorMessage) {
         sendJson(Json.object(
                 ACTION, ACTION_QUERY_END,
+                ERROR, errorMessage
+        ));
+    }
+
+    private void sendCommitError(String errorMessage) {
+        sendJson(Json.object(
+                ACTION, ACTION_COMMIT,
                 ERROR, errorMessage
         ));
     }

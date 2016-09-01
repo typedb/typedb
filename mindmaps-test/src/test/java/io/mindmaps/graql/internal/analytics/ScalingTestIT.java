@@ -28,7 +28,6 @@ import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-import static io.mindmaps.IntegrationUtils.hideLogs;
 import static io.mindmaps.IntegrationUtils.startTestEngine;
 import static io.mindmaps.graql.Graql.all;
 import static io.mindmaps.graql.Graql.var;
@@ -52,7 +51,6 @@ public class ScalingTestIT {
 
     @BeforeClass
     public static void startController() throws Exception {
-        hideLogs();
         startTestEngine();
     }
 

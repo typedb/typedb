@@ -30,15 +30,17 @@ public class IntegrationUtils {
 
     private static AtomicBoolean ENGINE_ON = new AtomicBoolean(false);
 
-    public static void hideLogs() {
+    private static void hideLogs() {
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.OFF);
     }
 
     public static void startTestEngine() throws Exception {
         if (ENGINE_ON.compareAndSet(false, true)) {
+            hideLogs();
             EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra-embedded.yaml");
             MindmapsEngineServer.start();
+            hideLogs();
             sleep(5000);
         }
     }

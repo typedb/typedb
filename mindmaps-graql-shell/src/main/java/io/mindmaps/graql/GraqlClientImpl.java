@@ -18,23 +18,15 @@
 
 package io.mindmaps.graql;
 
-import mjson.Json;
-import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-
-import static io.mindmaps.constants.RESTUtil.RemoteShell.*;
 
 public class GraqlClientImpl implements GraqlClient {
 
-    private final CompletableFuture<Session> session = new CompletableFuture<>();
-
     @Override
-    public void connect(GraqlShell shell, URI uri) {
+    public void connect(Object websocket, URI uri) {
         WebSocketClient client = new WebSocketClient();
 
         try {
@@ -43,29 +35,9 @@ public class GraqlClientImpl implements GraqlClient {
             e.printStackTrace();
         }
         try {
-            client.connect(shell, uri);
+            client.connect(websocket, uri);
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    @Override
-    public void setSession(Session session, String namespace) throws IOException {
-        sendJson(Json.object(ACTION, ACTION_NAMESPACE, NAMESPACE, namespace), session);
-        this.session.complete(session);
-    }
-
-    @Override
-    public void close() throws ExecutionException, InterruptedException {
-        session.get().close();
-    }
-
-    @Override
-    public void sendJson(Json json) throws IOException, ExecutionException, InterruptedException {
-        session.get().getRemote().sendString(json.toString());
-    }
-
-    private void sendJson(Json json, Session session) throws IOException {
-        session.getRemote().sendString(json.toString());
     }
 }

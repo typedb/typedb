@@ -86,10 +86,10 @@ public class GraqlShell implements AutoCloseable {
     private static final String DEFAULT_EDITOR = "vim";
 
     private final File tempFile = new File(System.getProperty("java.io.tmpdir") + TEMP_FILENAME);
+    private final String namespace;
     private ConsoleReader console;
-    private PrintStream err;
 
-    private final GraqlClient client;
+    private CompletableFuture<Session> session = new CompletableFuture<>();
     private CompletableFuture<Json> autocompleteResponse = new CompletableFuture<>();
 
     /**
@@ -97,12 +97,10 @@ public class GraqlShell implements AutoCloseable {
      * @param args arguments to the Graql shell. Possible arguments can be listed by running {@code graql.sh --help}
      */
     public static void main(String[] args) {
-        runShell(args, Version.VERSION, System.in, System.out, System.err, new GraqlClientImpl());
+        runShell(args, Version.VERSION, new GraqlClientImpl());
     }
 
-    public static void runShell(
-            String[] args, String version, InputStream in, PrintStream out, PrintStream err, GraqlClient client
-    ) {
+    public static void runShell(String[] args, String version, GraqlClient client) {
         Options options = new Options();
         options.addOption("n", "name", true, "name of the graph");
         options.addOption("e", "execute", true, "query to execute");
@@ -117,7 +115,7 @@ public class GraqlShell implements AutoCloseable {
         try {
             cmd = parser.parse(options, args);
         } catch (ParseException e) {
-            err.println(e.getMessage());
+            System.err.println(e.getMessage());
             return;
         }
 
@@ -127,7 +125,7 @@ public class GraqlShell implements AutoCloseable {
         // Print usage message if requested or if invalid arguments provided
         if (cmd.hasOption("h") || !cmd.getArgList().isEmpty()) {
             HelpFormatter helpFormatter = new HelpFormatter();
-            PrintWriter printWriter = new PrintWriter(out);
+            PrintWriter printWriter = new PrintWriter(System.out);
             int width = helpFormatter.getWidth();
             int leftPadding = helpFormatter.getLeftPadding();
             int descPadding = helpFormatter.getDescPadding();
@@ -137,13 +135,15 @@ public class GraqlShell implements AutoCloseable {
         }
 
         if (cmd.hasOption("v")) {
-            out.println(version);
+            System.out.println(version);
             return;
         }
 
         String namespace = cmd.getOptionValue("n", DEFAULT_NAMESPACE);
 
-        try(GraqlShell shell = new GraqlShell(in, out, err, client)) {
+        try(GraqlShell shell = new GraqlShell(namespace)) {
+            client.connect(shell, new URI("ws://localhost:4567" + REMOTE_SHELL_URI));
+
             if (filePath != null) {
                 query = loadQuery(filePath);
             }
@@ -154,8 +154,8 @@ public class GraqlShell implements AutoCloseable {
             } else {
                 shell.executeRepl();
             }
-        } catch (ExecutionException | InterruptedException | IOException e) {
-            err.println(e.toString());
+        } catch (IOException | InterruptedException | ExecutionException | URISyntaxException e) {
+            System.err.println(e.toString());
         }
     }
 
@@ -167,21 +167,15 @@ public class GraqlShell implements AutoCloseable {
     /**
      * Create a new Graql shell
      */
-    GraqlShell(InputStream in, OutputStream out, PrintStream err, GraqlClient client) throws IOException {
-        this.client = client;
-        console = new ConsoleReader(in, out);
-        this.err = err;
-        try {
-            client.connect(this, new URI("ws://localhost:4567" + REMOTE_SHELL_URI));
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
+    GraqlShell(String namespace) throws IOException {
+        this.namespace = namespace;
+        console = new ConsoleReader(System.in, System.out);
     }
 
     @Override
     public void close() throws IOException, ExecutionException, InterruptedException {
         console.flush();
-        client.close();
+        session.get().close();
     }
 
     /**
@@ -242,7 +236,7 @@ public class GraqlShell implements AutoCloseable {
                         try {
                             queryString = loadQuery(path);
                         } catch (IOException e) {
-                            err.println(e.toString());
+                            System.err.println(e.toString());
                             break;
                         }
                     }
@@ -273,20 +267,22 @@ public class GraqlShell implements AutoCloseable {
 
     @OnWebSocketConnect
     public void onConnect(Session session) throws IOException, ExecutionException, InterruptedException {
-        System.out.println("CONNECTED CLIENT");
-        client.setSession(session, "HIYA");
+        sendJson(Json.object(ACTION, ACTION_NAMESPACE, NAMESPACE, namespace), session);
+        this.session.complete(session);
     }
 
     @OnWebSocketClose
     public void onClose(int statusCode, String reason) {
-        System.out.println("CLOSED CLIENT: " + reason);
+        System.err.println(reason);
     }
 
     @OnWebSocketMessage
     public void onMessage(String msg) {
-        System.out.println("CLIENT RECEIVED: " + msg);
-
         Json json = Json.read(msg);
+
+        if (json.has(ERROR)) {
+            System.err.println(json.at(ERROR));
+        }
 
         switch (json.at(ACTION).asString()) {
             case ACTION_QUERY:
@@ -294,11 +290,6 @@ public class GraqlShell implements AutoCloseable {
                 lines.forEach(line -> println(line.asString()));
                 break;
             case ACTION_QUERY_END:
-
-                if (json.has(ERROR)) {
-                    err.println(json.at(ERROR));
-                }
-
                 synchronized (this) {
                     notifyAll();
                 }
@@ -311,7 +302,7 @@ public class GraqlShell implements AutoCloseable {
 
     private void executeQuery(String queryString, boolean setLimit) {
         try {
-            client.sendJson(Json.object(
+            sendJson(Json.object(
                     ACTION, ACTION_QUERY,
                     QUERY, queryString
             ));
@@ -350,7 +341,7 @@ public class GraqlShell implements AutoCloseable {
 
     private void commit() {
         try {
-            client.sendJson(Json.object(ACTION, ACTION_COMMIT));
+            sendJson(Json.object(ACTION, ACTION_COMMIT));
         } catch (IOException | InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
@@ -385,7 +376,7 @@ public class GraqlShell implements AutoCloseable {
     public synchronized Json getAutocompleteCandidates(
             String queryString, int cursorPosition
     ) throws InterruptedException, ExecutionException, IOException {
-        client.sendJson(Json.object(
+        sendJson(Json.object(
                 ACTION, ACTION_AUTOCOMPLETE,
                 QUERY, queryString,
                 AUTOCOMPLETE_CURSOR, cursorPosition
@@ -396,6 +387,14 @@ public class GraqlShell implements AutoCloseable {
         autocompleteResponse = new CompletableFuture<>();
 
         return json;
+    }
+
+    private void sendJson(Json json) throws IOException, ExecutionException, InterruptedException {
+        sendJson(json, session.get());
+    }
+
+    private void sendJson(Json json, Session session) throws IOException {
+        session.getRemote().sendString(json.toString());
     }
 
     private void print(String string) {

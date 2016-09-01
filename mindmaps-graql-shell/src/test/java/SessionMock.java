@@ -20,8 +20,23 @@ import org.eclipse.jetty.websocket.api.*;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.util.concurrent.Future;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 public class SessionMock implements Session {
+
+    private final Consumer<String> onMessage;
+
+    public SessionMock(Consumer<String> onMessage) {
+        this.onMessage = onMessage;
+    }
+
+    public SessionMock(Session other, BiConsumer<Session, String> onMessage) {
+        this.onMessage = string -> onMessage.accept(other, string);
+    }
+
     @Override
     public void close() {
 
@@ -64,7 +79,73 @@ public class SessionMock implements Session {
 
     @Override
     public RemoteEndpoint getRemote() {
-        return null;
+        return new RemoteEndpoint() {
+            @Override
+            public void sendBytes(ByteBuffer byteBuffer) throws IOException {
+
+            }
+
+            @Override
+            public Future<Void> sendBytesByFuture(ByteBuffer byteBuffer) {
+                return null;
+            }
+
+            @Override
+            public void sendBytes(ByteBuffer byteBuffer, WriteCallback writeCallback) {
+
+            }
+
+            @Override
+            public void sendPartialBytes(ByteBuffer byteBuffer, boolean b) throws IOException {
+
+            }
+
+            @Override
+            public void sendPartialString(String s, boolean b) throws IOException {
+
+            }
+
+            @Override
+            public void sendPing(ByteBuffer byteBuffer) throws IOException {
+
+            }
+
+            @Override
+            public void sendPong(ByteBuffer byteBuffer) throws IOException {
+
+            }
+
+            @Override
+            public void sendString(String s) throws IOException {
+                sendStringByFuture(s);
+            }
+
+            @Override
+            public Future<Void> sendStringByFuture(String s) {
+                onMessage.accept(s);
+                return null;
+            }
+
+            @Override
+            public void sendString(String s, WriteCallback writeCallback) {
+
+            }
+
+            @Override
+            public BatchMode getBatchMode() {
+                return null;
+            }
+
+            @Override
+            public void setBatchMode(BatchMode batchMode) {
+
+            }
+
+            @Override
+            public void flush() throws IOException {
+
+            }
+        };
     }
 
     @Override

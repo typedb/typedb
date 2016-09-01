@@ -65,7 +65,7 @@ public class RESTUtil {
         public static final String ACTION_NAMESPACE = "namespace";
         public static final String ACTION_QUERY = "query";
         public static final String ACTION_QUERY_END = "queryEnd";
-        public static final String ACTION_COMMIT = "query";
+        public static final String ACTION_COMMIT = "commit";
         public static final String ACTION_AUTOCOMPLETE = "autocomplete";
 
         public static final String NAMESPACE = "namespace";

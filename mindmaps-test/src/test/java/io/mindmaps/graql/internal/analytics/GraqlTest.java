@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
-import static io.mindmaps.IntegrationUtils.hideLogs;
 import static io.mindmaps.IntegrationUtils.startTestEngine;
 import static io.mindmaps.graql.Graql.*;
 import static org.junit.Assert.*;
@@ -47,7 +46,6 @@ public class GraqlTest {
 
     @BeforeClass
     public static void startController() throws Exception {
-        hideLogs();
         startTestEngine();
     }
 

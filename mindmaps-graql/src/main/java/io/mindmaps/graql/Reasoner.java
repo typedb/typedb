@@ -21,6 +21,10 @@ package io.mindmaps.graql;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.core.model.Concept;
+import io.mindmaps.core.model.RoleType;
+import io.mindmaps.core.model.Rule;
+import io.mindmaps.core.model.Type;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.*;
@@ -33,7 +37,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static io.mindmaps.graql.internal.reasoner.Utility.*;
 
@@ -584,7 +587,7 @@ public class Reasoner {
         Set<Map<String, Concept>> subAnswers = new HashSet<>();
         int dAns;
         int iter = 0;
-        
+
         do {
             Set<Query> subGoals = new HashSet<>();
             Map<String, Type> varMap = atom.getParentQuery().getVarTypeMap();

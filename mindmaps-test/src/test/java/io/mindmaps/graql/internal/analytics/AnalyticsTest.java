@@ -32,7 +32,6 @@ import org.junit.*;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-import static io.mindmaps.IntegrationUtils.hideLogs;
 import static io.mindmaps.IntegrationUtils.startTestEngine;
 import static org.junit.Assert.*;
 
@@ -57,7 +56,6 @@ public class AnalyticsTest {
 
     @BeforeClass
     public static void startController() throws Exception {
-        hideLogs();
         startTestEngine();
     }
 
