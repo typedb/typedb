@@ -25,20 +25,6 @@ import java.util.Collection;
  */
 public interface Rule extends Instance{
     //------------------------------------- Modifiers ----------------------------------
-    /**
-     *
-     * @param lhs A string representing the left hand side GraQL query.
-     * @return The Rule itself
-     */
-    Rule setLHS(String lhs);
-
-    /**
-     *
-     * @param rhs A string representing the right hand side GraQL query.
-     * @return The Rule itself
-     */
-    Rule setRHS(String rhs);
-
     //TODO: Fill out details on this method
     /**
      *

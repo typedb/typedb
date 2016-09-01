@@ -229,7 +229,7 @@ public class InstanceTest {
         Entity entity = mindmapsGraph.addEntity(entityType);
         Resource resource = mindmapsGraph.addResource(resourceType);
         Relation relation = mindmapsGraph.addRelation(relationType);
-        Rule rule = mindmapsGraph.addRule(ruleType);
+        Rule rule = mindmapsGraph.addRule("lhs", "rhs", ruleType);
 
         assertTrue(entity.getId().startsWith(DataType.BaseType.ENTITY.name() + "-" + entity.type().getId() + "-"));
         assertTrue(resource.getId().startsWith(DataType.BaseType.RESOURCE.name() + "-" + resource.type().getId() + "-"));

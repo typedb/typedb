@@ -424,8 +424,8 @@ public class MindmapsTransactionLowLevelTest {
         assertNull(mindmapsGraph.getRuleBySubject("Bob"));
         assertNull(mindmapsGraph.getRule("Bob"));
         RuleType type = mindmapsGraph.putRuleType("Type");
-        RuleImpl c1 = (RuleImpl) mindmapsGraph.putRule("Bob1", type).setSubject("Bob").setValue("1");
-        RuleImpl c2 = (RuleImpl) mindmapsGraph.putRule("Bob", type).setValue("1");
+        RuleImpl c1 = (RuleImpl) mindmapsGraph.putRule("Bob1", "lhs", "rhs", type).setSubject("Bob").setValue("1");
+        RuleImpl c2 = (RuleImpl) mindmapsGraph.putRule("Bob", "lhs", "rhs", type).setValue("1");
         assertEquals(c1, mindmapsGraph.getRuleBySubject("Bob"));
         assertEquals(c2, mindmapsGraph.getRule("Bob"));
         assertEquals(2, mindmapsGraph.getRulesByValue("1").size());

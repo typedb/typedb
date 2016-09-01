@@ -19,6 +19,8 @@
 package io.mindmaps.core.implementation;
 
 import io.mindmaps.constants.DataType;
+import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.core.implementation.exception.InvalidConceptValueException;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.core.model.Rule;
 import io.mindmaps.core.model.RuleType;
@@ -31,29 +33,30 @@ import java.util.HashSet;
  * A rule represents an instance of a Rule Type which is used to make inferences over the data instances.
  */
 class RuleImpl extends InstanceImpl<Rule, RuleType, String> implements Rule {
-    RuleImpl(Vertex v, MindmapsTransactionImpl mindmapsGraph) {
+    RuleImpl(Vertex v, MindmapsTransactionImpl mindmapsGraph, String lhs, String rhs) {
         super(v, mindmapsGraph);
+        setRule(DataType.ConceptProperty.RULE_LHS, lhs);
+        setRule(DataType.ConceptProperty.RULE_RHS, rhs);
     }
 
     /**
      *
-     * @param lhs A string representing the left hand side GraQL query.
-     * @return The Rule itself
-     */@Override
-    public Rule setLHS(String lhs) {
-        setProperty(DataType.ConceptProperty.RULE_LHS, lhs);
-        return getThis();
-    }
-
-    /**
-     *
-     * @param rhs A string representing the right hand side GraQL query.
-     * @return The Rule itself
+     * @param rule The rule to mutate
+     * @param value The value of either the lhs or rhs set
      */
-    @Override
-    public Rule setRHS(String rhs) {
-        setProperty(DataType.ConceptProperty.RULE_RHS, rhs);
-        return getThis();
+    private void setRule(DataType.ConceptProperty rule, String value){
+        if(value == null){
+            throw new InvalidConceptValueException(ErrorMessage.NULL_VALUE.getMessage(rule.name()));
+        }
+
+        if(getProperty(rule) != null){
+            String foundRuleValue = (String) getProperty(rule);
+            if(!foundRuleValue.equals(value)){
+                throw new InvalidConceptValueException(ErrorMessage.IMMUTABLE_VALUE.getMessage(foundRuleValue, this, value, rule.name()));
+            }
+        } else {
+            setProperty(rule, value);
+        }
     }
 
     //TODO: Fill out details on this method

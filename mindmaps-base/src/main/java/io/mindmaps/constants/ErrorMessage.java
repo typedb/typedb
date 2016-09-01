@@ -46,6 +46,8 @@ public enum ErrorMessage {
     NOT_SUPPORTED("Not supported with a ['%s'] backend"),
     CLOSED("The ['%s'] has been permanently closed"),
     TRANSACTIONS_NOT_SUPPORTED("The graph backend [%s] does not actually support transactions. The graph was not committed or refreshed."),
+    IMMUTABLE_VALUE("The value [%s] of concept [%s] cannot be changed to [%s] due to the property [%s] being immutable"),
+    NULL_VALUE("The value of [%s] cannot be set to [null]"),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),

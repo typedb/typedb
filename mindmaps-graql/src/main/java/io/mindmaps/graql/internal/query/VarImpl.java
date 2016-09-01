@@ -111,6 +111,8 @@ public class VarImpl implements VarAdmin {
             var.getAko().ifPresent(this::ako);
 
             var.getId().ifPresent(this::id);
+            var.getLhs().ifPresent(this::lhs);
+            var.getRhs().ifPresent(this::rhs);
             values.addAll(var.getValuePredicates());
 
             hasRole.addAll(var.getHasRoles());

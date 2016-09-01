@@ -107,10 +107,15 @@ final class ElementFactory {
     }
 
     public RuleImpl buildRule(Vertex v){
-        return  new RuleImpl(v, mindmapsTransaction);
+        return buildRule(v, v.value(DataType.ConceptProperty.RULE_LHS.name()), v.value(DataType.ConceptProperty.RULE_RHS.name()));
     }
-    public RuleImpl buildRule(Concept c){
-        return  buildRule(((ConceptImpl) c).getVertex());
+    public RuleImpl buildRule(Vertex v, String lhs, String rhs){
+        return  new RuleImpl(v, mindmapsTransaction, lhs, rhs);
+    }
+    public RuleImpl buildRule(ConceptImpl c){
+        return  buildRule(c.getVertex(),
+                c.getProperty(DataType.ConceptProperty.RULE_LHS).toString(),
+                c.getProperty(DataType.ConceptProperty.RULE_RHS).toString());
     }
 
 

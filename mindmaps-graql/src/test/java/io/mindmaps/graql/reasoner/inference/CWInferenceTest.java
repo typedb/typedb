@@ -20,7 +20,6 @@ package io.mindmaps.graql.reasoner.inference;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsTransaction;
-import io.mindmaps.core.model.Rule;
 import io.mindmaps.core.model.RuleType;
 import io.mindmaps.graql.MatchQueryDefault;
 import io.mindmaps.graql.QueryParser;
@@ -173,15 +172,12 @@ public class CWInferenceTest {
     @Test
     public void testGraphCase() {
         RuleType inferenceRule = graph.getRuleType("inference-rule");
-        Rule R6 = graph.putRule("R6", inferenceRule);
 
         graph.putEntityType("region").setValue("region");
 
         String R6_LHS = "match $x isa region";
         String R6_RHS = "match $x isa country";
-
-        R6.setLHS(R6_LHS);
-        R6.setRHS(R6_RHS);
+        graph.putRule("R6", R6_LHS, R6_RHS, inferenceRule);
 
         reasoner.linkConceptTypes();
         String queryString = "match $x isa criminal;";

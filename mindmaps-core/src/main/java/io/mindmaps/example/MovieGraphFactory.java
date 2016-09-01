@@ -253,12 +253,12 @@ public class MovieGraphFactory {
         // These rules are totally made up for testing purposes and don't work!
         RuleType aRuleType = mindmapsTransaction.putRuleType("a-rule-type");
 
-        mindmapsTransaction.putRule("expectation-rule", aRuleType)
-                .setLHS("expect-lhs").setRHS("expect-rhs").setExpectation(true)
+        mindmapsTransaction.putRule("expectation-rule", "expect-lhs", "expect-rhs", aRuleType)
+                .setExpectation(true)
                 .addConclusion(movie).addHypothesis(person);
 
-        mindmapsTransaction.putRule("materialize-rule", aRuleType)
-                .setLHS("materialize-lhs").setRHS("materialize-rhs").setMaterialise(true)
+        mindmapsTransaction.putRule("materialize-rule", "materialize-lhs", "materialize-rhs", aRuleType)
+                .setMaterialise(true)
                 .addConclusion(person).addConclusion(genre).addHypothesis(hasCast);
     }
 

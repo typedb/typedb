@@ -102,9 +102,6 @@ class InsertQueryExecutor {
 
         setValue(var);
 
-        var.getLhs().ifPresent(lhs -> concept.asRule().setLHS(lhs));
-        var.getRhs().ifPresent(rhs -> concept.asRule().setRHS(rhs));
-
         var.getHasRoles().forEach(role -> concept.asRelationType().hasRole(getConcept(role).asRoleType()));
         var.getPlaysRoles().forEach(role -> concept.asType().playsRole(getConcept(role).asRoleType()));
         var.getScopes().forEach(scope -> concept.asRelation().scope(getConcept(scope).asInstance()));
@@ -239,7 +236,14 @@ class InsertQueryExecutor {
         } else if (type.isResourceType()) {
             return putInstance(id, type.asResourceType(), transaction::putResource, transaction::addResource);
         } else if (type.isRuleType()) {
-            return putInstance(id, type.asRuleType(), transaction::putRule, transaction::addRule);
+            String lhs = var.getLhs().get();
+            String rhs = var.getRhs().get();
+
+            return putInstance(
+                    id, type.asRuleType(),
+                    (ruleId, ruleType) -> transaction.putRule(ruleId, lhs, rhs, ruleType),
+                    ruleType -> transaction.addRule(lhs, rhs, ruleType)
+            );
         } else {
             throw new RuntimeException("Unrecognized type " + type.getId());
         }
