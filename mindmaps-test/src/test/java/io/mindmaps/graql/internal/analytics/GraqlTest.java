@@ -9,6 +9,7 @@ import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsClient;
+import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.QueryParser;
 import org.apache.cassandra.exceptions.ConfigurationException;
@@ -21,6 +22,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 
 import static io.mindmaps.graql.Graql.or;
 import static io.mindmaps.graql.Graql.var;
@@ -32,7 +34,7 @@ import static org.junit.Assert.assertTrue;
 
 public class GraqlTest {
 
-    String TEST_KEYSPACE = Analytics.keySpace;
+    String TEST_KEYSPACE = "mindmapstest";
     MindmapsGraph graph;
     MindmapsTransaction transaction;
     private QueryParser qp;
@@ -84,10 +86,10 @@ public class GraqlTest {
     }
 
     @Test
-    public void testGraqlCount() throws MindmapsValidationException, InterruptedException {
+    public void testGraqlCount() throws MindmapsValidationException, InterruptedException, ExecutionException {
 
         // assert the graph is empty
-        Analytics computer = new Analytics();
+        Analytics computer = new Analytics(TEST_KEYSPACE);
         assertEquals(0, computer.count());
 
         // create 3 instances
@@ -102,7 +104,7 @@ public class GraqlTest {
                 or(var("y").isa("entity-type"), var("y").isa("resource-type"), var("y").isa("relation-type"))
         ).stream().count();
 
-        long computeCount = (long) qp.parseQuery("compute count()");
+        long computeCount = ((Long) ((ComputeQuery) qp.parseQuery("compute count()")).execute(graph));
 
         assertEquals(graqlCount, computeCount);
         assertEquals(3L, computeCount);
@@ -132,7 +134,7 @@ public class GraqlTest {
         transaction.commit();
 
         // compute degrees
-        Map<Instance, Long> degrees = (Map<Instance, Long>) qp.parseQuery("compute degrees()");
+        Map<Instance, Long> degrees = ((Map) ((ComputeQuery) qp.parseQuery("compute degrees()")).execute(graph));
 
         // assert degrees are correct
         instantiateSimpleConcepts();
@@ -191,7 +193,7 @@ public class GraqlTest {
         transaction.commit();
 
         // compute degrees
-        qp.parseQuery("compute degreesAndPersist()");
+        ((ComputeQuery) qp.parseQuery("compute degreesAndPersist()")).execute(graph);
 
         // assert persisted degrees are correct
         instantiateSimpleConcepts();

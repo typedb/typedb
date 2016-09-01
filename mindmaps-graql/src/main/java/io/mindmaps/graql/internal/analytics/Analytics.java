@@ -22,6 +22,7 @@ import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsComputer;
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.constants.DataType;
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.Data;
 import io.mindmaps.core.MindmapsGraph;
 
@@ -45,8 +46,8 @@ import static io.mindmaps.constants.DataType.ConceptPropertyUnique.ITEM_IDENTIFI
 
 public class Analytics {
 
-    public static final String keySpace = "mindmapsanalyticstest";
-    public static final String TYPE = "type";
+    public final String keySpace;
+    public static final String TYPE = DataType.ConceptMeta.TYPE.getId();
 
     public static final String degree = "degree";
     private static Set<String> analyticsElements =
@@ -56,11 +57,6 @@ public class Analytics {
      * A reference to the Mindmaps Graph that this subgraph belongs to.
      */
     private final MindmapsGraph graph;
-
-    /**
-     * The current transaction in use.
-     */
-    private final MindmapsTransaction transaction;
 
     /**
      * The graph computer.
@@ -75,10 +71,11 @@ public class Analytics {
     /**
      * Create a graph computer from a Mindmaps Graph. The computer operates on all instances in the graph.
      */
-    public Analytics() {
-        graph = MindmapsClient.getGraph(keySpace);
-        transaction = graph.getTransaction();
-        computer = MindmapsClient.getGraphComputer(keySpace);
+    public Analytics(String keySpace) {
+        this.keySpace = keySpace;
+        graph = MindmapsClient.getGraph(this.keySpace);
+        MindmapsTransaction transaction = graph.getTransaction();
+        computer = MindmapsClient.getGraphComputer(this.keySpace);
 
         // collect meta-types to exclude them as they do not have instances
         Set<Concept> excludedTypes = new HashSet<>();
@@ -113,10 +110,11 @@ public class Analytics {
      *
      * @param types the set of types the computer will use to filter instances
      */
-    public Analytics(Set<Type> types) {
-        graph = MindmapsClient.getGraph(keySpace);
-        transaction = graph.getTransaction();
-        computer = MindmapsClient.getGraphComputer(keySpace);
+    public Analytics(String keySpace, Set<Type> types) {
+        this.keySpace = keySpace;
+        graph = MindmapsClient.getGraph(this.keySpace);
+        MindmapsTransaction transaction = graph.getTransaction();
+        computer = MindmapsClient.getGraphComputer(this.keySpace);
 
         // use ako relations to add subtypes of the provided types
         for (Type t : types) {
@@ -145,7 +143,7 @@ public class Analytics {
         ComputerResult result = computer.compute(new DegreeVertexProgram(allTypes));
         result.graph().traversal().V().forEachRemaining(v -> {
             if (v.keys().contains(DegreeVertexProgram.DEGREE)) {
-                Instance instance = transaction.getInstance(v.value(ITEM_IDENTIFIER.name()));
+                Instance instance = graph.getTransaction().getInstance(v.value(ITEM_IDENTIFIER.name()));
                 allDegrees.put(instance, v.value(DegreeVertexProgram.DEGREE));
             }
         });
@@ -160,18 +158,19 @@ public class Analytics {
      */
     private void degreesAndPersist(String resourceType) {
         insertOntology(resourceType, Data.LONG);
-        computer.compute(new DegreeAndPersistVertexProgram(allTypes));
+        computer.compute(new DegreeAndPersistVertexProgram(keySpace, allTypes));
     }
 
     public void degreesAndPersist() throws ExecutionException, InterruptedException {
         degreesAndPersist(degree);
     }
 
-    private void insertOntology(String resourceName, Data resourceDataType) {
-        ResourceType resource = transaction.putResourceType(resourceName, resourceDataType);
-        RoleType degreeOwner = transaction.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceName));
-        RoleType degreeValue = transaction.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceName));
-        transaction.putRelationType(GraqlType.HAS_RESOURCE.getId(resourceName))
+    private void insertOntology(String resourceTypeId, Data resourceDataType) {
+        MindmapsTransaction transaction = graph.getTransaction();
+        ResourceType resource = transaction.putResourceType(resourceTypeId, resourceDataType);
+        RoleType degreeOwner = transaction.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
+        RoleType degreeValue = transaction.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
+        transaction.putRelationType(GraqlType.HAS_RESOURCE.getId(resourceTypeId))
                 .hasRole(degreeOwner)
                 .hasRole(degreeValue);
 
@@ -183,19 +182,19 @@ public class Analytics {
         try {
             transaction.commit();
         } catch (MindmapsValidationException e) {
-            e.printStackTrace();
+            throw new RuntimeException(ErrorMessage.ONTOLOGY_MUTATION.getMessage(e.getMessage()),e);
         }
 
         //TODO: need a proper way to store this information
-        addAnalyticsElements(resourceName);
+        addAnalyticsElements(resourceTypeId);
     }
 
-    private static void addAnalyticsElements(String resourceName) {
+    private static void addAnalyticsElements(String resourceTypeId) {
         if (analyticsElements == null) {
             analyticsElements = new HashSet<>();
         }
-        analyticsElements.add(resourceName);
-        analyticsElements.add(GraqlType.HAS_RESOURCE.getId(resourceName));
+        analyticsElements.add(resourceTypeId);
+        analyticsElements.add(GraqlType.HAS_RESOURCE.getId(resourceTypeId));
     }
 
     public static boolean isAnalyticsElement(Vertex vertex) {
@@ -203,13 +202,13 @@ public class Analytics {
     }
 
     public static void persistResource(MindmapsGraph mindmapsGraph, Vertex vertex,
-                                       String resourceName, long value) {
+                                       String resourceTypeId, long value) {
         MindmapsTransaction transaction = mindmapsGraph.getTransaction();
 
-        ResourceType<Long> resourceType = transaction.getResourceType(resourceName);
-        RoleType resourceOwner = transaction.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceName));
-        RoleType resourceValue = transaction.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceName));
-        RelationType relationType = transaction.getRelationType(GraqlType.HAS_RESOURCE.getId(resourceName));
+        ResourceType<Long> resourceType = transaction.getResourceType(resourceTypeId);
+        RoleType resourceOwner = transaction.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
+        RoleType resourceValue = transaction.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
+        RelationType relationType = transaction.getRelationType(GraqlType.HAS_RESOURCE.getId(resourceTypeId));
 
         Instance instance =
                 transaction.getInstance(vertex.value(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name()));
@@ -218,7 +217,7 @@ public class Analytics {
         instance.relations(resourceOwner).stream()
                 .filter(relation -> relation.rolePlayers().size() == 2)
                 .filter(relation ->
-                        relation.rolePlayers().get(resourceValue).type().getId().equals(resourceName))
+                        relation.rolePlayers().get(resourceValue).type().getId().equals(resourceTypeId))
                 .forEach(relation -> {
                     relation.rolePlayers().get(resourceValue).delete();
                     relation.delete();
@@ -232,7 +231,7 @@ public class Analytics {
         try {
             transaction.commit();
         } catch (MindmapsValidationException e) {
-            e.printStackTrace();
+            throw new RuntimeException(ErrorMessage.BULK_PERSIST.getMessage(resourceTypeId,e.getMessage()),e);
         }
     }
 

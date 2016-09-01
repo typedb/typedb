@@ -20,16 +20,15 @@ package io.mindmaps.graql.internal.parser;
 
 import com.google.common.collect.ImmutableMap;
 import io.mindmaps.core.Data;
-import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.graql.*;
 import io.mindmaps.graql.internal.StringConverter;
+import io.mindmaps.graql.internal.query.ComputeQueryImpl;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.*;
 import java.util.function.Function;
-import java.util.concurrent.ExecutionException;
 import java.util.function.UnaryOperator;
 
 import static java.util.stream.Collectors.toList;
@@ -121,23 +120,10 @@ public class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Object visitComputeQuery(GraqlParser.ComputeQueryContext ctx) {
+    public ComputeQuery visitComputeQuery(GraqlParser.ComputeQueryContext ctx) {
         // TODO: Allow registering additional compute methods
-        try {
-            switch (visitId(ctx.id())) {
-                case "count":
-                    return new Analytics().count();
-                case "degrees":
-                    return new Analytics().degrees();
-                case "degreesAndPersist":
-                    new Analytics().degreesAndPersist();
-                    return null;
-                default:
-                    throw new RuntimeException("Unrecognized compute method");
-            }
-        } catch (ExecutionException | InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        ComputeQuery computeQuery = new ComputeQueryImpl(visitId(ctx.id()));
+        return computeQuery;
     }
 
     @Override

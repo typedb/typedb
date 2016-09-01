@@ -20,6 +20,7 @@ package io.mindmaps.graql.internal.analytics;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.constants.DataType;
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.model.Type;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.*;
@@ -112,7 +113,7 @@ public class DegreeVertexProgram implements VertexProgram<Long> {
             final DegreeVertexProgram clone = (DegreeVertexProgram) super.clone();
             return clone;
         } catch (final CloneNotSupportedException e) {
-            throw new IllegalStateException(e.getMessage(), e);
+            throw new IllegalStateException(ErrorMessage.CLONE_FAILED.getMessage(this.getClass().toString(),e.getMessage()),e);
         }
     }
 

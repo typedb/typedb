@@ -118,6 +118,8 @@ public enum ErrorMessage {
 
     FAILED_TO_BUILD_TRAVERSAL("failed to build a traversal from the graql query"),
 
+    NO_ANALYTICS_METHOD("No compute method exists with the name [%s]"),
+
     //--------------------------------------------- Engine Errors -----------------------------------------------
     NO_CONFIG_FILE("Cannot find config file [%s]"),
     ILLEGAL_ARGUMENT_EXCEPTION("Illegal argument exception caused by [%s]"),
@@ -144,7 +146,13 @@ public enum ErrorMessage {
     MULTIPLE_VALUE_PREDICATES("Multiple value predicates found during data extraction in atom %s"),
     NO_VAL_IN_RELATION("Attempted to return value from a relation atom"),
     NO_TYPE_CONSTRAINTS("Attempted to return constraints from non-relation atom"),
-    LOOP_CLAUSE("Unable to find suitable starting atom (loop?)");
+    LOOP_CLAUSE("Unable to find suitable starting atom (loop?)"),
+
+
+    //--------------------------------------------- Analytics Errors -----------------------------------------------
+    ONTOLOGY_MUTATION("The mutations to the ontology have not been successfully committed. Validation Errors: [%s]"),
+    BULK_PERSIST("The bulk persist operation on instances of concept type [%s] has failed with validation error: [%s]"),
+    CLONE_FAILED("The vertex program could not be cloned, check implementation of the clone method in class: [%s]. Stacktrace: [%s]");
 
     private final String message;
 
