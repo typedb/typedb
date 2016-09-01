@@ -25,8 +25,6 @@ import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.Var;
 import io.mindmaps.postprocessing.Cache;
 import io.mindmaps.util.ConfigProperties;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -53,7 +51,7 @@ public class BlockingLoader extends Loader {
     public BlockingLoader(String graphNameInit) {
 
         ConfigProperties prop = ConfigProperties.getInstance();
-        threadsNumber = prop.getPropertyAsInt(ConfigProperties.NUM_THREADS_PROPERTY);
+        threadsNumber = prop.getAvailableThreads();
         batchSize = prop.getPropertyAsInt(ConfigProperties.BATCH_SIZE_PROPERTY);
         repeatCommits = prop.getPropertyAsInt(ConfigProperties.LOADER_REPEAT_COMMITS);
         graphName = graphNameInit;
@@ -83,7 +81,7 @@ public class BlockingLoader extends Loader {
         Collection<Var> deepCopy = new ArrayList<>(vars);
         try {
             executor.submit(() -> loadData(graphName, deepCopy));
-        }catch(Exception e ){
+        } catch (Exception e) {
             e.printStackTrace();
             transactionsSemaphore.release();
         }
@@ -91,7 +89,6 @@ public class BlockingLoader extends Loader {
 
     public void waitToFinish() {
         flush();
-
         try {
             executor.shutdown();
             executor.awaitTermination(5, TimeUnit.MINUTES);
@@ -131,7 +128,7 @@ public class BlockingLoader extends Loader {
                     }
                 }
             }
-        }finally {
+        } finally {
             transactionsSemaphore.release();
         }
         LOG.error(ErrorMessage.FAILED_TRANSACTION.getMessage(repeatCommits));

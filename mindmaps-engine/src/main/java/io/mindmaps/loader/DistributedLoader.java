@@ -69,7 +69,7 @@ public class DistributedLoader extends Loader {
         currentHost = 0;
         pollingFrequency = 30000;
 
-        threadsNumber = prop.getPropertyAsInt(ConfigProperties.NUM_THREADS_PROPERTY) * 3;
+        threadsNumber = prop.getAvailableThreads() * 3;
 
         // create availability map
         availability = new HashMap<>();

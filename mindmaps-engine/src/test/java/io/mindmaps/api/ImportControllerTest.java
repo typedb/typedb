@@ -22,6 +22,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
+import io.mindmaps.postprocessing.BackgroundTasks;
 import io.mindmaps.util.ConfigProperties;
 import org.junit.After;
 import org.junit.Assert;
@@ -50,6 +51,7 @@ public class ImportControllerTest {
         graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
         importer = new ImportController(graphName);
         new CommitLogController();
+        new GraphFactoryController();
 
     }
 

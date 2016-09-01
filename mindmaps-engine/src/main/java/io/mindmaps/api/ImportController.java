@@ -25,6 +25,7 @@ import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.Var;
 import io.mindmaps.loader.BlockingLoader;
+import io.mindmaps.postprocessing.BackgroundTasks;
 import io.mindmaps.util.ConfigProperties;
 import io.swagger.annotations.*;
 import org.json.JSONException;
@@ -132,6 +133,7 @@ public class ImportController {
         loader.waitToFinish();
         QueryParser.create().parsePatternsStream(new FileInputStream(dataFile)).forEach(pattern -> consumeRelation(pattern.admin().asVar()));
         loader.waitToFinish();
+        BackgroundTasks.getInstance().forcePostprocessing();
     }
 
     private void consumeEntity(Var var) {
@@ -173,7 +175,7 @@ public class ImportController {
 
         LOG.info("Loading new ontology .. ");
 
-        QueryParser.create().parsePatternsStream(new FileInputStream(ontologyFile)).map(x->x.admin().asVar()).forEach(ontologyBatch::add);
+        QueryParser.create().parsePatternsStream(new FileInputStream(ontologyFile)).map(x -> x.admin().asVar()).forEach(ontologyBatch::add);
         insert(ontologyBatch).withTransaction(transaction).execute();
         transaction.commit();
 
