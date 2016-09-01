@@ -67,8 +67,6 @@ public class ScalingTestIT {
 
     @Before
     public void setUp() throws InterruptedException {
-        System.out.println();
-        System.out.println("Clearing the graph");
         graph = MindmapsClient.getGraph(TEST_KEYSPACE);
         graph.clear();
         graph = MindmapsClient.getGraph(TEST_KEYSPACE);
@@ -96,7 +94,7 @@ public class ScalingTestIT {
 
         Map<Integer, Long> scaleToAverageTimeCount = new HashMap<>();
         Map<Integer, Long> scaleToAverageTimeDegree = new HashMap<>();
-        Map<Integer, Long> scaleToAverageTimeDegreeAndPersist = new HashMap<>();
+//        Map<Integer, Long> scaleToAverageTimeDegreeAndPersist = new HashMap<>();
 
         int NUM_SUPER_NODES = 10;
 
@@ -128,12 +126,12 @@ public class ScalingTestIT {
 
             Long countTime = 0L;
             Long degreeTime = 0L;
-            Long degreeAndPersistTime = 0L;
+//            Long degreeAndPersistTime = 0L;
             Long startTime = 0L;
             Long stopTime = 0L;
 
             for (int i=0;i<REPEAT;i++) {
-                System.out.println("gremlin count is: "+transaction.getTinkerTraversal().V().count().next());
+                writer.println("gremlin count is: "+transaction.getTinkerTraversal().V().count().next());
                 writer.println("repeat number: "+i);
                 writer.flush();
                 startTime = System.currentTimeMillis();
@@ -141,7 +139,7 @@ public class ScalingTestIT {
                 writer.flush();
                 stopTime = System.currentTimeMillis();
                 countTime+=stopTime-startTime;
-                System.out.println("count time: "+countTime/((i+1)*1000));
+                writer.println("count time: "+countTime/((i+1)*1000));
 
                 writer.println("degree");
                 writer.flush();
@@ -149,7 +147,7 @@ public class ScalingTestIT {
                 computer.degrees();
                 stopTime = System.currentTimeMillis();
                 degreeTime+=stopTime-startTime;
-                System.out.println("degree time: "+degreeTime/((i+1)*1000));
+                writer.println("degree time: "+degreeTime/((i+1)*1000));
 
 //                writer.println("persist degree");
 //                writer.flush();
@@ -162,13 +160,13 @@ public class ScalingTestIT {
 
             countTime /= REPEAT*1000;
             degreeTime /= REPEAT*1000;
-            degreeAndPersistTime /= REPEAT*1000;
-            System.out.println("time to count: "+countTime);
+//            degreeAndPersistTime /= REPEAT*1000;
+            writer.println("time to count: "+countTime);
             scaleToAverageTimeCount.put(graphSize,countTime);
-            System.out.println("time to degrees: "+degreeTime);
+            writer.println("time to degrees: "+degreeTime);
             scaleToAverageTimeDegree.put(graphSize,degreeTime);
-            System.out.println("time to degreesAndPersist: "+degreeAndPersistTime);
-            scaleToAverageTimeDegreeAndPersist.put(graphSize,degreeAndPersistTime);
+//            System.out.println("time to degreesAndPersist: "+degreeAndPersistTime);
+//            scaleToAverageTimeDegreeAndPersist.put(graphSize,degreeAndPersistTime);
         }
 
         writer.println("start clean graph " + System.currentTimeMillis()/1000L + "s");
@@ -176,9 +174,9 @@ public class ScalingTestIT {
         graph.clear();
         writer.println("stop clean graph " + System.currentTimeMillis()/1000L + "s");
 
-        System.out.println("counts: " + scaleToAverageTimeCount);
-        System.out.println("degrees: " + scaleToAverageTimeCount);
-        System.out.println("degreesAndPersist: " + scaleToAverageTimeCount);
+        writer.println("counts: " + scaleToAverageTimeCount);
+        writer.println("degrees: " + scaleToAverageTimeDegree);
+//        System.out.println("degreesAndPersist: " + scaleToAverageTimeDegreeAndPersist);
     }
 
     private void addNodes(Set<String> superNodes, int startRange, int endRange) throws MindmapsValidationException, InterruptedException {

@@ -147,7 +147,8 @@ public enum ErrorMessage {
 
     //--------------------------------------------- Analytics Errors -----------------------------------------------
     ONTOLOGY_MUTATION("The mutations to the ontology have not been successfully committed. Validation Errors: [%s]"),
-    BULK_PERSIST("The bulk persist operation on instances of concept type [%s] has failed with validation error: [%s]");
+    BULK_PERSIST("The bulk persist operation on instances of concept type [%s] has failed with validation error: [%s]"),
+    CLONE_FAILED("The vertex program could not be cloned, check implementation of the clone method in class: [%s]. Stacktrace: [%s]");
 
     private final String message;
 

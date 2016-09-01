@@ -184,7 +184,7 @@ public class Analytics {
         try {
             transaction.commit();
         } catch (MindmapsValidationException e) {
-            throw new RuntimeException(ErrorMessage.ONTOLOGY_MUTATION.getMessage(e.toString()));
+            throw new RuntimeException(ErrorMessage.ONTOLOGY_MUTATION.getMessage(e.getMessage()),e);
         }
 
         //TODO: need a proper way to store this information
@@ -233,7 +233,7 @@ public class Analytics {
         try {
             transaction.commit();
         } catch (MindmapsValidationException e) {
-            throw new RuntimeException(ErrorMessage.BULK_PERSIST.getMessage(resourceName,e.toString()));
+            throw new RuntimeException(ErrorMessage.BULK_PERSIST.getMessage(resourceName,e.getMessage()),e);
         }
     }
 

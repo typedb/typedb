@@ -20,6 +20,7 @@ package io.mindmaps.graql.internal.analytics;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.constants.DataType;
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.factory.MindmapsClient;
@@ -116,7 +117,7 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
             final DegreeAndPersistVertexProgram clone = (DegreeAndPersistVertexProgram) super.clone();
             return clone;
         } catch (final CloneNotSupportedException e) {
-            throw new IllegalStateException(e.getMessage(), e);
+            throw new IllegalStateException(ErrorMessage.CLONE_FAILED.getMessage(this.getClass().toString(),e.getMessage()),e);
         }
     }
 
