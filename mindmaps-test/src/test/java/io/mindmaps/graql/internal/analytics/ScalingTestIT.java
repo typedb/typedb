@@ -39,7 +39,7 @@ public class ScalingTestIT {
     private static final String[] HOST_NAME =
             {"localhost"};
 
-    String TEST_KEYSPACE = "mindmaps-test";
+    String TEST_KEYSPACE = "mindmapstest";
     MindmapsGraph graph;
     MindmapsTransaction transaction;
 

@@ -32,7 +32,7 @@ import static org.junit.Assert.assertTrue;
 
 public class GraqlTest {
 
-    String TEST_KEYSPACE = "mindmaps-test";
+    String TEST_KEYSPACE = "mindmapstest";
     MindmapsGraph graph;
     MindmapsTransaction transaction;
     private QueryParser qp;

@@ -80,7 +80,7 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
     public void loadState(final Graph graph, final Configuration configuration) {
         this.selectedTypes = new HashSet<>();
         configuration.getKeys(TYPE).forEachRemaining(key -> selectedTypes.add(configuration.getString(key)));
-        keySpace = configuration.getKeys(KEYSPACE).next();
+        keySpace = configuration.getString(KEYSPACE);
     }
 
     @Override
