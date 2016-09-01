@@ -21,7 +21,18 @@ package io.mindmaps;
 
 import io.mindmaps.core.Data;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.*;
+import io.mindmaps.core.model.Concept;
+import io.mindmaps.core.model.Entity;
+import io.mindmaps.core.model.EntityType;
+import io.mindmaps.core.model.Instance;
+import io.mindmaps.core.model.Relation;
+import io.mindmaps.core.model.RelationType;
+import io.mindmaps.core.model.Resource;
+import io.mindmaps.core.model.ResourceType;
+import io.mindmaps.core.model.RoleType;
+import io.mindmaps.core.model.Rule;
+import io.mindmaps.core.model.RuleType;
+import io.mindmaps.core.model.Type;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 
 import java.util.Collection;
@@ -111,17 +122,20 @@ public interface MindmapsTransaction {
     /**
      *
      * @param id A unique Id for the Rule
+     * @param lhs A string representing the left hand side GraQL query.
+     * @param rhs A string representing the right hand side GraQL query.
      * @param type The rule type of this Rule
      * @return new or existing Rule with the provided Id.
      */
-    Rule putRule(String id, RuleType type);
+    Rule putRule(String id, String lhs, String rhs, RuleType type);
 
     /**
-     *
+     * @param lhs A string representing the left hand side GraQL query.
+     * @param rhs A string representing the right hand side GraQL query.
      * @param type The rule type of this Rule
      * @return a new Rule
      */
-    Rule addRule(RuleType type);
+    Rule addRule(String lhs, String rhs, RuleType type);
 
     /**
      *

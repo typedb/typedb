@@ -92,39 +92,28 @@ public class AbstractGraph {
     private static void buildRules() {
         RuleType inferenceRule = mindmaps.getMetaRuleInference();
 
-        Rule r1 = mindmaps.putRule("R1", inferenceRule);
-        Rule r2 = mindmaps.putRule("R2", inferenceRule);
-        Rule r3 = mindmaps.putRule("R3", inferenceRule);
-        Rule r4 = mindmaps.putRule("R4", inferenceRule);
-        Rule r5 = mindmaps.putRule("R5", inferenceRule);
-
         String R1_LHS = "match " +
                         "$x isa p;\n" +
                         "$y isa q;\n" +
                         "($x, $y) isa rel select $x";
         String R1_RHS = "match $x isa Q";
-        r1.setLHS(R1_LHS);
-        r1.setRHS(R1_RHS);
+        mindmaps.putRule("R1", R1_LHS, R1_RHS, inferenceRule);
 
         String R2_LHS = "match $x isa r;";
         String R2_RHS = "match $x isa p";
-        r2.setLHS(R2_LHS);
-        r2.setRHS(R2_RHS);
+        mindmaps.putRule("R2", R2_LHS, R2_RHS, inferenceRule);
 
         String R3_LHS = "match $x isa s;";
         String R3_RHS = "match $x isa p";
-        r3.setLHS(R3_LHS);
-        r3.setRHS(R3_RHS);
+        mindmaps.putRule("R3", R3_LHS, R3_RHS, inferenceRule);
 
         String R4_LHS = "match $x isa t;";
         String R4_RHS = "match $x isa q";
-        r4.setLHS(R4_LHS);
-        r4.setRHS(R4_RHS);
+        mindmaps.putRule("R4", R4_LHS, R4_RHS, inferenceRule);
 
         String R5_LHS = "match $x isa u;";
         String R5_RHS = "match $x isa r";
-        r5.setLHS(R5_LHS);
-        r5.setRHS(R5_RHS);
+        Rule r5 = mindmaps.putRule("R5", R5_LHS, R5_RHS, inferenceRule);
     }
 
     private static Instance putEntity(EntityType type, String name) {

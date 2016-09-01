@@ -152,12 +152,6 @@ public class CWGraph {
     private static void buildRules() {
         RuleType inferenceRule = mindmaps.getMetaRuleInference();
 
-        Rule r1 = mindmaps.putRule("R1", inferenceRule);
-        Rule r2 = mindmaps.putRule("R2", inferenceRule);
-        Rule r3 = mindmaps.putRule("R3", inferenceRule);
-        Rule r4 = mindmaps.putRule("R4", inferenceRule);
-        Rule r5 = mindmaps.putRule("R5", inferenceRule);
-
         //R1: "It is a crime for an American to sell weapons to hostile nations"
         String R1_LHS = "match " +
                 "$x isa person;\n" +
@@ -170,15 +164,13 @@ public class CWGraph {
 
         String R1_RHS = "match $x isa criminal";
 
-        r1.setLHS(R1_LHS);
-        r1.setRHS(R1_RHS);
+        mindmaps.putRule("R1", R1_LHS, R1_RHS, inferenceRule);
 
         //R2: "Missiles are a kind of a weapon"
         String  R2_LHS = "match $x isa missile;";
         String R2_RHS = "match $x isa weapon";
 
-        r2.setLHS(R2_LHS);
-        r2.setRHS(R2_RHS);
+        mindmaps.putRule("R2", R2_LHS, R2_RHS, inferenceRule);
 
         //R3: "If a country is an enemy of America then it is hostile"
         String R3_LHS = "match " +
@@ -189,15 +181,13 @@ public class CWGraph {
                 "select $x";
         String R3_RHS = "match $x has alignment 'hostile'";
 
-        r3.setLHS(R3_LHS);
-        r3.setRHS(R3_RHS);
+        mindmaps.putRule("R3", R3_LHS, R3_RHS, inferenceRule);
 
         //R4: "If a rocket is self-propelled and guided, it is a missile"
         String R4_LHS = "match $x isa rocket;$x has propulsion 'gsp'";
         String R4_RHS = "match $x isa missile";
 
-        r4.setLHS(R4_LHS);
-        r4.setRHS(R4_RHS);
+        mindmaps.putRule("R4", R4_LHS, R4_RHS, inferenceRule);
 
         String R5_LHS = "match "+
                 "$x isa person;\n" +
@@ -208,9 +198,7 @@ public class CWGraph {
 
         String R5_RHS = "match ($x, $y, $z) isa transaction";
 
-        r5.setLHS(R5_LHS);
-        r5.setRHS(R5_RHS);
-
+        mindmaps.putRule("R5", R5_LHS, R5_RHS, inferenceRule);
     }
 
     private static Instance putEntity(EntityType type, String name) {

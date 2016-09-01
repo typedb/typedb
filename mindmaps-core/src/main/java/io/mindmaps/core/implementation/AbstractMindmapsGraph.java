@@ -31,8 +31,8 @@ import org.slf4j.LoggerFactory;
  * A mindmaps graph which produces new transactions to work with
  */
 public abstract class AbstractMindmapsGraph<G extends Graph> implements MindmapsGraph {
-    protected final ThreadLocal<MindmapsTransactionImpl> context = new ThreadLocal<>();
-    protected final Logger LOG = LoggerFactory.getLogger(AbstractMindmapsGraph.class);
+    private final ThreadLocal<MindmapsTransactionImpl> context = new ThreadLocal<>();
+    private final Logger LOG = LoggerFactory.getLogger(AbstractMindmapsGraph.class);
     private final String engineUrl;
     private final String graphName;
     private final boolean batchLoading;

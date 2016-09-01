@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
 
 public class MindmapsTransactionImpl implements MindmapsTransaction, AutoCloseable {
-    protected final Logger LOG = LoggerFactory.getLogger(MindmapsTransactionImpl.class);
+    private final Logger LOG = LoggerFactory.getLogger(MindmapsTransactionImpl.class);
     private final ElementFactory elementFactory;
     private final ConceptLog conceptLog;
     private final AbstractMindmapsGraph mindmapsGraph;
@@ -246,13 +246,13 @@ public class MindmapsTransactionImpl implements MindmapsTransaction, AutoCloseab
     }
 
     @Override
-    public Rule putRule(String itemIdentifier, RuleType type) {
-        return elementFactory.buildRule(putVertex(itemIdentifier, DataType.BaseType.RULE)).type(type);
+    public Rule putRule(String itemIdentifier, String lhs, String rhs, RuleType type) {
+        return elementFactory.buildRule(putVertex(itemIdentifier, DataType.BaseType.RULE), lhs, rhs).type(type);
     }
 
     @Override
-    public Rule addRule(RuleType type) {
-        return elementFactory.buildRule(addInstanceVertex(DataType.BaseType.RULE, type)).type(type);
+    public Rule addRule(String lhs, String rhs, RuleType type) {
+        return elementFactory.buildRule(addInstanceVertex(DataType.BaseType.RULE, type), lhs, rhs).type(type);
     }
 
     @Override
