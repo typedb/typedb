@@ -305,20 +305,17 @@ public class GraqlShell implements AutoCloseable {
                 reasoner.linkConceptTypes();
             } else if (query instanceof ComputeQuery) {
                 Object result = ((ComputeQuery) query).execute(graph);
-                if (result instanceof Long) {
-                    // Count query
-                    print(result.toString() + "\n");
-                } else if (result instanceof Map) {
+                if (result instanceof Map) {
                     // Degree query
                     ((Map<Instance, Long>) result).forEach((instance, degree) -> print(instance.getId() + "\t" + degree + "\n"));
-                } else if (result == null) {
-                    // Persist query
-                    print(result + "\n");
+                } else {
+                    // Persist and Count query
+                    println(result.toString());
                 }
             } else {
                 throw new RuntimeException("Unrecognized query " + query);
             }
-        } catch (IllegalArgumentException | IllegalStateException | InvalidConceptTypeException | InterruptedException | ExecutionException e) {
+        } catch (Exception e) {
             err.println(e.getMessage());
         }
     }

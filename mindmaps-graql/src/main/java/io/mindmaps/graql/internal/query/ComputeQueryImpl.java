@@ -53,4 +53,9 @@ public class ComputeQueryImpl implements ComputeQuery {
         }
     }
 
+    @Override
+    public String toString() {
+        return "compute "+computeMethod+"()";
+    }
+
 }
