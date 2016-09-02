@@ -23,7 +23,6 @@ import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.model.RelationType;
 import io.mindmaps.core.model.RoleType;
-import io.mindmaps.core.model.Rule;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.*;
 import io.mindmaps.graql.admin.PatternAdmin;
@@ -50,7 +49,6 @@ public class  Query {
     private final Map<Type, Set<Atomic>> typeAtomMap;
 
     private Atomic parentAtom = null;
-    private Rule rule = null;
 
     private final Set<String> selectVars;
     private final Conjunction<PatternAdmin> pattern;
@@ -64,11 +62,6 @@ public class  Query {
 
         this.atomSet = getAtomSet(pattern);
         this.typeAtomMap = getTypeAtomMap(atomSet);
-    }
-
-    public Query(String query, Rule r, MindmapsTransaction transaction) {
-        this(query, transaction);
-        this.rule = r;
     }
 
     public Query(MatchQueryDefault query, MindmapsTransaction transaction) {
@@ -113,7 +106,7 @@ public class  Query {
         atomSet = new HashSet<>();
         addAtom(atom);
         addAtomConstraints(atom.getSubstitutions());
-        if(atom.isRelation()) addAtomConstraints(atom.getTypeConstraints());
+        if(atom.isRelation() || atom.isResource()) addAtomConstraints(atom.getTypeConstraints());
 
         this.typeAtomMap = getTypeAtomMap(atomSet);
     }
@@ -122,30 +115,12 @@ public class  Query {
     public String toString() { return getMatchQuery().toString();}
 
     public MindmapsTransaction getTransaction(){ return graph;}
-    public Rule getRule(){ return rule;}
-    public Atomic getParentAtom(){ return parentAtom;}
-    public void setParentAtom(Atomic par){ parentAtom = par;}
-    public Query getParentQuery(){
+    private Atomic getParentAtom(){ return parentAtom;}
+    private Query getParentQuery(){
         return parentAtom != null? parentAtom.getParentQuery() : null;
     }
+    public void setParentAtom(Atomic par){ parentAtom = par;}
 
-    /**
-     * @param rl rule instance
-     * @return top query in the tree corresponding to body of rule rl
-     */
-    public Query getTopQueryWithRule(Rule rl) {
-        Query topQuery = null;
-        if (rule != null && rule.equals(rl)) topQuery = this;
-
-        Query query = getParentQuery();
-
-        while(query != null){
-            Rule currentRule = query.getRule();
-            if (currentRule != null && currentRule.equals(rl)) topQuery = query;
-            query = query.getParentQuery();
-        }
-        return topQuery;
-    }
 
     /**
      * @return top atom of this branch
@@ -172,9 +147,12 @@ public class  Query {
         return query;
     }
 
-    public Set<Atomic> getAtoms() { return atomSet;}
+    public Set<Atomic> getAtoms() { return new HashSet<>(atomSet);}
     public Set<Atomic> getAtomsWithType(Type type) {
         return typeAtomMap.get(type);
+    }
+    public Set<Atomic> getSubstitutions(){
+        return getAtoms().stream().filter(Atomic::isValuePredicate).collect(Collectors.toSet());
     }
 
     public Set<String> getSelectVars(){ return selectVars;}
@@ -198,7 +176,7 @@ public class  Query {
         });
     }
 
-    public boolean containsVar(String var) {
+    private boolean containsVar(String var) {
         boolean varContained = false;
         Iterator<Atomic> it = atomSet.iterator();
         while(it.hasNext() && !varContained)
@@ -208,12 +186,14 @@ public class  Query {
     }
 
     public boolean containsAtom(Atomic atom){ return atomSet.contains(atom);}
-    public boolean containsEquivalentAtom(Atomic atom){
+    private boolean containsEquivalentAtom(Atomic atom){
         boolean isContained = false;
 
         Iterator<Atomic> it = atomSet.iterator();
-        while( it.hasNext() && !isContained)
-            isContained = atom.isEquivalent(it.next());
+        while( it.hasNext() && !isContained) {
+            Atomic at = it.next();
+            isContained = atom.isEquivalent(at);
+        }
 
         return isContained;
     }
@@ -228,11 +208,17 @@ public class  Query {
         pattern.getPatterns().add(newPattern);
     }
 
-    private void updateSelectedVars(String from, String to) {
-        if (selectVars.contains(from)) {
-            selectVars.remove(from);
-            selectVars.add(to);
-        }
+    private void updateSelectedVars(Map<String, String> mappings) {
+        Set<String> toRemove = new HashSet<>();
+        Set<String> toAdd = new HashSet<>();
+        mappings.forEach( (from, to) -> {
+                    if (selectVars.contains(from)) {
+                        toRemove.add(from);
+                        toAdd.add(to);
+                    }
+                });
+        toRemove.forEach(selectVars::remove);
+        toAdd.forEach(selectVars::add);
     }
 
     private void exchangeRelVarNames(String from, String to){
@@ -241,7 +227,9 @@ public class  Query {
         changeVarName("temp", from);
     }
 
-    public void changeRelVarNames(Map<String, String> mappings) {
+    public void changeVarNames(Map<String, String> unifiers) {
+        if (unifiers.size() == 0) return;
+        Map<String, String> mappings = new HashMap<>(unifiers);
         Map<String, String> appliedMappings = new HashMap<>();
         //do bidirectional mappings if any
         for (Map.Entry<String, String> mapping: mappings.entrySet()) {
@@ -260,17 +248,38 @@ public class  Query {
         mappings.entrySet().removeIf(e ->
                 appliedMappings.containsKey(e.getKey()) && appliedMappings.get(e.getKey()).equals(e.getValue()));
 
-        atomSet.forEach(atom -> atom.changeEachVarName(mappings));
+        Set<Atomic> toRemove = new HashSet<>();
+        Set<Atomic> toAdd = new HashSet<>();
 
-        for (Map.Entry<String, String> mapping : mappings.entrySet())
-            updateSelectedVars(mapping.getKey(), mapping.getValue());
+        atomSet.stream()
+                .filter(atom -> {
+                    Set<String> intersection = atom.getVarNames();
+                    atom.getVarNames().retainAll(mappings.keySet());
+                    return !intersection.isEmpty();
+                })
+                .forEach(toRemove::add);
+        toRemove.forEach(atom -> toAdd.add(AtomicFactory.create(atom)));
+        toRemove.forEach(this::removeAtom);
+        toAdd.forEach(atom -> atom.changeEachVarName(mappings));
+        toAdd.forEach(this::addAtom);
+
+        updateSelectedVars(mappings);
     }
 
     public void changeVarName(String from, String to) {
-        atomSet.forEach(atom -> atom.changeEachVarName(from, to));
-        updateSelectedVars(from, to);
-    }
+        Set<Atomic> toRemove = new HashSet<>();
+        Set<Atomic> toAdd = new HashSet<>();
 
+        atomSet.stream().filter(atom -> atom.getVarNames().contains(from)).forEach(toRemove::add);
+        toRemove.forEach(atom -> toAdd.add(AtomicFactory.create(atom)));
+        toRemove.forEach(this::removeAtom);
+        toAdd.forEach(atom -> atom.changeEachVarName(from, to));
+        toAdd.forEach(this::addAtom);
+
+        Map<String, String> mapping = new HashMap<>();
+        mapping.put(from, to);
+        updateSelectedVars(mapping);
+    }
 
     private Disjunction<Conjunction<VarAdmin>> getDNF(){
         return pattern.getDisjunctiveNormalForm();}
@@ -297,7 +306,12 @@ public class  Query {
         return getExpandedMatchQuery().admin().getPattern().getDisjunctiveNormalForm();
     }
 
-    public MatchQueryDefault getMatchQuery() { return Graql.match(pattern).select(selectVars).withTransaction(graph);}
+    public MatchQueryDefault getMatchQuery() {
+        if (selectVars.isEmpty())
+            return Graql.match(pattern).select(getVarSet()).withTransaction(graph);
+        else
+            return Graql.match(pattern).select(selectVars).withTransaction(graph);
+    }
 
     public MatchQueryDefault getExpandedMatchQuery() {
         Set<AtomConjunction> conjunctions = getAtomConjunctions();
@@ -329,7 +343,7 @@ public class  Query {
         return qb.match(new DisjunctionImpl<>(conjs)).select(selectVars);
     }
 
-    public Conjunction<PatternAdmin> getPattern() {
+    private Conjunction<PatternAdmin> getPattern() {
         return pattern;
     }
     public PatternAdmin getExpandedPattern() {
@@ -410,10 +424,11 @@ public class  Query {
     public void addAtomConstraints(Set<Atomic> subs){
         subs.forEach(con -> {
             if (containsVar(con.getVarName())){
-                //Atomic lcon = AtomicFactory.create(con);
-                addAtom(con);
-                if (con.isValuePredicate())
-                    selectVars.remove(con.getVarName());
+                Atomic lcon = AtomicFactory.create(con);
+                lcon.setParentQuery(this);
+                addAtom(lcon);
+                if (lcon.isValuePredicate())
+                    selectVars.remove(lcon.getVarName());
             }
         });
     }
@@ -423,44 +438,20 @@ public class  Query {
      * @return selected atoms
      */
     public Set<Atomic> selectAtoms() {
-        Set<Atomic> selectedAtoms = new LinkedHashSet<>();
-        //TODO allow unary predicates
         Set<Atomic> atoms = new HashSet<>(atomSet).stream()
-                .filter(atom -> !atom.isValuePredicate())
-                .filter(atom -> !atom.isUnary())
-                .collect(Collectors.toSet());
+                .filter(atom -> !atom.isValuePredicate()).collect(Collectors.toSet());
         if (atoms.size() == 1) return atoms;
 
-        //find starting atom
-        Atomic start = null;
-        Iterator<Atomic> it = atoms.iterator();
-        while(it.hasNext() && start == null) {
-            Atomic current = it.next();
-            if (current.getNeighbours().size() == 1) start = current;
-        }
-        if (start == null )
-            throw new IllegalStateException(ErrorMessage.LOOP_CLAUSE.getMessage());
-
-        selectedAtoms.add(start);
-
-        Atomic current = start;
-        Set<Atomic> nbhs;
-        do{
-            nbhs = current.getNeighbours();
-            nbhs.removeAll(selectedAtoms);
-            if (nbhs.size() == 1 ){
-                current = nbhs.iterator().next();
-                selectedAtoms.add(current);
-            }
-        } while(!nbhs.isEmpty());
+        return atoms.stream().filter(atom -> (!atom.isUnary()) || atom.isRuleResolvable() || atom.isResource())
+                .collect(Collectors.toSet());
 
         //TODO
         //find most instantiated atom
         //no instantiations -> favour type atoms
-        return selectedAtoms;
+
     }
 
-    /**
+    /** NB: only for atomic queries
      * @param q query to be compared with
      * @return true if two queries are alpha-equivalent
      */
@@ -469,8 +460,10 @@ public class  Query {
         if(atomSet.size() != q.getAtoms().size()) return false;
 
         Iterator<Atomic> it = atomSet.iterator();
-        while (it.hasNext() && equivalent)
-            equivalent = q.containsEquivalentAtom(it.next());
+        while (it.hasNext() && equivalent) {
+            Atomic atom = it.next();
+            equivalent = q.containsEquivalentAtom(atom);
+        }
 
         return equivalent;
     }
@@ -488,7 +481,7 @@ public class  Query {
 
         //extrapolate if needed
         Atomic atom = selectAtoms().iterator().next();
-        if(atom.isRelation() && ((Relation) atom).getRoleVarTypeMap().isEmpty()){
+        if(atom.isRelation() && (atom.getRoleVarTypeMap().isEmpty() || !((Relation) atom).hasExplicitRoleTypes() )){
             String relTypeId = atom.getTypeId();
             RelationType relType = graph.getRelationType(relTypeId);
             Set<String> vars = atom.getVarNames();

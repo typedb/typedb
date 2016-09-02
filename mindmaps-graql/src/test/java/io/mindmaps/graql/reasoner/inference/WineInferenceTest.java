@@ -23,7 +23,7 @@ import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.graql.MatchQueryDefault;
 import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.Reasoner;
-import io.mindmaps.graql.reasoner.graphs.WineGraph;
+import io.mindmaps.graql.reasoner.graphs.GenericGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -37,7 +37,7 @@ public class WineInferenceTest {
 
     @BeforeClass
     public static void setUpClass() {
-        MindmapsTransaction graph = WineGraph.getTransaction();
+        MindmapsTransaction graph = GenericGraph.getTransaction("wines-test.gql");
         reasoner = new Reasoner(graph);
         qp = QueryParser.create(graph);
     }
@@ -49,14 +49,15 @@ public class WineInferenceTest {
         MatchQueryDefault expandedQuery = reasoner.expand(query);
 
         String explicitQuery = "match $x isa person;$y isa wine;" +
-                               "{$x value 'Alice';$y value 'Cabernet Sauvignion'} or" +
-                "{$x value 'Bob';$y value 'White Champagne'} or" +
-                "{$x value 'Charlie';$y value 'Pinot Grigio Rose'} or" +
-                "{$x value 'Denis';$y value 'Busuioaca Romaneasca'} or" +
-                "{$x value 'Eva';$y value 'Tamaioasa Romaneasca'} or" +
-                "{$x value 'Frank';$y value 'Riojo Blanco CVNE 2003'}";
+                            "{$x id 'Bob';$y id 'White Champagne'} or" +
+                        "{$x id 'Alice';$y id 'Cabernet Sauvignion'} or" +
+                        "{$x id 'Charlie';$y id 'Pinot Grigio Rose'} or" +
+                        "{$x id 'Denis';$y id 'Busuioaca Romaneasca'} or" +
+                        "{$x id 'Eva';$y id 'Tamaioasa Romaneasca'} or" +
+                        "{$x id 'Frank';$y id 'Riojo Blanco CVNE 2003'}";
 
         assertQueriesEqual(expandedQuery, qp.parseMatchQuery(explicitQuery).getMatchQuery());
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
     private void assertQueriesEqual(MatchQueryDefault q1, MatchQueryDefault q2) {

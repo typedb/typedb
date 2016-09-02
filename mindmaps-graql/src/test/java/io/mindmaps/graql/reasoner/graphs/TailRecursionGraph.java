@@ -30,6 +30,7 @@ public class TailRecursionGraph extends GenericGraph{
         final String gqlFile = "tail-recursion-test.gql";
         getTransaction(gqlFile);
         buildExtensionalDB(n, m);
+        commit();
         return mindmaps;
     }
 

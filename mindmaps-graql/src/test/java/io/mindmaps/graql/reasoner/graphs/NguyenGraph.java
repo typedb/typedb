@@ -30,6 +30,7 @@ public class NguyenGraph extends GenericGraph{
         final String gqlFile = "nguyen-test.gql";
         getTransaction(gqlFile);
         buildExtensionalDB(n);
+        commit();
         return mindmaps;
     }
 
@@ -41,7 +42,6 @@ public class NguyenGraph extends GenericGraph{
         RoleType Pfrom = mindmaps.getRoleType("P-rA");
         RoleType Pto = mindmaps.getRoleType("P-rB");
 
-        EntityType entity = mindmaps.getEntityType("entity");
         EntityType aEntity = mindmaps.getEntityType("a-entity");
         EntityType bEntity = mindmaps.getEntityType("b-entity");
         RelationType R = mindmaps.getRelationType("R");
@@ -73,7 +73,6 @@ public class NguyenGraph extends GenericGraph{
             mindmaps.addRelation(P)
                     .putRolePlayer(Pfrom, mindmaps.getInstance("c"))
                     .putRolePlayer(Pto, mindmaps.getInstance("b" + i));
-
             mindmaps.addRelation(Q)
                     .putRolePlayer(Qfrom, mindmaps.getInstance("a" + i))
                     .putRolePlayer(Qto, mindmaps.getInstance("b" + i));

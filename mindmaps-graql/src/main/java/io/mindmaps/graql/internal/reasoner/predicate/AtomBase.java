@@ -21,19 +21,19 @@ package io.mindmaps.graql.internal.reasoner.predicate;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.core.model.RoleType;
+import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.*;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.query.ConjunctionImpl;
 import io.mindmaps.graql.internal.query.DisjunctionImpl;
+import io.mindmaps.graql.internal.query.VarImpl;
 import io.mindmaps.graql.internal.reasoner.container.Query;
-import org.javatuples.Pair;
+import javafx.util.Pair;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public abstract class AtomBase implements Atomic{
 
@@ -54,43 +54,49 @@ public abstract class AtomBase implements Atomic{
     public AtomBase(VarAdmin pattern) {
         this.atomPattern = pattern;
         Pair<String, String> varData = extractDataFromVar(atomPattern.asVar());
-        this.varName = varData.getValue0();
-        this.typeId = varData.getValue1();
+        this.varName = varData.getKey();
+        this.typeId = varData.getValue();
     }
 
     public AtomBase(VarAdmin pattern, Query par) {
         this.atomPattern = pattern;
         Pair<String, String> varData = extractDataFromVar(atomPattern.asVar());
-        this.varName = varData.getValue0();
-        this.typeId = varData.getValue1();
+        this.varName = varData.getKey();
+        this.typeId = varData.getValue();
         this.parent = par;
     }
 
     public AtomBase(AtomBase a) {
-        this.atomPattern = a.atomPattern;
+        if (a.getParentQuery() != null)
+            this.parent = a.getParentQuery();
+
+        this.atomPattern = new VarImpl(Sets.newHashSet(a.atomPattern.asVar()));
         Pair<String, String> varData = extractDataFromVar(atomPattern.asVar());
-        varName = varData.getValue0();
-        typeId = varData.getValue1();
+        varName = varData.getKey();
+        typeId = varData.getValue();
         a.expansions.forEach(exp -> expansions.add(new Query(exp)));
+    }
+
+    private Pair<String, String> extractDataFromVar(VarAdmin var) {
+        String vTypeId;
+        String vName = var.getName();
+
+        Map<VarAdmin, Set<ValuePredicateAdmin>> resourceMap = var.getResourcePredicates();
+        if (resourceMap.size() != 0) {
+            if (resourceMap.size() != 1)
+                throw new IllegalArgumentException(ErrorMessage.MULTIPLE_RESOURCES.getMessage(var.toString()));
+
+            Map.Entry<VarAdmin, Set<ValuePredicateAdmin>> entry = resourceMap.entrySet().iterator().next();
+            vTypeId = entry.getKey().getId().isPresent()? entry.getKey().getId().get() : "";
+        }
+        else
+            vTypeId = var.getType().flatMap(VarAdmin::getId).orElse("");
+
+        return new Pair<>(vName, vTypeId);
     }
 
     @Override
     public String toString(){ return atomPattern.toString(); }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (!(obj instanceof AtomBase)) return false;
-        AtomBase a2 = (AtomBase) obj;
-        return this.getTypeId().equals(a2.getTypeId()) && this.getVarName().equals(a2.getVarName());
-    }
-
-    @Override
-    public int hashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + this.typeId.hashCode();
-        hashCode = hashCode * 37 + this.varName.hashCode();
-        return hashCode;
-    }
 
     @Override
     public void print() {
@@ -119,6 +125,11 @@ public abstract class AtomBase implements Atomic{
     @Override
     public boolean isType(){ return !typeId.isEmpty();}
     @Override
+    public boolean isRuleResolvable(){
+        Type type = getParentQuery().getTransaction().getType(getTypeId());
+        return !type.getRulesOfConclusion().isEmpty();
+    }
+    @Override
     public boolean containsVar(String name){ return varName.equals(name);}
 
     @Override
@@ -131,7 +142,7 @@ public abstract class AtomBase implements Atomic{
         return new DisjunctionImpl<>(expandedPattern);
     }
 
-    protected MatchQueryDefault getBaseMatchQuery(MindmapsTransaction graph) {
+    private MatchQueryDefault getBaseMatchQuery(MindmapsTransaction graph) {
         QueryBuilder qb = Graql.withTransaction(graph);
         MatchQueryDefault matchQuery = qb.match(getPattern());
 
@@ -214,6 +225,7 @@ public abstract class AtomBase implements Atomic{
         return subs;
     }
 
+    @Override
     public Set<Atomic> getTypeConstraints(){
         throw new IllegalArgumentException(ErrorMessage.NO_TYPE_CONSTRAINTS.getMessage());
     }
@@ -222,7 +234,8 @@ public abstract class AtomBase implements Atomic{
         Set<Atomic> neighbours = new HashSet<>();
         getParentQuery().getAtoms().forEach(atom ->{
             //TODO allow unary predicates
-            if (!atom.equals(this) && !atom.isValuePredicate() && !atom.isUnary()) {
+            if (!atom.equals(this) &&
+                    (!atom.isValuePredicate() && !atom.isUnary() || (atom.isRuleResolvable()) || atom.isResource()) ) {
                 Set<String> intersection = new HashSet<>(getVarNames());
                 intersection.retainAll(atom.getVarNames());
                 if (!intersection.isEmpty()) neighbours.add(atom);
@@ -244,22 +257,44 @@ public abstract class AtomBase implements Atomic{
         return map;
     }
 
-    private Pair<String, String> extractDataFromVar(VarAdmin var) {
-        String vTypeId;
-        String vName = var.getName();
-
-        Map<VarAdmin, Set<ValuePredicateAdmin>> resourceMap = var.getResourcePredicates();
-        if (resourceMap.size() != 0) {
-            if (resourceMap.size() != 1)
-                throw new IllegalArgumentException(ErrorMessage.MULTIPLE_RESOURCES.getMessage(var.toString()));
-
-            Map.Entry<VarAdmin, Set<ValuePredicateAdmin>> entry = resourceMap.entrySet().iterator().next();
-            vTypeId = entry.getKey().getId().get();
+    @Override
+    public Map<String, Set<Atomic>> getVarConstraintMap() {
+        Map<String, Set<Atomic>> map = new HashMap<>();
+        getSubstitutions().forEach( sub -> {
+            String var = sub.getVarName();
+            if (map.containsKey(var))
+                map.get(var).add(sub);
+            else
+                map.put(var, Sets.newHashSet(sub));
+        });
+        if (isRelation()){
+            getTypeConstraints().forEach( cstr -> {
+                String var = cstr.getVarName();
+                if (map.containsKey(var))
+                    map.get(var).add(cstr);
+                else
+                    map.put(var, Sets.newHashSet(cstr));
+            });
         }
-        else
-            vTypeId = var.getType().flatMap(VarAdmin::getId).orElse("");
+        return map;
+    }
 
-        return new Pair<>(vName, vTypeId);
+    public Map<String, javafx.util.Pair<Type, RoleType>> getVarTypeRoleMap() {
+        Map<String, javafx.util.Pair<Type, RoleType>> roleVarTypeMap = new HashMap<>();
+        if (getParentQuery() == null) return roleVarTypeMap;
+
+        Set<String> vars = getVarNames();
+        Map<String, Type> varTypeMap = getParentQuery().getVarTypeMap();
+
+        vars.forEach(var -> {
+            Type type = varTypeMap.get(var);
+            roleVarTypeMap.put(var, new Pair<>(type, null));
+        });
+        return roleVarTypeMap;
+    }
+
+    public Map<RoleType, Pair<String, Type>> getRoleVarTypeMap() {
+        return new HashMap<>();
     }
 
 }

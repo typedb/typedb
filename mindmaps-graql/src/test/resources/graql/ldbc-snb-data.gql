@@ -27,36 +27,36 @@ insert
 (member-location UK, container-location Europe) isa sublocate;
 (moderator Bob, moderated forum1) isa moderates;
 
-"Ennio Morricone" isa tag, value "Ennio_Morricone";
-"John Wayne" isa tag, value "John_Wayne";
-"Ozzy Osbourne" isa tag, value "Ozzy_Osbourne";
-"Rising Force" isa tag, value "Rising_Force";
-"Terry Pratchett" isa tag, value "Terry_Pratchett";
-"H. G. Wells" isa tag, value "H._G._Wells";
-"Oscar Wilde" isa tag, value "Oscar_Wilde";
-"Johann Wolfgang von Goethe" isa tag, value "Johann_Wolfgang_von_Goethe";
+"Ennio Morricone" isa tag, value "Ennio Morricone";
+"John Wayne" isa tag, value "John Wayne";
+"Ozzy Osbourne" isa tag, value "Ozzy Osbourne";
+"Rising Force" isa tag, value "Rising Force";
+"Terry Pratchett" isa tag, value "Terry Pratchett";
+"H. G. Wells" isa tag, value "H. G. Wells";
+"Oscar Wilde" isa tag, value "Oscar Wilde";
+"Johann Wolfgang von Goethe" isa tag, value "Johann Wolfgang von Goethe";
 "Writer" isa category, value "Writer";
 (grouped-tag 'Terry Pratchett', tag-group Writer) isa grouping;
 (grouped-tag 'H. G. Wells', tag-group Writer) isa grouping;
 (grouped-tag 'Johann Wolfgang von Goethe', tag-group Writer) isa grouping;
 
-"Johann_Sebastian_Bach" isa tag, value "Johann_Sebastian_Bach";
-"Ludwig_van_Beethoven" isa tag, value "Ludwig_van_Beethoven";
-"Wolfgang_Amadeus_Mozart" isa tag, value "Wolfgang_Amadeus_Mozart";
+"Johann Sebastian Bach" isa tag, value "Johann Sebastian Bach";
+"Ludwig van Beethoven" isa tag, value "Ludwig van Beethoven";
+"Wolfgang Amadeus Mozart" isa tag, value "Wolfgang Amadeus Mozart";
 
-"Roger_Waters" isa tag, value "Roger_Waters";
+"Roger Waters" isa tag, value "Roger Waters";
 
 (tagged-subject Alice, subject-tag 'H. G. Wells') isa tagging;
 (tagged-subject Bob, subject-tag 'Ennio Morricone') isa tagging;
 (tagged-subject Bob, subject-tag 'John Wayne') isa tagging;
 (tagged-subject Denis, subject-tag 'Terry Pratchett') isa tagging;
 (tagged-subject Denis, subject-tag 'Oscar Wilde') isa tagging;
-(tagged-subject Frank, subject-tag 'Ludwig_van_Beethoven') isa tagging;
+(tagged-subject Frank, subject-tag 'Ludwig van Beethoven') isa tagging;
 
 (tagged-subject Charlie, subject-tag 'Ozzy Osbourne') isa tagging;
 (tagged-subject Charlie, subject-tag 'Rising Force') isa tagging;
-(tagged-subject Gary, subject-tag 'Roger_Waters') isa tagging;
+(tagged-subject Gary, subject-tag 'Roger Waters') isa tagging;
 
-(tagged-subject 'Karl Fischer', subject-tag 'Ludwig_van_Beethoven') isa tagging;
-(tagged-subject 'Karl Fischer', subject-tag 'Wolfgang_Amadeus_Mozart') isa tagging;
+(tagged-subject 'Karl Fischer', subject-tag 'Ludwig van Beethoven') isa tagging;
+(tagged-subject 'Karl Fischer', subject-tag 'Wolfgang Amadeus Mozart') isa tagging;
 (tagged-subject 'Karl Fischer', subject-tag 'Johann Wolfgang von Goethe') isa tagging;

@@ -21,11 +21,9 @@ package io.mindmaps.graql;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.Concept;
-import io.mindmaps.core.model.RoleType;
-import io.mindmaps.core.model.Rule;
-import io.mindmaps.core.model.Type;
+import io.mindmaps.core.model.*;
 import io.mindmaps.graql.internal.reasoner.container.Query;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.Relation;
@@ -185,7 +183,6 @@ public class Reasoner {
         Set<Type> conclusionConceptTypes = qRHS.admin().getTypes();
 
         hypothesisConceptTypes.forEach(rule::addHypothesis);
-
         conclusionConceptTypes.forEach(rule::addConclusion);
 
         LOG.debug("Rule " + rule.getId() + " linked");
@@ -213,7 +210,6 @@ public class Reasoner {
      */
     public void linkConceptTypes() {
         Set<Rule> rules = getRules();
-
         LOG.debug(rules.size() + " rules initialized...");
 
         for(Rule rule : rules) {
@@ -221,11 +217,6 @@ public class Reasoner {
             if(rule.getHypothesisTypes().isEmpty() && rule.getConclusionTypes().isEmpty()) {
                 linkConceptTypes(rule);
             }
-        }
-        try {
-            graph.commit();
-        } catch (MindmapsValidationException e) {
-            e.printStackTrace();
         }
     }
 
@@ -273,23 +264,13 @@ public class Reasoner {
         });
     }
 
-    /**
-     * propagate variables to child via a relation atom (atom variables are bound)
-     * @param childHead child rule head
-     * @param childBody child rule body
-     * @param parentAtom parent atom (predicate) being resolved (subgoal)
-     * @param parentLHS parent query
-     * @param globalVarMap map containing global vars and their types
-     */
-    private void unifyRuleViaRelation(Query childHead, Query childBody, Relation parentAtom, Query parentLHS,
-                                             Map<String, Type> globalVarMap) {
+    private Map<String, String> getUnifiers(Atomic childAtom, Atomic parentAtom) {
         Set<String> varsToAllocate = parentAtom.getVarNames();
-        Atomic childAtom = getRuleConclusionAtom(childBody, childHead);
+
         Set<String> childBVs = childAtom.getVarNames();
 
-        /**construct mapping between child and parent bound variables*/
-        Map<String, String> varMappings = new HashMap<>();
-        Map<String, Pair<Type, RoleType>> childMap = ((Relation)childAtom).getVarTypeRoleMap();
+        Map<String, String> unifiers = new HashMap<>();
+        Map<String, Pair<Type, RoleType>> childMap = childAtom.getVarTypeRoleMap();
         Map<RoleType, Pair<String, Type>> parentMap = parentAtom.getRoleVarTypeMap();
 
         for (String chVar : childBVs) {
@@ -299,14 +280,30 @@ public class Reasoner {
                 pVar = varsToAllocate.iterator().next();
 
             if ( !chVar.equals(pVar))
-                varMappings.put(chVar, pVar);
+                unifiers.put(chVar, pVar);
 
             varsToAllocate.remove(pVar);
         }
 
+        return unifiers;
+    }
+
+    /**
+     * propagate variables to child via a relation atom (atom variables are bound)
+     * @param childHead child rule head
+     * @param childBody child rule body
+     * @param parentAtom parent atom (predicate) being resolved (subgoal)
+     * @param parentLHS parent query
+     * @param globalVarMap map containing global vars and their types
+     */
+    private void unifyRuleViaAtom(Query childHead, Query childBody, Atomic parentAtom, Query parentLHS,
+                                             Map<String, Type> globalVarMap) {
+        Atomic childAtom = getRuleConclusionAtom(childBody, childHead);
+        Map<String, String> unifiers = getUnifiers(childAtom, parentAtom);
+
         /**do alpha-conversion*/
-        childBody.changeRelVarNames(varMappings);
-        childHead.changeRelVarNames(varMappings);
+        childHead.changeVarNames(unifiers);
+        childBody.changeVarNames(unifiers);
         resolveCaptures(childBody, globalVarMap.keySet());
 
         /**check free variables for possible captures*/
@@ -326,57 +323,17 @@ public class Reasoner {
         }
 
     /**
-     * propagate variables to child via a non-relation atom (atom variables are bound)
-     * @param childHead child rule head
-     * @param childBody child rule body
-     * @param parentAtom parent atom (predicate) being resolved (subgoal)
-     * @param parentLHS parent query
-     * @param globalVarMap map containing global vars and their types
-     */
-    private void unifyRuleViaAtom(Query childHead, Query childBody, Atomic parentAtom, Query parentLHS,
-                                                   Map<String, Type> globalVarMap) {
-        Set<String> chVars = childBody.getVarSet();
-        Set<String> pVars = parentLHS.getVarSet();
-        Atomic childAtom = getRuleConclusionAtom(childBody, childHead);
-
-        String parentBV = parentAtom.getVarName();
-        String childBV = childAtom.getVarName();
-        //if bound vars not equal alpha-convert
-        if (!parentBV.equals(childBV)) {
-            LOG.debug("Replacing: " + childBV + "->" + parentBV);
-            childHead.changeVarName(childBV, parentBV);
-            childBody.changeVarName(childBV, parentBV);
-            resolveCaptures(childBody, globalVarMap.keySet());
-        }
-
-        //if any of free vars of child are contained in parent or global, create a new var
-        chVars.forEach( var -> {
-            // if (x e P) v (x e G)
-            // x -> fresh
-            if (!var.equals(parentBV) && ( pVars.contains(var) || globalVarMap.containsKey(var))) {
-                String freshVar = createFreshVariable(globalVarMap.keySet(), chVars, var);
-                LOG.debug("Replacing: " + var + "->" + freshVar);
-                childBody.changeVarName(var, freshVar);
-            }
-        });
-    }
-
-    /**
      * make child query consistent by performing variable substitution so that parent variables are propagated
      * @param rule to be unified
      * @param parentAtom parent atom (predicate) being resolved (subgoal)
      * @param globalVarMap map containing global vars and their types
      */
     private Pair<Query, Query> unifyRule(Rule rule, Atomic parentAtom, Map<String, Type> globalVarMap) {
-        Type type = getRuleConclusionType(rule);
         Query parent = parentAtom.getParentQuery();
-        Query ruleBody = new Query(rule.getLHS(), rule, graph);
+        Query ruleBody = new Query(rule.getLHS(), graph);
         Query ruleHead= new Query(rule.getRHS(), graph);
 
-        if (type.isRelationType())
-            unifyRuleViaRelation(ruleHead, ruleBody, (Relation) parentAtom, parent, globalVarMap);
-        else
-            unifyRuleViaAtom(ruleHead, ruleBody, parentAtom, parent, globalVarMap);
+        unifyRuleViaAtom(ruleHead, ruleBody, parentAtom, parent, globalVarMap);
 
         //update global vars
         Map<String, Type> varTypeMap = ruleBody.getVarTypeMap();
@@ -413,21 +370,73 @@ public class Reasoner {
         return answers;
     }
 
-    private Set<Map<String, Concept>> memoryLookup(Query query, Map<Query, Set<Map<String, Concept>>> matAnswers) {
-        Query equivalentQuery = findEquivalentQuery(query, matAnswers.keySet());
-        if (equivalentQuery != null)
-            return matAnswers.get(equivalentQuery);
-        else
-            return new HashSet<>();
+    private Set<Map<String, Concept>> getUnifiedAnswers(Query parentQuery, Query childQuery,
+                                                        Set<Map<String, Concept>>answers){
+        Set<Atomic> childAtoms = childQuery.selectAtoms();
+        Set<Atomic> parentAtoms = parentQuery.selectAtoms();
+        if(childAtoms.size() > 1 || parentAtoms.size() > 1) {
+            throw new IllegalArgumentException(ErrorMessage.NON_ATOMIC_QUERY.getMessage());
+        }
+
+        Atomic childAtom = childAtoms.iterator().next();
+        Atomic parentAtom = parentAtoms.iterator().next();
+        Map<String, String> unifiers = getUnifiers(childAtom, parentAtom);
+        Set<Map<String, Concept>> unifiedAnswers = new HashSet<>();
+        answers.forEach( entry -> {
+            Map<String, Concept> answer = new HashMap<>();
+            entry.forEach( (var, con) -> {
+                if (unifiers.containsKey(var))
+                    answer.put(unifiers.get(var), con);
+                else
+                    answer.put(var, con);
+            });
+            unifiedAnswers.add(answer);
+        });
+
+        return unifiedAnswers;
     }
 
-    private Set<Map<String, Concept>> filterAnswers(Query query, Set<Map<String, Concept>> answers) {
-        Set<String> selectVars = query.getMatchQuery().admin().getSelectedNames();
+    private Set<Map<String, Concept>> memoryLookup(Query query, Map<Query, Set<Map<String, Concept>>> matAnswers) {
+        Set<Map<String, Concept>> answers = new HashSet<>();
+        Query equivalentQuery = findEquivalentQuery(query, matAnswers.keySet());
+        if (equivalentQuery != null)
+            answers = getUnifiedAnswers(query, equivalentQuery, matAnswers.get(equivalentQuery));
+
+        //TODO get answers from compatible queries
+        return answers;
+    }
+
+    private Set<Map<String, Concept>> propagateHeadSubstitutions(Query atomicQuery, Query ruleHead, Set<Map<String, Concept>> answers){
+        Set<Map<String, Concept>> newAnswers = new HashSet<>();
+        if(answers.isEmpty()) return newAnswers;
+
+        Set<String> queryVars = atomicQuery.getSelectVars();
+        Set<String> headVars = ruleHead.getSelectVars();
+        Set<Atomic> extraSubs = new HashSet<>();
+        if(queryVars.size() > headVars.size()){
+            extraSubs.addAll(ruleHead.getSubstitutions()
+                    .stream().filter(sub -> queryVars.contains(sub.getVarName()))
+                    .collect(Collectors.toSet()));
+        }
+
+        answers.forEach( map -> {
+            Map<String, Concept> newMap = new HashMap<>(map);
+            extraSubs.forEach(sub -> newMap.put(sub.getVarName(), graph.getInstance(sub.getVal())) );
+            newAnswers.add(newMap);
+        });
+
+        return newAnswers;
+    }
+
+    private Set<Map<String, Concept>> filterAnswers(Query atomicQuery, Set<Map<String, Concept>> answers) {
         Set<Map<String, Concept>> results =  new HashSet<>();
+        if(answers.isEmpty()) return results;
+
+        Set<String> queryVars = atomicQuery.getSelectVars();
         answers.forEach(answer -> {
             Map<String, Concept> map = new HashMap<>();
             answer.forEach((var, concept) -> {
-                if(selectVars.contains(var))
+                if(queryVars.contains(var))
                     map.put(var, concept);
             });
             if (!map.isEmpty()) results.add(map);
@@ -436,12 +445,46 @@ public class Reasoner {
         return results.stream().distinct().collect(Collectors.toSet());
     }
 
-    private void recordAnswers(Query query, Set<Map<String, Concept>> answers, Map<Query, Set<Map<String, Concept>>> matAnswers) {
+    private void propagateAnswers(Query query, Set<Map<String, Concept>> answers, Map<Query, Set<Map<String, Concept>>> matAnswers){
+        if(answers.isEmpty()) return;
+
+        Set<Atomic> atoms = query.selectAtoms();
+        if (atoms.size() != 1 )
+            throw new IllegalArgumentException(ErrorMessage.NON_ATOMIC_QUERY.getMessage());
+        Atomic atom = atoms.iterator().next();
+        Set<Atomic> constraints = atom.getSubstitutions();
+        constraints.addAll(atom.getTypeConstraints());
+
+        //find compatible queries by stripping constraints
+        Query genQuery = new Query(query);
+        Iterator<Atomic> it = constraints.iterator();
+        while(it.hasNext() && genQuery.getAtoms().size() != 1) {
+            Atomic cstr = it.next();
+            genQuery.getAtoms().remove(cstr);
+            Query compatibleQuery = findEquivalentQuery(genQuery, matAnswers.keySet());
+            if(compatibleQuery != null) {
+                Set<Map<String, Concept>> compatibleAnswers = new HashSet<>();
+                answers.forEach( entry -> compatibleAnswers.add(new HashMap<>(entry)));
+                if (cstr.isValuePredicate())
+                    compatibleAnswers.forEach(map -> map.put(cstr.getVarName(), graph.getInstance(cstr.getVal())));
+                Set<Map<String, Concept>> unifiedAnswers = getUnifiedAnswers(compatibleQuery, query, compatibleAnswers);
+                matAnswers.get(compatibleQuery).addAll(unifiedAnswers);
+            }
+        }
+    }
+
+    private void recordAnswers(Query query, Set<Map<String, Concept>> answers,
+                               Map<Query, Set<Map<String, Concept>>> matAnswers) {
         Query equivalentQuery = findEquivalentQuery(query, matAnswers.keySet());
-        if (equivalentQuery != null)
-            matAnswers.get(equivalentQuery).addAll(answers);
-        else
+        if (equivalentQuery != null) {
+            Set<Map<String, Concept>> unifiedAnswers = getUnifiedAnswers(equivalentQuery, query, answers);
+            matAnswers.get(equivalentQuery).addAll(unifiedAnswers);
+            propagateAnswers(query, unifiedAnswers, matAnswers);
+        }
+        else {
             matAnswers.put(query, answers);
+            propagateAnswers(query, answers, matAnswers);
+        }
     }
 
     private void materializeAnswers(Query atomicQuery, Set<Map<String, Concept>> answers){
@@ -461,7 +504,6 @@ public class Reasoner {
     private Set<Map<String, Concept>> joinSubstitutions(Set<Map<String, Concept>> tuples, Set<Map<String, Concept>> localTuples) {
         if(localTuples.isEmpty())
             return new HashSet<>();
-
         if(tuples.isEmpty())
             return Sets.newHashSet(localTuples);
 
@@ -486,13 +528,21 @@ public class Reasoner {
                 }
             }
         }
-
         return join;
+    }
+
+    private void propagateConstraints(Atomic parentAtom, Query ruleHead, Query ruleBody){
+        ruleHead.addAtomConstraints(parentAtom.getSubstitutions());
+        ruleHead.addAtomConstraints(ruleBody.getSubstitutions());
+        ruleBody.addAtomConstraints(parentAtom.getSubstitutions());
+        if(parentAtom.isRelation()) {
+            ruleHead.addAtomConstraints(parentAtom.getTypeConstraints());
+            ruleBody.addAtomConstraints(parentAtom.getTypeConstraints());
+        }
     }
 
     private Set<Map<String, Concept>> Answer(Atomic atom, Set<Query> subGoals, Map<String, Type> varMap) {
         Query atomicQuery = new Query(atom);
-
         Set<Map<String, Concept>> allSubs = DBlookup(atomicQuery);
 
         boolean queryAdmissible = true;
@@ -507,28 +557,23 @@ public class Reasoner {
                 Query ruleBody = ruleQuery.getKey();
                 Query ruleHead = ruleQuery.getValue();
 
-                ruleHead.addAtomConstraints(atom.getSubstitutions());
-                ruleBody.addAtomConstraints(atom.getSubstitutions());
-                if(atom.isRelation()) {
-                    ruleHead.addAtomConstraints(atom.getTypeConstraints());
-                    ruleBody.addAtomConstraints(atom.getTypeConstraints());
-                }
+                propagateConstraints(atom, ruleHead, ruleBody);
 
                 Set<Map<String, Concept>> subs = new HashSet<>();
                 Set<Atomic> atoms = ruleBody.selectAtoms();
 
                 Iterator<Atomic> atIt = atoms.iterator();
-                do {
+                do{
                     Atomic at = atIt.next();
                     subGoals.add(atomicQuery);
                     Set<Map<String, Concept>> localSubs = Answer(at, subGoals, varMap);
                     subs = joinSubstitutions(subs, localSubs);
-                }
-                while (!subs.isEmpty() && atIt.hasNext());
+                } while(!subs.isEmpty() && atIt.hasNext());
 
-                Set<Map<String,Concept>> answers = filterAnswers(ruleHead, subs);
-                materializeAnswers(ruleHead, answers);
-                allSubs.addAll(answers);
+                Set<Map<String, Concept>> answers = propagateHeadSubstitutions(atomicQuery, ruleHead, subs);
+                Set<Map<String, Concept>> filteredAnswers = filterAnswers(atomicQuery, answers);
+                materializeAnswers(ruleHead, filteredAnswers);
+                allSubs.addAll(filteredAnswers);
             }
         }
 
@@ -539,7 +584,7 @@ public class Reasoner {
         Set<Map<String, Concept>> subAnswers = new HashSet<>();
         int dAns;
         int iter = 0;
-
+        
         do {
             Set<Query> subGoals = new HashSet<>();
             Map<String, Type> varMap = atom.getParentQuery().getVarTypeMap();
@@ -547,12 +592,15 @@ public class Reasoner {
             LOG.debug("iter: " + iter++ + " answers: " + dAns);
             subAnswers = Answer(atom, subGoals, varMap);
             dAns = subAnswers.size() - dAns;
-        } while(dAns != 0 );
+        } while(dAns != 0);
 
         return subAnswers;
     }
 
     private Set<Map<String, Concept>> resolveQuery(Query query) {
+        if(getRules().isEmpty())
+            return Sets.newHashSet(query.getMatchQuery().distinct());
+
         Set<Map<String, Concept>> answers = new HashSet<>();
         Set<Atomic> atoms = query.selectAtoms();
 

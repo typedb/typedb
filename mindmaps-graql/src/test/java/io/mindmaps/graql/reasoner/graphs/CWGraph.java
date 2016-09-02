@@ -32,9 +32,20 @@ public class CWGraph {
     private static MindmapsTransaction mindmaps;
 
     private static EntityType person, criminal, weapon, rocket, missile, country;
-    private static ResourceType<String> nationality;
-    private static ResourceType<String> propulsion;
+    
+
     private static ResourceType<String> alignment;
+    private static RelationType alignmentRelation;
+    private static RoleType alignmentValue, alignmentTarget;
+
+    private static ResourceType<String> propulsion;
+    private static RelationType propulsionRelation;
+    private static RoleType propulsionValue, propulsionTarget;
+
+    private static ResourceType<String> nationality;
+    private static RelationType nationalityRelation;
+    private static RoleType nationalityValue, nationalityTarget;
+    
     private static RelationType hasResource, isEnemyOf, isPaidBy, owns, transaction;
 
     private static RoleType hasResourceTarget, hasResourceValue;
@@ -72,9 +83,27 @@ public class CWGraph {
         hasResource = mindmaps.putRelationType("has-resource")
                 .hasRole(hasResourceTarget).hasRole(hasResourceValue);
 
-        nationality = mindmaps.putResourceType("nationality", Data.STRING).playsRole(hasResourceValue);
-        propulsion = mindmaps.putResourceType("propulsion", Data.STRING).playsRole(hasResourceValue);
-        alignment = mindmaps.putResourceType("alignment", Data.STRING).playsRole(hasResourceValue);
+        nationalityTarget = mindmaps.putRoleType("has-nationality-owner");
+        nationalityValue = mindmaps.putRoleType("has-nationality-value");
+        nationalityRelation = mindmaps.putRelationType("has-nationality")
+                .hasRole(nationalityTarget).hasRole(nationalityValue);
+        nationality = mindmaps.putResourceType("nationality", Data.STRING).playsRole(hasResourceValue)
+                .playsRole(nationalityValue);
+
+        propulsionTarget = mindmaps.putRoleType("has-propulsion-owner");
+        propulsionValue = mindmaps.putRoleType("has-propulsion-value");
+        propulsionRelation = mindmaps.putRelationType("has-propulsion")
+                .hasRole(propulsionTarget).hasRole(propulsionValue);
+        propulsion = mindmaps.putResourceType("propulsion", Data.STRING).playsRole(hasResourceValue)
+                .playsRole(propulsionValue);
+
+        alignmentTarget = mindmaps.putRoleType("has-alignment-owner");
+        alignmentValue = mindmaps.putRoleType("has-alignment-value");
+        alignmentRelation = mindmaps.putRelationType("has-alignment")
+                .hasRole(alignmentTarget).hasRole(alignmentValue);
+        alignment = mindmaps.putResourceType("alignment", Data.STRING).playsRole(hasResourceValue)
+                .playsRole(alignmentValue);
+
 
         enemySource = mindmaps.putRoleType("enemy-source");
         enemyTarget = mindmaps.putRoleType("enemy-target");
@@ -103,21 +132,33 @@ public class CWGraph {
 
 
         person = mindmaps.putEntityType("person").setValue("person")
-                .playsRole(seller).playsRole(payee).playsRole(hasResourceTarget);
+                .playsRole(seller)
+                .playsRole(payee)
+                .playsRole(nationalityTarget)
+                .playsRole(hasResourceTarget);
         criminal = mindmaps.putEntityType("criminal").setValue("criminal").superType(person);
 
         //device = mindmaps.putEntityType("device").setValue("device");
         weapon = mindmaps.putEntityType("weapon").setValue("weapon")
-                .playsRole(transactionItem).playsRole(ownedItem).playsRole(hasResourceTarget);//.superEntity(device);
+                .playsRole(transactionItem)
+                .playsRole(ownedItem)
+                .playsRole(hasResourceTarget);//.superEntity(device);
         rocket = mindmaps.putEntityType("rocket").setValue("rocket")
-                .playsRole(hasResourceTarget).playsRole(transactionItem).playsRole(ownedItem);
+                .playsRole(hasResourceTarget)
+                .playsRole(transactionItem)
+                .playsRole(ownedItem)
+                .playsRole(propulsionTarget);
         missile = mindmaps.putEntityType("missile").setValue("missile").superType(weapon)
-                .playsRole(transactionItem).playsRole(hasResourceTarget);
-
+                .playsRole(transactionItem)
+                .playsRole(hasResourceTarget);
 
         country = mindmaps.putEntityType("country").setValue("country")
-                .playsRole(buyer).playsRole(owner).playsRole(enemyTarget).playsRole(payer).playsRole(enemySource).playsRole(hasResourceTarget);
-
+                .playsRole(buyer)
+                .playsRole(owner)
+                .playsRole(enemyTarget)
+                .playsRole(payer)
+                .playsRole(enemySource)
+                .playsRole(hasResourceTarget);
 
     }
 
@@ -127,9 +168,8 @@ public class CWGraph {
         America = putEntity(country, "America");
         Tomahawk = putEntity(rocket, "Tomahawk");
 
-        putResource(colonelWest, nationality, "American");
-        putResource(Tomahawk, propulsion, "gsp");
-
+        putResource(colonelWest, nationality, "American", nationalityRelation, nationalityTarget, nationalityValue);
+        putResource(Tomahawk, propulsion, "gsp", propulsionRelation, propulsionTarget, propulsionValue);
     }
 
     private static void buildRelations() {
@@ -154,12 +194,10 @@ public class CWGraph {
 
         //R1: "It is a crime for an American to sell weapons to hostile nations"
         String R1_LHS = "match " +
-                "$x isa person;\n" +
-                "$x has nationality 'American';\n" +
-                "$y isa weapon;\n" +
-                "$z isa country;\n" +
-                "$z has alignment 'hostile';\n" +
-                "($x, $y, $z) isa transaction;" +
+                "$x isa person;$x has nationality 'American';" +
+                "$y isa weapon;" +
+                "$z isa country;$z has alignment 'hostile';" +
+                "(seller $x, transaction-item $y, buyer $z) isa transaction;" +
                 "select $x";
 
         String R1_RHS = "match $x isa criminal";
@@ -174,10 +212,9 @@ public class CWGraph {
 
         //R3: "If a country is an enemy of America then it is hostile"
         String R3_LHS = "match " +
-                "$x isa country;\n" +
-                "($x, $y) isa is-enemy-of;\n" +
-                "$y isa country;\n" +
-                "$y value 'America';" +
+                "$x isa country;" +
+                "($x, $y) isa is-enemy-of;" +
+                "$y isa country;$y id 'America';" +
                 "select $x";
         String R3_RHS = "match $x has alignment 'hostile'";
 
@@ -190,13 +227,13 @@ public class CWGraph {
         mindmaps.putRule("R4", R4_LHS, R4_RHS, inferenceRule);
 
         String R5_LHS = "match "+
-                "$x isa person;\n" +
-                "$y isa country;\n" +
-                "$z isa weapon;\n" +
+                "$x isa person;" +
+                "$y isa country;" +
+                "$z isa weapon;" +
                 "($x, $y) isa is-paid-by;\n" +
                 "($y, $z) isa owns";
 
-        String R5_RHS = "match ($x, $y, $z) isa transaction";
+        String R5_RHS = "match (seller $x, buyer $y, transaction-item $z) isa transaction";
 
         mindmaps.putRule("R5", R5_LHS, R5_RHS, inferenceRule);
     }
@@ -211,6 +248,15 @@ public class CWGraph {
         mindmaps.addRelation(hasResource)
                 .putRolePlayer(hasResourceTarget, instance)
                 .putRolePlayer(hasResourceValue, resourceInstance);
+    }
+
+    private static <T> void putResource(Instance instance, ResourceType<T> resourceType, T resource, RelationType relationType,
+                                        RoleType targetRole, RoleType valueRole) {
+        Resource resourceInstance = mindmaps.putResource(UUID.randomUUID().toString(), resourceType).setValue(resource);
+
+        mindmaps.addRelation(relationType)
+                .putRolePlayer(targetRole, instance)
+                .putRolePlayer(valueRole, resourceInstance);
     }
 
 

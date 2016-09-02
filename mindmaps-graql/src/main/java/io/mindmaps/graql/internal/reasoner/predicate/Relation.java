@@ -31,6 +31,7 @@ import io.mindmaps.graql.internal.reasoner.container.Query;
 import javafx.util.Pair;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static io.mindmaps.graql.internal.reasoner.Utility.getCompatibleRoleTypes;
 
@@ -81,7 +82,7 @@ public class Relation extends AtomBase {
     public boolean isEquivalent(Object obj) {
         if (!(obj instanceof Relation)) return false;
         Relation a2 = (Relation) obj;
-        return this.getTypeId().equals(a2.getTypeId());
+        return this.getTypeId().equals(a2.getTypeId()) && a2.getRoleVarTypeMap().size() == this.getRoleVarTypeMap().size();
     }
 
     @Override
@@ -109,6 +110,13 @@ public class Relation extends AtomBase {
     public boolean isResource(){ return false;}
     @Override
     public boolean isType(){ return true;}
+    public boolean hasExplicitRoleTypes(){
+        boolean rolesDefined = true;
+        Iterator<Var.Casting> it = castings.iterator();
+        while (it.hasNext() && rolesDefined)
+            rolesDefined = it.next().getRoleType().isPresent();
+        return rolesDefined;
+    }
     @Override
     public boolean containsVar(String name) {
         boolean varFound = false;
@@ -229,7 +237,6 @@ public class Relation extends AtomBase {
             if (!roleTypeId.isEmpty())
                 roleVarTypeMap.put(graph.getRoleType(roleTypeId), new Pair<>(var, type));
             else {
-
                 if (type != null) {
                     Set<RoleType> cRoles = getCompatibleRoleTypes(type.getId(), relTypeId, graph);
 
@@ -244,11 +251,9 @@ public class Relation extends AtomBase {
     }
 
     public Set<Atomic> getTypeConstraints(){
-        Set<Atomic> typeConstraints = new HashSet<>();
-        getParentQuery().getAtoms().forEach(atom ->{
-            if (atom.isType() && containsVar(atom.getVarName())) typeConstraints.add(atom);
-        });
-        return typeConstraints;
+        Set<Atomic> typeConstraints = getParentQuery().getAtoms();
+        return typeConstraints.stream().filter(atom -> atom.isType() && !atom.isResource() && containsVar(atom.getVarName()))
+                        .collect(Collectors.toSet());
     }
 
 
