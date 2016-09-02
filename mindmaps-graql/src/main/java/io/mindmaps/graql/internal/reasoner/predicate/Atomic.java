@@ -19,9 +19,12 @@
 package io.mindmaps.graql.internal.reasoner.predicate;
 
 import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.core.model.RoleType;
+import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.MatchQueryDefault;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.internal.reasoner.container.Query;
+import javafx.util.Pair;
 
 import java.util.Map;
 import java.util.Set;
@@ -63,6 +66,8 @@ public interface Atomic {
      */
     default boolean isEquivalent(Object obj){ return false;}
 
+    default boolean isRuleResolvable(){ return false;}
+
     /**
      * @param name variable name
      * @return true if atom contains an occurrence of the variable name
@@ -85,7 +90,6 @@ public interface Atomic {
      * @return match query obtained by selecting free variables
      */
     MatchQueryDefault getMatchQuery(MindmapsTransaction graph);
-
     MatchQueryDefault getExpandedMatchQuery(MindmapsTransaction graph);
 
     /**
@@ -125,5 +129,9 @@ public interface Atomic {
     Set<Atomic> getNeighbours();
 
     Map<String, Set<Atomic>> getVarSubMap();
+    Map<String, Set<Atomic>> getVarConstraintMap();
+
+    Map<String, Pair<Type, RoleType>> getVarTypeRoleMap();
+    Map<RoleType, Pair<String, Type>> getRoleVarTypeMap();
 
 }

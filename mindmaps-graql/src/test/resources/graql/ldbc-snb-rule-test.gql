@@ -1,20 +1,12 @@
 insert
 
 
-"R7" isa inference-rule,
+"R6" isa inference-rule,
 lhs {match $x isa person;
-$t isa tag;{$t value 'Ludwig_van_Beethoven'} or {$t value 'Johann_Sebastian_Bach'} or {$t value 'Wolfgang_Amadeus_Mozart'};
-($x, $t) isa tagging;
-$y isa product, value 'Chopin - Nocturnes';
-select $x, $y},
-rhs {match ($x, $y) isa recommendation};
-
-"R5" isa inference-rule,
-lhs {match $x isa person;
-$t isa tag;{$t value 'Ozzy_Osbourne'} or {$t value 'Rising_Force'};
-($x, $t) isa tagging;
-$y isa product;
-{$y value 'Ozzy Osbourne - Blizzard of Oz'} or {$y value 'Fender Stratocaster'};
+$x has gender 'male';$x has age >=18;
+$y isa product;$y has min-age >=18;
+$z isa country;$z id 'country-81';
+($y, $z) isa made-in;
 select $x, $y},
 rhs {match ($x, $y) isa recommendation};
 

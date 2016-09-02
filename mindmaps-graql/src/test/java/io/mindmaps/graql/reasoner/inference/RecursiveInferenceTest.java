@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import static io.mindmaps.graql.internal.reasoner.Utility.printAnswers;
 import static org.junit.Assert.assertEquals;
 
 public class RecursiveInferenceTest {
@@ -182,8 +183,29 @@ public class RecursiveInferenceTest {
     /**test 6.10 from Cao p. 82*/
     @Test
     public void testPath(){
+        final int N = 3;
+        MindmapsTransaction graph = PathGraph.getTransaction(N, 3);
+        QueryParser qp = QueryParser.create(graph);
+        Reasoner reasoner = new Reasoner(graph);
+
+        String queryString = "match (path-from $x, path-to $y) isa path;$x id 'a0' select $y";
+        MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
+        String explicitQuery = "match $y isa vertex";
+
+        Set<Map<String, Concept>> answers = reasoner.resolve(query);
+
+        Map<String, Concept> a0result = new HashMap<>();
+        a0result.put("y", graph.getInstance("a0"));
+        answers.add(a0result);
+
+        assertEquals(answers, Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
+    }
+
+    @Test
+    /**modified test 6.10 from Cao p. 82*/
+    public void testPathII(){
         final int N = 5;
-        MindmapsTransaction graph = PathGraph.getTransaction(N, N);
+        MindmapsTransaction graph = PathGraphII.getTransaction(N, N);
         QueryParser qp = QueryParser.create(graph);
         Reasoner reasoner = new Reasoner(graph);
 
@@ -232,7 +254,7 @@ public class RecursiveInferenceTest {
         assertEquals(answers, Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
-    /**test3 from Nguyen*/
+    /**test3 from Nguyen (similar to test 6.5 from Cao)*/
     @Test
     //TODO need to add handling unary predicates to capture match $x isa S
     public void testNguyen(){

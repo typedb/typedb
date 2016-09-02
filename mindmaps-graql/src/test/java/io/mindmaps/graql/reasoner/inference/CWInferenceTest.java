@@ -58,16 +58,14 @@ public class CWInferenceTest {
                 "{{$x isa missile} or {$x isa rocket;$x has propulsion 'gsp';}} or {$x isa rocket;$x has propulsion 'gsp';}\n" +
                 "}";
 
-        assertQueriesEqual(reasoner.expand(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
+        //assertQueriesEqual(reasoner.expand(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
 
     }
 
     @Test
     public void testTransactionQuery() {
-        String queryString = "match" +
-                "$x isa person;\n" +
-                "$z isa country;\n" +
-                "($x, $y, $z) isa transaction";
+        String queryString = "match $x isa person;$z isa country;($x, $y, $z) isa transaction";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
 
         String explicitQuery = "match \n" +
@@ -83,14 +81,13 @@ public class CWInferenceTest {
                 "($z, $y) isa owns\n" +
                 "}";
 
-        assertQueriesEqual(reasoner.expand(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
+        //assertQueriesEqual(reasoner.expand(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
     @Test
     public void testTransactionQuery2() {
-        String queryString = "match" +
-                       "$x isa person;$z isa country;$y isa weapon;\n" +
-                        "($x, $y, $z) isa transaction";
+        String queryString = "match $x isa person;$z isa country;$y isa weapon;($x, $y, $z) isa transaction";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
 
         String explicitQuery = "match \n" +
@@ -110,6 +107,7 @@ public class CWInferenceTest {
                 "}";
 
         assertQueriesEqual(reasoner.expand(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
     @Test
@@ -138,7 +136,8 @@ public class CWInferenceTest {
                 "$z isa country\n" +
                 "}; select $x";
 
-        assertQueriesEqual(reasoner.expand(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
+        //assertQueriesEqual(reasoner.expand(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
     @Test
@@ -183,8 +182,6 @@ public class CWInferenceTest {
         String queryString = "match $x isa criminal;";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
 
-        MatchQueryDefault expandedQuery = reasoner.expand(query);
-
         String explicitQuery = "match " +
                 "{$x isa criminal} or {\n" +
                 "$x has nationality 'American';\n" +
@@ -204,7 +201,8 @@ public class CWInferenceTest {
                 "}" +
                 "} select $x";
 
-        assertQueriesEqual(expandedQuery, qp.parseMatchQuery(explicitQuery).getMatchQuery());
+        //assertQueriesEqual(reasoner.expand(query);, qp.parseMatchQuery(explicitQuery).getMatchQuery());
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
     @Test
@@ -231,6 +229,7 @@ public class CWInferenceTest {
                 "}";
 
         assertQueriesEqual(reasoner.expand(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
     @Test
@@ -257,6 +256,7 @@ public class CWInferenceTest {
                 "}";
 
         assertQueriesEqual(reasoner.expand(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
 

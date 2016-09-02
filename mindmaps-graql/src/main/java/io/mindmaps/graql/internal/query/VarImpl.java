@@ -91,7 +91,7 @@ public class VarImpl implements VarAdmin {
      * Create a variable by combining a collection of other variables
      * @param vars a collection of variables to combine
      */
-    VarImpl(Collection<VarAdmin> vars) {
+    public VarImpl(Collection<VarAdmin> vars) {
         VarAdmin first = vars.iterator().next();
         this.name = first.getName();
         this.userDefinedName = first.isUserDefinedName();

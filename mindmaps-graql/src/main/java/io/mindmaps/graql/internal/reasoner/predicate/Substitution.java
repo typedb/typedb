@@ -51,8 +51,22 @@ public class Substitution extends AtomBase{
         this.val = con.getId();
     }
 
+    public Substitution(String name, Concept con, String val) {
+        super(createPattern(name, con, val));
+        this.val = con == null? val : con.getId();
+    }
+
+    static private VarAdmin createPattern(String name, Concept con, String val){
+        if (con == null)
+            return Graql.var(name).id(val).admin().asVar();
+        else
+            return Graql.var(name).value(con.getId()).admin().asVar();
+    }
+
     @Override
     public boolean isValuePredicate(){ return true;}
+    @Override
+    public boolean isRuleResolvable(){ return false;}
 
     @Override
     public boolean equals(Object obj) {
@@ -69,8 +83,7 @@ public class Substitution extends AtomBase{
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         int hashCode = 1;
         hashCode = hashCode * 37 + this.val.hashCode();
         hashCode = hashCode * 37 + this.varName.hashCode();
@@ -90,7 +103,7 @@ public class Substitution extends AtomBase{
             else
                 value = valuePredicates.iterator().next().getPredicate().getValue().toString();
         }
-        else if(var.admin().getId().isPresent()) value = var.admin().getId().get();
+        else if(var.admin().getId().isPresent()) value = var.admin().getId().isPresent()? var.admin().getId().get() : "";
         return value;
     }
 

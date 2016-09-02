@@ -39,6 +39,7 @@ creation-date plays-role relation-resource-value;
 "country" ako place;
 "city" ako place;
 
+
 "location" isa role-type, is-abstract;
 
 "member-location" ako location;

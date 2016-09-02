@@ -24,19 +24,17 @@ import io.mindmaps.core.model.Instance;
 import io.mindmaps.core.model.RelationType;
 import io.mindmaps.core.model.RoleType;
 
-import static com.google.common.math.IntMath.pow;
+public class PathGraphII extends GenericGraph {
 
-public class PathGraph extends GenericGraph {
-
-    public static MindmapsTransaction getTransaction(int n, int children) {
+    public static MindmapsTransaction getTransaction(int n, int m) {
         final String gqlFile = "path-test.gql";
         getTransaction(gqlFile);
-        buildExtensionalDB(n, children);
+        buildExtensionalDB(n, m);
         commit();
         return mindmaps;
     }
 
-    private static void buildExtensionalDB(int n, int children) {
+    private static void buildExtensionalDB(int n, int m) {
         EntityType vertex = mindmaps.getEntityType("vertex");
         RoleType arcFrom = mindmaps.getRoleType("arc-from");
         RoleType arcTo = mindmaps.getRoleType("arc-to");
@@ -44,27 +42,25 @@ public class PathGraph extends GenericGraph {
         RelationType arc = mindmaps.getRelationType("arc");
         putEntity(vertex, "a0");
 
-        for(int i = 1 ; i <= n ;i++) {
-            int m = pow(children, i);
-            for (int j = 0; j < m; j++) {
-                putEntity(vertex, "a" + i + "," + j);
-            }
-        }
+        for(int i = 0 ; i < n ;i++)
+            for(int j = 0; j < m; j++)
+                putEntity(vertex, "a" + i +"," + j);
 
-        for (int j = 0; j < children; j++) {
-            mindmaps.addRelation(arc)
-                    .putRolePlayer(arcFrom, mindmaps.getInstance("a0"))
-                    .putRolePlayer(arcTo, mindmaps.getInstance("a1," + j));
-        }
+        mindmaps.addRelation(arc)
+                .putRolePlayer(arcFrom, mindmaps.getInstance("a0"))
+                .putRolePlayer(arcTo, mindmaps.getInstance("a0,0"));
 
-        for(int i = 1 ; i < n ;i++) {
-            int m = pow(children, i);
+        for(int i = 0 ; i < n ;i++) {
             for (int j = 0; j < m; j++) {
-                for (int c = 0; c < children; c++) {
+                if (j < n - 1) {
                     mindmaps.addRelation(arc)
                             .putRolePlayer(arcFrom, mindmaps.getInstance("a" + i + "," + j))
-                            .putRolePlayer(arcTo, mindmaps.getInstance("a" + (i + 1) + "," + (j * children + c)));
-
+                            .putRolePlayer(arcTo, mindmaps.getInstance("a" + i + "," + (j + 1)));
+                }
+                if (i < m - 1) {
+                    mindmaps.addRelation(arc)
+                            .putRolePlayer(arcFrom, mindmaps.getInstance("a" + i + "," + j))
+                            .putRolePlayer(arcTo, mindmaps.getInstance("a" + (i + 1) + "," + j));
                 }
             }
         }

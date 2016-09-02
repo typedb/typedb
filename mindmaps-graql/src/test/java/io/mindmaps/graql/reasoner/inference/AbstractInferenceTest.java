@@ -25,6 +25,7 @@ import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.reasoner.graphs.AbstractGraph;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -42,7 +43,9 @@ public class AbstractInferenceTest {
         qp = QueryParser.create(graph);
     }
 
+    /**silently allows multiple isas*/
     @Test
+    @Ignore
     public void testQuery() {
         String queryString = "match $x isa Q;";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
@@ -56,14 +59,15 @@ public class AbstractInferenceTest {
                 "}; select $x";
 
         assertQueriesEqual(expQuery, qp.parseMatchQuery(explicitQuery).getMatchQuery());
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
+    /**silently allows multiple isas*/
     @Test
+    @Ignore
     public void testQuery2() {
         String queryString = "match " +
-                        "$yy isa Q;\n" +
-                        "$y isa P;\n" +
-                        "($y, $yy) isa REL; select $yy";
+                        "$yy isa Q;$y isa P;($y, $yy) isa REL; select $yy";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
         MatchQueryDefault expQuery = reasoner.expand(query);
 
@@ -76,6 +80,7 @@ public class AbstractInferenceTest {
                                 "$y isa P;\n" +
                                 "($y, $yy) isa REL; select $yy";
         assertQueriesEqual(expQuery, qp.parseMatchQuery(explicitQuery).getMatchQuery());
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
     private void assertQueriesEqual(MatchQueryDefault q1, MatchQueryDefault q2) {

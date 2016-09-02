@@ -58,5 +58,4 @@ public class AtomicFactory {
             return new Substitution((Substitution) atom);
         else return new Atom((Atom)atom);
     }
-
 }

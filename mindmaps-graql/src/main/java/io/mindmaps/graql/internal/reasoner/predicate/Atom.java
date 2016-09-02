@@ -23,6 +23,7 @@ import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.reasoner.container.Query;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Atom extends AtomBase{
 
@@ -50,15 +51,15 @@ public class Atom extends AtomBase{
     public boolean equals(Object obj) {
         if (!(obj instanceof Atom)) return false;
         Atom a2 = (Atom) obj;
-        return this.getTypeId().equals(a2.getTypeId()) && this.getVarName().equals(a2.getVarName())
-                && this.getVal().equals(a2.getVal());
+        return this.typeId.equals(a2.getTypeId()) && this.varName.equals(a2.getVarName())
+                && this.val.equals(a2.getVal());
     }
 
     @Override
     public boolean isEquivalent(Object obj) {
         if (!(obj instanceof Atom)) return false;
         Atom a2 = (Atom) obj;
-        return this.getTypeId().equals(a2.getTypeId()) && this.getVal().equals(a2.getVal());
+        return this.typeId.equals(a2.getTypeId()) && this.val.equals(a2.getVal());
     }
 
     @Override
@@ -80,6 +81,17 @@ public class Atom extends AtomBase{
 
     @Override
     public String getVal(){ return val;}
+
+    @Override
+    public Set<Atomic> getTypeConstraints(){
+        if (isResource()) {
+            Set<Atomic> typeConstraints = getParentQuery().getAtoms();
+            return typeConstraints.stream().filter(atom -> atom.isType() && !atom.isResource() && containsVar(atom.getVarName()))
+                    .collect(Collectors.toSet());
+        }
+        else
+            return new HashSet<>();
+    }
 
     private String extractValue(VarAdmin var) {
         String value = "";

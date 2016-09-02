@@ -72,7 +72,7 @@ public class Utility {
     public static Atomic getRuleConclusionAtom(Query ruleLHS, Query ruleRHS) {
         Set<Atomic> atoms = ruleRHS.getAtoms();
         if (atoms.size() > 1)
-            throw new IllegalArgumentException(ErrorMessage.NON_HORN_RULE.getMessage(ruleLHS.getRule().getId()));
+            throw new IllegalArgumentException(ErrorMessage.NON_HORN_RULE.getMessage(ruleLHS.toString()));
 
         Atomic atom = atoms.iterator().next();
         atom.setParentQuery(ruleLHS);
@@ -110,8 +110,8 @@ public class Utility {
         Iterator<Query> it = queries.iterator();
         while( it.hasNext() && equivalentQuery == null) {
             Query current = it.next();
-            if (query.isEquivalent(current));
-            equivalentQuery = current;
+            if (query.isEquivalent(current))
+                equivalentQuery = current;
         }
         return equivalentQuery;
     }

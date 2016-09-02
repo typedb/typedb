@@ -39,28 +39,18 @@ public class GenericGraph {
         MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
         mindmaps = graph.getTransaction();
         buildGraph(graqlFile);
-
-        try {
-            mindmaps.commit();
-        } catch (MindmapsValidationException e) {
-            System.out.println(e.getMessage());
-        }
+        commit();
 
         return mindmaps;
     }
 
     public static MindmapsTransaction getTransaction(String ontologyFile, String ruleFile, String dataFile) {
-            MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
-            mindmaps = graph.getTransaction();
-            buildGraph(ontologyFile, ruleFile, dataFile);
+        MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
+        mindmaps = graph.getTransaction();
+        buildGraph(ontologyFile, ruleFile, dataFile);
+        commit();
 
-            try {
-                mindmaps.commit();
-            } catch (MindmapsValidationException e) {
-                System.out.println(e.getMessage());
-            }
-
-            return mindmaps;
+        return mindmaps;
     }
 
     private static void buildGraph(String graqlFile) {
@@ -68,9 +58,9 @@ public class GenericGraph {
     }
 
     private static void buildGraph(String ontologyFile, String ruleFile, String dataFile) {
-            loadGraqlFile(ontologyFile);
-            loadGraqlFile(ruleFile);
-            loadGraqlFile(dataFile);
+        loadGraqlFile(ontologyFile);
+        loadGraqlFile(ruleFile);
+        loadGraqlFile(dataFile);
     }
 
     private static void loadGraqlFile(String fileName) {
@@ -84,6 +74,14 @@ public class GenericGraph {
         }
         catch (IOException e){
             e.printStackTrace();
+        }
+    }
+
+    protected static void commit(){
+        try {
+            mindmaps.commit();
+        } catch (MindmapsValidationException e) {
+            System.out.println(e.getMessage());
         }
     }
 

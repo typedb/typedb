@@ -149,7 +149,6 @@ public class QueryTest {
         disjunction = query.getExpandedMatchQuery().admin().getPattern().getDisjunctiveNormalForm();
 
         System.out.println(disjunction.toString());
-
         }
 
     @Test
@@ -180,7 +179,6 @@ public class QueryTest {
         Atomic atom = query.getAtomsWithType(graph.getRelationType("recommendation")).iterator().next();
         query.expandAtomByQuery(atom, rule);
         System.out.println(query.getExpandedMatchQuery().toString());
-
     }
 
     @Test
@@ -188,7 +186,7 @@ public class QueryTest {
         String queryString = "match $x isa person;$y isa product;($x, $y) isa recommendation";
 
         Query query = new Query(queryString, graph);
-        Query expansionQuery = new Query(graph.getRule("R7").getLHS(), graph);
+        Query expansionQuery = new Query(graph.getRule("R7a").getLHS(), graph);
 
         Atomic atom = query.getAtomsWithType(graph.getRelationType("recommendation")).iterator().next();
         query.expandAtomByQuery(atom, expansionQuery);

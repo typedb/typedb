@@ -30,6 +30,7 @@ public class MatrixGraph extends GenericGraph{
         final String gqlFile = "matrix-test.gql";
         getTransaction(gqlFile);
         buildExtensionalDB(n, m);
+        commit();
         return mindmaps;
     }
 

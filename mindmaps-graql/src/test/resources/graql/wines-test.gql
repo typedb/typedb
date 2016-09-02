@@ -1,21 +1,154 @@
 insert
 
+#######################################################
+########################ONTOLOGY######################
+#######################################################
+
+"context-preference-owner" isa role-type;
+"context-preference-id" isa role-type;
+"context-preference" isa relation-type, has-role context-preference-owner, has-role context-preference-id;
+
+"preferred-context" isa resource-type, datatype string;
+
+"body-preference-owner" isa role-type;
+"body-preference-id" isa role-type;
+"body-preference" isa relation-type, has-role body-preference-owner, has-role body-preference-id;
+
+"preferred-body" isa resource-type, datatype string;
+
+"dryness-preference-owner" isa role-type;
+"dryness-preference-id" isa role-type;
+"dryness-preference" isa relation-type, has-role dryness-preference-owner, has-role dryness-preference-id;
+
+"preferred-dryness" isa resource-type, datatype string;
+
+"entree-preference-owner" isa role-type;
+"entree-preference-id" isa role-type;
+"entree-preference" isa relation-type, has-role entree-preference-owner, has-role entree-preference-id;
+
+"preferred-entree" isa resource-type, datatype string;
+
+"colour-preference-owner" isa role-type;
+"colour-preference-id" isa role-type;
+"colour-preference" isa relation-type, has-role colour-preference-owner, has-role colour-preference-id;
+
+"preferred-colour" isa resource-type, datatype string;
+
+"sparklingness-preference-owner" isa role-type;
+"sparklingness-preference-id" isa role-type;
+"sparkingness-preference" isa relation-type, has-role sparklingness-preference-owner, has-role sparklingness-preference-id;
+
+"preferred-sparklingness" isa resource-type, datatype string;
+
+"recommended-wine" isa role-type;
+"recommendation-owner" isa role-type;
+"wine-recommendation" isa relation-type, has-role recommended-wine, has-role recommendation-owner;
+
+"recommended-generic-wine-type" isa resource-type, datatype string;
+
+"person" isa entity-type;
+person plays-role recommendation-owner;
+person has-resource preferred-context;
+person has-resource preferred-body;
+person has-resource preferred-dryness;
+person has-resource preferred-entree;
+person has-resource preferred-colour;
+person has-resource preferred-sparklingness;
+person has-resource recommended-generic-wine-type;
+
+"wine" isa entity-type;
+wine plays-role recommended-wine;
+
+#######################################################
+######################DATA########################
+#######################################################
+
+#recommend Cabernet Sauvignion
+"Alice" isa person, id "Alice";
+Alice has preferred-context "aperitif";
+Alice has preferred-sparklingness "non-sparkling";
+Alice has preferred-body "full";
+Alice has preferred-colour "red";
+
+#recommend White Champagne
+"Bob" isa person, id "Bob";
+Bob has preferred-context "aperitif";
+Bob has preferred-sparklingness "sparkling";
+Bob has preferred-body "full";
+Bob has preferred-colour "white";
+
+#recommend Pinot Grigio
+"Charlie" isa person, id "Charlie";
+Charlie has preferred-context "entree";
+Charlie has preferred-entree "white meat";
+Charlie has preferred-colour "rose";
+
+#recommend Busuioaca Romaneasca
+"Denis" isa person, id "Denis";
+Denis has preferred-context "entree";
+Denis has preferred-entree "steak";
+Denis has preferred-colour "rose";
+
+#recommend Tamaioasa Romaneasca
+"Eva" isa person, id "Eva";
+Eva has preferred-context "aperitif";
+Eva has preferred-body "full";
+Eva has preferred-sparklingness "non-sparkling";
+Eva has preferred-colour "white";
+
+#recommend Riojo Blanco
+"Frank" isa person, id "Frank";
+Frank has preferred-context "entree";
+Frank has preferred-entree "barbecue";
+Frank has preferred-body "full";
+Frank has preferred-sparklingness "non-sparkling";
+Frank has preferred-colour "white";
+
+#wines
+"White Champagne" isa wine;
+"Cabernet Sauvignion" isa wine;
+"Tamaioasa Romaneasca" isa wine;
+"Busuioaca Romaneasca" isa wine;
+"Pinot Noir" isa wine;
+"Muscat Sec" isa wine;
+"Pinot Grigio Rose" isa wine;
+"Corbieres 2003" isa wine;
+"Chateau Agnel 2000" isa wine;
+"Rosso di Sicilia 2004" isa wine;
+"Riojo Blanco CVNE 2003" isa wine;
+"Tamaioasa Regala" isa wine;
+"Riojo Tempranillo" isa wine;
+"Chianti" isa wine;
+"White Riesling" isa wine;
+"Burgundy" isa wine;
+"Chardonnay" isa wine;
+"Bordeaux Blanc" isa wine;
+"Feteasca Regala" isa wine;
+"Feteasca Roz" isa wine;
+"Feteasca Neagra" isa wine;
+"Sauvignion Blanc" isa wine;
+
+################################################################
+################################RULES#################################
+################################################################
+
 ###############APERITIF WINES##################
+
 "R2" isa inference-rule,
-lhs {match 
+lhs {match
 $x isa person;
 $x has preferred-context 'aperitif'},
 rhs {match  $x has recommended-generic-wine-type 'Romanian wine'};
 
 "R3" isa inference-rule,
-lhs {match 
+lhs {match
 $x isa person;
 $x has recommended-generic-wine-type 'Romanian wine';
 $x has preferred-body 'full'},
 rhs {match  $x has recommended-generic-wine-type 'Cotnary vineyard wine'};
 
 "R4" isa inference-rule,
-lhs {match 
+lhs {match
 $x isa person;
 $x has recommended-generic-wine-type 'Cotnary vineyard wine';
 $x has preferred-sparklingness 'sparkling'},
@@ -34,7 +167,7 @@ $x isa person;
 $x has recommended-generic-wine-type 'Champagne';
 $x has preferred-colour 'white';
 $y isa wine;
-$y value 'White Champagne'},
+$y id 'White Champagne'},
 rhs {match ($x, $y) isa wine-recommendation};
 
 "R7" isa inference-rule,
@@ -43,7 +176,7 @@ $x isa person;
 $x has recommended-generic-wine-type 'Champagne';
 $x has preferred-colour 'pink';
 $y isa wine;
-$y value 'Pink Champagne'},
+$y id 'Pink Champagne'},
 rhs {match ($x, $y) isa wine-recommendation};
 
 "R8" isa inference-rule,
@@ -52,7 +185,7 @@ $x isa person;
 $x has recommended-generic-wine-type 'Champagne';
 $x has preferred-colour 'black';
 $y isa wine;
-$y value 'Black Champagne'},
+$y id 'Black Champagne'},
 rhs {match ($x, $y) isa wine-recommendation};
 
 ###############Table###############
@@ -70,7 +203,7 @@ $x isa person;
 $x has recommended-generic-wine-type 'table wine';
 $x has preferred-colour 'white';
 $y isa wine;
-$y value 'Tamaioasa Romaneasca'},
+$y id 'Tamaioasa Romaneasca'},
 rhs {match ($x, $y) isa wine-recommendation};
 
 "R11" isa inference-rule,
@@ -79,7 +212,7 @@ $x isa person;
 $x has recommended-generic-wine-type 'table wine';
 $x has preferred-colour 'pink';
 $y isa wine;
-$y value 'Busuioaca Romaneasca'},
+$y id 'Busuioaca Romaneasca'},
 rhs {match ($x, $y) isa wine-recommendation};
 
 "R12" isa inference-rule,
@@ -88,7 +221,7 @@ $x isa person;
 $x has recommended-generic-wine-type 'table wine';
 $x has preferred-colour 'red';
 $y isa wine;
-$y value 'Cabernet Sauvignion'},
+$y id 'Cabernet Sauvignion'},
 rhs {match ($x, $y) isa wine-recommendation};
 
 
@@ -108,7 +241,7 @@ $x has recommended-generic-wine-type 'Dealu Mare vineyard wine';
 $x has preferred-sparklingness 'non-sparkling';
 $x has preferred-colour 'white';
 $y isa wine;
-$y value 'Feteasca Regala'},
+$y id 'Feteasca Regala'},
 rhs {match ($x, $y) isa wine-recommendation};
 
 "R15" isa inference-rule,
@@ -118,7 +251,7 @@ $x has recommended-generic-wine-type 'Dealu Mare vineyard wine';
 $x has preferred-sparklingness 'non-sparkling';
 $x has preferred-colour 'pink';
 $y isa wine;
-$y value 'Feteasca Roz'},
+$y id 'Feteasca Roz'},
 rhs {match ($x, $y) isa wine-recommendation};
 
 "R16" isa inference-rule,
@@ -128,7 +261,7 @@ $x has recommended-generic-wine-type 'Dealu Mare vineyard wine';
 $x has preferred-sparklingness 'non-sparkling';
 $x has preferred-colour 'red';
 $y isa wine;
-$y value 'Feteasca Neagra'},
+$y id 'Feteasca Neagra'},
 rhs {match ($x, $y) isa wine-recommendation};
 
 ###############Jidvei vineyard###############
@@ -147,7 +280,7 @@ $x has recommended-generic-wine-type 'Jidvei vineyard wine';
 $x has preferred-sparklingness 'non-sparkling';
 $x has preferred-colour 'white';
 $y isa wine;
-$y value 'Sauvignion Blanc'},
+$y id 'Sauvignion Blanc'},
 rhs {match ($x, $y) isa wine-recommendation};
 
 "R19" isa inference-rule,
@@ -157,7 +290,7 @@ $x has recommended-generic-wine-type 'Jidvei vineyard wine';
 $x has preferred-sparklingness 'non-sparkling';
 $x has preferred-colour 'pink';
 $y isa wine;
-$y value 'Feteasca Regala'},
+$y id 'Feteasca Regala'},
 rhs {match ($x, $y) isa wine-recommendation};
 
 "R20" isa inference-rule,
@@ -167,7 +300,7 @@ $x has recommended-generic-wine-type 'Jidvei vineyard wine';
 $x has preferred-sparklingness 'non-sparkling';
 $x has preferred-colour 'red';
 $y isa wine;
-$y value 'Pinot Noir'},
+$y id 'Pinot Noir'},
 rhs {match ($x, $y) isa wine-recommendation};
 
 ###############ENTREE WINES###############
@@ -185,7 +318,7 @@ $x has recommended-generic-wine-type 'entree wine';
 $x has preferred-entree 'white meat';
 $x has preferred-colour 'white';
 $y isa wine;
-$y value 'Muscat Sec'},
+$y id 'Muscat Sec'},
 rhs {match ($x, $y) isa wine-recommendation};
 
 "R23" isa inference-rule,
@@ -195,7 +328,7 @@ $x has recommended-generic-wine-type 'entree wine';
 $x has preferred-entree 'white meat';
 $x has preferred-colour 'rose';
 $y isa wine;
-$y value 'Pinot Grigio Rose'},
+$y id 'Pinot Grigio Rose'},
 rhs {match ($x, $y) isa wine-recommendation};
 
 "R24" isa inference-rule,
@@ -205,7 +338,7 @@ $x has recommended-generic-wine-type 'entree wine';
 $x has preferred-entree 'white meat';
 $x has preferred-colour 'red';
 $y isa wine;
-$y value 'Corbieres 2003'},
+$y id 'Corbieres 2003'},
 rhs {match ($x, $y) isa wine-recommendation};
 
 "R25" isa inference-rule,
@@ -215,7 +348,7 @@ $x has recommended-generic-wine-type 'entree wine';
 $x has preferred-entree 'steak';
 $x has preferred-colour 'white';
 $y isa wine;
-$y value 'Chateau Agnel 2000'},
+$y id 'Chateau Agnel 2000'},
 rhs {match ($x, $y) isa wine-recommendation};
 
 "R26" isa inference-rule,
@@ -225,7 +358,7 @@ $x has recommended-generic-wine-type 'entree wine';
 $x has preferred-entree 'steak';
 $x has preferred-colour 'rose';
 $y isa wine;
-$y value 'Busuioaca Romaneasca'},
+$y id 'Busuioaca Romaneasca'},
 rhs {match ($x, $y) isa wine-recommendation};
 
 "R27" isa inference-rule,
@@ -235,7 +368,7 @@ $x has recommended-generic-wine-type 'entree wine';
 $x has preferred-entree 'steak';
 $x has preferred-colour 'red';
 $y isa wine;
-$y value 'Rosso di Sicilia 2004'},
+$y id 'Rosso di Sicilia 2004'},
 rhs {match ($x, $y) isa wine-recommendation};
 
 "R28" isa inference-rule,
@@ -245,8 +378,10 @@ $x has recommended-generic-wine-type 'entree wine';
 $x has preferred-entree 'barbecue';
 $x has preferred-colour 'white';
 $y isa wine;
-$y value 'Riojo Blanco CVNE 2003'},
+$y id 'Riojo Blanco CVNE 2003'},
 rhs {match ($x, $y) isa wine-recommendation};
+
+
 
 
 
