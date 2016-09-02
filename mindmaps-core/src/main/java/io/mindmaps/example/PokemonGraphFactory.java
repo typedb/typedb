@@ -19,10 +19,16 @@
 package io.mindmaps.example;
 
 import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.Data;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.*;
+import io.mindmaps.core.model.Entity;
+import io.mindmaps.core.model.EntityType;
+import io.mindmaps.core.model.RelationType;
+import io.mindmaps.core.model.Resource;
+import io.mindmaps.core.model.ResourceType;
+import io.mindmaps.core.model.RoleType;
 
 /**
  * A class which loads sample data into a mindmaps graph
@@ -47,14 +53,17 @@ public class PokemonGraphFactory{
     private static RelationType hasType;
     private static RelationType superEffective;
 
+    private PokemonGraphFactory(){
+        throw new UnsupportedOperationException();
+    }
+
     public static void loadGraph(MindmapsGraph mindmapsGraph) {
         MindmapsTransaction transaction = mindmapsGraph.getTransaction();
         buildGraph(transaction);
-
         try {
             transaction.commit();
         } catch (MindmapsValidationException e) {
-            System.out.println(e.getMessage());
+            throw new RuntimeException(ErrorMessage.CANNOT_LOAD_EXAMPLE.getMessage(), e);
         }
     }
 

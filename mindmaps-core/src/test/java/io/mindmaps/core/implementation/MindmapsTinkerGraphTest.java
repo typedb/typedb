@@ -140,12 +140,11 @@ public class MindmapsTinkerGraphTest {
     }
 
     @Test
-    public void testDifferentEmptyGraphs(){
-        AbstractMindmapsGraph graph1 = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
-        AbstractMindmapsGraph graph2 = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
-
-        assertNotEquals(graph1, graph2);
-        assertNotEquals(graph1.getGraph(), graph2.getGraph());
-        assertNotEquals(graph1.getTransaction(), graph2.getTransaction());
+    public void testClear(){
+        MindmapsTransactionImpl transcation = (MindmapsTransactionImpl) mindmapsGraph.getTransaction();
+        transcation.putEntityType("entity type");
+        assertNotNull(transcation.getEntityType("entity type"));
+        mindmapsGraph.clear();
+        assertNull(transcation.getEntityType("entity type"));
     }
 }

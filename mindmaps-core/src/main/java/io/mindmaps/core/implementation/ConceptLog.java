@@ -35,12 +35,10 @@ import java.util.stream.Collectors;
 class ConceptLog {
     private Set<ConceptImpl> modifiedConcepts;
     private Set<ConceptImpl> modifiedCastings;
-    private Set<ConceptImpl> modifiedRelations;
 
     ConceptLog() {
         modifiedCastings = new HashSet<>();
         modifiedConcepts = new HashSet<>();
-        modifiedRelations = new HashSet<>();
     }
 
     /**
@@ -49,7 +47,6 @@ class ConceptLog {
     public void clearTransaction(){
         modifiedConcepts.clear();
         modifiedCastings.clear();
-        modifiedRelations.clear();
     }
 
     /**
@@ -59,9 +56,7 @@ class ConceptLog {
     public void putConcept(ConceptImpl concept) {
         if(!modifiedConcepts.contains(concept)) {
             modifiedConcepts.add(concept);
-            if (DataType.BaseType.RELATION.name().equals(concept.getBaseType()))
-                modifiedRelations.add(concept);
-            else if (DataType.BaseType.CASTING.name().equals(concept.getBaseType()))
+            if (DataType.BaseType.CASTING.name().equals(concept.getBaseType()))
                 modifiedCastings.add(concept);
         }
     }
@@ -82,15 +77,6 @@ class ConceptLog {
     public Set<ConceptImpl> getModifiedCastings () {
         modifiedCastings = modifiedCastings.stream().filter(ConceptImpl::isAlive).collect(Collectors.toSet());
         return modifiedCastings;
-    }
-
-    /**
-     *
-     * @return All the relations which have been affected within the transaction in some way
-     */
-    public Set<ConceptImpl> getModifiedRelations () {
-        modifiedRelations = modifiedRelations.stream().filter(ConceptImpl::isAlive).collect(Collectors.toSet());
-        return modifiedRelations;
     }
 
     /**

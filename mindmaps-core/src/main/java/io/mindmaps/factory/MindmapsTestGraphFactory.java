@@ -28,6 +28,9 @@ import java.util.UUID;
  * An in memory test graph. Should only be used for testing purposes.
  */
 public class MindmapsTestGraphFactory {
+    private MindmapsTestGraphFactory(){
+        throw new UnsupportedOperationException();
+    }
 
     /**
      *

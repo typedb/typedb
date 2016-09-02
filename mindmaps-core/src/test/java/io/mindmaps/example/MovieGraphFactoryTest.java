@@ -19,30 +19,67 @@
 package io.mindmaps.example;
 
 import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.AbstractMindmapsGraph;
-import io.mindmaps.core.model.*;
+import io.mindmaps.core.model.Entity;
+import io.mindmaps.core.model.EntityType;
+import io.mindmaps.core.model.Resource;
+import io.mindmaps.core.model.ResourceType;
+import io.mindmaps.core.model.RuleType;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.stream.Stream;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
 
 public class MovieGraphFactoryTest {
 
     private static Graph graph;
     private static MindmapsTransaction dao;
 
+    @Rule
+    public final ExpectedException expectedException = ExpectedException.none();
+
     @BeforeClass
-    public static void setUp() throws IOException {
+    public static void setUp() throws IOException{
         AbstractMindmapsGraph mindmapsGraph = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
         dao = mindmapsGraph.getTransaction();
         graph = mindmapsGraph.getGraph();
+    }
+
+    @Test
+    public void failToLoad(){
+        MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
+        mindmapsGraph.getTransaction().putRelationType("fake");
+
+        expectedException.expect(RuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.CANNOT_LOAD_EXAMPLE.getMessage())
+        ));
+
+        MovieGraphFactory.loadGraph(mindmapsGraph);
+    }
+
+    @Test(expected=InvocationTargetException.class)
+    public void testConstructorIsPrivate() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        Constructor<MovieGraphFactory> c = MovieGraphFactory.class.getDeclaredConstructor();
+        c.setAccessible(true);
+        c.newInstance();
     }
 
     @Test
