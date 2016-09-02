@@ -311,7 +311,7 @@ public class RelationTest {
     }
 
     @Test
-    public void testGetRoleMapWithMissingInstance(){
+    public void testGetRoleMapWithMissingInstance() {
         RoleType roleType1 = mindmapsGraph.putRoleType("role type 1");
         RoleType roleType2 = mindmapsGraph.putRoleType("role type 2");
         EntityType type = mindmapsGraph.putEntityType("concept type").playsRole(roleType1).playsRole(roleType2);
@@ -325,5 +325,28 @@ public class RelationTest {
         roleTypeInstanceMap.put(roleType2, null);
 
         assertEquals(roleTypeInstanceMap, relation1.rolePlayers());
+    }
+
+    @Test
+    public void makeSureCastingsNotRemoved(){
+        RoleType entityRole = mindmapsGraph.putRoleType("Entity Role");
+        RoleType degreeRole = mindmapsGraph.putRoleType("Degree Role");
+        EntityType entityType = mindmapsGraph.putEntityType("Entity Type").playsRole(entityRole);
+        ResourceType<Long> degreeType = mindmapsGraph.putResourceType("Resource Type", Data.LONG).playsRole(degreeRole);
+
+        RelationType hasDegree = mindmapsGraph.putRelationType("Has Degree").hasRole(entityRole).hasRole(degreeRole);
+
+        Entity entity = mindmapsGraph.addEntity(entityType);
+        Resource<Long> degree1 = mindmapsGraph.addResource(degreeType);
+        Resource<Long> degree2 = mindmapsGraph.addResource(degreeType);
+
+        Relation relation1 = mindmapsGraph.addRelation(hasDegree).putRolePlayer(entityRole, entity).putRolePlayer(degreeRole, degree1);
+        mindmapsGraph.addRelation(hasDegree).putRolePlayer(entityRole, entity).putRolePlayer(degreeRole, degree2);
+
+        assertEquals(2, entity.relations().size());
+
+        relation1.delete();
+
+        assertEquals(1, entity.relations().size());
     }
 }
