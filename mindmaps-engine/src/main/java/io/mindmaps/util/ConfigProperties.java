@@ -18,6 +18,9 @@
 
 package io.mindmaps.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.FileInputStream;
 import java.nio.file.Paths;
 import java.util.Properties;
@@ -34,7 +37,8 @@ public class ConfigProperties {
     public static final String DEFAULT_GRAPH_NAME_PROPERTY = "graphdatabase.default-graph-name";
 
     public static final String BATCH_SIZE_PROPERTY = "blockingLoader.batch-size";
-    public static final String NUM_THREADS_PROPERTY = "blockingLoader.num-threads";
+
+    public static final String NUM_THREADS_PROPERTY = "loader.threads";
 
     public static final String SERVER_HOST_NAME = "server.host";
     public static final String SERVER_PORT_NUMBER = "server.port";
@@ -43,7 +47,9 @@ public class ConfigProperties {
 
     public static final String LOADER_REPEAT_COMMITS = "loader.repeat-commits";
 
-    public static final String MAINTENANCE_ITERATION = "backgroundTasks.maintenance-iteration";
+    public static final String POSTPROCESSING_DELAY = "backgroundTasks.post-processing-delay";
+    public static final String TIME_LAPSE = "backgroundTasks.time-lapse";
+
 
     public static final String LOGGING_FILE_PATH = "logging.file";
     public static final String DATE_FORMAT = "yyyy/MM/dd HH:mm:ss";
@@ -52,14 +58,37 @@ public class ConfigProperties {
     public static final String CURRENT_DIR_SYSTEM_PROPERTY = "mindmaps.dir";
     public static final String CONFIG_FILE_SYSTEM_PROPERTY = "mindmaps.conf";
 
+    private final Logger LOG = LoggerFactory.getLogger(ConfigProperties.class);
 
+    private final int MAX_NUMBER_OF_THREADS = 120;
     private Properties prop;
     private static ConfigProperties instance = null;
     private String configFilePath = null;
+    private int numOfThreads = -1;
 
     public synchronized static ConfigProperties getInstance() {
         if (instance == null) instance = new ConfigProperties();
         return instance;
+    }
+
+    public int getAvailableThreads() {
+        if (numOfThreads == -1)
+            computeThreadsNumber();
+
+        return numOfThreads;
+    }
+
+    private void computeThreadsNumber() {
+
+        numOfThreads = Integer.parseInt(prop.getProperty(NUM_THREADS_PROPERTY));
+
+        if (numOfThreads == 0)
+            numOfThreads = Runtime.getRuntime().availableProcessors();
+
+        if (numOfThreads > MAX_NUMBER_OF_THREADS)
+            numOfThreads = MAX_NUMBER_OF_THREADS;
+
+        LOG.info("Number of threads set to [" + numOfThreads + "]");
     }
 
     public String getPath(String path) {
@@ -83,6 +112,9 @@ public class ConfigProperties {
         configFilePath = (System.getProperty(CONFIG_FILE_SYSTEM_PROPERTY) != null) ? System.getProperty(CONFIG_FILE_SYSTEM_PROPERTY) : ConfigProperties.CONFIG_FILE;
         if (!Paths.get(configFilePath).isAbsolute())
             configFilePath = getProjectPath() + configFilePath;
+
+        LOG.info("Configuration file in use: [" + configFilePath + "]");
+
     }
 
     private ConfigProperties() {
@@ -104,5 +136,9 @@ public class ConfigProperties {
 
     public int getPropertyAsInt(String property) {
         return Integer.parseInt(prop.getProperty(property));
+    }
+
+    public long getPropertyAsLong(String property) {
+        return Long.parseLong(prop.getProperty(property));
     }
 }

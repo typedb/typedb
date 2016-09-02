@@ -33,8 +33,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import java.util.UUID;
 
-import static spark.Spark.get;
-import static spark.Spark.post;
+import static spark.Spark.*;
 
 
 @Path("/transaction")
@@ -51,16 +50,17 @@ public class TransactionController {
 
         get(RESTUtil.WebPath.LOADER_STATE_URI, this::loaderState);
         post(RESTUtil.WebPath.NEW_TRANSACTION_URI, this::newTransactionREST);
-        get(RESTUtil.WebPath.TRANSACTION_STATUS_URI+RESTUtil.Request.UUID_PARAMETER, this::checkTransactionStatusREST);
+        get(RESTUtil.WebPath.TRANSACTION_STATUS_URI + RESTUtil.Request.UUID_PARAMETER, this::checkTransactionStatusREST);
 
     }
+
     @POST
     @Path("/new")
     @ApiOperation(
             value = "Load a new transaction made of Graql insert queries into the graph.",
             notes = "The body of the request must only contain the insert Graql strings.")
     @ApiImplicitParam(name = "graphName", value = "Name of graph to use", dataType = "string", paramType = "query")
-    private String newTransactionREST(Request req, Response res){
+    private String newTransactionREST(Request req, Response res) {
         String currentGraphName = req.queryParams(RESTUtil.Request.GRAPH_NAME_PARAM);
         if (currentGraphName == null) currentGraphName = defaultGraphName;
         UUID uuid = loader.addJob(currentGraphName, req.body());
@@ -73,12 +73,13 @@ public class TransactionController {
         }
     }
 
+
     @GET
     @Path("/status/:uuid")
     @ApiOperation(
             value = "Returns the status of the transaction associated to the given UUID.")
     @ApiImplicitParam(name = "uuid", value = "UUID of the transaction", required = true, dataType = "string", paramType = "path")
-    private String checkTransactionStatusREST(Request req, Response res){
+    private String checkTransactionStatusREST(Request req, Response res) {
         try {
             return loader.getStatus(UUID.fromString(req.params(RESTUtil.Request.UUID_PARAMETER)));
         } catch (Exception e) {
@@ -92,7 +93,7 @@ public class TransactionController {
     @Path("/loaderState")
     @ApiOperation(
             value = "Returns the state of the RESTLoader.")
-    private String loaderState(Request req, Response res){
+    private String loaderState(Request req, Response res) {
         try {
             return loader.getLoaderState();
         } catch (Exception e) {

@@ -26,6 +26,7 @@ import io.mindmaps.constants.RESTUtil;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.loader.TransactionState;
+import io.mindmaps.postprocessing.BackgroundTasks;
 import io.mindmaps.util.ConfigProperties;
 import org.json.JSONObject;
 import org.junit.After;
@@ -47,6 +48,8 @@ public class TransactionControllerTest {
 
         new TransactionController();
         new CommitLogController();
+        new GraphFactoryController();
+
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.INFO);
 
@@ -74,6 +77,9 @@ public class TransactionControllerTest {
                 e.printStackTrace();
             }
         }
+        //check that post processing starts periodically, in this case at least once.
+        while(!BackgroundTasks.getInstance().isPostProcessingRunning())
+
         assertTrue(GraphFactory.getInstance().getGraphBatchLoading(graphName).getTransaction().getConcept("actor-123").asEntity().getValue().equals("Al Pacino"));
     }
 

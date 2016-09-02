@@ -32,8 +32,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BackgroundTasks {
-    private static final long TIME_LAPSE = 60000;
-    private static final String CASTING_STAGE= "Scanning for duplicate castings . . .";
+    private static long timeLapse;
+    private static final String CASTING_STAGE = "Scanning for duplicate castings . . .";
     private static final String RELATION_STAGE = "Scanning for duplicate relations . . .";
 
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
@@ -54,22 +54,24 @@ public class BackgroundTasks {
         return instance;
     }
 
+    public boolean isPostProcessingRunning() {
+        return isRunning.get();
+    }
+
     private BackgroundTasks() {
-        postpool = Executors.newFixedThreadPool(ConfigProperties.getInstance().getPropertyAsInt(ConfigProperties.NUM_THREADS_PROPERTY));
+        timeLapse = ConfigProperties.getInstance().getPropertyAsLong(ConfigProperties.TIME_LAPSE);
+        postpool = Executors.newFixedThreadPool(ConfigProperties.getInstance().getAvailableThreads());
         statDump = Executors.newSingleThreadExecutor();
         cache = Cache.getInstance();
         futures = ConcurrentHashMap.newKeySet();
+        isRunning.set(false);
     }
 
-    //TODO: read from config backgroundTasks.post-processing-delay the interval of time between one invocation and another
     public void performPostprocessing() {
         futures = ConcurrentHashMap.newKeySet();
 
         if (maintenanceAllowed()) {
-            isRunning.set(true);
-            statDump.submit(this::dumpStats);
             postprocessing();
-            isRunning.set(false);
         }
     }
 
@@ -78,24 +80,13 @@ public class BackgroundTasks {
     }
 
     private void postprocessing() {
-        LOG.info("Starting maintenance and locking QueueManager");
-        lockQueueManager();
-        performTasks();
-        RESTLoader.getInstance().unlock();
-        LOG.info("Maintenance completed and unlocking QueueManager");
-    }
-
-    private void lockQueueManager() {
-        synchronized (this) {
-            RESTLoader.getInstance().lock();
-            while (RESTLoader.getInstance().getLoadingJobs() != 0) {
-                try {
-                    wait();
-                } catch (InterruptedException e) {
-                    LOG.error("Error while waiting for lock", e);
-                }
-            }
-            LOG.info("QueueManager safely locked. Proceeding with maintenance");
+        if (!isRunning.get()) {
+            LOG.info("Starting maintenance.");
+            isRunning.set(true);
+            statDump.submit(this::dumpStats);
+            performTasks();
+            isRunning.set(false);
+            LOG.info("Maintenance completed.");
         }
     }
 
@@ -109,17 +100,25 @@ public class BackgroundTasks {
 
     private void performCastingFix() {
         cache.getCastingJobs().entrySet().parallelStream().forEach(entry -> {
-            MindmapsGraph graph = MindmapsClient.getGraph(entry.getKey());
-            for (String castingId : entry.getValue()) {
-                futures.add(postpool.submit(() -> ConceptFixer.checkCasting(graph, castingId)));
+
+            MindmapsGraph graph;
+            try {
+                graph = MindmapsClient.getGraph(entry.getKey());
+                for (String castingId : entry.getValue()) {
+                    futures.add(postpool.submit(() -> ConceptFixer.checkCasting(graph, castingId)));
+                }
+            } catch (RuntimeException e) {
+                LOG.error("Error while trying to perform post processing on graph [" + entry.getKey() + "]");
+                e.printStackTrace();
             }
+
         });
     }
 
     private boolean maintenanceAllowed() {
         long lastJob = RESTLoader.getInstance().getLastJobFinished();
         long currentTime = System.currentTimeMillis();
-        return (currentTime - lastJob) >= TIME_LAPSE && RESTLoader.getInstance().getLoadingJobs() == 0;
+        return (currentTime - lastJob) >= timeLapse && RESTLoader.getInstance().getLoadingJobs() == 0;
     }
 
     private void waitToContinue() {

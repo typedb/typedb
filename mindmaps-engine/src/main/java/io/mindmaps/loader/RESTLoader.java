@@ -23,6 +23,7 @@ import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.QueryParser;
+import io.mindmaps.postprocessing.BackgroundTasks;
 import io.mindmaps.postprocessing.Cache;
 import io.mindmaps.util.ConfigProperties;
 import mjson.Json;
@@ -41,6 +42,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -64,13 +66,11 @@ public class RESTLoader {
     private ExecutorService executor;
     private final Map<UUID, TransactionState> loaderState;
 
-    private AtomicBoolean maintenanceInProcess;
     private AtomicInteger enqueuedJobs;
     private AtomicInteger loadingJobs;
     private AtomicInteger finishedJobs;
     private AtomicLong lastJobFinished;
     private AtomicInteger errorJobs;
-    private AtomicBoolean maintenanceInProgress;
     private String loggingFilePath;
 
     public long getLastJobFinished() {
@@ -82,6 +82,8 @@ public class RESTLoader {
     }
 
     private RESTLoader() {
+        ConfigProperties prop = ConfigProperties.getInstance();
+
         cache = Cache.getInstance();
         loaderState = new ConcurrentHashMap<>();
         enqueuedJobs = new AtomicInteger();
@@ -89,17 +91,25 @@ public class RESTLoader {
         errorJobs = new AtomicInteger();
         finishedJobs = new AtomicInteger();
         lastJobFinished = new AtomicLong();
-        maintenanceInProcess = new AtomicBoolean(false);
-        loggingFilePath = ConfigProperties.getInstance().getProperty(ConfigProperties.LOGGING_FILE_PATH);
-        repeatCommits = ConfigProperties.getInstance().getPropertyAsInt(ConfigProperties.LOADER_REPEAT_COMMITS);
+        loggingFilePath = prop.getProperty(ConfigProperties.LOGGING_FILE_PATH);
+        repeatCommits = prop.getPropertyAsInt(ConfigProperties.LOADER_REPEAT_COMMITS);
 
-        int numberThreads = ConfigProperties.getInstance().getPropertyAsInt(ConfigProperties.NUM_THREADS_PROPERTY);
+        int numberThreads = prop.getAvailableThreads();
         executor = Executors.newFixedThreadPool(numberThreads);
+
+        startPeriodPostProcessingCheck();
     }
+
 
     public static synchronized RESTLoader getInstance() {
         if (instance == null) instance = new RESTLoader();
         return instance;
+    }
+
+    private void startPeriodPostProcessingCheck(){
+        Executors.newSingleThreadScheduledExecutor()
+                .scheduleAtFixedRate(() -> BackgroundTasks.getInstance().performPostprocessing(), 0,
+                        ConfigProperties.getInstance().getPropertyAsLong(ConfigProperties.POSTPROCESSING_DELAY), TimeUnit.MILLISECONDS);
     }
 
     public String getLoaderState() {
@@ -129,7 +139,7 @@ public class RESTLoader {
         try {
             for (int i = 0; i < repeatCommits; i++) {
 
-                MindmapsTransactionImpl transaction= null;
+                MindmapsTransactionImpl transaction = null;
                 try {
                     transaction = (MindmapsTransactionImpl) GraphFactory.getInstance().getGraphBatchLoading(name).getTransaction();
                     QueryParser.create(transaction).parseInsertQuery(batch).execute();
@@ -164,8 +174,7 @@ public class RESTLoader {
                         if (transaction != null) {
                             transaction.close();
                         }
-                    }
-                    catch (Exception e){
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
                 }
@@ -210,9 +219,9 @@ public class RESTLoader {
             bw = new BufferedWriter(new FileWriter(file, true));
             bw.write(dateFormat.format(date) + ":: " + "-- NEW EXCEPTION ---");
             bw.newLine();
-            bw.write(dateFormat.format(date) + ":: " + "INPUT: "+input);
+            bw.write(dateFormat.format(date) + ":: " + "INPUT: " + input);
             bw.newLine();
-            bw.write(dateFormat.format(date) + ":: " +  "MESSAGE: "+ errorMessage);
+            bw.write(dateFormat.format(date) + ":: " + "MESSAGE: " + errorMessage);
             bw.newLine();
 
         } catch (IOException e) {
@@ -226,17 +235,6 @@ public class RESTLoader {
                 }
         }
 
-    }
-
-    public synchronized void unlock() {
-        maintenanceInProcess.set(false);
-        notifyAll();
-        LOG.info("Unlocking QueueManager [" + this + "]");
-    }
-
-    public void lock() {
-        maintenanceInProcess.set(true);
-        LOG.info("Locking QueueManager [" + this + "] for external maintenance");
     }
 
 }
