@@ -21,17 +21,16 @@ package io.mindmaps.api;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.response.Response;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.Util;
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.EntityType;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.util.ConfigProperties;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.Properties;
+import spark.Spark;
 
 import static com.jayway.restassured.RestAssured.get;
 import static org.junit.Assert.assertTrue;
@@ -45,6 +44,7 @@ public class RemoteShellControllerTest {
     public void setUp() throws Exception {
         System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
 
+        Spark.stop();
         new RemoteShellController();
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.INFO);
