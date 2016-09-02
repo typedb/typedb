@@ -23,6 +23,7 @@ import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.InvalidConceptTypeException;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.Concept;
+import io.mindmaps.core.model.Instance;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.*;
 import io.mindmaps.graql.internal.parser.ANSI;
@@ -110,7 +111,13 @@ class GraqlSession {
     }
 
     void close() {
-        queryExecutor.submit(graph::close);
+        queryExecutor.submit(() -> {
+            try {
+                graph.getTransaction().close();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     void executeQuery(Json json) {
@@ -137,10 +144,16 @@ class GraqlSession {
                 } else if (query instanceof DeleteQuery) {
                     executeDeleteQuery((DeleteQuery) query);
                     reasoner.linkConceptTypes();
-                } else if (query instanceof Long) {
-                    results = Stream.of(query.toString());
-                } else if (query instanceof Map) {
-                    results = ((Map<?, ?>) query).entrySet().stream().map(entry -> entry.getKey() + "\t" + entry.getValue());
+                } else if (query instanceof ComputeQuery) {
+                    Object computeResult = ((ComputeQuery) query).execute(graph);
+                    if (computeResult instanceof Map) {
+                        Map<Instance, ?> map = (Map<Instance, ?>) computeResult;
+                        results = map.entrySet().stream().map(e -> e.getKey().getId() + "\t" + e.getValue());
+                    } else {
+                        results = Stream.of(computeResult.toString());
+                    }
+                } else {
+                    errorMessage = "Unrecognized query " + query;
                 }
 
                 results.forEach(this::sendQueryResult);

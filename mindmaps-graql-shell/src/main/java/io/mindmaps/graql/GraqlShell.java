@@ -33,7 +33,10 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -101,6 +104,7 @@ public class GraqlShell implements AutoCloseable {
     }
 
     public static void runShell(String[] args, String version, GraqlClient client) {
+
         Options options = new Options();
         options.addOption("n", "name", true, "name of the graph");
         options.addOption("e", "execute", true, "query to execute");

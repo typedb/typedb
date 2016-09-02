@@ -36,7 +36,7 @@ public class GraqlShellIT {
 
     private String expectedVersion = "graql-9.9.9";
 
-    private char namespaceCounter = 'A';
+    private static char namespaceCounter = 'A';
 
     @BeforeClass
     public static void setUpClass() throws Exception {
