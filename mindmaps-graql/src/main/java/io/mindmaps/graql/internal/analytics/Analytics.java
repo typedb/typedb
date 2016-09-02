@@ -160,18 +160,23 @@ public class Analytics {
         insertOntology(resourceType, Data.LONG);
         ComputerResult result = computer.compute(new DegreeAndPersistVertexProgram(keySpace,allTypes));
         result.graph().traversal().V().forEachRemaining(v -> {
-//            System.out.println("v.keys() = " + v.keys());
 
             if (v.keys().contains(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID)) {
-                System.out.println("v.value(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID) = " +
-                        v.value(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID));
 
-                transaction.getTinkerTraversal().V().has(ITEM_IDENTIFIER.name(),
-                        v.value(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID).toString()).bothE()
-                        .forEachRemaining(edge -> edge.remove());
-                transaction.getRelation(v.value(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID)).delete();
+//                transaction.getTinkerTraversal().V().has(ITEM_IDENTIFIER.name(),
+//                        v.value(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID).toString()).bothE()
+//                        .forEachRemaining(edge -> edge.remove());
+//                List<Edge> assertions = transaction.getTinkerTraversal().V().has(ITEM_IDENTIFIER.name(),
+//                        v.value(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID).toString()).bothE().toList();
+//                Set<String> ids = new HashSet<>();
+//                assertions.forEach(edge -> ids.add(edge.id().toString()));
 
-
+                Relation relation = transaction.getRelation(v.value(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID));
+                relation.delete();
+//                transaction.refresh();
+//                ids.forEach(id -> {
+//                    transaction.getTinkerTraversal().E(Long.valueOf(id));
+//                });
             }
         });
 
@@ -235,6 +240,8 @@ public class Analytics {
                 transaction.getInstance(vertex.value(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name()));
 
         //TODO: remove the deletion of resource. This should be done by core.
+
+
         List<Relation> relations = instance.relations(resourceOwner).stream()
                 .filter(relation -> relation.rolePlayers().size() == 2)
                 .filter(relation -> relation.rolePlayers().containsKey(resourceValue) &&
@@ -247,7 +254,6 @@ public class Analytics {
             transaction.addRelation(relationType)
                     .putRolePlayer(resourceOwner, instance)
                     .putRolePlayer(resourceValue, resource);
-
             while (true) {
                 try {
                     transaction.commit();
@@ -269,6 +275,13 @@ public class Analytics {
 
         if (!relations.isEmpty()) {
             String oldAssertionId = relations.get(0).getId();
+            long oldDegree = (long) relations.get(0).rolePlayers().get(resourceValue).asResource().getValue();
+
+//            relations.forEach(relation -> {
+////                relation.rolePlayers().get(resourceValue).delete();
+//                relation.delete();
+//                System.out.println("deleted something ...");
+//            });
 
             while (true) {
                 Resource<Long> resource = transaction.putResource(value, resourceType);

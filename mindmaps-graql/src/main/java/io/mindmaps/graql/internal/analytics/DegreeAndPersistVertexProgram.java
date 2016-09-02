@@ -107,7 +107,7 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
 
     @Override
     public GraphComputer.Persist getPreferredPersist() {
-        return GraphComputer.Persist.NOTHING;
+        return GraphComputer.Persist.VERTEX_PROPERTIES;
     }
 
     @Override
@@ -179,22 +179,19 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
                     }
                 }
                 break;
-            case 3:
-                if (vertex.keys().contains(OLD_ASSERTION_ID)) {
-                    long oldDegree = vertex.value(OLD_ASSERTION_ID);
-                    try {
-                        deleteOldResourceAssertion(mindmapsGraph, vertex, Analytics.degree, oldDegree);
-                    } catch (MindmapsValidationException e) {
-                        e.printStackTrace();
-                    }
-                }
-                break;
+//            case 3:
+////                Graph graph = mindmapsGraph.getTransaction().getTinkerTraversal().V().
+//                if (vertex.keys().contains(OLD_ASSERTION_ID)) {
+//                    long oldDegree = vertex.value(OLD_ASSERTION_ID);
+//                    deleteOldResourceAssertion(mindmapsGraph, vertex, Analytics.degree, oldDegree);
+//                }
+//                break;
         }
     }
 
     @Override
     public boolean terminate(final Memory memory) {
-        return memory.getIteration() == 3;
+        return memory.getIteration() == 2;
     }
 
     @Override
