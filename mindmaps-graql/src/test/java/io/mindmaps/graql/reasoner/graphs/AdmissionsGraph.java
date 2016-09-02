@@ -274,14 +274,6 @@ public class AdmissionsGraph {
         }
     }
 
-    private static <T> void putResource(Instance instance, ResourceType<T> resourceType, T resource) {
-        Resource resourceInstance = mindmaps.putResource(resource, resourceType);
-
-        mindmaps.addRelation(hasResource)
-                .putRolePlayer(hasResourceTarget, instance)
-                .putRolePlayer(hasResourceValue, resourceInstance);
-    }
-
     private static <T> void putResource(Instance instance, ResourceType<T> resourceType, T resource, RelationType relationType,
                                     RoleType targetRole, RoleType valueRole) {
         Resource resourceInstance = mindmaps.putResource(resource, resourceType);

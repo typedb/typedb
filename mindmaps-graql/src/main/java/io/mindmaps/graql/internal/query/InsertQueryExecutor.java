@@ -34,6 +34,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static io.mindmaps.constants.ErrorMessage.INSERT_NON_RESOURCE_WITH_VALUE;
+
 /**
  * A class for executing insert queries.
  *
@@ -218,8 +220,7 @@ class InsertQueryExecutor {
         String typeId = type.getId();
 
         if (!type.isResourceType() && !var.getValuePredicates().isEmpty()) {
-            // TODO: Deal with this properly
-            throw new RuntimeException("RUH-ROH " + type);
+            throw new IllegalStateException(INSERT_NON_RESOURCE_WITH_VALUE.getMessage(type.getId()));
         }
 
         if (typeId.equals(DataType.ConceptMeta.ENTITY_TYPE.getId())) {

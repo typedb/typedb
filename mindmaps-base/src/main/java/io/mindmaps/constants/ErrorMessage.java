@@ -112,6 +112,7 @@ public enum ErrorMessage {
     INSERT_TYPE_WITHOUT_ID("attempted to insert a type without an id"),
     INSERT_RELATION_WITHOUT_ROLE_TYPE("attempted to insert a relation without all role types specified"),
     INSERT_RESOURCE_WITHOUT_VALUE("cannot insert a resource without specifying a value"),
+    INSERT_NON_RESOURCE_WITH_VALUE("cannot set value on an instance of %s because it is not a resource-type"),
 
     DELETE_VALUE("deleting values is not supported"),
     DELETE_RESOURCE_TYPE_NO_ID("resource type to delete from concept %s has no id specified"),
