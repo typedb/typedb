@@ -99,8 +99,6 @@ class CastingImpl extends ConceptImpl {
 
         if(concepts.size() > 0){
             relations.addAll(concepts.stream().map(getMindmapsTransaction().getElementFactory()::buildRelation).collect(Collectors.toList()));
-        } else {
-            throw new NoEdgeException(toString(), DataType.BaseType.RELATION.name());
         }
 
         return relations;
