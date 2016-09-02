@@ -30,12 +30,14 @@ import io.mindmaps.graql.internal.reasoner.predicate.Relation;
 import io.mindmaps.graql.reasoner.graphs.GenericGraph;
 import io.mindmaps.graql.reasoner.graphs.SNBGraph;
 import javafx.util.Pair;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.*;
 
 import static io.mindmaps.graql.internal.reasoner.Utility.*;
 
+@Ignore
 public class AtomicTest {
 
     @Test

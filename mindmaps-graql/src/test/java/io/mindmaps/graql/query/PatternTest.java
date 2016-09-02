@@ -19,11 +19,13 @@
 package io.mindmaps.graql.query;
 
 import io.mindmaps.graql.Pattern;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static io.mindmaps.graql.Graql.*;
 import static org.junit.Assert.*;
 
+@Ignore
 public class PatternTest {
 
     @Test

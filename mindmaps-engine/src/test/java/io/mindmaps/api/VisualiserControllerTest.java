@@ -20,27 +20,24 @@ package io.mindmaps.api;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import com.jayway.restassured.RestAssured;
 import com.jayway.restassured.response.Response;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.Util;
 import io.mindmaps.constants.RESTUtil;
 import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.EntityType;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.util.ConfigProperties;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
-
-import java.util.Enumeration;
-import java.util.Properties;
 
 import static com.jayway.restassured.RestAssured.get;
 import static org.junit.Assert.assertTrue;
 
+@Ignore
 public class VisualiserControllerTest {
 
     static String graphName;

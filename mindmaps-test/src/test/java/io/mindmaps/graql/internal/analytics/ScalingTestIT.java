@@ -5,7 +5,6 @@ import ch.qos.logback.classic.Logger;
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.api.CommitLogController;
 import io.mindmaps.api.GraphFactoryController;
-import io.mindmaps.api.ImportController;
 import io.mindmaps.api.TransactionController;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
@@ -15,25 +14,30 @@ import io.mindmaps.core.model.RoleType;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.loader.DistributedLoader;
 import org.apache.cassandra.exceptions.ConfigurationException;
-import org.apache.commons.configuration.Configuration;
 import org.apache.thrift.transport.TTransportException;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
-import static io.mindmaps.graql.Graql.all;
 import static io.mindmaps.graql.Graql.var;
 import static java.lang.Thread.sleep;
 
+@Ignore
 public class ScalingTestIT {
 
     private static final String[] HOST_NAME =
