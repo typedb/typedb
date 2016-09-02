@@ -33,6 +33,7 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 import static io.mindmaps.IntegrationUtils.startTestEngine;
+import static java.lang.Thread.sleep;
 import static org.junit.Assert.*;
 
 public class AnalyticsTest {
@@ -63,6 +64,7 @@ public class AnalyticsTest {
     public void setUp() throws InterruptedException {
         graph = MindmapsClient.getGraph(TEST_KEYSPACE);
         graph.clear();
+        sleep(5000);
         graph = MindmapsClient.getGraph(TEST_KEYSPACE);
         transaction = graph.getTransaction();
     }
