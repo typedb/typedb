@@ -19,6 +19,7 @@
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import io.mindmaps.graql.GraqlShell;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -33,13 +34,28 @@ import static org.junit.Assert.*;
 
 public class GraqlShellTest {
 
+    private InputStream trueIn;
+    private PrintStream trueOut;
+    private PrintStream trueErr;
+
     private GraqlClientMock client;
     private String expectedVersion = "graql-9.9.9";
 
     @Before
     public void setUp() {
+        trueIn = System.in;
+        trueOut = System.out;
+        trueErr = System.err;
+
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.OFF);
+    }
+
+    @After
+    public void resetIO() {
+        System.setIn(trueIn);
+        System.setOut(trueOut);
+        System.setErr(trueErr);
     }
 
     @Test
@@ -224,18 +240,13 @@ public class GraqlShellTest {
         PrintStream out = new PrintStream(bout);
         PrintStream err = new PrintStream(berr);
 
-        InputStream trueIn = System.in;
-        PrintStream trueOut = System.out;
-        PrintStream trueErr = System.err;
         System.setIn(in);
         System.setOut(out);
         System.setErr(err);
 
         GraqlShell.runShell(args, expectedVersion, client);
 
-        System.setIn(trueIn);
-        System.setOut(trueOut);
-        System.setErr(trueErr);
+        resetIO();
 
         out.flush();
         err.flush();

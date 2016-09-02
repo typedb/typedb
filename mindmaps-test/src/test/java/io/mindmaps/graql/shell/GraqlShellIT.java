@@ -20,6 +20,7 @@ package io.mindmaps.graql.shell;
 
 import io.mindmaps.graql.GraqlClientImpl;
 import io.mindmaps.graql.GraqlShell;
+import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -34,13 +35,28 @@ import static org.junit.Assert.*;
 
 public class GraqlShellIT {
 
+    private static InputStream trueIn;
+    private static PrintStream trueOut;
+    private static PrintStream trueErr;
+
     private String expectedVersion = "graql-9.9.9";
 
     private static char namespaceCounter = 'A';
 
     @BeforeClass
     public static void setUpClass() throws Exception {
+        trueIn = System.in;
+        trueOut = System.out;
+        trueErr = System.err;
+
         startTestEngine();
+    }
+
+    @After
+    public void resetIO() {
+        System.setIn(trueIn);
+        System.setOut(trueOut);
+        System.setErr(trueErr);
     }
 
     @Test
@@ -226,9 +242,6 @@ public class GraqlShellIT {
         PrintStream out = new PrintStream(bout);
         PrintStream err = new PrintStream(berr);
 
-        InputStream trueIn = System.in;
-        PrintStream trueOut = System.out;
-        PrintStream trueErr = System.err;
         System.setIn(in);
         System.setOut(out);
         System.setErr(err);
@@ -242,9 +255,7 @@ public class GraqlShellIT {
             fail(berr.toString());
         }
 
-        System.setIn(trueIn);
-        System.setOut(trueOut);
-        System.setErr(trueErr);
+        resetIO();
 
         out.flush();
         err.flush();
