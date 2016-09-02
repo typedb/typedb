@@ -26,10 +26,11 @@ import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.EngineCommunicator;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
-import java.io.*;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.MissingResourceException;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.PropertyResourceBundle;
 
 import static io.mindmaps.constants.RESTUtil.Request.GRAPH_CONFIG_PARAM;
@@ -42,9 +43,7 @@ import static io.mindmaps.constants.RESTUtil.WebPath.GRAPH_FACTORY_URI;
  */
 public class MindmapsClient {
     private static final String DEFAULT_URI = "localhost:4567";
-    private static final String FACTORY = "factory.internal";
     private static final String COMPUTER = "graph.computer";
-    private static final Map<String, MindmapsGraphFactory> openFactories = new HashMap<>();
 
     /**
      *
@@ -127,45 +126,18 @@ public class MindmapsClient {
             //Creating the actual mindmaps graph using reflection to identify the factory
             FileInputStream fis = new FileInputStream(path);
             PropertyResourceBundle bundle = new PropertyResourceBundle(fis);
-
-            String factoryType;
-            String computer = null;
-            try {
-                factoryType = bundle.getString(FACTORY);
-                if(bundle.containsKey(COMPUTER)){
-                    computer = bundle.getString(COMPUTER);
-                }
-            } catch(MissingResourceException e){
-                fis.close();
-                throw new IllegalArgumentException(ErrorMessage.MISSING_FACTORY_DEFINITION.getMessage());
-            }
             fis.close();
-            return new ConfigureFactory(path, computer, getFactory(factoryType));
+
+            String computer = null;
+            if(bundle.containsKey(COMPUTER)){
+                computer = bundle.getString(COMPUTER);
+            }
+
+            return new ConfigureFactory(path, computer, MindmapsFactoryBuilder.getFactory(bundle));
         } catch (IOException e) {
             throw new IllegalArgumentException(ErrorMessage.CONFIG_NOT_FOUND.getMessage(uri, e.getMessage()));
         }
     }
-
-
-    /**
-     *
-     * @param factoryType The string defining which factory should be used for creating the mindmaps graph.
-     *                    A valid example includes: io.mindmaps.factory.MindmapsTinkerGraphFactory
-     * @return A graph factory which produces the relevant expected graph.
-     */
-    private static MindmapsGraphFactory getFactory(String factoryType){
-        if(!openFactories.containsKey(factoryType)) {
-            MindmapsGraphFactory mindmapsGraphFactory;
-            try {
-                mindmapsGraphFactory = (MindmapsGraphFactory) Class.forName(factoryType).newInstance();
-            } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-                throw new IllegalArgumentException(ErrorMessage.INVALID_FACTORY.getMessage(factoryType));
-            }
-            openFactories.put(factoryType, mindmapsGraphFactory);
-        }
-        return openFactories.get(factoryType);
-    }
-
 
     private static class ConfigureFactory {
         String path;
