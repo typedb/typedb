@@ -1,7 +1,5 @@
 # MindmapsDB
-Open-Source Distributed Semantic Database - http://mindmaps.io
-
-[Visit Our Documentation](https://mindmaps.io/pages/index.html)
+Open-Source Distributed Semantic Database - [mindmaps.io](http://mindmaps.io) | [Documentation](https://mindmaps.io/pages/index.html)
 
 [![Build Status](https://travis-ci.org/mindmapsdb/mindmapsdb.svg?branch=internal)](https://travis-ci.org/mindmapsdb/mindmapsdb)
 [![Coverage Status](https://coveralls.io/repos/github/mindmapsdb/mindmapsdb/badge.svg?branch=master)](https://coveralls.io/github/mindmapsdb/mindmapsdb?branch=master)
