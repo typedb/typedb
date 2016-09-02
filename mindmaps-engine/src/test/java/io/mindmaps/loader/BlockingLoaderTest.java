@@ -38,6 +38,7 @@ import java.util.List;
 
 import static io.mindmaps.graql.Graql.insert;
 
+@Ignore
 public class BlockingLoaderTest {
 
     String graphName;

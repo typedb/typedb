@@ -30,6 +30,7 @@ import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Streamable;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.text.ParseException;
@@ -42,6 +43,7 @@ import static io.mindmaps.constants.DataType.ConceptMeta.*;
 import static io.mindmaps.graql.Graql.*;
 import static org.junit.Assert.*;
 
+@Ignore
 public class MatchQueryDefaultTest {
 
     private static MindmapsTransaction transaction;

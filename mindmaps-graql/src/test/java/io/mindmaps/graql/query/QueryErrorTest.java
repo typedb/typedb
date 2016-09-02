@@ -26,6 +26,7 @@ import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.QueryBuilder;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -34,6 +35,7 @@ import static io.mindmaps.graql.Graql.*;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.StringContains.containsString;
 
+@Ignore
 public class QueryErrorTest {
     @Rule
     public final ExpectedException exception = ExpectedException.none();

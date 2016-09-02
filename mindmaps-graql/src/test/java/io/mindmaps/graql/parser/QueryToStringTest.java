@@ -27,11 +27,13 @@ import io.mindmaps.graql.MatchQueryDefault;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.QueryParser;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static io.mindmaps.graql.Graql.*;
 import static org.junit.Assert.assertEquals;
 
+@Ignore
 public class QueryToStringTest {
 
     private QueryBuilder qb;

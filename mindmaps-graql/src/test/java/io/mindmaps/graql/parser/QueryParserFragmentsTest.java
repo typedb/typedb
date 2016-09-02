@@ -27,6 +27,7 @@ import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.admin.VarAdmin;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.*;
@@ -38,6 +39,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+@Ignore
 public class QueryParserFragmentsTest {
 
     private static MindmapsTransaction transaction;

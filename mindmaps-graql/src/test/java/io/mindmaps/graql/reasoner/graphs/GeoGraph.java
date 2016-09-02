@@ -23,9 +23,11 @@ import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
+import org.junit.Ignore;
 
 import java.util.UUID;
 
+@Ignore
 public class GeoGraph {
 
     private static MindmapsTransaction mindmaps;
