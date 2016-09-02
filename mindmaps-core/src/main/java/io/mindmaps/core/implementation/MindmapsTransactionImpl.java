@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
 
-public class MindmapsTransactionImpl implements MindmapsTransaction, AutoCloseable {
+public class MindmapsTransactionImpl implements MindmapsTransaction {
     private final Logger LOG = LoggerFactory.getLogger(MindmapsTransactionImpl.class);
     private final ElementFactory elementFactory;
     private final ConceptLog conceptLog;

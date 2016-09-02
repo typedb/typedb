@@ -41,7 +41,7 @@ import java.util.Map;
 /**
  * A thread bound mindmaps transaction
  */
-public interface MindmapsTransaction {
+public interface MindmapsTransaction extends AutoCloseable{
     //------------------------------------- Concept Construction ----------------------------------
 
     /**
