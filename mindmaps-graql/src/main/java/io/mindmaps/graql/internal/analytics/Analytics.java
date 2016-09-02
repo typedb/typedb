@@ -294,7 +294,7 @@ public class Analytics {
     }
 
     public static void deleteOldResourceAssertion(MindmapsGraph mindmapsGraph, Vertex vertex,
-                                                  String resourceName, long value) {
+                                                  String resourceName, long value) throws MindmapsValidationException {
 
         MindmapsTransaction transaction = mindmapsGraph.getTransaction();
 
@@ -311,8 +311,7 @@ public class Analytics {
                         (long) relation.rolePlayers().get(resourceValue).asResource().getValue() == value)
                 .forEach(Concept::delete);
 
-        System.out.println();
-        System.out.println("Deleted Something");
+        transaction.commit();
     }
 
     public static String getVertextType(Vertex vertex) {

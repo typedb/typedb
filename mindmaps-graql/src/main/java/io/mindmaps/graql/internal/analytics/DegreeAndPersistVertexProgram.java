@@ -22,6 +22,7 @@ import com.google.common.collect.Sets;
 import io.mindmaps.constants.DataType;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.factory.MindmapsClient;
 import org.apache.commons.configuration.Configuration;
@@ -106,7 +107,7 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
 
     @Override
     public GraphComputer.Persist getPreferredPersist() {
-        return GraphComputer.Persist.VERTEX_PROPERTIES;
+        return GraphComputer.Persist.NOTHING;
     }
 
     @Override
@@ -178,19 +179,22 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
                     }
                 }
                 break;
-//            case 3:
-////                Graph graph = mindmapsGraph.getTransaction().getTinkerTraversal().V().
-//                if (vertex.keys().contains(OLD_ASSERTION_ID)) {
-//                    long oldDegree = vertex.value(OLD_ASSERTION_ID);
-//                    deleteOldResourceAssertion(mindmapsGraph, vertex, Analytics.degree, oldDegree);
-//                }
-//                break;
+            case 3:
+                if (vertex.keys().contains(OLD_ASSERTION_ID)) {
+                    long oldDegree = vertex.value(OLD_ASSERTION_ID);
+                    try {
+                        deleteOldResourceAssertion(mindmapsGraph, vertex, Analytics.degree, oldDegree);
+                    } catch (MindmapsValidationException e) {
+                        e.printStackTrace();
+                    }
+                }
+                break;
         }
     }
 
     @Override
     public boolean terminate(final Memory memory) {
-        return memory.getIteration() == 2;
+        return memory.getIteration() == 3;
     }
 
     @Override
