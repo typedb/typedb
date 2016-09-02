@@ -35,7 +35,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.mindmaps.graql.internal.analytics.Analytics.TYPE;
-import static io.mindmaps.graql.internal.analytics.Analytics.getVertextType;
+import static io.mindmaps.graql.internal.analytics.Analytics.getVertexType;
 
 /**
  *
@@ -90,7 +90,7 @@ class CountMapReduce implements MapReduce<Serializable, Long, Serializable, Long
     @Override
     public void map(final Vertex vertex, final MapEmitter<Serializable, Long> emitter) {
         if (selectedTypes != null) {
-            if (selectedTypes.contains(getVertextType(vertex))) {
+            if (selectedTypes.contains(getVertexType(vertex))) {
                 emitter.emit(this.memoryKey, 1l);
             }
         } else if (baseTypes.contains(vertex.label())) {

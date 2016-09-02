@@ -159,24 +159,13 @@ public class Analytics {
         MindmapsTransaction transaction= graph.getTransaction();
         insertOntology(resourceType, Data.LONG);
         ComputerResult result = computer.compute(new DegreeAndPersistVertexProgram(keySpace,allTypes));
+
+        // TODO: get rid of this in the future MASSIVE bottleneck
+        // collect relation ids and delete them in a single thread
         result.graph().traversal().V().forEachRemaining(v -> {
-
             if (v.keys().contains(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID)) {
-
-//                transaction.getTinkerTraversal().V().has(ITEM_IDENTIFIER.name(),
-//                        v.value(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID).toString()).bothE()
-//                        .forEachRemaining(edge -> edge.remove());
-//                List<Edge> assertions = transaction.getTinkerTraversal().V().has(ITEM_IDENTIFIER.name(),
-//                        v.value(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID).toString()).bothE().toList();
-//                Set<String> ids = new HashSet<>();
-//                assertions.forEach(edge -> ids.add(edge.id().toString()));
-
                 Relation relation = transaction.getRelation(v.value(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID));
                 relation.delete();
-//                transaction.refresh();
-//                ids.forEach(id -> {
-//                    transaction.getTinkerTraversal().E(Long.valueOf(id));
-//                });
             }
         });
 
@@ -224,7 +213,7 @@ public class Analytics {
     }
 
     public static boolean isAnalyticsElement(Vertex vertex) {
-        return Analytics.analyticsElements.contains(getVertextType(vertex));
+        return Analytics.analyticsElements.contains(getVertexType(vertex));
     }
 
     public static String persistResource(MindmapsGraph mindmapsGraph, Vertex vertex,
@@ -239,9 +228,6 @@ public class Analytics {
         Instance instance =
                 transaction.getInstance(vertex.value(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name()));
 
-        //TODO: remove the deletion of resource. This should be done by core.
-
-
         List<Relation> relations = instance.relations(resourceOwner).stream()
                 .filter(relation -> relation.rolePlayers().size() == 2)
                 .filter(relation -> relation.rolePlayers().containsKey(resourceValue) &&
@@ -254,15 +240,13 @@ public class Analytics {
             transaction.addRelation(relationType)
                     .putRolePlayer(resourceOwner, instance)
                     .putRolePlayer(resourceValue, resource);
+
             while (true) {
                 try {
                     transaction.commit();
                     break;
-                } catch (MindmapsValidationException e) {
-                    throw new RuntimeException(e);
                 } catch (Exception e) {
-                    e.printStackTrace();
-                    System.out.println("RETRYING");
+                    throw new RuntimeException(ErrorMessage.BULK_PERSIST.getMessage(resourceType,e.getMessage()),e);
                 }
             }
             return null;
@@ -275,13 +259,6 @@ public class Analytics {
 
         if (!relations.isEmpty()) {
             String oldAssertionId = relations.get(0).getId();
-            long oldDegree = (long) relations.get(0).rolePlayers().get(resourceValue).asResource().getValue();
-
-//            relations.forEach(relation -> {
-////                relation.rolePlayers().get(resourceValue).delete();
-//                relation.delete();
-//                System.out.println("deleted something ...");
-//            });
 
             while (true) {
                 Resource<Long> resource = transaction.putResource(value, resourceType);
@@ -292,11 +269,8 @@ public class Analytics {
                 try {
                     transaction.commit();
                     break;
-                } catch (MindmapsValidationException e) {
-                    throw new RuntimeException(e);
                 } catch (Exception e) {
-                    e.printStackTrace();
-                    System.out.println("RETRYING");
+                    throw new RuntimeException(ErrorMessage.BULK_PERSIST.getMessage(resourceType,e.getMessage()),e);
                 }
             }
 
@@ -306,28 +280,7 @@ public class Analytics {
         }
     }
 
-    public static void deleteOldResourceAssertion(MindmapsGraph mindmapsGraph, Vertex vertex,
-                                                  String resourceName, long value) throws MindmapsValidationException {
-
-        MindmapsTransaction transaction = mindmapsGraph.getTransaction();
-
-        Instance instance =
-                transaction.getInstance(vertex.value(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name()));
-
-        RoleType resourceOwner = transaction.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceName));
-        RoleType resourceValue = transaction.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceName));
-
-        instance.relations(resourceOwner).stream()
-                .filter(relation -> relation.rolePlayers().size() == 2)
-                .filter(relation -> relation.rolePlayers().containsKey(resourceValue) &&
-                        relation.rolePlayers().get(resourceValue).type().getId().equals(resourceName) &&
-                        (long) relation.rolePlayers().get(resourceValue).asResource().getValue() == value)
-                .forEach(Concept::delete);
-
-        transaction.commit();
-    }
-
-    public static String getVertextType(Vertex vertex) {
+    public static String getVertexType(Vertex vertex) {
         return vertex.value(DataType.ConceptProperty.TYPE.name());
     }
 }
