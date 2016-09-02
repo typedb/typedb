@@ -263,7 +263,6 @@ public class ValidatorTest {
         mindmapsGraph.commit();
 
         assertionIds.forEach(id -> assertNull(mindmapsGraph.getConcept(id)));
-        castingIds.forEach(id -> assertNull(mindmapsGraph.getConcept(id)));
 
         // assert the movie is gone
         assertNull(mindmapsGraph.getEntity("godfather"));

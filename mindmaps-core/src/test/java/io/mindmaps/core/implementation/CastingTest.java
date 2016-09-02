@@ -19,7 +19,6 @@
 package io.mindmaps.core.implementation;
 
 import io.mindmaps.constants.DataType;
-import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.implementation.exception.MoreThanOneEdgeException;
 import io.mindmaps.core.implementation.exception.NoEdgeException;
 import io.mindmaps.core.model.Concept;
@@ -36,8 +35,11 @@ import org.junit.rules.ExpectedException;
 
 import java.util.UUID;
 
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class CastingTest {
 
@@ -152,18 +154,4 @@ public class CastingTest {
         assertThat(casting2.getRelations().iterator().next(), instanceOf(Relation.class));
     }
 
-    @SuppressWarnings("unchecked")
-    @Test
-    public void testGetAssertionFailNoAssertion(){
-        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.CASTING.name());
-        vertex.property(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), "fc");
-        CastingImpl fakeCasting = (CastingImpl) mindmapsGraph.getConcept("fc");
-
-        expectedException.expect(NoEdgeException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.NO_EDGE.getMessage(fakeCasting.toString(), DataType.BaseType.RELATION.name()))
-        ));
-
-        fakeCasting.getRelations();
-    }
 }
