@@ -19,7 +19,12 @@
 package io.mindmaps.core.implementation;
 
 import io.mindmaps.constants.DataType;
-import io.mindmaps.core.model.*;
+import io.mindmaps.core.model.Entity;
+import io.mindmaps.core.model.EntityType;
+import io.mindmaps.core.model.Instance;
+import io.mindmaps.core.model.RelationType;
+import io.mindmaps.core.model.RoleType;
+import io.mindmaps.core.model.Type;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.junit.After;
@@ -126,12 +131,7 @@ public class ValidateGlobalRulesTest {
 
         werewolf.type(wolf);
         wolf.playsRole(animal);
-        wolf.superType(creature);
         creature.playsRole(monster);
-
-        for (CastingImpl casting : assertion.getMappingCasting()) {
-            assertTrue(ValidateGlobalRules.validatePlaysRoleStructure(casting));
-        }
 
         ((Edge) mindmapsGraph.getTinkerTraversal().V(creature.getBaseIdentifier()).outE(DataType.EdgeLabel.PLAYS_ROLE.getLabel()).as("edge").otherV().hasId(monster.getBaseIdentifier()).select("edge").next()).remove();
         ((Edge) mindmapsGraph.getTinkerTraversal().V(hunter.getBaseIdentifier()).outE(DataType.EdgeLabel.PLAYS_ROLE.getLabel()).as("edge").otherV().hasId(witcher.getBaseIdentifier()).select("edge").next()).remove();

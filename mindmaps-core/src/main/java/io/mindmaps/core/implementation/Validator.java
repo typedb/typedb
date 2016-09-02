@@ -52,9 +52,6 @@ class Validator {
 
         for(ConceptImpl nextToValidate: validationList){
             if(nextToValidate.isAlive()) {
-                if(nextToValidate.type() == null){
-                    errorsFound.add(ErrorMessage.NO_TYPE.getMessage(nextToValidate));
-                }
                 if (nextToValidate.isRelation()) {
                     validateRelation((RelationImpl) nextToValidate);
                 } else if (nextToValidate.isCasting()) {

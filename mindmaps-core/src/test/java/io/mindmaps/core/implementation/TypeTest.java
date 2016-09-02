@@ -20,8 +20,13 @@ package io.mindmaps.core.implementation;
 
 import io.mindmaps.constants.DataType;
 import io.mindmaps.core.implementation.exception.ConceptException;
-import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.*;
+import io.mindmaps.core.model.Concept;
+import io.mindmaps.core.model.EntityType;
+import io.mindmaps.core.model.Instance;
+import io.mindmaps.core.model.RoleType;
+import io.mindmaps.core.model.Rule;
+import io.mindmaps.core.model.RuleType;
+import io.mindmaps.core.model.Type;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.junit.After;
 import org.junit.Before;
@@ -32,7 +37,12 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("unchecked")
 public class TypeTest {
@@ -341,13 +351,16 @@ public class TypeTest {
     public void testCircularAKO(){
         EntityType entityType = mindmapsGraph.putEntityType("Entity");
         entityType.superType(entityType);
-        entityType.type();
     }
 
     @Test(expected=ConceptException.class)
-    public void testCircularAKOCommit() throws MindmapsValidationException {
-        EntityType entityType = mindmapsGraph.putEntityType("Entity");
-        entityType.superType(entityType);
-        mindmapsGraph.commit();
+    public void testCircularAKOLong(){
+        EntityType entityType1 = mindmapsGraph.putEntityType("Entity1");
+        EntityType entityType2 = mindmapsGraph.putEntityType("Entity2");
+        EntityType entityType3 = mindmapsGraph.putEntityType("Entity3");
+        entityType1.superType(entityType2);
+        entityType2.superType(entityType3);
+        entityType3.superType(entityType1);
     }
+
 }

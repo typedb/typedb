@@ -228,6 +228,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type, S
         deleteEdges(Direction.OUT, DataType.EdgeLabel.AKO);
         deleteEdges(Direction.OUT, DataType.EdgeLabel.ISA);
         putEdge(getMindmapsTransaction().getElementFactory().buildSpecificConceptType(type), DataType.EdgeLabel.AKO);
+        type(); //Check if there is a circular ako loop
         return getThis();
     }
 
