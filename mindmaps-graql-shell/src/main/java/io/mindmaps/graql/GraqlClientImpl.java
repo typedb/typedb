@@ -23,6 +23,9 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 import java.io.IOException;
 import java.net.URI;
 
+/**
+ * Default implementation of GraqlClient that connects to a websocket
+ */
 public class GraqlClientImpl implements GraqlClient {
 
     @Override

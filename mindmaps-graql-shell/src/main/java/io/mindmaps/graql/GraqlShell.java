@@ -48,8 +48,6 @@ import java.util.Optional;
 import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static io.mindmaps.constants.RESTUtil.RemoteShell.*;
@@ -92,7 +90,10 @@ public class GraqlShell implements AutoCloseable {
     private final String namespace;
     private ConsoleReader console;
 
+    // A future containing the session, once the client has connected
     private CompletableFuture<Session> session = new CompletableFuture<>();
+
+    // A future containing an autocomplete result, once it has been received
     private CompletableFuture<Json> autocompleteResponse = new CompletableFuture<>();
 
     /**
@@ -271,6 +272,7 @@ public class GraqlShell implements AutoCloseable {
 
     @OnWebSocketConnect
     public void onConnect(Session session) throws IOException, ExecutionException, InterruptedException {
+        // Send the requested keyspace to the server once connected
         sendJson(Json.object(ACTION, ACTION_NAMESPACE, NAMESPACE, namespace), session);
         this.session.complete(session);
     }
@@ -294,6 +296,7 @@ public class GraqlShell implements AutoCloseable {
                 lines.forEach(line -> println(line.asString()));
                 break;
             case ACTION_QUERY_END:
+                // Alert the shell that the query has finished, so it can prompt for another query
                 synchronized (this) {
                     notifyAll();
                 }
@@ -311,36 +314,13 @@ public class GraqlShell implements AutoCloseable {
                     QUERY, queryString
             ));
 
+            // Wait for the end of the query results before continuing
             synchronized (this) {
                 wait();
             }
         } catch (IOException | InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }
-    }
-
-    private void printMatchQuery(MatchQueryPrinter matchQuery, boolean setLimit) {
-        // Expand match query with reasoner, if there are any rules in the graph
-        // TODO: Make sure reasoner still applies things such as limit, even with rules in the graph
-        if (!reasoner.getRules().isEmpty()) {
-            matchQuery.setMatchQuery(reasoner.expand(matchQuery.getMatchQuery()));
-        }
-
-        Stream<String> results = matchQuery.resultsString();
-        if (setLimit) results = results.limit(100);
-        results.forEach(this::println);
-    }
-
-    private void printAskQuery(AskQuery askQuery) {
-        if (askQuery.execute()) {
-            println(ANSI.color("True", ANSI.GREEN));
-        } else {
-            println(ANSI.color("False", ANSI.RED));
-        }
-    }
-
-    private void printInsertQuery(InsertQuery insertQuery) {
-        insertQuery.stream().map(Concept::getId).forEach(this::println);
     }
 
     private void commit() {
