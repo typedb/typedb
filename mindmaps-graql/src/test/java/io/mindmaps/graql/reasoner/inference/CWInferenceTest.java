@@ -26,11 +26,13 @@ import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.reasoner.graphs.CWGraph;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
 
+@Ignore
 public class CWInferenceTest {
 
     private static MindmapsTransaction graph;

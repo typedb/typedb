@@ -24,6 +24,7 @@ import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashSet;
@@ -38,6 +39,7 @@ import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
+@Ignore
 public class MindmapsTitanGraphTest {
     private static final String TEST_CONFIG = "../conf/test/mindmaps-test.properties";
     private static final String TEST_NAME = "mindmapstest";

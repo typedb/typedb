@@ -26,6 +26,7 @@ import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.QueryParser;
+import org.junit.Ignore;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -34,6 +35,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.UUID;
 
+@Ignore
 public class AdmissionsGraph {
 
     private static MindmapsTransaction mindmaps;
