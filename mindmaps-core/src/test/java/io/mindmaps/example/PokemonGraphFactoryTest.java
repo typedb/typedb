@@ -18,26 +18,61 @@
 
 package io.mindmaps.example;
 
-import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.MindmapsTransaction;
-import io.mindmaps.core.model.*;
+import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.core.model.Entity;
+import io.mindmaps.core.model.Relation;
+import io.mindmaps.core.model.RelationType;
+import io.mindmaps.core.model.Resource;
+import io.mindmaps.core.model.ResourceType;
+import io.mindmaps.core.model.RoleType;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.stream.Stream;
 
 import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertTrue;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
 
 public class PokemonGraphFactoryTest {
     private MindmapsTransaction transaction;
 
+    @Rule
+    public final ExpectedException expectedException = ExpectedException.none();
+
     @Before
-    public void setup(){
+    public void setup() {
         MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         PokemonGraphFactory.loadGraph(mindmapsGraph);
         transaction = mindmapsGraph.getTransaction();
+    }
+
+    @Test
+    public void failToLoad(){
+        MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
+        mindmapsGraph.getTransaction().putRelationType("fake");
+
+        expectedException.expect(RuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.CANNOT_LOAD_EXAMPLE.getMessage())
+        ));
+
+        PokemonGraphFactory.loadGraph(mindmapsGraph);
+    }
+
+    @Test(expected=InvocationTargetException.class)
+    public void testConstructorIsPrivate() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        Constructor<PokemonGraphFactory> c = PokemonGraphFactory.class.getDeclaredConstructor();
+        c.setAccessible(true);
+        c.newInstance();
     }
 
     @Test

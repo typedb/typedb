@@ -22,6 +22,8 @@ import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.implementation.MindmapsTinkerGraph;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -78,5 +80,11 @@ public class MindmapsTinkerGraphFactoryTest {
         assertFalse(mg2.isBatchLoadingEnabled());
         assertNotEquals(mg1, mg2);
         assertNotEquals(mg1.getGraph(), mg2.getGraph());
+    }
+
+    @Test
+    public void testGetTinkerPopGraph(){
+        Graph mg1 = tinkerGraphFactory.getTinkerPopGraph("name", null, null, false);
+        assertThat(mg1, instanceOf(TinkerGraph.class));
     }
 }

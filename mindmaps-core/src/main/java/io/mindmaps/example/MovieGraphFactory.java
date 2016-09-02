@@ -19,10 +19,19 @@
 package io.mindmaps.example;
 
 import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.Data;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.*;
+import io.mindmaps.core.model.Entity;
+import io.mindmaps.core.model.EntityType;
+import io.mindmaps.core.model.Instance;
+import io.mindmaps.core.model.RelationType;
+import io.mindmaps.core.model.Resource;
+import io.mindmaps.core.model.ResourceType;
+import io.mindmaps.core.model.RoleType;
+import io.mindmaps.core.model.RuleType;
+import io.mindmaps.core.model.Type;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -53,17 +62,17 @@ public class MovieGraphFactory {
 
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.US);
 
-    private MovieGraphFactory() {
+    private MovieGraphFactory(){
+        throw new UnsupportedOperationException();
     }
 
     public static void loadGraph(MindmapsGraph mindmapsGraph) {
         mindmapsTransaction = mindmapsGraph.getTransaction();
         buildGraph();
-
         try {
             mindmapsTransaction.commit();
         } catch (MindmapsValidationException e) {
-            System.out.println(e.getMessage());
+            throw new RuntimeException(ErrorMessage.CANNOT_LOAD_EXAMPLE.getMessage(), e);
         }
     }
 

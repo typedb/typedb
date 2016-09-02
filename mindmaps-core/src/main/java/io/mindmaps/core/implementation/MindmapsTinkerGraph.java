@@ -35,6 +35,7 @@ public class MindmapsTinkerGraph extends AbstractMindmapsGraph<TinkerGraph> {
      */
     @Override
     public void clear() {
+        getGraph().traversal().V().drop().iterate();
         close();
     }
 }

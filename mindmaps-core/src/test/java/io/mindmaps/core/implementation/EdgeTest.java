@@ -28,6 +28,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNull;
 
 public class EdgeTest {
 
@@ -51,6 +53,16 @@ public class EdgeTest {
     }
 
     @Test
+    public void testEquals(){
+        Entity entity2 = mindmapsTransaction.putEntity("My entity 2", entityType);
+        Edge tinkerEdge = mindmapsTransaction.getTinkerTraversal().V().has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), entity2.getId()).outE().next();
+        EdgeImpl edge2 = new EdgeImpl(tinkerEdge, mindmapsTransaction);
+
+        assertEquals(edge, edge);
+        assertNotEquals(edge, edge2);
+    }
+
+    @Test
     public void testGetSource() throws Exception {
         assertEquals(entity, edge.getSource());
     }
@@ -69,6 +81,7 @@ public class EdgeTest {
     public void testProperty() throws Exception {
         edge.setProperty(DataType.EdgeProperty.ROLE_TYPE, "role");
         assertEquals("role", edge.getProperty(DataType.EdgeProperty.ROLE_TYPE));
+        assertNull(edge.getProperty(DataType.EdgeProperty.FROM_TYPE));
     }
 
 }
