@@ -40,74 +40,74 @@ import io.mindmaps.factory.MindmapsClient;
  *
  */
 public class Main {
-	
-	static void die(String errorMsg) {
-		System.out.println(errorMsg);
-		System.out.println("\nSyntax: OWLMigrator -owl <owl filename> [-graph <graph name>] [-engine <Mindmaps engine URL>]");
-		System.exit(-1);
-	}
-		
-	public static void main(String[] argv) {
-		String owlFilename = null;
-		String engineUrl = null;
-		String graphName = null;
-		
-		for (int i = 0; i < argv.length; i++) {
-			if ("-owl".equals(argv[i]))
-				owlFilename = argv[++i];
-			else if ("-graph".equals(argv[i]))
-				graphName = argv[++i];
-			else if ("-engine".equals(argv[i]))
-				engineUrl = argv[++i];
-			else
-				die("Unknown option " + argv[i]);
-		}		
-		
-		if (owlFilename == null)
-			die("Please specify owl file with the -owl option.");
-		File owlfile = new File(owlFilename);
-		if (!owlfile.exists())
-			die("Cannot find file: " + owlFilename);
-		if (graphName == null)
-			graphName = owlfile.getName().replace(".", "_");
-		
-		System.out.println("Migrating " + owlFilename + " using MM Engine " + 
-							(engineUrl == null ? "local" : engineUrl ) + " into graph " + graphName);
-		
-		OWLMigrator migrator = new OWLMigrator();
-		
-		try {
-			MindmapsGraph graph = engineUrl == null ? MindmapsClient.getGraph(graphName) 
-													: MindmapsClient.getGraph(graphName, engineUrl);			
-			migrator.graph(graph)
-					.ontology(OWLManager.createOWLOntologyManager().loadOntologyFromOntologyDocument(owlfile))
-					.migrate();
-			System.out.println("Migration successfully completed!");
-		}
-		catch (Throwable t) {
-			t.printStackTrace(System.err);
-			System.exit(-1);
-		}
-		finally {
-			if (migrator.graph() != null)
-				migrator.graph().close();
-		}
-	}
+    
+    static void die(String errorMsg) {
+        System.out.println(errorMsg);
+        System.out.println("\nSyntax: OWLMigrator -owl <owl filename> [-graph <graph name>] [-engine <Mindmaps engine URL>]");
+        System.exit(-1);
+    }
+        
+    public static void main(String[] argv) {
+        String owlFilename = null;
+        String engineUrl = null;
+        String graphName = null;
+        
+        for (int i = 0; i < argv.length; i++) {
+            if ("-owl".equals(argv[i]))
+                owlFilename = argv[++i];
+            else if ("-graph".equals(argv[i]))
+                graphName = argv[++i];
+            else if ("-engine".equals(argv[i]))
+                engineUrl = argv[++i];
+            else
+                die("Unknown option " + argv[i]);
+        }       
+        
+        if (owlFilename == null)
+            die("Please specify owl file with the -owl option.");
+        File owlfile = new File(owlFilename);
+        if (!owlfile.exists())
+            die("Cannot find file: " + owlFilename);
+        if (graphName == null)
+            graphName = owlfile.getName().replace(".", "_");
+        
+        System.out.println("Migrating " + owlFilename + " using MM Engine " + 
+                            (engineUrl == null ? "local" : engineUrl ) + " into graph " + graphName);
+        
+        OWLMigrator migrator = new OWLMigrator();
+        
+        try {
+            MindmapsGraph graph = engineUrl == null ? MindmapsClient.getGraph(graphName) 
+                                                    : MindmapsClient.getGraph(graphName, engineUrl);            
+            migrator.graph(graph)
+                    .ontology(OWLManager.createOWLOntologyManager().loadOntologyFromOntologyDocument(owlfile))
+                    .migrate();
+            System.out.println("Migration successfully completed!");
+        }
+        catch (Throwable t) {
+            t.printStackTrace(System.err);
+            System.exit(-1);
+        }
+        finally {
+            if (migrator.graph() != null)
+                migrator.graph().close();
+        }
+    }
 
-	// stub to test and throw away stuff
-	static void test() {
-		try {
-			MindmapsGraph graph = MindmapsClient.getGraph("onco");
-			MindmapsTransaction tx = graph.getTransaction();
-			tx.putRelationType("authorship");
-			RelationType reltype = (RelationType)graph.getTransaction().getType("relation-type").instances().stream().findFirst().get();
-			reltype.hasRoles().forEach(System.out::println);
-			reltype.hasRole(tx.putRoleType("authro1")).hasRole(tx.putRoleType("author2"));
-			tx.commit();
-		}
-		catch (Throwable t) {
-			t.printStackTrace(System.err);
-		}
-		System.exit(0);
-	}
+    // stub to test and throw away stuff
+    static void test() {
+        try {
+            MindmapsGraph graph = MindmapsClient.getGraph("onco");
+            MindmapsTransaction tx = graph.getTransaction();
+            tx.putRelationType("authorship");
+            RelationType reltype = (RelationType)graph.getTransaction().getType("relation-type").instances().stream().findFirst().get();
+            reltype.hasRoles().forEach(System.out::println);
+            reltype.hasRole(tx.putRoleType("authro1")).hasRole(tx.putRoleType("author2"));
+            tx.commit();
+        }
+        catch (Throwable t) {
+            t.printStackTrace(System.err);
+        }
+        System.exit(0);
+    }
 }

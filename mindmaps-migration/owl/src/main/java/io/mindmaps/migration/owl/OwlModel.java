@@ -25,20 +25,20 @@ package io.mindmaps.migration.owl;
  *
  */
 public enum OwlModel {
-	THING("owl:Thing"),
-	OBJECT_PROPERTY("owl:topObjectProperty"),
-	SUBJECT_PROPERTY("owl:topDataProperty"),
-	SUBJECT("owl-subject"),
-	OBJECT("owl-object")
-	;
-	
-	private String name;
-	
-	OwlModel(String name) {
-		this.name = name;
-	}
-	
-	public String owlname() {
-		return name;
-	}
+    THING("owl:Thing"),
+    OBJECT_PROPERTY("owl:topObjectProperty"),
+    SUBJECT_PROPERTY("owl:topDataProperty"),
+    SUBJECT("owl-subject"),
+    OBJECT("owl-object")
+    ;
+    
+    private String name;
+    
+    OwlModel(String name) {
+        this.name = name;
+    }
+    
+    public String owlname() {
+        return name;
+    }
 }

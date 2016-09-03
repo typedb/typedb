@@ -37,78 +37,78 @@ import io.mindmaps.core.model.ResourceType;
  *
  */
 public interface Namer {
-	/**
-	 * Create and return a name from a full IRI. By default this is just the fragment (the part after the '#'
-	 * sign in an IRI).
-	 */
-	default String fromIri(IRI iri) {
-		return iri.getShortForm();		
-	}
-	/**
-	 * @see {{@link #fromIri(IRI)}
-	 */
-	default String fromIri(String iriAsString) {
-		return fromIri(IRI.create(iriAsString));
-	}
-	/**
-	 * Generate the name of a MM entity from the IRI of an OWL individual
-	 */
-	default String individualEntityName(IRI individualIri) {
-		return "e" + fromIri(individualIri);
-	}
-	/**
-	 * Generate the name of a MM entity type from the IRI of an OWL class
-	 */
-	default String classEntityTypeName(IRI classIri) {
-		return "t" + fromIri(classIri);
-	}
-	/**
-	 * Generate the name of a MM relation type from the IRI of an OWL object property
-	 */
-	default String objectPropertyName(IRI propIri) {
-		return "op-" + fromIri(propIri);
-	}
-	/**
-	 * Make a name/id for the Mindmaps <code>RelationType</code> representing
-	 * a relation b/w an entity (OWL individual) and its resource (the OWL data property)
-	 */
-	default String resourceRelation(IRI dataPropertyIRI) {
-		return "has-" + dataPropertyIRI.getShortForm();
-	}
-	/**
-	 * Make a name for the role type corresponding to the object (i.e. range) of an OWL object
-	 * property.
-	 *  
-	 * @param relationId The id of the Mindmaps <code>RelationType</code>.
-	 */
-	default String objectRole(String relationId) {
-		return OwlModel.OBJECT.owlname() + "-" + relationId;
-	}
-	/**
-	 * Make a name for the role type corresponding to the subject (i.e. domain) of an OWL object
-	 * property.
-	 *  
-	 * @param relationId The id of the Mindmaps <code>RelationType</code>.
-	 */
-	default String subjectRole(String relationId) {
-		return OwlModel.SUBJECT.owlname() + "-" + relationId;
-	}
-	/**
-	 * The name of the entity role type in an entity-role relation representing an OWL data property
-	 */
-	default String entityRole(String resourceId) {
-		return "has-" + resourceId + "-owner";
-	}
-	/**
-	 * Make a name for a resource role player representing the value of an OWL data property.
-	 */
-	default String resourceRole(String resourceId) {
-		return "has-" + resourceId + "-value";
-	}
-	/**
-	 * Make an identifier for a resource of a given type to be associated with a given entity.
-	 */
-	default String resourceId(Entity entity, ResourceType<?> resourceType) {
-		return "resource-" + resourceType.getId() + "-" + entity.getId();
-	}	
+    /**
+     * Create and return a name from a full IRI. By default this is just the fragment (the part after the '#'
+     * sign in an IRI).
+     */
+    default String fromIri(IRI iri) {
+        return iri.getShortForm();      
+    }
+    /**
+     * @see {{@link #fromIri(IRI)}
+     */
+    default String fromIri(String iriAsString) {
+        return fromIri(IRI.create(iriAsString));
+    }
+    /**
+     * Generate the name of a MM entity from the IRI of an OWL individual
+     */
+    default String individualEntityName(IRI individualIri) {
+        return "e" + fromIri(individualIri);
+    }
+    /**
+     * Generate the name of a MM entity type from the IRI of an OWL class
+     */
+    default String classEntityTypeName(IRI classIri) {
+        return "t" + fromIri(classIri);
+    }
+    /**
+     * Generate the name of a MM relation type from the IRI of an OWL object property
+     */
+    default String objectPropertyName(IRI propIri) {
+        return "op-" + fromIri(propIri);
+    }
+    /**
+     * Make a name/id for the Mindmaps <code>RelationType</code> representing
+     * a relation b/w an entity (OWL individual) and its resource (the OWL data property)
+     */
+    default String resourceRelation(IRI dataPropertyIRI) {
+        return "has-" + dataPropertyIRI.getShortForm();
+    }
+    /**
+     * Make a name for the role type corresponding to the object (i.e. range) of an OWL object
+     * property.
+     *  
+     * @param relationId The id of the Mindmaps <code>RelationType</code>.
+     */
+    default String objectRole(String relationId) {
+        return OwlModel.OBJECT.owlname() + "-" + relationId;
+    }
+    /**
+     * Make a name for the role type corresponding to the subject (i.e. domain) of an OWL object
+     * property.
+     *  
+     * @param relationId The id of the Mindmaps <code>RelationType</code>.
+     */
+    default String subjectRole(String relationId) {
+        return OwlModel.SUBJECT.owlname() + "-" + relationId;
+    }
+    /**
+     * The name of the entity role type in an entity-role relation representing an OWL data property
+     */
+    default String entityRole(String resourceId) {
+        return "has-" + resourceId + "-owner";
+    }
+    /**
+     * Make a name for a resource role player representing the value of an OWL data property.
+     */
+    default String resourceRole(String resourceId) {
+        return "has-" + resourceId + "-value";
+    }
+    /**
+     * Make an identifier for a resource of a given type to be associated with a given entity.
+     */
+    default String resourceId(Entity entity, ResourceType<?> resourceType) {
+        return "resource-" + resourceType.getId() + "-" + entity.getId();
+    }   
 }
