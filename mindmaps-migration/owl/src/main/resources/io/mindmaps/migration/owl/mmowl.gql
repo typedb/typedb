@@ -1,0 +1,18 @@
+###################################################
+# OWL 2 Mindmaps Ontology 
+#################################################
+
+insert
+
+"owl-Thing" isa entity-type;
+
+"owl-subject" isa role-type;
+"owl-object" isa role-type;
+"owl-topObjectProperty" isa relation-type, has-role owl-subject, has-role owl-object;
+owl-Thing plays-role owl-subject, plays-role owl-object;
+
+
+"a" isa owl-Thing;
+"b" isa owl-Thing;
+
+(owl-subject 'a', owl-object 'b') isa owl-topObjectProperty;

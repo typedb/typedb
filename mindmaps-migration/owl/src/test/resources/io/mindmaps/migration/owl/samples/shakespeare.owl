@@ -1,0 +1,153 @@
+<?xml version="1.0"?>
+<rdf:RDF
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:geo="http://www.workingontologist.org/Examples/Chapter3/geography.owl#"
+    xmlns:bio="http://www.workingontologist.org/Examples/Chapter3/biography.owl#"
+    xmlns:lit="http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl#"
+  xml:base="http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl">
+  <owl:Ontology rdf:about="">
+    <owl:versionInfo rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Created with TopBraid Composer</owl:versionInfo>
+  </owl:Ontology>
+  <owl:Class rdf:ID="Play">
+    <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Play</rdfs:label>
+  </owl:Class>
+  <owl:Class rdf:ID="Place">
+    <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Place</rdfs:label>
+  </owl:Class>
+  <owl:Class rdf:ID="Person">
+    <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Person</rdfs:label>
+  </owl:Class>
+  <owl:Class rdf:ID="Author">
+    <rdfs:subClassOf rdf:resource="#Person"/>
+    <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Author</rdfs:label>
+  </owl:Class>
+  <owl:ObjectProperty rdf:about="http://www.workingontologist.org/Examples/Chapter3/biography.owl#married">
+    <rdfs:domain rdf:resource="#Person"/>
+    <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >married</rdfs:label>
+    <rdfs:range rdf:resource="#Person"/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:ID="setIn">
+    <rdfs:range rdf:resource="#Place"/>
+    <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >set in</rdfs:label>
+    <rdfs:domain rdf:resource="#Play"/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:ID="wrote">
+    <rdfs:range rdf:resource="#Play"/>
+    <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >wrote</rdfs:label>
+    <rdfs:domain rdf:resource="#Author"/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:about="http://www.workingontologist.org/Examples/Chapter3/biography.owl#livedIn">
+    <rdfs:domain rdf:resource="#Person"/>
+    <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >lived in</rdfs:label>
+    <rdfs:range rdf:resource="#Place"/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:about="http://www.workingontologist.org/Examples/Chapter3/geography.owl#partOf">
+    <rdfs:domain rdf:resource="#Place"/>
+    <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >part of</rdfs:label>
+    <rdfs:range rdf:resource="#Place"/>
+  </owl:ObjectProperty>
+  <owl:ObjectProperty rdf:about="http://www.workingontologist.org/Examples/Chapter3/geography.owl#isIn">
+    <rdfs:domain rdf:resource="#Place"/>
+    <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >is in</rdfs:label>
+    <rdfs:range rdf:resource="#Place"/>
+  </owl:ObjectProperty>
+  <lit:Play rdf:ID="HenryV"/>
+  <lit:Play rdf:ID="LovesLaboursLost"/>
+  <lit:Place rdf:about="http://www.workingontologist.org/Examples/Chapter3/geography.owl#ChannelIslands">
+    <geo:partOf>
+      <lit:Place rdf:about="http://www.workingontologist.org/Examples/Chapter3/geography.owl#UK">
+        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+        >UK</rdfs:label>
+      </lit:Place>
+    </geo:partOf>
+  </lit:Place>
+  <lit:Place rdf:about="http://www.workingontologist.org/Examples/Chapter3/geography.owl#England">
+    <geo:partOf rdf:resource="http://www.workingontologist.org/Examples/Chapter3/geography.owl#UK"/>
+    <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >England</rdfs:label>
+  </lit:Place>
+  <lit:Person rdf:ID="AnneHathaway">
+    <bio:married>
+      <lit:Author rdf:ID="Shakespeare">
+        <lit:wrote>
+          <lit:Play rdf:ID="Hamlet"/>
+        </lit:wrote>
+        <lit:wrote rdf:resource="#LovesLaboursLost"/>
+        <lit:wrote>
+          <lit:Play rdf:ID="AsYouLikeIt"/>
+        </lit:wrote>
+        <lit:wrote>
+          <lit:Play rdf:ID="Othello"/>
+        </lit:wrote>
+        <lit:wrote>
+          <lit:Play rdf:ID="WintersTale"/>
+        </lit:wrote>
+        <lit:wrote>
+          <lit:Play rdf:ID="KingLear">
+            <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+            >King lear</rdfs:label>
+          </lit:Play>
+        </lit:wrote>
+        <lit:wrote>
+          <lit:Play rdf:ID="TheTempest"/>
+        </lit:wrote>
+        <lit:wrote>
+          <lit:Play rdf:ID="TwelfthNight"/>
+        </lit:wrote>
+        <lit:wrote>
+          <lit:Play rdf:ID="MeasureForMeasure"/>
+        </lit:wrote>
+        <lit:wrote>
+          <lit:Play rdf:ID="Macbeth">
+            <lit:setIn>
+              <lit:Place rdf:about="http://www.workingontologist.org/Examples/Chapter3/geography.owl#Scotland">
+                <geo:partOf rdf:resource="http://www.workingontologist.org/Examples/Chapter3/geography.owl#UK"/>
+                <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+                >Scotland</rdfs:label>
+              </lit:Place>
+            </lit:setIn>
+            <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+            >Macbeth</rdfs:label>
+          </lit:Play>
+        </lit:wrote>
+        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+        >Shakespeare</rdfs:label>
+        <bio:livedIn>
+          <lit:Place rdf:about="http://www.workingontologist.org/Examples/Chapter3/geography.owl#Stratford">
+            <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+            >Stratford</rdfs:label>
+            <geo:isIn rdf:resource="http://www.workingontologist.org/Examples/Chapter3/geography.owl#England"/>
+          </lit:Place>
+        </bio:livedIn>
+        <lit:wrote rdf:resource="#HenryV"/>
+      </lit:Author>
+    </bio:married>
+    <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string"
+    >Anne hathaway</rdfs:label>
+  </lit:Person>
+  <lit:Place rdf:about="http://www.workingontologist.org/Examples/Chapter3/geography.owl#IsleOfMan">
+    <geo:partOf rdf:resource="http://www.workingontologist.org/Examples/Chapter3/geography.owl#UK"/>
+  </lit:Place>
+  <lit:Place rdf:about="http://www.workingontologist.org/Examples/Chapter3/geography.owl#Wales">
+    <geo:partOf rdf:resource="http://www.workingontologist.org/Examples/Chapter3/geography.owl#UK"/>
+  </lit:Place>
+  <lit:Place rdf:about="http://www.workingontologist.org/Examples/Chapter3/geography.owl#NorthernIreland">
+    <geo:partOf rdf:resource="http://www.workingontologist.org/Examples/Chapter3/geography.owl#UK"/>
+  </lit:Place>
+</rdf:RDF>
+
+<!-- Created with TopBraid Composer -->
