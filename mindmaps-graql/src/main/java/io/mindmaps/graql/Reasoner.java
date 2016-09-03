@@ -189,7 +189,7 @@ public class Reasoner {
 
     }
 
-    private Set<Rule> getRules() {
+    public Set<Rule> getRules() {
         Set<Rule> rules = new HashSet<>();
         MatchQueryDefault sq = qp.parseMatchQuery("match $x isa inference-rule;").getMatchQuery();
 

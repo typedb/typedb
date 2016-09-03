@@ -321,8 +321,11 @@ public class GraqlShell implements AutoCloseable {
     }
 
     private void printMatchQuery(MatchQueryPrinter matchQuery, boolean setLimit) {
-        // Expand match query with reasoner
-        matchQuery.setMatchQuery(reasoner.expand(matchQuery.getMatchQuery()));
+        // Expand match query with reasoner, if there are any rules in the graph
+        // TODO: Make sure reasoner still applies things such as limit, even with rules in the graph
+        if (!reasoner.getRules().isEmpty()) {
+            matchQuery.setMatchQuery(reasoner.expand(matchQuery.getMatchQuery()));
+        }
 
         Stream<String> results = matchQuery.resultsString();
         if (setLimit) results = results.limit(100);
