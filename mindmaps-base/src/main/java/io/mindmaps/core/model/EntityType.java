@@ -25,14 +25,6 @@ import java.util.Collection;
  */
 public interface EntityType extends Type{
     //------------------------------------- Modifiers ----------------------------------
-
-    /**
-     *
-     * @param id The new unique id of the Entity Type.
-     * @return The Entity Type itself.
-     */
-    EntityType setId(String id);
-
     /**
      *
      * @param subject The new unique subject of the Entity Type.

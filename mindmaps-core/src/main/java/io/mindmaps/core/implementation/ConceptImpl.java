@@ -99,20 +99,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type, D> implements Conc
 
     /**
      *
-     * @param id The new unique id of the concept.
-     * @return The concept itself casted to the correct interface itself
-     */
-    @Override
-    public T setId(String id) {
-        if(DataType.ConceptMeta.isMetaId(id)){
-            throw new ConceptException(ErrorMessage.ID_RESERVED.getMessage(id));
-        }
-
-        return setUniqueProperty(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER, id);
-    }
-
-    /**
-     *
      * @param subject The new unique subject of the concept.
      * @return The concept itself casted to the correct interface itself
      */

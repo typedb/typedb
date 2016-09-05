@@ -32,13 +32,6 @@ public interface Relation extends Instance {
     //------------------------------------- Modifiers ----------------------------------
     /**
      *
-     * @param id The new unique id of the Relation.
-     * @return The Relation itself
-     */
-    Relation setId(String id);
-
-    /**
-     *
      * @param subject The new unique subject of the Relation.
      * @return The Relation itself
      */
