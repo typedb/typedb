@@ -33,6 +33,10 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -108,11 +112,21 @@ public class BlockingLoaderTest {
         ClassLoader classLoader = getClass().getClassLoader();
 
         LOG.info("Loading new ontology .. ");
+
+            List<String> lines = null;
+            try {
+                lines = Files.readAllLines(Paths.get(classLoader.getResource("dblp-ontology.gql").getFile()), StandardCharsets.UTF_8);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
+            QueryParser.create().parseInsertQuery(query).withTransaction(transaction).execute();
         try {
-            QueryParser.create().parsePatternsStream(new FileInputStream(classLoader.getResource("dblp-ontology.gql").getFile())).map(x -> x.admin().asVar()).forEach(ontologyBatch::add);
-        } catch (FileNotFoundException e) {
+            transaction.commit();
+        } catch (MindmapsValidationException e) {
             e.printStackTrace();
         }
+
         insert(ontologyBatch).withTransaction(transaction).execute();
         try {
             transaction.commit();
