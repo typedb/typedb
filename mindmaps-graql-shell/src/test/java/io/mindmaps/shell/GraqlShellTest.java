@@ -178,7 +178,7 @@ public class GraqlShellTest {
 
     @Test
     public void testAutocompleteFill() throws IOException {
-        String result = testShell("match $x isa typ\t\n");
+        String result = testShell("match $x isa concept-typ\t\n");
         assertThat(result, containsString("\"relation-type\""));
     }
 
@@ -223,7 +223,7 @@ public class GraqlShellTest {
 
     @Test
     public void testLimit() throws IOException {
-        String result = testShell("match $x isa type limit 1\n");
+        String result = testShell("match $x isa concept-type limit 1\n");
 
         // Expect seven lines output - four for the license, one for the query, only one result and a new prompt
         assertEquals(result, 7, result.split("\n").length);
