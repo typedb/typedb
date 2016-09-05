@@ -89,13 +89,11 @@ public class MindmapsTitanGraphFactoryTest {
         TitanManagement management = sharedGraph.openManagement();
 
         assertEquals("byItemIdentifier", management.getGraphIndex("byItemIdentifier").toString());
-        assertEquals("bySubjectIdentifier", management.getGraphIndex("bySubjectIdentifier").toString());
         assertEquals("byValueString", management.getGraphIndex("byValueString").toString());
         assertEquals("byValueLong", management.getGraphIndex("byValueLong").toString());
         assertEquals("byValueDouble", management.getGraphIndex("byValueDouble").toString());
         assertEquals("byValueBoolean", management.getGraphIndex("byValueBoolean").toString());
         assertEquals("ITEM_IDENTIFIER", management.getPropertyKey("ITEM_IDENTIFIER").toString());
-        assertEquals("SUBJECT_IDENTIFIER", management.getPropertyKey("SUBJECT_IDENTIFIER").toString());
         assertEquals("VALUE_STRING", management.getPropertyKey("VALUE_STRING").toString());
         assertEquals("VALUE_LONG", management.getPropertyKey("VALUE_LONG").toString());
         assertEquals("VALUE_BOOLEAN", management.getPropertyKey("VALUE_BOOLEAN").toString());

@@ -26,14 +26,6 @@ import java.util.Collection;
  */
 public interface RuleType extends Type {
     //---- Inherited Methods
-
-    /**
-     *
-     * @param subject The new unique subject of the concept.
-     * @return The Rule Type itself
-     */
-    RuleType setSubject(String subject);
-
     /**
      *
      * @param isAbstract  Specifies if the concept is abstract (true) or not (false).

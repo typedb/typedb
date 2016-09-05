@@ -119,7 +119,7 @@ public final class DataType {
      * A property enum defining the unique mutable properties of the concept. The must be unique properties.
      */
     public enum ConceptPropertyUnique {
-        ITEM_IDENTIFIER, SUBJECT_IDENTIFIER, INDEX
+        ITEM_IDENTIFIER, INDEX
     }
 
     /**

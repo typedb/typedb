@@ -98,16 +98,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
 
     /**
      *
-     * @param subject The new unique subject of the concept.
-     * @return The concept itself casted to the correct interface itself
-     */
-    @Override
-    public T setSubject(String subject) {
-        return setUniqueProperty(DataType.ConceptPropertyUnique.SUBJECT_IDENTIFIER, subject);
-    }
-
-    /**
-     *
      * @param key The key of the unique property to mutate
      * @param id The new value of the unique property
      * @return The concept itself casted to the correct interface itself
@@ -617,15 +607,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
 
     /**
      *
-     * @return A string representing the concept's unique subject.
-     */
-    @Override
-    public String getSubject() {
-        return getProperty(DataType.ConceptPropertyUnique.SUBJECT_IDENTIFIER);
-    }
-
-    /**
-     *
      * @return The id of the type of this concept. This is a shortcut used to prevent traversals.
      */
     public String getType(){
@@ -748,8 +729,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
     public String toString(){
         String message = "[" +  this.hashCode() + "] "+
                 "- Base Type [" + getBaseType() + "] ";
-        if(getSubject() != null)
-            message = message +  "- Subject Identifier [" + getSubject() + "] ";
         if(getId() != null)
             message = message + "- Item Identifier [" + getId() + "] ";
 

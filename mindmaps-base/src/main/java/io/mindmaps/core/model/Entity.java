@@ -24,14 +24,6 @@ import java.util.Collection;
  * An instance of Entity Type which represents some data in the graph.
  */
 public interface Entity extends Instance{
-    //------------------------------------- Modifiers ----------------------------------
-    /**
-     *
-     * @param subject The new unique subject of the instance.
-     * @return The Entity itself
-     */
-    Entity setSubject(String subject);
-
     //------------------------------------- Accessors ----------------------------------
 
     /**

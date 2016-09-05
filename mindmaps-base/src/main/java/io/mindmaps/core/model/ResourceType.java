@@ -32,13 +32,6 @@ public interface ResourceType<D> extends Type {
     //------------------------------------- Modifiers ----------------------------------
     /**
      *
-     * @param subject The new unique subject of the Resource Type.
-     * @return The Resource Type itself.
-     */
-    ResourceType<D> setSubject(String subject);
-
-    /**
-     *
      * @param isAbstract  Specifies if the Resource Type is abstract (true) or not (false).
      *                    If the Resource Type is abstract it is not allowed to have any instances.
      * @return The Resource Type itself.

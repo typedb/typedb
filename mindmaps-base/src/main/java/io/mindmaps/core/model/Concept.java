@@ -25,26 +25,12 @@ import io.mindmaps.core.implementation.exception.ConceptException;
  * A Concept which represents anything in the graph.
  */
 public interface Concept extends Comparable<Concept>{
-    //------------------------------------- Modifiers ----------------------------------
-    /**
-     *
-     * @param subject The new unique subject of the concept.
-     * @return The concept itself.
-     */
-    Concept setSubject(String subject);
-
     //------------------------------------- Accessors ----------------------------------
     /**
      *
      * @return A string representing the concept's unique id.
      */
     String getId();
-
-    /**
-     *
-     * @return A string representing the concept's unique subject.
-     */
-    String getSubject();
 
     /**
      *

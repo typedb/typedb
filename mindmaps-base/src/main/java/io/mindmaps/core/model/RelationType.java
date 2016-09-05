@@ -52,13 +52,6 @@ public interface RelationType extends Type {
     //---- Inherited Methods
     /**
      *
-     * @param subject The new unique subject of the concept.
-     * @return The Relation Type itself.
-     */
-    RelationType setSubject(String subject);
-
-    /**
-     *
      * @param isAbstract  Specifies if the concept is abstract (true) or not (false).
      *                    If the concept type is abstract it is not allowed to have any instances.
      * @return The Relation Type itself.

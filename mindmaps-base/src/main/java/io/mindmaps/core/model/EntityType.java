@@ -27,13 +27,6 @@ public interface EntityType extends Type{
     //------------------------------------- Modifiers ----------------------------------
     /**
      *
-     * @param subject The new unique subject of the Entity Type.
-     * @return The Entity Type itself.
-     */
-    EntityType setSubject(String subject);
-
-    /**
-     *
      * @param isAbstract  Specifies if the concept is abstract (true) or not (false).
      *                    If the concept type is abstract it is not allowed to have any instances.
      * @return The Entity Type itself

@@ -19,11 +19,19 @@
 package io.mindmaps.core.implementation;
 
 import io.mindmaps.constants.DataType;
-import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.Data;
-import io.mindmaps.core.implementation.exception.ConceptIdNotUniqueException;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.*;
+import io.mindmaps.core.model.Concept;
+import io.mindmaps.core.model.Entity;
+import io.mindmaps.core.model.EntityType;
+import io.mindmaps.core.model.Instance;
+import io.mindmaps.core.model.Relation;
+import io.mindmaps.core.model.RelationType;
+import io.mindmaps.core.model.Resource;
+import io.mindmaps.core.model.ResourceType;
+import io.mindmaps.core.model.RoleType;
+import io.mindmaps.core.model.RuleType;
+import io.mindmaps.core.model.Type;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -40,8 +48,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class MindmapsTransactionLowLevelTest {
 
@@ -74,37 +89,6 @@ public class MindmapsTransactionLowLevelTest {
     }
 
     //----------------------------------------------Concept Functionality-----------------------------------------------
-
-    @Test
-    public void testPutConceptWithSubjectID() {
-        Concept concept = mindmapsGraph.putEntityType("http://mindmaps.io").setSubject("http://mindmaps.io");
-        assertEquals("http://mindmaps.io", concept.getSubject());
-    }
-
-    @Test
-    public void testPutConceptWithMultiWithOverlap() {
-        mindmapsGraph.putEntityType("valueBased");
-        Concept subjectIdBased = mindmapsGraph.putEntityType("subjectIdBased");
-        subjectIdBased.setSubject("www.mind.io");
-
-        Concept concept = mindmapsGraph.putEntityType("valueBased");
-
-        expectedException.expect(ConceptIdNotUniqueException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.ID_NOT_UNIQUE.getMessage(concept.toString(), DataType.ConceptPropertyUnique.SUBJECT_IDENTIFIER.name(), "www.mind.io"))
-        ));
-
-        concept.setSubject("www.mind.io");
-    }
-
-    @Test
-    public void testPutConceptWithMultiWithExistingNode() {
-        Concept valueBased = mindmapsGraph.putEntityType("valueBased");
-        Concept nextConcept = mindmapsGraph.putEntityType("valueBased").setSubject("www.mind.io");
-
-        assertEquals(valueBased, nextConcept);
-    }
-
     @Test
     public void testSetTinkerPopGrap(){
         Graph graph1 = mindmapsGraph.getTinkerPopGraph();
@@ -136,13 +120,6 @@ public class MindmapsTransactionLowLevelTest {
     public void testGetConcept() throws Exception {
         Concept c1 = mindmapsGraph.putEntityType("VALUE");
         Concept c2 = mindmapsGraph.getConcept("VALUE");
-        assertEquals(c1, c2);
-    }
-
-    @Test
-    public void testGetConceptBySubjectIdentifier() throws Exception {
-        Concept c1 = mindmapsGraph.putEntityType("c1").setSubject("www.mindmaps.io");
-        Concept c2 = mindmapsGraph.getConceptBySubject("www.mindmaps.io");
         assertEquals(c1, c2);
     }
 
@@ -276,12 +253,9 @@ public class MindmapsTransactionLowLevelTest {
 
     @Test
     public void testGetConceptInstance(){
-        assertNull(mindmapsGraph.getEntityBySubject("Bob"));
         assertNull(mindmapsGraph.getEntity("Bob"));
         EntityType type = mindmapsGraph.putEntityType("Parent");
-        Instance c1 = mindmapsGraph.putEntity("Bob1", type).setSubject("Bob");
         Instance c2 = mindmapsGraph.putEntity("Bob", type);
-        assertEquals(c1, mindmapsGraph.getEntityBySubject("Bob"));
         assertEquals(c2, mindmapsGraph.getEntity("Bob"));
     }
 
@@ -295,74 +269,53 @@ public class MindmapsTransactionLowLevelTest {
 
     @Test
     public void testGetConceptType(){
-        assertNull(mindmapsGraph.getEntityTypeBySubject("Bob"));
         assertNull(mindmapsGraph.getEntityType("Bob"));
-        Type c1 = mindmapsGraph.putEntityType("Bob1").setSubject("Bob");
         Type c2 = mindmapsGraph.putEntityType("Bob");
-        assertEquals(c1, mindmapsGraph.getEntityTypeBySubject("Bob"));
         assertEquals(c2, mindmapsGraph.getEntityType("Bob"));
     }
 
     @Test
     public void testGetRelationType(){
-        assertNull(mindmapsGraph.getRelationTypeBySubject("Bob"));
         assertNull(mindmapsGraph.getRelationType("Bob"));
-        RelationType c1 = mindmapsGraph.putRelationType("Bob1").setSubject("Bob");
         RelationType c2 = mindmapsGraph.putRelationType("Bob");
-        assertEquals(c1, mindmapsGraph.getRelationTypeBySubject("Bob"));
         assertEquals(c2, mindmapsGraph.getRelationType("Bob"));
     }
 
     @Test
     public void testGetRoleType(){
-        assertNull(mindmapsGraph.getRoleTypeBySubject("Bob"));
         assertNull(mindmapsGraph.getRoleType("Bob"));
-        RoleType c1 = mindmapsGraph.putRoleType("Bob1").setSubject("Bob");
         RoleType c2 = mindmapsGraph.putRoleType("Bob");
-        assertEquals(c1, mindmapsGraph.getRoleTypeBySubject("Bob"));
         assertEquals(c2, mindmapsGraph.getRoleType("Bob"));
     }
 
     @Test
     public void testGetResourceType(){
-        assertNull(mindmapsGraph.getResourceTypeBySubject("Bob"));
         assertNull(mindmapsGraph.getResourceType("Bob"));
-        ResourceType c1 = mindmapsGraph.putResourceType("Bob1", Data.STRING).setSubject("Bob");
         ResourceType c2 = mindmapsGraph.putResourceType("Bob", Data.STRING);
-        assertEquals(c1, mindmapsGraph.getResourceTypeBySubject("Bob"));
         assertEquals(c2, mindmapsGraph.getResourceType("Bob"));
     }
 
     @Test
     public void testGetRuleType(){
-        assertNull(mindmapsGraph.getRuleTypeBySubject("Bob"));
         assertNull(mindmapsGraph.getRuleType("Bob"));
-        RuleType c1 = mindmapsGraph.putRuleType("Bob1").setSubject("Bob");
         RuleType c2 = mindmapsGraph.putRuleType("Bob");
-        assertEquals(c1, mindmapsGraph.getRuleTypeBySubject("Bob"));
         assertEquals(c2, mindmapsGraph.getRuleType("Bob"));
     }
 
     @Test
     public void testGetResource(){
-        assertNull(mindmapsGraph.getResourceBySubject("Bob"));
         assertNull(mindmapsGraph.getResource("Bob"));
         ResourceType type = mindmapsGraph.putResourceType("Type", Data.STRING);
-        Resource c1 = mindmapsGraph.putResource("1", type).setSubject("Bob");
         Resource c2 = mindmapsGraph.putResource("1", type);
-        assertEquals(c1, mindmapsGraph.getResourceBySubject("Bob"));
         assertEquals(c2, mindmapsGraph.getResourcesByValue("1").iterator().next());
         assertEquals(1, mindmapsGraph.getResourcesByValue("1").size());
     }
 
     @Test
     public void testGetRule(){
-        assertNull(mindmapsGraph.getRuleBySubject("Bob"));
         assertNull(mindmapsGraph.getRule("Bob"));
         RuleType type = mindmapsGraph.putRuleType("Type");
-        RuleImpl c1 = (RuleImpl) mindmapsGraph.putRule("Bob1", "lhs", "rhs", type).setSubject("Bob");
         RuleImpl c2 = (RuleImpl) mindmapsGraph.putRule("Bob", "lhs", "rhs", type);
-        assertEquals(c1, mindmapsGraph.getRuleBySubject("Bob"));
         assertEquals(c2, mindmapsGraph.getRule("Bob"));
     }
 
@@ -431,10 +384,7 @@ public class MindmapsTransactionLowLevelTest {
     @Test
     public void testGetType(){
         EntityType a = mindmapsGraph.putEntityType("a");
-        RoleType b = mindmapsGraph.putRoleType("b").setSubject("subject");
-
         assertEquals(a, mindmapsGraph.getType("a"));
-        assertEquals(b, mindmapsGraph.getTypeBySubject("subject"));
     }
 
     @Test
@@ -444,11 +394,10 @@ public class MindmapsTransactionLowLevelTest {
         ResourceType<String> c = mindmapsGraph.putResourceType("c", Data.STRING);
 
         Entity instanceA = mindmapsGraph.putEntity("instanceA", a);
-        Relation instanceB = mindmapsGraph.putRelation(UUID.randomUUID().toString(), b).setSubject("subject");
+        Relation instanceB = mindmapsGraph.putRelation(UUID.randomUUID().toString(), b);
         mindmapsGraph.putResource("1", c);
 
         assertEquals(instanceA, mindmapsGraph.getInstance("instanceA"));
-        assertEquals(instanceB, mindmapsGraph.getInstanceBySubject("subject"));
     }
 
     @Test

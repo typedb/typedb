@@ -27,13 +27,6 @@ public interface RoleType extends Type {
     //------------------------------------- Modifiers ----------------------------------
     /**
      *
-     * @param subject The new unique subject of the Role Type.
-     * @return The Role Type itself
-     */
-    RoleType setSubject(String subject);
-
-    /**
-     *
      * @param isAbstract  Specifies if the Role Type is abstract (true) or not (false).
      *                    If the Role Type is abstract it is not allowed to have any instances.
      * @return The Role Type itself

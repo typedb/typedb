@@ -84,14 +84,6 @@ public class ConceptTest {
     }
 
     @Test
-    public void testSubjectIdentifier() throws ConceptException {
-        concept.setSubject("http://mindmaps.io");
-        Vertex conceptVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
-        assertEquals("http://mindmaps.io", conceptVertex.property(DataType.ConceptPropertyUnique.SUBJECT_IDENTIFIER.name()).value());
-        assertEquals("http://mindmaps.io", concept.getSubject());
-    }
-
-    @Test
     public void testGetVertex(){
         assertNotNull(concept.getBaseIdentifier());
     }
@@ -108,12 +100,6 @@ public class ConceptTest {
         concept.setType("test_type");
         Vertex conceptVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
         assertEquals(concept.getType(), conceptVertex.property(DataType.ConceptProperty.TYPE.name()).value());
-    }
-
-    @Test(expected=ConceptException.class)
-    public void updateConceptBySubjectIdentifierFailConceptAlreadyExists() {
-        mindmapsGraph.putEntityType("bob").setSubject("www.mindmaps.io");
-        concept.setSubject("www.mindmaps.io");
     }
 
     @Test(expected=RuntimeException.class)
@@ -177,10 +163,9 @@ public class ConceptTest {
 
     @Test
     public void testToString() {
-        EntityType concept = mindmapsGraph.putEntityType("a").setSubject("b");
+        EntityType concept = mindmapsGraph.putEntityType("a");
         Instance concept2 = mindmapsGraph.putEntity("concept2", concept);
 
-        assertTrue(concept.toString().contains("Subject Identifier"));
         assertFalse(concept2.toString().contains("ConceptType"));
         assertFalse(concept2.toString().contains("Subject Identifier"));
         assertFalse(concept2.toString().contains("Subject Locator"));

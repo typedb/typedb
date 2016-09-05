@@ -25,14 +25,6 @@ import java.util.Collection;
  */
 public interface Type extends Concept {
     //------------------------------------- Modifiers ----------------------------------
-
-    /**
-     *
-     * @param subject The new unique subject of the concept.
-     * @return The Type itself.
-     */
-    Type setSubject(String subject);
-
     /**
      *
      * @param isAbstract  Specifies if the concept is abstract (true) or not (false).
