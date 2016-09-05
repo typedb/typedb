@@ -84,9 +84,7 @@ public class MindmapsTransactionLowLevelTest {
 
     @Test
     public void testPutConceptWithMultiWithOverlap() {
-        Concept valueBased = mindmapsGraph.putEntityType("valueBased");
-        valueBased.setId("valueBased");
-
+        mindmapsGraph.putEntityType("valueBased");
         Concept subjectIdBased = mindmapsGraph.putEntityType("subjectIdBased");
         subjectIdBased.setSubject("www.mind.io");
 
@@ -103,8 +101,6 @@ public class MindmapsTransactionLowLevelTest {
     @Test
     public void testPutConceptWithMultiWithExistingNode() {
         Concept valueBased = mindmapsGraph.putEntityType("valueBased");
-        valueBased.setId("valueBased");
-
         Concept nextConcept = mindmapsGraph.putEntityType("valueBased").setSubject("www.mind.io");
 
         assertEquals(valueBased, nextConcept);

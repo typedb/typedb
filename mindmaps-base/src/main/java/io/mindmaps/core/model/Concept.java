@@ -28,13 +28,6 @@ public interface Concept extends Comparable<Concept>{
     //------------------------------------- Modifiers ----------------------------------
     /**
      *
-     * @param id The new unique id of the concept.
-     * @return The concept itself.
-     */
-    Concept setId(String id);
-
-    /**
-     *
      * @param subject The new unique subject of the concept.
      * @return The concept itself.
      */

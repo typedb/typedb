@@ -29,13 +29,6 @@ public interface RuleType extends Type {
 
     /**
      *
-     * @param id The new unique id of the concept.
-     * @return The Rule Type itself
-     */
-    RuleType setId(String id);
-
-    /**
-     *
      * @param subject The new unique subject of the concept.
      * @return The Rule Type itself
      */

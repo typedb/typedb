@@ -32,13 +32,6 @@ public interface ResourceType<D> extends Type {
     //------------------------------------- Modifiers ----------------------------------
     /**
      *
-     * @param id The new unique id of the Resource Type.
-     * @return The Resource Type itself.
-     */
-    ResourceType<D> setId(String id);
-
-    /**
-     *
      * @param subject The new unique subject of the Resource Type.
      * @return The Resource Type itself.
      */

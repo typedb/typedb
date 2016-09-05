@@ -27,13 +27,6 @@ public interface Entity extends Instance{
     //------------------------------------- Modifiers ----------------------------------
     /**
      *
-     * @param id The new unique id of the instance.
-     * @return The Entity itself
-     */
-    Entity setId(String id);
-
-    /**
-     *
      * @param subject The new unique subject of the instance.
      * @return The Entity itself
      */

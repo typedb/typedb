@@ -100,14 +100,6 @@ public interface Rule extends Instance{
     Collection<Type> getConclusionTypes();
 
     //---- Inherited Methods
-
-    /**
-     *
-     * @param id The new unique id of the instance.
-     * @return The Rule itself
-     */
-    Rule setId(String id);
-
     /**
      *
      * @param subject The new unique subject of the instance.

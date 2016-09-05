@@ -76,8 +76,6 @@ public class TypeTest {
     public void testItemIdentifier(){
         Type test = mindmapsGraph.putEntityType("test");
         assertEquals("test", test.getId());
-        test.setId("bobo");
-        assertEquals("bobo", test.getId());
     }
 
     @Test

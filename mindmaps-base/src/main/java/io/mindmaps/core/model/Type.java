@@ -28,13 +28,6 @@ public interface Type extends Concept {
 
     /**
      *
-     * @param id The new unique id of the concept.
-     * @return The Type itself.
-     */
-    Type setId(String id);
-
-    /**
-     *
      * @param subject The new unique subject of the concept.
      * @return The Type itself.
      */
