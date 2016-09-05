@@ -36,6 +36,7 @@ import spark.Spark;
 import static com.jayway.restassured.RestAssured.get;
 import static org.junit.Assert.assertTrue;
 
+@Ignore
 public class RemoteShellControllerTest {
 
     String graphName;

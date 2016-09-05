@@ -36,6 +36,7 @@ import static io.mindmaps.IntegrationUtils.startTestEngine;
 import static java.lang.Thread.sleep;
 import static org.junit.Assert.*;
 
+@Ignore
 public class AnalyticsTest {
 
     String TEST_KEYSPACE = "mindmapstest";

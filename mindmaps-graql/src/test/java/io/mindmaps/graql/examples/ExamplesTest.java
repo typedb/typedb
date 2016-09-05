@@ -24,12 +24,14 @@ import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.MatchQueryDefault;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
 
+@Ignore
 public class ExamplesTest {
 
     private QueryParser qp;

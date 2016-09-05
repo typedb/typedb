@@ -19,9 +19,7 @@
 package io.mindmaps.graql.reasoner.inference;
 
 import com.google.common.collect.Sets;
-import com.sun.javafx.collections.MappingChange;
 import io.mindmaps.MindmapsTransaction;
-import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Rule;
 import io.mindmaps.graql.MatchQueryDefault;
 import io.mindmaps.graql.QueryParser;
@@ -31,14 +29,11 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.util.Map;
-import java.util.Set;
-
 import static io.mindmaps.graql.internal.reasoner.Utility.isRuleRecursive;
-import static io.mindmaps.graql.internal.reasoner.Utility.printAnswers;
 import static io.mindmaps.graql.internal.reasoner.Utility.printMatchQueryResults;
 import static org.junit.Assert.assertEquals;
 
+@Ignore
 public class SNBInferenceTest {
 
     private static MindmapsTransaction graph;

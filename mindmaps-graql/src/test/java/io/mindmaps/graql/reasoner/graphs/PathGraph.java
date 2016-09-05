@@ -23,9 +23,11 @@ import io.mindmaps.core.model.EntityType;
 import io.mindmaps.core.model.Instance;
 import io.mindmaps.core.model.RelationType;
 import io.mindmaps.core.model.RoleType;
+import org.junit.Ignore;
 
 import static com.google.common.math.IntMath.pow;
 
+@Ignore
 public class PathGraph extends GenericGraph {
 
     public static MindmapsTransaction getTransaction(int n, int children) {

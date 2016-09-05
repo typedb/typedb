@@ -20,12 +20,14 @@ package io.mindmaps.graql.query;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.core.model.Concept;
+import org.junit.Ignore;
 
 import java.util.Map;
 import java.util.Set;
 
 import static org.junit.Assert.*;
 
+@Ignore
 class QueryUtil {
 
     static final String[] movies = new String[] {

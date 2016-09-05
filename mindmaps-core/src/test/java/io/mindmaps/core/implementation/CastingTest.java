@@ -80,6 +80,7 @@ public class CastingTest {
         InstanceImpl rolePlayer = (InstanceImpl) mindmapsGraph.putEntity("An instance", type);
         CastingImpl casting2 = mindmapsGraph.putCasting(role, rolePlayer, relation);
         assertNotEquals(casting, casting2);
+        assertEquals(1, 2);
     }
 
     @Test
