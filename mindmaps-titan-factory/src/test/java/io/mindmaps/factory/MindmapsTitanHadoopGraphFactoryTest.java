@@ -20,12 +20,14 @@ package io.mindmaps.factory;
 
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 
+@Ignore
 public class MindmapsTitanHadoopGraphFactoryTest {
     private final String TEST_CONFIG = "../conf/main/mindmaps-analytics.properties";
 

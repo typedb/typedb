@@ -25,11 +25,13 @@ import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.reasoner.graphs.GeoGraph;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static io.mindmaps.graql.internal.reasoner.Utility.printMatchQueryResults;
 import static org.junit.Assert.assertEquals;
 
+@Ignore
 public class GeoInferenceTest {
 
     private static MindmapsTransaction graph;

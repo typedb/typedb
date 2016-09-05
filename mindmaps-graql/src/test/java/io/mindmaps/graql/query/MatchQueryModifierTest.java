@@ -30,6 +30,7 @@ import io.mindmaps.graql.QueryBuilder;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.*;
@@ -40,6 +41,7 @@ import static io.mindmaps.constants.DataType.ConceptPropertyUnique.ITEM_IDENTIFI
 import static io.mindmaps.graql.Graql.*;
 import static org.junit.Assert.*;
 
+@Ignore
 public class MatchQueryModifierTest {
 
     private static MindmapsTransaction transaction;

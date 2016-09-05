@@ -23,7 +23,9 @@ import io.mindmaps.core.model.EntityType;
 import io.mindmaps.core.model.Instance;
 import io.mindmaps.core.model.RelationType;
 import io.mindmaps.core.model.RoleType;
+import org.junit.Ignore;
 
+@Ignore
 public class PathGraphII extends GenericGraph {
 
     public static MindmapsTransaction getTransaction(int n, int m) {

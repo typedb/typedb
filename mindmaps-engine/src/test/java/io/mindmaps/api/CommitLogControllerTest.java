@@ -32,20 +32,18 @@ import io.mindmaps.core.model.RoleType;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.postprocessing.Cache;
 import io.mindmaps.util.ConfigProperties;
-import org.apache.hadoop.hdfs.DFSClient;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
-
-import java.util.Enumeration;
-import java.util.Properties;
 
 import static com.jayway.restassured.RestAssured.delete;
 import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
+@Ignore
 public class CommitLogControllerTest {
     private Cache cache;
 

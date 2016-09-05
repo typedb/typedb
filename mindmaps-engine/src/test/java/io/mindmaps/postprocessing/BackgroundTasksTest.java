@@ -36,10 +36,12 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
+@Ignore
 public class BackgroundTasksTest {
     private BackgroundTasks backgroundTasks;
     private MindmapsGraph mindmapsGraph;
