@@ -32,7 +32,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.UUID;
 
 public class AdmissionsGraph {
 
@@ -199,7 +198,7 @@ public class AdmissionsGraph {
         decisionType = mindmaps.putResourceType("decisionType", Data.STRING).playsRole(hasResourceValue)
                 .playsRole(decisionTypeValue);
 
-        applicant = mindmaps.putEntityType("applicant").setValue("applicant")
+        applicant = mindmaps.putEntityType("applicant")
                 .playsRole(hasResourceTarget)
                 .playsRole(TOEFLtarget)
                 .playsRole(GREtarget)
@@ -218,12 +217,12 @@ public class AdmissionsGraph {
     }
 
     private static void buildInstances() {
-        Instance Alice = putEntity(applicant, "Alice");
-        Instance Bob = putEntity(applicant, "Bob");
-        Instance Charlie = putEntity(applicant, "Charlie");
-        Instance Denis = putEntity(applicant, "Denis");
-        Instance Eva = putEntity(applicant, "Eva");
-        Instance Frank = putEntity(applicant, "Frank");
+        Instance Alice = mindmaps.putEntity("Alice", applicant);
+        Instance Bob = mindmaps.putEntity("Bob", applicant);
+        Instance Charlie = mindmaps.putEntity("Charlie", applicant);
+        Instance Denis = mindmaps.putEntity("Denis", applicant);
+        Instance Eva = mindmaps.putEntity("Eva", applicant);
+        Instance Frank = mindmaps.putEntity("Frank", applicant);
 
         putResource(Alice, TOEFL, 470L, TOEFLrelation,TOEFLtarget, TOEFLvalue);
         putResource(Alice, degreeOrigin, "nonUS", degreeOriginRelation, degreeOriginTarget, degreeOriginValue);
@@ -275,13 +274,9 @@ public class AdmissionsGraph {
         }
     }
 
-    private static Instance putEntity(EntityType type, String name) {
-        return mindmaps.putEntity(name.replaceAll(" ", "-").replaceAll("\\.", ""), type).setValue(name);
-    }
-
     private static <T> void putResource(Instance instance, ResourceType<T> resourceType, T resource, RelationType relationType,
                                     RoleType targetRole, RoleType valueRole) {
-        Resource resourceInstance = mindmaps.putResource(UUID.randomUUID().toString(), resourceType).setValue(resource);
+        Resource resourceInstance = mindmaps.putResource(resource, resourceType);
 
         mindmaps.addRelation(relationType)
                 .putRolePlayer(targetRole, instance)

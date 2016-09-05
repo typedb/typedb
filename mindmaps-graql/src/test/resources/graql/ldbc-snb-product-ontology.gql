@@ -1,16 +1,12 @@
 insert 
 
 entity isa entity-type, is-abstract;
-product ako entity;
-product-resource-owner isa role-type;
-product-resource-value isa role-type;
-product-resource isa relation-type, has-role product-resource-value, has-role product-resource-owner;
-product plays-role product-resource-owner;
+product ako entity, has-resource min-age, has-resource max-age, has-resource gender;
 
 # product resources
-min-age isa resource-type, datatype long, plays-role product-resource-value;
-max-age isa resource-type, datatype long, plays-role product-resource-value;
-gender isa resource-type, datatype string, plays-role product-resource-value;
+min-age isa resource-type, datatype long;
+max-age isa resource-type, datatype long;
+gender isa resource-type, datatype string;
 
 product-made isa role-type;
 product-origin isa role-type;

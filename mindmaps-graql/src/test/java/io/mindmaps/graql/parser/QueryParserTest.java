@@ -260,18 +260,18 @@ public class QueryParserTest {
 
     @Test
     public void testPositiveAskQuery() {
-        assertTrue(qp.parseAskQuery("match $x isa movie value 'Godfather' ask").execute());
+        assertTrue(qp.parseAskQuery("match $x isa movie id 'Godfather' ask").execute());
     }
 
     @Test
     public void testNegativeAskQuery() {
-        assertFalse(qp.parseAskQuery("match $x isa movie value 'Dogfather' ask").execute());
+        assertFalse(qp.parseAskQuery("match $x isa movie id 'Dogfather' ask").execute());
     }
 
     @Test
     public void testConstructQuery() {
-        Var var = var().id("123").value("abc").isa("movie").has("title", "The Title");
-        String varString = "id \"123\", value \"abc\" isa movie has title \"The Title\"";
+        Var var = var().id("123").isa("movie").has("title", "The Title");
+        String varString = "id \"123\", isa movie has title \"The Title\"";
         assertFalse(qb.match(var).ask().execute());
 
         qp.parseInsertQuery("insert " + varString).execute();
@@ -323,9 +323,9 @@ public class QueryParserTest {
         assertTrue(qb.match(language1).ask().execute());
         assertTrue(qb.match(language2).ask().execute());
 
-        qp.parseInsertQuery("match $x isa language insert $x value \"HELLO\"").execute();
-        assertTrue(qb.match(var().isa("language").id("123").value("HELLO")).ask().execute());
-        assertTrue(qb.match(var().isa("language").id("456").value("HELLO")).ask().execute());
+        qp.parseInsertQuery("match $x isa language insert $x has name \"HELLO\"").execute();
+        assertTrue(qb.match(var().isa("language").id("123").has("name", "HELLO")).ask().execute());
+        assertTrue(qb.match(var().isa("language").id("456").has("name", "HELLO")).ask().execute());
 
         qp.parseDeleteQuery("match $x isa language delete $x").execute();
         assertFalse(qb.match(language1).ask().execute());
@@ -367,10 +367,10 @@ public class QueryParserTest {
 
         assertFalse(qb.match(var().isa("movie").value(unescaped).has("title", unescaped)).ask().execute());
 
-        qp.parseInsertQuery("insert isa movie value \"" + escaped + "\", has title '" + escaped + "'").execute();
+        qp.parseInsertQuery("insert isa movie has title '" + escaped + "'").execute();
 
-        assertFalse(qb.match(var().isa("movie").value(escaped).has("title", escaped)).ask().execute());
-        assertTrue(qb.match(var().isa("movie").value(unescaped).has("title", unescaped)).ask().execute());
+        assertFalse(qb.match(var().isa("movie").has("title", escaped)).ask().execute());
+        assertTrue(qb.match(var().isa("movie").has("title", unescaped)).ask().execute());
     }
 
     @Test

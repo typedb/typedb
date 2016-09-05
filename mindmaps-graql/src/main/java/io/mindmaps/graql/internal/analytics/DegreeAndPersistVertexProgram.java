@@ -42,10 +42,6 @@ import java.util.stream.Collectors;
 
 import static io.mindmaps.graql.internal.analytics.Analytics.*;
 
-/**
- *
- */
-
 public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
 
     private final MessageScope.Local<Long> countMessageScopeIn = MessageScope.Local.of(__::inE);
@@ -54,11 +50,15 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
 
     public static final String DEGREE = "analytics.degreeAndPersistVertexProgram.degree";
 
+    public static final String OLD_ASSERTION_ID = "analytics.degreeAndPersistVertexProgram.oldAssertionId";
+
     private static final String TRAVERSAL_SUPPLIER = "analytics.degreeAndPersistVertexProgram.traversalSupplier";
 
     private static final String KEYSPACE = "analytics.degreeAndPersistVertexProgram.keySpace";
 
     private ConfigurationTraversal<Vertex, Edge> configurationTraversal;
+
+    private static final Set<String> COMPUTE_KEYS = Collections.singleton(OLD_ASSERTION_ID);
 
     private final HashSet<String> baseTypes = Sets.newHashSet(
             DataType.BaseType.ENTITY.name(),
@@ -102,12 +102,12 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
 
     @Override
     public GraphComputer.Persist getPreferredPersist() {
-        return GraphComputer.Persist.NOTHING;
+        return GraphComputer.Persist.VERTEX_PROPERTIES;
     }
 
     @Override
     public Set<String> getElementComputeKeys() {
-        return Collections.emptySet();
+        return COMPUTE_KEYS;
     }
 
     @Override
@@ -137,7 +137,7 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
     public void execute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
         switch (memory.getIteration()) {
             case 0:
-                if (selectedTypes.contains(getVertextType(vertex)) && !isAnalyticsElement(vertex)) {
+                if (selectedTypes.contains(getVertexType(vertex)) && !isAnalyticsElement(vertex)) {
                     if (baseTypes.contains(vertex.label())) {
                         messenger.sendMessage(this.countMessageScopeIn, 1L);
                     } else if (vertex.label().equals(DataType.BaseType.RELATION.name())) {
@@ -163,11 +163,14 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
                 }
                 break;
             case 2:
-                if (!isAnalyticsElement(vertex) && selectedTypes.contains(getVertextType(vertex))) {
+                if (!isAnalyticsElement(vertex) && selectedTypes.contains(getVertexType(vertex))) {
                     if (baseTypes.contains(vertex.label()) ||
                             vertex.label().equals(DataType.BaseType.RELATION.name())) {
                         long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
-                        Analytics.persistResource(mindmapsGraph, vertex, Analytics.degree, edgeCount);
+                        String oldAssertionId = Analytics.persistResource(mindmapsGraph, vertex, Analytics.degree, edgeCount);
+                        if (oldAssertionId != null) {
+                            vertex.property(OLD_ASSERTION_ID, oldAssertionId);
+                        }
                     }
                 }
                 break;
@@ -185,6 +188,7 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
     }
 
     @Override
+
     public void workerIterationStart(Memory memory) {
         mindmapsGraph = MindmapsClient.getGraph(keySpace);
     }

@@ -126,7 +126,7 @@ public class DegreeVertexProgram implements VertexProgram<Long> {
     public void execute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
         switch (memory.getIteration()) {
             case 0:
-                if (selectedTypes.contains(getVertextType(vertex)) && !isAnalyticsElement(vertex)) {
+                if (selectedTypes.contains(getVertexType(vertex)) && !isAnalyticsElement(vertex)) {
                     if (baseTypes.contains(vertex.label())) {
                         messenger.sendMessage(this.countMessageScopeIn, 1L);
                     } else if (vertex.label().equals(DataType.BaseType.RELATION.name())) {
@@ -152,7 +152,7 @@ public class DegreeVertexProgram implements VertexProgram<Long> {
                 }
                 break;
             case 2:
-                if (!isAnalyticsElement(vertex) && selectedTypes.contains(getVertextType(vertex))) {
+                if (!isAnalyticsElement(vertex) && selectedTypes.contains(getVertexType(vertex))) {
                     if (baseTypes.contains(vertex.label()) ||
                             vertex.label().equals(DataType.BaseType.RELATION.name())) {
                         long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);

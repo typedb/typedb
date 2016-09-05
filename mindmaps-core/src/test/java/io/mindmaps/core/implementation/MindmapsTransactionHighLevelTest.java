@@ -485,8 +485,8 @@ public class MindmapsTransactionHighLevelTest {
         RoleTypeImpl actor = (RoleTypeImpl) transaction.putRoleType("Actor");
         EntityType movie = transaction.putEntityType("Movie");
         EntityType person = transaction.putEntityType("Person");
-        InstanceImpl<?, ?, ?> pacino = (InstanceImpl) transaction.putEntity("Pacino", person);
-        InstanceImpl<?, ?, ?> godfather = (InstanceImpl) transaction.putEntity("Godfather", movie);
+        InstanceImpl<?, ?> pacino = (InstanceImpl) transaction.putEntity("Pacino", person);
+        InstanceImpl<?, ?> godfather = (InstanceImpl) transaction.putEntity("Godfather", movie);
         RoleType actor2 = transaction.putRoleType("Actor 2");
         RoleType actor3 = transaction.putRoleType("Actor 3");
         RoleType character = transaction.putRoleType("Character");

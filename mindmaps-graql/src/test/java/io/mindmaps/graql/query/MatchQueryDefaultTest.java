@@ -77,17 +77,16 @@ public class MatchQueryDefaultTest {
 
     @Test
     public void testValueQuery() {
-        MatchQueryDefault query = qb.match(var("the-crime-genre").value("crime"));
+        MatchQueryDefault query = qb.match(var("tgf").value("Godfather"));
         List<Map<String, Concept>> results = Lists.newArrayList(query);
 
         assertEquals(1, results.size());
 
         Map<String, Concept> result = results.get(0);
-        Concept crime = result.get("the-crime-genre");
+        Concept tgf = result.get("tgf");
 
-        assertEquals("genre", crime.type().getId());
-        assertEquals("crime", crime.getValue());
-        assertEquals("crime", crime.getId());
+        assertEquals("title", tgf.type().getId());
+        assertEquals("Godfather", tgf.asResource().getValue());
     }
 
     @Test
@@ -105,7 +104,7 @@ public class MatchQueryDefaultTest {
     public void testPredicateQuery1() {
         MatchQueryDefault query = qb.match(
                 var("x").isa("movie")
-                        .value(any(lt("Juno").and(gt("Godfather")), eq("Apocalypse Now"), eq("Spy")).and(neq("Apocalypse Now")))
+                        .has("title", any(lt("Juno").and(gt("Godfather")), eq("Apocalypse Now"), eq("Spy")).and(neq("Apocalypse Now")))
         );
 
         QueryUtil.assertResultsMatch(query, "x", "movie", "Hocus-Pocus", "Heat", "Spy");
@@ -114,7 +113,7 @@ public class MatchQueryDefaultTest {
     @Test
     public void testPredicateQuery2() {
         MatchQueryDefault query = qb.match(
-                var("x").isa("movie").value(all(lte("Juno"), gte("Godfather"), neq("Heat")).or(eq("The Muppets")))
+                var("x").isa("movie").has("title", all(lte("Juno"), gte("Godfather"), neq("Heat")).or(eq("The Muppets")))
         );
 
         QueryUtil.assertResultsMatch(query, "x", "movie", "Hocus-Pocus", "Godfather", "The-Muppets");
@@ -123,7 +122,7 @@ public class MatchQueryDefaultTest {
     @Test
     public void testRegexQuery() {
         MatchQueryDefault query = qb.match(
-                var("x").isa("genre").value(regex("^f.*y$"))
+                var("x").isa("genre").has("name", regex("^f.*y$"))
         );
 
         QueryUtil.assertResultsMatch(query, "x", "genre", "family", "fantasy");
@@ -132,7 +131,7 @@ public class MatchQueryDefaultTest {
     @Test
     public void testContainsQuery() {
         MatchQueryDefault query = qb.match(
-                var("x").isa("character").value(contains("ar"))
+                var("x").isa("character").has("name", contains("ar"))
         );
 
         QueryUtil.assertResultsMatch(query, "x", "character", "Sarah", "Benjamin-L-Willard", "Harry");
@@ -152,7 +151,7 @@ public class MatchQueryDefaultTest {
         MatchQueryDefault query = qb.match(
                 var("x").isa("movie"),
                 var("y").isa("person"),
-                var("z").isa("character").value("Don Vito Corleone"),
+                var("z").isa("character").id("Don-Vito-Corleone"),
                 var().rel("x").rel("y").rel("z")
         ).select("x", "y");
         List<Map<String, Concept>> results = Lists.newArrayList(query);
@@ -160,8 +159,8 @@ public class MatchQueryDefaultTest {
         assertEquals(1, results.size());
 
         Map<String, Concept> result = results.get(0);
-        assertEquals("Godfather", result.get("x").getValue());
-        assertEquals("Marlon Brando", result.get("y").getValue());
+        assertEquals("Godfather", result.get("x").getId());
+        assertEquals("Marlon-Brando", result.get("y").getId());
     }
 
     @Test
@@ -205,7 +204,7 @@ public class MatchQueryDefaultTest {
 
     @Test
     public void testNameQuery() {
-        MatchQueryDefault query = qb.match(var("x").has("title", "The Godfather"));
+        MatchQueryDefault query = qb.match(var("x").has("title", "Godfather"));
         QueryUtil.assertResultsMatch(query, "x", "movie", "Godfather");
     }
 
@@ -248,7 +247,7 @@ public class MatchQueryDefaultTest {
 
         assertEquals(1, results.size());
         Concept result = results.get(0);
-        assertEquals(1000L, result.getValue());
+        assertEquals(1000L, result.asResource().getValue());
         assertEquals("tmdb-vote-count", result.type().getId());
     }
 
@@ -256,7 +255,7 @@ public class MatchQueryDefaultTest {
     public void testAssertionQuery() {
         MatchQueryDefault query = qb.match(
                 var("a").rel("production-with-cast", "x").rel("y"),
-                var("y").value("Miss Piggy"),
+                var("y").id("Miss-Piggy"),
                 var("a").isa("has-cast")
         ).select("x");
 
@@ -268,8 +267,8 @@ public class MatchQueryDefaultTest {
         MatchQueryDefault query = qb.match(
                 var("x").isa("movie"),
                 or(
-                        and(var("y").isa("genre").value("drama"), var().rel("x").rel("y")),
-                        var("x").value("The Muppets")
+                        and(var("y").isa("genre").has("name", "drama"), var().rel("x").rel("y")),
+                        var("x").has("title", "The Muppets")
                 )
         );
 
@@ -279,7 +278,7 @@ public class MatchQueryDefaultTest {
     @Test
     public void testTypeAsVariable() {
         MatchQueryDefault query = qb.match(id("genre").playsRole(var("x")));
-        QueryUtil.assertResultsMatch(query, "x", null, "genre-of-production");
+        QueryUtil.assertResultsMatch(query, "x", null, "genre-of-production", "has-name-owner");
     }
 
     @Test
@@ -294,7 +293,7 @@ public class MatchQueryDefaultTest {
     @Test
     public void testVariableAsRoleplayer() {
         MatchQueryDefault query = qb.match(
-                var().rel(var("x").isa("movie")).rel("genre-of-production", var().value("crime"))
+                var().rel(var("x").isa("movie")).rel("genre-of-production", var().has("name", "crime"))
         );
 
         QueryUtil.assertResultsMatch(query, "x", null, "Godfather", "Heat");
@@ -305,7 +304,7 @@ public class MatchQueryDefaultTest {
         MatchQueryDefault query = qb.match(
                 var()
                         .rel(id("production-with-genre"), var("x").isa(var().ako(id("production"))))
-                        .rel(var().value("crime"))
+                        .rel(var().has("name", "crime"))
         );
 
         QueryUtil.assertResultsMatch(query, "x", null, "Godfather", "Heat");
@@ -322,7 +321,7 @@ public class MatchQueryDefaultTest {
     public void testHasValue() {
         MatchQueryDefault query = qb.match(var("x").value()).limit(10);
         assertEquals(10, query.stream().count());
-        assertTrue(query.stream().allMatch(results -> results.get("x").getValue() != null));
+        assertTrue(query.stream().allMatch(results -> results.get("x").asResource().getValue() != null));
     }
 
     @Test
@@ -363,13 +362,6 @@ public class MatchQueryDefaultTest {
     }
 
     @Test
-    public void testGettingNullValue() {
-        MatchQueryDefault query = qb.match(var("x").isa("has-cast"));
-        Concept result = query.iterator().next().get("x");
-        assertNull(result.getValue());
-    }
-
-    @Test
     public void testMatchDataType() {
         MatchQueryDefault query = qb.match(var("x").datatype(Data.DOUBLE));
         QueryUtil.assertResultsMatch(query, "x", RESOURCE_TYPE.getId(), "tmdb-vote-average");
@@ -381,7 +373,7 @@ public class MatchQueryDefaultTest {
         assertEquals(0, query.stream().count());
 
         query = qb.match(var("x").datatype(Data.STRING));
-        QueryUtil.assertResultsMatch(query, "x", RESOURCE_TYPE.getId(), "title", "gender", "real-name");
+        QueryUtil.assertResultsMatch(query, "x", RESOURCE_TYPE.getId(), "title", "gender", "real-name", "name");
     }
 
     @Test

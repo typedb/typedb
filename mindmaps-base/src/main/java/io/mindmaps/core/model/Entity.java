@@ -32,19 +32,7 @@ public interface Entity extends Instance{
      */
     Entity setSubject(String subject);
 
-    /**
-     *
-     * @param value The String value to store on this Entity
-     * @return The Entity itself
-     */
-    Entity setValue(String value);
-
     //------------------------------------- Accessors ----------------------------------
-    /**
-     *
-     * @return The String value stored on this Entity
-     */
-    String getValue();
 
     /**
      *

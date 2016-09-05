@@ -227,7 +227,7 @@ public class InstanceTest {
         RuleType ruleType = mindmapsGraph.putRuleType("Rule Type");
 
         Entity entity = mindmapsGraph.addEntity(entityType);
-        Resource resource = mindmapsGraph.addResource(resourceType);
+        Resource resource = mindmapsGraph.putResource("A resource thing", resourceType);
         Relation relation = mindmapsGraph.addRelation(relationType);
         Rule rule = mindmapsGraph.addRule("lhs", "rhs", ruleType);
 

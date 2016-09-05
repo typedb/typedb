@@ -113,7 +113,6 @@ public class Analytics {
     public Analytics(String keySpace, Set<Type> types) {
         this.keySpace = keySpace;
         graph = MindmapsClient.getGraph(this.keySpace);
-        MindmapsTransaction transaction = graph.getTransaction();
         computer = MindmapsClient.getGraphComputer(this.keySpace);
 
         // use ako relations to add subtypes of the provided types
@@ -157,8 +156,24 @@ public class Analytics {
      * @param resourceType the type of the resource that will contain the degree
      */
     private void degreesAndPersist(String resourceType) {
+        MindmapsTransaction transaction= graph.getTransaction();
         insertOntology(resourceType, Data.LONG);
-        computer.compute(new DegreeAndPersistVertexProgram(keySpace, allTypes));
+        ComputerResult result = computer.compute(new DegreeAndPersistVertexProgram(keySpace,allTypes));
+
+        // TODO: get rid of this in the future MASSIVE bottleneck
+        // collect relation ids and delete them in a single thread
+        result.graph().traversal().V().forEachRemaining(v -> {
+            if (v.keys().contains(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID)) {
+                Relation relation = transaction.getRelation(v.value(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID));
+                relation.delete();
+            }
+        });
+
+        try {
+            transaction.commit();
+        } catch (MindmapsValidationException e) {
+            e.printStackTrace();
+        }
     }
 
     public void degreesAndPersist() throws ExecutionException, InterruptedException {
@@ -198,44 +213,74 @@ public class Analytics {
     }
 
     public static boolean isAnalyticsElement(Vertex vertex) {
-        return Analytics.analyticsElements.contains(getVertextType(vertex));
+        return Analytics.analyticsElements.contains(getVertexType(vertex));
     }
 
-    public static void persistResource(MindmapsGraph mindmapsGraph, Vertex vertex,
-                                       String resourceTypeId, long value) {
+    public static String persistResource(MindmapsGraph mindmapsGraph, Vertex vertex,
+                                         String resourceName, long value) {
         MindmapsTransaction transaction = mindmapsGraph.getTransaction();
 
-        ResourceType<Long> resourceType = transaction.getResourceType(resourceTypeId);
-        RoleType resourceOwner = transaction.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
-        RoleType resourceValue = transaction.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
-        RelationType relationType = transaction.getRelationType(GraqlType.HAS_RESOURCE.getId(resourceTypeId));
+        ResourceType<Long> resourceType = transaction.getResourceType(resourceName);
+        RoleType resourceOwner = transaction.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceName));
+        RoleType resourceValue = transaction.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceName));
+        RelationType relationType = transaction.getRelationType(GraqlType.HAS_RESOURCE.getId(resourceName));
 
         Instance instance =
                 transaction.getInstance(vertex.value(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name()));
 
-        //TODO: remove the deletion of resource. This should be done by core.
-        instance.relations(resourceOwner).stream()
+        List<Relation> relations = instance.relations(resourceOwner).stream()
                 .filter(relation -> relation.rolePlayers().size() == 2)
+                .filter(relation -> relation.rolePlayers().containsKey(resourceValue) &&
+                        relation.rolePlayers().get(resourceValue).type().getId().equals(resourceName))
+                .collect(Collectors.toList());
+
+        if (relations.isEmpty()) {
+            Resource<Long> resource = transaction.putResource(value, resourceType);
+
+            transaction.addRelation(relationType)
+                    .putRolePlayer(resourceOwner, instance)
+                    .putRolePlayer(resourceValue, resource);
+
+            while (true) {
+                try {
+                    transaction.commit();
+                    break;
+                } catch (Exception e) {
+                    throw new RuntimeException(ErrorMessage.BULK_PERSIST.getMessage(resourceType,e.getMessage()),e);
+                }
+            }
+            return null;
+        }
+
+        relations = relations.stream()
                 .filter(relation ->
-                        relation.rolePlayers().get(resourceValue).type().getId().equals(resourceTypeId))
-                .forEach(relation -> {
-                    relation.rolePlayers().get(resourceValue).delete();
-                    relation.delete();
-                });
+                        (long) relation.rolePlayers().get(resourceValue).asResource().getValue() != value)
+                .collect(Collectors.toList());
 
-        Resource<Long> resource = transaction.addResource(resourceType).setValue(value);
-        transaction.addRelation(relationType)
-                .putRolePlayer(resourceOwner, instance)
-                .putRolePlayer(resourceValue, resource);
+        if (!relations.isEmpty()) {
+            String oldAssertionId = relations.get(0).getId();
 
-        try {
-            transaction.commit();
-        } catch (MindmapsValidationException e) {
-            throw new RuntimeException(ErrorMessage.BULK_PERSIST.getMessage(resourceTypeId,e.getMessage()),e);
+            while (true) {
+                Resource<Long> resource = transaction.putResource(value, resourceType);
+
+                transaction.addRelation(relationType)
+                        .putRolePlayer(resourceOwner, instance)
+                        .putRolePlayer(resourceValue, resource);
+                try {
+                    transaction.commit();
+                    break;
+                } catch (Exception e) {
+                    throw new RuntimeException(ErrorMessage.BULK_PERSIST.getMessage(resourceType,e.getMessage()),e);
+                }
+            }
+
+            return oldAssertionId;
+        } else {
+            return null;
         }
     }
 
-    public static String getVertextType(Vertex vertex) {
+    public static String getVertexType(Vertex vertex) {
         return vertex.value(DataType.ConceptProperty.TYPE.name());
     }
 }

@@ -21,14 +21,11 @@ package io.mindmaps.core.implementation;
 import io.mindmaps.constants.DataType;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.Data;
-import io.mindmaps.core.implementation.exception.ConceptException;
 import io.mindmaps.core.implementation.exception.InvalidConceptValueException;
 import io.mindmaps.core.model.Resource;
 import io.mindmaps.core.model.ResourceType;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.HashSet;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -81,51 +78,6 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
     }
 
     /**
-     * @param isUnique Indicates if the resource should be Unique to the Instance or not.
-     * @return The Resource Type itself.
-     */
-    @Override
-    public ResourceType<D> setUnique(boolean isUnique) {
-        if(isUnique){
-            if(instancesUnique()){
-                return setProperty(DataType.ConceptProperty.IS_UNIQUE, true);
-            } else {
-                throw new ConceptException(ErrorMessage.RESOURCE_TYPE_CANNOT_BE_UNIQUE.getMessage(this));
-            }
-        } else {
-            resetInstanceIndices();
-            return setProperty(DataType.ConceptProperty.IS_UNIQUE, false);
-        }
-    }
-
-    /**
-     * Gets rid of all indices for this type's resource children
-     */
-    private void resetInstanceIndices(){
-        instances().forEach(resource -> ((ResourceImpl<D>) resource).setUniqueProperty(DataType.ConceptPropertyUnique.INDEX, null));
-    }
-
-    /**
-     *
-     * @return true if all of this type's resource children are unique
-     */
-    private boolean instancesUnique(){
-        Set<D> values = new HashSet<>();
-        for(Resource<D> instance : instances()){
-            D foundValue = instance.getValue();
-            if(values.contains(foundValue)){
-                return false;
-            } else {
-                values.add(foundValue);
-                ResourceImpl<D> resource = ((ResourceImpl<D>) instance);
-                String newIndex = resource.generateResourceIndex(foundValue);
-                resource.setUniqueProperty(DataType.ConceptPropertyUnique.INDEX, newIndex);
-            }
-        }
-        return true;
-    }
-
-    /**
      * @return The data type which instances of this resource must conform to.
      */
     //This unsafe cast is suppressed because at this stage we do not know what the type is when reading from the rootGraph.
@@ -145,14 +97,5 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
         if(object == null)
             return null;
         return (String) object;
-    }
-
-    /**
-     * @return Indicates if the resource is Unique to the Instance or not.
-     */
-    @Override
-    public boolean isUnique() {
-        Object object = getProperty(DataType.ConceptProperty.IS_UNIQUE);
-        return object != null && Boolean.parseBoolean(object.toString());
     }
 }

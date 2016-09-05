@@ -146,7 +146,7 @@ public class AggregateTest {
 
     @Test
     public void testMaxString() {
-        AggregateQuery<Optional<?>> query = qb.match(var("x").isa("movie")).aggregate(max("x"));
+        AggregateQuery<Optional<?>> query = qb.match(var("x").isa("title")).aggregate(max("x"));
         assertEquals(Optional.of("The Muppets"), query.execute());
     }
 

@@ -20,7 +20,6 @@ package io.mindmaps.graql.reasoner.graphs;
 
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.EntityType;
-import io.mindmaps.core.model.Instance;
 import io.mindmaps.core.model.RelationType;
 import io.mindmaps.core.model.RoleType;
 
@@ -46,11 +45,11 @@ public class MatrixGraph extends GenericGraph{
         RelationType R2 = mindmaps.getRelationType("R2");
 
         for(int i = 0 ; i <= m ;i++)
-            putEntity(aEntity, "a" + i);
+            mindmaps.putEntity("a" + i, aEntity);
 
         for(int i = 1 ; i < m ;i++)
             for(int j = 1 ; j <= n ;j++)
-                putEntity(bEntity, "b" + i + j);
+                mindmaps.putEntity("b" + i + j, bEntity);
 
         for (int i = 0; i < m; i++)
             mindmaps.addRelation(R1)
@@ -70,9 +69,5 @@ public class MatrixGraph extends GenericGraph{
                         .putRolePlayer(R2to, mindmaps.getInstance("b" + (i+1) + j));
             }
         }
-    }
-
-    private static Instance putEntity(EntityType type, String name) {
-        return mindmaps.putEntity(name.replaceAll(" ", "-").replaceAll("\\.", ""), type).setValue(name);
     }
 }

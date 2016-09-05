@@ -109,19 +109,6 @@ public interface Rule extends Instance{
 
     /**
      *
-     * @param value The optional value of this rule
-     * @return The Rule itself
-     */
-    Rule setValue(String value);
-
-    /**
-     *
-     * @return The optional value of this rule
-     */
-    String getValue();
-
-    /**
-     *
      * @return The type of this rule
      */
     RuleType type();

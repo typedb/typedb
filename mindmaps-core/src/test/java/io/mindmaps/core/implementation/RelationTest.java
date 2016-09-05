@@ -337,8 +337,8 @@ public class RelationTest {
         RelationType hasDegree = mindmapsGraph.putRelationType("Has Degree").hasRole(entityRole).hasRole(degreeRole);
 
         Entity entity = mindmapsGraph.addEntity(entityType);
-        Resource<Long> degree1 = mindmapsGraph.addResource(degreeType);
-        Resource<Long> degree2 = mindmapsGraph.addResource(degreeType);
+        Resource<Long> degree1 = mindmapsGraph.putResource(100L, degreeType);
+        Resource<Long> degree2 = mindmapsGraph.putResource(101L, degreeType);
 
         Relation relation1 = mindmapsGraph.addRelation(hasDegree).putRolePlayer(entityRole, entity).putRolePlayer(degreeRole, degree1);
         mindmapsGraph.addRelation(hasDegree).putRolePlayer(entityRole, entity).putRolePlayer(degreeRole, degree2);

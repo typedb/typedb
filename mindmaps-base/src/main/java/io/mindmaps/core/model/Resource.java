@@ -37,13 +37,6 @@ public interface Resource<D> extends Instance{
      */
     Resource<D> setSubject(String subject);
 
-    /**
-     *
-     * @param value The value to store on the resource
-     * @return The Resource itself
-     */
-    Resource<D> setValue(D value);
-
     //------------------------------------- Accessors ----------------------------------
     /**
      *

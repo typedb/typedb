@@ -39,24 +39,12 @@ public interface Relation extends Instance {
 
     /**
      *
-     * @param value The String value of the relation
-     * @return The Relation itself
-     */
-    Relation setValue(String value);
-
-    /**
-     *
      * @param instance A new instance which can scope this Relation
      * @return The Relation itself
      */
     Relation scope(Instance instance);
 
     //------------------------------------- Accessors ----------------------------------
-    /**
-     *
-     * @return The String value of the relation
-     */
-    String getValue();
 
     /**
      *

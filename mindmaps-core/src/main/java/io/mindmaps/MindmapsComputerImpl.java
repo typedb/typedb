@@ -39,27 +39,19 @@ public class MindmapsComputerImpl implements MindmapsComputer {
     @Override
     public ComputerResult compute(VertexProgram program) {
         try {
-            ComputerResult result = graph.compute(graphComputer).program(program).submit().get();
-            return result;
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
+            return graph.compute(graphComputer).program(program).submit().get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
         }
-        return null;
     }
 
     @Override
     public ComputerResult compute(MapReduce mapReduce) {
         try {
-            ComputerResult result = graph.compute(graphComputer).mapReduce(mapReduce).submit().get();
-            return result;
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
+            return graph.compute(graphComputer).mapReduce(mapReduce).submit().get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
         }
-        return null;
     }
 
     /**

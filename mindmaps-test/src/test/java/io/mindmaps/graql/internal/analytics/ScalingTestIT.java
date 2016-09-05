@@ -6,10 +6,12 @@ import io.mindmaps.api.CommitLogController;
 import io.mindmaps.api.GraphFactoryController;
 import io.mindmaps.api.ImportController;
 import io.mindmaps.api.TransactionController;
+import io.mindmaps.core.Data;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.EntityType;
 import io.mindmaps.core.model.RelationType;
+import io.mindmaps.core.model.ResourceType;
 import io.mindmaps.core.model.RoleType;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.loader.DistributedLoader;
@@ -28,6 +30,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
+import static io.mindmaps.graql.Graql.all;
 import static io.mindmaps.IntegrationUtils.startTestEngine;
 import static io.mindmaps.graql.Graql.all;
 import static io.mindmaps.graql.Graql.var;
@@ -72,9 +75,9 @@ public class ScalingTestIT {
         }
 
         // compute the sample of graph sizes
-        int MAX_SIZE = 10000;
-        int NUM_DIVS = 10;
-        int REPEAT = 10;
+        int MAX_SIZE = 100;
+        int NUM_DIVS = 3;
+        int REPEAT = 3;
 
         int STEP_SIZE = MAX_SIZE/NUM_DIVS;
         List<Integer> graphSizes = new ArrayList<>();
@@ -99,6 +102,12 @@ public class ScalingTestIT {
         }
         transaction.commit();
 
+        // add resources in advance
+        ResourceType<Long> resourceType = transaction.putResourceType("degree", Data.LONG);
+        for (long i = 0;i<MAX_SIZE;i++) {
+            transaction.putResource(i,resourceType);
+        }
+        transaction.commit();
 
         int previousGraphSize = 0;
         for (int graphSize : graphSizes) {
@@ -130,21 +139,21 @@ public class ScalingTestIT {
                 countTime+=stopTime-startTime;
                 writer.println("count time: " + countTime / ((i + 1) * 1000));
 
-                writer.println("degree");
-                writer.flush();
-                startTime = System.currentTimeMillis();
-                computer.degrees();
-                stopTime = System.currentTimeMillis();
-                degreeTime+=stopTime-startTime;
-                writer.println("degree time: " + degreeTime / ((i + 1) * 1000));
-
-//                writer.println("persist degree");
+//                writer.println("degree");
 //                writer.flush();
 //                startTime = System.currentTimeMillis();
-//                computer.degreesAndPersist();
+//                computer.degrees();
 //                stopTime = System.currentTimeMillis();
-//                degreeAndPersistTime+=stopTime-startTime;
-//                System.out.println("persist time: "+degreeAndPersistTime/((i+1)*1000));
+//                degreeTime+=stopTime-startTime;
+//                writer.println("degree time: " + degreeTime / ((i + 1) * 1000));
+
+                writer.println("persist degree");
+                writer.flush();
+                startTime = System.currentTimeMillis();
+                computer.degreesAndPersist();
+                stopTime = System.currentTimeMillis();
+                degreeAndPersistTime+=stopTime-startTime;
+                System.out.println("persist time: "+degreeAndPersistTime/((i+1)*1000));
             }
 
             countTime /= REPEAT*1000;

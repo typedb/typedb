@@ -20,7 +20,6 @@ package io.mindmaps.graql.reasoner.graphs;
 
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.EntityType;
-import io.mindmaps.core.model.Instance;
 import io.mindmaps.core.model.RelationType;
 import io.mindmaps.core.model.RoleType;
 
@@ -40,11 +39,11 @@ public class PathGraphII extends GenericGraph {
         RoleType arcTo = mindmaps.getRoleType("arc-to");
 
         RelationType arc = mindmaps.getRelationType("arc");
-        putEntity(vertex, "a0");
+        mindmaps.putEntity("a0", vertex);
 
         for(int i = 0 ; i < n ;i++)
             for(int j = 0; j < m; j++)
-                putEntity(vertex, "a" + i +"," + j);
+                mindmaps.putEntity("a" + i +"," + j, vertex);
 
         mindmaps.addRelation(arc)
                 .putRolePlayer(arcFrom, mindmaps.getInstance("a0"))
@@ -64,9 +63,5 @@ public class PathGraphII extends GenericGraph {
                 }
             }
         }
-    }
-
-    private static Instance putEntity(EntityType type, String name) {
-        return mindmaps.putEntity(name.replaceAll(" ", "-").replaceAll("\\.", ""), type).setValue(name);
     }
 }

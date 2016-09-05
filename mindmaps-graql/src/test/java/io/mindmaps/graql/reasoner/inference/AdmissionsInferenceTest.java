@@ -47,7 +47,7 @@ public class AdmissionsInferenceTest {
     public void testConditionalAdmission() {
         String queryString = "match $x isa applicant; $x has admissionStatus 'conditional'";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
-        String explicitQuery = "match $x isa applicant, value 'Bob'";
+        String explicitQuery = "match $x isa applicant, id 'Bob'";
         assertQueriesEqual(reasoner.expand(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
@@ -56,7 +56,7 @@ public class AdmissionsInferenceTest {
     public void testDeniedAdmission() {
         String queryString = "match $x isa applicant;$x has admissionStatus 'denied'";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
-        String explicitQuery = "match $x isa applicant, value 'Alice'";
+        String explicitQuery = "match $x isa applicant, id 'Alice'";
         MatchQueryDefault expandedQuery = reasoner.expand(query);
         assertQueriesEqual(expandedQuery, qp.parseMatchQuery(explicitQuery).getMatchQuery());
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
@@ -66,7 +66,7 @@ public class AdmissionsInferenceTest {
     public void testProvisionalAdmission() {
         String queryString = "match $x isa applicant;$x has admissionStatus 'provisional'";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
-        String explicitQuery = "match $x isa applicant, value 'Denis'";
+        String explicitQuery = "match $x isa applicant, id 'Denis'";
         MatchQueryDefault expandedQuery = reasoner.expand(query);
         assertQueriesEqual(expandedQuery, qp.parseMatchQuery(explicitQuery).getMatchQuery());
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
@@ -76,7 +76,7 @@ public class AdmissionsInferenceTest {
     public void testWaitForTranscriptAdmission() {
         String queryString = "match $x isa applicant;$x has admissionStatus 'wait for transcript'";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
-        String explicitQuery = "match $x isa applicant, value 'Frank'";
+        String explicitQuery = "match $x isa applicant, id 'Frank'";
         MatchQueryDefault expandedQuery = reasoner.expand(query);
         assertQueriesEqual(expandedQuery, qp.parseMatchQuery(explicitQuery).getMatchQuery());
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
@@ -86,7 +86,7 @@ public class AdmissionsInferenceTest {
     public void testFullStatusAdmission() {
         String queryString = "match $x isa applicant;$x has admissionStatus 'full'";
         MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
-        String explicitQuery = "match $x isa applicant; $x value 'Eva' or $x value 'Charlie'";
+        String explicitQuery = "match $x isa applicant; $x id 'Eva' or $x id 'Charlie'";
         MatchQueryDefault expandedQuery = reasoner.expand(query);
         assertQueriesEqual(expandedQuery, qp.parseMatchQuery(explicitQuery).getMatchQuery());
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));

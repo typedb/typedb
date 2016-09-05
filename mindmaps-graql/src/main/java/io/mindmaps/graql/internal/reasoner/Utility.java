@@ -41,7 +41,11 @@ public class Utility {
         for (Map<String, Concept> result : results) {
             for (Map.Entry<String, Concept> entry : result.entrySet()) {
                 Concept concept = entry.getValue();
-                System.out.print(entry.getKey() + ": " + concept.getId() + " : " + concept.getValue() + " ");
+                System.out.print(entry.getKey() + ": " + concept.getId() + " : ");
+
+                if (concept.isResource()) {
+                    System.out.print(concept.asResource().getValue() + " ");
+                }
             }
             System.out.println();
         }
@@ -51,7 +55,11 @@ public class Utility {
         for (Map<String, Concept> result : answers) {
             for (Map.Entry<String, Concept> entry : result.entrySet()) {
                 Concept concept = entry.getValue();
-                System.out.print(entry.getKey() + ": " + concept.getId() + " : " + concept.getValue() + " ");
+                System.out.print(entry.getKey() + ": " + concept.getId() + " : ");
+
+                if (concept.isResource()) {
+                    System.out.print(concept.asResource().getValue() + " ");
+                }
             }
             System.out.println();
         }

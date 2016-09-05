@@ -52,12 +52,6 @@ public interface Concept extends Comparable<Concept>{
      */
     Type type();
 
-    /**
-     *
-     * @return The value stored in the concept
-     */
-    Object getValue();
-
     //------------------------------------- Other ---------------------------------
 
     /**

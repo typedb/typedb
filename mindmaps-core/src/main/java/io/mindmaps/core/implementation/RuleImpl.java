@@ -32,7 +32,7 @@ import java.util.HashSet;
 /**
  * A rule represents an instance of a Rule Type which is used to make inferences over the data instances.
  */
-class RuleImpl extends InstanceImpl<Rule, RuleType, String> implements Rule {
+class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
     RuleImpl(Vertex v, MindmapsTransactionImpl mindmapsGraph, String lhs, String rhs) {
         super(v, mindmapsGraph);
         setRule(DataType.ConceptProperty.RULE_LHS, lhs);

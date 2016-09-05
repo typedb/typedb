@@ -36,10 +36,7 @@ import static io.mindmaps.constants.RESTUtil.Request.GRAPH_CONFIG_PARAM;
 import static io.mindmaps.constants.RESTUtil.WebPath.GRAPH_FACTORY_URI;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class GraphFactoryControllerTest {
     @Before

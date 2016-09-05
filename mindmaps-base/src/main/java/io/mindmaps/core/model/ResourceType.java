@@ -39,13 +39,6 @@ public interface ResourceType<D> extends Type {
 
     /**
      *
-     * @param value The String value to store in the Resource Type
-     * @return The Resource Type itself.
-     */
-    ResourceType<D> setValue(String value);
-
-    /**
-     *
      * @param isAbstract  Specifies if the Resource Type is abstract (true) or not (false).
      *                    If the Resource Type is abstract it is not allowed to have any instances.
      * @return The Resource Type itself.
@@ -79,12 +72,6 @@ public interface ResourceType<D> extends Type {
      */
     ResourceType<D> setRegex(String regex);
 
-    /**
-     * @param isUnique Indicates if the resource should be Unique to the Instance or not.
-     * @return The Resource Type itself.
-     */
-    ResourceType<D> setUnique(boolean isUnique);
-
     //------------------------------------- Accessors ---------------------------------
     /**
      *
@@ -114,8 +101,4 @@ public interface ResourceType<D> extends Type {
      */
     String getRegex();
 
-    /**
-     * @return Indicates if the resource is Unique to the Instance or not.
-     */
-    boolean isUnique();
 }

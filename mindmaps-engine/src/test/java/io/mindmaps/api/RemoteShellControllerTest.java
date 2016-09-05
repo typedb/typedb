@@ -55,7 +55,7 @@ public class RemoteShellControllerTest {
         MindmapsTransaction transaction = graph.getTransaction();
 
         EntityType man = transaction.putEntityType("Man");
-        transaction.putEntity("actor-123", man).setValue("Al Pacino");
+        transaction.putEntity("actor-123", man);
         transaction.commit();
 
         Util.setRestAssuredBaseURI(ConfigProperties.getInstance().getProperties());
@@ -67,7 +67,7 @@ public class RemoteShellControllerTest {
     public void existingID() {
         Response response = get("/shell/match?graphName=" + graphName + "&query=match $x isa Man").then().statusCode(200).extract().response().andReturn();
         String message = response.getBody().asString();
-        assertTrue(message.contains("Al Pacino"));
+        assertTrue(message.contains("actor-123"));
     }
 
     @After

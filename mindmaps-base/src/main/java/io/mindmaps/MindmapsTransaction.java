@@ -102,22 +102,13 @@ public interface MindmapsTransaction extends AutoCloseable{
 
     /**
      *
-     * @param id A unique Id for the Resource
-     * @param type The resource type of this resource.
      * @param <V> The data type of both the ResourceType and the Resource.
      *           Supported types include: String, Long, Double, Boolean.
+     * @param value A value for the Resource which is unique to it's type
+     * @param type The resource type of this resource.
      * @return new or existing Resource with the provided Id.
      */
-    <V> Resource <V> putResource(String id, ResourceType<V> type);
-
-    /**
-     *
-     * @param type The resource type of this resource.
-     * @param <V> The data type of both the ResourceType and the Resource.
-     *           Supported types include: String, Long, Double, Boolean.
-     * @return a new resource.
-     */
-    <V> Resource <V> addResource(ResourceType<V> type);
+    <V> Resource <V> putResource(V value, ResourceType<V> type);
 
     /**
      *
@@ -175,13 +166,6 @@ public interface MindmapsTransaction extends AutoCloseable{
      */
     Concept getConceptBySubject(String subject);
 
-    /**
-     *
-     * @param value A value which a Concept in the graph may be holding.
-     * @return The Concepts holding the provided value or an empty collection if no such Concept exists.
-     */
-    <V> Collection<Concept> getConceptsByValue(V value);
-
     //------------------------------------- Type
     /**
      *
@@ -196,13 +180,6 @@ public interface MindmapsTransaction extends AutoCloseable{
      * @return The Type with the provided Id or null if no such Type exists.
      */
     Type getTypeBySubject(String subject);
-
-    /**
-     *
-     * @param value A value which a Type in the graph may be holding.
-     * @return The Entities holding the provided value or an empty collection if no such Type exists.
-     */
-    Collection<Type> getTypesByValue(String value);
 
     //------------------------------------- Instance
     /**
@@ -219,15 +196,6 @@ public interface MindmapsTransaction extends AutoCloseable{
      */
     Instance getInstanceBySubject(String subject);
 
-    /**
-     *
-     * @param value A value which a Instance in the graph may be holding.
-     * @param <V> The data type of the value. Supported types include: String, Long, Double, and Boolean.
-     * @return The Entities holding the provided value or an empty collection if no such Instance exists.
-     */
-    <V> Collection<Instance> getInstancesByValue(V value);
-
-
     //------------------------------------- Entity
     /**
      *
@@ -243,12 +211,6 @@ public interface MindmapsTransaction extends AutoCloseable{
      */
     Entity getEntityBySubject(String subject);
 
-    /**
-     *
-     * @param value A value which a Entity in the graph may be holding.
-     * @return The Entities holding the provided value or an empty collection if no such Entity exists.
-     */
-    Collection<Entity> getEntitiesByValue(String value);
     //------------------------------------- Resource
     /**
      *
@@ -289,12 +251,6 @@ public interface MindmapsTransaction extends AutoCloseable{
      */
     Rule getRuleBySubject(String subject);
 
-    /**
-     *
-     * @param value A value which a Rule in the graph may be holding.
-     * @return The Rules holding the provided value or an empty collection if no such Rule exists.
-     */
-    Collection<Rule> getRulesByValue(String value);
     //------------------------------------- Concept Type
     /**
      *
@@ -310,12 +266,6 @@ public interface MindmapsTransaction extends AutoCloseable{
      */
     EntityType getEntityTypeBySubject(String subject);
 
-    /**
-     *
-     * @param value A value which a Entity Type  in the graph may be holding.
-     * @return The Entity Types holding the provided value or an empty collection if no such Entity Type  exists.
-     */
-    Collection<EntityType> getEntityTypesByValue(String value);
     //------------------------------------- Relation Type
     /**
      *
@@ -331,12 +281,6 @@ public interface MindmapsTransaction extends AutoCloseable{
      */
     RelationType getRelationTypeBySubject(String subject);
 
-    /**
-     *
-     * @param value A value which a Relation Type in the graph may be holding.
-     * @return The Relation Types holding the provided value or an empty collection if no such Relation Type exists.
-     */
-    Collection<RelationType> getRelationTypesByValue(String value);
     //------------------------------------- Resource Type
     /**
      *
@@ -354,13 +298,6 @@ public interface MindmapsTransaction extends AutoCloseable{
      */
     <V> ResourceType<V> getResourceTypeBySubject(String subject);
 
-    /**
-     *
-     * @param value A value which a Resource Type in the graph may be holding.
-     * @param <V> The data type of the value. Supported types include: String, Long, Double, and Boolean.
-     * @return The Resource Types holding the provided value or an empty collection if no such Resource Type exists.
-     */
-    <V> Collection<ResourceType<V>> getResourceTypesByValue(String value);
     //------------------------------------- Role Type
     /**
      *
@@ -376,12 +313,6 @@ public interface MindmapsTransaction extends AutoCloseable{
      */
     RoleType getRoleTypeBySubject(String subject);
 
-    /**
-     *
-     * @param value A value which a Role Type in the graph may be holding.
-     * @return The Role Types holding the provided value or an empty collection if no such Role Type exists.
-     */
-    Collection<RoleType> getRoleTypesByValue(String value);
     //------------------------------------- Rule Type
     /**
      *
@@ -396,13 +327,6 @@ public interface MindmapsTransaction extends AutoCloseable{
      * @return The Rule Type with the provided Id or null if no such Rule Type  exists.
      */
     RuleType getRuleTypeBySubject(String subject);
-
-    /**
-     *
-     * @param value A value which a Rule Type in the graph may be holding.
-     * @return The Rule Types holding the provided value or an empty collection if no such Rule Type exists.
-     */
-    Collection<RuleType> getRuleTypesByValue(String value);
 
     //------------------------------------- Relationship Handling ----------------------------------
     /**

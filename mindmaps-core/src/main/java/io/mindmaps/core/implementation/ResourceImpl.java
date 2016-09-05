@@ -36,7 +36,7 @@ import java.util.regex.Pattern;
  * A concept which represents a resource.
  * @param <D> The data type of this resource. Supported Types include: String, Long, Double, and Boolean
  */
-class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>, D> implements Resource<D> {
+class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> implements Resource<D> {
     ResourceImpl(Vertex v, MindmapsTransactionImpl mindmapsGraph) {
         super(v, mindmapsGraph);
     }
@@ -68,7 +68,6 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>, D> impl
      * @param value The value to store on the resource
      * @return The Resource itself
      */
-    @Override
     public Resource<D> setValue(D value) {
         try {
             ResourceType<D> resourceType = type();
@@ -81,20 +80,12 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>, D> impl
                 }
             }
 
-            //If the value has to be unique some additional checks are in order
-            if(type().isUnique()){
-                String index = generateResourceIndex(value);
-                ConceptImpl<?, ?, ?> conceptByIndex = mindmapsTransaction.getConcept(DataType.ConceptPropertyUnique.INDEX, index);
-                if(conceptByIndex != null && !conceptByIndex.getId().equals(getId())){
-                    throw new InvalidConceptValueException(ErrorMessage.RESOURCE_CANNOT_HAVE_VALUE.getMessage(value, this, conceptByIndex));
-                } else {
-                    setUniqueProperty(DataType.ConceptPropertyUnique.INDEX, index);
-                }
-            }
+            String index = generateResourceIndex(type().getId(), value.toString());
+            setUniqueProperty(DataType.ConceptPropertyUnique.INDEX, index);
 
             return setProperty(dataType().getConceptProperty(), castValue(value));
         } catch (ClassCastException e) {
-            throw new RuntimeException(ErrorMessage.INVALID_DATATYPE.getMessage(value, this, dataType().getName()));
+            throw new RuntimeException(ErrorMessage.INVALID_DATATYPE.getMessage(value, dataType().getName()));
         }
     }
 
@@ -103,8 +94,8 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>, D> impl
      * @param value The value of the resource
      * @return A unique id for the resource
      */
-    public String generateResourceIndex(D value){
-        return DataType.BaseType.RESOURCE.name() + "-" + type().getId() + "-" + value.toString();
+    public static String generateResourceIndex(String typeId, String value){
+        return DataType.BaseType.RESOURCE.name() + "-" + typeId + "-" + value;
     }
 
     /**
@@ -133,5 +124,10 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>, D> impl
     @Override
     public D getValue(){
         return (D) getProperty(dataType().getConceptProperty());
+    }
+
+    @Override
+    public String toString(){
+        return super.toString() + "- Value [" + getValue() + "] ";
     }
 }

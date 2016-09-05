@@ -2,16 +2,12 @@ insert
 
 # motorbike
 $motorbike isa category, id "motorbike";
-$ducatti isa product, id "Ducatti 1299";
+$ducatti isa product, id "Ducatti 1299", has min-age 18, has gender "male";
 (typed-product $ducatti, product-type $motorbike) isa typing;
-$ducatti-min-age isa min-age, value 18;
-(product-resource-owner $ducatti, product-resource-value $ducatti-min-age) isa product-resource;
-$ducatti-gender isa gender, value "male";
-(product-resource-owner $ducatti, product-resource-value $ducatti-gender) isa product-resource;
-(product-made $ducatti, product-origin country-81) isa made-in;
+(product-made $ducatti, product-origin Italy) isa made-in;
 
 # music
-$cd isa category, id "cd", value "cd";
+$cd isa category, id "cd";
 $theWall isa product, id "The Wall";
 (typed-product $theWall,product-type $cd) isa typing;
 $blizzard isa product, id "Blizzard of Ozz";
@@ -20,161 +16,161 @@ $nocturnes isa product, id "Nocturnes";
 (typed-product $nocturnes, product-type $cd) isa typing;
 
 # movie
-$movie isa category, id "movie", value "movie";
-$goodBadUgly isa product, id "The Good the Bad the Ugly", value "The Good, the Bad and the Ugly";
+$movie isa category, id "movie";
+$goodBadUgly isa product, id "The Good the Bad the Ugly";
 (typed-product $goodBadUgly, product-type $movie) isa typing;
-$godfather isa product, id "Godfather", value "Godfather";
+$godfather isa product, id "Godfather";
 (typed-product $godfather, product-type $movie) isa typing;
-$dumb isa product, id "Dumb and dumber", value "Dumb and dumber";
+$dumb isa product, id "Dumb and dumber";
 (typed-product $dumb, product-type $movie) isa typing;
 
 # book
-$book isa category, id "book", value "book";
-$dorianGray isa product, id "Dorian Gray", value "The Picture of Dorian Gray";
+$book isa category, id "book";
+$dorianGray isa product, id "Dorian Gray";
 (typed-product $dorianGray, product-type $book) isa typing;
-$colourOfMagic isa product, id "Colour of Magic", value "The Colour of Magic";
+$colourOfMagic isa product, id "Colour of Magic";
 (typed-product $colourOfMagic, product-type $book) isa typing;
-$warOfWorlds isa product, id "War of the Worlds", value "The War of the Worlds";
+$warOfWorlds isa product, id "War of the Worlds";
 (typed-product $warOfWorlds, product-type $book) isa typing;
-$crime isa product, id "Crime and Punishment", value "Crime and Punishment";
+$crime isa product, id "Crime and Punishment";
 (typed-product $crime, product-type $book) isa typing;
-$farm isa product, id "Animal Farm", value "Animal Farm";
+$farm isa product, id "Animal Farm";
 (typed-product $farm, product-type $book) isa typing;
-$alice isa product, id "Adventures in Wonderland", value "Alice's Adventures in Wonderland";
+$alice isa product, id "Adventures in Wonderland";
 (typed-product $alice, product-type $book) isa typing;
-$orientExpress isa product, id "Orient Express", value "Murder on the Orient Express";
+$orientExpress isa product, id "Orient Express";
 (typed-product $orientExpress, product-type $book) isa typing;
-$fairy isa product, id "Fairy Tales", value "Fairy Tales";
+$fairy isa product, id "Fairy Tales";
 (typed-product $fairy, product-type $book) isa typing;
-$jeeves isa product, id "My Man Jeeves", value "My Man Jeeves";
+$jeeves isa product, id "My Man Jeeves";
 (typed-product $jeeves, product-type $book) isa typing;
-$rings isa product, id "Lord of the rings", value "The Lord of the Rings";
+$rings isa product, id "Lord of the rings";
 (typed-product $rings, product-type $book) isa typing;
-$harry isa product, id "Harry Potter", value "Harry Potter";
+$harry isa product, id "Harry Potter";
 (typed-product $harry, product-type $book) isa typing;
-$sherlock isa product, id "Sherlock Holmes", value "Stories of Sherlock Holmes";
+$sherlock isa product, id "Sherlock Holmes";
 (typed-product $sherlock, product-type $book) isa typing;
-$forWhom isa product, id "For Whom he Bell Tolls", value "For Whom the Bell Tolls";
+$forWhom isa product, id "For Whom he Bell Tolls";
 (typed-product $forWhom, product-type $book) isa typing;
-$miceAndMen isa product, id "Of Mice and Men", value "Of Mice and Men";
+$miceAndMen isa product, id "Of Mice and Men";
 (typed-product $miceAndMen, product-type $book) isa typing;
-$trial isa product, id "Trial", value "The Trial";
+$trial isa product, id "Trial";
 (typed-product $trial, product-type $book) isa typing;
-$faust isa product, id "Faust", value "Faust";
+$faust isa product, id "Faust";
 (typed-product $faust, product-type $book) isa typing;
 
 
 # paintings
-$painting isa category, id "painting", value "painting";
-$lesElephants isa product, id "Les Elephants", value "Salvador Dali - Les Elephants";
+$painting isa category, id "painting";
+$lesElephants isa product, id "Les Elephants";
 (typed-product $lesElephants, product-type $painting) isa typing;
-$waterLillies isa product, id "Water Lillies", value "Claude Monet - The Water Lillies";
+$waterLillies isa product, id "Water Lillies";
 (typed-product $waterLillies, product-type $painting) isa typing;
-$nightWatch isa product, id "Night Watch", value "Rembrandt - The Night Watch";
+$nightWatch isa product, id "Night Watch";
 (typed-product $nightWatch, product-type $painting) isa typing;
-$monaLisa isa product, id "Mona Lisa", value "Leonardo da Vinci - Mona Lisa";
+$monaLisa isa product, id "Mona Lisa";
 (typed-product $monaLisa, product-type $painting) isa typing;
-$raphael isa product, id "Madonna of the pinks", value "Raphael - The Madonna of the Pinks";
+$raphael isa product, id "Madonna of the pinks";
 (typed-product $raphael, product-type $painting) isa typing;
-$bacchus isa product, id "Bacchus and Ariadne", value "Titian - Bacchus and Ariadne";
+$bacchus isa product, id "Bacchus and Ariadne";
 (typed-product $bacchus, product-type $painting) isa typing;
-$sunflowers isa product, id "Sunflowers", value "Vincent van Gogh - Sunflowers";
+$sunflowers isa product, id "Sunflowers";
 (typed-product $sunflowers, product-type $painting) isa typing;
-$universe isa product, id "Controller of the Universe", value "Diego Rivera - Controller of the Universe";
+$universe isa product, id "Controller of the Universe";
 (typed-product $universe, product-type $painting) isa typing;
-$grayTree isa product, id "Gray Tree", value "Piet Mondrian - Gray Tree";
+$grayTree isa product, id "Gray Tree";
 (typed-product $grayTree, product-type $painting) isa typing;
-$lastJudgement isa product, id "Last Judgement", value "Michelangelo - The Last Judgement";
+$lastJudgement isa product, id "Last Judgement";
 (typed-product $lastJudgement, product-type $painting) isa typing;
 
 # instrument
-$guitar isa category, id "guitar", value "guitar";
-$stratocaster isa product, id "Stratocaster", value "Fender Stratocaster";
+$guitar isa category, id "guitar";
+$stratocaster isa product, id "Stratocaster";
 (typed-product $stratocaster, product-type $guitar) isa typing;
 
 # bands
-"category-61" isa category, id "category-61", value "Band";
-"category-115" isa category, id "category-115", value "MusicalArtist";
+"Band" isa category;
+"MusicalArtist" isa category;
 
-$beatles isa tag, id "Beatles", value "The Beatles";
-(grouped-tag $beatles,tag-group category-61) isa grouping;
-$pinkFloyd isa tag, id "Pink Floyd", value "Pink Floyd";
-(grouped-tag $pinkFloyd,tag-group category-61) isa grouping;
-$rollingStones isa tag, id "Rolling Stones", value "Rolling Stones";
-(grouped-tag $rollingStones,tag-group category-61) isa grouping;
-$cream isa tag, id "Cream", value "Cream";
-(grouped-tag $cream,tag-group category-61) isa grouping;
-$yardbirds isa tag, id "Yardbirds", value "The Yardbirds";
-(grouped-tag $yardbirds,tag-group category-61) isa grouping;
-$simonAndGarfunkel isa tag, id "Simon and Garfunkel", value "Simon and Garfunkel";
-(grouped-tag $simonAndGarfunkel,tag-group category-61) isa grouping;
-$blackSabbath isa tag, id "Black Sabbath", value "Black Sabbath";
-(grouped-tag $blackSabbath,tag-group category-61) isa grouping;
-$wailers isa tag, id "Bob Marley and the Wailers", value "Bob Marley and the Wailers";
-(grouped-tag $wailers,tag-group category-61) isa grouping;
+$beatles isa tag, id "Beatles";
+(grouped-tag $beatles,tag-group Band) isa grouping;
+$pinkFloyd isa tag, id "Pink Floyd";
+(grouped-tag $pinkFloyd,tag-group Band) isa grouping;
+$rollingStones isa tag, id "Rolling Stones";
+(grouped-tag $rollingStones,tag-group Band) isa grouping;
+$cream isa tag, id "Cream";
+(grouped-tag $cream,tag-group Band) isa grouping;
+$yardbirds isa tag, id "Yardbirds";
+(grouped-tag $yardbirds,tag-group Band) isa grouping;
+$simonAndGarfunkel isa tag, id "Simon and Garfunkel";
+(grouped-tag $simonAndGarfunkel,tag-group Band) isa grouping;
+$blackSabbath isa tag, id "Black Sabbath";
+(grouped-tag $blackSabbath,tag-group Band) isa grouping;
+$wailers isa tag, id "Bob Marley and the Wailers";
+(grouped-tag $wailers,tag-group Band) isa grouping;
 
-$buckethead isa tag, id "Buckethead", value "Buckethead";
-(grouped-tag $buckethead,tag-group category-61) isa grouping;
+$buckethead isa tag, id "Buckethead";
+(grouped-tag $buckethead,tag-group Band) isa grouping;
 
-$primus isa tag, id "Primus", value "Primus";
-(grouped-tag $primus, tag-group category-61) isa grouping;
+$primus isa tag, id "Primus";
+(grouped-tag $primus, tag-group Band) isa grouping;
 
-$linkinPark isa tag, id "Linkin park", value "Linkin Park";
-(grouped-tag $linkinPark, tag-group category-61) isa grouping;
+$linkinPark isa tag, id "Linkin park";
+(grouped-tag $linkinPark, tag-group Band) isa grouping;
 
-$limpBizkit isa tag, id "Limp Bizkit", value "Limp Bizkit";
-(grouped-tag $limpBizkit, tag-group category-61) isa grouping;
+$limpBizkit isa tag, id "Limp Bizkit";
+(grouped-tag $limpBizkit, tag-group Band) isa grouping;
 
-$jimiHendrix isa tag, id "Jimi Hendrix", value "Jimi Hendrix";
-(grouped-tag $jimiHendrix, tag-group category-115) isa grouping;
+$jimiHendrix isa tag, id "Jimi Hendrix";
+(grouped-tag $jimiHendrix, tag-group MusicalArtist) isa grouping;
 
-$slash isa tag, id "Slash", value "Slash";
-(grouped-tag $slash, tag-group category-115) isa grouping;
+$slash isa tag, id "Slash";
+(grouped-tag $slash, tag-group MusicalArtist) isa grouping;
 
-$yngwie isa tag, id "Yngwie Malmsteen", value "Yngwie Malmsteen";
-(grouped-tag $yngwie, tag-group category-115) isa grouping;
+$yngwie isa tag, id "Yngwie Malmsteen";
+(grouped-tag $yngwie, tag-group MusicalArtist) isa grouping;
 
-$steveVai isa tag, id "Steve Vai", value "Steve Vai";
-(grouped-tag $steveVai, tag-group category-115) isa grouping;
+$steveVai isa tag, id "Steve Vai";
+(grouped-tag $steveVai, tag-group MusicalArtist) isa grouping;
 
-$cacophony isa tag, id "Cacophony", value "Cacophony";
-(grouped-tag $cacophony, tag-group category-61) isa grouping;
+$cacophony isa tag, id "Cacophony";
+(grouped-tag $cacophony, tag-group Band) isa grouping;
 
-$vanHalen isa tag, id "Van Halen", value "van Halen";
-(grouped-tag $vanHalen, tag-group category-61) isa grouping;
+$vanHalen isa tag, id "Van Halen";
+(grouped-tag $vanHalen, tag-group Band) isa grouping;
 
-$metallica isa tag, id "Metallica", value "Metallica";
-(grouped-tag $metallica, tag-group category-61) isa grouping;
+$metallica isa tag, id "Metallica";
+(grouped-tag $metallica, tag-group Band) isa grouping;
 
-$megadeth isa tag, id "Megadeth", value "Megadeth";
-(grouped-tag $megadeth, tag-group category-61) isa grouping;
+$megadeth isa tag, id "Megadeth";
+(grouped-tag $megadeth, tag-group Band) isa grouping;
 
-$slayer isa tag, id "Slayer", value "Slayer";
-(grouped-tag $slayer, tag-group category-61) isa grouping;
+$slayer isa tag, id "Slayer";
+(grouped-tag $slayer, tag-group Band) isa grouping;
 
-$pantera isa tag, id "Pantera", value "Pantera";
-(grouped-tag $pantera, tag-group category-61) isa grouping;
+$pantera isa tag, id "Pantera";
+(grouped-tag $pantera, tag-group Band) isa grouping;
 
-$superjoint isa tag, id "Superjoint Ritual", value "Superjoint Ritual";
-(grouped-tag $superjoint, tag-group category-61) isa grouping;
+$superjoint isa tag, id "Superjoint Ritual";
+(grouped-tag $superjoint, tag-group Band) isa grouping;
 
-$ironMaiden isa tag, id "Iron Maiden", value "Iron Maiden";
-(grouped-tag $ironMaiden, tag-group category-61) isa grouping;
+$ironMaiden isa tag, id "Iron Maiden";
+(grouped-tag $ironMaiden, tag-group Band) isa grouping;
 
-$judasPriest isa tag, id "Judas Priest", value "Judas Priest";
-(grouped-tag $judasPriest, tag-group category-61) isa grouping;
+$judasPriest isa tag, id "Judas Priest";
+(grouped-tag $judasPriest, tag-group Band) isa grouping;
 
-$thinLizzy isa tag, id "Thin Lizzy", value "Thin Lizzy";
-(grouped-tag $thinLizzy, tag-group category-61) isa grouping;
+$thinLizzy isa tag, id "Thin Lizzy";
+(grouped-tag $thinLizzy, tag-group Band) isa grouping;
 
-$ledZeppelin isa tag, id "Led Zeppelin", value "Led Zeppelin";
-(grouped-tag $ledZeppelin, tag-group category-61) isa grouping;
+$ledZeppelin isa tag, id "Led Zeppelin";
+(grouped-tag $ledZeppelin, tag-group Band) isa grouping;
 
-$deepPurple isa tag, id "Deep Purple", value "Deep Purple";
-(grouped-tag $deepPurple, tag-group category-61) isa grouping;
+$deepPurple isa tag, id "Deep Purple";
+(grouped-tag $deepPurple, tag-group Band) isa grouping;
 
-$queen isa tag, id "Queen", value "Queen";
-(grouped-tag $queen, tag-group category-61) isa grouping;
+$queen isa tag, id "Queen";
+(grouped-tag $queen, tag-group Band) isa grouping;
 
 tag plays-role recommended-product;
 

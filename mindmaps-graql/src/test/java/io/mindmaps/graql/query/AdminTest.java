@@ -103,7 +103,7 @@ public class AdminTest {
         MatchQueryDefault query = qb.match(var("x").isa("movie"));
 
         Conjunction<PatternAdmin> pattern = query.admin().getPattern();
-        pattern.getPatterns().add(var("x").value("Spy").admin());
+        pattern.getPatterns().add(var("x").id("Spy").admin());
 
         assertEquals(1, query.stream().count());
     }

@@ -33,7 +33,7 @@ import java.util.*;
 /**
  * A relation represents and instance of a relation type which model how different entities relate to one another.
  */
-class RelationImpl extends InstanceImpl<Relation, RelationType, String> implements Relation {
+class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relation {
     RelationImpl(Vertex v, MindmapsTransactionImpl mindmapsGraph) {
         super(v, mindmapsGraph);
     }
@@ -213,7 +213,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType, String> implemen
         Set<CastingImpl> castings = getMappingCasting();
 
         for (CastingImpl casting: castings) {
-            InstanceImpl<?, ?, ?> instance = casting.getRolePlayer();
+            InstanceImpl<?, ?> instance = casting.getRolePlayer();
             if(instance != null) {
                 for (EdgeImpl edge : instance.getEdgesOfType(Direction.BOTH, DataType.EdgeLabel.SHORTCUT)) {
                     if(edge.getProperty(DataType.EdgeProperty.RELATION_ID).equals(getId())){

@@ -34,13 +34,6 @@ public interface EntityType extends Type{
 
     /**
      *
-     * @param value The String value to store in the Entity Type
-     * @return The Entity Type itself
-     */
-    EntityType setValue(String value);
-
-    /**
-     *
      * @param isAbstract  Specifies if the concept is abstract (true) or not (false).
      *                    If the concept type is abstract it is not allowed to have any instances.
      * @return The Entity Type itself

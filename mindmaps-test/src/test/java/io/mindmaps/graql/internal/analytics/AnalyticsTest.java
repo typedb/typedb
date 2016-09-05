@@ -280,7 +280,9 @@ public class AnalyticsTest {
         long numVertices = 0;
 
         // compute again and again ...
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 2; i++) {
+            System.out.println();
+            System.out.println("i = " + i);
             computer.degreesAndPersist();
 
             correctDegrees.entrySet().forEach(degree -> {
@@ -320,6 +322,7 @@ public class AnalyticsTest {
                     resources = instance.asRelation().resources();
                 }
                 assert resources != null;
+                assert !resources.isEmpty();
                 assertEquals(resources.iterator().next().getValue(), degree.getValue());
             });
 
@@ -542,8 +545,7 @@ public class AnalyticsTest {
         RelationType hasResource = transaction.putRelationType(GraqlType.HAS_RESOURCE.getId(Analytics.degree))
                 .hasRole(degreeOwner).hasRole(degreeValue);
         ResourceType<Long> decoyResourceType = transaction.putResourceType("decoy-resource", Data.LONG).playsRole(degreeValue);
-        Resource<Long> decoyResource = transaction.putResource(UUID.randomUUID().toString(),decoyResourceType);
-        decoyResource.setValue(100L);
+        Resource<Long> decoyResource = transaction.putResource(100L, decoyResourceType);
         transaction.addRelation(hasResource).putRolePlayer(degreeOwner,coco).putRolePlayer(degreeValue,decoyResource);
         animal.playsRole(degreeOwner);
 

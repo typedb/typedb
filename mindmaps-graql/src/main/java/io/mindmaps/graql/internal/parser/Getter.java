@@ -20,10 +20,10 @@ package io.mindmaps.graql.internal.parser;
 
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Resource;
+import io.mindmaps.graql.internal.StringConverter;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Optional;
 
 /**
  * A getter is used to return a string representation of a property of a Concept, using the resultString method
@@ -48,9 +48,13 @@ public interface Getter {
      * @return a getter that will get the value of a concept
      */
     static Getter value() {
-        return result -> Optional.ofNullable(result.getValue()).map(
-                property -> " " + colorKeyword("value") + " \"" + property + "\""
-        ).orElse("");
+        return result -> {
+            if (result.isResource()) {
+                return " " + colorKeyword("value") + StringConverter.valueToString(result.asResource().getValue());
+            } else {
+                return "";
+            }
+        };
     }
 
     /**
