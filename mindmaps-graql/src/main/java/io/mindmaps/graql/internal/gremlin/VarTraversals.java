@@ -144,9 +144,6 @@ public class VarTraversals {
                 addRelatesPattern(casting.getRolePlayer());
             }
         });
-
-        // If this is a type, confirm that its ITEM_IDENTIFIER is correct
-        var.getId().ifPresent(this::addTypeNamePattern);
     }
 
     /**
@@ -389,16 +386,6 @@ public class VarTraversals {
 
         innerVarTraversals.add(new VarTraversals(relationType.admin()));
         innerVarTraversals.add(relationTraversals);
-    }
-
-    /**
-     * Add a pattern checking the ITEM_IDENTIFIER of the given type
-     * @param typeName the expected ITEM_IDENTIFIER of the variable
-     */
-    private void addTypeNamePattern(String typeName) {
-        addPattern(
-                new FragmentImpl(t -> t.has(ITEM_IDENTIFIER.name(), typeName), TYPE_ID, getName())
-        );
     }
 
     /**

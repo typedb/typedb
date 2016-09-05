@@ -29,21 +29,16 @@ import io.mindmaps.graql.admin.ValuePredicateAdmin;
 enum FragmentPriority {
 
     /**
-     * Looking up instances by ID (not types), this is extremely fast due to indices
-     */
-    ID,
-
-    /**
      * Looking up things by value. Values are non-unique so this is only slightly slower than lookup by ID
      */
     VALUE_SPECIFIC,
 
     /**
-     * Looking up types by ID. This is lower priority due to a limitation of the system for sorting fragments.
-     * Because types are often super-nodes, it is usually better to start from an instance (looked up by ID or value)
-     * than from a type if possible.
+     * Looking up by ID.
+     * Because types are often super-nodes and are usually referred to by ID, it is usually better to start from an
+     * instance (looked up by value) than from a type (looked up by ID) if possible.
      */
-    TYPE_ID,
+    ID,
 
     /**
      * Looking up things by non-specific values. This includes predicates (e.g. 'value > 100') and very short strings,
