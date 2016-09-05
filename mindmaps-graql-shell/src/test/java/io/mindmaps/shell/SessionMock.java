@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-import org.eclipse.jetty.websocket.api.*;
+package io.mindmaps.shell;import org.eclipse.jetty.websocket.api.*;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;

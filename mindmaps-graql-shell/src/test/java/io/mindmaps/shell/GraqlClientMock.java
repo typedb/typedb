@@ -16,10 +16,9 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-import io.mindmaps.factory.MindmapsTestGraphFactory;
+package io.mindmaps.shell;import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.GraqlClient;
 import io.mindmaps.graql.GraqlShell;
-import io.mindmaps.shell.RemoteShell;
 
 import java.io.IOException;
 import java.net.URI;
