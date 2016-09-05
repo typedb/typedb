@@ -29,3 +29,8 @@ hs_err_pid*
 
 # Log files #
 logs/
+
+# Analytics files #
+mindmaps-test/db/
+mindmaps-test/output/
+mindmaps-test/*.txt
