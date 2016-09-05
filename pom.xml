@@ -35,7 +35,6 @@
         <module>mindmaps-graql-shell</module>
         <module>mindmaps-engine</module>
         <module>mindmaps-dist</module>
-        <module>mindmaps-test</module>
         <module>mindmaps-base</module>
         <module>mindmaps-migration</module>
     </modules>
