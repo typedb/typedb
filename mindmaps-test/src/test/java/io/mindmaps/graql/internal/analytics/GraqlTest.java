@@ -1,12 +1,14 @@
 package io.mindmaps.graql.internal.analytics;
 
 import io.mindmaps.MindmapsTransaction;
-import io.mindmaps.api.CommitLogController;
-import io.mindmaps.api.GraphFactoryController;
-import io.mindmaps.core.Data;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.*;
+import io.mindmaps.core.model.Entity;
+import io.mindmaps.core.model.EntityType;
+import io.mindmaps.core.model.Instance;
+import io.mindmaps.core.model.RelationType;
+import io.mindmaps.core.model.Resource;
+import io.mindmaps.core.model.RoleType;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.QueryBuilder;
@@ -14,6 +16,7 @@ import io.mindmaps.graql.QueryParser;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Collection;
@@ -23,9 +26,14 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 import static io.mindmaps.IntegrationUtils.startTestEngine;
-import static io.mindmaps.graql.Graql.*;
-import static org.junit.Assert.*;
+import static io.mindmaps.graql.Graql.or;
+import static io.mindmaps.graql.Graql.var;
+import static io.mindmaps.graql.Graql.withTransaction;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
+@Ignore
 public class GraqlTest {
 
     String TEST_KEYSPACE = "mindmapstest";

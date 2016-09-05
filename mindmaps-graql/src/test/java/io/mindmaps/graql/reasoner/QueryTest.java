@@ -29,12 +29,14 @@ import io.mindmaps.graql.reasoner.graphs.SNBGraph;
 import io.mindmaps.graql.internal.reasoner.container.Query;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 
+@Ignore
 public class QueryTest {
 
     private static MindmapsTransaction graph;
