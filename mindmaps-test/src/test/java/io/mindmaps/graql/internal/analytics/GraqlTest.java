@@ -1,16 +1,13 @@
 package io.mindmaps.graql.internal.analytics;
 
 import io.mindmaps.MindmapsTransaction;
-import io.mindmaps.api.CommitLogController;
-import io.mindmaps.api.GraphFactoryController;
-import io.mindmaps.core.Data;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.*;
-import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.QueryParser;
+import org.javatuples.Pair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -22,13 +19,14 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
+import static io.mindmaps.IntegrationUtils.graphWithNewKeyspace;
 import static io.mindmaps.IntegrationUtils.startTestEngine;
 import static io.mindmaps.graql.Graql.*;
 import static org.junit.Assert.*;
 
 public class GraqlTest {
 
-    String TEST_KEYSPACE = "mindmapstest";
+    String keyspace = "mindmapstest";
     MindmapsGraph graph;
     MindmapsTransaction transaction;
     private QueryParser qp;
@@ -51,9 +49,9 @@ public class GraqlTest {
 
     @Before
     public void setUp() throws InterruptedException {
-        graph = MindmapsClient.getGraph(TEST_KEYSPACE);
-        graph.clear();
-        graph = MindmapsClient.getGraph(TEST_KEYSPACE);
+        Pair<MindmapsGraph, String> result = graphWithNewKeyspace();
+        graph = result.getValue0();
+        keyspace = result.getValue1();
         transaction = graph.getTransaction();
         qp = QueryParser.create(transaction);
         qb = withTransaction(transaction);
@@ -68,7 +66,7 @@ public class GraqlTest {
     public void testGraqlCount() throws MindmapsValidationException, InterruptedException, ExecutionException {
 
         // assert the graph is empty
-        Analytics computer = new Analytics(TEST_KEYSPACE);
+        Analytics computer = new Analytics(keyspace);
         assertEquals(0, computer.count());
 
         // create 3 instances
