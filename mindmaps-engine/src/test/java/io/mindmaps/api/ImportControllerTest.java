@@ -69,11 +69,8 @@ public class ImportControllerTest {
             e.printStackTrace();
         }
         File fileData= new File(classLoader.getResource("small_nametags.gql").getFile());
-        try {
-            importer.importDataFromFile(fileData.getAbsolutePath());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        importer.importDataFromFile(fileData.getAbsolutePath());
+
         Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getTransaction().getConcept("X506965727265204162656c").getId());
     }
 

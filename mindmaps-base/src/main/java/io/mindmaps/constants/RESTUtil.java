@@ -3,7 +3,7 @@ package io.mindmaps.constants;
 public class RESTUtil {
 
     public static class WebPath{
-        public static final String IMPORT_DATA_URI =  "/import/data";
+        public static final String IMPORT_DATA_URI =  "/import/batch/data";
         public static final String IMPORT_ONTOLOGY_URI = "/import/ontology";
 
         public static final String GRAPH_FACTORY_URI = "/graph_factory";
@@ -21,6 +21,7 @@ public class RESTUtil {
         public static final String NEW_TRANSACTION_URI = "/transaction/new";
         public static final String TRANSACTION_STATUS_URI = "/transaction/status/";
         public static final String LOADER_STATE_URI = "/transaction/loaderState";
+        public static final String GET_STATUS_URI = "/status";
 
         public static final String REMOTE_SHELL_URI = "/shell/remote";
     }

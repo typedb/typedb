@@ -51,6 +51,7 @@ public class MindmapsEngineServer {
         new ImportController();
         new CommitLogController();
         new TransactionController();
+        new StatusController();
 
     }
 }

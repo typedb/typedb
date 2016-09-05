@@ -1,6 +1,7 @@
 ## Special entities, relationships and resource to manage names
 ## this will be used to manage synonims, homonyms etc.
 
+insert
 
 # This should help manage things with a name, things with
 # multiple names and conflicts.

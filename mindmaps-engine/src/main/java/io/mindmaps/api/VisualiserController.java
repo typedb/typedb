@@ -88,23 +88,24 @@ public class VisualiserController {
             value = "Executes match query on the server and build HAL representation for each concept in the query result.")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "graphName", value = "Name of graph to use", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "query", value = "Match query to execute", required = true,dataType = "string", paramType = "query")
+            @ApiImplicitParam(name = "query", value = "Match query to execute", required = true, dataType = "string", paramType = "query")
     })
     private String matchQuery(Request req, Response res) {
 
         String currentGraphName = req.queryParams(RESTUtil.Request.GRAPH_NAME_PARAM);
-        if(currentGraphName==null) currentGraphName = defaultGraphName;
+        if (currentGraphName == null) currentGraphName = defaultGraphName;
 
         LOG.info("Received match query: \"" + req.queryParams(RESTUtil.Request.QUERY_FIELD) + "\"");
 
         try {
+
             QueryParser parser = QueryParser.create(GraphFactory.getInstance().getGraph(currentGraphName).getTransaction());
             final JSONArray halArray = new JSONArray();
 
             parser.parseMatchQuery(req.queryParams(RESTUtil.Request.QUERY_FIELD))
                     .getMatchQuery().stream()
-                    .forEach(x-> x.values()
-                        .forEach(concept->halArray.put(new JSONObject(new HALConcept(concept).render()))));
+                    .forEach(x -> x.values()
+                            .forEach(concept -> halArray.put(new JSONObject(new HALConcept(concept).render()))));
 
             return halArray.toString();
         } catch (Exception e) {

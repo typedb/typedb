@@ -107,9 +107,10 @@ public class RESTLoader {
     }
 
     private void startPeriodPostProcessingCheck(){
+        long postProcessingDelay = ConfigProperties.getInstance().getPropertyAsLong(ConfigProperties.POSTPROCESSING_DELAY);
         Executors.newSingleThreadScheduledExecutor()
-                .scheduleAtFixedRate(() -> BackgroundTasks.getInstance().performPostprocessing(), 0,
-                        ConfigProperties.getInstance().getPropertyAsLong(ConfigProperties.POSTPROCESSING_DELAY), TimeUnit.MILLISECONDS);
+                .scheduleAtFixedRate(() -> BackgroundTasks.getInstance().performPostprocessing(), postProcessingDelay,
+                        postProcessingDelay, TimeUnit.MILLISECONDS);
     }
 
     public String getLoaderState() {
