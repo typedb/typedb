@@ -66,6 +66,7 @@ public class GraqlShell implements AutoCloseable {
     private static final String LICENSE_LOCATION = "LICENSE.txt";
 
     private static final String DEFAULT_NAMESPACE = "mindmaps";
+    private static final String DEFAULT_URI = "localhost:4567";
 
     private static final String PROMPT = ">>> ";
 
@@ -145,9 +146,10 @@ public class GraqlShell implements AutoCloseable {
         }
 
         String namespace = cmd.getOptionValue("n", DEFAULT_NAMESPACE);
+        String uriString = cmd.getOptionValue("u", DEFAULT_URI);
 
         try(GraqlShell shell = new GraqlShell(namespace)) {
-            client.connect(shell, new URI("ws://localhost:4567" + REMOTE_SHELL_URI));
+            client.connect(shell, new URI("ws://" + uriString + REMOTE_SHELL_URI));
 
             if (filePath != null) {
                 query = loadQuery(filePath);

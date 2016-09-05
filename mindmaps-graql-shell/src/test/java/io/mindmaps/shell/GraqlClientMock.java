@@ -34,17 +34,20 @@ class GraqlClientMock implements GraqlClient {
     });
 
     private String namespace = null;
+    private URI uri;
 
     String getNamespace() {
         return namespace;
     }
 
     URI getURI() {
-        return null;
+        return uri;
     }
 
     @Override
     public void connect(Object websocket, URI uri) {
+        this.uri = uri;
+
         GraqlShell client = (GraqlShell) websocket;
 
         SessionMock serverSession = new SessionMock(client::onMessage);

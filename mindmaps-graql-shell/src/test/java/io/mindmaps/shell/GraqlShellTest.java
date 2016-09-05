@@ -96,6 +96,18 @@ public class GraqlShellTest {
         assertEquals("myspace", client.getNamespace());
     }
 
+   @Test
+    public void testDefaultUri() throws IOException {
+        testShell("");
+        assertEquals("ws://localhost:4567/shell/remote", client.getURI().toString());
+    }
+
+    @Test
+    public void testSpecifiedUri() throws IOException {
+        testShell("", "-u", "1.2.3.4:5678");
+        assertEquals("ws://1.2.3.4:5678/shell/remote", client.getURI().toString());
+    }
+
     @Test
     public void testExecuteOption() throws IOException {
         String result = testShell("", "-e", "match $x isa role-type ask");
@@ -207,6 +219,14 @@ public class GraqlShellTest {
         testShell("insert movie isa entity-type; moon isa movie; europa isa moon\n", err);
 
         assertThat(err.toString(), allOf(containsString("moon"), containsString("not"), containsString("type")));
+    }
+
+    @Test
+    public void testLimit() throws IOException {
+        String result = testShell("match $x isa type limit 1\n");
+
+        // Expect seven lines output - four for the license, one for the query, only one result and a new prompt
+        assertEquals(7, result.split("\n").length);
     }
 
     @Test
