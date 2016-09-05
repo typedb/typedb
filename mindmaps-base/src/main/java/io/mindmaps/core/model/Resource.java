@@ -32,13 +32,6 @@ public interface Resource<D> extends Instance{
     //------------------------------------- Modifiers ----------------------------------
     /**
      *
-     * @param id The new unique id of the instance.
-     * @return The Resource itself
-     */
-    Resource<D> setId(String id);
-
-    /**
-     *
      * @param subject The new unique subject of the instance.
      * @return The Resource itself
      */

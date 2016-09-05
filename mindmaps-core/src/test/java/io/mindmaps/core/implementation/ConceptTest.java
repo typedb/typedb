@@ -80,10 +80,7 @@ public class ConceptTest {
 
     @Test
     public void testItemIdentifier() {
-        concept.setId("http://mindmaps.io");
-        Vertex conceptVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
-        assertEquals("http://mindmaps.io", conceptVertex.property(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name()).value());
-        assertEquals("http://mindmaps.io", concept.getId());
+        assertEquals("main_concept", concept.getId());
     }
 
     @Test
@@ -98,15 +95,6 @@ public class ConceptTest {
     public void testGetVertex(){
         assertNotNull(concept.getBaseIdentifier());
     }
-
-    @Test
-    public void testSetItemIdentifier() throws ConceptException{
-        concept.setId("Test");
-        assertEquals("Test", concept.getId());
-        Vertex conceptVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
-        assertEquals("Test", conceptVertex.property(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name()).value());
-    }
-
 
     @Test
     public void testSetType() {
@@ -161,12 +149,6 @@ public class ConceptTest {
     }
 
     @Test(expected=ConceptException.class)
-    public void updateConceptByValueFailConceptAlreadyExists() {
-        mindmapsGraph.putEntityType("VALUE");
-        concept.setId("VALUE");
-    }
-
-    @Test(expected=ConceptException.class)
     public void updateConceptBySubjectIdentifierFailConceptAlreadyExists() {
         mindmapsGraph.putEntityType("bob").setSubject("www.mindmaps.io");
         concept.setSubject("www.mindmaps.io");
@@ -174,7 +156,6 @@ public class ConceptTest {
 
     @Test(expected=RuntimeException.class)
     public void updateConceptFailTooManyConcepts()  {
-        concept.setId("VALUE");
         Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex();
         vertex.property(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), "VALUE");
         mindmapsGraph.putEntityType("VALUE");
@@ -501,15 +482,5 @@ public class ConceptTest {
                 containsString(ErrorMessage.ID_RESERVED.getMessage("type"))
         ));
         mindmapsGraph.putEntityType("type");
-    }
-
-    @Test
-    public void reservedTest2(){
-        EntityType entityType = mindmapsGraph.putEntityType("a type");
-        expectedException.expect(ConceptException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.ID_RESERVED.getMessage("type"))
-        ));
-        entityType.setId("type");
     }
 }

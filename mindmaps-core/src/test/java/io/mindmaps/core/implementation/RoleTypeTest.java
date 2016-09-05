@@ -73,8 +73,6 @@ public class RoleTypeTest {
     public void testRoleTypeItemIdentifier(){
         RoleType roleType = mindmapsGraph.putRoleType("test");
         assertEquals("test", roleType.getId());
-        roleType.setId("bobo");
-        assertEquals("bobo", roleType.getId());
     }
 
     @Test

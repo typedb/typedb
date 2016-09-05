@@ -27,13 +27,6 @@ public interface RoleType extends Type {
     //------------------------------------- Modifiers ----------------------------------
     /**
      *
-     * @param id The new unique id of the Role Type.
-     * @return The Role Type itself
-     */
-    RoleType setId(String id);
-
-    /**
-     *
      * @param subject The new unique subject of the Role Type.
      * @return The Role Type itself
      */

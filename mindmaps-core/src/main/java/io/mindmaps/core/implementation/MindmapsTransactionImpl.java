@@ -206,7 +206,6 @@ public class MindmapsTransactionImpl implements MindmapsTransaction {
     }
     private Type putConceptType(String itemIdentifier, DataType.BaseType baseType, Type metaType) {
         TypeImpl conceptType = elementFactory.buildSpecificConceptType(putVertex(itemIdentifier, baseType));
-        conceptType.setId(itemIdentifier);
         conceptType.type(metaType);
         return conceptType;
     }

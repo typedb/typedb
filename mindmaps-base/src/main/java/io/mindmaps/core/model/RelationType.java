@@ -50,14 +50,6 @@ public interface RelationType extends Type {
     RelationType deleteHasRole(RoleType roleType);
 
     //---- Inherited Methods
-
-    /**
-     *
-     * @param id The new unique id of the concept.
-     * @return The Relation Type itself.
-     */
-    RelationType setId(String id);
-
     /**
      *
      * @param subject The new unique subject of the concept.
