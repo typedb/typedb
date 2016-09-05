@@ -4,7 +4,6 @@ import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.Data;
 import io.mindmaps.api.CommitLogController;
 import io.mindmaps.api.GraphFactoryController;
-import io.mindmaps.api.ImportController;
 import io.mindmaps.api.TransactionController;
 import io.mindmaps.core.Data;
 import io.mindmaps.core.MindmapsGraph;
@@ -16,12 +15,11 @@ import io.mindmaps.core.model.RoleType;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.loader.DistributedLoader;
 import org.apache.cassandra.exceptions.ConfigurationException;
-import org.apache.commons.configuration.Configuration;
 import org.apache.thrift.transport.TTransportException;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.FileNotFoundException;
@@ -64,6 +62,8 @@ public class ScalingTestIT {
         transaction = graph.getTransaction();
     }
 
+    // TODO: Make integration tests not run in travis
+    @Ignore
     @Test
     public void countAndDegreeIT() throws InterruptedException, ExecutionException, MindmapsValidationException {
         PrintWriter writer = null;
