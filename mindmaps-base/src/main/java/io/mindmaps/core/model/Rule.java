@@ -102,13 +102,6 @@ public interface Rule extends Instance{
     //---- Inherited Methods
     /**
      *
-     * @param subject The new unique subject of the instance.
-     * @return The Rule itself
-     */
-    Rule setSubject(String subject);
-
-    /**
-     *
      * @return The type of this rule
      */
     RuleType type();

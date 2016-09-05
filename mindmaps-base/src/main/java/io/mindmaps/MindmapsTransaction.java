@@ -151,7 +151,6 @@ public interface MindmapsTransaction extends AutoCloseable{
      */
     Relation addRelation(RelationType type);
     //------------------------------------- Concept Lookup ----------------------------------
-    //------------------------------------- Concept
     /**
      *
      * @param id A unique Id which identifies the Concept in the graph.
@@ -161,27 +160,11 @@ public interface MindmapsTransaction extends AutoCloseable{
 
     /**
      *
-     * @param subject A unique subject Id which identifies the Concept in the graph.
-     * @return The Concept with the provided Id or null if no such Concept exists.
-     */
-    Concept getConceptBySubject(String subject);
-
-    //------------------------------------- Type
-    /**
-     *
      * @param id A unique Id which identifies the Type in the graph.
      * @return The Type with the provided Id or null if no such Type exists.
      */
     Type getType(String id);
 
-    /**
-     *
-     * @param subject A unique subject Id which identifies the Type in the graph.
-     * @return The Type with the provided Id or null if no such Type exists.
-     */
-    Type getTypeBySubject(String subject);
-
-    //------------------------------------- Instance
     /**
      *
      * @param id A unique Id which identifies the Instance in the graph.
@@ -191,27 +174,11 @@ public interface MindmapsTransaction extends AutoCloseable{
 
     /**
      *
-     * @param subject A unique subject Id which identifies the Instance in the graph.
-     * @return The Instance with the provided Id or null if no such Instance exists.
-     */
-    Instance getInstanceBySubject(String subject);
-
-    //------------------------------------- Entity
-    /**
-     *
      * @param id A unique Id which identifies the Entity in the graph.
      * @return The Entity with the provided Id or null if no such Entity exists.
      */
     Entity getEntity(String id);
 
-    /**
-     *
-     * @param subject A unique subject Id which identifies the Entity in the graph.
-     * @return The Entity with the provided Id or null if no such Entity exists.
-     */
-    Entity getEntityBySubject(String subject);
-
-    //------------------------------------- Resource
     /**
      *
      * @param id A unique Id which identifies the Resource in the graph.
@@ -222,20 +189,11 @@ public interface MindmapsTransaction extends AutoCloseable{
 
     /**
      *
-     * @param subject A unique subject Id which identifies the Resource in the graph.
-     * @param <V> The data type of the value. Supported types include: String, Long, Double, and Boolean.
-     * @return The Resource with the provided Id or null if no such Resource exists.
-     */
-    <V> Resource<V> getResourceBySubject(String subject);
-
-    /**
-     *
      * @param value A value which a Resource in the graph may be holding.
      * @param <V> The data type of the value. Supported types include: String, Long, Double, and Boolean.
      * @return The Resources holding the provided value or an empty collection if no such Resource exists.
      */
     <V> Collection<Resource<V>> getResourcesByValue(V value);
-    //------------------------------------- Rule
 
     /**
      *
@@ -246,14 +204,6 @@ public interface MindmapsTransaction extends AutoCloseable{
 
     /**
      *
-     * @param subject A unique subject Id which identifies the Rule in the graph.
-     * @return The Rule with the provided Id or null if no such Rule exists.
-     */
-    Rule getRuleBySubject(String subject);
-
-    //------------------------------------- Concept Type
-    /**
-     *
      * @param id A unique Id which identifies the Entity Type in the graph.
      * @return The Entity Type  with the provided Id or null if no such Entity Type  exists.
      */
@@ -261,27 +211,11 @@ public interface MindmapsTransaction extends AutoCloseable{
 
     /**
      *
-     * @param subject A unique subject Id which identifies the Entity Type  in the graph.
-     * @return The Entity Type  with the provided Id or null if no such Entity Type  exists.
-     */
-    EntityType getEntityTypeBySubject(String subject);
-
-    //------------------------------------- Relation Type
-    /**
-     *
      * @param id A unique Id which identifies the Relation Type in the graph.
      * @return The Relation Type with the provided Id or null if no such Relation Type exists.
      */
     RelationType getRelationType(String id);
 
-    /**
-     *
-     * @param subject A unique subject Id which identifies the Relation Type in the graph.
-     * @return The Relation Type with the provided Id or null if no such Relation Type exists.
-     */
-    RelationType getRelationTypeBySubject(String subject);
-
-    //------------------------------------- Resource Type
     /**
      *
      * @param id A unique Id which identifies the Resource Type in the graph.
@@ -292,15 +226,6 @@ public interface MindmapsTransaction extends AutoCloseable{
 
     /**
      *
-     * @param subject A unique subject Id which identifies the Resource Type in the graph.
-     * @param <V> The data type of the value. Supported types include: String, Long, Double, and Boolean.
-     * @return The Resource Type with the provided Id or null if no such Resource Type exists.
-     */
-    <V> ResourceType<V> getResourceTypeBySubject(String subject);
-
-    //------------------------------------- Role Type
-    /**
-     *
      * @param id A unique Id which identifies the Role Type in the graph.
      * @return The Role Type  with the provided Id or null if no such Role Type exists.
      */
@@ -308,25 +233,10 @@ public interface MindmapsTransaction extends AutoCloseable{
 
     /**
      *
-     * @param subject A unique subject Id which identifies the Role Type in the graph.
-     * @return The Role Type with the provided Id or null if no such Role Type exists.
-     */
-    RoleType getRoleTypeBySubject(String subject);
-
-    //------------------------------------- Rule Type
-    /**
-     *
      * @param id A unique Id which identifies the Rule Type in the graph.
      * @return The Rule Type with the provided Id or null if no such Rule Type exists.
      */
     RuleType getRuleType(String id);
-
-    /**
-     *
-     * @param subject A unique subject Id which identifies the Rule Type in the graph.
-     * @return The Rule Type with the provided Id or null if no such Rule Type  exists.
-     */
-    RuleType getRuleTypeBySubject(String subject);
 
     //------------------------------------- Relationship Handling ----------------------------------
     /**

@@ -194,7 +194,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
         this.getMappingCasting().forEach(c -> getMindmapsTransaction().getConceptLog().putConcept(c));
 
         for(Instance instance : rolePlayers){
-            if(instance != null && (instance.getId() != null || instance.getSubject() != null)){
+            if(instance != null && (instance.getId() != null )){
                 performDeletion = false;
             }
         }

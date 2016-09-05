@@ -29,14 +29,6 @@ import java.util.Collection;
  * @param <D> The data type of this resource. Supported Types include: String, Long, Double, and Boolean
  */
 public interface Resource<D> extends Instance{
-    //------------------------------------- Modifiers ----------------------------------
-    /**
-     *
-     * @param subject The new unique subject of the instance.
-     * @return The Resource itself
-     */
-    Resource<D> setSubject(String subject);
-
     //------------------------------------- Accessors ----------------------------------
     /**
      *

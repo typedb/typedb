@@ -125,7 +125,7 @@ public class ResourceTest {
         expectedException.expectMessage(allOf(
                 containsString(ErrorMessage.INVALID_DATATYPE.getMessage("Invalid Thing", Long.class.getName()))
         ));
-        Resource invalidThing = mindmapsGraph.putResource("Invalid Thing", longResourceType);
+        mindmapsGraph.putResource("Invalid Thing", longResourceType);
     }
 
     @Test
@@ -137,7 +137,7 @@ public class ResourceTest {
 
     @Test
     public void testToString() {
-        ResourceType<String> concept = mindmapsGraph.putResourceType("a", Data.STRING).setSubject("b");
+        ResourceType<String> concept = mindmapsGraph.putResourceType("a", Data.STRING);
         Resource<String> concept2 = mindmapsGraph.putResource("concept2", concept);
         assertTrue(concept2.toString().contains("Value"));
     }

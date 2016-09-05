@@ -27,13 +27,6 @@ public interface Instance extends Concept{
     //------------------------------------- Accessors ----------------------------------
     /**
      *
-     * @param subject The new unique subject of the instance.
-     * @return The instance itself.
-     */
-    Instance setSubject(String subject);
-
-    /**
-     *
      * @param roleTypes An optional parameter which allows you to specify the role of the relations you wish to retrieve.
      * @return A set of Relations which the concept instance takes part in, optionally constrained by the Role Type.
      */

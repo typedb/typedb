@@ -139,8 +139,8 @@ public class CastingTest {
     @Test
     public void testGetAssertion(){
         RoleTypeImpl role2 = (RoleTypeImpl) mindmapsGraph.putRoleType("Role 2");
-        RelationTypeImpl genericRelation = (RelationTypeImpl) mindmapsGraph.putRelationType("gr").setSubject("Other Relation");
-        RelationTypeImpl resourceType = (RelationTypeImpl) mindmapsGraph.putRelationType("rt").setSubject("A resource thing");
+        RelationTypeImpl genericRelation = (RelationTypeImpl) mindmapsGraph.putRelationType("gr");
+        RelationTypeImpl resourceType = (RelationTypeImpl) mindmapsGraph.putRelationType("rt");
         RelationImpl relationValue = (RelationImpl) mindmapsGraph.putRelation(UUID.randomUUID().toString(), resourceType);
 
         relation.addEdge(genericRelation, DataType.EdgeLabel.ISA);

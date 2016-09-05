@@ -306,19 +306,10 @@ public class MindmapsTransactionImpl implements MindmapsTransaction {
     public Concept getConcept(String id) {
         return getConcept(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER, id);
     }
-    @Override
-    public Concept getConceptBySubject(String subject) {
-        return getConcept(DataType.ConceptPropertyUnique.SUBJECT_IDENTIFIER, subject);
-    }
 
     @Override
     public Type getType(String id) {
         return validConceptOfType(getConcept(id), TypeImpl.class);
-    }
-
-    @Override
-    public Type getTypeBySubject(String subject) {
-        return validConceptOfType(getConceptBySubject(subject), TypeImpl.class);
     }
 
     @Override
@@ -327,27 +318,13 @@ public class MindmapsTransactionImpl implements MindmapsTransaction {
     }
 
     @Override
-    public Instance getInstanceBySubject(String subject) {
-        return validConceptOfType(getConceptBySubject(subject), InstanceImpl.class);
-    }
-
-    @Override
     public Entity getEntity(String id) {
         return validConceptOfType(getConcept(id), EntityImpl.class);
-    }
-    @Override
-    public Entity getEntityBySubject(String subject) {
-        return validConceptOfType(getConceptBySubject(subject), EntityImpl.class);
     }
 
     @Override
     public <V> Resource<V> getResource(String id) {
         return validConceptOfType(getConcept(id), ResourceImpl.class);
-    }
-
-    @Override
-    public <V> Resource<V> getResourceBySubject(String subject) {
-        return validConceptOfType(getConceptBySubject(subject), ResourceImpl.class);
     }
 
     @Override
@@ -371,18 +348,8 @@ public class MindmapsTransactionImpl implements MindmapsTransaction {
     }
 
     @Override
-    public Rule getRuleBySubject(String subject) {
-        return validConceptOfType(getConceptBySubject(subject), RuleImpl.class);
-    }
-
-    @Override
     public EntityType getEntityType(String id) {
         return validConceptOfType(getConcept(id), EntityTypeImpl.class);
-    }
-
-    @Override
-    public EntityType getEntityTypeBySubject(String subject) {
-        return validConceptOfType(getConceptBySubject(subject), EntityTypeImpl.class);
     }
 
     @Override
@@ -391,18 +358,8 @@ public class MindmapsTransactionImpl implements MindmapsTransaction {
     }
 
     @Override
-    public RelationType getRelationTypeBySubject(String subject) {
-        return validConceptOfType(getConceptBySubject(subject), RelationTypeImpl.class);
-    }
-
-    @Override
     public <V> ResourceType<V> getResourceType(String id) {
         return validConceptOfType(getConcept(id), ResourceTypeImpl.class);
-    }
-
-    @Override
-    public <V> ResourceType<V> getResourceTypeBySubject(String subject) {
-        return validConceptOfType(getConceptBySubject(subject), ResourceTypeImpl.class);
     }
 
     @Override
@@ -411,18 +368,8 @@ public class MindmapsTransactionImpl implements MindmapsTransaction {
     }
 
     @Override
-    public RoleType getRoleTypeBySubject(String subject) {
-        return validConceptOfType(getConceptBySubject(subject), RoleTypeImpl.class);
-    }
-
-    @Override
     public RuleType getRuleType(String id) {
         return validConceptOfType(getConcept(id), RuleTypeImpl.class);
-    }
-
-    @Override
-    public RuleType getRuleTypeBySubject(String subject) {
-        return validConceptOfType(getConceptBySubject(subject), RuleTypeImpl.class);
     }
 
     private Type getConceptType(String id){
