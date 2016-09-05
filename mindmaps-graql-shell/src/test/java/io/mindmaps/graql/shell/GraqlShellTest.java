@@ -227,7 +227,7 @@ public class GraqlShellTest {
 
     @Test
     public void testLimit() throws IOException {
-        String result = testShell("match $x isa type limit 1\n");
+        String result = testShell("match $x isa concept-type limit 1\n");
 
         // Expect seven lines output - four for the license, one for the query, only one result and a new prompt
         assertEquals(7, result.split("\n").length);
