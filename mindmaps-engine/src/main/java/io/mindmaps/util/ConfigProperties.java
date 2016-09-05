@@ -55,6 +55,8 @@ public class ConfigProperties {
     public static final String DATE_FORMAT = "yyyy/MM/dd HH:mm:ss";
     public static final String STATIC_FILES_PATH = "server.static-file-dir";
 
+    public static final String PROJECT_VERSION = "project.version";
+
     public static final String CURRENT_DIR_SYSTEM_PROPERTY = "mindmaps.dir";
     public static final String CONFIG_FILE_SYSTEM_PROPERTY = "mindmaps.conf";
 

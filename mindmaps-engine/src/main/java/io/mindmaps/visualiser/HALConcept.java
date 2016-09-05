@@ -27,6 +27,9 @@ import io.mindmaps.util.ConfigProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 
@@ -66,6 +69,14 @@ public class HALConcept {
         resource.withProperty("_id", concept.getId())
                 .withProperty("_type", concept.type().getId())
                 .withProperty("_baseType", concept.type().type().getId());
+
+        if (concept.isEntity()) {
+            entityResources(halResource, concept.asEntity());
+        }
+
+        if (concept.isRelation()) {
+            relationResources(halResource, concept.asRelation());
+        }
     }
 
     private void dispatchConcept(Representation halResource, Concept concept, int separationDegree) {
@@ -77,12 +88,10 @@ public class HALConcept {
         // If it's an instance we put resources as state variables
         if (concept.isEntity()) {
             generateEntityLinks(halResource, concept.asEntity());
-            entityResources(halResource, concept.asEntity());
             generateEntityEmbedded(halResource, concept.asEntity(), separationDegree);
         }
         if (concept.isRelation()) {
             generateRelationLinks(halResource, concept.asRelation());
-            relationResources(halResource, concept.asRelation());
             generateRelationEmbedded(halResource, concept.asRelation(), separationDegree);
         }
 
@@ -96,11 +105,17 @@ public class HALConcept {
     // ================================ resources as HAL state properties ========================= //
 
     private void entityResources(Representation resource, Entity entity) {
-        entity.resources().forEach(resource1 -> resource.withProperty(resource1.type().getId(), resource1.getValue()));
+        final Map<String, Collection<String>> resources = new HashMap<>();
+        entity.resources().forEach(currentResource -> {
+            resources.putIfAbsent(currentResource.type().getId(), new HashSet<>());
+            resources.get(currentResource.type().getId()).add(currentResource.getValue().toString());
+        });
+
+        resources.keySet().forEach(current -> resource.withProperty(current, resources.get(current).toString()));
     }
 
     private void relationResources(Representation resource, Relation rel) {
-        rel.resources().forEach(resource1 -> resource.withProperty(resource1.getId(), resource1.getValue()));
+        rel.resources().forEach(currentResource -> resource.withProperty(currentResource.getId(), currentResource.getValue()));
     }
 
     // ======================================= _links =============================================== //

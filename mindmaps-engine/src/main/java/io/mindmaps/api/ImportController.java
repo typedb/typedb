@@ -27,7 +27,9 @@ import io.mindmaps.graql.Var;
 import io.mindmaps.loader.BlockingLoader;
 import io.mindmaps.postprocessing.BackgroundTasks;
 import io.mindmaps.util.ConfigProperties;
-import io.swagger.annotations.*;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiOperation;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.LoggerFactory;
@@ -39,13 +41,16 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 
-import static io.mindmaps.graql.Graql.insert;
 import static spark.Spark.post;
 
 
@@ -62,7 +67,8 @@ public class ImportController {
 
     //TODO: Use redis for caching LRU
     private Map<String, String> entitiesMap;
-    private ArrayList<Var> relationshipsList;
+    //TODO: add relations to relationsList when they are referring to relations that have not been inserted yet
+    private ArrayList<Var> relationsList;
 
     private BlockingLoader loader;
 
@@ -78,7 +84,7 @@ public class ImportController {
         post(RESTUtil.WebPath.IMPORT_ONTOLOGY_URI, this::importOntologyREST);
 
         entitiesMap = new ConcurrentHashMap<>();
-        relationshipsList = new ArrayList<>();
+        relationsList = new ArrayList<>();
         graphName = graphNameInit;
         loader = new BlockingLoader(graphName);
 
@@ -86,25 +92,25 @@ public class ImportController {
 
 
     @POST
-    @Path("/data")
+    @Path("/batch/data")
     @ApiOperation(
             value = "Import data from a Graql file. It performs batch loading.",
             notes = "This is a separate import from ontology, since a batch loading is performed to optimise the loading speed. ")
     @ApiImplicitParam(name = "path", value = "File path on the server.", required = true, dataType = "string", paramType = "body")
 
     private String importDataREST(Request req, Response res) {
+
         try {
             String filePath = new JSONObject(req.body()).getString(RESTUtil.Request.PATH_FIELD);
-            importDataFromFile(filePath);
+            Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(filePath));
         } catch (JSONException j) {
             res.status(400);
             return j.getMessage();
-        } catch (Exception e) {
-            res.status(500);
-            return e.getMessage();
         }
-        return "";
+
+        return "Loading successfully started.";
     }
+
 
     @POST
     @Path("/ontology")
@@ -121,19 +127,25 @@ public class ImportController {
             res.status(400);
             return j.getMessage();
         } catch (Exception e) {
+            LOG.error("Exception while loading ontology.");
             e.printStackTrace();
             res.status(500);
             return e.getMessage();
         }
-        return "";
+        return "Ontology successfully loaded.";
     }
 
-    void importDataFromFile(String dataFile) throws IOException {
-        QueryParser.create().parsePatternsStream(new FileInputStream(dataFile)).forEach(pattern -> consumeEntity(pattern.admin().asVar()));
-        loader.waitToFinish();
-        QueryParser.create().parsePatternsStream(new FileInputStream(dataFile)).forEach(pattern -> consumeRelation(pattern.admin().asVar()));
-        loader.waitToFinish();
-        BackgroundTasks.getInstance().forcePostprocessing();
+    void importDataFromFile(String dataFile) {
+        try {
+            QueryParser.create().parsePatternsStream(new FileInputStream(dataFile)).forEach(pattern -> consumeEntity(pattern.admin().asVar()));
+            loader.waitToFinish();
+            QueryParser.create().parsePatternsStream(new FileInputStream(dataFile)).forEach(pattern -> consumeRelationAndResource(pattern.admin().asVar()));
+            loader.waitToFinish();
+            BackgroundTasks.getInstance().forcePostprocessing();
+        } catch (Exception e) {
+            LOG.error("Exception while batch loading data.");
+            e.printStackTrace();
+        }
     }
 
     private void consumeEntity(Var var) {
@@ -151,36 +163,45 @@ public class ImportController {
         }
     }
 
-    private void consumeRelation(Var var) {
+    private void consumeRelationAndResource(Var var) {
         boolean ready = false;
 
         if (var.admin().isRelation()) {
             ready = true;
             //If one of the role players is defined using a variable name and the variable name is not in our cache we cannot insert the relation.
             for (Var.Casting x : var.admin().getCastings()) {
+                //If one of the role players is referring to a variable we check to have that var in the entities map cache.
                 if (x.getRolePlayer().admin().isUserDefinedName()) {
                     if (entitiesMap.containsKey(x.getRolePlayer().getName()))
                         x.getRolePlayer().id(entitiesMap.get(x.getRolePlayer().getName()));
                     else ready = false;
                 }
             }
+        } else {
+            // if it is not a relation and the isa is not specified it is probably a resource referring to an existing entity.
+            if (!var.admin().getType().isPresent()) {
+                ready = true;
+            }
         }
+
+
         if (ready) loader.addToQueue(var);
+
+
     }
 
     void importOntologyFromFile(String ontologyFile) throws IOException, MindmapsValidationException {
 
         MindmapsTransaction transaction = GraphFactory.getInstance().getGraphBatchLoading(graphName).getTransaction();
-        List<Var> ontologyBatch = new ArrayList<>();
 
         LOG.info("Loading new ontology .. ");
 
-        QueryParser.create().parsePatternsStream(new FileInputStream(ontologyFile)).map(x -> x.admin().asVar()).forEach(ontologyBatch::add);
-        insert(ontologyBatch).withTransaction(transaction).execute();
+        List<String> lines = Files.readAllLines(Paths.get(ontologyFile), StandardCharsets.UTF_8);
+        String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
+        QueryParser.create().parseInsertQuery(query).withTransaction(transaction).execute();
         transaction.commit();
 
         LOG.info("Ontology loaded. ");
-
 
     }
 }

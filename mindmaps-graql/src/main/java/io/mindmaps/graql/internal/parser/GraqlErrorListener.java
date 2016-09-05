@@ -39,7 +39,13 @@ public class GraqlErrorListener extends BaseErrorListener {
     public void syntaxError(
             Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg,
             RecognitionException e) {
-        errors.add(new SyntaxError(query[line-1], line, charPositionInLine, msg));
+        String lineString;
+        if (line < query.length) {
+            lineString = query[line-1];
+        } else {
+            lineString = "<UNKNOWN>";
+        }
+        errors.add(new SyntaxError(lineString, line, charPositionInLine, msg));
     }
 
     public boolean hasErrors() {
