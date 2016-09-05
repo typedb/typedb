@@ -18,20 +18,17 @@
 
 package io.mindmaps.graql;
 
-import io.mindmaps.graql.internal.shell.ErrorMessage;
-import io.mindmaps.graql.internal.shell.GraQLCompleter;
-import io.mindmaps.graql.internal.shell.ShellCommandCompleter;
-import io.mindmaps.graql.internal.shell.Version;
+import io.mindmaps.graql.internal.shell.*;
 import jline.console.ConsoleReader;
 import jline.console.completer.AggregateCompleter;
 import jline.console.history.FileHistory;
 import mjson.Json;
 import org.apache.commons.cli.*;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import sun.misc.Signal;
 
 import java.io.File;
 import java.io.IOException;
@@ -97,6 +94,8 @@ public class GraqlShell implements AutoCloseable {
     // A future containing an autocomplete result, once it has been received
     private CompletableFuture<Json> autocompleteResponse = new CompletableFuture<>();
 
+    private boolean waitingQuery = false;
+
     /**
      * Run a Graql REPL
      * @param args arguments to the Graql shell. Possible arguments can be listed by running {@code graql.sh --help}
@@ -156,7 +155,7 @@ public class GraqlShell implements AutoCloseable {
             }
 
             if (query != null) {
-                shell.executeQuery(query, false);
+                shell.executeQuery(query);
                 shell.commit();
             } else {
                 shell.executeRepl();
@@ -177,6 +176,11 @@ public class GraqlShell implements AutoCloseable {
     GraqlShell(String namespace) throws IOException {
         this.namespace = namespace;
         console = new ConsoleReader(System.in, System.out);
+
+        // Create handler to handle SIGINT (Ctrl-C) interrupts
+        Signal signal = new Signal("INT");
+        GraqlSignalHandler signalHandler = new GraqlSignalHandler(this);
+        Signal.handle(signal, signalHandler);
     }
 
     @Override
@@ -219,7 +223,7 @@ public class GraqlShell implements AutoCloseable {
 
             switch (queryString) {
                 case EDIT_COMMAND:
-                    executeQuery(runEditor(), true);
+                    executeQuery(runEditor());
                     break;
                 case COMMIT_COMMAND:
                     commit();
@@ -248,7 +252,7 @@ public class GraqlShell implements AutoCloseable {
                         }
                     }
 
-                    executeQuery(queryString, true);
+                    executeQuery(queryString);
                     break;
             }
         }
@@ -279,11 +283,6 @@ public class GraqlShell implements AutoCloseable {
         this.session.complete(session);
     }
 
-    @OnWebSocketClose
-    public void onClose(int statusCode, String reason) {
-        System.err.println(reason);
-    }
-
     @OnWebSocketMessage
     public void onMessage(String msg) {
         Json json = Json.read(msg);
@@ -309,7 +308,7 @@ public class GraqlShell implements AutoCloseable {
         }
     }
 
-    private void executeQuery(String queryString, boolean setLimit) {
+    private void executeQuery(String queryString) {
         try {
             sendJson(Json.object(
                     ACTION, ACTION_QUERY,
@@ -317,20 +316,19 @@ public class GraqlShell implements AutoCloseable {
             ));
 
             // Wait for the end of the query results before continuing
+            waitingQuery = true;
             synchronized (this) {
                 wait();
             }
-        } catch (IOException | InterruptedException | ExecutionException e) {
-            e.printStackTrace();
+            waitingQuery = false;
+
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
     private void commit() {
-        try {
-            sendJson(Json.object(ACTION, ACTION_COMMIT));
-        } catch (IOException | InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
+        sendJson(Json.object(ACTION, ACTION_COMMIT));
     }
 
     /**
@@ -359,6 +357,19 @@ public class GraqlShell implements AutoCloseable {
         return String.join("\n", Files.readAllLines(tempFile.toPath()));
     }
 
+    /**
+     * Interrupt the shell. If the user is waiting for query results, tell the server to stop sending them.
+     * Otherwise, exit normally.
+     */
+    public void interrupt() {
+        if (waitingQuery) {
+            sendJson(Json.object(ACTION, ACTION_QUERY_END));
+            waitingQuery = false;
+        } else {
+            System.exit(0);
+        }
+    }
+
     public synchronized Json getAutocompleteCandidates(
             String queryString, int cursorPosition
     ) throws InterruptedException, ExecutionException, IOException {
@@ -375,12 +386,20 @@ public class GraqlShell implements AutoCloseable {
         return json;
     }
 
-    private void sendJson(Json json) throws IOException, ExecutionException, InterruptedException {
-        sendJson(json, session.get());
+    private void sendJson(Json json) {
+        try {
+            sendJson(json, session.get());
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    private void sendJson(Json json, Session session) throws IOException {
-        session.getRemote().sendString(json.toString());
+    private void sendJson(Json json, Session session) {
+        try {
+            session.getRemote().sendString(json.toString());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void print(String string) {

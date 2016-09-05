@@ -72,6 +72,9 @@ public class RemoteShell {
                 case ACTION_QUERY:
                     sessions.get(session).executeQuery(json);
                     break;
+                case ACTION_QUERY_END:
+                    sessions.get(session).stopQuery();
+                    break;
                 case ACTION_COMMIT:
                     sessions.get(session).commit();
                     break;
