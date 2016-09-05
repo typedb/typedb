@@ -8,7 +8,5 @@ cache:
   - $HOME/.m2
 notifications:
   slack: mindmapsdb:3M1bWW0kGQ7LdniMmKeaY3o5
-install:
-    - mvn install -DskipTests=true -q -Dfailsafe.timeout=0
-after_success:
+script:
     - mvn test jacoco:report coveralls:report -q
