@@ -24,6 +24,11 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>io.mindmaps</groupId>
+            <artifactId>mindmaps-graql-shell</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.cassandraunit</groupId>
             <artifactId>cassandra-unit</artifactId>
             <version>2.1.9.2</version>

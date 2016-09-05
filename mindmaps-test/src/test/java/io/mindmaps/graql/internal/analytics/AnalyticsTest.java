@@ -18,32 +18,23 @@
 
 package io.mindmaps.graql.internal.analytics;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsTransaction;
-import io.mindmaps.api.CommitLogController;
-import io.mindmaps.api.GraphFactoryController;
 import io.mindmaps.core.Data;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.graql.internal.GraqlType;
-import org.apache.cassandra.exceptions.ConfigurationException;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.thrift.transport.TTransportException;
-import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.junit.*;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
+import static io.mindmaps.IntegrationUtils.startTestEngine;
 import static java.lang.Thread.sleep;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class AnalyticsTest {
 
@@ -65,28 +56,15 @@ public class AnalyticsTest {
     long startTime;
 
     @BeforeClass
-    public static void startController()
-            throws InterruptedException, ConfigurationException, IOException, TTransportException {
-        // Disable horrid cassandra logs
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.OFF);
-
-        EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra-embedded.yaml");
-        new GraphFactoryController();
-        new CommitLogController();
-
-        sleep(5000);
-    }
-
-    @AfterClass
-    public static void stopController() {
-        EmbeddedCassandraServerHelper.stopEmbeddedCassandra();
+    public static void startController() throws Exception {
+        startTestEngine();
     }
 
     @Before
     public void setUp() throws InterruptedException {
         graph = MindmapsClient.getGraph(TEST_KEYSPACE);
         graph.clear();
+        sleep(5000);
         graph = MindmapsClient.getGraph(TEST_KEYSPACE);
         transaction = graph.getTransaction();
     }

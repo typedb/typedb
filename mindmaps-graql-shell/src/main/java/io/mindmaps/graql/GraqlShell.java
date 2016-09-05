@@ -18,27 +18,27 @@
 
 package io.mindmaps.graql;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import com.sun.corba.se.impl.util.Version;
-import io.mindmaps.MindmapsTransaction;
-import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.implementation.exception.InvalidConceptTypeException;
-import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.Concept;
-import io.mindmaps.core.model.Instance;
-import io.mindmaps.factory.MindmapsClient;
-import io.mindmaps.graql.internal.parser.ANSI;
-import io.mindmaps.graql.internal.parser.MatchQueryPrinter;
 import io.mindmaps.graql.internal.shell.ErrorMessage;
 import io.mindmaps.graql.internal.shell.GraQLCompleter;
 import io.mindmaps.graql.internal.shell.ShellCommandCompleter;
 import jline.console.ConsoleReader;
 import jline.console.completer.AggregateCompleter;
 import jline.console.history.FileHistory;
+import mjson.Json;
 import org.apache.commons.cli.*;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -46,15 +46,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
+import static io.mindmaps.constants.RESTUtil.RemoteShell.*;
+import static io.mindmaps.constants.RESTUtil.WebPath.REMOTE_SHELL_URI;
 
 /**
  * A Graql REPL shell that can be run from the command line
  */
+@WebSocket
 public class GraqlShell implements AutoCloseable {
     private static final String LICENSE_PROMPT = "\n" +
             "MindmapsDB  Copyright (C) 2016  Mindmaps Research Ltd \n" +
@@ -63,7 +65,8 @@ public class GraqlShell implements AutoCloseable {
 
     private static final String LICENSE_LOCATION = "LICENSE.txt";
 
-    private static final String NAMESPACE = "mindmaps";
+    private static final String DEFAULT_NAMESPACE = "mindmaps";
+    private static final String DEFAULT_URI = "localhost:4567";
 
     private static final String PROMPT = ">>> ";
 
@@ -85,32 +88,24 @@ public class GraqlShell implements AutoCloseable {
     private static final String DEFAULT_EDITOR = "vim";
 
     private final File tempFile = new File(System.getProperty("java.io.tmpdir") + TEMP_FILENAME);
+    private final String namespace;
     private ConsoleReader console;
-    private PrintStream err;
 
-    private final MindmapsGraph graph;
-    private final MindmapsTransaction transaction;
-    private final Reasoner reasoner;
+    // A future containing the session, once the client has connected
+    private CompletableFuture<Session> session = new CompletableFuture<>();
+
+    // A future containing an autocomplete result, once it has been received
+    private CompletableFuture<Json> autocompleteResponse = new CompletableFuture<>();
 
     /**
      * Run a Graql REPL
      * @param args arguments to the Graql shell. Possible arguments can be listed by running {@code graql.sh --help}
      */
     public static void main(String[] args) {
-        InputStream in = System.in;
-        PrintStream out = System.out;
-        PrintStream err = System.err;
-        runShell(args, MindmapsClient::getGraph, MindmapsClient::getGraph, Version.VERSION, in, out, err);
+        runShell(args, Version.VERSION, new GraqlClientImpl());
     }
 
-    public static void runShell(
-            String[] args,
-            Function<String, MindmapsGraph> localFactory, BiFunction<String, String, MindmapsGraph> remoteFactory,
-            String version, InputStream in, PrintStream out, PrintStream err
-    ) {
-        // Disable horrid cassandra logs
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.OFF);
+    public static void runShell(String[] args, String version, GraqlClient client) {
 
         Options options = new Options();
         options.addOption("n", "name", true, "name of the graph");
@@ -126,7 +121,7 @@ public class GraqlShell implements AutoCloseable {
         try {
             cmd = parser.parse(options, args);
         } catch (ParseException e) {
-            err.println(e.getMessage());
+            System.err.println(e.getMessage());
             return;
         }
 
@@ -136,7 +131,7 @@ public class GraqlShell implements AutoCloseable {
         // Print usage message if requested or if invalid arguments provided
         if (cmd.hasOption("h") || !cmd.getArgList().isEmpty()) {
             HelpFormatter helpFormatter = new HelpFormatter();
-            PrintWriter printWriter = new PrintWriter(out);
+            PrintWriter printWriter = new PrintWriter(System.out);
             int width = helpFormatter.getWidth();
             int leftPadding = helpFormatter.getLeftPadding();
             int descPadding = helpFormatter.getDescPadding();
@@ -146,21 +141,16 @@ public class GraqlShell implements AutoCloseable {
         }
 
         if (cmd.hasOption("v")) {
-            out.println(version);
+            System.out.println(version);
             return;
         }
 
-        String namespace = cmd.getOptionValue("n", NAMESPACE);
+        String namespace = cmd.getOptionValue("n", DEFAULT_NAMESPACE);
+        String uriString = cmd.getOptionValue("u", DEFAULT_URI);
 
-        MindmapsGraph graph;
+        try(GraqlShell shell = new GraqlShell(namespace)) {
+            client.connect(shell, new URI("ws://" + uriString + REMOTE_SHELL_URI));
 
-        if (cmd.hasOption("u")) {
-            graph = remoteFactory.apply(cmd.getOptionValue("u"), namespace);
-        } else {
-            graph = localFactory.apply(namespace);
-        }
-
-        try(GraqlShell shell = new GraqlShell(graph, in, out, err)) {
             if (filePath != null) {
                 query = loadQuery(filePath);
             }
@@ -171,8 +161,8 @@ public class GraqlShell implements AutoCloseable {
             } else {
                 shell.executeRepl();
             }
-        } catch (IOException e) {
-            err.println(e.toString());
+        } catch (IOException | InterruptedException | ExecutionException | URISyntaxException e) {
+            System.err.println(e.toString());
         }
     }
 
@@ -183,20 +173,16 @@ public class GraqlShell implements AutoCloseable {
 
     /**
      * Create a new Graql shell
-     * @param graph the graph to operate on
      */
-    GraqlShell(MindmapsGraph graph, InputStream in, OutputStream out, PrintStream err) throws IOException {
-        this.graph = graph;
-        transaction = graph.getTransaction();
-        reasoner = new Reasoner(transaction);
-        console = new ConsoleReader(in, out);
-        this.err = err;
+    GraqlShell(String namespace) throws IOException {
+        this.namespace = namespace;
+        console = new ConsoleReader(System.in, System.out);
     }
 
     @Override
-    public void close() throws IOException {
-        graph.close();
+    public void close() throws IOException, ExecutionException, InterruptedException {
         console.flush();
+        session.get().close();
     }
 
     /**
@@ -224,7 +210,7 @@ public class GraqlShell implements AutoCloseable {
         console.setHistory(history);
 
         // Add all autocompleters
-        console.addCompleter(new AggregateCompleter(new GraQLCompleter(graph), new ShellCommandCompleter()));
+        console.addCompleter(new AggregateCompleter(new GraQLCompleter(this), new ShellCommandCompleter()));
 
         String queryString;
 
@@ -257,7 +243,7 @@ public class GraqlShell implements AutoCloseable {
                         try {
                             queryString = loadQuery(path);
                         } catch (IOException e) {
-                            err.println(e.toString());
+                            System.err.println(e.toString());
                             break;
                         }
                     }
@@ -286,69 +272,64 @@ public class GraqlShell implements AutoCloseable {
         this.print(result.toString());
     }
 
-    private void executeQuery(String queryString, boolean setLimit) {
-        Object query;
+    @OnWebSocketConnect
+    public void onConnect(Session session) throws IOException, ExecutionException, InterruptedException {
+        // Send the requested keyspace to the server once connected
+        sendJson(Json.object(ACTION, ACTION_NAMESPACE, NAMESPACE, namespace), session);
+        this.session.complete(session);
+    }
 
-        try {
-            QueryParser parser = QueryParser.create(transaction);
-            query = parser.parseQuery(queryString);
+    @OnWebSocketClose
+    public void onClose(int statusCode, String reason) {
+        System.err.println(reason);
+    }
 
-            if (query instanceof MatchQueryPrinter) {
-                printMatchQuery((MatchQueryPrinter) query, setLimit);
-            } else if (query instanceof AskQuery) {
-                printAskQuery((AskQuery) query);
-            } else if (query instanceof InsertQuery) {
-                printInsertQuery((InsertQuery) query);
-                reasoner.linkConceptTypes();
-            } else if (query instanceof DeleteQuery) {
-                ((DeleteQuery) query).execute();
-                reasoner.linkConceptTypes();
-            } else if (query instanceof ComputeQuery) {
-                Object result = ((ComputeQuery) query).execute(graph);
-                if (result instanceof Map) {
-                    // Degree query
-                    ((Map<Instance, Long>) result).forEach((instance, degree) -> print(instance.getId() + "\t" + degree + "\n"));
-                } else {
-                    // Persist and Count query
-                    println(result.toString());
+    @OnWebSocketMessage
+    public void onMessage(String msg) {
+        Json json = Json.read(msg);
+
+        if (json.has(ERROR)) {
+            System.err.println(json.at(ERROR));
+        }
+
+        switch (json.at(ACTION).asString()) {
+            case ACTION_QUERY:
+                List<Json> lines = json.at(QUERY_LINES).asJsonList();
+                lines.forEach(line -> println(line.asString()));
+                break;
+            case ACTION_QUERY_END:
+                // Alert the shell that the query has finished, so it can prompt for another query
+                synchronized (this) {
+                    notifyAll();
                 }
-            } else {
-                throw new RuntimeException("Unrecognized query " + query);
+                break;
+            case ACTION_AUTOCOMPLETE:
+                autocompleteResponse.complete(json);
+                break;
+        }
+    }
+
+    private void executeQuery(String queryString, boolean setLimit) {
+        try {
+            sendJson(Json.object(
+                    ACTION, ACTION_QUERY,
+                    QUERY, queryString
+            ));
+
+            // Wait for the end of the query results before continuing
+            synchronized (this) {
+                wait();
             }
-        } catch (Exception e) {
-            err.println(e.getMessage());
+        } catch (IOException | InterruptedException | ExecutionException e) {
+            e.printStackTrace();
         }
-    }
-
-    private void printMatchQuery(MatchQueryPrinter matchQuery, boolean setLimit) {
-        // Expand match query with reasoner, if there are any rules in the graph
-        // TODO: Make sure reasoner still applies things such as limit, even with rules in the graph
-        if (!reasoner.getRules().isEmpty()) {
-            matchQuery.setMatchQuery(reasoner.expand(matchQuery.getMatchQuery()));
-        }
-
-        Stream<String> results = matchQuery.resultsString();
-        if (setLimit) results = results.limit(100);
-        results.forEach(this::println);
-    }
-
-    private void printAskQuery(AskQuery askQuery) {
-        if (askQuery.execute()) {
-            println(ANSI.color("True", ANSI.GREEN));
-        } else {
-            println(ANSI.color("False", ANSI.RED));
-        }
-    }
-
-    private void printInsertQuery(InsertQuery insertQuery) {
-        insertQuery.stream().map(Concept::getId).forEach(this::println);
     }
 
     private void commit() {
         try {
-            transaction.commit();
-        } catch (MindmapsValidationException e) {
-            err.println(e.getMessage());
+            sendJson(Json.object(ACTION, ACTION_COMMIT));
+        } catch (IOException | InterruptedException | ExecutionException e) {
+            e.printStackTrace();
         }
     }
 
@@ -376,6 +357,30 @@ public class GraqlShell implements AutoCloseable {
         }
 
         return String.join("\n", Files.readAllLines(tempFile.toPath()));
+    }
+
+    public synchronized Json getAutocompleteCandidates(
+            String queryString, int cursorPosition
+    ) throws InterruptedException, ExecutionException, IOException {
+        sendJson(Json.object(
+                ACTION, ACTION_AUTOCOMPLETE,
+                QUERY, queryString,
+                AUTOCOMPLETE_CURSOR, cursorPosition
+        ));
+
+        Json json = autocompleteResponse.get();
+
+        autocompleteResponse = new CompletableFuture<>();
+
+        return json;
+    }
+
+    private void sendJson(Json json) throws IOException, ExecutionException, InterruptedException {
+        sendJson(json, session.get());
+    }
+
+    private void sendJson(Json json, Session session) throws IOException {
+        session.getRemote().sendString(json.toString());
     }
 
     private void print(String string) {

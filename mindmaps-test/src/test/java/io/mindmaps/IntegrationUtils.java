@@ -1,4 +1,4 @@
-package io.mindmaps;/*
+/*
  * MindmapsDB - A Distributed Semantic Database
  * Copyright (C) 2016  Mindmaps Research Ltd
  *
@@ -16,41 +16,32 @@ package io.mindmaps;/*
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
+package io.mindmaps;
+
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import io.mindmaps.api.*;
-import io.mindmaps.util.ConfigProperties;
+import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 
-import static spark.Spark.port;
-import static spark.Spark.staticFiles;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-public class MindmapsEngineServer {
+import static java.lang.Thread.sleep;
 
-    public static void main(String[] args) {
-        start();
+public class IntegrationUtils {
+
+    private static AtomicBoolean ENGINE_ON = new AtomicBoolean(false);
+
+    private static void hideLogs() {
+        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+        logger.setLevel(Level.OFF);
     }
 
-    public static void start() {
-
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.INFO);
-
-        ConfigProperties prop = ConfigProperties.getInstance();
-
-        // Listening port
-        port(prop.getPropertyAsInt(ConfigProperties.SERVER_PORT_NUMBER));
-
-        // Set the static files folder
-        staticFiles.externalLocation(prop.getPath(ConfigProperties.STATIC_FILES_PATH));
-
-        // ----- APIs --------- //
-
-        new RemoteShellController();
-        new VisualiserController();
-        new GraphFactoryController();
-        new ImportController();
-        new CommitLogController();
-        new TransactionController();
-
+    public static void startTestEngine() throws Exception {
+        if (ENGINE_ON.compareAndSet(false, true)) {
+            hideLogs();
+            EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra-embedded.yaml");
+            MindmapsEngineServer.start();
+            hideLogs();
+            sleep(5000);
+        }
     }
 }

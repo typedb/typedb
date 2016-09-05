@@ -22,6 +22,7 @@ import io.mindmaps.constants.RESTUtil;
 import io.mindmaps.core.implementation.MindmapsTransactionImpl;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.QueryParser;
+import io.mindmaps.shell.RemoteShell;
 import io.mindmaps.util.ConfigProperties;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -41,6 +42,7 @@ import java.util.stream.Collectors;
 
 import static spark.Spark.get;
 import static spark.Spark.redirect;
+import static spark.Spark.webSocket;
 
 
 @Path("/shell")
@@ -54,11 +56,11 @@ public class RemoteShellController {
     String defaultGraphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
 
     public RemoteShellController() {
+        webSocket(RESTUtil.WebPath.REMOTE_SHELL_URI, RemoteShell.class);
 
         redirect.get(RESTUtil.WebPath.HOME_URI, RESTUtil.WebPath.MATCH_QUERY_URI);
 
         get(RESTUtil.WebPath.MATCH_QUERY_URI, this::matchQuery);
-
         get(RESTUtil.WebPath.META_TYPE_INSTANCES_URI, this::buildMetaTypeInstancesObject);
     }
     @GET

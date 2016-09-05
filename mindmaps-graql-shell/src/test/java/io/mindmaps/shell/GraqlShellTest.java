@@ -16,43 +16,46 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql.shell;
-
-import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.factory.MindmapsTestGraphFactory;
+package io.mindmaps.shell;import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import io.mindmaps.graql.GraqlShell;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.*;
 import java.util.Arrays;
 import java.util.Random;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 
-import static org.hamcrest.CoreMatchers.*;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.*;
 
 public class GraqlShellTest {
 
-    private Function<String, MindmapsGraph> localFactory;
-    private BiFunction<String, String, MindmapsGraph> remoteFactory;
+    private InputStream trueIn;
+    private PrintStream trueOut;
+    private PrintStream trueErr;
 
-    private String providedUri;
-    private String providedNamespace;
+    private GraqlClientMock client;
     private String expectedVersion = "graql-9.9.9";
 
     @Before
     public void setUp() {
-        remoteFactory = (uri, namespace) -> {
-            providedUri = uri;
-            providedNamespace = namespace;
-            return MindmapsTestGraphFactory.newEmptyGraph();
-        };
+        trueIn = System.in;
+        trueOut = System.out;
+        trueErr = System.err;
 
-        localFactory = namespace -> remoteFactory.apply("default-test", namespace);
+        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+        logger.setLevel(Level.OFF);
+    }
+
+    @After
+    public void resetIO() {
+        System.setIn(trueIn);
+        System.setOut(trueOut);
+        System.setErr(trueErr);
     }
 
     @Test
@@ -84,25 +87,25 @@ public class GraqlShellTest {
     @Test
     public void testDefaultNamespace() throws IOException {
         testShell("");
-        assertEquals("mindmaps", providedNamespace);
+        assertEquals("mindmaps", client.getNamespace());
     }
 
     @Test
     public void testSpecifiedNamespace() throws IOException {
         testShell("", "-n", "myspace");
-        assertEquals("myspace", providedNamespace);
+        assertEquals("myspace", client.getNamespace());
     }
 
-    @Test
+   @Test
     public void testDefaultUri() throws IOException {
         testShell("");
-        assertEquals("default-test", providedUri);
+        assertEquals("ws://localhost:4567/shell/remote", client.getURI().toString());
     }
 
     @Test
     public void testSpecifiedUri() throws IOException {
         testShell("", "-u", "1.2.3.4:5678");
-        assertEquals("1.2.3.4:5678", providedUri);
+        assertEquals("ws://1.2.3.4:5678/shell/remote", client.getURI().toString());
     }
 
     @Test
@@ -183,10 +186,10 @@ public class GraqlShellTest {
     public void testReasoner() throws IOException {
         String result = testShell(
                 "insert man isa entity-type; person isa entity-type;\n" +
-                "insert 'felix' isa man;\n" +
-                "match $x isa person;\n" +
-                "insert my-rule isa inference-rule lhs {match $x isa man;} rhs {match $x isa person;};\n" +
-                "match $x isa person;\n"
+                        "insert 'felix' isa man;\n" +
+                        "match $x isa person;\n" +
+                        "insert my-rule isa inference-rule lhs {match $x isa man;} rhs {match $x isa person;};\n" +
+                        "match $x isa person;\n"
         );
 
         // Make sure first 'match' query has no results and second has exactly one result
@@ -218,43 +221,27 @@ public class GraqlShellTest {
         assertThat(err.toString(), allOf(containsString("moon"), containsString("not"), containsString("type")));
     }
 
-    @Ignore
-    @Test
-    public void testComputeCount() throws IOException {
-        String result = testShell("insert X isa entity-type; a isa X; b isa X; c isa X;\ncommit\ncompute count()\n");
-        assertThat(result, containsString("\n3\n"));
-    }
-
     @Test
     public void testLimit() throws IOException {
         String result = testShell("match $x isa type limit 1\n");
 
         // Expect seven lines output - four for the license, one for the query, only one result and a new prompt
-        assertEquals(7, result.split("\n").length);
+        assertEquals(result, 7, result.split("\n").length);
     }
 
     @Test
     public void fuzzTest() throws IOException {
         int repeats = 100;
-        int maxCommands = 10;
-        int maxLength = 100;
-
         for (int i = 0; i < repeats; i ++) {
-            testShell(randomString(maxCommands, maxLength));
+            testShell(randomString(i));
         }
     }
 
-    private String randomString(int maxCommands, int maxLength) {
+    private String randomString(int length) {
         Random random = new Random();
         StringBuilder sb = new StringBuilder();
 
-        int commands = random.nextInt(maxCommands);
-
-        for (int i = 0; i < commands; i ++) {
-            int length = random.nextInt(maxLength);
-            random.ints().limit(length).forEach(c -> sb.append((char) c));
-            sb.append("\n");
-        }
+        random.ints().limit(length).forEach(i -> sb.append((char) i));
 
         return sb.toString();
     }
@@ -264,17 +251,25 @@ public class GraqlShellTest {
         return testShell(input, err, args);
     }
 
-    private String testShell(String input, ByteArrayOutputStream err, String... args) throws IOException {
+    private String testShell(String input, ByteArrayOutputStream berr, String... args) throws IOException {
+        client = new GraqlClientMock();
+
         InputStream in = new ByteArrayInputStream(input.getBytes());
 
         ByteArrayOutputStream bout = new ByteArrayOutputStream();
-        PrintStream pout = new PrintStream(bout);
-        PrintStream perr = new PrintStream(err);
+        PrintStream out = new PrintStream(bout);
+        PrintStream err = new PrintStream(berr);
 
-        GraqlShell.runShell(args, localFactory, remoteFactory, expectedVersion, in, pout, perr);
+        System.setIn(in);
+        System.setOut(out);
+        System.setErr(err);
 
-        pout.flush();
-        perr.flush();
+        GraqlShell.runShell(args, expectedVersion, client);
+
+        resetIO();
+
+        out.flush();
+        err.flush();
 
         return bout.toString();
     }
