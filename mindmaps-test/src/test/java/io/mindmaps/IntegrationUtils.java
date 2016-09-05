@@ -20,8 +20,12 @@ package io.mindmaps;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.factory.MindmapsClient;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
+import org.javatuples.Pair;
 
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.lang.Thread.sleep;
@@ -43,5 +47,11 @@ public class IntegrationUtils {
             hideLogs();
             sleep(5000);
         }
+    }
+
+    public static Pair<MindmapsGraph, String> graphWithNewKeyspace() {
+        String keyspace = UUID.randomUUID().toString().replaceAll("-", "");
+        MindmapsGraph graph = MindmapsClient.getGraph(keyspace);
+        return Pair.with(graph, keyspace);
     }
 }
