@@ -38,6 +38,10 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -53,6 +57,8 @@ public class DistributedLoaderTest {
 
     private DistributedLoader loader;
 
+    private String graphName;
+
     @Before
     public void setUp() throws Exception {
         LOG.setLevel(Level.INFO);
@@ -62,7 +68,7 @@ public class DistributedLoaderTest {
         new TransactionController();
         new CommitLogController();
 
-        String graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+        graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
 
         loader = new DistributedLoader(graphName, Collections.singletonList("localhost"));
         graph = GraphFactory.getInstance().getGraphBatchLoading(graphName);
@@ -71,10 +77,9 @@ public class DistributedLoaderTest {
     @Test
     public void testLoad1000() {
         ClassLoader classLoader = getClass().getClassLoader();
-        File ontology = new File(classLoader.getResource("dblp-ontology.gql").getFile());
         File data = new File(classLoader.getResource("small_nametags.gql").getFile());
 
-        loadOntologyFromFile(ontology);
+        loadOntologyFromFile();
         loadDataFromFile(data);
 
         MindmapsTransaction transaction = graph.getTransaction();
@@ -103,22 +108,24 @@ public class DistributedLoaderTest {
         loader.waitToFinish();
     }
 
-    private void loadOntologyFromFile(File file) {
-        List<Var> ontologyBatch = new ArrayList<>();
+    private void loadOntologyFromFile() {
+        MindmapsTransaction transaction = GraphFactory.getInstance().getGraphBatchLoading(graphName).getTransaction();
+        ClassLoader classLoader = getClass().getClassLoader();
 
         LOG.info("Loading new ontology .. ");
+
+        List<String> lines = null;
         try {
-            QueryParser.create()
-                    .parsePatternsStream(new FileInputStream(file))
-                    .map(x -> x.admin().asVar())
-                    .forEach(ontologyBatch::add);
-
-            MindmapsTransaction transaction = graph.getTransaction();
-            Graql.withTransaction(transaction).insert(ontologyBatch).execute();
+            lines = Files.readAllLines(Paths.get(classLoader.getResource("dblp-ontology.gql").getFile()), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
+        QueryParser.create().parseInsertQuery(query).withTransaction(transaction).execute();
+        try {
             transaction.commit();
-
-        } catch (FileNotFoundException | MindmapsValidationException e) {
-            throw new RuntimeException(e);
+        } catch (MindmapsValidationException e) {
+            e.printStackTrace();
         }
 
         LOG.info("Ontology loaded. ");
