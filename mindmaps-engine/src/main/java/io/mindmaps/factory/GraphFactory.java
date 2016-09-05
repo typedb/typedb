@@ -22,11 +22,9 @@ import io.mindmaps.util.ConfigProperties;
 import io.mindmaps.core.MindmapsGraph;
 
 public class GraphFactory {
-
     private String graphConfig;
     private String graphBatchConfig;
     private static GraphFactory instance = null;
-    private MindmapsGraphFactory titanGraphFactory;
 
 
     public static synchronized GraphFactory getInstance() {
@@ -37,18 +35,15 @@ public class GraphFactory {
     }
 
     private GraphFactory() {
-        titanGraphFactory = new MindmapsTitanGraphFactory();
         graphConfig = ConfigProperties.getInstance().getPath(ConfigProperties.GRAPH_CONFIG_PROPERTY);
         graphBatchConfig = ConfigProperties.getInstance().getPath(ConfigProperties.GRAPH_BATCH_CONFIG_PROPERTY);
     }
 
     public synchronized MindmapsGraph getGraph(String name) {
-        return titanGraphFactory.getGraph(name, null, graphConfig, false);
+        return MindmapsFactoryBuilder.getFactory(graphConfig).getGraph(name, null, graphConfig, false);
     }
-
     public synchronized MindmapsGraph getGraphBatchLoading(String name) {
-        MindmapsGraph graph = titanGraphFactory.getGraph(name, null, graphBatchConfig, true);
-        return graph;
+        return MindmapsFactoryBuilder.getFactory(graphBatchConfig).getGraph(name, null, graphBatchConfig, true);
     }
 }
 
