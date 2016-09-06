@@ -24,19 +24,15 @@ import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.engine.loader.DistributedLoader;
+import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsClient;
 import org.junit.*;
+import static org.junit.Assert.*;
 
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 import static io.mindmaps.IntegrationUtils.startTestEngine;
@@ -245,6 +241,47 @@ public class ScalingTestIT {
 
         writer.flush();
         writer.close();
+    }
+
+    @Test
+    public void testLargeDegreeMutationResultsInReadableGraphIT() throws MindmapsValidationException, InterruptedException, ExecutionException {
+
+        graph = MindmapsClient.getGraph(TEST_KEYSPACE);
+        simpleOntology();
+
+        // construct graph
+        addNodes(TEST_KEYSPACE, 0, MAX_SIZE);
+
+        Analytics computer = new Analytics(TEST_KEYSPACE);
+
+        computer.degreesAndPersist();
+
+        // add edges to force mutation
+        addEdges(TEST_KEYSPACE, MAX_SIZE);
+
+        computer = new Analytics(TEST_KEYSPACE);
+
+        computer.degreesAndPersist();
+
+        // assert mutated degrees are as expected
+        thing = graph.getEntityType("thing");
+        Collection<Entity> things = thing.instances();
+
+        assertFalse(things.isEmpty());
+        things.forEach(thisThing -> {
+            assertEquals(1, thisThing.resources().size());
+            assertEquals(1, thisThing.resources().iterator().next().getValue());
+        });
+
+        Collection<Relation> relations = graph.getRelationType("degrees").instances();
+
+        assertFalse(relations.isEmpty());
+        relations.forEach(thisRelation -> {
+            assertEquals(1, thisRelation.resources().size());
+            assertEquals(2, thisRelation.resources().iterator().next().getValue());
+        });
+
+        graph.clear();
     }
 
     private void addNodes(String keyspace, int startRange, int endRange) throws MindmapsValidationException, InterruptedException {
