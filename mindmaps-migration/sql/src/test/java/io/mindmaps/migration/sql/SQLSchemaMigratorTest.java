@@ -62,7 +62,6 @@ public class SQLSchemaMigratorTest {
     @After
     public void shutdown() throws SQLException {
         graph.clear();
-        graph.close();
         migrator.close();
         connection.close();
     }

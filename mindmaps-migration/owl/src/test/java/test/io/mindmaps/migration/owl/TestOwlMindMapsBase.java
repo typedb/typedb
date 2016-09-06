@@ -27,7 +27,6 @@ import io.mindmaps.core.model.Resource;
 import io.mindmaps.core.model.RoleType;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.migration.owl.OWLMigrator;
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
@@ -75,16 +74,6 @@ public class TestOwlMindMapsBase {
          migrator = new OWLMigrator();
     }
 
-    @After
-    public void closeTransaction() {
-        if (graph != null)
-            try {
-                graph.close();
-            } catch (Exception e) {
-                e.printStackTrace(System.err);
-            }
-    }
-    
     OWLOntologyManager owlManager() {
         return manager;
     }

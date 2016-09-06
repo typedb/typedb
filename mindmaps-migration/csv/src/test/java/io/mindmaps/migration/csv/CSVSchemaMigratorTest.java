@@ -63,7 +63,6 @@ public class CSVSchemaMigratorTest {
     @After
     public void shutdown(){
         graph.clear();
-        graph.close();
     }
 
     @Test
