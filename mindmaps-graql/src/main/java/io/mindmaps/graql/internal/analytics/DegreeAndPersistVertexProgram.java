@@ -183,7 +183,7 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
                     try {
                         transaction.commit();
                     } catch (MindmapsValidationException e) {
-                        e.printStackTrace();
+                        throw new RuntimeException(e);
                     }
                 }
         }

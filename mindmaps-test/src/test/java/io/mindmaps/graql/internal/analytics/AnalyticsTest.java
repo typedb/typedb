@@ -305,13 +305,15 @@ public class AnalyticsTest {
             }
         }
 
+        correctDegrees.put(entity4, 1l);
+        correctDegrees.put(transaction.getRelation(id3), 2l);
+
         // compute degrees on all types, again and again ...
         for (int i = 0; i < 3; i++) {
             computer = new Analytics(keyspace);
             computer.degreesAndPersist();
 
-            correctDegrees.put(entity4, 1l);
-            correctDegrees.put(transaction.getRelation(id3), 2l);
+            Thread.sleep(5000);
 
             correctDegrees.entrySet().forEach(degree -> {
                 Instance instance = degree.getKey();
@@ -323,6 +325,9 @@ public class AnalyticsTest {
                 }
                 assert resources != null;
                 assert !resources.isEmpty();
+                assertEquals(1,resources.size());
+                System.out.println(instance);
+                System.out.println(resources.iterator().next().getValue());
                 assertEquals(resources.iterator().next().getValue(), degree.getValue());
             });
 
