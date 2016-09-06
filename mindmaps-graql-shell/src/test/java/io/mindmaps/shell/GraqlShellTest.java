@@ -155,6 +155,14 @@ public class GraqlShellTest {
     }
 
     @Test
+    public void testAggregateQuery() throws IOException {
+        String result = testShell("match $x isa concept-type aggregate count\n");
+
+        // Expect to see the whole meta-ontology
+        assertThat(result, containsString("\n8\n"));
+    }
+
+    @Test
     public void testAutocomplete() throws IOException {
         String result = testShell("match $x isa \t");
 
