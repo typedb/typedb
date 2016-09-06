@@ -21,7 +21,7 @@ public class Main {
 
     static void die(String errorMsg) {
         System.out.println(errorMsg);
-        System.out.println("\nSyntax: CSVMigrator -owl <owl filename> [-graph <graph name>] [-engine <Mindmaps engine URL>]");
+        System.out.println("\nSyntax: CSVMigrator -file <csv filename> [-graph <graph name>] [-engine <Mindmaps engine URL>] [-as <Mindmaps graph name>]");
         System.exit(-1);
     }
 
@@ -100,6 +100,7 @@ public class Main {
         catch (Throwable throwable){
             throwable.printStackTrace(System.err);
         }
+
         System.exit(0);
     }
 }
