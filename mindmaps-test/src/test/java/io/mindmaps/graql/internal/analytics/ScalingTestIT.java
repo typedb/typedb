@@ -251,16 +251,16 @@ public class ScalingTestIT {
 
         assertFalse(things.isEmpty());
         things.forEach(thisThing -> {
-            assertEquals(1, thisThing.resources().size());
-            assertEquals(1, thisThing.resources().iterator().next().getValue());
+            assertEquals(1L, thisThing.resources().size());
+            assertEquals(1L, thisThing.resources().iterator().next().getValue());
         });
 
         Collection<Relation> relations = graph.getRelationType("degrees").instances();
 
         assertFalse(relations.isEmpty());
         relations.forEach(thisRelation -> {
-            assertEquals(1, thisRelation.resources().size());
-            assertEquals(2, thisRelation.resources().iterator().next().getValue());
+            assertEquals(1L, thisRelation.resources().size());
+            assertEquals(2L, thisRelation.resources().iterator().next().getValue());
         });
 
         graph.clear();
