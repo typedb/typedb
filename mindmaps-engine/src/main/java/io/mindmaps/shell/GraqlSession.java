@@ -46,6 +46,8 @@ class GraqlSession {
     private final MindmapsGraph graph;
     private final Reasoner reasoner;
 
+    private boolean queryCancelled = false;
+
     // All requests are run within a single thread, so they always happen in a single thread-bound transaction
     private final ExecutorService queryExecutor = Executors.newSingleThreadExecutor();
 
@@ -108,7 +110,13 @@ class GraqlSession {
                     errorMessage = "Unrecognized query " + query;
                 }
 
-                results.forEach(this::sendQueryResult);
+                // Return results unless query is cancelled
+                results.forEach(result -> {
+                    if (queryCancelled) return;
+                    sendQueryResult(result);
+                });
+                queryCancelled = false;
+
             } catch (IllegalArgumentException | IllegalStateException | InvalidConceptTypeException e) {
                 errorMessage = e.getMessage();
             } catch (Throwable e) {
@@ -122,6 +130,10 @@ class GraqlSession {
                 }
             }
         });
+    }
+
+    void stopQuery() {
+        queryCancelled = true;
     }
 
     /**
