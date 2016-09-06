@@ -18,24 +18,47 @@
 
 package io.mindmaps.graql.internal.query;
 
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.internal.analytics.Analytics;
 
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
+
+import static java.util.stream.Collectors.toSet;
 
 public class ComputeQueryImpl implements ComputeQuery {
 
-    String computeMethod;
+    private Optional<Set<String>> typeIds;
+    private final String computeMethod;
 
     public ComputeQueryImpl(String computeMethod) {
         this.computeMethod = computeMethod;
+        this.typeIds = Optional.empty();
+    }
+
+    public ComputeQueryImpl(String computeMethod, Set<String> typeIds) {
+        this.computeMethod = computeMethod;
+        this.typeIds = Optional.of(typeIds);
     }
 
     @Override
     public Object execute(MindmapsGraph graph) throws ExecutionException, InterruptedException {
-        Analytics analytics = new Analytics(graph.getName());
+
+        MindmapsTransaction transaction = graph.getTransaction();
+        String keyspace = graph.getName();
+
+        Analytics analytics = typeIds.map(ids -> {
+            Set<Type> types = ids.stream().map(transaction::getType).collect(toSet());
+            return new Analytics(keyspace, types);
+        }).orElseGet(() ->
+            new Analytics(keyspace)
+        );
+
         switch (computeMethod) {
             case "count": {
                 return analytics.count();

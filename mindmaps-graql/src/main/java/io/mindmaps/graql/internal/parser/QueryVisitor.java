@@ -122,8 +122,19 @@ public class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public ComputeQuery visitComputeQuery(GraqlParser.ComputeQueryContext ctx) {
         // TODO: Allow registering additional compute methods
-        ComputeQuery computeQuery = new ComputeQueryImpl(visitId(ctx.id()));
-        return computeQuery;
+        String computeMethod = visitId(ctx.id());
+
+        if (ctx.subgraph() != null) {
+            Set<String> typeIds = visitSubgraph(ctx.subgraph());
+            return new ComputeQueryImpl(computeMethod, typeIds);
+        } else {
+            return new ComputeQueryImpl(computeMethod);
+        }
+    }
+
+    @Override
+    public Set<String> visitSubgraph(GraqlParser.SubgraphContext ctx) {
+        return ctx.id().stream().map(this::visitId).collect(toSet());
     }
 
     @Override
