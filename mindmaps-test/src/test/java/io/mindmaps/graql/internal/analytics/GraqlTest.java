@@ -81,7 +81,7 @@ public class GraqlTest {
                 or(var("y").isa("entity-type"), var("y").isa("resource-type"), var("y").isa("relation-type"))
         ).stream().count();
 
-        long computeCount = ((Long) ((ComputeQuery) qp.parseQuery("compute count()")).execute(graph));
+        long computeCount = ((Long) ((ComputeQuery) qp.parseQuery("compute count")).execute(graph));
 
         assertEquals(graqlCount, computeCount);
         assertEquals(3L, computeCount);
@@ -111,7 +111,7 @@ public class GraqlTest {
         transaction.commit();
 
         // compute degrees
-        Map<Instance, Long> degrees = ((Map) ((ComputeQuery) qp.parseQuery("compute degrees()")).execute(graph));
+        Map<Instance, Long> degrees = ((Map) ((ComputeQuery) qp.parseQuery("compute degrees")).execute(graph));
 
         // assert degrees are correct
         instantiateSimpleConcepts();
@@ -170,7 +170,7 @@ public class GraqlTest {
         transaction.commit();
 
         // compute degrees
-        ((ComputeQuery) qp.parseQuery("compute degreesAndPersist()")).execute(graph);
+        ((ComputeQuery) qp.parseQuery("compute degreesAndPersist")).execute(graph);
 
         // assert persisted degrees are correct
         instantiateSimpleConcepts();

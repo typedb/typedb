@@ -15,7 +15,7 @@ askQuery       : matchQuery 'ask' ;
 insertQuery    : matchQuery? 'insert' insertPatterns ;
 deleteQuery    : matchQuery 'delete' deletePatterns ;
 aggregateQuery : matchQuery 'aggregate' aggregate ;
-computeQuery   : 'compute' id '(' ')' ;
+computeQuery   : 'compute' id ;
 
 selectors      : selector (',' selector)* ;
 selector       : VARIABLE ('(' (getter ','?)* ')')? ;

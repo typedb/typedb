@@ -200,7 +200,7 @@ public class GraqlShellIT {
 
     @Test
     public void testComputeCount() throws IOException {
-        String result = testShell("insert X isa entity-type; a isa X; b isa X; c isa X;\ncommit\ncompute count()\n");
+        String result = testShell("insert X isa entity-type; a isa X; b isa X; c isa X;\ncommit\ncompute count\n");
         assertThat(result, containsString("\n3\n"));
     }
 
