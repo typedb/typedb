@@ -19,7 +19,7 @@
 
 package io.mindmaps.graql.admin;
 
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.internal.query.Conjunction;
@@ -45,13 +45,13 @@ public interface MatchQueryAdmin<T> extends MatchQuery<T> {
      * @param order how to order the resulting stream
      * @return a stream of results
      */
-    Stream<T> stream(Optional<MindmapsTransaction> transaction, Optional<MatchOrder> order);
+    Stream<T> stream(Optional<MindmapsGraph> transaction, Optional<MatchOrder> order);
 
     /**
      * @param transaction the transaction to use to get types from the graph
      * @return all concept types referred to explicitly in the query
      */
-    Set<Type> getTypes(MindmapsTransaction transaction);
+    Set<Type> getTypes(MindmapsGraph transaction);
 
     /**
      * @return all concept types referred to explicitly in the query
@@ -66,5 +66,5 @@ public interface MatchQueryAdmin<T> extends MatchQuery<T> {
     /**
      * @return the transaction the query operates on, if one was provided
      */
-    Optional<MindmapsTransaction> getTransaction();
+    Optional<MindmapsGraph> getTransaction();
 }

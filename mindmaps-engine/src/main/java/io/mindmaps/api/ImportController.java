@@ -18,7 +18,7 @@
 
 package io.mindmaps.api;
 
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.RESTUtil;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
@@ -192,7 +192,7 @@ public class ImportController {
 
     void importOntologyFromFile(String ontologyFile) throws IOException, MindmapsValidationException {
 
-        MindmapsTransaction transaction = GraphFactory.getInstance().getGraphBatchLoading(graphName).getTransaction();
+        MindmapsGraph transaction = GraphFactory.getInstance().getGraphBatchLoading(graphName);
 
         LOG.info("Loading new ontology .. ");
 

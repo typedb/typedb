@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.internal.validation;
 
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -42,13 +42,13 @@ interface Validator {
      * @param transaction the transaction to use for validating a query
      * @return a stream of errors found during validation
      */
-    Stream<String> getErrors(MindmapsTransaction transaction);
+    Stream<String> getErrors(MindmapsGraph transaction);
 
     /**
      * @param transaction the transaction to use for validating a query
      * @throws IllegalStateException when a problem was found in a query
      */
-    default void validate(MindmapsTransaction transaction) throws IllegalStateException {
+    default void validate(MindmapsGraph transaction) throws IllegalStateException {
         List<String> errors = getErrors(transaction).collect(Collectors.toList());
         if (!errors.isEmpty()) {
             throw new IllegalStateException(String.join("\n", errors));

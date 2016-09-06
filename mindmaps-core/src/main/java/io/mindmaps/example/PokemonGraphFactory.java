@@ -18,10 +18,9 @@
 
 package io.mindmaps.example;
 
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.Data;
-import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.Entity;
 import io.mindmaps.core.model.EntityType;
@@ -58,22 +57,21 @@ public class PokemonGraphFactory{
     }
 
     public static void loadGraph(MindmapsGraph mindmapsGraph) {
-        MindmapsTransaction transaction = mindmapsGraph.getTransaction();
-        buildGraph(transaction);
+        buildGraph(mindmapsGraph);
         try {
-            transaction.commit();
+            mindmapsGraph.commit();
         } catch (MindmapsValidationException e) {
             throw new RuntimeException(ErrorMessage.CANNOT_LOAD_EXAMPLE.getMessage(), e);
         }
     }
 
-    private static void buildGraph(MindmapsTransaction transaction) {
+    private static void buildGraph(MindmapsGraph transaction) {
         buildOntology(transaction);
         buildRelations(transaction);
         buildInstances(transaction);
     }
 
-    private static void buildOntology(MindmapsTransaction transaction) {
+    private static void buildOntology(MindmapsGraph transaction) {
 
         hasResourceTarget = transaction.putRoleType("has-resource-target");
         hasResourceValue = transaction.putRoleType("has-resource-value");
@@ -120,7 +118,7 @@ public class PokemonGraphFactory{
                 .playsRole(hasResourceValue);
     }
 
-    private static void buildInstances(MindmapsTransaction transaction) {
+    private static void buildInstances(MindmapsGraph transaction) {
         Entity bulbasaur = transaction.putEntity("Bulbasaur", pokemon);
         addResource(transaction,bulbasaur,1L,pokedexNo);
         addResource(transaction,bulbasaur,"A strange seed was planted on its back at birth. The plant sprouts and grows with this POKéMON.",description);
@@ -182,21 +180,21 @@ public class PokemonGraphFactory{
                 .putRolePlayer(ancestor, charmeleon);
     }
 
-    private static void addResource(MindmapsTransaction mt, Entity pokemon, String s, ResourceType<String> type) {
+    private static void addResource(MindmapsGraph mt, Entity pokemon, String s, ResourceType<String> type) {
             Resource<String> resource = mt.putResource(s, type);
         mt.addRelation(hasResource)
                 .putRolePlayer(hasResourceTarget, pokemon)
                 .putRolePlayer(hasResourceValue, resource);
     }
 
-    private static void addResource(MindmapsTransaction mt, Entity pokemon, Long l, ResourceType<Long> type) {
+    private static void addResource(MindmapsGraph mt, Entity pokemon, Long l, ResourceType<Long> type) {
             Resource<Long> resource = mt.putResource(l, type);
         mt.addRelation(hasResource)
                 .putRolePlayer(hasResourceTarget, pokemon)
                 .putRolePlayer(hasResourceValue, resource);
     }
 
-    private static void putTypes(MindmapsTransaction mt, Entity pokemon, Entity... entities) {
+    private static void putTypes(MindmapsGraph mt, Entity pokemon, Entity... entities) {
         for (Entity entity : entities) {
             mt.addRelation(hasType)
                     .putRolePlayer(pokemonWithType,pokemon)
@@ -204,7 +202,7 @@ public class PokemonGraphFactory{
         }
     }
 
-    private static void buildRelations(MindmapsTransaction transaction) {
+    private static void buildRelations(MindmapsGraph transaction) {
         Entity normal = transaction.putEntity("normal",pokemonType);
         Entity fighting = transaction.putEntity("fighting",pokemonType);
         Entity flying = transaction.putEntity("flying",pokemonType);
@@ -244,7 +242,7 @@ public class PokemonGraphFactory{
         putSuper(transaction,grass,ice);
     }
 
-    private static void putSuper(MindmapsTransaction mt, Entity defend, Entity attack) {
+    private static void putSuper(MindmapsGraph mt, Entity defend, Entity attack) {
         mt.addRelation(superEffective)
                 .putRolePlayer(defendingType,defend)
                 .putRolePlayer(attackingType,attack);

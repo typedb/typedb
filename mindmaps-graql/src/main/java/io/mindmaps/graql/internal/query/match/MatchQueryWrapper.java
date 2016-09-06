@@ -19,7 +19,7 @@
 
 package io.mindmaps.graql.internal.query.match;
 
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.admin.MatchQueryAdmin;
@@ -51,12 +51,12 @@ class MatchQueryWrapper extends AbstractMatchQueryDefault {
     }
 
     @Override
-    public Stream<Map<String, Concept>> stream(Optional<MindmapsTransaction> transaction, Optional<MatchOrder> order) {
+    public Stream<Map<String, Concept>> stream(Optional<MindmapsGraph> transaction, Optional<MatchOrder> order) {
         return query.stream(transaction, order);
     }
 
     @Override
-    public Set<Type> getTypes(MindmapsTransaction transaction) {
+    public Set<Type> getTypes(MindmapsGraph transaction) {
         return query.getTypes(transaction);
     }
 
@@ -71,7 +71,7 @@ class MatchQueryWrapper extends AbstractMatchQueryDefault {
     }
 
     @Override
-    public Optional<MindmapsTransaction> getTransaction() {
+    public Optional<MindmapsGraph> getTransaction() {
         return query.getTransaction();
     }
 

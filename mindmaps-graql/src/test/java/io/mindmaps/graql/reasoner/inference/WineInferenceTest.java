@@ -19,7 +19,7 @@
 package io.mindmaps.graql.reasoner.inference;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.MatchQueryDefault;
 import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.Reasoner;
@@ -37,7 +37,7 @@ public class WineInferenceTest {
 
     @BeforeClass
     public static void setUpClass() {
-        MindmapsTransaction graph = GenericGraph.getTransaction("wines-test.gql");
+        MindmapsGraph graph = GenericGraph.getTransaction("wines-test.gql");
         reasoner = new Reasoner(graph);
         qp = QueryParser.create(graph);
     }

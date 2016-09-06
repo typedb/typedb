@@ -19,7 +19,7 @@
 package io.mindmaps.api;
 
 import io.mindmaps.constants.RESTUtil;
-import io.mindmaps.core.implementation.MindmapsTransactionImpl;
+import io.mindmaps.core.implementation.AbstractMindmapsGraph;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.QueryParser;
 import io.mindmaps.shell.RemoteShell;
@@ -79,7 +79,7 @@ public class RemoteShellController {
         if (currentGraphName == null) currentGraphName = defaultGraphName;
 
         try {
-            MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) GraphFactory.getInstance().getGraph(currentGraphName).getTransaction();
+            AbstractMindmapsGraph transaction = (AbstractMindmapsGraph) GraphFactory.getInstance().getGraph(currentGraphName);
 
             JSONObject responseObj = new JSONObject();
             responseObj.put(RESTUtil.Response.ROLES_JSON_FIELD, new JSONArray(transaction.getMetaRoleType().instances().stream().map(x -> x.getId()).toArray()));
@@ -112,7 +112,7 @@ public class RemoteShellController {
 
 
         try {
-            QueryParser parser = QueryParser.create(GraphFactory.getInstance().getGraph(currentGraphName).getTransaction());
+            QueryParser parser = QueryParser.create(GraphFactory.getInstance().getGraph(currentGraphName));
 
             return parser.parseMatchQuery(req.queryParams(RESTUtil.Request.QUERY_FIELD))
                     .resultsString()

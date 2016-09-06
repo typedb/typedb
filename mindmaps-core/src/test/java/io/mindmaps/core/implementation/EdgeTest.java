@@ -33,14 +33,14 @@ import static org.junit.Assert.assertNull;
 
 public class EdgeTest {
 
-    private MindmapsTransactionImpl mindmapsTransaction;
+    private AbstractMindmapsGraph mindmapsTransaction;
     private EntityType entityType;
     private Entity entity;
     private EdgeImpl edge;
 
     @Before
     public void setUp(){
-        mindmapsTransaction = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
+        mindmapsTransaction = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
         entityType = mindmapsTransaction.putEntityType("My Entity Type");
         entity = mindmapsTransaction.putEntity("My entity", entityType);
         Edge tinkerEdge = mindmapsTransaction.getTinkerTraversal().V().has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), entity.getId()).outE().next();

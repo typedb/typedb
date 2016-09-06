@@ -19,8 +19,7 @@
 package io.mindmaps.graql.query;
 
 import com.google.common.collect.Lists;
-import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.Data;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.example.MovieGraphFactory;
@@ -38,27 +37,43 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import static io.mindmaps.constants.DataType.ConceptMeta.*;
-import static io.mindmaps.graql.Graql.*;
-import static org.junit.Assert.*;
+import static io.mindmaps.constants.DataType.ConceptMeta.ENTITY_TYPE;
+import static io.mindmaps.constants.DataType.ConceptMeta.RESOURCE_TYPE;
+import static io.mindmaps.constants.DataType.ConceptMeta.RULE_TYPE;
+import static io.mindmaps.graql.Graql.all;
+import static io.mindmaps.graql.Graql.and;
+import static io.mindmaps.graql.Graql.any;
+import static io.mindmaps.graql.Graql.contains;
+import static io.mindmaps.graql.Graql.eq;
+import static io.mindmaps.graql.Graql.gt;
+import static io.mindmaps.graql.Graql.gte;
+import static io.mindmaps.graql.Graql.id;
+import static io.mindmaps.graql.Graql.lt;
+import static io.mindmaps.graql.Graql.lte;
+import static io.mindmaps.graql.Graql.neq;
+import static io.mindmaps.graql.Graql.or;
+import static io.mindmaps.graql.Graql.regex;
+import static io.mindmaps.graql.Graql.var;
+import static io.mindmaps.graql.Graql.withTransaction;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class MatchQueryDefaultTest {
 
-    private static MindmapsTransaction transaction;
+    private static MindmapsGraph mindmapsGraph;
     private QueryBuilder qb;
 
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.US);
 
     @BeforeClass
     public static void setUpClass() {
-        MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
+        mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
-        transaction = mindmapsGraph.getTransaction();
     }
 
     @Before
     public void setUp() {
-        qb = withTransaction(transaction);
+        qb = withTransaction(mindmapsGraph);
     }
 
     @Test
@@ -399,8 +414,7 @@ public class MatchQueryDefaultTest {
     @Test
     public void testAkoRelationType() {
         MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
-        MindmapsTransaction transaction = graph.getTransaction();
-        QueryBuilder qb = withTransaction(transaction);
+        QueryBuilder qb = withTransaction(graph);
 
         qb.insert(
                 id("ownership").isa("relation-type").hasRole("owner").hasRole("possession"),

@@ -19,8 +19,7 @@
 package io.mindmaps.graql.query;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.Autocomplete;
@@ -31,18 +30,17 @@ import static org.junit.Assert.*;
 
 public class AutocompleteTest {
 
-    private static MindmapsTransaction transaction;
+    private static MindmapsGraph mindmapsGraph;
 
     @BeforeClass
     public static void setUpClass() {
-        MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
-        MovieGraphFactory.loadGraph(graph);
-        transaction = graph.getTransaction();
+        mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
+        MovieGraphFactory.loadGraph(mindmapsGraph);
     }
 
     @Test
     public void testAutocompleteEmpty() {
-        Autocomplete autocomplete = Autocomplete.create(transaction, "", 0);
+        Autocomplete autocomplete = Autocomplete.create(mindmapsGraph, "", 0);
         assertTrue(autocomplete.getCandidates().contains("match"));
         assertTrue(autocomplete.getCandidates().contains("isa"));
         assertTrue(autocomplete.getCandidates().contains("movie"));
@@ -53,7 +51,7 @@ public class AutocompleteTest {
     @Test
     public void testAutocompleteKeywords() {
         String queryString = "match $x isa movie; sel";
-        Autocomplete autocomplete = Autocomplete.create(transaction, queryString, queryString.length());
+        Autocomplete autocomplete = Autocomplete.create(mindmapsGraph, queryString, queryString.length());
         assertTrue(autocomplete.getCandidates().contains("select"));
         assertFalse(autocomplete.getCandidates().contains("match"));
         assertEquals(queryString.length() - 3, autocomplete.getCursorPosition());
@@ -62,7 +60,7 @@ public class AutocompleteTest {
     @Test
     public void testAutocompleteKeywordCursorInQuery() {
         String queryString = " matc $x isa person";
-        Autocomplete autocomplete = Autocomplete.create(transaction, queryString, 4);
+        Autocomplete autocomplete = Autocomplete.create(mindmapsGraph, queryString, 4);
         assertTrue(autocomplete.getCandidates().contains("match"));
         assertFalse(autocomplete.getCandidates().contains("insert"));
         assertEquals(1, autocomplete.getCursorPosition());
@@ -71,7 +69,7 @@ public class AutocompleteTest {
     @Test
     public void testAutocompleteKeywordCursorInWord() {
         String queryString = "match $x has-re title";
-        Autocomplete autocomplete = Autocomplete.create(transaction, queryString, 11);
+        Autocomplete autocomplete = Autocomplete.create(mindmapsGraph, queryString, 11);
         assertTrue(autocomplete.getCandidates().contains("has-resource"));
         assertFalse(autocomplete.getCandidates().contains("delete"));
         assertEquals(9, autocomplete.getCursorPosition());
@@ -80,7 +78,7 @@ public class AutocompleteTest {
     @Test
     public void testAutocompleteSpace() {
         String queryString = "match";
-        Autocomplete autocomplete = Autocomplete.create(transaction, queryString, queryString.length());
+        Autocomplete autocomplete = Autocomplete.create(mindmapsGraph, queryString, queryString.length());
         assertEquals(Sets.newHashSet(" "), autocomplete.getCandidates());
         assertEquals(queryString.length(), autocomplete.getCursorPosition());
     }
@@ -88,7 +86,7 @@ public class AutocompleteTest {
     @Test
     public void testAutocompleteType() {
         String queryString = "insert $x isa pro";
-        Autocomplete autocomplete = Autocomplete.create(transaction, queryString, queryString.length());
+        Autocomplete autocomplete = Autocomplete.create(mindmapsGraph, queryString, queryString.length());
         assertTrue(autocomplete.getCandidates().contains("production"));
         assertEquals(queryString.length() - 3, autocomplete.getCursorPosition());
     }
@@ -96,7 +94,7 @@ public class AutocompleteTest {
     @Test
     public void testAutocompleteVariables() {
         String queryString = "insert $x isa ";
-        Autocomplete autocomplete = Autocomplete.create(transaction, queryString, queryString.length());
+        Autocomplete autocomplete = Autocomplete.create(mindmapsGraph, queryString, queryString.length());
         assertTrue(autocomplete.getCandidates().contains("$x"));
         assertEquals(queryString.length(), autocomplete.getCursorPosition());
     }
@@ -104,7 +102,7 @@ public class AutocompleteTest {
     @Test
     public void testAutocompleteVariablesDollar() {
         String queryString = "insert $x isa $";
-        Autocomplete autocomplete = Autocomplete.create(transaction, queryString, queryString.length());
+        Autocomplete autocomplete = Autocomplete.create(mindmapsGraph, queryString, queryString.length());
         assertTrue(autocomplete.getCandidates().contains("$x"));
         assertEquals(queryString.length() - 1, autocomplete.getCursorPosition());
     }

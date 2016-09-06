@@ -19,8 +19,8 @@
 package io.mindmaps.graql.internal.query.match;
 
 import com.google.common.collect.Sets;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.admin.PatternAdmin;
@@ -60,9 +60,9 @@ public class MatchQueryBase extends AbstractMatchQueryDefault {
 
     @Override
     public Stream<Map<String, Concept>> stream(
-            Optional<MindmapsTransaction> optionalTransaction, Optional<MatchOrder> order
+            Optional<MindmapsGraph> optionalTransaction, Optional<MatchOrder> order
     ) {
-        MindmapsTransaction transaction = optionalTransaction.orElseThrow(
+        MindmapsGraph transaction = optionalTransaction.orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.NO_TRANSACTION.getMessage())
         );
 
@@ -73,7 +73,7 @@ public class MatchQueryBase extends AbstractMatchQueryDefault {
     }
 
     @Override
-    public Set<Type> getTypes(MindmapsTransaction transaction) {
+    public Set<Type> getTypes(MindmapsGraph transaction) {
         Query query = getQuery(transaction, Optional.empty());
         return query.getConcepts().map(transaction::getType).filter(t -> t != null).collect(toSet());
     }
@@ -109,7 +109,7 @@ public class MatchQueryBase extends AbstractMatchQueryDefault {
     }
 
     @Override
-    public Optional<MindmapsTransaction> getTransaction() {
+    public Optional<MindmapsGraph> getTransaction() {
         return Optional.empty();
     }
 
@@ -135,7 +135,7 @@ public class MatchQueryBase extends AbstractMatchQueryDefault {
      * @param order an optional ordering of the query
      * @return the query that will match the specified patterns
      */
-    private Query getQuery(MindmapsTransaction transaction, Optional<MatchOrder> order) {
+    private Query getQuery(MindmapsGraph transaction, Optional<MatchOrder> order) {
         return new Query(transaction, this.pattern, getSelectedNames(), order);
     }
 
@@ -144,7 +144,7 @@ public class MatchQueryBase extends AbstractMatchQueryDefault {
      * @param vertices a map of vertices where the key is the variable name
      * @return a map of concepts where the key is the variable name
      */
-    private Map<String, Concept> makeResults(MindmapsTransaction transaction, Map<String, Vertex> vertices) {
+    private Map<String, Concept> makeResults(MindmapsGraph transaction, Map<String, Vertex> vertices) {
         return getSelectedNames().stream().collect(Collectors.toMap(
                 name -> name,
                 name -> transaction.getConcept(vertices.get(name).value(ITEM_IDENTIFIER.name()))

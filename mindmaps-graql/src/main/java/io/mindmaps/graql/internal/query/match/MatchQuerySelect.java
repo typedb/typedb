@@ -21,7 +21,7 @@ package io.mindmaps.graql.internal.query.match;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.admin.MatchQueryDefaultAdmin;
 
@@ -49,7 +49,7 @@ class MatchQuerySelect extends MatchQueryDefaultModifier {
     }
 
     @Override
-    public Stream<Map<String, Concept>> stream(Optional<MindmapsTransaction> transaction, Optional<MatchOrder> order) {
+    public Stream<Map<String, Concept>> stream(Optional<MindmapsGraph> transaction, Optional<MatchOrder> order) {
         return inner.stream(transaction, order).map(result -> Maps.filterKeys(result, names::contains));
     }
 

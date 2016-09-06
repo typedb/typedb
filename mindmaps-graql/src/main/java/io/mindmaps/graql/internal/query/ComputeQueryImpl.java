@@ -18,8 +18,8 @@
 
 package io.mindmaps.graql.internal.query;
 
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.internal.analytics.Analytics;
 
@@ -35,7 +35,7 @@ public class ComputeQueryImpl implements ComputeQuery {
 
     @Override
     public Object execute(MindmapsGraph graph) throws ExecutionException, InterruptedException {
-        Analytics analytics = new Analytics(graph.getName());
+        Analytics analytics = new Analytics(graph.getKeyspace());
         switch (computeMethod) {
             case "count": {
                 return analytics.count();

@@ -20,7 +20,7 @@
 package io.mindmaps.graql.internal.query.match;
 
 import com.google.common.collect.ImmutableSet;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.*;
 import io.mindmaps.graql.admin.AdminConverter;
@@ -80,7 +80,7 @@ abstract class AbstractMatchQueryDefault extends AbstractMatchQuery<Map<String, 
     }
 
     @Override
-    public final MatchQueryDefault withTransaction(MindmapsTransaction transaction) {
+    public final MatchQueryDefault withTransaction(MindmapsGraph transaction) {
         return new MatchQueryWrapper(super.withTransaction(transaction).admin(), admin());
     }
 

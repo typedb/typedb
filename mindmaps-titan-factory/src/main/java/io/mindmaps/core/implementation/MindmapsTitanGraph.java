@@ -28,7 +28,7 @@ public class MindmapsTitanGraph extends AbstractMindmapsGraph<TitanGraph> {
 
     @Override
     public void clear() {
-        TitanGraph titanGraph = getGraph();
+        TitanGraph titanGraph = getTinkerPopGraph();
         titanGraph.close();
         TitanCleanup.clear(titanGraph);
         EngineCommunicator.contactEngine(getCommitLogEndPoint(), "DELETE");

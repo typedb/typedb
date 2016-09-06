@@ -39,14 +39,14 @@ import static org.junit.Assert.*;
 
 public class ValidatorTest {
     private final Logger LOG = org.slf4j.LoggerFactory.getLogger(ValidatorTest.class);
-    private MindmapsTransactionImpl mindmapsGraph;
+    private AbstractMindmapsGraph mindmapsGraph;
 
     @org.junit.Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void buildGraphAccessManager(){
-        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
+        mindmapsGraph = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
     }
     @After
     public void destroyGraphAccessManager()  throws Exception{

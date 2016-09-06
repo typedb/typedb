@@ -19,7 +19,7 @@
 package io.mindmaps.graql.internal.query;
 
 import com.google.common.collect.ImmutableMap;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.implementation.exception.ConceptException;
 import io.mindmaps.core.model.Concept;
@@ -67,7 +67,7 @@ public class DeleteQueryImpl implements DeleteQueryAdmin {
     }
 
     @Override
-    public DeleteQuery withTransaction(MindmapsTransaction transaction) {
+    public DeleteQuery withTransaction(MindmapsGraph transaction) {
         return new DeleteQueryImpl(deleters.values(), matchQuery.withTransaction(transaction));
     }
 
@@ -165,7 +165,7 @@ public class DeleteQueryImpl implements DeleteQueryAdmin {
         }
     }
 
-    private MindmapsTransaction getTransaction() {
+    private MindmapsGraph getTransaction() {
         return matchQuery.getTransaction().orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.NO_TRANSACTION.getMessage())
         );

@@ -20,9 +20,9 @@ package io.mindmaps.factory;
 
 import io.mindmaps.MindmapsComputer;
 import io.mindmaps.MindmapsComputerImpl;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.constants.RESTUtil;
-import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.EngineCommunicator;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 

@@ -18,8 +18,8 @@
 
 package io.mindmaps.graql.internal.validation;
 
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.graql.admin.VarAdmin;
 
 import java.util.ArrayList;
@@ -42,7 +42,7 @@ class InsertVarValidator implements Validator {
     }
 
     @Override
-    public Stream<String> getErrors(MindmapsTransaction transaction) {
+    public Stream<String> getErrors(MindmapsGraph transaction) {
         if (var.usesNonEqualPredicate()) {
             errors.add(ErrorMessage.INSERT_PREDICATE.getMessage());
         }

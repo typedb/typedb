@@ -58,7 +58,7 @@ abstract class AbstractMindmapsGraphFactory<M extends AbstractMindmapsGraph<G>, 
     }
 
     private boolean isClosed(M mindmapsGraph) {
-        G innerGraph = mindmapsGraph.getGraph();
+        G innerGraph = mindmapsGraph.getTinkerPopGraph();
         return isClosed(innerGraph);
     }
 

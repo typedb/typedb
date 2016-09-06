@@ -6,7 +6,14 @@ import io.mindmaps.loader.Loader;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import static io.mindmaps.graql.Graql.var;
 
@@ -18,7 +25,7 @@ import static io.mindmaps.graql.Graql.var;
  */
 public class CSVDataMigrator implements Iterable<Collection<Var>> {
 
-    private Namer namer;
+    private io.mindmaps.migration.csv.Namer namer;
     private MindmapsGraph graph;
 
     private String entityName;
@@ -26,7 +33,7 @@ public class CSVDataMigrator implements Iterable<Collection<Var>> {
     private Map<String, Integer> headers;
 
     public CSVDataMigrator(){
-        this.namer = new Namer() {};
+        this.namer = new io.mindmaps.migration.csv.Namer() {};
     }
 
     /**

@@ -1,15 +1,7 @@
 package io.mindmaps.graql.internal.analytics;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.Data;
-import io.mindmaps.api.CommitLogController;
-import io.mindmaps.api.GraphFactoryController;
-import io.mindmaps.api.ImportController;
-import io.mindmaps.api.TransactionController;
-import io.mindmaps.core.Data;
-import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.EntityType;
 import io.mindmaps.core.model.RelationType;
@@ -17,24 +9,24 @@ import io.mindmaps.core.model.ResourceType;
 import io.mindmaps.core.model.RoleType;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.loader.DistributedLoader;
-import org.apache.cassandra.exceptions.ConfigurationException;
-import org.apache.commons.configuration.Configuration;
-import org.apache.thrift.transport.TTransportException;
-import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-import javax.validation.constraints.Min;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
-import static io.mindmaps.graql.Graql.all;
 import static io.mindmaps.IntegrationUtils.startTestEngine;
-import static io.mindmaps.graql.Graql.all;
 import static io.mindmaps.graql.Graql.var;
-import static java.lang.Thread.sleep;
 
 public class ScalingTestIT {
 
@@ -43,7 +35,7 @@ public class ScalingTestIT {
 
     String TEST_KEYSPACE = "mindmapstest";
     MindmapsGraph graph;
-    MindmapsTransaction transaction;
+    MindmapsGraph transaction;
 
     // concepts
     EntityType thing;
@@ -96,12 +88,11 @@ public class ScalingTestIT {
         Set<String> superNodes = makeSuperNodes();
 
         // add resources in advance
-        MindmapsTransaction transaction = graph.getTransaction();
-        ResourceType<Long> resourceType = transaction.putResourceType("degree", Data.LONG);
+        ResourceType<Long> resourceType = graph.putResourceType("degree", Data.LONG);
         for (long i = 0;i<MAX_SIZE;i++) {
-            transaction.putResource(i,resourceType);
+            graph.putResource(i,resourceType);
         }
-        transaction.commit();
+        graph.commit();
 
         int previousGraphSize = 0;
         for (int graphSize : graphSizes) {
@@ -124,7 +115,7 @@ public class ScalingTestIT {
             Long stopTime = 0L;
 
             for (int i=0;i<REPEAT;i++) {
-                writer.println("gremlin count is: " + transaction.getTinkerTraversal().V().count().next());
+                writer.println("gremlin count is: " + graph.getTinkerTraversal().V().count().next());
                 writer.println("repeat number: "+i);
                 writer.flush();
                 startTime = System.currentTimeMillis();
@@ -154,8 +145,8 @@ public class ScalingTestIT {
 
         writer.println("start clean graph " + System.currentTimeMillis()/1000L + "s");
         writer.flush();
-        graph.clear();
-        graph = MindmapsClient.getGraph(TEST_KEYSPACE);
+        this.graph.clear();
+        this.graph = MindmapsClient.getGraph(TEST_KEYSPACE);
         writer.println("stop clean graph " + System.currentTimeMillis()/1000L + "s");
 
         writer.println("counts: " + scaleToAverageTimeCount);
@@ -193,12 +184,11 @@ public class ScalingTestIT {
                 simpleOntology();
 
                 // add resources in advance
-                MindmapsTransaction transaction = graph.getTransaction();
-                ResourceType<Long> resourceType = transaction.putResourceType("degree", Data.LONG);
+                ResourceType<Long> resourceType = graph.putResourceType("degree", Data.LONG);
                 for (long k = 0;k<MAX_SIZE;k++) {
-                    transaction.putResource(k,resourceType);
+                    graph.putResource(k,resourceType);
                 }
-                transaction.commit();
+                graph.commit();
 
                 // construct graph
                 writer.println("start generate graph " + System.currentTimeMillis()/1000L + "s");
@@ -206,8 +196,7 @@ public class ScalingTestIT {
                 addNodes(CURRENT_KEYSPACE, 0, graphSize);
                 writer.println("stop generate graph " + System.currentTimeMillis()/1000L + "s");
 
-                transaction = graph.getTransaction();
-                writer.println("gremlin count is: " + transaction.getTinkerTraversal().V().count().next());
+                writer.println("gremlin count is: " + graph.getTinkerTraversal().V().count().next());
 
                 Analytics computer = new Analytics(CURRENT_KEYSPACE);
 
@@ -230,8 +219,7 @@ public class ScalingTestIT {
                 writer.println("stop mutate graph " + System.currentTimeMillis()/1000L + "s");
                 computer = new Analytics(CURRENT_KEYSPACE);
 
-                transaction = graph.getTransaction();
-                writer.println("gremlin count is: " + transaction.getTinkerTraversal().V().count().next());
+                writer.println("gremlin count is: " + graph.getTinkerTraversal().V().count().next());
 
                 writer.println("mutate degree");
                 writer.flush();
@@ -242,7 +230,7 @@ public class ScalingTestIT {
                 writer.println("mutate time: " + degreeAndPersistTimeMutate / ((i + 1) * 1000));
 
                 writer.println("start clean graph" + System.currentTimeMillis()/1000L + "s");
-                graph.clear();
+                this.graph.clear();
                 writer.println("stop clean graph" + System.currentTimeMillis()/1000L + "s");
             }
 
@@ -299,16 +287,15 @@ public class ScalingTestIT {
     }
 
     private void simpleOntology() throws MindmapsValidationException {
-        MindmapsTransaction transaction = graph.getTransaction();
-        thing = transaction.putEntityType("thing");
-        relation1 = transaction.putRoleType("relation1");
-        relation2 = transaction.putRoleType("relation2");
+        thing = graph.putEntityType("thing");
+        relation1 = graph.putRoleType("relation1");
+        relation2 = graph.putRoleType("relation2");
         thing.playsRole(relation1).playsRole(relation2);
-        related = transaction.putRelationType("related").hasRole(relation1).hasRole(relation2);
-        transaction.commit();
+        related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
+        graph.commit();
     }
 
-    private void refreshOntology(MindmapsTransaction transaction) {
+    private void refreshOntology(MindmapsGraph transaction) {
         thing = transaction.getEntityType("thing");
         relation1 = transaction.getRoleType("relation1");
         relation2 = transaction.getRoleType("relation2");
@@ -317,13 +304,12 @@ public class ScalingTestIT {
 
     private Set<String> makeSuperNodes() throws MindmapsValidationException {
         // make the supernodes
-        MindmapsTransaction transaction = graph.getTransaction();
-        refreshOntology(transaction);
+        refreshOntology(graph);
         Set<String> superNodes = new HashSet<>();
         for (int i = 0; i < NUM_SUPER_NODES; i++) {
-            superNodes.add(transaction.addEntity(thing).getId());
+            superNodes.add(graph.addEntity(thing).getId());
         }
-        transaction.commit();
+        graph.commit();
         return superNodes;
     }
 

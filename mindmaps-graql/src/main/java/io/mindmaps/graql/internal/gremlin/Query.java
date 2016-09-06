@@ -19,7 +19,7 @@
 package io.mindmaps.graql.internal.gremlin;
 
 import com.google.common.collect.ImmutableSet;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
@@ -49,7 +49,7 @@ import static java.util.stream.Collectors.toList;
  */
 public class Query {
 
-    private final MindmapsTransaction transaction;
+    private final MindmapsGraph transaction;
     private final Collection<ConjunctionQuery> innerQueries;
     private final ImmutableSet<String> names;
     private final Optional<MatchOrder> order;
@@ -60,7 +60,7 @@ public class Query {
      * @param names the variable names to select
      * @param order an optional ordering
      */
-    public Query(MindmapsTransaction transaction, PatternAdmin pattern, Set<String> names, Optional<MatchOrder> order) {
+    public Query(MindmapsGraph transaction, PatternAdmin pattern, Set<String> names, Optional<MatchOrder> order) {
         Collection<Conjunction<VarAdmin>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
         if (transaction == null) {

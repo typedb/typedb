@@ -36,14 +36,14 @@ import static junit.framework.Assert.assertNull;
 import static org.junit.Assert.*;
 
 public class InstanceTest {
-    private MindmapsTransactionImpl mindmapsGraph;
+    private AbstractMindmapsGraph mindmapsGraph;
 
     @org.junit.Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void buildGraph(){
-        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
+        mindmapsGraph = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
         mindmapsGraph.initialiseMetaConcepts();
     }
     @After

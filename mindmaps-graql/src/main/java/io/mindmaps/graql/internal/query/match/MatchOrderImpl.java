@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.internal.query.match;
 
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.DataType;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -50,7 +50,7 @@ class MatchOrderImpl implements MatchOrder {
     }
 
     @Override
-    public void orderTraversal(MindmapsTransaction transaction, GraphTraversal<Vertex, Map<String, Vertex>> traversal) {
+    public void orderTraversal(MindmapsGraph transaction, GraphTraversal<Vertex, Map<String, Vertex>> traversal) {
         if (resourceType.isPresent()) {
             // Order by resource type
 
@@ -76,7 +76,7 @@ class MatchOrderImpl implements MatchOrder {
      * @param value the VALUE property to use on the vertex
      * @return the value of an attached resource, or nothing if there is no resource of this type
      */
-    private Optional<Comparable> getResourceValue(MindmapsTransaction transaction, Object elem, String resourceTypeId, DataType.ConceptProperty value) {
+    private Optional<Comparable> getResourceValue(MindmapsGraph transaction, Object elem, String resourceTypeId, DataType.ConceptProperty value) {
         return transaction.getTinkerTraversal().V(elem)
                 .outE(SHORTCUT.getLabel()).has(TO_TYPE.name(), resourceTypeId).inV().values(value.name())
                 .tryNext().map(o -> (Comparable) o);

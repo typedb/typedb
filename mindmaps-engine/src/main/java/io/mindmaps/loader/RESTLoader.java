@@ -19,7 +19,7 @@
 package io.mindmaps.loader;
 
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.implementation.MindmapsTransactionImpl;
+import io.mindmaps.core.implementation.AbstractMindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.QueryParser;
@@ -43,7 +43,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -140,9 +139,9 @@ public class RESTLoader {
         try {
             for (int i = 0; i < repeatCommits; i++) {
 
-                MindmapsTransactionImpl transaction = null;
+                AbstractMindmapsGraph transaction = null;
                 try {
-                    transaction = (MindmapsTransactionImpl) GraphFactory.getInstance().getGraphBatchLoading(name).getTransaction();
+                    transaction = (AbstractMindmapsGraph) GraphFactory.getInstance().getGraphBatchLoading(name);
                     QueryParser.create(transaction).parseInsertQuery(batch).execute();
                     transaction.commit();
                     cache.addJobCasting(name, transaction.getModifiedCastingIds());
@@ -172,9 +171,6 @@ public class RESTLoader {
                 } finally {
                     try {
                         lastJobFinished.set(System.currentTimeMillis());
-                        if (transaction != null) {
-                            transaction.close();
-                        }
                     } catch (Exception e) {
                         e.printStackTrace();
                     }

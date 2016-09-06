@@ -19,7 +19,7 @@
 
 package io.mindmaps.graql.internal.query.match;
 
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.Aggregate;
 import io.mindmaps.graql.AggregateQuery;
 import io.mindmaps.graql.MatchQuery;
@@ -29,7 +29,7 @@ import io.mindmaps.graql.internal.query.aggregate.AggregateQueryImpl;
 abstract class AbstractMatchQuery<T> implements MatchQueryAdmin<T> {
 
     @Override
-    public MatchQuery<T> withTransaction(MindmapsTransaction transaction) {
+    public MatchQuery<T> withTransaction(MindmapsGraph transaction) {
         return new MatchQueryTransaction<>(transaction, admin());
     }
 

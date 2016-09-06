@@ -19,7 +19,7 @@
 package io.mindmaps.graql.internal.reasoner.predicate;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.model.RoleType;
 import io.mindmaps.core.model.Type;
@@ -142,7 +142,7 @@ public abstract class AtomBase implements Atomic{
         return new DisjunctionImpl<>(expandedPattern);
     }
 
-    private MatchQueryDefault getBaseMatchQuery(MindmapsTransaction graph) {
+    private MatchQueryDefault getBaseMatchQuery(MindmapsGraph graph) {
         QueryBuilder qb = Graql.withTransaction(graph);
         MatchQueryDefault matchQuery = qb.match(getPattern());
 
@@ -159,12 +159,12 @@ public abstract class AtomBase implements Atomic{
     }
 
     @Override
-    public MatchQueryDefault getMatchQuery(MindmapsTransaction graph) {
+    public MatchQueryDefault getMatchQuery(MindmapsGraph graph) {
         return getBaseMatchQuery(graph);
     }
 
     @Override
-    public MatchQueryDefault getExpandedMatchQuery(MindmapsTransaction graph) {
+    public MatchQueryDefault getExpandedMatchQuery(MindmapsGraph graph) {
         QueryBuilder qb = Graql.withTransaction(graph);
         Set<String> selectVars = Sets.newHashSet(varName);
         return qb.match(getExpandedPattern()).select(selectVars);

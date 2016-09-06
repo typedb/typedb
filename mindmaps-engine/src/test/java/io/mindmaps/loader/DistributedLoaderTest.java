@@ -20,15 +20,12 @@ package io.mindmaps.loader;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.api.CommitLogController;
 import io.mindmaps.api.TransactionController;
-import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
-import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.QueryParser;
-import io.mindmaps.graql.Var;
 import io.mindmaps.util.ConfigProperties;
 import org.junit.After;
 import org.junit.Before;
@@ -42,7 +39,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -82,7 +78,7 @@ public class DistributedLoaderTest {
         loadOntologyFromFile();
         loadDataFromFile(data);
 
-        MindmapsTransaction transaction = graph.getTransaction();
+        MindmapsGraph transaction = graph;
         assertNotNull(transaction.getConcept("X4d616e75656c20417a656e6861").getId());
         assertNotNull(transaction.getConcept("X44616e69656c61204675696f726561").getId());
         assertNotNull(transaction.getConcept("X422e20476174686d616e6e").getId());
@@ -109,7 +105,7 @@ public class DistributedLoaderTest {
     }
 
     private void loadOntologyFromFile() {
-        MindmapsTransaction transaction = GraphFactory.getInstance().getGraphBatchLoading(graphName).getTransaction();
+        MindmapsGraph transaction = GraphFactory.getInstance().getGraphBatchLoading(graphName);
         ClassLoader classLoader = getClass().getClassLoader();
 
         LOG.info("Loading new ontology .. ");

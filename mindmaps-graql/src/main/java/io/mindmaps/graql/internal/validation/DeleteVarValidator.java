@@ -18,8 +18,8 @@
 
 package io.mindmaps.graql.internal.validation;
 
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.graql.admin.VarAdmin;
 
 import java.util.ArrayList;
@@ -41,7 +41,7 @@ class DeleteVarValidator implements Validator {
     }
 
     @Override
-    public Stream<String> getErrors(MindmapsTransaction transaction) {
+    public Stream<String> getErrors(MindmapsGraph transaction) {
         List<String> errors = new ArrayList<>();
 
         if (var.hasValue()) errors.add(ErrorMessage.DELETE_VALUE.getMessage());

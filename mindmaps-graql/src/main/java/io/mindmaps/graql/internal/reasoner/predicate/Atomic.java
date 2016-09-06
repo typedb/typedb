@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.internal.reasoner.predicate;
 
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.model.RoleType;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.MatchQueryDefault;
@@ -89,8 +89,8 @@ public interface Atomic {
      * @param graph transaction
      * @return match query obtained by selecting free variables
      */
-    MatchQueryDefault getMatchQuery(MindmapsTransaction graph);
-    MatchQueryDefault getExpandedMatchQuery(MindmapsTransaction graph);
+    MatchQueryDefault getMatchQuery(MindmapsGraph graph);
+    MatchQueryDefault getExpandedMatchQuery(MindmapsGraph graph);
 
     /**
      * @return the query this atom belongs to

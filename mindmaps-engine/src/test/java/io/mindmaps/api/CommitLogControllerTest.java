@@ -21,7 +21,7 @@ package io.mindmaps.api;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.http.ContentType;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.Util;
 import io.mindmaps.constants.RESTUtil;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
@@ -32,14 +32,10 @@ import io.mindmaps.core.model.RoleType;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.postprocessing.Cache;
 import io.mindmaps.util.ConfigProperties;
-import org.apache.hadoop.hdfs.DFSClient;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.util.Enumeration;
-import java.util.Properties;
 
 import static com.jayway.restassured.RestAssured.delete;
 import static com.jayway.restassured.RestAssured.given;
@@ -96,8 +92,8 @@ public class CommitLogControllerTest {
         final String BOB = "bob";
         final String TIM = "tim";
 
-        MindmapsTransaction bob = MindmapsClient.getGraph(BOB).getTransaction();
-        MindmapsTransaction tim = MindmapsClient.getGraph(TIM).getTransaction();
+        MindmapsGraph bob = MindmapsClient.getGraph(BOB);
+        MindmapsGraph tim = MindmapsClient.getGraph(TIM);
 
         addSomeData(bob);
 
@@ -116,7 +112,7 @@ public class CommitLogControllerTest {
         assertEquals(0, cache.getCastingJobs().get(TIM).size());
     }
 
-    private void addSomeData(MindmapsTransaction transaction) throws MindmapsValidationException {
+    private void addSomeData(MindmapsGraph transaction) throws MindmapsValidationException {
         RoleType role1 = transaction.putRoleType("Role 1");
         RoleType role2 = transaction.putRoleType("Role 2");
         RelationType relationType = transaction.putRelationType("A Relation Type").hasRole(role1).hasRole(role2);

@@ -19,7 +19,7 @@
 
 package io.mindmaps.graql;
 
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.admin.MatchQueryAdmin;
 
 import java.util.Optional;
@@ -43,7 +43,7 @@ public interface MatchQuery<T> extends Streamable<T> {
      * @param transaction the transaction to execute the query on
      * @return a new MatchQuery with the transaction set
      */
-    MatchQuery<T> withTransaction(MindmapsTransaction transaction);
+    MatchQuery<T> withTransaction(MindmapsGraph transaction);
 
     /**
      * @param limit the maximum number of results the query should return

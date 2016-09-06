@@ -22,7 +22,6 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
-import io.mindmaps.postprocessing.BackgroundTasks;
 import io.mindmaps.util.ConfigProperties;
 import org.junit.After;
 import org.junit.Assert;
@@ -71,7 +70,7 @@ public class ImportControllerTest {
         File fileData= new File(classLoader.getResource("small_nametags.gql").getFile());
         importer.importDataFromFile(fileData.getAbsolutePath());
 
-        Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getTransaction().getConcept("X506965727265204162656c").getId());
+        Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getConcept("X506965727265204162656c").getId());
     }
 
     @After

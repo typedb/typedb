@@ -42,10 +42,10 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
         return (T) this;
     }
 
-    final MindmapsTransactionImpl mindmapsTransaction;
+    final AbstractMindmapsGraph mindmapsTransaction;
     private Vertex vertex;
 
-    ConceptImpl(Vertex v, MindmapsTransactionImpl mindmapsTransaction){
+    ConceptImpl(Vertex v, AbstractMindmapsGraph mindmapsTransaction){
         this.vertex = v;
         this.mindmapsTransaction = mindmapsTransaction;
         mindmapsTransaction.getConceptLog().putConcept(this);
@@ -646,7 +646,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      *
      * @return The mindmaps transaction this concept is bound to.
      */
-    MindmapsTransactionImpl getMindmapsTransaction() {return mindmapsTransaction;}
+    AbstractMindmapsGraph getMindmapsTransaction() {return mindmapsTransaction;}
 
     //--------- Create Links -------//
     /**

@@ -41,7 +41,7 @@ import java.util.Map;
 /**
  * A thread bound mindmaps transaction
  */
-public interface MindmapsTransaction extends AutoCloseable{
+public interface MindmapsGraph extends AutoCloseable{
     //------------------------------------- Concept Construction ----------------------------------
 
     /**
@@ -82,6 +82,10 @@ public interface MindmapsTransaction extends AutoCloseable{
      * @return new or existing Role Type with the provided Id.
      */
     RoleType putRoleType(String id);
+
+    void clear();
+
+    String getKeyspace();
 
     GraphTraversalSource getTinkerTraversal();
 

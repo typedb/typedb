@@ -20,7 +20,7 @@
 package io.mindmaps.graql;
 
 import com.google.common.collect.ImmutableSet;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.admin.AdminConverter;
 import io.mindmaps.graql.admin.PatternAdmin;
@@ -47,7 +47,7 @@ public class Graql {
      * @param transaction  the transaction to operate the query on
      * @return a query builder using the specified transaction
      */
-    public static QueryBuilder withTransaction(MindmapsTransaction transaction) {
+    public static QueryBuilder withTransaction(MindmapsGraph transaction) {
         return new QueryBuilder(transaction);
     }
 

@@ -37,7 +37,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.Veri
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -56,16 +55,16 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class MindmapsTransactionLowLevelTest {
+public class MindmapsGraphLowLevelTest {
 
-    private MindmapsTransactionImpl mindmapsGraph;
+    private AbstractMindmapsGraph mindmapsGraph;
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void buildGraphAccessManager(){
-        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
+        mindmapsGraph = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
         mindmapsGraph.initialiseMetaConcepts();
     }
     @After
@@ -87,14 +86,6 @@ public class MindmapsTransactionLowLevelTest {
     }
 
     //----------------------------------------------Concept Functionality-----------------------------------------------
-    @Test
-    public void testSetTinkerPopGrap(){
-        Graph graph1 = mindmapsGraph.getTinkerPopGraph();
-        mindmapsGraph.setTinkerPopGraph(TinkerGraph.open());
-        Graph graph2 = mindmapsGraph.getTinkerPopGraph();
-        assertNotEquals(graph1, graph2);
-    }
-
     @Test(expected=RuntimeException.class)
     public void testTooManyNodesForId() {
         Graph graph = mindmapsGraph.getTinkerPopGraph();

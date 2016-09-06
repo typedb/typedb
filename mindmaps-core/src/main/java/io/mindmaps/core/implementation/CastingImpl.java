@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
  */
 class CastingImpl extends ConceptImpl {
 
-    CastingImpl(Vertex v, MindmapsTransactionImpl mindmapsGraph) {
+    CastingImpl(Vertex v, AbstractMindmapsGraph mindmapsGraph) {
         super(v, mindmapsGraph);
     }
 

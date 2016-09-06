@@ -18,7 +18,6 @@
 
 package io.mindmaps.factory;
 
-import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.AbstractMindmapsGraph;
 import org.junit.Test;
 
@@ -41,7 +40,7 @@ public class MindmapsTestGraphFactoryTest {
 
     @Test
     public void testNewEmptyGraph(){
-        MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
+        AbstractMindmapsGraph graph = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
         assertNotNull(graph);
         assertFalse(graph.isBatchLoadingEnabled());
     }
@@ -52,13 +51,12 @@ public class MindmapsTestGraphFactoryTest {
         AbstractMindmapsGraph graph2 = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
 
         assertNotEquals(graph1, graph2);
-        assertNotEquals(graph1.getGraph(), graph2.getGraph());
-        assertNotEquals(graph1.getTransaction(), graph2.getTransaction());
+        assertNotEquals(graph1.getTinkerPopGraph(), graph2.getTinkerPopGraph());
     }
 
     @Test
     public void testNewEmptyGraphBatchLoading(){
-        MindmapsGraph graph = MindmapsTestGraphFactory.newBatchLoadingEmptyGraph();
+        AbstractMindmapsGraph graph = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newBatchLoadingEmptyGraph();
         assertNotNull(graph);
         assertTrue(graph.isBatchLoadingEnabled());
     }

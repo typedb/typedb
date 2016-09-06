@@ -20,14 +20,12 @@ package io.mindmaps.graql;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.RoleType;
 import io.mindmaps.core.model.Rule;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.*;
 import io.mindmaps.graql.internal.reasoner.container.Query;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.Relation;
@@ -44,13 +42,13 @@ import static io.mindmaps.graql.internal.reasoner.Utility.*;
 
 public class Reasoner {
 
-    private final MindmapsTransaction graph;
+    private final MindmapsGraph graph;
     private final QueryParser qp;
     private final Logger LOG = LoggerFactory.getLogger(Reasoner.class);
 
     private final Map<String, Query> workingMemory = new HashMap<>();
 
-    public Reasoner(MindmapsTransaction tr){
+    public Reasoner(MindmapsGraph tr){
         this.graph = tr;
         qp =  QueryParser.create(graph);
 

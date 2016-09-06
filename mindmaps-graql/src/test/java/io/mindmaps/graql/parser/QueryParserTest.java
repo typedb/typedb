@@ -20,13 +20,16 @@ package io.mindmaps.graql.parser;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.Data;
-import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
-import io.mindmaps.graql.*;
+import io.mindmaps.graql.AggregateQuery;
+import io.mindmaps.graql.MatchQueryDefault;
+import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.QueryParser;
+import io.mindmaps.graql.Var;
 import io.mindmaps.graql.internal.parser.MatchQueryPrinter;
 import io.mindmaps.graql.internal.query.aggregate.AbstractAggregate;
 import org.junit.Before;
@@ -41,15 +44,34 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static io.mindmaps.constants.DataType.ConceptMeta.*;
-import static io.mindmaps.graql.Graql.*;
+import static io.mindmaps.constants.DataType.ConceptMeta.ENTITY_TYPE;
+import static io.mindmaps.constants.DataType.ConceptMeta.RELATION_TYPE;
+import static io.mindmaps.constants.DataType.ConceptMeta.ROLE_TYPE;
+import static io.mindmaps.constants.DataType.ConceptMeta.RULE_TYPE;
+import static io.mindmaps.graql.Graql.all;
+import static io.mindmaps.graql.Graql.and;
+import static io.mindmaps.graql.Graql.any;
+import static io.mindmaps.graql.Graql.contains;
+import static io.mindmaps.graql.Graql.eq;
+import static io.mindmaps.graql.Graql.gt;
+import static io.mindmaps.graql.Graql.gte;
+import static io.mindmaps.graql.Graql.id;
+import static io.mindmaps.graql.Graql.lt;
+import static io.mindmaps.graql.Graql.lte;
+import static io.mindmaps.graql.Graql.neq;
+import static io.mindmaps.graql.Graql.or;
+import static io.mindmaps.graql.Graql.regex;
+import static io.mindmaps.graql.Graql.var;
+import static io.mindmaps.graql.Graql.withTransaction;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.core.AllOf.allOf;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class QueryParserTest {
 
-    private static MindmapsTransaction transaction;
+    private static MindmapsGraph mindmapsGraph;
     private QueryParser qp;
     private QueryBuilder qb;
     @Rule
@@ -57,15 +79,14 @@ public class QueryParserTest {
 
     @BeforeClass
     public static void setUpClass() {
-        MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
+        mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
-        transaction = mindmapsGraph.getTransaction();
     }
 
     @Before
     public void setUp() {
-        qp = QueryParser.create(transaction);
-        qb = withTransaction(transaction);
+        qp = QueryParser.create(mindmapsGraph);
+        qb = withTransaction(mindmapsGraph);
     }
 
     @Test
@@ -400,7 +421,7 @@ public class QueryParserTest {
         String queryString = "match $x isa movie select $x";
         MatchQueryDefault query = queryParserNoGraph.parseMatchQuery("match $x isa movie select $x").getMatchQuery();
         assertEquals(queryString, query.toString());
-        assertTrue(query.withTransaction(transaction).stream().findAny().isPresent());
+        assertTrue(query.withTransaction(mindmapsGraph).stream().findAny().isPresent());
     }
 
     @Test
@@ -428,7 +449,7 @@ public class QueryParserTest {
 
     @Test
     public void testCustomAggregate() {
-        QueryParser qp = QueryParser.create(transaction);
+        QueryParser qp = QueryParser.create(mindmapsGraph);
 
         qp.registerAggregate(
                 "get-any", args -> new AbstractAggregate<Map<String, Concept>, Concept>() {
