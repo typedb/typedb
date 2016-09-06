@@ -227,6 +227,9 @@ public class GraqlShellTest {
         testShell("insert movie isa entity-type; moon isa movie; europa isa moon\n", err);
 
         assertThat(err.toString(), allOf(containsString("moon"), containsString("not"), containsString("type")));
+
+        // Errors should not be printed "in quotes"
+        assertThat(err.toString(), not(containsString("\"\n")));
     }
 
     @Test
