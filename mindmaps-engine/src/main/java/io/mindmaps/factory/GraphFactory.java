@@ -19,7 +19,7 @@
 package io.mindmaps.factory;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.ConfigProperties;
+import io.mindmaps.engine.util.ConfigProperties;
 
 public class GraphFactory {
     private String graphConfig;

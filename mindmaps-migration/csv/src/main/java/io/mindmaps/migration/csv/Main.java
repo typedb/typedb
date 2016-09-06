@@ -1,11 +1,11 @@
 package io.mindmaps.migration.csv;
 
 import com.google.common.collect.Lists;
-import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.MindmapsGraph;
+import io.mindmaps.engine.loader.BlockingLoader;
+import io.mindmaps.engine.loader.DistributedLoader;
+import io.mindmaps.engine.loader.Loader;
 import io.mindmaps.factory.MindmapsClient;
-import io.mindmaps.loader.BlockingLoader;
-import io.mindmaps.loader.DistributedLoader;
-import io.mindmaps.loader.Loader;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 
@@ -21,7 +21,7 @@ public class Main {
 
     static void die(String errorMsg) {
         System.out.println(errorMsg);
-        System.out.println("\nSyntax: CSVMigrator -owl <owl filename> [-graph <graph name>] [-engine <Mindmaps engine URL>]");
+        System.out.println("\nSyntax: CSVMigrator -file <csv filename> [-graph <graph name>] [-engine <Mindmaps engine URL>] [-as <Mindmaps graph name>]");
         System.exit(-1);
     }
 
@@ -100,6 +100,7 @@ public class Main {
         catch (Throwable throwable){
             throwable.printStackTrace(System.err);
         }
+
         System.exit(0);
     }
 }

@@ -17,14 +17,12 @@
  */
 package io.mindmaps.migration.owl;
 
-import java.io.File;
-
-import org.semanticweb.owlapi.apibinding.OWLManager;
-
-import io.mindmaps.MindmapsTransaction;
-import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.model.RelationType;
 import io.mindmaps.factory.MindmapsClient;
+import org.semanticweb.owlapi.apibinding.OWLManager;
+
+import java.io.File;
 
 /**
  * <p>
@@ -77,7 +75,7 @@ public class Main {
         OWLMigrator migrator = new OWLMigrator();
         
         try {
-            MindmapsGraph graph = engineUrl == null ? MindmapsClient.getGraph(graphName) 
+            MindmapsGraph graph = engineUrl == null ? MindmapsClient.getGraph(graphName)
                                                     : MindmapsClient.getGraph(graphName, engineUrl);            
             migrator.graph(graph)
                     .ontology(OWLManager.createOWLOntologyManager().loadOntologyFromOntologyDocument(owlfile))
@@ -98,12 +96,11 @@ public class Main {
     static void test() {
         try {
             MindmapsGraph graph = MindmapsClient.getGraph("onco");
-            MindmapsTransaction tx = graph.getTransaction();
-            tx.putRelationType("authorship");
-            RelationType reltype = (RelationType)graph.getTransaction().getType("relation-type").instances().stream().findFirst().get();
+            graph.putRelationType("authorship");
+            RelationType reltype = (RelationType)graph.getType("relation-type").instances().stream().findFirst().get();
             reltype.hasRoles().forEach(System.out::println);
-            reltype.hasRole(tx.putRoleType("authro1")).hasRole(tx.putRoleType("author2"));
-            tx.commit();
+            reltype.hasRole(graph.putRoleType("authro1")).hasRole(graph.putRoleType("author2"));
+            graph.commit();
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);

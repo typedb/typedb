@@ -18,8 +18,8 @@ package io.mindmaps;/*
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import io.mindmaps.api.*;
-import io.mindmaps.util.ConfigProperties;
+import io.mindmaps.engine.controller.*;
+import io.mindmaps.engine.util.ConfigProperties;
 
 import static spark.Spark.port;
 import static spark.Spark.staticFiles;

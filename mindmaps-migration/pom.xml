@@ -8,4 +8,9 @@
     <version>0.1.0-SNAPSHOT</version>
   </parent>
   <packaging>pom</packaging>
+  <modules>
+      <module>owl</module>
+      <module>csv</module>
+      <module>sql</module>
+  </modules>  
 </project>

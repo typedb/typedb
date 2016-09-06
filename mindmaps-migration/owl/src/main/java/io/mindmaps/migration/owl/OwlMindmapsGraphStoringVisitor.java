@@ -226,7 +226,7 @@ public class OwlMindmapsGraphStoringVisitor implements OWLAxiomVisitorEx<Concept
             value = Long.parseLong(valueAsString);
         else if (resourceType.getDataType() == Data.DOUBLE)
             value = Double.parseDouble(valueAsString);
-        Resource resource = migrator.tx().putResource(migrator.namer().resourceId(entity, resourceType), resourceType).setValue(value);
+        Resource resource = migrator.tx().putResource(value, resourceType);
         RelationType propertyRelation = migrator.relation(axiom.getProperty().asOWLDataProperty());
         RoleType entityRole = migrator.entityRole(entity.type(), resource.type());
         RoleType resourceRole = migrator.resourceRole(resource.type());
@@ -254,8 +254,7 @@ public class OwlMindmapsGraphStoringVisitor implements OWLAxiomVisitorEx<Concept
         @SuppressWarnings("unchecked")
         ResourceType<String> resourceType = (ResourceType<String>)visit(axiom.getProperty());
         Entity entity = migrator.entity((OWLNamedIndividual)axiom.getSubject());
-        Resource<String> resource = migrator.tx().putResource(
-                migrator.namer().resourceId(entity, resourceType), resourceType).setValue(value.get().getLiteral());
+        Resource<String> resource = migrator.tx().putResource(value.get().getLiteral(), resourceType);
         RelationType propertyRelation = migrator.relation(axiom.getProperty());
         return migrator.tx().addRelation(propertyRelation)
                  .putRolePlayer(migrator.entityRole(entity.type(), resource.type()), entity)

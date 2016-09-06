@@ -12,10 +12,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 import static io.mindmaps.IntegrationUtils.graphWithNewKeyspace;
@@ -78,10 +75,24 @@ public class GraqlTest {
                 or(var("y").isa("entity-type"), var("y").isa("resource-type"), var("y").isa("relation-type"))
         ).stream().count();
 
-        long computeCount = ((Long) ((ComputeQuery) qp.parseQuery("compute count()")).execute(graph));
+        long computeCount = ((Long) ((ComputeQuery) qp.parseQuery("compute count")).execute(graph));
 
         assertEquals(graqlCount, computeCount);
         assertEquals(3L, computeCount);
+    }
+
+    @Test
+    public void testGraqlCountSubgraph() throws Exception {
+        // create 3 instances
+        thing = graph.putEntityType("thing");
+        EntityType anotherThing = graph.putEntityType("another");
+        graph.putEntity("1", thing);
+        graph.putEntity("2", thing);
+        graph.putEntity("3", anotherThing);
+        graph.commit();
+
+        long computeCount = ((Long) ((ComputeQuery) qp.parseQuery("compute count in thing, thing")).execute(graph));
+        assertEquals(2, computeCount);
     }
 
 
@@ -108,7 +119,7 @@ public class GraqlTest {
         graph.commit();
 
         // compute degrees
-        Map<Instance, Long> degrees = ((Map) ((ComputeQuery) qp.parseQuery("compute degrees()")).execute(graph));
+        Map<Instance, Long> degrees = ((Map) ((ComputeQuery) qp.parseQuery("compute degrees")).execute(graph));
 
         // assert degrees are correct
         instantiateSimpleConcepts();
@@ -167,7 +178,7 @@ public class GraqlTest {
         graph.commit();
 
         // compute degrees
-        ((ComputeQuery) qp.parseQuery("compute degreesAndPersist()")).execute(graph);
+        ((ComputeQuery) qp.parseQuery("compute degreesAndPersist")).execute(graph);
 
         // assert persisted degrees are correct
         instantiateSimpleConcepts();
