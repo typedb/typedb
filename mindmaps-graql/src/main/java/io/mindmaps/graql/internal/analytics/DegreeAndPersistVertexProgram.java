@@ -20,10 +20,11 @@ package io.mindmaps.graql.internal.analytics;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.util.Schema;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.concept.Type;
-import io.mindmaps.factory.MindmapsClient;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
@@ -108,7 +109,7 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
 
     @Override
     public GraphComputer.Persist getPreferredPersist() {
-        return GraphComputer.Persist.VERTEX_PROPERTIES;
+        return GraphComputer.Persist.NOTHING;
     }
 
     @Override
@@ -180,12 +181,21 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
                     }
                 }
                 break;
+            case 3:
+                if(vertex.keys().contains(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID)) {
+                    mindmapsGraph.getRelation(vertex.value(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID)).delete();
+                    try {
+                        mindmapsGraph.commit();
+                    } catch (MindmapsValidationException e) {
+                        throw new RuntimeException("Failed to delete relation during bulk resource mutation.",e);
+                    }
+                }
         }
     }
 
     @Override
     public boolean terminate(final Memory memory) {
-        return memory.getIteration() == 2;
+        return memory.getIteration() == 3;
     }
 
     @Override
@@ -196,6 +206,6 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
     @Override
 
     public void workerIterationStart(Memory memory) {
-        mindmapsGraph = MindmapsClient.getGraph(keySpace);
+        mindmapsGraph = MindmapsClient.getGraphBatchLoading(keySpace);
     }
 }
