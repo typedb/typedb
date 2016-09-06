@@ -22,13 +22,10 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.RelationType;
-import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.factory.MindmapsClient;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
@@ -102,13 +99,6 @@ public class ScalingTestIT {
         simpleOntology();
 
         Set<String> superNodes = makeSuperNodes();
-
-        // add resources in advance
-        ResourceType<Long> resourceType = graph.putResourceType("degree", ResourceType.DataType.LONG);
-        for (long i = 0;i<MAX_SIZE;i++) {
-            graph.putResource(i,resourceType);
-        }
-        graph.commit();
 
         int previousGraphSize = 0;
         for (int graphSize : graphSizes) {
@@ -199,13 +189,6 @@ public class ScalingTestIT {
                 graph = MindmapsClient.getGraph(CURRENT_KEYSPACE);
                 simpleOntology();
 
-                // add resources in advance
-                ResourceType<Long> resourceType = graph.putResourceType("degree", ResourceType.DataType.LONG);
-                for (long k = 0;k<MAX_SIZE;k++) {
-                    graph.putResource(k,resourceType);
-                }
-                graph.commit();
-
                 // construct graph
                 writer.println("start generate graph " + System.currentTimeMillis()/1000L + "s");
                 writer.flush();
@@ -223,7 +206,6 @@ public class ScalingTestIT {
                 stopTime = System.currentTimeMillis();
                 degreeAndPersistTimeWrite+=stopTime-startTime;
                 writer.println("persist time: " + degreeAndPersistTimeWrite / ((i + 1) * 1000));
-
 
                 // mutate graph
                 writer.println("start mutate graph " + System.currentTimeMillis()/1000L + "s");
@@ -341,7 +323,7 @@ public class ScalingTestIT {
         while (startNode<graphSize) {
 
             String nodeId1 = "node-" + startNode;
-            String nodeId2 = "node-" + startNode++;
+            String nodeId2 = "node-" + ++startNode;
             distributedLoader.addToQueue(var().isa("related")
                     .rel("relation1", var().id(nodeId1))
                     .rel("relation2", var().id(nodeId2)));
