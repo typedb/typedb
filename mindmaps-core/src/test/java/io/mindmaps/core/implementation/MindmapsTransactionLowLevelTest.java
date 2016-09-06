@@ -44,8 +44,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 import static org.hamcrest.CoreMatchers.allOf;
@@ -430,24 +428,5 @@ public class MindmapsTransactionLowLevelTest {
         mindmapsGraph.commit();
 
         assertNull(mindmapsGraph.getConcept("1"));
-    }
-
-    @Test
-    public void testPutRelationTest(){
-        RoleType roleType1 = mindmapsGraph.putRoleType("roleType 1");
-        RoleType roleType2 = mindmapsGraph.putRoleType("roleType 2");
-        EntityType entityType = mindmapsGraph.putEntityType("entity type").
-                playsRole(roleType1).playsRole(roleType2);
-        RelationType relationType1 = mindmapsGraph.putRelationType("relation type 1").hasRole(roleType1).hasRole(roleType2);
-
-        Entity entity1 = mindmapsGraph.putEntity("1", entityType);
-        Entity entity2 = mindmapsGraph.putEntity("2", entityType);
-
-        Map<RoleType, Instance> map = new HashMap<>();
-        map.put(roleType1, entity1);
-        map.put(roleType2, entity2);
-
-        Relation rel1 = mindmapsGraph.putRelation(relationType1, map);
-        Relation rel2 = mindmapsGraph.putRelation(relationType1, map);
     }
 }

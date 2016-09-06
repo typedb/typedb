@@ -270,20 +270,11 @@ public class MindmapsTransactionImpl implements MindmapsTransaction {
     }
 
     @Override
-    public Relation putRelation(RelationType type, Map<RoleType, Instance> roleMap) {
-        Relation relation = getRelation(type, roleMap);
-        if(relation == null){
-            relation = addRelation(type);
-            for (Map.Entry<RoleType, Instance> entry : roleMap.entrySet()) {
-                relation.putRolePlayer(entry.getKey(), entry.getValue());
-            }
-        }
-        return relation;
-    }
-
-    @Override
     public Relation addRelation(RelationType type) {
-        return elementFactory.buildRelation(addInstanceVertex(DataType.BaseType.RELATION, type)).type(type);
+        RelationImpl relation = elementFactory.buildRelation(addInstanceVertex(DataType.BaseType.RELATION, type));
+        relation.setHash(null);
+        relation.type(type);
+        return relation;
     }
 
     //------------------------------------ Lookup

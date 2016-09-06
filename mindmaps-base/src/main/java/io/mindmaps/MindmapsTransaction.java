@@ -139,14 +139,6 @@ public interface MindmapsTransaction extends AutoCloseable{
     /**
      *
      * @param type The relation type of this Relation
-     * @param roleMap A role map specifying the rolePlayers (Instances or Resources) in the relationship and the roles (Role Types) they play.
-     * @return A new or existing relation with the provided type and role map.
-     */
-    Relation putRelation(RelationType type, Map<RoleType, Instance> roleMap);
-
-    /**
-     *
-     * @param type The relation type of this Relation
      * @return A new empty relation which can be fully customised
      */
     Relation addRelation(RelationType type);
