@@ -3,12 +3,11 @@ package io.mindmaps.graql.internal.analytics;
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.EntityType;
-import io.mindmaps.core.model.RelationType;
-import io.mindmaps.core.model.RoleType;
+import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.loader.DistributedLoader;
 import org.junit.*;
+import static org.junit.Assert.*;
 
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
@@ -35,9 +34,9 @@ public class ScalingTestIT {
 
     // test parameters
     int NUM_SUPER_NODES = 10; // the number of supernodes to generate in the test graph
-    int MAX_SIZE = 100; // the maximum number of non super nodes to add to the test graph
-    int NUM_DIVS = 3; // the number of divisions of the MAX_SIZE to use in the scaling test
-    int REPEAT = 3; // the number of times to repeat at each size for average runtimes
+    int MAX_SIZE = 1000; // the maximum number of non super nodes to add to the test graph
+    int NUM_DIVS = 1; // the number of divisions of the MAX_SIZE to use in the scaling test
+    int REPEAT = 1; // the number of times to repeat at each size for average runtimes
 
     // test variables
     int STEP_SIZE;
@@ -45,7 +44,7 @@ public class ScalingTestIT {
 
     @BeforeClass
     public static void startController() throws Exception {
-        startTestEngine();
+//        startTestEngine();
     }
 
     @Before
@@ -226,6 +225,48 @@ public class ScalingTestIT {
 
         writer.flush();
         writer.close();
+    }
+
+    @Test
+    public void testLargeDegreeMutationResultsInReadableGraphIT() throws MindmapsValidationException, InterruptedException, ExecutionException {
+
+        graph = MindmapsClient.getGraph(TEST_KEYSPACE);
+        simpleOntology();
+
+        // construct graph
+        addNodes(TEST_KEYSPACE, 0, MAX_SIZE);
+
+        Analytics computer = new Analytics(TEST_KEYSPACE);
+
+        computer.degreesAndPersist();
+
+        // add edges to force mutation
+        addEdges(TEST_KEYSPACE, MAX_SIZE);
+
+        computer = new Analytics(TEST_KEYSPACE);
+
+        computer.degreesAndPersist();
+
+        // assert mutated degrees are as expected
+        MindmapsTransaction transaction = graph.getTransaction();
+        thing = transaction.getEntityType("thing");
+        Collection<Entity> things = thing.instances();
+
+        assertFalse(things.isEmpty());
+        things.forEach(thisThing -> {
+            assertEquals(1, thisThing.resources().size());
+            assertEquals(1, thisThing.resources().iterator().next().getValue());
+        });
+
+        Collection<Relation> relations = transaction.getRelationType("degrees").instances();
+
+        assertFalse(relations.isEmpty());
+        relations.forEach(thisRelation -> {
+            assertEquals(1, thisRelation.resources().size());
+            assertEquals(2, thisRelation.resources().iterator().next().getValue());
+        });
+
+        graph.clear();
     }
 
     private void addNodes(String keyspace, int startRange, int endRange) throws MindmapsValidationException, InterruptedException {

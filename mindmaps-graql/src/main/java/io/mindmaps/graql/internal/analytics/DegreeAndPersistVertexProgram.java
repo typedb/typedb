@@ -104,7 +104,7 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
 
     @Override
     public GraphComputer.Persist getPreferredPersist() {
-        return GraphComputer.Persist.NOTHING;
+        return GraphComputer.Persist.VERTEX_PROPERTIES;
     }
 
     @Override
@@ -177,9 +177,9 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
                 }
                 break;
             case 3:
-                if(vertex.keys().contains(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID)) {
+                if(!isAnalyticsElement(vertex) && selectedTypes.contains(getVertexType(vertex)) && vertex.property(OLD_ASSERTION_ID).isPresent()) {
                     MindmapsTransaction transaction = mindmapsGraph.getTransaction();
-                    transaction.getRelation(vertex.value(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID)).delete();
+                    transaction.getRelation(vertex.value(OLD_ASSERTION_ID)).delete();
                     try {
                         transaction.commit();
                     } catch (MindmapsValidationException e) {
