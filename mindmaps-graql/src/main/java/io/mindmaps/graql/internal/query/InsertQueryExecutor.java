@@ -24,7 +24,7 @@ import io.mindmaps.util.Schema;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.core.concept.*;
 import io.mindmaps.graql.Var;
-import io.mindmaps.graql.internal.GraqlType;
+import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.graql.admin.VarAdmin;
 
 import java.util.*;

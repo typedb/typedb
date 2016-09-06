@@ -21,10 +21,10 @@ package io.mindmaps.graql;
 
 import com.google.common.collect.ImmutableSet;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.graql.internal.util.AdminConverter;
 import io.mindmaps.core.concept.Concept;
-import io.mindmaps.graql.admin.AdminConverter;
 import io.mindmaps.graql.admin.PatternAdmin;
-import io.mindmaps.graql.internal.StringConverter;
+import io.mindmaps.graql.internal.util.StringConverter;
 import io.mindmaps.graql.internal.query.*;
 import io.mindmaps.graql.internal.query.aggregate.*;
 import org.apache.tinkerpop.gremlin.process.traversal.P;

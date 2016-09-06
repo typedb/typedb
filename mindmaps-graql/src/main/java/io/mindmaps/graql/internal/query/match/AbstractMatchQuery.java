@@ -23,13 +23,13 @@ import com.google.common.collect.ImmutableSet;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.concept.Concept;
 import io.mindmaps.graql.*;
-import io.mindmaps.graql.admin.AdminConverter;
 import io.mindmaps.graql.admin.MatchQueryAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.query.AskQueryImpl;
 import io.mindmaps.graql.internal.query.DeleteQueryImpl;
 import io.mindmaps.graql.internal.query.InsertQueryImpl;
 import io.mindmaps.graql.internal.query.aggregate.AggregateQueryImpl;
+import io.mindmaps.graql.internal.util.AdminConverter;
 
 import java.util.*;
 import java.util.stream.Stream;

@@ -19,8 +19,8 @@
 package io.mindmaps.graql;
 
 import com.google.common.collect.ImmutableSet;
+import io.mindmaps.graql.internal.util.AdminConverter;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.graql.admin.AdminConverter;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.query.ConjunctionImpl;
 import io.mindmaps.graql.internal.query.InsertQueryImpl;
