@@ -148,8 +148,6 @@ public class AnalyticsTest {
         System.out.println(System.currentTimeMillis() - startTime + " ms");
     }
 
-    //TODO: Fix this test. It appears to be failing randomly from my experience, due to duplicate resources of the same value being created
-    @Ignore
     @Test
     public void testDegrees() throws Exception {
         instantiateSimpleConcepts();
@@ -235,8 +233,6 @@ public class AnalyticsTest {
         related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
     }
 
-    //TODO: Fix this test. It appears to be failing randomly from my experience, due to duplicate resources of the same value being created
-    @Ignore
     @Test
     public void testDegreesAndPersist() throws Exception {
         instantiateSimpleConcepts();
@@ -331,6 +327,7 @@ public class AnalyticsTest {
                 }
                 assert resources != null;
                 assert !resources.isEmpty();
+                assertEquals(1,resources.size());
                 assertEquals(resources.iterator().next().getValue(), degree.getValue());
             });
 
