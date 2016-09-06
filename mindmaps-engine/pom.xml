@@ -76,11 +76,11 @@
     <build>
         <plugins>
             <plugin>
+                <version>1.3.4</version>
                 <groupId>org.raml.plugins</groupId>
                 <artifactId>jaxrs-raml-maven-plugin</artifactId>
-                <version>1.3.4</version>
                 <configuration>
-                    <sourceDirectory>${basedir}/src/main/java/io/mindmaps/api</sourceDirectory>
+                    <sourceDirectory>src/main/java/io/mindmaps/engine/controller</sourceDirectory>
                     <outputFile>${project.build.directory}/jaxrs-raml/engine-apis.raml</outputFile>
                     <removeOldOutput>true</removeOldOutput>
                 </configuration>

@@ -19,6 +19,7 @@
 package io.mindmaps.shell;import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.GraqlClient;
 import io.mindmaps.graql.GraqlShell;
+import io.mindmaps.engine.session.RemoteSession;
 
 import java.io.IOException;
 import java.net.URI;
@@ -28,7 +29,7 @@ import static org.junit.Assert.fail;
 
 class GraqlClientMock implements GraqlClient {
 
-    private RemoteShell server = new RemoteShell(namespace -> {
+    private RemoteSession server = new RemoteSession(namespace -> {
         this.namespace = namespace;
         return MindmapsTestGraphFactory.newEmptyGraph();
     });
