@@ -77,6 +77,7 @@ public class ScalingTestIT {
 
     @Test
     public void countAndDegreeIT() throws InterruptedException, ExecutionException, MindmapsValidationException {
+        graph = MindmapsClient.getGraph(TEST_KEYSPACE);
 
         PrintWriter writer = null;
 
@@ -88,7 +89,6 @@ public class ScalingTestIT {
 
         Map<Integer, Long> scaleToAverageTimeCount = new HashMap<>();
         Map<Integer, Long> scaleToAverageTimeDegree = new HashMap<>();
-
 
         // Insert super nodes into graph
         simpleOntology();
