@@ -29,7 +29,7 @@ import static org.junit.Assert.assertTrue;
 
 public class CSVSchemaMigratorTest {
 
-    private String GRAPH_NAME;
+    private String GRAPH_NAME = "test";
 
     private MindmapsGraph graph;
     private MindmapsTransaction transaction;
@@ -54,8 +54,6 @@ public class CSVSchemaMigratorTest {
 
     @Before
     public void setup(){
-        GRAPH_NAME = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
-
         loader = new BlockingLoader(GRAPH_NAME);
         graph = GraphFactory.getInstance().getGraphBatchLoading(GRAPH_NAME);
         transaction = graph.getTransaction();
