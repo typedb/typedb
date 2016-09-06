@@ -1,40 +1,22 @@
 package io.mindmaps.graql.internal.analytics;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import io.mindmaps.MindmapsTransaction;
-import io.mindmaps.core.Data;
-import io.mindmaps.api.CommitLogController;
-import io.mindmaps.api.GraphFactoryController;
-import io.mindmaps.api.ImportController;
-import io.mindmaps.api.TransactionController;
-import io.mindmaps.core.Data;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.EntityType;
-import io.mindmaps.core.model.RelationType;
-import io.mindmaps.core.model.ResourceType;
-import io.mindmaps.core.model.RoleType;
+import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.loader.DistributedLoader;
-import org.apache.cassandra.exceptions.ConfigurationException;
-import org.apache.commons.configuration.Configuration;
-import org.apache.thrift.transport.TTransportException;
-import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.junit.*;
+import static org.junit.Assert.*;
 
-import javax.validation.constraints.Min;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-import static io.mindmaps.graql.Graql.all;
 import static io.mindmaps.IntegrationUtils.startTestEngine;
-import static io.mindmaps.graql.Graql.all;
 import static io.mindmaps.graql.Graql.var;
-import static java.lang.Thread.sleep;
 
 public class ScalingTestIT {
 
@@ -43,7 +25,6 @@ public class ScalingTestIT {
 
     String TEST_KEYSPACE = "mindmapstest";
     MindmapsGraph graph;
-    MindmapsTransaction transaction;
 
     // concepts
     EntityType thing;
@@ -78,6 +59,7 @@ public class ScalingTestIT {
     @Test
     public void countAndDegreeIT() throws InterruptedException, ExecutionException, MindmapsValidationException {
         graph = MindmapsClient.getGraph(TEST_KEYSPACE);
+        MindmapsTransaction transaction = graph.getTransaction();
 
         PrintWriter writer = null;
 
@@ -94,14 +76,6 @@ public class ScalingTestIT {
         simpleOntology();
 
         Set<String> superNodes = makeSuperNodes();
-
-        // add resources in advance
-        MindmapsTransaction transaction = graph.getTransaction();
-        ResourceType<Long> resourceType = transaction.putResourceType("degree", Data.LONG);
-        for (long i = 0;i<MAX_SIZE;i++) {
-            transaction.putResource(i,resourceType);
-        }
-        transaction.commit();
 
         int previousGraphSize = 0;
         for (int graphSize : graphSizes) {
@@ -192,20 +166,13 @@ public class ScalingTestIT {
                 graph = MindmapsClient.getGraph(CURRENT_KEYSPACE);
                 simpleOntology();
 
-                // add resources in advance
-                MindmapsTransaction transaction = graph.getTransaction();
-                ResourceType<Long> resourceType = transaction.putResourceType("degree", Data.LONG);
-                for (long k = 0;k<MAX_SIZE;k++) {
-                    transaction.putResource(k,resourceType);
-                }
-                transaction.commit();
-
                 // construct graph
                 writer.println("start generate graph " + System.currentTimeMillis()/1000L + "s");
                 writer.flush();
                 addNodes(CURRENT_KEYSPACE, 0, graphSize);
                 writer.println("stop generate graph " + System.currentTimeMillis()/1000L + "s");
 
+                MindmapsTransaction transaction = graph.getTransaction();
                 transaction = graph.getTransaction();
                 writer.println("gremlin count is: " + transaction.getTinkerTraversal().V().count().next());
 
@@ -218,7 +185,6 @@ public class ScalingTestIT {
                 stopTime = System.currentTimeMillis();
                 degreeAndPersistTimeWrite+=stopTime-startTime;
                 writer.println("persist time: " + degreeAndPersistTimeWrite / ((i + 1) * 1000));
-
 
                 // mutate graph
                 writer.println("start mutate graph " + System.currentTimeMillis()/1000L + "s");
@@ -259,6 +225,48 @@ public class ScalingTestIT {
 
         writer.flush();
         writer.close();
+    }
+
+    @Test
+    public void testLargeDegreeMutationResultsInReadableGraphIT() throws MindmapsValidationException, InterruptedException, ExecutionException {
+
+        graph = MindmapsClient.getGraph(TEST_KEYSPACE);
+        simpleOntology();
+
+        // construct graph
+        addNodes(TEST_KEYSPACE, 0, MAX_SIZE);
+
+        Analytics computer = new Analytics(TEST_KEYSPACE);
+
+        computer.degreesAndPersist();
+
+        // add edges to force mutation
+        addEdges(TEST_KEYSPACE, MAX_SIZE);
+
+        computer = new Analytics(TEST_KEYSPACE);
+
+        computer.degreesAndPersist();
+
+        // assert mutated degrees are as expected
+        MindmapsTransaction transaction = graph.getTransaction();
+        thing = transaction.getEntityType("thing");
+        Collection<Entity> things = thing.instances();
+
+        assertFalse(things.isEmpty());
+        things.forEach(thisThing -> {
+            assertEquals(1L, thisThing.resources().size());
+            assertEquals(1L, thisThing.resources().iterator().next().getValue());
+        });
+
+        Collection<Relation> relations = transaction.getRelationType("related").instances();
+
+        assertFalse(relations.isEmpty());
+        relations.forEach(thisRelation -> {
+            assertEquals(1L, thisRelation.resources().size());
+            assertEquals(2L, thisRelation.resources().iterator().next().getValue());
+        });
+
+        graph.clear();
     }
 
     private void addNodes(String keyspace, int startRange, int endRange) throws MindmapsValidationException, InterruptedException {
@@ -339,7 +347,7 @@ public class ScalingTestIT {
         while (startNode<graphSize) {
 
             String nodeId1 = "node-" + startNode;
-            String nodeId2 = "node-" + startNode++;
+            String nodeId2 = "node-" + ++startNode;
             distributedLoader.addToQueue(var().isa("related")
                     .rel("relation1", var().id(nodeId1))
                     .rel("relation2", var().id(nodeId2)));

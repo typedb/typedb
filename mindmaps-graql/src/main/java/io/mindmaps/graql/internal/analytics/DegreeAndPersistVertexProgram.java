@@ -19,9 +19,11 @@
 package io.mindmaps.graql.internal.analytics;
 
 import com.google.common.collect.Sets;
+import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.constants.DataType;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.factory.MindmapsClient;
 import org.apache.commons.configuration.Configuration;
@@ -174,12 +176,22 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
                     }
                 }
                 break;
+            case 3:
+                if(!isAnalyticsElement(vertex) && selectedTypes.contains(getVertexType(vertex)) && vertex.property(OLD_ASSERTION_ID).isPresent()) {
+                    MindmapsTransaction transaction = mindmapsGraph.getTransaction();
+                    transaction.getRelation(vertex.value(OLD_ASSERTION_ID)).delete();
+                    try {
+                        transaction.commit();
+                    } catch (MindmapsValidationException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
         }
     }
 
     @Override
     public boolean terminate(final Memory memory) {
-        return memory.getIteration() == 2;
+        return memory.getIteration() == 3;
     }
 
     @Override
@@ -190,6 +202,6 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
     @Override
 
     public void workerIterationStart(Memory memory) {
-        mindmapsGraph = MindmapsClient.getGraph(keySpace);
+        mindmapsGraph = MindmapsClient.getGraphBatchLoading(keySpace);
     }
 }
