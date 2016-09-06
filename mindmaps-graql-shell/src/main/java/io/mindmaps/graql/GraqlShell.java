@@ -288,7 +288,7 @@ public class GraqlShell implements AutoCloseable {
         Json json = Json.read(msg);
 
         if (json.has(ERROR)) {
-            System.err.println(json.at(ERROR));
+            System.err.println(json.at(ERROR).asString());
         }
 
         switch (json.at(ACTION).asString()) {

@@ -155,6 +155,14 @@ public class GraqlShellTest {
     }
 
     @Test
+    public void testAggregateQuery() throws IOException {
+        String result = testShell("match $x isa concept-type aggregate count\n");
+
+        // Expect to see the whole meta-ontology
+        assertThat(result, containsString("\n8\n"));
+    }
+
+    @Test
     public void testAutocomplete() throws IOException {
         String result = testShell("match $x isa \t");
 
@@ -219,6 +227,9 @@ public class GraqlShellTest {
         testShell("insert movie isa entity-type; moon isa movie; europa isa moon\n", err);
 
         assertThat(err.toString(), allOf(containsString("moon"), containsString("not"), containsString("type")));
+
+        // Errors should not be printed "in quotes"
+        assertThat(err.toString(), not(containsString("\"\n")));
     }
 
     @Test
