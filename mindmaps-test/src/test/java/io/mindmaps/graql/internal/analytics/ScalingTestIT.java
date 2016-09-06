@@ -4,11 +4,6 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.Data;
-import io.mindmaps.api.CommitLogController;
-import io.mindmaps.api.GraphFactoryController;
-import io.mindmaps.api.ImportController;
-import io.mindmaps.api.TransactionController;
-import io.mindmaps.core.Data;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.EntityType;
@@ -16,12 +11,10 @@ import io.mindmaps.core.model.RelationType;
 import io.mindmaps.core.model.ResourceType;
 import io.mindmaps.core.model.RoleType;
 import io.mindmaps.factory.MindmapsClient;
-import io.mindmaps.loader.DistributedLoader;
-import org.apache.cassandra.exceptions.ConfigurationException;
-import org.apache.commons.configuration.Configuration;
-import org.apache.thrift.transport.TTransportException;
-import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
-import org.junit.*;
+import io.mindmaps.engine.loader.DistributedLoader;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import javax.validation.constraints.Min;
 import java.io.FileNotFoundException;
@@ -32,7 +25,6 @@ import java.util.concurrent.ExecutionException;
 
 import static io.mindmaps.graql.Graql.all;
 import static io.mindmaps.IntegrationUtils.startTestEngine;
-import static io.mindmaps.graql.Graql.all;
 import static io.mindmaps.graql.Graql.var;
 import static java.lang.Thread.sleep;
 
