@@ -4,7 +4,7 @@ import com.google.common.collect.Lists;
 import io.mindmaps.core.Data;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.graql.Var;
-import io.mindmaps.loader.Loader;
+import io.mindmaps.engine.loader.Loader;
 import io.mindmaps.migration.sql.SQLModel.SQLTable;
 
 import java.io.Closeable;

@@ -3,9 +3,9 @@ package io.mindmaps.migration.sql;
 import com.google.common.collect.Lists;
 import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.factory.MindmapsClient;
-import io.mindmaps.loader.BlockingLoader;
-import io.mindmaps.loader.DistributedLoader;
-import io.mindmaps.loader.Loader;
+import io.mindmaps.engine.loader.BlockingLoader;
+import io.mindmaps.engine.loader.DistributedLoader;
+import io.mindmaps.engine.loader.Loader;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
