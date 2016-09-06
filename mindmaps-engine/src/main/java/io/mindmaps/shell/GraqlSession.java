@@ -98,6 +98,8 @@ class GraqlSession {
                 } else if (query instanceof DeleteQuery) {
                     executeDeleteQuery((DeleteQuery) query);
                     reasoner.linkConceptTypes();
+                } else if (query instanceof AggregateQuery) {
+                    results = streamAggregateQuery((AggregateQuery) query);
                 } else if (query instanceof ComputeQuery) {
                     Object computeResult = ((ComputeQuery) query).execute(graph);
                     if (computeResult instanceof Map) {
@@ -198,6 +200,13 @@ class GraqlSession {
      */
     private void executeDeleteQuery(DeleteQuery query) {
         query.execute();
+    }
+
+    /**
+     * Return a stream containing the single aggregate query result
+     */
+    private Stream<String> streamAggregateQuery(AggregateQuery query) {
+        return Stream.of(query.execute().toString());
     }
 
     /**
