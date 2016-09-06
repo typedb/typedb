@@ -21,6 +21,7 @@ package io.mindmaps.engine.controller;
 import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.constants.RESTUtil;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
+import io.mindmaps.engine.loader.Loader;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.Var;
@@ -35,6 +36,7 @@ import org.json.JSONObject;
 import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
+import spark.Route;
 
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -63,31 +65,22 @@ public class ImportController {
     private final org.slf4j.Logger LOG = LoggerFactory.getLogger(ImportController.class);
 
 
-    private String graphName;
-
     //TODO: Use redis for caching LRU
     private Map<String, String> entitiesMap;
     //TODO: add relations to relationsList when they are referring to relations that have not been inserted yet
     private ArrayList<Var> relationsList;
 
-    private BlockingLoader loader;
 
+    private String defaultGraphName;
 
     public ImportController() {
-        new ImportController(ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY));
-    }
-
-
-    public ImportController(String graphNameInit) {
 
         post(RESTUtil.WebPath.IMPORT_DATA_URI, this::importDataREST);
         post(RESTUtil.WebPath.IMPORT_ONTOLOGY_URI, this::importOntologyREST);
 
         entitiesMap = new ConcurrentHashMap<>();
         relationsList = new ArrayList<>();
-        graphName = graphNameInit;
-        loader = new BlockingLoader(graphName);
-
+        defaultGraphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
     }
 
 
@@ -101,8 +94,16 @@ public class ImportController {
     private String importDataREST(Request req, Response res) {
 
         try {
-            String filePath = new JSONObject(req.body()).getString(RESTUtil.Request.PATH_FIELD);
-            Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(filePath));
+            JSONObject bodyObject = new JSONObject(req.body());
+            String pathToFile = bodyObject.get(RESTUtil.Request.PATH_FIELD).toString();
+            final String graphName;
+
+            if (bodyObject.has(RESTUtil.Request.GRAPH_NAME_PARAM))
+                graphName = bodyObject.get(RESTUtil.Request.GRAPH_NAME_PARAM).toString();
+            else
+                graphName = defaultGraphName;
+
+            Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(pathToFile, graphName));
         } catch (JSONException j) {
             LOG.error("Malformed request.");
             j.printStackTrace();
@@ -124,7 +125,13 @@ public class ImportController {
     private String importOntologyREST(Request req, Response res) {
         try {
             JSONObject bodyObject = new JSONObject(req.body());
-            importOntologyFromFile(bodyObject.get(RESTUtil.Request.PATH_FIELD).toString());
+            String pathToFile = bodyObject.get(RESTUtil.Request.PATH_FIELD).toString();
+            String graphName;
+            if (bodyObject.has(RESTUtil.Request.GRAPH_NAME_PARAM))
+                graphName = bodyObject.get(RESTUtil.Request.GRAPH_NAME_PARAM).toString();
+            else
+                graphName = defaultGraphName;
+            importOntologyFromFile(pathToFile, graphName);
         } catch (JSONException j) {
             LOG.error("Malformed request.");
             j.printStackTrace();
@@ -139,11 +146,12 @@ public class ImportController {
         return "Ontology successfully loaded.";
     }
 
-    void importDataFromFile(String dataFile) {
+    void importDataFromFile(String dataFile, String graphName) {
+        BlockingLoader loader = new BlockingLoader(graphName);
         try {
-            QueryParser.create().parsePatternsStream(new FileInputStream(dataFile)).forEach(pattern -> consumeEntity(pattern.admin().asVar()));
+            QueryParser.create().parsePatternsStream(new FileInputStream(dataFile)).forEach(pattern -> consumeEntity(pattern.admin().asVar(),loader));
             loader.waitToFinish();
-            QueryParser.create().parsePatternsStream(new FileInputStream(dataFile)).forEach(pattern -> consumeRelationAndResource(pattern.admin().asVar()));
+            QueryParser.create().parsePatternsStream(new FileInputStream(dataFile)).forEach(pattern -> consumeRelationAndResource(pattern.admin().asVar(),loader));
             loader.waitToFinish();
             BackgroundTasks.getInstance().forcePostprocessing();
         } catch (Exception e) {
@@ -152,7 +160,7 @@ public class ImportController {
         }
     }
 
-    private void consumeEntity(Var var) {
+    private void consumeEntity(Var var, Loader loader) {
         if (!entitiesMap.containsKey(var.admin().getName()) && !var.admin().isRelation() && var.admin().getType().isPresent()) {
             if (var.admin().isUserDefinedName()) {
                 // Some variable might not have an explicit ID defined, in that case we generate explicitly one and we save it into our cache
@@ -167,7 +175,7 @@ public class ImportController {
         }
     }
 
-    private void consumeRelationAndResource(Var var) {
+    private void consumeRelationAndResource(Var var, Loader loader) {
         boolean ready = false;
 
         if (var.admin().isRelation()) {
@@ -194,7 +202,7 @@ public class ImportController {
 
     }
 
-    void importOntologyFromFile(String ontologyFile) throws IOException, MindmapsValidationException {
+    void importOntologyFromFile(String ontologyFile, String graphName) throws IOException, MindmapsValidationException {
 
         MindmapsTransaction transaction = GraphFactory.getInstance().getGraphBatchLoading(graphName).getTransaction();
 

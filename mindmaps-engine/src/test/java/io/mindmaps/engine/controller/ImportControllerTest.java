@@ -46,7 +46,7 @@ public class ImportControllerTest {
     @Before
     public void setUp() throws Exception {
         graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
-        importer = new ImportController(graphName);
+        importer = new ImportController();
         new CommitLogController();
         new GraphFactoryController();
         new ImportController();
@@ -80,13 +80,38 @@ public class ImportControllerTest {
         }
 
          Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getTransaction().getConcept("X506965727265204162656c").getId());
-
+         GraphFactory.getInstance().getGraphBatchLoading(graphName).clear();
     }
 
+    @Test
+    public void testLoadOntologyAndDataOnCustomKeyspace() {
+        String ontologyPath = getClass().getClassLoader().getResource("dblp-ontology.gql").getPath();
+        String dataPath = getClass().getClassLoader().getResource("small_nametags.gql").getPath();
+        String customGraph = "import-graph";
 
-    @After
-    public void cleanGraph() {
-        GraphFactory.getInstance().getGraphBatchLoading(graphName).clear();
+
+        Response ontologyResponse = given().contentType("application/json").
+                body(Json.object("path", ontologyPath,"graphName",customGraph).toString()).when().
+                post(RESTUtil.WebPath.IMPORT_ONTOLOGY_URI);
+
+        ontologyResponse.then().assertThat().statusCode(200);
+
+        Response dataResponse = given().contentType("application/json").
+                body(Json.object("path", dataPath,"graphName",customGraph).toString()).when().
+                post(RESTUtil.WebPath.IMPORT_DATA_URI);
+
+        dataResponse.then().assertThat().statusCode(200);
+
+        //TODO: find a proper way to notify a client when loading is done. Something slightly more elegant than a thread sleep.
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(customGraph).getTransaction().getConcept("X506965727265204162656c").getId());
+        GraphFactory.getInstance().getGraphBatchLoading(customGraph).clear();
     }
+
 
 }
