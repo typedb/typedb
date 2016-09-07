@@ -19,37 +19,90 @@
 
 package io.mindmaps.graql.internal.query.match;
 
+import com.google.common.collect.ImmutableSet;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.graql.Aggregate;
-import io.mindmaps.graql.AggregateQuery;
-import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.core.model.Concept;
+import io.mindmaps.graql.*;
+import io.mindmaps.graql.admin.AdminConverter;
 import io.mindmaps.graql.admin.MatchQueryAdmin;
+import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.query.AskQueryImpl;
+import io.mindmaps.graql.internal.query.DeleteQueryImpl;
+import io.mindmaps.graql.internal.query.InsertQueryImpl;
 import io.mindmaps.graql.internal.query.aggregate.AggregateQueryImpl;
 
-abstract class AbstractMatchQuery<T> implements MatchQueryAdmin<T> {
+import java.util.*;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toList;
+
+@SuppressWarnings("UnusedReturnValue")
+abstract class AbstractMatchQuery implements MatchQueryAdmin {
 
     @Override
-    public MatchQuery<T> withGraph(MindmapsGraph transaction) {
-        return new MatchQueryTransaction<>(transaction, admin());
+    public MatchQuery withGraph(MindmapsGraph graph) {
+        return new MatchQueryGraph(graph, admin());
     }
 
     @Override
-    public MatchQuery<T> limit(long limit) {
-        return new MatchQueryLimit<>(admin(), limit);
+    public MatchQuery limit(long limit) {
+        return new MatchQueryLimit(admin(), limit);
     }
 
     @Override
-    public MatchQuery<T> offset(long offset) {
-        return new MatchQueryOffset<>(admin(), offset);
+    public MatchQuery offset(long offset) {
+        return new MatchQueryOffset(admin(), offset);
     }
 
     @Override
-    public MatchQuery<T> distinct() {
-        return new MatchQueryDistinct<>(admin());
+    public MatchQuery distinct() {
+        return new MatchQueryDistinct(admin());
     }
 
     @Override
-    public final <S> AggregateQuery<S> aggregate(Aggregate<? super T, S> aggregate) {
+    public final <S> AggregateQuery<S> aggregate(Aggregate<? super Map<String, Concept>, S> aggregate) {
         return new AggregateQueryImpl<>(admin(), aggregate);
+    }
+
+    @Override
+    public final MatchQuery select(Set<String> names) {
+        return new MatchQuerySelect(admin(), ImmutableSet.copyOf(names));
+    }
+
+    @Override
+    public final Stream<Concept> get(String name) {
+        return stream().map(result -> result.get(name));
+    }
+
+    @Override
+    public final AskQuery ask() {
+        return new AskQueryImpl(this);
+    }
+
+    @Override
+    public final InsertQuery insert(Collection<? extends Var> vars) {
+        ImmutableSet<VarAdmin> varAdmins = ImmutableSet.copyOf(AdminConverter.getVarAdmins(vars));
+        return new InsertQueryImpl(varAdmins, admin());
+    }
+
+    @Override
+    public final DeleteQuery delete(String... names) {
+        List<Var> deleters = Arrays.stream(names).map(Graql::var).collect(toList());
+        return delete(deleters);
+    }
+
+    @Override
+    public final DeleteQuery delete(Collection<? extends Var> deleters) {
+        return new DeleteQueryImpl(AdminConverter.getVarAdmins(deleters), this);
+    }
+
+    @Override
+    public final MatchQuery orderBy(String varName, boolean asc) {
+        return new MatchQueryOrder(admin(), new MatchOrderImpl(varName, Optional.empty(), asc));
+    }
+
+    @Override
+    public final MatchQuery orderBy(String varName, String resourceType, boolean asc) {
+        return new MatchQueryOrder(admin(), new MatchOrderImpl(varName, Optional.of(resourceType), asc));
     }
 }

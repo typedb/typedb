@@ -37,25 +37,25 @@ public class Graql {
     // QUERY BUILDING
 
     /**
-     * @return a query builder without a specified transaction
+     * @return a query builder without a specified graph
      */
     public static QueryBuilder withoutGraph() {
         return new QueryBuilder();
     }
 
     /**
-     * @param transaction  the transaction to operate the query on
-     * @return a query builder using the specified transaction
+     * @param graph the graph to operate the query on
+     * @return a query builder using the specified graph
      */
-    public static QueryBuilder withGraph(MindmapsGraph transaction) {
-        return new QueryBuilder(transaction);
+    public static QueryBuilder withGraph(MindmapsGraph graph) {
+        return new QueryBuilder(graph);
     }
 
     /**
      * @param patterns an array of patterns to match in the graph
      * @return a match query that will find matches of the given patterns
      */
-    public static MatchQueryDefault match(Pattern... patterns) {
+    public static MatchQuery match(Pattern... patterns) {
         return withoutGraph().match(patterns);
     }
 
@@ -63,7 +63,7 @@ public class Graql {
      * @param patterns a collection of patterns to match in the graph
      * @return a match query that will find matches of the given patterns
      */
-    public static MatchQueryDefault match(Collection<? extends Pattern> patterns) {
+    public static MatchQuery match(Collection<? extends Pattern> patterns) {
         return withoutGraph().match(patterns);
     }
 

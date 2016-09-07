@@ -20,48 +20,51 @@
 package io.mindmaps.graql.internal.query.match;
 
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Type;
-import io.mindmaps.graql.admin.MatchQueryDefaultAdmin;
-import io.mindmaps.graql.admin.PatternAdmin;
-import io.mindmaps.graql.internal.query.Conjunction;
+import io.mindmaps.graql.admin.MatchQueryAdmin;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
- * Abstract MatchQueryDefault implementation. Extends the abstract MatchQuery implementation, but provides extra behaviour
- * to support the MatchQueryDefault interface.
+ * Modifier that specifies the graph to execute the match query with.
  */
-abstract class MatchQueryDefaultModifier extends AbstractMatchQueryDefault {
+class MatchQueryGraph extends MatchQueryModifier {
 
-    final MatchQueryDefaultAdmin inner;
+    private final MindmapsGraph graph;
 
-    MatchQueryDefaultModifier(MatchQueryDefaultAdmin inner) {
-        this.inner = inner;
+    MatchQueryGraph(MindmapsGraph graph, MatchQueryAdmin inner) {
+        super(inner);
+        this.graph = graph;
     }
 
     @Override
-    public Set<Type> getTypes(MindmapsGraph transaction) {
-        return inner.getTypes(transaction);
-    }
+    public Stream<Map<String, Concept>> stream(
+            Optional<MindmapsGraph> graph, Optional<MatchOrder> order
+    ) {
+        if (graph.isPresent()) {
+            throw new IllegalStateException(ErrorMessage.MULTIPLE_GRAPH.getMessage());
+        }
 
-    @Override
-    public Set<Type> getTypes() {
-        return inner.getTypes();
-    }
-
-    @Override
-    public Conjunction<PatternAdmin> getPattern() {
-        return inner.getPattern();
+        return inner.stream(Optional.of(this.graph), order);
     }
 
     @Override
     public Optional<MindmapsGraph> getGraph() {
-        return inner.getGraph();
+        return Optional.of(graph);
     }
 
     @Override
-    public Set<String> getSelectedNames() {
-        return inner.getSelectedNames();
+    public Set<Type> getTypes() {
+        return inner.getTypes(graph);
+    }
+
+    @Override
+    public String toString() {
+        return inner.toString();
     }
 }

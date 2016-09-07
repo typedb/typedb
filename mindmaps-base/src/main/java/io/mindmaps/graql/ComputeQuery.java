@@ -24,8 +24,6 @@ import java.util.concurrent.ExecutionException;
 
 /**
  * A query that triggers an OLAP computation on a graph.
- * <p>
- * A {@code ComputeQuery} operates on a specific keyspace obtained from the graph providing transactions to the parser.
  */
 public interface ComputeQuery {
 

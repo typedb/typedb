@@ -49,29 +49,29 @@ import static java.util.stream.Collectors.toList;
  */
 public class Query {
 
-    private final MindmapsGraph transaction;
+    private final MindmapsGraph graph;
     private final Collection<ConjunctionQuery> innerQueries;
     private final ImmutableSet<String> names;
     private final Optional<MatchOrder> order;
 
     /**
-     * @param transaction the transaction to execute the query on
+     * @param graph the graph to execute the query on
      * @param pattern a pattern to find in the graph
      * @param names the variable names to select
      * @param order an optional ordering
      */
-    public Query(MindmapsGraph transaction, PatternAdmin pattern, Set<String> names, Optional<MatchOrder> order) {
+    public Query(MindmapsGraph graph, PatternAdmin pattern, Set<String> names, Optional<MatchOrder> order) {
         Collection<Conjunction<VarAdmin>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
-        if (transaction == null) {
-            throw new IllegalStateException(ErrorMessage.NO_TRANSACTION.getMessage());
+        if (graph == null) {
+            throw new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage());
         }
 
-        this.transaction = transaction;
+        this.graph = graph;
         this.names = ImmutableSet.copyOf(names);
         this.order = order;
 
-        innerQueries = patterns.stream().map(p -> new ConjunctionQuery(transaction, p)).collect(toList());
+        innerQueries = patterns.stream().map(p -> new ConjunctionQuery(graph, p)).collect(toList());
     }
 
     /**
@@ -84,9 +84,9 @@ public class Query {
         // Because 'union' accepts an array, we can't use generics...
         //noinspection unchecked
         GraphTraversal<Vertex, Map<String, Vertex>> traversal =
-                transaction.getTinkerTraversal().V().limit(1).union(collect);
+                graph.getTinkerTraversal().V().limit(1).union(collect);
 
-        order.ifPresent(o -> o.orderTraversal(transaction, traversal));
+        order.ifPresent(o -> o.orderTraversal(graph, traversal));
 
         String[] namesArray = names.toArray(new String[names.size()]);
 

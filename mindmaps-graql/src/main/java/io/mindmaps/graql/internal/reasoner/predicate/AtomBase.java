@@ -142,9 +142,9 @@ public abstract class AtomBase implements Atomic{
         return new DisjunctionImpl<>(expandedPattern);
     }
 
-    private MatchQueryDefault getBaseMatchQuery(MindmapsGraph graph) {
+    private MatchQuery getBaseMatchQuery(MindmapsGraph graph) {
         QueryBuilder qb = Graql.withGraph(graph);
-        MatchQueryDefault matchQuery = qb.match(getPattern());
+        MatchQuery matchQuery = qb.match(getPattern());
 
         //add substitutions
         Map<String, Set<Atomic>> varSubMap = getVarSubMap();
@@ -159,12 +159,12 @@ public abstract class AtomBase implements Atomic{
     }
 
     @Override
-    public MatchQueryDefault getMatchQuery(MindmapsGraph graph) {
+    public MatchQuery getMatchQuery(MindmapsGraph graph) {
         return getBaseMatchQuery(graph);
     }
 
     @Override
-    public MatchQueryDefault getExpandedMatchQuery(MindmapsGraph graph) {
+    public MatchQuery getExpandedMatchQuery(MindmapsGraph graph) {
         QueryBuilder qb = Graql.withGraph(graph);
         Set<String> selectVars = Sets.newHashSet(varName);
         return qb.match(getExpandedPattern()).select(selectVars);

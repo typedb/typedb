@@ -27,80 +27,80 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
  * Internal factory to produce different types of concepts
  */
 final class ElementFactory {
-    private final AbstractMindmapsGraph mindmapsTransaction;
+    private final AbstractMindmapsGraph mindmapsGraph;
 
-    public ElementFactory(AbstractMindmapsGraph mindmapsTransaction){
-        this.mindmapsTransaction = mindmapsTransaction;
+    public ElementFactory(AbstractMindmapsGraph mindmapsGraph){
+        this.mindmapsGraph = mindmapsGraph;
     }
 
     public RelationImpl buildRelation(Vertex v){
-        return new RelationImpl(v, mindmapsTransaction);
+        return new RelationImpl(v, mindmapsGraph);
     }
     public RelationImpl buildRelation(Concept c){
         return buildRelation(((ConceptImpl) c).getVertex());
     }
 
     public CastingImpl buildCasting(Vertex v){
-        return new CastingImpl(v, mindmapsTransaction);
+        return new CastingImpl(v, mindmapsGraph);
     }
     public CastingImpl buildCasting(Concept c){
         return buildCasting(((ConceptImpl) c).getVertex());
     }
 
     public TypeImpl buildConceptType(Vertex v){
-        return  new TypeImpl(v, mindmapsTransaction);
+        return  new TypeImpl(v, mindmapsGraph);
     }
     public TypeImpl buildConceptType(Concept c){
         return buildConceptType(((ConceptImpl) c).getVertex());
     }
 
     public RuleTypeImpl buildRuleType(Vertex v){
-        return  new RuleTypeImpl(v, mindmapsTransaction);
+        return  new RuleTypeImpl(v, mindmapsGraph);
     }
     public RuleTypeImpl buildRuleType(Concept c){
         return buildRuleType(((ConceptImpl) c).getVertex());
     }
 
     public RoleTypeImpl buildRoleType(Vertex v){
-        return new RoleTypeImpl(v, mindmapsTransaction);
+        return new RoleTypeImpl(v, mindmapsGraph);
     }
     public RoleTypeImpl buildRoleType(Concept c){
         return buildRoleType(((ConceptImpl) c).getVertex());
     }
 
     public <V> ResourceTypeImpl<V> buildResourceType(Vertex v){
-        return new ResourceTypeImpl<>(v, mindmapsTransaction);
+        return new ResourceTypeImpl<>(v, mindmapsGraph);
     }
     public <V> ResourceTypeImpl<V> buildResourceType(Vertex v, Data<V> type){
-        return new ResourceTypeImpl<>(v, mindmapsTransaction, type);
+        return new ResourceTypeImpl<>(v, mindmapsGraph, type);
     }
     public <V> ResourceTypeImpl<V> buildResourceType(Concept c, Data<V> type){
         return buildResourceType(((ConceptImpl) c).getVertex(), type);
     }
 
     public RelationTypeImpl buildRelationType(Vertex v){
-        return  new RelationTypeImpl(v, mindmapsTransaction);
+        return  new RelationTypeImpl(v, mindmapsGraph);
     }
     public RelationTypeImpl buildRelationType(Concept c){
         return buildRelationType(((ConceptImpl) c).getVertex());
     }
 
     public EntityTypeImpl buildEntityType(Vertex v){
-        return  new EntityTypeImpl(v, mindmapsTransaction);
+        return  new EntityTypeImpl(v, mindmapsGraph);
     }
     public EntityTypeImpl buildEntityType(Concept c){
         return buildEntityType(((ConceptImpl) c).getVertex());
     }
 
     public EntityImpl buildEntity(Vertex v){
-        return  new EntityImpl(v, mindmapsTransaction);
+        return  new EntityImpl(v, mindmapsGraph);
     }
     public EntityImpl buildEntity(Concept c){
         return buildEntity(((ConceptImpl) c).getVertex());
     }
 
     public <V> ResourceImpl <V> buildResource(Vertex v){
-        return  new ResourceImpl<>(v, mindmapsTransaction);
+        return  new ResourceImpl<>(v, mindmapsGraph);
     }
     public <V> ResourceImpl <V> buildResource(Concept c){
         return  buildResource(((ConceptImpl) c).getVertex());
@@ -110,7 +110,7 @@ final class ElementFactory {
         return buildRule(v, v.value(DataType.ConceptProperty.RULE_LHS.name()), v.value(DataType.ConceptProperty.RULE_RHS.name()));
     }
     public RuleImpl buildRule(Vertex v, String lhs, String rhs){
-        return  new RuleImpl(v, mindmapsTransaction, lhs, rhs);
+        return  new RuleImpl(v, mindmapsGraph, lhs, rhs);
     }
     public RuleImpl buildRule(ConceptImpl c){
         return  buildRule(c.getVertex(),

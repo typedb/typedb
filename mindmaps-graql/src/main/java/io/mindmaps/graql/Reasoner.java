@@ -48,8 +48,8 @@ public class Reasoner {
 
     private final Map<String, Query> workingMemory = new HashMap<>();
 
-    public Reasoner(MindmapsGraph tr){
-        this.graph = tr;
+    public Reasoner(MindmapsGraph graph){
+        this.graph = graph;
         qp =  QueryParser.create(graph);
 
         linkConceptTypes();
@@ -178,8 +178,8 @@ public class Reasoner {
     private void linkConceptTypes(Rule rule)
     {
         LOG.debug("Linking rule " + rule.getId() + "...");
-        MatchQueryDefault qLHS = qp.parseMatchQuery(rule.getLHS()).getMatchQuery();
-        MatchQueryDefault qRHS = qp.parseMatchQuery(rule.getRHS()).getMatchQuery();
+        MatchQuery qLHS = qp.parseMatchQuery(rule.getLHS()).getMatchQuery();
+        MatchQuery qRHS = qp.parseMatchQuery(rule.getRHS()).getMatchQuery();
 
         Set<Type> hypothesisConceptTypes = qLHS.admin().getTypes();
         Set<Type> conclusionConceptTypes = qRHS.admin().getTypes();
@@ -193,7 +193,7 @@ public class Reasoner {
 
     public Set<Rule> getRules() {
         Set<Rule> rules = new HashSet<>();
-        MatchQueryDefault sq = qp.parseMatchQuery("match $x isa inference-rule;").getMatchQuery();
+        MatchQuery sq = qp.parseMatchQuery("match $x isa inference-rule;").getMatchQuery();
 
         List<Map<String, Concept>> results = Lists.newArrayList(sq);
 
@@ -650,7 +650,7 @@ public class Reasoner {
      * @param inputQuery the query string to be expanded
      * @return set of answers
      */
-    public Set<Map<String, Concept>> resolve(MatchQueryDefault inputQuery) {
+    public Set<Map<String, Concept>> resolve(MatchQuery inputQuery) {
         Query query = new Query(inputQuery, graph);
         return resolveQuery(query);
     }
@@ -660,7 +660,7 @@ public class Reasoner {
      * @param inputQuery the query string to be expanded
      * @return expanded query string
      */
-    public MatchQueryDefault expand(MatchQueryDefault inputQuery) {
+    public MatchQuery expand(MatchQuery inputQuery) {
         Query query = new Query(inputQuery, graph);
         Map<String, Type> varMap = query.getVarTypeMap();
         expandQuery(query, varMap);

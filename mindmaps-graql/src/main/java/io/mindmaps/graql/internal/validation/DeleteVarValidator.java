@@ -41,7 +41,7 @@ class DeleteVarValidator implements Validator {
     }
 
     @Override
-    public Stream<String> getErrors(MindmapsGraph transaction) {
+    public Stream<String> getErrors(MindmapsGraph graph) {
         List<String> errors = new ArrayList<>();
 
         if (var.hasValue()) errors.add(ErrorMessage.DELETE_VALUE.getMessage());

@@ -71,9 +71,9 @@ public class VisualiserController {
         String graphNameParam = req.queryParams(RESTUtil.Request.GRAPH_NAME_PARAM);
         String currentGraphName = (graphNameParam == null) ? defaultGraphName : graphNameParam;
 
-        MindmapsGraph transaction = GraphFactory.getInstance().getGraph(currentGraphName);
+        MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName);
 
-        Concept concept = transaction.getConcept(req.params(RESTUtil.Request.ID_PARAMETER));
+        Concept concept = graph.getConcept(req.params(RESTUtil.Request.ID_PARAMETER));
         if (concept != null)
             return new HALConcept(concept).render();
         else {

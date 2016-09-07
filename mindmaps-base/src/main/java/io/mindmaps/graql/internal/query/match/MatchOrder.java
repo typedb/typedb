@@ -35,5 +35,5 @@ public interface MatchOrder {
      * Order the traversal
      * @param traversal the traversal to order
      */
-    void orderTraversal(MindmapsGraph transaction, GraphTraversal<Vertex, Map<String, Vertex>> traversal);
+    void orderTraversal(MindmapsGraph graph, GraphTraversal<Vertex, Map<String, Vertex>> traversal);
 }

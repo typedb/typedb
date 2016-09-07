@@ -30,7 +30,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 public class PostprocessingTest {
-    private AbstractMindmapsGraph transaction;
+    private AbstractMindmapsGraph graph;
     private RoleType roleType1;
     private RoleType roleType2;
     private RelationType relationType;
@@ -41,26 +41,26 @@ public class PostprocessingTest {
 
     @Before
     public void buildGraphAccessManager(){
-        transaction = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
-        transaction.initialiseMetaConcepts();
+        graph = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
+        graph.initialiseMetaConcepts();
 
-        roleType1 = transaction.putRoleType("role 1");
-        roleType2 = transaction.putRoleType("role 2");
-        relationType = transaction.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
-        EntityType thing = transaction.putEntityType("thing").playsRole(roleType1).playsRole(roleType2);
-        instance1 = (InstanceImpl) transaction.putEntity("1", thing);
-        instance2 = (InstanceImpl) transaction.putEntity("2", thing);
-        instance3 = (InstanceImpl) transaction.putEntity("3", thing);
-        instance4 = (InstanceImpl) transaction.putEntity("4", thing);
+        roleType1 = graph.putRoleType("role 1");
+        roleType2 = graph.putRoleType("role 2");
+        relationType = graph.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
+        EntityType thing = graph.putEntityType("thing").playsRole(roleType1).playsRole(roleType2);
+        instance1 = (InstanceImpl) graph.putEntity("1", thing);
+        instance2 = (InstanceImpl) graph.putEntity("2", thing);
+        instance3 = (InstanceImpl) graph.putEntity("3", thing);
+        instance4 = (InstanceImpl) graph.putEntity("4", thing);
 
-        transaction.addRelation(relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
+        graph.addRelation(relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
         assertEquals(1, instance1.castings().size());
-        assertEquals(2, transaction.getTinkerPopGraph().traversal().E().
+        assertEquals(2, graph.getTinkerPopGraph().traversal().E().
                 hasLabel(DataType.EdgeLabel.SHORTCUT.getLabel()).toList().size());
     }
     @After
     public void destroyGraphAccessManager()  throws Exception{
-        transaction.close();
+        graph.close();
     }
 
     @Test
@@ -70,15 +70,15 @@ public class PostprocessingTest {
         buildDuplicateCastingWithNewRelation(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance4);
         assertEquals(3, instance1.castings().size());
 
-        transaction.fixDuplicateCasting(mainCasting.getId());
+        graph.fixDuplicateCasting(mainCasting.getId());
         assertEquals(1, instance1.castings().size());
     }
 
     private void buildDuplicateCastingWithNewRelation(RelationType relationType, RoleTypeImpl mainRoleType, InstanceImpl mainInstance, RoleType otherRoleType, InstanceImpl otherInstance){
-        RelationImpl relation = (RelationImpl) transaction.addRelation(relationType).putRolePlayer(otherRoleType, otherInstance);
+        RelationImpl relation = (RelationImpl) graph.addRelation(relationType).putRolePlayer(otherRoleType, otherInstance);
 
         //Create Fake Casting
-        Vertex castingVertex = transaction.getTinkerPopGraph().addVertex(DataType.BaseType.CASTING.name());
+        Vertex castingVertex = graph.getTinkerPopGraph().addVertex(DataType.BaseType.CASTING.name());
         castingVertex.addEdge(DataType.EdgeLabel.ISA.getLabel(), mainRoleType.getVertex());
 
         Edge edge = castingVertex.addEdge(DataType.EdgeLabel.ROLE_PLAYER.getLabel(), mainInstance.getVertex());
@@ -93,7 +93,7 @@ public class PostprocessingTest {
 
     private void putFakeShortcutEdge(RelationType relationType, Relation relation, RoleType fromRole, InstanceImpl fromInstance, RoleType toRole, InstanceImpl toInstance){
         Edge tinkerEdge = fromInstance.getVertex().addEdge(DataType.EdgeLabel.SHORTCUT.getLabel(), toInstance.getVertex());
-        EdgeImpl edge = new EdgeImpl(tinkerEdge, transaction);
+        EdgeImpl edge = new EdgeImpl(tinkerEdge, graph);
 
         edge.setProperty(DataType.EdgeProperty.RELATION_TYPE_ID, relationType.getId());
         edge.setProperty(DataType.EdgeProperty.RELATION_ID, relation.getId());
@@ -121,16 +121,16 @@ public class PostprocessingTest {
         assertEquals(2, instance2.relations().size());
         assertEquals(1, instance3.relations().size());
 
-        assertEquals(6, transaction.getTinkerPopGraph().traversal().E().
+        assertEquals(6, graph.getTinkerPopGraph().traversal().E().
                 hasLabel(DataType.EdgeLabel.SHORTCUT.getLabel()).toList().size());
 
-        transaction.fixDuplicateCasting(mainCasting.getId());
+        graph.fixDuplicateCasting(mainCasting.getId());
 
         assertEquals(2, instance1.relations().size());
         assertEquals(1, instance2.relations().size());
         assertEquals(1, instance3.relations().size());
 
-        assertEquals(4, transaction.getTinkerTraversal().E().
+        assertEquals(4, graph.getTinkerTraversal().E().
                 hasLabel(DataType.EdgeLabel.SHORTCUT.getLabel()).toList().size());
 
     }

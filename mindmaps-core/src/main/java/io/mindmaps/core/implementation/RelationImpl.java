@@ -131,12 +131,12 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
             throw new IllegalArgumentException(ErrorMessage.ROLE_IS_NULL.getMessage(instance));
         }
 
-        if(mindmapsTransaction.isBatchLoadingEnabled()) {
+        if(mindmapsGraph.isBatchLoadingEnabled()) {
             return addNewRolePlayer(null, roleType, instance);
         } else {
             Map<RoleType, Instance> roleMap = rolePlayers();
             roleMap.put(roleType, instance);
-            Relation otherRelation = mindmapsTransaction.getRelation(type(), roleMap);
+            Relation otherRelation = mindmapsGraph.getRelation(type(), roleMap);
 
             if(otherRelation == null){
                 return addNewRolePlayer(roleMap, roleType, instance);
@@ -158,9 +158,9 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      */
     private Relation addNewRolePlayer(Map<RoleType, Instance> roleMap, RoleType roleType, Instance instance){
         if(instance != null)
-            mindmapsTransaction.putCasting((RoleTypeImpl) roleType, (InstanceImpl) instance, this);
+            mindmapsGraph.putCasting((RoleTypeImpl) roleType, (InstanceImpl) instance, this);
 
-        if(mindmapsTransaction.isBatchLoadingEnabled()){
+        if(mindmapsGraph.isBatchLoadingEnabled()){
             setHash(null);
         } else {
             setHash(roleMap);

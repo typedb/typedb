@@ -36,7 +36,7 @@ class MatchVarValidator implements Validator {
 
     private final VarAdmin var;
 
-    private MindmapsGraph transaction;
+    private MindmapsGraph graph;
     private List<String> errors = new ArrayList<>();
 
     /**
@@ -47,8 +47,8 @@ class MatchVarValidator implements Validator {
     }
 
     @Override
-    public Stream<String> getErrors(MindmapsGraph transaction) {
-        this.transaction = transaction;
+    public Stream<String> getErrors(MindmapsGraph graph) {
+        this.graph = graph;
         errors = new ArrayList<>();
 
         var.getType().flatMap(VarAdmin::getIdOnly).ifPresent(this::validateType);
@@ -63,7 +63,7 @@ class MatchVarValidator implements Validator {
             }
         });
 
-        new ResourceValidator(var.getResourceTypes()).getErrors(this.transaction).forEach(errors::add);
+        new ResourceValidator(var.getResourceTypes()).getErrors(this.graph).forEach(errors::add);
 
         return errors.stream();
     }
@@ -101,7 +101,7 @@ class MatchVarValidator implements Validator {
      * @param id the ID to check in the graph
      */
     private void validateIdExists(String id) {
-        if (transaction.getConcept(id) == null) {
+        if (graph.getConcept(id) == null) {
             errors.add(ErrorMessage.ID_NOT_FOUND.getMessage(id));
         }
     }
@@ -111,7 +111,7 @@ class MatchVarValidator implements Validator {
      * @param id the type ID
      */
     private void validateType(String id) {
-        Type type = transaction.getType(id);
+        Type type = graph.getType(id);
         if (type != null && type.isRoleType()) {
             errors.add(ErrorMessage.INSTANCE_OF_ROLE_TYPE.getMessage(id));
         }
@@ -122,7 +122,7 @@ class MatchVarValidator implements Validator {
      * @param id the ID to check in the graph
      */
     private void validateRoleTypeExists(String id) {
-        if (transaction.getRoleType(id) == null) {
+        if (graph.getRoleType(id) == null) {
             errors.add(ErrorMessage.NOT_A_ROLE_TYPE.getMessage(id, id));
         }
     }
@@ -133,7 +133,7 @@ class MatchVarValidator implements Validator {
      * @param roleTypes the IDs of the role types
      */
     private void validateRelation(String id, Collection<String> roleTypes) {
-        RelationType relationType = transaction.getRelationType(id);
+        RelationType relationType = graph.getRelationType(id);
 
         if (relationType == null) {
             errors.add(ErrorMessage.NOT_A_RELATION_TYPE.getMessage(id));

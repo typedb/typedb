@@ -22,7 +22,7 @@ package io.mindmaps.graql.admin;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.InsertQuery;
-import io.mindmaps.graql.MatchQueryDefault;
+import io.mindmaps.graql.MatchQuery;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -35,7 +35,7 @@ public interface InsertQueryAdmin extends InsertQuery {
     /**
      * @return the match query that this insert query is using, if it was provided one
      */
-    Optional<? extends MatchQueryDefault> getMatchQuery();
+    Optional<? extends MatchQuery> getMatchQuery();
 
     /**
      * @return all concept types referred to explicitly in the query
@@ -53,7 +53,7 @@ public interface InsertQueryAdmin extends InsertQuery {
     Collection<VarAdmin> getAllVars();
 
     /**
-     * @return the transaction set on this query, if it was provided one
+     * @return the graph set on this query, if it was provided one
      */
     Optional<MindmapsGraph> getGraph();
 }

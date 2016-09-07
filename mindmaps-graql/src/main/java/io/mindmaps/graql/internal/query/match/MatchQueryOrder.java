@@ -22,7 +22,7 @@ package io.mindmaps.graql.internal.query.match;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.model.Concept;
-import io.mindmaps.graql.admin.MatchQueryDefaultAdmin;
+import io.mindmaps.graql.admin.MatchQueryAdmin;
 
 import java.util.Map;
 import java.util.Optional;
@@ -31,24 +31,24 @@ import java.util.stream.Stream;
 /**
  * "Order" modify that orders the underlying match query
  */
-class MatchQueryOrder extends MatchQueryDefaultModifier {
+class MatchQueryOrder extends MatchQueryModifier {
 
     private final MatchOrderImpl order;
 
-    MatchQueryOrder(MatchQueryDefaultAdmin inner, MatchOrderImpl order) {
+    MatchQueryOrder(MatchQueryAdmin inner, MatchOrderImpl order) {
         super(inner);
         this.order = order;
     }
 
     @Override
     public Stream<Map<String, Concept>> stream(
-            Optional<MindmapsGraph> transaction, Optional<MatchOrder> order
+            Optional<MindmapsGraph> graph, Optional<MatchOrder> order
     ) {
         if (order.isPresent()) {
             throw new IllegalStateException(ErrorMessage.MULTIPLE_ORDER.getMessage());
         }
 
-        return inner.stream(transaction, Optional.of(this.order));
+        return inner.stream(graph, Optional.of(this.order));
     }
 
     @Override

@@ -37,7 +37,7 @@ class AggregateValidator implements Validator {
     }
 
     @Override
-    public Stream<String> getErrors(MindmapsGraph transaction) {
-        return validators.stream().flatMap(v -> v.getErrors(transaction));
+    public Stream<String> getErrors(MindmapsGraph graph) {
+        return validators.stream().flatMap(v -> v.getErrors(graph));
     }
 }

@@ -39,10 +39,10 @@ public interface DeleteQuery {
     void execute();
 
     /**
-     * @param transaction the transaction to execute the query on
-     * @return a new DeleteQuery with the transaction set
+     * @param graph the graph to execute the query on
+     * @return a new DeleteQuery with the graph set
      */
-    DeleteQuery withGraph(MindmapsGraph transaction);
+    DeleteQuery withGraph(MindmapsGraph graph);
 
     /**
      * @return admin instance for inspecting and manipulating this query

@@ -51,10 +51,10 @@ public class QueryParser {
 
     /**
      * Create a query parser with the specified graph
-     *  @param transaction  the transaction to operate the query on
+     *  @param graph the graph to operate the query on
      */
-    private QueryParser(MindmapsGraph transaction) {
-        queryBuilder = withGraph(transaction);
+    private QueryParser(MindmapsGraph graph) {
+        queryBuilder = withGraph(graph);
         registerDefaultAggregates();
     }
 
@@ -67,11 +67,11 @@ public class QueryParser {
 
     /**
      * Create a query parser with the specified graph
-     *  @param transaction  the transaction to operate the query on
+     *  @param graph the graph to operate the query on
      *  @return a query parser that operates with the specified graph
      */
-    public static QueryParser create(MindmapsGraph transaction) {
-        return new QueryParser(transaction);
+    public static QueryParser create(MindmapsGraph graph) {
+        return new QueryParser(graph);
     }
 
     public void registerAggregate(String name, Function<List<Object>, Aggregate> aggregateMethod) {
