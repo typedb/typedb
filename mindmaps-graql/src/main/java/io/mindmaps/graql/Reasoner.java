@@ -48,8 +48,8 @@ public class Reasoner {
 
     private final Map<String, Query> workingMemory = new HashMap<>();
 
-    public Reasoner(MindmapsGraph tr){
-        this.graph = tr;
+    public Reasoner(MindmapsGraph graph){
+        this.graph = graph;
         qp =  QueryParser.create(graph);
 
         linkConceptTypes();
