@@ -29,15 +29,25 @@ import java.util.Set;
  * Admin class for inspecting a ValuePredicate
  */
 public interface ValuePredicateAdmin extends ValuePredicate {
+
+    @Override
+    default ValuePredicateAdmin admin() {
+        return this;
+    }
+
     /**
      * @return whether this predicate is specific (e.g. "eq" is specific, "regex" is not)
      */
-    boolean isSpecific();
+    default boolean isSpecific() {
+        return false;
+    }
 
     /**
      * @return the value comparing against, if this is an "equality" predicate, otherwise nothing
      */
-    Optional<Object> equalsValue();
+    default Optional<Object> equalsValue() {
+        return Optional.empty();
+    }
 
     /**
      * @return all values referred to in the predicate (including within 'ors' and 'ands')

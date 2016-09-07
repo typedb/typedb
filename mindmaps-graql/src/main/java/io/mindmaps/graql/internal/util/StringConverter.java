@@ -39,7 +39,7 @@ public class StringConverter {
      * @param string the string to escape
      * @return the escaped string, replacing any escapable characters with backslashes
      */
-    private static String escapeString(String string) {
+    public static String escapeString(String string) {
         return StringEscapeUtils.escapeJavaScript(string);
     }
 

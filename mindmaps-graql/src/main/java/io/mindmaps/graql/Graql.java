@@ -24,10 +24,12 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.internal.util.AdminConverter;
 import io.mindmaps.core.concept.Concept;
 import io.mindmaps.graql.admin.PatternAdmin;
-import io.mindmaps.graql.internal.util.StringConverter;
-import io.mindmaps.graql.internal.query.*;
-import io.mindmaps.graql.internal.query.aggregate.*;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
+import io.mindmaps.graql.internal.query.Conjunction;
+import io.mindmaps.graql.internal.query.Disjunction;
+import io.mindmaps.graql.internal.query.Patterns;
+import io.mindmaps.graql.internal.query.aggregate.Aggregates;
+import io.mindmaps.graql.internal.query.predicate.*;
+import io.mindmaps.graql.internal.util.AdminConverter;
 
 import java.util.*;
 
@@ -243,7 +245,7 @@ public class Graql {
      */
     public static ValuePredicate eq(Object value) {
         Objects.requireNonNull(value);
-        return new ValuePredicateImpl(P.eq(value), StringConverter.valueToString(value), value, true);
+        return Predicates.eq(value);
     }
 
     /**
@@ -252,7 +254,7 @@ public class Graql {
      */
     public static ValuePredicate neq(Object value) {
         Objects.requireNonNull(value);
-        return new ValuePredicateImpl(P.neq(value), "!= " + StringConverter.valueToString(value), value, false);
+        return Predicates.neq(value);
     }
 
     /**
@@ -261,7 +263,7 @@ public class Graql {
      */
     public static ValuePredicate gt(Comparable value) {
         Objects.requireNonNull(value);
-        return new ValuePredicateImpl(P.gt(value), "> " + StringConverter.valueToString(value), value, false);
+        return Predicates.gt(value);
     }
 
     /**
@@ -270,7 +272,7 @@ public class Graql {
      */
     public static ValuePredicate gte(Comparable value) {
         Objects.requireNonNull(value);
-        return new ValuePredicateImpl(P.gte(value), ">= " + StringConverter.valueToString(value), value, false);
+        return Predicates.gte(value);
     }
 
     /**
@@ -279,7 +281,7 @@ public class Graql {
      */
     public static ValuePredicate lt(Comparable value) {
         Objects.requireNonNull(value);
-        return new ValuePredicateImpl(P.lt(value), "< " + StringConverter.valueToString(value), value, false);
+        return Predicates.lt(value);
     }
 
     /**
@@ -288,7 +290,7 @@ public class Graql {
      */
     public static ValuePredicate lte(Comparable value) {
         Objects.requireNonNull(value);
-        return new ValuePredicateImpl(P.lte(value), "<= " + StringConverter.valueToString(value), value, false);
+        return Predicates.lte(value);
     }
 
     /**
@@ -313,12 +315,7 @@ public class Graql {
      */
     public static ValuePredicate regex(String pattern) {
         Objects.requireNonNull(pattern);
-        return new ValuePredicateImpl(
-                new P<>((value, p) -> java.util.regex.Pattern.matches((String) p, (String) value), pattern),
-                "/" + pattern + "/",
-                pattern,
-                false
-        );
+        return Predicates.regex(pattern);
     }
 
     /**
@@ -327,11 +324,6 @@ public class Graql {
      */
     public static ValuePredicate contains(String substring) {
         Objects.requireNonNull(substring);
-        return new ValuePredicateImpl(
-                new P<>((value, s) -> ((String) value).contains((String) s), substring),
-                "contains " + StringConverter.valueToString(substring),
-                substring,
-                false
-        );
+        return Predicates.contains(substring);
     }
 }
