@@ -19,10 +19,7 @@
 package io.mindmaps.core.implementation;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.implementation.exception.GraphRuntimeException;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.EntityType;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.junit.Before;
@@ -36,7 +33,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 public class MindmapsTinkerGraphTest {
     private MindmapsGraph mindmapsGraph;
@@ -45,22 +44,6 @@ public class MindmapsTinkerGraphTest {
     public void setup() throws MindmapsValidationException {
         mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         mindmapsGraph.commit();
-    }
-
-    @Test
-    public void testFakeTransactionHandling() throws Exception {
-        EntityType entityType = mindmapsGraph.putEntityType("1");
-        mindmapsGraph.commit();
-        mindmapsGraph.close();
-
-        boolean thrown = false;
-        try{
-            mindmapsGraph.putEntityType("2");
-        } catch (GraphRuntimeException e){
-            assertEquals(ErrorMessage.CLOSED.getMessage(mindmapsGraph.getClass().getName()), e.getMessage());
-            thrown = true;
-        }
-        assertTrue(thrown);
     }
 
     @Test

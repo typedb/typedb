@@ -600,15 +600,15 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     }
 
     /**
-     * Closes the current graph rendering it unusable.
+     * Closes the current transaction.
      */
     @Override
     public void close() {
         handleTransaction(Transaction::rollback);
         getConceptLog().clearTransaction();
         try {
-            graph.close();
-            graph = null;
+            graph.tx().close();
+        } catch(UnsupportedOperationException e) {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

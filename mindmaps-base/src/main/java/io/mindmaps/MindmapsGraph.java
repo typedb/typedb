@@ -310,7 +310,7 @@ public interface MindmapsGraph extends AutoCloseable{
     void refresh();
 
     /**
-     * Closes the current transaction rendering it unusable.
+     * Closes the current transaction.
      */
     void close();
 }

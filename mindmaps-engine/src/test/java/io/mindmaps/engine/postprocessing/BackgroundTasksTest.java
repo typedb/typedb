@@ -75,7 +75,6 @@ public class BackgroundTasksTest {
     @Test
     public void testMergingCastings() throws Exception {
         //Create Scenario
-        MindmapsGraph mindmapsGraph = this.mindmapsGraph;
         RoleType roleType1 = mindmapsGraph.putRoleType("role 1");
         RoleType roleType2 = mindmapsGraph.putRoleType("role 2");
         RelationType relationType = mindmapsGraph.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
