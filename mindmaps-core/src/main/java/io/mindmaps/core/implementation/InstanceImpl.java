@@ -32,7 +32,7 @@ import java.util.Set;
  * @param <V> The type of the concept.
  */
 abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptImpl<T, V> implements Instance {
-    InstanceImpl(Vertex v, MindmapsTransactionImpl mindmapsGraph) {
+    InstanceImpl(Vertex v, AbstractMindmapsGraph mindmapsGraph) {
         super(v, mindmapsGraph);
     }
 
@@ -46,10 +46,10 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
         deleteNode();
         for(CastingImpl casting: castings){
             Set<RelationImpl> relations = casting.getRelations();
-            getMindmapsTransaction().getConceptLog().putConcept(casting);
+            getMindmapsGraph().getConceptLog().putConcept(casting);
 
             for(RelationImpl relation : relations) {
-                getMindmapsTransaction().getConceptLog().putConcept(relation);
+                getMindmapsGraph().getConceptLog().putConcept(relation);
                 relation.cleanUp();
             }
 
@@ -106,7 +106,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
         InstanceImpl<?, ?> parent = this;
 
         parent.castings().forEach(c -> {
-            CastingImpl casting = getMindmapsTransaction().getElementFactory().buildCasting(c);
+            CastingImpl casting = getMindmapsGraph().getElementFactory().buildCasting(c);
             if (roleTypeItemIdentifier.size() != 0) {
                 if (roleTypeItemIdentifier.contains(casting.getType()))
                     relations.addAll(casting.getRelations());
@@ -126,7 +126,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     public Collection<RoleType> playsRoles() {
         Set<RoleType> roleTypes = new HashSet<>();
         ConceptImpl<?, ?> parent = this;
-        parent.getIncomingNeighbours(DataType.EdgeLabel.ROLE_PLAYER).forEach(c -> roleTypes.add(getMindmapsTransaction().getElementFactory().buildCasting(c).getRole()));
+        parent.getIncomingNeighbours(DataType.EdgeLabel.ROLE_PLAYER).forEach(c -> roleTypes.add(getMindmapsGraph().getElementFactory().buildCasting(c).getRole()));
         return roleTypes;
     }
 }

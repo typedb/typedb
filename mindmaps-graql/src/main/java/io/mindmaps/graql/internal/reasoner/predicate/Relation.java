@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.internal.reasoner.predicate;
 
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.model.RoleType;
 import io.mindmaps.core.model.Type;
@@ -127,8 +127,8 @@ public class Relation extends AtomBase {
     }
 
     @Override
-    public MatchQueryDefault getExpandedMatchQuery(MindmapsTransaction graph) {
-        QueryBuilder qb = Graql.withTransaction(graph);
+    public MatchQueryDefault getExpandedMatchQuery(MindmapsGraph graph) {
+        QueryBuilder qb = Graql.withGraph(graph);
         Set<String> selectVars = getVarNames();
         return qb.match(getExpandedPattern()).select(selectVars);
     }
@@ -180,7 +180,7 @@ public class Relation extends AtomBase {
         Map<String, Pair<Type, RoleType>> roleVarTypeMap = new HashMap<>();
         if (getParentQuery() == null) return roleVarTypeMap;
 
-        MindmapsTransaction graph =  getParentQuery().getTransaction();
+        MindmapsGraph graph =  getParentQuery().getGraph();
         String relTypeId = getTypeId();
         Set<String> vars = getVarNames();
         Map<String, Type> varTypeMap = getParentQuery().getVarTypeMap();
@@ -197,7 +197,7 @@ public class Relation extends AtomBase {
                 roleVarTypeMap.put(var, new Pair<>(type, graph.getRoleType(roleTypeId)));
             else {
                 if (type != null) {
-                    Set<RoleType> cRoles = getCompatibleRoleTypes(type.getId(), relTypeId, getParentQuery().getTransaction());
+                    Set<RoleType> cRoles = getCompatibleRoleTypes(type.getId(), relTypeId, getParentQuery().getGraph());
 
                     /**if roleType is unambigous*/
                     if (cRoles.size() == 1)
@@ -220,7 +220,7 @@ public class Relation extends AtomBase {
 
         if (getParentQuery() == null) return roleVarTypeMap;
 
-        MindmapsTransaction graph =  getParentQuery().getTransaction();
+        MindmapsGraph graph =  getParentQuery().getGraph();
         String relTypeId = getTypeId();
         Set<String> relVars = getVarNames();
         Map<String, Type> varTypeMap = getParentQuery().getVarTypeMap();

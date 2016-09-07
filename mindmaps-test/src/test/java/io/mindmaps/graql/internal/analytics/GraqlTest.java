@@ -1,7 +1,6 @@
 package io.mindmaps.graql.internal.analytics;
 
-import io.mindmaps.MindmapsTransaction;
-import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.*;
 import io.mindmaps.graql.ComputeQuery;
@@ -25,7 +24,6 @@ public class GraqlTest {
 
     String keyspace = "mindmapstest";
     MindmapsGraph graph;
-    MindmapsTransaction transaction;
     private QueryParser qp;
     private QueryBuilder qb;
 
@@ -49,9 +47,8 @@ public class GraqlTest {
         Pair<MindmapsGraph, String> result = graphWithNewKeyspace();
         graph = result.getValue0();
         keyspace = result.getValue1();
-        transaction = graph.getTransaction();
-        qp = QueryParser.create(transaction);
-        qb = withTransaction(transaction);
+        qp = QueryParser.create(graph);
+        qb = withGraph(graph);
     }
 
     @After
@@ -67,11 +64,11 @@ public class GraqlTest {
         assertEquals(0, computer.count());
 
         // create 3 instances
-        EntityType thing = transaction.putEntityType("thing");
-        transaction.putEntity("1", thing);
-        transaction.putEntity("2", thing);
-        transaction.putEntity("3", thing);
-        transaction.commit();
+        EntityType thing = graph.putEntityType("thing");
+        graph.putEntity("1", thing);
+        graph.putEntity("2", thing);
+        graph.putEntity("3", thing);
+        graph.commit();
 
         long graqlCount = qb.match(
                 var("x").isa(var("y")),
@@ -87,12 +84,12 @@ public class GraqlTest {
     @Test
     public void testGraqlCountSubgraph() throws Exception {
         // create 3 instances
-        thing = transaction.putEntityType("thing");
-        EntityType anotherThing = transaction.putEntityType("another");
-        transaction.putEntity("1", thing);
-        transaction.putEntity("2", thing);
-        transaction.putEntity("3", anotherThing);
-        transaction.commit();
+        thing = graph.putEntityType("thing");
+        EntityType anotherThing = graph.putEntityType("another");
+        graph.putEntity("1", thing);
+        graph.putEntity("2", thing);
+        graph.putEntity("3", anotherThing);
+        graph.commit();
 
         long computeCount = ((Long) ((ComputeQuery) qp.parseQuery("compute count in thing, thing")).execute(graph));
         assertEquals(2, computeCount);
@@ -105,21 +102,21 @@ public class GraqlTest {
 
         // relate them
         String id1 = UUID.randomUUID().toString();
-        transaction.putRelation(id1, related)
+        graph.putRelation(id1, related)
                 .putRolePlayer(relation1, entity1)
                 .putRolePlayer(relation2, entity2);
 
         String id2 = UUID.randomUUID().toString();
-        transaction.putRelation(id2, related)
+        graph.putRelation(id2, related)
                 .putRolePlayer(relation1, entity2)
                 .putRolePlayer(relation2, entity3);
 
         String id3 = UUID.randomUUID().toString();
-        transaction.putRelation(id3, related)
+        graph.putRelation(id3, related)
                 .putRolePlayer(relation1, entity2)
                 .putRolePlayer(relation2, entity4);
 
-        transaction.commit();
+        graph.commit();
 
         // compute degrees
         Map<Instance, Long> degrees = ((Map) ((ComputeQuery) qp.parseQuery("compute degrees")).execute(graph));
@@ -131,9 +128,9 @@ public class GraqlTest {
         correctDegrees.put(entity2, 3l);
         correctDegrees.put(entity3, 1l);
         correctDegrees.put(entity4, 1l);
-        correctDegrees.put(transaction.getRelation(id1), 2l);
-        correctDegrees.put(transaction.getRelation(id2), 2l);
-        correctDegrees.put(transaction.getRelation(id3), 2l);
+        correctDegrees.put(graph.getRelation(id1), 2l);
+        correctDegrees.put(graph.getRelation(id2), 2l);
+        correctDegrees.put(graph.getRelation(id3), 2l);
 
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(degree -> {
@@ -145,16 +142,16 @@ public class GraqlTest {
     private void instantiateSimpleConcepts() {
 
         // create 3 instances
-        thing = transaction.putEntityType("thing");
-        entity1 = transaction.putEntity("1", thing);
-        entity2 = transaction.putEntity("2", thing);
-        entity3 = transaction.putEntity("3", thing);
-        entity4 = transaction.putEntity("4", thing);
+        thing = graph.putEntityType("thing");
+        entity1 = graph.putEntity("1", thing);
+        entity2 = graph.putEntity("2", thing);
+        entity3 = graph.putEntity("3", thing);
+        entity4 = graph.putEntity("4", thing);
 
-        relation1 = transaction.putRoleType("relation1");
-        relation2 = transaction.putRoleType("relation2");
+        relation1 = graph.putRoleType("relation1");
+        relation2 = graph.putRoleType("relation2");
         thing.playsRole(relation1).playsRole(relation2);
-        related = transaction.putRelationType("related").hasRole(relation1).hasRole(relation2);
+        related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
 
     }
 
@@ -164,21 +161,21 @@ public class GraqlTest {
 
         // relate them
         String id1 = UUID.randomUUID().toString();
-        transaction.putRelation(id1, related)
+        graph.putRelation(id1, related)
                 .putRolePlayer(relation1, entity1)
                 .putRolePlayer(relation2, entity2);
 
         String id2 = UUID.randomUUID().toString();
-        transaction.putRelation(id2, related)
+        graph.putRelation(id2, related)
                 .putRolePlayer(relation1, entity2)
                 .putRolePlayer(relation2, entity3);
 
         String id3 = UUID.randomUUID().toString();
-        transaction.putRelation(id3, related)
+        graph.putRelation(id3, related)
                 .putRolePlayer(relation1, entity2)
                 .putRolePlayer(relation2, entity4);
 
-        transaction.commit();
+        graph.commit();
 
         // compute degrees
         ((ComputeQuery) qp.parseQuery("compute degreesAndPersist")).execute(graph);
@@ -191,9 +188,9 @@ public class GraqlTest {
         correctDegrees.put(entity2, 3l);
         correctDegrees.put(entity3, 1l);
         correctDegrees.put(entity4, 1l);
-        correctDegrees.put(transaction.getRelation(id1), 2l);
-        correctDegrees.put(transaction.getRelation(id2), 2l);
-        correctDegrees.put(transaction.getRelation(id3), 2l);
+        correctDegrees.put(graph.getRelation(id1), 2l);
+        correctDegrees.put(graph.getRelation(id2), 2l);
+        correctDegrees.put(graph.getRelation(id3), 2l);
 
         correctDegrees.entrySet().forEach(degree -> {
             Instance instance = degree.getKey();

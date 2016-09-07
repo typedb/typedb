@@ -20,9 +20,8 @@ package io.mindmaps.engine.controller;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.RESTUtil;
-import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.engine.Util;
 import io.mindmaps.engine.loader.TransactionState;
 import io.mindmaps.engine.postprocessing.BackgroundTasks;
@@ -56,9 +55,8 @@ public class TransactionControllerTest {
 
         graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
         MindmapsGraph graph = GraphFactory.getInstance().getGraphBatchLoading(graphName);
-        MindmapsTransaction transaction = graph.getTransaction();
-        transaction.putEntityType("Man");
-        transaction.commit();
+        graph.putEntityType("Man");
+        graph.commit();
         Util.setRestAssuredBaseURI(ConfigProperties.getInstance().getProperties());
     }
 
@@ -81,7 +79,7 @@ public class TransactionControllerTest {
         //check that post processing starts periodically, in this case at least once.
         while(!BackgroundTasks.getInstance().isPostProcessingRunning())
 
-        assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getTransaction().getConcept("actor-123"));
+        assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getConcept("actor-123"));
     }
 
     @Test

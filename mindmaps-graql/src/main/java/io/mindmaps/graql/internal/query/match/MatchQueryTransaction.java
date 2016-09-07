@@ -19,8 +19,8 @@
 
 package io.mindmaps.graql.internal.query.match;
 
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.admin.MatchQueryAdmin;
 
@@ -33,16 +33,16 @@ import java.util.stream.Stream;
  */
 class MatchQueryTransaction<T> extends MatchQueryModifier<T, T> {
 
-    private final MindmapsTransaction transaction;
+    private final MindmapsGraph transaction;
 
-    MatchQueryTransaction(MindmapsTransaction transaction, MatchQueryAdmin<T> inner) {
+    MatchQueryTransaction(MindmapsGraph transaction, MatchQueryAdmin<T> inner) {
         super(inner);
         this.transaction = transaction;
     }
 
     @Override
     public Stream<T> stream(
-            Optional<MindmapsTransaction> transaction, Optional<MatchOrder> order
+            Optional<MindmapsGraph> transaction, Optional<MatchOrder> order
     ) {
         if (transaction.isPresent()) {
             throw new IllegalStateException(ErrorMessage.MULTIPLE_TRANSACTION.getMessage());
@@ -52,7 +52,7 @@ class MatchQueryTransaction<T> extends MatchQueryModifier<T, T> {
     }
 
     @Override
-    public Optional<MindmapsTransaction> getTransaction() {
+    public Optional<MindmapsGraph> getGraph() {
         return Optional.of(transaction);
     }
 

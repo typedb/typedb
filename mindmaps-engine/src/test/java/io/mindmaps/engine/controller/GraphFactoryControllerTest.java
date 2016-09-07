@@ -22,8 +22,8 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.response.Response;
 import io.mindmaps.MindmapsComputerImpl;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.RESTUtil.GraphConfig;
-import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.AbstractMindmapsGraph;
 import io.mindmaps.engine.Util;
 import io.mindmaps.engine.util.ConfigProperties;
@@ -36,7 +36,10 @@ import static io.mindmaps.constants.RESTUtil.Request.GRAPH_CONFIG_PARAM;
 import static io.mindmaps.constants.RESTUtil.WebPath.GRAPH_FACTORY_URI;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 public class GraphFactoryControllerTest {
     @Before
@@ -77,15 +80,15 @@ public class GraphFactoryControllerTest {
     @Test
     public void testMindmapsClientBatch(){
         MindmapsGraph batch = MindmapsClient.getGraphBatchLoading("mindmapstest");
-        assertTrue(batch.isBatchLoadingEnabled());
+        assertTrue(((AbstractMindmapsGraph)batch).isBatchLoadingEnabled());
     }
 
     @Test
     public void testMindmapsClient(){
-        MindmapsGraph graph = MindmapsClient.getGraph("mindmapstest");
-        MindmapsGraph graph2 = MindmapsClient.getGraph("mindmapstest2");
-        MindmapsGraph graphCopy = MindmapsClient.getGraph("mindmapstest");
-        assertNotEquals(0, ((AbstractMindmapsGraph) graph).getGraph().traversal().V().toList().size());
+        AbstractMindmapsGraph graph = (AbstractMindmapsGraph) MindmapsClient.getGraph("mindmapstest");
+        AbstractMindmapsGraph graph2 = (AbstractMindmapsGraph) MindmapsClient.getGraph("mindmapstest2");
+        AbstractMindmapsGraph graphCopy = (AbstractMindmapsGraph) MindmapsClient.getGraph("mindmapstest");
+        assertNotEquals(0, graph.getTinkerPopGraph().traversal().V().toList().size());
         assertFalse(graph.isBatchLoadingEnabled());
         assertNotEquals(graph, graph2);
         assertEquals(graph, graphCopy);
@@ -93,7 +96,7 @@ public class GraphFactoryControllerTest {
 
         assertThat(MindmapsClient.getGraphComputer("Keyspace"), instanceOf(MindmapsComputerImpl.class));
 
-        MindmapsGraph batch = MindmapsClient.getGraphBatchLoading("mindmapstest");
+        AbstractMindmapsGraph batch = (AbstractMindmapsGraph) MindmapsClient.getGraphBatchLoading("mindmapstest");
         assertTrue(batch.isBatchLoadingEnabled());
         assertNotEquals(graph, batch);
 

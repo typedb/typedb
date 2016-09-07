@@ -18,8 +18,7 @@
 
 package io.mindmaps.graql.parser;
 
-import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.Pattern;
@@ -29,7 +28,9 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.List;
@@ -40,19 +41,18 @@ import static org.junit.Assert.assertTrue;
 
 public class QueryParserFragmentsTest {
 
-    private static MindmapsTransaction transaction;
+    private static MindmapsGraph mindmapsGraph;
     private QueryParser qp;
 
     @BeforeClass
     public static void setUpClass() {
-        MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
+        mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
-        transaction = mindmapsGraph.getTransaction();
     }
 
     @Before
     public void setUp() {
-        qp = QueryParser.create(transaction);
+        qp = QueryParser.create(mindmapsGraph);
     }
 
     @Test

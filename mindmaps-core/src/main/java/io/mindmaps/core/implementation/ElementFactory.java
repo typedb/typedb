@@ -27,9 +27,9 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
  * Internal factory to produce different types of concepts
  */
 final class ElementFactory {
-    private final MindmapsTransactionImpl mindmapsTransaction;
+    private final AbstractMindmapsGraph mindmapsTransaction;
 
-    public ElementFactory(MindmapsTransactionImpl mindmapsTransaction){
+    public ElementFactory(AbstractMindmapsGraph mindmapsTransaction){
         this.mindmapsTransaction = mindmapsTransaction;
     }
 
@@ -222,7 +222,7 @@ final class ElementFactory {
         return conceptInstance;
     }
 
-    public EdgeImpl buildEdge(org.apache.tinkerpop.gremlin.structure.Edge edge, MindmapsTransactionImpl mindmapsGraph){
+    public EdgeImpl buildEdge(org.apache.tinkerpop.gremlin.structure.Edge edge, AbstractMindmapsGraph mindmapsGraph){
         return new EdgeImpl(edge, mindmapsGraph);
     }
 }

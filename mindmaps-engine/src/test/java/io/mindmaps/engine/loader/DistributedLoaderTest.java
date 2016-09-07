@@ -20,14 +20,13 @@ package io.mindmaps.engine.loader;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
+import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.engine.controller.CommitLogController;
 import io.mindmaps.engine.controller.TransactionController;
-import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.implementation.exception.MindmapsValidationException;
+import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.QueryParser;
-import io.mindmaps.engine.util.ConfigProperties;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -79,7 +78,7 @@ public class DistributedLoaderTest {
         loadOntologyFromFile();
         loadDataFromFile(data);
 
-        MindmapsTransaction transaction = graph.getTransaction();
+        MindmapsGraph transaction = graph;
         assertNotNull(transaction.getConcept("X4d616e75656c20417a656e6861").getId());
         assertNotNull(transaction.getConcept("X44616e69656c61204675696f726561").getId());
         assertNotNull(transaction.getConcept("X422e20476174686d616e6e").getId());
@@ -106,7 +105,7 @@ public class DistributedLoaderTest {
     }
 
     private void loadOntologyFromFile() {
-        MindmapsTransaction transaction = GraphFactory.getInstance().getGraphBatchLoading(graphName).getTransaction();
+        MindmapsGraph transaction = GraphFactory.getInstance().getGraphBatchLoading(graphName);
         ClassLoader classLoader = getClass().getClassLoader();
 
         LOG.info("Loading new ontology .. ");
@@ -118,7 +117,7 @@ public class DistributedLoaderTest {
             e.printStackTrace();
         }
         String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-        QueryParser.create().parseInsertQuery(query).withTransaction(transaction).execute();
+        QueryParser.create().parseInsertQuery(query).withGraph(transaction).execute();
         try {
             transaction.commit();
         } catch (MindmapsValidationException e) {

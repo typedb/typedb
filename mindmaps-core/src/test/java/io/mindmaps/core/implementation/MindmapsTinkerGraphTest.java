@@ -18,13 +18,10 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.MindmapsTransaction;
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.implementation.exception.GraphRuntimeException;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.EntityType;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -36,7 +33,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 public class MindmapsTinkerGraphTest {
     private MindmapsGraph mindmapsGraph;
@@ -44,28 +43,7 @@ public class MindmapsTinkerGraphTest {
     @Before
     public void setup() throws MindmapsValidationException {
         mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
-        mindmapsGraph.getTransaction().commit();
-    }
-
-    @Test
-    public void testFakeTransactionHandling() throws Exception {
-        MindmapsTransaction mindmapsTransaction = mindmapsGraph.getTransaction();
-
-        EntityType entityType = mindmapsTransaction.putEntityType("1");
-        mindmapsTransaction.commit();
-        mindmapsTransaction.close();
-
-        boolean thrown = false;
-        try{
-            mindmapsTransaction.putEntityType("2");
-        } catch (GraphRuntimeException e){
-            assertEquals(ErrorMessage.CLOSED.getMessage(mindmapsTransaction.getClass().getName()), e.getMessage());
-            thrown = true;
-        }
-        assertTrue(thrown);
-
-        mindmapsTransaction = mindmapsGraph.getTransaction();
-        assertEquals(entityType, mindmapsTransaction.getConcept("1"));
+        mindmapsGraph.commit();
     }
 
     @Test
@@ -85,45 +63,28 @@ public class MindmapsTinkerGraphTest {
             }
         });
 
-        MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) mindmapsGraph.getTransaction();
-        assertEquals(108, transaction.getTinkerPopGraph().traversal().V().toList().size());
+        assertEquals(108, ((AbstractMindmapsGraph<Graph>) mindmapsGraph).getTinkerPopGraph().traversal().V().toList().size());
     }
     private void addEntityType(MindmapsGraph mindmapsGraph){
-        MindmapsTransaction mindmapsTransaction = mindmapsGraph.getTransaction();
-        mindmapsTransaction.putEntityType(UUID.randomUUID().toString());
+        mindmapsGraph.putEntityType(UUID.randomUUID().toString());
         try {
-            mindmapsTransaction.commit();
+            mindmapsGraph.commit();
         } catch (MindmapsValidationException e) {
             e.printStackTrace();
         }
     }
 
     @Test
-    public void testSingletonTinkerTransaction() throws ExecutionException, InterruptedException {
-        MindmapsTransaction transaction = mindmapsGraph.getTransaction();
-        MindmapsTransaction transaction2 = mindmapsGraph.getTransaction();
-        final MindmapsTransaction[] transaction3 = new MindmapsTransaction[1];
-
-        assertEquals(transaction, transaction2);
-
-        ExecutorService pool = Executors.newSingleThreadExecutor();
-        pool.submit(() -> transaction3[0] = mindmapsGraph.getTransaction()).get();
-
-        assertNotNull(transaction3[0]);
-        assertNotEquals(transaction, transaction3[0]);
-    }
-
-    @Test
     public void testTestThreadLocal(){
         ExecutorService pool = Executors.newFixedThreadPool(10);
         Set<Future> futures = new HashSet<>();
-        MindmapsTransactionImpl transcation = (MindmapsTransactionImpl) mindmapsGraph.getTransaction();
+        AbstractMindmapsGraph transcation = (AbstractMindmapsGraph) mindmapsGraph;
         transcation.putEntityType(UUID.randomUUID().toString());
         assertEquals(9, transcation.getTinkerTraversal().V().toList().size());
 
         for(int i = 0; i < 100; i ++){
             futures.add(pool.submit(() -> {
-                MindmapsTransaction innerTranscation = mindmapsGraph.getTransaction();
+                MindmapsGraph innerTranscation = mindmapsGraph;
                 innerTranscation.putEntityType(UUID.randomUUID().toString());
             }));
         }
@@ -141,10 +102,9 @@ public class MindmapsTinkerGraphTest {
 
     @Test
     public void testClear(){
-        MindmapsTransactionImpl transcation = (MindmapsTransactionImpl) mindmapsGraph.getTransaction();
-        transcation.putEntityType("entity type");
-        assertNotNull(transcation.getEntityType("entity type"));
+        mindmapsGraph.putEntityType("entity type");
+        assertNotNull(mindmapsGraph.getEntityType("entity type"));
         mindmapsGraph.clear();
-        assertNull(transcation.getEntityType("entity type"));
+        assertNull(mindmapsGraph.getEntityType("entity type"));
     }
 }

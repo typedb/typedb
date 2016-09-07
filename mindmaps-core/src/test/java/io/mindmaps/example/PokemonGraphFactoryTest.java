@@ -18,9 +18,8 @@
 
 package io.mindmaps.example;
 
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.model.Entity;
 import io.mindmaps.core.model.Relation;
 import io.mindmaps.core.model.RelationType;
@@ -43,22 +42,21 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 
 public class PokemonGraphFactoryTest {
-    private MindmapsTransaction transaction;
+    private MindmapsGraph mindmapsGraph;
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void setup() {
-        MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
+        mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         PokemonGraphFactory.loadGraph(mindmapsGraph);
-        transaction = mindmapsGraph.getTransaction();
     }
 
     @Test
     public void failToLoad(){
         MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
-        mindmapsGraph.getTransaction().putRelationType("fake");
+        mindmapsGraph.putRelationType("fake");
 
         expectedException.expect(RuntimeException.class);
         expectedException.expectMessage(allOf(
@@ -77,35 +75,35 @@ public class PokemonGraphFactoryTest {
 
     @Test
     public void testGraphExists() {
-        assertNotNull(transaction);
+        assertNotNull(mindmapsGraph);
     }
 
     @Test
     public void testGraphHasPokemon() {
-        Entity bulbasaur = transaction.getEntity("Bulbasaur");
-        assertTrue(bulbasaur.type().equals(transaction.getEntityType("pokemon")));
+        Entity bulbasaur = mindmapsGraph.getEntity("Bulbasaur");
+        assertTrue(bulbasaur.type().equals(mindmapsGraph.getEntityType("pokemon")));
     }
 
     @Test
     public void testGraphHasPokemonType() {
-        Entity poison = transaction.getEntity("poison");
-        assertTrue(poison.type().equals(transaction.getEntityType("pokemon-type")));
+        Entity poison = mindmapsGraph.getEntity("poison");
+        assertTrue(poison.type().equals(mindmapsGraph.getEntityType("pokemon-type")));
     }
 
     @Test
     public void testBulbasaurHasResource() {
-        ResourceType<Long> pokedexNo = transaction.getResourceType("pokedex-no");
-        Entity weedle = transaction.getEntity("Bulbasaur");
+        ResourceType<Long> pokedexNo = mindmapsGraph.getResourceType("pokedex-no");
+        Entity weedle = mindmapsGraph.getEntity("Bulbasaur");
         Stream<Resource<?>> resources = weedle.resources().stream();
         assertTrue(resources.anyMatch(r -> r.type().equals(pokedexNo) && r.getValue().equals(1L)));
     }
 
     @Test
     public void testTypeIsSuperEffective() {
-        RelationType relationType = transaction.getRelationType("super-effective");
-        RoleType role = transaction.getRoleType("defending-type");
-        Entity poison = transaction.getEntity("poison");
-        Entity grass = transaction.getEntity("grass");
+        RelationType relationType = mindmapsGraph.getRelationType("super-effective");
+        RoleType role = mindmapsGraph.getRoleType("defending-type");
+        Entity poison = mindmapsGraph.getEntity("poison");
+        Entity grass = mindmapsGraph.getEntity("grass");
         Stream<Relation> relations = poison.relations().stream();
         assertTrue(relations.anyMatch(r -> r.type().equals(relationType)
                 && r.rolePlayers().get(role).equals(grass)));

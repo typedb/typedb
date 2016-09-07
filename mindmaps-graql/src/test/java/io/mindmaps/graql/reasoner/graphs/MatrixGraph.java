@@ -18,16 +18,16 @@
 
 package io.mindmaps.graql.reasoner.graphs;
 
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.model.EntityType;
 import io.mindmaps.core.model.RelationType;
 import io.mindmaps.core.model.RoleType;
 
 public class MatrixGraph extends GenericGraph{
 
-    public static MindmapsTransaction getTransaction(int n, int m) {
+    public static MindmapsGraph getGraph(int n, int m) {
         final String gqlFile = "matrix-test.gql";
-        getTransaction(gqlFile);
+        getGraph(gqlFile);
         buildExtensionalDB(n, m);
         commit();
         return mindmaps;

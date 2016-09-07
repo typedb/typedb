@@ -2,16 +2,15 @@ package io.mindmaps.migration.csv;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
+import io.mindmaps.core.model.Entity;
 import io.mindmaps.engine.controller.CommitLogController;
 import io.mindmaps.engine.controller.GraphFactoryController;
 import io.mindmaps.engine.controller.TransactionController;
-import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.model.Entity;
-import io.mindmaps.factory.GraphFactory;
-import io.mindmaps.graql.Graql;
 import io.mindmaps.engine.loader.BlockingLoader;
 import io.mindmaps.engine.util.ConfigProperties;
+import io.mindmaps.factory.GraphFactory;
+import io.mindmaps.graql.Graql;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.junit.After;
@@ -32,7 +31,6 @@ public class CSVDataMigratorTest {
     private String GRAPH_NAME;
 
     private MindmapsGraph graph;
-    private MindmapsTransaction transaction;
     private BlockingLoader loader;
 
     private static CSVSchemaMigrator schemaMigrator;
@@ -60,13 +58,11 @@ public class CSVDataMigratorTest {
 
         loader = new BlockingLoader(GRAPH_NAME);
         graph = GraphFactory.getInstance().getGraphBatchLoading(GRAPH_NAME);
-        transaction = graph.getTransaction();
     }
 
     @After
     public void shutdown(){
         graph.clear();
-        graph.close();
     }
 
     @Test
@@ -76,7 +72,7 @@ public class CSVDataMigratorTest {
         dataMigrator.configure("entity", parser("icij/Entities.csv")).migrate(loader);
 
         // test a entity
-        Entity thing = Graql.withTransaction(transaction).match(var("x").isa("entity")).iterator().next().get("x").asEntity();
+        Entity thing = Graql.withGraph(graph).match(var("x").isa("entity")).iterator().next().get("x").asEntity();
         assertNotNull(thing);
         assertResourceRelationExists("name-resource", thing);
         assertResourceRelationExists("country_codes-resource", thing);
@@ -88,7 +84,7 @@ public class CSVDataMigratorTest {
         dataMigrator.configure("address", parser("icij/Addresses.csv")).migrate(loader);
 
         // test an address
-        Entity thing = Graql.withTransaction(transaction).match(var("x").isa("address")).iterator().next().get("x").asEntity();
+        Entity thing = Graql.withGraph(graph).match(var("x").isa("address")).iterator().next().get("x").asEntity();
         assertNotNull(thing);
         assertResourceRelationExists("valid_until-resource", thing);
         assertResourceRelationExists("countries-resource", thing);
@@ -100,7 +96,7 @@ public class CSVDataMigratorTest {
         dataMigrator.configure("officer", parser("icij/Officers.csv")).migrate(loader);
 
 //        // test an officer
-        Entity thing = Graql.withTransaction(transaction).match(var("x").isa("officer")).iterator().next().get("x").asEntity();
+        Entity thing = Graql.withGraph(graph).match(var("x").isa("officer")).iterator().next().get("x").asEntity();
         assertNotNull(thing);
         assertResourceRelationExists("valid_until-resource", thing);
         assertResourceRelationExists("country_codes-resource", thing);
@@ -112,7 +108,7 @@ public class CSVDataMigratorTest {
         dataMigrator.configure("intermediary", parser("icij/Intermediaries.csv")).migrate(loader);
 
         // test an intermediary
-        Entity thing = Graql.withTransaction(transaction).match(var("x").isa("intermediary")).iterator().next().get("x").asEntity();
+        Entity thing = Graql.withGraph(graph).match(var("x").isa("intermediary")).iterator().next().get("x").asEntity();
         assertNotNull(thing);
         assertResourceRelationExists("countries-resource", thing);
         assertResourceRelationExists("status-resource", thing);

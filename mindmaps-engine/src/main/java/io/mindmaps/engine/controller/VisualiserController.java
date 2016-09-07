@@ -18,7 +18,7 @@
 
 package io.mindmaps.engine.controller;
 
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.constants.RESTUtil;
 import io.mindmaps.core.model.Concept;
@@ -71,7 +71,7 @@ public class VisualiserController {
         String graphNameParam = req.queryParams(RESTUtil.Request.GRAPH_NAME_PARAM);
         String currentGraphName = (graphNameParam == null) ? defaultGraphName : graphNameParam;
 
-        MindmapsTransaction transaction = GraphFactory.getInstance().getGraph(currentGraphName).getTransaction();
+        MindmapsGraph transaction = GraphFactory.getInstance().getGraph(currentGraphName);
 
         Concept concept = transaction.getConcept(req.params(RESTUtil.Request.ID_PARAMETER));
         if (concept != null)
@@ -99,7 +99,7 @@ public class VisualiserController {
 
         try {
 
-            QueryParser parser = QueryParser.create(GraphFactory.getInstance().getGraph(currentGraphName).getTransaction());
+            QueryParser parser = QueryParser.create(GraphFactory.getInstance().getGraph(currentGraphName));
             final JSONArray halArray = new JSONArray();
 
             parser.parseMatchQuery(req.queryParams(RESTUtil.Request.QUERY_FIELD))

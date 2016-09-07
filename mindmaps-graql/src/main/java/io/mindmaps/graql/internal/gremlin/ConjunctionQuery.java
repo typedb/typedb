@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.internal.gremlin;
 
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.query.Conjunction;
@@ -50,12 +50,12 @@ class ConjunctionQuery {
 
     private final Set<VarAdmin> vars;
     private final Set<List<Fragment>> fragments;
-    private final MindmapsTransaction transaction;
+    private final MindmapsGraph transaction;
 
     /**
      * @param patternConjunction a pattern containing no disjunctions to find in the graph
      */
-    ConjunctionQuery(MindmapsTransaction transaction, Conjunction<VarAdmin> patternConjunction) {
+    ConjunctionQuery(MindmapsGraph transaction, Conjunction<VarAdmin> patternConjunction) {
         this.transaction = transaction;
         vars = patternConjunction.getPatterns();
 

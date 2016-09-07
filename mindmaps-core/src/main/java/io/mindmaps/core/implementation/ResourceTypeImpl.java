@@ -35,11 +35,11 @@ import java.util.regex.Pattern;
  */
 class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> implements ResourceType<D> {
 
-    ResourceTypeImpl(Vertex v, MindmapsTransactionImpl mindmapsGraph) {
+    ResourceTypeImpl(Vertex v, AbstractMindmapsGraph mindmapsGraph) {
         super(v, mindmapsGraph);
     }
 
-    ResourceTypeImpl(Vertex v, MindmapsTransactionImpl mindmapsGraph, Data<D> type) {
+    ResourceTypeImpl(Vertex v, AbstractMindmapsGraph mindmapsGraph, Data<D> type) {
         super(v, mindmapsGraph);
         setDataType(type);
     }

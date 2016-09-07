@@ -19,8 +19,8 @@
 
 package io.mindmaps.graql.internal.query.match;
 
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.admin.MatchQueryDefaultAdmin;
 
@@ -42,7 +42,7 @@ class MatchQueryOrder extends MatchQueryDefaultModifier {
 
     @Override
     public Stream<Map<String, Concept>> stream(
-            Optional<MindmapsTransaction> transaction, Optional<MatchOrder> order
+            Optional<MindmapsGraph> transaction, Optional<MatchOrder> order
     ) {
         if (order.isPresent()) {
             throw new IllegalStateException(ErrorMessage.MULTIPLE_ORDER.getMessage());

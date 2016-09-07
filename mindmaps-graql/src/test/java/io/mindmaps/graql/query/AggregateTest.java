@@ -19,8 +19,7 @@
 
 package io.mindmaps.graql.query;
 
-import io.mindmaps.MindmapsTransaction;
-import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Instance;
 import io.mindmaps.example.MovieGraphFactory;
@@ -34,21 +33,29 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static io.mindmaps.graql.Graql.*;
+import static io.mindmaps.graql.Graql.average;
+import static io.mindmaps.graql.Graql.count;
+import static io.mindmaps.graql.Graql.group;
+import static io.mindmaps.graql.Graql.max;
+import static io.mindmaps.graql.Graql.median;
+import static io.mindmaps.graql.Graql.min;
+import static io.mindmaps.graql.Graql.select;
+import static io.mindmaps.graql.Graql.sum;
+import static io.mindmaps.graql.Graql.var;
+import static io.mindmaps.graql.Graql.withGraph;
 import static io.mindmaps.graql.query.QueryUtil.movies;
 import static org.junit.Assert.assertEquals;
 
 public class AggregateTest {
 
     private QueryBuilder qb;
-    private MindmapsTransaction transaction;
+    private MindmapsGraph mindmapsGraph;
 
     @Before
     public void setUp() {
-        MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
+        mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
-        transaction = mindmapsGraph.getTransaction();
-        qb = withTransaction(transaction);
+        qb = withGraph(this.mindmapsGraph);
     }
 
     @Test
@@ -72,7 +79,7 @@ public class AggregateTest {
         groups.forEach((movie, results) -> {
             results.forEach(result -> {
                 assertEquals(movie, result.get("x"));
-                assertEquals(transaction.getEntityType("person"), result.get("y").type());
+                assertEquals(mindmapsGraph.getEntityType("person"), result.get("y").type());
             });
         });
     }
@@ -84,7 +91,7 @@ public class AggregateTest {
 
         Map<Concept, Long> groupCount = groupCountQuery.execute();
 
-        Instance godfather = transaction.getInstance("Godfather");
+        Instance godfather = mindmapsGraph.getInstance("Godfather");
 
         assertEquals(new Long(9), groupCount.get(godfather));
     }

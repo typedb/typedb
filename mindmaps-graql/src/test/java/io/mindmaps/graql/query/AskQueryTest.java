@@ -18,8 +18,7 @@
 
 package io.mindmaps.graql.query;
 
-import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.QueryBuilder;
@@ -29,7 +28,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.graql.Graql.withTransaction;
+import static io.mindmaps.graql.Graql.withGraph;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -43,8 +42,7 @@ public class AskQueryTest {
     public void setUp() {
         MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
-        MindmapsTransaction transaction = mindmapsGraph.getTransaction();
-        qb = withTransaction(transaction);
+        qb = withGraph(mindmapsGraph);
     }
 
     @Test

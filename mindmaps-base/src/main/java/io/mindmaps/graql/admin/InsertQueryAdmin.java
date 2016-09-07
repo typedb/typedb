@@ -19,7 +19,7 @@
 
 package io.mindmaps.graql.admin;
 
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.MatchQueryDefault;
@@ -55,5 +55,5 @@ public interface InsertQueryAdmin extends InsertQuery {
     /**
      * @return the transaction set on this query, if it was provided one
      */
-    Optional<MindmapsTransaction> getTransaction();
+    Optional<MindmapsGraph> getGraph();
 }

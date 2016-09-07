@@ -41,7 +41,7 @@ abstract class AbstractMindmapsGraphFactory<M extends AbstractMindmapsGraph<G>, 
 
     @Override
     public M getGraph(String name, String address, String pathToConfig, boolean batchLoading){
-        String key = generateKey(name, address, batchLoading);
+        String key = generateKey(name, batchLoading);
         if(!openMindmapsGraphs.containsKey(key) || isClosed(openMindmapsGraphs.get(key))){
             openMindmapsGraphs.put(key, getMindmapsGraphFromMap(name, address, pathToConfig, batchLoading));
         }
@@ -50,7 +50,7 @@ abstract class AbstractMindmapsGraphFactory<M extends AbstractMindmapsGraph<G>, 
 
     @Override
     public G getTinkerPopGraph(String name, String address, String pathToConfig, boolean batchLoading){
-        String key = generateKey(name, address, batchLoading);
+        String key = generateKey(name, batchLoading);
         if(!openGraphs.containsKey(key) || isClosed(openGraphs.get(key))){
             openGraphs.put(key, buildTinkerPopGraph(name, address, pathToConfig));
         }
@@ -58,12 +58,12 @@ abstract class AbstractMindmapsGraphFactory<M extends AbstractMindmapsGraph<G>, 
     }
 
     private boolean isClosed(M mindmapsGraph) {
-        G innerGraph = mindmapsGraph.getGraph();
+        G innerGraph = mindmapsGraph.getTinkerPopGraph();
         return isClosed(innerGraph);
     }
 
     private M getMindmapsGraphFromMap(String name, String address, String pathToConfig, boolean batchLoading) {
-        String key = generateKey(name, address, batchLoading);
+        String key = generateKey(name, batchLoading);
 
         if(!openGraphs.containsKey(key) || isClosed(openGraphs.get(key))){
             openGraphs.put(key, this.buildTinkerPopGraph(name, address, pathToConfig));
@@ -72,7 +72,7 @@ abstract class AbstractMindmapsGraphFactory<M extends AbstractMindmapsGraph<G>, 
         return buildMindmapsGraphFromTinker(openGraphs.get(key), name, address, batchLoading);
     }
 
-    private String generateKey(String name, String address, boolean batchLoading){
-        return name + address + batchLoading;
+    private String generateKey(String name, boolean batchLoading){
+        return name + batchLoading;
     }
 }

@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.internal.reasoner.container;
 
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.query.Conjunction;
@@ -73,7 +73,7 @@ public class AtomConjunction {
         return new AtomConjunction(atoms);
     }
 
-    public AtomConjunction conjunction(AtomConjunction conj, MindmapsTransaction graph) {
+    public AtomConjunction conjunction(AtomConjunction conj, MindmapsGraph graph) {
         boolean isCompatible = true;
         for (Atomic cAtom : conj.getAtoms() ) {
             Iterator<Atomic> it = atomSet.iterator();

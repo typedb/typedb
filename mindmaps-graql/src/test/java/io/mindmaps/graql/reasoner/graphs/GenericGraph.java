@@ -18,8 +18,7 @@
 
 package io.mindmaps.graql.reasoner.graphs;
 
-import io.mindmaps.MindmapsTransaction;
-import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.QueryParser;
@@ -32,21 +31,19 @@ import java.util.List;
 
 public class GenericGraph {
 
-    protected static MindmapsTransaction mindmaps;
+    protected static MindmapsGraph mindmaps;
     private static String filePath = "src/test/resources/graql/";
 
-    public static MindmapsTransaction getTransaction(String graqlFile) {
-        MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
-        mindmaps = graph.getTransaction();
+    public static MindmapsGraph getGraph(String graqlFile) {
+        mindmaps = MindmapsTestGraphFactory.newEmptyGraph();
         buildGraph(graqlFile);
         commit();
 
         return mindmaps;
     }
 
-    public static MindmapsTransaction getTransaction(String ontologyFile, String ruleFile, String dataFile) {
-        MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
-        mindmaps = graph.getTransaction();
+    public static MindmapsGraph getGraph(String ontologyFile, String ruleFile, String dataFile) {
+        MindmapsGraph mindmaps = MindmapsTestGraphFactory.newEmptyGraph();
         buildGraph(ontologyFile, ruleFile, dataFile);
         commit();
 

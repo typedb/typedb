@@ -18,15 +18,20 @@
 
 package io.mindmaps.graql.reasoner.graphs;
 
-import io.mindmaps.MindmapsTransaction;
-import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.*;
+import io.mindmaps.core.model.EntityType;
+import io.mindmaps.core.model.Instance;
+import io.mindmaps.core.model.RelationType;
+import io.mindmaps.core.model.Resource;
+import io.mindmaps.core.model.ResourceType;
+import io.mindmaps.core.model.RoleType;
+import io.mindmaps.core.model.RuleType;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 
 public class GeoGraph {
 
-    private static MindmapsTransaction mindmaps;
+    private static MindmapsGraph mindmaps;
 
     private static EntityType university, city, region, country, continent, geographicalObject;
     private static RelationType hasResource, isLocatedIn;
@@ -40,9 +45,8 @@ public class GeoGraph {
     private static Instance Poland, England, Germany, France, Italy;
     private static Instance UW, PW, Imperial, UniversityOfMunich, UCL;
 
-    public static MindmapsTransaction getTransaction() {
-        MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
-        mindmaps = graph.getTransaction();
+    public static MindmapsGraph getGraph() {
+        mindmaps = MindmapsTestGraphFactory.newEmptyGraph();
         buildGraph();
         try {
             mindmaps.commit();

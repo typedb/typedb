@@ -19,9 +19,9 @@
 package io.mindmaps.graql.internal.query;
 
 import com.google.common.collect.ImmutableMap;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.DataType;
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.Data;
 import io.mindmaps.core.model.*;
 import io.mindmaps.graql.Var;
@@ -43,14 +43,14 @@ import static io.mindmaps.constants.ErrorMessage.INSERT_NON_RESOURCE_WITH_VALUE;
  */
 class InsertQueryExecutor {
 
-    private final MindmapsTransaction transaction;
+    private final MindmapsGraph transaction;
     private final Collection<VarAdmin> vars;
     private final Map<String, Concept> concepts = new HashMap<>();
     private final Stack<String> visitedVars = new Stack<>();
     private final ImmutableMap<String, List<VarAdmin>> varsByName;
     private final ImmutableMap<String, List<VarAdmin>> varsById;
 
-    InsertQueryExecutor(Collection<VarAdmin> vars, MindmapsTransaction transaction) {
+    InsertQueryExecutor(Collection<VarAdmin> vars, MindmapsGraph transaction) {
         this.vars = vars;
         this.transaction = transaction;
 
@@ -279,8 +279,8 @@ class InsertQueryExecutor {
      * Put an instance of a type which may or may not have an ID specified
      * @param id the ID of the instance to create, or empty to not specify an ID
      * @param type the type of the instance
-     * @param putInstance a 'put' method on a MindmapsTransaction, such as transaction::putEntity
-     * @param addInstance an 'add' method on a MindmapsTransaction such a transaction::addEntity
+     * @param putInstance a 'put' method on a MindmapsGraph, such as transaction::putEntity
+     * @param addInstance an 'add' method on a MindmapsGraph such a transaction::addEntity
      * @param <T> the class of the type of the instance, e.g. EntityType
      * @param <S> the class of the instance, e.g. Entity
      * @return an instance of the specified type, with the given ID if one was specified

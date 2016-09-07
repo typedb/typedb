@@ -19,9 +19,8 @@
 package io.mindmaps.graql.reasoner.graphs;
 
 
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.Data;
-import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
@@ -35,7 +34,7 @@ import java.util.List;
 
 public class AdmissionsGraph {
 
-    private static MindmapsTransaction mindmaps;
+    private static MindmapsGraph mindmaps;
 
     private static EntityType applicant;
 
@@ -93,9 +92,8 @@ public class AdmissionsGraph {
 
     private static RoleType hasResourceTarget, hasResourceValue;
 
-    public static MindmapsTransaction getTransaction() {
-        MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
-        mindmaps = graph.getTransaction();
+    public static MindmapsGraph getGraph() {
+        mindmaps = MindmapsTestGraphFactory.newEmptyGraph();
         buildGraph();
 
         try {

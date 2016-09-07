@@ -17,22 +17,7 @@
  */
 package test.io.mindmaps.migration.owl;
 
-import java.io.InputStream;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Optional;
-
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.semanticweb.owlapi.apibinding.OWLManager;
-import org.semanticweb.owlapi.model.OWLOntology;
-import org.semanticweb.owlapi.model.OWLOntologyManager;
-
-import io.mindmaps.MindmapsTransaction;
-import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Entity;
 import io.mindmaps.core.model.Instance;
@@ -42,6 +27,18 @@ import io.mindmaps.core.model.Resource;
 import io.mindmaps.core.model.RoleType;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.migration.owl.OWLMigrator;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.semanticweb.owlapi.apibinding.OWLManager;
+import org.semanticweb.owlapi.model.OWLOntology;
+import org.semanticweb.owlapi.model.OWLOntologyManager;
+
+import java.io.InputStream;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * Base class for OWL migrator unit tests: create and holds OWL manager and
@@ -54,7 +51,7 @@ import io.mindmaps.migration.owl.OWLMigrator;
 public class TestOwlMindMapsBase {
     public static final String OWL_TEST_GRAPH = "owltestgraph";
  
-    static MindmapsGraph graph = 
+    static MindmapsGraph graph =
              MindmapsTestGraphFactory.newEmptyGraph();  
              // MindmapsClient.getGraph(OWL_TEST_GRAPH);
     
@@ -71,28 +68,12 @@ public class TestOwlMindMapsBase {
     }
     
     OWLMigrator migrator;
-    MindmapsTransaction tx;
-    
+
     @Before
     public void initMigrator() {
          migrator = new OWLMigrator();
     }
-    
-    @Before
-    public void initTransaction() {
-        tx = graph.getTransaction();
-    }
-    
-    @After
-    public void closeTransaction() {
-        if (tx != null)
-            try {
-                tx.close();
-            } catch (Exception e) {
-                e.printStackTrace(System.err);
-            }
-    }
-    
+
     OWLOntologyManager owlManager() {
         return manager;
     }
@@ -119,9 +100,9 @@ public class TestOwlMindMapsBase {
     }
     
     void checkRelation(Entity subject, String relationTypeId, Entity object) {
-        RelationType relationType = tx.getRelationType(relationTypeId);
-        final RoleType subjectRole = tx.getRoleType(migrator.namer().subjectRole(relationType.getId()));
-        final RoleType objectRole = tx.getRoleType(migrator.namer().objectRole(relationType.getId()));
+        RelationType relationType = graph.getRelationType(relationTypeId);
+        final RoleType subjectRole = graph.getRoleType(migrator.namer().subjectRole(relationType.getId()));
+        final RoleType objectRole = graph.getRoleType(migrator.namer().objectRole(relationType.getId()));
         Assert.assertNotNull(subjectRole);
         Assert.assertNotNull(objectRole);
         Optional<Relation> relation = relationType.instances().stream().filter(rel -> {

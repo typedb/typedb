@@ -19,7 +19,7 @@
 package io.mindmaps.graql;
 
 import com.google.common.collect.ImmutableMap;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.internal.parser.*;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -45,7 +45,7 @@ public class QueryParser {
      * Create a query parser with no specified graph
      */
     private QueryParser() {
-        queryBuilder = withoutTransaction();
+        queryBuilder = withoutGraph();
         registerDefaultAggregates();
     }
 
@@ -53,8 +53,8 @@ public class QueryParser {
      * Create a query parser with the specified graph
      *  @param transaction  the transaction to operate the query on
      */
-    private QueryParser(MindmapsTransaction transaction) {
-        queryBuilder = withTransaction(transaction);
+    private QueryParser(MindmapsGraph transaction) {
+        queryBuilder = withGraph(transaction);
         registerDefaultAggregates();
     }
 
@@ -70,7 +70,7 @@ public class QueryParser {
      *  @param transaction  the transaction to operate the query on
      *  @return a query parser that operates with the specified graph
      */
-    public static QueryParser create(MindmapsTransaction transaction) {
+    public static QueryParser create(MindmapsGraph transaction) {
         return new QueryParser(transaction);
     }
 

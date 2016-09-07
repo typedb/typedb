@@ -19,7 +19,7 @@
 package io.mindmaps.graql.reasoner.inference;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.MatchQueryDefault;
 import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.Reasoner;
@@ -38,7 +38,7 @@ public class AbstractInferenceTest {
 
     @BeforeClass
     public static void setUpClass() {
-        MindmapsTransaction graph = AbstractGraph.getTransaction();
+        MindmapsGraph graph = AbstractGraph.getGraph();
         reasoner = new Reasoner(graph);
         qp = QueryParser.create(graph);
     }

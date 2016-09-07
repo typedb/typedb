@@ -18,12 +18,8 @@
 
 package io.mindmaps.graql;
 
-import io.mindmaps.MindmapsTransaction;
-import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.model.Instance;
-import io.mindmaps.graql.admin.AskQueryAdmin;
+import io.mindmaps.MindmapsGraph;
 
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 /**

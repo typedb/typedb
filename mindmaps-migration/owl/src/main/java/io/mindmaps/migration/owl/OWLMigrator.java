@@ -17,9 +17,14 @@
  */
 package io.mindmaps.migration.owl;
 
-import java.util.Optional;
-import java.util.function.Supplier;
-
+import io.mindmaps.MindmapsGraph;
+import io.mindmaps.core.Data;
+import io.mindmaps.core.implementation.exception.MindmapsValidationException;
+import io.mindmaps.core.model.Entity;
+import io.mindmaps.core.model.EntityType;
+import io.mindmaps.core.model.RelationType;
+import io.mindmaps.core.model.ResourceType;
+import io.mindmaps.core.model.RoleType;
 import org.semanticweb.owlapi.model.OWLAnnotationProperty;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassAssertionAxiom;
@@ -30,15 +35,8 @@ import org.semanticweb.owlapi.model.OWLObjectProperty;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.vocab.OWL2Datatype;
 
-import io.mindmaps.MindmapsTransaction;
-import io.mindmaps.core.Data;
-import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.Entity;
-import io.mindmaps.core.model.EntityType;
-import io.mindmaps.core.model.RelationType;
-import io.mindmaps.core.model.ResourceType;
-import io.mindmaps.core.model.RoleType;
+import java.util.Optional;
+import java.util.function.Supplier;
 
 /**
  * 
@@ -55,8 +53,7 @@ public class OWLMigrator {
     private Namer namer;
     private OWLOntology ontology;
     private MindmapsGraph graph;
-    private MindmapsTransaction tx;
-    
+
     private <T> T eval(Supplier<T> f) {
         return f.get();
     }
@@ -65,8 +62,8 @@ public class OWLMigrator {
         this.namer = new Namer(){};
     }
 
-    public MindmapsTransaction tx() {
-        return tx;
+    public MindmapsGraph tx() {
+        return graph;
     }
     
     public OWLMigrator namer(Namer namer) {
@@ -97,13 +94,12 @@ public class OWLMigrator {
     }
     
     public void migrate() throws MindmapsValidationException { 
-        tx = graph.getTransaction();
-        OwlMindmapsGraphStoringVisitor visitor = new OwlMindmapsGraphStoringVisitor(this); 
+        OwlMindmapsGraphStoringVisitor visitor = new OwlMindmapsGraphStoringVisitor(this);
         visitor.prepareOWL();
         ontology.axioms().forEach(ax -> {
             ax.accept(visitor); 
         });
-        tx.commit();
+        graph.commit();
     }
 
     public Data<?> owlBuiltInToMindmapsDatatype(OWL2Datatype propertyType) {
@@ -122,14 +118,14 @@ public class OWLMigrator {
     }
     
     public EntityType owlThingEntityType() {
-        return tx.putEntityType(
+        return graph.putEntityType(
                 namer.classEntityTypeName(
                         ontology.getOWLOntologyManager().getOWLDataFactory().getOWLClass(
                                 OwlModel.THING.owlname()).getIRI()));
     }
     
     public EntityType entityType(OWLClass owlclass) {
-        EntityType type = tx.putEntityType(namer.classEntityTypeName(owlclass.getIRI()));
+        EntityType type = graph.putEntityType(namer.classEntityTypeName(owlclass.getIRI()));
         EntityType thing = owlThingEntityType();
         if (type.superType() == null && !type.equals(thing))
             type.superType(thing);
@@ -138,7 +134,7 @@ public class OWLMigrator {
 
     public Entity entity(OWLNamedIndividual individual) {
         String id = namer.individualEntityName(individual.getIRI());
-        Entity entity = tx.getEntity(id);
+        Entity entity = graph.getEntity(id);
         if (entity != null)
             return entity;
         OWLClass owlclass = eval(() -> {
@@ -148,11 +144,11 @@ public class OWLMigrator {
                     .findFirst();
             return expr.isPresent() ? expr.get().getClassExpression().asOWLClass() : null;
         });
-        return tx.putEntity(id, owlclass == null ? owlThingEntityType() : entityType(owlclass));        
+        return graph.putEntity(id, owlclass == null ? owlThingEntityType() : entityType(owlclass));
     }   
 
     public RelationType relation(OWLObjectProperty property) {
-        RelationType relType = tx.putRelationType(namer.objectPropertyName(property.getIRI()));
+        RelationType relType = graph.putRelationType(namer.objectPropertyName(property.getIRI()));
         RoleType subjectRole = subjectRole(relType);
         RoleType objectRole = objectRole(relType);
         relType.hasRole(subjectRole);
@@ -164,7 +160,7 @@ public class OWLMigrator {
     }
 
     public RelationType relation(OWLDataProperty property) {
-        RelationType relType = tx.putRelationType(namer.resourceRelation(property.getIRI()));
+        RelationType relType = graph.putRelationType(namer.resourceRelation(property.getIRI()));
         ResourceType<?> resourceType = resourceType(property);
         relType.hasRole(entityRole(owlThingEntityType(), resourceType));
         relType.hasRole(resourceRole(resourceType));
@@ -172,29 +168,29 @@ public class OWLMigrator {
     }
 
     public RelationType relation(OWLAnnotationProperty property) {
-        RelationType relType = tx.putRelationType(namer.resourceRelation(property.getIRI()));
-        ResourceType<?> resourceType = tx.putResourceType(namer.fromIri(property.getIRI()), Data.STRING);
+        RelationType relType = graph.putRelationType(namer.resourceRelation(property.getIRI()));
+        ResourceType<?> resourceType = graph.putResourceType(namer.fromIri(property.getIRI()), Data.STRING);
         relType.hasRole(entityRole(owlThingEntityType(), resourceType));
         relType.hasRole(resourceRole(resourceType));
         return relType;
     }
     
     public RoleType subjectRole(RelationType relType) {
-        return tx.putRoleType(namer.subjectRole(relType.getId()));
+        return graph.putRoleType(namer.subjectRole(relType.getId()));
     }
 
     public RoleType objectRole(RelationType relType) {
-        return tx.putRoleType(namer.objectRole(relType.getId()));
+        return graph.putRoleType(namer.objectRole(relType.getId()));
     }
 
     public RoleType entityRole(EntityType entityType, ResourceType<?> resourceType) {
-        RoleType roleType = tx.putRoleType(namer.entityRole(resourceType.getId()));
+        RoleType roleType = graph.putRoleType(namer.entityRole(resourceType.getId()));
         entityType.playsRole(roleType);
         return roleType;
     }
     
     public RoleType resourceRole(ResourceType<?> resourceType) {
-        RoleType roleType = tx.putRoleType(namer.resourceRole(resourceType.getId()));
+        RoleType roleType = graph.putRoleType(namer.resourceRole(resourceType.getId()));
         resourceType.playsRole(roleType);
         return roleType;
     }
@@ -208,7 +204,7 @@ public class OWLMigrator {
             return ax.isPresent() ? ax.get().getRange().asOWLDatatype().getBuiltInDatatype() : null;
         });
         Data<?> mindmapsType = propertyType == null ? Data.STRING : owlBuiltInToMindmapsDatatype(propertyType);
-        ResourceType<?> resourceType = tx.putResourceType(namer.fromIri(property.getIRI()), mindmapsType);
+        ResourceType<?> resourceType = graph.putResourceType(namer.fromIri(property.getIRI()), mindmapsType);
         return resourceType;        
     }   
 }

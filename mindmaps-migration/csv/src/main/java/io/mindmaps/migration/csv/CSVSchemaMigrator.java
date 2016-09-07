@@ -2,8 +2,8 @@ package io.mindmaps.migration.csv;
 
 
 import com.google.common.collect.Lists;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.Data;
-import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.engine.loader.Loader;
 import io.mindmaps.graql.Var;
 import org.apache.commons.csv.CSVParser;

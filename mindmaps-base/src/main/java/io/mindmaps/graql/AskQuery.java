@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql;
 
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.admin.AskQueryAdmin;
 
 /**
@@ -36,7 +36,7 @@ public interface AskQuery {
      * @param transaction the transaction to execute the query on
      * @return a new AskQuery with the transaction set
      */
-    AskQuery withTransaction(MindmapsTransaction transaction);
+    AskQuery withGraph(MindmapsGraph transaction);
 
     /**
      * @return admin instance for inspecting and manipulating this query

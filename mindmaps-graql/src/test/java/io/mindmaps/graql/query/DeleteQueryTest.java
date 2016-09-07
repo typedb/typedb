@@ -18,8 +18,7 @@
 
 package io.mindmaps.graql.query;
 
-import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.Graql;
@@ -34,7 +33,9 @@ import static io.mindmaps.constants.DataType.ConceptMeta.ENTITY_TYPE;
 import static io.mindmaps.graql.Graql.var;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.core.StringContains.containsString;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class DeleteQueryTest {
 
@@ -46,8 +47,7 @@ public class DeleteQueryTest {
     public void setUp() {
         MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
-        MindmapsTransaction transaction = mindmapsGraph.getTransaction();
-        qb = Graql.withTransaction(transaction);
+        qb = Graql.withGraph(mindmapsGraph);
     }
 
     @Test

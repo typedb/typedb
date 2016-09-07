@@ -27,15 +27,13 @@ import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 public class MindmapsTinkerGraph extends AbstractMindmapsGraph<TinkerGraph> {
     public MindmapsTinkerGraph(TinkerGraph tinkerGraph, String name, boolean batchLoading){
         super(tinkerGraph, name, "localhost", batchLoading);
-        new MindmapsTransactionImpl(this).initialiseMetaConcepts();
     }
 
     /**
-     * Clears the graph completely. WARNING: This will invalidate any open transactions.
+     * Clears the graph completely.
      */
     @Override
     public void clear() {
-        getGraph().traversal().V().drop().iterate();
-        close();
+        getTinkerPopGraph().traversal().V().drop().iterate();
     }
 }

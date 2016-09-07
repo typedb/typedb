@@ -19,7 +19,7 @@
 package io.mindmaps.graql.internal.reasoner.predicate;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.model.RoleType;
 import io.mindmaps.core.model.Type;
@@ -126,7 +126,7 @@ public abstract class AtomBase implements Atomic{
     public boolean isType(){ return !typeId.isEmpty();}
     @Override
     public boolean isRuleResolvable(){
-        Type type = getParentQuery().getTransaction().getType(getTypeId());
+        Type type = getParentQuery().getGraph().getType(getTypeId());
         return !type.getRulesOfConclusion().isEmpty();
     }
     @Override
@@ -142,8 +142,8 @@ public abstract class AtomBase implements Atomic{
         return new DisjunctionImpl<>(expandedPattern);
     }
 
-    private MatchQueryDefault getBaseMatchQuery(MindmapsTransaction graph) {
-        QueryBuilder qb = Graql.withTransaction(graph);
+    private MatchQueryDefault getBaseMatchQuery(MindmapsGraph graph) {
+        QueryBuilder qb = Graql.withGraph(graph);
         MatchQueryDefault matchQuery = qb.match(getPattern());
 
         //add substitutions
@@ -159,13 +159,13 @@ public abstract class AtomBase implements Atomic{
     }
 
     @Override
-    public MatchQueryDefault getMatchQuery(MindmapsTransaction graph) {
+    public MatchQueryDefault getMatchQuery(MindmapsGraph graph) {
         return getBaseMatchQuery(graph);
     }
 
     @Override
-    public MatchQueryDefault getExpandedMatchQuery(MindmapsTransaction graph) {
-        QueryBuilder qb = Graql.withTransaction(graph);
+    public MatchQueryDefault getExpandedMatchQuery(MindmapsGraph graph) {
+        QueryBuilder qb = Graql.withGraph(graph);
         Set<String> selectVars = Sets.newHashSet(varName);
         return qb.match(getExpandedPattern()).select(selectVars);
     }

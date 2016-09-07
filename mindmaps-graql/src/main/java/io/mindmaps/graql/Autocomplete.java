@@ -20,7 +20,7 @@ package io.mindmaps.graql;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.internal.parser.GraqlLexer;
 import org.antlr.v4.runtime.ANTLRInputStream;
@@ -44,13 +44,13 @@ public class Autocomplete {
     private final int cursorPosition;
 
     /**
-     * @param transaction the transaction to find types in
+     * @param graph the graph to find types in
      * @param query the query to autocomplete
      * @param cursorPosition the cursor position in the query
      * @return an autocomplete object containing potential candidates and cursor position to autocomplete from
      */
-    public static Autocomplete create(MindmapsTransaction transaction, String query, int cursorPosition) {
-        return new Autocomplete(transaction, query, cursorPosition);
+    public static Autocomplete create(MindmapsGraph graph, String query, int cursorPosition) {
+        return new Autocomplete(graph, query, cursorPosition);
     }
 
     /**
@@ -68,24 +68,24 @@ public class Autocomplete {
     }
 
     /**
-     * @param transaction the transaction to find types in
+     * @param graph the graph to find types in
      * @param query the query to autocomplete
      * @param cursorPosition the cursor position in the query
      */
-    private Autocomplete(MindmapsTransaction transaction, String query, int cursorPosition) {
+    private Autocomplete(MindmapsGraph graph, String query, int cursorPosition) {
         Optional<? extends Token> optToken = getCursorToken(query, cursorPosition);
-        candidates = ImmutableSet.copyOf(findCandidates(transaction, query, optToken));
+        candidates = ImmutableSet.copyOf(findCandidates(graph, query, optToken));
         this.cursorPosition = findCursorPosition(cursorPosition, optToken);
     }
 
     /**
-     * @param transaction the transaction to find types in
+     * @param graph the graph to find types in
      * @param query a graql query
      * @param optToken the token the cursor is on in the query
      * @return a set of potential autocomplete words
      */
-    private static Set<String> findCandidates(MindmapsTransaction transaction, String query, Optional<? extends Token> optToken) {
-        Set<String> allCandidates = Stream.of(getKeywords(), getTypes(transaction), getVariables(query))
+    private static Set<String> findCandidates(MindmapsGraph graph, String query, Optional<? extends Token> optToken) {
+        Set<String> allCandidates = Stream.of(getKeywords(), getTypes(graph), getVariables(query))
                 .flatMap(Function.identity()).collect(Collectors.toSet());
 
         return optToken.map(
@@ -130,11 +130,11 @@ public class Autocomplete {
     }
 
     /**
-     * @param transaction the transaction to find types in
+     * @param graph the graph to find types in
      * @return all type IDs in the ontology
      */
-    private static Stream<String> getTypes(MindmapsTransaction transaction) {
-        return transaction.getMetaType().instances().stream().map(Concept::getId);
+    private static Stream<String> getTypes(MindmapsGraph graph) {
+        return graph.getMetaType().instances().stream().map(Concept::getId);
     }
 
     /**

@@ -20,7 +20,6 @@ package io.mindmaps;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.factory.MindmapsClient;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.javatuples.Pair;

@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.internal.validation;
 
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 
@@ -40,7 +40,7 @@ class PatternValidator implements Validator {
     }
 
     @Override
-    public Stream<String> getErrors(MindmapsTransaction transaction) {
+    public Stream<String> getErrors(MindmapsGraph transaction) {
         Stream<Validator> validators = vars.stream().map(MatchVarValidator::new);
         return Validator.getAggregateValidator(validators).getErrors(transaction);
     }

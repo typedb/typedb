@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql;
 
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.admin.InsertQueryAdmin;
 
@@ -38,7 +38,7 @@ public interface InsertQuery extends Streamable<Concept> {
      * @param transaction the transaction to execute the query on
      * @return a new InsertQuery with the transaction set
      */
-    InsertQuery withTransaction(MindmapsTransaction transaction);
+    InsertQuery withGraph(MindmapsGraph transaction);
 
     /**
      * Execute the insert query

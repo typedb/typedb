@@ -19,7 +19,7 @@
 package io.mindmaps.graql.reasoner.inference;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.model.Rule;
 import io.mindmaps.graql.MatchQueryDefault;
 import io.mindmaps.graql.QueryParser;
@@ -35,13 +35,13 @@ import static org.junit.Assert.assertEquals;
 
 public class SNBInferenceTest {
 
-    private static MindmapsTransaction graph;
+    private static MindmapsGraph graph;
     private static Reasoner reasoner;
     private static QueryParser qp;
 
     @BeforeClass
     public static void setUpClass() {
-        graph = SNBGraph.getTransaction();
+        graph = SNBGraph.getGraph();
         qp = QueryParser.create(graph);
         reasoner = new Reasoner(graph);
     }

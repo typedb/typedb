@@ -18,9 +18,8 @@
 
 package io.mindmaps.graql.internal.query;
 
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.internal.analytics.Analytics;
@@ -48,12 +47,10 @@ public class ComputeQueryImpl implements ComputeQuery {
 
     @Override
     public Object execute(MindmapsGraph graph) throws ExecutionException, InterruptedException {
-
-        MindmapsTransaction transaction = graph.getTransaction();
-        String keyspace = graph.getName();
+        String keyspace = graph.getKeyspace();
 
         Analytics analytics = typeIds.map(ids -> {
-            Set<Type> types = ids.stream().map(transaction::getType).collect(toSet());
+            Set<Type> types = ids.stream().map(graph::getType).collect(toSet());
             return new Analytics(keyspace, types);
         }).orElseGet(() ->
             new Analytics(keyspace)

@@ -20,8 +20,8 @@ package io.mindmaps.graql.internal.query;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.InsertQuery;
@@ -45,7 +45,7 @@ import static java.util.stream.Collectors.toSet;
 public class InsertQueryImpl implements InsertQueryAdmin {
 
     private final Optional<MatchQueryDefaultAdmin> matchQuery;
-    private final Optional<MindmapsTransaction> transaction;
+    private final Optional<MindmapsGraph> transaction;
     private final ImmutableCollection<VarAdmin> originalVars;
     private final ImmutableCollection<VarAdmin> vars;
 
@@ -56,7 +56,7 @@ public class InsertQueryImpl implements InsertQueryAdmin {
      * @param matchQuery the match query to insert for each result
      * @param transaction the transaction to execute on
      */
-    private InsertQueryImpl(ImmutableCollection<VarAdmin> vars, Optional<MatchQueryDefaultAdmin> matchQuery, Optional<MindmapsTransaction> transaction) {
+    private InsertQueryImpl(ImmutableCollection<VarAdmin> vars, Optional<MatchQueryDefaultAdmin> matchQuery, Optional<MindmapsGraph> transaction) {
         // match query and transaction should never both be present (should get transaction from inner match query)
         assert(!matchQuery.isPresent() || !transaction.isPresent());
 
@@ -68,7 +68,7 @@ public class InsertQueryImpl implements InsertQueryAdmin {
         // Get all variables, including ones nested in other variables
         this.vars = ImmutableSet.copyOf(vars.stream().flatMap(v -> v.getInnerVars().stream()).collect(toSet()));
 
-        getTransaction().ifPresent(t -> new InsertQueryValidator(this).validate(t));
+        getGraph().ifPresent(t -> new InsertQueryValidator(this).validate(t));
     }
 
     /**
@@ -83,14 +83,14 @@ public class InsertQueryImpl implements InsertQueryAdmin {
      * @param transaction the transaction to execute on
      * @param vars a collection of Vars to insert
      */
-    public InsertQueryImpl(ImmutableCollection<VarAdmin> vars, Optional<MindmapsTransaction> transaction) {
+    public InsertQueryImpl(ImmutableCollection<VarAdmin> vars, Optional<MindmapsGraph> transaction) {
         this(vars, Optional.empty(), transaction);
     }
 
     @Override
-    public InsertQuery withTransaction(MindmapsTransaction transaction) {
+    public InsertQuery withGraph(MindmapsGraph transaction) {
         return matchQuery.map(
-                m -> new InsertQueryImpl(vars, m.withTransaction(transaction).admin())
+                m -> new InsertQueryImpl(vars, m.withGraph(transaction).admin())
         ).orElseGet(
                 () -> new InsertQueryImpl(vars, Optional.of(transaction))
         );
@@ -104,8 +104,8 @@ public class InsertQueryImpl implements InsertQueryAdmin {
 
     @Override
     public Stream<Concept> stream() {
-        MindmapsTransaction theTransaction =
-                getTransaction().orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_TRANSACTION.getMessage()));
+        MindmapsGraph theTransaction =
+                getGraph().orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_TRANSACTION.getMessage()));
 
         InsertQueryExecutor executor = new InsertQueryExecutor(vars, theTransaction);
 
@@ -128,8 +128,8 @@ public class InsertQueryImpl implements InsertQueryAdmin {
 
     @Override
     public Set<Type> getTypes() {
-        MindmapsTransaction theTransaction =
-                getTransaction().orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_TRANSACTION.getMessage()));
+        MindmapsGraph theTransaction =
+                getGraph().orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_TRANSACTION.getMessage()));
 
         Set<Type> types = vars.stream()
                 .flatMap(v -> v.getInnerVars().stream())
@@ -153,8 +153,8 @@ public class InsertQueryImpl implements InsertQueryAdmin {
     }
 
     @Override
-    public Optional<MindmapsTransaction> getTransaction() {
-        return matchQuery.map(MatchQueryDefaultAdmin::getTransaction).orElse(transaction);
+    public Optional<MindmapsGraph> getGraph() {
+        return matchQuery.map(MatchQueryDefaultAdmin::getGraph).orElse(transaction);
     }
 
     @Override
