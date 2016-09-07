@@ -27,7 +27,8 @@ import java.util.stream.Stream;
  * An aggregate that changes match query results into a list.
  * @param <T> the type of the results of the match query
  */
-public class ListAggregate<T> extends AbstractAggregate<T, List<T>> {
+class ListAggregate<T> extends AbstractAggregate<T, List<T>> {
+
     @Override
     public List<T> apply(Stream<? extends T> stream) {
         return stream.collect(Collectors.toList());

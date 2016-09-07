@@ -16,34 +16,35 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql.internal.query.aggregate;
+package io.mindmaps.graql.internal.query;
 
-import io.mindmaps.core.concept.Concept;
+import io.mindmaps.graql.admin.PatternAdmin;
+import io.mindmaps.graql.admin.VarAdmin;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Stream;
+import java.util.Collection;
+import java.util.Set;
 
-import static java.util.Comparator.naturalOrder;
+public class Patterns {
 
-/**
- * Aggregate that finds maximum of a match query.
- */
-class MaxAggregate extends AbstractAggregate<Map<String, Concept>, Optional<?>> {
+    private Patterns() {}
 
-    private final String varName;
-
-    MaxAggregate(String varName) {
-        this.varName = varName;
+    public static <T extends PatternAdmin> Conjunction<T> conjunction(Set<T> patterns) {
+        return new ConjunctionImpl<>(patterns);
     }
 
-    @Override
-    public Optional<?> apply(Stream<? extends Map<String, Concept>> stream) {
-        return stream.map(result -> (Comparable) result.get(varName).asResource().getValue()).max(naturalOrder());
+    public static <T extends PatternAdmin> Disjunction<T> disjunction(Set<T> patterns) {
+        return new DisjunctionImpl<>(patterns);
     }
 
-    @Override
-    public String toString() {
-        return "max $" + varName;
+    public static VarAdmin var() {
+        return new VarImpl();
+    }
+
+    public static VarAdmin var(String name) {
+        return new VarImpl(name);
+    }
+
+    public static VarAdmin mergeVars(Collection<VarAdmin> vars) {
+        return new VarImpl(vars);
     }
 }

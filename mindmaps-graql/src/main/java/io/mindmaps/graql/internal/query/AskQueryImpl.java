@@ -26,14 +26,14 @@ import io.mindmaps.graql.admin.AskQueryAdmin;
 /**
  * An AskQuery to check if a given pattern matches anywhere in the graph
  */
-public class AskQueryImpl implements AskQueryAdmin {
+class AskQueryImpl implements AskQueryAdmin {
 
     private final MatchQuery matchQuery;
 
     /**
      * @param matchQuery the match query that the ask query will search for in the graph
      */
-    public AskQueryImpl(MatchQuery matchQuery) {
+    AskQueryImpl(MatchQuery matchQuery) {
         this.matchQuery = matchQuery;
     }
 

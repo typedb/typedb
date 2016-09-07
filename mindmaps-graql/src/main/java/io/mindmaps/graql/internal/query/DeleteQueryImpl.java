@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
 /**
  * A DeleteQuery that will execute deletions for every result of a MatchQuery
  */
-public class DeleteQueryImpl implements DeleteQueryAdmin {
+class DeleteQueryImpl implements DeleteQueryAdmin {
     private final ImmutableMap<String, VarAdmin> deleters;
     private final MatchQueryAdmin matchQuery;
 
@@ -49,7 +49,7 @@ public class DeleteQueryImpl implements DeleteQueryAdmin {
      * @param deleters a collection of variable patterns to delete
      * @param matchQuery a pattern to match and delete for each result
      */
-    public DeleteQueryImpl(Collection<VarAdmin> deleters, MatchQuery matchQuery) {
+    DeleteQueryImpl(Collection<VarAdmin> deleters, MatchQuery matchQuery) {
         Map<String, VarAdmin> deletersMap =
                 deleters.stream().collect(Collectors.toMap(VarAdmin::getName, Function.identity()));
         this.deleters = ImmutableMap.copyOf(deletersMap);
@@ -68,7 +68,7 @@ public class DeleteQueryImpl implements DeleteQueryAdmin {
 
     @Override
     public DeleteQuery withGraph(MindmapsGraph graph) {
-        return new DeleteQueryImpl(deleters.values(), matchQuery.withGraph(graph));
+        return Queries.delete(deleters.values(), matchQuery.withGraph(graph));
     }
 
     @Override

@@ -91,14 +91,14 @@ public class Graql {
      * @return a new query variable
      */
     public static Var var(String name) {
-        return new VarImpl(Objects.requireNonNull(name));
+        return Patterns.var(Objects.requireNonNull(name));
     }
 
     /**
      * @return a new, anonymous query variable
      */
     public static Var var() {
-        return new VarImpl();
+        return Patterns.var();
     }
 
     /**
@@ -122,7 +122,7 @@ public class Graql {
      * @return a pattern that will match only when all contained patterns match
      */
     public static Pattern and(Collection<? extends Pattern> patterns) {
-        Conjunction<PatternAdmin> conjunction = new ConjunctionImpl<>(AdminConverter.getPatternAdmins(patterns));
+        Conjunction<PatternAdmin> conjunction = Patterns.conjunction(AdminConverter.getPatternAdmins(patterns));
 
         return () -> conjunction;
     }
@@ -140,7 +140,7 @@ public class Graql {
      * @return a pattern that will match when any contained pattern matches
      */
     public static Pattern or(Collection<? extends Pattern> patterns) {
-        Disjunction<PatternAdmin> disjunction = new DisjunctionImpl<>(AdminConverter.getPatternAdmins(patterns));
+        Disjunction<PatternAdmin> disjunction = Patterns.disjunction(AdminConverter.getPatternAdmins(patterns));
 
         return () -> disjunction;
     }
@@ -152,14 +152,14 @@ public class Graql {
      * Create an aggregate that will count the results of a query.
      */
     public static Aggregate<Object, Long> count() {
-        return new CountAggregate();
+        return Aggregates.count();
     }
 
     /**
      * Create an aggregate that will sum the values of a variable.
      */
     public static Aggregate<Map<String, Concept>, Number> sum(String varName) {
-        return new SumAggregate(varName);
+        return Aggregates.sum(varName);
     }
 
     /**
@@ -167,7 +167,7 @@ public class Graql {
      * @param varName the variable to find the maximum of
      */
     public static Aggregate<Map<String, Concept>, Optional<?>> max(String varName) {
-        return new MaxAggregate(varName);
+        return Aggregates.max(varName);
     }
 
     /**
@@ -175,7 +175,7 @@ public class Graql {
      * @param varName the variable to find the maximum of
      */
     public static Aggregate<Map<String, Concept>, Optional<?>> min(String varName) {
-        return new MinAggregate(varName);
+        return Aggregates.min(varName);
     }
 
     /**
@@ -183,7 +183,7 @@ public class Graql {
      * @param varName the variable to find the mean of
      */
     public static Aggregate<Map<String, Concept>, Optional<Double>> average(String varName) {
-        return new AverageAggregate(varName);
+        return Aggregates.average(varName);
     }
 
     /**
@@ -191,7 +191,7 @@ public class Graql {
      * @param varName the variable to find the median of
      */
     public static Aggregate<Map<String, Concept>, Optional<Number>> median(String varName) {
-        return new MedianAggregate(varName);
+        return Aggregates.median(varName);
     }
 
     /**
@@ -199,7 +199,7 @@ public class Graql {
      * @param varName the variable name to group results by
      */
     public static Aggregate<Map<String, Concept>, Map<Concept, List<Map<String, Concept>>>> group(String varName) {
-        return group(varName, new ListAggregate<>());
+        return group(varName, Aggregates.list());
     }
 
     /**
@@ -210,7 +210,7 @@ public class Graql {
      */
     public static <T> Aggregate<Map<String, Concept>, Map<Concept, T>> group(
             String varName, Aggregate<? super Map<String, Concept>, T> aggregate) {
-        return new GroupAggregate<>(varName, aggregate);
+        return Aggregates.group(varName, aggregate);
     }
 
     /**
@@ -231,7 +231,7 @@ public class Graql {
      * @param <T> the type that each aggregate returns
      */
     public static <S, T> Aggregate<S, Map<String, T>> select(Set<NamedAggregate<? super S, ? extends T>> aggregates) {
-        return new SelectAggregate<>(ImmutableSet.copyOf(aggregates));
+        return Aggregates.select(ImmutableSet.copyOf(aggregates));
     }
 
 

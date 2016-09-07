@@ -25,10 +25,7 @@ import io.mindmaps.core.concept.Concept;
 import io.mindmaps.graql.*;
 import io.mindmaps.graql.admin.MatchQueryAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.query.AskQueryImpl;
-import io.mindmaps.graql.internal.query.DeleteQueryImpl;
-import io.mindmaps.graql.internal.query.InsertQueryImpl;
-import io.mindmaps.graql.internal.query.aggregate.AggregateQueryImpl;
+import io.mindmaps.graql.internal.query.Queries;
 import io.mindmaps.graql.internal.util.AdminConverter;
 
 import java.util.*;
@@ -37,7 +34,7 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.toList;
 
 @SuppressWarnings("UnusedReturnValue")
-abstract class AbstractMatchQuery implements MatchQueryAdmin {
+public abstract class AbstractMatchQuery implements MatchQueryAdmin {
 
     @Override
     public MatchQuery withGraph(MindmapsGraph graph) {
@@ -61,7 +58,7 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
 
     @Override
     public final <S> AggregateQuery<S> aggregate(Aggregate<? super Map<String, Concept>, S> aggregate) {
-        return new AggregateQueryImpl<>(admin(), aggregate);
+        return Queries.aggregate(admin(), aggregate);
     }
 
     @Override
@@ -76,13 +73,13 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
 
     @Override
     public final AskQuery ask() {
-        return new AskQueryImpl(this);
+        return Queries.ask(this);
     }
 
     @Override
     public final InsertQuery insert(Collection<? extends Var> vars) {
         ImmutableSet<VarAdmin> varAdmins = ImmutableSet.copyOf(AdminConverter.getVarAdmins(vars));
-        return new InsertQueryImpl(varAdmins, admin());
+        return Queries.insert(varAdmins, admin());
     }
 
     @Override
@@ -93,7 +90,7 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
 
     @Override
     public final DeleteQuery delete(Collection<? extends Var> deleters) {
-        return new DeleteQueryImpl(AdminConverter.getVarAdmins(deleters), this);
+        return Queries.delete(AdminConverter.getVarAdmins(deleters), this);
     }
 
     @Override

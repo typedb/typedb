@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql.internal.query.match;
+package io.mindmaps.graql.internal.query;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
@@ -26,7 +26,8 @@ import io.mindmaps.core.concept.Type;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.Query;
-import io.mindmaps.graql.internal.query.Conjunction;
+import io.mindmaps.graql.internal.query.match.AbstractMatchQuery;
+import io.mindmaps.graql.internal.query.match.MatchOrder;
 import io.mindmaps.graql.internal.validation.MatchQueryValidator;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -43,14 +44,14 @@ import static java.util.stream.Collectors.toSet;
 /**
  * Base MatchQuery implementation that executes the gremlin traversal
  */
-public class MatchQueryBase extends AbstractMatchQuery {
+class MatchQueryBase extends AbstractMatchQuery {
 
     private final Conjunction<PatternAdmin> pattern;
 
     /**
      * @param pattern a pattern to match in the graph
      */
-    public MatchQueryBase(Conjunction<PatternAdmin> pattern) {
+    MatchQueryBase(Conjunction<PatternAdmin> pattern) {
         if (pattern.getPatterns().size() == 0) {
             throw new IllegalArgumentException(ErrorMessage.MATCH_NO_PATTERNS.getMessage());
         }

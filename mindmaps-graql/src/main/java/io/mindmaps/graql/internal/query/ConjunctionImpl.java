@@ -30,11 +30,11 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
-public class ConjunctionImpl<T extends PatternAdmin> implements Conjunction<T> {
+class ConjunctionImpl<T extends PatternAdmin> implements Conjunction<T> {
 
     private final Set<T> patterns;
 
-    public ConjunctionImpl(Set<T> patterns) {
+    ConjunctionImpl(Set<T> patterns) {
         this.patterns = patterns;
     }
 
@@ -57,7 +57,7 @@ public class ConjunctionImpl<T extends PatternAdmin> implements Conjunction<T> {
                 .map(ConjunctionImpl::fromConjunctions)
                 .collect(toSet());
 
-        return new DisjunctionImpl<>(dnf);
+        return Patterns.disjunction(dnf);
 
         // Wasn't that a horrible function? Here it is in Haskell:
         //     dnf = map fromConjunctions . sequence . map getDisjunctiveNormalForm . patterns
@@ -75,7 +75,7 @@ public class ConjunctionImpl<T extends PatternAdmin> implements Conjunction<T> {
 
     private static <U extends PatternAdmin> Conjunction<U> fromConjunctions(List<Conjunction<U>> conjunctions) {
         Set<U> patterns = conjunctions.stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return new ConjunctionImpl<>(patterns);
+        return Patterns.conjunction(patterns);
     }
 
     @Override

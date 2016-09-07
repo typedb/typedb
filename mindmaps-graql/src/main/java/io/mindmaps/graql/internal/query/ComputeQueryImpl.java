@@ -30,17 +30,17 @@ import java.util.concurrent.ExecutionException;
 
 import static java.util.stream.Collectors.toSet;
 
-public class ComputeQueryImpl implements ComputeQuery {
+class ComputeQueryImpl implements ComputeQuery {
 
     private Optional<Set<String>> typeIds;
     private final String computeMethod;
 
-    public ComputeQueryImpl(String computeMethod) {
+    ComputeQueryImpl(String computeMethod) {
         this.computeMethod = computeMethod;
         this.typeIds = Optional.empty();
     }
 
-    public ComputeQueryImpl(String computeMethod, Set<String> typeIds) {
+    ComputeQueryImpl(String computeMethod, Set<String> typeIds) {
         this.computeMethod = computeMethod;
         this.typeIds = Optional.of(typeIds);
     }

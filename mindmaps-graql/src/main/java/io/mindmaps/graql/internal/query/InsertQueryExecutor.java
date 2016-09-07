@@ -197,11 +197,11 @@ class InsertQueryExecutor {
         while (changed) {
             // Merge variable referred to by name...
             boolean byNameChange = varsToMerge.addAll(varsByName.get(var.getName()));
-            var = new VarImpl(varsToMerge);
+            var = Patterns.mergeVars(varsToMerge);
 
             // Then merge variables referred to by id...
             boolean byIdChange = var.getId().map(id -> varsToMerge.addAll(varsById.get(id))).orElse(false);
-            var = new VarImpl(varsToMerge);
+            var = Patterns.mergeVars(varsToMerge);
 
             changed = byNameChange | byIdChange;
         }

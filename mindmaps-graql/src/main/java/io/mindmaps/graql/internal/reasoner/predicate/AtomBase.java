@@ -27,9 +27,7 @@ import io.mindmaps.graql.*;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.query.ConjunctionImpl;
-import io.mindmaps.graql.internal.query.DisjunctionImpl;
-import io.mindmaps.graql.internal.query.VarImpl;
+import io.mindmaps.graql.internal.query.Patterns;
 import io.mindmaps.graql.internal.reasoner.container.Query;
 import javafx.util.Pair;
 
@@ -70,7 +68,7 @@ public abstract class AtomBase implements Atomic{
         if (a.getParentQuery() != null)
             this.parent = a.getParentQuery();
 
-        this.atomPattern = new VarImpl(Sets.newHashSet(a.atomPattern.asVar()));
+        this.atomPattern = Patterns.mergeVars(Sets.newHashSet(a.atomPattern.asVar()));
         Pair<String, String> varData = extractDataFromVar(atomPattern.asVar());
         varName = varData.getKey();
         typeId = varData.getValue();
@@ -139,7 +137,7 @@ public abstract class AtomBase implements Atomic{
         Set<PatternAdmin> expandedPattern = new HashSet<>();
         expandedPattern.add(atomPattern);
         expansions.forEach(q -> expandedPattern.add(q.getExpandedPattern()));
-        return new DisjunctionImpl<>(expandedPattern);
+        return Patterns.disjunction(expandedPattern);
     }
 
     private MatchQuery getBaseMatchQuery(MindmapsGraph graph) {
@@ -153,7 +151,7 @@ public abstract class AtomBase implements Atomic{
         varSubMap.forEach( (key, val) -> {
             Set<PatternAdmin> patterns = new HashSet<>();
             val.forEach(sub -> patterns.add(sub.getPattern()));
-            matchQuery.admin().getPattern().getPatterns().add(new ConjunctionImpl<>(patterns));
+            matchQuery.admin().getPattern().getPatterns().add(Patterns.conjunction(patterns));
         });
         return matchQuery.admin().select(selectVars);
     }

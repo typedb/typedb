@@ -26,11 +26,11 @@ import java.util.stream.Stream;
 /**
  * Aggregate that sums results of a match query.
  */
-public class SumAggregate extends AbstractAggregate<Map<String, Concept>, Number> {
+class SumAggregate extends AbstractAggregate<Map<String, Concept>, Number> {
 
     private final String varName;
 
-    public SumAggregate(String varName) {
+    SumAggregate(String varName) {
         this.varName = varName;
     }
 

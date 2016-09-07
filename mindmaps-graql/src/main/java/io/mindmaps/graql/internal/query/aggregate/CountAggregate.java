@@ -24,7 +24,7 @@ import java.util.stream.Stream;
 /**
  * Aggregate that counts results of a match query.
  */
-public class CountAggregate extends AbstractAggregate<Object, Long> {
+class CountAggregate extends AbstractAggregate<Object, Long> {
     @Override
     public Long apply(Stream<?> stream) {
         return stream.count();

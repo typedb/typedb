@@ -27,11 +27,11 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toSet;
 
-public class DisjunctionImpl<T extends PatternAdmin> implements Disjunction<T> {
+class DisjunctionImpl<T extends PatternAdmin> implements Disjunction<T> {
 
     private final Set<T> patterns;
 
-    public DisjunctionImpl(Set<T> patterns) {
+    DisjunctionImpl(Set<T> patterns) {
         this.patterns = patterns;
     }
 
@@ -47,7 +47,7 @@ public class DisjunctionImpl<T extends PatternAdmin> implements Disjunction<T> {
                 .flatMap(p -> p.getDisjunctiveNormalForm().getPatterns().stream())
                 .collect(toSet());
 
-        return new DisjunctionImpl<>(dnf);
+        return Patterns.disjunction(dnf);
     }
 
     @Override

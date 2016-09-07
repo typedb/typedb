@@ -52,7 +52,7 @@ import static java.util.stream.Collectors.toSet;
 /**
  * Implementation of Var interface
  */
-public class VarImpl implements VarAdmin {
+class VarImpl implements VarAdmin {
 
     private String name;
     private final boolean userDefinedName;
@@ -85,7 +85,7 @@ public class VarImpl implements VarAdmin {
     /**
      * Create a variable with a random variable name
      */
-    public VarImpl() {
+    VarImpl() {
         this.name = UUID.randomUUID().toString();
         this.userDefinedName = false;
     }
@@ -93,7 +93,7 @@ public class VarImpl implements VarAdmin {
     /**
      * @param name the variable name of the variable
      */
-    public VarImpl(String name) {
+    VarImpl(String name) {
         this.name = name;
         this.userDefinedName = true;
     }
@@ -102,7 +102,7 @@ public class VarImpl implements VarAdmin {
      * Create a variable by combining a collection of other variables
      * @param vars a collection of variables to combine
      */
-    public VarImpl(Collection<VarAdmin> vars) {
+    VarImpl(Collection<VarAdmin> vars) {
         VarAdmin first = vars.iterator().next();
         this.name = first.getName();
         this.userDefinedName = first.isUserDefinedName();
@@ -620,8 +620,8 @@ public class VarImpl implements VarAdmin {
     @Override
     public Disjunction<Conjunction<VarAdmin>> getDisjunctiveNormalForm() {
         // a disjunction containing only one option
-        Conjunction<VarAdmin> conjunction = new ConjunctionImpl<>(Collections.singleton(this));
-        return new DisjunctionImpl<>(Collections.singleton(conjunction));
+        Conjunction<VarAdmin> conjunction = Patterns.conjunction(Collections.singleton(this));
+        return Patterns.disjunction(Collections.singleton(conjunction));
     }
 
     /**
