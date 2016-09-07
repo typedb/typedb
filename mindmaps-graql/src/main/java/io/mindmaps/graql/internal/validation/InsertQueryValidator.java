@@ -38,8 +38,8 @@ public class InsertQueryValidator implements Validator {
     }
 
     @Override
-    public Stream<String> getErrors(MindmapsGraph transaction) {
+    public Stream<String> getErrors(MindmapsGraph graph) {
         Stream<Validator> validators = insertQuery.getAllVars().stream().map(InsertVarValidator::new);
-        return Validator.getAggregateValidator(validators).getErrors(transaction);
+        return Validator.getAggregateValidator(validators).getErrors(graph);
     }
 }

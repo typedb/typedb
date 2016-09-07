@@ -45,23 +45,23 @@ import static java.util.stream.Collectors.toSet;
 public class InsertQueryImpl implements InsertQueryAdmin {
 
     private final Optional<MatchQueryAdmin> matchQuery;
-    private final Optional<MindmapsGraph> transaction;
+    private final Optional<MindmapsGraph> graph;
     private final ImmutableCollection<VarAdmin> originalVars;
     private final ImmutableCollection<VarAdmin> vars;
 
     /**
-     * At least one of transaction and matchQuery must be absent.
+     * At least one of graph and matchQuery must be absent.
      *
      * @param vars a collection of Vars to insert
      * @param matchQuery the match query to insert for each result
-     * @param transaction the transaction to execute on
+     * @param graph the graph to execute on
      */
-    private InsertQueryImpl(ImmutableCollection<VarAdmin> vars, Optional<MatchQueryAdmin> matchQuery, Optional<MindmapsGraph> transaction) {
-        // match query and transaction should never both be present (should get transaction from inner match query)
-        assert(!matchQuery.isPresent() || !transaction.isPresent());
+    private InsertQueryImpl(ImmutableCollection<VarAdmin> vars, Optional<MatchQueryAdmin> matchQuery, Optional<MindmapsGraph> graph) {
+        // match query and graph should never both be present (should get graph from inner match query)
+        assert(!matchQuery.isPresent() || !graph.isPresent());
 
         this.matchQuery = matchQuery;
-        this.transaction = transaction;
+        this.graph = graph;
 
         this.originalVars = vars;
 
@@ -80,19 +80,19 @@ public class InsertQueryImpl implements InsertQueryAdmin {
     }
 
     /**
-     * @param transaction the transaction to execute on
+     * @param graph the graph to execute on
      * @param vars a collection of Vars to insert
      */
-    public InsertQueryImpl(ImmutableCollection<VarAdmin> vars, Optional<MindmapsGraph> transaction) {
-        this(vars, Optional.empty(), transaction);
+    public InsertQueryImpl(ImmutableCollection<VarAdmin> vars, Optional<MindmapsGraph> graph) {
+        this(vars, Optional.empty(), graph);
     }
 
     @Override
-    public InsertQuery withGraph(MindmapsGraph transaction) {
+    public InsertQuery withGraph(MindmapsGraph graph) {
         return matchQuery.map(
-                m -> new InsertQueryImpl(vars, m.withGraph(transaction).admin())
+                m -> new InsertQueryImpl(vars, m.withGraph(graph).admin())
         ).orElseGet(
-                () -> new InsertQueryImpl(vars, Optional.of(transaction))
+                () -> new InsertQueryImpl(vars, Optional.of(graph))
         );
     }
 
@@ -104,10 +104,10 @@ public class InsertQueryImpl implements InsertQueryAdmin {
 
     @Override
     public Stream<Concept> stream() {
-        MindmapsGraph theTransaction =
-                getGraph().orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_TRANSACTION.getMessage()));
+        MindmapsGraph theGraph =
+                getGraph().orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage()));
 
-        InsertQueryExecutor executor = new InsertQueryExecutor(vars, theTransaction);
+        InsertQueryExecutor executor = new InsertQueryExecutor(vars, theGraph);
 
         return matchQuery.map(
                 query -> query.stream().flatMap(executor::insertAll)
@@ -128,13 +128,13 @@ public class InsertQueryImpl implements InsertQueryAdmin {
 
     @Override
     public Set<Type> getTypes() {
-        MindmapsGraph theTransaction =
-                getGraph().orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_TRANSACTION.getMessage()));
+        MindmapsGraph theGraph =
+                getGraph().orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage()));
 
         Set<Type> types = vars.stream()
                 .flatMap(v -> v.getInnerVars().stream())
                 .flatMap(v -> v.getTypeIds().stream())
-                .map(theTransaction::getType)
+                .map(theGraph::getType)
                 .collect(Collectors.toSet());
 
         matchQuery.ifPresent(mq -> types.addAll(mq.getTypes()));
@@ -154,7 +154,7 @@ public class InsertQueryImpl implements InsertQueryAdmin {
 
     @Override
     public Optional<MindmapsGraph> getGraph() {
-        return matchQuery.map(MatchQueryAdmin::getGraph).orElse(transaction);
+        return matchQuery.map(MatchQueryAdmin::getGraph).orElse(graph);
     }
 
     @Override

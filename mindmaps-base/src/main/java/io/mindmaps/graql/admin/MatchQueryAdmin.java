@@ -42,7 +42,7 @@ public interface MatchQueryAdmin extends MatchQuery {
     }
 
     /**
-     * Execute the query using the given transaction.
+     * Execute the query using the given graph.
      * @param graph the graph to use to execute the query
      * @param order how to order the resulting stream
      * @return a stream of results
@@ -50,10 +50,10 @@ public interface MatchQueryAdmin extends MatchQuery {
     Stream<Map<String, Concept>> stream(Optional<MindmapsGraph> graph, Optional<MatchOrder> order);
 
     /**
-     * @param transaction the transaction to use to get types from the graph
+     * @param graph the graph to use to get types from
      * @return all concept types referred to explicitly in the query
      */
-    Set<Type> getTypes(MindmapsGraph transaction);
+    Set<Type> getTypes(MindmapsGraph graph);
 
     /**
      * @return all concept types referred to explicitly in the query

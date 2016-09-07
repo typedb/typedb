@@ -137,7 +137,7 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
 
     /**
      * @param graph the graph to execute the query on
-     * @return a new MatchQuery with the transaction set
+     * @return a new MatchQuery with the graph set
      */
     MatchQuery withGraph(MindmapsGraph graph);
 

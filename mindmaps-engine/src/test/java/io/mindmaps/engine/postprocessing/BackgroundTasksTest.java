@@ -113,18 +113,16 @@ public class BackgroundTasksTest {
         assertEquals(4, ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph().traversal().V().hasLabel(DataType.BaseType.CASTING.name()).toList().size());
     }
     private void buildDuplicateCasting(String relationTypeId, String mainRoleTypeId, String mainInstanceId, String otherRoleTypeId, String otherInstanceId) throws Exception {
-        AbstractMindmapsGraph mindmapsTransaction = (AbstractMindmapsGraph) mindmapsGraph;
-
         //Get Needed Mindmaps Objects
-        RelationType relationType = mindmapsTransaction.getRelationType(relationTypeId);
-        Instance otherInstance = mindmapsTransaction.getInstance(otherInstanceId);
-        RoleType otherRoleType = mindmapsTransaction.getRoleType(otherRoleTypeId);
-        Relation relation = mindmapsTransaction.addRelation(relationType).putRolePlayer(otherRoleType, otherInstance);
+        RelationType relationType = mindmapsGraph.getRelationType(relationTypeId);
+        Instance otherInstance = mindmapsGraph.getInstance(otherInstanceId);
+        RoleType otherRoleType = mindmapsGraph.getRoleType(otherRoleTypeId);
+        Relation relation = mindmapsGraph.addRelation(relationType).putRolePlayer(otherRoleType, otherInstance);
         String relationId = relation.getId();
 
-        mindmapsTransaction.commit();
+        mindmapsGraph.commit();
 
-        Graph rawGraph = ((AbstractMindmapsGraph) mindmapsGraph).getTinkerPopGraph();
+        Graph rawGraph = ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph();
 
         //Get Needed Vertices
         Vertex mainRoleTypeVertex = rawGraph.traversal().V().

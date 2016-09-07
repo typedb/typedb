@@ -53,8 +53,8 @@ public class  Query {
     private final Set<String> selectVars;
     private final Conjunction<PatternAdmin> pattern;
 
-    public Query(String query, MindmapsGraph transaction) {
-        this.graph = transaction;
+    public Query(String query, MindmapsGraph graph) {
+        this.graph = graph;
         QueryParser qp = QueryParser.create(graph);
         MatchQuery matchQuery = qp.parseMatchQuery(query).getMatchQuery();
         this.pattern = matchQuery.admin().getPattern();

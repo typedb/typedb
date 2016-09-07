@@ -41,7 +41,7 @@ abstract class AbstractMatchQuery implements MatchQueryAdmin {
 
     @Override
     public MatchQuery withGraph(MindmapsGraph graph) {
-        return new MatchQueryTransaction(graph, admin());
+        return new MatchQueryGraph(graph, admin());
     }
 
     @Override

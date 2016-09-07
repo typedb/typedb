@@ -81,13 +81,13 @@ public class RemoteShellController {
         if (currentGraphName == null) currentGraphName = defaultGraphName;
 
         try {
-            AbstractMindmapsGraph transaction = (AbstractMindmapsGraph) GraphFactory.getInstance().getGraph(currentGraphName);
+            AbstractMindmapsGraph graph = (AbstractMindmapsGraph) GraphFactory.getInstance().getGraph(currentGraphName);
 
             JSONObject responseObj = new JSONObject();
-            responseObj.put(RESTUtil.Response.ROLES_JSON_FIELD, new JSONArray(transaction.getMetaRoleType().instances().stream().map(x -> x.getId()).toArray()));
-            responseObj.put(RESTUtil.Response.ENTITIES_JSON_FIELD, new JSONArray(transaction.getMetaEntityType().instances().stream().map(x -> x.getId()).toArray()));
-            responseObj.put(RESTUtil.Response.RELATIONS_JSON_FIELD, new JSONArray(transaction.getMetaRelationType().instances().stream().map(x -> x.getId()).toArray()));
-            responseObj.put(RESTUtil.Response.RESOURCES_JSON_FIELD, new JSONArray(transaction.getMetaResourceType().instances().stream().map(x -> x.getId()).toArray()));
+            responseObj.put(RESTUtil.Response.ROLES_JSON_FIELD, new JSONArray(graph.getMetaRoleType().instances().stream().map(x -> x.getId()).toArray()));
+            responseObj.put(RESTUtil.Response.ENTITIES_JSON_FIELD, new JSONArray(graph.getMetaEntityType().instances().stream().map(x -> x.getId()).toArray()));
+            responseObj.put(RESTUtil.Response.RELATIONS_JSON_FIELD, new JSONArray(graph.getMetaRelationType().instances().stream().map(x -> x.getId()).toArray()));
+            responseObj.put(RESTUtil.Response.RESOURCES_JSON_FIELD, new JSONArray(graph.getMetaResourceType().instances().stream().map(x -> x.getId()).toArray()));
 
             return responseObj.toString();
         }catch(Exception e){

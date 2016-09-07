@@ -78,14 +78,13 @@ public class DistributedLoaderTest {
         loadOntologyFromFile();
         loadDataFromFile(data);
 
-        MindmapsGraph transaction = graph;
-        assertNotNull(transaction.getConcept("X4d616e75656c20417a656e6861").getId());
-        assertNotNull(transaction.getConcept("X44616e69656c61204675696f726561").getId());
-        assertNotNull(transaction.getConcept("X422e20476174686d616e6e").getId());
-        assertNotNull(transaction.getConcept("X416e6472657720522e2057656262").getId());
-        assertNotNull(transaction.getConcept("X4a752d4d696e205a68616f").getId());
+        assertNotNull(graph.getConcept("X4d616e75656c20417a656e6861").getId());
+        assertNotNull(graph.getConcept("X44616e69656c61204675696f726561").getId());
+        assertNotNull(graph.getConcept("X422e20476174686d616e6e").getId());
+        assertNotNull(graph.getConcept("X416e6472657720522e2057656262").getId());
+        assertNotNull(graph.getConcept("X4a752d4d696e205a68616f").getId());
 
-        int size = transaction.getEntityType("name_tag").instances().size();
+        int size = graph.getEntityType("name_tag").instances().size();
         assertEquals(size, 100);
     }
 
@@ -105,7 +104,7 @@ public class DistributedLoaderTest {
     }
 
     private void loadOntologyFromFile() {
-        MindmapsGraph transaction = GraphFactory.getInstance().getGraphBatchLoading(graphName);
+        MindmapsGraph graph = GraphFactory.getInstance().getGraphBatchLoading(graphName);
         ClassLoader classLoader = getClass().getClassLoader();
 
         LOG.info("Loading new ontology .. ");
@@ -117,9 +116,9 @@ public class DistributedLoaderTest {
             e.printStackTrace();
         }
         String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-        QueryParser.create().parseInsertQuery(query).withGraph(transaction).execute();
+        QueryParser.create().parseInsertQuery(query).withGraph(graph).execute();
         try {
-            transaction.commit();
+            graph.commit();
         } catch (MindmapsValidationException e) {
             e.printStackTrace();
         }

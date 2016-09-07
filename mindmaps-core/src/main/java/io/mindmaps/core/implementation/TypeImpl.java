@@ -220,7 +220,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
             currentSuperType.instances().forEach(concept -> {
                 if(concept.isInstance()){
                     ((InstanceImpl<?, ?>) concept).castings().forEach(
-                            instance -> mindmapsTransaction.getConceptLog().putConcept(instance));
+                            instance -> mindmapsGraph.getConceptLog().putConcept(instance));
                 }
             });
         }
@@ -255,7 +255,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
         //Add castings to tracking to make sure they can still be played.
         instances().forEach(concept -> {
             if (concept.isInstance()) {
-                ((InstanceImpl<?, ?>) concept).castings().forEach(casting -> mindmapsTransaction.getConceptLog().putConcept(casting));
+                ((InstanceImpl<?, ?>) concept).castings().forEach(casting -> mindmapsGraph.getConceptLog().putConcept(casting));
             }
         });
 
@@ -279,7 +279,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
     public T setAbstract(Boolean isAbstract) {
         setProperty(DataType.ConceptProperty.IS_ABSTRACT, isAbstract);
         if(isAbstract)
-            mindmapsTransaction.getConceptLog().putConcept(this);
+            mindmapsGraph.getConceptLog().putConcept(this);
         return getThis();
     }
 }

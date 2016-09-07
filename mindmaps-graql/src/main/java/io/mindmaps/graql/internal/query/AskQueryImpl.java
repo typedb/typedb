@@ -43,8 +43,8 @@ public class AskQueryImpl implements AskQueryAdmin {
     }
 
     @Override
-    public AskQuery withGraph(MindmapsGraph transaction) {
-        return new AskQueryImpl(matchQuery.withGraph(transaction));
+    public AskQuery withGraph(MindmapsGraph graph) {
+        return new AskQueryImpl(matchQuery.withGraph(graph));
     }
 
     @Override

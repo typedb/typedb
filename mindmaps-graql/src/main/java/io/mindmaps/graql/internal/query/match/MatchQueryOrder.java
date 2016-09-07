@@ -42,13 +42,13 @@ class MatchQueryOrder extends MatchQueryModifier {
 
     @Override
     public Stream<Map<String, Concept>> stream(
-            Optional<MindmapsGraph> transaction, Optional<MatchOrder> order
+            Optional<MindmapsGraph> graph, Optional<MatchOrder> order
     ) {
         if (order.isPresent()) {
             throw new IllegalStateException(ErrorMessage.MULTIPLE_ORDER.getMessage());
         }
 
-        return inner.stream(transaction, Optional.of(this.order));
+        return inner.stream(graph, Optional.of(this.order));
     }
 
     @Override

@@ -51,8 +51,8 @@ abstract class MatchQueryModifier extends AbstractMatchQuery {
     }
 
     @Override
-    public final Set<Type> getTypes(MindmapsGraph transaction) {
-        return inner.getTypes(transaction);
+    public final Set<Type> getTypes(MindmapsGraph graph) {
+        return inner.getTypes(graph);
     }
 
     @Override

@@ -37,18 +37,18 @@ public class Graql {
     // QUERY BUILDING
 
     /**
-     * @return a query builder without a specified transaction
+     * @return a query builder without a specified graph
      */
     public static QueryBuilder withoutGraph() {
         return new QueryBuilder();
     }
 
     /**
-     * @param transaction  the transaction to operate the query on
-     * @return a query builder using the specified transaction
+     * @param graph the graph to operate the query on
+     * @return a query builder using the specified graph
      */
-    public static QueryBuilder withGraph(MindmapsGraph transaction) {
-        return new QueryBuilder(transaction);
+    public static QueryBuilder withGraph(MindmapsGraph graph) {
+        return new QueryBuilder(graph);
     }
 
     /**

@@ -38,7 +38,7 @@ public class MatchQueryValidator implements Validator {
     }
 
     @Override
-    public Stream<String> getErrors(MindmapsGraph transaction) {
-        return new PatternValidator(matchQuery.getPattern()).getErrors(transaction);
+    public Stream<String> getErrors(MindmapsGraph graph) {
+        return new PatternValidator(matchQuery.getPattern()).getErrors(graph);
     }
 }

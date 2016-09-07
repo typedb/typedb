@@ -35,10 +35,10 @@ import io.mindmaps.graql.admin.InsertQueryAdmin;
 public interface InsertQuery extends Streamable<Concept> {
 
     /**
-     * @param transaction the transaction to execute the query on
-     * @return a new InsertQuery with the transaction set
+     * @param graph the graph to execute the query on
+     * @return a new InsertQuery with the graph set
      */
-    InsertQuery withGraph(MindmapsGraph transaction);
+    InsertQuery withGraph(MindmapsGraph graph);
 
     /**
      * Execute the insert query

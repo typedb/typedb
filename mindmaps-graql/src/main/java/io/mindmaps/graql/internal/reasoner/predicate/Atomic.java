@@ -86,7 +86,7 @@ public interface Atomic {
 
     /**
      *
-     * @param graph transaction
+     * @param graph graph
      * @return match query obtained by selecting free variables
      */
     MatchQuery getMatchQuery(MindmapsGraph graph);

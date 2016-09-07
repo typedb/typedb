@@ -62,7 +62,6 @@ class GraqlSession {
     void close() {
         queryExecutor.submit(() -> {
             try {
-                // Close only the transaction, not the graph, in case other clients are sharing it!
                 graph.close();
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -137,7 +136,7 @@ class GraqlSession {
     }
 
     /**
-     * Commit the transaction and report any errors to the client
+     * Commit and report any errors to the client
      */
     void commit() {
         queryExecutor.submit(() -> {

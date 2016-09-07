@@ -57,7 +57,7 @@ public class DeleteQueryImpl implements DeleteQueryAdmin {
         this.matchQuery = matchQuery.admin();
 
         matchQuery.admin().getGraph().ifPresent(
-                transaction -> new DeleteQueryValidator(this).validate(transaction)
+                graph -> new DeleteQueryValidator(this).validate(graph)
         );
     }
 
@@ -67,8 +67,8 @@ public class DeleteQueryImpl implements DeleteQueryAdmin {
     }
 
     @Override
-    public DeleteQuery withGraph(MindmapsGraph transaction) {
-        return new DeleteQueryImpl(deleters.values(), matchQuery.withGraph(transaction));
+    public DeleteQuery withGraph(MindmapsGraph graph) {
+        return new DeleteQueryImpl(deleters.values(), matchQuery.withGraph(graph));
     }
 
     @Override
@@ -167,7 +167,7 @@ public class DeleteQueryImpl implements DeleteQueryAdmin {
 
     private MindmapsGraph getGraph() {
         return matchQuery.getGraph().orElseThrow(
-                () -> new IllegalStateException(ErrorMessage.NO_TRANSACTION.getMessage())
+                () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
         );
     }
 

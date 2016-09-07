@@ -112,17 +112,17 @@ public class CommitLogControllerTest {
         assertEquals(0, cache.getCastingJobs().get(TIM).size());
     }
 
-    private void addSomeData(MindmapsGraph transaction) throws MindmapsValidationException {
-        RoleType role1 = transaction.putRoleType("Role 1");
-        RoleType role2 = transaction.putRoleType("Role 2");
-        RelationType relationType = transaction.putRelationType("A Relation Type").hasRole(role1).hasRole(role2);
-        EntityType type = transaction.putEntityType("A Thing").playsRole(role1).playsRole(role2);
-        Entity entity1 = transaction.addEntity(type);
-        Entity entity2 = transaction.addEntity(type);
+    private void addSomeData(MindmapsGraph graph) throws MindmapsValidationException {
+        RoleType role1 = graph.putRoleType("Role 1");
+        RoleType role2 = graph.putRoleType("Role 2");
+        RelationType relationType = graph.putRelationType("A Relation Type").hasRole(role1).hasRole(role2);
+        EntityType type = graph.putEntityType("A Thing").playsRole(role1).playsRole(role2);
+        Entity entity1 = graph.addEntity(type);
+        Entity entity2 = graph.addEntity(type);
 
-        transaction.addRelation(relationType).putRolePlayer(role1, entity1).putRolePlayer(role2, entity2);
+        graph.addRelation(relationType).putRolePlayer(role1, entity1).putRolePlayer(role2, entity2);
 
-        transaction.commit();
+        graph.commit();
     }
 
     @Test

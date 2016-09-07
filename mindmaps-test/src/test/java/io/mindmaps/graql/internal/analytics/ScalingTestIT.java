@@ -35,7 +35,6 @@ public class ScalingTestIT {
 
     String TEST_KEYSPACE = "mindmapstest";
     MindmapsGraph graph;
-    MindmapsGraph transaction;
 
     // concepts
     EntityType thing;
@@ -295,11 +294,11 @@ public class ScalingTestIT {
         graph.commit();
     }
 
-    private void refreshOntology(MindmapsGraph transaction) {
-        thing = transaction.getEntityType("thing");
-        relation1 = transaction.getRoleType("relation1");
-        relation2 = transaction.getRoleType("relation2");
-        related = transaction.getRelationType("related");
+    private void refreshOntology(MindmapsGraph graph) {
+        thing = graph.getEntityType("thing");
+        relation1 = graph.getRoleType("relation1");
+        relation2 = graph.getRoleType("relation2");
+        related = graph.getRelationType("related");
     }
 
     private Set<String> makeSuperNodes() throws MindmapsValidationException {
