@@ -34,7 +34,7 @@ public class GenericGraph {
     protected static MindmapsGraph mindmaps;
     private static String filePath = "src/test/resources/graql/";
 
-    public static MindmapsGraph getTransaction(String graqlFile) {
+    public static MindmapsGraph getGraph(String graqlFile) {
         mindmaps = MindmapsTestGraphFactory.newEmptyGraph();
         buildGraph(graqlFile);
         commit();
@@ -42,7 +42,7 @@ public class GenericGraph {
         return mindmaps;
     }
 
-    public static MindmapsGraph getTransaction(String ontologyFile, String ruleFile, String dataFile) {
+    public static MindmapsGraph getGraph(String ontologyFile, String ruleFile, String dataFile) {
         MindmapsGraph mindmaps = MindmapsTestGraphFactory.newEmptyGraph();
         buildGraph(ontologyFile, ruleFile, dataFile);
         commit();

@@ -27,9 +27,9 @@ import static com.google.common.math.IntMath.pow;
 
 public class PathGraph extends GenericGraph {
 
-    public static MindmapsGraph getTransaction(int n, int children) {
+    public static MindmapsGraph getGraph(int n, int children) {
         final String gqlFile = "path-test.gql";
-        getTransaction(gqlFile);
+        getGraph(gqlFile);
         buildExtensionalDB(n, children);
         commit();
         return mindmaps;

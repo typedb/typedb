@@ -31,7 +31,7 @@ import org.junit.rules.ExpectedException;
 
 import static io.mindmaps.graql.Graql.id;
 import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.graql.Graql.withTransaction;
+import static io.mindmaps.graql.Graql.withGraph;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.StringContains.containsString;
 
@@ -49,7 +49,7 @@ public class QueryErrorTest {
 
     @Before
     public void setUp() {
-        qb = withTransaction(mindmapsGraph);
+        qb = withGraph(mindmapsGraph);
     }
 
     @Test
@@ -146,7 +146,7 @@ public class QueryErrorTest {
         // Create a fresh graph, with no has-resource between person and name
         MindmapsGraph empty = MindmapsTestGraphFactory.newEmptyGraph();
 
-        QueryBuilder emptyQb = withTransaction(empty);
+        QueryBuilder emptyQb = withGraph(empty);
         emptyQb.insert(
                 id("person").isa("entity-type"),
                 id("name").isa("resource-type").datatype(Data.STRING)

@@ -38,7 +38,7 @@ public class AdmissionsInferenceTest {
 
     @BeforeClass
     public static void setUpClass() {
-        graph = AdmissionsGraph.getTransaction();
+        graph = AdmissionsGraph.getGraph();
         reasoner = new Reasoner(graph);
         qp = QueryParser.create(graph);
     }

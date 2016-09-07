@@ -72,7 +72,7 @@ public class CSVDataMigratorTest {
         dataMigrator.configure("entity", parser("icij/Entities.csv")).migrate(loader);
 
         // test a entity
-        Entity thing = Graql.withTransaction(graph).match(var("x").isa("entity")).iterator().next().get("x").asEntity();
+        Entity thing = Graql.withGraph(graph).match(var("x").isa("entity")).iterator().next().get("x").asEntity();
         assertNotNull(thing);
         assertResourceRelationExists("name-resource", thing);
         assertResourceRelationExists("country_codes-resource", thing);
@@ -84,7 +84,7 @@ public class CSVDataMigratorTest {
         dataMigrator.configure("address", parser("icij/Addresses.csv")).migrate(loader);
 
         // test an address
-        Entity thing = Graql.withTransaction(graph).match(var("x").isa("address")).iterator().next().get("x").asEntity();
+        Entity thing = Graql.withGraph(graph).match(var("x").isa("address")).iterator().next().get("x").asEntity();
         assertNotNull(thing);
         assertResourceRelationExists("valid_until-resource", thing);
         assertResourceRelationExists("countries-resource", thing);
@@ -96,7 +96,7 @@ public class CSVDataMigratorTest {
         dataMigrator.configure("officer", parser("icij/Officers.csv")).migrate(loader);
 
 //        // test an officer
-        Entity thing = Graql.withTransaction(graph).match(var("x").isa("officer")).iterator().next().get("x").asEntity();
+        Entity thing = Graql.withGraph(graph).match(var("x").isa("officer")).iterator().next().get("x").asEntity();
         assertNotNull(thing);
         assertResourceRelationExists("valid_until-resource", thing);
         assertResourceRelationExists("country_codes-resource", thing);
@@ -108,7 +108,7 @@ public class CSVDataMigratorTest {
         dataMigrator.configure("intermediary", parser("icij/Intermediaries.csv")).migrate(loader);
 
         // test an intermediary
-        Entity thing = Graql.withTransaction(graph).match(var("x").isa("intermediary")).iterator().next().get("x").asEntity();
+        Entity thing = Graql.withGraph(graph).match(var("x").isa("intermediary")).iterator().next().get("x").asEntity();
         assertNotNull(thing);
         assertResourceRelationExists("countries-resource", thing);
         assertResourceRelationExists("status-resource", thing);

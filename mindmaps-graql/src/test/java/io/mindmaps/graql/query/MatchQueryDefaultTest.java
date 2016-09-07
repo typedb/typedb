@@ -54,7 +54,7 @@ import static io.mindmaps.graql.Graql.neq;
 import static io.mindmaps.graql.Graql.or;
 import static io.mindmaps.graql.Graql.regex;
 import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.graql.Graql.withTransaction;
+import static io.mindmaps.graql.Graql.withGraph;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -73,7 +73,7 @@ public class MatchQueryDefaultTest {
 
     @Before
     public void setUp() {
-        qb = withTransaction(mindmapsGraph);
+        qb = withGraph(mindmapsGraph);
     }
 
     @Test
@@ -414,7 +414,7 @@ public class MatchQueryDefaultTest {
     @Test
     public void testAkoRelationType() {
         MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
-        QueryBuilder qb = withTransaction(graph);
+        QueryBuilder qb = withGraph(graph);
 
         qb.insert(
                 id("ownership").isa("relation-type").hasRole("owner").hasRole("possession"),

@@ -43,7 +43,7 @@ public interface MatchQuery<T> extends Streamable<T> {
      * @param transaction the transaction to execute the query on
      * @return a new MatchQuery with the transaction set
      */
-    MatchQuery<T> withTransaction(MindmapsGraph transaction);
+    MatchQuery<T> withGraph(MindmapsGraph transaction);
 
     /**
      * @param limit the maximum number of results the query should return

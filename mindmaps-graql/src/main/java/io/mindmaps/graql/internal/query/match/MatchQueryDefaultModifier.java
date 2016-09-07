@@ -56,8 +56,8 @@ abstract class MatchQueryDefaultModifier extends AbstractMatchQueryDefault {
     }
 
     @Override
-    public Optional<MindmapsGraph> getTransaction() {
-        return inner.getTransaction();
+    public Optional<MindmapsGraph> getGraph() {
+        return inner.getGraph();
     }
 
     @Override

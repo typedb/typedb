@@ -41,7 +41,7 @@ public class SNBInferenceTest {
 
     @BeforeClass
     public static void setUpClass() {
-        graph = SNBGraph.getTransaction();
+        graph = SNBGraph.getGraph();
         qp = QueryParser.create(graph);
         reasoner = new Reasoner(graph);
     }

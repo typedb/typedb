@@ -45,7 +45,7 @@ public class GeoGraph {
     private static Instance Poland, England, Germany, France, Italy;
     private static Instance UW, PW, Imperial, UniversityOfMunich, UCL;
 
-    public static MindmapsGraph getTransaction() {
+    public static MindmapsGraph getGraph() {
         mindmaps = MindmapsTestGraphFactory.newEmptyGraph();
         buildGraph();
         try {

@@ -59,7 +59,7 @@ public class CWGraph {
 
     private static Instance colonelWest, Nono, America, Tomahawk;
 
-    public static MindmapsGraph getTransaction() {
+    public static MindmapsGraph getGraph() {
         mindmaps = MindmapsTestGraphFactory.newEmptyGraph();
         buildGraph();
 

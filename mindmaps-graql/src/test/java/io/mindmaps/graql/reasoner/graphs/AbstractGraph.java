@@ -38,7 +38,7 @@ public class AbstractGraph {
 
     private static Instance instanceU, instanceT, instanceP;
 
-    public static MindmapsGraph getTransaction() {
+    public static MindmapsGraph getGraph() {
         mindmaps = MindmapsTestGraphFactory.newEmptyGraph();
         buildGraph();
 

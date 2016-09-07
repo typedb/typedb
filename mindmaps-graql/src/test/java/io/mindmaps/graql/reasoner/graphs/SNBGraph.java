@@ -34,7 +34,7 @@ public class SNBGraph {
 
     private static MindmapsGraph mindmaps;
 
-    public static MindmapsGraph getTransaction() {
+    public static MindmapsGraph getGraph() {
         mindmaps = MindmapsTestGraphFactory.newEmptyGraph();
         buildGraph();
 

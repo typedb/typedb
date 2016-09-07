@@ -40,7 +40,7 @@ public class AtomicTest {
 
     @Test
     public void testValuePredicate(){
-        MindmapsGraph graph = SNBGraph.getTransaction();
+        MindmapsGraph graph = SNBGraph.getGraph();
         QueryParser qp = QueryParser.create(graph);
         String queryString = "match " +
                 "$x1 isa person;\n" +
@@ -53,7 +53,7 @@ public class AtomicTest {
 
     @Test
     public void testRelationConstructor(){
-        MindmapsGraph graph = GenericGraph.getTransaction("geo-test.gql");
+        MindmapsGraph graph = GenericGraph.getGraph("geo-test.gql");
         QueryParser qp = QueryParser.create(graph);
 
         String queryString = "match (geo-entity $x, entity-location $y) isa is-located-in;";
@@ -77,7 +77,7 @@ public class AtomicTest {
 
     @Test
     public void testRelationConstructor2(){
-        MindmapsGraph graph = GenericGraph.getTransaction("geo-test.gql");
+        MindmapsGraph graph = GenericGraph.getGraph("geo-test.gql");
         QueryParser qp = QueryParser.create(graph);
 
         String queryString = "match ($x, $y, $z) isa ternary-relation-test";

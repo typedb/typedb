@@ -137,7 +137,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      */
     @Override
     public Rule addHypothesis(Type type) {
-        putEdge(getMindmapsTransaction().getElementFactory().buildSpecificConceptType(type), DataType.EdgeLabel.HYPOTHESIS);
+        putEdge(getMindmapsGraph().getElementFactory().buildSpecificConceptType(type), DataType.EdgeLabel.HYPOTHESIS);
         return getThis();
     }
 
@@ -148,7 +148,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      */
     @Override
     public Rule addConclusion(Type type) {
-        putEdge(getMindmapsTransaction().getElementFactory().buildSpecificConceptType(type), DataType.EdgeLabel.CONCLUSION);
+        putEdge(getMindmapsGraph().getElementFactory().buildSpecificConceptType(type), DataType.EdgeLabel.CONCLUSION);
         return getThis();
     }
 
@@ -159,7 +159,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
     @Override
     public Collection<Type> getHypothesisTypes() {
         Collection<Type> types = new HashSet<>();
-        getOutgoingNeighbours(DataType.EdgeLabel.HYPOTHESIS).forEach(concept -> types.add(getMindmapsTransaction().getElementFactory().buildSpecificConceptType(concept)));
+        getOutgoingNeighbours(DataType.EdgeLabel.HYPOTHESIS).forEach(concept -> types.add(getMindmapsGraph().getElementFactory().buildSpecificConceptType(concept)));
         return types;
     }
 
@@ -170,7 +170,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
     @Override
     public Collection<Type> getConclusionTypes() {
         Collection<Type> types = new HashSet<>();
-        getOutgoingNeighbours(DataType.EdgeLabel.CONCLUSION).forEach(concept -> types.add(getMindmapsTransaction().getElementFactory().buildSpecificConceptType(concept)));
+        getOutgoingNeighbours(DataType.EdgeLabel.CONCLUSION).forEach(concept -> types.add(getMindmapsGraph().getElementFactory().buildSpecificConceptType(concept)));
         return types;
     }
 }

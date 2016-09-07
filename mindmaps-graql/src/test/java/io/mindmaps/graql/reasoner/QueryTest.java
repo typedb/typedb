@@ -44,9 +44,9 @@ public class QueryTest {
     @BeforeClass
     public static void setUpClass() {
 
-        graph = SNBGraph.getTransaction();
+        graph = SNBGraph.getGraph();
         qp = QueryParser.create(graph);
-        qb = Graql.withTransaction(graph);
+        qb = Graql.withGraph(graph);
     }
 
     @Test

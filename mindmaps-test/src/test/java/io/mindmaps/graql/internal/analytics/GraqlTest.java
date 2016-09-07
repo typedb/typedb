@@ -48,7 +48,7 @@ public class GraqlTest {
         graph = result.getValue0();
         keyspace = result.getValue1();
         qp = QueryParser.create(graph);
-        qb = withTransaction(graph);
+        qb = withGraph(graph);
     }
 
     @After

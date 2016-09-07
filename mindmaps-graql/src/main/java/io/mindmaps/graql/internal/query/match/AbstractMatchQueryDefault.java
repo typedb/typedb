@@ -80,8 +80,8 @@ abstract class AbstractMatchQueryDefault extends AbstractMatchQuery<Map<String, 
     }
 
     @Override
-    public final MatchQueryDefault withTransaction(MindmapsGraph transaction) {
-        return new MatchQueryWrapper(super.withTransaction(transaction).admin(), admin());
+    public final MatchQueryDefault withGraph(MindmapsGraph transaction) {
+        return new MatchQueryWrapper(super.withGraph(transaction).admin(), admin());
     }
 
     @Override

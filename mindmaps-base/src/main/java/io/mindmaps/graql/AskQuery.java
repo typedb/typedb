@@ -36,7 +36,7 @@ public interface AskQuery {
      * @param transaction the transaction to execute the query on
      * @return a new AskQuery with the transaction set
      */
-    AskQuery withTransaction(MindmapsGraph transaction);
+    AskQuery withGraph(MindmapsGraph transaction);
 
     /**
      * @return admin instance for inspecting and manipulating this query

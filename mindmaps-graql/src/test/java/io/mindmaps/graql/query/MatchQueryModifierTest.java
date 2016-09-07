@@ -43,7 +43,7 @@ import static io.mindmaps.constants.DataType.ConceptPropertyUnique.ITEM_IDENTIFI
 import static io.mindmaps.graql.Graql.neq;
 import static io.mindmaps.graql.Graql.or;
 import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.graql.Graql.withTransaction;
+import static io.mindmaps.graql.Graql.withGraph;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -61,7 +61,7 @@ public class MatchQueryModifierTest {
 
     @Before
     public void setUp() {
-        qb = withTransaction(mindmapsGraph);
+        qb = withGraph(mindmapsGraph);
     }
 
     @Test

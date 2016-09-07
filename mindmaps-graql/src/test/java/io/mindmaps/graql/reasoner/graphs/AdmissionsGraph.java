@@ -92,7 +92,7 @@ public class AdmissionsGraph {
 
     private static RoleType hasResourceTarget, hasResourceValue;
 
-    public static MindmapsGraph getTransaction() {
+    public static MindmapsGraph getGraph() {
         mindmaps = MindmapsTestGraphFactory.newEmptyGraph();
         buildGraph();
 

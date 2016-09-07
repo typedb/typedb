@@ -39,7 +39,7 @@ public class CWInferenceTest {
 
     @BeforeClass
     public static void setUpClass() {
-        graph = CWGraph.getTransaction();
+        graph = CWGraph.getGraph();
         reasoner = new Reasoner(graph);
         qp = QueryParser.create(graph);
     }

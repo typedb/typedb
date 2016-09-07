@@ -47,7 +47,7 @@ public class DeleteQueryTest {
     public void setUp() {
         MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
-        qb = Graql.withTransaction(mindmapsGraph);
+        qb = Graql.withGraph(mindmapsGraph);
     }
 
     @Test

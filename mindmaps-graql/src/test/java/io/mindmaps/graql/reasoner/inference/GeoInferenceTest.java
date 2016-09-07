@@ -38,7 +38,7 @@ public class GeoInferenceTest {
 
     @BeforeClass
     public static void setUpClass() {
-        graph = GeoGraph.getTransaction();
+        graph = GeoGraph.getGraph();
         reasoner = new Reasoner(graph);
         qp = QueryParser.create(graph);
     }

@@ -52,7 +52,7 @@ class MatchQueryTransaction<T> extends MatchQueryModifier<T, T> {
     }
 
     @Override
-    public Optional<MindmapsGraph> getTransaction() {
+    public Optional<MindmapsGraph> getGraph() {
         return Optional.of(transaction);
     }
 

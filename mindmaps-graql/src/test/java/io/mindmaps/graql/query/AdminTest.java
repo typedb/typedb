@@ -39,7 +39,7 @@ import java.util.stream.Stream;
 
 import static io.mindmaps.graql.Graql.id;
 import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.graql.Graql.withTransaction;
+import static io.mindmaps.graql.Graql.withGraph;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
@@ -58,7 +58,7 @@ public class AdminTest {
 
     @Before
     public void setUp() {
-        qb = withTransaction(mindmapsGraph);
+        qb = withGraph(mindmapsGraph);
     }
 
     @Test

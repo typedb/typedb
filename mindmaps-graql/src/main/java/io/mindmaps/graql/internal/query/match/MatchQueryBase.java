@@ -109,7 +109,7 @@ public class MatchQueryBase extends AbstractMatchQueryDefault {
     }
 
     @Override
-    public Optional<MindmapsGraph> getTransaction() {
+    public Optional<MindmapsGraph> getGraph() {
         return Optional.empty();
     }
 

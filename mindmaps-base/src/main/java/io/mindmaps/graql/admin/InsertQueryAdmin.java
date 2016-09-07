@@ -55,5 +55,5 @@ public interface InsertQueryAdmin extends InsertQuery {
     /**
      * @return the transaction set on this query, if it was provided one
      */
-    Optional<MindmapsGraph> getTransaction();
+    Optional<MindmapsGraph> getGraph();
 }

@@ -45,7 +45,7 @@ public class QueryParser {
      * Create a query parser with no specified graph
      */
     private QueryParser() {
-        queryBuilder = withoutTransaction();
+        queryBuilder = withoutGraph();
         registerDefaultAggregates();
     }
 
@@ -54,7 +54,7 @@ public class QueryParser {
      *  @param transaction  the transaction to operate the query on
      */
     private QueryParser(MindmapsGraph transaction) {
-        queryBuilder = withTransaction(transaction);
+        queryBuilder = withGraph(transaction);
         registerDefaultAggregates();
     }
 

@@ -56,7 +56,7 @@ public class DeleteQueryImpl implements DeleteQueryAdmin {
 
         this.matchQuery = matchQuery.admin();
 
-        matchQuery.admin().getTransaction().ifPresent(
+        matchQuery.admin().getGraph().ifPresent(
                 transaction -> new DeleteQueryValidator(this).validate(transaction)
         );
     }
@@ -67,8 +67,8 @@ public class DeleteQueryImpl implements DeleteQueryAdmin {
     }
 
     @Override
-    public DeleteQuery withTransaction(MindmapsGraph transaction) {
-        return new DeleteQueryImpl(deleters.values(), matchQuery.withTransaction(transaction));
+    public DeleteQuery withGraph(MindmapsGraph transaction) {
+        return new DeleteQueryImpl(deleters.values(), matchQuery.withGraph(transaction));
     }
 
     @Override
@@ -96,19 +96,19 @@ public class DeleteQueryImpl implements DeleteQueryAdmin {
         } else {
             deleter.getHasRoles().forEach(
                     role -> role.getId().ifPresent(
-                            typeName -> getTransaction().getRelationType(id).deleteHasRole(getTransaction().getRoleType(typeName))
+                            typeName -> getGraph().getRelationType(id).deleteHasRole(getGraph().getRoleType(typeName))
                     )
             );
 
             deleter.getPlaysRoles().forEach(
                     role -> role.getId().ifPresent(
-                            typeName -> getTransaction().getType(id).deletePlaysRole(getTransaction().getRoleType(typeName))
+                            typeName -> getGraph().getType(id).deletePlaysRole(getGraph().getRoleType(typeName))
                     )
             );
 
             deleter.getScopes().forEach(
                     scope -> scope.getId().ifPresent(
-                            scopeName -> getTransaction().getRelation(id).deleteScope(getTransaction().getInstance(scopeName))
+                            scopeName -> getGraph().getRelation(id).deleteScope(getGraph().getInstance(scopeName))
                     )
             );
 
@@ -122,7 +122,7 @@ public class DeleteQueryImpl implements DeleteQueryAdmin {
      */
     private void deleteConcept(String id) {
         try {
-            getTransaction().getConcept(id).delete();
+            getGraph().getConcept(id).delete();
         } catch (ConceptException e) {
             throw new RuntimeException(e);
         }
@@ -152,7 +152,7 @@ public class DeleteQueryImpl implements DeleteQueryAdmin {
     private Collection<Resource<?>> resources(String id) {
         // Get resources attached to a concept
         // This method is necessary because the 'resource' method appears in 3 separate interfaces
-        Concept concept = getTransaction().getConcept(id);
+        Concept concept = getGraph().getConcept(id);
 
         if (concept.isEntity()) {
             return concept.asEntity().resources();
@@ -165,8 +165,8 @@ public class DeleteQueryImpl implements DeleteQueryAdmin {
         }
     }
 
-    private MindmapsGraph getTransaction() {
-        return matchQuery.getTransaction().orElseThrow(
+    private MindmapsGraph getGraph() {
+        return matchQuery.getGraph().orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.NO_TRANSACTION.getMessage())
         );
     }

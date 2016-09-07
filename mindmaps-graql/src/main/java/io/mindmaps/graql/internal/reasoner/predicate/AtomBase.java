@@ -126,7 +126,7 @@ public abstract class AtomBase implements Atomic{
     public boolean isType(){ return !typeId.isEmpty();}
     @Override
     public boolean isRuleResolvable(){
-        Type type = getParentQuery().getTransaction().getType(getTypeId());
+        Type type = getParentQuery().getGraph().getType(getTypeId());
         return !type.getRulesOfConclusion().isEmpty();
     }
     @Override
@@ -143,7 +143,7 @@ public abstract class AtomBase implements Atomic{
     }
 
     private MatchQueryDefault getBaseMatchQuery(MindmapsGraph graph) {
-        QueryBuilder qb = Graql.withTransaction(graph);
+        QueryBuilder qb = Graql.withGraph(graph);
         MatchQueryDefault matchQuery = qb.match(getPattern());
 
         //add substitutions
@@ -165,7 +165,7 @@ public abstract class AtomBase implements Atomic{
 
     @Override
     public MatchQueryDefault getExpandedMatchQuery(MindmapsGraph graph) {
-        QueryBuilder qb = Graql.withTransaction(graph);
+        QueryBuilder qb = Graql.withGraph(graph);
         Set<String> selectVars = Sets.newHashSet(varName);
         return qb.match(getExpandedPattern()).select(selectVars);
     }

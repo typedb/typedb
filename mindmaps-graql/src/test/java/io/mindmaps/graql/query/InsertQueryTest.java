@@ -46,7 +46,7 @@ import static io.mindmaps.constants.DataType.ConceptMeta.RULE_TYPE;
 import static io.mindmaps.graql.Graql.gt;
 import static io.mindmaps.graql.Graql.id;
 import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.graql.Graql.withTransaction;
+import static io.mindmaps.graql.Graql.withGraph;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -64,7 +64,7 @@ public class InsertQueryTest {
     public void setUp() {
         mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
-        qb = withTransaction(this.mindmapsGraph);
+        qb = withGraph(this.mindmapsGraph);
     }
 
     @Test

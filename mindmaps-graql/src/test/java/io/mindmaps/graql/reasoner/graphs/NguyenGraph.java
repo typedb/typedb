@@ -25,9 +25,9 @@ import io.mindmaps.core.model.RoleType;
 
 public class NguyenGraph extends GenericGraph{
 
-    public static MindmapsGraph getTransaction(int n) {
+    public static MindmapsGraph getGraph(int n) {
         final String gqlFile = "nguyen-test.gql";
-        getTransaction(gqlFile);
+        getGraph(gqlFile);
         buildExtensionalDB(n);
         commit();
         return mindmaps;

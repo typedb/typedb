@@ -108,7 +108,7 @@ public class BlockingLoader extends Loader {
                 AbstractMindmapsGraph transaction = (AbstractMindmapsGraph) GraphFactory.getInstance().getGraphBatchLoading(name);
                 try {
 
-                    insert(batch).withTransaction(transaction).execute();
+                    insert(batch).withGraph(transaction).execute();
                     transaction.commit();
                     cache.addJobCasting(graphName, transaction.getModifiedCastingIds());
                     return;

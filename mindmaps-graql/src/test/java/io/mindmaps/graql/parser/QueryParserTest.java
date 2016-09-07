@@ -62,7 +62,7 @@ import static io.mindmaps.graql.Graql.neq;
 import static io.mindmaps.graql.Graql.or;
 import static io.mindmaps.graql.Graql.regex;
 import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.graql.Graql.withTransaction;
+import static io.mindmaps.graql.Graql.withGraph;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.junit.Assert.assertEquals;
@@ -86,7 +86,7 @@ public class QueryParserTest {
     @Before
     public void setUp() {
         qp = QueryParser.create(mindmapsGraph);
-        qb = withTransaction(mindmapsGraph);
+        qb = withGraph(mindmapsGraph);
     }
 
     @Test
@@ -421,7 +421,7 @@ public class QueryParserTest {
         String queryString = "match $x isa movie select $x";
         MatchQueryDefault query = queryParserNoGraph.parseMatchQuery("match $x isa movie select $x").getMatchQuery();
         assertEquals(queryString, query.toString());
-        assertTrue(query.withTransaction(mindmapsGraph).stream().findAny().isPresent());
+        assertTrue(query.withGraph(mindmapsGraph).stream().findAny().isPresent());
     }
 
     @Test

@@ -46,7 +46,7 @@ public class MatchQueryTest {
 
     @Before
     public void setUp() {
-        qb = Graql.withTransaction(mindmapsGraph);
+        qb = Graql.withGraph(mindmapsGraph);
     }
 
     @Test

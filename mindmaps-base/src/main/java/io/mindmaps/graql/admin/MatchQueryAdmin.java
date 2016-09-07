@@ -66,5 +66,5 @@ public interface MatchQueryAdmin<T> extends MatchQuery<T> {
     /**
      * @return the transaction the query operates on, if one was provided
      */
-    Optional<MindmapsGraph> getTransaction();
+    Optional<MindmapsGraph> getGraph();
 }

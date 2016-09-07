@@ -119,7 +119,7 @@ public class BlockingLoaderTest {
                 e.printStackTrace();
             }
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-            QueryParser.create().parseInsertQuery(query).withTransaction(transaction).execute();
+            QueryParser.create().parseInsertQuery(query).withGraph(transaction).execute();
         try {
             transaction.commit();
         } catch (MindmapsValidationException e) {

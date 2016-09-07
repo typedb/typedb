@@ -42,7 +42,7 @@ import static io.mindmaps.graql.Graql.min;
 import static io.mindmaps.graql.Graql.select;
 import static io.mindmaps.graql.Graql.sum;
 import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.graql.Graql.withTransaction;
+import static io.mindmaps.graql.Graql.withGraph;
 import static io.mindmaps.graql.query.QueryUtil.movies;
 import static org.junit.Assert.assertEquals;
 
@@ -55,7 +55,7 @@ public class AggregateTest {
     public void setUp() {
         mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
-        qb = withTransaction(this.mindmapsGraph);
+        qb = withGraph(this.mindmapsGraph);
     }
 
     @Test

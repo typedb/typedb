@@ -29,7 +29,7 @@ import io.mindmaps.graql.internal.query.aggregate.AggregateQueryImpl;
 abstract class AbstractMatchQuery<T> implements MatchQueryAdmin<T> {
 
     @Override
-    public MatchQuery<T> withTransaction(MindmapsGraph transaction) {
+    public MatchQuery<T> withGraph(MindmapsGraph transaction) {
         return new MatchQueryTransaction<>(transaction, admin());
     }
 

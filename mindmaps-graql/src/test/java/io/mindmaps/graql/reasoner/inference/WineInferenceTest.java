@@ -37,7 +37,7 @@ public class WineInferenceTest {
 
     @BeforeClass
     public static void setUpClass() {
-        MindmapsGraph graph = GenericGraph.getTransaction("wines-test.gql");
+        MindmapsGraph graph = GenericGraph.getGraph("wines-test.gql");
         reasoner = new Reasoner(graph);
         qp = QueryParser.create(graph);
     }

@@ -64,7 +64,7 @@ public class QueryBuilder {
      */
     public MatchQueryDefault match(Collection<? extends Pattern> patterns) {
         MatchQueryBase query = new MatchQueryBase(new ConjunctionImpl<>(AdminConverter.getPatternAdmins(patterns)));
-        return transaction.map(query::withTransaction).orElse(query);
+        return transaction.map(query::withGraph).orElse(query);
     }
 
     /**

@@ -71,8 +71,8 @@ class MatchQueryWrapper extends AbstractMatchQueryDefault {
     }
 
     @Override
-    public Optional<MindmapsGraph> getTransaction() {
-        return query.getTransaction();
+    public Optional<MindmapsGraph> getGraph() {
+        return query.getGraph();
     }
 
     @Override

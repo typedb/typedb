@@ -42,7 +42,7 @@ public interface DeleteQuery {
      * @param transaction the transaction to execute the query on
      * @return a new DeleteQuery with the transaction set
      */
-    DeleteQuery withTransaction(MindmapsGraph transaction);
+    DeleteQuery withGraph(MindmapsGraph transaction);
 
     /**
      * @return admin instance for inspecting and manipulating this query

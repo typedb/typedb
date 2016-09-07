@@ -36,7 +36,6 @@ import org.json.JSONObject;
 import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
-import spark.Route;
 
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -210,7 +209,7 @@ public class ImportController {
 
         List<String> lines = Files.readAllLines(Paths.get(ontologyFile), StandardCharsets.UTF_8);
         String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-        QueryParser.create().parseInsertQuery(query).withTransaction(transaction).execute();
+        QueryParser.create().parseInsertQuery(query).withGraph(transaction).execute();
         transaction.commit();
 
         LOG.info("Ontology loaded. ");

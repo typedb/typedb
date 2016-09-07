@@ -84,7 +84,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      */
     @Override
     public void delete() throws ConceptException {
-        ConceptImpl properType = getMindmapsTransaction().getElementFactory().buildUnknownConcept(this);
+        ConceptImpl properType = getMindmapsGraph().getElementFactory().buildUnknownConcept(this);
         properType.innerDelete(); //This will execute the proper deletion method.
     }
 
@@ -128,8 +128,8 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
         vertex.edges(Direction.BOTH).
                 forEachRemaining(
                         e -> {
-                            mindmapsTransaction.getConceptLog().putConcept(getMindmapsTransaction().getElementFactory().buildUnknownConcept(e.inVertex()));
-                            mindmapsTransaction.getConceptLog().putConcept(getMindmapsTransaction().getElementFactory().buildUnknownConcept(e.outVertex()));}
+                            mindmapsTransaction.getConceptLog().putConcept(getMindmapsGraph().getElementFactory().buildUnknownConcept(e.inVertex()));
+                            mindmapsTransaction.getConceptLog().putConcept(getMindmapsGraph().getElementFactory().buildUnknownConcept(e.outVertex()));}
                 );
         mindmapsTransaction.getConceptLog().removeConcept(this);
         // delete node
@@ -158,7 +158,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
                     throw new ConceptException(ErrorMessage.LOOP_DETECTED.getMessage(toString(), DataType.EdgeLabel.AKO.getLabel() + " " + DataType.EdgeLabel.ISA.getLabel()));
                 }
                 notFound = false;
-                type = getMindmapsTransaction().getElementFactory().buildSpecificConceptType(concept);
+                type = getMindmapsGraph().getElementFactory().buildSpecificConceptType(concept);
             } else {
                 currentConcept = currentConcept.getParentAko();
                 if(visitedConcepts.contains(currentConcept)){
@@ -409,7 +409,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      */
     public T type(Type type) {
         deleteEdges(Direction.OUT, DataType.EdgeLabel.ISA);
-        putEdge(getMindmapsTransaction().getElementFactory().buildSpecificConceptType(type), DataType.EdgeLabel.ISA);
+        putEdge(getMindmapsGraph().getElementFactory().buildSpecificConceptType(type), DataType.EdgeLabel.ISA);
         setType(String.valueOf(type.getId()));
 
         //Put any castings back into tracking to make sure the type is still valid
@@ -446,7 +446,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
     public TypeImpl getParentIsa(){
         Concept isaParent = getOutgoingNeighbour(DataType.EdgeLabel.ISA);
         if(isaParent != null){
-            return getMindmapsTransaction().getElementFactory().buildSpecificConceptType(isaParent);
+            return getMindmapsGraph().getElementFactory().buildSpecificConceptType(isaParent);
         } else {
             return null;
         }
@@ -459,7 +459,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
     public TypeImpl getParentAko(){
         Concept akoParent = getOutgoingNeighbour(DataType.EdgeLabel.AKO);
         if(akoParent != null){
-            return getMindmapsTransaction().getElementFactory().buildSpecificConceptType(akoParent);
+            return getMindmapsGraph().getElementFactory().buildSpecificConceptType(akoParent);
         } else {
             return null;
         }
@@ -622,7 +622,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
     protected Set<EdgeImpl> getEdgesOfType(Direction direction, DataType.EdgeLabel type){
         Set<EdgeImpl> edges = new HashSet<>();
         vertex.edges(direction, type.getLabel()).
-                forEachRemaining(e -> edges.add(new EdgeImpl(e, getMindmapsTransaction())));
+                forEachRemaining(e -> edges.add(new EdgeImpl(e, getMindmapsGraph())));
         return edges;
     }
 
@@ -646,7 +646,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      *
      * @return The mindmaps transaction this concept is bound to.
      */
-    AbstractMindmapsGraph getMindmapsTransaction() {return mindmapsTransaction;}
+    AbstractMindmapsGraph getMindmapsGraph() {return mindmapsTransaction;}
 
     //--------- Create Links -------//
     /**
@@ -670,7 +670,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
         mindmapsTransaction.getConceptLog().putConcept(this);
         mindmapsTransaction.getConceptLog().putConcept(toConcept);
 
-        return getMindmapsTransaction().getElementFactory().buildEdge(toConcept.addEdgeFrom(this.vertex, type.getLabel()), mindmapsTransaction);
+        return getMindmapsGraph().getElementFactory().buildEdge(toConcept.addEdgeFrom(this.vertex, type.getLabel()), mindmapsTransaction);
     }
 
     /**
@@ -684,9 +684,9 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
                 forEachRemaining(
                         e -> {
                             mindmapsTransaction.getConceptLog().putConcept(
-                                    getMindmapsTransaction().getElementFactory().buildUnknownConcept(e.inVertex()));
+                                    getMindmapsGraph().getElementFactory().buildUnknownConcept(e.inVertex()));
                             mindmapsTransaction.getConceptLog().putConcept(
-                                    getMindmapsTransaction().getElementFactory().buildUnknownConcept(e.outVertex()));
+                                    getMindmapsGraph().getElementFactory().buildUnknownConcept(e.outVertex()));
                         }
                 );
 

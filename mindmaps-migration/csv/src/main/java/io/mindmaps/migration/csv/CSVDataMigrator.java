@@ -25,7 +25,7 @@ import static io.mindmaps.graql.Graql.var;
  */
 public class CSVDataMigrator implements Iterable<Collection<Var>> {
 
-    private io.mindmaps.migration.csv.Namer namer;
+    private Namer namer;
     private MindmapsGraph graph;
 
     private String entityName;

@@ -68,7 +68,7 @@ public class InsertQueryImpl implements InsertQueryAdmin {
         // Get all variables, including ones nested in other variables
         this.vars = ImmutableSet.copyOf(vars.stream().flatMap(v -> v.getInnerVars().stream()).collect(toSet()));
 
-        getTransaction().ifPresent(t -> new InsertQueryValidator(this).validate(t));
+        getGraph().ifPresent(t -> new InsertQueryValidator(this).validate(t));
     }
 
     /**
@@ -88,9 +88,9 @@ public class InsertQueryImpl implements InsertQueryAdmin {
     }
 
     @Override
-    public InsertQuery withTransaction(MindmapsGraph transaction) {
+    public InsertQuery withGraph(MindmapsGraph transaction) {
         return matchQuery.map(
-                m -> new InsertQueryImpl(vars, m.withTransaction(transaction).admin())
+                m -> new InsertQueryImpl(vars, m.withGraph(transaction).admin())
         ).orElseGet(
                 () -> new InsertQueryImpl(vars, Optional.of(transaction))
         );
@@ -105,7 +105,7 @@ public class InsertQueryImpl implements InsertQueryAdmin {
     @Override
     public Stream<Concept> stream() {
         MindmapsGraph theTransaction =
-                getTransaction().orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_TRANSACTION.getMessage()));
+                getGraph().orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_TRANSACTION.getMessage()));
 
         InsertQueryExecutor executor = new InsertQueryExecutor(vars, theTransaction);
 
@@ -129,7 +129,7 @@ public class InsertQueryImpl implements InsertQueryAdmin {
     @Override
     public Set<Type> getTypes() {
         MindmapsGraph theTransaction =
-                getTransaction().orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_TRANSACTION.getMessage()));
+                getGraph().orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_TRANSACTION.getMessage()));
 
         Set<Type> types = vars.stream()
                 .flatMap(v -> v.getInnerVars().stream())
@@ -153,8 +153,8 @@ public class InsertQueryImpl implements InsertQueryAdmin {
     }
 
     @Override
-    public Optional<MindmapsGraph> getTransaction() {
-        return matchQuery.map(MatchQueryDefaultAdmin::getTransaction).orElse(transaction);
+    public Optional<MindmapsGraph> getGraph() {
+        return matchQuery.map(MatchQueryDefaultAdmin::getGraph).orElse(transaction);
     }
 
     @Override

@@ -38,7 +38,7 @@ public class AbstractInferenceTest {
 
     @BeforeClass
     public static void setUpClass() {
-        MindmapsGraph graph = AbstractGraph.getTransaction();
+        MindmapsGraph graph = AbstractGraph.getGraph();
         reasoner = new Reasoner(graph);
         qp = QueryParser.create(graph);
     }
