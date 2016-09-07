@@ -276,7 +276,7 @@ public class AnalyticsTest {
         Analytics computer = new Analytics(keyspace,Sets.newHashSet(thing, related));
         computer.degreesAndPersist();
 
-        transaction.refresh();
+        graph.refresh();
         instantiateSimpleConcepts();
         correctDegrees.clear();
         correctDegrees.put(entity1, 1l);
@@ -296,15 +296,15 @@ public class AnalyticsTest {
             computer.degreesAndPersist();
 
             // refresh everything after commit
-            transaction.refresh();
+            graph.refresh();
             instantiateSimpleConcepts();
             correctDegrees.clear();
             correctDegrees.put(entity1, 1l);
             correctDegrees.put(entity2, 3l);
             correctDegrees.put(entity3, 1l);
-            correctDegrees.put(transaction.getRelation(id1), 2l);
-            correctDegrees.put(transaction.getRelation(id2), 2l);
-            correctDegrees.put(transaction.getRelation(id3), 1l);
+            correctDegrees.put(graph.getRelation(id1), 2l);
+            correctDegrees.put(graph.getRelation(id2), 2l);
+            correctDegrees.put(graph.getRelation(id3), 1l);
 
             checkDegrees(correctDegrees);
 
@@ -320,15 +320,15 @@ public class AnalyticsTest {
         // compute degrees on all types, again and again ...
         for (int i = 0; i < 3; i++) {
 
-            transaction.getEntityType("thing").instances().forEach(thing -> thing.resources().forEach(resource -> {
+            graph.getEntityType("thing").instances().forEach(thing -> thing.resources().forEach(resource -> {
                 System.out.println("thing: "+thing);
                 System.out.println("resource: "+resource);
             }));
-            transaction.getEntityType("another").instances().forEach(thing -> thing.resources().forEach(resource -> {
+            graph.getEntityType("another").instances().forEach(thing -> thing.resources().forEach(resource -> {
                 System.out.println("thing: "+thing);
                 System.out.println("resource: "+resource);
             }));
-            transaction.getRelationType("related").instances().forEach(thing -> thing.resources().forEach(resource -> {
+            graph.getRelationType("related").instances().forEach(thing -> thing.resources().forEach(resource -> {
                 System.out.println("thing: "+thing);
                 System.out.println("resource: "+resource);
             }));
@@ -336,30 +336,30 @@ public class AnalyticsTest {
             computer = new Analytics(keyspace);
             computer.degreesAndPersist();
 
-            transaction.getEntityType("thing").instances().forEach(thing -> thing.resources().forEach(resource -> {
+            graph.getEntityType("thing").instances().forEach(thing -> thing.resources().forEach(resource -> {
                 System.out.println("thing: "+thing);
                 System.out.println("resource: "+resource);
             }));
-            transaction.getEntityType("another").instances().forEach(thing -> thing.resources().forEach(resource -> {
+            graph.getEntityType("another").instances().forEach(thing -> thing.resources().forEach(resource -> {
                 System.out.println("thing: "+thing);
                 System.out.println("resource: "+resource);
             }));
-            transaction.getRelationType("related").instances().forEach(thing -> thing.resources().forEach(resource -> {
+            graph.getRelationType("related").instances().forEach(thing -> thing.resources().forEach(resource -> {
                 System.out.println("thing: "+thing);
                 System.out.println("resource: "+resource);
             }));
 
             // after computation refresh concepts
-            transaction.refresh();
+            graph.refresh();
             instantiateSimpleConcepts();
             correctDegrees.clear();
             correctDegrees.put(entity1, 1l);
             correctDegrees.put(entity2, 3l);
             correctDegrees.put(entity3, 1l);
-            correctDegrees.put(transaction.getRelation(id1), 2l);
-            correctDegrees.put(transaction.getRelation(id2), 2l);
+            correctDegrees.put(graph.getRelation(id1), 2l);
+            correctDegrees.put(graph.getRelation(id2), 2l);
             correctDegrees.put(entity4, 1l);
-            correctDegrees.put(transaction.getRelation(id3), 2l);
+            correctDegrees.put(graph.getRelation(id3), 2l);
 
             checkDegrees(correctDegrees);
 
