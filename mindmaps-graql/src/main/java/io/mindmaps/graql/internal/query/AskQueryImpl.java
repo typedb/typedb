@@ -20,7 +20,7 @@ package io.mindmaps.graql.internal.query;
 
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.AskQuery;
-import io.mindmaps.graql.MatchQueryDefault;
+import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.admin.AskQueryAdmin;
 
 /**
@@ -28,12 +28,12 @@ import io.mindmaps.graql.admin.AskQueryAdmin;
  */
 public class AskQueryImpl implements AskQueryAdmin {
 
-    private final MatchQueryDefault matchQuery;
+    private final MatchQuery matchQuery;
 
     /**
      * @param matchQuery the match query that the ask query will search for in the graph
      */
-    public AskQueryImpl(MatchQueryDefault matchQuery) {
+    public AskQueryImpl(MatchQuery matchQuery) {
         this.matchQuery = matchQuery;
     }
 
@@ -58,7 +58,7 @@ public class AskQueryImpl implements AskQueryAdmin {
     }
 
     @Override
-    public MatchQueryDefault getMatchQuery() {
+    public MatchQuery getMatchQuery() {
         return matchQuery;
     }
 }

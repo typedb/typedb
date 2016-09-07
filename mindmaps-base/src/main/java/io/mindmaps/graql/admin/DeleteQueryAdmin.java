@@ -20,7 +20,7 @@
 package io.mindmaps.graql.admin;
 
 import io.mindmaps.graql.DeleteQuery;
-import io.mindmaps.graql.MatchQueryDefault;
+import io.mindmaps.graql.MatchQuery;
 
 import java.util.Collection;
 
@@ -36,5 +36,5 @@ public interface DeleteQueryAdmin extends DeleteQuery {
     /**
      * @return the match query this delete query is operating on
      */
-    MatchQueryDefault getMatchQuery();
+    MatchQuery getMatchQuery();
 }

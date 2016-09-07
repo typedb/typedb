@@ -23,10 +23,9 @@ import com.google.common.collect.Maps;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.model.Concept;
-import io.mindmaps.graql.admin.MatchQueryDefaultAdmin;
+import io.mindmaps.graql.admin.MatchQueryAdmin;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -34,11 +33,11 @@ import java.util.stream.Stream;
 /**
  * "Select" modifier for a match query that selects particular variables from the result.
  */
-class MatchQuerySelect extends MatchQueryDefaultModifier {
+class MatchQuerySelect extends MatchQueryModifier {
 
     private final ImmutableSet<String> names;
 
-    MatchQuerySelect(MatchQueryDefaultAdmin inner, ImmutableSet<String> names) {
+    MatchQuerySelect(MatchQueryAdmin inner, ImmutableSet<String> names) {
         super(inner);
 
         if (names.isEmpty()) {
@@ -49,8 +48,8 @@ class MatchQuerySelect extends MatchQueryDefaultModifier {
     }
 
     @Override
-    public Stream<Map<String, Concept>> stream(Optional<MindmapsGraph> transaction, Optional<MatchOrder> order) {
-        return inner.stream(transaction, order).map(result -> Maps.filterKeys(result, names::contains));
+    public Stream<Map<String, Concept>> transformStream(Stream<Map<String, Concept>> stream) {
+        return stream.map(result -> Maps.filterKeys(result, names::contains));
     }
 
     @Override

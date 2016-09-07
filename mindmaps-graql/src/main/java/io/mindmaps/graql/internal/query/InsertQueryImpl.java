@@ -25,9 +25,9 @@ import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.InsertQuery;
-import io.mindmaps.graql.MatchQueryDefault;
+import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.admin.InsertQueryAdmin;
-import io.mindmaps.graql.admin.MatchQueryDefaultAdmin;
+import io.mindmaps.graql.admin.MatchQueryAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.validation.InsertQueryValidator;
 
@@ -44,7 +44,7 @@ import static java.util.stream.Collectors.toSet;
  */
 public class InsertQueryImpl implements InsertQueryAdmin {
 
-    private final Optional<MatchQueryDefaultAdmin> matchQuery;
+    private final Optional<MatchQueryAdmin> matchQuery;
     private final Optional<MindmapsGraph> transaction;
     private final ImmutableCollection<VarAdmin> originalVars;
     private final ImmutableCollection<VarAdmin> vars;
@@ -56,7 +56,7 @@ public class InsertQueryImpl implements InsertQueryAdmin {
      * @param matchQuery the match query to insert for each result
      * @param transaction the transaction to execute on
      */
-    private InsertQueryImpl(ImmutableCollection<VarAdmin> vars, Optional<MatchQueryDefaultAdmin> matchQuery, Optional<MindmapsGraph> transaction) {
+    private InsertQueryImpl(ImmutableCollection<VarAdmin> vars, Optional<MatchQueryAdmin> matchQuery, Optional<MindmapsGraph> transaction) {
         // match query and transaction should never both be present (should get transaction from inner match query)
         assert(!matchQuery.isPresent() || !transaction.isPresent());
 
@@ -75,7 +75,7 @@ public class InsertQueryImpl implements InsertQueryAdmin {
      * @param vars a collection of Vars to insert
      * @param matchQuery the match query to insert for each result
      */
-    public InsertQueryImpl(ImmutableCollection<VarAdmin> vars, MatchQueryDefaultAdmin matchQuery) {
+    public InsertQueryImpl(ImmutableCollection<VarAdmin> vars, MatchQueryAdmin matchQuery) {
         this(vars, Optional.of(matchQuery), Optional.empty());
     }
 
@@ -122,7 +122,7 @@ public class InsertQueryImpl implements InsertQueryAdmin {
     }
 
     @Override
-    public Optional<? extends MatchQueryDefault> getMatchQuery() {
+    public Optional<? extends MatchQuery> getMatchQuery() {
         return matchQuery;
     }
 
@@ -154,7 +154,7 @@ public class InsertQueryImpl implements InsertQueryAdmin {
 
     @Override
     public Optional<MindmapsGraph> getGraph() {
-        return matchQuery.map(MatchQueryDefaultAdmin::getGraph).orElse(transaction);
+        return matchQuery.map(MatchQueryAdmin::getGraph).orElse(transaction);
     }
 
     @Override

@@ -19,11 +19,13 @@
 package io.mindmaps.graql.internal.query.match;
 
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.admin.MatchQueryAdmin;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.internal.query.Conjunction;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -35,17 +37,17 @@ import java.util.stream.Stream;
  *
  * Query modifiers should extend this class and implement a stream() method that modifies the inner query.
  */
-abstract class MatchQueryModifier<S, T> extends AbstractMatchQuery<T> {
+abstract class MatchQueryModifier extends AbstractMatchQuery {
 
-    final MatchQueryAdmin<S> inner;
+    final MatchQueryAdmin inner;
 
-    MatchQueryModifier(MatchQueryAdmin<S> inner) {
+    MatchQueryModifier(MatchQueryAdmin inner) {
         this.inner = inner;
     }
 
     @Override
-    public Stream<T> stream(Optional<MindmapsGraph> transaction, Optional<MatchOrder> order) {
-        return transformStream(inner.stream(transaction, order));
+    public Stream<Map<String, Concept>> stream(Optional<MindmapsGraph> graph, Optional<MatchOrder> order) {
+        return transformStream(inner.stream(graph, order));
     }
 
     @Override
@@ -68,10 +70,18 @@ abstract class MatchQueryModifier<S, T> extends AbstractMatchQuery<T> {
         return inner.getTypes();
     }
 
+    @Override
+    public Set<String> getSelectedNames() {
+        return inner.getSelectedNames();
+    }
+
     /**
-     * Transform the given stream. Implement in subclasses to perform modifier behaviour.
+     * Transform the given stream. This should be overridden in subclasses to perform modifier behaviour.
+     * The default implementation returns the stream unmodified.
      * @param stream the stream to transform
      * @return the transformed stream
      */
-    protected abstract Stream<T> transformStream(Stream<S> stream);
+    protected Stream<Map<String, Concept>> transformStream(Stream<Map<String, Concept>> stream) {
+        return stream;
+    }
 }

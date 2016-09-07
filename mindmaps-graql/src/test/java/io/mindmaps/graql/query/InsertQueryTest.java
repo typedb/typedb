@@ -25,11 +25,7 @@ import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.EntityType;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
-import io.mindmaps.graql.InsertQuery;
-import io.mindmaps.graql.MatchQueryDefault;
-import io.mindmaps.graql.Pattern;
-import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.graql.Var;
+import io.mindmaps.graql.*;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -38,20 +34,11 @@ import org.junit.rules.ExpectedException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static io.mindmaps.constants.DataType.ConceptMeta.ENTITY_TYPE;
-import static io.mindmaps.constants.DataType.ConceptMeta.RELATION_TYPE;
-import static io.mindmaps.constants.DataType.ConceptMeta.RESOURCE_TYPE;
-import static io.mindmaps.constants.DataType.ConceptMeta.ROLE_TYPE;
-import static io.mindmaps.constants.DataType.ConceptMeta.RULE_TYPE;
-import static io.mindmaps.graql.Graql.gt;
-import static io.mindmaps.graql.Graql.id;
-import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.graql.Graql.withGraph;
+import static io.mindmaps.constants.DataType.ConceptMeta.*;
+import static io.mindmaps.graql.Graql.*;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class InsertQueryTest {
 
@@ -232,7 +219,7 @@ public class InsertQueryTest {
                 id("my-type").isa(RESOURCE_TYPE.getId()).datatype(Data.LONG)
         ).execute();
 
-        MatchQueryDefault query = qb.match(var("x").id("my-type"));
+        MatchQuery query = qb.match(var("x").id("my-type"));
         Data datatype = query.iterator().next().get("x").asResourceType().getDataType();
 
         assertEquals(Data.LONG, datatype);
@@ -245,7 +232,7 @@ public class InsertQueryTest {
                 id("ako-type").ako("my-type")
         ).execute();
 
-        MatchQueryDefault query = qb.match(var("x").id("ako-type"));
+        MatchQuery query = qb.match(var("x").id("ako-type"));
         Data datatype = query.iterator().next().get("x").asResourceType().getDataType();
 
         assertEquals(Data.STRING, datatype);
@@ -347,13 +334,13 @@ public class InsertQueryTest {
                 var().id("new-thing").isa("new-type")
         ).execute();
 
-        MatchQueryDefault typeQuery = qb.match(var("n").id("new-type"));
+        MatchQuery typeQuery = qb.match(var("n").id("new-type"));
 
         assertEquals(1, typeQuery.stream().count());
 
         // We checked count ahead of time
         //noinspection OptionalGetWithoutIsPresent
-        EntityType newType = typeQuery.get("n").stream().findFirst().get().asEntityType();
+        EntityType newType = typeQuery.get("n").findFirst().get().asEntityType();
 
         assertTrue(newType.asEntityType().isAbstract());
         assertTrue(newType.playsRoles().contains(mindmapsGraph.getRoleType("has-title-owner")));

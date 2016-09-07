@@ -25,7 +25,7 @@ import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.DeleteQuery;
 import io.mindmaps.graql.InsertQuery;
-import io.mindmaps.graql.MatchQueryDefault;
+import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.internal.query.Conjunction;
@@ -37,9 +37,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static io.mindmaps.graql.Graql.id;
-import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.graql.Graql.withGraph;
+import static io.mindmaps.graql.Graql.*;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
@@ -63,7 +61,7 @@ public class AdminTest {
 
     @Test
     public void testGetTypesInQuery() {
-        MatchQueryDefault query = qb.match(
+        MatchQuery query = qb.match(
                 var("x").isa(id("movie").ako("production")).has("tmdb-vote-count", 400),
                 var("y").isa("character").id("123"),
                 var().rel("production-with-cast", "x").rel("y").isa("has-cast")
@@ -78,21 +76,21 @@ public class AdminTest {
 
     @Test
     public void testDefaultGetSelectedNamesInQuery() {
-        MatchQueryDefault query = qb.match(var("x").isa(var("y")));
+        MatchQuery query = qb.match(var("x").isa(var("y")));
 
         assertEquals(Sets.newHashSet("x", "y"), query.admin().getSelectedNames());
     }
 
     @Test
     public void testExplicitGetSelectedNamesInQuery() {
-        MatchQueryDefault query = qb.match(var("x").isa(var("y"))).select("x");
+        MatchQuery query = qb.match(var("x").isa(var("y"))).select("x");
 
         assertEquals(Sets.newHashSet("x"), query.admin().getSelectedNames());
     }
 
     @Test
     public void testGetPatternInQuery() {
-        MatchQueryDefault query = qb.match(var("x").isa("movie"), var("x").value("Bob"));
+        MatchQuery query = qb.match(var("x").isa("movie"), var("x").value("Bob"));
 
         Conjunction<PatternAdmin> conjunction = query.admin().getPattern();
         assertNotNull(conjunction);
@@ -103,7 +101,7 @@ public class AdminTest {
 
     @Test
     public void testMutateMatchQuery() {
-        MatchQueryDefault query = qb.match(var("x").isa("movie"));
+        MatchQuery query = qb.match(var("x").isa("movie"));
 
         Conjunction<PatternAdmin> pattern = query.admin().getPattern();
         pattern.getPatterns().add(var("x").id("Spy").admin());
