@@ -170,7 +170,6 @@ public class SQLModel implements Iterable<SQLModel.SQLTable> {
         * Get the primary key of a given row (the concatenation of the values of the primary key columns)
         */
         public Collection<String> getPrimaryKeyValues(ResultSet row) throws SQLException {
-            System.out.println(row);
             Collection<String> values = new ArrayList<>();
             for(String key:primaryKeyColumns){
                 if(row.getObject(key) != null){

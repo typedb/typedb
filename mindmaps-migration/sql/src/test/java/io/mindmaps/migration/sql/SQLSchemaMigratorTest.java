@@ -38,7 +38,6 @@ public class SQLSchemaMigratorTest {
 
     private Namer namer = new Namer() {};
     private static SQLSchemaMigrator migrator;
-    private Connection connection;
 
     @BeforeClass
     public static void start(){
@@ -67,12 +66,11 @@ public class SQLSchemaMigratorTest {
         graph.clear();
         graph.close();
         migrator.close();
-        connection.close();
     }
 
     @Test
     public void usersTest() throws SQLException {
-        connection = Util.setupExample("simple");
+        Connection connection = Util.setupExample("simple");
         migrator.configure(connection).migrate(loader);
 
         Type type = transaction.getEntityType("USERS");
@@ -85,7 +83,7 @@ public class SQLSchemaMigratorTest {
 
     @Test
     public void alterTableTest() throws SQLException {
-        connection = Util.setupExample("alter-table");
+        Connection connection = Util.setupExample("alter-table");
         migrator.configure(connection).migrate(loader);
         transaction.refresh();
 
@@ -122,7 +120,7 @@ public class SQLSchemaMigratorTest {
 
     @Test
     public void emptyTest() throws SQLException {
-        connection = Util.setupExample("empty");
+        Connection connection = Util.setupExample("empty");
         migrator.configure(connection).migrate(loader);
         transaction.refresh();
 
@@ -137,7 +135,7 @@ public class SQLSchemaMigratorTest {
 
     @Test
     public void datavaultSchemaTest() throws SQLException {
-        connection = Util.setupExample("datavault");
+        Connection connection = Util.setupExample("datavault");
         migrator.configure(connection).migrate(loader);
         transaction.refresh();
 
@@ -152,7 +150,7 @@ public class SQLSchemaMigratorTest {
 
     @Test
     public void postgresSchemaTest() throws SQLException, ClassNotFoundException {
-        connection = Util.setupExample("postgresql-example");
+        Connection connection = Util.setupExample("postgresql-example");
         migrator.configure(connection).migrate(loader);
         transaction.refresh();
 
@@ -180,7 +178,7 @@ public class SQLSchemaMigratorTest {
 
     @Test
     public void mysqlSchemaTest() throws SQLException {
-        connection = Util.setupExample("mysql-example");
+        Connection connection = Util.setupExample("mysql-example");
         migrator.configure(connection).migrate(loader);
         transaction.refresh();
 
@@ -205,7 +203,7 @@ public class SQLSchemaMigratorTest {
 
     @Test
     public void combinedKeyTest() throws SQLException {
-        connection = Util.setupExample("combined-key");
+        Connection connection = Util.setupExample("combined-key");
         migrator.configure(connection).migrate(loader);
         transaction.refresh();
 

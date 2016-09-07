@@ -189,7 +189,9 @@ public class SQLDataMigrator implements Iterable<Collection<Var>>, Closeable {
     @Override
     public void close() {
         try {
-            connection.close();
+            if(connection != null) {
+                connection.close();
+            }
         } catch (SQLException e) {
             e.printStackTrace();
         }
