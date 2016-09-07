@@ -53,7 +53,7 @@ public interface InsertQueryAdmin extends InsertQuery {
     Collection<VarAdmin> getAllVars();
 
     /**
-     * @return the transaction set on this query, if it was provided one
+     * @return the graph set on this query, if it was provided one
      */
     Optional<MindmapsGraph> getGraph();
 }

@@ -60,27 +60,27 @@ public class MatchQueryBase extends AbstractMatchQuery {
 
     @Override
     public Stream<Map<String, Concept>> stream(
-            Optional<MindmapsGraph> optionalTransaction, Optional<MatchOrder> order
+            Optional<MindmapsGraph> optionalGraph, Optional<MatchOrder> order
     ) {
-        MindmapsGraph transaction = optionalTransaction.orElseThrow(
-                () -> new IllegalStateException(ErrorMessage.NO_TRANSACTION.getMessage())
+        MindmapsGraph graph = optionalGraph.orElseThrow(
+                () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
         );
 
-        new MatchQueryValidator(admin()).validate(transaction);
+        new MatchQueryValidator(admin()).validate(graph);
 
-        GraphTraversal<Vertex, Map<String, Vertex>> traversal = getQuery(transaction, order).getTraversals();
-        return traversal.toStream().map(vertices -> makeResults(transaction, vertices)).sequential();
+        GraphTraversal<Vertex, Map<String, Vertex>> traversal = getQuery(graph, order).getTraversals();
+        return traversal.toStream().map(vertices -> makeResults(graph, vertices)).sequential();
     }
 
     @Override
-    public Set<Type> getTypes(MindmapsGraph transaction) {
-        Query query = getQuery(transaction, Optional.empty());
-        return query.getConcepts().map(transaction::getType).filter(t -> t != null).collect(toSet());
+    public Set<Type> getTypes(MindmapsGraph graph) {
+        Query query = getQuery(graph, Optional.empty());
+        return query.getConcepts().map(graph::getType).filter(t -> t != null).collect(toSet());
     }
 
     @Override
     public Set<Type> getTypes() {
-        throw new IllegalStateException(ErrorMessage.NO_TRANSACTION.getMessage());
+        throw new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage());
     }
 
     @Override
@@ -131,23 +131,23 @@ public class MatchQueryBase extends AbstractMatchQuery {
     }
 
     /**
-     * @param transaction the transaction to execute the query on
+     * @param graph the graph to execute the query on
      * @param order an optional ordering of the query
      * @return the query that will match the specified patterns
      */
-    private Query getQuery(MindmapsGraph transaction, Optional<MatchOrder> order) {
-        return new Query(transaction, this.pattern, getSelectedNames(), order);
+    private Query getQuery(MindmapsGraph graph, Optional<MatchOrder> order) {
+        return new Query(graph, this.pattern, getSelectedNames(), order);
     }
 
     /**
-     * @param transaction the transaction to get results from
+     * @param graph the graph to get results from
      * @param vertices a map of vertices where the key is the variable name
      * @return a map of concepts where the key is the variable name
      */
-    private Map<String, Concept> makeResults(MindmapsGraph transaction, Map<String, Vertex> vertices) {
+    private Map<String, Concept> makeResults(MindmapsGraph graph, Map<String, Vertex> vertices) {
         return getSelectedNames().stream().collect(Collectors.toMap(
                 name -> name,
-                name -> transaction.getConcept(vertices.get(name).value(ITEM_IDENTIFIER.name()))
+                name -> graph.getConcept(vertices.get(name).value(ITEM_IDENTIFIER.name()))
         ));
     }
 }

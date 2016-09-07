@@ -65,185 +65,185 @@ public class PokemonGraphFactory{
         }
     }
 
-    private static void buildGraph(MindmapsGraph transaction) {
-        buildOntology(transaction);
-        buildRelations(transaction);
-        buildInstances(transaction);
+    private static void buildGraph(MindmapsGraph graph) {
+        buildOntology(graph);
+        buildRelations(graph);
+        buildInstances(graph);
     }
 
-    private static void buildOntology(MindmapsGraph transaction) {
+    private static void buildOntology(MindmapsGraph graph) {
 
-        hasResourceTarget = transaction.putRoleType("has-resource-target");
-        hasResourceValue = transaction.putRoleType("has-resource-value");
-        hasResource = transaction.putRelationType("has-resource")
+        hasResourceTarget = graph.putRoleType("has-resource-target");
+        hasResourceValue = graph.putRoleType("has-resource-value");
+        hasResource = graph.putRelationType("has-resource")
                 .hasRole(hasResourceTarget)
                 .hasRole(hasResourceValue);
 
-        ancestor = transaction.putRoleType("ancestor");
-        descendent = transaction.putRoleType("descendent");
-        evolution = transaction.putRelationType("evolution")
+        ancestor = graph.putRoleType("ancestor");
+        descendent = graph.putRoleType("descendent");
+        evolution = graph.putRelationType("evolution")
                 .hasRole(ancestor)
                 .hasRole(descendent);
 
-        pokemonWithType = transaction.putRoleType("pokemon-with-type");
-        typeOfPokemon = transaction.putRoleType("type-of-pokemon");
-        hasType = transaction.putRelationType("has-type")
+        pokemonWithType = graph.putRoleType("pokemon-with-type");
+        typeOfPokemon = graph.putRoleType("type-of-pokemon");
+        hasType = graph.putRelationType("has-type")
                 .hasRole(pokemonWithType)
                 .hasRole(typeOfPokemon);
 
-        defendingType = transaction.putRoleType("defending-type");
-        attackingType = transaction.putRoleType("attacking-type");
-        superEffective = transaction.putRelationType("super-effective")
+        defendingType = graph.putRoleType("defending-type");
+        attackingType = graph.putRoleType("attacking-type");
+        superEffective = graph.putRelationType("super-effective")
                 .hasRole(defendingType)
                 .hasRole(attackingType);
 
-        pokemon = transaction.putEntityType("pokemon")
+        pokemon = graph.putEntityType("pokemon")
                 .playsRole(hasResourceTarget)
                 .playsRole(ancestor)
                 .playsRole(descendent)
                 .playsRole(pokemonWithType);
 
-        pokemonType = transaction.putEntityType("pokemon-type")
+        pokemonType = graph.putEntityType("pokemon-type")
                 .playsRole(typeOfPokemon)
                 .playsRole(defendingType)
                 .playsRole(attackingType);
 
-        pokedexNo = transaction.putResourceType("pokedex-no", Data.LONG)
+        pokedexNo = graph.putResourceType("pokedex-no", Data.LONG)
                 .playsRole(hasResourceValue);
-        description = transaction.putResourceType("description", Data.STRING)
+        description = graph.putResourceType("description", Data.STRING)
                 .playsRole(hasResourceValue);
-        height = transaction.putResourceType("height", Data.LONG)
+        height = graph.putResourceType("height", Data.LONG)
                 .playsRole(hasResourceValue);
-        weight = transaction.putResourceType("weight", Data.LONG)
+        weight = graph.putResourceType("weight", Data.LONG)
                 .playsRole(hasResourceValue);
     }
 
-    private static void buildInstances(MindmapsGraph transaction) {
-        Entity bulbasaur = transaction.putEntity("Bulbasaur", pokemon);
-        addResource(transaction,bulbasaur,1L,pokedexNo);
-        addResource(transaction,bulbasaur,"A strange seed was planted on its back at birth. The plant sprouts and grows with this POKéMON.",description);
-        addResource(transaction,bulbasaur,7L,height);
-        addResource(transaction,bulbasaur,69L,weight);
-        putTypes(transaction,bulbasaur,
-                transaction.getEntity("poison"),transaction.getEntity("grass"));
+    private static void buildInstances(MindmapsGraph graph) {
+        Entity bulbasaur = graph.putEntity("Bulbasaur", pokemon);
+        addResource(graph,bulbasaur,1L,pokedexNo);
+        addResource(graph,bulbasaur,"A strange seed was planted on its back at birth. The plant sprouts and grows with this POKéMON.",description);
+        addResource(graph,bulbasaur,7L,height);
+        addResource(graph,bulbasaur,69L,weight);
+        putTypes(graph,bulbasaur,
+                graph.getEntity("poison"),graph.getEntity("grass"));
 
-        Entity ivysaur = transaction.putEntity("Ivysaur", pokemon);
-        addResource(transaction,ivysaur,2L,pokedexNo);
-        addResource(transaction,ivysaur,"When the bulb on its back grows large, it appears to lose the ability to stand on its hind legs.",description);
-        addResource(transaction,ivysaur,10L,height);
-        addResource(transaction,ivysaur,130L,weight);
-        putTypes(transaction,ivysaur,
-                transaction.getEntity("poison"),transaction.getEntity("grass"));
-        transaction.addRelation(evolution)
+        Entity ivysaur = graph.putEntity("Ivysaur", pokemon);
+        addResource(graph,ivysaur,2L,pokedexNo);
+        addResource(graph,ivysaur,"When the bulb on its back grows large, it appears to lose the ability to stand on its hind legs.",description);
+        addResource(graph,ivysaur,10L,height);
+        addResource(graph,ivysaur,130L,weight);
+        putTypes(graph,ivysaur,
+                graph.getEntity("poison"),graph.getEntity("grass"));
+        graph.addRelation(evolution)
                 .putRolePlayer(descendent,ivysaur)
                 .putRolePlayer(ancestor,bulbasaur);
 
-        Entity venusaur = transaction.putEntity("Venusaur", pokemon);
-        addResource(transaction,venusaur,3L,pokedexNo);
-        addResource(transaction,venusaur,"The plant blooms when it is absorbing solar energy. It stays on the move to seek sunlight.",description);
-        addResource(transaction,venusaur,20L,height);
-        addResource(transaction,venusaur,1000L,weight);
-        putTypes(transaction,venusaur,
-                transaction.getEntity("poison"),transaction.getEntity("grass"));
-        transaction.addRelation(evolution)
+        Entity venusaur = graph.putEntity("Venusaur", pokemon);
+        addResource(graph,venusaur,3L,pokedexNo);
+        addResource(graph,venusaur,"The plant blooms when it is absorbing solar energy. It stays on the move to seek sunlight.",description);
+        addResource(graph,venusaur,20L,height);
+        addResource(graph,venusaur,1000L,weight);
+        putTypes(graph,venusaur,
+                graph.getEntity("poison"),graph.getEntity("grass"));
+        graph.addRelation(evolution)
                 .putRolePlayer(descendent,venusaur)
                 .putRolePlayer(ancestor,ivysaur);
 
-        Entity charmander = transaction.putEntity("Charmander", pokemon);
-        addResource(transaction,charmander,4L,pokedexNo);
-        addResource(transaction,charmander,"Obviously prefers hot places. When it rains, steam is said to spout from the tip of its tail.",description);
-        addResource(transaction,charmander,6L,height);
-        addResource(transaction,charmander,85L,weight);
-        putTypes(transaction,charmander,
-                transaction.getEntity("fire"));
+        Entity charmander = graph.putEntity("Charmander", pokemon);
+        addResource(graph,charmander,4L,pokedexNo);
+        addResource(graph,charmander,"Obviously prefers hot places. When it rains, steam is said to spout from the tip of its tail.",description);
+        addResource(graph,charmander,6L,height);
+        addResource(graph,charmander,85L,weight);
+        putTypes(graph,charmander,
+                graph.getEntity("fire"));
 
-        Entity charmeleon = transaction.putEntity("Charmeleon", pokemon);
-        addResource(transaction,charmeleon,5L,pokedexNo);
-        addResource(transaction,charmeleon,"When it swings its burning tail, it elevates the temperature to unbearably high levels.",description);
-        addResource(transaction,charmeleon,11L,height);
-        addResource(transaction,charmeleon,190L,weight);
-        putTypes(transaction,charmeleon,
-                transaction.getEntity("fire"));
-        transaction.addRelation(evolution)
+        Entity charmeleon = graph.putEntity("Charmeleon", pokemon);
+        addResource(graph,charmeleon,5L,pokedexNo);
+        addResource(graph,charmeleon,"When it swings its burning tail, it elevates the temperature to unbearably high levels.",description);
+        addResource(graph,charmeleon,11L,height);
+        addResource(graph,charmeleon,190L,weight);
+        putTypes(graph,charmeleon,
+                graph.getEntity("fire"));
+        graph.addRelation(evolution)
                 .putRolePlayer(descendent,charmeleon)
                 .putRolePlayer(ancestor, charmander);
 
-        Entity charizard = transaction.putEntity("Charizard", pokemon);
-        addResource(transaction,charizard,6L,pokedexNo);
-        addResource(transaction,charizard,"Spits fire that is hot enough to melt boulders. Known to cause forest fires unintentionally.",description);
-        addResource(transaction,charizard,17L,height);
-        addResource(transaction,charizard,905L,weight);
-        putTypes(transaction,charizard,
-                transaction.getEntity("fire"),transaction.getEntity("flying"));
-        transaction.addRelation(evolution)
+        Entity charizard = graph.putEntity("Charizard", pokemon);
+        addResource(graph,charizard,6L,pokedexNo);
+        addResource(graph,charizard,"Spits fire that is hot enough to melt boulders. Known to cause forest fires unintentionally.",description);
+        addResource(graph,charizard,17L,height);
+        addResource(graph,charizard,905L,weight);
+        putTypes(graph,charizard,
+                graph.getEntity("fire"),graph.getEntity("flying"));
+        graph.addRelation(evolution)
                 .putRolePlayer(descendent,charizard)
                 .putRolePlayer(ancestor, charmeleon);
     }
 
-    private static void addResource(MindmapsGraph mt, Entity pokemon, String s, ResourceType<String> type) {
-            Resource<String> resource = mt.putResource(s, type);
-        mt.addRelation(hasResource)
+    private static void addResource(MindmapsGraph graph, Entity pokemon, String s, ResourceType<String> type) {
+            Resource<String> resource = graph.putResource(s, type);
+        graph.addRelation(hasResource)
                 .putRolePlayer(hasResourceTarget, pokemon)
                 .putRolePlayer(hasResourceValue, resource);
     }
 
-    private static void addResource(MindmapsGraph mt, Entity pokemon, Long l, ResourceType<Long> type) {
-            Resource<Long> resource = mt.putResource(l, type);
-        mt.addRelation(hasResource)
+    private static void addResource(MindmapsGraph graph, Entity pokemon, Long l, ResourceType<Long> type) {
+            Resource<Long> resource = graph.putResource(l, type);
+        graph.addRelation(hasResource)
                 .putRolePlayer(hasResourceTarget, pokemon)
                 .putRolePlayer(hasResourceValue, resource);
     }
 
-    private static void putTypes(MindmapsGraph mt, Entity pokemon, Entity... entities) {
+    private static void putTypes(MindmapsGraph graph, Entity pokemon, Entity... entities) {
         for (Entity entity : entities) {
-            mt.addRelation(hasType)
+            graph.addRelation(hasType)
                     .putRolePlayer(pokemonWithType,pokemon)
                     .putRolePlayer(typeOfPokemon,entity);
         }
     }
 
-    private static void buildRelations(MindmapsGraph transaction) {
-        Entity normal = transaction.putEntity("normal",pokemonType);
-        Entity fighting = transaction.putEntity("fighting",pokemonType);
-        Entity flying = transaction.putEntity("flying",pokemonType);
-        Entity poison = transaction.putEntity("poison",pokemonType);
-        Entity ground = transaction.putEntity("ground",pokemonType);
-        Entity rock = transaction.putEntity("rock",pokemonType);
-        Entity bug = transaction.putEntity("bug",pokemonType);
-        Entity ghost = transaction.putEntity("ghost",pokemonType);
-        Entity steel = transaction.putEntity("steel",pokemonType);
-        Entity fire = transaction.putEntity("fire",pokemonType);
-        Entity water = transaction.putEntity("water",pokemonType);
-        Entity grass = transaction.putEntity("grass",pokemonType);
-        Entity electric = transaction.putEntity("electric",pokemonType);
-        Entity psychic = transaction.putEntity("psychic",pokemonType);
-        Entity ice = transaction.putEntity("ice",pokemonType);
-        Entity dragon = transaction.putEntity("dragon",pokemonType);
-        Entity dark = transaction.putEntity("dark",pokemonType);
-        Entity fairy = transaction.putEntity("fairy",pokemonType);
-        Entity unknown = transaction.putEntity("unknown",pokemonType);
-        Entity shadow = transaction.putEntity("shadow",pokemonType);
+    private static void buildRelations(MindmapsGraph graph) {
+        Entity normal = graph.putEntity("normal",pokemonType);
+        Entity fighting = graph.putEntity("fighting",pokemonType);
+        Entity flying = graph.putEntity("flying",pokemonType);
+        Entity poison = graph.putEntity("poison",pokemonType);
+        Entity ground = graph.putEntity("ground",pokemonType);
+        Entity rock = graph.putEntity("rock",pokemonType);
+        Entity bug = graph.putEntity("bug",pokemonType);
+        Entity ghost = graph.putEntity("ghost",pokemonType);
+        Entity steel = graph.putEntity("steel",pokemonType);
+        Entity fire = graph.putEntity("fire",pokemonType);
+        Entity water = graph.putEntity("water",pokemonType);
+        Entity grass = graph.putEntity("grass",pokemonType);
+        Entity electric = graph.putEntity("electric",pokemonType);
+        Entity psychic = graph.putEntity("psychic",pokemonType);
+        Entity ice = graph.putEntity("ice",pokemonType);
+        Entity dragon = graph.putEntity("dragon",pokemonType);
+        Entity dark = graph.putEntity("dark",pokemonType);
+        Entity fairy = graph.putEntity("fairy",pokemonType);
+        Entity unknown = graph.putEntity("unknown",pokemonType);
+        Entity shadow = graph.putEntity("shadow",pokemonType);
 
-        putSuper(transaction,normal,fighting);
-        putSuper(transaction,rock,fighting);
-        putSuper(transaction,fighting,flying);
-        putSuper(transaction,bug,flying);
-        putSuper(transaction,grass,flying);
-        putSuper(transaction,grass,poison);
-        putSuper(transaction,grass,bug);
-        putSuper(transaction,grass,fire);
-        putSuper(transaction,fairy,poison);
-        putSuper(transaction,poison,ground);
-        putSuper(transaction,ice,steel);
-        putSuper(transaction,poison,psychic);
-        putSuper(transaction,ground,grass);
-        putSuper(transaction,rock,grass);
-        putSuper(transaction,water,grass);
-        putSuper(transaction,grass,ice);
+        putSuper(graph,normal,fighting);
+        putSuper(graph,rock,fighting);
+        putSuper(graph,fighting,flying);
+        putSuper(graph,bug,flying);
+        putSuper(graph,grass,flying);
+        putSuper(graph,grass,poison);
+        putSuper(graph,grass,bug);
+        putSuper(graph,grass,fire);
+        putSuper(graph,fairy,poison);
+        putSuper(graph,poison,ground);
+        putSuper(graph,ice,steel);
+        putSuper(graph,poison,psychic);
+        putSuper(graph,ground,grass);
+        putSuper(graph,rock,grass);
+        putSuper(graph,water,grass);
+        putSuper(graph,grass,ice);
     }
 
-    private static void putSuper(MindmapsGraph mt, Entity defend, Entity attack) {
-        mt.addRelation(superEffective)
+    private static void putSuper(MindmapsGraph graph, Entity defend, Entity attack) {
+        graph.addRelation(superEffective)
                 .putRolePlayer(defendingType,defend)
                 .putRolePlayer(attackingType,attack);
     }

@@ -203,14 +203,14 @@ public class ImportController {
 
     void importOntologyFromFile(String ontologyFile, String graphName) throws IOException, MindmapsValidationException {
 
-        MindmapsGraph transaction = GraphFactory.getInstance().getGraphBatchLoading(graphName);
+        MindmapsGraph graph = GraphFactory.getInstance().getGraphBatchLoading(graphName);
 
         LOG.info("Loading new ontology .. ");
 
         List<String> lines = Files.readAllLines(Paths.get(ontologyFile), StandardCharsets.UTF_8);
         String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-        QueryParser.create().parseInsertQuery(query).withGraph(transaction).execute();
-        transaction.commit();
+        QueryParser.create().parseInsertQuery(query).withGraph(graph).execute();
+        graph.commit();
 
         LOG.info("Ontology loaded. ");
 

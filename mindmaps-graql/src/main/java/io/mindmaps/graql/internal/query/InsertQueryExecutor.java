@@ -43,16 +43,16 @@ import static io.mindmaps.constants.ErrorMessage.INSERT_NON_RESOURCE_WITH_VALUE;
  */
 class InsertQueryExecutor {
 
-    private final MindmapsGraph transaction;
+    private final MindmapsGraph graph;
     private final Collection<VarAdmin> vars;
     private final Map<String, Concept> concepts = new HashMap<>();
     private final Stack<String> visitedVars = new Stack<>();
     private final ImmutableMap<String, List<VarAdmin>> varsByName;
     private final ImmutableMap<String, List<VarAdmin>> varsById;
 
-    InsertQueryExecutor(Collection<VarAdmin> vars, MindmapsGraph transaction) {
+    InsertQueryExecutor(Collection<VarAdmin> vars, MindmapsGraph graph) {
         this.vars = vars;
-        this.transaction = transaction;
+        this.graph = graph;
 
         // Group variables by name
         varsByName = ImmutableMap.copyOf(
@@ -168,7 +168,7 @@ class InsertQueryExecutor {
         } else if (type.isPresent()) {
             concept = putConceptByType(var.getId(), var, getConcept(type.get()).asType());
         } else {
-            concept = var.getId().map(transaction::getConcept).orElse(null);
+            concept = var.getId().map(graph::getConcept).orElse(null);
         }
 
         if (concept == null) {
@@ -224,29 +224,29 @@ class InsertQueryExecutor {
         }
 
         if (typeId.equals(DataType.ConceptMeta.ENTITY_TYPE.getId())) {
-            return transaction.putEntityType(getTypeIdOrThrow(id));
+            return graph.putEntityType(getTypeIdOrThrow(id));
         } else if (typeId.equals(DataType.ConceptMeta.RELATION_TYPE.getId())) {
-            return transaction.putRelationType(getTypeIdOrThrow(id));
+            return graph.putRelationType(getTypeIdOrThrow(id));
         } else if (typeId.equals(DataType.ConceptMeta.ROLE_TYPE.getId())) {
-            return transaction.putRoleType(getTypeIdOrThrow(id));
+            return graph.putRoleType(getTypeIdOrThrow(id));
         } else if (typeId.equals(DataType.ConceptMeta.RESOURCE_TYPE.getId())) {
-            return transaction.putResourceType(getTypeIdOrThrow(id), getDataType(var));
+            return graph.putResourceType(getTypeIdOrThrow(id), getDataType(var));
         } else if (typeId.equals(DataType.ConceptMeta.RULE_TYPE.getId())) {
-            return transaction.putRuleType(getTypeIdOrThrow(id));
+            return graph.putRuleType(getTypeIdOrThrow(id));
         } else if (type.isEntityType()) {
-            return putInstance(id, type.asEntityType(), transaction::putEntity, transaction::addEntity);
+            return putInstance(id, type.asEntityType(), graph::putEntity, graph::addEntity);
         } else if (type.isRelationType()) {
-            return putInstance(id, type.asRelationType(), transaction::putRelation, transaction::addRelation);
+            return putInstance(id, type.asRelationType(), graph::putRelation, graph::addRelation);
         } else if (type.isResourceType()) {
-            return transaction.putResource(getValue(var), type.asResourceType());
+            return graph.putResource(getValue(var), type.asResourceType());
         } else if (type.isRuleType()) {
             String lhs = var.getLhs().get();
             String rhs = var.getRhs().get();
 
             return putInstance(
                     id, type.asRuleType(),
-                    (ruleId, ruleType) -> transaction.putRule(ruleId, lhs, rhs, ruleType),
-                    ruleType -> transaction.addRule(lhs, rhs, ruleType)
+                    (ruleId, ruleType) -> graph.putRule(ruleId, lhs, rhs, ruleType),
+                    ruleType -> graph.addRule(lhs, rhs, ruleType)
             );
         } else {
             throw new RuntimeException("Unrecognized type " + type.getId());
@@ -260,16 +260,16 @@ class InsertQueryExecutor {
      */
     private <T> Concept putConceptBySuperType(String id, Type superType) {
         if (superType.isEntityType()) {
-            return transaction.putEntityType(id).superType(superType.asEntityType());
+            return graph.putEntityType(id).superType(superType.asEntityType());
         } else if (superType.isRelationType()) {
-            return transaction.putRelationType(id).superType(superType.asRelationType());
+            return graph.putRelationType(id).superType(superType.asRelationType());
         } else if (superType.isRoleType()) {
-            return transaction.putRoleType(id).superType(superType.asRoleType());
+            return graph.putRoleType(id).superType(superType.asRoleType());
         } else if (superType.isResourceType()) {
             ResourceType<T> superResource = superType.asResourceType();
-            return transaction.putResourceType(id, superResource.getDataType()).superType(superResource);
+            return graph.putResourceType(id, superResource.getDataType()).superType(superResource);
         } else if (superType.isRuleType()) {
-            return transaction.putRuleType(id).superType(superType.asRuleType());
+            return graph.putRuleType(id).superType(superType.asRuleType());
         } else {
             throw new IllegalStateException(ErrorMessage.INSERT_METATYPE.getMessage(id, superType.getId()));
         }
@@ -279,8 +279,8 @@ class InsertQueryExecutor {
      * Put an instance of a type which may or may not have an ID specified
      * @param id the ID of the instance to create, or empty to not specify an ID
      * @param type the type of the instance
-     * @param putInstance a 'put' method on a MindmapsGraph, such as transaction::putEntity
-     * @param addInstance an 'add' method on a MindmapsGraph such a transaction::addEntity
+     * @param putInstance a 'put' method on a MindmapsGraph, such as graph::putEntity
+     * @param addInstance an 'add' method on a MindmapsGraph such a graph::addEntity
      * @param <T> the class of the type of the instance, e.g. EntityType
      * @param <S> the class of the instance, e.g. Entity
      * @return an instance of the specified type, with the given ID if one was specified
@@ -353,9 +353,9 @@ class InsertQueryExecutor {
         Type type = getConcept(var).asType();
         ResourceType resourceType = getConcept(resourceVar).asResourceType();
 
-        RoleType owner = transaction.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceType.getId()));
-        RoleType value = transaction.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceType.getId()));
-        transaction.putRelationType(GraqlType.HAS_RESOURCE.getId(resourceType.getId()))
+        RoleType owner = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceType.getId()));
+        RoleType value = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceType.getId()));
+        graph.putRelationType(GraqlType.HAS_RESOURCE.getId(resourceType.getId()))
                 .hasRole(owner).hasRole(value);
 
         type.playsRole(owner);
@@ -384,11 +384,11 @@ class InsertQueryExecutor {
      * @param <D> the type of the resource
      */
     private <D> void addResource(Instance instance, ResourceType<D> type, D value) {
-        Resource resource = transaction.putResource(value, type);
+        Resource resource = graph.putResource(value, type);
 
-        RelationType hasResource = transaction.getRelationType(GraqlType.HAS_RESOURCE.getId(type.getId()));
-        RoleType hasResourceTarget = transaction.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(type.getId()));
-        RoleType hasResourceValue = transaction.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(type.getId()));
+        RelationType hasResource = graph.getRelationType(GraqlType.HAS_RESOURCE.getId(type.getId()));
+        RoleType hasResourceTarget = graph.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(type.getId()));
+        RoleType hasResourceValue = graph.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(type.getId()));
 
         if (hasResource == null || hasResourceTarget == null || hasResourceValue == null) {
             throw new IllegalStateException(
@@ -396,7 +396,7 @@ class InsertQueryExecutor {
             );
         }
 
-        Relation relation = transaction.addRelation(hasResource);
+        Relation relation = graph.addRelation(hasResource);
         relation.putRolePlayer(hasResourceTarget, instance);
         relation.putRolePlayer(hasResourceValue, resource);
     }

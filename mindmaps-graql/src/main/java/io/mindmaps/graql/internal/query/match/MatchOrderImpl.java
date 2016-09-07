@@ -50,18 +50,18 @@ class MatchOrderImpl implements MatchOrder {
     }
 
     @Override
-    public void orderTraversal(MindmapsGraph transaction, GraphTraversal<Vertex, Map<String, Vertex>> traversal) {
+    public void orderTraversal(MindmapsGraph graph, GraphTraversal<Vertex, Map<String, Vertex>> traversal) {
         if (resourceType.isPresent()) {
             // Order by resource type
 
             // Look up datatype of resource type
             String typeId = resourceType.get();
-            DataType.ConceptProperty valueProp = transaction.getResourceType(typeId).getDataType().getConceptProperty();
+            DataType.ConceptProperty valueProp = graph.getResourceType(typeId).getDataType().getConceptProperty();
 
             Comparator<Optional<Comparable>> comparator = new ResourceComparator();
             if (!asc) comparator = comparator.reversed();
 
-            traversal.select(var).order().by(v -> getResourceValue(transaction, v, typeId, valueProp), comparator);
+            traversal.select(var).order().by(v -> getResourceValue(graph, v, typeId, valueProp), comparator);
         } else {
             // Order by ITEM_IDENTIFIER by default
             Order order = asc ? Order.incr : Order.decr;
@@ -76,8 +76,8 @@ class MatchOrderImpl implements MatchOrder {
      * @param value the VALUE property to use on the vertex
      * @return the value of an attached resource, or nothing if there is no resource of this type
      */
-    private Optional<Comparable> getResourceValue(MindmapsGraph transaction, Object elem, String resourceTypeId, DataType.ConceptProperty value) {
-        return transaction.getTinkerTraversal().V(elem)
+    private Optional<Comparable> getResourceValue(MindmapsGraph graph, Object elem, String resourceTypeId, DataType.ConceptProperty value) {
+        return graph.getTinkerTraversal().V(elem)
                 .outE(SHORTCUT.getLabel()).has(TO_TYPE.name(), resourceTypeId).inV().values(value.name())
                 .tryNext().map(o -> (Comparable) o);
     }

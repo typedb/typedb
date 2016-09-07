@@ -21,7 +21,7 @@ package io.mindmaps.core.implementation;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
 /**
- * A mindmaps graph which produces new transactions to work with using a Tinkergraph backend.
+ * A mindmaps graph which uses a Tinkergraph backend.
  * Primarily used for testing
  */
 public class MindmapsTinkerGraph extends AbstractMindmapsGraph<TinkerGraph> {

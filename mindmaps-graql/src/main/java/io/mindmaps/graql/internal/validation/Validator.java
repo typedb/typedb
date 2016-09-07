@@ -39,17 +39,17 @@ interface Validator {
     }
 
     /**
-     * @param transaction the transaction to use for validating a query
+     * @param graph the graph to use for validating a query
      * @return a stream of errors found during validation
      */
-    Stream<String> getErrors(MindmapsGraph transaction);
+    Stream<String> getErrors(MindmapsGraph graph);
 
     /**
-     * @param transaction the transaction to use for validating a query
+     * @param graph the graph to use for validating a query
      * @throws IllegalStateException when a problem was found in a query
      */
-    default void validate(MindmapsGraph transaction) throws IllegalStateException {
-        List<String> errors = getErrors(transaction).collect(Collectors.toList());
+    default void validate(MindmapsGraph graph) throws IllegalStateException {
+        List<String> errors = getErrors(graph).collect(Collectors.toList());
         if (!errors.isEmpty()) {
             throw new IllegalStateException(String.join("\n", errors));
         }

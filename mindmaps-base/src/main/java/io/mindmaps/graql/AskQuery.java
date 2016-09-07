@@ -33,10 +33,10 @@ public interface AskQuery {
     boolean execute();
 
     /**
-     * @param transaction the transaction to execute the query on
-     * @return a new AskQuery with the transaction set
+     * @param graph the graph to execute the query on
+     * @return a new AskQuery with the graph set
      */
-    AskQuery withGraph(MindmapsGraph transaction);
+    AskQuery withGraph(MindmapsGraph graph);
 
     /**
      * @return admin instance for inspecting and manipulating this query

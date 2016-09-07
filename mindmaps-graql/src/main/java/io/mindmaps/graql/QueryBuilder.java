@@ -34,20 +34,20 @@ import java.util.Optional;
  * A starting point for creating queries.
  * <p>
  * A {@code QueryBuiler} is constructed with a {@code MindmapsGraph}. All operations are performed using this
- * transaction. The user must explicitly commit or rollback changes after executing queries.
+ * graph. The user must explicitly commit or rollback changes after executing queries.
  * <p>
  * {@code QueryBuilder} also provides static methods for creating {@code Vars}.
  */
 public class QueryBuilder {
 
-    private final Optional<MindmapsGraph> transaction;
+    private final Optional<MindmapsGraph> graph;
 
     QueryBuilder() {
-        this.transaction = Optional.empty();
+        this.graph = Optional.empty();
     }
 
-    QueryBuilder(MindmapsGraph transaction) {
-        this.transaction = Optional.of(transaction);
+    QueryBuilder(MindmapsGraph graph) {
+        this.graph = Optional.of(graph);
     }
 
     /**
@@ -64,7 +64,7 @@ public class QueryBuilder {
      */
     public MatchQuery match(Collection<? extends Pattern> patterns) {
         MatchQueryBase query = new MatchQueryBase(new ConjunctionImpl<>(AdminConverter.getPatternAdmins(patterns)));
-        return transaction.map(query::withGraph).orElse(query);
+        return graph.map(query::withGraph).orElse(query);
     }
 
     /**
@@ -81,7 +81,7 @@ public class QueryBuilder {
      */
     public InsertQuery insert(Collection<? extends Var> vars) {
         ImmutableSet<VarAdmin> varAdmins = ImmutableSet.copyOf(AdminConverter.getVarAdmins(vars));
-        return new InsertQueryImpl(varAdmins, transaction);
+        return new InsertQueryImpl(varAdmins, graph);
     }
 
 }

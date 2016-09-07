@@ -139,12 +139,12 @@ public class RESTLoader {
         try {
             for (int i = 0; i < repeatCommits; i++) {
 
-                AbstractMindmapsGraph transaction = null;
+                AbstractMindmapsGraph graph;
                 try {
-                    transaction = (AbstractMindmapsGraph) GraphFactory.getInstance().getGraphBatchLoading(name);
-                    QueryParser.create(transaction).parseInsertQuery(batch).execute();
-                    transaction.commit();
-                    cache.addJobCasting(name, transaction.getModifiedCastingIds());
+                    graph = (AbstractMindmapsGraph) GraphFactory.getInstance().getGraphBatchLoading(name);
+                    QueryParser.create(graph).parseInsertQuery(batch).execute();
+                    graph.commit();
+                    cache.addJobCasting(name, graph.getModifiedCastingIds());
                     loaderState.get(uuid).setState(State.FINISHED);
                     finishedJobs.incrementAndGet();
                     return;

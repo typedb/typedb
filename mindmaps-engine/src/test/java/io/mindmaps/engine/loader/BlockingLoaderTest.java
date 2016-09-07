@@ -107,7 +107,7 @@ public class BlockingLoaderTest {
     }
 
     private void loadOntology() {
-        MindmapsGraph transaction = GraphFactory.getInstance().getGraphBatchLoading(graphName);
+        MindmapsGraph graph = GraphFactory.getInstance().getGraphBatchLoading(graphName);
         ClassLoader classLoader = getClass().getClassLoader();
 
         LOG.info("Loading new ontology .. ");
@@ -119,9 +119,9 @@ public class BlockingLoaderTest {
                 e.printStackTrace();
             }
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-            QueryParser.create().parseInsertQuery(query).withGraph(transaction).execute();
+            QueryParser.create().parseInsertQuery(query).withGraph(graph).execute();
         try {
-            transaction.commit();
+            graph.commit();
         } catch (MindmapsValidationException e) {
             e.printStackTrace();
         }

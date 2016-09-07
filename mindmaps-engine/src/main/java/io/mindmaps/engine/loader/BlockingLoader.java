@@ -105,12 +105,12 @@ public class BlockingLoader extends Loader {
 
         try {
             for (int i = 0; i < repeatCommits; i++) {
-                AbstractMindmapsGraph transaction = (AbstractMindmapsGraph) GraphFactory.getInstance().getGraphBatchLoading(name);
+                AbstractMindmapsGraph graph = (AbstractMindmapsGraph) GraphFactory.getInstance().getGraphBatchLoading(name);
                 try {
 
-                    insert(batch).withGraph(transaction).execute();
-                    transaction.commit();
-                    cache.addJobCasting(graphName, transaction.getModifiedCastingIds());
+                    insert(batch).withGraph(graph).execute();
+                    graph.commit();
+                    cache.addJobCasting(graphName, graph.getModifiedCastingIds());
                     return;
 
                 } catch (MindmapsValidationException e) {

@@ -42,7 +42,7 @@ class InsertVarValidator implements Validator {
     }
 
     @Override
-    public Stream<String> getErrors(MindmapsGraph transaction) {
+    public Stream<String> getErrors(MindmapsGraph graph) {
         if (var.usesNonEqualPredicate()) {
             errors.add(ErrorMessage.INSERT_PREDICATE.getMessage());
         }

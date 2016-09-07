@@ -31,36 +31,36 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Modifier that specifies the transaction to execute the match query with.
+ * Modifier that specifies the graph to execute the match query with.
  */
-class MatchQueryTransaction extends MatchQueryModifier {
+class MatchQueryGraph extends MatchQueryModifier {
 
-    private final MindmapsGraph transaction;
+    private final MindmapsGraph graph;
 
-    MatchQueryTransaction(MindmapsGraph graph, MatchQueryAdmin inner) {
+    MatchQueryGraph(MindmapsGraph graph, MatchQueryAdmin inner) {
         super(inner);
-        this.transaction = graph;
+        this.graph = graph;
     }
 
     @Override
     public Stream<Map<String, Concept>> stream(
-            Optional<MindmapsGraph> transaction, Optional<MatchOrder> order
+            Optional<MindmapsGraph> graph, Optional<MatchOrder> order
     ) {
-        if (transaction.isPresent()) {
-            throw new IllegalStateException(ErrorMessage.MULTIPLE_TRANSACTION.getMessage());
+        if (graph.isPresent()) {
+            throw new IllegalStateException(ErrorMessage.MULTIPLE_GRAPH.getMessage());
         }
 
-        return inner.stream(Optional.of(this.transaction), order);
+        return inner.stream(Optional.of(this.graph), order);
     }
 
     @Override
     public Optional<MindmapsGraph> getGraph() {
-        return Optional.of(transaction);
+        return Optional.of(graph);
     }
 
     @Override
     public Set<Type> getTypes() {
-        return inner.getTypes(transaction);
+        return inner.getTypes(graph);
     }
 
     @Override

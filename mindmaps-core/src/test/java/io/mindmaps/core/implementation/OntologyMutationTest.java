@@ -53,13 +53,13 @@ public class OntologyMutationTest {
     public void buildGraph() throws MindmapsValidationException {
         mindmapsGraph = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
 
-        //spouse = mindmapsTransaction.putRoleType("Spouse");
+        //spouse = mindmapsGraph.putRoleType("Spouse");
         husband = mindmapsGraph.putRoleType("Husband");//.superType(spouse);
         wife = mindmapsGraph.putRoleType("Wife");
         RoleType driver = mindmapsGraph.putRoleType("Driver");
         RoleType driven = mindmapsGraph.putRoleType("Driven");
 
-        //union = mindmapsTransaction.putRelationType("Union").hasRole(spouse).hasRole(wife);
+        //union = mindmapsGraph.putRelationType("Union").hasRole(spouse).hasRole(wife);
         marriage = mindmapsGraph.putRelationType("marriage").hasRole(husband).hasRole(wife);
         RelationType carBeingDrivenBy = mindmapsGraph.putRelationType("car being driven by").hasRole(driven).hasRole(driver);
 

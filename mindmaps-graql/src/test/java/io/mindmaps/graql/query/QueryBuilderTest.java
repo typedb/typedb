@@ -44,25 +44,25 @@ public class QueryBuilderTest {
     }
 
     @Test
-    public void testBuildQueryTransactionFirst() {
+    public void testBuildQueryGraphFirst() {
         MatchQuery query = withGraph(mindmapsGraph).match(var("x").isa("movie"));
         QueryUtil.assertResultsMatch(query, "x", "movie", QueryUtil.movies);
     }
 
     @Test
-    public void testBuildMatchQueryTransactionLast() {
+    public void testBuildMatchQueryGraphLast() {
         MatchQuery query = match(var("x").isa("movie")).withGraph(mindmapsGraph);
         QueryUtil.assertResultsMatch(query, "x", "movie", QueryUtil.movies);
     }
 
     @Test
-    public void testBuildAskQueryTransactionLast() {
+    public void testBuildAskQueryGraphLast() {
         AskQuery query = match(var("x").isa("movie")).ask().withGraph(mindmapsGraph);
         assertTrue(query.execute());
     }
 
     @Test
-    public void testBuildInsertQueryTransactionLast() {
+    public void testBuildInsertQueryGraphLast() {
         assertFalse(withGraph(mindmapsGraph).match(var().id("a-movie")).ask().execute());
         InsertQuery query = insert(var().id("a-movie").isa("movie")).withGraph(mindmapsGraph);
         query.execute();
@@ -70,7 +70,7 @@ public class QueryBuilderTest {
     }
 
     @Test
-    public void testBuildDeleteQueryTransactionLast() {
+    public void testBuildDeleteQueryGraphLast() {
         // Insert some data to delete
         withGraph(mindmapsGraph).insert(var().id("123").isa("movie")).execute();
 
@@ -83,7 +83,7 @@ public class QueryBuilderTest {
     }
 
     @Test
-    public void testBuildMatchInsertQueryTransactionLast() {
+    public void testBuildMatchInsertQueryGraphLast() {
         assertFalse(withGraph(mindmapsGraph).match(var().id("a-movie")).ask().execute());
         InsertQuery query =
                 match(var("x").id("movie")).
@@ -93,46 +93,46 @@ public class QueryBuilderTest {
     }
 
     @Test
-    public void testErrorExecuteMatchQueryWithoutTransaction() {
+    public void testErrorExecuteMatchQueryWithoutGraph() {
         MatchQuery query = match(var("x").isa("movie"));
         exception.expect(IllegalStateException.class);
-        exception.expectMessage("transaction");
+        exception.expectMessage("graph");
         query.iterator();
     }
 
     @Test
-    public void testErrorExecuteAskQueryWithoutTransaction() {
+    public void testErrorExecuteAskQueryWithoutGraph() {
         exception.expect(IllegalStateException.class);
-        exception.expectMessage("transaction");
+        exception.expectMessage("graph");
         match(var("x").isa("movie")).ask().execute();
     }
 
     @Test
-    public void testErrorExecuteInsertQueryWithoutTransaction() {
+    public void testErrorExecuteInsertQueryWithoutGraph() {
         InsertQuery query = insert(var().id("another-movie").isa("movie"));
         exception.expect(IllegalStateException.class);
-        exception.expectMessage("transaction");
+        exception.expectMessage("graph");
         query.execute();
     }
 
     @Test
-    public void testErrorExecuteDeleteQueryWithoutTransaction() {
+    public void testErrorExecuteDeleteQueryWithoutGraph() {
         exception.expect(IllegalStateException.class);
-        exception.expectMessage("transaction");
+        exception.expectMessage("graph");
         match(var("x").isa("movie")).delete("x").execute();
     }
 
     @Test
-    public void testValidationWhenTransactionProvided() {
+    public void testValidationWhenGraphProvided() {
         MatchQuery query = match(var("x").isa("not-a-thing"));
         exception.expect(IllegalStateException.class);
         query.withGraph(mindmapsGraph).stream();
     }
 
     @Test
-    public void testErrorWhenSpecifyTransactionTwice() {
+    public void testErrorWhenSpecifyGraphTwice() {
         exception.expect(IllegalStateException.class);
-        exception.expectMessage("transaction");
+        exception.expectMessage("graph");
         withGraph(mindmapsGraph).match(var("x").isa("movie")).withGraph(mindmapsGraph).stream();
     }
 }

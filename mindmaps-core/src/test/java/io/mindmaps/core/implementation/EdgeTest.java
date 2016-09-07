@@ -33,30 +33,30 @@ import static org.junit.Assert.assertNull;
 
 public class EdgeTest {
 
-    private AbstractMindmapsGraph mindmapsTransaction;
+    private AbstractMindmapsGraph mindmapsGraph;
     private EntityType entityType;
     private Entity entity;
     private EdgeImpl edge;
 
     @Before
     public void setUp(){
-        mindmapsTransaction = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
-        entityType = mindmapsTransaction.putEntityType("My Entity Type");
-        entity = mindmapsTransaction.putEntity("My entity", entityType);
-        Edge tinkerEdge = mindmapsTransaction.getTinkerTraversal().V().has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), entity.getId()).outE().next();
-        edge = new EdgeImpl(tinkerEdge, mindmapsTransaction);
+        mindmapsGraph = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
+        entityType = mindmapsGraph.putEntityType("My Entity Type");
+        entity = mindmapsGraph.putEntity("My entity", entityType);
+        Edge tinkerEdge = mindmapsGraph.getTinkerTraversal().V().has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), entity.getId()).outE().next();
+        edge = new EdgeImpl(tinkerEdge, mindmapsGraph);
     }
 
     @After
     public void destroyGraphAccessManager() throws Exception {
-        mindmapsTransaction.close();
+        mindmapsGraph.close();
     }
 
     @Test
     public void testEquals(){
-        Entity entity2 = mindmapsTransaction.putEntity("My entity 2", entityType);
-        Edge tinkerEdge = mindmapsTransaction.getTinkerTraversal().V().has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), entity2.getId()).outE().next();
-        EdgeImpl edge2 = new EdgeImpl(tinkerEdge, mindmapsTransaction);
+        Entity entity2 = mindmapsGraph.putEntity("My entity 2", entityType);
+        Edge tinkerEdge = mindmapsGraph.getTinkerTraversal().V().has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), entity2.getId()).outE().next();
+        EdgeImpl edge2 = new EdgeImpl(tinkerEdge, mindmapsGraph);
 
         assertEquals(edge, edge);
         assertNotEquals(edge, edge2);
