@@ -182,7 +182,7 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
                 }
                 break;
             case 3:
-                if(vertex.keys().contains(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID)) {
+                if(vertex.property(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID).isPresent()) {
                     mindmapsGraph.getRelation(vertex.value(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID)).delete();
                     try {
                         mindmapsGraph.commit();
