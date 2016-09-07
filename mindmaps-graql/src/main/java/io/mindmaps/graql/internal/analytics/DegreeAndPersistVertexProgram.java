@@ -206,6 +206,6 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
     @Override
 
     public void workerIterationStart(Memory memory) {
-        mindmapsGraph = MindmapsClient.getGraphBatchLoading(keySpace);
+        mindmapsGraph = MindmapsClient.getGraph(keySpace);
     }
 }
