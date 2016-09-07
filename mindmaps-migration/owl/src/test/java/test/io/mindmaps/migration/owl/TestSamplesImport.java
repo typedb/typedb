@@ -25,8 +25,6 @@ import org.junit.runner.JUnitCore;
 import org.junit.runner.Request;
 import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
-import org.semanticweb.owlapi.apibinding.OWLManager;
-import org.semanticweb.owlapi.model.OWLObjectProperty;
 import org.semanticweb.owlapi.model.OWLOntology;
 
 import io.mindmaps.core.model.Entity;
@@ -49,7 +47,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
         try {
             OWLOntology O = loadOntologyFromResource("/io/mindmaps/migration/owl/samples/Shopping.owl");
             migrator.ontology(O).graph(graph).migrate();
-            migrator.tx().commit();
+            migrator.getGraph().commit();
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
@@ -57,8 +55,8 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
         }
         // Verify
         try {
-            EntityType type = migrator.tx().getEntityType("tMensWear");
-            EntityType sub = migrator.tx().getEntityType("tTshirts");
+            EntityType type = migrator.getGraph().getEntityType("tMensWear");
+            EntityType sub = migrator.getGraph().getEntityType("tTshirts");
             Assert.assertNotNull(type);
             Assert.assertNotNull(sub);
             Assert.assertTrue(type.subTypes().contains(sub));
@@ -75,7 +73,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
         try {
             OWLOntology O = loadOntologyFromResource("/io/mindmaps/migration/owl/samples/shakespeare.owl");         
             migrator.ontology(O).graph(graph).migrate();
-            migrator.tx().commit();
+            migrator.getGraph().commit();
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
@@ -83,21 +81,21 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
         }
         // Verify
         try {
-            EntityType top = migrator.tx().getEntityType("tThing");
-            EntityType type = migrator.tx().getEntityType("tAuthor");
+            EntityType top = migrator.getGraph().getEntityType("tThing");
+            EntityType type = migrator.getGraph().getEntityType("tAuthor");
             Assert.assertNotNull(type);
-            Assert.assertNull(migrator.tx().getEntityType("http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl#Author"));
+            Assert.assertNull(migrator.getGraph().getEntityType("http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl#Author"));
             Assert.assertNotNull(type.superType());
             Assert.assertEquals("tPerson", type.superType().getId());
             Assert.assertEquals(top, type.superType().superType());
-            Assert.assertTrue(top.subTypes().contains(migrator.tx().getEntityType("tPlace")));
+            Assert.assertTrue(top.subTypes().contains(migrator.getGraph().getEntityType("tPlace")));
             Assert.assertNotEquals(0, type.instances().size());
             Assert.assertTrue(
                 type.instances().stream().map(Entity::getId).anyMatch(s -> s.equals("eShakespeare"))
             );
-            final Entity author = migrator.tx().getEntity("eShakespeare");
+            final Entity author = migrator.getGraph().getEntity("eShakespeare");
             Assert.assertNotNull(author);
-            final Entity work = migrator.tx().getEntity("eHamlet");
+            final Entity work = migrator.getGraph().getEntity("eHamlet");
             Assert.assertNotNull(work);
             checkRelation(author, "op-wrote", work);
         }
@@ -113,7 +111,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
         try {
             OWLOntology O = loadOntologyFromResource("/io/mindmaps/migration/owl/samples/Product.owl");
             migrator.ontology(O).graph(graph).migrate();
-            migrator.tx().commit();
+            migrator.getGraph().commit();
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
@@ -121,7 +119,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
         }
         // Verify
         try {
-            EntityType type = migrator.tx().getEntityType("tProduct");          
+            EntityType type = migrator.getGraph().getEntityType("tProduct");
             Assert.assertNotNull(type);
             Optional<Entity> e = findById(type.instances(), "eProduct5");
             Assert.assertTrue(e.isPresent());
@@ -141,7 +139,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
             OWLOntology O = loadOntologyFromResource("/io/mindmaps/migration/owl/samples/test1.owl");
             O.axioms().forEach(System.out::println);            
             migrator.ontology(O).graph(graph).migrate();
-            migrator.tx().commit();
+            migrator.getGraph().commit();
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
@@ -152,24 +150,24 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
             EntityType type = migrator.entityType(owlManager().getOWLDataFactory().getOWLClass(OwlModel.THING.owlname()));          
             Assert.assertNotNull(type);         
             Assert.assertTrue(type.instances().stream().map(Entity::getId).anyMatch(id -> id.equals("eItem1")));
-            Entity item1 = migrator.tx().getEntity("eItem1");
+            Entity item1 = migrator.getGraph().getEntity("eItem1");
             // Item1 name data property is "First Name"
             item1.resources().stream().anyMatch(r -> r.getValue().equals("First Item"));
             item1.resources().stream().forEach(System.out::println);
-            Entity item2 = migrator.tx().getEntity("eItem2");
-            RoleType subjectRole = migrator.tx().getRoleType(migrator.namer().subjectRole("op-related"));
-            RoleType objectRole = migrator.tx().getRoleType(migrator.namer().objectRole("op-related"));
+            Entity item2 = migrator.getGraph().getEntity("eItem2");
+            RoleType subjectRole = migrator.getGraph().getRoleType(migrator.namer().subjectRole("op-related"));
+            RoleType objectRole = migrator.getGraph().getRoleType(migrator.namer().objectRole("op-related"));
             Assert.assertTrue(item2.relations(subjectRole).stream().anyMatch(
                     relation -> item1.equals(relation.rolePlayers().get(objectRole))));
-            RoleType catsubjectRole = migrator.tx().getRoleType(migrator.namer().subjectRole("op-hasCategory"));
-            RoleType catobjectRole = migrator.tx().getRoleType(migrator.namer().objectRole("op-hasCategory"));
-            Assert.assertTrue(catobjectRole.playedByTypes().contains(migrator.tx().getEntityType("tCategory")));
-            Assert.assertTrue(catsubjectRole.playedByTypes().contains(migrator.tx().getEntityType("tThing")));
+            RoleType catsubjectRole = migrator.getGraph().getRoleType(migrator.namer().subjectRole("op-hasCategory"));
+            RoleType catobjectRole = migrator.getGraph().getRoleType(migrator.namer().objectRole("op-hasCategory"));
+            Assert.assertTrue(catobjectRole.playedByTypes().contains(migrator.getGraph().getEntityType("tCategory")));
+            Assert.assertTrue(catsubjectRole.playedByTypes().contains(migrator.getGraph().getEntityType("tThing")));
             //Assert.assertFalse(catobjectRole.playedByTypes().contains(migrator.graph().getEntityType("Thing")));
-            Entity category2 = migrator.tx().getEntity("eCategory2");
+            Entity category2 = migrator.getGraph().getEntity("eCategory2");
             Assert.assertTrue(category2.relations(catobjectRole).stream().anyMatch(
                     relation -> item1.equals(relation.rolePlayers().get(catsubjectRole))));
-            Entity category1 = migrator.tx().getEntity("eCategory1");
+            Entity category1 = migrator.getGraph().getEntity("eCategory1");
             category1.resources().forEach(System.out::println);
             // annotation assertion axioms don't seem to be visited for some reason...need to troubleshoot seems like 
             // OWLAPI issue
