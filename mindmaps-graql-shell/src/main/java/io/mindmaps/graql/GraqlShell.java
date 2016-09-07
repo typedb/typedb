@@ -18,12 +18,21 @@
 
 package io.mindmaps.graql;
 
-import io.mindmaps.graql.internal.shell.*;
+import io.mindmaps.graql.internal.shell.Version;
+import io.mindmaps.graql.internal.shell.ErrorMessage;
+import io.mindmaps.graql.internal.shell.GraQLCompleter;
+import io.mindmaps.graql.internal.shell.GraqlSignalHandler;
+import io.mindmaps.graql.internal.shell.ShellCommandCompleter;
 import jline.console.ConsoleReader;
 import jline.console.completer.AggregateCompleter;
 import jline.console.history.FileHistory;
 import mjson.Json;
-import org.apache.commons.cli.*;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
@@ -47,7 +56,17 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import static io.mindmaps.constants.RESTUtil.RemoteShell.*;
+import static io.mindmaps.constants.RESTUtil.RemoteShell.ACTION;
+import static io.mindmaps.constants.RESTUtil.RemoteShell.ACTION_AUTOCOMPLETE;
+import static io.mindmaps.constants.RESTUtil.RemoteShell.ACTION_COMMIT;
+import static io.mindmaps.constants.RESTUtil.RemoteShell.ACTION_NAMESPACE;
+import static io.mindmaps.constants.RESTUtil.RemoteShell.ACTION_QUERY;
+import static io.mindmaps.constants.RESTUtil.RemoteShell.ACTION_QUERY_END;
+import static io.mindmaps.constants.RESTUtil.RemoteShell.AUTOCOMPLETE_CURSOR;
+import static io.mindmaps.constants.RESTUtil.RemoteShell.ERROR;
+import static io.mindmaps.constants.RESTUtil.RemoteShell.NAMESPACE;
+import static io.mindmaps.constants.RESTUtil.RemoteShell.QUERY;
+import static io.mindmaps.constants.RESTUtil.RemoteShell.QUERY_LINES;
 import static io.mindmaps.constants.RESTUtil.WebPath.REMOTE_SHELL_URI;
 
 /**

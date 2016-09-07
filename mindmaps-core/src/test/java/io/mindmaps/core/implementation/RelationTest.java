@@ -41,7 +41,7 @@ import static org.junit.Assert.*;
 
 public class RelationTest {
 
-    private MindmapsTransactionImpl mindmapsGraph;
+    private AbstractMindmapsGraph mindmapsGraph;
 
     private RelationImpl relation;
     private RoleTypeImpl role1;
@@ -61,7 +61,7 @@ public class RelationTest {
 
     @Before
     public void buildGraph(){
-        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
+        mindmapsGraph = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
         mindmapsGraph.initialiseMetaConcepts();
 
         type = mindmapsGraph.putEntityType("Main concept Type");

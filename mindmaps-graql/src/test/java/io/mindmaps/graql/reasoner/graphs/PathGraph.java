@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.reasoner.graphs;
 
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.model.EntityType;
 import io.mindmaps.core.model.RelationType;
 import io.mindmaps.core.model.RoleType;
@@ -27,9 +27,9 @@ import static com.google.common.math.IntMath.pow;
 
 public class PathGraph extends GenericGraph {
 
-    public static MindmapsTransaction getTransaction(int n, int children) {
+    public static MindmapsGraph getGraph(int n, int children) {
         final String gqlFile = "path-test.gql";
-        getTransaction(gqlFile);
+        getGraph(gqlFile);
         buildExtensionalDB(n, children);
         commit();
         return mindmaps;

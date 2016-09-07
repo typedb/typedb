@@ -19,7 +19,7 @@
 package io.mindmaps.graql.internal.reasoner.container;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.model.RelationType;
 import io.mindmaps.core.model.RoleType;
@@ -43,7 +43,7 @@ import static io.mindmaps.graql.internal.reasoner.Utility.computeRoleCombination
 
 public class  Query {
 
-    private final MindmapsTransaction graph;
+    private final MindmapsGraph graph;
 
     private final Set<Atomic> atomSet;
     private final Map<Type, Set<Atomic>> typeAtomMap;
@@ -53,7 +53,7 @@ public class  Query {
     private final Set<String> selectVars;
     private final Conjunction<PatternAdmin> pattern;
 
-    public Query(String query, MindmapsTransaction transaction) {
+    public Query(String query, MindmapsGraph transaction) {
         this.graph = transaction;
         QueryParser qp = QueryParser.create(graph);
         MatchQueryDefault matchQuery = qp.parseMatchQuery(query).getMatchQuery();
@@ -64,7 +64,7 @@ public class  Query {
         this.typeAtomMap = getTypeAtomMap(atomSet);
     }
 
-    public Query(MatchQueryDefault query, MindmapsTransaction transaction) {
+    public Query(MatchQueryDefault query, MindmapsGraph transaction) {
         this.graph = transaction;
 
         this.pattern = query.admin().getPattern();
@@ -99,7 +99,7 @@ public class  Query {
     public Query(Atomic atom) {
         if (atom.getParentQuery() == null)
             throw new IllegalArgumentException(ErrorMessage.PARENT_MISSING.getMessage(atom.toString()));
-        this.graph = atom.getParentQuery().getTransaction();
+        this.graph = atom.getParentQuery().getGraph();
         this.pattern = new ConjunctionImpl<>(Sets.newHashSet());
         this.selectVars = Sets.newHashSet(atom.getMatchQuery(graph).admin().getSelectedNames());
 
@@ -114,7 +114,7 @@ public class  Query {
     @Override
     public String toString() { return getMatchQuery().toString();}
 
-    public MindmapsTransaction getTransaction(){ return graph;}
+    public MindmapsGraph getGraph(){ return graph;}
     private Atomic getParentAtom(){ return parentAtom;}
     private Query getParentQuery(){
         return parentAtom != null? parentAtom.getParentQuery() : null;
@@ -308,9 +308,9 @@ public class  Query {
 
     public MatchQueryDefault getMatchQuery() {
         if (selectVars.isEmpty())
-            return Graql.match(pattern).select(getVarSet()).withTransaction(graph);
+            return Graql.match(pattern).select(getVarSet()).withGraph(graph);
         else
-            return Graql.match(pattern).select(selectVars).withTransaction(graph);
+            return Graql.match(pattern).select(selectVars).withGraph(graph);
     }
 
     public MatchQueryDefault getExpandedMatchQuery() {
@@ -336,7 +336,7 @@ public class  Query {
                 }
             }
         });
-        QueryBuilder qb = Graql.withTransaction(graph);
+        QueryBuilder qb = Graql.withGraph(graph);
 
         Set<Conjunction<VarAdmin>> conjs = new HashSet<>();
         conjunctions.forEach(conj -> conjs.add(conj.getConjunction()));
@@ -470,7 +470,7 @@ public class  Query {
 
     private void materialize() {
         if (!getMatchQuery().ask().execute()) {
-            InsertQuery insert = Graql.insert(getPattern().getVars()).withTransaction(graph);
+            InsertQuery insert = Graql.insert(getPattern().getVars()).withGraph(graph);
             insert.execute();
         }
     }

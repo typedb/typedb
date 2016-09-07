@@ -18,9 +18,8 @@
 
 package io.mindmaps.example;
 
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.implementation.AbstractMindmapsGraph;
 import io.mindmaps.core.model.Entity;
 import io.mindmaps.core.model.EntityType;
@@ -37,7 +36,6 @@ import org.junit.rules.ExpectedException;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Collection;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
@@ -49,23 +47,22 @@ import static org.hamcrest.CoreMatchers.containsString;
 public class MovieGraphFactoryTest {
 
     private static Graph graph;
-    private static MindmapsTransaction dao;
+    private static MindmapsGraph mindmapsGraph;
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @BeforeClass
     public static void setUp() throws IOException{
-        AbstractMindmapsGraph mindmapsGraph = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
+        mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
-        dao = mindmapsGraph.getTransaction();
-        graph = mindmapsGraph.getGraph();
+        graph = ((AbstractMindmapsGraph)mindmapsGraph).getTinkerPopGraph();
     }
 
     @Test
     public void failToLoad(){
         MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
-        mindmapsGraph.getTransaction().putRelationType("fake");
+        mindmapsGraph.putRelationType("fake");
 
         expectedException.expect(RuntimeException.class);
         expectedException.expectMessage(allOf(
@@ -99,27 +96,27 @@ public class MovieGraphFactoryTest {
 
     @Test
     public void testGraphHasMovie() {
-        EntityType movie = dao.getEntityType("movie");
-        assertTrue(movie.superType().equals(dao.getEntityType("production")));
+        EntityType movie = mindmapsGraph.getEntityType("movie");
+        assertTrue(movie.superType().equals(mindmapsGraph.getEntityType("production")));
     }
 
     @Test
     public void testGraphHasTvShow() {
-        EntityType tvShow = dao.getEntityType("tv-show");
-        assertTrue(tvShow.superType().equals(dao.getEntityType("production")));
+        EntityType tvShow = mindmapsGraph.getEntityType("tv-show");
+        assertTrue(tvShow.superType().equals(mindmapsGraph.getEntityType("production")));
     }
 
     @Test
     public void testGodfatherHasResource() {
-        ResourceType tmdbVoteCount = dao.getResourceType("tmdb-vote-count");
-        Entity godfather = dao.getEntity("Godfather");
+        ResourceType tmdbVoteCount = mindmapsGraph.getResourceType("tmdb-vote-count");
+        Entity godfather = mindmapsGraph.getEntity("Godfather");
         Stream<Resource<?>> resources = godfather.resources().stream();
         assertTrue(resources.anyMatch(r -> r.type().equals(tmdbVoteCount) && r.getValue().equals(1000L)));
     }
 
     @Test
     public void testRulesExists() {
-        RuleType ruleType = dao.getRuleType("a-rule-type");
+        RuleType ruleType = mindmapsGraph.getRuleType("a-rule-type");
         assertEquals(2, ruleType.instances().size());
     }
 }

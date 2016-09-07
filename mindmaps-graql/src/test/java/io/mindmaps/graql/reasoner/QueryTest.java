@@ -19,7 +19,7 @@
 package io.mindmaps.graql.reasoner;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.model.Rule;
 import io.mindmaps.graql.*;
 import io.mindmaps.graql.admin.VarAdmin;
@@ -37,16 +37,16 @@ import static org.junit.Assert.assertTrue;
 
 public class QueryTest {
 
-    private static MindmapsTransaction graph;
+    private static MindmapsGraph graph;
     private static QueryParser qp;
     private static QueryBuilder qb;
 
     @BeforeClass
     public static void setUpClass() {
 
-        graph = SNBGraph.getTransaction();
+        graph = SNBGraph.getGraph();
         qp = QueryParser.create(graph);
-        qb = Graql.withTransaction(graph);
+        qb = Graql.withGraph(graph);
     }
 
     @Test

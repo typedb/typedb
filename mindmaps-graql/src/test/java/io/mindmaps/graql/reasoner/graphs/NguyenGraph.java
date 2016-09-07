@@ -18,16 +18,16 @@
 
 package io.mindmaps.graql.reasoner.graphs;
 
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.model.EntityType;
 import io.mindmaps.core.model.RelationType;
 import io.mindmaps.core.model.RoleType;
 
 public class NguyenGraph extends GenericGraph{
 
-    public static MindmapsTransaction getTransaction(int n) {
+    public static MindmapsGraph getGraph(int n) {
         final String gqlFile = "nguyen-test.gql";
-        getTransaction(gqlFile);
+        getGraph(gqlFile);
         buildExtensionalDB(n);
         commit();
         return mindmaps;

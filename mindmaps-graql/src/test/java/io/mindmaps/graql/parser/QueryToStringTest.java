@@ -18,10 +18,8 @@
 
 package io.mindmaps.graql.parser;
 
-import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.Data;
-import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.MatchQueryDefault;
@@ -42,9 +40,8 @@ public class QueryToStringTest {
     public void setUp() {
         MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
-        MindmapsTransaction transaction = mindmapsGraph.getTransaction();
-        qb = withTransaction(transaction);
-        qp = QueryParser.create(transaction);
+        qb = withGraph(mindmapsGraph);
+        qp = QueryParser.create(mindmapsGraph);
     }
 
     @Test

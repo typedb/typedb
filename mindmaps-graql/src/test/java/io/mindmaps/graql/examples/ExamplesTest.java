@@ -18,11 +18,11 @@
 
 package io.mindmaps.graql.examples;
 
-import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
-import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.MatchQueryDefault;
+import io.mindmaps.graql.QueryParser;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -37,7 +37,7 @@ public class ExamplesTest {
     @Before
     public void setUp() {
         MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
-        qp = QueryParser.create(graph.getTransaction());
+        qp = QueryParser.create(graph);
     }
 
     @Test

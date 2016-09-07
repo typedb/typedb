@@ -165,7 +165,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
             RoleType catobjectRole = migrator.tx().getRoleType(migrator.namer().objectRole("op-hasCategory"));
             Assert.assertTrue(catobjectRole.playedByTypes().contains(migrator.tx().getEntityType("tCategory")));
             Assert.assertTrue(catsubjectRole.playedByTypes().contains(migrator.tx().getEntityType("tThing")));
-            //Assert.assertFalse(catobjectRole.playedByTypes().contains(migrator.tx().getEntityType("Thing")));
+            //Assert.assertFalse(catobjectRole.playedByTypes().contains(migrator.graph().getEntityType("Thing")));
             Entity category2 = migrator.tx().getEntity("eCategory2");
             Assert.assertTrue(category2.relations(catobjectRole).stream().anyMatch(
                     relation -> item1.equals(relation.rolePlayers().get(catsubjectRole))));

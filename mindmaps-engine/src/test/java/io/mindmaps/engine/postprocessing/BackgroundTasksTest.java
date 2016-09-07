@@ -20,16 +20,18 @@ package io.mindmaps.engine.postprocessing;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import io.mindmaps.MindmapsGraph;
+import io.mindmaps.constants.DataType;
+import io.mindmaps.core.implementation.AbstractMindmapsGraph;
+import io.mindmaps.core.model.EntityType;
+import io.mindmaps.core.model.Instance;
+import io.mindmaps.core.model.Relation;
+import io.mindmaps.core.model.RelationType;
+import io.mindmaps.core.model.RoleType;
 import io.mindmaps.engine.controller.CommitLogController;
 import io.mindmaps.engine.controller.GraphFactoryController;
-import io.mindmaps.constants.DataType;
-import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.MindmapsTransaction;
-import io.mindmaps.core.implementation.AbstractMindmapsGraph;
-import io.mindmaps.core.implementation.MindmapsTransactionImpl;
-import io.mindmaps.core.model.*;
-import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.engine.util.ConfigProperties;
+import io.mindmaps.factory.MindmapsClient;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -73,17 +75,16 @@ public class BackgroundTasksTest {
     @Test
     public void testMergingCastings() throws Exception {
         //Create Scenario
-        MindmapsTransaction mindmapsTransaction = mindmapsGraph.getTransaction();
-        RoleType roleType1 = mindmapsTransaction.putRoleType("role 1");
-        RoleType roleType2 = mindmapsTransaction.putRoleType("role 2");
-        RelationType relationType = mindmapsTransaction.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
-        EntityType thing = mindmapsTransaction.putEntityType("thing").playsRole(roleType1).playsRole(roleType2);
-        Instance instance1 = mindmapsTransaction.putEntity("1", thing);
-        Instance instance2 = mindmapsTransaction.putEntity("2", thing);
-        Instance instance3 = mindmapsTransaction.putEntity("3", thing);
-        Instance instance4 = mindmapsTransaction.putEntity("4", thing);
+        RoleType roleType1 = mindmapsGraph.putRoleType("role 1");
+        RoleType roleType2 = mindmapsGraph.putRoleType("role 2");
+        RelationType relationType = mindmapsGraph.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
+        EntityType thing = mindmapsGraph.putEntityType("thing").playsRole(roleType1).playsRole(roleType2);
+        Instance instance1 = mindmapsGraph.putEntity("1", thing);
+        Instance instance2 = mindmapsGraph.putEntity("2", thing);
+        Instance instance3 = mindmapsGraph.putEntity("3", thing);
+        Instance instance4 = mindmapsGraph.putEntity("4", thing);
 
-        mindmapsTransaction.addRelation(relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
+        mindmapsGraph.addRelation(relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
 
         //Record Needed Ids
         String relationTypeId = relationType.getId();
@@ -93,26 +94,26 @@ public class BackgroundTasksTest {
         String otherInstanceId3 = instance3.getId();
         String otherInstanceId4 = instance4.getId();
 
-        mindmapsTransaction.commit();
+        mindmapsGraph.commit();
 
         //Check Number of castings is as expected
-        assertEquals(2, ((AbstractMindmapsGraph) mindmapsGraph).getGraph().traversal().V().hasLabel(DataType.BaseType.CASTING.name()).toList().size());
+        assertEquals(2, ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph().traversal().V().hasLabel(DataType.BaseType.CASTING.name()).toList().size());
 
         //Break The Graph With Fake Castings
         buildDuplicateCasting(relationTypeId, mainRoleTypeId, mainInstanceId, otherRoleTypeId, otherInstanceId3);
         buildDuplicateCasting(relationTypeId, mainRoleTypeId, mainInstanceId, otherRoleTypeId, otherInstanceId4);
 
         //Check the graph is broken
-        assertEquals(6, ((AbstractMindmapsGraph) mindmapsGraph).getGraph().traversal().V().hasLabel(DataType.BaseType.CASTING.name()).toList().size());
+        assertEquals(6, ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph().traversal().V().hasLabel(DataType.BaseType.CASTING.name()).toList().size());
 
         //Now fix everything
         backgroundTasks.forcePostprocessing();
 
         //Check it's all fixed
-        assertEquals(4, ((AbstractMindmapsGraph) mindmapsGraph).getGraph().traversal().V().hasLabel(DataType.BaseType.CASTING.name()).toList().size());
+        assertEquals(4, ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph().traversal().V().hasLabel(DataType.BaseType.CASTING.name()).toList().size());
     }
     private void buildDuplicateCasting(String relationTypeId, String mainRoleTypeId, String mainInstanceId, String otherRoleTypeId, String otherInstanceId) throws Exception {
-        MindmapsTransactionImpl mindmapsTransaction = (MindmapsTransactionImpl) mindmapsGraph.getTransaction();
+        AbstractMindmapsGraph mindmapsTransaction = (AbstractMindmapsGraph) mindmapsGraph;
 
         //Get Needed Mindmaps Objects
         RelationType relationType = mindmapsTransaction.getRelationType(relationTypeId);
@@ -123,7 +124,7 @@ public class BackgroundTasksTest {
 
         mindmapsTransaction.commit();
 
-        Graph rawGraph = ((AbstractMindmapsGraph) mindmapsGraph).getGraph();
+        Graph rawGraph = ((AbstractMindmapsGraph) mindmapsGraph).getTinkerPopGraph();
 
         //Get Needed Vertices
         Vertex mainRoleTypeVertex = rawGraph.traversal().V().

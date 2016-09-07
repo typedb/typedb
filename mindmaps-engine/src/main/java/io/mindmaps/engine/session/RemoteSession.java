@@ -18,7 +18,7 @@
 
 package io.mindmaps.engine.session;
 
-import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.factory.GraphFactory;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
@@ -31,7 +31,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import static io.mindmaps.constants.RESTUtil.RemoteShell.*;
+import static io.mindmaps.constants.RESTUtil.RemoteShell.ACTION;
+import static io.mindmaps.constants.RESTUtil.RemoteShell.ACTION_AUTOCOMPLETE;
+import static io.mindmaps.constants.RESTUtil.RemoteShell.ACTION_COMMIT;
+import static io.mindmaps.constants.RESTUtil.RemoteShell.ACTION_NAMESPACE;
+import static io.mindmaps.constants.RESTUtil.RemoteShell.ACTION_QUERY;
+import static io.mindmaps.constants.RESTUtil.RemoteShell.ACTION_QUERY_END;
+import static io.mindmaps.constants.RESTUtil.RemoteShell.NAMESPACE;
 
 /**
  * Web socket for running a Graql shell

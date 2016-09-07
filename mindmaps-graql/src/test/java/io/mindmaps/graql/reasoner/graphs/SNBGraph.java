@@ -19,8 +19,7 @@
 package io.mindmaps.graql.reasoner.graphs;
 
 
-import io.mindmaps.MindmapsTransaction;
-import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.QueryParser;
@@ -33,11 +32,10 @@ import java.util.List;
 
 public class SNBGraph {
 
-    private static MindmapsTransaction mindmaps;
+    private static MindmapsGraph mindmaps;
 
-    public static MindmapsTransaction getTransaction() {
-        MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
-        mindmaps = graph.getTransaction();
+    public static MindmapsGraph getGraph() {
+        mindmaps = MindmapsTestGraphFactory.newEmptyGraph();
         buildGraph();
 
         try {

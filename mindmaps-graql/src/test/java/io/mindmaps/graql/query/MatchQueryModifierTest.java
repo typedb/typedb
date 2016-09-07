@@ -19,9 +19,8 @@
 package io.mindmaps.graql.query;
 
 import com.google.common.collect.Lists;
-import io.mindmaps.MindmapsTransaction;
-import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.implementation.MindmapsTransactionImpl;
+import io.mindmaps.MindmapsGraph;
+import io.mindmaps.core.implementation.AbstractMindmapsGraph;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
@@ -32,29 +31,37 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.mindmaps.constants.DataType.ConceptPropertyUnique.ITEM_IDENTIFIER;
-import static io.mindmaps.graql.Graql.*;
-import static org.junit.Assert.*;
+import static io.mindmaps.graql.Graql.neq;
+import static io.mindmaps.graql.Graql.or;
+import static io.mindmaps.graql.Graql.var;
+import static io.mindmaps.graql.Graql.withGraph;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class MatchQueryModifierTest {
 
-    private static MindmapsTransaction transaction;
+    private static MindmapsGraph mindmapsGraph;
     private QueryBuilder qb;
 
     @BeforeClass
     public static void setUpClass() {
-        MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
+        mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
-        transaction = mindmapsGraph.getTransaction();
     }
 
     @Before
     public void setUp() {
-        qb = withTransaction(transaction);
+        qb = withGraph(mindmapsGraph);
     }
 
     @Test
@@ -180,7 +187,7 @@ public class MatchQueryModifierTest {
     }
 
     private void assertResultsOrderedById(MatchQueryDefault query, String var, boolean asc) {
-        GraphTraversalSource g = ((MindmapsTransactionImpl) transaction).getTinkerTraversal();
+        GraphTraversalSource g = ((AbstractMindmapsGraph) mindmapsGraph).getTinkerTraversal();
         Stream<String> ids = query.stream().map(results -> results.get(var)).map(
                 result -> (String) g.V().has("ITEM_IDENTIFIER", result.getId()).values(ITEM_IDENTIFIER.name()).next()
         );

@@ -21,15 +21,13 @@ package io.mindmaps.engine.controller;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.response.Response;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.RESTUtil;
-import io.mindmaps.core.MindmapsGraph;
 import io.mindmaps.core.model.EntityType;
 import io.mindmaps.engine.Util;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
 import org.json.JSONObject;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -50,10 +48,9 @@ public class VisualiserControllerTest {
         logger.setLevel(Level.INFO);
         graphName="special-test-graph";
         MindmapsGraph graph = GraphFactory.getInstance().getGraph(graphName);
-        MindmapsTransaction transaction = graph.getTransaction();
-        EntityType man = transaction.putEntityType("Man");
-        transaction.putEntity("actor-123", man);
-        transaction.commit();
+        EntityType man = graph.putEntityType("Man");
+        graph.putEntity("actor-123", man);
+        graph.commit();
         Util.setRestAssuredBaseURI(ConfigProperties.getInstance().getProperties());
     }
 
@@ -75,10 +72,5 @@ public class VisualiserControllerTest {
     @Test
     public void notExistingIDInDefaultGraph() {
         get("/graph/concept/actor-123").then().statusCode(404).extract().response().andReturn();
-    }
-
-    @After
-    public void cleanGraph(){
-        GraphFactory.getInstance().getGraph(graphName).clear();
     }
 }

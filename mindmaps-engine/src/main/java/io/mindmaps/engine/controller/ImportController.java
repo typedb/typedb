@@ -18,7 +18,7 @@
 
 package io.mindmaps.engine.controller;
 
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.RESTUtil;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.engine.loader.Loader;
@@ -36,7 +36,6 @@ import org.json.JSONObject;
 import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
-import spark.Route;
 
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -204,13 +203,13 @@ public class ImportController {
 
     void importOntologyFromFile(String ontologyFile, String graphName) throws IOException, MindmapsValidationException {
 
-        MindmapsTransaction transaction = GraphFactory.getInstance().getGraphBatchLoading(graphName).getTransaction();
+        MindmapsGraph transaction = GraphFactory.getInstance().getGraphBatchLoading(graphName);
 
         LOG.info("Loading new ontology .. ");
 
         List<String> lines = Files.readAllLines(Paths.get(ontologyFile), StandardCharsets.UTF_8);
         String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-        QueryParser.create().parseInsertQuery(query).withTransaction(transaction).execute();
+        QueryParser.create().parseInsertQuery(query).withGraph(transaction).execute();
         transaction.commit();
 
         LOG.info("Ontology loaded. ");

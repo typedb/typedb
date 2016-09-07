@@ -32,7 +32,7 @@ import java.util.Set;
  * A Relation Type is an ontological element used to model how entity types relate to one another.
  */
 class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
-    RelationTypeImpl(Vertex v, MindmapsTransactionImpl mindmapsGraph) {
+    RelationTypeImpl(Vertex v, AbstractMindmapsGraph mindmapsGraph) {
         super(v, mindmapsGraph);
     }
 
@@ -43,7 +43,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     @Override
     public Collection<RoleType> hasRoles() {
         Set<RoleType> roleTypes = new HashSet<>();
-        getOutgoingNeighbours(DataType.EdgeLabel.HAS_ROLE).forEach(role -> roleTypes.add(getMindmapsTransaction().getElementFactory().buildRoleType(role)));
+        getOutgoingNeighbours(DataType.EdgeLabel.HAS_ROLE).forEach(role -> roleTypes.add(getMindmapsGraph().getElementFactory().buildRoleType(role)));
         return roleTypes;
     }
 
@@ -54,7 +54,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
      */
     @Override
     public RelationType hasRole(RoleType roleType) {
-        putEdge(getMindmapsTransaction().getElementFactory().buildRoleType(roleType), DataType.EdgeLabel.HAS_ROLE);
+        putEdge(getMindmapsGraph().getElementFactory().buildRoleType(roleType), DataType.EdgeLabel.HAS_ROLE);
         return this;
     }
 
@@ -65,7 +65,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
      */
     @Override
     public RelationType deleteHasRole(RoleType roleType) {
-        deleteEdgeTo(DataType.EdgeLabel.HAS_ROLE, getMindmapsTransaction().getElementFactory().buildRoleType(roleType));
+        deleteEdgeTo(DataType.EdgeLabel.HAS_ROLE, getMindmapsGraph().getElementFactory().buildRoleType(roleType));
         //Add castings of roleType to make sure relations are still valid
         ((RoleTypeImpl) roleType).castings().forEach(casting -> mindmapsTransaction.getConceptLog().putConcept(casting));
         return this;

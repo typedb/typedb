@@ -19,7 +19,7 @@
 package io.mindmaps.graql;
 
 import com.google.common.collect.ImmutableSet;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.admin.AdminConverter;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.query.ConjunctionImpl;
@@ -33,20 +33,20 @@ import java.util.Optional;
 /**
  * A starting point for creating queries.
  * <p>
- * A {@code QueryBuiler} is constructed with a {@code MindmapsTransaction}. All operations are performed using this
+ * A {@code QueryBuiler} is constructed with a {@code MindmapsGraph}. All operations are performed using this
  * transaction. The user must explicitly commit or rollback changes after executing queries.
  * <p>
  * {@code QueryBuilder} also provides static methods for creating {@code Vars}.
  */
 public class QueryBuilder {
 
-    private final Optional<MindmapsTransaction> transaction;
+    private final Optional<MindmapsGraph> transaction;
 
     QueryBuilder() {
         this.transaction = Optional.empty();
     }
 
-    QueryBuilder(MindmapsTransaction transaction) {
+    QueryBuilder(MindmapsGraph transaction) {
         this.transaction = Optional.of(transaction);
     }
 
@@ -64,7 +64,7 @@ public class QueryBuilder {
      */
     public MatchQueryDefault match(Collection<? extends Pattern> patterns) {
         MatchQueryBase query = new MatchQueryBase(new ConjunctionImpl<>(AdminConverter.getPatternAdmins(patterns)));
-        return transaction.map(query::withTransaction).orElse(query);
+        return transaction.map(query::withGraph).orElse(query);
     }
 
     /**

@@ -20,7 +20,7 @@
 package io.mindmaps.graql;
 
 import com.google.common.collect.ImmutableSet;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.admin.AdminConverter;
 import io.mindmaps.graql.admin.PatternAdmin;
@@ -39,7 +39,7 @@ public class Graql {
     /**
      * @return a query builder without a specified transaction
      */
-    public static QueryBuilder withoutTransaction() {
+    public static QueryBuilder withoutGraph() {
         return new QueryBuilder();
     }
 
@@ -47,7 +47,7 @@ public class Graql {
      * @param transaction  the transaction to operate the query on
      * @return a query builder using the specified transaction
      */
-    public static QueryBuilder withTransaction(MindmapsTransaction transaction) {
+    public static QueryBuilder withGraph(MindmapsGraph transaction) {
         return new QueryBuilder(transaction);
     }
 
@@ -56,7 +56,7 @@ public class Graql {
      * @return a match query that will find matches of the given patterns
      */
     public static MatchQueryDefault match(Pattern... patterns) {
-        return withoutTransaction().match(patterns);
+        return withoutGraph().match(patterns);
     }
 
     /**
@@ -64,7 +64,7 @@ public class Graql {
      * @return a match query that will find matches of the given patterns
      */
     public static MatchQueryDefault match(Collection<? extends Pattern> patterns) {
-        return withoutTransaction().match(patterns);
+        return withoutGraph().match(patterns);
     }
 
     /**
@@ -72,7 +72,7 @@ public class Graql {
      * @return an insert query that will insert the given variables into the graph
      */
     public static InsertQuery insert(Var... vars) {
-        return withoutTransaction().insert(vars);
+        return withoutGraph().insert(vars);
     }
 
     /**
@@ -80,7 +80,7 @@ public class Graql {
      * @return an insert query that will insert the given variables into the graph
      */
     public static InsertQuery insert(Collection<? extends Var> vars) {
-        return withoutTransaction().insert(vars);
+        return withoutGraph().insert(vars);
     }
 
 

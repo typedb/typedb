@@ -79,7 +79,7 @@ public class ImportControllerTest {
             e.printStackTrace();
         }
 
-         Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getTransaction().getConcept("X506965727265204162656c").getId());
+         Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getConcept("X506965727265204162656c").getId());
          GraphFactory.getInstance().getGraphBatchLoading(graphName).clear();
     }
 
@@ -109,7 +109,7 @@ public class ImportControllerTest {
             e.printStackTrace();
         }
 
-        Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(customGraph).getTransaction().getConcept("X506965727265204162656c").getId());
+        Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(customGraph).getConcept("X506965727265204162656c").getId());
         GraphFactory.getInstance().getGraphBatchLoading(customGraph).clear();
     }
 

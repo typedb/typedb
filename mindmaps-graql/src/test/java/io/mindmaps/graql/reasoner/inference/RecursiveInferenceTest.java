@@ -19,7 +19,7 @@
 package io.mindmaps.graql.reasoner.inference;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.MatchQueryDefault;
 import io.mindmaps.graql.QueryParser;
@@ -32,7 +32,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static io.mindmaps.graql.internal.reasoner.Utility.printAnswers;
 import static org.junit.Assert.assertEquals;
 
 public class RecursiveInferenceTest {
@@ -41,7 +40,7 @@ public class RecursiveInferenceTest {
     /**from Vieille - Recursive Axioms in Deductive Databases p. 192*/
     @Test
     public void testTransitivity() {
-        MindmapsTransaction graph = GenericGraph.getTransaction("transitivity-test.gql");
+        MindmapsGraph graph = GenericGraph.getGraph("transitivity-test.gql");
         QueryParser qp = QueryParser.create(graph);
         Reasoner reasoner = new Reasoner(graph);
 
@@ -57,7 +56,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testRecursivity()
     {
-        MindmapsTransaction graph = GenericGraph.getTransaction("recursivity-test.gql");
+        MindmapsGraph graph = GenericGraph.getGraph("recursivity-test.gql");
         QueryParser qp = QueryParser.create(graph);
         Reasoner reasoner = new Reasoner(graph);
     }
@@ -66,7 +65,7 @@ public class RecursiveInferenceTest {
     /**from Bancilhon - An Amateur's Introduction to Recursive Query Processing Strategies p. 25*/
     @Test
     public void testAncestor() {
-        MindmapsTransaction graph = GenericGraph.getTransaction("ancestor-test.gql");
+        MindmapsGraph graph = GenericGraph.getGraph("ancestor-test.gql");
         QueryParser qp = QueryParser.create(graph);
         Reasoner reasoner = new Reasoner(graph);
 
@@ -82,7 +81,7 @@ public class RecursiveInferenceTest {
     /**as above but both directions*/
     @Test
     public void testAncestor2() {
-        MindmapsTransaction graph = GenericGraph.getTransaction("ancestor-test.gql");
+        MindmapsGraph graph = GenericGraph.getGraph("ancestor-test.gql");
         QueryParser qp = QueryParser.create(graph);
         Reasoner reasoner = new Reasoner(graph);
 
@@ -98,7 +97,7 @@ public class RecursiveInferenceTest {
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
     @Test
     public void testAncestorFriend() {
-        MindmapsTransaction graph = GenericGraph.getTransaction("ancestor-friend-test.gql");
+        MindmapsGraph graph = GenericGraph.getGraph("ancestor-friend-test.gql");
         QueryParser qp = QueryParser.create(graph);
         Reasoner reasoner = new Reasoner(graph);
 
@@ -114,7 +113,7 @@ public class RecursiveInferenceTest {
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
     @Test
     public void testAncestorFriend2() {
-        MindmapsTransaction graph = GenericGraph.getTransaction("ancestor-friend-test.gql");
+        MindmapsGraph graph = GenericGraph.getGraph("ancestor-friend-test.gql");
         QueryParser qp = QueryParser.create(graph);
         Reasoner reasoner = new Reasoner(graph);
 
@@ -132,7 +131,7 @@ public class RecursiveInferenceTest {
     @Test
     @Ignore
     public void testSameGeneration(){
-        MindmapsTransaction graph = GenericGraph.getTransaction("recursivity-sg-test.gql");
+        MindmapsGraph graph = GenericGraph.getGraph("recursivity-sg-test.gql");
         QueryParser qp = QueryParser.create(graph);
         Reasoner reasoner = new Reasoner(graph);
 
@@ -147,7 +146,7 @@ public class RecursiveInferenceTest {
     /**from Vieille - Recursive Query Processing: The power of logic p. 18*/
     @Test
     public void testTC() {
-        MindmapsTransaction graph = GenericGraph.getTransaction("recursivity-tc-test.gql");
+        MindmapsGraph graph = GenericGraph.getGraph("recursivity-tc-test.gql");
         QueryParser qp = QueryParser.create(graph);
         Reasoner reasoner = new Reasoner(graph);
 
@@ -161,7 +160,7 @@ public class RecursiveInferenceTest {
 
     @Test
     public void testReachability(){
-        MindmapsTransaction graph = GenericGraph.getTransaction("reachability-test.gql");
+        MindmapsGraph graph = GenericGraph.getGraph("reachability-test.gql");
         QueryParser qp = QueryParser.create(graph);
         Reasoner reasoner = new Reasoner(graph);
 
@@ -184,7 +183,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testPath(){
         final int N = 3;
-        MindmapsTransaction graph = PathGraph.getTransaction(N, 3);
+        MindmapsGraph graph = PathGraph.getGraph(N, 3);
         QueryParser qp = QueryParser.create(graph);
         Reasoner reasoner = new Reasoner(graph);
 
@@ -205,7 +204,7 @@ public class RecursiveInferenceTest {
     /**modified test 6.10 from Cao p. 82*/
     public void testPathII(){
         final int N = 5;
-        MindmapsTransaction graph = PathGraphII.getTransaction(N, N);
+        MindmapsGraph graph = PathGraphII.getGraph(N, N);
         QueryParser qp = QueryParser.create(graph);
         Reasoner reasoner = new Reasoner(graph);
 
@@ -224,7 +223,7 @@ public class RecursiveInferenceTest {
     /**from Abiteboul - Foundations of databases p. 312/Cao test 6.14 p. 89*/
     @Test
     public void testReverseSameGeneration(){
-        MindmapsTransaction graph = GenericGraph.getTransaction("recursivity-rsg-test.gql");
+        MindmapsGraph graph = GenericGraph.getGraph("recursivity-rsg-test.gql");
         QueryParser qp = QueryParser.create(graph);
         Reasoner reasoner = new Reasoner(graph);
 
@@ -237,7 +236,7 @@ public class RecursiveInferenceTest {
     }
     @Test
     public void testReverseSameGeneration2() {
-        MindmapsTransaction graph = GenericGraph.getTransaction("recursivity-rsg-test.gql");
+        MindmapsGraph graph = GenericGraph.getGraph("recursivity-rsg-test.gql");
         QueryParser qp = QueryParser.create(graph);
         Reasoner reasoner = new Reasoner(graph);
 
@@ -259,7 +258,7 @@ public class RecursiveInferenceTest {
     //TODO need to add handling unary predicates to capture match $x isa S
     public void testNguyen(){
         final int N = 9;
-        MindmapsTransaction graph = NguyenGraph.getTransaction(N);
+        MindmapsGraph graph = NguyenGraph.getGraph(N);
         QueryParser qp = QueryParser.create(graph);
         Reasoner reasoner = new Reasoner(graph);
 
@@ -274,7 +273,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testMatrix(){
         final int N = 5;
-        MindmapsTransaction graph = MatrixGraph.getTransaction(N, N);
+        MindmapsGraph graph = MatrixGraph.getGraph(N, N);
         QueryParser qp = QueryParser.create(graph);
         Reasoner reasoner = new Reasoner(graph);
 
@@ -308,7 +307,7 @@ public class RecursiveInferenceTest {
     public void testTailRecursion(){
         final int N = 10;
         final int M = 5;
-        MindmapsTransaction graph = TailRecursionGraph.getTransaction(N, M);
+        MindmapsGraph graph = TailRecursionGraph.getGraph(N, M);
         QueryParser qp = QueryParser.create(graph);
         Reasoner reasoner = new Reasoner(graph);
 

@@ -21,7 +21,7 @@ package io.mindmaps.graql.internal.reasoner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.RoleType;
@@ -87,7 +87,7 @@ public class Utility {
         return atom;
     }
 
-    public static boolean isAtomRecursive(Atomic atom, MindmapsTransaction graph) {
+    public static boolean isAtomRecursive(Atomic atom, MindmapsGraph graph) {
         if (atom.isResource()) return false;
         boolean atomRecursive = false;
 
@@ -123,7 +123,7 @@ public class Utility {
         }
         return equivalentQuery;
     }
-    public static Set<RoleType> getCompatibleRoleTypes(String typeId, String relId, MindmapsTransaction graph) {
+    public static Set<RoleType> getCompatibleRoleTypes(String typeId, String relId, MindmapsGraph graph) {
         Set<RoleType> cRoles = new HashSet<>();
 
         Collection<RoleType> typeRoles = graph.getType(typeId).playsRoles();
@@ -132,7 +132,7 @@ public class Utility {
         return cRoles;
     }
 
-    public static boolean checkAtomsCompatible(Atomic a, Atomic b, MindmapsTransaction graph) {
+    public static boolean checkAtomsCompatible(Atomic a, Atomic b, MindmapsGraph graph) {
         if (!(a.isType() && b.isType()) || (a.isRelation() || b.isRelation())
            || !a.getVarName().equals(b.getVarName()) || a.isResource() || b.isResource()) return true;
         String aTypeId = a.getTypeId();

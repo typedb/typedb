@@ -19,7 +19,7 @@
 package io.mindmaps.engine.loader;
 
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.implementation.MindmapsTransactionImpl;
+import io.mindmaps.core.implementation.AbstractMindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.engine.postprocessing.Cache;
 import io.mindmaps.engine.util.ConfigProperties;
@@ -105,10 +105,10 @@ public class BlockingLoader extends Loader {
 
         try {
             for (int i = 0; i < repeatCommits; i++) {
-                MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) GraphFactory.getInstance().getGraphBatchLoading(name).getTransaction();
+                AbstractMindmapsGraph transaction = (AbstractMindmapsGraph) GraphFactory.getInstance().getGraphBatchLoading(name);
                 try {
 
-                    insert(batch).withTransaction(transaction).execute();
+                    insert(batch).withGraph(transaction).execute();
                     transaction.commit();
                     cache.addJobCasting(graphName, transaction.getModifiedCastingIds());
                     return;
@@ -120,12 +120,6 @@ public class BlockingLoader extends Loader {
                 } catch (Exception e) {
                     //If it's not a validation exception we need to remain in the for loop
                     handleError(e, 1);
-                } finally {
-                    try {
-                        transaction.close();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
                 }
             }
         } finally {

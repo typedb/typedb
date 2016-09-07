@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.internal.validation;
 
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.admin.MatchQueryDefaultAdmin;
 
 import java.util.stream.Stream;
@@ -38,7 +38,7 @@ public class MatchQueryValidator implements Validator {
     }
 
     @Override
-    public Stream<String> getErrors(MindmapsTransaction transaction) {
+    public Stream<String> getErrors(MindmapsGraph transaction) {
         return new PatternValidator(matchQuery.getPattern()).getErrors(transaction);
     }
 }

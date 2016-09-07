@@ -19,7 +19,7 @@
 package io.mindmaps.graql.reasoner.inference;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.model.RuleType;
 import io.mindmaps.graql.MatchQueryDefault;
 import io.mindmaps.graql.QueryParser;
@@ -33,13 +33,13 @@ import static org.junit.Assert.assertEquals;
 
 public class CWInferenceTest {
 
-    private static MindmapsTransaction graph;
+    private static MindmapsGraph graph;
     private static Reasoner reasoner;
     private static QueryParser qp;
 
     @BeforeClass
     public static void setUpClass() {
-        graph = CWGraph.getTransaction();
+        graph = CWGraph.getGraph();
         reasoner = new Reasoner(graph);
         qp = QueryParser.create(graph);
     }

@@ -20,13 +20,17 @@ package io.mindmaps.engine.loader;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import io.mindmaps.MindmapsTransaction;
-import io.mindmaps.engine.controller.CommitLogController;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
+import io.mindmaps.engine.controller.CommitLogController;
+import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.QueryParser;
-import io.mindmaps.engine.util.ConfigProperties;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
@@ -37,8 +41,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
-
-import static io.mindmaps.graql.Graql.insert;
 
 public class BlockingLoaderTest {
 
@@ -101,11 +103,11 @@ public class BlockingLoaderTest {
         // TODO: Make this assertion consistently pass
         // Assert.assertTrue(secondLoadingTime < firstLoadingTime);
 
-        Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getTransaction().getConcept("X506965727265204162656c").getId());
+        Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getConcept("X506965727265204162656c").getId());
     }
 
     private void loadOntology() {
-        MindmapsTransaction transaction = GraphFactory.getInstance().getGraphBatchLoading(graphName).getTransaction();
+        MindmapsGraph transaction = GraphFactory.getInstance().getGraphBatchLoading(graphName);
         ClassLoader classLoader = getClass().getClassLoader();
 
         LOG.info("Loading new ontology .. ");
@@ -117,7 +119,7 @@ public class BlockingLoaderTest {
                 e.printStackTrace();
             }
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-            QueryParser.create().parseInsertQuery(query).withTransaction(transaction).execute();
+            QueryParser.create().parseInsertQuery(query).withGraph(transaction).execute();
         try {
             transaction.commit();
         } catch (MindmapsValidationException e) {

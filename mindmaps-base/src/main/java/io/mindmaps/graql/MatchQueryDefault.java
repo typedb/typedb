@@ -19,7 +19,7 @@
 
 package io.mindmaps.graql;
 
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.admin.MatchQueryDefaultAdmin;
 
@@ -127,7 +127,7 @@ public interface MatchQueryDefault extends MatchQuery<Map<String, Concept>> {
     MatchQueryDefault orderBy(String varName, String resourceType, boolean asc);
 
     @Override
-    MatchQueryDefault withTransaction(MindmapsTransaction transaction);
+    MatchQueryDefault withGraph(MindmapsGraph transaction);
 
     @Override
     MatchQueryDefault limit(long limit);

@@ -43,7 +43,7 @@ import static org.junit.Assert.assertTrue;
 
 public class CastingTest {
 
-    private MindmapsTransactionImpl mindmapsGraph;
+    private AbstractMindmapsGraph mindmapsGraph;
     private CastingImpl casting;
     private RoleTypeImpl role;
     private RelationImpl relation;
@@ -54,7 +54,7 @@ public class CastingTest {
 
     @Before
     public void setUp() {
-        mindmapsGraph = (MindmapsTransactionImpl) MindmapsTestGraphFactory.newEmptyGraph().getTransaction();
+        mindmapsGraph = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
         mindmapsGraph.initialiseMetaConcepts();
         role = (RoleTypeImpl) mindmapsGraph.putRoleType("Role");
         EntityTypeImpl conceptType = (EntityTypeImpl) mindmapsGraph.putEntityType("A thing");

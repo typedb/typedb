@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
  */
 class CastingImpl extends ConceptImpl {
 
-    CastingImpl(Vertex v, MindmapsTransactionImpl mindmapsGraph) {
+    CastingImpl(Vertex v, AbstractMindmapsGraph mindmapsGraph) {
         super(v, mindmapsGraph);
     }
 
@@ -45,7 +45,7 @@ class CastingImpl extends ConceptImpl {
     public RoleTypeImpl getRole() {
         Concept concept = getParentIsa();
         if(concept != null)
-            return getMindmapsTransaction().getElementFactory().buildRoleType(concept);
+            return getMindmapsGraph().getElementFactory().buildRoleType(concept);
         else
             throw new NoEdgeException(toString(), DataType.BaseType.ROLE_TYPE.name());
     }
@@ -57,7 +57,7 @@ class CastingImpl extends ConceptImpl {
     public InstanceImpl getRolePlayer() {
         Concept concept = getOutgoingNeighbour(DataType.EdgeLabel.ROLE_PLAYER);
         if(concept != null)
-            return getMindmapsTransaction().getElementFactory().buildSpecificInstance(concept);
+            return getMindmapsGraph().getElementFactory().buildSpecificInstance(concept);
         else
             return null;
     }
@@ -70,7 +70,7 @@ class CastingImpl extends ConceptImpl {
      */
     public CastingImpl setHash(RoleTypeImpl role, InstanceImpl rolePlayer){
         String hash;
-        if(getMindmapsTransaction().isBatchLoadingEnabled())
+        if(getMindmapsGraph().isBatchLoadingEnabled())
             hash = "CastingBaseId_" + this.getBaseIdentifier() + UUID.randomUUID().toString();
         else
             hash = generateNewHash(role, rolePlayer);
@@ -98,7 +98,7 @@ class CastingImpl extends ConceptImpl {
         Set<ConceptImpl> concepts = thisRef.getIncomingNeighbours(DataType.EdgeLabel.CASTING);
 
         if(concepts.size() > 0){
-            relations.addAll(concepts.stream().map(getMindmapsTransaction().getElementFactory()::buildRelation).collect(Collectors.toList()));
+            relations.addAll(concepts.stream().map(getMindmapsGraph().getElementFactory()::buildRelation).collect(Collectors.toList()));
         }
 
         return relations;

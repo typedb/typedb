@@ -2,16 +2,19 @@ package io.mindmaps.migration.csv;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
+import io.mindmaps.core.Data;
+import io.mindmaps.core.model.EntityType;
+import io.mindmaps.core.model.RelationType;
+import io.mindmaps.core.model.ResourceType;
+import io.mindmaps.core.model.RoleType;
+import io.mindmaps.core.model.Type;
 import io.mindmaps.engine.controller.CommitLogController;
 import io.mindmaps.engine.controller.GraphFactoryController;
 import io.mindmaps.engine.controller.TransactionController;
-import io.mindmaps.core.Data;
-import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.model.*;
-import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.engine.loader.BlockingLoader;
 import io.mindmaps.engine.util.ConfigProperties;
+import io.mindmaps.factory.GraphFactory;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.junit.After;
@@ -32,7 +35,6 @@ public class CSVSchemaMigratorTest {
     private String GRAPH_NAME = "test";
 
     private MindmapsGraph graph;
-    private MindmapsTransaction transaction;
     private static CSVSchemaMigrator migrator;
     private BlockingLoader loader;
     private Namer namer = new Namer() {};
@@ -56,13 +58,11 @@ public class CSVSchemaMigratorTest {
     public void setup(){
         loader = new BlockingLoader(GRAPH_NAME);
         graph = GraphFactory.getInstance().getGraphBatchLoading(GRAPH_NAME);
-        transaction = graph.getTransaction();
     }
 
     @After
     public void shutdown(){
         graph.clear();
-        graph.close();
     }
 
     @Test
@@ -71,7 +71,7 @@ public class CSVSchemaMigratorTest {
                 .migrate(loader);
 
         // Check entity type and resources
-        EntityType entity = transaction.getEntityType("entity");
+        EntityType entity = graph.getEntityType("entity");
         assertNotNull(entity);
 
         assertResourceRelationExists("name", Data.STRING, entity);
@@ -103,7 +103,7 @@ public class CSVSchemaMigratorTest {
                 .migrate(loader);
 
         // Check address type and resources
-        EntityType address = transaction.getEntityType("address");
+        EntityType address = graph.getEntityType("address");
         assertNotNull(address);
 
         assertResourceRelationExists("icij_id", Data.STRING, address);
@@ -120,7 +120,7 @@ public class CSVSchemaMigratorTest {
                 .migrate(loader);
 
         // check officers type and resources
-        EntityType officer = transaction.getEntityType("officer");
+        EntityType officer = graph.getEntityType("officer");
         assertNotNull(officer);
 
         assertResourceRelationExists("name", Data.STRING, officer);
@@ -138,7 +138,7 @@ public class CSVSchemaMigratorTest {
                 .migrate(loader);
 
         // check intermediaries type and resources
-        EntityType intermediary = transaction.getEntityType("intermediary");
+        EntityType intermediary = graph.getEntityType("intermediary");
         assertNotNull(intermediary);
 
         assertResourceRelationExists("name", Data.STRING, intermediary);
@@ -158,7 +158,7 @@ public class CSVSchemaMigratorTest {
                 .migrate(loader);
 
         // check relations were created
-        EntityType relationship = transaction.getEntityType("relationship");
+        EntityType relationship = graph.getEntityType("relationship");
         assertNotNull(relationship);
 
         assertResourceRelationExists("node_1", Data.STRING, relationship);
@@ -167,7 +167,7 @@ public class CSVSchemaMigratorTest {
     }
 
     private ResourceType assertResourceExists(String name, Data datatype) {
-        ResourceType resourceType = transaction.getResourceType(name);
+        ResourceType resourceType = graph.getResourceType(name);
         assertNotNull(resourceType);
         assertEquals(datatype.getName(), resourceType.getDataType().getName());
         return resourceType;
@@ -177,9 +177,9 @@ public class CSVSchemaMigratorTest {
         String resourceName = namer.resourceName(name);
         ResourceType resource = assertResourceExists(resourceName, datatype);
 
-        RelationType relationType = transaction.getRelationType("has-" + resourceName);
-        RoleType roleOwner = transaction.getRoleType("has-" + resourceName + "-owner");
-        RoleType roleOther = transaction.getRoleType("has-" + resourceName + "-value");
+        RelationType relationType = graph.getRelationType("has-" + resourceName);
+        RoleType roleOwner = graph.getRoleType("has-" + resourceName + "-owner");
+        RoleType roleOther = graph.getRoleType("has-" + resourceName + "-value");
 
         assertNotNull(relationType);
         assertNotNull(roleOwner);

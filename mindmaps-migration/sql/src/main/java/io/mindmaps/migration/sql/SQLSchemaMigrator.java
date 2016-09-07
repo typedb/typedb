@@ -1,16 +1,20 @@
 package io.mindmaps.migration.sql;
 
 import com.google.common.collect.Lists;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.Data;
-import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.graql.Var;
 import io.mindmaps.engine.loader.Loader;
+import io.mindmaps.graql.Var;
 import io.mindmaps.migration.sql.SQLModel.SQLTable;
 
 import java.io.Closeable;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 
 import static io.mindmaps.graql.Graql.var;
 

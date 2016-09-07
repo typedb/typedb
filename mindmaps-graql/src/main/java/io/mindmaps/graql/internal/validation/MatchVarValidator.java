@@ -18,8 +18,8 @@
 
 package io.mindmaps.graql.internal.validation;
 
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.MindmapsTransaction;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.RelationType;
 import io.mindmaps.core.model.Type;
@@ -36,7 +36,7 @@ class MatchVarValidator implements Validator {
 
     private final VarAdmin var;
 
-    private MindmapsTransaction transaction;
+    private MindmapsGraph transaction;
     private List<String> errors = new ArrayList<>();
 
     /**
@@ -47,7 +47,7 @@ class MatchVarValidator implements Validator {
     }
 
     @Override
-    public Stream<String> getErrors(MindmapsTransaction transaction) {
+    public Stream<String> getErrors(MindmapsGraph transaction) {
         this.transaction = transaction;
         errors = new ArrayList<>();
 

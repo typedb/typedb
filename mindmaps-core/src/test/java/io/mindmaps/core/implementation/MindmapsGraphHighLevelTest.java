@@ -18,10 +18,16 @@
 
 package io.mindmaps.core.implementation;
 
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.constants.DataType;
 import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.MindmapsGraph;
-import io.mindmaps.core.model.*;
+import io.mindmaps.core.model.Concept;
+import io.mindmaps.core.model.EntityType;
+import io.mindmaps.core.model.Instance;
+import io.mindmaps.core.model.Relation;
+import io.mindmaps.core.model.RelationType;
+import io.mindmaps.core.model.RoleType;
+import io.mindmaps.core.model.Type;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -33,16 +39,30 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
-public class MindmapsTransactionHighLevelTest {
+public class MindmapsGraphHighLevelTest {
 
     private MindmapsGraph mindmapsGraph;
-    private MindmapsTransactionImpl transaction;
+    private AbstractMindmapsGraph transaction;
     private EntityType type;
     private RelationTypeImpl relationType;
     private RoleTypeImpl role1;
@@ -58,7 +78,7 @@ public class MindmapsTransactionHighLevelTest {
     @Before
     public void buildGraphAccessManager(){
         mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
-        transaction = (MindmapsTransactionImpl) mindmapsGraph.getTransaction();
+        transaction = (AbstractMindmapsGraph) mindmapsGraph;
         transaction.initialiseMetaConcepts();
 
         type = transaction.putEntityType("Test");
@@ -535,29 +555,28 @@ public class MindmapsTransactionHighLevelTest {
 
     @Test
     public void testPutRelationSimple(){
-        MindmapsGraph graph = MindmapsTestGraphFactory.newBatchLoadingEmptyGraph();
-        MindmapsTransactionImpl transaction = (MindmapsTransactionImpl) graph.getTransaction();
+        AbstractMindmapsGraph graph = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newBatchLoadingEmptyGraph();
 
-        EntityType type = transaction.putEntityType("Test");
-        RoleType actor = transaction.putRoleType("Actor");
-        RoleType actor2 = transaction.putRoleType("Actor 2");
-        RoleType actor3 = transaction.putRoleType("Actor 3");
-        RelationType cast = transaction.putRelationType("Cast").hasRole(actor).hasRole(actor2).hasRole(actor3);
-        Instance pacino = transaction.putEntity("Pacino", type);
-        Instance thing = transaction.putEntity("Thing", type);
-        Instance godfather = transaction.putEntity("Godfather", type);
+        EntityType type = graph.putEntityType("Test");
+        RoleType actor = graph.putRoleType("Actor");
+        RoleType actor2 = graph.putRoleType("Actor 2");
+        RoleType actor3 = graph.putRoleType("Actor 3");
+        RelationType cast = graph.putRelationType("Cast").hasRole(actor).hasRole(actor2).hasRole(actor3);
+        Instance pacino = graph.putEntity("Pacino", type);
+        Instance thing = graph.putEntity("Thing", type);
+        Instance godfather = graph.putEntity("Godfather", type);
 
-        Instance pacino2 = transaction.putEntity("Pacino", type);
-        Instance thing2 = transaction.putEntity("Thing", type);
-        Instance godfather2 = transaction.putEntity("Godfather", type);
+        Instance pacino2 = graph.putEntity("Pacino", type);
+        Instance thing2 = graph.putEntity("Thing", type);
+        Instance godfather2 = graph.putEntity("Godfather", type);
 
-        assertEquals(0, transaction.getTinkerPopGraph().traversal().V().hasLabel(DataType.BaseType.RELATION.name()).toList().size());
-        RelationImpl relation = (RelationImpl) transaction.putRelation("a", cast).
+        assertEquals(0, graph.getTinkerPopGraph().traversal().V().hasLabel(DataType.BaseType.RELATION.name()).toList().size());
+        RelationImpl relation = (RelationImpl) graph.putRelation("a", cast).
                 putRolePlayer(actor, pacino).putRolePlayer(actor2, thing).putRolePlayer(actor3, godfather);
-        assertEquals(1, transaction.getTinkerPopGraph().traversal().V().hasLabel(DataType.BaseType.RELATION.name()).toList().size());
+        assertEquals(1, graph.getTinkerPopGraph().traversal().V().hasLabel(DataType.BaseType.RELATION.name()).toList().size());
         assertNotEquals(String.valueOf(relation.getBaseIdentifier()), relation.getId());
 
-        relation = (RelationImpl) transaction.addRelation(cast).
+        relation = (RelationImpl) graph.addRelation(cast).
                 putRolePlayer(actor, pacino2).putRolePlayer(actor2, thing2).putRolePlayer(actor3, godfather2);
 
         assertTrue(relation.getIndex().startsWith("RelationBaseId_" + String.valueOf(relation.getBaseIdentifier())));

@@ -18,8 +18,7 @@
 
 package io.mindmaps.engine.session;
 
-import io.mindmaps.MindmapsTransaction;
-import io.mindmaps.core.MindmapsGraph;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.implementation.exception.InvalidConceptTypeException;
 import io.mindmaps.core.implementation.exception.MindmapsValidationException;
 import io.mindmaps.core.model.Concept;
@@ -54,7 +53,7 @@ class GraqlSession {
     GraqlSession(Session session, MindmapsGraph graph) {
         this.session = session;
         this.graph = graph;
-        reasoner = new Reasoner(graph.getTransaction());
+        reasoner = new Reasoner(graph);
     }
 
     /**
@@ -64,7 +63,7 @@ class GraqlSession {
         queryExecutor.submit(() -> {
             try {
                 // Close only the transaction, not the graph, in case other clients are sharing it!
-                graph.getTransaction().close();
+                graph.close();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -80,8 +79,7 @@ class GraqlSession {
             String errorMessage = null;
 
             try {
-                MindmapsTransaction transaction = graph.getTransaction();
-                QueryParser parser = QueryParser.create(transaction);
+                QueryParser parser = QueryParser.create(graph);
                 String queryString = json.at(QUERY).asString();
 
                 Object query = parser.parseQuery(queryString);
@@ -101,7 +99,7 @@ class GraqlSession {
                 } else if (query instanceof AggregateQuery) {
                     results = streamAggregateQuery((AggregateQuery) query);
                 } else if (query instanceof ComputeQuery) {
-                    Object computeResult = ((ComputeQuery) query).execute(graph);
+                    Object computeResult = ((ComputeQuery) query).execute(this.graph);
                     if (computeResult instanceof Map) {
                         Map<Instance, ?> map = (Map<Instance, ?>) computeResult;
                         results = map.entrySet().stream().map(e -> e.getKey().getId() + "\t" + e.getValue());
@@ -144,7 +142,7 @@ class GraqlSession {
     void commit() {
         queryExecutor.submit(() -> {
             try {
-                graph.getTransaction().commit();
+                graph.commit();
             } catch (MindmapsValidationException e) {
                 sendCommitError(e.getMessage());
             }
@@ -158,7 +156,7 @@ class GraqlSession {
         queryExecutor.submit(() -> {
             String queryString = json.at(QUERY).asString();
             int cursor = json.at(AUTOCOMPLETE_CURSOR).asInteger();
-            Autocomplete autocomplete = Autocomplete.create(graph.getTransaction(), queryString, cursor);
+            Autocomplete autocomplete = Autocomplete.create(graph, queryString, cursor);
             sendAutocomplete(autocomplete);
         });
     }

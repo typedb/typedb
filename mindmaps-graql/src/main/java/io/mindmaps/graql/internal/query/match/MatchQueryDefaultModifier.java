@@ -19,7 +19,7 @@
 
 package io.mindmaps.graql.internal.query.match;
 
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.admin.MatchQueryDefaultAdmin;
 import io.mindmaps.graql.admin.PatternAdmin;
@@ -41,7 +41,7 @@ abstract class MatchQueryDefaultModifier extends AbstractMatchQueryDefault {
     }
 
     @Override
-    public Set<Type> getTypes(MindmapsTransaction transaction) {
+    public Set<Type> getTypes(MindmapsGraph transaction) {
         return inner.getTypes(transaction);
     }
 
@@ -56,8 +56,8 @@ abstract class MatchQueryDefaultModifier extends AbstractMatchQueryDefault {
     }
 
     @Override
-    public Optional<MindmapsTransaction> getTransaction() {
-        return inner.getTransaction();
+    public Optional<MindmapsGraph> getGraph() {
+        return inner.getGraph();
     }
 
     @Override

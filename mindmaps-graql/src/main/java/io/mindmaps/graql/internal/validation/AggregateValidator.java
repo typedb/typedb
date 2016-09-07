@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.internal.validation;
 
-import io.mindmaps.MindmapsTransaction;
+import io.mindmaps.MindmapsGraph;
 
 import java.util.Collection;
 import java.util.stream.Stream;
@@ -37,7 +37,7 @@ class AggregateValidator implements Validator {
     }
 
     @Override
-    public Stream<String> getErrors(MindmapsTransaction transaction) {
+    public Stream<String> getErrors(MindmapsGraph transaction) {
         return validators.stream().flatMap(v -> v.getErrors(transaction));
     }
 }
