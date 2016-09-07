@@ -145,8 +145,6 @@ public class SQLSchemaMigratorTest {
         assertResourceRelationExists("SOURCE_URL", Data.STRING, entity);
     }
 
-    //TODO: Fix, sometimes fails due to stack overflow
-    @Ignore
     @Test
     public void postgresSchemaTest() throws SQLException, ClassNotFoundException {
         Connection connection = Util.setupExample("postgresql-example");
