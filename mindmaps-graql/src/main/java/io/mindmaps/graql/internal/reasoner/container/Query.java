@@ -56,7 +56,7 @@ public class  Query {
     public Query(String query, MindmapsGraph transaction) {
         this.graph = transaction;
         QueryParser qp = QueryParser.create(graph);
-        MatchQueryDefault matchQuery = qp.parseMatchQuery(query).getMatchQuery();
+        MatchQuery matchQuery = qp.parseMatchQuery(query).getMatchQuery();
         this.pattern = matchQuery.admin().getPattern();
         this.selectVars = Sets.newHashSet(matchQuery.admin().getSelectedNames());
 
@@ -64,8 +64,8 @@ public class  Query {
         this.typeAtomMap = getTypeAtomMap(atomSet);
     }
 
-    public Query(MatchQueryDefault query, MindmapsGraph transaction) {
-        this.graph = transaction;
+    public Query(MatchQuery query, MindmapsGraph graph) {
+        this.graph = graph;
 
         this.pattern = query.admin().getPattern();
         this.selectVars = Sets.newHashSet(query.admin().getSelectedNames());
@@ -78,7 +78,7 @@ public class  Query {
         this.graph = q.graph;
         QueryParser qp = QueryParser.create(graph);
 
-        MatchQueryDefault matchQuery = qp.parseMatchQuery(q.toString()).getMatchQuery();
+        MatchQuery matchQuery = qp.parseMatchQuery(q.toString()).getMatchQuery();
         this.pattern = matchQuery.admin().getPattern();
         this.selectVars = Sets.newHashSet(matchQuery.admin().getSelectedNames());
         this.atomSet = getAtomSet(pattern);
@@ -306,14 +306,14 @@ public class  Query {
         return getExpandedMatchQuery().admin().getPattern().getDisjunctiveNormalForm();
     }
 
-    public MatchQueryDefault getMatchQuery() {
+    public MatchQuery getMatchQuery() {
         if (selectVars.isEmpty())
             return Graql.match(pattern).select(getVarSet()).withGraph(graph);
         else
             return Graql.match(pattern).select(selectVars).withGraph(graph);
     }
 
-    public MatchQueryDefault getExpandedMatchQuery() {
+    public MatchQuery getExpandedMatchQuery() {
         Set<AtomConjunction> conjunctions = getAtomConjunctions();
         atomSet.forEach(atom -> {
             if (!atom.getExpansions().isEmpty()) {

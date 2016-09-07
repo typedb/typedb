@@ -23,7 +23,7 @@ import io.mindmaps.constants.ErrorMessage;
 import io.mindmaps.core.model.RoleType;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.Graql;
-import io.mindmaps.graql.MatchQueryDefault;
+import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.admin.VarAdmin;
@@ -127,7 +127,7 @@ public class Relation extends AtomBase {
     }
 
     @Override
-    public MatchQueryDefault getExpandedMatchQuery(MindmapsGraph graph) {
+    public MatchQuery getExpandedMatchQuery(MindmapsGraph graph) {
         QueryBuilder qb = Graql.withGraph(graph);
         Set<String> selectVars = getVarNames();
         return qb.match(getExpandedPattern()).select(selectVars);

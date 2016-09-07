@@ -21,7 +21,7 @@ package io.mindmaps.graql.reasoner.inference;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.model.RuleType;
-import io.mindmaps.graql.MatchQueryDefault;
+import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.reasoner.graphs.CWGraph;
@@ -44,14 +44,14 @@ public class CWInferenceTest {
         qp = QueryParser.create(graph);
     }
 
-    private static void printMatchQuery(MatchQueryDefault query) {
+    private static void printMatchQuery(MatchQuery query) {
         System.out.println(query.toString().replace(" or ", "\nor\n").replace("};", "};\n").replace("; {", ";\n{"));
     }
 
     @Test
     public void testWeapon() {
         String queryString = "match $x isa weapon";
-        MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
 
         String explicitQuery = "match \n" +
                 "{$x isa weapon} or {\n" +
@@ -66,7 +66,7 @@ public class CWInferenceTest {
     @Test
     public void testTransactionQuery() {
         String queryString = "match $x isa person;$z isa country;($x, $y, $z) isa transaction";
-        MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
 
         String explicitQuery = "match \n" +
                 "$x isa person;\n" +
@@ -88,7 +88,7 @@ public class CWInferenceTest {
     @Test
     public void testTransactionQuery2() {
         String queryString = "match $x isa person;$z isa country;$y isa weapon;($x, $y, $z) isa transaction";
-        MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
 
         String explicitQuery = "match \n" +
                 "$x isa person;\n" +
@@ -113,7 +113,7 @@ public class CWInferenceTest {
     @Test
     public void testQuery() {
         String queryString = "match $x isa criminal;";
-        MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
 
         String explicitQuery = "match " +
                 "{$x isa criminal} or {" +
@@ -143,7 +143,7 @@ public class CWInferenceTest {
     @Test
     public void testQueryWithOr() {
         String queryString = "match {$x isa criminal} or {$x has nationality 'American';$x isa person}";
-        MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
 
         String explicitQuery = "match " +
             "{{$x isa criminal} or {$x has nationality 'American';\n" +
@@ -180,7 +180,7 @@ public class CWInferenceTest {
 
         reasoner.linkConceptTypes();
         String queryString = "match $x isa criminal;";
-        MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
 
         String explicitQuery = "match " +
                 "{$x isa criminal} or {\n" +
@@ -210,7 +210,7 @@ public class CWInferenceTest {
         String queryString = "match" +
                 "$y isa person;$yy isa country;$yyy isa weapon;\n" +
                 "($y, $yy, $yyy) isa transaction";
-        MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
 
         String explicitQuery = "match \n" +
                 "$y isa person;\n" +
@@ -237,7 +237,7 @@ public class CWInferenceTest {
         String queryString = "match" +
                 "$y isa person;$z isa country;$x isa weapon;\n" +
                 "($y, $z, $x) isa transaction";
-        MatchQueryDefault query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
 
         String explicitQuery = "match \n" +
                 "$y isa person;\n" +
@@ -260,7 +260,7 @@ public class CWInferenceTest {
     }
 
 
-    private void assertQueriesEqual(MatchQueryDefault q1, MatchQueryDefault q2) {
+    private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
         assertEquals(Sets.newHashSet(q1), Sets.newHashSet(q2));
     }
 }

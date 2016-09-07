@@ -18,24 +18,26 @@
 
 package io.mindmaps.graql.internal.query.match;
 
+import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.admin.MatchQueryAdmin;
 
+import java.util.Map;
 import java.util.stream.Stream;
 
 /**
  * "Limit" modifier for match query that limits the results of a query.
  */
-class MatchQueryLimit<T> extends MatchQueryModifier<T, T> {
+class MatchQueryLimit extends MatchQueryModifier {
 
     private final long limit;
 
-    MatchQueryLimit(MatchQueryAdmin<T> inner, long limit) {
+    MatchQueryLimit(MatchQueryAdmin inner, long limit) {
         super(inner);
         this.limit = limit;
     }
 
     @Override
-    protected Stream<T> transformStream(Stream<T> stream) {
+    protected Stream<Map<String, Concept>> transformStream(Stream<Map<String, Concept>> stream) {
         return stream.limit(limit);
     }
 

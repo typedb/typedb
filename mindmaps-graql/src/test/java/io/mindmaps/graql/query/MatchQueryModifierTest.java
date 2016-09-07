@@ -24,7 +24,7 @@ import io.mindmaps.core.implementation.AbstractMindmapsGraph;
 import io.mindmaps.core.model.Concept;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
-import io.mindmaps.graql.MatchQueryDefault;
+import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.junit.Before;
@@ -66,14 +66,14 @@ public class MatchQueryModifierTest {
 
     @Test
     public void testOffsetQuery() {
-        MatchQueryDefault query = qb.match(var("x").isa("movie")).orderBy("x", false).offset(4);
+        MatchQuery query = qb.match(var("x").isa("movie")).orderBy("x", false).offset(4);
 
         assertResultsOrderedById(query, "x", false);
     }
 
     @Test
     public void testLimitQuery() {
-        MatchQueryDefault query = qb.match(var("x").isa("movie")).orderBy("x", true).offset(1).limit(3);
+        MatchQuery query = qb.match(var("x").isa("movie")).orderBy("x", true).offset(1).limit(3);
 
         assertResultsOrderedById(query, "x", true);
         assertEquals(3, query.stream().count());
@@ -81,7 +81,7 @@ public class MatchQueryModifierTest {
 
     @Test
     public void testOrPatternOrderByResource() {
-        MatchQueryDefault query = qb.match(
+        MatchQuery query = qb.match(
                 var("x").isa("movie"),
                 var().rel("x").rel("y"),
                 or(
@@ -95,7 +95,7 @@ public class MatchQueryModifierTest {
 
     @Test
     public void testOrPatternOrderByUnselected() {
-        MatchQueryDefault query = qb.match(
+        MatchQuery query = qb.match(
                 var("x").isa("movie"),
                 var().rel("x").rel("y"),
                 or(
@@ -111,7 +111,7 @@ public class MatchQueryModifierTest {
 
     @Test
     public void testDegreeOrderedQuery() {
-        MatchQueryDefault query = qb.match(var("the-movie").isa("movie")).orderBy("the-movie", false);
+        MatchQuery query = qb.match(var("the-movie").isa("movie")).orderBy("the-movie", false);
 
         assertResultsOrderedById(query, "the-movie", false);
 
@@ -121,7 +121,7 @@ public class MatchQueryModifierTest {
 
     @Test
     public void testVoteCountOrderedQuery() {
-        MatchQueryDefault query = qb.match(var("z").isa("movie")).orderBy("z", "tmdb-vote-count", false);
+        MatchQuery query = qb.match(var("z").isa("movie")).orderBy("z", "tmdb-vote-count", false);
 
         // Make sure movies are in the correct order
         assertOrderedResultsMatch(query, "z", "movie", "Godfather", "Hocus-Pocus", "Apocalypse-Now", "The-Muppets");
@@ -132,7 +132,7 @@ public class MatchQueryModifierTest {
 
     @Test
     public void testOrPatternDistinct() {
-        MatchQueryDefault query = qb.match(
+        MatchQuery query = qb.match(
                 var("x").isa("movie"),
                 var().rel("x").rel("y"),
                 or(
@@ -146,7 +146,7 @@ public class MatchQueryModifierTest {
 
     @Test
     public void testNondistinctQuery() {
-        MatchQueryDefault query = qb.match(
+        MatchQuery query = qb.match(
                 var("x").isa("person"),
                 var("y").has("title", "The Muppets"),
                 var().rel("x").rel("y")
@@ -159,7 +159,7 @@ public class MatchQueryModifierTest {
 
     @Test
     public void testDistinctQuery() {
-        MatchQueryDefault query = qb.match(
+        MatchQuery query = qb.match(
                 var("x").isa("person"),
                 var("y").has("title", "The Muppets"),
                 var().rel("x").rel("y")
@@ -170,7 +170,7 @@ public class MatchQueryModifierTest {
         assertEquals(2, distinctResults.size());
     }
 
-    private void assertOrderedResultsMatch(MatchQueryDefault query, String var, String expectedType, String... expectedIds) {
+    private void assertOrderedResultsMatch(MatchQuery query, String var, String expectedType, String... expectedIds) {
         Queue<String> expectedQueue = new LinkedList<>(Arrays.asList(expectedIds));
 
         query.forEach(results -> {
@@ -186,7 +186,7 @@ public class MatchQueryModifierTest {
         assertTrue("expected ids not found: " + expectedQueue, expectedQueue.isEmpty());
     }
 
-    private void assertResultsOrderedById(MatchQueryDefault query, String var, boolean asc) {
+    private void assertResultsOrderedById(MatchQuery query, String var, boolean asc) {
         GraphTraversalSource g = ((AbstractMindmapsGraph) mindmapsGraph).getTinkerTraversal();
         Stream<String> ids = query.stream().map(results -> results.get(var)).map(
                 result -> (String) g.V().has("ITEM_IDENTIFIER", result.getId()).values(ITEM_IDENTIFIER.name()).next()

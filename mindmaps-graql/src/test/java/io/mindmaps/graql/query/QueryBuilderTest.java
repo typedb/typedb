@@ -45,13 +45,13 @@ public class QueryBuilderTest {
 
     @Test
     public void testBuildQueryTransactionFirst() {
-        MatchQueryDefault query = withGraph(mindmapsGraph).match(var("x").isa("movie"));
+        MatchQuery query = withGraph(mindmapsGraph).match(var("x").isa("movie"));
         QueryUtil.assertResultsMatch(query, "x", "movie", QueryUtil.movies);
     }
 
     @Test
     public void testBuildMatchQueryTransactionLast() {
-        MatchQueryDefault query = match(var("x").isa("movie")).withGraph(mindmapsGraph);
+        MatchQuery query = match(var("x").isa("movie")).withGraph(mindmapsGraph);
         QueryUtil.assertResultsMatch(query, "x", "movie", QueryUtil.movies);
     }
 
@@ -94,7 +94,7 @@ public class QueryBuilderTest {
 
     @Test
     public void testErrorExecuteMatchQueryWithoutTransaction() {
-        MatchQueryDefault query = match(var("x").isa("movie"));
+        MatchQuery query = match(var("x").isa("movie"));
         exception.expect(IllegalStateException.class);
         exception.expectMessage("transaction");
         query.iterator();
@@ -124,7 +124,7 @@ public class QueryBuilderTest {
 
     @Test
     public void testValidationWhenTransactionProvided() {
-        MatchQueryDefault query = match(var("x").isa("not-a-thing"));
+        MatchQuery query = match(var("x").isa("not-a-thing"));
         exception.expect(IllegalStateException.class);
         query.withGraph(mindmapsGraph).stream();
     }

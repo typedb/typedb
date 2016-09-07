@@ -20,11 +20,13 @@
 package io.mindmaps.graql.admin;
 
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.core.model.Concept;
 import io.mindmaps.core.model.Type;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.internal.query.Conjunction;
 import io.mindmaps.graql.internal.query.match.MatchOrder;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -32,20 +34,20 @@ import java.util.stream.Stream;
 /**
  * Admin class for inspecting and manipulating a MatchQuery
  */
-public interface MatchQueryAdmin<T> extends MatchQuery<T> {
+public interface MatchQueryAdmin extends MatchQuery {
 
     @Override
-    default MatchQueryAdmin<T> admin() {
+    default MatchQueryAdmin admin() {
         return this;
     }
 
     /**
      * Execute the query using the given transaction.
-     * @param transaction the transaction to use to execute the query
+     * @param graph the graph to use to execute the query
      * @param order how to order the resulting stream
      * @return a stream of results
      */
-    Stream<T> stream(Optional<MindmapsGraph> transaction, Optional<MatchOrder> order);
+    Stream<Map<String, Concept>> stream(Optional<MindmapsGraph> graph, Optional<MatchOrder> order);
 
     /**
      * @param transaction the transaction to use to get types from the graph
@@ -64,7 +66,12 @@ public interface MatchQueryAdmin<T> extends MatchQuery<T> {
     Conjunction<PatternAdmin> getPattern();
 
     /**
-     * @return the transaction the query operates on, if one was provided
+     * @return the graph the query operates on, if one was provided
      */
     Optional<MindmapsGraph> getGraph();
+
+    /**
+     * @return all selected variable names in the query
+     */
+    Set<String> getSelectedNames();
 }

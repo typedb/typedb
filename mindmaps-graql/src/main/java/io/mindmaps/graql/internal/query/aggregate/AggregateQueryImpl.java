@@ -19,21 +19,24 @@
 
 package io.mindmaps.graql.internal.query.aggregate;
 
+import io.mindmaps.core.model.Concept;
 import io.mindmaps.graql.Aggregate;
 import io.mindmaps.graql.AggregateQuery;
 import io.mindmaps.graql.admin.MatchQueryAdmin;
+
+import java.util.Map;
 
 /**
  * Implementation of AggregateQuery
  * @param <S> the type of the input match query results
  * @param <T> the type of the aggregate result
  */
-public class AggregateQueryImpl<S, T> implements AggregateQuery<T> {
+public class AggregateQueryImpl<T> implements AggregateQuery<T> {
 
-    private final MatchQueryAdmin<S> matchQuery;
-    private final Aggregate<? super S, T> aggregate;
+    private final MatchQueryAdmin matchQuery;
+    private final Aggregate<? super Map<String, Concept>, T> aggregate;
 
-    public AggregateQueryImpl(MatchQueryAdmin<S> matchQuery, Aggregate<? super S, T> aggregate) {
+    public AggregateQueryImpl(MatchQueryAdmin matchQuery, Aggregate<? super Map<String, Concept>, T> aggregate) {
         this.matchQuery = matchQuery;
         this.aggregate = aggregate;
     }

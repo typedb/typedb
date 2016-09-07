@@ -20,7 +20,7 @@
 package io.mindmaps.graql.admin;
 
 import io.mindmaps.graql.AskQuery;
-import io.mindmaps.graql.MatchQueryDefault;
+import io.mindmaps.graql.MatchQuery;
 
 /**
  * Admin class for inspecting and manipulating an AskQuery
@@ -29,5 +29,5 @@ public interface AskQueryAdmin extends AskQuery {
     /**
      * @return the match query used to create this ask query
      */
-    MatchQueryDefault getMatchQuery();
+    MatchQuery getMatchQuery();
 }

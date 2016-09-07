@@ -54,7 +54,7 @@ public class QueryBuilder {
      * @param patterns an array of patterns to match in the graph
      * @return a match query that will find matches of the given patterns
      */
-    public MatchQueryDefault match(Pattern... patterns) {
+    public MatchQuery match(Pattern... patterns) {
         return match(Arrays.asList(patterns));
     }
 
@@ -62,7 +62,7 @@ public class QueryBuilder {
      * @param patterns a collection of patterns to match in the graph
      * @return a match query that will find matches of the given patterns
      */
-    public MatchQueryDefault match(Collection<? extends Pattern> patterns) {
+    public MatchQuery match(Collection<? extends Pattern> patterns) {
         MatchQueryBase query = new MatchQueryBase(new ConjunctionImpl<>(AdminConverter.getPatternAdmins(patterns)));
         return transaction.map(query::withGraph).orElse(query);
     }
