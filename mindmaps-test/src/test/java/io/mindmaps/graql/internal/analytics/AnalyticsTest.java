@@ -44,7 +44,7 @@ import static org.junit.Assert.*;
 
 public class AnalyticsTest {
 
-    String keyspace = "mindmapstest";
+    String keyspace;
     MindmapsGraph graph;
 
     // concepts
@@ -233,6 +233,21 @@ public class AnalyticsTest {
         related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
     }
 
+    private void checkDegrees(Map<Instance,Long> correctDegrees) {
+        correctDegrees.entrySet().forEach(degree -> {
+            Instance instance = degree.getKey();
+            Collection<Resource<?>> resources = null;
+            if (instance.isEntity()) {
+                resources = instance.asEntity().resources();
+            } else if (instance.isRelation()) {
+                resources = instance.asRelation().resources();
+            }
+            assert resources != null;
+            assertEquals(1,resources.size());
+            assertTrue(resources.iterator().next().getValue().equals(degree.getValue()));
+        });
+    }
+
     @Test
     public void testDegreesAndPersist() throws Exception {
         instantiateSimpleConcepts();
@@ -256,6 +271,14 @@ public class AnalyticsTest {
         graph.commit();
 
         Map<Instance, Long> correctDegrees = new HashMap<>();
+
+        // compute degrees on subgraph
+        Analytics computer = new Analytics(keyspace,Sets.newHashSet(thing, related));
+        computer.degreesAndPersist();
+
+        transaction.refresh();
+        instantiateSimpleConcepts();
+        correctDegrees.clear();
         correctDegrees.put(entity1, 1l);
         correctDegrees.put(entity2, 3l);
         correctDegrees.put(entity3, 1l);
@@ -263,43 +286,27 @@ public class AnalyticsTest {
         correctDegrees.put(graph.getRelation(id2), 2l);
         correctDegrees.put(graph.getRelation(id3), 1l);
 
-        // compute degrees on subgraph
-        Analytics computer = new Analytics(keyspace,Sets.newHashSet(thing, related));
-        computer.degreesAndPersist();
-
         // assert persisted degrees are correct
-        instantiateSimpleConcepts();
-        correctDegrees.entrySet().forEach(degree -> {
-            Instance instance = degree.getKey();
-            Collection<Resource<?>> resources = null;
-            if (instance.isEntity()) {
-                resources = instance.asEntity().resources();
-            } else if (instance.isRelation()) {
-                resources = instance.asRelation().resources();
-            }
-            assert resources != null;
-            assertTrue(resources.iterator().next().getValue().equals(degree.getValue()));
-        });
+        checkDegrees(correctDegrees);
 
         long numVertices = 0;
 
         // compute again and again ...
         for (int i = 0; i < 2; i++) {
-            System.out.println();
-            System.out.println("i = " + i);
             computer.degreesAndPersist();
 
-            correctDegrees.entrySet().forEach(degree -> {
-                Instance instance = degree.getKey();
-                Collection<Resource<?>> resources = null;
-                if (instance.isEntity()) {
-                    resources = instance.asEntity().resources();
-                } else if (instance.isRelation()) {
-                    resources = instance.asRelation().resources();
-                }
-                assert resources != null;
-                assertTrue(resources.iterator().next().getValue().equals(degree.getValue()));
-            });
+            // refresh everything after commit
+            transaction.refresh();
+            instantiateSimpleConcepts();
+            correctDegrees.clear();
+            correctDegrees.put(entity1, 1l);
+            correctDegrees.put(entity2, 3l);
+            correctDegrees.put(entity3, 1l);
+            correctDegrees.put(transaction.getRelation(id1), 2l);
+            correctDegrees.put(transaction.getRelation(id2), 2l);
+            correctDegrees.put(transaction.getRelation(id3), 1l);
+
+            checkDegrees(correctDegrees);
 
             // assert the number of vertices remain the same
             if (i == 0) {
@@ -309,27 +316,52 @@ public class AnalyticsTest {
             }
         }
 
+
         // compute degrees on all types, again and again ...
         for (int i = 0; i < 3; i++) {
+
+            transaction.getEntityType("thing").instances().forEach(thing -> thing.resources().forEach(resource -> {
+                System.out.println("thing: "+thing);
+                System.out.println("resource: "+resource);
+            }));
+            transaction.getEntityType("another").instances().forEach(thing -> thing.resources().forEach(resource -> {
+                System.out.println("thing: "+thing);
+                System.out.println("resource: "+resource);
+            }));
+            transaction.getRelationType("related").instances().forEach(thing -> thing.resources().forEach(resource -> {
+                System.out.println("thing: "+thing);
+                System.out.println("resource: "+resource);
+            }));
+
             computer = new Analytics(keyspace);
             computer.degreesAndPersist();
 
-            correctDegrees.put(entity4, 1l);
-            correctDegrees.put(graph.getRelation(id3), 2l);
+            transaction.getEntityType("thing").instances().forEach(thing -> thing.resources().forEach(resource -> {
+                System.out.println("thing: "+thing);
+                System.out.println("resource: "+resource);
+            }));
+            transaction.getEntityType("another").instances().forEach(thing -> thing.resources().forEach(resource -> {
+                System.out.println("thing: "+thing);
+                System.out.println("resource: "+resource);
+            }));
+            transaction.getRelationType("related").instances().forEach(thing -> thing.resources().forEach(resource -> {
+                System.out.println("thing: "+thing);
+                System.out.println("resource: "+resource);
+            }));
 
-            correctDegrees.entrySet().forEach(degree -> {
-                Instance instance = degree.getKey();
-                Collection<Resource<?>> resources = null;
-                if (instance.isEntity()) {
-                    resources = instance.asEntity().resources();
-                } else if (instance.isRelation()) {
-                    resources = instance.asRelation().resources();
-                }
-                assert resources != null;
-                assert !resources.isEmpty();
-                assertEquals(1,resources.size());
-                assertEquals(resources.iterator().next().getValue(), degree.getValue());
-            });
+            // after computation refresh concepts
+            transaction.refresh();
+            instantiateSimpleConcepts();
+            correctDegrees.clear();
+            correctDegrees.put(entity1, 1l);
+            correctDegrees.put(entity2, 3l);
+            correctDegrees.put(entity3, 1l);
+            correctDegrees.put(transaction.getRelation(id1), 2l);
+            correctDegrees.put(transaction.getRelation(id2), 2l);
+            correctDegrees.put(entity4, 1l);
+            correctDegrees.put(transaction.getRelation(id3), 2l);
+
+            checkDegrees(correctDegrees);
 
             // assert the number of vertices remain the same
             if (i == 0) {
