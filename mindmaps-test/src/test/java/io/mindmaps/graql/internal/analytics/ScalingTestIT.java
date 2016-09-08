@@ -24,7 +24,6 @@ import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.engine.loader.DistributedLoader;
-import io.mindmaps.core.model.*;
 import io.mindmaps.factory.MindmapsClient;
 import org.junit.*;
 import static org.junit.Assert.*;
@@ -33,7 +32,7 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.*;
 
 import static io.mindmaps.IntegrationUtils.startTestEngine;
 import static io.mindmaps.graql.Graql.var;
@@ -44,7 +43,6 @@ public class ScalingTestIT {
             {"localhost"};
 
     String TEST_KEYSPACE = "mindmapstest";
-    MindmapsGraph graph;
 
     // concepts
     EntityType thing;
@@ -53,8 +51,8 @@ public class ScalingTestIT {
     RelationType related;
 
     // test parameters
-    int NUM_SUPER_NODES = 10; // the number of supernodes to generate in the test graph
-    int MAX_SIZE = 100; // the maximum number of non super nodes to add to the test graph
+    int NUM_SUPER_NODES = 1; // the number of supernodes to generate in the test graph
+    int MAX_SIZE = 150; // the maximum number of non super nodes to add to the test graph
     int NUM_DIVS = 3; // the number of divisions of the MAX_SIZE to use in the scaling test
     int REPEAT = 3; // the number of times to repeat at each size for average runtimes
 
@@ -78,7 +76,7 @@ public class ScalingTestIT {
 
     @Test
     public void countAndDegreeIT() throws InterruptedException, ExecutionException, MindmapsValidationException {
-        graph = MindmapsClient.getGraph(TEST_KEYSPACE);
+        MindmapsGraph graph = MindmapsClient.getGraph(TEST_KEYSPACE);
 
         PrintWriter writer = null;
 
@@ -92,9 +90,9 @@ public class ScalingTestIT {
         Map<Integer, Long> scaleToAverageTimeDegree = new HashMap<>();
 
         // Insert super nodes into graph
-        simpleOntology();
+        simpleOntology(TEST_KEYSPACE);
 
-        Set<String> superNodes = makeSuperNodes();
+        Set<String> superNodes = makeSuperNodes(TEST_KEYSPACE);
 
         int previousGraphSize = 0;
         for (int graphSize : graphSizes) {
@@ -147,8 +145,7 @@ public class ScalingTestIT {
 
         writer.println("start clean graph " + System.currentTimeMillis()/1000L + "s");
         writer.flush();
-        this.graph.clear();
-        this.graph = MindmapsClient.getGraph(TEST_KEYSPACE);
+        graph.clear();
         writer.println("stop clean graph " + System.currentTimeMillis()/1000L + "s");
 
         writer.println("counts: " + scaleToAverageTimeCount);
@@ -182,8 +179,8 @@ public class ScalingTestIT {
             for (int i=0;i<REPEAT;i++) {
                 writer.println("repeat number: "+i);
                 String CURRENT_KEYSPACE = TEST_KEYSPACE + String.valueOf(graphSize) + String.valueOf(i);
-                graph = MindmapsClient.getGraph(CURRENT_KEYSPACE);
-                simpleOntology();
+                MindmapsGraph graph = MindmapsClient.getGraph(CURRENT_KEYSPACE);
+                simpleOntology(CURRENT_KEYSPACE);
 
                 // construct graph
                 writer.println("start generate graph " + System.currentTimeMillis()/1000L + "s");
@@ -210,7 +207,7 @@ public class ScalingTestIT {
                 // add edges to force mutation
                 addEdges(CURRENT_KEYSPACE, graphSize);
 
-                writer.println("stop mutate graph " + System.currentTimeMillis()/1000L + "s");
+                writer.println("stop mutate graph " + System.currentTimeMillis() / 1000L + "s");
                 computer = new Analytics(CURRENT_KEYSPACE);
 
                 writer.println("gremlin count is: " + graph.getTinkerTraversal().V().count().next());
@@ -224,7 +221,7 @@ public class ScalingTestIT {
                 writer.println("mutate time: " + degreeAndPersistTimeMutate / ((i + 1) * 1000));
 
                 writer.println("start clean graph" + System.currentTimeMillis()/1000L + "s");
-                this.graph.clear();
+                graph.clear();
                 writer.println("stop clean graph" + System.currentTimeMillis()/1000L + "s");
             }
 
@@ -246,8 +243,8 @@ public class ScalingTestIT {
     @Test
     public void testLargeDegreeMutationResultsInReadableGraphIT() throws MindmapsValidationException, InterruptedException, ExecutionException {
 
-        graph = MindmapsClient.getGraph(TEST_KEYSPACE);
-        simpleOntology();
+        MindmapsGraph graph = MindmapsClient.getGraph(TEST_KEYSPACE);
+        simpleOntology(TEST_KEYSPACE);
 
         // construct graph
         addNodes(TEST_KEYSPACE, 0, MAX_SIZE);
@@ -255,6 +252,17 @@ public class ScalingTestIT {
         Analytics computer = new Analytics(TEST_KEYSPACE);
 
         computer.degreesAndPersist();
+
+        // assert mutated degrees are as expected
+        graph.refresh();
+        thing = graph.getEntityType("thing");
+        Collection<Entity> things = thing.instances();
+
+        assertFalse(things.isEmpty());
+        things.forEach(thisThing -> {
+            assertEquals(1L, thisThing.resources().size());
+            assertEquals(0L, thisThing.resources().iterator().next().getValue());
+        });
 
         // add edges to force mutation
         addEdges(TEST_KEYSPACE, MAX_SIZE);
@@ -264,16 +272,27 @@ public class ScalingTestIT {
         computer.degreesAndPersist();
 
         // assert mutated degrees are as expected
+        graph.refresh();
         thing = graph.getEntityType("thing");
-        Collection<Entity> things = thing.instances();
+        things = thing.instances();
 
         assertFalse(things.isEmpty());
-        things.forEach(thisThing -> {
-            assertEquals(1L, thisThing.resources().size());
-            assertEquals(1L, thisThing.resources().iterator().next().getValue());
+        // TODO: use this concise code when concurrent deletions removes shortcut edges
+//        things.forEach(thisThing -> {
+//            assertEquals(1L, thisThing.resources().size());
+//            assertEquals(1L, thisThing.resources().iterator().next().getValue());
+//        });
+        things.forEach(thisThing ->{
+            Collection<Relation> relations = thisThing.relations(graph.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId("degree")));
+            assertEquals(1L,relations.size());
+            relations.forEach(relation -> {
+                if (relation.type().equals(graph.getRelationType("has-degree"))) {
+                    assertEquals(1L,relation.rolePlayers().get(graph.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId("degree"))).asResource().getValue());
+                }
+            });
         });
 
-        Collection<Relation> relations = graph.getRelationType("degrees").instances();
+        Collection<Relation> relations = graph.getRelationType("related").instances();
 
         assertFalse(relations.isEmpty());
         relations.forEach(thisRelation -> {
@@ -321,7 +340,8 @@ public class ScalingTestIT {
         distributedLoader.waitToFinish();
     }
 
-    private void simpleOntology() throws MindmapsValidationException {
+    private void simpleOntology(String keyspace) throws MindmapsValidationException {
+        MindmapsGraph graph = MindmapsClient.getGraph(keyspace);
         thing = graph.putEntityType("thing");
         relation1 = graph.putRoleType("relation1");
         relation2 = graph.putRoleType("relation2");
@@ -337,8 +357,9 @@ public class ScalingTestIT {
         related = graph.getRelationType("related");
     }
 
-    private Set<String> makeSuperNodes() throws MindmapsValidationException {
+    private Set<String> makeSuperNodes(String keyspace) throws MindmapsValidationException {
         // make the supernodes
+        MindmapsGraph graph = MindmapsClient.getGraph(keyspace);
         refreshOntology(graph);
         Set<String> superNodes = new HashSet<>();
         for (int i = 0; i < NUM_SUPER_NODES; i++) {
@@ -349,6 +370,11 @@ public class ScalingTestIT {
     }
 
     private void addEdges(String keyspace, int graphSize) {
+        // if graph size not even throw error for now
+        if (graphSize%2!=0) {
+            throw new RuntimeException("sorry graphsize has to be even");
+        }
+
         // batch in the nodes
         DistributedLoader distributedLoader = new DistributedLoader(keyspace,
                 Arrays.asList(HOST_NAME));
@@ -370,4 +396,127 @@ public class ScalingTestIT {
         distributedLoader.waitToFinish();
     }
 
+    ResourceType resource;
+    RoleType degreeOwner;
+    RoleType degreeValue;
+    RelationType hasDegree;
+    Entity entity1;
+    Entity entity2;
+    Entity entity3;
+    String resourceTypeId = "degree";
+
+    @Test
+    public void testBatchResourceLoad() throws MindmapsValidationException, InterruptedException {
+        createBugOntology(TEST_KEYSPACE);
+
+        // relate them
+        MindmapsGraph graph = MindmapsClient.getGraph(TEST_KEYSPACE);
+        refreshBugOntology(graph);
+
+        String id1 = UUID.randomUUID().toString();
+        graph.putRelation(id1, related)
+                .putRolePlayer(relation1, entity1)
+                .putRolePlayer(relation2, entity2);
+
+        String id2 = UUID.randomUUID().toString();
+        graph.putRelation(id2, related)
+                .putRolePlayer(relation1, entity2)
+                .putRolePlayer(relation2, entity3);
+
+        graph.commit();
+
+        // mutate all in first batch
+        LinkedBlockingQueue<Runnable> Jobs = new LinkedBlockingQueue<>();
+
+        // construct batch
+        Jobs.put(() -> putResource(TEST_KEYSPACE, "1", 1L));
+        Jobs.put(() -> putResource(TEST_KEYSPACE, "3", 1L));
+        Jobs.put(() -> putResource(TEST_KEYSPACE, "2", 2L));
+        Jobs.put(() -> putResource(TEST_KEYSPACE, id1, 2L));
+        Jobs.put(() -> putResource(TEST_KEYSPACE, id2, 2L));
+
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        Jobs.forEach(pool::submit);
+
+//        ThreadPoolExecutor pool = new ThreadPoolExecutor(1,1,1000, TimeUnit.MILLISECONDS, Jobs);
+//        pool.prestartAllCoreThreads();
+
+        Thread.sleep(10000);
+
+        // read in normal graph
+        graph = MindmapsClient.getGraph(TEST_KEYSPACE);
+        refreshBugOntology(graph);
+        System.out.println("resources method: ");
+        thing.instances().forEach(thisThing->{
+            System.out.println(thisThing);
+            thisThing.resources().forEach(System.out::println);
+        });
+        related.instances().forEach(thisThing->{
+            System.out.println(thisThing);
+            thisThing.resources().forEach(System.out::println);
+        });
+        System.out.println("relations method: ");
+        thing.instances().forEach(thisThing->{
+            System.out.println(thisThing);
+            thisThing.relations().forEach(relation -> System.out.println(relation.rolePlayers()));
+        });
+        related.instances().forEach(thisThing->{
+            System.out.println(thisThing);
+            thisThing.relations().forEach(relation -> System.out.println(relation.rolePlayers()));
+        });
+        System.out.println("resources" );
+        resource.instances().iterator().forEachRemaining(System.out::println);
+
+    }
+
+    private void createBugOntology(String keyspace) throws MindmapsValidationException {
+        MindmapsGraph graph = MindmapsClient.getGraph(keyspace);
+
+        resource = graph.putResourceType(resourceTypeId, Data.LONG);
+        degreeOwner = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
+        degreeValue = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
+        graph.putRelationType(GraqlType.HAS_RESOURCE.getId(resourceTypeId))
+                .hasRole(degreeOwner)
+                .hasRole(degreeValue);
+        resource.playsRole(degreeValue);
+        graph.putEntityType("thing").playsRole(degreeOwner);
+
+        thing = graph.getEntityType("thing");
+        entity1 = graph.putEntity("1", thing);
+        entity2 = graph.putEntity("2", thing);
+        entity3 = graph.putEntity("3", thing);
+
+        relation1 = graph.putRoleType("relation1");
+        relation2 = graph.putRoleType("relation2");
+        thing.playsRole(relation1).playsRole(relation2);
+        related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
+        related.playsRole(degreeOwner);
+
+
+        graph.commit();
+    }
+
+    private void refreshBugOntology(MindmapsGraph graph) {
+        resource = graph.getResourceType(resourceTypeId);
+        degreeOwner = graph.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
+        degreeValue = graph.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
+        hasDegree = graph.getRelationType(GraqlType.HAS_RESOURCE.getId(resourceTypeId));
+        thing = graph.getEntityType("thing");
+        entity1 = graph.getEntity("1");
+        entity2 = graph.getEntity("2");
+        entity3 = graph.getEntity("3");
+    }
+
+    private void putResource(String keyspace, String ownerId, Long value) {
+        MindmapsGraph graph = MindmapsClient.getGraphBatchLoading(keyspace);
+        refreshBugOntology(graph);
+        graph.addRelation(hasDegree)
+                .putRolePlayer(degreeOwner,graph.getInstance(ownerId))
+                .putRolePlayer(degreeValue,graph.putResource(value,resource));
+        try {
+            graph.commit();
+        } catch (MindmapsValidationException e) {
+            e.printStackTrace();
+        }
+    }
 }
