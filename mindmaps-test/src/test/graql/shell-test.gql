@@ -1,0 +1,4 @@
+insert
+person isa entity-type, has-resource name;
+name isa resource-type, datatype string;
+bob isa person, has name "Bob";

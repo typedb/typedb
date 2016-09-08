@@ -36,6 +36,7 @@ class GraqlClientMock implements GraqlClient {
 
     private String namespace = null;
     private URI uri;
+    private boolean closed = false;
 
     String getNamespace() {
         return namespace;
@@ -43,6 +44,10 @@ class GraqlClientMock implements GraqlClient {
 
     URI getURI() {
         return uri;
+    }
+
+    boolean isClosed() {
+        return closed;
     }
 
     @Override
@@ -60,5 +65,10 @@ class GraqlClientMock implements GraqlClient {
         } catch (IOException | InterruptedException | ExecutionException e) {
             fail();
         }
+    }
+
+    @Override
+    public void close() {
+        closed = true;
     }
 }

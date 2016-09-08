@@ -181,6 +181,8 @@ public class GraqlShell implements AutoCloseable {
             }
         } catch (IOException | InterruptedException | ExecutionException | URISyntaxException e) {
             System.err.println(e.toString());
+        } finally {
+            client.close();
         }
     }
 

@@ -23,7 +23,8 @@ import java.net.URI;
 /**
  * Interface for connecting a Graql websocket to a remote URI. Used for mocking in tests.
  */
-@FunctionalInterface
 public interface GraqlClient {
     void connect(Object websocket, URI uri);
+
+    void close();
 }

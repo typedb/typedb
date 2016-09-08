@@ -19,6 +19,8 @@
 package io.mindmaps.engine.session;
 
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.exception.ConceptException;
+import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.exception.InvalidConceptTypeException;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.concept.Concept;
@@ -116,7 +118,7 @@ class GraqlSession {
                 });
                 queryCancelled = false;
 
-            } catch (IllegalArgumentException | IllegalStateException | InvalidConceptTypeException e) {
+            } catch (IllegalArgumentException | IllegalStateException | ConceptException e) {
                 errorMessage = e.getMessage();
             } catch (Throwable e) {
                 errorMessage = "An unexpected error occurred";
