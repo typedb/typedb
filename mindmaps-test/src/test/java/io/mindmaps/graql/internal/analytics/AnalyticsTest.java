@@ -236,15 +236,26 @@ public class AnalyticsTest {
     private void checkDegrees(Map<Instance,Long> correctDegrees) {
         correctDegrees.entrySet().forEach(degree -> {
             Instance instance = degree.getKey();
-            Collection<Resource<?>> resources = null;
+            // TODO: when shortcut edges are removed properly during concurrent deletion revert code
+//            Collection<Resource<?>> resources = null;
+//            if (instance.isEntity()) {
+//                resources = instance.asEntity().resources();
+//            } else if (instance.isRelation()) {
+//                resources = instance.asRelation().resources();
+//            }
+//            assert resources != null;
+//            assertEquals(1,resources.size());
+//            assertTrue(resources.iterator().next().getValue().equals(degree.getValue()));
+
             if (instance.isEntity()) {
-                resources = instance.asEntity().resources();
+                Collection<Relation> relations = instance.asEntity().relations(graph.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId("degree")));
+                assertEquals(1,relations.size());
+                assertEquals(degree.getValue(),relations.iterator().next().rolePlayers().get(graph.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId("degree"))).asResource().getValue());
             } else if (instance.isRelation()) {
-                resources = instance.asRelation().resources();
+                Collection<Relation> relations = instance.asRelation().relations(graph.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId("degree")));
+                assertEquals(1,relations.size());
+                assertEquals(degree.getValue(),relations.iterator().next().rolePlayers().get(graph.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId("degree"))).asResource().getValue());
             }
-            assert resources != null;
-            assertEquals(1,resources.size());
-            assertTrue(resources.iterator().next().getValue().equals(degree.getValue()));
         });
     }
 
@@ -333,9 +344,16 @@ public class AnalyticsTest {
                 System.out.println("resource: "+resource);
             }));
 
+            System.out.println("All resources");
+            graph.getResourceType("degree").instances().forEach(System.out::println);
+
+//            System.out.println("gremlin graph");
+
             computer = new Analytics(keyspace);
             computer.degreesAndPersist();
 
+            Thread.sleep(5000);
+            graph.refresh();
             graph.getEntityType("thing").instances().forEach(thing -> thing.resources().forEach(resource -> {
                 System.out.println("thing: "+thing);
                 System.out.println("resource: "+resource);
@@ -348,6 +366,9 @@ public class AnalyticsTest {
                 System.out.println("thing: "+thing);
                 System.out.println("resource: "+resource);
             }));
+
+            System.out.println("All resources");
+            graph.getResourceType("degree").instances().forEach(System.out::println);
 
             // after computation refresh concepts
             graph.refresh();

@@ -182,20 +182,20 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
                 }
                 break;
             case 3:
-                if(vertex.property(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID).isPresent()) {
-                    mindmapsGraph.getRelation(vertex.value(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID)).delete();
-                    try {
-                        mindmapsGraph.commit();
-                    } catch (MindmapsValidationException e) {
-                        throw new RuntimeException("Failed to delete relation during bulk resource mutation.",e);
-                    }
-                }
+//                if(vertex.property(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID).isPresent()) {
+//                    mindmapsGraph.getRelation(vertex.value(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID)).delete();
+//                    try {
+//                        mindmapsGraph.commit();
+//                    } catch (MindmapsValidationException e) {
+//                        throw new RuntimeException("Failed to delete relation during bulk resource mutation.",e);
+//                    }
+//                }
         }
     }
 
     @Override
     public boolean terminate(final Memory memory) {
-        return memory.getIteration() == 3;
+        return memory.getIteration() == 2;
     }
 
     @Override
