@@ -35,6 +35,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.javatuples.Pair;
 import org.junit.*;
 
+import javax.management.relation.Role;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
@@ -46,17 +47,6 @@ public class AnalyticsTest {
 
     String keyspace;
     MindmapsGraph graph;
-
-    // concepts
-    EntityType thing;
-    EntityType anotherThing;
-    Entity entity1;
-    Entity entity2;
-    Entity entity3;
-    Entity entity4;
-    RoleType relation1;
-    RoleType relation2;
-    RelationType related;
 
     long startTime;
 
@@ -123,8 +113,8 @@ public class AnalyticsTest {
         // create 3 instances
         System.out.println();
         System.out.println("Creating 3 instances");
-        thing = graph.putEntityType("thing");
-        anotherThing = graph.putEntityType("another");
+        EntityType thing = graph.putEntityType("thing");
+        EntityType anotherThing = graph.putEntityType("another");
         graph.putEntity("1", thing);
         graph.putEntity("2", thing);
         graph.putEntity("3", anotherThing);
@@ -150,7 +140,20 @@ public class AnalyticsTest {
 
     @Test
     public void testDegrees() throws Exception {
-        instantiateSimpleConcepts();
+        // create instances
+        EntityType thing = graph.putEntityType("thing");
+        EntityType anotherThing = graph.putEntityType("another");
+
+        Entity entity1 = graph.putEntity("1", thing);
+        Entity entity2 = graph.putEntity("2", thing);
+        Entity entity3 = graph.putEntity("3", thing);
+        Entity entity4 = graph.putEntity("4", anotherThing);
+
+        RoleType relation1 = graph.putRoleType("relation1");
+        RoleType relation2 = graph.putRoleType("relation2");
+        thing.playsRole(relation1).playsRole(relation2);
+        anotherThing.playsRole(relation1).playsRole(relation2);
+        RelationType related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
 
         // relate them
         String id1 = UUID.randomUUID().toString();
@@ -171,7 +174,21 @@ public class AnalyticsTest {
         graph.commit();
 
         // assert degrees are correct
-        instantiateSimpleConcepts();
+        // create instances
+        thing = graph.putEntityType("thing");
+        anotherThing = graph.putEntityType("another");
+
+        entity1 = graph.putEntity("1", thing);
+        entity2 = graph.putEntity("2", thing);
+        entity3 = graph.putEntity("3", thing);
+        entity4 = graph.putEntity("4", anotherThing);
+
+        relation1 = graph.putRoleType("relation1");
+        relation2 = graph.putRoleType("relation2");
+        thing.playsRole(relation1).playsRole(relation2);
+        anotherThing.playsRole(relation1).playsRole(relation2);
+        related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
+
         Map<Instance, Long> correctDegrees = new HashMap<>();
         correctDegrees.put(entity1, 1l);
         correctDegrees.put(entity2, 3l);
@@ -216,24 +233,7 @@ public class AnalyticsTest {
         });
     }
 
-    private void instantiateSimpleConcepts() {
-        // create instances
-        thing = graph.putEntityType("thing");
-        anotherThing = graph.putEntityType("another");
-
-        entity1 = graph.putEntity("1", thing);
-        entity2 = graph.putEntity("2", thing);
-        entity3 = graph.putEntity("3", thing);
-        entity4 = graph.putEntity("4", anotherThing);
-
-        relation1 = graph.putRoleType("relation1");
-        relation2 = graph.putRoleType("relation2");
-        thing.playsRole(relation1).playsRole(relation2);
-        anotherThing.playsRole(relation1).playsRole(relation2);
-        related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
-    }
-
-    private void checkDegrees(Map<Instance,Long> correctDegrees) {
+    private static void checkDegrees(MindmapsGraph graph, Map<Instance,Long> correctDegrees) {
         correctDegrees.entrySet().forEach(degree -> {
             Instance instance = degree.getKey();
             // TODO: when shortcut edges are removed properly during concurrent deletion revert code
@@ -261,7 +261,20 @@ public class AnalyticsTest {
 
     @Test
     public void testDegreesAndPersist() throws Exception {
-        instantiateSimpleConcepts();
+        // create instances
+        EntityType thing = graph.putEntityType("thing");
+        EntityType anotherThing = graph.putEntityType("another");
+
+        Entity entity1 = graph.putEntity("1", thing);
+        Entity entity2 = graph.putEntity("2", thing);
+        Entity entity3 = graph.putEntity("3", thing);
+        Entity entity4 = graph.putEntity("4", anotherThing);
+
+        RoleType relation1 = graph.putRoleType("relation1");
+        RoleType relation2 = graph.putRoleType("relation2");
+        thing.playsRole(relation1).playsRole(relation2);
+        anotherThing.playsRole(relation1).playsRole(relation2);
+        RelationType related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
 
         // relate them
         String id1 = UUID.randomUUID().toString();
@@ -288,7 +301,20 @@ public class AnalyticsTest {
         computer.degreesAndPersist();
 
         graph.refresh();
-        instantiateSimpleConcepts();
+        // create instances
+        thing = graph.putEntityType("thing");
+        anotherThing = graph.putEntityType("another");
+
+        entity1 = graph.putEntity("1", thing);
+        entity2 = graph.putEntity("2", thing);
+        entity3 = graph.putEntity("3", thing);
+        entity4 = graph.putEntity("4", anotherThing);
+
+        relation1 = graph.putRoleType("relation1");
+        relation2 = graph.putRoleType("relation2");
+        thing.playsRole(relation1).playsRole(relation2);
+        anotherThing.playsRole(relation1).playsRole(relation2);
+        related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
         correctDegrees.clear();
         correctDegrees.put(entity1, 1l);
         correctDegrees.put(entity2, 3l);
@@ -298,17 +324,31 @@ public class AnalyticsTest {
         correctDegrees.put(graph.getRelation(id3), 1l);
 
         // assert persisted degrees are correct
-        checkDegrees(correctDegrees);
+        checkDegrees(graph,correctDegrees);
 
         long numVertices = 0;
 
         // compute again and again ...
         for (int i = 0; i < 2; i++) {
+            graph.refresh();
             computer.degreesAndPersist();
 
             // refresh everything after commit
             graph.refresh();
-            instantiateSimpleConcepts();
+            // create instances
+            thing = graph.putEntityType("thing");
+            anotherThing = graph.putEntityType("another");
+
+            entity1 = graph.putEntity("1", thing);
+            entity2 = graph.putEntity("2", thing);
+            entity3 = graph.putEntity("3", thing);
+            entity4 = graph.putEntity("4", anotherThing);
+
+            relation1 = graph.putRoleType("relation1");
+            relation2 = graph.putRoleType("relation2");
+            thing.playsRole(relation1).playsRole(relation2);
+            anotherThing.playsRole(relation1).playsRole(relation2);
+            related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
             correctDegrees.clear();
             correctDegrees.put(entity1, 1l);
             correctDegrees.put(entity2, 3l);
@@ -317,7 +357,7 @@ public class AnalyticsTest {
             correctDegrees.put(graph.getRelation(id2), 2l);
             correctDegrees.put(graph.getRelation(id3), 1l);
 
-            checkDegrees(correctDegrees);
+            checkDegrees(graph, correctDegrees);
 
             // assert the number of vertices remain the same
             if (i == 0) {
@@ -331,16 +371,16 @@ public class AnalyticsTest {
         // compute degrees on all types, again and again ...
         for (int i = 0; i < 3; i++) {
 
-            graph.getEntityType("thing").instances().forEach(thing -> thing.resources().forEach(resource -> {
-                System.out.println("thing: "+thing);
+            graph.getEntityType("thing").instances().forEach(thisThing -> thisThing.resources().forEach(resource -> {
+                System.out.println("thing: "+thisThing);
                 System.out.println("resource: "+resource);
             }));
-            graph.getEntityType("another").instances().forEach(thing -> thing.resources().forEach(resource -> {
-                System.out.println("thing: "+thing);
+            graph.getEntityType("another").instances().forEach(thisThing -> thisThing.resources().forEach(resource -> {
+                System.out.println("thing: "+thisThing);
                 System.out.println("resource: "+resource);
             }));
-            graph.getRelationType("related").instances().forEach(thing -> thing.resources().forEach(resource -> {
-                System.out.println("thing: "+thing);
+            graph.getRelationType("related").instances().forEach(thisThing -> thisThing.resources().forEach(resource -> {
+                System.out.println("thing: "+thisThing);
                 System.out.println("resource: "+resource);
             }));
 
@@ -348,22 +388,22 @@ public class AnalyticsTest {
             graph.getResourceType("degree").instances().forEach(System.out::println);
 
 //            System.out.println("gremlin graph");
-
+            graph.refresh();
             computer = new Analytics(keyspace);
             computer.degreesAndPersist();
 
             Thread.sleep(5000);
             graph.refresh();
-            graph.getEntityType("thing").instances().forEach(thing -> thing.resources().forEach(resource -> {
-                System.out.println("thing: "+thing);
+            graph.getEntityType("thing").instances().forEach(thisThing -> thisThing.resources().forEach(resource -> {
+                System.out.println("thing: "+thisThing);
                 System.out.println("resource: "+resource);
             }));
-            graph.getEntityType("another").instances().forEach(thing -> thing.resources().forEach(resource -> {
-                System.out.println("thing: "+thing);
+            graph.getEntityType("another").instances().forEach(thisThing -> thisThing.resources().forEach(resource -> {
+                System.out.println("thing: "+thisThing);
                 System.out.println("resource: "+resource);
             }));
-            graph.getRelationType("related").instances().forEach(thing -> thing.resources().forEach(resource -> {
-                System.out.println("thing: "+thing);
+            graph.getRelationType("related").instances().forEach(thisThing -> thisThing.resources().forEach(resource -> {
+                System.out.println("thing: "+thisThing);
                 System.out.println("resource: "+resource);
             }));
 
@@ -372,7 +412,20 @@ public class AnalyticsTest {
 
             // after computation refresh concepts
             graph.refresh();
-            instantiateSimpleConcepts();
+            // create instances
+            thing = graph.putEntityType("thing");
+            anotherThing = graph.putEntityType("another");
+
+            entity1 = graph.putEntity("1", thing);
+            entity2 = graph.putEntity("2", thing);
+            entity3 = graph.putEntity("3", thing);
+            entity4 = graph.putEntity("4", anotherThing);
+
+            relation1 = graph.putRoleType("relation1");
+            relation2 = graph.putRoleType("relation2");
+            thing.playsRole(relation1).playsRole(relation2);
+            anotherThing.playsRole(relation1).playsRole(relation2);
+            related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
             correctDegrees.clear();
             correctDegrees.put(entity1, 1l);
             correctDegrees.put(entity2, 3l);
@@ -382,7 +435,7 @@ public class AnalyticsTest {
             correctDegrees.put(entity4, 1l);
             correctDegrees.put(graph.getRelation(id3), 2l);
 
-            checkDegrees(correctDegrees);
+            checkDegrees(graph,correctDegrees);
 
             // assert the number of vertices remain the same
             if (i == 0) {
