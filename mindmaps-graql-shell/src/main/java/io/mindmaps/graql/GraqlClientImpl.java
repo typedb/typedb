@@ -28,9 +28,11 @@ import java.net.URI;
  */
 public class GraqlClientImpl implements GraqlClient {
 
+    private WebSocketClient client;
+
     @Override
     public void connect(Object websocket, URI uri) {
-        WebSocketClient client = new WebSocketClient();
+        client = new WebSocketClient();
 
         try {
             client.start();
@@ -40,6 +42,15 @@ public class GraqlClientImpl implements GraqlClient {
         try {
             client.connect(websocket, uri);
         } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void close() {
+        try {
+            client.stop();
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
