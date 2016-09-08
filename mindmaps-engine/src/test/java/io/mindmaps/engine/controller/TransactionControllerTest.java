@@ -21,7 +21,7 @@ package io.mindmaps.engine.controller;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.constants.RESTUtil;
+import io.mindmaps.util.REST;
 import io.mindmaps.engine.Util;
 import io.mindmaps.engine.loader.TransactionState;
 import io.mindmaps.engine.postprocessing.BackgroundTasks;
@@ -64,7 +64,7 @@ public class TransactionControllerTest {
     public void insertValidQuery() {
         String exampleInsertQuery = "insert id \"actor-123\" isa Man";
         String transactionUUID = given().body(exampleInsertQuery).
-                when().post(RESTUtil.WebPath.NEW_TRANSACTION_URI + "?graphName=mindmapstest").body().asString();
+                when().post(REST.WebPath.NEW_TRANSACTION_URI + "?graphName=mindmapstest").body().asString();
         int i = 0;
         String status = "QUEUED";
         while (i < 5 && !status.equals("FINISHED")) {
@@ -86,7 +86,7 @@ public class TransactionControllerTest {
     public void insertInvalidQuery() {
         String exampleInvalidInsertQuery = "insert id ?Cdcs;w4. '' ervalue;";
         String transactionUUID = given().body(exampleInvalidInsertQuery).
-                when().post(RESTUtil.WebPath.NEW_TRANSACTION_URI + "?graphName=mindmapstest").body().asString();
+                when().post(REST.WebPath.NEW_TRANSACTION_URI + "?graphName=mindmapstest").body().asString();
         int i = 0;
         String status = "QUEUED";
         while (i < 1 && !status.equals("ERROR")) {
@@ -106,8 +106,8 @@ public class TransactionControllerTest {
     public void checkLoaderStateTest() {
         String exampleInvalidInsertQuery = "insert id ?Cdcs;w4. '' ervalue;";
         given().body(exampleInvalidInsertQuery).
-                when().post(RESTUtil.WebPath.NEW_TRANSACTION_URI + "?graphName=mindmapstest").body().asString();
-        JSONObject resultObj = new JSONObject(get(RESTUtil.WebPath.LOADER_STATE_URI).then().statusCode(200).and().extract().body().asString());
+                when().post(REST.WebPath.NEW_TRANSACTION_URI + "?graphName=mindmapstest").body().asString();
+        JSONObject resultObj = new JSONObject(get(REST.WebPath.LOADER_STATE_URI).then().statusCode(200).and().extract().body().asString());
         assertTrue(resultObj.has(TransactionState.State.QUEUED.name()));
         assertTrue(resultObj.has(TransactionState.State.ERROR.name()));
         assertTrue(resultObj.has(TransactionState.State.FINISHED.name()));

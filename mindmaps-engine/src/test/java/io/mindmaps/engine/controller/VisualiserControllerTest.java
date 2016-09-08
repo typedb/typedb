@@ -22,8 +22,8 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.response.Response;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.constants.RESTUtil;
-import io.mindmaps.core.model.EntityType;
+import io.mindmaps.util.REST;
+import io.mindmaps.core.concept.EntityType;
 import io.mindmaps.engine.Util;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
@@ -56,14 +56,14 @@ public class VisualiserControllerTest {
 
     @Test
      public void notExistingID() {
-        Response response = get(RESTUtil.WebPath.CONCEPT_BY_ID_URI+"6573gehjio?graphName="+graphName).then().statusCode(404).extract().response().andReturn();
+        Response response = get(REST.WebPath.CONCEPT_BY_ID_URI+"6573gehjio?graphName="+graphName).then().statusCode(404).extract().response().andReturn();
         String  message = response.getBody().asString();
         assertTrue(message.equals("ID [6573gehjio] not found in the graph."));
     }
 
     @Test
     public void getConceptByID() {
-        Response response = get(RESTUtil.WebPath.CONCEPT_BY_ID_URI+"actor-123?graphName="+graphName).then().statusCode(200).extract().response().andReturn();
+        Response response = get(REST.WebPath.CONCEPT_BY_ID_URI+"actor-123?graphName="+graphName).then().statusCode(200).extract().response().andReturn();
         JSONObject message = new JSONObject(response.getBody().asString());
         assertTrue(message.getString("_type").equals("Man"));
         assertTrue(message.getString("_id").equals("actor-123"));

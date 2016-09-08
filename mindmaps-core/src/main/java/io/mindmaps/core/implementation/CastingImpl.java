@@ -18,9 +18,9 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.constants.DataType;
-import io.mindmaps.core.implementation.exception.NoEdgeException;
-import io.mindmaps.core.model.*;
+import io.mindmaps.util.Schema;
+import io.mindmaps.exception.NoEdgeException;
+import io.mindmaps.core.concept.*;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.HashSet;
@@ -47,7 +47,7 @@ class CastingImpl extends ConceptImpl {
         if(concept != null)
             return getMindmapsGraph().getElementFactory().buildRoleType(concept);
         else
-            throw new NoEdgeException(toString(), DataType.BaseType.ROLE_TYPE.name());
+            throw new NoEdgeException(toString(), Schema.BaseType.ROLE_TYPE.name());
     }
 
     /**
@@ -55,7 +55,7 @@ class CastingImpl extends ConceptImpl {
      * @return The {@link Instance} which is the roleplayer in this casting
      */
     public InstanceImpl getRolePlayer() {
-        Concept concept = getOutgoingNeighbour(DataType.EdgeLabel.ROLE_PLAYER);
+        Concept concept = getOutgoingNeighbour(Schema.EdgeLabel.ROLE_PLAYER);
         if(concept != null)
             return getMindmapsGraph().getElementFactory().buildSpecificInstance(concept);
         else
@@ -74,7 +74,7 @@ class CastingImpl extends ConceptImpl {
             hash = "CastingBaseId_" + this.getBaseIdentifier() + UUID.randomUUID().toString();
         else
             hash = generateNewHash(role, rolePlayer);
-        setUniqueProperty(DataType.ConceptPropertyUnique.INDEX, hash);
+        setUniqueProperty(Schema.ConceptPropertyUnique.INDEX, hash);
         return this;
     }
 
@@ -95,7 +95,7 @@ class CastingImpl extends ConceptImpl {
     public Set<RelationImpl> getRelations() {
         ConceptImpl<?, ?> thisRef = this;
         Set<RelationImpl> relations = new HashSet<>();
-        Set<ConceptImpl> concepts = thisRef.getIncomingNeighbours(DataType.EdgeLabel.CASTING);
+        Set<ConceptImpl> concepts = thisRef.getIncomingNeighbours(Schema.EdgeLabel.CASTING);
 
         if(concepts.size() > 0){
             relations.addAll(concepts.stream().map(getMindmapsGraph().getElementFactory()::buildRelation).collect(Collectors.toList()));

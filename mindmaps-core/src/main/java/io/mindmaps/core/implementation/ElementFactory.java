@@ -18,9 +18,9 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.constants.DataType;
-import io.mindmaps.core.Data;
-import io.mindmaps.core.model.Concept;
+import io.mindmaps.core.concept.Concept;
+import io.mindmaps.core.concept.ResourceType;
+import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 /**
@@ -71,10 +71,10 @@ final class ElementFactory {
     public <V> ResourceTypeImpl<V> buildResourceType(Vertex v){
         return new ResourceTypeImpl<>(v, mindmapsGraph);
     }
-    public <V> ResourceTypeImpl<V> buildResourceType(Vertex v, Data<V> type){
+    public <V> ResourceTypeImpl<V> buildResourceType(Vertex v, ResourceType.DataType<V> type){
         return new ResourceTypeImpl<>(v, mindmapsGraph, type);
     }
-    public <V> ResourceTypeImpl<V> buildResourceType(Concept c, Data<V> type){
+    public <V> ResourceTypeImpl<V> buildResourceType(Concept c, ResourceType.DataType<V> type){
         return buildResourceType(((ConceptImpl) c).getVertex(), type);
     }
 
@@ -107,15 +107,15 @@ final class ElementFactory {
     }
 
     public RuleImpl buildRule(Vertex v){
-        return buildRule(v, v.value(DataType.ConceptProperty.RULE_LHS.name()), v.value(DataType.ConceptProperty.RULE_RHS.name()));
+        return buildRule(v, v.value(Schema.ConceptProperty.RULE_LHS.name()), v.value(Schema.ConceptProperty.RULE_RHS.name()));
     }
     public RuleImpl buildRule(Vertex v, String lhs, String rhs){
         return  new RuleImpl(v, mindmapsGraph, lhs, rhs);
     }
     public RuleImpl buildRule(ConceptImpl c){
         return  buildRule(c.getVertex(),
-                c.getProperty(DataType.ConceptProperty.RULE_LHS).toString(),
-                c.getProperty(DataType.ConceptProperty.RULE_RHS).toString());
+                c.getProperty(Schema.ConceptProperty.RULE_LHS).toString(),
+                c.getProperty(Schema.ConceptProperty.RULE_RHS).toString());
     }
 
 
@@ -129,7 +129,7 @@ final class ElementFactory {
      * @return A concept built to the correct type
      */
     public ConceptImpl buildUnknownConcept(Vertex v){
-        DataType.BaseType type = DataType.BaseType.valueOf(v.label());
+        Schema.BaseType type = Schema.BaseType.valueOf(v.label());
         ConceptImpl concept = null;
         switch (type){
             case RELATION:
@@ -174,7 +174,7 @@ final class ElementFactory {
     }
 
     public TypeImpl buildSpecificConceptType(Vertex vertex){
-        DataType.BaseType type = DataType.BaseType.valueOf(vertex.label());
+        Schema.BaseType type = Schema.BaseType.valueOf(vertex.label());
         TypeImpl conceptType;
         switch (type){
             case ROLE_TYPE:
@@ -204,7 +204,7 @@ final class ElementFactory {
     }
 
     public InstanceImpl buildSpecificInstance(Vertex vertex){
-        DataType.BaseType type = DataType.BaseType.valueOf(vertex.label());
+        Schema.BaseType type = Schema.BaseType.valueOf(vertex.label());
         InstanceImpl conceptInstance;
         switch (type){
             case RELATION:

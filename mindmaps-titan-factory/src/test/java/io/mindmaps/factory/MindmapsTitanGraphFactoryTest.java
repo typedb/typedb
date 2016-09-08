@@ -23,7 +23,7 @@ import ch.qos.logback.classic.Logger;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
-import io.mindmaps.constants.DataType;
+import io.mindmaps.util.Schema;
 import io.mindmaps.core.implementation.MindmapsTitanGraph;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -170,28 +170,28 @@ public class MindmapsTitanGraphFactoryTest {
 
         // Indexed Lookup /////////////////////////////////////////////////////
         // time the same query multiple times
-        Vertex first = indexGraph.traversal().V().has(DataType.ConceptProperty.VALUE_STRING.name(), String.valueOf(0)).next();
+        Vertex first = indexGraph.traversal().V().has(Schema.ConceptProperty.VALUE_STRING.name(), String.valueOf(0)).next();
         List<Object> indexResult = new ArrayList<>();
         double startTime = System.nanoTime();
         for (int i=0; i<nTimes; i++) {
             indexResult = indexGraph.traversal().V(first).
-                    outE(DataType.EdgeLabel.SHORTCUT.getLabel()).
-                    has(DataType.EdgeProperty.TO_ROLE.name(), String.valueOf(1)).inV().
-                    values(DataType.ConceptProperty.VALUE_STRING.name()).toList();
+                    outE(Schema.EdgeLabel.SHORTCUT.getLabel()).
+                    has(Schema.EdgeProperty.TO_ROLE.name(), String.valueOf(1)).inV().
+                    values(Schema.ConceptProperty.VALUE_STRING.name()).toList();
         }
         double endTime = System.nanoTime();
         double indexDuration = (endTime - startTime);  // this is the difference (divide by 1000000 to get milliseconds).
 
         // Non-Indexed Lookup /////////////////////////////////////////////////////
         // time the same query multiple times
-        first = noIndexGraph.traversal().V().has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(),String.valueOf(0)).next();
+        first = noIndexGraph.traversal().V().has(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(),String.valueOf(0)).next();
         List<Object> result = new ArrayList<>();
         startTime = System.nanoTime();
         for (int i=0; i<nTimes; i++) {
             result = noIndexGraph.traversal().V(first).
-                    outE(DataType.EdgeLabel.ISA.getLabel()).
-                    has(DataType.ConceptProperty.TYPE.name(), String.valueOf(1)).inV().
-                    values(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name()).toList();
+                    outE(Schema.EdgeLabel.ISA.getLabel()).
+                    has(Schema.ConceptProperty.TYPE.name(), String.valueOf(1)).inV().
+                    values(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name()).toList();
         }
         endTime = System.nanoTime();
         double duration = (endTime - startTime);  //divide by 1000000 to get milliseconds.
@@ -216,13 +216,13 @@ public class MindmapsTitanGraphFactoryTest {
         // Gremlin Indexed Lookup ////////////////////////////////////////////////////
 
         // time the same query multiple times
-        Vertex first = indexGraph.traversal().V().has(DataType.ConceptProperty.VALUE_STRING.name(),String.valueOf(0)).next();
+        Vertex first = indexGraph.traversal().V().has(Schema.ConceptProperty.VALUE_STRING.name(),String.valueOf(0)).next();
         List<Object> gremlinIndexedTraversalResult = new ArrayList<>();
         double startTime = System.nanoTime();
         for (int i=0; i<nTimes; i++) {
             gremlinIndexedTraversalResult = indexGraph.traversal().V(first).
-                    local(__.outE(DataType.EdgeLabel.SHORTCUT.getLabel()).order().by(DataType.EdgeProperty.TO_ROLE.name(), Order.decr).range(0, 10)).
-                    inV().values(DataType.ConceptProperty.VALUE_STRING.name()).toList();
+                    local(__.outE(Schema.EdgeLabel.SHORTCUT.getLabel()).order().by(Schema.EdgeProperty.TO_ROLE.name(), Order.decr).range(0, 10)).
+                    inV().values(Schema.ConceptProperty.VALUE_STRING.name()).toList();
         }
         double endTime = System.nanoTime();
         double gremlinIndexedTraversalDuration = (endTime - startTime);  // this is the difference (divide by 1000000 to get milliseconds).
@@ -230,13 +230,13 @@ public class MindmapsTitanGraphFactoryTest {
         // Non-Indexed Gremlin Lookup ////////////////////////////////////////////////////
 
         // time the same query multiple times
-        first = noIndexGraph.traversal().V().has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), String.valueOf(0)).next();
+        first = noIndexGraph.traversal().V().has(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), String.valueOf(0)).next();
         List<Object> gremlinTraversalResult = new ArrayList<>();
         startTime = System.nanoTime();
         for (int i=0; i < nTimes; i++) {
             gremlinTraversalResult = noIndexGraph.traversal().V(first).
-                    local(__.outE(DataType.EdgeLabel.ISA.getLabel()).order().by(DataType.ConceptProperty.TYPE.name(), Order.decr).range(0, 10)).
-                    inV().values(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name()).toList();
+                    local(__.outE(Schema.EdgeLabel.ISA.getLabel()).order().by(Schema.ConceptProperty.TYPE.name(), Order.decr).range(0, 10)).
+                    inV().values(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name()).toList();
         }
         endTime = System.nanoTime();
         double gremlinTraversalDuration = (endTime - startTime);  //divide by 1000000 to get milliseconds.
@@ -257,25 +257,25 @@ public class MindmapsTitanGraphFactoryTest {
         Graph graph = getGraph();
         createGraphTestVertexCentricIndex("rand",graph, max);
 
-        Vertex first = graph.traversal().V().has(DataType.ConceptProperty.VALUE_STRING.name(),String.valueOf(0)).next();
+        Vertex first = graph.traversal().V().has(Schema.ConceptProperty.VALUE_STRING.name(),String.valueOf(0)).next();
         List<Object> result, oldResult = new ArrayList<>();
         for (int i=0; i<nTimes; i++) {
             // confirm every iteration fetches exactly the same results
             result = graph.traversal().V(first).
-                    local(__.outE(DataType.EdgeLabel.SHORTCUT.getLabel()).order().by(DataType.EdgeProperty.TO_ROLE.name(), Order.decr).range(0, 10)).
-                    inV().values(DataType.ConceptProperty.VALUE_STRING.name()).toList();
+                    local(__.outE(Schema.EdgeLabel.SHORTCUT.getLabel()).order().by(Schema.EdgeProperty.TO_ROLE.name(), Order.decr).range(0, 10)).
+                    inV().values(Schema.ConceptProperty.VALUE_STRING.name()).toList();
             if (i>0) assertEquals(result,oldResult);
             oldResult = result;
 
             // confirm paging works
             List allNodes = graph.traversal().V(first).
-                    local(__.outE(DataType.EdgeLabel.SHORTCUT.getLabel()).order().by(DataType.EdgeProperty.TO_ROLE.name(), Order.decr)).
-                    inV().values(DataType.ConceptProperty.VALUE_STRING.name()).toList();
+                    local(__.outE(Schema.EdgeLabel.SHORTCUT.getLabel()).order().by(Schema.EdgeProperty.TO_ROLE.name(), Order.decr)).
+                    inV().values(Schema.ConceptProperty.VALUE_STRING.name()).toList();
 
             for (int j=0;j<max-1;j++) {
                 List currentNode = graph.traversal().V(first).
-                        local(__.outE(DataType.EdgeLabel.SHORTCUT.getLabel()).order().by(DataType.EdgeProperty.TO_ROLE.name(), Order.decr).range(j, j + 1)).
-                        inV().values(DataType.ConceptProperty.VALUE_STRING.name()).toList();
+                        local(__.outE(Schema.EdgeLabel.SHORTCUT.getLabel()).order().by(Schema.EdgeProperty.TO_ROLE.name(), Order.decr).range(j, j + 1)).
+                        inV().values(Schema.ConceptProperty.VALUE_STRING.name()).toList();
                 assertEquals(currentNode.get(0),allNodes.get(j));
             }
         }
@@ -292,26 +292,26 @@ public class MindmapsTitanGraphFactoryTest {
     private void addConcepts(Graph graph) {
         Vertex vertex1 = graph.addVertex();
         vertex1.property("ITEM_IDENTIFIER", "www.mindmaps.com/action-movie/");
-        vertex1.property(DataType.ConceptProperty.VALUE_STRING.name(), "hi there");
+        vertex1.property(Schema.ConceptProperty.VALUE_STRING.name(), "hi there");
 
         Vertex vertex2 = graph.addVertex();
-        vertex2.property(DataType.ConceptProperty.VALUE_STRING.name(), "hi there");
+        vertex2.property(Schema.ConceptProperty.VALUE_STRING.name(), "hi there");
     }
 
     private void assertIndexCorrect(Graph graph) {
-        assertTrue(graph.traversal().V().has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), "www.mindmaps.com/action-movie/").hasNext());
-        assertEquals(2, graph.traversal().V().has(DataType.ConceptProperty.VALUE_STRING.name(), "hi there").count().next().longValue());
-        assertFalse(graph.traversal().V().has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), "mind").hasNext());
-        assertFalse(graph.traversal().V().has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), "www").hasNext());
-        assertFalse(graph.traversal().V().has(DataType.ConceptProperty.VALUE_STRING.name(), "hi").hasNext());
+        assertTrue(graph.traversal().V().has(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), "www.mindmaps.com/action-movie/").hasNext());
+        assertEquals(2, graph.traversal().V().has(Schema.ConceptProperty.VALUE_STRING.name(), "hi there").count().next().longValue());
+        assertFalse(graph.traversal().V().has(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), "mind").hasNext());
+        assertFalse(graph.traversal().V().has(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), "www").hasNext());
+        assertFalse(graph.traversal().V().has(Schema.ConceptProperty.VALUE_STRING.name(), "hi").hasNext());
     }
 
     private static void createGraphTestNoIndex(String indexProp,Graph graph, int max) throws InterruptedException {
-        createGraphGeneric(indexProp, graph, max, "ITEM_IDENTIFIER", DataType.EdgeLabel.ISA.getLabel(), "TYPE");
+        createGraphGeneric(indexProp, graph, max, "ITEM_IDENTIFIER", Schema.EdgeLabel.ISA.getLabel(), "TYPE");
     }
 
     private static void createGraphTestVertexCentricIndex(String indexProp,Graph graph, int max) throws InterruptedException {
-        createGraphGeneric(indexProp,graph,max,DataType.ConceptProperty.VALUE_STRING.name(), DataType.EdgeLabel.SHORTCUT.getLabel(), DataType.EdgeProperty.TO_ROLE.name());
+        createGraphGeneric(indexProp,graph,max, Schema.ConceptProperty.VALUE_STRING.name(), Schema.EdgeLabel.SHORTCUT.getLabel(), Schema.EdgeProperty.TO_ROLE.name());
     }
 
     private static void createGraphGeneric(String indexProp,Graph graph,int max,String nodeProp,String edgeLabel,String edgeProp) throws InterruptedException {

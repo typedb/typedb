@@ -20,12 +20,16 @@ package io.mindmaps.graql.query;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.Data;
-import io.mindmaps.core.model.Concept;
-import io.mindmaps.core.model.EntityType;
+import io.mindmaps.core.concept.Concept;
+import io.mindmaps.core.concept.EntityType;
+import io.mindmaps.core.concept.ResourceType;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
-import io.mindmaps.graql.*;
+import io.mindmaps.graql.InsertQuery;
+import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.Pattern;
+import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.Var;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,11 +38,20 @@ import org.junit.rules.ExpectedException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static io.mindmaps.constants.DataType.ConceptMeta.*;
-import static io.mindmaps.graql.Graql.*;
+import static io.mindmaps.graql.Graql.gt;
+import static io.mindmaps.graql.Graql.id;
+import static io.mindmaps.graql.Graql.var;
+import static io.mindmaps.graql.Graql.withGraph;
+import static io.mindmaps.util.Schema.MetaType.ENTITY_TYPE;
+import static io.mindmaps.util.Schema.MetaType.RELATION_TYPE;
+import static io.mindmaps.util.Schema.MetaType.RESOURCE_TYPE;
+import static io.mindmaps.util.Schema.MetaType.ROLE_TYPE;
+import static io.mindmaps.util.Schema.MetaType.RULE_TYPE;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class InsertQueryTest {
 
@@ -216,26 +229,26 @@ public class InsertQueryTest {
     @Test
     public void testInsertDatatype() {
         qb.insert(
-                id("my-type").isa(RESOURCE_TYPE.getId()).datatype(Data.LONG)
+                id("my-type").isa(RESOURCE_TYPE.getId()).datatype(ResourceType.DataType.LONG)
         ).execute();
 
         MatchQuery query = qb.match(var("x").id("my-type"));
-        Data datatype = query.iterator().next().get("x").asResourceType().getDataType();
+        ResourceType.DataType datatype = query.iterator().next().get("x").asResourceType().getDataType();
 
-        assertEquals(Data.LONG, datatype);
+        assertEquals(ResourceType.DataType.LONG, datatype);
     }
 
     @Test
     public void testInsertAkoResourceType() {
         qb.insert(
-                id("my-type").isa(RESOURCE_TYPE.getId()).datatype(Data.STRING),
+                id("my-type").isa(RESOURCE_TYPE.getId()).datatype(ResourceType.DataType.STRING),
                 id("ako-type").ako("my-type")
         ).execute();
 
         MatchQuery query = qb.match(var("x").id("ako-type"));
-        Data datatype = query.iterator().next().get("x").asResourceType().getDataType();
+        ResourceType.DataType datatype = query.iterator().next().get("x").asResourceType().getDataType();
 
-        assertEquals(Data.STRING, datatype);
+        assertEquals(ResourceType.DataType.STRING, datatype);
     }
 
     @Test
@@ -372,7 +385,7 @@ public class InsertQueryTest {
     public void testInsertResourceTypeAndInstance() {
         qb.insert(
                 var("x").isa("movie").has("my-resource", "look a string"),
-                id("my-resource").isa("resource-type").datatype(Data.STRING),
+                id("my-resource").isa("resource-type").datatype(ResourceType.DataType.STRING),
                 id("movie").hasResource("my-resource")
         ).execute();
     }
@@ -381,8 +394,8 @@ public class InsertQueryTest {
     public void testHasResource() {
         qb.insert(
                 id("a-new-type").isa("entity-type").hasResource("a-new-resource-type"),
-                id("a-new-resource-type").isa("resource-type").datatype(Data.STRING),
-                id("an-unconnected-resource-type").isa("resource-type").datatype(Data.LONG)
+                id("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING),
+                id("an-unconnected-resource-type").isa("resource-type").datatype(ResourceType.DataType.LONG)
         ).execute();
 
         // Make sure a-new-type can have the given resource type, but not other resource types

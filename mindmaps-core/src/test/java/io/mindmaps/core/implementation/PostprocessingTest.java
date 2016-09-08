@@ -18,8 +18,8 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.constants.DataType;
-import io.mindmaps.core.model.*;
+import io.mindmaps.util.Schema;
+import io.mindmaps.core.concept.*;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -56,7 +56,7 @@ public class PostprocessingTest {
         graph.addRelation(relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
         assertEquals(1, instance1.castings().size());
         assertEquals(2, graph.getTinkerPopGraph().traversal().E().
-                hasLabel(DataType.EdgeLabel.SHORTCUT.getLabel()).toList().size());
+                hasLabel(Schema.EdgeLabel.SHORTCUT.getLabel()).toList().size());
     }
     @After
     public void destroyGraphAccessManager()  throws Exception{
@@ -78,36 +78,36 @@ public class PostprocessingTest {
         RelationImpl relation = (RelationImpl) graph.addRelation(relationType).putRolePlayer(otherRoleType, otherInstance);
 
         //Create Fake Casting
-        Vertex castingVertex = graph.getTinkerPopGraph().addVertex(DataType.BaseType.CASTING.name());
-        castingVertex.addEdge(DataType.EdgeLabel.ISA.getLabel(), mainRoleType.getVertex());
+        Vertex castingVertex = graph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
+        castingVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), mainRoleType.getVertex());
 
-        Edge edge = castingVertex.addEdge(DataType.EdgeLabel.ROLE_PLAYER.getLabel(), mainInstance.getVertex());
-        edge.property(DataType.EdgeProperty.ROLE_TYPE.name(), mainRoleType.getId());
+        Edge edge = castingVertex.addEdge(Schema.EdgeLabel.ROLE_PLAYER.getLabel(), mainInstance.getVertex());
+        edge.property(Schema.EdgeProperty.ROLE_TYPE.name(), mainRoleType.getId());
 
-        edge = relation.getVertex().addEdge(DataType.EdgeLabel.CASTING.getLabel(), castingVertex);
-        edge.property(DataType.EdgeProperty.ROLE_TYPE.name(), mainRoleType.getId());
+        edge = relation.getVertex().addEdge(Schema.EdgeLabel.CASTING.getLabel(), castingVertex);
+        edge.property(Schema.EdgeProperty.ROLE_TYPE.name(), mainRoleType.getId());
 
         putFakeShortcutEdge(relationType, relation, mainRoleType, mainInstance, otherRoleType, otherInstance);
         putFakeShortcutEdge(relationType, relation, otherRoleType, otherInstance, mainRoleType, mainInstance);
     }
 
     private void putFakeShortcutEdge(RelationType relationType, Relation relation, RoleType fromRole, InstanceImpl fromInstance, RoleType toRole, InstanceImpl toInstance){
-        Edge tinkerEdge = fromInstance.getVertex().addEdge(DataType.EdgeLabel.SHORTCUT.getLabel(), toInstance.getVertex());
+        Edge tinkerEdge = fromInstance.getVertex().addEdge(Schema.EdgeLabel.SHORTCUT.getLabel(), toInstance.getVertex());
         EdgeImpl edge = new EdgeImpl(tinkerEdge, graph);
 
-        edge.setProperty(DataType.EdgeProperty.RELATION_TYPE_ID, relationType.getId());
-        edge.setProperty(DataType.EdgeProperty.RELATION_ID, relation.getId());
+        edge.setProperty(Schema.EdgeProperty.RELATION_TYPE_ID, relationType.getId());
+        edge.setProperty(Schema.EdgeProperty.RELATION_ID, relation.getId());
 
         if (fromInstance.getId() != null)
-            edge.setProperty(DataType.EdgeProperty.FROM_ID, fromInstance.getId());
-        edge.setProperty(DataType.EdgeProperty.FROM_ROLE, fromRole.getId());
+            edge.setProperty(Schema.EdgeProperty.FROM_ID, fromInstance.getId());
+        edge.setProperty(Schema.EdgeProperty.FROM_ROLE, fromRole.getId());
 
         if (toInstance.getId() != null)
-            edge.setProperty(DataType.EdgeProperty.TO_ID, toInstance.getId());
-        edge.setProperty(DataType.EdgeProperty.TO_ROLE, toRole.getId());
+            edge.setProperty(Schema.EdgeProperty.TO_ID, toInstance.getId());
+        edge.setProperty(Schema.EdgeProperty.TO_ROLE, toRole.getId());
 
-        edge.setProperty(DataType.EdgeProperty.FROM_TYPE, fromInstance.getParentIsa().getId());
-        edge.setProperty(DataType.EdgeProperty.TO_TYPE, toInstance.getParentIsa().getId());
+        edge.setProperty(Schema.EdgeProperty.FROM_TYPE, fromInstance.getParentIsa().getId());
+        edge.setProperty(Schema.EdgeProperty.TO_TYPE, toInstance.getParentIsa().getId());
     }
 
     @Test
@@ -122,7 +122,7 @@ public class PostprocessingTest {
         assertEquals(1, instance3.relations().size());
 
         assertEquals(6, graph.getTinkerPopGraph().traversal().E().
-                hasLabel(DataType.EdgeLabel.SHORTCUT.getLabel()).toList().size());
+                hasLabel(Schema.EdgeLabel.SHORTCUT.getLabel()).toList().size());
 
         graph.fixDuplicateCasting(mainCasting.getId());
 
@@ -131,7 +131,7 @@ public class PostprocessingTest {
         assertEquals(1, instance3.relations().size());
 
         assertEquals(4, graph.getTinkerTraversal().E().
-                hasLabel(DataType.EdgeLabel.SHORTCUT.getLabel()).toList().size());
+                hasLabel(Schema.EdgeLabel.SHORTCUT.getLabel()).toList().size());
 
     }
 }

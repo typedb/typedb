@@ -19,8 +19,8 @@
 package io.mindmaps.graql.internal.query.match;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.model.Concept;
-import io.mindmaps.core.model.Type;
+import io.mindmaps.core.concept.Concept;
+import io.mindmaps.core.concept.Type;
 import io.mindmaps.graql.admin.MatchQueryAdmin;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.internal.query.Conjunction;

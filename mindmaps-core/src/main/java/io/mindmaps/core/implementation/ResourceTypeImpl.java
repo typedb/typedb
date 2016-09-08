@@ -18,12 +18,11 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.constants.DataType;
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.Data;
-import io.mindmaps.core.implementation.exception.InvalidConceptValueException;
-import io.mindmaps.core.model.Resource;
-import io.mindmaps.core.model.ResourceType;
+import io.mindmaps.core.concept.Resource;
+import io.mindmaps.core.concept.ResourceType;
+import io.mindmaps.exception.InvalidConceptValueException;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.regex.Matcher;
@@ -39,7 +38,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
         super(v, mindmapsGraph);
     }
 
-    ResourceTypeImpl(Vertex v, AbstractMindmapsGraph mindmapsGraph, Data<D> type) {
+    ResourceTypeImpl(Vertex v, AbstractMindmapsGraph mindmapsGraph, DataType<D> type) {
         super(v, mindmapsGraph);
         setDataType(type);
     }
@@ -48,8 +47,8 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
      *
      * @param type The data type of the resource
      */
-    private void setDataType(Data<D> type) {
-        setProperty(DataType.ConceptProperty.DATA_TYPE, type.getName());
+    private void setDataType(DataType<D> type) {
+        setProperty(Schema.ConceptProperty.DATA_TYPE, type.getName());
     }
 
     /**
@@ -58,7 +57,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
      */
     @Override
     public ResourceType<D> setRegex(String regex) {
-        if(!getDataType().equals(Data.STRING)){
+        if(!getDataType().equals(DataType.STRING)){
             throw new UnsupportedOperationException(ErrorMessage.REGEX_NOT_STRING.getMessage(toString()));
         }
 
@@ -74,7 +73,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
             }
         }
 
-        return setProperty(DataType.ConceptProperty.REGEX, regex);
+        return setProperty(Schema.ConceptProperty.REGEX, regex);
     }
 
     /**
@@ -83,9 +82,9 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
     //This unsafe cast is suppressed because at this stage we do not know what the type is when reading from the rootGraph.
     @SuppressWarnings("unchecked")
     @Override
-    public Data<D> getDataType() {
-        Object object = getProperty(DataType.ConceptProperty.DATA_TYPE);
-        return (Data<D>) Data.SUPPORTED_TYPES.get(String.valueOf(object));
+    public DataType<D> getDataType() {
+        Object object = getProperty(Schema.ConceptProperty.DATA_TYPE);
+        return (DataType<D>) DataType.SUPPORTED_TYPES.get(String.valueOf(object));
     }
 
     /**
@@ -93,7 +92,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
      */
     @Override
     public String getRegex() {
-        Object object = getProperty(DataType.ConceptProperty.REGEX);
+        Object object = getProperty(Schema.ConceptProperty.REGEX);
         if(object == null)
             return null;
         return (String) object;

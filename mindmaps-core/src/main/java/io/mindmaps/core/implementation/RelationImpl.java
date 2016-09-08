@@ -18,20 +18,20 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.constants.DataType;
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.implementation.exception.ConceptException;
-import io.mindmaps.core.model.Instance;
-import io.mindmaps.core.model.Relation;
-import io.mindmaps.core.model.RelationType;
-import io.mindmaps.core.model.RoleType;
+import io.mindmaps.util.Schema;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.exception.ConceptException;
+import io.mindmaps.core.concept.Instance;
+import io.mindmaps.core.concept.Relation;
+import io.mindmaps.core.concept.RelationType;
+import io.mindmaps.core.concept.RoleType;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.*;
 
 /**
- * A relation represents and instance of a relation type which model how different entities relate to one another.
+ * A relation represents and instance of a relation type which concept how different entities relate to one another.
  */
 class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relation {
     RelationImpl(Vertex v, AbstractMindmapsGraph mindmapsGraph) {
@@ -44,7 +44,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      */
     public Set<CastingImpl> getMappingCasting() {
         Set<CastingImpl> castings = new HashSet<>();
-        getOutgoingNeighbours(DataType.EdgeLabel.CASTING).forEach(casting -> castings.add(getMindmapsGraph().getElementFactory().buildCasting(casting)));
+        getOutgoingNeighbours(Schema.EdgeLabel.CASTING).forEach(casting -> castings.add(getMindmapsGraph().getElementFactory().buildCasting(casting)));
         return castings;
     }
 
@@ -54,9 +54,9 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      */
     public void setHash(Map<RoleType, Instance> roleMap){
         if(roleMap == null || roleMap.isEmpty())
-            setUniqueProperty(DataType.ConceptPropertyUnique.INDEX, "RelationBaseId_" + getBaseIdentifier() + UUID.randomUUID().toString());
+            setUniqueProperty(Schema.ConceptPropertyUnique.INDEX, "RelationBaseId_" + getBaseIdentifier() + UUID.randomUUID().toString());
         else
-            setUniqueProperty(DataType.ConceptPropertyUnique.INDEX, generateNewHash(type(), roleMap));
+            setUniqueProperty(Schema.ConceptPropertyUnique.INDEX, generateNewHash(type(), roleMap));
     }
 
     /**
@@ -104,7 +104,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
     @Override
     public Set<Instance> scopes() {
         HashSet<Instance> scopes = new HashSet<>();
-        getOutgoingNeighbours(DataType.EdgeLabel.HAS_SCOPE).forEach(concept -> scopes.add(getMindmapsGraph().getElementFactory().buildSpecificInstance(concept)));
+        getOutgoingNeighbours(Schema.EdgeLabel.HAS_SCOPE).forEach(concept -> scopes.add(getMindmapsGraph().getElementFactory().buildSpecificInstance(concept)));
         return scopes;
     }
 
@@ -115,7 +115,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      */
     @Override
     public Relation scope(Instance instance) {
-        putEdge(getMindmapsGraph().getElementFactory().buildEntity(instance), DataType.EdgeLabel.HAS_SCOPE);
+        putEdge(getMindmapsGraph().getElementFactory().buildEntity(instance), Schema.EdgeLabel.HAS_SCOPE);
         return this;
     }
 
@@ -175,7 +175,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      */
     @Override
     public Relation deleteScope(Instance scope) throws ConceptException {
-        deleteEdgeTo(DataType.EdgeLabel.HAS_SCOPE, getMindmapsGraph().getElementFactory().buildEntity(scope));
+        deleteEdgeTo(Schema.EdgeLabel.HAS_SCOPE, getMindmapsGraph().getElementFactory().buildEntity(scope));
         return this;
     }
 
@@ -215,8 +215,8 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
         for (CastingImpl casting: castings) {
             InstanceImpl<?, ?> instance = casting.getRolePlayer();
             if(instance != null) {
-                for (EdgeImpl edge : instance.getEdgesOfType(Direction.BOTH, DataType.EdgeLabel.SHORTCUT)) {
-                    if(edge.getProperty(DataType.EdgeProperty.RELATION_ID).equals(getId())){
+                for (EdgeImpl edge : instance.getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.SHORTCUT)) {
+                    if(edge.getProperty(Schema.EdgeProperty.RELATION_ID).equals(getId())){
                         edge.delete();
                     }
                 }

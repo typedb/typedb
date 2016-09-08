@@ -19,15 +19,31 @@
 package io.mindmaps.graql.internal.parser;
 
 import com.google.common.collect.ImmutableMap;
-import io.mindmaps.core.Data;
-import io.mindmaps.graql.*;
+import io.mindmaps.core.concept.ResourceType;
+import io.mindmaps.graql.Aggregate;
+import io.mindmaps.graql.AskQuery;
+import io.mindmaps.graql.ComputeQuery;
+import io.mindmaps.graql.DeleteQuery;
+import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.InsertQuery;
+import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.NamedAggregate;
+import io.mindmaps.graql.Pattern;
+import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.ValuePredicate;
+import io.mindmaps.graql.Var;
 import io.mindmaps.graql.internal.StringConverter;
 import io.mindmaps.graql.internal.query.ComputeQueryImpl;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Stack;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
@@ -588,16 +604,16 @@ public class QueryVisitor extends GraqlBaseVisitor {
         return order.getText().equals("asc");
     }
 
-    private Data getDatatype(TerminalNode datatype) {
+    private ResourceType.DataType getDatatype(TerminalNode datatype) {
         switch (datatype.getText()) {
             case "long":
-                return Data.LONG;
+                return ResourceType.DataType.LONG;
             case "double":
-                return Data.DOUBLE;
+                return ResourceType.DataType.DOUBLE;
             case "string":
-                return Data.STRING;
+                return ResourceType.DataType.STRING;
             case "boolean":
-                return Data.BOOLEAN;
+                return ResourceType.DataType.BOOLEAN;
             default:
                 throw new RuntimeException("Unrecognized datatype " + datatype.getText());
         }

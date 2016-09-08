@@ -19,18 +19,17 @@
 package io.mindmaps.example;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.Data;
-import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.Entity;
-import io.mindmaps.core.model.EntityType;
-import io.mindmaps.core.model.Instance;
-import io.mindmaps.core.model.RelationType;
-import io.mindmaps.core.model.Resource;
-import io.mindmaps.core.model.ResourceType;
-import io.mindmaps.core.model.RoleType;
-import io.mindmaps.core.model.RuleType;
-import io.mindmaps.core.model.Type;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.core.concept.Entity;
+import io.mindmaps.core.concept.EntityType;
+import io.mindmaps.core.concept.Instance;
+import io.mindmaps.core.concept.RelationType;
+import io.mindmaps.core.concept.Resource;
+import io.mindmaps.core.concept.ResourceType;
+import io.mindmaps.core.concept.RoleType;
+import io.mindmaps.core.concept.RuleType;
+import io.mindmaps.core.concept.Type;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -107,14 +106,14 @@ public class MovieGraphFactory {
         hasCluster = mindmapsGraph.putRelationType("has-cluster")
                 .hasRole(clusterOfProduction).hasRole(productionWithCluster);
 
-        title = mindmapsGraph.putResourceType("title", Data.STRING);
-        tmdbVoteCount = mindmapsGraph.putResourceType("tmdb-vote-count", Data.LONG);
-        tmdbVoteAverage = mindmapsGraph.putResourceType("tmdb-vote-average", Data.DOUBLE);
-        releaseDate = mindmapsGraph.putResourceType("release-date", Data.LONG);
-        runtime = mindmapsGraph.putResourceType("runtime", Data.LONG);
-        gender = mindmapsGraph.putResourceType("gender", Data.STRING);
-        realName = mindmapsGraph.putResourceType("real-name", Data.STRING);
-        name = mindmapsGraph.putResourceType("name", Data.STRING);
+        title = mindmapsGraph.putResourceType("title", ResourceType.DataType.STRING);
+        tmdbVoteCount = mindmapsGraph.putResourceType("tmdb-vote-count", ResourceType.DataType.LONG);
+        tmdbVoteAverage = mindmapsGraph.putResourceType("tmdb-vote-average", ResourceType.DataType.DOUBLE);
+        releaseDate = mindmapsGraph.putResourceType("release-date", ResourceType.DataType.LONG);
+        runtime = mindmapsGraph.putResourceType("runtime", ResourceType.DataType.LONG);
+        gender = mindmapsGraph.putResourceType("gender", ResourceType.DataType.STRING);
+        realName = mindmapsGraph.putResourceType("real-name", ResourceType.DataType.STRING);
+        name = mindmapsGraph.putResourceType("name", ResourceType.DataType.STRING);
 
         EntityType production = mindmapsGraph.putEntityType("production")
                 .playsRole(productionWithCluster).playsRole(productionBeingDirected).playsRole(productionWithCast)

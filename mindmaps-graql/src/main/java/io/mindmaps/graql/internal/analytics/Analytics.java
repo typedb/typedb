@@ -21,12 +21,11 @@ package io.mindmaps.graql.internal.analytics;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsComputer;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.constants.DataType;
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.Data;
+import io.mindmaps.util.Schema;
+import io.mindmaps.util.ErrorMessage;
 
-import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.*;
+import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.core.concept.*;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.graql.internal.GraqlType;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
@@ -36,7 +35,7 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import static io.mindmaps.constants.DataType.ConceptPropertyUnique.ITEM_IDENTIFIER;
+import static io.mindmaps.util.Schema.ConceptPropertyUnique.ITEM_IDENTIFIER;
 
 /**
  * OLAP computations that can be applied to a Mindmaps Graph. The current implementation uses the SparkGraphComputer
@@ -46,7 +45,7 @@ import static io.mindmaps.constants.DataType.ConceptPropertyUnique.ITEM_IDENTIFI
 public class Analytics {
 
     public final String keySpace;
-    public static final String TYPE = DataType.ConceptMeta.TYPE.getId();
+    public static final String TYPE = Schema.MetaType.TYPE.getId();
 
     public static final String degree = "degree";
     private static Set<String> analyticsElements =
@@ -154,7 +153,7 @@ public class Analytics {
      * @param resourceType the type of the resource that will contain the degree
      */
     private void degreesAndPersist(String resourceType) {
-        insertOntology(resourceType, Data.LONG);
+        insertOntology(resourceType, ResourceType.DataType.LONG);
         ComputerResult result = computer.compute(new DegreeAndPersistVertexProgram(keySpace,allTypes));
 
         // TODO: get rid of this in the future MASSIVE bottleneck
@@ -177,7 +176,7 @@ public class Analytics {
         degreesAndPersist(degree);
     }
 
-    private void insertOntology(String resourceTypeId, Data resourceDataType) {
+    private void insertOntology(String resourceTypeId, ResourceType.DataType resourceDataType) {
         ResourceType resource = graph.putResourceType(resourceTypeId, resourceDataType);
         RoleType degreeOwner = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
         RoleType degreeValue = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
@@ -220,7 +219,7 @@ public class Analytics {
         RelationType relationType = mindmapsGraph.getRelationType(GraqlType.HAS_RESOURCE.getId(resourceName));
 
         Instance instance =
-                mindmapsGraph.getInstance(vertex.value(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name()));
+                mindmapsGraph.getInstance(vertex.value(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name()));
 
         List<Relation> relations = instance.relations(resourceOwner).stream()
                 .filter(relation -> relation.rolePlayers().size() == 2)
@@ -275,6 +274,6 @@ public class Analytics {
     }
 
     public static String getVertexType(Vertex vertex) {
-        return vertex.value(DataType.ConceptProperty.TYPE.name());
+        return vertex.value(Schema.ConceptProperty.TYPE.name());
     }
 }

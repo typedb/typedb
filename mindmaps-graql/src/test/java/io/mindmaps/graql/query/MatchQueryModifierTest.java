@@ -21,7 +21,7 @@ package io.mindmaps.graql.query;
 import com.google.common.collect.Lists;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.implementation.AbstractMindmapsGraph;
-import io.mindmaps.core.model.Concept;
+import io.mindmaps.core.concept.Concept;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.MatchQuery;
@@ -39,7 +39,7 @@ import java.util.Queue;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.mindmaps.constants.DataType.ConceptPropertyUnique.ITEM_IDENTIFIER;
+import static io.mindmaps.util.Schema.ConceptPropertyUnique.ITEM_IDENTIFIER;
 import static io.mindmaps.graql.Graql.neq;
 import static io.mindmaps.graql.Graql.or;
 import static io.mindmaps.graql.Graql.var;

@@ -17,12 +17,14 @@
  *
  */
 
-package io.mindmaps.core.model;
+package io.mindmaps.core.concept;
 
 
-import io.mindmaps.core.Data;
+import io.mindmaps.util.Schema;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * A Resource Type which can hold different values.
@@ -87,11 +89,47 @@ public interface ResourceType<D> extends Type {
     /**
      * @return The data type which instances of this resource must conform to.
      */
-    Data<D> getDataType();
+    DataType<D> getDataType();
 
     /**
      * @return The regular expression which instances of this resource must conform to.
      */
     String getRegex();
 
+    /**
+     * A class used to hold the supported data types of resources and any other concepts.
+     * This is used tp constrain value data types to only those we explicitly support.
+     * @param <D> The data type.
+     */
+    class DataType<D> {
+        public static final DataType<String> STRING = new DataType<>(String.class.getName(), Schema.ConceptProperty.VALUE_STRING);
+        public static final DataType<Boolean> BOOLEAN = new DataType<>(Boolean.class.getName(), Schema.ConceptProperty.VALUE_BOOLEAN);
+        public static final DataType<Long> LONG = new DataType<>(Long.class.getName(), Schema.ConceptProperty.VALUE_LONG);
+        public static final DataType<Double> DOUBLE = new DataType<>(Double.class.getName(), Schema.ConceptProperty.VALUE_DOUBLE);
+        public static final Map<String, DataType<?>> SUPPORTED_TYPES = new HashMap<>();
+
+        static {
+            SUPPORTED_TYPES.put(STRING.getName(), STRING);
+            SUPPORTED_TYPES.put(BOOLEAN.getName(), BOOLEAN);
+            SUPPORTED_TYPES.put(LONG.getName(), LONG);
+            SUPPORTED_TYPES.put(DOUBLE.getName(), DOUBLE);
+            SUPPORTED_TYPES.put(Integer.class.getName(), LONG);
+        }
+
+        private final String dataType;
+        private final Schema.ConceptProperty conceptProperty;
+
+        private DataType(String dataType, Schema.ConceptProperty conceptProperty){
+            this.dataType = dataType;
+            this.conceptProperty = conceptProperty;
+        }
+
+        public String getName(){
+            return dataType;
+        }
+
+        public Schema.ConceptProperty getConceptProperty(){
+            return conceptProperty;
+        }
+    }
 }

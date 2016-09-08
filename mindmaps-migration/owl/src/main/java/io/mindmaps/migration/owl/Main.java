@@ -18,7 +18,7 @@
 package io.mindmaps.migration.owl;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.model.RelationType;
+import io.mindmaps.core.concept.RelationType;
 import io.mindmaps.factory.MindmapsClient;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 

@@ -20,10 +20,9 @@ package io.mindmaps.graql.internal.query;
 
 import com.google.common.collect.ImmutableMap;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.constants.DataType;
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.Data;
-import io.mindmaps.core.model.*;
+import io.mindmaps.util.Schema;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.core.concept.*;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.internal.GraqlType;
 import io.mindmaps.graql.admin.VarAdmin;
@@ -34,7 +33,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.mindmaps.constants.ErrorMessage.INSERT_NON_RESOURCE_WITH_VALUE;
+import static io.mindmaps.util.ErrorMessage.INSERT_NON_RESOURCE_WITH_VALUE;
 
 /**
  * A class for executing insert queries.
@@ -223,15 +222,15 @@ class InsertQueryExecutor {
             throw new IllegalStateException(INSERT_NON_RESOURCE_WITH_VALUE.getMessage(type.getId()));
         }
 
-        if (typeId.equals(DataType.ConceptMeta.ENTITY_TYPE.getId())) {
+        if (typeId.equals(Schema.MetaType.ENTITY_TYPE.getId())) {
             return graph.putEntityType(getTypeIdOrThrow(id));
-        } else if (typeId.equals(DataType.ConceptMeta.RELATION_TYPE.getId())) {
+        } else if (typeId.equals(Schema.MetaType.RELATION_TYPE.getId())) {
             return graph.putRelationType(getTypeIdOrThrow(id));
-        } else if (typeId.equals(DataType.ConceptMeta.ROLE_TYPE.getId())) {
+        } else if (typeId.equals(Schema.MetaType.ROLE_TYPE.getId())) {
             return graph.putRoleType(getTypeIdOrThrow(id));
-        } else if (typeId.equals(DataType.ConceptMeta.RESOURCE_TYPE.getId())) {
+        } else if (typeId.equals(Schema.MetaType.RESOURCE_TYPE.getId())) {
             return graph.putResourceType(getTypeIdOrThrow(id), getDataType(var));
-        } else if (typeId.equals(DataType.ConceptMeta.RULE_TYPE.getId())) {
+        } else if (typeId.equals(Schema.MetaType.RULE_TYPE.getId())) {
             return graph.putRuleType(getTypeIdOrThrow(id));
         } else if (type.isEntityType()) {
             return putInstance(id, type.asEntityType(), graph::putEntity, graph::addEntity);
@@ -339,7 +338,7 @@ class InsertQueryExecutor {
      * Get the datatype of a Var if specified, else throws an IllegalStateException
      * @return the datatype of the given var
      */
-    private Data<?> getDataType(VarAdmin var) {
+    private ResourceType.DataType<?> getDataType(VarAdmin var) {
         return var.getDatatype().orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.INSERT_NO_DATATYPE.getMessage(var.getPrintableName()))
         );

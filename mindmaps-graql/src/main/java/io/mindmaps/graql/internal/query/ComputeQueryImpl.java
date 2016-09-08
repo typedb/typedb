@@ -19,8 +19,8 @@
 package io.mindmaps.graql.internal.query;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.model.Type;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.core.concept.Type;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.internal.analytics.Analytics;
 

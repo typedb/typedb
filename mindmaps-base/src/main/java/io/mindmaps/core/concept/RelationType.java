@@ -16,12 +16,12 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.core.model;
+package io.mindmaps.core.concept;
 
 import java.util.Collection;
 
 /**
- * A Relation Type is an ontological element used to model how entity types relate to one another.
+ * A Relation Type is an ontological element used to concept how entity types relate to one another.
  */
 public interface RelationType extends Type {
     //------------------------------------- Accessors ----------------------------------

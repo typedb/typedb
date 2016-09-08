@@ -18,11 +18,11 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.constants.DataType;
-import io.mindmaps.core.implementation.exception.MoreThanOneEdgeException;
-import io.mindmaps.core.model.Concept;
-import io.mindmaps.core.model.RelationType;
-import io.mindmaps.core.model.RoleType;
+import io.mindmaps.util.Schema;
+import io.mindmaps.exception.MoreThanOneEdgeException;
+import io.mindmaps.core.concept.Concept;
+import io.mindmaps.core.concept.RelationType;
+import io.mindmaps.core.concept.RoleType;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Collection;
@@ -31,7 +31,7 @@ import java.util.Set;
 
 /**
  * The global structural rules to validate.
- * This ensures the graph conforms to our model.
+ * This ensures the graph conforms to our concept.
  */
 class ValidateGlobalRules {
     private ValidateGlobalRules() {
@@ -117,6 +117,6 @@ class ValidateGlobalRules {
 
     /*--------------------------------------- Global Related TO Local Rules ------------------------------------------*/
     static boolean validateIsAbstractHasNoIncomingIsaEdges(TypeImpl conceptType){
-        return !conceptType.getVertex().edges(Direction.IN, DataType.EdgeLabel.ISA.getLabel()).hasNext();
+        return !conceptType.getVertex().edges(Direction.IN, Schema.EdgeLabel.ISA.getLabel()).hasNext();
     }
 }

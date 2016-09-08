@@ -18,9 +18,9 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.constants.DataType;
-import io.mindmaps.core.model.Entity;
-import io.mindmaps.core.model.EntityType;
+import io.mindmaps.util.Schema;
+import io.mindmaps.core.concept.Entity;
+import io.mindmaps.core.concept.EntityType;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.junit.After;
@@ -43,7 +43,7 @@ public class EdgeTest {
         mindmapsGraph = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
         entityType = mindmapsGraph.putEntityType("My Entity Type");
         entity = mindmapsGraph.putEntity("My entity", entityType);
-        Edge tinkerEdge = mindmapsGraph.getTinkerTraversal().V().has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), entity.getId()).outE().next();
+        Edge tinkerEdge = mindmapsGraph.getTinkerTraversal().V().has(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), entity.getId()).outE().next();
         edge = new EdgeImpl(tinkerEdge, mindmapsGraph);
     }
 
@@ -55,7 +55,7 @@ public class EdgeTest {
     @Test
     public void testEquals(){
         Entity entity2 = mindmapsGraph.putEntity("My entity 2", entityType);
-        Edge tinkerEdge = mindmapsGraph.getTinkerTraversal().V().has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), entity2.getId()).outE().next();
+        Edge tinkerEdge = mindmapsGraph.getTinkerTraversal().V().has(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), entity2.getId()).outE().next();
         EdgeImpl edge2 = new EdgeImpl(tinkerEdge, mindmapsGraph);
 
         assertEquals(edge, edge);
@@ -74,14 +74,14 @@ public class EdgeTest {
 
     @Test
     public void testGetType() throws Exception {
-        assertEquals(DataType.EdgeLabel.ISA, edge.getType());
+        assertEquals(Schema.EdgeLabel.ISA, edge.getType());
     }
 
     @Test
     public void testProperty() throws Exception {
-        edge.setProperty(DataType.EdgeProperty.ROLE_TYPE, "role");
-        assertEquals("role", edge.getProperty(DataType.EdgeProperty.ROLE_TYPE));
-        assertNull(edge.getProperty(DataType.EdgeProperty.FROM_TYPE));
+        edge.setProperty(Schema.EdgeProperty.ROLE_TYPE, "role");
+        assertEquals("role", edge.getProperty(Schema.EdgeProperty.ROLE_TYPE));
+        assertNull(edge.getProperty(Schema.EdgeProperty.FROM_TYPE));
     }
 
 }

@@ -18,7 +18,7 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.constants.DataType;
+import io.mindmaps.util.Schema;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -56,7 +56,7 @@ class ConceptLog {
     public void putConcept(ConceptImpl concept) {
         if(!modifiedConcepts.contains(concept)) {
             modifiedConcepts.add(concept);
-            if (DataType.BaseType.CASTING.name().equals(concept.getBaseType()))
+            if (Schema.BaseType.CASTING.name().equals(concept.getBaseType()))
                 modifiedCastings.add(concept);
         }
     }

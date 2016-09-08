@@ -21,7 +21,7 @@ package io.mindmaps.graql;
 
 import com.google.common.collect.ImmutableSet;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.model.Concept;
+import io.mindmaps.core.concept.Concept;
 import io.mindmaps.graql.admin.AdminConverter;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.internal.StringConverter;

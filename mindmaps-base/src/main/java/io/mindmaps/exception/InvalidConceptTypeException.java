@@ -16,13 +16,17 @@
  *  along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.core.implementation.exception;
+package io.mindmaps.exception;
+
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.core.concept.Concept;
 
 /**
- * Thrown when the value of a resource does not match the resources datatype.
+ * This exception is thrown when attempting to incorrectly cast a concept to something it is not.
+ * For example when
  */
-public class InvalidConceptValueException extends ConceptException {
-    public InvalidConceptValueException(String message) {
-        super(message);
+public class InvalidConceptTypeException extends ConceptException {
+    public InvalidConceptTypeException(Concept c, Class type) {
+        super(ErrorMessage.INVALID_OBJECT_TYPE.getMessage(c.toString(), type.getName()));
     }
 }

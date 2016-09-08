@@ -19,9 +19,9 @@
 package io.mindmaps.graql.internal.analytics;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.constants.DataType;
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.model.Type;
+import io.mindmaps.util.Schema;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.core.concept.Type;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
@@ -49,9 +49,9 @@ class CountMapReduce implements MapReduce<Serializable, Long, Serializable, Long
     private String memoryKey = DEFAULT_MEMORY_KEY;
 
     private Set<String> baseTypes = Sets.newHashSet(
-            DataType.BaseType.ENTITY.name(),
-            DataType.BaseType.RELATION.name(),
-            DataType.BaseType.RESOURCE.name());
+            Schema.BaseType.ENTITY.name(),
+            Schema.BaseType.RELATION.name(),
+            Schema.BaseType.RESOURCE.name());
 
     private Set<String> selectedTypes = null;
 

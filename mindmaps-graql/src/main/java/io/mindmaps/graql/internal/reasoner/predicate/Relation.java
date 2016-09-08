@@ -19,9 +19,9 @@
 package io.mindmaps.graql.internal.reasoner.predicate;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.model.RoleType;
-import io.mindmaps.core.model.Type;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.core.concept.RoleType;
+import io.mindmaps.core.concept.Type;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;

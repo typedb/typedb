@@ -19,10 +19,10 @@
 package io.mindmaps.factory;
 
 import io.mindmaps.MindmapsComputer;
-import io.mindmaps.MindmapsComputerImpl;
+import io.mindmaps.core.implementation.MindmapsComputerImpl;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.constants.RESTUtil;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.util.REST;
 import io.mindmaps.core.implementation.EngineCommunicator;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
@@ -33,8 +33,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.PropertyResourceBundle;
 
-import static io.mindmaps.constants.RESTUtil.Request.GRAPH_CONFIG_PARAM;
-import static io.mindmaps.constants.RESTUtil.WebPath.GRAPH_FACTORY_URI;
+import static io.mindmaps.util.REST.Request.GRAPH_CONFIG_PARAM;
+import static io.mindmaps.util.REST.WebPath.GRAPH_FACTORY_URI;
 
 /**
  * A client for creating a mindmaps graph from a running engine.
@@ -70,7 +70,7 @@ public class MindmapsClient {
      * @return A new or existing mindmaps graph with the defined name connecting to the specified remote uri
      */
     public static MindmapsGraph getGraph(String name, String uri){
-        ConfigureFactory configuredFactory = configureGraphFactory(uri, RESTUtil.GraphConfig.DEFAULT);
+        ConfigureFactory configuredFactory = configureGraphFactory(uri, REST.GraphConfig.DEFAULT);
         return configuredFactory.factory.getGraph(name, uri, configuredFactory.path, false);
     }
 
@@ -81,7 +81,7 @@ public class MindmapsClient {
      * @return A new or existing mindmaps graph with the defined name connecting to the specified remote uri with batch loading enabled
      */
     public static MindmapsGraph getGraphBatchLoading(String name, String uri){
-        ConfigureFactory configuredFactory = configureGraphFactory(uri, RESTUtil.GraphConfig.BATCH);
+        ConfigureFactory configuredFactory = configureGraphFactory(uri, REST.GraphConfig.BATCH);
         return configuredFactory.factory.getGraph(name, uri, configuredFactory.path, true);
     }
 
@@ -99,7 +99,7 @@ public class MindmapsClient {
      * @return A new or existing mindmaps graph compute with the defined name
      */
     public static MindmapsComputer getGraphComputer(String name, String uri) {
-        ConfigureFactory configuredFactory = configureGraphFactory(uri, RESTUtil.GraphConfig.COMPUTER);
+        ConfigureFactory configuredFactory = configureGraphFactory(uri, REST.GraphConfig.COMPUTER);
         Graph graph = configuredFactory.factory.getTinkerPopGraph(name, uri, configuredFactory.path, false);
         return new MindmapsComputerImpl(graph, configuredFactory.graphComputer);
     }

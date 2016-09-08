@@ -18,11 +18,10 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.Data;
-import io.mindmaps.core.implementation.exception.InvalidConceptValueException;
-import io.mindmaps.core.model.Resource;
-import io.mindmaps.core.model.ResourceType;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.exception.InvalidConceptValueException;
+import io.mindmaps.core.concept.Resource;
+import io.mindmaps.core.concept.ResourceType;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.junit.Before;
 import org.junit.Rule;
@@ -48,12 +47,12 @@ public class ResourceTypeTest {
     public void buildGraph() {
         mindmapsGraph = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
         mindmapsGraph.initialiseMetaConcepts();
-        resourceType = mindmapsGraph.putResourceType("Resource Type", Data.STRING);
+        resourceType = mindmapsGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
     }
 
     @Test
     public void testDataType() throws Exception {
-        assertEquals(Data.STRING, resourceType.getDataType());
+        assertEquals(ResourceType.DataType.STRING, resourceType.getDataType());
     }
 
     @Test
@@ -72,7 +71,7 @@ public class ResourceTypeTest {
 
     @Test
     public void testRegexSetOnNonString(){
-        ResourceType<Long> thing = mindmapsGraph.putResourceType("Random ID", Data.LONG);
+        ResourceType<Long> thing = mindmapsGraph.putResourceType("Random ID", ResourceType.DataType.LONG);
         expectedException.expect(UnsupportedOperationException.class);
         expectedException.expectMessage(allOf(
                 containsString(ErrorMessage.REGEX_NOT_STRING.getMessage(thing.toString()))
@@ -103,8 +102,8 @@ public class ResourceTypeTest {
 
     @Test
     public void checkSuper() throws Exception{
-        ResourceType superConcept = mindmapsGraph.putResourceType("super", Data.STRING);
-        ResourceType resourceType = mindmapsGraph.putResourceType("resourceType", Data.STRING);
+        ResourceType superConcept = mindmapsGraph.putResourceType("super", ResourceType.DataType.STRING);
+        ResourceType resourceType = mindmapsGraph.putResourceType("resourceType", ResourceType.DataType.STRING);
         resourceType.superType(superConcept);
         assertThat(resourceType.superType(), instanceOf(ResourceType.class));
         assertEquals(superConcept, resourceType.superType());

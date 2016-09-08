@@ -17,8 +17,14 @@
  */
 package io.mindmaps.migration.owl;
 
-import java.util.Optional;
-
+import io.mindmaps.core.concept.Concept;
+import io.mindmaps.core.concept.Entity;
+import io.mindmaps.core.concept.EntityType;
+import io.mindmaps.core.concept.RelationType;
+import io.mindmaps.core.concept.Resource;
+import io.mindmaps.core.concept.ResourceType;
+import io.mindmaps.core.concept.RoleType;
+import io.mindmaps.exception.ConceptException;
 import org.semanticweb.owlapi.model.OWLAnnotationAssertionAxiom;
 import org.semanticweb.owlapi.model.OWLAnnotationProperty;
 import org.semanticweb.owlapi.model.OWLAxiomVisitorEx;
@@ -39,15 +45,7 @@ import org.semanticweb.owlapi.model.OWLSubClassOfAxiom;
 import org.semanticweb.owlapi.model.OWLSubDataPropertyOfAxiom;
 import org.semanticweb.owlapi.model.OWLSubObjectPropertyOfAxiom;
 
-import io.mindmaps.core.Data;
-import io.mindmaps.core.implementation.exception.ConceptException;
-import io.mindmaps.core.model.Concept;
-import io.mindmaps.core.model.Entity;
-import io.mindmaps.core.model.EntityType;
-import io.mindmaps.core.model.RelationType;
-import io.mindmaps.core.model.Resource;
-import io.mindmaps.core.model.ResourceType;
-import io.mindmaps.core.model.RoleType;
+import java.util.Optional;
 
 /**
  * <p>
@@ -220,11 +218,11 @@ public class OwlMindmapsGraphStoringVisitor implements OWLAxiomVisitorEx<Concept
         Entity entity = migrator.entity(axiom.getSubject().asOWLNamedIndividual());
         String valueAsString =  axiom.getObject().getLiteral();
         Object value = valueAsString;
-        if (resourceType.getDataType() == Data.BOOLEAN)
+        if (resourceType.getDataType() == ResourceType.DataType.BOOLEAN)
             value = Boolean.parseBoolean(valueAsString);
-        else if (resourceType.getDataType() == Data.LONG)
+        else if (resourceType.getDataType() == ResourceType.DataType.LONG)
             value = Long.parseLong(valueAsString);
-        else if (resourceType.getDataType() == Data.DOUBLE)
+        else if (resourceType.getDataType() == ResourceType.DataType.DOUBLE)
             value = Double.parseDouble(valueAsString);
         Resource resource = migrator.getGraph().putResource(value, resourceType);
         RelationType propertyRelation = migrator.relation(axiom.getProperty().asOWLDataProperty());

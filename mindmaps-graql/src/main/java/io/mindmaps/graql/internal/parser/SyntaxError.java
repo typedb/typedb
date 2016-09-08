@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.internal.parser;
 
-import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.util.ErrorMessage;
 import org.apache.commons.lang.StringUtils;
 
 class SyntaxError {

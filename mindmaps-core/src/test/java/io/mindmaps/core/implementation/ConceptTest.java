@@ -18,12 +18,11 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.constants.DataType;
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.Data;
-import io.mindmaps.core.implementation.exception.ConceptException;
-import io.mindmaps.core.implementation.exception.MoreThanOneEdgeException;
-import io.mindmaps.core.model.*;
+import io.mindmaps.util.Schema;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.exception.ConceptException;
+import io.mindmaps.exception.MoreThanOneEdgeException;
+import io.mindmaps.core.concept.*;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -63,19 +62,19 @@ public class ConceptTest {
     @Test(expected=MoreThanOneEdgeException.class)
     public void testGetEdgeOutgoingOfType(){
         ConceptImpl<?, ?> concept = (ConceptImpl<?, ?>) mindmapsGraph.putEntityType("Thing");
-        assertNull(concept.getEdgeOutgoingOfType(DataType.EdgeLabel.AKO));
+        assertNull(concept.getEdgeOutgoingOfType(Schema.EdgeLabel.AKO));
 
         TypeImpl type1 = (TypeImpl) mindmapsGraph.putEntityType("Type 1");
         TypeImpl type2 = (TypeImpl) mindmapsGraph.putEntityType("Type 2");
         TypeImpl type3 = (TypeImpl) mindmapsGraph.putEntityType("Type 3");
 
-        assertNotNull(type1.getEdgeOutgoingOfType(DataType.EdgeLabel.ISA));
+        assertNotNull(type1.getEdgeOutgoingOfType(Schema.EdgeLabel.ISA));
 
         type1.type(type2);
         Vertex vertexType1 = mindmapsGraph.getTinkerPopGraph().traversal().V(type1.getBaseIdentifier()).next();
         Vertex vertexType3 = mindmapsGraph.getTinkerPopGraph().traversal().V(type3.getBaseIdentifier()).next();
-        vertexType1.addEdge(DataType.EdgeLabel.ISA.getLabel(), vertexType3);
-        type1.getEdgeOutgoingOfType(DataType.EdgeLabel.ISA);
+        vertexType1.addEdge(Schema.EdgeLabel.ISA.getLabel(), vertexType3);
+        type1.getEdgeOutgoingOfType(Schema.EdgeLabel.ISA);
     }
 
     @Test
@@ -92,20 +91,20 @@ public class ConceptTest {
     public void testSetType() {
         concept.setType("test_type");
         Vertex conceptVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
-        assertEquals("test_type", conceptVertex.property(DataType.ConceptProperty.TYPE.name()).value());
+        assertEquals("test_type", conceptVertex.property(Schema.ConceptProperty.TYPE.name()).value());
     }
 
     @Test
     public void testGetType() {
         concept.setType("test_type");
         Vertex conceptVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(concept.getBaseIdentifier()).next();
-        assertEquals(concept.getType(), conceptVertex.property(DataType.ConceptProperty.TYPE.name()).value());
+        assertEquals(concept.getType(), conceptVertex.property(Schema.ConceptProperty.TYPE.name()).value());
     }
 
     @Test(expected=RuntimeException.class)
     public void updateConceptFailTooManyConcepts()  {
         Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex();
-        vertex.property(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), "VALUE");
+        vertex.property(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), "VALUE");
         mindmapsGraph.putEntityType("VALUE");
     }
 
@@ -219,7 +218,7 @@ public class ConceptTest {
 
         expectedException.expect(ConceptException.class);
         expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.LOOP_DETECTED.getMessage(c1.toString(), DataType.EdgeLabel.AKO.getLabel() + " " + DataType.EdgeLabel.ISA.getLabel()))
+                containsString(ErrorMessage.LOOP_DETECTED.getMessage(c1.toString(), Schema.EdgeLabel.AKO.getLabel() + " " + Schema.EdgeLabel.ISA.getLabel()))
         ));
 
         TypeImpl c2 = (TypeImpl) mindmapsGraph.putEntityType("c2");
@@ -232,9 +231,9 @@ public class ConceptTest {
         c2_Vertex.edges(Direction.BOTH).next().remove();
         c3_Vertex.edges(Direction.BOTH).next().remove();
 
-        c1_Vertex.addEdge(DataType.EdgeLabel.AKO.getLabel(), c2_Vertex);
-        c2_Vertex.addEdge(DataType.EdgeLabel.AKO.getLabel(), c3_Vertex);
-        c3_Vertex.addEdge(DataType.EdgeLabel.AKO.getLabel(), c1_Vertex);
+        c1_Vertex.addEdge(Schema.EdgeLabel.AKO.getLabel(), c2_Vertex);
+        c2_Vertex.addEdge(Schema.EdgeLabel.AKO.getLabel(), c3_Vertex);
+        c3_Vertex.addEdge(Schema.EdgeLabel.AKO.getLabel(), c1_Vertex);
         c1.type();
     }
 
@@ -251,7 +250,7 @@ public class ConceptTest {
 
         expectedException.expect(ConceptException.class);
         expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.LOOP_DETECTED.getMessage(c1.toString(), DataType.EdgeLabel.AKO.getLabel() + " " + DataType.EdgeLabel.ISA.getLabel()))
+                containsString(ErrorMessage.LOOP_DETECTED.getMessage(c1.toString(), Schema.EdgeLabel.AKO.getLabel() + " " + Schema.EdgeLabel.ISA.getLabel()))
         ));
 
         c1.type();
@@ -302,13 +301,13 @@ public class ConceptTest {
         Vertex conceptInstance5_Vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(conceptInstance5.getBaseIdentifier()).next();
         Vertex conceptInstance6_Vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(conceptInstance6.getBaseIdentifier()).next();
 
-        conceptInstance2_Vertex.addEdge(DataType.EdgeLabel.SHORTCUT.getLabel(), conceptInstance1_Vertex);
-        conceptInstance3_Vertex.addEdge(DataType.EdgeLabel.SHORTCUT.getLabel(), conceptInstance1_Vertex);
-        conceptInstance4_Vertex.addEdge(DataType.EdgeLabel.SHORTCUT.getLabel(), conceptInstance1_Vertex);
-        conceptInstance5_Vertex.addEdge(DataType.EdgeLabel.SHORTCUT.getLabel(), conceptInstance1_Vertex);
-        conceptInstance6_Vertex.addEdge(DataType.EdgeLabel.SHORTCUT.getLabel(), conceptInstance1_Vertex);
+        conceptInstance2_Vertex.addEdge(Schema.EdgeLabel.SHORTCUT.getLabel(), conceptInstance1_Vertex);
+        conceptInstance3_Vertex.addEdge(Schema.EdgeLabel.SHORTCUT.getLabel(), conceptInstance1_Vertex);
+        conceptInstance4_Vertex.addEdge(Schema.EdgeLabel.SHORTCUT.getLabel(), conceptInstance1_Vertex);
+        conceptInstance5_Vertex.addEdge(Schema.EdgeLabel.SHORTCUT.getLabel(), conceptInstance1_Vertex);
+        conceptInstance6_Vertex.addEdge(Schema.EdgeLabel.SHORTCUT.getLabel(), conceptInstance1_Vertex);
 
-        Set<EdgeImpl> edges = conceptInstance1.getEdgesOfType(Direction.IN, DataType.EdgeLabel.SHORTCUT);
+        Set<EdgeImpl> edges = conceptInstance1.getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHORTCUT);
 
         assertEquals(5, edges.size());
     }
@@ -339,7 +338,7 @@ public class ConceptTest {
 
     @Test
     public void  testAsResourceType() {
-        Concept concept = mindmapsGraph.putResourceType("Test", Data.STRING);
+        Concept concept = mindmapsGraph.putResourceType("Test", ResourceType.DataType.STRING);
         assertTrue(concept.isResourceType());
         ResourceType concept2 = concept.asResourceType();
         assertEquals(concept2, concept);
@@ -373,7 +372,7 @@ public class ConceptTest {
 
     @Test
     public void  testAsResource() {
-        ResourceType type = mindmapsGraph.putResourceType("a type", Data.STRING);
+        ResourceType type = mindmapsGraph.putResourceType("a type", ResourceType.DataType.STRING);
         Concept concept = mindmapsGraph.putResource("Test", type);
         assertTrue(concept.isResource());
         Resource concept2 = concept.asResource();
@@ -385,7 +384,7 @@ public class ConceptTest {
         RuleType type = mindmapsGraph.putRuleType("a type");
         Concept concept = mindmapsGraph.putRule("Test", "lhs", "rhs", type);
         assertTrue(concept.isRule());
-        io.mindmaps.core.model.Rule concept2 = concept.asRule();
+        io.mindmaps.core.concept.Rule concept2 = concept.asRule();
         assertEquals(concept2, concept);
     }
 

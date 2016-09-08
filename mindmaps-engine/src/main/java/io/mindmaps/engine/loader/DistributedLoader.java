@@ -18,8 +18,8 @@
 
 package io.mindmaps.engine.loader;
 
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.constants.RESTUtil;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.util.REST;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.graql.Var;
 import mjson.Json;
@@ -53,12 +53,12 @@ public class DistributedLoader extends Loader {
 
     private static final String POST = "http://%s:" +
             ConfigProperties.getInstance().getProperty(ConfigProperties.SERVER_PORT_NUMBER) +
-            RESTUtil.WebPath.NEW_TRANSACTION_URI + "?" +
-            RESTUtil.Request.GRAPH_NAME_PARAM + "=%s";
+            REST.WebPath.NEW_TRANSACTION_URI + "?" +
+            REST.Request.GRAPH_NAME_PARAM + "=%s";
 
     private static final String GET = "http://%s:" +
             ConfigProperties.getInstance().getProperty(ConfigProperties.SERVER_PORT_NUMBER) +
-            RESTUtil.WebPath.LOADER_STATE_URI;
+            REST.WebPath.LOADER_STATE_URI;
 
     public DistributedLoader(String graphNameInit, Collection<String> hosts) {
         ConfigProperties prop = ConfigProperties.getInstance();
@@ -110,12 +110,12 @@ public class DistributedLoader extends Loader {
         if (batchedString.length() == 0) { return; }
 
         HttpURLConnection currentConn = acquireNextHost();
-        String query = RESTUtil.HttpConn.INSERT_PREFIX + batchedString;
+        String query = REST.HttpConn.INSERT_PREFIX + batchedString;
 
         executePost(currentConn, query);
 
         int responseCode = getResponseCode(currentConn);
-        if (responseCode != RESTUtil.HttpConn.HTTP_TRANSACTION_CREATED) {
+        if (responseCode != REST.HttpConn.HTTP_TRANSACTION_CREATED) {
             throw new HTTPException(responseCode);
         }
 
@@ -270,12 +270,12 @@ public class DistributedLoader extends Loader {
 
         try {
             // create post
-            connection.setRequestMethod(RESTUtil.HttpConn.POST_METHOD);
-            connection.addRequestProperty(RESTUtil.HttpConn.CONTENT_TYPE, RESTUtil.HttpConn.APPLICATION_POST_TYPE);
+            connection.setRequestMethod(REST.HttpConn.POST_METHOD);
+            connection.addRequestProperty(REST.HttpConn.CONTENT_TYPE, REST.HttpConn.APPLICATION_POST_TYPE);
 
             // add body and execute
-            connection.setRequestProperty(RESTUtil.HttpConn.CONTENT_LENGTH, Integer.toString(body.length()));
-            connection.getOutputStream().write(body.getBytes(RESTUtil.HttpConn.UTF8));
+            connection.setRequestProperty(REST.HttpConn.CONTENT_LENGTH, Integer.toString(body.length()));
+            connection.getOutputStream().write(body.getBytes(REST.HttpConn.UTF8));
 
             // get response
             return connection.getResponseMessage();

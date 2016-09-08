@@ -18,18 +18,17 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.constants.DataType;
-import io.mindmaps.core.Data;
-import io.mindmaps.core.model.Concept;
-import io.mindmaps.core.model.Instance;
-import io.mindmaps.core.model.Relation;
-import io.mindmaps.core.model.RelationType;
-import io.mindmaps.core.model.Resource;
-import io.mindmaps.core.model.ResourceType;
-import io.mindmaps.core.model.RoleType;
-import io.mindmaps.core.model.Rule;
-import io.mindmaps.core.model.RuleType;
-import io.mindmaps.core.model.Type;
+import io.mindmaps.util.Schema;
+import io.mindmaps.core.concept.Concept;
+import io.mindmaps.core.concept.Instance;
+import io.mindmaps.core.concept.Relation;
+import io.mindmaps.core.concept.RelationType;
+import io.mindmaps.core.concept.Resource;
+import io.mindmaps.core.concept.ResourceType;
+import io.mindmaps.core.concept.RoleType;
+import io.mindmaps.core.concept.Rule;
+import io.mindmaps.core.concept.RuleType;
+import io.mindmaps.core.concept.Type;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Before;
@@ -49,19 +48,19 @@ public class ElementFactoryTest {
 
     @Test
     public void testBuildAssertion() throws Exception {
-        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.RELATION.name());
+        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.RELATION.name());
         RelationImpl relation = mindmapsGraph.getElementFactory().buildRelation(vertex);
         assertThat(relation, instanceOf(ConceptImpl.class));
 
         Concept concept = mindmapsGraph.getElementFactory().buildUnknownConcept(vertex);
         relation = mindmapsGraph.getElementFactory().buildRelation(concept);
 
-        assertEquals(DataType.BaseType.RELATION.name(), relation.getBaseType());
+        assertEquals(Schema.BaseType.RELATION.name(), relation.getBaseType());
     }
 
     @Test
     public void testBuildCasting() throws Exception {
-        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.CASTING.name());
+        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
         CastingImpl casting = mindmapsGraph.getElementFactory().buildCasting(vertex);
         assertThat(casting, instanceOf(ConceptImpl.class));
 
@@ -69,12 +68,12 @@ public class ElementFactoryTest {
         casting = mindmapsGraph.getElementFactory().buildCasting(concept);
         assertEquals(concept, casting);
 
-        assertEquals(DataType.BaseType.CASTING.name(), casting.getBaseType());
+        assertEquals(Schema.BaseType.CASTING.name(), casting.getBaseType());
     }
 
     @Test
     public void testType() throws Exception {
-        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.TYPE.name());
+        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.TYPE.name());
         TypeImpl conceptType = mindmapsGraph.getElementFactory().buildConceptType(vertex);
         assertThat(conceptType, instanceOf(ConceptImpl.class));
 
@@ -82,12 +81,12 @@ public class ElementFactoryTest {
         conceptType = mindmapsGraph.getElementFactory().buildConceptType(concept);
         assertEquals(concept, conceptType);
 
-        assertEquals(DataType.BaseType.TYPE.name(), conceptType.getBaseType());
+        assertEquals(Schema.BaseType.TYPE.name(), conceptType.getBaseType());
     }
 
     @Test
     public void testBuildRoleType() throws Exception {
-        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.ROLE_TYPE.name());
+        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.ROLE_TYPE.name());
         RoleTypeImpl roleType = mindmapsGraph.getElementFactory().buildRoleType(vertex);
         assertThat(roleType, instanceOf(ConceptImpl.class));
 
@@ -95,12 +94,12 @@ public class ElementFactoryTest {
         roleType = mindmapsGraph.getElementFactory().buildRoleType(concept);
         assertEquals(concept, roleType);
 
-        assertEquals(DataType.BaseType.ROLE_TYPE.name(), roleType.getBaseType());
+        assertEquals(Schema.BaseType.ROLE_TYPE.name(), roleType.getBaseType());
     }
 
     @Test
     public void testBuildRelationType() throws Exception {
-        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.RELATION_TYPE.name());
+        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.RELATION_TYPE.name());
         RelationTypeImpl relationType = mindmapsGraph.getElementFactory().buildRelationType(vertex);
         assertThat(relationType, instanceOf(ConceptImpl.class));
 
@@ -108,12 +107,12 @@ public class ElementFactoryTest {
         relationType = mindmapsGraph.getElementFactory().buildRelationType(concept);
         assertEquals(concept, relationType);
 
-        assertEquals(DataType.BaseType.RELATION_TYPE.name(), relationType.getBaseType());
+        assertEquals(Schema.BaseType.RELATION_TYPE.name(), relationType.getBaseType());
     }
 
     @Test
     public void testBuildConceptInstance() throws Exception {
-        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.ENTITY.name());
+        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.ENTITY.name());
         InstanceImpl instance = mindmapsGraph.getElementFactory().buildEntity(vertex);
         assertThat(instance, instanceOf(InstanceImpl.class));
 
@@ -121,25 +120,25 @@ public class ElementFactoryTest {
         instance = mindmapsGraph.getElementFactory().buildEntity(concept);
         assertEquals(concept, instance);
 
-        assertEquals(DataType.BaseType.ENTITY.name(), instance.getBaseType());
+        assertEquals(Schema.BaseType.ENTITY.name(), instance.getBaseType());
     }
 
     @Test
     public void testBuildResourceType() throws Exception {
-        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.RESOURCE_TYPE.name());
+        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE_TYPE.name());
         ResourceTypeImpl resource = mindmapsGraph.getElementFactory().buildResourceType(vertex);
         assertThat(resource, instanceOf(ResourceTypeImpl.class));
 
         Concept concept = mindmapsGraph.getElementFactory().buildUnknownConcept(vertex);
-        resource = mindmapsGraph.getElementFactory().buildResourceType(concept, Data.STRING);
+        resource = mindmapsGraph.getElementFactory().buildResourceType(concept, ResourceType.DataType.STRING);
         assertEquals(concept, resource);
 
-        assertEquals(DataType.BaseType.RESOURCE_TYPE.name(), resource.getBaseType());
+        assertEquals(Schema.BaseType.RESOURCE_TYPE.name(), resource.getBaseType());
     }
 
     @Test
     public void testBuildRuleType() throws Exception {
-        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.RULE_TYPE.name());
+        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.RULE_TYPE.name());
         RuleType rule = mindmapsGraph.getElementFactory().buildRuleType(vertex);
         assertThat(rule, instanceOf(TypeImpl.class));
 
@@ -147,14 +146,14 @@ public class ElementFactoryTest {
         rule = mindmapsGraph.getElementFactory().buildRuleType(concept);
         assertEquals(concept, rule);
 
-        assertEquals(DataType.BaseType.RULE_TYPE.name(), ((ConceptImpl) rule).getBaseType());
+        assertEquals(Schema.BaseType.RULE_TYPE.name(), ((ConceptImpl) rule).getBaseType());
     }
 
     @Test
     public void testBuildRule() throws Exception {
-        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.RULE.name());
-        vertex.property(DataType.ConceptProperty.RULE_LHS.name(), "lhs");
-        vertex.property(DataType.ConceptProperty.RULE_RHS.name(), "rhs");
+        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.RULE.name());
+        vertex.property(Schema.ConceptProperty.RULE_LHS.name(), "lhs");
+        vertex.property(Schema.ConceptProperty.RULE_RHS.name(), "rhs");
 
         RuleImpl rule = mindmapsGraph.getElementFactory().buildRule(vertex);
         assertThat(rule, instanceOf(RuleImpl.class));
@@ -163,12 +162,12 @@ public class ElementFactoryTest {
         rule = mindmapsGraph.getElementFactory().buildRule((ConceptImpl) concept);
         assertEquals(concept, rule);
 
-        assertEquals(DataType.BaseType.RULE.name(), rule.getBaseType());
+        assertEquals(Schema.BaseType.RULE.name(), rule.getBaseType());
     }
 
     @Test
     public void testBuildResource() throws Exception {
-        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.RESOURCE.name());
+        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
         ResourceImpl resource = mindmapsGraph.getElementFactory().buildResource(vertex);
         assertThat(resource, instanceOf(ResourceImpl.class));
 
@@ -176,12 +175,12 @@ public class ElementFactoryTest {
         resource = mindmapsGraph.getElementFactory().buildResource(concept);
         assertEquals(concept, resource);
 
-        assertEquals(DataType.BaseType.RESOURCE.name(), resource.getBaseType());
+        assertEquals(Schema.BaseType.RESOURCE.name(), resource.getBaseType());
     }
 
     @Test
     public void testEquality() throws Exception {
-        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.TYPE.name());
+        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.TYPE.name());
         Concept concept = mindmapsGraph.getElementFactory().buildUnknownConcept(vertex);
         Type type = mindmapsGraph.getElementFactory().buildConceptType(vertex);
         assertEquals(concept, type);
@@ -189,18 +188,18 @@ public class ElementFactoryTest {
 
     @Test
     public void testBuildUnknownConcept() throws Exception{
-        Vertex v2 = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.RELATION.name());
-        Vertex v4 = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.CASTING.name());
-        Vertex v5 = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.TYPE.name());
-        Vertex v6 = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.ROLE_TYPE.name());
-        Vertex v7 = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.RELATION_TYPE.name());
-        Vertex v8 = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.ENTITY.name());
-        Vertex v9 = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.RESOURCE_TYPE.name());
-        Vertex v10 = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.RESOURCE.name());
-        Vertex v11 = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.RULE_TYPE.name());
-        Vertex v12 = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.RULE.name());
-        v12.property(DataType.ConceptProperty.RULE_LHS.name(), "lhs");
-        v12.property(DataType.ConceptProperty.RULE_RHS.name(), "rhs");
+        Vertex v2 = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.RELATION.name());
+        Vertex v4 = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
+        Vertex v5 = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.TYPE.name());
+        Vertex v6 = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.ROLE_TYPE.name());
+        Vertex v7 = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.RELATION_TYPE.name());
+        Vertex v8 = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.ENTITY.name());
+        Vertex v9 = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE_TYPE.name());
+        Vertex v10 = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
+        Vertex v11 = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.RULE_TYPE.name());
+        Vertex v12 = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.RULE.name());
+        v12.property(Schema.ConceptProperty.RULE_LHS.name(), "lhs");
+        v12.property(Schema.ConceptProperty.RULE_RHS.name(), "rhs");
 
         Concept assertion = mindmapsGraph.getElementFactory().buildUnknownConcept(v2);
         Concept casting = mindmapsGraph.getElementFactory().buildUnknownConcept(v4);
@@ -228,10 +227,10 @@ public class ElementFactoryTest {
 
     @Test
     public void testBuildSpecificConceptType() throws Exception {
-        Vertex c1 = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.TYPE.name());
-        Vertex c2 = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.RELATION_TYPE.name());
-        Vertex c3 = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.ROLE_TYPE.name());
-        Vertex c4 = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.RESOURCE_TYPE.name());
+        Vertex c1 = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.TYPE.name());
+        Vertex c2 = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.RELATION_TYPE.name());
+        Vertex c3 = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.ROLE_TYPE.name());
+        Vertex c4 = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE_TYPE.name());
 
         assertThat(mindmapsGraph.getElementFactory().buildSpecificConceptType(c1), instanceOf(Type.class));
         assertThat(mindmapsGraph.getElementFactory().buildSpecificConceptType(c2), instanceOf(RelationType.class));
@@ -241,11 +240,11 @@ public class ElementFactoryTest {
 
     @Test
     public void testBuildSpecificConceptInstance(){
-        Vertex conceptInstance = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.ENTITY.name());
-        Vertex assertion = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.RELATION.name());
-        Vertex rule = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.RULE.name());
-        rule.property(DataType.ConceptProperty.RULE_LHS.name(), "lhs");
-        rule.property(DataType.ConceptProperty.RULE_RHS.name(), "rhs");
+        Vertex conceptInstance = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.ENTITY.name());
+        Vertex assertion = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.RELATION.name());
+        Vertex rule = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.RULE.name());
+        rule.property(Schema.ConceptProperty.RULE_LHS.name(), "lhs");
+        rule.property(Schema.ConceptProperty.RULE_RHS.name(), "rhs");
 
         assertThat(mindmapsGraph.getElementFactory().buildSpecificInstance(conceptInstance), instanceOf(Instance.class));
         assertThat(mindmapsGraph.getElementFactory().buildSpecificInstance(assertion), instanceOf(Relation.class));
@@ -254,9 +253,9 @@ public class ElementFactoryTest {
 
     @Test
     public void testBuildSpecificConceptInstance2(){
-        Vertex c1 = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.ENTITY.name());
-        Vertex c2 = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.RELATION.name());
-        Vertex c3 = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.RESOURCE.name());
+        Vertex c1 = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.ENTITY.name());
+        Vertex c2 = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.RELATION.name());
+        Vertex c3 = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
 
         assertThat(mindmapsGraph.getElementFactory().buildSpecificInstance(c1), instanceOf(Instance.class));
         assertThat(mindmapsGraph.getElementFactory().buildSpecificInstance(c2), instanceOf(Relation.class));

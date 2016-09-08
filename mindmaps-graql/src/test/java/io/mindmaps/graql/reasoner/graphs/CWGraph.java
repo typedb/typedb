@@ -19,15 +19,14 @@
 package io.mindmaps.graql.reasoner.graphs;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.Data;
-import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.EntityType;
-import io.mindmaps.core.model.Instance;
-import io.mindmaps.core.model.RelationType;
-import io.mindmaps.core.model.Resource;
-import io.mindmaps.core.model.ResourceType;
-import io.mindmaps.core.model.RoleType;
-import io.mindmaps.core.model.RuleType;
+import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.core.concept.EntityType;
+import io.mindmaps.core.concept.Instance;
+import io.mindmaps.core.concept.RelationType;
+import io.mindmaps.core.concept.Resource;
+import io.mindmaps.core.concept.ResourceType;
+import io.mindmaps.core.concept.RoleType;
+import io.mindmaps.core.concept.RuleType;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 
 public class CWGraph {
@@ -89,21 +88,21 @@ public class CWGraph {
         nationalityValue = mindmaps.putRoleType("has-nationality-value");
         nationalityRelation = mindmaps.putRelationType("has-nationality")
                 .hasRole(nationalityTarget).hasRole(nationalityValue);
-        nationality = mindmaps.putResourceType("nationality", Data.STRING).playsRole(hasResourceValue)
+        nationality = mindmaps.putResourceType("nationality", ResourceType.DataType.STRING).playsRole(hasResourceValue)
                 .playsRole(nationalityValue);
 
         propulsionTarget = mindmaps.putRoleType("has-propulsion-owner");
         propulsionValue = mindmaps.putRoleType("has-propulsion-value");
         propulsionRelation = mindmaps.putRelationType("has-propulsion")
                 .hasRole(propulsionTarget).hasRole(propulsionValue);
-        propulsion = mindmaps.putResourceType("propulsion", Data.STRING).playsRole(hasResourceValue)
+        propulsion = mindmaps.putResourceType("propulsion", ResourceType.DataType.STRING).playsRole(hasResourceValue)
                 .playsRole(propulsionValue);
 
         alignmentTarget = mindmaps.putRoleType("has-alignment-owner");
         alignmentValue = mindmaps.putRoleType("has-alignment-value");
         alignmentRelation = mindmaps.putRelationType("has-alignment")
                 .hasRole(alignmentTarget).hasRole(alignmentValue);
-        alignment = mindmaps.putResourceType("alignment", Data.STRING).playsRole(hasResourceValue)
+        alignment = mindmaps.putResourceType("alignment", ResourceType.DataType.STRING).playsRole(hasResourceValue)
                 .playsRole(alignmentValue);
 
 

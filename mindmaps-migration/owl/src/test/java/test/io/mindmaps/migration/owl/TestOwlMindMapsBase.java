@@ -18,13 +18,13 @@
 package test.io.mindmaps.migration.owl;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.model.Concept;
-import io.mindmaps.core.model.Entity;
-import io.mindmaps.core.model.Instance;
-import io.mindmaps.core.model.Relation;
-import io.mindmaps.core.model.RelationType;
-import io.mindmaps.core.model.Resource;
-import io.mindmaps.core.model.RoleType;
+import io.mindmaps.core.concept.Concept;
+import io.mindmaps.core.concept.Entity;
+import io.mindmaps.core.concept.Instance;
+import io.mindmaps.core.concept.Relation;
+import io.mindmaps.core.concept.RelationType;
+import io.mindmaps.core.concept.Resource;
+import io.mindmaps.core.concept.RoleType;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.migration.owl.OWLMigrator;
 import org.junit.AfterClass;

@@ -20,9 +20,8 @@ package io.mindmaps.graql.reasoner.graphs;
 
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.Data;
-import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.*;
+import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.core.concept.*;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.QueryParser;
 
@@ -121,79 +120,79 @@ public class AdmissionsGraph {
         TOEFLvalue = mindmaps.putRoleType("has-TOEFL-value");
         TOEFLrelation = mindmaps.putRelationType("has-TOEFL")
                 .hasRole(TOEFLtarget).hasRole(TOEFLvalue);
-        TOEFL = mindmaps.putResourceType("TOEFL", Data.LONG).playsRole(hasResourceValue).playsRole(TOEFLvalue);
+        TOEFL = mindmaps.putResourceType("TOEFL", ResourceType.DataType.LONG).playsRole(hasResourceValue).playsRole(TOEFLvalue);
 
         GREtarget= mindmaps.putRoleType("has-GRE-owner");
         GREvalue = mindmaps.putRoleType("has-GRE-value");
         GRErelation = mindmaps.putRelationType("has-GRE")
                 .hasRole(GREtarget).hasRole(GREvalue);
-        GRE = mindmaps.putResourceType("GRE", Data.LONG).playsRole(hasResourceValue).playsRole(GREvalue);
+        GRE = mindmaps.putResourceType("GRE", ResourceType.DataType.LONG).playsRole(hasResourceValue).playsRole(GREvalue);
 
         vGREtarget= mindmaps.putRoleType("has-vGRE-owner");
         vGREvalue = mindmaps.putRoleType("has-vGRE-value");
         vGRErelation = mindmaps.putRelationType("has-vGRE")
                 .hasRole(vGREtarget).hasRole(vGREvalue);
-        vGRE = mindmaps.putResourceType("vGRE", Data.LONG).playsRole(hasResourceValue).playsRole(vGREvalue);
+        vGRE = mindmaps.putResourceType("vGRE", ResourceType.DataType.LONG).playsRole(hasResourceValue).playsRole(vGREvalue);
 
         GPRtarget= mindmaps.putRoleType("has-GPR-owner");
         GPRvalue = mindmaps.putRoleType("has-GPR-value");
         GPRrelation = mindmaps.putRelationType("has-GPR")
                 .hasRole(GPRtarget).hasRole(GPRvalue);
-        GPR = mindmaps.putResourceType("GPR", Data.DOUBLE).playsRole(hasResourceValue).playsRole(GPRvalue);
+        GPR = mindmaps.putResourceType("GPR", ResourceType.DataType.DOUBLE).playsRole(hasResourceValue).playsRole(GPRvalue);
 
         specialHonoursTarget= mindmaps.putRoleType("has-specialHonours-owner");
         specialHonoursValue = mindmaps.putRoleType("has-specialHonours-value");
         specialHonoursRelation = mindmaps.putRelationType("has-specialHonours")
                 .hasRole(specialHonoursTarget).hasRole(specialHonoursValue);
-        specialHonours = mindmaps.putResourceType("specialHonours", Data.STRING).playsRole(hasResourceValue)
+        specialHonours = mindmaps.putResourceType("specialHonours", ResourceType.DataType.STRING).playsRole(hasResourceValue)
                 .playsRole(specialHonoursValue);
 
         considerGPRtarget= mindmaps.putRoleType("has-considerGPR-owner");
         considerGPRvalue = mindmaps.putRoleType("has-considerGPR-value");
         considerGPRrelation = mindmaps.putRelationType("has-considerGPR")
                 .hasRole(considerGPRtarget).hasRole(considerGPRvalue);
-        considerGPR = mindmaps.putResourceType("considerGPR", Data.STRING).playsRole(hasResourceValue).playsRole(considerGPRvalue);
+        considerGPR = mindmaps.putResourceType("considerGPR", ResourceType.DataType.STRING).playsRole(hasResourceValue).playsRole(considerGPRvalue);
 
         transcriptTarget = mindmaps.putRoleType("has-transcript-owner");
         transcriptValue = mindmaps.putRoleType("has-transcript-value");
         transcriptRelation = mindmaps.putRelationType("has-transcript")
                 .hasRole(transcriptTarget).hasRole(transcriptValue);
-        transcript = mindmaps.putResourceType("transcript", Data.STRING).playsRole(hasResourceValue)
+        transcript = mindmaps.putResourceType("transcript", ResourceType.DataType.STRING).playsRole(hasResourceValue)
                 .playsRole(transcriptValue);
 
         priorGraduateWorkTarget = mindmaps.putRoleType("has-priorGraduateWork-owner");
         priorGraduateWorkValue = mindmaps.putRoleType("has-priorGraduateWork-value");
         priorGraduateWorkRelation = mindmaps.putRelationType("has-priorGraduateWork")
                 .hasRole(priorGraduateWorkTarget).hasRole(priorGraduateWorkValue);
-        priorGraduateWork = mindmaps.putResourceType("priorGraduateWork", Data.STRING).playsRole(hasResourceValue)
+        priorGraduateWork = mindmaps.putResourceType("priorGraduateWork", ResourceType.DataType.STRING).playsRole(hasResourceValue)
                 .playsRole(priorGraduateWorkValue);
 
         languageRequirementTarget = mindmaps.putRoleType("has-languageRequirement-owner");
         languageRequirementValue = mindmaps.putRoleType("has-languageRequirement-value");
         languageRequirementRelation = mindmaps.putRelationType("has-languageRequirement")
                 .hasRole(languageRequirementTarget).hasRole(languageRequirementValue);
-        languageRequirement= mindmaps.putResourceType("languageRequirement", Data.STRING).playsRole(hasResourceValue)
+        languageRequirement= mindmaps.putResourceType("languageRequirement", ResourceType.DataType.STRING).playsRole(hasResourceValue)
                 .playsRole(languageRequirementValue);
 
         degreeOriginTarget = mindmaps.putRoleType("has-degreeOrigin-owner");
         degreeOriginValue = mindmaps.putRoleType("has-degreeOrigin-value");
         degreeOriginRelation = mindmaps.putRelationType("has-degreeOrigin")
                 .hasRole(degreeOriginTarget).hasRole(degreeOriginValue);
-        degreeOrigin = mindmaps.putResourceType("degreeOrigin", Data.STRING).playsRole(hasResourceValue)
+        degreeOrigin = mindmaps.putResourceType("degreeOrigin", ResourceType.DataType.STRING).playsRole(hasResourceValue)
                 .playsRole(degreeOriginValue);
 
         admissionStatusTarget = mindmaps.putRoleType("has-admissionStatus-owner");
         admissionStatusValue = mindmaps.putRoleType("has-admissionStatus-value");
         admissionStatusRelation = mindmaps.putRelationType("has-admissionStatus")
                 .hasRole(admissionStatusTarget).hasRole(admissionStatusValue);
-        admissionStatus = mindmaps.putResourceType("admissionStatus", Data.STRING).playsRole(hasResourceValue)
+        admissionStatus = mindmaps.putResourceType("admissionStatus", ResourceType.DataType.STRING).playsRole(hasResourceValue)
                 .playsRole(admissionStatusValue);
 
         decisionTypeTarget = mindmaps.putRoleType("has-decisionType-owner");
         decisionTypeValue = mindmaps.putRoleType("has-decisionType-value");
         decisionTypeRelation = mindmaps.putRelationType("has-decisionType")
                 .hasRole(decisionTypeTarget).hasRole(decisionTypeValue);
-        decisionType = mindmaps.putResourceType("decisionType", Data.STRING).playsRole(hasResourceValue)
+        decisionType = mindmaps.putResourceType("decisionType", ResourceType.DataType.STRING).playsRole(hasResourceValue)
                 .playsRole(decisionTypeValue);
 
         applicant = mindmaps.putEntityType("applicant")

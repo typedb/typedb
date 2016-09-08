@@ -19,20 +19,19 @@
 
 package io.mindmaps;
 
-import io.mindmaps.core.Data;
-import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.Concept;
-import io.mindmaps.core.model.Entity;
-import io.mindmaps.core.model.EntityType;
-import io.mindmaps.core.model.Instance;
-import io.mindmaps.core.model.Relation;
-import io.mindmaps.core.model.RelationType;
-import io.mindmaps.core.model.Resource;
-import io.mindmaps.core.model.ResourceType;
-import io.mindmaps.core.model.RoleType;
-import io.mindmaps.core.model.Rule;
-import io.mindmaps.core.model.RuleType;
-import io.mindmaps.core.model.Type;
+import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.core.concept.Concept;
+import io.mindmaps.core.concept.Entity;
+import io.mindmaps.core.concept.EntityType;
+import io.mindmaps.core.concept.Instance;
+import io.mindmaps.core.concept.Relation;
+import io.mindmaps.core.concept.RelationType;
+import io.mindmaps.core.concept.Resource;
+import io.mindmaps.core.concept.ResourceType;
+import io.mindmaps.core.concept.RoleType;
+import io.mindmaps.core.concept.Rule;
+import io.mindmaps.core.concept.RuleType;
+import io.mindmaps.core.concept.Type;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 
 import java.util.Collection;
@@ -55,12 +54,12 @@ public interface MindmapsGraph extends AutoCloseable{
      *
      * @param id A unique Id for the Resource Type
      * @param type The data type of the resource type.
-     *             Supported types include: Data.STRING, Data.LONG, Data.DOUBLE, and Data.BOOLEAN
+     *             Supported types include: DataType.STRING, DataType.LONG, DataType.DOUBLE, and DataType.BOOLEAN
      * @param <V> The data type of the resource type. Supported types include: String, Long, Double, Boolean.
      *           This should match the parameter type
      * @return A new or existing Resource Type with the provided Id.
      */
-    <V> ResourceType <V> putResourceType(String id, Data<V> type);
+    <V> ResourceType <V> putResourceType(String id, ResourceType.DataType<V> type);
 
     /**
      *

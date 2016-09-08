@@ -18,13 +18,12 @@
 package io.mindmaps.migration.owl;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.Data;
-import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.Entity;
-import io.mindmaps.core.model.EntityType;
-import io.mindmaps.core.model.RelationType;
-import io.mindmaps.core.model.ResourceType;
-import io.mindmaps.core.model.RoleType;
+import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.core.concept.Entity;
+import io.mindmaps.core.concept.EntityType;
+import io.mindmaps.core.concept.RelationType;
+import io.mindmaps.core.concept.ResourceType;
+import io.mindmaps.core.concept.RoleType;
 import org.semanticweb.owlapi.model.OWLAnnotationProperty;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassAssertionAxiom;
@@ -102,19 +101,19 @@ public class OWLMigrator {
         graph.commit();
     }
 
-    public Data<?> owlBuiltInToMindmapsDatatype(OWL2Datatype propertyType) {
+    public ResourceType.DataType<?> owlBuiltInToMindmapsDatatype(OWL2Datatype propertyType) {
         if (propertyType == OWL2Datatype.XSD_BOOLEAN)
-            return Data.BOOLEAN;
+            return ResourceType.DataType.BOOLEAN;
         else if (propertyType == OWL2Datatype.XSD_FLOAT || 
                  propertyType == OWL2Datatype.XSD_DOUBLE ||
                  propertyType == OWL2Datatype.OWL_REAL ||
                  propertyType == OWL2Datatype.OWL_RATIONAL ||
                  propertyType == OWL2Datatype.XSD_DECIMAL)
-            return Data.DOUBLE;
+            return ResourceType.DataType.DOUBLE;
         else if (propertyType.isNumeric())
-            return Data.LONG;
+            return ResourceType.DataType.LONG;
         else
-            return Data.STRING;
+            return ResourceType.DataType.STRING;
     }
     
     public EntityType owlThingEntityType() {
@@ -169,7 +168,7 @@ public class OWLMigrator {
 
     public RelationType relation(OWLAnnotationProperty property) {
         RelationType relType = graph.putRelationType(namer.resourceRelation(property.getIRI()));
-        ResourceType<?> resourceType = graph.putResourceType(namer.fromIri(property.getIRI()), Data.STRING);
+        ResourceType<?> resourceType = graph.putResourceType(namer.fromIri(property.getIRI()), ResourceType.DataType.STRING);
         relType.hasRole(entityRole(owlThingEntityType(), resourceType));
         relType.hasRole(resourceRole(resourceType));
         return relType;
@@ -203,7 +202,7 @@ public class OWLMigrator {
                 .findFirst();
             return ax.isPresent() ? ax.get().getRange().asOWLDatatype().getBuiltInDatatype() : null;
         });
-        Data<?> mindmapsType = propertyType == null ? Data.STRING : owlBuiltInToMindmapsDatatype(propertyType);
+        ResourceType.DataType<?> mindmapsType = propertyType == null ? ResourceType.DataType.STRING : owlBuiltInToMindmapsDatatype(propertyType);
         ResourceType<?> resourceType = graph.putResourceType(namer.fromIri(property.getIRI()), mindmapsType);
         return resourceType;        
     }   

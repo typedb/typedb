@@ -92,7 +92,7 @@ public class Main {
                     .migrate(loader)
                     .close();
 
-            System.out.println("Data migration successful");
+            System.out.println("DataType migration successful");
 
         }
         catch (Throwable throwable){

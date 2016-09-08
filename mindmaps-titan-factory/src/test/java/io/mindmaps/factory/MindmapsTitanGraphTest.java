@@ -19,7 +19,7 @@
 package io.mindmaps.factory;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.implementation.exception.MindmapsValidationException;
+import io.mindmaps.exception.MindmapsValidationException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

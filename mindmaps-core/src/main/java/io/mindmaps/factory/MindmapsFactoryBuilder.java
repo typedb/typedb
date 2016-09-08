@@ -18,7 +18,7 @@
 
 package io.mindmaps.factory;
 
-import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.util.ErrorMessage;
 
 import java.io.FileInputStream;
 import java.io.IOException;

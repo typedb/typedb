@@ -1,12 +1,11 @@
 package io.mindmaps.graql.internal.analytics;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.Data;
-import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.EntityType;
-import io.mindmaps.core.model.RelationType;
-import io.mindmaps.core.model.ResourceType;
-import io.mindmaps.core.model.RoleType;
+import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.core.concept.EntityType;
+import io.mindmaps.core.concept.RelationType;
+import io.mindmaps.core.concept.ResourceType;
+import io.mindmaps.core.concept.RoleType;
 import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.factory.MindmapsClient;
 import org.junit.Before;
@@ -87,7 +86,7 @@ public class ScalingTestIT {
         Set<String> superNodes = makeSuperNodes();
 
         // add resources in advance
-        ResourceType<Long> resourceType = graph.putResourceType("degree", Data.LONG);
+        ResourceType<Long> resourceType = graph.putResourceType("degree", ResourceType.DataType.LONG);
         for (long i = 0;i<MAX_SIZE;i++) {
             graph.putResource(i,resourceType);
         }
@@ -183,7 +182,7 @@ public class ScalingTestIT {
                 simpleOntology();
 
                 // add resources in advance
-                ResourceType<Long> resourceType = graph.putResourceType("degree", Data.LONG);
+                ResourceType<Long> resourceType = graph.putResourceType("degree", ResourceType.DataType.LONG);
                 for (long k = 0;k<MAX_SIZE;k++) {
                     graph.putResource(k,resourceType);
                 }

@@ -3,12 +3,11 @@ package io.mindmaps.migration.csv;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.Data;
-import io.mindmaps.core.model.EntityType;
-import io.mindmaps.core.model.RelationType;
-import io.mindmaps.core.model.ResourceType;
-import io.mindmaps.core.model.RoleType;
-import io.mindmaps.core.model.Type;
+import io.mindmaps.core.concept.EntityType;
+import io.mindmaps.core.concept.RelationType;
+import io.mindmaps.core.concept.ResourceType;
+import io.mindmaps.core.concept.RoleType;
+import io.mindmaps.core.concept.Type;
 import io.mindmaps.engine.controller.CommitLogController;
 import io.mindmaps.engine.controller.GraphFactoryController;
 import io.mindmaps.engine.controller.TransactionController;
@@ -74,27 +73,27 @@ public class CSVSchemaMigratorTest {
         EntityType entity = graph.getEntityType("entity");
         assertNotNull(entity);
 
-        assertResourceRelationExists("name", Data.STRING, entity);
-        assertResourceRelationExists("original_name", Data.STRING, entity);
-        assertResourceRelationExists("former_name", Data.STRING, entity);
-        assertResourceRelationExists("jurisdiction", Data.STRING, entity);
-        assertResourceRelationExists("jurisdiction_description", Data.STRING, entity);
-        assertResourceRelationExists("company_type", Data.STRING, entity);
-        assertResourceRelationExists("address", Data.STRING, entity);
-        assertResourceRelationExists("internal_id", Data.STRING, entity);
-        assertResourceRelationExists("incorporation_date", Data.STRING, entity);
-        assertResourceRelationExists("inactivation_date", Data.STRING, entity);
-        assertResourceRelationExists("struck_off_date", Data.STRING, entity);
-        assertResourceRelationExists("dorm_date", Data.STRING, entity);
-        assertResourceRelationExists("status", Data.STRING, entity);
-        assertResourceRelationExists("service_provider", Data.STRING, entity);
-        assertResourceRelationExists("ibcRUC", Data.STRING, entity);
-        assertResourceRelationExists("country_codes", Data.STRING, entity);
-        assertResourceRelationExists("countries", Data.STRING, entity);
-        assertResourceRelationExists("note", Data.STRING, entity);
-        assertResourceRelationExists("valid_until", Data.STRING, entity);
-        assertResourceRelationExists("node_id", Data.STRING, entity);
-        assertResourceRelationExists("sourceID", Data.STRING, entity);
+        assertResourceRelationExists("name", ResourceType.DataType.STRING, entity);
+        assertResourceRelationExists("original_name", ResourceType.DataType.STRING, entity);
+        assertResourceRelationExists("former_name", ResourceType.DataType.STRING, entity);
+        assertResourceRelationExists("jurisdiction", ResourceType.DataType.STRING, entity);
+        assertResourceRelationExists("jurisdiction_description", ResourceType.DataType.STRING, entity);
+        assertResourceRelationExists("company_type", ResourceType.DataType.STRING, entity);
+        assertResourceRelationExists("address", ResourceType.DataType.STRING, entity);
+        assertResourceRelationExists("internal_id", ResourceType.DataType.STRING, entity);
+        assertResourceRelationExists("incorporation_date", ResourceType.DataType.STRING, entity);
+        assertResourceRelationExists("inactivation_date", ResourceType.DataType.STRING, entity);
+        assertResourceRelationExists("struck_off_date", ResourceType.DataType.STRING, entity);
+        assertResourceRelationExists("dorm_date", ResourceType.DataType.STRING, entity);
+        assertResourceRelationExists("status", ResourceType.DataType.STRING, entity);
+        assertResourceRelationExists("service_provider", ResourceType.DataType.STRING, entity);
+        assertResourceRelationExists("ibcRUC", ResourceType.DataType.STRING, entity);
+        assertResourceRelationExists("country_codes", ResourceType.DataType.STRING, entity);
+        assertResourceRelationExists("countries", ResourceType.DataType.STRING, entity);
+        assertResourceRelationExists("note", ResourceType.DataType.STRING, entity);
+        assertResourceRelationExists("valid_until", ResourceType.DataType.STRING, entity);
+        assertResourceRelationExists("node_id", ResourceType.DataType.STRING, entity);
+        assertResourceRelationExists("sourceID", ResourceType.DataType.STRING, entity);
     }
 
     @Test
@@ -106,12 +105,12 @@ public class CSVSchemaMigratorTest {
         EntityType address = graph.getEntityType("address");
         assertNotNull(address);
 
-        assertResourceRelationExists("icij_id", Data.STRING, address);
-        assertResourceRelationExists("valid_until", Data.STRING, address);
-        assertResourceRelationExists("country_codes", Data.STRING, address);
-        assertResourceRelationExists("countries", Data.STRING, address);
-        assertResourceRelationExists("node_id", Data.STRING, address);
-        assertResourceRelationExists("sourceID", Data.STRING, address);
+        assertResourceRelationExists("icij_id", ResourceType.DataType.STRING, address);
+        assertResourceRelationExists("valid_until", ResourceType.DataType.STRING, address);
+        assertResourceRelationExists("country_codes", ResourceType.DataType.STRING, address);
+        assertResourceRelationExists("countries", ResourceType.DataType.STRING, address);
+        assertResourceRelationExists("node_id", ResourceType.DataType.STRING, address);
+        assertResourceRelationExists("sourceID", ResourceType.DataType.STRING, address);
     }
 
     @Test
@@ -123,13 +122,14 @@ public class CSVSchemaMigratorTest {
         EntityType officer = graph.getEntityType("officer");
         assertNotNull(officer);
 
-        assertResourceRelationExists("name", Data.STRING, officer);
-        assertResourceRelationExists("icij_id", Data.STRING, officer);
-        assertResourceRelationExists("valid_until", Data.STRING, officer);
-        assertResourceRelationExists("country_codes", Data.STRING, officer);
-        assertResourceRelationExists("countries", Data.STRING, officer);
-        assertResourceRelationExists("node_id", Data.STRING, officer);
-        assertResourceRelationExists("sourceID", Data.STRING, officer);
+        assertResourceRelationExists("name", ResourceType.DataType.STRING, officer);
+        assertResourceRelationExists("name", ResourceType.DataType.STRING, officer);
+        assertResourceRelationExists("icij_id", ResourceType.DataType.STRING, officer);
+        assertResourceRelationExists("valid_until", ResourceType.DataType.STRING, officer);
+        assertResourceRelationExists("country_codes", ResourceType.DataType.STRING, officer);
+        assertResourceRelationExists("countries", ResourceType.DataType.STRING, officer);
+        assertResourceRelationExists("node_id", ResourceType.DataType.STRING, officer);
+        assertResourceRelationExists("sourceID", ResourceType.DataType.STRING, officer);
     }
 
     @Test
@@ -141,15 +141,15 @@ public class CSVSchemaMigratorTest {
         EntityType intermediary = graph.getEntityType("intermediary");
         assertNotNull(intermediary);
 
-        assertResourceRelationExists("name", Data.STRING, intermediary);
-        assertResourceRelationExists("internal_id", Data.STRING, intermediary);
-        assertResourceRelationExists("address", Data.STRING, intermediary);
-        assertResourceRelationExists("valid_until", Data.STRING, intermediary);
-        assertResourceRelationExists("country_codes", Data.STRING, intermediary);
-        assertResourceRelationExists("countries", Data.STRING, intermediary);
-        assertResourceRelationExists("status", Data.STRING, intermediary);
-        assertResourceRelationExists("node_id", Data.STRING, intermediary);
-        assertResourceRelationExists("sourceID", Data.STRING, intermediary);
+        assertResourceRelationExists("name", ResourceType.DataType.STRING, intermediary);
+        assertResourceRelationExists("internal_id", ResourceType.DataType.STRING, intermediary);
+        assertResourceRelationExists("address", ResourceType.DataType.STRING, intermediary);
+        assertResourceRelationExists("valid_until", ResourceType.DataType.STRING, intermediary);
+        assertResourceRelationExists("country_codes", ResourceType.DataType.STRING, intermediary);
+        assertResourceRelationExists("countries", ResourceType.DataType.STRING, intermediary);
+        assertResourceRelationExists("status", ResourceType.DataType.STRING, intermediary);
+        assertResourceRelationExists("node_id", ResourceType.DataType.STRING, intermediary);
+        assertResourceRelationExists("sourceID", ResourceType.DataType.STRING, intermediary);
     }
 
     @Test
@@ -161,19 +161,19 @@ public class CSVSchemaMigratorTest {
         EntityType relationship = graph.getEntityType("relationship");
         assertNotNull(relationship);
 
-        assertResourceRelationExists("node_1", Data.STRING, relationship);
-        assertResourceRelationExists("rel_type", Data.STRING, relationship);
-        assertResourceRelationExists("node_2", Data.STRING, relationship);
+        assertResourceRelationExists("node_1", ResourceType.DataType.STRING, relationship);
+        assertResourceRelationExists("rel_type", ResourceType.DataType.STRING, relationship);
+        assertResourceRelationExists("node_2", ResourceType.DataType.STRING, relationship);
     }
 
-    private ResourceType assertResourceExists(String name, Data datatype) {
+    private ResourceType assertResourceExists(String name, ResourceType.DataType datatype) {
         ResourceType resourceType = graph.getResourceType(name);
         assertNotNull(resourceType);
         assertEquals(datatype.getName(), resourceType.getDataType().getName());
         return resourceType;
     }
 
-    private void assertResourceRelationExists(String name, Data datatype, Type owner){
+    private void assertResourceRelationExists(String name, ResourceType.DataType datatype, Type owner){
         String resourceName = namer.resourceName(name);
         ResourceType resource = assertResourceExists(resourceName, datatype);
 
