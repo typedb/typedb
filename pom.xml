@@ -29,7 +29,7 @@
     <description>A distributed semantic graph database.</description>
     <url>http://mindmaps.io/platform.html</url>
     <modules>
-        <module>mindmaps-core</module>
+        <module>mindmaps-graph</module>
         <module>mindmaps-titan-factory</module>
         <module>mindmaps-graql</module>
         <module>mindmaps-graql-shell</module>
