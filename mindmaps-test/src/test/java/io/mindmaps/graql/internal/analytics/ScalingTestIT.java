@@ -19,10 +19,8 @@
 package io.mindmaps.graql.internal.analytics;
 
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.concept.*;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.concept.EntityType;
-import io.mindmaps.concept.RelationType;
-import io.mindmaps.concept.RoleType;
 import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.factory.MindmapsClient;
 import org.junit.*;
@@ -179,7 +177,7 @@ public class ScalingTestIT {
             for (int i=0;i<REPEAT;i++) {
                 writer.println("repeat number: "+i);
                 String CURRENT_KEYSPACE = TEST_KEYSPACE + String.valueOf(graphSize) + String.valueOf(i);
-                MindmapsGraph graph = MindmapsClient.getGraph(CURRENT_KEYSPACE);
+                MindmapsGraph graph = MindmapsClient.getGraphBatchLoading(CURRENT_KEYSPACE);
                 simpleOntology(CURRENT_KEYSPACE);
 
                 // construct graph
@@ -243,7 +241,7 @@ public class ScalingTestIT {
     @Test
     public void testLargeDegreeMutationResultsInReadableGraphIT() throws MindmapsValidationException, InterruptedException, ExecutionException {
 
-        MindmapsGraph graph = MindmapsClient.getGraph(TEST_KEYSPACE);
+        MindmapsGraph graph = MindmapsClient.getGraphBatchLoading(TEST_KEYSPACE);
         simpleOntology(TEST_KEYSPACE);
 
         // construct graph
@@ -277,19 +275,9 @@ public class ScalingTestIT {
         things = thing.instances();
 
         assertFalse(things.isEmpty());
-        // TODO: use this concise code when concurrent deletions removes shortcut edges
-//        things.forEach(thisThing -> {
-//            assertEquals(1L, thisThing.resources().size());
-//            assertEquals(1L, thisThing.resources().iterator().next().getValue());
-//        });
-        things.forEach(thisThing ->{
-            Collection<Relation> relations = thisThing.relations(graph.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId("degree")));
-            assertEquals(1L,relations.size());
-            relations.forEach(relation -> {
-                if (relation.type().equals(graph.getRelationType("has-degree"))) {
-                    assertEquals(1L,relation.rolePlayers().get(graph.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId("degree"))).asResource().getValue());
-                }
-            });
+        things.forEach(thisThing -> {
+            assertEquals(1L, thisThing.resources().size());
+            assertEquals(1L, thisThing.resources().iterator().next().getValue());
         });
 
         Collection<Relation> relations = graph.getRelationType("related").instances();
@@ -341,7 +329,7 @@ public class ScalingTestIT {
     }
 
     private void simpleOntology(String keyspace) throws MindmapsValidationException {
-        MindmapsGraph graph = MindmapsClient.getGraph(keyspace);
+        MindmapsGraph graph = MindmapsClient.getGraphBatchLoading(keyspace);
         thing = graph.putEntityType("thing");
         relation1 = graph.putRoleType("relation1");
         relation2 = graph.putRoleType("relation2");
@@ -359,7 +347,7 @@ public class ScalingTestIT {
 
     private Set<String> makeSuperNodes(String keyspace) throws MindmapsValidationException {
         // make the supernodes
-        MindmapsGraph graph = MindmapsClient.getGraph(keyspace);
+        MindmapsGraph graph = MindmapsClient.getGraphBatchLoading(keyspace);
         refreshOntology(graph);
         Set<String> superNodes = new HashSet<>();
         for (int i = 0; i < NUM_SUPER_NODES; i++) {
@@ -396,133 +384,4 @@ public class ScalingTestIT {
         distributedLoader.waitToFinish();
     }
 
-    ResourceType resource;
-    RoleType degreeOwner;
-    RoleType degreeValue;
-    RelationType hasDegree;
-    Entity entity1;
-    Entity entity2;
-    Entity entity3;
-    String resourceTypeId = "degree";
-
-    @Test
-    public void testBatchResourceLoad() throws MindmapsValidationException, InterruptedException {
-        createBugOntology(TEST_KEYSPACE);
-
-        // relate them
-        MindmapsGraph graph = MindmapsClient.getGraph(TEST_KEYSPACE);
-        resource = graph.getResourceType(resourceTypeId);
-        degreeOwner = graph.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
-        degreeValue = graph.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
-        hasDegree = graph.getRelationType(GraqlType.HAS_RESOURCE.getId(resourceTypeId));
-        thing = graph.getEntityType("thing");
-        entity1 = graph.getEntity("1");
-        entity2 = graph.getEntity("2");
-        entity3 = graph.getEntity("3");
-
-        String id1 = UUID.randomUUID().toString();
-        graph.putRelation(id1, related)
-                .putRolePlayer(relation1, entity1)
-                .putRolePlayer(relation2, entity2);
-
-        String id2 = UUID.randomUUID().toString();
-        graph.putRelation(id2, related)
-                .putRolePlayer(relation1, entity2)
-                .putRolePlayer(relation2, entity3);
-
-        graph.commit();
-
-        // mutate all in first batch
-        LinkedBlockingQueue<Runnable> Jobs = new LinkedBlockingQueue<>();
-
-        // construct batch
-        Jobs.put(() -> putResource(TEST_KEYSPACE, "1", 1L));
-        Jobs.put(() -> putResource(TEST_KEYSPACE, "3", 1L));
-        Jobs.put(() -> putResource(TEST_KEYSPACE, "2", 2L));
-        Jobs.put(() -> putResource(TEST_KEYSPACE, id1, 2L));
-        Jobs.put(() -> putResource(TEST_KEYSPACE, id2, 2L));
-
-        ExecutorService pool = Executors.newFixedThreadPool(5);
-        Jobs.forEach(pool::submit);
-
-//        ThreadPoolExecutor pool = new ThreadPoolExecutor(1,1,1000, TimeUnit.MILLISECONDS, Jobs);
-//        pool.prestartAllCoreThreads();
-
-        Thread.sleep(10000);
-
-        // read in normal graph
-        graph = MindmapsClient.getGraph(TEST_KEYSPACE);
-        resource = graph.getResourceType(resourceTypeId);
-        degreeOwner = graph.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
-        degreeValue = graph.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
-        hasDegree = graph.getRelationType(GraqlType.HAS_RESOURCE.getId(resourceTypeId));
-        thing = graph.getEntityType("thing");
-        entity1 = graph.getEntity("1");
-        entity2 = graph.getEntity("2");
-        entity3 = graph.getEntity("3");
-        System.out.println("resources method: ");
-        thing.instances().forEach(thisThing->{
-            System.out.println(thisThing);
-            thisThing.resources().forEach(System.out::println);
-        });
-        related.instances().forEach(thisThing->{
-            System.out.println(thisThing);
-            thisThing.resources().forEach(System.out::println);
-        });
-        System.out.println("relations method: ");
-        thing.instances().forEach(thisThing->{
-            System.out.println(thisThing);
-            thisThing.relations().forEach(relation -> System.out.println(relation.rolePlayers()));
-        });
-        related.instances().forEach(thisThing->{
-            System.out.println(thisThing);
-            thisThing.relations().forEach(relation -> System.out.println(relation.rolePlayers()));
-        });
-        System.out.println("resources" );
-        resource.instances().iterator().forEachRemaining(System.out::println);
-
-    }
-
-    private void createBugOntology(String keyspace) throws MindmapsValidationException {
-        MindmapsGraph graph = MindmapsClient.getGraph(keyspace);
-
-        resource = graph.putResourceType(resourceTypeId, Data.LONG);
-        degreeOwner = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
-        degreeValue = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
-        graph.putRelationType(GraqlType.HAS_RESOURCE.getId(resourceTypeId))
-                .hasRole(degreeOwner)
-                .hasRole(degreeValue);
-        resource.playsRole(degreeValue);
-        graph.putEntityType("thing").playsRole(degreeOwner);
-
-        thing = graph.getEntityType("thing");
-        entity1 = graph.putEntity("1", thing);
-        entity2 = graph.putEntity("2", thing);
-        entity3 = graph.putEntity("3", thing);
-
-        relation1 = graph.putRoleType("relation1");
-        relation2 = graph.putRoleType("relation2");
-        thing.playsRole(relation1).playsRole(relation2);
-        related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
-        related.playsRole(degreeOwner);
-
-
-        graph.commit();
-    }
-
-    private void putResource(String keyspace, String ownerId, Long value) {
-        MindmapsGraph graph = MindmapsClient.getGraphBatchLoading(keyspace);
-        ResourceType resource = graph.getResourceType(resourceTypeId);
-        RoleType degreeOwner = graph.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
-        RoleType degreeValue = graph.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
-        RelationType hasDegree = graph.getRelationType(GraqlType.HAS_RESOURCE.getId(resourceTypeId));
-        graph.addRelation(hasDegree)
-                .putRolePlayer(degreeOwner,graph.getInstance(ownerId))
-                .putRolePlayer(degreeValue,graph.putResource(value,resource));
-        try {
-            graph.commit();
-        } catch (MindmapsValidationException e) {
-            e.printStackTrace();
-        }
-    }
 }

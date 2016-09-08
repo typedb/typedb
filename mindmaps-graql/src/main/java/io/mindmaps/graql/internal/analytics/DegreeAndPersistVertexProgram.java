@@ -142,6 +142,7 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
 
     @Override
     public void execute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
+        MindmapsGraph mindmapsGraph = MindmapsClient.getGraphBatchLoading(keySpace);
         switch (memory.getIteration()) {
             case 0:
                 if (selectedTypes.contains(getVertexType(vertex)) && !isAnalyticsElement(vertex)) {
@@ -174,7 +175,7 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
                     if (baseTypes.contains(vertex.label()) ||
                             vertex.label().equals(Schema.BaseType.RELATION.name())) {
                         long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
-                        String oldAssertionId = Analytics.persistResource(mindmapsGraph, vertex, Analytics.degree, edgeCount);
+                        String oldAssertionId = Analytics.persistResource(keySpace, vertex, Analytics.degree, edgeCount);
                         if (oldAssertionId != null) {
                             vertex.property(OLD_ASSERTION_ID, oldAssertionId);
                         }
@@ -182,20 +183,20 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
                 }
                 break;
             case 3:
-//                if(vertex.property(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID).isPresent()) {
-//                    mindmapsGraph.getRelation(vertex.value(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID)).delete();
-//                    try {
-//                        mindmapsGraph.commit();
-//                    } catch (MindmapsValidationException e) {
-//                        throw new RuntimeException("Failed to delete relation during bulk resource mutation.",e);
-//                    }
-//                }
+                if(vertex.property(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID).isPresent()) {
+                    mindmapsGraph.getRelation(vertex.value(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID)).delete();
+                    try {
+                        mindmapsGraph.commit();
+                    } catch (MindmapsValidationException e) {
+                        throw new RuntimeException("Failed to delete relation during bulk resource mutation.",e);
+                    }
+                }
         }
     }
 
     @Override
     public boolean terminate(final Memory memory) {
-        return memory.getIteration() == 2;
+        return memory.getIteration() == 3;
     }
 
     @Override
@@ -203,9 +204,4 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
         return StringFactory.vertexProgramString(this);
     }
 
-    @Override
-
-    public void workerIterationStart(Memory memory) {
-        mindmapsGraph = MindmapsClient.getGraphBatchLoading(keySpace);
-    }
 }
