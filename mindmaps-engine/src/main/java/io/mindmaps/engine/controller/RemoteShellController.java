@@ -19,7 +19,7 @@
 package io.mindmaps.engine.controller;
 
 import io.mindmaps.util.REST;
-import io.mindmaps.core.implementation.AbstractMindmapsGraph;
+import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.QueryParser;
 import io.mindmaps.engine.session.RemoteSession;

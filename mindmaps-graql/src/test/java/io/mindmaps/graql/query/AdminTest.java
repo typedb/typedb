@@ -20,7 +20,7 @@ package io.mindmaps.graql.query;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.concept.Type;
+import io.mindmaps.concept.Type;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.DeleteQuery;

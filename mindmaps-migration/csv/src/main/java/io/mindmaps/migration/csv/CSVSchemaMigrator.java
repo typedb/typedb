@@ -3,7 +3,7 @@ package io.mindmaps.migration.csv;
 
 import com.google.common.collect.Lists;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.concept.ResourceType;
+import io.mindmaps.concept.ResourceType;
 import io.mindmaps.engine.loader.Loader;
 import io.mindmaps.graql.Var;
 import org.apache.commons.csv.CSVParser;

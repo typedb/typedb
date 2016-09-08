@@ -20,7 +20,7 @@ package io.mindmaps.graql.internal.query.match;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
-import io.mindmaps.core.concept.Concept;
+import io.mindmaps.concept.Concept;
 import io.mindmaps.util.ErrorMessage;
 
 import java.util.Map;

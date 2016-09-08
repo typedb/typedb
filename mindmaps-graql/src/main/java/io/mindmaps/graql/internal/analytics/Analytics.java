@@ -21,17 +21,27 @@ package io.mindmaps.graql.internal.analytics;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsComputer;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.Schema;
-import io.mindmaps.util.ErrorMessage;
-
+import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.Instance;
+import io.mindmaps.concept.Relation;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.Resource;
+import io.mindmaps.concept.ResourceType;
+import io.mindmaps.concept.RoleType;
+import io.mindmaps.concept.Type;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.core.concept.*;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.graql.internal.util.GraqlType;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 

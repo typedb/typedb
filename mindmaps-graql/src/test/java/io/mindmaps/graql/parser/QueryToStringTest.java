@@ -19,7 +19,7 @@
 package io.mindmaps.graql.parser;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.concept.ResourceType;
+import io.mindmaps.concept.ResourceType;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.MatchQuery;

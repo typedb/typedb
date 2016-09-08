@@ -3,7 +3,7 @@ package io.mindmaps.migration.csv;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.concept.Entity;
+import io.mindmaps.concept.Entity;
 import io.mindmaps.engine.controller.CommitLogController;
 import io.mindmaps.engine.controller.GraphFactoryController;
 import io.mindmaps.engine.controller.TransactionController;

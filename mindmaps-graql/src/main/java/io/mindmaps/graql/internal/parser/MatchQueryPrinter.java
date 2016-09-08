@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.internal.parser;
 
-import io.mindmaps.core.concept.Concept;
+import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.MatchQuery;
 
 import java.util.ArrayList;

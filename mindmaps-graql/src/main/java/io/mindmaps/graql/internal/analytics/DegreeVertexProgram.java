@@ -21,7 +21,7 @@ package io.mindmaps.graql.internal.analytics;
 import com.google.common.collect.Sets;
 import io.mindmaps.util.Schema;
 import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.core.concept.Type;
+import io.mindmaps.concept.Type;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.*;
 import org.apache.tinkerpop.gremlin.process.computer.util.ConfigurationTraversal;

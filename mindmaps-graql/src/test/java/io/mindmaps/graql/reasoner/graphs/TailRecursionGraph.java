@@ -19,9 +19,9 @@
 package io.mindmaps.graql.reasoner.graphs;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.concept.EntityType;
-import io.mindmaps.core.concept.RelationType;
-import io.mindmaps.core.concept.RoleType;
+import io.mindmaps.concept.EntityType;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.RoleType;
 
 public class TailRecursionGraph extends GenericGraph{
 

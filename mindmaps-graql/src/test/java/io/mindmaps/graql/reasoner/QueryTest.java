@@ -20,7 +20,7 @@ package io.mindmaps.graql.reasoner;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.concept.Rule;
+import io.mindmaps.concept.Rule;
 import io.mindmaps.graql.*;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.admin.Conjunction;

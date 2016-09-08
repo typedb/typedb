@@ -21,8 +21,7 @@ package io.mindmaps.engine.visualiser;
 import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
-
-import io.mindmaps.core.concept.*;
+import io.mindmaps.concept.*;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.util.REST;
 import org.slf4j.Logger;
@@ -45,7 +44,7 @@ public class HALConcept {
 
     private final String resourceLinkPrefix;
     private final Logger LOG = LoggerFactory.getLogger(HALConcept.class);
-    private final String ROOT_CONCEPT="concept-type";
+    private final String ROOT_CONCEPT = "concept-type";
     private final String ISA_EDGE = "isa";
 
 
@@ -75,7 +74,7 @@ public class HALConcept {
 
         if (separationDegree == 0) return;
 
-        embedType(halResource,concept);
+        embedType(halResource, concept);
 
         if (concept.isEntity()) {
             generateEntityEmbedded(halResource, concept.asEntity(), separationDegree);
@@ -90,10 +89,10 @@ public class HALConcept {
 
     }
 
-    private void embedType(Representation halResource, Concept concept){
+    private void embedType(Representation halResource, Concept concept) {
         Representation HALType = factory.newRepresentation(resourceLinkPrefix + concept.type().getId());
-        handleConcept(HALType, concept.type(),0);
-        halResource.withRepresentation(ISA_EDGE,HALType);
+        handleConcept(HALType, concept.type(), 0);
+        halResource.withRepresentation(ISA_EDGE, HALType);
     }
 
     private void generateStateAndLinks(Representation resource, Concept concept) {

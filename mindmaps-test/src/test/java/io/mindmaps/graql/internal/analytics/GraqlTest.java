@@ -1,8 +1,13 @@
 package io.mindmaps.graql.internal.analytics;
 
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.concept.Entity;
+import io.mindmaps.concept.EntityType;
+import io.mindmaps.concept.Instance;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.Resource;
+import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.core.concept.*;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.QueryParser;

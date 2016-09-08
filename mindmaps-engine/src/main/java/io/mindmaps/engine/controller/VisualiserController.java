@@ -21,7 +21,7 @@ package io.mindmaps.engine.controller;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.REST;
-import io.mindmaps.core.concept.Concept;
+import io.mindmaps.concept.Concept;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.QueryParser;
 import io.mindmaps.engine.util.ConfigProperties;

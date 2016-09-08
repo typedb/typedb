@@ -1,6 +1,6 @@
 package io.mindmaps.migration.sql;
 
-import io.mindmaps.core.concept.ResourceType;
+import io.mindmaps.concept.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

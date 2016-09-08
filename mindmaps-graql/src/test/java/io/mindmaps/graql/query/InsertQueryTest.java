@@ -20,9 +20,9 @@ package io.mindmaps.graql.query;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.concept.Concept;
-import io.mindmaps.core.concept.EntityType;
-import io.mindmaps.core.concept.ResourceType;
+import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.EntityType;
+import io.mindmaps.concept.ResourceType;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.InsertQuery;

@@ -19,7 +19,7 @@
 package io.mindmaps.factory;
 
 import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.core.implementation.AbstractMindmapsGraph;
+import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;

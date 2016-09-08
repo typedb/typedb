@@ -20,7 +20,7 @@
 package io.mindmaps.graql.internal.query.match;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.concept.Concept;
+import io.mindmaps.concept.Concept;
 import io.mindmaps.util.ErrorMessage;
 
 import java.util.Map;

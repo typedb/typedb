@@ -2,7 +2,7 @@ package io.mindmaps.migration.sql;
 
 import com.google.common.base.Throwables;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.concept.ResourceType;
+import io.mindmaps.concept.ResourceType;
 import io.mindmaps.engine.loader.Loader;
 import io.mindmaps.graql.Var;
 import io.mindmaps.migration.sql.SQLModel.SQLTable;

@@ -27,10 +27,10 @@ import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
 import org.semanticweb.owlapi.model.OWLOntology;
 
-import io.mindmaps.core.concept.Entity;
-import io.mindmaps.core.concept.EntityType;
-import io.mindmaps.core.concept.Resource;
-import io.mindmaps.core.concept.RoleType;
+import io.mindmaps.concept.Entity;
+import io.mindmaps.concept.EntityType;
+import io.mindmaps.concept.Resource;
+import io.mindmaps.concept.RoleType;
 import io.mindmaps.migration.owl.OwlModel;
 
 /**

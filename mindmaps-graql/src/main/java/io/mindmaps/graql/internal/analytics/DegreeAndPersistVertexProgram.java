@@ -22,7 +22,7 @@ import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.util.Schema;
 import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.core.concept.Type;
+import io.mindmaps.concept.Type;
 import io.mindmaps.factory.MindmapsClient;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
