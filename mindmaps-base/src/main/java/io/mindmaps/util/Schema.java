@@ -16,13 +16,13 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.constants;
+package io.mindmaps.util;
 
 /**
  * A type enum which restricts the types of links/concepts which can be created
  */
-public final class DataType {
-    private DataType(){
+public final class Schema {
+    private Schema(){
         throw new UnsupportedOperationException();
     }
 
@@ -79,7 +79,7 @@ public final class DataType {
     /**
      * The concepts which represent our internal schema
      */
-    public enum ConceptMeta {
+    public enum MetaType {
         TYPE("concept-type"),
         ENTITY_TYPE("entity-type"),
         ROLE_TYPE("role-type"),
@@ -91,7 +91,7 @@ public final class DataType {
 
 
         private final String id;
-        ConceptMeta(String i){
+        MetaType(String i){
             id = i;
         }
 
@@ -100,8 +100,8 @@ public final class DataType {
         }
 
         public static boolean isMetaId(String id){
-            for (ConceptMeta conceptMeta : ConceptMeta.values()) {
-                if(conceptMeta.getId().equals(id))
+            for (MetaType metaType : MetaType.values()) {
+                if(metaType.getId().equals(id))
                     return true;
             }
             return false;
@@ -109,7 +109,7 @@ public final class DataType {
     }
 
     /**
-     * Base Types reflecting the possible objects in the model
+     * Base Types reflecting the possible objects in the concept
      */
     public enum BaseType{
         RELATION, CASTING, TYPE, ROLE_TYPE, RELATION_TYPE, RESOURCE_TYPE, ENTITY, RESOURCE, RULE, RULE_TYPE, ENTITY_TYPE

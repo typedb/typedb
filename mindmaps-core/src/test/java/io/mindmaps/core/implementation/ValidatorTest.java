@@ -18,9 +18,9 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.*;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.core.concept.*;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.junit.After;
 import org.junit.Before;

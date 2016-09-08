@@ -18,8 +18,8 @@
 
 package io.mindmaps.graql.internal.parser;
 
-import io.mindmaps.core.model.Concept;
-import io.mindmaps.core.model.Resource;
+import io.mindmaps.core.concept.Concept;
+import io.mindmaps.core.concept.Resource;
 import io.mindmaps.graql.internal.StringConverter;
 
 import java.util.Collection;

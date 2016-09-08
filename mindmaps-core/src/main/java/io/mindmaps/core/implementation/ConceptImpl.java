@@ -18,13 +18,13 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.constants.DataType;
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.implementation.exception.ConceptException;
-import io.mindmaps.core.implementation.exception.ConceptIdNotUniqueException;
-import io.mindmaps.core.implementation.exception.InvalidConceptTypeException;
-import io.mindmaps.core.implementation.exception.MoreThanOneEdgeException;
-import io.mindmaps.core.model.*;
+import io.mindmaps.util.Schema;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.exception.ConceptException;
+import io.mindmaps.exception.ConceptIdNotUniqueException;
+import io.mindmaps.exception.InvalidConceptTypeException;
+import io.mindmaps.exception.MoreThanOneEdgeException;
+import io.mindmaps.core.concept.*;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.*;
 
@@ -33,7 +33,7 @@ import java.util.Set;
 
 /**
  * A concept which can represent anything in the graph
- * @param <T> The leaf interface of the object model. For example an EntityType, Entity, RelationType etc . . .
+ * @param <T> The leaf interface of the object concept. For example an EntityType, Entity, RelationType etc . . .
  * @param <V> The type of the concept.
  */
 abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept {
@@ -102,7 +102,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @param id The new value of the unique property
      * @return The concept itself casted to the correct interface itself
      */
-    T setUniqueProperty(DataType.ConceptPropertyUnique key, String id){
+    T setUniqueProperty(Schema.ConceptPropertyUnique key, String id){
         if(mindmapsGraph.isBatchLoadingEnabled() || updateAllowed(key, id))
             return setProperty(key, id);
         else
@@ -115,7 +115,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @param value The value to check
      * @return True if the concept can be updated. I.e. the value is unique for the property.
      */
-    private boolean updateAllowed(DataType.ConceptPropertyUnique key, String value) {
+    private boolean updateAllowed(Schema.ConceptPropertyUnique key, String value) {
         ConceptImpl fetchedConcept = mindmapsGraph.getConcept(key, value);
         return fetchedConcept == null || this.equals(fetchedConcept);
     }
@@ -155,14 +155,14 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
             if(concept != null){
                 //Checks the following case c1 -ako-> c2 -ako-> c3 -isa-> c1 is invalid
                 if(visitedConcepts.contains(concept) && !concept.equals(currentConcept)){
-                    throw new ConceptException(ErrorMessage.LOOP_DETECTED.getMessage(toString(), DataType.EdgeLabel.AKO.getLabel() + " " + DataType.EdgeLabel.ISA.getLabel()));
+                    throw new ConceptException(ErrorMessage.LOOP_DETECTED.getMessage(toString(), Schema.EdgeLabel.AKO.getLabel() + " " + Schema.EdgeLabel.ISA.getLabel()));
                 }
                 notFound = false;
                 type = getMindmapsGraph().getElementFactory().buildSpecificConceptType(concept);
             } else {
                 currentConcept = currentConcept.getParentAko();
                 if(visitedConcepts.contains(currentConcept)){
-                    throw new ConceptException(ErrorMessage.LOOP_DETECTED.getMessage(toString(), DataType.EdgeLabel.AKO.getLabel() + " " + DataType.EdgeLabel.ISA.getLabel()));
+                    throw new ConceptException(ErrorMessage.LOOP_DETECTED.getMessage(toString(), Schema.EdgeLabel.AKO.getLabel() + " " + Schema.EdgeLabel.ISA.getLabel()));
                 }
                 visitedConcepts.add(currentConcept);
 
@@ -408,12 +408,12 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @return The concept itself casted to the correct interface
      */
     public T type(Type type) {
-        deleteEdges(Direction.OUT, DataType.EdgeLabel.ISA);
-        putEdge(getMindmapsGraph().getElementFactory().buildSpecificConceptType(type), DataType.EdgeLabel.ISA);
+        deleteEdges(Direction.OUT, Schema.EdgeLabel.ISA);
+        putEdge(getMindmapsGraph().getElementFactory().buildSpecificConceptType(type), Schema.EdgeLabel.ISA);
         setType(String.valueOf(type.getId()));
 
         //Put any castings back into tracking to make sure the type is still valid
-        getIncomingNeighbours(DataType.EdgeLabel.ROLE_PLAYER).forEach(casting -> mindmapsGraph.getConceptLog().putConcept(casting));
+        getIncomingNeighbours(Schema.EdgeLabel.ROLE_PLAYER).forEach(casting -> mindmapsGraph.getConceptLog().putConcept(casting));
 
         return getThis();
     }
@@ -444,7 +444,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @return The result of following one outgoing isa edge to a Type.
      */
     public TypeImpl getParentIsa(){
-        Concept isaParent = getOutgoingNeighbour(DataType.EdgeLabel.ISA);
+        Concept isaParent = getOutgoingNeighbour(Schema.EdgeLabel.ISA);
         if(isaParent != null){
             return getMindmapsGraph().getElementFactory().buildSpecificConceptType(isaParent);
         } else {
@@ -457,7 +457,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @return The result of following one outgoing ako edge to a Type.
      */
     public TypeImpl getParentAko(){
-        Concept akoParent = getOutgoingNeighbour(DataType.EdgeLabel.AKO);
+        Concept akoParent = getOutgoingNeighbour(Schema.EdgeLabel.AKO);
         if(akoParent != null){
             return getMindmapsGraph().getElementFactory().buildSpecificConceptType(akoParent);
         } else {
@@ -470,7 +470,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @param edgeLabel The edge label to traverse
      * @return The neighbouring concept found by traversing one outgoing edge of a specific type
      */
-    protected Concept getOutgoingNeighbour(DataType.EdgeLabel edgeLabel){
+    protected Concept getOutgoingNeighbour(Schema.EdgeLabel edgeLabel){
         Set<ConceptImpl> concepts = getOutgoingNeighbours(edgeLabel);
         if(concepts.size() == 1){
             return concepts.iterator().next();
@@ -486,7 +486,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @param edgeType The edge label to traverse
      * @return The neighbouring concepts found by traversing outgoing edges of a specific type
      */
-    protected Set<ConceptImpl> getOutgoingNeighbours(DataType.EdgeLabel edgeType){
+    protected Set<ConceptImpl> getOutgoingNeighbours(Schema.EdgeLabel edgeType){
         Set<ConceptImpl> outgoingNeighbours = new HashSet<>();
 
         getEdgesOfType(Direction.OUT, edgeType).forEach(edge -> outgoingNeighbours.add(edge.getTarget()));
@@ -498,7 +498,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @param edgeLabel The edge label to traverse
      * @return The neighbouring concept found by traversing one incoming edge of a specific type
      */
-    Concept getIncomingNeighbour(DataType.EdgeLabel edgeLabel){
+    Concept getIncomingNeighbour(Schema.EdgeLabel edgeLabel){
         Set<ConceptImpl> concepts = getIncomingNeighbours(edgeLabel);
         if(concepts.size() == 1){
             return concepts.iterator().next();
@@ -513,7 +513,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @param edgeType The edge label to traverse
      * @return The neighbouring concepts found by traversing incoming edges of a specific type
      */
-    protected Set<ConceptImpl> getIncomingNeighbours(DataType.EdgeLabel edgeType){
+    protected Set<ConceptImpl> getIncomingNeighbours(Schema.EdgeLabel edgeType){
         Set<ConceptImpl> incomingNeighbours = new HashSet<>();
         getEdgesOfType(Direction.IN, edgeType).forEach(edge -> incomingNeighbours.add(edge.getSource()));
         return incomingNeighbours;
@@ -525,7 +525,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @param value The value to commit into the property
      * @return The concept itself casted to the correct interface
      */
-    public T setProperty(DataType.ConceptPropertyUnique key, Object value) {
+    public T setProperty(Schema.ConceptPropertyUnique key, Object value) {
         return setProperty(key.name(), value);
     }
 
@@ -535,7 +535,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @param value The value to commit into the property
      * @return The concept itself casted to the correct interface
      */
-    T setProperty(DataType.ConceptProperty key, Object value){
+    T setProperty(Schema.ConceptProperty key, Object value){
         return setProperty(key.name(), value);
     }
 
@@ -544,7 +544,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @param key The key of the unique property to retrieve
      * @return The value stored in the property
      */
-    public String getProperty(DataType.ConceptPropertyUnique key){
+    public String getProperty(Schema.ConceptPropertyUnique key){
         Object property = getProperty(key.name());
         if(property == null)
             return null;
@@ -557,7 +557,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @param key The key of the non-unique property to retrieve
      * @return The value stored in the property
      */
-    public Object getProperty(DataType.ConceptProperty key){
+    public Object getProperty(Schema.ConceptProperty key){
         return getProperty(key.name());
     }
 
@@ -576,7 +576,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @return The concept itself casted to the correct interface
      */
     public T setType(String type){
-        return setProperty(DataType.ConceptProperty.TYPE, type);
+        return setProperty(Schema.ConceptProperty.TYPE, type);
     }
 
     //------------ Getters ------------
@@ -602,7 +602,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      */
     @Override
     public String getId(){
-        return getProperty(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER);
+        return getProperty(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER);
     }
 
     /**
@@ -610,7 +610,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @return The id of the type of this concept. This is a shortcut used to prevent traversals.
      */
     public String getType(){
-        return String.valueOf(getProperty(DataType.ConceptProperty.TYPE));
+        return String.valueOf(getProperty(Schema.ConceptProperty.TYPE));
     }
 
     /**
@@ -619,7 +619,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @param type The type of the edges to retrieve
      * @return A collection of edges from this concept in a particular direction of a specific type
      */
-    protected Set<EdgeImpl> getEdgesOfType(Direction direction, DataType.EdgeLabel type){
+    protected Set<EdgeImpl> getEdgesOfType(Direction direction, Schema.EdgeLabel type){
         Set<EdgeImpl> edges = new HashSet<>();
         vertex.edges(direction, type.getLabel()).
                 forEachRemaining(e -> edges.add(new EdgeImpl(e, getMindmapsGraph())));
@@ -632,7 +632,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @return An edge from this concept in a particular direction of a specific type
      * @throws MoreThanOneEdgeException when more than one edge of s specific type
      */
-    public EdgeImpl getEdgeOutgoingOfType(DataType.EdgeLabel type) {
+    public EdgeImpl getEdgeOutgoingOfType(Schema.EdgeLabel type) {
         Set<EdgeImpl> edges = getEdgesOfType(Direction.OUT, type);
         if(edges.size() == 1)
             return edges.iterator().next();
@@ -654,7 +654,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @param toConcept the target concept
      * @param type the type of the edge to create
      */
-    void putEdge(ConceptImpl toConcept, DataType.EdgeLabel type){
+    void putEdge(ConceptImpl toConcept, Schema.EdgeLabel type){
         GraphTraversal<Vertex, Edge> traversal = mindmapsGraph.getTinkerPopGraph().traversal().V(getBaseIdentifier()).outE(type.getLabel()).as("edge").otherV().hasId(toConcept.getBaseIdentifier()).select("edge");
         if(!traversal.hasNext())
             addEdge(toConcept, type);
@@ -666,7 +666,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @param type the type of the edge to create
      * @return The edge created
      */
-    public EdgeImpl addEdge(ConceptImpl toConcept, DataType.EdgeLabel type) {
+    public EdgeImpl addEdge(ConceptImpl toConcept, Schema.EdgeLabel type) {
         mindmapsGraph.getConceptLog().putConcept(this);
         mindmapsGraph.getConceptLog().putConcept(toConcept);
 
@@ -678,7 +678,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @param direction The direction of the edges to retrieve
      * @param type The type of the edges to retrieve
      */
-    void deleteEdges(Direction direction, DataType.EdgeLabel type){
+    void deleteEdges(Direction direction, Schema.EdgeLabel type){
         // track changes
         vertex.edges(direction, type.getLabel()).
                 forEachRemaining(
@@ -699,7 +699,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @param type The type of the edge
      * @param toConcept The target concept
      */
-    void deleteEdgeTo(DataType.EdgeLabel type, ConceptImpl toConcept){
+    void deleteEdgeTo(Schema.EdgeLabel type, ConceptImpl toConcept){
         GraphTraversal<Vertex, Edge> traversal = mindmapsGraph.getTinkerPopGraph().traversal().V(getBaseIdentifier()).
                 outE(type.getLabel()).as("edge").otherV().hasId(toConcept.getBaseIdentifier()).select("edge");
         if(traversal.hasNext())
@@ -745,7 +745,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
             return false;
 
         try {
-            return vertex.property(DataType.BaseType.TYPE.name()).isPresent();
+            return vertex.property(Schema.BaseType.TYPE.name()).isPresent();
         } catch (IllegalStateException e){
             return false;
         }

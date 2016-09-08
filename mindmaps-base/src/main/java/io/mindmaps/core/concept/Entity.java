@@ -14,43 +14,27 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package io.mindmaps.core.model;
-
-
-import io.mindmaps.core.Data;
+package io.mindmaps.core.concept;
 
 import java.util.Collection;
 
 /**
- * A concept which represents a resource.
- * @param <D> The data type of this resource. Supported Types include: String, Long, Double, and Boolean
+ * An instance of Entity Type which represents some data in the graph.
  */
-public interface Resource<D> extends Instance{
+public interface Entity extends Instance{
     //------------------------------------- Accessors ----------------------------------
-    /**
-     *
-     * @return The Resource itself
-     */
-    D getValue();
 
     /**
      *
-     * @return the type of this resource
+     * @return The Entity Type of this Entity
      */
-    ResourceType<D> type();
+    EntityType type();
 
     /**
      *
-     * @return The data type of this Resource's type.
+     * @return A collection of resources attached to this Instance.
      */
-    Data<D> dataType();
-
-    /**
-     * @return The list of all Instances which posses this resource
-     */
-    Collection<Instance> ownerInstances();
-
+    Collection<Resource<?>> resources();
 }

@@ -16,9 +16,9 @@
  *  along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.core.implementation.exception;
+package io.mindmaps.exception;
 
-import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.util.ErrorMessage;
 
 /**
  * The exception thrown when an edge is expected between two concepts.

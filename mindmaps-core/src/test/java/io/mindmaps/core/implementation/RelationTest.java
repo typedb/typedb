@@ -18,11 +18,10 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.constants.DataType;
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.Data;
-import io.mindmaps.core.implementation.exception.ConceptException;
-import io.mindmaps.core.model.*;
+import io.mindmaps.util.Schema;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.exception.ConceptException;
+import io.mindmaps.core.concept.*;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -111,10 +110,10 @@ public class RelationTest {
         relation.scope(scope);
         relationValue.scope(scope);
 
-        Vertex vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(relation.getBaseIdentifier()).out(DataType.EdgeLabel.HAS_SCOPE.getLabel()).next();
+        Vertex vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(relation.getBaseIdentifier()).out(Schema.EdgeLabel.HAS_SCOPE.getLabel()).next();
         assertEquals(scope.getBaseIdentifier(), vertex.id());
 
-        vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(relationValue.getBaseIdentifier()).out(DataType.EdgeLabel.HAS_SCOPE.getLabel()).next();
+        vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(relationValue.getBaseIdentifier()).out(Schema.EdgeLabel.HAS_SCOPE.getLabel()).next();
         assertEquals(scope.getBaseIdentifier(), vertex.id());
     }
 
@@ -168,7 +167,7 @@ public class RelationTest {
         Vertex assertion2_vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(relation2.getBaseIdentifier()).next();
 
         int count = 0;
-        Iterator<Edge> edges =  assertion2_vertex.edges(Direction.OUT, DataType.EdgeLabel.HAS_SCOPE.getLabel());
+        Iterator<Edge> edges =  assertion2_vertex.edges(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE.getLabel());
         while(edges.hasNext()){
             edges.next();
             count ++;
@@ -182,7 +181,7 @@ public class RelationTest {
         assertTrue(mindmapsGraph.getTinkerPopGraph().traversal().V(scope1.getBaseIdentifier()).hasNext());
         relation2.deleteScope(scope1);
         relation.deleteScope(scope3);
-        assertFalse(mindmapsGraph.getTinkerPopGraph().traversal().V(relation.getBaseIdentifier()).next().edges(Direction.OUT, DataType.EdgeLabel.HAS_SCOPE.getLabel()).hasNext());
+        assertFalse(mindmapsGraph.getTinkerPopGraph().traversal().V(relation.getBaseIdentifier()).next().edges(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE.getLabel()).hasNext());
     }
 
     @Test
@@ -193,7 +192,7 @@ public class RelationTest {
         relation.scope(scope2);
 
         relation.scopes().forEach(relation::deleteScope);
-        assertFalse(mindmapsGraph.getTinkerPopGraph().traversal().V(relation.getBaseIdentifier()).next().edges(Direction.OUT, DataType.EdgeLabel.HAS_SCOPE.getLabel()).hasNext());
+        assertFalse(mindmapsGraph.getTinkerPopGraph().traversal().V(relation.getBaseIdentifier()).next().edges(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE.getLabel()).hasNext());
     }
 
     @Test
@@ -205,7 +204,7 @@ public class RelationTest {
     @Test
     public void testDeleteShortcuts() {
         EntityType type = mindmapsGraph.putEntityType("A thing");
-        ResourceType resourceType = mindmapsGraph.putResourceType("A resource thing", Data.STRING);
+        ResourceType resourceType = mindmapsGraph.putResourceType("A resource thing", ResourceType.DataType.STRING);
         EntityImpl instance1 = (EntityImpl) mindmapsGraph.putEntity("Instance 1", type);
         EntityImpl instance2 = (EntityImpl) mindmapsGraph.putEntity("Instance 2", type);
         EntityImpl instance3 = (EntityImpl) mindmapsGraph.putEntity("Instance 3", type);
@@ -223,16 +222,16 @@ public class RelationTest {
         assertEquals(1, instance1.resources().size());
         assertEquals(2, resource.ownerInstances().size());
 
-        assertEquals(3, instance1.getEdgesOfType(Direction.IN, DataType.EdgeLabel.SHORTCUT).size());
-        assertEquals(3, instance1.getEdgesOfType(Direction.OUT, DataType.EdgeLabel.SHORTCUT).size());
+        assertEquals(3, instance1.getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHORTCUT).size());
+        assertEquals(3, instance1.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT).size());
 
         rel.delete();
 
         assertEquals(0, instance1.resources().size());
         assertEquals(0, resource.ownerInstances().size());
 
-        assertEquals(1, instance1.getEdgesOfType(Direction.IN, DataType.EdgeLabel.SHORTCUT).size());
-        assertEquals(1, instance1.getEdgesOfType(Direction.OUT, DataType.EdgeLabel.SHORTCUT).size());
+        assertEquals(1, instance1.getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHORTCUT).size());
+        assertEquals(1, instance1.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHORTCUT).size());
     }
 
     @Test
@@ -332,7 +331,7 @@ public class RelationTest {
         RoleType entityRole = mindmapsGraph.putRoleType("Entity Role");
         RoleType degreeRole = mindmapsGraph.putRoleType("Degree Role");
         EntityType entityType = mindmapsGraph.putEntityType("Entity Type").playsRole(entityRole);
-        ResourceType<Long> degreeType = mindmapsGraph.putResourceType("Resource Type", Data.LONG).playsRole(degreeRole);
+        ResourceType<Long> degreeType = mindmapsGraph.putResourceType("Resource Type", ResourceType.DataType.LONG).playsRole(degreeRole);
 
         RelationType hasDegree = mindmapsGraph.putRelationType("Has Degree").hasRole(entityRole).hasRole(degreeRole);
 

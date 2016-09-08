@@ -21,8 +21,8 @@ package io.mindmaps.engine.visualiser;
 import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
-import io.mindmaps.constants.RESTUtil;
-import io.mindmaps.core.model.*;
+import io.mindmaps.util.REST;
+import io.mindmaps.core.concept.*;
 import io.mindmaps.engine.util.ConfigProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +53,7 @@ public class HALConcept {
         int separationDegree = prop.getPropertyAsInt(ConfigProperties.HAL_DEGREE_PROPERTY);
         resourceLinkPrefix = "http://" + prop.getProperty(ConfigProperties.SERVER_HOST_NAME) + ":"
                 + prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER)
-                + RESTUtil.WebPath.CONCEPT_BY_ID_URI;
+                + REST.WebPath.CONCEPT_BY_ID_URI;
 
         factory = new StandardRepresentationFactory();
         halResource = factory.newRepresentation(resourceLinkPrefix + concept.getId());

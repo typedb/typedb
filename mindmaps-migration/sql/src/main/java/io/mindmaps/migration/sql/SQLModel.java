@@ -1,13 +1,18 @@
 package io.mindmaps.migration.sql;
 
-import io.mindmaps.core.Data;
+import io.mindmaps.core.concept.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Class to hold metadata of a SQL table.
@@ -80,7 +85,7 @@ public class SQLModel implements Iterable<SQLModel.SQLTable> {
         private String type;
         private List<String> primaryKeyColumns;
         private Map<String, String> foreignKeyColumns;
-        private Map<String, Data> columnTypes;
+        private Map<String, ResourceType.DataType> columnTypes;
 
          SQLTable(String type, Connection connection) {
             this.type = type;
@@ -116,7 +121,7 @@ public class SQLModel implements Iterable<SQLModel.SQLTable> {
             return foreignKeyColumns;
         }
 
-        public Map<String, Data> getColumns() {
+        public Map<String, ResourceType.DataType> getColumns() {
             return columnTypes;
         }
 
@@ -130,7 +135,7 @@ public class SQLModel implements Iterable<SQLModel.SQLTable> {
 
             while(results.next()){
                 String name = results.getString("COLUMN_NAME");
-                Data type = SQLType.getDatatype(results.getInt("DATA_TYPE"));
+                ResourceType.DataType type = SQLType.getDatatype(results.getInt("DATA_TYPE"));
 
                 columnTypes.put(name, type);
             }

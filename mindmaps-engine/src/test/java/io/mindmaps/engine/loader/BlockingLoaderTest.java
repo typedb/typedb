@@ -21,7 +21,7 @@ package io.mindmaps.engine.loader;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.implementation.exception.MindmapsValidationException;
+import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.engine.controller.CommitLogController;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;

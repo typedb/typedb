@@ -19,8 +19,8 @@ package io.mindmaps.migration.owl;
 
 import org.semanticweb.owlapi.model.IRI;
 
-import io.mindmaps.core.model.Entity;
-import io.mindmaps.core.model.ResourceType;
+import io.mindmaps.core.concept.Entity;
+import io.mindmaps.core.concept.ResourceType;
 
 /**
  * <p>

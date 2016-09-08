@@ -1,6 +1,6 @@
-package io.mindmaps.constants;
+package io.mindmaps.util;
 
-public class RESTUtil {
+public class REST {
 
     public static class WebPath{
         public static final String IMPORT_DATA_URI =  "/import/batch/data";

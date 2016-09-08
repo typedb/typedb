@@ -20,8 +20,8 @@
 package io.mindmaps.graql.admin;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.model.Concept;
-import io.mindmaps.core.model.Type;
+import io.mindmaps.core.concept.Concept;
+import io.mindmaps.core.concept.Type;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.internal.query.Conjunction;
 import io.mindmaps.graql.internal.query.match.MatchOrder;

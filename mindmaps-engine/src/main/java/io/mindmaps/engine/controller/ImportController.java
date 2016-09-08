@@ -19,8 +19,8 @@
 package io.mindmaps.engine.controller;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.constants.RESTUtil;
-import io.mindmaps.core.implementation.exception.MindmapsValidationException;
+import io.mindmaps.util.REST;
+import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.engine.loader.Loader;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.QueryParser;
@@ -74,8 +74,8 @@ public class ImportController {
 
     public ImportController() {
 
-        post(RESTUtil.WebPath.IMPORT_DATA_URI, this::importDataREST);
-        post(RESTUtil.WebPath.IMPORT_ONTOLOGY_URI, this::importOntologyREST);
+        post(REST.WebPath.IMPORT_DATA_URI, this::importDataREST);
+        post(REST.WebPath.IMPORT_ONTOLOGY_URI, this::importOntologyREST);
 
         entitiesMap = new ConcurrentHashMap<>();
         relationsList = new ArrayList<>();
@@ -94,11 +94,11 @@ public class ImportController {
 
         try {
             JSONObject bodyObject = new JSONObject(req.body());
-            String pathToFile = bodyObject.get(RESTUtil.Request.PATH_FIELD).toString();
+            String pathToFile = bodyObject.get(REST.Request.PATH_FIELD).toString();
             final String graphName;
 
-            if (bodyObject.has(RESTUtil.Request.GRAPH_NAME_PARAM))
-                graphName = bodyObject.get(RESTUtil.Request.GRAPH_NAME_PARAM).toString();
+            if (bodyObject.has(REST.Request.GRAPH_NAME_PARAM))
+                graphName = bodyObject.get(REST.Request.GRAPH_NAME_PARAM).toString();
             else
                 graphName = defaultGraphName;
 
@@ -124,10 +124,10 @@ public class ImportController {
     private String importOntologyREST(Request req, Response res) {
         try {
             JSONObject bodyObject = new JSONObject(req.body());
-            String pathToFile = bodyObject.get(RESTUtil.Request.PATH_FIELD).toString();
+            String pathToFile = bodyObject.get(REST.Request.PATH_FIELD).toString();
             String graphName;
-            if (bodyObject.has(RESTUtil.Request.GRAPH_NAME_PARAM))
-                graphName = bodyObject.get(RESTUtil.Request.GRAPH_NAME_PARAM).toString();
+            if (bodyObject.has(REST.Request.GRAPH_NAME_PARAM))
+                graphName = bodyObject.get(REST.Request.GRAPH_NAME_PARAM).toString();
             else
                 graphName = defaultGraphName;
             importOntologyFromFile(pathToFile, graphName);

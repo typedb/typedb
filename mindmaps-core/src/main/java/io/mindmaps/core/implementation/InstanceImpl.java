@@ -18,8 +18,8 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.constants.DataType;
-import io.mindmaps.core.model.*;
+import io.mindmaps.util.Schema;
+import io.mindmaps.core.concept.*;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
@@ -28,7 +28,7 @@ import java.util.Set;
 
 /**
  * This represents an instance of a Type. It represents data in the graph.
- * @param <T> The leaf interface of the object model. For example an EntityType, Entity, RelationType etc . . .
+ * @param <T> The leaf interface of the object concept. For example an EntityType, Entity, RelationType etc . . .
  * @param <V> The type of the concept.
  */
 abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptImpl<T, V> implements Instance {
@@ -62,7 +62,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      * @return The inner index value of some concepts.
      */
     public String getIndex(){
-        return getProperty(DataType.ConceptPropertyUnique.INDEX);
+        return getProperty(Schema.ConceptPropertyUnique.INDEX);
     }
 
     /**
@@ -71,7 +71,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      */
     public Collection<Resource<?>> resources() {
         Set<Resource<?>> resources = new HashSet<>();
-        this.getOutgoingNeighbours(DataType.EdgeLabel.SHORTCUT).forEach(concept -> {
+        this.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).forEach(concept -> {
             if(concept.isResource()) {
                 Resource<?> resource = concept.asResource();
                 resources.add(resource);
@@ -86,7 +86,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      */
     public Set<CastingImpl> castings(){
         Set<CastingImpl> castings = new HashSet<>();
-        getIncomingNeighbours(DataType.EdgeLabel.ROLE_PLAYER).forEach(casting -> castings.add((CastingImpl) casting));
+        getIncomingNeighbours(Schema.EdgeLabel.ROLE_PLAYER).forEach(casting -> castings.add((CastingImpl) casting));
         return castings;
     }
 
@@ -126,7 +126,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     public Collection<RoleType> playsRoles() {
         Set<RoleType> roleTypes = new HashSet<>();
         ConceptImpl<?, ?> parent = this;
-        parent.getIncomingNeighbours(DataType.EdgeLabel.ROLE_PLAYER).forEach(c -> roleTypes.add(getMindmapsGraph().getElementFactory().buildCasting(c).getRole()));
+        parent.getIncomingNeighbours(Schema.EdgeLabel.ROLE_PLAYER).forEach(c -> roleTypes.add(getMindmapsGraph().getElementFactory().buildCasting(c).getRole()));
         return roleTypes;
     }
 }

@@ -18,7 +18,7 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.constants.DataType;
+import io.mindmaps.util.Schema;
 import org.junit.Test;
 
 import java.lang.reflect.Constructor;
@@ -26,34 +26,34 @@ import java.lang.reflect.InvocationTargetException;
 
 import static org.junit.Assert.assertEquals;
 
-public class DataTypeTest {
+public class SchemaTest {
     @Test(expected = InvocationTargetException.class)
     public void testConstructor() throws Exception { //Checks that you cannot initialise it.
-        Constructor<DataType> c = DataType.class.getDeclaredConstructor();
+        Constructor<Schema> c = Schema.class.getDeclaredConstructor();
         c.setAccessible(true);
-        DataType u = c.newInstance();
+        Schema u = c.newInstance();
     }
 
     @Test
     public void enumParingAndValueTest(){
-        DataType.EdgeLabel isa = DataType.EdgeLabel.valueOf("ISA");
-        DataType.EdgeLabel ako = DataType.EdgeLabel.valueOf("AKO");
-        DataType.EdgeLabel has_role = DataType.EdgeLabel.valueOf("HAS_ROLE");
-        DataType.EdgeLabel has_scope = DataType.EdgeLabel.valueOf("HAS_SCOPE");
-        DataType.EdgeLabel casting = DataType.EdgeLabel.valueOf("CASTING");
+        Schema.EdgeLabel isa = Schema.EdgeLabel.valueOf("ISA");
+        Schema.EdgeLabel ako = Schema.EdgeLabel.valueOf("AKO");
+        Schema.EdgeLabel has_role = Schema.EdgeLabel.valueOf("HAS_ROLE");
+        Schema.EdgeLabel has_scope = Schema.EdgeLabel.valueOf("HAS_SCOPE");
+        Schema.EdgeLabel casting = Schema.EdgeLabel.valueOf("CASTING");
 
-        DataType.ConceptMeta role_type = DataType.ConceptMeta.valueOf("ROLE_TYPE");
+        Schema.MetaType role_type = Schema.MetaType.valueOf("ROLE_TYPE");
 
         // Basic Edges
-        assertEquals(DataType.EdgeLabel.ISA, isa);
-        assertEquals(DataType.EdgeLabel.AKO, ako);
-        assertEquals(DataType.EdgeLabel.HAS_ROLE, has_role);
-        assertEquals(DataType.EdgeLabel.HAS_SCOPE, has_scope);
+        assertEquals(Schema.EdgeLabel.ISA, isa);
+        assertEquals(Schema.EdgeLabel.AKO, ako);
+        assertEquals(Schema.EdgeLabel.HAS_ROLE, has_role);
+        assertEquals(Schema.EdgeLabel.HAS_SCOPE, has_scope);
         // Other
-        assertEquals(DataType.EdgeLabel.CASTING, casting);
+        assertEquals(Schema.EdgeLabel.CASTING, casting);
 
         //Internal Vertex
-        assertEquals(DataType.ConceptMeta.ROLE_TYPE, role_type);
+        assertEquals(Schema.MetaType.ROLE_TYPE, role_type);
 
     }
 }

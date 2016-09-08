@@ -19,7 +19,7 @@
 package io.mindmaps.graql.internal.query;
 
 import com.google.common.collect.Maps;
-import io.mindmaps.core.Data;
+import io.mindmaps.core.concept.ResourceType;
 import io.mindmaps.graql.ValuePredicate;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
@@ -28,13 +28,24 @@ import io.mindmaps.graql.internal.StringConverter;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 import io.mindmaps.graql.internal.gremlin.VarTraversals;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.Stack;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static io.mindmaps.constants.ErrorMessage.*;
 import static io.mindmaps.graql.Graql.eq;
 import static io.mindmaps.graql.Graql.var;
+import static io.mindmaps.util.ErrorMessage.MULTIPLE_IDS;
+import static io.mindmaps.util.ErrorMessage.MULTIPLE_TYPES;
+import static io.mindmaps.util.ErrorMessage.SET_GENERATED_VARIABLE_NAME;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
@@ -47,7 +58,7 @@ public class VarImpl implements VarAdmin {
     private final boolean userDefinedName;
 
     private boolean abstractFlag = false;
-    private Optional<Data<?>> datatype = Optional.empty();
+    private Optional<ResourceType.DataType<?>> datatype = Optional.empty();
 
     private Optional<String> id = Optional.empty();
 
@@ -284,7 +295,7 @@ public class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Var datatype(Data<?> datatype) {
+    public Var datatype(ResourceType.DataType<?> datatype) {
         this.datatype = Optional.of(datatype);
         return this;
     }
@@ -338,7 +349,7 @@ public class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Optional<Data<?>> getDatatype() {
+    public Optional<ResourceType.DataType<?>> getDatatype() {
         return datatype;
     }
 
@@ -554,13 +565,13 @@ public class VarImpl implements VarAdmin {
     private Optional<String> getDatatypeName() {
         return datatype.map(
                 d -> {
-                    if (d == Data.BOOLEAN) {
+                    if (d == ResourceType.DataType.BOOLEAN) {
                         return "boolean";
-                    } else if (d == Data.DOUBLE) {
+                    } else if (d == ResourceType.DataType.DOUBLE) {
                         return "double";
-                    } else if (d == Data.LONG) {
+                    } else if (d == ResourceType.DataType.LONG) {
                         return "long";
-                    } else if (d == Data.STRING) {
+                    } else if (d == ResourceType.DataType.STRING) {
                         return "string";
                     } else {
                         throw new RuntimeException("Unknown data type: " + d.getName());

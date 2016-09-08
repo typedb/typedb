@@ -19,15 +19,14 @@
 package io.mindmaps.example;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.Data;
-import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.Entity;
-import io.mindmaps.core.model.EntityType;
-import io.mindmaps.core.model.RelationType;
-import io.mindmaps.core.model.Resource;
-import io.mindmaps.core.model.ResourceType;
-import io.mindmaps.core.model.RoleType;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.core.concept.Entity;
+import io.mindmaps.core.concept.EntityType;
+import io.mindmaps.core.concept.RelationType;
+import io.mindmaps.core.concept.Resource;
+import io.mindmaps.core.concept.ResourceType;
+import io.mindmaps.core.concept.RoleType;
 
 /**
  * A class which loads sample data into a mindmaps graph
@@ -108,13 +107,13 @@ public class PokemonGraphFactory{
                 .playsRole(defendingType)
                 .playsRole(attackingType);
 
-        pokedexNo = graph.putResourceType("pokedex-no", Data.LONG)
+        pokedexNo = graph.putResourceType("pokedex-no", ResourceType.DataType.LONG)
                 .playsRole(hasResourceValue);
-        description = graph.putResourceType("description", Data.STRING)
+        description = graph.putResourceType("description", ResourceType.DataType.STRING)
                 .playsRole(hasResourceValue);
-        height = graph.putResourceType("height", Data.LONG)
+        height = graph.putResourceType("height", ResourceType.DataType.LONG)
                 .playsRole(hasResourceValue);
-        weight = graph.putResourceType("weight", Data.LONG)
+        weight = graph.putResourceType("weight", ResourceType.DataType.LONG)
                 .playsRole(hasResourceValue);
     }
 

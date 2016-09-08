@@ -18,13 +18,12 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.constants.DataType;
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.Data;
-import io.mindmaps.core.implementation.exception.InvalidConceptValueException;
-import io.mindmaps.core.model.Instance;
-import io.mindmaps.core.model.Resource;
-import io.mindmaps.core.model.ResourceType;
+import io.mindmaps.util.Schema;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.exception.InvalidConceptValueException;
+import io.mindmaps.core.concept.Instance;
+import io.mindmaps.core.concept.Resource;
+import io.mindmaps.core.concept.ResourceType;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
@@ -46,7 +45,7 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
      * @return The data type of this Resource's type.
      */
     @Override
-    public Data<D> dataType() {
+    public ResourceType.DataType<D> dataType() {
         return type().getDataType();
     }
 
@@ -56,8 +55,8 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
     @Override
     public Collection<Instance> ownerInstances() {
         Set<Instance> owners = new HashSet<>();
-        this.getOutgoingNeighbours(DataType.EdgeLabel.SHORTCUT).forEach(concept -> {
-            if(!concept.getBaseType().equals(DataType.BaseType.RESOURCE.name()))
+        this.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).forEach(concept -> {
+            if(!concept.getBaseType().equals(Schema.BaseType.RESOURCE.name()))
                 owners.add(getMindmapsGraph().getElementFactory().buildSpecificInstance(concept));
         });
         return owners;
@@ -81,7 +80,7 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
             }
 
             String index = generateResourceIndex(type().getId(), value.toString());
-            setUniqueProperty(DataType.ConceptPropertyUnique.INDEX, index);
+            setUniqueProperty(Schema.ConceptPropertyUnique.INDEX, index);
 
             return setProperty(dataType().getConceptProperty(), castValue(value));
         } catch (ClassCastException e) {
@@ -95,7 +94,7 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
      * @return A unique id for the resource
      */
     public static String generateResourceIndex(String typeId, String value){
-        return DataType.BaseType.RESOURCE.name() + "-" + typeId + "-" + value;
+        return Schema.BaseType.RESOURCE.name() + "-" + typeId + "-" + value;
     }
 
     /**
@@ -104,10 +103,10 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
      * @return The value casted to the correct type
      */
     private Object castValue(Object value){
-        Data<D> parentDataType = dataType();
-        if(parentDataType.equals(Data.DOUBLE)){
+        ResourceType.DataType<D> parentDataType = dataType();
+        if(parentDataType.equals(ResourceType.DataType.DOUBLE)){
             return ((Number) value).doubleValue();
-        } else if(parentDataType.equals(Data.LONG)){
+        } else if(parentDataType.equals(ResourceType.DataType.LONG)){
             if(value instanceof Double){
                 throw new ClassCastException();
             }

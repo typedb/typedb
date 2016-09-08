@@ -2,7 +2,7 @@ package io.mindmaps.migration.sql;
 
 import com.google.common.collect.Lists;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.Data;
+import io.mindmaps.core.concept.ResourceType;
 import io.mindmaps.engine.loader.Loader;
 import io.mindmaps.graql.Var;
 import io.mindmaps.migration.sql.SQLModel.SQLTable;
@@ -89,12 +89,12 @@ public class SQLSchemaMigrator implements Closeable {
         List<Var> vars = new ArrayList<>();
 
         String tableType = currentTable.getEntityType();
-        Map<String, Data> columns = currentTable.getColumns();
+        Map<String, ResourceType.DataType> columns = currentTable.getColumns();
         Map<String, String> foreignColumns = currentTable.getForeignKeyColumns();
 
         for(String column: columns.keySet()){
 
-            Data columnType = columns.get(column);
+            ResourceType.DataType columnType = columns.get(column);
 
             if(foreignColumns.containsKey(column)){
                 vars.addAll(migrateAsRelation(tableType, column, foreignColumns.get(column)));
@@ -125,7 +125,7 @@ public class SQLSchemaMigrator implements Closeable {
      * @param columnName name of the column
      * @return var patterns representing the resource type
      */
-    private Collection<Var> migrateAsResource(String ownerType, Data columnType, String columnName){
+    private Collection<Var> migrateAsResource(String ownerType, ResourceType.DataType columnType, String columnName){
         String resourceName = namer.resourceName(ownerType, columnName);
 
         // create the vars

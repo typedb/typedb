@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.constants;
+package io.mindmaps.util;
 
 public enum ErrorMessage {
     //--------------------------------------------- Core Errors -----------------------------------------------

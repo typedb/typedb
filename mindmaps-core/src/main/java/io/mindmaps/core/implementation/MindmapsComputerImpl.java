@@ -16,9 +16,10 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps;
+package io.mindmaps.core.implementation;
 
-import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.MindmapsComputer;
+import io.mindmaps.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;

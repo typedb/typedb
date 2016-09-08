@@ -18,8 +18,8 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.core.model.Rule;
-import io.mindmaps.core.model.RuleType;
+import io.mindmaps.core.concept.Rule;
+import io.mindmaps.core.concept.RuleType;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 /**

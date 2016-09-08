@@ -16,25 +16,25 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.core.model;
+package io.mindmaps.core.concept;
 
 import java.util.Collection;
 
 /**
- * An instance of Entity Type which represents some data in the graph.
+ * This represents an instance of a Type. It represents data in the graph.
  */
-public interface Entity extends Instance{
+public interface Instance extends Concept{
     //------------------------------------- Accessors ----------------------------------
+    /**
+     *
+     * @param roleTypes An optional parameter which allows you to specify the role of the relations you wish to retrieve.
+     * @return A set of Relations which the concept instance takes part in, optionally constrained by the Role Type.
+     */
+    Collection<Relation> relations(RoleType... roleTypes);
 
     /**
      *
-     * @return The Entity Type of this Entity
+     * @return A set of all the Role Types which this instance plays.
      */
-    EntityType type();
-
-    /**
-     *
-     * @return A collection of resources attached to this Instance.
-     */
-    Collection<Resource<?>> resources();
+    Collection<RoleType> playsRoles();
 }

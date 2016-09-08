@@ -19,7 +19,7 @@
 
 package io.mindmaps.graql.admin;
 
-import io.mindmaps.core.Data;
+import io.mindmaps.core.concept.ResourceType;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 
@@ -90,7 +90,7 @@ public interface VarAdmin extends PatternAdmin, Var {
     /**
      * @return the datatype of this resource type, if one is set
      */
-    Optional<Data<?>> getDatatype();
+    Optional<ResourceType.DataType<?>> getDatatype();
 
     /**
      * @return whether this variable is an abstract type

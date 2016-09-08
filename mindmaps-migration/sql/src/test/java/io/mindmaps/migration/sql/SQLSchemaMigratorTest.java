@@ -3,12 +3,11 @@ package io.mindmaps.migration.sql;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.Data;
-import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.RelationType;
-import io.mindmaps.core.model.ResourceType;
-import io.mindmaps.core.model.RoleType;
-import io.mindmaps.core.model.Type;
+import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.core.concept.RelationType;
+import io.mindmaps.core.concept.ResourceType;
+import io.mindmaps.core.concept.RoleType;
+import io.mindmaps.core.concept.Type;
 import io.mindmaps.engine.controller.CommitLogController;
 import io.mindmaps.engine.controller.GraphFactoryController;
 import io.mindmaps.engine.controller.TransactionController;
@@ -75,9 +74,9 @@ public class SQLSchemaMigratorTest {
         Type type = graph.getEntityType("USERS");
         assertNotNull(type);
 
-        assertResourceRelationExists("ID", Data.LONG, type);
-        assertResourceRelationExists("NAME", Data.STRING, type);
-        assertResourceRelationExists("EMAIL", Data.STRING, type);
+        assertResourceRelationExists("ID", ResourceType.DataType.LONG, type);
+        assertResourceRelationExists("NAME", ResourceType.DataType.STRING, type);
+        assertResourceRelationExists("EMAIL", ResourceType.DataType.STRING, type);
     }
 
     @Test
@@ -89,25 +88,25 @@ public class SQLSchemaMigratorTest {
         Type cart = graph.getEntityType("CART");
         assertNotNull(cart);
 
-        assertResourceRelationExists("ID", Data.LONG, cart);
-        assertResourceRelationExists("NAME", Data.STRING, cart);
+        assertResourceRelationExists("ID", ResourceType.DataType.LONG, cart);
+        assertResourceRelationExists("NAME", ResourceType.DataType.STRING, cart);
 
         Type cartItem = graph.getEntityType("CART_ITEM");
 
-        assertResourceRelationExists("ITEM_QTY", Data.LONG, cartItem);
-        assertResourceRelationExists("LAST_UPDATED", Data.STRING, cartItem);
+        assertResourceRelationExists("ITEM_QTY", ResourceType.DataType.LONG, cartItem);
+        assertResourceRelationExists("LAST_UPDATED", ResourceType.DataType.STRING, cartItem);
 
         Type category = graph.getEntityType("CATEGORY");
-        assertResourceRelationExists("ID", Data.LONG, category);
-        assertResourceRelationExists("DESCRIPTION", Data.STRING, category);
-        assertResourceRelationExists("NAME", Data.STRING, category);
+        assertResourceRelationExists("ID", ResourceType.DataType.LONG, category);
+        assertResourceRelationExists("DESCRIPTION", ResourceType.DataType.STRING, category);
+        assertResourceRelationExists("NAME", ResourceType.DataType.STRING, category);
 
         Type customer = graph.getEntityType("CUSTOMER");
-        assertResourceRelationExists("ID", Data.LONG, customer);
-        assertResourceRelationExists("NAME", Data.STRING, customer);
-        assertResourceRelationExists("PASSWORD", Data.STRING, customer);
-        assertResourceRelationExists("LAST_UPDATED", Data.STRING, customer);
-        assertResourceRelationExists("REGISTRATION_DATE", Data.STRING, customer);
+        assertResourceRelationExists("ID", ResourceType.DataType.LONG, customer);
+        assertResourceRelationExists("NAME", ResourceType.DataType.STRING, customer);
+        assertResourceRelationExists("PASSWORD", ResourceType.DataType.STRING, customer);
+        assertResourceRelationExists("LAST_UPDATED", ResourceType.DataType.STRING, customer);
+        assertResourceRelationExists("REGISTRATION_DATE", ResourceType.DataType.STRING, customer);
 
         Type product = graph.getEntityType("PRODUCT");
 
@@ -140,11 +139,11 @@ public class SQLSchemaMigratorTest {
 
         Type entity = graph.getEntityType("AZ_BAKUAPPEALCOURT_CASES");
         assertNotNull(entity);
-        assertResourceRelationExists("ID", Data.LONG, entity);
-        assertResourceRelationExists("DATE", Data.STRING, entity);
-        assertResourceRelationExists("CASE_ID", Data.STRING, entity);
-        assertResourceRelationExists("DETAILS", Data.STRING, entity);
-        assertResourceRelationExists("SOURCE_URL", Data.STRING, entity);
+        assertResourceRelationExists("ID", ResourceType.DataType.LONG, entity);
+        assertResourceRelationExists("DATE", ResourceType.DataType.STRING, entity);
+        assertResourceRelationExists("CASE_ID", ResourceType.DataType.STRING, entity);
+        assertResourceRelationExists("DETAILS", ResourceType.DataType.STRING, entity);
+        assertResourceRelationExists("SOURCE_URL", ResourceType.DataType.STRING, entity);
     }
 
     //TODO: Fix, sometimes fails due to stack overflow
@@ -158,11 +157,11 @@ public class SQLSchemaMigratorTest {
         Type city = graph.getEntityType("CITY");
         assertNotNull(city);
 
-        assertResourceRelationExists("ID", Data.LONG, city);
-        assertResourceRelationExists("NAME", Data.STRING, city);
-        assertResourceRelationExists("COUNTRYCODE", Data.STRING, city);
-        assertResourceRelationExists("DISTRICT", Data.STRING, city);
-        assertResourceRelationExists("POPULATION", Data.LONG, city);
+        assertResourceRelationExists("ID", ResourceType.DataType.LONG, city);
+        assertResourceRelationExists("NAME", ResourceType.DataType.STRING, city);
+        assertResourceRelationExists("COUNTRYCODE", ResourceType.DataType.STRING, city);
+        assertResourceRelationExists("DISTRICT", ResourceType.DataType.STRING, city);
+        assertResourceRelationExists("POPULATION", ResourceType.DataType.LONG, city);
 
         Type country = graph.getEntityType("COUNTRY");
         assertNotNull(country);
@@ -189,17 +188,17 @@ public class SQLSchemaMigratorTest {
         assertNotNull(pet);
         assertNotNull(event);
 
-        assertResourceRelationExists("NAME", Data.STRING, pet);
-        assertResourceRelationExists("OWNER", Data.STRING, pet);
-        assertResourceRelationExists("SPECIES", Data.STRING, pet);
-        assertResourceRelationExists("SEX", Data.STRING, pet);
-        assertResourceRelationExists("BIRTH", Data.STRING, pet);
-        assertResourceRelationExists("DEATH", Data.STRING, pet);
+        assertResourceRelationExists("NAME", ResourceType.DataType.STRING, pet);
+        assertResourceRelationExists("OWNER", ResourceType.DataType.STRING, pet);
+        assertResourceRelationExists("SPECIES", ResourceType.DataType.STRING, pet);
+        assertResourceRelationExists("SEX", ResourceType.DataType.STRING, pet);
+        assertResourceRelationExists("BIRTH", ResourceType.DataType.STRING, pet);
+        assertResourceRelationExists("DEATH", ResourceType.DataType.STRING, pet);
 
-        assertResourceRelationExists("NAME", Data.STRING, event);
-        assertResourceRelationExists("DATE", Data.STRING, event);
-        assertResourceRelationExists("EVENTTYPE", Data.STRING, event);
-        assertResourceRelationExists("REMARK", Data.STRING, event);
+        assertResourceRelationExists("NAME", ResourceType.DataType.STRING, event);
+        assertResourceRelationExists("DATE", ResourceType.DataType.STRING, event);
+        assertResourceRelationExists("EVENTTYPE", ResourceType.DataType.STRING, event);
+        assertResourceRelationExists("REMARK", ResourceType.DataType.STRING, event);
     }
 
     @Test
@@ -211,19 +210,19 @@ public class SQLSchemaMigratorTest {
         Type type = graph.getEntityType("USERS");
         assertNotNull(type);
 
-        assertResourceRelationExists("FIRSTNAME", Data.STRING, type);
-        assertResourceRelationExists("LASTNAME", Data.STRING, type);
-        assertResourceRelationExists("EMAIL", Data.STRING, type);
+        assertResourceRelationExists("FIRSTNAME", ResourceType.DataType.STRING, type);
+        assertResourceRelationExists("LASTNAME", ResourceType.DataType.STRING, type);
+        assertResourceRelationExists("EMAIL", ResourceType.DataType.STRING, type);
     }
 
-    private ResourceType assertResourceExists(String name, Data datatype) {
+    private ResourceType assertResourceExists(String name, ResourceType.DataType datatype) {
         ResourceType resourceType = graph.getResourceType(name);
         assertNotNull(resourceType);
         assertEquals(datatype.getName(), resourceType.getDataType().getName());
         return resourceType;
     }
 
-    private void assertResourceRelationExists(String name, Data datatype, Type owner){
+    private void assertResourceRelationExists(String name, ResourceType.DataType datatype, Type owner){
         String resourceName = namer.resourceName(owner.getId(), name);
         ResourceType resource = assertResourceExists(resourceName, datatype);
 

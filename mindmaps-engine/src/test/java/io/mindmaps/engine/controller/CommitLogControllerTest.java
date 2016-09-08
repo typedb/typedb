@@ -22,12 +22,12 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.http.ContentType;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.constants.RESTUtil;
-import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.Entity;
-import io.mindmaps.core.model.EntityType;
-import io.mindmaps.core.model.RelationType;
-import io.mindmaps.core.model.RoleType;
+import io.mindmaps.util.REST;
+import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.core.concept.Entity;
+import io.mindmaps.core.concept.EntityType;
+import io.mindmaps.core.concept.RelationType;
+import io.mindmaps.core.concept.RoleType;
 import io.mindmaps.engine.Util;
 import io.mindmaps.engine.postprocessing.Cache;
 import io.mindmaps.engine.util.ConfigProperties;
@@ -73,7 +73,7 @@ public class CommitLogControllerTest {
                 "}";
 
         given().contentType(ContentType.JSON).body(commitLog).when().
-                post(RESTUtil.WebPath.COMMIT_LOG_URI + "?" + RESTUtil.Request.GRAPH_NAME_PARAM + "=" + "test").
+                post(REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.GRAPH_NAME_PARAM + "=" + "test").
                 then().statusCode(200).extract().response().andReturn();
     }
 
@@ -129,7 +129,7 @@ public class CommitLogControllerTest {
     public void testDeleteController() {
         assertEquals(4, cache.getCastingJobs().values().iterator().next().size());
 
-        delete(RESTUtil.WebPath.COMMIT_LOG_URI + "?" + RESTUtil.Request.GRAPH_NAME_PARAM + "=" + "test").
+        delete(REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.GRAPH_NAME_PARAM + "=" + "test").
                 then().statusCode(200).extract().response().andReturn();
 
         assertEquals(0, cache.getCastingJobs().values().iterator().next().size());

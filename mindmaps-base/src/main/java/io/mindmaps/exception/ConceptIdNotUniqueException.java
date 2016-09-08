@@ -16,18 +16,21 @@
  *  along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.core.implementation.exception;
+package io.mindmaps.exception;
 
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.implementation.exception.ConceptException;
-import io.mindmaps.core.model.Concept;
+import io.mindmaps.util.Schema;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.core.concept.Concept;
 
 /**
- * This exception is thrown when attempting to incorrectly cast a concept to something it is not.
- * For example when
+ * This exception is thrown when two concepts attept to have the same unique id.
  */
-public class InvalidConceptTypeException extends ConceptException {
-    public InvalidConceptTypeException(Concept c, Class type) {
-        super(ErrorMessage.INVALID_OBJECT_TYPE.getMessage(c.toString(), type.getName()));
+public class ConceptIdNotUniqueException extends ConceptException {
+    public ConceptIdNotUniqueException(Concept concept, Schema.ConceptPropertyUnique type, String id) {
+        super(ErrorMessage.ID_NOT_UNIQUE.getMessage(concept.toString(), type.name(), id));
+    }
+
+    public ConceptIdNotUniqueException(Concept concept, String id){
+        super(ErrorMessage.ID_ALREADY_TAKEN.getMessage(id, concept.toString()));
     }
 }

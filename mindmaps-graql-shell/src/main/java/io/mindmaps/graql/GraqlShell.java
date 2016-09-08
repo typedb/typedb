@@ -56,18 +56,18 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import static io.mindmaps.constants.RESTUtil.RemoteShell.ACTION;
-import static io.mindmaps.constants.RESTUtil.RemoteShell.ACTION_AUTOCOMPLETE;
-import static io.mindmaps.constants.RESTUtil.RemoteShell.ACTION_COMMIT;
-import static io.mindmaps.constants.RESTUtil.RemoteShell.ACTION_NAMESPACE;
-import static io.mindmaps.constants.RESTUtil.RemoteShell.ACTION_QUERY;
-import static io.mindmaps.constants.RESTUtil.RemoteShell.ACTION_QUERY_END;
-import static io.mindmaps.constants.RESTUtil.RemoteShell.AUTOCOMPLETE_CURSOR;
-import static io.mindmaps.constants.RESTUtil.RemoteShell.ERROR;
-import static io.mindmaps.constants.RESTUtil.RemoteShell.NAMESPACE;
-import static io.mindmaps.constants.RESTUtil.RemoteShell.QUERY;
-import static io.mindmaps.constants.RESTUtil.RemoteShell.QUERY_LINES;
-import static io.mindmaps.constants.RESTUtil.WebPath.REMOTE_SHELL_URI;
+import static io.mindmaps.util.REST.RemoteShell.ACTION;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_AUTOCOMPLETE;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_COMMIT;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_NAMESPACE;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY_END;
+import static io.mindmaps.util.REST.RemoteShell.AUTOCOMPLETE_CURSOR;
+import static io.mindmaps.util.REST.RemoteShell.ERROR;
+import static io.mindmaps.util.REST.RemoteShell.NAMESPACE;
+import static io.mindmaps.util.REST.RemoteShell.QUERY;
+import static io.mindmaps.util.REST.RemoteShell.QUERY_LINES;
+import static io.mindmaps.util.REST.WebPath.REMOTE_SHELL_URI;
 
 /**
  * A Graql REPL shell that can be run from the command line

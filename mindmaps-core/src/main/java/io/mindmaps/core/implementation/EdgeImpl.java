@@ -18,11 +18,11 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.constants.DataType;
+import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 
 /**
- * Wraps a tinkerpop edge constraining it to our object model
+ * Wraps a tinkerpop edge constraining it to our object concept
  */
 class EdgeImpl {
     private Edge edge;
@@ -74,8 +74,8 @@ class EdgeImpl {
      *
      * @return The type of the edge
      */
-    public DataType.EdgeLabel getType() {
-        return DataType.EdgeLabel.getEdgeLabel(edge.label());
+    public Schema.EdgeLabel getType() {
+        return Schema.EdgeLabel.getEdgeLabel(edge.label());
     }
 
     /**
@@ -83,7 +83,7 @@ class EdgeImpl {
      * @param type The property to retrieve
      * @return The value of the property
      */
-    Object getProperty(DataType.EdgeProperty type){
+    Object getProperty(Schema.EdgeProperty type){
         org.apache.tinkerpop.gremlin.structure.Property property = edge.property(type.name());
         if(property != null && property.isPresent())
             return property.value();
@@ -96,7 +96,7 @@ class EdgeImpl {
      * @param type The property to retrieve
      * @param value The value of the property
      */
-    void setProperty(DataType.EdgeProperty type, Object value){
+    void setProperty(Schema.EdgeProperty type, Object value){
         edge.property(type.name(), value);
     }
 

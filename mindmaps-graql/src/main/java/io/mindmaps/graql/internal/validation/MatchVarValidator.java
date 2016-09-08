@@ -19,10 +19,10 @@
 package io.mindmaps.graql.internal.validation;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.model.Concept;
-import io.mindmaps.core.model.RelationType;
-import io.mindmaps.core.model.Type;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.core.concept.Concept;
+import io.mindmaps.core.concept.RelationType;
+import io.mindmaps.core.concept.Type;
 import io.mindmaps.graql.admin.VarAdmin;
 
 import java.util.*;
