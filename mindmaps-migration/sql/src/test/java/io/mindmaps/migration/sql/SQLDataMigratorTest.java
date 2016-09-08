@@ -17,7 +17,6 @@ import io.mindmaps.factory.GraphFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.sql.Connection;
@@ -34,7 +33,6 @@ public class SQLDataMigratorTest {
     private MindmapsGraph graph;
     private BlockingLoader loader;
     private Namer namer = new Namer() {};
-    private Connection connection;
 
     private static SQLSchemaMigrator schemaMigrator;
     private static SQLDataMigrator dataMigrator;
@@ -58,6 +56,7 @@ public class SQLDataMigratorTest {
     @Before
     public void setup(){
         loader = new BlockingLoader(GRAPH_NAME);
+        loader.setThreadsNumber(1);
         graph = GraphFactory.getInstance().getGraphBatchLoading(GRAPH_NAME);
     }
 
@@ -66,12 +65,11 @@ public class SQLDataMigratorTest {
         graph.clear();
         dataMigrator.close();
         schemaMigrator.close();
-        connection.close();
     }
 
     @Test
     public void usersDataTest() throws SQLException {
-        connection = Util.setupExample("simple");
+        Connection connection = Util.setupExample("simple");
         schemaMigrator.configure(connection).migrate(loader);
         dataMigrator.configure(connection).migrate(loader);
 
@@ -91,7 +89,7 @@ public class SQLDataMigratorTest {
 
     @Test(expected = AssertionError.class)
     public void usersDataDoesNotExist() throws SQLException {
-        connection = Util.setupExample("simple");
+        Connection connection = Util.setupExample("simple");
         schemaMigrator.configure(connection).migrate(loader);
         dataMigrator.configure(connection).migrate(loader);
 
@@ -99,11 +97,9 @@ public class SQLDataMigratorTest {
         assertResourceRelationExists("email", "alexandra@yahoo.com", alexandra, "USERS");
     }
 
-    //TODO: Fix, sometimes fails due to stack overflow
-    @Ignore
     @Test
     public void postgresDataTest() throws SQLException, MindmapsValidationException {
-        connection = Util.setupExample("postgresql-example");
+        Connection connection = Util.setupExample("postgresql-example");
         schemaMigrator.configure(connection).migrate(loader);
         dataMigrator.configure(connection).migrate(loader);
 
@@ -132,7 +128,7 @@ public class SQLDataMigratorTest {
 
     @Test
     public void combinedKeyDataTest() throws SQLException {
-        connection = Util.setupExample("combined-key");
+        Connection connection = Util.setupExample("combined-key");
         schemaMigrator.configure(connection).migrate(loader);
         dataMigrator.configure(connection).migrate(loader);
 
@@ -154,8 +150,6 @@ public class SQLDataMigratorTest {
 
     private void assertRelationExists(Entity parent, Entity child, String relName) {
         RoleType parentRole = graph.getRoleType(relName + "-parent");
-
-        parent.relations(parentRole).forEach(System.out::println);
 
         assertTrue(parent.relations(parentRole).stream().anyMatch(relation ->
                 relation.rolePlayers().values().contains(child)));

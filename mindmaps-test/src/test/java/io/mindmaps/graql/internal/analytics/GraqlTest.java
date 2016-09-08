@@ -10,8 +10,8 @@ import org.javatuples.Pair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.Ignore;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -156,7 +156,7 @@ public class GraqlTest {
 
     }
 
-    //TODO: Repair this test. Its appears to be randomly failing.
+    //TODO: Fix this test. Failing for the same reason as the equivalent test in AnalyticsTest.java
     @Ignore
     @Test
     public void testDegreesAndPersist() throws Exception {

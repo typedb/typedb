@@ -74,7 +74,9 @@ public class SQLSchemaMigrator implements Closeable {
     @Override
     public void close() {
         try {
-            connection.close();
+            if(connection != null) {
+                connection.close();
+            }
         } catch (SQLException e) {
             e.printStackTrace();
         }
