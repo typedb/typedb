@@ -60,8 +60,6 @@ public class RemoteShellController {
         webSocket(REST.WebPath.REMOTE_SHELL_URI, RemoteSession.class);
         webSocketIdleTimeoutMillis(WEBSOCKET_TIMEOUT);
 
-        redirect.get(REST.WebPath.HOME_URI, REST.WebPath.MATCH_QUERY_URI);
-
         get(REST.WebPath.MATCH_QUERY_URI, this::matchQuery);
         get(REST.WebPath.META_TYPE_INSTANCES_URI, this::buildMetaTypeInstancesObject);
     }

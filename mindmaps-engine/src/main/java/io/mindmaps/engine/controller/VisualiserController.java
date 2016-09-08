@@ -74,8 +74,10 @@ public class VisualiserController {
         MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName);
 
         Concept concept = graph.getConcept(req.params(REST.Request.ID_PARAMETER));
-        if (concept != null)
+        if (concept != null) {
+            LOG.debug("Building HAL resource for concept with id " + concept.getId().toString());
             return new HALConcept(concept).render();
+        }
         else {
             res.status(404);
             return ErrorMessage.CONCEPT_ID_NOT_FOUND.getMessage(req.params(REST.Request.ID_PARAMETER));
@@ -95,7 +97,7 @@ public class VisualiserController {
         String currentGraphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
         if (currentGraphName == null) currentGraphName = defaultGraphName;
 
-        LOG.info("Received match query: \"" + req.queryParams(REST.Request.QUERY_FIELD) + "\"");
+        LOG.debug("Received match query: \"" + req.queryParams(REST.Request.QUERY_FIELD) + "\"");
 
         try {
 
@@ -105,8 +107,11 @@ public class VisualiserController {
             parser.parseMatchQuery(req.queryParams(REST.Request.QUERY_FIELD))
                     .getMatchQuery().stream()
                     .forEach(x -> x.values()
-                            .forEach(concept -> halArray.put(new JSONObject(new HALConcept(concept).render()))));
-
+                            .forEach(concept -> {
+                                LOG.debug("Building HAL resource for concept with id " + concept.getId().toString());
+                                halArray.put(new JSONObject(new HALConcept(concept).render()));
+                            }));
+            LOG.debug("Done building resources.");
             return halArray.toString();
         } catch (Exception e) {
             e.printStackTrace();

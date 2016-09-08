@@ -1,4 +1,4 @@
-package io.mindmaps;/*
+/*
  * MindmapsDB - A Distributed Semantic Database
  * Copyright (C) 2016  Mindmaps Research Ltd
  *
@@ -15,6 +15,7 @@ package io.mindmaps;/*
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
+package io.mindmaps.engine;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
