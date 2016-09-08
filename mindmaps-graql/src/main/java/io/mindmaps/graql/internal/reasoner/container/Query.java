@@ -20,6 +20,8 @@ package io.mindmaps.graql.internal.reasoner.container;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.graql.admin.Conjunction;
+import io.mindmaps.graql.admin.Disjunction;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.core.concept.RelationType;
 import io.mindmaps.core.concept.RoleType;

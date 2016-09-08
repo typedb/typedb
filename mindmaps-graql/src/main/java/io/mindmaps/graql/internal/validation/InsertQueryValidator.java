@@ -19,8 +19,9 @@
 package io.mindmaps.graql.internal.validation;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.graql.admin.InsertQueryAdmin;
+import io.mindmaps.graql.admin.VarAdmin;
 
+import java.util.Collection;
 import java.util.stream.Stream;
 
 /**
@@ -28,18 +29,18 @@ import java.util.stream.Stream;
  */
 public class InsertQueryValidator implements Validator {
 
-    private final InsertQueryAdmin insertQuery;
+    private final Collection<VarAdmin> insertVars;
 
     /**
-     * @param insertQuery the insert query to validate
+     * @param insertVars the insert query variables to validate
      */
-    public InsertQueryValidator(InsertQueryAdmin insertQuery) {
-        this.insertQuery = insertQuery;
+    public InsertQueryValidator(Collection<VarAdmin> insertVars) {
+        this.insertVars = insertVars;
     }
 
     @Override
     public Stream<String> getErrors(MindmapsGraph graph) {
-        Stream<Validator> validators = insertQuery.getAllVars().stream().map(InsertVarValidator::new);
+        Stream<Validator> validators = insertVars.stream().map(InsertVarValidator::new);
         return Validator.getAggregateValidator(validators).getErrors(graph);
     }
 }

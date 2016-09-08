@@ -42,7 +42,7 @@ import static java.util.stream.Collectors.toSet;
 /**
  * A query that will insert a collection of variables into a graph
  */
-class InsertQueryImpl implements InsertQueryInternal {
+class InsertQueryImpl implements InsertQueryAdmin {
 
     private final Optional<MatchQueryAdmin> matchQuery;
     private final Optional<MindmapsGraph> graph;
@@ -68,7 +68,7 @@ class InsertQueryImpl implements InsertQueryInternal {
         // Get all variables, including ones nested in other variables
         this.vars = ImmutableSet.copyOf(vars.stream().flatMap(v -> v.getInnerVars().stream()).collect(toSet()));
 
-        getGraph().ifPresent(t -> new InsertQueryValidator(this).validate(t));
+        getGraph().ifPresent(t -> new InsertQueryValidator(vars).validate(t));
     }
 
     @Override
@@ -129,11 +129,6 @@ class InsertQueryImpl implements InsertQueryInternal {
     @Override
     public Collection<VarAdmin> getVars() {
         return originalVars;
-    }
-
-    @Override
-    public Collection<VarAdmin> getAllVars() {
-        return vars;
     }
 
     @Override

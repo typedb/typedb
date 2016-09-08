@@ -34,72 +34,85 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.toList;
 
 @SuppressWarnings("UnusedReturnValue")
-public abstract class AbstractMatchQuery implements MatchQueryAdmin {
+interface MatchQueryInternal extends MatchQueryAdmin {
+
+    /**
+     * Execute the query using the given graph.
+     * @param graph the graph to use to execute the query
+     * @param order how to order the resulting stream
+     * @return a stream of results
+     */
+    Stream<Map<String, Concept>> stream(Optional<MindmapsGraph> graph, Optional<MatchOrder> order);
 
     @Override
-    public MatchQuery withGraph(MindmapsGraph graph) {
-        return new MatchQueryGraph(graph, admin());
+    default Stream<Map<String, Concept>> stream() {
+        return stream(Optional.empty(), Optional.empty());
     }
 
     @Override
-    public MatchQuery limit(long limit) {
-        return new MatchQueryLimit(admin(), limit);
+    default MatchQuery withGraph(MindmapsGraph graph) {
+        return new MatchQueryGraph(graph, this);
     }
 
     @Override
-    public MatchQuery offset(long offset) {
-        return new MatchQueryOffset(admin(), offset);
+    default MatchQuery limit(long limit) {
+        return new MatchQueryLimit(this, limit);
     }
 
     @Override
-    public MatchQuery distinct() {
-        return new MatchQueryDistinct(admin());
+    default MatchQuery offset(long offset) {
+        return new MatchQueryOffset(this, offset);
     }
 
     @Override
-    public final <S> AggregateQuery<S> aggregate(Aggregate<? super Map<String, Concept>, S> aggregate) {
+    default MatchQuery distinct() {
+        return new MatchQueryDistinct(this);
+    }
+
+    @Override
+    default <S> AggregateQuery<S> aggregate(Aggregate<? super Map<String, Concept>, S> aggregate) {
         return Queries.aggregate(admin(), aggregate);
     }
 
     @Override
-    public final MatchQuery select(Set<String> names) {
-        return new MatchQuerySelect(admin(), ImmutableSet.copyOf(names));
+    default MatchQuery select(Set<String> names) {
+        return new MatchQuerySelect(this, ImmutableSet.copyOf(names));
     }
 
     @Override
-    public final Stream<Concept> get(String name) {
+    default Stream<Concept> get(String name) {
         return stream().map(result -> result.get(name));
     }
 
     @Override
-    public final AskQuery ask() {
+    default AskQuery ask() {
         return Queries.ask(this);
     }
 
     @Override
-    public final InsertQuery insert(Collection<? extends Var> vars) {
+    default InsertQuery insert(Collection<? extends Var> vars) {
         ImmutableSet<VarAdmin> varAdmins = ImmutableSet.copyOf(AdminConverter.getVarAdmins(vars));
         return Queries.insert(varAdmins, admin());
     }
 
     @Override
-    public final DeleteQuery delete(String... names) {
+    default DeleteQuery delete(String... names) {
         List<Var> deleters = Arrays.stream(names).map(Graql::var).collect(toList());
         return delete(deleters);
     }
 
     @Override
-    public final DeleteQuery delete(Collection<? extends Var> deleters) {
+    default DeleteQuery delete(Collection<? extends Var> deleters) {
         return Queries.delete(AdminConverter.getVarAdmins(deleters), this);
     }
 
     @Override
-    public final MatchQuery orderBy(String varName, boolean asc) {
-        return new MatchQueryOrder(admin(), new MatchOrderImpl(varName, Optional.empty(), asc));
+    default MatchQuery orderBy(String varName, boolean asc) {
+        return new MatchQueryOrder(this, new MatchOrderImpl(varName, Optional.empty(), asc));
     }
 
     @Override
-    public final MatchQuery orderBy(String varName, String resourceType, boolean asc) {
-        return new MatchQueryOrder(admin(), new MatchOrderImpl(varName, Optional.of(resourceType), asc));
+    default MatchQuery orderBy(String varName, String resourceType, boolean asc) {
+        return new MatchQueryOrder(this, new MatchOrderImpl(varName, Optional.of(resourceType), asc));
     }
 }

@@ -19,7 +19,6 @@
 package io.mindmaps.graql.internal.reasoner.predicate;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.core.concept.RoleType;
 import io.mindmaps.core.concept.Type;
 import io.mindmaps.graql.Graql;
@@ -28,6 +27,7 @@ import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.reasoner.container.Query;
+import io.mindmaps.util.ErrorMessage;
 import javafx.util.Pair;
 
 import java.util.*;
@@ -37,7 +37,7 @@ import static io.mindmaps.graql.internal.reasoner.Utility.getCompatibleRoleTypes
 
 public class Relation extends AtomBase {
 
-    private final Set<Var.Casting> castings = new HashSet<>();
+    private final Set<VarAdmin.Casting> castings = new HashSet<>();
 
     public Relation(VarAdmin pattern) {
         super(pattern);
@@ -112,7 +112,7 @@ public class Relation extends AtomBase {
     public boolean isType(){ return true;}
     public boolean hasExplicitRoleTypes(){
         boolean rolesDefined = true;
-        Iterator<Var.Casting> it = castings.iterator();
+        Iterator<VarAdmin.Casting> it = castings.iterator();
         while (it.hasNext() && rolesDefined)
             rolesDefined = it.next().getRoleType().isPresent();
         return rolesDefined;
@@ -120,7 +120,7 @@ public class Relation extends AtomBase {
     @Override
     public boolean containsVar(String name) {
         boolean varFound = false;
-        Iterator<Var.Casting> it = castings.iterator();
+        Iterator<VarAdmin.Casting> it = castings.iterator();
         while(it.hasNext() && !varFound)
             varFound = it.next().getRolePlayer().getName().equals(name);
         return varFound;
@@ -188,7 +188,7 @@ public class Relation extends AtomBase {
         for (String var : vars) {
             Type type = varTypeMap.get(var);
             String roleTypeId = "";
-            for(Var.Casting c : castings) {
+            for(VarAdmin.Casting c : castings) {
                 if (c.getRolePlayer().getName().equals(var))
                     roleTypeId = c.getRoleType().flatMap(VarAdmin::getId).orElse("");
             }
@@ -228,7 +228,7 @@ public class Relation extends AtomBase {
         for (String var : relVars) {
             Type type = varTypeMap.get(var);
             String roleTypeId = "";
-            for(Var.Casting c : castings) {
+            for(VarAdmin.Casting c : castings) {
                 if (c.getRolePlayer().getName().equals(var))
                     roleTypeId = c.getRoleType().flatMap(VarAdmin::getId).orElse("");
             }

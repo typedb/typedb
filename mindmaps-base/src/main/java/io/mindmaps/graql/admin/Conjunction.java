@@ -14,26 +14,21 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package io.mindmaps.graql.internal.query.match;
+package io.mindmaps.graql.admin;
 
-import io.mindmaps.MindmapsGraph;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-
-import java.util.Map;
+import java.util.Set;
 
 /**
- * An interface for handling ordering match queries.
+ * A class representing a conjunction (and) of patterns. All inner patterns must match in a query
  */
-public interface MatchOrder {
-    String getVar();
-
+public interface Conjunction<T extends PatternAdmin> extends PatternAdmin {
     /**
-     * Order the traversal
-     * @param traversal the traversal to order
+     * @return the patterns within this conjunction
      */
-    void orderTraversal(MindmapsGraph graph, GraphTraversal<Vertex, Map<String, Vertex>> traversal);
+    Set<T> getPatterns();
+
+    @Override
+    Disjunction<Conjunction<VarAdmin>> getDisjunctiveNormalForm();
 }

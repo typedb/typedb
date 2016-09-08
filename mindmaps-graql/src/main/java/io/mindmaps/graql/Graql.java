@@ -24,12 +24,11 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.internal.util.AdminConverter;
 import io.mindmaps.core.concept.Concept;
 import io.mindmaps.graql.admin.PatternAdmin;
-import io.mindmaps.graql.internal.query.Conjunction;
-import io.mindmaps.graql.internal.query.Disjunction;
+import io.mindmaps.graql.admin.Conjunction;
+import io.mindmaps.graql.admin.Disjunction;
 import io.mindmaps.graql.internal.query.Patterns;
 import io.mindmaps.graql.internal.query.aggregate.Aggregates;
 import io.mindmaps.graql.internal.query.predicate.*;
-import io.mindmaps.graql.internal.util.AdminConverter;
 
 import java.util.*;
 

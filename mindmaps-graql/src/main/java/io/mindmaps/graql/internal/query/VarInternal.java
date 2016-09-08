@@ -14,23 +14,22 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package io.mindmaps.graql.internal.gremlin;
+package io.mindmaps.graql.internal.query;
 
-import java.util.stream.Stream;
+import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.gremlin.MultiTraversal;
+
+import java.util.Set;
 
 /**
- * a pattern to match in the graph. comprised of {@code Fragments}, each describing one way to represent the traversal,
- * starting from different variables.
- * <p>
- * A {@code MultiTraversal} may contain only one {@code Fragment} (e.g. checking the 'id' property), while others may
- * be comprised of two fragments (e.g. $x isa $y, which may start from $x or $y).
+ * Internal interface for Var
  */
-public interface MultiTraversal {
+public interface VarInternal extends VarAdmin {
+
     /**
-     * @return a stream of fragments that this MultiTraversal contains
+     * @return the gremlin traversals that describe this variable
      */
-    Stream<Fragment> getFragments();
+    Set<MultiTraversal> getMultiTraversals();
 }

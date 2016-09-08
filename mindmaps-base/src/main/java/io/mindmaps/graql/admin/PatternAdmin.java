@@ -20,8 +20,6 @@
 package io.mindmaps.graql.admin;
 
 import io.mindmaps.graql.Pattern;
-import io.mindmaps.graql.internal.query.Conjunction;
-import io.mindmaps.graql.internal.query.Disjunction;
 
 import java.util.Set;
 

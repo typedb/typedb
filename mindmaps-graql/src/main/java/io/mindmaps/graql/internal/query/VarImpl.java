@@ -22,8 +22,7 @@ import com.google.common.collect.Maps;
 import io.mindmaps.core.concept.ResourceType;
 import io.mindmaps.graql.ValuePredicate;
 import io.mindmaps.graql.Var;
-import io.mindmaps.graql.admin.ValuePredicateAdmin;
-import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.admin.*;
 import io.mindmaps.graql.internal.util.StringConverter;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 import io.mindmaps.graql.internal.gremlin.VarTraversals;
@@ -52,7 +51,7 @@ import static java.util.stream.Collectors.toSet;
 /**
  * Implementation of Var interface
  */
-class VarImpl implements VarAdmin {
+class VarImpl implements VarInternal {
 
     private String name;
     private final boolean userDefinedName;
@@ -78,7 +77,7 @@ class VarImpl implements VarAdmin {
 
     private final Map<VarAdmin, Set<ValuePredicateAdmin>> resources = new HashMap<>();
 
-    private final Set<Var.Casting> castings = new HashSet<>();
+    private final Set<VarAdmin.Casting> castings = new HashSet<>();
 
     private Optional<VarTraversals> varPattern = Optional.empty();
 
@@ -313,7 +312,7 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public VarAdmin admin() {
+    public VarInternal admin() {
         return this;
     }
 
@@ -385,7 +384,7 @@ class VarImpl implements VarAdmin {
 
     @Override
     public Set<String> getRoleTypes() {
-        return getIdNames(castings.stream().map(Var.Casting::getRoleType).flatMap(this::optionalToStream));
+        return getIdNames(castings.stream().map(VarAdmin.Casting::getRoleType).flatMap(this::optionalToStream));
     }
 
     @Override
@@ -469,7 +468,7 @@ class VarImpl implements VarAdmin {
         return resources;
     }
 
-    public Set<Var.Casting> getCastings() {
+    public Set<VarAdmin.Casting> getCastings() {
         return castings;
     }
 
@@ -627,7 +626,7 @@ class VarImpl implements VarAdmin {
     /**
      * A casting is the pairing of roletype and roleplayer in a relation, where the roletype may be unknown
      */
-    public class Casting implements Var.Casting {
+    public class Casting implements VarAdmin.Casting {
         private final Optional<VarAdmin> roleType;
         private final VarAdmin rolePlayer;
 

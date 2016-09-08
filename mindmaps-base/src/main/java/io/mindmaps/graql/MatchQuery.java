@@ -36,10 +36,6 @@ import java.util.stream.Stream;
  */
 public interface MatchQuery extends Streamable<Map<String, Concept>> {
 
-    default Stream<Map<String, Concept>> stream() {
-        return admin().stream(Optional.empty(), Optional.empty());
-    }
-
     /**
      * @param names an array of variable names to select
      * @return a new MatchQuery that selects the given variables

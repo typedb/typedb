@@ -20,12 +20,11 @@ package io.mindmaps.graql.internal.query;
 
 import com.google.common.collect.ImmutableMap;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.Schema;
-import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.core.concept.*;
-import io.mindmaps.graql.Var;
-import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.util.GraqlType;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.util.Schema;
 
 import java.util.*;
 import java.util.function.BiFunction;
@@ -306,7 +305,7 @@ class InsertQueryExecutor {
      * @param var the variable representing the relation
      * @param casting a casting between a role type and role player
      */
-    private void addCasting(VarAdmin var, Var.Casting casting) {
+    private void addCasting(VarAdmin var, VarAdmin.Casting casting) {
         Relation relation = getConcept(var).asRelation();
 
         VarAdmin roleVar = casting.getRoleType().orElseThrow(

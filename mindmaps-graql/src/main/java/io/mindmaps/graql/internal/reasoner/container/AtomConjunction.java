@@ -21,7 +21,7 @@ package io.mindmaps.graql.internal.reasoner.container;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.query.Conjunction;
+import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.internal.query.Patterns;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;

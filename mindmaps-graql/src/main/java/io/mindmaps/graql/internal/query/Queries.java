@@ -26,6 +26,7 @@ import io.mindmaps.graql.AggregateQuery;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.admin.*;
+import io.mindmaps.graql.internal.query.match.MatchQueryBase;
 
 import java.util.Collection;
 import java.util.Map;
@@ -42,7 +43,7 @@ public class Queries {
     /**
      * @param pattern a pattern to match in the graph
      */
-    public static MatchQueryBase match(Conjunction<PatternAdmin> pattern) {
+    public static MatchQueryAdmin match(Conjunction<PatternAdmin> pattern) {
         return new MatchQueryBase(pattern);
     }
 
@@ -57,7 +58,7 @@ public class Queries {
      * @param vars a collection of Vars to insert
      * @param matchQuery the match query to insert for each result
      */
-    public static InsertQueryInternal insert(ImmutableCollection<VarAdmin> vars, MatchQueryAdmin matchQuery) {
+    public static InsertQueryAdmin insert(ImmutableCollection<VarAdmin> vars, MatchQueryAdmin matchQuery) {
         return new InsertQueryImpl(vars, Optional.of(matchQuery), Optional.empty());
     }
 
@@ -65,7 +66,7 @@ public class Queries {
      * @param graph the graph to execute on
      * @param vars a collection of Vars to insert
      */
-    public static InsertQueryInternal insert(ImmutableCollection<VarAdmin> vars, Optional<MindmapsGraph> graph) {
+    public static InsertQueryAdmin insert(ImmutableCollection<VarAdmin> vars, Optional<MindmapsGraph> graph) {
         return new InsertQueryImpl(vars, Optional.empty(), graph);
     }
 

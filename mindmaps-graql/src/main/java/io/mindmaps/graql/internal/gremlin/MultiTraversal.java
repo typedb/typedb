@@ -16,21 +16,20 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql.internal.query;
+package io.mindmaps.graql.internal.gremlin;
 
-import io.mindmaps.graql.admin.InsertQueryAdmin;
-import io.mindmaps.graql.admin.VarAdmin;
-
-import java.util.Collection;
+import java.util.stream.Stream;
 
 /**
- * Internal class for handling an InsertQuery
+ * a pattern to match in the graph. comprised of {@code Fragments}, each describing one way to represent the traversal,
+ * starting from different variables.
+ * <p>
+ * A {@code MultiTraversal} may contain only one {@code Fragment} (e.g. checking the 'id' property), while others may
+ * be comprised of two fragments (e.g. $x isa $y, which may start from $x or $y).
  */
-interface InsertQueryInternal extends InsertQueryAdmin {
-
+public interface MultiTraversal {
     /**
-     * @return a collection of Vars to insert, including any nested vars
+     * @return a stream of fragments that this MultiTraversal contains
      */
-    Collection<VarAdmin> getAllVars();
-
+    Stream<Fragment> getFragments();
 }
