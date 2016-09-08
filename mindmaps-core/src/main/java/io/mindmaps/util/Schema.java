@@ -52,26 +52,11 @@ public final class Schema {
         }
 
         public static EdgeLabel getEdgeLabel(String label){
-            if(ISA.getLabel().equals(label))
-                return ISA;
-            if(AKO.getLabel().equals(label))
-                return AKO;
-            if(HAS_ROLE.getLabel().equals(label))
-                return HAS_ROLE;
-            if(PLAYS_ROLE.getLabel().equals(label))
-                return PLAYS_ROLE;
-            if(HAS_SCOPE.getLabel().equals(label))
-                return HAS_SCOPE;
-            if(CASTING.getLabel().equals(label))
-                return CASTING;
-            if(ROLE_PLAYER.getLabel().equals(label))
-                return ROLE_PLAYER;
-            if(HYPOTHESIS.getLabel().equals(label))
-                return HYPOTHESIS;
-            if(CONCLUSION.getLabel().equals(label))
-                return CONCLUSION;
-            if(SHORTCUT.getLabel().equals(label))
-                return SHORTCUT;
+            for (EdgeLabel edgeLabel : EdgeLabel.values()) {
+                if(edgeLabel.getLabel().equals(label)){
+                    return edgeLabel;
+                }
+            }
             return null;
         }
     }
