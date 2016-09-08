@@ -27,7 +27,9 @@ import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.admin.VarAdmin;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -40,10 +42,15 @@ import static io.mindmaps.graql.Graql.parsePatterns;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.*;
 
 public class QueryParserFragmentsTest {
 
     private static MindmapsGraph mindmapsGraph;
+    private QueryParser qp;
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
     private QueryBuilder qb;
 
     @BeforeClass
@@ -93,6 +100,19 @@ public class QueryParserFragmentsTest {
         assertFalse(patterns.hasNext());
     }
 
+    @Test
+    public void testParseInfinitePatternStreamWithSyntaxError() throws IOException {
+        InputStream stream = new InfiniteStream("$x isa person; ($x, $y) is has-cast;\n");
+
+        Iterator<Pattern> patterns = qp.parsePatternsStream(stream).iterator();
+
+        VarAdmin var1 = patterns.next().admin().asVar();
+        assertEquals("$x isa person", var1.toString());
+
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(containsString("isa"));
+        patterns.next().admin().asVar();
+    }
 
     class InfiniteStream extends InputStream {
 
