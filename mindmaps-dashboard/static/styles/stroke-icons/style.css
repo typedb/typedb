@@ -1,0 +1,265 @@
+@font-face {
+	font-family: 'stroke';
+	src:url('stroke.eot?-yg5sl9');
+	src:url('stroke.eot?#iefix-yg5sl9') format('embedded-opentype'),
+		url('stroke.woff?-yg5sl9') format('woff'),
+		url('stroke.ttf?-yg5sl9') format('truetype'),
+		url('stroke.svg?-yg5sl9#stroke') format('svg');
+	font-weight: normal;
+	font-style: normal;
+}
+
+i {
+	font-family: 'stroke';
+	speak: none;
+	font-style: normal;
+	font-weight: normal;
+	font-variant: normal;
+	text-transform: none;
+	line-height: 1;
+
+	/* Better Font Rendering =========== */
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+.stroke-alignleft:before {
+	content: "\e600";
+}
+.stroke-alignmiddle:before {
+	content: "\e601";
+}
+.stroke-alignright:before {
+	content: "\e602";
+}
+.stroke-arrow:before {
+	content: "\e603";
+}
+.stroke-battery:before {
+	content: "\e604";
+}
+.stroke-bell:before {
+	content: "\e605";
+}
+.stroke-blank:before {
+	content: "\e606";
+}
+.stroke-bluetooth:before {
+	content: "\e607";
+}
+.stroke-browser:before {
+	content: "\e608";
+}
+.stroke-camera:before {
+	content: "\e609";
+}
+.stroke-cart:before {
+	content: "\e60a";
+}
+.stroke-chat:before {
+	content: "\e60b";
+}
+.stroke-checkmark:before {
+	content: "\e60c";
+}
+.stroke-clock:before {
+	content: "\e60d";
+}
+.stroke-close:before {
+	content: "\e60e";
+}
+.stroke-cocktail:before {
+	content: "\e60f";
+}
+.stroke-compass:before {
+	content: "\e610";
+}
+.stroke-connection:before {
+	content: "\e611";
+}
+.stroke-cursor:before {
+	content: "\e612";
+}
+.stroke-display:before {
+	content: "\e613";
+}
+.stroke-download:before {
+	content: "\e614";
+}
+.stroke-drop:before {
+	content: "\e615";
+}
+.stroke-emptyblank:before {
+	content: "\e616";
+}
+.stroke-flag:before {
+	content: "\e617";
+}
+.stroke-forward2:before {
+	content: "\e618";
+}
+.stroke-forward:before {
+	content: "\e619";
+}
+.stroke-gift:before {
+	content: "\e61a";
+}
+.stroke-graphic:before {
+	content: "\e61b";
+}
+.stroke-grid:before {
+	content: "\e61c";
+}
+.stroke-hamburgermenu:before {
+	content: "\e61d";
+}
+.stroke-headphones:before {
+	content: "\e61e";
+}
+.stroke-heart:before {
+	content: "\e61f";
+}
+.stroke-home:before {
+	content: "\e620";
+}
+.stroke-hyperlink:before {
+	content: "\e621";
+}
+.stroke-justifyall:before {
+	content: "\e622";
+}
+.stroke-key:before {
+	content: "\e623";
+}
+.stroke-label:before {
+	content: "\e624";
+}
+.stroke-launch:before {
+	content: "\e625";
+}
+.stroke-lockclosed:before {
+	content: "\e626";
+}
+.stroke-lockopen:before {
+	content: "\e627";
+}
+.stroke-magnet:before {
+	content: "\e628";
+}
+.stroke-magnifyingglass2:before {
+	content: "\e629";
+}
+.stroke-magnifyingglassminus:before {
+	content: "\e62a";
+}
+.stroke-magnifyingglassplus:before {
+	content: "\e62b";
+}
+.stroke-magnifyingglass:before {
+	content: "\e62c";
+}
+.stroke-mail:before {
+	content: "\e62d";
+}
+.stroke-mappin:before {
+	content: "\e62e";
+}
+.stroke-map:before {
+	content: "\e62f";
+}
+.stroke-maximize:before {
+	content: "\e630";
+}
+.stroke-microphone:before {
+	content: "\e631";
+}
+.stroke-minimize:before {
+	content: "\e632";
+}
+.stroke-minus:before {
+	content: "\e633";
+}
+.stroke-mouse:before {
+	content: "\e634";
+}
+.stroke-music:before {
+	content: "\e635";
+}
+.stroke-navigation:before {
+	content: "\e636";
+}
+.stroke-notifications:before {
+	content: "\e637";
+}
+.stroke-pause:before {
+	content: "\e638";
+}
+.stroke-pencil:before {
+	content: "\e639";
+}
+.stroke-play:before {
+	content: "\e63a";
+}
+.stroke-plus:before {
+	content: "\e63b";
+}
+.stroke-power:before {
+	content: "\e63c";
+}
+.stroke-print:before {
+	content: "\e63d";
+}
+.stroke-repeat:before {
+	content: "\e63e";
+}
+.stroke-rule:before {
+	content: "\e63f";
+}
+.stroke-selection:before {
+	content: "\e640";
+}
+.stroke-settings:before {
+	content: "\e641";
+}
+.stroke-share:before {
+	content: "\e642";
+}
+.stroke-shuffle:before {
+	content: "\e643";
+}
+.stroke-soundminus:before {
+	content: "\e644";
+}
+.stroke-soundplus:before {
+	content: "\e645";
+}
+.stroke-speaker:before {
+	content: "\e646";
+}
+.stroke-star:before {
+	content: "\e647";
+}
+.stroke-statistics:before {
+	content: "\e648";
+}
+.stroke-stop:before {
+	content: "\e649";
+}
+.stroke-sun:before {
+	content: "\e64a";
+}
+.stroke-trashbin:before {
+	content: "\e64b";
+}
+.stroke-umbrella:before {
+	content: "\e64c";
+}
+.stroke-upload:before {
+	content: "\e64d";
+}
+.stroke-videocamera:before {
+	content: "\e64e";
+}
+.stroke-wifi:before {
+	content: "\e64f";
+}
