@@ -10,3 +10,7 @@ notifications:
   slack: mindmapsdb:3M1bWW0kGQ7LdniMmKeaY3o5
 script:
     - mvn test jacoco:report coveralls:report -q
+before_install:
+  - sudo add-apt-repository -y ppa:chris-lea/node.js
+  - sudo apt-get update -q
+  - sudo apt-get -y install npm

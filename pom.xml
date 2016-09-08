@@ -34,6 +34,7 @@
         <module>mindmaps-graql</module>
         <module>mindmaps-graql-shell</module>
         <module>mindmaps-engine</module>
+        <module>mindmaps-dashboard</module>
         <module>mindmaps-dist</module>
         <module>mindmaps-test</module>
         <module>mindmaps-core</module>
@@ -127,7 +128,7 @@
             <organizationUrl>http://mindmaps.io</organizationUrl>
         </developer>
         <developer>
-            <name>Denis Lobanov</name>
+            <name>Denis Igorevich Lobanov</name>
             <email>denis@mindmaps.io</email>
             <organization>Mindmaps Research Ltd</organization>
             <organizationUrl>http://mindmaps.io</organizationUrl>
