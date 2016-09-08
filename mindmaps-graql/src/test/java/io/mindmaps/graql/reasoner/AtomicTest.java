@@ -20,9 +20,9 @@ package io.mindmaps.graql.reasoner;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.concept.RelationType;
-import io.mindmaps.core.concept.RoleType;
-import io.mindmaps.core.concept.Type;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.RoleType;
+import io.mindmaps.concept.Type;
 import io.mindmaps.graql.*;
 import io.mindmaps.graql.internal.reasoner.container.Query;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;

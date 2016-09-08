@@ -32,7 +32,7 @@
     <dependencies>
         <dependency>
             <groupId>io.mindmaps</groupId>
-            <artifactId>mindmaps-core</artifactId>
+            <artifactId>mindmaps-graph</artifactId>
             <version>${project.version}</version>
         </dependency>
 

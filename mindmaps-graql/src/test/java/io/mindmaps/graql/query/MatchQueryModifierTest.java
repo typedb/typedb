@@ -20,8 +20,8 @@ package io.mindmaps.graql.query;
 
 import com.google.common.collect.Lists;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.implementation.AbstractMindmapsGraph;
-import io.mindmaps.core.concept.Concept;
+import io.mindmaps.graph.internal.AbstractMindmapsGraph;
+import io.mindmaps.concept.Concept;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.MatchQuery;

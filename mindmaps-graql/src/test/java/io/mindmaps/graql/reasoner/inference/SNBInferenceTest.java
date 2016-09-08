@@ -20,7 +20,7 @@ package io.mindmaps.graql.reasoner.inference;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.concept.Rule;
+import io.mindmaps.concept.Rule;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.Reasoner;

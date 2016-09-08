@@ -20,9 +20,17 @@ package io.mindmaps.graql.internal.analytics;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.concept.Entity;
+import io.mindmaps.concept.EntityType;
+import io.mindmaps.concept.Instance;
+import io.mindmaps.concept.Relation;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.Resource;
+import io.mindmaps.concept.ResourceType;
+import io.mindmaps.concept.RoleType;
+import io.mindmaps.concept.Type;
 import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.core.concept.*;
 import org.apache.commons.collections.CollectionUtils;
 import org.javatuples.Pair;
 import org.junit.*;

@@ -21,9 +21,14 @@ package io.mindmaps.engine.visualiser;
 import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
-import io.mindmaps.util.REST;
-import io.mindmaps.core.concept.*;
+import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.Entity;
+import io.mindmaps.concept.Instance;
+import io.mindmaps.concept.Relation;
+import io.mindmaps.concept.RoleType;
+import io.mindmaps.concept.Type;
 import io.mindmaps.engine.util.ConfigProperties;
+import io.mindmaps.util.REST;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

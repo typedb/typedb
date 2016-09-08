@@ -1,7 +1,7 @@
 package io.mindmaps.migration.sql;
 
 
-import io.mindmaps.core.concept.ResourceType;
+import io.mindmaps.concept.ResourceType;
 
 import java.sql.Types;
 import java.util.HashMap;

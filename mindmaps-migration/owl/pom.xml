@@ -16,10 +16,6 @@
             <artifactId>owlapi-distribution</artifactId>
             <version>5.0.2</version>
         </dependency>
-        <!-- <dependency> <groupId>io.mindmaps.core</groupId> <artifactId>mindmaps-core</artifactId> 
-            <version>${mindmapscore.version}</version> </dependency> <dependency> <groupId>io.mindmaps</groupId> 
-            <artifactId>mindmaps-base</artifactId> <version>${mindmapscore.version}</version> 
-            </dependency> -->
         <dependency>
             <groupId>io.mindmaps</groupId>
             <artifactId>mindmaps-titan-factory</artifactId>

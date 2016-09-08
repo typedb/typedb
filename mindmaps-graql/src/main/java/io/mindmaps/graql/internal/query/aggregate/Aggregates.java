@@ -19,7 +19,7 @@
 package io.mindmaps.graql.internal.query.aggregate;
 
 import com.google.common.collect.ImmutableSet;
-import io.mindmaps.core.concept.Concept;
+import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.Aggregate;
 import io.mindmaps.graql.NamedAggregate;
 

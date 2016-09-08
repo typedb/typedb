@@ -19,10 +19,9 @@
 package io.mindmaps.graql.internal.parser;
 
 import com.google.common.collect.ImmutableMap;
-import io.mindmaps.graql.*;
 import io.mindmaps.graql.internal.query.Queries;
 import io.mindmaps.graql.internal.util.StringConverter;
-import io.mindmaps.core.concept.ResourceType;
+import io.mindmaps.concept.ResourceType;
 import io.mindmaps.graql.Aggregate;
 import io.mindmaps.graql.AskQuery;
 import io.mindmaps.graql.ComputeQuery;

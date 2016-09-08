@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.internal.gremlin;
 
-import io.mindmaps.core.concept.ResourceType;
+import io.mindmaps.concept.ResourceType;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;

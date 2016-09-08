@@ -20,8 +20,8 @@
 package io.mindmaps.graql.query;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.concept.Concept;
-import io.mindmaps.core.concept.Instance;
+import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.Instance;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.AggregateQuery;

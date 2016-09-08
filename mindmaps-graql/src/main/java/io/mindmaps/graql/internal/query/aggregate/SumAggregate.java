@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.internal.query.aggregate;
 
-import io.mindmaps.core.concept.Concept;
+import io.mindmaps.concept.Concept;
 
 import java.util.Map;
 import java.util.stream.Stream;
