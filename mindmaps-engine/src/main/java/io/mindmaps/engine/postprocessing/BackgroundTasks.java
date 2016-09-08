@@ -20,6 +20,7 @@ package io.mindmaps.engine.postprocessing;
 
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.engine.util.ConfigProperties;
+import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.engine.loader.RESTLoader;
 import org.apache.tinkerpop.shaded.minlog.Log;
@@ -103,7 +104,7 @@ public class BackgroundTasks {
 
             MindmapsGraph graph;
             try {
-                graph = MindmapsClient.getGraph(entry.getKey());
+                graph = GraphFactory.getInstance().getGraph(entry.getKey());
                 for (String castingId : entry.getValue()) {
                     futures.add(postpool.submit(() -> ConceptFixer.checkCasting(graph, castingId)));
                 }
