@@ -51,30 +51,6 @@
                             </arguments>
                         </configuration>
                     </execution>
-                    <execution>
-                        <id>npm test</id>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <phase>test</phase>
-                        <configuration>
-                            <executable>npm</executable>
-                            <arguments>
-                                <argument>test</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>browserify</id>
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-                        <phase>compile</phase>
-                        <configuration>
-                            <executable>browserify</executable>
-                            <commandlineArgs>-t vueify -e src/main.js -o static/dashboard.js</commandlineArgs>
-                        </configuration>
-                    </execution>
                 </executions>
             </plugin>
         </plugins>
