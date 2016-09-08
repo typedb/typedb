@@ -18,10 +18,10 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.constants.DataType;
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.implementation.exception.MoreThanOneEdgeException;
-import io.mindmaps.core.model.*;
+import io.mindmaps.util.Schema;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.exception.MoreThanOneEdgeException;
+import io.mindmaps.core.concept.*;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.junit.After;
 import org.junit.Before;
@@ -90,7 +90,7 @@ public class RoleTypeTest {
     public void testGetRelationFailTooManyRelationShip() throws Exception {
         expectedException.expect(MoreThanOneEdgeException.class);
         expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.MORE_THAN_ONE_EDGE.getMessage(roleType.toString(), DataType.EdgeLabel.HAS_ROLE.name()))
+                containsString(ErrorMessage.MORE_THAN_ONE_EDGE.getMessage(roleType.toString(), Schema.EdgeLabel.HAS_ROLE.name()))
         ));
 
         RelationType relationType2 = mindmapsGraph.putRelationType("relationType2");

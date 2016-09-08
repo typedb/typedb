@@ -18,9 +18,9 @@
 
 package io.mindmaps.engine.controller;
 
-import io.mindmaps.constants.DataType;
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.constants.RESTUtil;
+import io.mindmaps.util.Schema;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.util.REST;
 import io.mindmaps.engine.postprocessing.Cache;
 import io.mindmaps.engine.util.ConfigProperties;
 import org.json.JSONArray;
@@ -42,8 +42,8 @@ public class CommitLogController {
 
     public CommitLogController(){
         cache = Cache.getInstance();
-        post(RESTUtil.WebPath.COMMIT_LOG_URI, this::submitConcepts);
-        delete(RESTUtil.WebPath.COMMIT_LOG_URI, this::deleteConcepts);
+        post(REST.WebPath.COMMIT_LOG_URI, this::submitConcepts);
+        delete(REST.WebPath.COMMIT_LOG_URI, this::deleteConcepts);
     }
 
     /**
@@ -53,11 +53,11 @@ public class CommitLogController {
      * @return The result of clearing the post processing for a single graph
      */
     private String deleteConcepts(Request req, Response res){
-        String graphName = req.queryParams(RESTUtil.Request.GRAPH_NAME_PARAM);
+        String graphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
 
         if(graphName == null){
             res.status(400);
-           return ErrorMessage.NO_PARAMETER_PROVIDED.getMessage(RESTUtil.Request.GRAPH_NAME_PARAM, "delete");
+           return ErrorMessage.NO_PARAMETER_PROVIDED.getMessage(REST.Request.GRAPH_NAME_PARAM, "delete");
         }
 
         cache.getCastingJobs().computeIfPresent(graphName, (key, set) -> {set.clear(); return set;});
@@ -72,7 +72,7 @@ public class CommitLogController {
      * @return The result of adding something for post processing
      */
     private String submitConcepts(Request req, Response res) {
-        String graphName = req.queryParams(RESTUtil.Request.GRAPH_NAME_PARAM);
+        String graphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
 
         if(graphName == null){
             graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
@@ -84,7 +84,7 @@ public class CommitLogController {
         for (Object object : jsonArray) {
             JSONObject jsonObject = (JSONObject) object;
             String conceptId = jsonObject.getString("id");
-            DataType.BaseType type = DataType.BaseType.valueOf(jsonObject.getString("type"));
+            Schema.BaseType type = Schema.BaseType.valueOf(jsonObject.getString("type"));
 
             switch (type){
                 case CASTING:

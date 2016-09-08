@@ -18,15 +18,15 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.constants.DataType;
-import io.mindmaps.core.implementation.exception.ConceptException;
-import io.mindmaps.core.model.Concept;
-import io.mindmaps.core.model.EntityType;
-import io.mindmaps.core.model.Instance;
-import io.mindmaps.core.model.RoleType;
-import io.mindmaps.core.model.Rule;
-import io.mindmaps.core.model.RuleType;
-import io.mindmaps.core.model.Type;
+import io.mindmaps.util.Schema;
+import io.mindmaps.exception.ConceptException;
+import io.mindmaps.core.concept.Concept;
+import io.mindmaps.core.concept.EntityType;
+import io.mindmaps.core.concept.Instance;
+import io.mindmaps.core.concept.RoleType;
+import io.mindmaps.core.concept.Rule;
+import io.mindmaps.core.concept.RuleType;
+import io.mindmaps.core.concept.Type;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.junit.After;
 import org.junit.Before;
@@ -136,8 +136,8 @@ public class TypeTest {
         assertFalse(c1.getAkoHierarchySuperSet().contains(c4));
 
         mindmapsGraph.getTinkerPopGraph().traversal().V().
-                has(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), c3.getId()).
-                outE(DataType.EdgeLabel.ISA.getLabel()).next().remove();
+                has(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), c3.getId()).
+                outE(Schema.EdgeLabel.ISA.getLabel()).next().remove();
         c3.superType(c4);
         boolean correctExceptionThrown = false;
         try{
@@ -239,7 +239,7 @@ public class TypeTest {
         conceptType.playsRole(roleType1).playsRole(roleType2);
         Set<RoleType> foundRoles = new HashSet<>();
         mindmapsGraph.getTinkerPopGraph().traversal().V(conceptType.getBaseIdentifier()).
-                out(DataType.EdgeLabel.PLAYS_ROLE.getLabel()).forEachRemaining(r -> foundRoles.add(mindmapsGraph.getRoleType(r.value(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name()))));
+                out(Schema.EdgeLabel.PLAYS_ROLE.getLabel()).forEachRemaining(r -> foundRoles.add(mindmapsGraph.getRoleType(r.value(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name()))));
 
         assertEquals(2, foundRoles.size());
         assertTrue(foundRoles.contains(roleType1));
@@ -250,11 +250,11 @@ public class TypeTest {
     public void checkSuperConceptTypeOverride(){
         EntityTypeImpl conceptType = (EntityTypeImpl) mindmapsGraph.putEntityType("A Thing");
         EntityTypeImpl conceptType2 = (EntityTypeImpl) mindmapsGraph.putEntityType("A Super Thing");
-        assertNotNull(conceptType.getOutgoingNeighbour(DataType.EdgeLabel.ISA));
-        assertNull(conceptType.getOutgoingNeighbour(DataType.EdgeLabel.AKO));
+        assertNotNull(conceptType.getOutgoingNeighbour(Schema.EdgeLabel.ISA));
+        assertNull(conceptType.getOutgoingNeighbour(Schema.EdgeLabel.AKO));
         conceptType.superType(conceptType2);
-        assertNull(conceptType.getOutgoingNeighbour(DataType.EdgeLabel.ISA));
-        assertNotNull(conceptType.getOutgoingNeighbour(DataType.EdgeLabel.AKO));
+        assertNull(conceptType.getOutgoingNeighbour(Schema.EdgeLabel.ISA));
+        assertNotNull(conceptType.getOutgoingNeighbour(Schema.EdgeLabel.AKO));
     }
 
     @Test

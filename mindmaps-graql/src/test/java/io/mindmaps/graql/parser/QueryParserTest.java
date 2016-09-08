@@ -21,11 +21,15 @@ package io.mindmaps.graql.parser;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.Data;
-import io.mindmaps.core.model.Concept;
+import io.mindmaps.core.concept.Concept;
+import io.mindmaps.core.concept.ResourceType;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
-import io.mindmaps.graql.*;
+import io.mindmaps.graql.AggregateQuery;
+import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.QueryParser;
+import io.mindmaps.graql.Var;
 import io.mindmaps.graql.internal.parser.MatchQueryPrinter;
 import io.mindmaps.graql.internal.query.aggregate.AbstractAggregate;
 import org.junit.Before;
@@ -40,11 +44,30 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static io.mindmaps.constants.DataType.ConceptMeta.*;
-import static io.mindmaps.graql.Graql.*;
+import static io.mindmaps.graql.Graql.all;
+import static io.mindmaps.graql.Graql.and;
+import static io.mindmaps.graql.Graql.any;
+import static io.mindmaps.graql.Graql.contains;
+import static io.mindmaps.graql.Graql.eq;
+import static io.mindmaps.graql.Graql.gt;
+import static io.mindmaps.graql.Graql.gte;
+import static io.mindmaps.graql.Graql.id;
+import static io.mindmaps.graql.Graql.lt;
+import static io.mindmaps.graql.Graql.lte;
+import static io.mindmaps.graql.Graql.neq;
+import static io.mindmaps.graql.Graql.or;
+import static io.mindmaps.graql.Graql.regex;
+import static io.mindmaps.graql.Graql.var;
+import static io.mindmaps.graql.Graql.withGraph;
+import static io.mindmaps.util.Schema.MetaType.ENTITY_TYPE;
+import static io.mindmaps.util.Schema.MetaType.RELATION_TYPE;
+import static io.mindmaps.util.Schema.MetaType.ROLE_TYPE;
+import static io.mindmaps.util.Schema.MetaType.RULE_TYPE;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.core.AllOf.allOf;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class QueryParserTest {
 
@@ -342,7 +365,7 @@ public class QueryParserTest {
 
     @Test
     public void testMatchDataTypeQuery() {
-        MatchQuery expected = qb.match(var("x").datatype(Data.DOUBLE));
+        MatchQuery expected = qb.match(var("x").datatype(ResourceType.DataType.DOUBLE));
         MatchQueryPrinter parsed = qp.parseMatchQuery("match $x datatype double");
 
         assertQueriesEqual(expected, parsed);
@@ -353,9 +376,9 @@ public class QueryParserTest {
         qp.parseInsertQuery("insert my-type isa resource-type, datatype long").execute();
 
         MatchQuery query = qb.match(var("x").id("my-type"));
-        Data datatype = query.iterator().next().get("x").asResourceType().getDataType();
+        ResourceType.DataType datatype = query.iterator().next().get("x").asResourceType().getDataType();
 
-        assertEquals(Data.LONG, datatype);
+        assertEquals(ResourceType.DataType.LONG, datatype);
     }
 
     @Test

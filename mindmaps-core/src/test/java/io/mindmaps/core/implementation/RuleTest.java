@@ -18,10 +18,10 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.constants.DataType;
-import io.mindmaps.core.model.Rule;
-import io.mindmaps.core.model.RuleType;
-import io.mindmaps.core.model.Type;
+import io.mindmaps.util.Schema;
+import io.mindmaps.core.concept.Rule;
+import io.mindmaps.core.concept.RuleType;
+import io.mindmaps.core.concept.Type;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -81,9 +81,9 @@ public class RuleTest {
         Vertex ruleVertex = mindmapsGraph.getTinkerTraversal().V(((RuleImpl) rule).getBaseIdentifier()).next();
         Type type1 = mindmapsGraph.putEntityType("A Concept Type 1");
         Type type2 = mindmapsGraph.putEntityType("A Concept Type 2");
-        assertFalse(ruleVertex.edges(Direction.BOTH, DataType.EdgeLabel.HYPOTHESIS.getLabel()).hasNext());
+        assertFalse(ruleVertex.edges(Direction.BOTH, Schema.EdgeLabel.HYPOTHESIS.getLabel()).hasNext());
         rule.addHypothesis(type1).addHypothesis(type2);
-        assertTrue(ruleVertex.edges(Direction.BOTH, DataType.EdgeLabel.HYPOTHESIS.getLabel()).hasNext());
+        assertTrue(ruleVertex.edges(Direction.BOTH, Schema.EdgeLabel.HYPOTHESIS.getLabel()).hasNext());
     }
 
     @Test
@@ -93,9 +93,9 @@ public class RuleTest {
         Vertex ruleVertex = mindmapsGraph.getTinkerTraversal().V(((RuleImpl) rule).getBaseIdentifier()).next();
         Type type1 = mindmapsGraph.putEntityType("A Concept Type 1");
         Type type2 = mindmapsGraph.putEntityType("A Concept Type 2");
-        assertFalse(ruleVertex.edges(Direction.BOTH, DataType.EdgeLabel.CONCLUSION.getLabel()).hasNext());
+        assertFalse(ruleVertex.edges(Direction.BOTH, Schema.EdgeLabel.CONCLUSION.getLabel()).hasNext());
         rule.addConclusion(type1).addConclusion(type2);
-        assertTrue(ruleVertex.edges(Direction.BOTH, DataType.EdgeLabel.CONCLUSION.getLabel()).hasNext());
+        assertTrue(ruleVertex.edges(Direction.BOTH, Schema.EdgeLabel.CONCLUSION.getLabel()).hasNext());
     }
 
     @Test

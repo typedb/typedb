@@ -18,9 +18,8 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.Data;
-import io.mindmaps.core.model.*;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.core.concept.*;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.junit.Before;
 import org.junit.Test;
@@ -48,15 +47,15 @@ public class ResourceTest {
 
     @Test
     public void testDataType() throws Exception {
-        ResourceType resourceType = mindmapsGraph.putResourceType("resourceType", Data.STRING);
+        ResourceType resourceType = mindmapsGraph.putResourceType("resourceType", ResourceType.DataType.STRING);
         Resource resource = mindmapsGraph.putResource("resource", resourceType);
-        assertEquals(Data.STRING, resource.dataType());
+        assertEquals(ResourceType.DataType.STRING, resource.dataType());
     }
 
     @Test
     public void testOwnerInstances() throws Exception {
         EntityType randomThing = mindmapsGraph.putEntityType("A Thing");
-        ResourceType resourceType = mindmapsGraph.putResourceType("A Resource Thing", Data.STRING);
+        ResourceType resourceType = mindmapsGraph.putResourceType("A Resource Thing", ResourceType.DataType.STRING);
         RelationType hasResource = mindmapsGraph.putRelationType("Has Resource");
         RoleType resourceRole = mindmapsGraph.putRoleType("Resource Role");
         RoleType actorRole = mindmapsGraph.putRoleType("Actor");
@@ -87,10 +86,10 @@ public class ResourceTest {
 
     @Test
     public void checkResourceDataTypes(){
-        ResourceType<String> strings = mindmapsGraph.putResourceType("String Type", Data.STRING);
-        ResourceType<Long> longs = mindmapsGraph.putResourceType("Long Type", Data.LONG);
-        ResourceType<Double> doubles = mindmapsGraph.putResourceType("Double Type", Data.DOUBLE);
-        ResourceType<Boolean> booleans = mindmapsGraph.putResourceType("Boolean Type", Data.BOOLEAN);
+        ResourceType<String> strings = mindmapsGraph.putResourceType("String Type", ResourceType.DataType.STRING);
+        ResourceType<Long> longs = mindmapsGraph.putResourceType("Long Type", ResourceType.DataType.LONG);
+        ResourceType<Double> doubles = mindmapsGraph.putResourceType("Double Type", ResourceType.DataType.DOUBLE);
+        ResourceType<Boolean> booleans = mindmapsGraph.putResourceType("Boolean Type", ResourceType.DataType.BOOLEAN);
 
         Resource<String> resource1 = mindmapsGraph.putResource("1", strings);
         Resource<Long> resource2 = mindmapsGraph.putResource(1L, longs);
@@ -120,7 +119,7 @@ public class ResourceTest {
 
     @Test
     public void setInvalidResourceTest (){
-        ResourceType longResourceType = mindmapsGraph.putResourceType("long", Data.LONG);
+        ResourceType longResourceType = mindmapsGraph.putResourceType("long", ResourceType.DataType.LONG);
         expectedException.expect(RuntimeException.class);
         expectedException.expectMessage(allOf(
                 containsString(ErrorMessage.INVALID_DATATYPE.getMessage("Invalid Thing", Long.class.getName()))
@@ -130,14 +129,14 @@ public class ResourceTest {
 
     @Test
     public void datatypeTest2(){
-        ResourceType<Double> doubleResourceType = mindmapsGraph.putResourceType("doubleType", Data.DOUBLE);
+        ResourceType<Double> doubleResourceType = mindmapsGraph.putResourceType("doubleType", ResourceType.DataType.DOUBLE);
         Resource thing = mindmapsGraph.putResource(2.0, doubleResourceType);
         assertEquals(2.0, thing.getValue());
     }
 
     @Test
     public void testToString() {
-        ResourceType<String> concept = mindmapsGraph.putResourceType("a", Data.STRING);
+        ResourceType<String> concept = mindmapsGraph.putResourceType("a", ResourceType.DataType.STRING);
         Resource<String> concept2 = mindmapsGraph.putResource("concept2", concept);
         assertTrue(concept2.toString().contains("Value"));
     }

@@ -19,9 +19,9 @@
 package io.mindmaps.engine.controller;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.constants.RESTUtil;
-import io.mindmaps.core.model.Concept;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.util.REST;
+import io.mindmaps.core.concept.Concept;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.QueryParser;
 import io.mindmaps.engine.util.ConfigProperties;
@@ -57,8 +57,8 @@ public class VisualiserController {
 
         defaultGraphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
 
-        get(RESTUtil.WebPath.CONCEPT_BY_ID_URI + RESTUtil.Request.ID_PARAMETER, this::getConceptById);
-        get(RESTUtil.WebPath.GRAPH_MATCH_QUERY_URI, this::matchQuery);
+        get(REST.WebPath.CONCEPT_BY_ID_URI + REST.Request.ID_PARAMETER, this::getConceptById);
+        get(REST.WebPath.GRAPH_MATCH_QUERY_URI, this::matchQuery);
     }
 
     @GET
@@ -68,17 +68,17 @@ public class VisualiserController {
     @ApiImplicitParam(name = "id", value = "ID of the concept", required = true, dataType = "string", paramType = "path")
     private String getConceptById(Request req, Response res) {
 
-        String graphNameParam = req.queryParams(RESTUtil.Request.GRAPH_NAME_PARAM);
+        String graphNameParam = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
         String currentGraphName = (graphNameParam == null) ? defaultGraphName : graphNameParam;
 
         MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName);
 
-        Concept concept = graph.getConcept(req.params(RESTUtil.Request.ID_PARAMETER));
+        Concept concept = graph.getConcept(req.params(REST.Request.ID_PARAMETER));
         if (concept != null)
             return new HALConcept(concept).render();
         else {
             res.status(404);
-            return ErrorMessage.CONCEPT_ID_NOT_FOUND.getMessage(req.params(RESTUtil.Request.ID_PARAMETER));
+            return ErrorMessage.CONCEPT_ID_NOT_FOUND.getMessage(req.params(REST.Request.ID_PARAMETER));
         }
     }
 
@@ -92,17 +92,17 @@ public class VisualiserController {
     })
     private String matchQuery(Request req, Response res) {
 
-        String currentGraphName = req.queryParams(RESTUtil.Request.GRAPH_NAME_PARAM);
+        String currentGraphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
         if (currentGraphName == null) currentGraphName = defaultGraphName;
 
-        LOG.info("Received match query: \"" + req.queryParams(RESTUtil.Request.QUERY_FIELD) + "\"");
+        LOG.info("Received match query: \"" + req.queryParams(REST.Request.QUERY_FIELD) + "\"");
 
         try {
 
             QueryParser parser = QueryParser.create(GraphFactory.getInstance().getGraph(currentGraphName));
             final JSONArray halArray = new JSONArray();
 
-            parser.parseMatchQuery(req.queryParams(RESTUtil.Request.QUERY_FIELD))
+            parser.parseMatchQuery(req.queryParams(REST.Request.QUERY_FIELD))
                     .getMatchQuery().stream()
                     .forEach(x -> x.values()
                             .forEach(concept -> halArray.put(new JSONObject(new HALConcept(concept).render()))));

@@ -20,8 +20,8 @@ package io.mindmaps.graql.query;
 
 import com.google.common.collect.Lists;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.Data;
-import io.mindmaps.core.model.Concept;
+import io.mindmaps.core.concept.Concept;
+import io.mindmaps.core.concept.ResourceType;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.Graql;
@@ -38,8 +38,24 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static io.mindmaps.constants.DataType.ConceptMeta.*;
-import static io.mindmaps.graql.Graql.*;
+import static io.mindmaps.graql.Graql.all;
+import static io.mindmaps.graql.Graql.and;
+import static io.mindmaps.graql.Graql.any;
+import static io.mindmaps.graql.Graql.contains;
+import static io.mindmaps.graql.Graql.eq;
+import static io.mindmaps.graql.Graql.gt;
+import static io.mindmaps.graql.Graql.gte;
+import static io.mindmaps.graql.Graql.id;
+import static io.mindmaps.graql.Graql.lt;
+import static io.mindmaps.graql.Graql.lte;
+import static io.mindmaps.graql.Graql.neq;
+import static io.mindmaps.graql.Graql.or;
+import static io.mindmaps.graql.Graql.regex;
+import static io.mindmaps.graql.Graql.var;
+import static io.mindmaps.graql.Graql.withGraph;
+import static io.mindmaps.util.Schema.MetaType.ENTITY_TYPE;
+import static io.mindmaps.util.Schema.MetaType.RESOURCE_TYPE;
+import static io.mindmaps.util.Schema.MetaType.RULE_TYPE;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -364,16 +380,16 @@ public class MatchQueryTest {
 
     @Test
     public void testMatchDataType() {
-        MatchQuery query = qb.match(var("x").datatype(Data.DOUBLE));
+        MatchQuery query = qb.match(var("x").datatype(ResourceType.DataType.DOUBLE));
         QueryUtil.assertResultsMatch(query, "x", RESOURCE_TYPE.getId(), "tmdb-vote-average");
 
-        query = qb.match(var("x").datatype(Data.LONG));
+        query = qb.match(var("x").datatype(ResourceType.DataType.LONG));
         QueryUtil.assertResultsMatch(query, "x", RESOURCE_TYPE.getId(), "tmdb-vote-count", "runtime", "release-date");
 
-        query = qb.match(var("x").datatype(Data.BOOLEAN));
+        query = qb.match(var("x").datatype(ResourceType.DataType.BOOLEAN));
         assertEquals(0, query.stream().count());
 
-        query = qb.match(var("x").datatype(Data.STRING));
+        query = qb.match(var("x").datatype(ResourceType.DataType.STRING));
         QueryUtil.assertResultsMatch(query, "x", RESOURCE_TYPE.getId(), "title", "gender", "real-name", "name");
     }
 

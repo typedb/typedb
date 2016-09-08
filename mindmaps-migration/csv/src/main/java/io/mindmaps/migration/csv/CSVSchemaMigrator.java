@@ -3,7 +3,7 @@ package io.mindmaps.migration.csv;
 
 import com.google.common.collect.Lists;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.Data;
+import io.mindmaps.core.concept.ResourceType;
 import io.mindmaps.engine.loader.Loader;
 import io.mindmaps.graql.Var;
 import org.apache.commons.csv.CSVParser;
@@ -95,7 +95,7 @@ public class CSVSchemaMigrator {
     public Collection<Var> migrateAsResource(String ownerType, String otherType){
         // create the vars
         Var resourceType = var().id(namer.resourceName(otherType))
-                .datatype(Data.STRING)
+                .datatype(ResourceType.DataType.STRING)
                 .isa("resource-type");
 
         Var hasResource = var().id(ownerType).hasResource(namer.resourceName(otherType));

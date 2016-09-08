@@ -16,21 +16,13 @@
  *  along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.core.implementation.exception;
-
-import io.mindmaps.constants.DataType;
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.model.Concept;
+package io.mindmaps.exception;
 
 /**
- * This exception is thrown when two concepts attept to have the same unique id.
+ * Thrown when the value of a resource does not match the resources datatype.
  */
-public class ConceptIdNotUniqueException extends ConceptException {
-    public ConceptIdNotUniqueException(Concept concept, DataType.ConceptPropertyUnique type, String id) {
-        super(ErrorMessage.ID_NOT_UNIQUE.getMessage(concept.toString(), type.name(), id));
-    }
-
-    public ConceptIdNotUniqueException(Concept concept, String id){
-        super(ErrorMessage.ID_ALREADY_TAKEN.getMessage(id, concept.toString()));
+public class InvalidConceptValueException extends ConceptException {
+    public InvalidConceptValueException(String message) {
+        super(message);
     }
 }

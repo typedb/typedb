@@ -19,8 +19,8 @@
 package io.mindmaps.engine.controller;
 
 
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.constants.RESTUtil;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.util.REST;
 import io.mindmaps.engine.util.ConfigProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,21 +43,21 @@ public class GraphFactoryController {
     public GraphFactoryController() {
         ConfigProperties prop = ConfigProperties.getInstance();
 
-        get(RESTUtil.WebPath.GRAPH_FACTORY_URI, (req, res) -> {
-            String graphConfig = req.queryParams(RESTUtil.Request.GRAPH_CONFIG_PARAM);
+        get(REST.WebPath.GRAPH_FACTORY_URI, (req, res) -> {
+            String graphConfig = req.queryParams(REST.Request.GRAPH_CONFIG_PARAM);
 
             try {
                 if (graphConfig == null) {
                     graphConfig = ConfigProperties.GRAPH_CONFIG_PROPERTY;
                 } else {
                     switch (graphConfig) {
-                        case RESTUtil.GraphConfig.DEFAULT:
+                        case REST.GraphConfig.DEFAULT:
                             graphConfig = ConfigProperties.GRAPH_CONFIG_PROPERTY;
                             break;
-                        case RESTUtil.GraphConfig.BATCH:
+                        case REST.GraphConfig.BATCH:
                             graphConfig = ConfigProperties.GRAPH_BATCH_CONFIG_PROPERTY;
                             break;
-                        case RESTUtil.GraphConfig.COMPUTER:
+                        case REST.GraphConfig.COMPUTER:
                             graphConfig = ConfigProperties.GRAPH_COMPUTER_CONFIG_PROPERTY;
                             break;
                     }

@@ -20,9 +20,9 @@ package io.mindmaps.graql.internal.query.match;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.model.Concept;
-import io.mindmaps.core.model.Type;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.core.concept.Concept;
+import io.mindmaps.core.concept.Type;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.Query;
@@ -37,7 +37,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.mindmaps.constants.DataType.ConceptPropertyUnique.ITEM_IDENTIFIER;
+import static io.mindmaps.util.Schema.ConceptPropertyUnique.ITEM_IDENTIFIER;
 import static java.util.stream.Collectors.toSet;
 
 /**

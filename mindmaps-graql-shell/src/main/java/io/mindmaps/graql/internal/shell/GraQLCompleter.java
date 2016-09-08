@@ -26,8 +26,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-import static io.mindmaps.constants.RESTUtil.RemoteShell.AUTOCOMPLETE_CANDIDATES;
-import static io.mindmaps.constants.RESTUtil.RemoteShell.AUTOCOMPLETE_CURSOR;
+import static io.mindmaps.util.REST.RemoteShell.AUTOCOMPLETE_CANDIDATES;
+import static io.mindmaps.util.REST.RemoteShell.AUTOCOMPLETE_CURSOR;
 
 /**
  * An autocompleter for Graql.

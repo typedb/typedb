@@ -19,7 +19,7 @@
 package io.mindmaps.graql.query;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.Data;
+import io.mindmaps.core.concept.ResourceType;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.QueryBuilder;
@@ -149,7 +149,7 @@ public class QueryErrorTest {
         QueryBuilder emptyQb = withGraph(empty);
         emptyQb.insert(
                 id("person").isa("entity-type"),
-                id("name").isa("resource-type").datatype(Data.STRING)
+                id("name").isa("resource-type").datatype(ResourceType.DataType.STRING)
         ).execute();
 
         exception.expect(IllegalStateException.class);

@@ -21,7 +21,7 @@ package io.mindmaps.engine.controller;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.response.Response;
-import io.mindmaps.constants.RESTUtil;
+import io.mindmaps.util.REST;
 import io.mindmaps.engine.Util;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
@@ -62,13 +62,13 @@ public class ImportControllerTest {
 
         Response ontologyResponse = given().contentType("application/json").
                 body(Json.object("path", ontologyPath).toString()).when().
-                post(RESTUtil.WebPath.IMPORT_ONTOLOGY_URI);
+                post(REST.WebPath.IMPORT_ONTOLOGY_URI);
 
         ontologyResponse.then().assertThat().statusCode(200);
 
         Response dataResponse = given().contentType("application/json").
                 body(Json.object("path", dataPath).toString()).when().
-                post(RESTUtil.WebPath.IMPORT_DATA_URI);
+                post(REST.WebPath.IMPORT_DATA_URI);
 
         dataResponse.then().assertThat().statusCode(200);
 
@@ -92,13 +92,13 @@ public class ImportControllerTest {
 
         Response ontologyResponse = given().contentType("application/json").
                 body(Json.object("path", ontologyPath,"graphName",customGraph).toString()).when().
-                post(RESTUtil.WebPath.IMPORT_ONTOLOGY_URI);
+                post(REST.WebPath.IMPORT_ONTOLOGY_URI);
 
         ontologyResponse.then().assertThat().statusCode(200);
 
         Response dataResponse = given().contentType("application/json").
                 body(Json.object("path", dataPath,"graphName",customGraph).toString()).when().
-                post(RESTUtil.WebPath.IMPORT_DATA_URI);
+                post(REST.WebPath.IMPORT_DATA_URI);
 
         dataResponse.then().assertThat().statusCode(200);
 

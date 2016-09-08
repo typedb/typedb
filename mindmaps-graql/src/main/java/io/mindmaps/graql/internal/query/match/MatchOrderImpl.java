@@ -19,7 +19,7 @@
 package io.mindmaps.graql.internal.query.match;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.constants.DataType;
+import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -28,9 +28,9 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.Optional;
 
-import static io.mindmaps.constants.DataType.ConceptPropertyUnique.ITEM_IDENTIFIER;
-import static io.mindmaps.constants.DataType.EdgeLabel.SHORTCUT;
-import static io.mindmaps.constants.DataType.EdgeProperty.TO_TYPE;
+import static io.mindmaps.util.Schema.ConceptPropertyUnique.ITEM_IDENTIFIER;
+import static io.mindmaps.util.Schema.EdgeLabel.SHORTCUT;
+import static io.mindmaps.util.Schema.EdgeProperty.TO_TYPE;
 
 class MatchOrderImpl implements MatchOrder {
 
@@ -56,7 +56,7 @@ class MatchOrderImpl implements MatchOrder {
 
             // Look up datatype of resource type
             String typeId = resourceType.get();
-            DataType.ConceptProperty valueProp = graph.getResourceType(typeId).getDataType().getConceptProperty();
+            Schema.ConceptProperty valueProp = graph.getResourceType(typeId).getDataType().getConceptProperty();
 
             Comparator<Optional<Comparable>> comparator = new ResourceComparator();
             if (!asc) comparator = comparator.reversed();
@@ -76,7 +76,7 @@ class MatchOrderImpl implements MatchOrder {
      * @param value the VALUE property to use on the vertex
      * @return the value of an attached resource, or nothing if there is no resource of this type
      */
-    private Optional<Comparable> getResourceValue(MindmapsGraph graph, Object elem, String resourceTypeId, DataType.ConceptProperty value) {
+    private Optional<Comparable> getResourceValue(MindmapsGraph graph, Object elem, String resourceTypeId, Schema.ConceptProperty value) {
         return graph.getTinkerTraversal().V(elem)
                 .outE(SHORTCUT.getLabel()).has(TO_TYPE.name(), resourceTypeId).inV().values(value.name())
                 .tryNext().map(o -> (Comparable) o);

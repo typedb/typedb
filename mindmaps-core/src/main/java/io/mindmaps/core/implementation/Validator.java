@@ -18,9 +18,9 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.model.Instance;
-import io.mindmaps.core.model.RoleType;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.core.concept.Instance;
+import io.mindmaps.core.concept.RoleType;
 
 import java.util.*;
 
@@ -45,7 +45,7 @@ class Validator {
 
     /**
      *
-     * @return True if the data and schema conforms to our model.
+     * @return True if the data and schema conforms to our concept.
      */
     public boolean validate(){
         Set<ConceptImpl> validationList = new HashSet<>(mindmapsGraph.getModifiedConcepts());

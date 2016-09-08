@@ -17,16 +17,16 @@
  *
  */
 
-package io.mindmaps.core.model;
+package io.mindmaps.core.concept;
 
 
-import io.mindmaps.core.implementation.exception.ConceptException;
+import io.mindmaps.exception.ConceptException;
 
 import java.util.Collection;
 import java.util.Map;
 
 /**
- * A relation represents and instance of a relation type which model how different entities relate to one another.
+ * A relation represents and instance of a relation type which concept how different entities relate to one another.
  */
 public interface Relation extends Instance {
     //------------------------------------- Modifiers ----------------------------------

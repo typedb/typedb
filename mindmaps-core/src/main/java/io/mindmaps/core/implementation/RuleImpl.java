@@ -18,12 +18,12 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.constants.DataType;
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.implementation.exception.InvalidConceptValueException;
-import io.mindmaps.core.model.Type;
-import io.mindmaps.core.model.Rule;
-import io.mindmaps.core.model.RuleType;
+import io.mindmaps.util.Schema;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.exception.InvalidConceptValueException;
+import io.mindmaps.core.concept.Type;
+import io.mindmaps.core.concept.Rule;
+import io.mindmaps.core.concept.RuleType;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
@@ -35,8 +35,8 @@ import java.util.HashSet;
 class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
     RuleImpl(Vertex v, AbstractMindmapsGraph mindmapsGraph, String lhs, String rhs) {
         super(v, mindmapsGraph);
-        setRule(DataType.ConceptProperty.RULE_LHS, lhs);
-        setRule(DataType.ConceptProperty.RULE_RHS, rhs);
+        setRule(Schema.ConceptProperty.RULE_LHS, lhs);
+        setRule(Schema.ConceptProperty.RULE_RHS, rhs);
     }
 
     /**
@@ -44,7 +44,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      * @param rule The rule to mutate
      * @param value The value of either the lhs or rhs set
      */
-    private void setRule(DataType.ConceptProperty rule, String value){
+    private void setRule(Schema.ConceptProperty rule, String value){
         if(value == null){
             throw new InvalidConceptValueException(ErrorMessage.NULL_VALUE.getMessage(rule.name()));
         }
@@ -67,7 +67,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      */
     @Override
     public Rule setExpectation(boolean expectation) {
-        setProperty(DataType.ConceptProperty.IS_EXPECTED, expectation);
+        setProperty(Schema.ConceptProperty.IS_EXPECTED, expectation);
         return getThis();
     }
 
@@ -79,7 +79,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      */
     @Override
     public Rule setMaterialise(boolean materialise) {
-        setProperty(DataType.ConceptProperty.IS_MATERIALISED, materialise);
+        setProperty(Schema.ConceptProperty.IS_MATERIALISED, materialise);
         return getThis();
     }
 
@@ -89,7 +89,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      */
     @Override
     public String getLHS() {
-        Object object = getProperty(DataType.ConceptProperty.RULE_LHS);
+        Object object = getProperty(Schema.ConceptProperty.RULE_LHS);
         if(object == null)
             return null;
         return (String) object;
@@ -101,7 +101,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      */
     @Override
     public String getRHS() {
-        Object object = getProperty(DataType.ConceptProperty.RULE_RHS);
+        Object object = getProperty(Schema.ConceptProperty.RULE_RHS);
         if(object == null)
             return null;
         return (String) object;
@@ -115,7 +115,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      */
     @Override
     public boolean getExpectation() {
-        Object object = getProperty(DataType.ConceptProperty.IS_EXPECTED);
+        Object object = getProperty(Schema.ConceptProperty.IS_EXPECTED);
         return object != null && Boolean.parseBoolean(object.toString());
     }
 
@@ -126,7 +126,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      */
     @Override
     public boolean isMaterialise() {
-        Object object = getProperty(DataType.ConceptProperty.IS_MATERIALISED);
+        Object object = getProperty(Schema.ConceptProperty.IS_MATERIALISED);
         return object != null && Boolean.parseBoolean(object.toString());
     }
 
@@ -137,7 +137,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      */
     @Override
     public Rule addHypothesis(Type type) {
-        putEdge(getMindmapsGraph().getElementFactory().buildSpecificConceptType(type), DataType.EdgeLabel.HYPOTHESIS);
+        putEdge(getMindmapsGraph().getElementFactory().buildSpecificConceptType(type), Schema.EdgeLabel.HYPOTHESIS);
         return getThis();
     }
 
@@ -148,7 +148,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      */
     @Override
     public Rule addConclusion(Type type) {
-        putEdge(getMindmapsGraph().getElementFactory().buildSpecificConceptType(type), DataType.EdgeLabel.CONCLUSION);
+        putEdge(getMindmapsGraph().getElementFactory().buildSpecificConceptType(type), Schema.EdgeLabel.CONCLUSION);
         return getThis();
     }
 
@@ -159,7 +159,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
     @Override
     public Collection<Type> getHypothesisTypes() {
         Collection<Type> types = new HashSet<>();
-        getOutgoingNeighbours(DataType.EdgeLabel.HYPOTHESIS).forEach(concept -> types.add(getMindmapsGraph().getElementFactory().buildSpecificConceptType(concept)));
+        getOutgoingNeighbours(Schema.EdgeLabel.HYPOTHESIS).forEach(concept -> types.add(getMindmapsGraph().getElementFactory().buildSpecificConceptType(concept)));
         return types;
     }
 
@@ -170,7 +170,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
     @Override
     public Collection<Type> getConclusionTypes() {
         Collection<Type> types = new HashSet<>();
-        getOutgoingNeighbours(DataType.EdgeLabel.CONCLUSION).forEach(concept -> types.add(getMindmapsGraph().getElementFactory().buildSpecificConceptType(concept)));
+        getOutgoingNeighbours(Schema.EdgeLabel.CONCLUSION).forEach(concept -> types.add(getMindmapsGraph().getElementFactory().buildSpecificConceptType(concept)));
         return types;
     }
 }

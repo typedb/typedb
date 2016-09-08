@@ -19,7 +19,7 @@
 package io.mindmaps.engine.postprocessing;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.core.implementation.AbstractMindmapsGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

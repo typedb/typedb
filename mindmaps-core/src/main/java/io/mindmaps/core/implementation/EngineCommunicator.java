@@ -18,7 +18,7 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.util.ErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

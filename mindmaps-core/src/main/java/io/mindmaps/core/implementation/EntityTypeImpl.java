@@ -18,8 +18,8 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.core.model.Entity;
-import io.mindmaps.core.model.EntityType;
+import io.mindmaps.core.concept.Entity;
+import io.mindmaps.core.concept.EntityType;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 /**

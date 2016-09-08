@@ -18,8 +18,8 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.constants.DataType;
-import io.mindmaps.core.model.*;
+import io.mindmaps.util.Schema;
+import io.mindmaps.core.concept.*;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
@@ -40,7 +40,7 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
      */
     @Override
     public RelationType relationType() {
-        Concept concept = getIncomingNeighbour(DataType.EdgeLabel.HAS_ROLE);
+        Concept concept = getIncomingNeighbour(Schema.EdgeLabel.HAS_ROLE);
 
         if(concept == null){
             return null;
@@ -56,7 +56,7 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
     @Override
     public Collection<Type> playedByTypes() {
         Collection<Type> types = new HashSet<>();
-        getIncomingNeighbours(DataType.EdgeLabel.PLAYS_ROLE).forEach(c -> types.add(getMindmapsGraph().getElementFactory().buildSpecificConceptType(c)));
+        getIncomingNeighbours(Schema.EdgeLabel.PLAYS_ROLE).forEach(c -> types.add(getMindmapsGraph().getElementFactory().buildSpecificConceptType(c)));
         return types;
     }
 
@@ -67,7 +67,7 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
     @Override
     public Collection<Instance> instances(){
         Set<Instance> instances = new HashSet<>();
-        getIncomingNeighbours(DataType.EdgeLabel.ISA).forEach(concept -> {
+        getIncomingNeighbours(Schema.EdgeLabel.ISA).forEach(concept -> {
             CastingImpl casting = (CastingImpl) concept;
             instances.add(casting.getRolePlayer());
         });
@@ -80,7 +80,7 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
      */
     public Set<CastingImpl> castings(){
         Set<CastingImpl> castings = new HashSet<>();
-        getIncomingNeighbours(DataType.EdgeLabel.ISA).forEach(concept -> ((CastingImpl) concept).getRelations().forEach(relation -> mindmapsGraph.getConceptLog().putConcept(relation)));
+        getIncomingNeighbours(Schema.EdgeLabel.ISA).forEach(concept -> ((CastingImpl) concept).getRelations().forEach(relation -> mindmapsGraph.getConceptLog().putConcept(relation)));
         return castings;
     }
 }

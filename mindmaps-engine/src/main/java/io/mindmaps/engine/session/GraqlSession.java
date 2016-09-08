@@ -19,10 +19,10 @@
 package io.mindmaps.engine.session;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.implementation.exception.InvalidConceptTypeException;
-import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.Concept;
-import io.mindmaps.core.model.Instance;
+import io.mindmaps.exception.InvalidConceptTypeException;
+import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.core.concept.Concept;
+import io.mindmaps.core.concept.Instance;
 import io.mindmaps.graql.*;
 import io.mindmaps.graql.internal.parser.ANSI;
 import io.mindmaps.graql.internal.parser.MatchQueryPrinter;
@@ -35,7 +35,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Stream;
 
-import static io.mindmaps.constants.RESTUtil.RemoteShell.*;
+import static io.mindmaps.util.REST.RemoteShell.*;
 
 /**
  * A Graql shell session for a single client, running on one graph in one thread

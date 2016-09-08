@@ -20,9 +20,8 @@ package io.mindmaps.graql.internal.analytics;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.Data;
-import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.*;
+import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.core.concept.*;
 import io.mindmaps.graql.internal.GraqlType;
 import org.apache.commons.collections.CollectionUtils;
 import org.javatuples.Pair;
@@ -349,8 +348,8 @@ public class AnalyticsTest {
         RelationType hasName = graph.putRelationType("has-name").hasRole(value).hasRole(target);
         EntityType person = graph.putEntityType("person").playsRole(owner);
         EntityType animal = graph.putEntityType("animal").playsRole(pet).playsRole(target);
-        ResourceType<String> name = graph.putResourceType("name", Data.STRING).playsRole(value);
-        ResourceType<String> altName = graph.putResourceType("alternate-name", Data.STRING).playsRole(value);
+        ResourceType<String> name = graph.putResourceType("name", ResourceType.DataType.STRING).playsRole(value);
+        ResourceType<String> altName = graph.putResourceType("alternate-name", ResourceType.DataType.STRING).playsRole(value);
 
         // add data to the graph
         Entity coco = graph.putEntity("coco", animal);
@@ -547,7 +546,7 @@ public class AnalyticsTest {
         RoleType degreeValue = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(Analytics.degree));
         RelationType hasResource = graph.putRelationType(GraqlType.HAS_RESOURCE.getId(Analytics.degree))
                 .hasRole(degreeOwner).hasRole(degreeValue);
-        ResourceType<Long> decoyResourceType = graph.putResourceType("decoy-resource", Data.LONG).playsRole(degreeValue);
+        ResourceType<Long> decoyResourceType = graph.putResourceType("decoy-resource", ResourceType.DataType.LONG).playsRole(degreeValue);
         Resource<Long> decoyResource = graph.putResource(100L, decoyResourceType);
         graph.addRelation(hasResource).putRolePlayer(degreeOwner,coco).putRolePlayer(degreeValue,decoyResource);
         animal.playsRole(degreeOwner);
@@ -608,12 +607,12 @@ public class AnalyticsTest {
         RelationType hasName = graph.putRelationType("has-name").hasRole(value).hasRole(target);
         EntityType person = graph.putEntityType("person").playsRole(owner);
         EntityType animal = graph.putEntityType("animal").playsRole(pet).playsRole(target);
-        ResourceType<String> name = graph.putResourceType("name", Data.STRING).playsRole(value);
-        ResourceType<String> altName = graph.putResourceType("alternate-name", Data.STRING).playsRole(value);
+        ResourceType<String> name = graph.putResourceType("name", ResourceType.DataType.STRING).playsRole(value);
+        ResourceType<String> altName = graph.putResourceType("alternate-name", ResourceType.DataType.STRING).playsRole(value);
         RoleType ownership = graph.putRoleType("ownership");
         RoleType ownershipResource = graph.putRoleType("ownership-resource");
         RelationType hasOwnershipResource = graph.putRelationType("has-ownership-resource").hasRole(ownership).hasRole(ownershipResource);
-        ResourceType<String> startDate = graph.putResourceType("start-date",Data.STRING).playsRole(ownershipResource);
+        ResourceType<String> startDate = graph.putResourceType("start-date", ResourceType.DataType.STRING).playsRole(ownershipResource);
         mansBestFriend.playsRole(ownership);
 
         // add data to the graph

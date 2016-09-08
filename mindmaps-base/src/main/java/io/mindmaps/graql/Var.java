@@ -19,7 +19,7 @@
 
 package io.mindmaps.graql;
 
-import io.mindmaps.core.Data;
+import io.mindmaps.core.concept.ResourceType;
 import io.mindmaps.graql.admin.VarAdmin;
 
 import java.util.Optional;
@@ -208,7 +208,7 @@ public interface Var extends Pattern {
      * @param datatype the datatype to set for this resource type variable
      * @return this
      */
-    Var datatype(Data<?> datatype);
+    Var datatype(ResourceType.DataType<?> datatype);
 
     /**
      * @param lhs the left-hand side of this rule

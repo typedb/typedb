@@ -18,7 +18,7 @@
 
 package io.mindmaps.engine.controller;
 
-import io.mindmaps.constants.RESTUtil;
+import io.mindmaps.util.REST;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -43,7 +43,7 @@ public class StatusController {
 
     public StatusController() {
 
-        get(RESTUtil.WebPath.GET_STATUS_URI, this::getStatus);
+        get(REST.WebPath.GET_STATUS_URI, this::getStatus);
     }
 
     @GET

@@ -14,27 +14,42 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ *
  */
 
-package io.mindmaps.core.model;
+package io.mindmaps.core.concept;
+
+
 
 import java.util.Collection;
 
 /**
- * This represents an instance of a Type. It represents data in the graph.
+ * A concept which represents a resource.
+ * @param <D> The data type of this resource. Supported Types include: String, Long, Double, and Boolean
  */
-public interface Instance extends Concept{
+public interface Resource<D> extends Instance{
     //------------------------------------- Accessors ----------------------------------
     /**
      *
-     * @param roleTypes An optional parameter which allows you to specify the role of the relations you wish to retrieve.
-     * @return A set of Relations which the concept instance takes part in, optionally constrained by the Role Type.
+     * @return The Resource itself
      */
-    Collection<Relation> relations(RoleType... roleTypes);
+    D getValue();
 
     /**
      *
-     * @return A set of all the Role Types which this instance plays.
+     * @return the type of this resource
      */
-    Collection<RoleType> playsRoles();
+    ResourceType<D> type();
+
+    /**
+     *
+     * @return The data type of this Resource's type.
+     */
+    ResourceType.DataType<D> dataType();
+
+    /**
+     * @return The list of all Instances which posses this resource
+     */
+    Collection<Instance> ownerInstances();
+
 }

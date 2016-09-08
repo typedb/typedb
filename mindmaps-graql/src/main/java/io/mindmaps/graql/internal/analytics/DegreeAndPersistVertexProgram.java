@@ -20,9 +20,9 @@ package io.mindmaps.graql.internal.analytics;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.constants.DataType;
-import io.mindmaps.constants.ErrorMessage;
-import io.mindmaps.core.model.Type;
+import io.mindmaps.util.Schema;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.core.concept.Type;
 import io.mindmaps.factory.MindmapsClient;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
@@ -67,8 +67,8 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
     private static final Set<String> COMPUTE_KEYS = Collections.singleton(OLD_ASSERTION_ID);
 
     private final HashSet<String> baseTypes = Sets.newHashSet(
-            DataType.BaseType.ENTITY.name(),
-            DataType.BaseType.RESOURCE.name());
+            Schema.BaseType.ENTITY.name(),
+            Schema.BaseType.RESOURCE.name());
 
     private Set<String> selectedTypes = null;
 
@@ -146,14 +146,14 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
                 if (selectedTypes.contains(getVertexType(vertex)) && !isAnalyticsElement(vertex)) {
                     if (baseTypes.contains(vertex.label())) {
                         messenger.sendMessage(this.countMessageScopeIn, 1L);
-                    } else if (vertex.label().equals(DataType.BaseType.RELATION.name())) {
+                    } else if (vertex.label().equals(Schema.BaseType.RELATION.name())) {
                         messenger.sendMessage(this.countMessageScopeOut, -1L);
                         messenger.sendMessage(this.countMessageScopeIn, 1L);
                     }
                 }
                 break;
             case 1:
-                if (vertex.label().equals(DataType.BaseType.CASTING.name())) {
+                if (vertex.label().equals(Schema.BaseType.CASTING.name())) {
                     boolean hasRolePlayer = false;
                     long assertionCount = 0;
                     Iterator<Long> iterator = messenger.receiveMessages();
@@ -171,7 +171,7 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
             case 2:
                 if (!isAnalyticsElement(vertex) && selectedTypes.contains(getVertexType(vertex))) {
                     if (baseTypes.contains(vertex.label()) ||
-                            vertex.label().equals(DataType.BaseType.RELATION.name())) {
+                            vertex.label().equals(Schema.BaseType.RELATION.name())) {
                         long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
                         String oldAssertionId = Analytics.persistResource(mindmapsGraph, vertex, Analytics.degree, edgeCount);
                         if (oldAssertionId != null) {

@@ -18,20 +18,19 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.constants.DataType;
-import io.mindmaps.core.Data;
-import io.mindmaps.core.implementation.exception.MindmapsValidationException;
-import io.mindmaps.core.model.Concept;
-import io.mindmaps.core.model.Entity;
-import io.mindmaps.core.model.EntityType;
-import io.mindmaps.core.model.Instance;
-import io.mindmaps.core.model.Relation;
-import io.mindmaps.core.model.RelationType;
-import io.mindmaps.core.model.Resource;
-import io.mindmaps.core.model.ResourceType;
-import io.mindmaps.core.model.RoleType;
-import io.mindmaps.core.model.RuleType;
-import io.mindmaps.core.model.Type;
+import io.mindmaps.util.Schema;
+import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.core.concept.Concept;
+import io.mindmaps.core.concept.Entity;
+import io.mindmaps.core.concept.EntityType;
+import io.mindmaps.core.concept.Instance;
+import io.mindmaps.core.concept.Relation;
+import io.mindmaps.core.concept.RelationType;
+import io.mindmaps.core.concept.Resource;
+import io.mindmaps.core.concept.ResourceType;
+import io.mindmaps.core.concept.RoleType;
+import io.mindmaps.core.concept.RuleType;
+import io.mindmaps.core.concept.Type;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -90,9 +89,9 @@ public class MindmapsGraphLowLevelTest {
     public void testTooManyNodesForId() {
         Graph graph = mindmapsGraph.getTinkerPopGraph();
         Vertex v1 = graph.addVertex();
-        v1.property(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), "value");
+        v1.property(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), "value");
         Vertex v2 = graph.addVertex();
-        v2.property(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), "value");
+        v2.property(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), "value");
         mindmapsGraph.putEntityType("value");
     }
 
@@ -143,8 +142,8 @@ public class MindmapsGraphLowLevelTest {
         assertEquals(casting.getBaseIdentifier(), casting_role.outVertex().id());
         assertEquals(casting.getBaseIdentifier(), casting_rolePlayer.outVertex().id());
 
-        assertEquals(DataType.BaseType.ROLE_TYPE.name(), roleVertex.label());
-        assertEquals(DataType.BaseType.RELATION.name(), assertionVertex.label());
+        assertEquals(Schema.BaseType.ROLE_TYPE.name(), roleVertex.label());
+        assertEquals(Schema.BaseType.RELATION.name(), assertionVertex.label());
     }
 
     @Test
@@ -161,16 +160,16 @@ public class MindmapsGraphLowLevelTest {
 
     public void makeArtificialCasting(RoleTypeImpl role, InstanceImpl rolePlayer, RelationImpl relation) {
         String id = "FakeCasting " + UUID.randomUUID();
-        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.CASTING.name());
-        vertex.property(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), id);
-        vertex.property(DataType.ConceptPropertyUnique.INDEX.name(), CastingImpl.generateNewHash(role, rolePlayer));
+        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
+        vertex.property(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), id);
+        vertex.property(Schema.ConceptPropertyUnique.INDEX.name(), CastingImpl.generateNewHash(role, rolePlayer));
 
         CastingImpl casting = (CastingImpl) mindmapsGraph.getConcept(id);
-        EdgeImpl edge = casting.addEdge(role, DataType.EdgeLabel.ISA); // Casting to Role
-        edge.setProperty(DataType.EdgeProperty.ROLE_TYPE, role.getId());
-        edge = casting.addEdge(rolePlayer, DataType.EdgeLabel.ROLE_PLAYER);// Casting to Roleplayer
-        edge.setProperty(DataType.EdgeProperty.ROLE_TYPE, role.getId());
-        relation.addEdge(casting, DataType.EdgeLabel.CASTING);// Assertion to Casting
+        EdgeImpl edge = casting.addEdge(role, Schema.EdgeLabel.ISA); // Casting to Role
+        edge.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId());
+        edge = casting.addEdge(rolePlayer, Schema.EdgeLabel.ROLE_PLAYER);// Casting to Roleplayer
+        edge.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId());
+        relation.addEdge(casting, Schema.EdgeLabel.CASTING);// Assertion to Casting
     }
 
     @Test
@@ -215,8 +214,8 @@ public class MindmapsGraphLowLevelTest {
         assertTrue(assertion.getMappingCasting().contains(casting2));
         assertNotEquals(casting1, casting2);
 
-        Concept rolePlayer2Copy = rolePlayer1.getOutgoingNeighbours(DataType.EdgeLabel.SHORTCUT).iterator().next();
-        Concept rolePlayer1Copy = rolePlayer2.getOutgoingNeighbours(DataType.EdgeLabel.SHORTCUT).iterator().next();
+        Concept rolePlayer2Copy = rolePlayer1.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).iterator().next();
+        Concept rolePlayer1Copy = rolePlayer2.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).iterator().next();
 
         assertEquals(rolePlayer1, rolePlayer1Copy);
         assertEquals(rolePlayer2, rolePlayer2Copy);
@@ -225,8 +224,8 @@ public class MindmapsGraphLowLevelTest {
     @Test
     public void testGetResourcesByValue(){
         assertEquals(0, mindmapsGraph.getResourcesByValue("Bob").size());
-        ResourceType type = mindmapsGraph.putResourceType("Parent", Data.STRING);
-        ResourceType type2 = mindmapsGraph.putResourceType("Parent 2", Data.STRING);
+        ResourceType type = mindmapsGraph.putResourceType("Parent", ResourceType.DataType.STRING);
+        ResourceType type2 = mindmapsGraph.putResourceType("Parent 2", ResourceType.DataType.STRING);
 
         Resource c1 = mindmapsGraph.putResource("Bob", type);
         Resource c2 = mindmapsGraph.putResource("Bob", type2);
@@ -280,7 +279,7 @@ public class MindmapsGraphLowLevelTest {
     @Test
     public void testGetResourceType(){
         assertNull(mindmapsGraph.getResourceType("Bob"));
-        ResourceType c2 = mindmapsGraph.putResourceType("Bob", Data.STRING);
+        ResourceType c2 = mindmapsGraph.putResourceType("Bob", ResourceType.DataType.STRING);
         assertEquals(c2, mindmapsGraph.getResourceType("Bob"));
     }
 
@@ -294,7 +293,7 @@ public class MindmapsGraphLowLevelTest {
     @Test
     public void testGetResource(){
         assertNull(mindmapsGraph.getResource("Bob"));
-        ResourceType type = mindmapsGraph.putResourceType("Type", Data.STRING);
+        ResourceType type = mindmapsGraph.putResourceType("Type", ResourceType.DataType.STRING);
         Resource c2 = mindmapsGraph.putResource("1", type);
         assertEquals(c2, mindmapsGraph.getResourcesByValue("1").iterator().next());
         assertEquals(1, mindmapsGraph.getResourcesByValue("1").size());
@@ -310,32 +309,32 @@ public class MindmapsGraphLowLevelTest {
 
     @Test
     public void getSuperConceptType(){
-        assertEquals(mindmapsGraph.getMetaType().getId(), DataType.ConceptMeta.TYPE.getId());
+        assertEquals(mindmapsGraph.getMetaType().getId(), Schema.MetaType.TYPE.getId());
     }
 
     @Test
     public void getSuperRelationType(){
-        assertEquals(mindmapsGraph.getMetaRelationType().getId(), DataType.ConceptMeta.RELATION_TYPE.getId());
+        assertEquals(mindmapsGraph.getMetaRelationType().getId(), Schema.MetaType.RELATION_TYPE.getId());
     }
 
     @Test
     public void getSuperRoleType(){
-        assertEquals(mindmapsGraph.getMetaRoleType().getId(), DataType.ConceptMeta.ROLE_TYPE.getId());
+        assertEquals(mindmapsGraph.getMetaRoleType().getId(), Schema.MetaType.ROLE_TYPE.getId());
     }
 
     @Test
     public void getSuperResourceType(){
-        assertEquals(mindmapsGraph.getMetaResourceType().getId(), DataType.ConceptMeta.RESOURCE_TYPE.getId());
+        assertEquals(mindmapsGraph.getMetaResourceType().getId(), Schema.MetaType.RESOURCE_TYPE.getId());
     }
 
     @Test
     public void testGetMetaRuleInference() {
-        assertEquals(mindmapsGraph.getMetaRuleInference().getId(), DataType.ConceptMeta.INFERENCE_RULE.getId());
+        assertEquals(mindmapsGraph.getMetaRuleInference().getId(), Schema.MetaType.INFERENCE_RULE.getId());
     }
 
     @Test
     public void testGetMetaRuleConstraint() {
-        assertEquals(mindmapsGraph.getMetaRuleConstraint().getId(), DataType.ConceptMeta.CONSTRAINT_RULE.getId());
+        assertEquals(mindmapsGraph.getMetaRuleConstraint().getId(), Schema.MetaType.CONSTRAINT_RULE.getId());
     }
 
     @Test
@@ -358,15 +357,15 @@ public class MindmapsGraphLowLevelTest {
     @Test
     public void checkTypeCreation(){
         Type testType = mindmapsGraph.putEntityType("Test Concept Type");
-        ResourceType testResourceType = mindmapsGraph.putResourceType("Test Resource Type", Data.STRING);
+        ResourceType testResourceType = mindmapsGraph.putResourceType("Test Resource Type", ResourceType.DataType.STRING);
         RoleType testRoleType = mindmapsGraph.putRoleType("Test Role Type");
         RelationType testRelationType = mindmapsGraph.putRelationType("Test Relation Type");
 
-        assertEquals(DataType.ConceptMeta.TYPE.getId(), testType.type().type().getId());
-        assertEquals(DataType.ConceptMeta.ENTITY_TYPE.getId(), testType.type().getId());
-        assertEquals(DataType.ConceptMeta.RESOURCE_TYPE.getId(), testResourceType.type().getId());
-        assertEquals(DataType.ConceptMeta.ROLE_TYPE.getId(), testRoleType.type().getId());
-        assertEquals(DataType.ConceptMeta.RELATION_TYPE.getId(), testRelationType.type().getId());
+        assertEquals(Schema.MetaType.TYPE.getId(), testType.type().type().getId());
+        assertEquals(Schema.MetaType.ENTITY_TYPE.getId(), testType.type().getId());
+        assertEquals(Schema.MetaType.RESOURCE_TYPE.getId(), testResourceType.type().getId());
+        assertEquals(Schema.MetaType.ROLE_TYPE.getId(), testRoleType.type().getId());
+        assertEquals(Schema.MetaType.RELATION_TYPE.getId(), testRelationType.type().getId());
 
     }
 
@@ -380,7 +379,7 @@ public class MindmapsGraphLowLevelTest {
     public void testInstance(){
         EntityType a = mindmapsGraph.putEntityType("a");
         RelationType b = mindmapsGraph.putRelationType("b");
-        ResourceType<String> c = mindmapsGraph.putResourceType("c", Data.STRING);
+        ResourceType<String> c = mindmapsGraph.putResourceType("c", ResourceType.DataType.STRING);
 
         Entity instanceA = mindmapsGraph.putEntity("instanceA", a);
         Relation instanceB = mindmapsGraph.putRelation(UUID.randomUUID().toString(), b);

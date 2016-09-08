@@ -16,15 +16,18 @@
  *  along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.core.implementation.exception;
+package io.mindmaps.exception;
 
-import io.mindmaps.core.implementation.exception.ConceptException;
+import io.mindmaps.util.Schema;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.core.concept.Concept;
 
 /**
- * Thrown when two concepts are returned when using a unique id to retrieve them.
+ * Thrown when more than one edge appears between two oncepts when it should not be the case.
+ * For example if 2 isa edges appear between the same concepts.
  */
-public class MoreThanOneConceptException extends ConceptException {
-    public MoreThanOneConceptException(String message) {
-        super(message);
+public class MoreThanOneEdgeException extends GraphRuntimeException {
+    public MoreThanOneEdgeException(Concept concept, Schema.EdgeLabel edgeType) {
+        super(ErrorMessage.MORE_THAN_ONE_EDGE.getMessage(concept, edgeType.name()));
     }
 }

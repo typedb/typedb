@@ -18,10 +18,10 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.constants.DataType;
-import io.mindmaps.core.model.Relation;
-import io.mindmaps.core.model.RelationType;
-import io.mindmaps.core.model.RoleType;
+import io.mindmaps.util.Schema;
+import io.mindmaps.core.concept.Relation;
+import io.mindmaps.core.concept.RelationType;
+import io.mindmaps.core.concept.RoleType;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
@@ -29,7 +29,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * A Relation Type is an ontological element used to model how entity types relate to one another.
+ * A Relation Type is an ontological element used to concept how entity types relate to one another.
  */
 class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
     RelationTypeImpl(Vertex v, AbstractMindmapsGraph mindmapsGraph) {
@@ -43,7 +43,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     @Override
     public Collection<RoleType> hasRoles() {
         Set<RoleType> roleTypes = new HashSet<>();
-        getOutgoingNeighbours(DataType.EdgeLabel.HAS_ROLE).forEach(role -> roleTypes.add(getMindmapsGraph().getElementFactory().buildRoleType(role)));
+        getOutgoingNeighbours(Schema.EdgeLabel.HAS_ROLE).forEach(role -> roleTypes.add(getMindmapsGraph().getElementFactory().buildRoleType(role)));
         return roleTypes;
     }
 
@@ -54,7 +54,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
      */
     @Override
     public RelationType hasRole(RoleType roleType) {
-        putEdge(getMindmapsGraph().getElementFactory().buildRoleType(roleType), DataType.EdgeLabel.HAS_ROLE);
+        putEdge(getMindmapsGraph().getElementFactory().buildRoleType(roleType), Schema.EdgeLabel.HAS_ROLE);
         return this;
     }
 
@@ -65,7 +65,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
      */
     @Override
     public RelationType deleteHasRole(RoleType roleType) {
-        deleteEdgeTo(DataType.EdgeLabel.HAS_ROLE, getMindmapsGraph().getElementFactory().buildRoleType(roleType));
+        deleteEdgeTo(Schema.EdgeLabel.HAS_ROLE, getMindmapsGraph().getElementFactory().buildRoleType(roleType));
         //Add castings of roleType to make sure relations are still valid
         ((RoleTypeImpl) roleType).castings().forEach(casting -> mindmapsGraph.getConceptLog().putConcept(casting));
         return this;

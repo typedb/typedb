@@ -20,7 +20,7 @@ package io.mindmaps.graql.internal.gremlin;
 
 import com.google.common.collect.ImmutableSet;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.constants.ErrorMessage;
+import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.query.Conjunction;

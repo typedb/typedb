@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.internal.gremlin;
 
-import io.mindmaps.constants.DataType;
+import io.mindmaps.util.Schema;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 
 /**
@@ -78,7 +78,7 @@ enum FragmentPriority {
      * @param out whether we are going outbound on this edge
      * @return the priority of travelling along the given edge in the given direction in a gremlin traversal
      */
-    public static FragmentPriority getEdgePriority(DataType.EdgeLabel edgeLabel, boolean out) {
+    public static FragmentPriority getEdgePriority(Schema.EdgeLabel edgeLabel, boolean out) {
         switch (edgeLabel) {
             case ISA:
                 return out ? EDGE_UNIQUE : EDGE_UNBOUNDED;

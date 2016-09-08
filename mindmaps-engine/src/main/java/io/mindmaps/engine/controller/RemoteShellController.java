@@ -18,7 +18,7 @@
 
 package io.mindmaps.engine.controller;
 
-import io.mindmaps.constants.RESTUtil;
+import io.mindmaps.util.REST;
 import io.mindmaps.core.implementation.AbstractMindmapsGraph;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.QueryParser;
@@ -57,13 +57,13 @@ public class RemoteShellController {
 
     public RemoteShellController() {
 
-        webSocket(RESTUtil.WebPath.REMOTE_SHELL_URI, RemoteSession.class);
+        webSocket(REST.WebPath.REMOTE_SHELL_URI, RemoteSession.class);
         webSocketIdleTimeoutMillis(WEBSOCKET_TIMEOUT);
 
-        redirect.get(RESTUtil.WebPath.HOME_URI, RESTUtil.WebPath.MATCH_QUERY_URI);
+        redirect.get(REST.WebPath.HOME_URI, REST.WebPath.MATCH_QUERY_URI);
 
-        get(RESTUtil.WebPath.MATCH_QUERY_URI, this::matchQuery);
-        get(RESTUtil.WebPath.META_TYPE_INSTANCES_URI, this::buildMetaTypeInstancesObject);
+        get(REST.WebPath.MATCH_QUERY_URI, this::matchQuery);
+        get(REST.WebPath.META_TYPE_INSTANCES_URI, this::buildMetaTypeInstancesObject);
     }
     @GET
     @Path("/metaTypeInstances")
@@ -77,17 +77,17 @@ public class RemoteShellController {
     })
     private String buildMetaTypeInstancesObject(Request req, Response res){
 
-        String currentGraphName = req.queryParams(RESTUtil.Request.GRAPH_NAME_PARAM);
+        String currentGraphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
         if (currentGraphName == null) currentGraphName = defaultGraphName;
 
         try {
             AbstractMindmapsGraph graph = (AbstractMindmapsGraph) GraphFactory.getInstance().getGraph(currentGraphName);
 
             JSONObject responseObj = new JSONObject();
-            responseObj.put(RESTUtil.Response.ROLES_JSON_FIELD, new JSONArray(graph.getMetaRoleType().instances().stream().map(x -> x.getId()).toArray()));
-            responseObj.put(RESTUtil.Response.ENTITIES_JSON_FIELD, new JSONArray(graph.getMetaEntityType().instances().stream().map(x -> x.getId()).toArray()));
-            responseObj.put(RESTUtil.Response.RELATIONS_JSON_FIELD, new JSONArray(graph.getMetaRelationType().instances().stream().map(x -> x.getId()).toArray()));
-            responseObj.put(RESTUtil.Response.RESOURCES_JSON_FIELD, new JSONArray(graph.getMetaResourceType().instances().stream().map(x -> x.getId()).toArray()));
+            responseObj.put(REST.Response.ROLES_JSON_FIELD, new JSONArray(graph.getMetaRoleType().instances().stream().map(x -> x.getId()).toArray()));
+            responseObj.put(REST.Response.ENTITIES_JSON_FIELD, new JSONArray(graph.getMetaEntityType().instances().stream().map(x -> x.getId()).toArray()));
+            responseObj.put(REST.Response.RELATIONS_JSON_FIELD, new JSONArray(graph.getMetaRelationType().instances().stream().map(x -> x.getId()).toArray()));
+            responseObj.put(REST.Response.RESOURCES_JSON_FIELD, new JSONArray(graph.getMetaResourceType().instances().stream().map(x -> x.getId()).toArray()));
 
             return responseObj.toString();
         }catch(Exception e){
@@ -107,16 +107,16 @@ public class RemoteShellController {
     })
     private String matchQuery(Request req, Response res) {
 
-        String currentGraphName = req.queryParams(RESTUtil.Request.GRAPH_NAME_PARAM);
+        String currentGraphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
         if(currentGraphName==null) currentGraphName = defaultGraphName;
 
-        LOG.info("Received match query: \"" + req.queryParams(RESTUtil.Request.QUERY_FIELD) + "\"");
+        LOG.info("Received match query: \"" + req.queryParams(REST.Request.QUERY_FIELD) + "\"");
 
 
         try {
             QueryParser parser = QueryParser.create(GraphFactory.getInstance().getGraph(currentGraphName));
 
-            return parser.parseMatchQuery(req.queryParams(RESTUtil.Request.QUERY_FIELD))
+            return parser.parseMatchQuery(req.queryParams(REST.Request.QUERY_FIELD))
                     .resultsString()
                     .map(x -> x.replaceAll("\u001B\\[\\d+[m]", ""))
                     .collect(Collectors.joining("\n"));

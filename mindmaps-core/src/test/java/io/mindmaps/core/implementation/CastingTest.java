@@ -18,12 +18,12 @@
 
 package io.mindmaps.core.implementation;
 
-import io.mindmaps.constants.DataType;
-import io.mindmaps.core.implementation.exception.MoreThanOneEdgeException;
-import io.mindmaps.core.implementation.exception.NoEdgeException;
-import io.mindmaps.core.model.Concept;
-import io.mindmaps.core.model.EntityType;
-import io.mindmaps.core.model.Relation;
+import io.mindmaps.util.Schema;
+import io.mindmaps.exception.MoreThanOneEdgeException;
+import io.mindmaps.exception.NoEdgeException;
+import io.mindmaps.core.concept.Concept;
+import io.mindmaps.core.concept.EntityType;
+import io.mindmaps.core.concept.Relation;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -71,8 +71,8 @@ public class CastingTest {
     @Test
     public void testEquals() throws Exception {
         Graph graph = mindmapsGraph.getTinkerPopGraph();
-        Vertex v = graph.traversal().V(relation.getBaseIdentifier()).out(DataType.EdgeLabel.CASTING.getLabel()).next();
-        CastingImpl castingCopy = (CastingImpl) mindmapsGraph.getConcept(v.value(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name()));
+        Vertex v = graph.traversal().V(relation.getBaseIdentifier()).out(Schema.EdgeLabel.CASTING.getLabel()).next();
+        CastingImpl castingCopy = (CastingImpl) mindmapsGraph.getConcept(v.value(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name()));
         assertEquals(casting, castingCopy);
 
         EntityType type = mindmapsGraph.putEntityType("Another entity type");
@@ -93,8 +93,8 @@ public class CastingTest {
         assertEquals(role, casting.getRole());
 
         String id = UUID.randomUUID().toString();
-        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(DataType.BaseType.CASTING.name());
-        vertex.property(DataType.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), id);
+        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
+        vertex.property(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), id);
 
         CastingImpl casting2 = (CastingImpl) mindmapsGraph.getConcept(id);
         boolean exceptionThrown = false;
@@ -112,8 +112,8 @@ public class CastingTest {
         Vertex c1_Vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(c1.getBaseIdentifier()).next();
         Vertex c2_Vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(c2.getBaseIdentifier()).next();
 
-        casting2_Vertex.addEdge(DataType.EdgeLabel.ISA.getLabel(), c1_Vertex);
-        casting2_Vertex.addEdge(DataType.EdgeLabel.ISA.getLabel(), c2_Vertex);
+        casting2_Vertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), c1_Vertex);
+        casting2_Vertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), c2_Vertex);
 
         exceptionThrown = false;
         try{
@@ -132,7 +132,7 @@ public class CastingTest {
     @Test (expected = RuntimeException.class)
     public void testGetRolePlayerFail() throws Exception {
         Concept anotherConcept = mindmapsGraph.putEntityType("ac'");
-        casting.addEdge((ConceptImpl) anotherConcept, DataType.EdgeLabel.ROLE_PLAYER);
+        casting.addEdge((ConceptImpl) anotherConcept, Schema.EdgeLabel.ROLE_PLAYER);
         casting.getRolePlayer();
     }
 
@@ -143,8 +143,8 @@ public class CastingTest {
         RelationTypeImpl resourceType = (RelationTypeImpl) mindmapsGraph.putRelationType("rt");
         RelationImpl relationValue = (RelationImpl) mindmapsGraph.putRelation(UUID.randomUUID().toString(), resourceType);
 
-        relation.addEdge(genericRelation, DataType.EdgeLabel.ISA);
-        relationValue.addEdge(resourceType, DataType.EdgeLabel.ISA);
+        relation.addEdge(genericRelation, Schema.EdgeLabel.ISA);
+        relationValue.addEdge(resourceType, Schema.EdgeLabel.ISA);
 
         CastingImpl casting2 = mindmapsGraph.putCasting(role2, rolePlayer, relationValue);
 

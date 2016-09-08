@@ -31,13 +31,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import static io.mindmaps.constants.RESTUtil.RemoteShell.ACTION;
-import static io.mindmaps.constants.RESTUtil.RemoteShell.ACTION_AUTOCOMPLETE;
-import static io.mindmaps.constants.RESTUtil.RemoteShell.ACTION_COMMIT;
-import static io.mindmaps.constants.RESTUtil.RemoteShell.ACTION_NAMESPACE;
-import static io.mindmaps.constants.RESTUtil.RemoteShell.ACTION_QUERY;
-import static io.mindmaps.constants.RESTUtil.RemoteShell.ACTION_QUERY_END;
-import static io.mindmaps.constants.RESTUtil.RemoteShell.NAMESPACE;
+import static io.mindmaps.util.REST.RemoteShell.ACTION;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_AUTOCOMPLETE;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_COMMIT;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_NAMESPACE;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY_END;
+import static io.mindmaps.util.REST.RemoteShell.NAMESPACE;
 
 /**
  * Web socket for running a Graql shell

@@ -29,7 +29,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static io.mindmaps.constants.DataType.ConceptMeta.ENTITY_TYPE;
+import static io.mindmaps.util.Schema.MetaType.ENTITY_TYPE;
 import static io.mindmaps.graql.Graql.var;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.core.StringContains.containsString;

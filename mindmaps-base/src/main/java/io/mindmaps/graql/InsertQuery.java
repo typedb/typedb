@@ -19,7 +19,7 @@
 package io.mindmaps.graql;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.model.Concept;
+import io.mindmaps.core.concept.Concept;
 import io.mindmaps.graql.admin.InsertQueryAdmin;
 
 /**
