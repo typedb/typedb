@@ -19,11 +19,11 @@ package io.mindmaps.migration.owl;
 
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.core.concept.Entity;
-import io.mindmaps.core.concept.EntityType;
-import io.mindmaps.core.concept.RelationType;
-import io.mindmaps.core.concept.ResourceType;
-import io.mindmaps.core.concept.RoleType;
+import io.mindmaps.concept.Entity;
+import io.mindmaps.concept.EntityType;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.ResourceType;
+import io.mindmaps.concept.RoleType;
 import org.semanticweb.owlapi.model.OWLAnnotationProperty;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassAssertionAxiom;

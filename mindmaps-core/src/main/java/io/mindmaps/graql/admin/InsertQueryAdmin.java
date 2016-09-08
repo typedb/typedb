@@ -20,7 +20,7 @@
 package io.mindmaps.graql.admin;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.concept.Type;
+import io.mindmaps.concept.Type;
 import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.MatchQuery;
 

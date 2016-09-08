@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.admin;
 
-import io.mindmaps.core.concept.ResourceType;
+import io.mindmaps.concept.ResourceType;
 import io.mindmaps.graql.Var;
 
 import java.util.Map;

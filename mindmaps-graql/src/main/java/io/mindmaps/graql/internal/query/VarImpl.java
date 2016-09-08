@@ -19,7 +19,7 @@
 package io.mindmaps.graql.internal.query;
 
 import com.google.common.collect.Maps;
-import io.mindmaps.core.concept.ResourceType;
+import io.mindmaps.concept.ResourceType;
 import io.mindmaps.graql.ValuePredicate;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.admin.*;

@@ -19,11 +19,11 @@
 package io.mindmaps.factory;
 
 import io.mindmaps.MindmapsComputer;
-import io.mindmaps.core.implementation.MindmapsComputerImpl;
+import io.mindmaps.graph.internal.MindmapsComputerImpl;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.REST;
-import io.mindmaps.core.implementation.EngineCommunicator;
+import io.mindmaps.graph.internal.EngineCommunicator;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import java.io.BufferedWriter;

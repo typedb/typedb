@@ -19,8 +19,8 @@
 package io.mindmaps.factory;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.implementation.AbstractMindmapsGraph;
-import io.mindmaps.core.implementation.MindmapsTinkerGraph;
+import io.mindmaps.graph.internal.AbstractMindmapsGraph;
+import io.mindmaps.graph.internal.MindmapsTinkerGraph;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.junit.Before;

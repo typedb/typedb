@@ -20,7 +20,7 @@ package io.mindmaps.exception;
 
 import io.mindmaps.util.Schema;
 import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.core.concept.Concept;
+import io.mindmaps.concept.Concept;
 
 /**
  * Thrown when more than one edge appears between two oncepts when it should not be the case.

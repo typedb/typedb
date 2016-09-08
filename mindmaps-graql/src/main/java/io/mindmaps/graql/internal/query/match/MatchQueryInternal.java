@@ -21,7 +21,7 @@ package io.mindmaps.graql.internal.query.match;
 
 import com.google.common.collect.ImmutableSet;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.concept.Concept;
+import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.*;
 import io.mindmaps.graql.admin.MatchQueryAdmin;
 import io.mindmaps.graql.admin.VarAdmin;

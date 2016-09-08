@@ -18,7 +18,7 @@
 
 package io.mindmaps.factory;
 
-import io.mindmaps.core.implementation.AbstractMindmapsGraph;
+import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import java.util.HashMap;

@@ -19,7 +19,7 @@
 
 package io.mindmaps.graql;
 
-import io.mindmaps.core.concept.ResourceType;
+import io.mindmaps.concept.ResourceType;
 import io.mindmaps.graql.admin.VarAdmin;
 
 /**

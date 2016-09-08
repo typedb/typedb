@@ -18,7 +18,7 @@
 
 package io.mindmaps.factory;
 
-import io.mindmaps.core.implementation.AbstractMindmapsGraph;
+import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import org.junit.Test;
 
 import java.lang.reflect.Constructor;

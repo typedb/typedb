@@ -20,7 +20,7 @@ package io.mindmaps.graql.internal.query;
 
 import com.google.common.collect.ImmutableCollection;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.concept.Concept;
+import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.Aggregate;
 import io.mindmaps.graql.AggregateQuery;
 import io.mindmaps.graql.ComputeQuery;

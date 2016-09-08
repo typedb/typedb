@@ -19,7 +19,7 @@
 package io.mindmaps.factory;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.implementation.MindmapsTinkerGraph;
+import io.mindmaps.graph.internal.MindmapsTinkerGraph;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
 import java.util.UUID;

@@ -20,18 +20,18 @@
 package io.mindmaps;
 
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.core.concept.Concept;
-import io.mindmaps.core.concept.Entity;
-import io.mindmaps.core.concept.EntityType;
-import io.mindmaps.core.concept.Instance;
-import io.mindmaps.core.concept.Relation;
-import io.mindmaps.core.concept.RelationType;
-import io.mindmaps.core.concept.Resource;
-import io.mindmaps.core.concept.ResourceType;
-import io.mindmaps.core.concept.RoleType;
-import io.mindmaps.core.concept.Rule;
-import io.mindmaps.core.concept.RuleType;
-import io.mindmaps.core.concept.Type;
+import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.Entity;
+import io.mindmaps.concept.EntityType;
+import io.mindmaps.concept.Instance;
+import io.mindmaps.concept.Relation;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.Resource;
+import io.mindmaps.concept.ResourceType;
+import io.mindmaps.concept.RoleType;
+import io.mindmaps.concept.Rule;
+import io.mindmaps.concept.RuleType;
+import io.mindmaps.concept.Type;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 
 import java.util.Collection;

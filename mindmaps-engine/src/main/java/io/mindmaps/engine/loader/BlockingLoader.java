@@ -19,7 +19,7 @@
 package io.mindmaps.engine.loader;
 
 import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.core.implementation.AbstractMindmapsGraph;
+import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.engine.postprocessing.Cache;
 import io.mindmaps.engine.util.ConfigProperties;

@@ -2,10 +2,10 @@ package io.mindmaps.graql.internal.analytics;
 
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.core.concept.EntityType;
-import io.mindmaps.core.concept.RelationType;
-import io.mindmaps.core.concept.ResourceType;
-import io.mindmaps.core.concept.RoleType;
+import io.mindmaps.concept.EntityType;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.ResourceType;
+import io.mindmaps.concept.RoleType;
 import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.factory.MindmapsClient;
 import org.junit.Before;

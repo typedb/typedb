@@ -19,7 +19,7 @@
 package io.mindmaps.exception;
 
 import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.core.concept.Concept;
+import io.mindmaps.concept.Concept;
 
 /**
  * This exception is thrown when attempting to incorrectly cast a concept to something it is not.

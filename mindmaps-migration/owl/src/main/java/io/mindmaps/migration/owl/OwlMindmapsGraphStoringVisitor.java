@@ -17,13 +17,13 @@
  */
 package io.mindmaps.migration.owl;
 
-import io.mindmaps.core.concept.Concept;
-import io.mindmaps.core.concept.Entity;
-import io.mindmaps.core.concept.EntityType;
-import io.mindmaps.core.concept.RelationType;
-import io.mindmaps.core.concept.Resource;
-import io.mindmaps.core.concept.ResourceType;
-import io.mindmaps.core.concept.RoleType;
+import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.Entity;
+import io.mindmaps.concept.EntityType;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.Resource;
+import io.mindmaps.concept.ResourceType;
+import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.ConceptException;
 import org.semanticweb.owlapi.model.OWLAnnotationAssertionAxiom;
 import org.semanticweb.owlapi.model.OWLAnnotationProperty;

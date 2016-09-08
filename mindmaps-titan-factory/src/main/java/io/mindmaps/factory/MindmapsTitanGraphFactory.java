@@ -23,7 +23,7 @@ import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.schema.TitanIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.core.implementation.MindmapsTitanGraph;
+import io.mindmaps.graph.internal.MindmapsTitanGraph;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.slf4j.Logger;

@@ -19,7 +19,7 @@
 package io.mindmaps.graql.query;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.core.concept.Concept;
+import io.mindmaps.concept.Concept;
 
 import java.util.Map;
 import java.util.Set;

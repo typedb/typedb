@@ -20,12 +20,12 @@ package io.mindmaps.example;
 
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.core.concept.Entity;
-import io.mindmaps.core.concept.Relation;
-import io.mindmaps.core.concept.RelationType;
-import io.mindmaps.core.concept.Resource;
-import io.mindmaps.core.concept.ResourceType;
-import io.mindmaps.core.concept.RoleType;
+import io.mindmaps.concept.Entity;
+import io.mindmaps.concept.Relation;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.Resource;
+import io.mindmaps.concept.ResourceType;
+import io.mindmaps.concept.RoleType;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import org.junit.Before;
 import org.junit.Rule;
