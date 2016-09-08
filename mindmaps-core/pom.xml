@@ -9,7 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>mindmaps-base</artifactId>
+    <artifactId>mindmaps-core</artifactId>
 
     <dependencies>
         <!-- Tinkerpop3 core -->
