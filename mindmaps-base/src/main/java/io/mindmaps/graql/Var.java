@@ -22,12 +22,10 @@ package io.mindmaps.graql;
 import io.mindmaps.core.concept.ResourceType;
 import io.mindmaps.graql.admin.VarAdmin;
 
-import java.util.Optional;
-
 /**
  * A wildcard variable to refers to a concept in a query.
  * <p>
- * A {@code Var} may be given a variable name, or left as an "anonymous" variable. {@link Graql} provides
+ * A {@code Var} may be given a variable name, or left as an "anonymous" variable. {@code Graql} provides
  * static methods for constructing {@code Var} objects.
  * <p>
  * The methods on {@code Var} are used to set its properties. A {@code Var} behaves differently depending on the type of
@@ -226,19 +224,4 @@ public interface Var extends Pattern {
      * @return an Admin class to allow inspection of this Var
      */
     VarAdmin admin();
-
-    /**
-     * A casting, a pair of role type and role player (where the role type may not be present)
-     */
-    interface Casting {
-        /**
-         * @return the role type, if specified
-         */
-        Optional<VarAdmin> getRoleType();
-
-        /**
-         * @return the role player
-         */
-        VarAdmin getRolePlayer();
-    }
 }

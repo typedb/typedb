@@ -19,15 +19,16 @@
 package io.mindmaps.engine.controller;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.REST;
-import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.engine.loader.BlockingLoader;
 import io.mindmaps.engine.loader.Loader;
+import io.mindmaps.engine.postprocessing.BackgroundTasks;
+import io.mindmaps.engine.util.ConfigProperties;
+import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.Var;
-import io.mindmaps.engine.loader.BlockingLoader;
-import io.mindmaps.engine.postprocessing.BackgroundTasks;
-import io.mindmaps.engine.util.ConfigProperties;
+import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiOperation;
@@ -180,7 +181,7 @@ public class ImportController {
         if (var.admin().isRelation()) {
             ready = true;
             //If one of the role players is defined using a variable name and the variable name is not in our cache we cannot insert the relation.
-            for (Var.Casting x : var.admin().getCastings()) {
+            for (VarAdmin.Casting x : var.admin().getCastings()) {
                 //If one of the role players is referring to a variable we check to have that var in the entities map cache.
                 if (x.getRolePlayer().admin().isUserDefinedName()) {
                     if (entitiesMap.containsKey(x.getRolePlayer().getName()))

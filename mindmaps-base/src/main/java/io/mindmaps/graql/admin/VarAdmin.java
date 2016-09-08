@@ -14,14 +14,12 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
 package io.mindmaps.graql.admin;
 
 import io.mindmaps.core.concept.ResourceType;
 import io.mindmaps.graql.Var;
-import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 
 import java.util.Map;
 import java.util.Optional;
@@ -31,7 +29,6 @@ import java.util.Set;
  * Admin class for inspecting a Var
  */
 public interface VarAdmin extends PatternAdmin, Var {
-
     @Override
     default boolean isVar() {
         return true;
@@ -188,7 +185,17 @@ public interface VarAdmin extends PatternAdmin, Var {
     Set<Casting> getCastings();
 
     /**
-     * @return the gremlin traversals that describe this variable
+     * A casting, a pair of role type and role player (where the role type may not be present)
      */
-    Set<MultiTraversal> getMultiTraversals();
+    interface Casting {
+        /**
+         * @return the role type, if specified
+         */
+        Optional<VarAdmin> getRoleType();
+
+        /**
+         * @return the role player
+         */
+        VarAdmin getRolePlayer();
+    }
 }

@@ -14,25 +14,33 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package io.mindmaps.graql.internal.query;
+package io.mindmaps.graql.internal.query.predicate;
 
-import io.mindmaps.graql.admin.PatternAdmin;
-import io.mindmaps.graql.admin.VarAdmin;
+import com.google.common.collect.ImmutableSet;
+import io.mindmaps.graql.internal.util.StringConverter;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 
-import java.util.Set;
+class RegexPredicate extends AbstractValuePredicate {
 
-/**
- * A class representing a conjunction (and) of patterns. All inner patterns must match in a query
- */
-public interface Conjunction<T extends PatternAdmin> extends PatternAdmin {
+    private final String pattern;
+
     /**
-     * @return the patterns within this conjunction
+     * @param pattern the regex pattern that this predicate is testing against
      */
-    Set<T> getPatterns();
+    RegexPredicate(String pattern) {
+        super(ImmutableSet.of(pattern));
+        this.pattern = pattern;
+    }
 
     @Override
-    Disjunction<Conjunction<VarAdmin>> getDisjunctiveNormalForm();
+    public P<Object> getPredicate() {
+        return new P<>((value, p) -> java.util.regex.Pattern.matches((String) p, (String) value), pattern);
+    }
+
+    @Override
+    public String toString() {
+        return "/" + StringConverter.escapeString(pattern) + "/";
+    }
 }

@@ -14,25 +14,22 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package io.mindmaps.graql.internal.query;
+package io.mindmaps.graql.internal.gremlin;
 
-import io.mindmaps.graql.admin.PatternAdmin;
-import io.mindmaps.graql.admin.VarAdmin;
-
-import java.util.Set;
+import java.util.stream.Stream;
 
 /**
- * A class representing a disjunction (or) of patterns. Any inner pattern must match in a query
+ * a pattern to match in the graph. comprised of {@code Fragments}, each describing one way to represent the traversal,
+ * starting from different variables.
+ * <p>
+ * A {@code MultiTraversal} may contain only one {@code Fragment} (e.g. checking the 'id' property), while others may
+ * be comprised of two fragments (e.g. $x isa $y, which may start from $x or $y).
  */
-public interface Disjunction<T extends PatternAdmin> extends PatternAdmin {
+public interface MultiTraversal {
     /**
-     * @return the patterns within this disjunction
+     * @return a stream of fragments that this MultiTraversal contains
      */
-    Set<T> getPatterns();
-
-    @Override
-    Disjunction<Conjunction<VarAdmin>> getDisjunctiveNormalForm();
+    Stream<Fragment> getFragments();
 }

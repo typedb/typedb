@@ -19,6 +19,8 @@
 package io.mindmaps.graql.query;
 
 import com.google.common.collect.Sets;
+import io.mindmaps.graql.admin.Conjunction;
+import io.mindmaps.graql.admin.Disjunction;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.query.*;
@@ -32,12 +34,12 @@ import static org.junit.Assert.assertEquals;
 @SuppressWarnings("unchecked")
 public class PatternImplTest {
 
-    private final VarAdmin x = new VarImpl("x").admin();
-    private final VarAdmin y = new VarImpl("y").admin();
-    private final VarAdmin z = new VarImpl("z").admin();
-    private final VarAdmin a = new VarImpl("a").admin();
-    private final VarAdmin b = new VarImpl("b").admin();
-    private final VarAdmin c = new VarImpl("c").admin();
+    private final VarAdmin x = Patterns.var("x").admin();
+    private final VarAdmin y = Patterns.var("y").admin();
+    private final VarAdmin z = Patterns.var("z").admin();
+    private final VarAdmin a = Patterns.var("a").admin();
+    private final VarAdmin b = Patterns.var("b").admin();
+    private final VarAdmin c = Patterns.var("c").admin();
 
     @Test
     public void testVarDNF() {
@@ -87,7 +89,7 @@ public class PatternImplTest {
     @Test
     public void testDNFIdentity() {
         Set disjunction = set(conjunction(x, y, z), conjunction(a, b, c));
-        assertHasDNF(disjunction, new DisjunctionImpl<>(disjunction));
+        assertHasDNF(disjunction, Patterns.disjunction(disjunction));
     }
 
     @Test
@@ -103,11 +105,11 @@ public class PatternImplTest {
     }
 
     private <T extends PatternAdmin> Conjunction<T> conjunction(T... patterns) {
-        return new ConjunctionImpl<>(Sets.newHashSet(patterns));
+        return Patterns.conjunction(Sets.newHashSet(patterns));
     }
 
     private <T extends PatternAdmin> Disjunction<T> disjunction(T... patterns) {
-        return new DisjunctionImpl<>(Sets.newHashSet(patterns));
+        return Patterns.disjunction(Sets.newHashSet(patterns));
     }
 
     private <T extends PatternAdmin> Set<T> set(T... patterns) {

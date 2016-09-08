@@ -20,16 +20,11 @@
 package io.mindmaps.graql.admin;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.core.concept.Concept;
 import io.mindmaps.core.concept.Type;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.internal.query.Conjunction;
-import io.mindmaps.graql.internal.query.match.MatchOrder;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Stream;
 
 /**
  * Admin class for inspecting and manipulating a MatchQuery
@@ -40,14 +35,6 @@ public interface MatchQueryAdmin extends MatchQuery {
     default MatchQueryAdmin admin() {
         return this;
     }
-
-    /**
-     * Execute the query using the given graph.
-     * @param graph the graph to use to execute the query
-     * @param order how to order the resulting stream
-     * @return a stream of results
-     */
-    Stream<Map<String, Concept>> stream(Optional<MindmapsGraph> graph, Optional<MatchOrder> order);
 
     /**
      * @param graph the graph to use to get types from

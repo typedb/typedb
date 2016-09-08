@@ -29,11 +29,11 @@ import static java.util.Comparator.naturalOrder;
 /**
  * Aggregate that finds maximum of a match query.
  */
-public class MaxAggregate extends AbstractAggregate<Map<String, Concept>, Optional<?>> {
+class MaxAggregate extends AbstractAggregate<Map<String, Concept>, Optional<?>> {
 
     private final String varName;
 
-    public MaxAggregate(String varName) {
+    MaxAggregate(String varName) {
         this.varName = varName;
     }
 

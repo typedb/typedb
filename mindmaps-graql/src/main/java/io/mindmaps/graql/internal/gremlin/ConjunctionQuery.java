@@ -19,9 +19,10 @@
 package io.mindmaps.graql.internal.gremlin;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.query.Conjunction;
+import io.mindmaps.graql.internal.query.VarInternal;
+import io.mindmaps.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -212,7 +213,7 @@ class ConjunctionQuery {
      * @return a stream of MultiTraversals in this query
      */
     private Stream<MultiTraversal> getMultiTraversals() {
-        return vars.stream().flatMap(var -> var.getMultiTraversals().stream());
+        return vars.stream().flatMap(var -> ((VarInternal) var).getMultiTraversals().stream());
     }
 
     /**

@@ -18,6 +18,7 @@
 
 package io.mindmaps.graql.internal.query.aggregate;
 
+import io.mindmaps.graql.Aggregate;
 import io.mindmaps.core.concept.Concept;
 
 import java.util.List;
@@ -30,16 +31,16 @@ import static java.util.stream.Collectors.toList;
 /**
  * Aggregate that finds average (mean) of a match query.
  */
-public class AverageAggregate extends AbstractAggregate<Map<String, Concept>, Optional<Double>> {
+class AverageAggregate extends AbstractAggregate<Map<String, Concept>, Optional<Double>> {
 
     private final String varName;
     private final CountAggregate countAggregate;
-    private final SumAggregate sumAggregate;
+    private final Aggregate<Map<String, Concept>, Number> sumAggregate;
 
-    public AverageAggregate(String varName) {
+    AverageAggregate(String varName) {
         this.varName = varName;
         countAggregate = new CountAggregate();
-        sumAggregate = new SumAggregate(varName);
+        sumAggregate = Aggregates.sum(varName);
     }
 
     @Override

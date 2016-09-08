@@ -29,11 +29,11 @@ import static java.util.Comparator.naturalOrder;
 /**
  * Aggregate that finds minimum of a match query.
  */
-public class MinAggregate extends AbstractAggregate<Map<String, Concept>, Optional<?>> {
+class MinAggregate extends AbstractAggregate<Map<String, Concept>, Optional<?>> {
 
     private final String varName;
 
-    public MinAggregate(String varName) {
+    MinAggregate(String varName) {
         this.varName = varName;
     }
 

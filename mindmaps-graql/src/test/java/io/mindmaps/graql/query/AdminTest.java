@@ -28,7 +28,7 @@ import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.admin.PatternAdmin;
-import io.mindmaps.graql.internal.query.Conjunction;
+import io.mindmaps.graql.admin.Conjunction;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;

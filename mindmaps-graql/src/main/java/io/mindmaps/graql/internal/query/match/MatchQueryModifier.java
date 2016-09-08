@@ -21,9 +21,8 @@ package io.mindmaps.graql.internal.query.match;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.core.concept.Concept;
 import io.mindmaps.core.concept.Type;
-import io.mindmaps.graql.admin.MatchQueryAdmin;
+import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.PatternAdmin;
-import io.mindmaps.graql.internal.query.Conjunction;
 
 import java.util.Map;
 import java.util.Optional;
@@ -37,11 +36,11 @@ import java.util.stream.Stream;
  *
  * Query modifiers should extend this class and implement a stream() method that modifies the inner query.
  */
-abstract class MatchQueryModifier extends AbstractMatchQuery {
+abstract class MatchQueryModifier implements MatchQueryInternal {
 
-    final MatchQueryAdmin inner;
+    final MatchQueryInternal inner;
 
-    MatchQueryModifier(MatchQueryAdmin inner) {
+    MatchQueryModifier(MatchQueryInternal inner) {
         this.inner = inner;
     }
 

@@ -14,10 +14,9 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package io.mindmaps.graql.internal.query.aggregate;
+package io.mindmaps.graql.internal.query;
 
 import io.mindmaps.core.concept.Concept;
 import io.mindmaps.graql.Aggregate;
@@ -28,15 +27,14 @@ import java.util.Map;
 
 /**
  * Implementation of AggregateQuery
- * @param <S> the type of the input match query results
  * @param <T> the type of the aggregate result
  */
-public class AggregateQueryImpl<T> implements AggregateQuery<T> {
+class AggregateQueryImpl<T> implements AggregateQuery<T> {
 
     private final MatchQueryAdmin matchQuery;
     private final Aggregate<? super Map<String, Concept>, T> aggregate;
 
-    public AggregateQueryImpl(MatchQueryAdmin matchQuery, Aggregate<? super Map<String, Concept>, T> aggregate) {
+    AggregateQueryImpl(MatchQueryAdmin matchQuery, Aggregate<? super Map<String, Concept>, T> aggregate) {
         this.matchQuery = matchQuery;
         this.aggregate = aggregate;
     }

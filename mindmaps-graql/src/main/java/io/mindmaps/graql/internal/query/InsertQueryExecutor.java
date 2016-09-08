@@ -20,12 +20,11 @@ package io.mindmaps.graql.internal.query;
 
 import com.google.common.collect.ImmutableMap;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.Schema;
-import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.core.concept.*;
-import io.mindmaps.graql.Var;
-import io.mindmaps.graql.internal.GraqlType;
 import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.util.GraqlType;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.util.Schema;
 
 import java.util.*;
 import java.util.function.BiFunction;
@@ -197,11 +196,11 @@ class InsertQueryExecutor {
         while (changed) {
             // Merge variable referred to by name...
             boolean byNameChange = varsToMerge.addAll(varsByName.get(var.getName()));
-            var = new VarImpl(varsToMerge);
+            var = Patterns.mergeVars(varsToMerge);
 
             // Then merge variables referred to by id...
             boolean byIdChange = var.getId().map(id -> varsToMerge.addAll(varsById.get(id))).orElse(false);
-            var = new VarImpl(varsToMerge);
+            var = Patterns.mergeVars(varsToMerge);
 
             changed = byNameChange | byIdChange;
         }
@@ -306,7 +305,7 @@ class InsertQueryExecutor {
      * @param var the variable representing the relation
      * @param casting a casting between a role type and role player
      */
-    private void addCasting(VarAdmin var, Var.Casting casting) {
+    private void addCasting(VarAdmin var, VarAdmin.Casting casting) {
         Relation relation = getConcept(var).asRelation();
 
         VarAdmin roleVar = casting.getRoleType().orElseThrow(

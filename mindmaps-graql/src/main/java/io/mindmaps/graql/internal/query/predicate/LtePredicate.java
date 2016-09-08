@@ -14,26 +14,28 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package io.mindmaps.graql.internal.query.match;
+package io.mindmaps.graql.internal.query.predicate;
 
-import io.mindmaps.MindmapsGraph;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 
-import java.util.Map;
-
-/**
- * An interface for handling ordering match queries.
- */
-public interface MatchOrder {
-    String getVar();
+class LtePredicate extends ComparatorPredicate {
 
     /**
-     * Order the traversal
-     * @param traversal the traversal to order
+     * @param value the value that this predicate is testing against
      */
-    void orderTraversal(MindmapsGraph graph, GraphTraversal<Vertex, Map<String, Vertex>> traversal);
+    LtePredicate(Object value) {
+        super(value);
+    }
+
+    @Override
+    public P<Object> getPredicate() {
+        return P.lte(value);
+    }
+
+    @Override
+    protected String getSymbol() {
+        return "<=";
+    }
 }

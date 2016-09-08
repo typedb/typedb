@@ -19,6 +19,9 @@
 package io.mindmaps.graql.internal.parser;
 
 import com.google.common.collect.ImmutableMap;
+import io.mindmaps.graql.*;
+import io.mindmaps.graql.internal.query.Queries;
+import io.mindmaps.graql.internal.util.StringConverter;
 import io.mindmaps.core.concept.ResourceType;
 import io.mindmaps.graql.Aggregate;
 import io.mindmaps.graql.AskQuery;
@@ -32,8 +35,6 @@ import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.ValuePredicate;
 import io.mindmaps.graql.Var;
-import io.mindmaps.graql.internal.StringConverter;
-import io.mindmaps.graql.internal.query.ComputeQueryImpl;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -142,9 +143,9 @@ public class QueryVisitor extends GraqlBaseVisitor {
 
         if (ctx.subgraph() != null) {
             Set<String> typeIds = visitSubgraph(ctx.subgraph());
-            return new ComputeQueryImpl(computeMethod, typeIds);
+            return Queries.compute(computeMethod, typeIds);
         } else {
-            return new ComputeQueryImpl(computeMethod);
+            return Queries.compute(computeMethod);
         }
     }
 

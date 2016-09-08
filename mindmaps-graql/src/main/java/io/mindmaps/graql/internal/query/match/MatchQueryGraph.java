@@ -20,10 +20,9 @@
 package io.mindmaps.graql.internal.query.match;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.core.concept.Concept;
 import io.mindmaps.core.concept.Type;
-import io.mindmaps.graql.admin.MatchQueryAdmin;
+import io.mindmaps.util.ErrorMessage;
 
 import java.util.Map;
 import java.util.Optional;
@@ -37,7 +36,7 @@ class MatchQueryGraph extends MatchQueryModifier {
 
     private final MindmapsGraph graph;
 
-    MatchQueryGraph(MindmapsGraph graph, MatchQueryAdmin inner) {
+    MatchQueryGraph(MindmapsGraph graph, MatchQueryInternal inner) {
         super(inner);
         this.graph = graph;
     }

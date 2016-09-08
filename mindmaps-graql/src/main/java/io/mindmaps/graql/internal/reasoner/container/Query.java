@@ -20,6 +20,8 @@ package io.mindmaps.graql.internal.reasoner.container;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.graql.admin.Conjunction;
+import io.mindmaps.graql.admin.Disjunction;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.core.concept.RelationType;
 import io.mindmaps.core.concept.RoleType;
@@ -27,10 +29,7 @@ import io.mindmaps.core.concept.Type;
 import io.mindmaps.graql.*;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.query.Conjunction;
-import io.mindmaps.graql.internal.query.ConjunctionImpl;
-import io.mindmaps.graql.internal.query.Disjunction;
-import io.mindmaps.graql.internal.query.DisjunctionImpl;
+import io.mindmaps.graql.internal.query.*;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
 import io.mindmaps.graql.internal.reasoner.predicate.Relation;
@@ -100,7 +99,7 @@ public class  Query {
         if (atom.getParentQuery() == null)
             throw new IllegalArgumentException(ErrorMessage.PARENT_MISSING.getMessage(atom.toString()));
         this.graph = atom.getParentQuery().getGraph();
-        this.pattern = new ConjunctionImpl<>(Sets.newHashSet());
+        this.pattern = Patterns.conjunction(Sets.newHashSet());
         this.selectVars = Sets.newHashSet(atom.getMatchQuery(graph).admin().getSelectedNames());
 
         atomSet = new HashSet<>();
@@ -340,7 +339,7 @@ public class  Query {
 
         Set<Conjunction<VarAdmin>> conjs = new HashSet<>();
         conjunctions.forEach(conj -> conjs.add(conj.getConjunction()));
-        return qb.match(new DisjunctionImpl<>(conjs)).select(selectVars);
+        return qb.match(Patterns.disjunction(conjs)).select(selectVars);
     }
 
     private Conjunction<PatternAdmin> getPattern() {

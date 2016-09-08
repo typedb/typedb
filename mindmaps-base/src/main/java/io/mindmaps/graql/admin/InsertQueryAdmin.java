@@ -48,11 +48,6 @@ public interface InsertQueryAdmin extends InsertQuery {
     Collection<VarAdmin> getVars();
 
     /**
-     * @return a collection of Vars to insert, including any nested vars
-     */
-    Collection<VarAdmin> getAllVars();
-
-    /**
      * @return the graph set on this query, if it was provided one
      */
     Optional<MindmapsGraph> getGraph();

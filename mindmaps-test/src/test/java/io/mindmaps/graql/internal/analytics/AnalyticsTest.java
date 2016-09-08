@@ -20,9 +20,9 @@ package io.mindmaps.graql.internal.analytics;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.core.concept.*;
-import io.mindmaps.graql.internal.GraqlType;
 import org.apache.commons.collections.CollectionUtils;
 import org.javatuples.Pair;
 import org.junit.*;

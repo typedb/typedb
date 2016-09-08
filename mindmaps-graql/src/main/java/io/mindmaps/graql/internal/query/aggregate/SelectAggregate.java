@@ -35,11 +35,11 @@ import static java.util.stream.Collectors.toList;
  * @param <S> the type of the match query results
  * @param <T> the type of the aggregate results
  */
-public class SelectAggregate<S, T> extends AbstractAggregate<S, Map<String, T>> {
+class SelectAggregate<S, T> extends AbstractAggregate<S, Map<String, T>> {
 
     private final ImmutableSet<NamedAggregate<? super S, ? extends T>> aggregates;
 
-    public SelectAggregate(ImmutableSet<NamedAggregate<? super S, ? extends T>> aggregates) {
+    SelectAggregate(ImmutableSet<NamedAggregate<? super S, ? extends T>> aggregates) {
         this.aggregates = aggregates;
     }
 

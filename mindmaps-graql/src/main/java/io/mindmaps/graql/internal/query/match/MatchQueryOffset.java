@@ -19,7 +19,6 @@
 package io.mindmaps.graql.internal.query.match;
 
 import io.mindmaps.core.concept.Concept;
-import io.mindmaps.graql.admin.MatchQueryAdmin;
 
 import java.util.Map;
 import java.util.stream.Stream;
@@ -31,7 +30,7 @@ class MatchQueryOffset extends MatchQueryModifier {
 
     private final long offset;
 
-    MatchQueryOffset(MatchQueryAdmin inner, long offset) {
+    MatchQueryOffset(MatchQueryInternal inner, long offset) {
         super(inner);
         this.offset = offset;
     }

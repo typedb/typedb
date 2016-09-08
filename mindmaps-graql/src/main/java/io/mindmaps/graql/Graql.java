@@ -21,13 +21,14 @@ package io.mindmaps.graql;
 
 import com.google.common.collect.ImmutableSet;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.graql.internal.util.AdminConverter;
 import io.mindmaps.core.concept.Concept;
-import io.mindmaps.graql.admin.AdminConverter;
 import io.mindmaps.graql.admin.PatternAdmin;
-import io.mindmaps.graql.internal.StringConverter;
-import io.mindmaps.graql.internal.query.*;
-import io.mindmaps.graql.internal.query.aggregate.*;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
+import io.mindmaps.graql.admin.Conjunction;
+import io.mindmaps.graql.admin.Disjunction;
+import io.mindmaps.graql.internal.query.Patterns;
+import io.mindmaps.graql.internal.query.aggregate.Aggregates;
+import io.mindmaps.graql.internal.query.predicate.*;
 
 import java.util.*;
 
@@ -91,14 +92,14 @@ public class Graql {
      * @return a new query variable
      */
     public static Var var(String name) {
-        return new VarImpl(Objects.requireNonNull(name));
+        return Patterns.var(Objects.requireNonNull(name));
     }
 
     /**
      * @return a new, anonymous query variable
      */
     public static Var var() {
-        return new VarImpl();
+        return Patterns.var();
     }
 
     /**
@@ -122,7 +123,7 @@ public class Graql {
      * @return a pattern that will match only when all contained patterns match
      */
     public static Pattern and(Collection<? extends Pattern> patterns) {
-        Conjunction<PatternAdmin> conjunction = new ConjunctionImpl<>(AdminConverter.getPatternAdmins(patterns));
+        Conjunction<PatternAdmin> conjunction = Patterns.conjunction(AdminConverter.getPatternAdmins(patterns));
 
         return () -> conjunction;
     }
@@ -140,7 +141,7 @@ public class Graql {
      * @return a pattern that will match when any contained pattern matches
      */
     public static Pattern or(Collection<? extends Pattern> patterns) {
-        Disjunction<PatternAdmin> disjunction = new DisjunctionImpl<>(AdminConverter.getPatternAdmins(patterns));
+        Disjunction<PatternAdmin> disjunction = Patterns.disjunction(AdminConverter.getPatternAdmins(patterns));
 
         return () -> disjunction;
     }
@@ -152,14 +153,14 @@ public class Graql {
      * Create an aggregate that will count the results of a query.
      */
     public static Aggregate<Object, Long> count() {
-        return new CountAggregate();
+        return Aggregates.count();
     }
 
     /**
      * Create an aggregate that will sum the values of a variable.
      */
     public static Aggregate<Map<String, Concept>, Number> sum(String varName) {
-        return new SumAggregate(varName);
+        return Aggregates.sum(varName);
     }
 
     /**
@@ -167,7 +168,7 @@ public class Graql {
      * @param varName the variable to find the maximum of
      */
     public static Aggregate<Map<String, Concept>, Optional<?>> max(String varName) {
-        return new MaxAggregate(varName);
+        return Aggregates.max(varName);
     }
 
     /**
@@ -175,7 +176,7 @@ public class Graql {
      * @param varName the variable to find the maximum of
      */
     public static Aggregate<Map<String, Concept>, Optional<?>> min(String varName) {
-        return new MinAggregate(varName);
+        return Aggregates.min(varName);
     }
 
     /**
@@ -183,7 +184,7 @@ public class Graql {
      * @param varName the variable to find the mean of
      */
     public static Aggregate<Map<String, Concept>, Optional<Double>> average(String varName) {
-        return new AverageAggregate(varName);
+        return Aggregates.average(varName);
     }
 
     /**
@@ -191,7 +192,7 @@ public class Graql {
      * @param varName the variable to find the median of
      */
     public static Aggregate<Map<String, Concept>, Optional<Number>> median(String varName) {
-        return new MedianAggregate(varName);
+        return Aggregates.median(varName);
     }
 
     /**
@@ -199,7 +200,7 @@ public class Graql {
      * @param varName the variable name to group results by
      */
     public static Aggregate<Map<String, Concept>, Map<Concept, List<Map<String, Concept>>>> group(String varName) {
-        return group(varName, new ListAggregate<>());
+        return group(varName, Aggregates.list());
     }
 
     /**
@@ -210,7 +211,7 @@ public class Graql {
      */
     public static <T> Aggregate<Map<String, Concept>, Map<Concept, T>> group(
             String varName, Aggregate<? super Map<String, Concept>, T> aggregate) {
-        return new GroupAggregate<>(varName, aggregate);
+        return Aggregates.group(varName, aggregate);
     }
 
     /**
@@ -231,7 +232,7 @@ public class Graql {
      * @param <T> the type that each aggregate returns
      */
     public static <S, T> Aggregate<S, Map<String, T>> select(Set<NamedAggregate<? super S, ? extends T>> aggregates) {
-        return new SelectAggregate<>(ImmutableSet.copyOf(aggregates));
+        return Aggregates.select(ImmutableSet.copyOf(aggregates));
     }
 
 
@@ -243,7 +244,7 @@ public class Graql {
      */
     public static ValuePredicate eq(Object value) {
         Objects.requireNonNull(value);
-        return new ValuePredicateImpl(P.eq(value), StringConverter.valueToString(value), value, true);
+        return Predicates.eq(value);
     }
 
     /**
@@ -252,7 +253,7 @@ public class Graql {
      */
     public static ValuePredicate neq(Object value) {
         Objects.requireNonNull(value);
-        return new ValuePredicateImpl(P.neq(value), "!= " + StringConverter.valueToString(value), value, false);
+        return Predicates.neq(value);
     }
 
     /**
@@ -261,7 +262,7 @@ public class Graql {
      */
     public static ValuePredicate gt(Comparable value) {
         Objects.requireNonNull(value);
-        return new ValuePredicateImpl(P.gt(value), "> " + StringConverter.valueToString(value), value, false);
+        return Predicates.gt(value);
     }
 
     /**
@@ -270,7 +271,7 @@ public class Graql {
      */
     public static ValuePredicate gte(Comparable value) {
         Objects.requireNonNull(value);
-        return new ValuePredicateImpl(P.gte(value), ">= " + StringConverter.valueToString(value), value, false);
+        return Predicates.gte(value);
     }
 
     /**
@@ -279,7 +280,7 @@ public class Graql {
      */
     public static ValuePredicate lt(Comparable value) {
         Objects.requireNonNull(value);
-        return new ValuePredicateImpl(P.lt(value), "< " + StringConverter.valueToString(value), value, false);
+        return Predicates.lt(value);
     }
 
     /**
@@ -288,7 +289,7 @@ public class Graql {
      */
     public static ValuePredicate lte(Comparable value) {
         Objects.requireNonNull(value);
-        return new ValuePredicateImpl(P.lte(value), "<= " + StringConverter.valueToString(value), value, false);
+        return Predicates.lte(value);
     }
 
     /**
@@ -313,12 +314,7 @@ public class Graql {
      */
     public static ValuePredicate regex(String pattern) {
         Objects.requireNonNull(pattern);
-        return new ValuePredicateImpl(
-                new P<>((value, p) -> java.util.regex.Pattern.matches((String) p, (String) value), pattern),
-                "/" + pattern + "/",
-                pattern,
-                false
-        );
+        return Predicates.regex(pattern);
     }
 
     /**
@@ -327,11 +323,6 @@ public class Graql {
      */
     public static ValuePredicate contains(String substring) {
         Objects.requireNonNull(substring);
-        return new ValuePredicateImpl(
-                new P<>((value, s) -> ((String) value).contains((String) s), substring),
-                "contains " + StringConverter.valueToString(substring),
-                substring,
-                false
-        );
+        return Predicates.contains(substring);
     }
 }

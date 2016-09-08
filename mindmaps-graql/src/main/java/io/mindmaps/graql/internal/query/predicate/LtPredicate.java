@@ -14,23 +14,28 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package io.mindmaps.graql.internal.gremlin;
+package io.mindmaps.graql.internal.query.predicate;
 
-import java.util.stream.Stream;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 
-/**
- * a pattern to match in the graph. comprised of {@code Fragments}, each describing one way to represent the traversal,
- * starting from different variables.
- * <p>
- * A {@code MultiTraversal} may contain only one {@code Fragment} (e.g. checking the 'id' property), while others may
- * be comprised of two fragments (e.g. $x isa $y, which may start from $x or $y).
- */
-public interface MultiTraversal {
+class LtPredicate extends ComparatorPredicate {
+
     /**
-     * @return a stream of fragments that this MultiTraversal contains
+     * @param value the value that this predicate is testing against
      */
-    Stream<Fragment> getFragments();
+    LtPredicate(Object value) {
+        super(value);
+    }
+
+    @Override
+    public P<Object> getPredicate() {
+        return P.lt(value);
+    }
+
+    @Override
+    protected String getSymbol() {
+        return "<";
+    }
 }

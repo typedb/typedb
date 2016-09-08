@@ -42,7 +42,7 @@ import static java.util.stream.Collectors.toSet;
 /**
  * A query that will insert a collection of variables into a graph
  */
-public class InsertQueryImpl implements InsertQueryAdmin {
+class InsertQueryImpl implements InsertQueryAdmin {
 
     private final Optional<MatchQueryAdmin> matchQuery;
     private final Optional<MindmapsGraph> graph;
@@ -56,7 +56,7 @@ public class InsertQueryImpl implements InsertQueryAdmin {
      * @param matchQuery the match query to insert for each result
      * @param graph the graph to execute on
      */
-    private InsertQueryImpl(ImmutableCollection<VarAdmin> vars, Optional<MatchQueryAdmin> matchQuery, Optional<MindmapsGraph> graph) {
+    InsertQueryImpl(ImmutableCollection<VarAdmin> vars, Optional<MatchQueryAdmin> matchQuery, Optional<MindmapsGraph> graph) {
         // match query and graph should never both be present (should get graph from inner match query)
         assert(!matchQuery.isPresent() || !graph.isPresent());
 
@@ -68,31 +68,15 @@ public class InsertQueryImpl implements InsertQueryAdmin {
         // Get all variables, including ones nested in other variables
         this.vars = ImmutableSet.copyOf(vars.stream().flatMap(v -> v.getInnerVars().stream()).collect(toSet()));
 
-        getGraph().ifPresent(t -> new InsertQueryValidator(this).validate(t));
-    }
-
-    /**
-     * @param vars a collection of Vars to insert
-     * @param matchQuery the match query to insert for each result
-     */
-    public InsertQueryImpl(ImmutableCollection<VarAdmin> vars, MatchQueryAdmin matchQuery) {
-        this(vars, Optional.of(matchQuery), Optional.empty());
-    }
-
-    /**
-     * @param graph the graph to execute on
-     * @param vars a collection of Vars to insert
-     */
-    public InsertQueryImpl(ImmutableCollection<VarAdmin> vars, Optional<MindmapsGraph> graph) {
-        this(vars, Optional.empty(), graph);
+        getGraph().ifPresent(t -> new InsertQueryValidator(vars).validate(t));
     }
 
     @Override
     public InsertQuery withGraph(MindmapsGraph graph) {
         return matchQuery.map(
-                m -> new InsertQueryImpl(vars, m.withGraph(graph).admin())
+                m -> Queries.insert(vars, m.withGraph(graph).admin())
         ).orElseGet(
-                () -> new InsertQueryImpl(vars, Optional.of(graph))
+                () -> Queries.insert(vars, Optional.of(graph))
         );
     }
 
@@ -145,11 +129,6 @@ public class InsertQueryImpl implements InsertQueryAdmin {
     @Override
     public Collection<VarAdmin> getVars() {
         return originalVars;
-    }
-
-    @Override
-    public Collection<VarAdmin> getAllVars() {
-        return vars;
     }
 
     @Override

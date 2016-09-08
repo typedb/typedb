@@ -27,7 +27,7 @@ import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.core.concept.*;
 import io.mindmaps.factory.MindmapsClient;
-import io.mindmaps.graql.internal.GraqlType;
+import io.mindmaps.graql.internal.util.GraqlType;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 

@@ -22,9 +22,8 @@ import com.google.common.collect.Maps;
 import io.mindmaps.core.concept.ResourceType;
 import io.mindmaps.graql.ValuePredicate;
 import io.mindmaps.graql.Var;
-import io.mindmaps.graql.admin.ValuePredicateAdmin;
-import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.StringConverter;
+import io.mindmaps.graql.admin.*;
+import io.mindmaps.graql.internal.util.StringConverter;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 import io.mindmaps.graql.internal.gremlin.VarTraversals;
 
@@ -52,7 +51,7 @@ import static java.util.stream.Collectors.toSet;
 /**
  * Implementation of Var interface
  */
-public class VarImpl implements VarAdmin {
+class VarImpl implements VarInternal {
 
     private String name;
     private final boolean userDefinedName;
@@ -78,14 +77,14 @@ public class VarImpl implements VarAdmin {
 
     private final Map<VarAdmin, Set<ValuePredicateAdmin>> resources = new HashMap<>();
 
-    private final Set<Var.Casting> castings = new HashSet<>();
+    private final Set<VarAdmin.Casting> castings = new HashSet<>();
 
     private Optional<VarTraversals> varPattern = Optional.empty();
 
     /**
      * Create a variable with a random variable name
      */
-    public VarImpl() {
+    VarImpl() {
         this.name = UUID.randomUUID().toString();
         this.userDefinedName = false;
     }
@@ -93,7 +92,7 @@ public class VarImpl implements VarAdmin {
     /**
      * @param name the variable name of the variable
      */
-    public VarImpl(String name) {
+    VarImpl(String name) {
         this.name = name;
         this.userDefinedName = true;
     }
@@ -102,7 +101,7 @@ public class VarImpl implements VarAdmin {
      * Create a variable by combining a collection of other variables
      * @param vars a collection of variables to combine
      */
-    public VarImpl(Collection<VarAdmin> vars) {
+    VarImpl(Collection<VarAdmin> vars) {
         VarAdmin first = vars.iterator().next();
         this.name = first.getName();
         this.userDefinedName = first.isUserDefinedName();
@@ -313,7 +312,7 @@ public class VarImpl implements VarAdmin {
     }
 
     @Override
-    public VarAdmin admin() {
+    public VarInternal admin() {
         return this;
     }
 
@@ -385,7 +384,7 @@ public class VarImpl implements VarAdmin {
 
     @Override
     public Set<String> getRoleTypes() {
-        return getIdNames(castings.stream().map(Var.Casting::getRoleType).flatMap(this::optionalToStream));
+        return getIdNames(castings.stream().map(VarAdmin.Casting::getRoleType).flatMap(this::optionalToStream));
     }
 
     @Override
@@ -469,7 +468,7 @@ public class VarImpl implements VarAdmin {
         return resources;
     }
 
-    public Set<Var.Casting> getCastings() {
+    public Set<VarAdmin.Casting> getCastings() {
         return castings;
     }
 
@@ -620,14 +619,14 @@ public class VarImpl implements VarAdmin {
     @Override
     public Disjunction<Conjunction<VarAdmin>> getDisjunctiveNormalForm() {
         // a disjunction containing only one option
-        Conjunction<VarAdmin> conjunction = new ConjunctionImpl<>(Collections.singleton(this));
-        return new DisjunctionImpl<>(Collections.singleton(conjunction));
+        Conjunction<VarAdmin> conjunction = Patterns.conjunction(Collections.singleton(this));
+        return Patterns.disjunction(Collections.singleton(conjunction));
     }
 
     /**
      * A casting is the pairing of roletype and roleplayer in a relation, where the roletype may be unknown
      */
-    public class Casting implements Var.Casting {
+    public class Casting implements VarAdmin.Casting {
         private final Optional<VarAdmin> roleType;
         private final VarAdmin rolePlayer;
 
