@@ -48,7 +48,7 @@
         </fileSet>
         <fileSet>
             <outputDirectory>assets</outputDirectory>
-            <directory>${project.parent.basedir}/assets/</directory>
+            <directory>${project.parent.basedir}/mindmaps-dashboard/static</directory>
             <includes>
                 <include>**</include>
             </includes>
