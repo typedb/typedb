@@ -411,7 +411,14 @@ public class ScalingTestIT {
 
         // relate them
         MindmapsGraph graph = MindmapsClient.getGraph(TEST_KEYSPACE);
-        refreshBugOntology(graph);
+        resource = graph.getResourceType(resourceTypeId);
+        degreeOwner = graph.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
+        degreeValue = graph.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
+        hasDegree = graph.getRelationType(GraqlType.HAS_RESOURCE.getId(resourceTypeId));
+        thing = graph.getEntityType("thing");
+        entity1 = graph.getEntity("1");
+        entity2 = graph.getEntity("2");
+        entity3 = graph.getEntity("3");
 
         String id1 = UUID.randomUUID().toString();
         graph.putRelation(id1, related)
@@ -435,7 +442,7 @@ public class ScalingTestIT {
         Jobs.put(() -> putResource(TEST_KEYSPACE, id1, 2L));
         Jobs.put(() -> putResource(TEST_KEYSPACE, id2, 2L));
 
-        ExecutorService pool = Executors.newFixedThreadPool(2);
+        ExecutorService pool = Executors.newFixedThreadPool(5);
         Jobs.forEach(pool::submit);
 
 //        ThreadPoolExecutor pool = new ThreadPoolExecutor(1,1,1000, TimeUnit.MILLISECONDS, Jobs);
@@ -445,7 +452,14 @@ public class ScalingTestIT {
 
         // read in normal graph
         graph = MindmapsClient.getGraph(TEST_KEYSPACE);
-        refreshBugOntology(graph);
+        resource = graph.getResourceType(resourceTypeId);
+        degreeOwner = graph.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
+        degreeValue = graph.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
+        hasDegree = graph.getRelationType(GraqlType.HAS_RESOURCE.getId(resourceTypeId));
+        thing = graph.getEntityType("thing");
+        entity1 = graph.getEntity("1");
+        entity2 = graph.getEntity("2");
+        entity3 = graph.getEntity("3");
         System.out.println("resources method: ");
         thing.instances().forEach(thisThing->{
             System.out.println(thisThing);
@@ -496,20 +510,12 @@ public class ScalingTestIT {
         graph.commit();
     }
 
-    private void refreshBugOntology(MindmapsGraph graph) {
-        resource = graph.getResourceType(resourceTypeId);
-        degreeOwner = graph.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
-        degreeValue = graph.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
-        hasDegree = graph.getRelationType(GraqlType.HAS_RESOURCE.getId(resourceTypeId));
-        thing = graph.getEntityType("thing");
-        entity1 = graph.getEntity("1");
-        entity2 = graph.getEntity("2");
-        entity3 = graph.getEntity("3");
-    }
-
     private void putResource(String keyspace, String ownerId, Long value) {
         MindmapsGraph graph = MindmapsClient.getGraphBatchLoading(keyspace);
-        refreshBugOntology(graph);
+        ResourceType resource = graph.getResourceType(resourceTypeId);
+        RoleType degreeOwner = graph.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
+        RoleType degreeValue = graph.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
+        RelationType hasDegree = graph.getRelationType(GraqlType.HAS_RESOURCE.getId(resourceTypeId));
         graph.addRelation(hasDegree)
                 .putRolePlayer(degreeOwner,graph.getInstance(ownerId))
                 .putRolePlayer(degreeValue,graph.putResource(value,resource));
