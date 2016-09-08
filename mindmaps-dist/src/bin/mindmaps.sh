@@ -91,7 +91,7 @@ start)
         # engine has not already started
         echo -n "Starting engine"
         SCRIPTPATH=`cd "$(dirname "$0")" && pwd -P`
-        java -cp "`dirname $path`/../lib/*" -Dmindmaps.dir=$SCRIPTPATH io.mindmaps.MindmapsEngineServer > /dev/null &
+        java -cp "`dirname $path`/../lib/*" -Dmindmaps.dir=$SCRIPTPATH io.mindmaps.engine.MindmapsEngineServer > /dev/null &
         echo $!>$ENGINE_PS
         wait_for_engine
     fi
