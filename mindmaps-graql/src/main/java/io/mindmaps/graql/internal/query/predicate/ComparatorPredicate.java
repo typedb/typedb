@@ -18,6 +18,7 @@
 
 package io.mindmaps.graql.internal.query.predicate;
 
+import com.google.common.collect.ImmutableSet;
 import io.mindmaps.graql.internal.util.StringConverter;
 
 abstract class ComparatorPredicate extends AbstractValuePredicate {
@@ -28,7 +29,7 @@ abstract class ComparatorPredicate extends AbstractValuePredicate {
      * @param value the value that this predicate is testing against
      */
     public ComparatorPredicate(Object value) {
-        super(value);
+        super(ImmutableSet.of(value));
         this.value = value;
     }
 

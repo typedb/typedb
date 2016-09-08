@@ -26,7 +26,7 @@ import java.util.Collection;
 /**
  * Internal class for handling an InsertQuery
  */
-public interface InsertQueryInternal extends InsertQueryAdmin {
+interface InsertQueryInternal extends InsertQueryAdmin {
 
     /**
      * @return a collection of Vars to insert, including any nested vars

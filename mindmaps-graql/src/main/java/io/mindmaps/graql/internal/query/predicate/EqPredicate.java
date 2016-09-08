@@ -18,17 +18,22 @@
 
 package io.mindmaps.graql.internal.query.predicate;
 
+import com.google.common.collect.ImmutableSet;
+import io.mindmaps.graql.internal.util.StringConverter;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.Optional;
 
-class EqPredicate extends ComparatorPredicate {
+class EqPredicate extends AbstractValuePredicate {
+
+    private Object value;
 
     /**
      * @param value the value that this predicate is testing against
      */
     EqPredicate(Object value) {
-        super(value);
+        super(ImmutableSet.of(value));
+        this.value = value;
     }
 
     @Override
@@ -47,7 +52,7 @@ class EqPredicate extends ComparatorPredicate {
     }
 
     @Override
-    protected String getSymbol() {
-        return "=";
+    public String toString() {
+        return StringConverter.valueToString(value);
     }
 }

@@ -18,6 +18,7 @@
 
 package io.mindmaps.graql.internal.query.predicate;
 
+import com.google.common.collect.ImmutableSet;
 import io.mindmaps.graql.internal.util.StringConverter;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
@@ -29,7 +30,7 @@ class RegexPredicate extends AbstractValuePredicate {
      * @param pattern the regex pattern that this predicate is testing against
      */
     RegexPredicate(String pattern) {
-        super(pattern);
+        super(ImmutableSet.of(pattern));
         this.pattern = pattern;
     }
 
