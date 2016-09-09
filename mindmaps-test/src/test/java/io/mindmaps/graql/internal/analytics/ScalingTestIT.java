@@ -177,7 +177,6 @@ public class ScalingTestIT {
             for (int i=0;i<REPEAT;i++) {
                 writer.println("repeat number: "+i);
                 String CURRENT_KEYSPACE = keyspace + String.valueOf(graphSize) + String.valueOf(i);
-                MindmapsGraph graph = MindmapsClient.getGraphBatchLoading(CURRENT_KEYSPACE);
                 simpleOntology(CURRENT_KEYSPACE);
 
                 // construct graph
@@ -186,6 +185,7 @@ public class ScalingTestIT {
                 addNodes(CURRENT_KEYSPACE, 0, graphSize);
                 writer.println("stop generate graph " + System.currentTimeMillis()/1000L + "s");
 
+                graph = MindmapsClient.getGraph(keyspace);
                 writer.println("gremlin count is: " + graph.getTinkerTraversal().V().count().next());
 
                 Analytics computer = new Analytics(CURRENT_KEYSPACE);
@@ -206,11 +206,12 @@ public class ScalingTestIT {
                 addEdges(CURRENT_KEYSPACE, graphSize);
 
                 writer.println("stop mutate graph " + System.currentTimeMillis() / 1000L + "s");
-                computer = new Analytics(CURRENT_KEYSPACE);
 
+                graph = MindmapsClient.getGraph(CURRENT_KEYSPACE);
                 writer.println("gremlin count is: " + graph.getTinkerTraversal().V().count().next());
 
                 writer.println("mutate degree");
+                computer = new Analytics(CURRENT_KEYSPACE);
                 writer.flush();
                 startTime = System.currentTimeMillis();
                 computer.degreesAndPersist();
@@ -241,7 +242,6 @@ public class ScalingTestIT {
     @Test
     public void testLargeDegreeMutationResultsInReadableGraphIT() throws MindmapsValidationException, InterruptedException, ExecutionException {
 
-        MindmapsGraph graph = MindmapsClient.getGraphBatchLoading(keyspace);
         simpleOntology(keyspace);
 
         // construct graph
@@ -252,7 +252,7 @@ public class ScalingTestIT {
         computer.degreesAndPersist();
 
         // assert mutated degrees are as expected
-        graph.rollback();
+        graph = MindmapsClient.getGraph(keyspace);
         EntityType thing = graph.getEntityType("thing");
         Collection<Entity> things = thing.instances();
 
@@ -270,7 +270,7 @@ public class ScalingTestIT {
         computer.degreesAndPersist();
 
         // assert mutated degrees are as expected
-        graph.rollback();
+        graph = MindmapsClient.getGraph(keyspace);
         thing = graph.getEntityType("thing");
         things = thing.instances();
 
@@ -288,7 +288,6 @@ public class ScalingTestIT {
             assertEquals(2L, thisRelation.resources().iterator().next().getValue());
         });
 
-        graph.clear();
     }
 
     private void addNodes(String keyspace, int startRange, int endRange) throws MindmapsValidationException, InterruptedException {
@@ -329,7 +328,7 @@ public class ScalingTestIT {
     }
 
     private void simpleOntology(String keyspace) throws MindmapsValidationException {
-        MindmapsGraph graph = MindmapsClient.getGraphBatchLoading(keyspace);
+        MindmapsGraph graph = MindmapsClient.getGraph(keyspace);
         EntityType thing = graph.putEntityType("thing");
         RoleType relation1 = graph.putRoleType("relation1");
         RoleType relation2 = graph.putRoleType("relation2");
@@ -340,7 +339,7 @@ public class ScalingTestIT {
 
     private Set<String> makeSuperNodes(String keyspace) throws MindmapsValidationException {
         // make the supernodes
-        MindmapsGraph graph = MindmapsClient.getGraphBatchLoading(keyspace);
+        MindmapsGraph graph = MindmapsClient.getGraph(keyspace);
         EntityType thing = graph.getEntityType("thing");
         RoleType relation1 = graph.getRoleType("relation1");
         RoleType relation2 = graph.getRoleType("relation2");
