@@ -175,23 +175,10 @@
       </repository>
     </distributionManagement>
     <repositories>
-        <!-- Internal mirror of all public repositories -->
-        <repository>
-            <id>public</id>
-            <url>http://maven.internal.mindmaps.io:8082/nexus/content/groups/public</url>
-        </repository>
-
-        <!-- Internal snapshot repository -->
+        <!--Snapshot repository for 3rd party libraries -->
         <repository>
             <id>development-snapshots</id>
-            <url>http://maven.internal.mindmaps.io:8082/nexus/content/repositories/development-snapshots</url>
-        </repository>
-
-        <!-- Internal release repository -->
-        <repository>
-            <id>releases</id>
-            <name>Internal Releases</name>
-            <url>http://maven.internal.mindmaps.io:8082/nexus/content/repositories/releases/</url>
+            <url>https://maven.mindmaps.io/content/repositories/snapshots/</url>
         </repository>
     </repositories>
 
