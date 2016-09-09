@@ -18,13 +18,12 @@
 
 package io.mindmaps.engine.loader;
 
-import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.engine.controller.CommitLogController;
 import io.mindmaps.engine.controller.TransactionController;
 import io.mindmaps.engine.util.ConfigProperties;
+import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.QueryParser;
 import org.junit.After;
@@ -47,7 +46,7 @@ import static org.junit.Assert.assertNotNull;
 
 public class DistributedLoaderTest {
 
-    private final Logger LOG = (Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+    private final Logger LOG = (Logger) LoggerFactory.getLogger(DistributedLoaderTest.class);
 
     private MindmapsGraph graph;
 
@@ -57,9 +56,7 @@ public class DistributedLoaderTest {
 
     @Before
     public void setUp() throws Exception {
-        LOG.setLevel(Level.INFO);
         System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
-
         // set up engine
         new TransactionController();
         new CommitLogController();

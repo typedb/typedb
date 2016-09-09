@@ -70,7 +70,6 @@ public class RESTLoader {
     private AtomicInteger finishedJobs;
     private AtomicLong lastJobFinished;
     private AtomicInteger errorJobs;
-    private String loggingFilePath;
 
     public long getLastJobFinished() {
         return lastJobFinished.get();
@@ -90,7 +89,6 @@ public class RESTLoader {
         errorJobs = new AtomicInteger();
         finishedJobs = new AtomicInteger();
         lastJobFinished = new AtomicLong();
-        loggingFilePath = prop.getProperty(ConfigProperties.LOGGING_FILE_PATH);
         repeatCommits = prop.getPropertyAsInt(ConfigProperties.LOADER_REPEAT_COMMITS);
 
         int numberThreads = prop.getAvailableThreads();
@@ -151,16 +149,16 @@ public class RESTLoader {
 
                 } catch (MindmapsValidationException e) {
                     //If it's a validation exception there is no point in re-trying
-                    LOG.error(ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));
-                    logToFile(batch, ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));
+                    LOG.error("Input batch: {}",batch);
+                    LOG.error("Caused Exception: {}",ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));
                     loaderState.get(uuid).setState(State.ERROR);
                     loaderState.get(uuid).setException(ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));
                     errorJobs.incrementAndGet();
                     return;
                 } catch (IllegalArgumentException e) {
                     //If it's an illegal argument exception there is no point in re-trying
-                    LOG.error(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION.getMessage(e.getMessage()));
-                    logToFile(batch, ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION.getMessage(e.getMessage()));
+                    LOG.error("Input batch: {}",batch);
+                    LOG.error("Caused Exception: {}",ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION.getMessage(e.getMessage()));
                     loaderState.get(uuid).setState(State.ERROR);
                     loaderState.get(uuid).setException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION.getMessage(e.getMessage()));
                     errorJobs.incrementAndGet();
@@ -180,14 +178,12 @@ public class RESTLoader {
             loadingJobs.decrementAndGet();
         }
 
-        LOG.error(ErrorMessage.FAILED_TRANSACTION.getMessage(repeatCommits));
-        logToFile(batch, ErrorMessage.FAILED_TRANSACTION.getMessage(repeatCommits));
+        LOG.error("Input batch: {}",batch);
+        LOG.error("Caused Exception: {}",ErrorMessage.FAILED_TRANSACTION.getMessage(repeatCommits));
 
         loaderState.get(uuid).setState(State.ERROR);
         loaderState.get(uuid).setException(ErrorMessage.FAILED_TRANSACTION.getMessage(repeatCommits));
         errorJobs.incrementAndGet();
-
-        //TODO: log the errors to a log file in a proper way.
     }
 
     public String getStatus(UUID uuid) {
@@ -203,35 +199,6 @@ public class RESTLoader {
         } catch (InterruptedException e1) {
             e1.printStackTrace();
         }
-    }
-
-    private synchronized void logToFile(String input, String errorMessage) {
-        DateFormat dateFormat = new SimpleDateFormat(ConfigProperties.DATE_FORMAT);
-        Date date = new Date();
-        BufferedWriter bw = null;
-
-        try {
-            File file = new File(loggingFilePath);
-            file.createNewFile();
-            bw = new BufferedWriter(new FileWriter(file, true));
-            bw.write(dateFormat.format(date) + ":: " + "-- NEW EXCEPTION ---");
-            bw.newLine();
-            bw.write(dateFormat.format(date) + ":: " + "INPUT: " + input);
-            bw.newLine();
-            bw.write(dateFormat.format(date) + ":: " + "MESSAGE: " + errorMessage);
-            bw.newLine();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (bw != null)
-                try {
-                    bw.close();
-                } catch (IOException ioe2) {
-                    ioe2.printStackTrace();
-                }
-        }
-
     }
 
 }

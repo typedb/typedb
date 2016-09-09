@@ -18,20 +18,14 @@
 
 package io.mindmaps.engine.postprocessing;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.Schema;
-import io.mindmaps.graph.internal.AbstractMindmapsGraph;
-import io.mindmaps.concept.EntityType;
-import io.mindmaps.concept.Instance;
-import io.mindmaps.concept.Relation;
-import io.mindmaps.concept.RelationType;
-import io.mindmaps.concept.RoleType;
+import io.mindmaps.concept.*;
 import io.mindmaps.engine.controller.CommitLogController;
 import io.mindmaps.engine.controller.GraphFactoryController;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.MindmapsClient;
+import io.mindmaps.graph.internal.AbstractMindmapsGraph;
+import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -48,11 +42,7 @@ public class BackgroundTasksTest {
 
     @BeforeClass
     public static void startController() {
-        // Disable horrid cassandra logs
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.INFO);
-        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
-
+        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY, ConfigProperties.TEST_CONFIG_FILE);
     }
 
     @Before
@@ -67,8 +57,9 @@ public class BackgroundTasksTest {
         mindmapsGraph = MindmapsClient.getGraph("mindmapstesting");
 
     }
+
     @After
-    public void cleanup(){
+    public void cleanup() {
         mindmapsGraph.clear();
     }
 
@@ -112,6 +103,7 @@ public class BackgroundTasksTest {
         //Check it's all fixed
         assertEquals(4, ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
     }
+
     private void buildDuplicateCasting(String relationTypeId, String mainRoleTypeId, String mainInstanceId, String otherRoleTypeId, String otherInstanceId) throws Exception {
         //Get Needed Mindmaps Objects
         RelationType relationType = mindmapsGraph.getRelationType(relationTypeId);

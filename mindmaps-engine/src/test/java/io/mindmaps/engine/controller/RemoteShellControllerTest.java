@@ -18,8 +18,6 @@
 
 package io.mindmaps.engine.controller;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.response.Response;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.EntityType;
@@ -46,8 +44,6 @@ public class RemoteShellControllerTest {
 
         Spark.stop();
         new RemoteShellController();
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.INFO);
 
         graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
         MindmapsGraph graph = GraphFactory.getInstance().getGraph(graphName);

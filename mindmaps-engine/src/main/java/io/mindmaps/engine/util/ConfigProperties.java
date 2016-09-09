@@ -27,8 +27,9 @@ import java.util.Properties;
 
 public class ConfigProperties {
 
-    public static final String CONFIG_FILE = "../conf/main/mindmaps-engine.properties";
+    public static final String DEFAULT_CONFIG_FILE = "../conf/main/mindmaps-engine.properties";
     public static final String TEST_CONFIG_FILE = "../conf/test/mindmaps-engine-test.properties";
+    public static final String DEFAULT_LOG_CONFIG_FILE = "../conf/main/logback.xml";
 
     public static final String GRAPH_CONFIG_PROPERTY = "graphdatabase.config";
     public static final String GRAPH_BATCH_CONFIG_PROPERTY = "graphdatabase.batch-config";
@@ -50,17 +51,19 @@ public class ConfigProperties {
     public static final String POSTPROCESSING_DELAY = "backgroundTasks.post-processing-delay";
     public static final String TIME_LAPSE = "backgroundTasks.time-lapse";
 
-
-    public static final String LOGGING_FILE_PATH = "logging.file";
-    public static final String DATE_FORMAT = "yyyy/MM/dd HH:mm:ss";
     public static final String STATIC_FILES_PATH = "server.static-file-dir";
+    public static final String LOGGING_FILE_PATH = "logging.file";
 
     public static final String PROJECT_VERSION = "project.version";
 
     public static final String CURRENT_DIR_SYSTEM_PROPERTY = "mindmaps.dir";
     public static final String CONFIG_FILE_SYSTEM_PROPERTY = "mindmaps.conf";
+    public static final String LOG_FILE_OUTPUT_SYSTEM_PROPERTY = "mindmaps.log";
 
-    private final Logger LOG = LoggerFactory.getLogger(ConfigProperties.class);
+    public static final String LOG_FILE_CONFIG_SYSTEM_PROPERTY = "logback.configurationFile";
+
+
+    private Logger LOG;
 
     private final int MAX_NUMBER_OF_THREADS = 120;
     private Properties prop;
@@ -111,12 +114,17 @@ public class ConfigProperties {
     }
 
     private void setConfigFilePath() {
-        configFilePath = (System.getProperty(CONFIG_FILE_SYSTEM_PROPERTY) != null) ? System.getProperty(CONFIG_FILE_SYSTEM_PROPERTY) : ConfigProperties.CONFIG_FILE;
+        configFilePath = (System.getProperty(CONFIG_FILE_SYSTEM_PROPERTY) != null) ? System.getProperty(CONFIG_FILE_SYSTEM_PROPERTY) : ConfigProperties.DEFAULT_CONFIG_FILE;
         if (!Paths.get(configFilePath).isAbsolute())
             configFilePath = getProjectPath() + configFilePath;
 
-        LOG.info("Configuration file in use: [" + configFilePath + "]");
+    }
 
+    private void setLogConfigFile() {
+        if (System.getProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY) == null)
+            System.setProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY, getProjectPath() + DEFAULT_LOG_CONFIG_FILE);
+
+        System.setProperty(LOG_FILE_OUTPUT_SYSTEM_PROPERTY,getPath(LOGGING_FILE_PATH));
     }
 
     private ConfigProperties() {
@@ -126,6 +134,10 @@ public class ConfigProperties {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        setLogConfigFile();
+        LOG = LoggerFactory.getLogger(ConfigProperties.class);
+        LOG.info("Configuration file in use: [" + configFilePath + "]");
+
     }
 
     public Properties getProperties() {

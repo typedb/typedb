@@ -18,15 +18,13 @@
 
 package io.mindmaps.engine.controller;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.REST;
 import io.mindmaps.engine.Util;
 import io.mindmaps.engine.loader.TransactionState;
 import io.mindmaps.engine.postprocessing.BackgroundTasks;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
+import io.mindmaps.util.REST;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
@@ -49,9 +47,6 @@ public class TransactionControllerTest {
         new TransactionController();
         new CommitLogController();
         new GraphFactoryController();
-
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.INFO);
 
         graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
         MindmapsGraph graph = GraphFactory.getInstance().getGraphBatchLoading(graphName);

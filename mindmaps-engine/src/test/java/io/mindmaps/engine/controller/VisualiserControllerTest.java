@@ -18,15 +18,13 @@
 
 package io.mindmaps.engine.controller;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.response.Response;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.REST;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.engine.Util;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
+import io.mindmaps.util.REST;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
@@ -45,8 +43,7 @@ public class VisualiserControllerTest {
         System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
 
         new VisualiserController();
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.INFO);
+
         graphName="special-test-graph";
         MindmapsGraph graph = GraphFactory.getInstance().getGraph(graphName);
         EntityType man = graph.putEntityType("Man");
