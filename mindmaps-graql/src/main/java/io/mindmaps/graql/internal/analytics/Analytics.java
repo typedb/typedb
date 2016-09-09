@@ -98,7 +98,7 @@ public class Analytics {
                 .map(Concept::asType)
                 .collect(Collectors.toList()).forEach(type -> allTypes.add(type.getId()));
 
-        graph.close();
+        graph.rollback();
     }
 
     /**
@@ -184,7 +184,6 @@ public class Analytics {
 
         try {
             graph.commit();
-            graph.close();
         } catch (MindmapsValidationException e) {
             throw new RuntimeException(ErrorMessage.ONTOLOGY_MUTATION.getMessage(e.getMessage()),e);
         }

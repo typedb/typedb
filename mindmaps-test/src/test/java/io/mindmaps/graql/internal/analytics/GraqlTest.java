@@ -89,6 +89,11 @@ public class GraqlTest {
 
         assertEquals(graqlCount, computeCount);
         assertEquals(3L, computeCount);
+
+        computeCount = ((Long) ((ComputeQuery) qp.parseQuery("compute count")).execute());
+
+        assertEquals(graqlCount, computeCount);
+        assertEquals(3L, computeCount);
     }
 
     @Test
@@ -203,13 +208,43 @@ public class GraqlTest {
         ((ComputeQuery) qp.parseQuery("compute degreesAndPersist")).execute();
 
         // assert persisted degrees are correct
-        MindmapsGraph graph = MindmapsClient.getGraph(keyspace);
+//        MindmapsGraph graph = MindmapsClient.getGraph(keyspace);
         entity1 = graph.getEntity("1");
         entity2 = graph.getEntity("2");
         entity3 = graph.getEntity("3");
         entity4 = graph.getEntity("4");
 
         Map<Instance, Long> correctDegrees = new HashMap<>();
+        correctDegrees.put(entity1, 1l);
+        correctDegrees.put(entity2, 3l);
+        correctDegrees.put(entity3, 1l);
+        correctDegrees.put(entity4, 1l);
+        correctDegrees.put(graph.getRelation(id1), 2l);
+        correctDegrees.put(graph.getRelation(id2), 2l);
+        correctDegrees.put(graph.getRelation(id3), 2l);
+
+        correctDegrees.entrySet().forEach(degree -> {
+            Instance instance = degree.getKey();
+            Collection<Resource<?>> resources = null;
+            if (instance.isEntity()) {
+                resources = instance.asEntity().resources();
+            } else if (instance.isRelation()) {
+                resources = instance.asRelation().resources();
+            }
+            assertTrue(resources.iterator().next().getValue().equals(degree.getValue()));
+        });
+
+        // compute degrees again
+        ((ComputeQuery) qp.parseQuery("compute degreesAndPersist")).execute();
+
+        // assert persisted degrees are correct
+        graph = MindmapsClient.getGraph(keyspace);
+        entity1 = graph.getEntity("1");
+        entity2 = graph.getEntity("2");
+        entity3 = graph.getEntity("3");
+        entity4 = graph.getEntity("4");
+
+        correctDegrees = new HashMap<>();
         correctDegrees.put(entity1, 1l);
         correctDegrees.put(entity2, 3l);
         correctDegrees.put(entity3, 1l);
