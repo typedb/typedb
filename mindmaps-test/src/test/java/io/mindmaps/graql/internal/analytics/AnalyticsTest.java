@@ -29,6 +29,7 @@ import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
+import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.exception.MindmapsValidationException;
 import org.apache.commons.collections.CollectionUtils;
@@ -44,19 +45,8 @@ import static org.junit.Assert.*;
 
 public class AnalyticsTest {
 
-    String keyspace = "mindmapstest";
+    String keyspace;
     MindmapsGraph graph;
-
-    // concepts
-    EntityType thing;
-    EntityType anotherThing;
-    Entity entity1;
-    Entity entity2;
-    Entity entity3;
-    Entity entity4;
-    RoleType relation1;
-    RoleType relation2;
-    RelationType related;
 
     long startTime;
 
@@ -103,7 +93,7 @@ public class AnalyticsTest {
         analytics.degreesAndPersist();
 
         // check that dog has a degree to confirm ako has been inferred
-        graph.rollback();
+        graph = MindmapsClient.getGraph(keyspace);
         foofoo = graph.getEntity("foofoo");
         Collection<Resource<?>> degrees = foofoo.resources();
         assertTrue(degrees.iterator().next().getValue().equals(0L));
@@ -123,12 +113,14 @@ public class AnalyticsTest {
         // create 3 instances
         System.out.println();
         System.out.println("Creating 3 instances");
-        thing = graph.putEntityType("thing");
-        anotherThing = graph.putEntityType("another");
+        graph = MindmapsClient.getGraph(keyspace);
+        EntityType thing = graph.putEntityType("thing");
+        EntityType anotherThing = graph.putEntityType("another");
         graph.putEntity("1", thing);
         graph.putEntity("2", thing);
         graph.putEntity("3", anotherThing);
         graph.commit();
+        graph.close();
 
         // assert computer returns the correct count of instances
         System.out.println();
@@ -142,17 +134,29 @@ public class AnalyticsTest {
         System.out.println();
         System.out.println("Counting");
         startTime = System.currentTimeMillis();
+        graph = MindmapsClient.getGraph(keyspace);
         computer = new Analytics(keyspace,Collections.singleton(graph.getType("thing")));
         Assert.assertEquals(2, computer.count());
         System.out.println();
         System.out.println(System.currentTimeMillis() - startTime + " ms");
     }
 
-    //TODO: Fix this test. It appears to be failing randomly from my experience, due to duplicate resources of the same value being created
-    @Ignore
     @Test
     public void testDegrees() throws Exception {
-        instantiateSimpleConcepts();
+        // create instances
+        EntityType thing = graph.putEntityType("thing");
+        EntityType anotherThing = graph.putEntityType("another");
+
+        Entity entity1 = graph.putEntity("1", thing);
+        Entity entity2 = graph.putEntity("2", thing);
+        Entity entity3 = graph.putEntity("3", thing);
+        Entity entity4 = graph.putEntity("4", anotherThing);
+
+        RoleType relation1 = graph.putRoleType("relation1");
+        RoleType relation2 = graph.putRoleType("relation2");
+        thing.playsRole(relation1).playsRole(relation2);
+        anotherThing.playsRole(relation1).playsRole(relation2);
+        RelationType related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
 
         // relate them
         String id1 = UUID.randomUUID().toString();
@@ -173,7 +177,21 @@ public class AnalyticsTest {
         graph.commit();
 
         // assert degrees are correct
-        instantiateSimpleConcepts();
+        // create instances
+        thing = graph.putEntityType("thing");
+        anotherThing = graph.putEntityType("another");
+
+        entity1 = graph.putEntity("1", thing);
+        entity2 = graph.putEntity("2", thing);
+        entity3 = graph.putEntity("3", thing);
+        entity4 = graph.putEntity("4", anotherThing);
+
+        relation1 = graph.putRoleType("relation1");
+        relation2 = graph.putRoleType("relation2");
+        thing.playsRole(relation1).playsRole(relation2);
+        anotherThing.playsRole(relation1).playsRole(relation2);
+        related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
+
         Map<Instance, Long> correctDegrees = new HashMap<>();
         correctDegrees.put(entity1, 1l);
         correctDegrees.put(entity2, 3l);
@@ -206,9 +224,14 @@ public class AnalyticsTest {
         });
 
         // compute degrees on subgraph
+        graph = MindmapsClient.getGraph(keyspace);
+        thing = graph.getEntityType("thing");
+        related = graph.getRelationType("related");
         computer = new Analytics(keyspace,Sets.newHashSet(thing, related));
+        graph.close();
         degrees = computer.degrees();
 
+        graph = MindmapsClient.getGraph(keyspace);
         correctDegrees.put(graph.getRelation(id3), 1l);
 
         assertTrue(!degrees.isEmpty());
@@ -218,28 +241,38 @@ public class AnalyticsTest {
         });
     }
 
-    private void instantiateSimpleConcepts() {
-        // create instances
-        thing = graph.putEntityType("thing");
-        anotherThing = graph.putEntityType("another");
-
-        entity1 = graph.putEntity("1", thing);
-        entity2 = graph.putEntity("2", thing);
-        entity3 = graph.putEntity("3", thing);
-        entity4 = graph.putEntity("4", anotherThing);
-
-        relation1 = graph.putRoleType("relation1");
-        relation2 = graph.putRoleType("relation2");
-        thing.playsRole(relation1).playsRole(relation2);
-        anotherThing.playsRole(relation1).playsRole(relation2);
-        related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
+    private static void checkDegrees(MindmapsGraph graph, Map<Instance,Long> correctDegrees) {
+        correctDegrees.entrySet().forEach(degree -> {
+            Instance instance = degree.getKey();
+            // TODO: when shortcut edges are removed properly during concurrent deletion revert code
+            Collection<Resource<?>> resources = null;
+            if (instance.isEntity()) {
+                resources = instance.asEntity().resources();
+            } else if (instance.isRelation()) {
+                resources = instance.asRelation().resources();
+            }
+            assert resources != null;
+            assertEquals(1,resources.size());
+            assertTrue(resources.iterator().next().getValue().equals(degree.getValue()));
+        });
     }
 
-    //TODO: Fix this test. It appears to be failing randomly from my experience, due to duplicate resources of the same value being created
-    @Ignore
     @Test
     public void testDegreesAndPersist() throws Exception {
-        instantiateSimpleConcepts();
+        // create instances
+        EntityType thing = graph.putEntityType("thing");
+        EntityType anotherThing = graph.putEntityType("another");
+
+        Entity entity1 = graph.putEntity("1", thing);
+        Entity entity2 = graph.putEntity("2", thing);
+        Entity entity3 = graph.putEntity("3", thing);
+        Entity entity4 = graph.putEntity("4", anotherThing);
+
+        RoleType relation1 = graph.putRoleType("relation1");
+        RoleType relation2 = graph.putRoleType("relation2");
+        thing.playsRole(relation1).playsRole(relation2);
+        anotherThing.playsRole(relation1).playsRole(relation2);
+        RelationType related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
 
         // relate them
         String id1 = UUID.randomUUID().toString();
@@ -260,6 +293,18 @@ public class AnalyticsTest {
         graph.commit();
 
         Map<Instance, Long> correctDegrees = new HashMap<>();
+
+        // compute degrees on subgraph
+        Analytics computer = new Analytics(keyspace,Sets.newHashSet(thing, related));
+        computer.degreesAndPersist();
+
+        // fetch instances
+        graph = MindmapsClient.getGraph(keyspace);
+        entity1 = graph.getEntity("1");
+        entity2 = graph.getEntity("2");
+        entity3 = graph.getEntity("3");
+
+        correctDegrees.clear();
         correctDegrees.put(entity1, 1l);
         correctDegrees.put(entity2, 3l);
         correctDegrees.put(entity3, 1l);
@@ -267,43 +312,32 @@ public class AnalyticsTest {
         correctDegrees.put(graph.getRelation(id2), 2l);
         correctDegrees.put(graph.getRelation(id3), 1l);
 
-        // compute degrees on subgraph
-        Analytics computer = new Analytics(keyspace,Sets.newHashSet(thing, related));
-        computer.degreesAndPersist();
-
         // assert persisted degrees are correct
-        instantiateSimpleConcepts();
-        correctDegrees.entrySet().forEach(degree -> {
-            Instance instance = degree.getKey();
-            Collection<Resource<?>> resources = null;
-            if (instance.isEntity()) {
-                resources = instance.asEntity().resources();
-            } else if (instance.isRelation()) {
-                resources = instance.asRelation().resources();
-            }
-            assert resources != null;
-            assertTrue(resources.iterator().next().getValue().equals(degree.getValue()));
-        });
+        checkDegrees(graph,correctDegrees);
 
         long numVertices = 0;
 
         // compute again and again ...
         for (int i = 0; i < 2; i++) {
-            System.out.println();
-            System.out.println("i = " + i);
+            graph.close();
             computer.degreesAndPersist();
 
-            correctDegrees.entrySet().forEach(degree -> {
-                Instance instance = degree.getKey();
-                Collection<Resource<?>> resources = null;
-                if (instance.isEntity()) {
-                    resources = instance.asEntity().resources();
-                } else if (instance.isRelation()) {
-                    resources = instance.asRelation().resources();
-                }
-                assert resources != null;
-                assertTrue(resources.iterator().next().getValue().equals(degree.getValue()));
-            });
+            // refresh everything after commit
+            graph = MindmapsClient.getGraph(keyspace);
+            // fetch instances
+            entity1 = graph.getEntity("1");
+            entity2 = graph.getEntity("2");
+            entity3 = graph.getEntity("3");
+
+            correctDegrees.clear();
+            correctDegrees.put(entity1, 1l);
+            correctDegrees.put(entity2, 3l);
+            correctDegrees.put(entity3, 1l);
+            correctDegrees.put(graph.getRelation(id1), 2l);
+            correctDegrees.put(graph.getRelation(id2), 2l);
+            correctDegrees.put(graph.getRelation(id3), 1l);
+
+            checkDegrees(graph, correctDegrees);
 
             // assert the number of vertices remain the same
             if (i == 0) {
@@ -313,26 +347,33 @@ public class AnalyticsTest {
             }
         }
 
+
         // compute degrees on all types, again and again ...
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 2; i++) {
+
+            graph.close();
             computer = new Analytics(keyspace);
             computer.degreesAndPersist();
 
+            // after computation refresh concepts
+            graph = MindmapsClient.getGraph(keyspace);
+
+            // fetch instances
+            entity1 = graph.getEntity("1");
+            entity2 = graph.getEntity("2");
+            entity3 = graph.getEntity("3");
+            entity4 = graph.getEntity("4");
+
+            correctDegrees.clear();
+            correctDegrees.put(entity1, 1l);
+            correctDegrees.put(entity2, 3l);
+            correctDegrees.put(entity3, 1l);
+            correctDegrees.put(graph.getRelation(id1), 2l);
+            correctDegrees.put(graph.getRelation(id2), 2l);
             correctDegrees.put(entity4, 1l);
             correctDegrees.put(graph.getRelation(id3), 2l);
 
-            correctDegrees.entrySet().forEach(degree -> {
-                Instance instance = degree.getKey();
-                Collection<Resource<?>> resources = null;
-                if (instance.isEntity()) {
-                    resources = instance.asEntity().resources();
-                } else if (instance.isRelation()) {
-                    resources = instance.asRelation().resources();
-                }
-                assert resources != null;
-                assert !resources.isEmpty();
-                assertEquals(resources.iterator().next().getValue(), degree.getValue());
-            });
+            checkDegrees(graph,correctDegrees);
 
             // assert the number of vertices remain the same
             if (i == 0) {
@@ -468,6 +509,7 @@ public class AnalyticsTest {
         analytics.degreesAndPersist();
 
         // check degrees are correct
+        graph = MindmapsClient.getGraph(keyspace);
         referenceDegrees.entrySet().forEach(entry->{
             Instance instance = graph.getInstance(entry.getKey());
             if (instance.isEntity()) {
@@ -496,7 +538,7 @@ public class AnalyticsTest {
         analytics.degreesAndPersist();
 
         // check only expected resources exist
-        graph.rollback();
+        graph = MindmapsClient.getGraph(keyspace);
         rt = graph.getResourceType(Analytics.degree);
         degrees = rt.instances();
         degrees.forEach(i->i.ownerInstances().iterator().forEachRemaining(r ->
@@ -525,8 +567,6 @@ public class AnalyticsTest {
         assertTrue(CollectionUtils.isEqualCollection(currentDegrees.values(),referenceDegrees.values()));
     }
 
-    //TODO: Fix this test. It's the one with the concurrent execution exception
-    @Ignore
     @Test
     public void testDegreeIsPersistedInPresenceOfOtherResource() throws MindmapsValidationException, ExecutionException, InterruptedException {
         // create a simple graph
@@ -573,6 +613,8 @@ public class AnalyticsTest {
         // compute and persist degrees
         Analytics analytics = new Analytics(keyspace,ct);
         analytics.degreesAndPersist();
+
+        graph = MindmapsClient.getGraph(keyspace);
         ResourceType<Long> degreeResource = graph.getResourceType(Analytics.degree);
 
         // check degrees are correct
@@ -714,6 +756,7 @@ public class AnalyticsTest {
 
         Analytics analytics = new Analytics(keyspace);
         Map<Instance, Long> degrees = analytics.degrees();
+        graph = MindmapsClient.getGraph(keyspace);
         assertTrue(degrees.get(graph.getRelation(relationId)).equals(3L));
         assertTrue(degrees.get(graph.getEntity(marlonId)).equals(1L));
     }

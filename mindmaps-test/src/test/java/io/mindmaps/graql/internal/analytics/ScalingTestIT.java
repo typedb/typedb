@@ -19,28 +19,21 @@
 package io.mindmaps.graql.internal.analytics;
 
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.concept.*;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.concept.EntityType;
-import io.mindmaps.concept.RelationType;
-import io.mindmaps.concept.ResourceType;
-import io.mindmaps.concept.RoleType;
 import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.factory.MindmapsClient;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.javatuples.Pair;
+import org.junit.*;
+
+import static io.mindmaps.IntegrationUtils.graphWithNewKeyspace;
+import static org.junit.Assert.*;
 
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
+import java.util.*;
+import java.util.concurrent.*;
 
 import static io.mindmaps.IntegrationUtils.startTestEngine;
 import static io.mindmaps.graql.Graql.var;
@@ -50,18 +43,12 @@ public class ScalingTestIT {
     private static final String[] HOST_NAME =
             {"localhost"};
 
-    String TEST_KEYSPACE = "mindmapstest";
+    String keyspace;
     MindmapsGraph graph;
 
-    // concepts
-    EntityType thing;
-    RoleType relation1;
-    RoleType relation2;
-    RelationType related;
-
     // test parameters
-    int NUM_SUPER_NODES = 10; // the number of supernodes to generate in the test graph
-    int MAX_SIZE = 100; // the maximum number of non super nodes to add to the test graph
+    int NUM_SUPER_NODES = 1; // the number of supernodes to generate in the test graph
+    int MAX_SIZE = 150; // the maximum number of non super nodes to add to the test graph
     int NUM_DIVS = 3; // the number of divisions of the MAX_SIZE to use in the scaling test
     int REPEAT = 3; // the number of times to repeat at each size for average runtimes
 
@@ -76,6 +63,10 @@ public class ScalingTestIT {
 
     @Before
     public void setUp() throws InterruptedException {
+        Pair<MindmapsGraph, String> result = graphWithNewKeyspace();
+        graph = result.getValue0();
+        keyspace = result.getValue1();
+
         // compute the sample of graph sizes
         STEP_SIZE = MAX_SIZE/NUM_DIVS;
         graphSizes = new ArrayList<>();
@@ -83,10 +74,13 @@ public class ScalingTestIT {
         graphSizes.add(MAX_SIZE);
     }
 
+    @After
+    public void cleanGraph() {
+        graph.clear();
+    }
+
     @Test
     public void countAndDegreeIT() throws InterruptedException, ExecutionException, MindmapsValidationException {
-        graph = MindmapsClient.getGraph(TEST_KEYSPACE);
-
         PrintWriter writer = null;
 
         try {
@@ -99,16 +93,9 @@ public class ScalingTestIT {
         Map<Integer, Long> scaleToAverageTimeDegree = new HashMap<>();
 
         // Insert super nodes into graph
-        simpleOntology();
+        simpleOntology(keyspace);
 
-        Set<String> superNodes = makeSuperNodes();
-
-        // add resources in advance
-        ResourceType<Long> resourceType = graph.putResourceType("degree", ResourceType.DataType.LONG);
-        for (long i = 0;i<MAX_SIZE;i++) {
-            graph.putResource(i,resourceType);
-        }
-        graph.commit();
+        Set<String> superNodes = makeSuperNodes(keyspace);
 
         int previousGraphSize = 0;
         for (int graphSize : graphSizes) {
@@ -117,12 +104,12 @@ public class ScalingTestIT {
 
             writer.println("start generate graph " + System.currentTimeMillis()/1000L + "s");
             writer.flush();
-            addNodes(TEST_KEYSPACE, previousGraphSize, graphSize);
-            addEdgesToSuperNodes(TEST_KEYSPACE, superNodes, previousGraphSize, graphSize);
+            addNodes(keyspace, previousGraphSize, graphSize);
+            addEdgesToSuperNodes(keyspace, superNodes, previousGraphSize, graphSize);
             previousGraphSize = graphSize;
             writer.println("stop generate graph " + System.currentTimeMillis()/1000L + "s");
 
-            Analytics computer = new Analytics(TEST_KEYSPACE);
+            Analytics computer = new Analytics(keyspace);
 
             Long countTime = 0L;
             Long degreeTime = 0L;
@@ -159,12 +146,6 @@ public class ScalingTestIT {
             scaleToAverageTimeDegree.put(graphSize,degreeTime);
         }
 
-        writer.println("start clean graph " + System.currentTimeMillis()/1000L + "s");
-        writer.flush();
-        this.graph.clear();
-        this.graph = MindmapsClient.getGraph(TEST_KEYSPACE);
-        writer.println("stop clean graph " + System.currentTimeMillis()/1000L + "s");
-
         writer.println("counts: " + scaleToAverageTimeCount);
         writer.println("degrees: " + scaleToAverageTimeDegree);
 
@@ -195,16 +176,8 @@ public class ScalingTestIT {
             // repeat persist
             for (int i=0;i<REPEAT;i++) {
                 writer.println("repeat number: "+i);
-                String CURRENT_KEYSPACE = TEST_KEYSPACE + String.valueOf(graphSize) + String.valueOf(i);
-                graph = MindmapsClient.getGraph(CURRENT_KEYSPACE);
-                simpleOntology();
-
-                // add resources in advance
-                ResourceType<Long> resourceType = graph.putResourceType("degree", ResourceType.DataType.LONG);
-                for (long k = 0;k<MAX_SIZE;k++) {
-                    graph.putResource(k,resourceType);
-                }
-                graph.commit();
+                String CURRENT_KEYSPACE = keyspace + String.valueOf(graphSize) + String.valueOf(i);
+                simpleOntology(CURRENT_KEYSPACE);
 
                 // construct graph
                 writer.println("start generate graph " + System.currentTimeMillis()/1000L + "s");
@@ -212,6 +185,7 @@ public class ScalingTestIT {
                 addNodes(CURRENT_KEYSPACE, 0, graphSize);
                 writer.println("stop generate graph " + System.currentTimeMillis()/1000L + "s");
 
+                graph = MindmapsClient.getGraph(keyspace);
                 writer.println("gremlin count is: " + graph.getTinkerTraversal().V().count().next());
 
                 Analytics computer = new Analytics(CURRENT_KEYSPACE);
@@ -224,7 +198,6 @@ public class ScalingTestIT {
                 degreeAndPersistTimeWrite+=stopTime-startTime;
                 writer.println("persist time: " + degreeAndPersistTimeWrite / ((i + 1) * 1000));
 
-
                 // mutate graph
                 writer.println("start mutate graph " + System.currentTimeMillis()/1000L + "s");
                 writer.flush();
@@ -232,12 +205,13 @@ public class ScalingTestIT {
                 // add edges to force mutation
                 addEdges(CURRENT_KEYSPACE, graphSize);
 
-                writer.println("stop mutate graph " + System.currentTimeMillis()/1000L + "s");
-                computer = new Analytics(CURRENT_KEYSPACE);
+                writer.println("stop mutate graph " + System.currentTimeMillis() / 1000L + "s");
 
+                graph = MindmapsClient.getGraph(CURRENT_KEYSPACE);
                 writer.println("gremlin count is: " + graph.getTinkerTraversal().V().count().next());
 
                 writer.println("mutate degree");
+                computer = new Analytics(CURRENT_KEYSPACE);
                 writer.flush();
                 startTime = System.currentTimeMillis();
                 computer.degreesAndPersist();
@@ -246,7 +220,7 @@ public class ScalingTestIT {
                 writer.println("mutate time: " + degreeAndPersistTimeMutate / ((i + 1) * 1000));
 
                 writer.println("start clean graph" + System.currentTimeMillis()/1000L + "s");
-                this.graph.clear();
+                graph.clear();
                 writer.println("stop clean graph" + System.currentTimeMillis()/1000L + "s");
             }
 
@@ -263,6 +237,57 @@ public class ScalingTestIT {
 
         writer.flush();
         writer.close();
+    }
+
+    @Test
+    public void testLargeDegreeMutationResultsInReadableGraphIT() throws MindmapsValidationException, InterruptedException, ExecutionException {
+
+        simpleOntology(keyspace);
+
+        // construct graph
+        addNodes(keyspace, 0, MAX_SIZE);
+
+        Analytics computer = new Analytics(keyspace);
+
+        computer.degreesAndPersist();
+
+        // assert mutated degrees are as expected
+        graph = MindmapsClient.getGraph(keyspace);
+        EntityType thing = graph.getEntityType("thing");
+        Collection<Entity> things = thing.instances();
+
+        assertFalse(things.isEmpty());
+        things.forEach(thisThing -> {
+            assertEquals(1L, thisThing.resources().size());
+            assertEquals(0L, thisThing.resources().iterator().next().getValue());
+        });
+
+        // add edges to force mutation
+        addEdges(keyspace, MAX_SIZE);
+
+        computer = new Analytics(keyspace);
+
+        computer.degreesAndPersist();
+
+        // assert mutated degrees are as expected
+        graph = MindmapsClient.getGraph(keyspace);
+        thing = graph.getEntityType("thing");
+        things = thing.instances();
+
+        assertFalse(things.isEmpty());
+        things.forEach(thisThing -> {
+            assertEquals(1L, thisThing.resources().size());
+            assertEquals(1L, thisThing.resources().iterator().next().getValue());
+        });
+
+        Collection<Relation> relations = graph.getRelationType("related").instances();
+
+        assertFalse(relations.isEmpty());
+        relations.forEach(thisRelation -> {
+            assertEquals(1L, thisRelation.resources().size());
+            assertEquals(2L, thisRelation.resources().iterator().next().getValue());
+        });
+
     }
 
     private void addNodes(String keyspace, int startRange, int endRange) throws MindmapsValidationException, InterruptedException {
@@ -302,25 +327,23 @@ public class ScalingTestIT {
         distributedLoader.waitToFinish();
     }
 
-    private void simpleOntology() throws MindmapsValidationException {
-        thing = graph.putEntityType("thing");
-        relation1 = graph.putRoleType("relation1");
-        relation2 = graph.putRoleType("relation2");
+    private void simpleOntology(String keyspace) throws MindmapsValidationException {
+        MindmapsGraph graph = MindmapsClient.getGraph(keyspace);
+        EntityType thing = graph.putEntityType("thing");
+        RoleType relation1 = graph.putRoleType("relation1");
+        RoleType relation2 = graph.putRoleType("relation2");
         thing.playsRole(relation1).playsRole(relation2);
-        related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
+        RelationType related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
         graph.commit();
     }
 
-    private void refreshOntology(MindmapsGraph graph) {
-        thing = graph.getEntityType("thing");
-        relation1 = graph.getRoleType("relation1");
-        relation2 = graph.getRoleType("relation2");
-        related = graph.getRelationType("related");
-    }
-
-    private Set<String> makeSuperNodes() throws MindmapsValidationException {
+    private Set<String> makeSuperNodes(String keyspace) throws MindmapsValidationException {
         // make the supernodes
-        refreshOntology(graph);
+        MindmapsGraph graph = MindmapsClient.getGraph(keyspace);
+        EntityType thing = graph.getEntityType("thing");
+        RoleType relation1 = graph.getRoleType("relation1");
+        RoleType relation2 = graph.getRoleType("relation2");
+        RelationType related = graph.getRelationType("related");
         Set<String> superNodes = new HashSet<>();
         for (int i = 0; i < NUM_SUPER_NODES; i++) {
             superNodes.add(graph.addEntity(thing).getId());
@@ -330,6 +353,11 @@ public class ScalingTestIT {
     }
 
     private void addEdges(String keyspace, int graphSize) {
+        // if graph size not even throw error for now
+        if (graphSize%2!=0) {
+            throw new RuntimeException("sorry graphsize has to be even");
+        }
+
         // batch in the nodes
         DistributedLoader distributedLoader = new DistributedLoader(keyspace,
                 Arrays.asList(HOST_NAME));
@@ -341,7 +369,7 @@ public class ScalingTestIT {
         while (startNode<graphSize) {
 
             String nodeId1 = "node-" + startNode;
-            String nodeId2 = "node-" + startNode++;
+            String nodeId2 = "node-" + ++startNode;
             distributedLoader.addToQueue(var().isa("related")
                     .rel("relation1", var().id(nodeId1))
                     .rel("relation2", var().id(nodeId2)));

@@ -63,8 +63,8 @@ public class DegreeVertexProgram implements VertexProgram<Long> {
     public DegreeVertexProgram() {
     }
 
-    public DegreeVertexProgram(Set<Type> types) {
-        selectedTypes = types.stream().map(Type::getId).collect(Collectors.toSet());
+    public DegreeVertexProgram(Set<String> types) {
+        selectedTypes = types;
     }
 
     @Override
