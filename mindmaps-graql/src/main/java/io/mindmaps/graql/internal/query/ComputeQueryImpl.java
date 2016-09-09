@@ -32,21 +32,24 @@ import static java.util.stream.Collectors.toSet;
 
 class ComputeQueryImpl implements ComputeQuery {
 
+    private final MindmapsGraph graph;
     private Optional<Set<String>> typeIds;
     private final String computeMethod;
 
-    ComputeQueryImpl(String computeMethod) {
+    ComputeQueryImpl(MindmapsGraph graph, String computeMethod) {
+        this.graph = graph;
         this.computeMethod = computeMethod;
         this.typeIds = Optional.empty();
     }
 
-    ComputeQueryImpl(String computeMethod, Set<String> typeIds) {
+    ComputeQueryImpl(MindmapsGraph graph, String computeMethod, Set<String> typeIds) {
+        this.graph = graph;
         this.computeMethod = computeMethod;
         this.typeIds = Optional.of(typeIds);
     }
 
     @Override
-    public Object execute(MindmapsGraph graph) throws ExecutionException, InterruptedException {
+    public Object execute() throws ExecutionException, InterruptedException {
         String keyspace = graph.getKeyspace();
 
         Analytics analytics = typeIds.map(ids -> {

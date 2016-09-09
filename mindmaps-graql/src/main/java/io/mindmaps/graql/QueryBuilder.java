@@ -24,10 +24,12 @@ import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.query.Patterns;
 import io.mindmaps.graql.internal.query.Queries;
 import io.mindmaps.graql.internal.util.AdminConverter;
+import io.mindmaps.util.ErrorMessage;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * A starting point for creating queries.
@@ -81,6 +83,16 @@ public class QueryBuilder {
     public InsertQuery insert(Collection<? extends Var> vars) {
         ImmutableSet<VarAdmin> varAdmins = ImmutableSet.copyOf(AdminConverter.getVarAdmins(vars));
         return Queries.insert(varAdmins, graph);
+    }
+
+    public ComputeQuery compute(String computeMethod) {
+        MindmapsGraph theGraph = graph.orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage()));
+        return Queries.compute(theGraph, computeMethod);
+    }
+
+    public ComputeQuery compute(String computeMethod, Set<String> typeIds) {
+        MindmapsGraph theGraph = graph.orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage()));
+        return Queries.compute(theGraph, computeMethod, typeIds);
     }
 
 }

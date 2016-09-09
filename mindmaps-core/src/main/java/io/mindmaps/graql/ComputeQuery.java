@@ -18,8 +18,6 @@
 
 package io.mindmaps.graql;
 
-import io.mindmaps.MindmapsGraph;
-
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -30,6 +28,6 @@ public interface ComputeQuery {
     /**
      * Perform OLAP computation.
      */
-    Object execute(MindmapsGraph graph) throws ExecutionException, InterruptedException;
+    Object execute() throws ExecutionException, InterruptedException;
 
 }
