@@ -285,13 +285,15 @@ public class GraqlShellTest {
         PrintStream out = new PrintStream(bout);
         PrintStream err = new PrintStream(berr);
 
-        System.setIn(in);
-        System.setOut(out);
-        System.setErr(err);
+        try {
+            System.setIn(in);
+            System.setOut(out);
+            System.setErr(err);
 
-        GraqlShell.runShell(args, expectedVersion, client);
-
-        resetIO();
+            GraqlShell.runShell(args, expectedVersion, client);
+        } finally {
+            resetIO();
+        }
 
         out.flush();
         err.flush();
