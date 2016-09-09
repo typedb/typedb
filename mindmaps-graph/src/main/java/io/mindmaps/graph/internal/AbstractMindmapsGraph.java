@@ -606,8 +606,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         handleTransaction(Transaction::rollback);
         getConceptLog().clearTransaction();
         try {
-            graph.tx().close();
-        } catch(UnsupportedOperationException e) {
+            graph.close();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
