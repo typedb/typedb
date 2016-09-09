@@ -22,6 +22,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.graql.internal.reasoner.container.AtomicQuery;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.RoleType;
@@ -113,11 +114,11 @@ public class Utility {
         return ruleRecursive;
     }
 
-    public static Query findEquivalentQuery(Query query, Set<Query> queries) {
-        Query equivalentQuery = null;
-        Iterator<Query> it = queries.iterator();
+    public static AtomicQuery findEquivalentAtomicQuery(AtomicQuery query, Set<AtomicQuery> queries) {
+        AtomicQuery equivalentQuery = null;
+        Iterator<AtomicQuery> it = queries.iterator();
         while( it.hasNext() && equivalentQuery == null) {
-            Query current = it.next();
+            AtomicQuery current = it.next();
             if (query.isEquivalent(current))
                 equivalentQuery = current;
         }
