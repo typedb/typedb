@@ -22,15 +22,24 @@ import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
 
+/**
+ * Encapsulates a tinkerpop graph computer and provides methods to execute OLAP tasks.
+ */
 public interface MindmapsComputer {
 
     /**
-     * @param program
+     * Execute the given vertex program using a graph computer.
+     *
+     * @param program   the vertex program
+     * @return          the result of the computation
      */
     ComputerResult compute(VertexProgram program);
 
     /**
-     * @param mapReduce
+     * Execute the given map reduce job using a graph computer.
+     *
+     * @param mapReduce the map reduce job
+     * @return          the result of the computation
      */
     ComputerResult compute(MapReduce mapReduce);
 }
