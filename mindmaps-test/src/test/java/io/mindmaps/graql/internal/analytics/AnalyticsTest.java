@@ -103,7 +103,7 @@ public class AnalyticsTest {
         analytics.degreesAndPersist();
 
         // check that dog has a degree to confirm ako has been inferred
-        graph.refresh();
+        graph.rollback();
         foofoo = graph.getEntity("foofoo");
         Collection<Resource<?>> degrees = foofoo.resources();
         assertTrue(degrees.iterator().next().getValue().equals(0L));
@@ -496,7 +496,7 @@ public class AnalyticsTest {
         analytics.degreesAndPersist();
 
         // check only expected resources exist
-        graph.refresh();
+        graph.rollback();
         rt = graph.getResourceType(Analytics.degree);
         degrees = rt.instances();
         degrees.forEach(i->i.ownerInstances().iterator().forEachRemaining(r ->

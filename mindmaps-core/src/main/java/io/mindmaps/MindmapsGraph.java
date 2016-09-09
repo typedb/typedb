@@ -306,7 +306,7 @@ public interface MindmapsGraph extends AutoCloseable{
     /**
      * Resets the current transaction without commiting.
      */
-    void refresh();
+    void rollback();
 
     /**
      * Closes the current transaction.
