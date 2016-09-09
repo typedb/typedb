@@ -599,7 +599,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     }
 
     /**
-     * Closes the current transaction.
+     * Closes the current graph, rendering it unusable.
      */
     @Override
     public void close() {
