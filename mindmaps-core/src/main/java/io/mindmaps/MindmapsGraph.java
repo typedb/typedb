@@ -19,7 +19,6 @@
 
 package io.mindmaps;
 
-import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
@@ -32,6 +31,7 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.RuleType;
 import io.mindmaps.concept.Type;
+import io.mindmaps.exception.MindmapsValidationException;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 
 import java.util.Collection;
@@ -81,12 +81,6 @@ public interface MindmapsGraph extends AutoCloseable{
      * @return new or existing Role Type with the provided Id.
      */
     RoleType putRoleType(String id);
-
-    void clear();
-
-    String getKeyspace();
-
-    GraphTraversalSource getTinkerTraversal();
 
     /**
      *
@@ -298,6 +292,23 @@ public interface MindmapsGraph extends AutoCloseable{
     Relation getRelation(String id);
     //------------------------------------- Utilities ----------------------------------
     /**
+     * Closes and clears the current graph.
+     */
+    void clear();
+
+    /**
+     *
+     * @return The name of the keyspace where the graph is persisted
+     */
+    String getKeyspace();
+
+    /**
+     *
+     * @return A read only tinkerpop traversal for manually traversing the graph
+     */
+    GraphTraversalSource getTinkerTraversal();
+
+    /**
      * Validates and attempts to commit the graph. An exception is thrown if validation fails or if the graph cannot be persisted due to an underlying database issue.
      * @throws MindmapsValidationException is thrown when a structural validation fails.
      */
@@ -309,7 +320,7 @@ public interface MindmapsGraph extends AutoCloseable{
     void rollback();
 
     /**
-     * Closes the current transaction.
+     * Closes the current graph, rendering it unusable.
      */
     void close();
 }
