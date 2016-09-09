@@ -50,6 +50,7 @@ public class RecursiveInferenceTest {
         String explicitQuery = "match $x id 'i';" +
                             "{$y id 'j'} or {$y id 's'} or {$y id 'v'} select $y";
 
+        assertQueriesEqual(reasoner.resolveToQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
@@ -75,6 +76,7 @@ public class RecursiveInferenceTest {
         String explicitQuery = "match $Y isa Person;" +
                 "{$Y id 'aaa'} or {$Y id 'aab'} or {$Y id 'aaaa'}";
 
+        assertQueriesEqual(reasoner.resolveToQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
@@ -91,6 +93,7 @@ public class RecursiveInferenceTest {
         String explicitQuery = "match $Y isa Person;" +
                 "{$Y id 'a'} or {$Y id 'aaa'} or {$Y id 'aab'} or {$Y id 'aaaa'}";
 
+        assertQueriesEqual(reasoner.resolveToQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
@@ -107,6 +110,7 @@ public class RecursiveInferenceTest {
         String explicitQuery = "match $X id 'a';" +
                             "{$Y id 'd'} or {$Y id 'g'} select $Y";
 
+        assertQueriesEqual(reasoner.resolveToQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
@@ -123,6 +127,7 @@ public class RecursiveInferenceTest {
         String explicitQuery = "match $Y id 'd';" +
                 "{$X id 'a'} or {$X id 'b'} or {$X id 'c'} select $X";
 
+        assertQueriesEqual(reasoner.resolveToQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
@@ -140,6 +145,7 @@ public class RecursiveInferenceTest {
 
         String explicitQuery = "match {$y id 'f'} or {$y id 'h'};";
 
+        assertQueriesEqual(reasoner.resolveToQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
@@ -155,6 +161,7 @@ public class RecursiveInferenceTest {
 
         String explicitQuery = "match $x id 'a2';";
 
+        assertQueriesEqual(reasoner.resolveToQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
@@ -176,6 +183,7 @@ public class RecursiveInferenceTest {
                 "{$x id 'b';$y id 'd'} or" +
                 "{$x id 'a';$y id 'd'}";
 
+        assertQueriesEqual(reasoner.resolveToQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
@@ -191,13 +199,8 @@ public class RecursiveInferenceTest {
         MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
         String explicitQuery = "match $y isa vertex";
 
-        Set<Map<String, Concept>> answers = reasoner.resolve(query);
-
-        Map<String, Concept> a0result = new HashMap<>();
-        a0result.put("y", graph.getInstance("a0"));
-        answers.add(a0result);
-
-        assertEquals(answers, Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
     @Test
@@ -212,12 +215,8 @@ public class RecursiveInferenceTest {
         MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
         String explicitQuery = "match $y isa vertex";
 
-        Set<Map<String, Concept>> answers = reasoner.resolve(query);
-        Map<String, Concept> a0result = new HashMap<>();
-        a0result.put("y", graph.getInstance("a0"));
-        answers.add(a0result);
-
-        assertEquals(answers, Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
     /**from Abiteboul - Foundations of databases p. 312/Cao test 6.14 p. 89*/
@@ -232,6 +231,7 @@ public class RecursiveInferenceTest {
         String explicitQuery = "match $y isa person;" +
                                 "{$y id 'b'} or {$y id 'c'} or {$y id 'd'}";
 
+        assertQueriesEqual(reasoner.resolveToQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
     @Test
@@ -250,6 +250,7 @@ public class RecursiveInferenceTest {
                 "{$x id 'g';$y id 'f'} or {$x id 'h';$y id 'f'} or {$x id 'i';$y id 'f'} or" +
                 "{$x id 'j';$y id 'f'} or {$x id 'f';$y id 'k'}";
 
+        assertQueriesEqual(reasoner.resolveToQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
         assertEquals(answers, Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
@@ -266,6 +267,7 @@ public class RecursiveInferenceTest {
         MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
         String explicitQuery = "match $y isa a-entity";
 
+        assertQueriesEqual(reasoner.resolveToQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
@@ -279,27 +281,17 @@ public class RecursiveInferenceTest {
 
         String queryString = "match (Q1-from $x, Q1-to $y) isa Q1; $x id 'a0' select $y";
         MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
-        String explicitQuery = "match $y isa a-entity";
+        String explicitQuery = "match $y isa a-entity or $y isa end";
 
-        Set<Map<String, Concept>> answers = reasoner.resolve(query);
-        Map<String, Concept> a0result = new HashMap<>();
-        a0result.put("y", graph.getInstance("a0"));
-        answers.add(a0result);
-
-        assertEquals(answers, Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
 
         queryString = "match (Q2-from $x, Q2-to $y) isa Q2; $x id 'a0' select $y";
         query = qp.parseMatchQuery(queryString).getMatchQuery();
-        explicitQuery = "match $y isa b-entity";
+        explicitQuery = "match $y isa b-entity or $y isa end";
 
-        answers = reasoner.resolve(query);
-        Set<Map<String, Concept>> explicitAnswers = Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery());
-
-        Map<String, Concept> amresult = new HashMap<>();
-        amresult.put("y", graph.getInstance("a" + N));
-        explicitAnswers.add(amresult);
-
-        assertEquals(answers, explicitAnswers);
+        assertQueriesEqual(reasoner.resolveToQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
     /** test 6.3 from Cao p 75*/
@@ -317,7 +309,11 @@ public class RecursiveInferenceTest {
 
         Set<Map<String, Concept>> answers = reasoner.resolve(query);
 
+        assertQueriesEqual(reasoner.resolveToQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
         assertEquals(answers, Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
+    private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
+        assertEquals(Sets.newHashSet(q1), Sets.newHashSet(q2));
+    }
 }

@@ -4,17 +4,20 @@ insert
 ####################Ontology######################
 #################################################
 
+"start-vertex" isa entity-type;
 "vertex" isa entity-type;
 
 "arc-from" isa role-type;
 "arc-to" isa role-type;
 "arc" isa relation-type, has-role arc-from, has-role arc-to;
 vertex plays-role arc-from, plays-role arc-to;
+start-vertex plays-role arc-from;
 
 "path-from" isa role-type;
 "path-to" isa role-type;
 "path" isa relation-type, has-role path-from, has-role path-to;
 vertex plays-role path-from, plays-role path-to;
+start-vertex plays-role path-from;
 
 ####################################################
 ##################RULES#############################

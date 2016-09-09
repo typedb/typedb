@@ -307,7 +307,7 @@ public class  Query {
 
     public MatchQuery getMatchQuery() {
         if (selectVars.isEmpty())
-            return Graql.match(pattern).select(getVarSet()).withGraph(graph);
+            return Graql.match(pattern).withGraph(graph);
         else
             return Graql.match(pattern).select(selectVars).withGraph(graph);
     }
@@ -354,8 +354,23 @@ public class  Query {
 
         Set<VarAdmin> vars = pat.getVars();
         vars.forEach(var -> {
-            Atomic atom = AtomicFactory.create(var, this);
-            atoms.add(atom);
+            if(var.getType().isPresent() && (var.getId().isPresent() || !var.getValueEqualsPredicates().isEmpty())) {
+                VarAdmin typeVar = Graql.var(var.getName()).isa(var.getType().get()).admin();
+                atoms.add(AtomicFactory.create(typeVar, this));
+
+                if (var.getId().isPresent()) {
+                    VarAdmin sub = Graql.var(var.getName()).id(var.getId().get()).admin();
+                    atoms.add(AtomicFactory.create(sub, this));
+                }
+                else if (!var.getValueEqualsPredicates().isEmpty()){
+                    if(var.getValueEqualsPredicates().size() > 1)
+                        throw new IllegalArgumentException(ErrorMessage.MULTI_VALUE_VAR.getMessage(var.toString()));
+                    VarAdmin sub = Graql.var(var.getName()).value(var.getValueEqualsPredicates().iterator().next()).admin();
+                    atoms.add(AtomicFactory.create(sub, this));
+                }
+            }
+            else
+                atoms.add(AtomicFactory.create(var, this));
         });
 
         return atoms;
@@ -441,12 +456,12 @@ public class  Query {
                 .filter(atom -> !atom.isValuePredicate()).collect(Collectors.toSet());
         if (atoms.size() == 1) return atoms;
 
-        return atoms.stream().filter(atom -> (!atom.isUnary()) || atom.isRuleResolvable() || atom.isResource())
+        Set<Atomic> selectedAtoms = atoms.stream()
+                .filter(atom -> (!atom.isUnary()) || atom.isRuleResolvable() || atom.isResource())
                 .collect(Collectors.toSet());
-
-        //TODO
-        //find most instantiated atom
-        //no instantiations -> favour type atoms
+        if (selectedAtoms.isEmpty())
+            throw new IllegalStateException(ErrorMessage.NO_ATOMS_SELECTED.getMessage(this.toString()));
+        return selectedAtoms;
 
     }
 

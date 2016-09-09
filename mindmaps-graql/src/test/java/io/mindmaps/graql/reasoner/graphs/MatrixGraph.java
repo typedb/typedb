@@ -44,7 +44,9 @@ public class MatrixGraph extends GenericGraph{
         RelationType R1 = mindmaps.getRelationType("R1");
         RelationType R2 = mindmaps.getRelationType("R2");
 
-        for(int i = 0 ; i <= m ;i++)
+        mindmaps.putEntity("a0", mindmaps.getEntityType("start"));
+        mindmaps.putEntity("a" + m, mindmaps.getEntityType("end"));
+        for(int i = 1 ; i < m ;i++)
             mindmaps.putEntity("a" + i, aEntity);
 
         for(int i = 1 ; i < m ;i++)

@@ -56,7 +56,7 @@ public class WineInferenceTest {
                         "{$x id 'Eva';$y id 'Tamaioasa Romaneasca'} or" +
                         "{$x id 'Frank';$y id 'Riojo Blanco CVNE 2003'}";
 
-        assertQueriesEqual(expandedQuery, qp.parseMatchQuery(explicitQuery).getMatchQuery());
+        assertQueriesEqual(reasoner.resolveToQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
     }
 
