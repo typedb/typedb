@@ -41,7 +41,7 @@ public class Main {
     
     static void die(String errorMsg) {
         System.out.println(errorMsg);
-        System.out.println("\nSyntax: OWLMigrator -owl <owl filename> [-graph <graph name>] [-engine <Mindmaps engine URL>]");
+        System.out.println("\nSyntax: ./migration.sh owl -file <owl filename> [-graph <graph name>] [-engine <Mindmaps engine URL>]");
         System.exit(-1);
     }
         
@@ -51,12 +51,14 @@ public class Main {
         String graphName = null;
         
         for (int i = 0; i < argv.length; i++) {
-            if ("-owl".equals(argv[i]))
+            if ("-file".equals(argv[i]))
                 owlFilename = argv[++i];
             else if ("-graph".equals(argv[i]))
                 graphName = argv[++i];
             else if ("-engine".equals(argv[i]))
                 engineUrl = argv[++i];
+            else if("owl".equals(argv[0]))
+                continue;
             else
                 die("Unknown option " + argv[i]);
         }       

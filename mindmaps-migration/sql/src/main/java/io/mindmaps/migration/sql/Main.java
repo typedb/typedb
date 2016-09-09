@@ -30,14 +30,14 @@ import java.sql.DriverManager;
 
 /**
  * Main program to migrate a SQL database into a Mindmaps graph. For use from a command line.
- * Expected arguments are the JDBC driver, JDBC username, JDBC password, JDBC database name and the Mindmaps Graph URL
- * Optionally you can provide the name of the Mindmaps graph
+ * Expected arguments are the JDBC driver, JDBC username, JDBC password, JDBC database name and the Mindmaps Graph name
+ * Optionally you can provide the Mindmaps engine URL
  */
 public class Main {
 
     static void die(String errorMsg){
         System.out.println(errorMsg);
-        System.out.println("\nSyntax: SQLMigrator -driver <jdbc driver> -database <database url> -user <username> -pass <password> -engine <Mindmaps engine URL> [-graph <graph name>]");
+        System.out.println("\nSyntax: ./migration.sh sql -driver <jdbc driver> -database <database url> -user <username> -pass <password> [-engine <Mindmaps engine URL>] -graph <graph name>");
         System.exit(-1);
     }
 
@@ -63,19 +63,17 @@ public class Main {
                 graphName = args[++i];
             else if ("-engine".equals(args[i]))
                 engineURL = args[++i];
+            else if("sql".equals(args[0]))
+                continue;
             else
                 die("Unknown option " + args[i]);
         }
 
-        if(jdbcDriver == null) die("Please specify the JDBC diver on the classpath using -driver option");
+        if (jdbcDriver == null) die("Please specify the JDBC diver on the classpath using -driver option");
         if (jdbcDBUrl == null) die("Please specify the URL where the SQL db is running using -database option");
         if (jdbcUser == null) die("Please specify the username of the database using the -user option");
         if (jdbcPass == null) die("Please specify the password of the database using the -pass option");
-        if (engineURL == null) die("Please specify the URL where engine is running using the -engine option");
-
-        if(graphName == null){
-            graphName = jdbcDBUrl.replaceAll("^[a-zA-Z]", "_");
-        }
+        if (graphName == null){ die("Please specify the name of the graph using the -graph option"); }
 
         System.out.println("Migrating " + jdbcDBUrl + " using MM Engine " +
                 (engineURL == null ? "local" : engineURL ) + " into graph " + graphName);
