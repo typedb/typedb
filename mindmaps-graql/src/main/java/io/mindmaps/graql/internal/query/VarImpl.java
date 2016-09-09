@@ -251,7 +251,12 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var hasResource(String type) {
-        hasResourceTypes.add(var().id(type).admin());
+        return hasResource(var().id(type));
+    }
+
+    @Override
+    public Var hasResource(Var type) {
+        hasResourceTypes.add(type.admin());
         return this;
     }
 
