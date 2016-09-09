@@ -57,11 +57,6 @@
             <artifactId>mindmaps-graph</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-actor_2.10</artifactId>
-            <version>2.3.15</version>
-        </dependency>
 
     </dependencies>
 
