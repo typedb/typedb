@@ -10,7 +10,7 @@ See `owl_mm_notes.txt` in the owl package to read about the limitations of the O
 
 To migrate an OWL schema:
 ```
-mvn exec:java -Dexec.mainClass="io.mindmaps.migration.owl.Main" -Dexec.args="-owl /path/to/owl/file"
+./migration.sh owl -file /path/to/owl/file"
 ```
 
 Optionally you can provide:
@@ -24,7 +24,7 @@ CSV migration
 
 To migrate a CSV schema and data:
 ```
-mvn exec:java -Dexec.mainClass="io.mindmaps.migration.csv.Main" -Dexec.args="-file /path/to/csv/file -graph icij" -Dmindmaps.conf="../../conf/main/mindmaps-engine.properties"
+./migration.sh csv -file /path/to/csv/file -graph icij
 ```
 
 Optionally you can provide:
@@ -39,7 +39,7 @@ SQL Migration
 
 To migrate an SQL database and data:
 ```
-mvn exec:java -Dexec.mainClass="io.mindmaps.migration.sql.Main" -Dexec.args="-driver your.jdbc.Driver -user jdbcUsername -pass jdbcPassword -database databaseUrl -graph graphName" -Dmindmaps.conf="../../conf/main/mindmaps-engine.properties"
+./migration.sh sql -driver your.jdbc.Driver -user jdbcUsername -pass jdbcPassword -database databaseUrl -graph graphName
 ```
 
 Optionally you can provide:

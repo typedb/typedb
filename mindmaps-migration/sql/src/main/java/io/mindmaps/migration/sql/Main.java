@@ -37,7 +37,7 @@ public class Main {
 
     static void die(String errorMsg){
         System.out.println(errorMsg);
-        System.out.println("\nSyntax: SQLMigrator -driver <jdbc driver> -database <database url> -user <username> -pass <password> [-engine <Mindmaps engine URL>] -graph <graph name>");
+        System.out.println("\nSyntax: ./migration.sh sql -driver <jdbc driver> -database <database url> -user <username> -pass <password> [-engine <Mindmaps engine URL>] -graph <graph name>");
         System.exit(-1);
     }
 
@@ -63,6 +63,8 @@ public class Main {
                 graphName = args[++i];
             else if ("-engine".equals(args[i]))
                 engineURL = args[++i];
+            else if("sql".equals(args[0]))
+                continue;
             else
                 die("Unknown option " + args[i]);
         }

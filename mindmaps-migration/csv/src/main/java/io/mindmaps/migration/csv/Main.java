@@ -39,7 +39,7 @@ public class Main {
 
     static void die(String errorMsg) {
         System.out.println(errorMsg);
-        System.out.println("\nSyntax: CSVMigrator -file <csv filename> -graph <graph name> [-engine <Mindmaps engine URL>] [-as <name of this entity type>]");
+        System.out.println("\nSyntax: ./migration.sh csv -file <csv filename> -graph <graph name> [-engine <Mindmaps engine URL>] [-as <name of this entity type>]");
         System.exit(-1);
     }
 
@@ -60,6 +60,9 @@ public class Main {
             else if ("-as".equals(args[i])){
                 csvEntityType = args[++i];
             }
+            else if("csv".equals(args[0])) {
+                continue;
+            }
             else
                 die("Unknown option " + args[i]);
         }
@@ -75,7 +78,7 @@ public class Main {
             die("Please provide the name of the graph using -graph");
         }
         if(csvEntityType == null){
-            csvEntityType = csvFile.getName().replaceAll("^[a-zA-Z]", "_");
+            csvEntityType = csvFile.getName().replaceAll("[^A-Za-z0-9]", "_");
         }
 
         System.out.println("Migrating " + csvFileName + " using MM Engine " +
