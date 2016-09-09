@@ -133,14 +133,21 @@ public class CWGraph {
 
 
         person = mindmaps.putEntityType("person")
-                .playsRole(seller).playsRole(payee).playsRole(hasResourceTarget);
+                .playsRole(seller)
+                .playsRole(payee)
+                .playsRole(hasResourceTarget)
+                .playsRole(nationalityTarget);
+
         criminal = mindmaps.putEntityType("criminal").superType(person);
 
         //device = mindmaps.putEntityType("device").setValue("device");
         weapon = mindmaps.putEntityType("weapon")
                 .playsRole(transactionItem).playsRole(ownedItem).playsRole(hasResourceTarget);//.superEntity(device);
         rocket = mindmaps.putEntityType("rocket")
-                .playsRole(hasResourceTarget).playsRole(transactionItem).playsRole(ownedItem);
+                .playsRole(hasResourceTarget)
+                .playsRole(transactionItem)
+                .playsRole(ownedItem)
+                .playsRole(propulsionTarget);
         missile = mindmaps.putEntityType("missile").superType(weapon)
                 .playsRole(transactionItem).playsRole(hasResourceTarget);
 

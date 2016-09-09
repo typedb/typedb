@@ -25,6 +25,7 @@ import io.mindmaps.graql.*;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.Disjunction;
+import io.mindmaps.graql.internal.reasoner.container.QueryAnswers;
 import io.mindmaps.graql.reasoner.graphs.SNBGraph;
 import io.mindmaps.graql.internal.reasoner.container.Query;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
@@ -194,6 +195,22 @@ public class QueryTest {
     }
 
     @Test
+    public void testTwinPattern() {
+        String queryString = "match $x isa person;$x id 'Bob'";
+        String queryString2 = "match $x isa person, id 'Bob'";
+        String queryString3 = "match $x isa person, value 'Bob'";
+        String queryString4 = "match $x isa person;$x value 'Bob'";
+
+        Query query = new Query(queryString, graph);
+        Query query2 = new Query(queryString2, graph);
+        Query query3 = new Query(queryString3, graph);
+        Query query4 = new Query(queryString4, graph);
+
+        assertTrue(query.isEquivalent(query2));
+        assertTrue(query3.isEquivalent(query4));
+    }
+
+    @Test
     public void testAlphaEquivalence() {
         String queryString = "match $x isa person;$t isa tag;$t value 'Michelangelo';" +
             "($x, $t) isa tagging;" +
@@ -207,6 +224,15 @@ public class QueryTest {
         Query query2 = new Query(queryString2, graph);
 
         assertTrue(query.isEquivalent(query2));
+    }
+
+    @Test
+    public void testQueryResults(){
+        //QueryResults answers = new QueryResults(Sets.newHashSet(qp.parseMatchQuery("match $x isa person").getMatchQuery()));
+
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(qp.parseMatchQuery("match $x isa person").getMatchQuery()));
+
+        answers.forEach(ans -> System.out.println(ans.toString()));
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {

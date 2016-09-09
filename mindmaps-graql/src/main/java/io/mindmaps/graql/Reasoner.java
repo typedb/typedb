@@ -27,6 +27,7 @@ import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.Type;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.graql.internal.reasoner.container.Query;
+import io.mindmaps.graql.internal.reasoner.container.QueryAnswers;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.Relation;
 import io.mindmaps.graql.internal.reasoner.predicate.Substitution;
@@ -366,14 +367,12 @@ public class Reasoner {
         return expansions;
     }
 
-    private Set<Map<String, Concept>> DBlookup(Query query) {
-        Set<Map<String, Concept>> answers = new HashSet<>();
-        Lists.newArrayList(query.getMatchQuery().distinct()).forEach(answers::add);
-        return answers;
+    private QueryAnswers DBlookup(Query query) {
+        return new QueryAnswers(Sets.newHashSet(query.getMatchQuery().distinct()));
     }
 
-    private Set<Map<String, Concept>> getUnifiedAnswers(Query parentQuery, Query childQuery,
-                                                        Set<Map<String, Concept>>answers){
+    private QueryAnswers getUnifiedAnswers(Query parentQuery, Query childQuery,
+                                                        QueryAnswers answers){
         Set<Atomic> childAtoms = childQuery.selectAtoms();
         Set<Atomic> parentAtoms = parentQuery.selectAtoms();
         if(childAtoms.size() > 1 || parentAtoms.size() > 1) {
@@ -383,7 +382,7 @@ public class Reasoner {
         Atomic childAtom = childAtoms.iterator().next();
         Atomic parentAtom = parentAtoms.iterator().next();
         Map<String, String> unifiers = getUnifiers(childAtom, parentAtom);
-        Set<Map<String, Concept>> unifiedAnswers = new HashSet<>();
+        QueryAnswers unifiedAnswers = new QueryAnswers();
         answers.forEach( entry -> {
             Map<String, Concept> answer = new HashMap<>();
             entry.forEach( (var, con) -> {
@@ -398,8 +397,9 @@ public class Reasoner {
         return unifiedAnswers;
     }
 
-    private Set<Map<String, Concept>> memoryLookup(Query query, Map<Query, Set<Map<String, Concept>>> matAnswers) {
-        Set<Map<String, Concept>> answers = new HashSet<>();
+    private QueryAnswers memoryLookup(Query query, Map<Query, QueryAnswers> matAnswers) {
+        QueryAnswers answers = new QueryAnswers();
+
         Query equivalentQuery = findEquivalentQuery(query, matAnswers.keySet());
         if (equivalentQuery != null)
             answers = getUnifiedAnswers(query, equivalentQuery, matAnswers.get(equivalentQuery));
@@ -408,8 +408,8 @@ public class Reasoner {
         return answers;
     }
 
-    private Set<Map<String, Concept>> propagateHeadSubstitutions(Query atomicQuery, Query ruleHead, Set<Map<String, Concept>> answers){
-        Set<Map<String, Concept>> newAnswers = new HashSet<>();
+    private QueryAnswers propagateHeadSubstitutions(Query atomicQuery, Query ruleHead, QueryAnswers answers){
+        QueryAnswers newAnswers = new QueryAnswers();
         if(answers.isEmpty()) return newAnswers;
 
         Set<String> queryVars = atomicQuery.getSelectVars();
@@ -422,32 +422,15 @@ public class Reasoner {
         }
 
         answers.forEach( map -> {
-            Map<String, Concept> newMap = new HashMap<>(map);
-            extraSubs.forEach(sub -> newMap.put(sub.getVarName(), graph.getInstance(sub.getVal())) );
-            newAnswers.add(newMap);
+            Map<String, Concept> newAns = new HashMap<>(map);
+            extraSubs.forEach(sub -> newAns.put(sub.getVarName(), graph.getInstance(sub.getVal())) );
+            newAnswers.add(newAns);
         });
 
         return newAnswers;
     }
 
-    private Set<Map<String, Concept>> filterAnswers(Query atomicQuery, Set<Map<String, Concept>> answers) {
-        Set<Map<String, Concept>> results =  new HashSet<>();
-        if(answers.isEmpty()) return results;
-
-        Set<String> queryVars = atomicQuery.getSelectVars();
-        answers.forEach(answer -> {
-            Map<String, Concept> map = new HashMap<>();
-            answer.forEach((var, concept) -> {
-                if(queryVars.contains(var))
-                    map.put(var, concept);
-            });
-            if (!map.isEmpty()) results.add(map);
-        });
-
-        return results.stream().distinct().collect(Collectors.toSet());
-    }
-
-    private void propagateAnswers(Query query, Set<Map<String, Concept>> answers, Map<Query, Set<Map<String, Concept>>> matAnswers){
+    private void propagateAnswers(Query query, QueryAnswers answers, Map<Query, QueryAnswers> matAnswers){
         if(answers.isEmpty()) return;
 
         Set<Atomic> atoms = query.selectAtoms();
@@ -465,21 +448,21 @@ public class Reasoner {
             genQuery.getAtoms().remove(cstr);
             Query compatibleQuery = findEquivalentQuery(genQuery, matAnswers.keySet());
             if(compatibleQuery != null) {
-                Set<Map<String, Concept>> compatibleAnswers = new HashSet<>();
+                QueryAnswers compatibleAnswers = new QueryAnswers();
                 answers.forEach( entry -> compatibleAnswers.add(new HashMap<>(entry)));
                 if (cstr.isValuePredicate())
                     compatibleAnswers.forEach(map -> map.put(cstr.getVarName(), graph.getInstance(cstr.getVal())));
-                Set<Map<String, Concept>> unifiedAnswers = getUnifiedAnswers(compatibleQuery, query, compatibleAnswers);
+                QueryAnswers unifiedAnswers = getUnifiedAnswers(compatibleQuery, query, compatibleAnswers);
                 matAnswers.get(compatibleQuery).addAll(unifiedAnswers);
             }
         }
     }
 
-    private void recordAnswers(Query query, Set<Map<String, Concept>> answers,
-                               Map<Query, Set<Map<String, Concept>>> matAnswers) {
+    private void recordAnswers(Query query, QueryAnswers answers,
+                               Map<Query, QueryAnswers> matAnswers) {
         Query equivalentQuery = findEquivalentQuery(query, matAnswers.keySet());
         if (equivalentQuery != null) {
-            Set<Map<String, Concept>> unifiedAnswers = getUnifiedAnswers(equivalentQuery, query, answers);
+            QueryAnswers unifiedAnswers = getUnifiedAnswers(equivalentQuery, query, answers);
             matAnswers.get(equivalentQuery).addAll(unifiedAnswers);
             propagateAnswers(query, unifiedAnswers, matAnswers);
         }
@@ -489,7 +472,7 @@ public class Reasoner {
         }
     }
 
-    private void materializeAnswers(Query atomicQuery, Set<Map<String, Concept>> answers){
+    private void materializeAnswers(Query atomicQuery, QueryAnswers answers){
         LOG.debug("Materializing...");
         answers.forEach(answer -> {
             Set<Substitution> subs = new HashSet<>();
@@ -503,13 +486,17 @@ public class Reasoner {
         LOG.debug("Materialized: " + answers.size());
     }
 
-    private Set<Map<String, Concept>> joinSubstitutions(Set<Map<String, Concept>> tuples, Set<Map<String, Concept>> localTuples) {
+    private QueryAnswers joinSubstitutions(QueryAnswers tuples, QueryAnswers localTuples) {
+        if (tuples.isEmpty() || localTuples.isEmpty())
+            return new QueryAnswers();
+        /*
         if(localTuples.isEmpty())
-            return new HashSet<>();
+            return new QueryAnswers();
         if(tuples.isEmpty())
-            return Sets.newHashSet(localTuples);
+            return new QueryAnswers(Sets.newHashSet(localTuples));
+        */
 
-        Set<Map<String, Concept>> join = new HashSet<>();
+        QueryAnswers join = new QueryAnswers();
         for( Map<String, Concept> lanswer : localTuples){
             for (Map<String, Concept> answer : tuples){
                 boolean isCompatible = true;
@@ -543,9 +530,9 @@ public class Reasoner {
         }
     }
 
-    private Set<Map<String, Concept>> Answer(Atomic atom, Set<Query> subGoals, Map<String, Type> varMap) {
+    private QueryAnswers answer(Atomic atom, Set<Query> subGoals, Map<String, Type> varMap) {
         Query atomicQuery = new Query(atom);
-        Set<Map<String, Concept>> allSubs = DBlookup(atomicQuery);
+        QueryAnswers allSubs = DBlookup(atomicQuery);
 
         boolean queryAdmissible = true;
         Iterator<Query> it = subGoals.iterator();
@@ -561,19 +548,18 @@ public class Reasoner {
 
                 propagateConstraints(atom, ruleHead, ruleBody);
 
-                Set<Map<String, Concept>> subs = new HashSet<>();
                 Set<Atomic> atoms = ruleBody.selectAtoms();
-
                 Iterator<Atomic> atIt = atoms.iterator();
-                do{
-                    Atomic at = atIt.next();
-                    subGoals.add(atomicQuery);
-                    Set<Map<String, Concept>> localSubs = Answer(at, subGoals, varMap);
-                    subs = joinSubstitutions(subs, localSubs);
-                } while(!subs.isEmpty() && atIt.hasNext());
 
-                Set<Map<String, Concept>> answers = propagateHeadSubstitutions(atomicQuery, ruleHead, subs);
-                Set<Map<String, Concept>> filteredAnswers = filterAnswers(atomicQuery, answers);
+                subGoals.add(atomicQuery);
+                QueryAnswers subs = answer(atIt.next(), subGoals, varMap);
+                while(atIt.hasNext()){
+                    QueryAnswers localSubs = answer(atIt.next(), subGoals, varMap);
+                    subs = joinSubstitutions(subs, localSubs);
+                }
+
+                QueryAnswers answers = propagateHeadSubstitutions(atomicQuery, ruleHead, subs);
+                QueryAnswers filteredAnswers = answers.filter(atomicQuery.getSelectVars());
                 materializeAnswers(ruleHead, filteredAnswers);
                 allSubs.addAll(filteredAnswers);
             }
@@ -582,8 +568,8 @@ public class Reasoner {
         return allSubs;
     }
 
-    private Set<Map<String, Concept>> resolveAtomicQuery(Atomic atom) {
-        Set<Map<String, Concept>> subAnswers = new HashSet<>();
+    private QueryAnswers resolveAtomicQuery(Atomic atom) {
+        QueryAnswers subAnswers = new QueryAnswers();
         int dAns;
         int iter = 0;
 
@@ -592,25 +578,22 @@ public class Reasoner {
             Map<String, Type> varMap = atom.getParentQuery().getVarTypeMap();
             dAns = subAnswers.size();
             LOG.debug("iter: " + iter++ + " answers: " + dAns);
-            subAnswers = Answer(atom, subGoals, varMap);
+            subAnswers = answer(atom, subGoals, varMap);
             dAns = subAnswers.size() - dAns;
         } while(dAns != 0);
 
         return subAnswers;
     }
 
-    private Set<Map<String, Concept>> resolveQuery(Query query) {
-        if(getRules().isEmpty())
-            return Sets.newHashSet(query.getMatchQuery().distinct());
-
-        Set<Map<String, Concept>> answers = new HashSet<>();
-        Set<Atomic> atoms = query.selectAtoms();
-
-        for(Atomic atom: atoms){
-            Set<Map<String, Concept>> subAnswers = resolveAtomicQuery(atom);
+    private QueryAnswers resolveQuery(Query query) {
+        Iterator<Atomic> atIt = query.selectAtoms().iterator();
+        QueryAnswers answers = resolveAtomicQuery(atIt.next());
+        while(atIt.hasNext()){
+            QueryAnswers subAnswers = resolveAtomicQuery(atIt.next());
             answers = joinSubstitutions(answers, subAnswers);
         }
-        return filterAnswers(query, answers);
+
+        return answers.filter(query.getSelectVars());
     }
 
     private void expandAtomicQuery(Atomic atom, Set<Query> subGoals, Map<String, Type> varMap) {
@@ -653,6 +636,12 @@ public class Reasoner {
     public Set<Map<String, Concept>> resolve(MatchQuery inputQuery) {
         Query query = new Query(inputQuery, graph);
         return resolveQuery(query);
+    }
+
+    public MatchQuery resolveToQuery(MatchQuery inputQuery) {
+        Query query = new Query(inputQuery, graph);
+        resolveQuery(query);
+        return inputQuery;
     }
 
     /**

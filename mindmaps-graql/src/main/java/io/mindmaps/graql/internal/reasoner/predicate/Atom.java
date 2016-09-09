@@ -43,11 +43,10 @@ public class Atom extends AtomBase{
         super(a);
         this.val = extractValue(a.getPattern().asVar());
     }
-
     @Override
     public boolean isUnary(){ return true;}
 
-    @Override
+        @Override
     public boolean equals(Object obj) {
         if (!(obj instanceof Atom)) return false;
         Atom a2 = (Atom) obj;
