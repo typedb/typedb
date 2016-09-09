@@ -124,7 +124,7 @@ public class GraqlTest {
         Map<Instance, Long> degrees = ((Map) ((ComputeQuery) qp.parseQuery("compute degrees")).execute(graph));
 
         // assert degrees are correct
-        graph.refresh();
+        graph.rollback();
 
         entity1 = graph.getEntity("1");
         entity2 = graph.getEntity("2");
@@ -184,7 +184,7 @@ public class GraqlTest {
         ((ComputeQuery) qp.parseQuery("compute degreesAndPersist")).execute(graph);
 
         // assert persisted degrees are correct
-        graph.refresh();
+        graph.rollback();
         entity1 = graph.putEntity("1", thing);
         entity2 = graph.putEntity("2", thing);
         entity3 = graph.putEntity("3", thing);

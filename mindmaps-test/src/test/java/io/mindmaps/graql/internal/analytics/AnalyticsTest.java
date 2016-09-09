@@ -289,7 +289,7 @@ public class AnalyticsTest {
         Analytics computer = new Analytics(keyspace,Sets.newHashSet(thing, related));
         computer.degreesAndPersist();
 
-        graph.refresh();
+        graph.rollback();
         // fetch instances
         entity1 = graph.getEntity("1");
         entity2 = graph.getEntity("2");
@@ -310,11 +310,11 @@ public class AnalyticsTest {
 
         // compute again and again ...
         for (int i = 0; i < 2; i++) {
-            graph.refresh();
+            graph.rollback();
             computer.degreesAndPersist();
 
             // refresh everything after commit
-            graph.refresh();
+            graph.rollback();
             // fetch instances
             entity1 = graph.getEntity("1");
             entity2 = graph.getEntity("2");
@@ -342,12 +342,12 @@ public class AnalyticsTest {
         // compute degrees on all types, again and again ...
         for (int i = 0; i < 2; i++) {
 
-            graph.refresh();
+            graph.rollback();
             computer = new Analytics(keyspace);
             computer.degreesAndPersist();
 
             // after computation refresh concepts
-            graph.refresh();
+            graph.rollback();
             // fetch instances
             entity1 = graph.getEntity("1");
             entity2 = graph.getEntity("2");
