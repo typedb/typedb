@@ -18,23 +18,19 @@
 
 package io.mindmaps.graql.parser;
 
+import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
+import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.QueryParser;
 import org.junit.Before;
 import org.junit.Test;
 
-import static io.mindmaps.graql.Graql.id;
-import static io.mindmaps.graql.Graql.lte;
-import static io.mindmaps.graql.Graql.match;
-import static io.mindmaps.graql.Graql.neq;
-import static io.mindmaps.graql.Graql.or;
-import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.graql.Graql.withGraph;
+import static io.mindmaps.graql.Graql.*;
 import static org.junit.Assert.assertEquals;
 
 public class QueryToStringTest {
@@ -142,6 +138,17 @@ public class QueryToStringTest {
     @Test
     public void testHasResource() {
         assertEquals("insert $x has-resource thingy;", qb.insert(var("x").hasResource("thingy")).toString());
+    }
+
+    @Test
+    public void testComputeQueryToString() {
+        assertEquals("compute count", qb.compute("count").toString());
+    }
+
+    @Test
+    public void testComputeQuerySubgraphToString() {
+        ComputeQuery query = qb.compute("degrees", Sets.newHashSet("movie", "person"));
+        assertEquals("compute degrees in movie, person", query.toString());
     }
 
     @Test(expected=UnsupportedOperationException.class)

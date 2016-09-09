@@ -28,6 +28,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
 class ComputeQueryImpl implements ComputeQuery {
@@ -78,7 +79,8 @@ class ComputeQueryImpl implements ComputeQuery {
 
     @Override
     public String toString() {
-        return "compute "+computeMethod+"()";
+        String subtypes = typeIds.map(types -> " in " + types.stream().collect(joining(", "))).orElse("");
+        return "compute " + computeMethod + subtypes;
     }
 
 }
