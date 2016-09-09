@@ -252,7 +252,7 @@ public class ScalingTestIT {
         computer.degreesAndPersist();
 
         // assert mutated degrees are as expected
-        graph.refresh();
+        graph.rollback();
         EntityType thing = graph.getEntityType("thing");
         Collection<Entity> things = thing.instances();
 
@@ -270,7 +270,7 @@ public class ScalingTestIT {
         computer.degreesAndPersist();
 
         // assert mutated degrees are as expected
-        graph.refresh();
+        graph.rollback();
         thing = graph.getEntityType("thing");
         things = thing.instances();
 
