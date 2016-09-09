@@ -108,7 +108,7 @@ public class RemoteShellController {
         String currentGraphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
         if(currentGraphName==null) currentGraphName = defaultGraphName;
 
-        LOG.info("Received match query: \"" + req.queryParams(REST.Request.QUERY_FIELD) + "\"");
+        LOG.debug("Received match query: \"" + req.queryParams(REST.Request.QUERY_FIELD) + "\"");
 
 
         try {

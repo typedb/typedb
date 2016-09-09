@@ -18,12 +18,8 @@
 
 package io.mindmaps.engine.controller;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.http.ContentType;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.REST;
-import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.RelationType;
@@ -31,7 +27,9 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.engine.Util;
 import io.mindmaps.engine.postprocessing.Cache;
 import io.mindmaps.engine.util.ConfigProperties;
+import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.MindmapsClient;
+import io.mindmaps.util.REST;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -47,9 +45,6 @@ public class CommitLogControllerTest {
 
     @BeforeClass
     public static void startController() {
-        // Disable horrid cassandra logs
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.INFO);
         System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY, ConfigProperties.TEST_CONFIG_FILE);
     }
 

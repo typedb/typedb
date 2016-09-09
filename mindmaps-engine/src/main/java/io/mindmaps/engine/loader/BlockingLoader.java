@@ -126,8 +126,6 @@ public class BlockingLoader extends Loader {
             transactionsSemaphore.release();
         }
         LOG.error(ErrorMessage.FAILED_TRANSACTION.getMessage(repeatCommits));
-
-        //TODO: set a proper file appender to log all exceptions to file.
     }
 
     private void handleError(Exception e, int i) {

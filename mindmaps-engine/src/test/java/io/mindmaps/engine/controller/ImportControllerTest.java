@@ -18,15 +18,16 @@
 
 package io.mindmaps.engine.controller;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.response.Response;
-import io.mindmaps.util.REST;
 import io.mindmaps.engine.Util;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
+import io.mindmaps.util.REST;
 import mjson.Json;
-import org.junit.*;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import static com.jayway.restassured.RestAssured.given;
 
@@ -37,9 +38,6 @@ public class ImportControllerTest {
 
     @BeforeClass
     public static void startController() {
-        // Disable horrid cassandra logs
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.INFO);
         System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY, ConfigProperties.TEST_CONFIG_FILE);
     }
 

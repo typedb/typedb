@@ -15,11 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-
 package io.mindmaps.engine;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
+
 import io.mindmaps.engine.controller.*;
 import io.mindmaps.engine.util.ConfigProperties;
 
@@ -33,10 +31,6 @@ public class MindmapsEngineServer {
     }
 
     public static void start() {
-
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.INFO);
-
         ConfigProperties prop = ConfigProperties.getInstance();
 
         // Listening port

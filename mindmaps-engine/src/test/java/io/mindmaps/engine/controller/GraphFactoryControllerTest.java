@@ -18,16 +18,14 @@
 
 package io.mindmaps.engine.controller;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.response.Response;
-import io.mindmaps.graph.internal.MindmapsComputerImpl;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.REST.GraphConfig;
-import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import io.mindmaps.engine.Util;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.MindmapsClient;
+import io.mindmaps.graph.internal.AbstractMindmapsGraph;
+import io.mindmaps.graph.internal.MindmapsComputerImpl;
+import io.mindmaps.util.REST.GraphConfig;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -36,32 +34,26 @@ import static io.mindmaps.util.REST.Request.GRAPH_CONFIG_PARAM;
 import static io.mindmaps.util.REST.WebPath.GRAPH_FACTORY_URI;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class GraphFactoryControllerTest {
     @Before
     public void setUp() throws Exception {
-        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
+        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY, ConfigProperties.TEST_CONFIG_FILE);
 
         new GraphFactoryController();
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.INFO);
         Util.setRestAssuredBaseURI(ConfigProperties.getInstance().getProperties());
-
     }
 
     @Test
-    public void testConfigWorking(){
+    public void testConfigWorking() {
         Response response = get(GRAPH_FACTORY_URI).then().statusCode(200).extract().response().andReturn();
         String config = response.getBody().prettyPrint();
         assertTrue(config.contains("factory"));
     }
 
     @Test
-    public void testSpecificConfigWorking(){
+    public void testSpecificConfigWorking() {
         String endPoint = GRAPH_FACTORY_URI + "?" + GRAPH_CONFIG_PARAM + "=";
 
         Response responseDefault = get(endPoint + GraphConfig.DEFAULT).
@@ -78,13 +70,13 @@ public class GraphFactoryControllerTest {
     }
 
     @Test
-    public void testMindmapsClientBatch(){
+    public void testMindmapsClientBatch() {
         MindmapsGraph batch = MindmapsClient.getGraphBatchLoading("mindmapstest");
-        assertTrue(((AbstractMindmapsGraph)batch).isBatchLoadingEnabled());
+        assertTrue(((AbstractMindmapsGraph) batch).isBatchLoadingEnabled());
     }
 
     @Test
-    public void testMindmapsClient(){
+    public void testMindmapsClient() {
         AbstractMindmapsGraph graph = (AbstractMindmapsGraph) MindmapsClient.getGraph("mindmapstest");
         AbstractMindmapsGraph graph2 = (AbstractMindmapsGraph) MindmapsClient.getGraph("mindmapstest2");
         AbstractMindmapsGraph graphCopy = (AbstractMindmapsGraph) MindmapsClient.getGraph("mindmapstest");
