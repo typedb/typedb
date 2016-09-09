@@ -73,7 +73,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     private final String keyspace;
     private final String engine;
     private final boolean batchLoadingEnabled;
-    private G graph;
+    private final G graph;
 
     public AbstractMindmapsGraph(G graph, String keyspace, String engine, boolean batchLoadingEnabled) {
         this.graph = graph;
@@ -593,7 +593,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     }
 
     @Override
-    public void refresh() {
+    public void rollback() {
         handleTransaction(Transaction::rollback);
         getConceptLog().clearTransaction();
     }
@@ -603,7 +603,6 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
      */
     @Override
     public void close() {
-        handleTransaction(Transaction::rollback);
         getConceptLog().clearTransaction();
         try {
             graph.close();
@@ -630,7 +629,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         handleTransaction(Transaction::commit);
 
         try {
-            refresh();
+            rollback();
         } catch (Exception e) {
             LOG.error("Failed to create new graph after committing", e);
             e.printStackTrace();
