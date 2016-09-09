@@ -305,7 +305,7 @@ public class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public Object visitPropResource(GraqlParser.PropResourceContext ctx) {
-        patterns.peek().hasResource(visitId(ctx.id()));
+        patterns.peek().hasResource(visitVariable(ctx.variable()));
         return null;
     }
 

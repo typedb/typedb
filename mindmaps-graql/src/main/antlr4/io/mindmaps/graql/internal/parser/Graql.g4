@@ -88,7 +88,7 @@ propHasFlag    : 'has' id ;
 propHas        : 'has' id value ;
 propHasPred    : 'has' id predicate ;
 
-propResource   : 'has-resource' id ;
+propResource   : 'has-resource' variable ;
 
 propDatatype   : 'datatype' DATATYPE ;
 
