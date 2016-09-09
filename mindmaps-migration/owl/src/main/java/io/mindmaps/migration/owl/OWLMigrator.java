@@ -61,10 +61,6 @@ public class OWLMigrator {
         this.namer = new Namer(){};
     }
 
-    public MindmapsGraph getGraph() {
-        return graph;
-    }
-    
     public OWLMigrator namer(Namer namer) {
         this.namer = namer;
         return this;
