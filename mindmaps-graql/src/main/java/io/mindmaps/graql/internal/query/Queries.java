@@ -74,12 +74,12 @@ public class Queries {
         return new DeleteQueryImpl(deleters, matchQuery);
     }
 
-    public static ComputeQuery compute(String computeMethod) {
-        return new ComputeQueryImpl(computeMethod);
+    public static ComputeQuery compute(MindmapsGraph graph, String computeMethod) {
+        return new ComputeQueryImpl(graph, computeMethod);
     }
 
-    public static ComputeQuery compute(String computeMethod, Set<String> typeIds) {
-        return new ComputeQueryImpl(computeMethod, typeIds);
+    public static ComputeQuery compute(MindmapsGraph graph, String computeMethod, Set<String> typeIds) {
+        return new ComputeQueryImpl(graph, computeMethod, typeIds);
     }
 
     public static <T> AggregateQuery<T> aggregate(MatchQueryAdmin matchQuery, Aggregate<? super Map<String, Concept>, T> aggregate) {

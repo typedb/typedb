@@ -19,12 +19,10 @@
 package io.mindmaps.engine.session;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.exception.ConceptException;
-import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.exception.InvalidConceptTypeException;
-import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Instance;
+import io.mindmaps.exception.ConceptException;
+import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.*;
 import io.mindmaps.graql.internal.parser.ANSI;
 import io.mindmaps.graql.internal.parser.MatchQueryPrinter;
@@ -100,7 +98,7 @@ class GraqlSession {
                 } else if (query instanceof AggregateQuery) {
                     results = streamAggregateQuery((AggregateQuery) query);
                 } else if (query instanceof ComputeQuery) {
-                    Object computeResult = ((ComputeQuery) query).execute(this.graph);
+                    Object computeResult = ((ComputeQuery) query).execute();
                     if (computeResult instanceof Map) {
                         Map<Instance, ?> map = (Map<Instance, ?>) computeResult;
                         results = map.entrySet().stream().map(e -> e.getKey().getId() + "\t" + e.getValue());
