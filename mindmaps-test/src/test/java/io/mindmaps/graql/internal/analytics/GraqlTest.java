@@ -21,6 +21,7 @@ package io.mindmaps.graql.internal.analytics;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.*;
 import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.QueryParser;
@@ -142,7 +143,7 @@ public class GraqlTest {
         Map<Instance, Long> degrees = ((Map) ((ComputeQuery) qp.parseQuery("compute degrees")).execute());
 
         // assert degrees are correct
-        graph.rollback();
+        graph = MindmapsClient.getGraph(keyspace);
 
         entity1 = graph.getEntity("1");
         entity2 = graph.getEntity("2");
@@ -202,11 +203,11 @@ public class GraqlTest {
         ((ComputeQuery) qp.parseQuery("compute degreesAndPersist")).execute();
 
         // assert persisted degrees are correct
-        graph.rollback();
-        entity1 = graph.putEntity("1", thing);
-        entity2 = graph.putEntity("2", thing);
-        entity3 = graph.putEntity("3", thing);
-        entity4 = graph.putEntity("4", thing);
+        MindmapsGraph graph = MindmapsClient.getGraph(keyspace);
+        entity1 = graph.getEntity("1");
+        entity2 = graph.getEntity("2");
+        entity3 = graph.getEntity("3");
+        entity4 = graph.getEntity("4");
 
         Map<Instance, Long> correctDegrees = new HashMap<>();
         correctDegrees.put(entity1, 1l);

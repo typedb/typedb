@@ -78,9 +78,9 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
     public DegreeAndPersistVertexProgram() {
     }
 
-    public DegreeAndPersistVertexProgram(String keySpace, Set<Type> types) {
+    public DegreeAndPersistVertexProgram(String keySpace, Set<String> types) {
         this.keySpace = keySpace;
-        selectedTypes = types.stream().map(Type::getId).collect(Collectors.toSet());
+        selectedTypes = types;
     }
 
     @Override

@@ -51,7 +51,7 @@ public class IntegrationUtils {
 
     public static Pair<MindmapsGraph, String> graphWithNewKeyspace() {
         String keyspace = UUID.randomUUID().toString().replaceAll("-", "");
-        MindmapsGraph graph = MindmapsClient.getGraphBatchLoading(keyspace);
+        MindmapsGraph graph = MindmapsClient.getGraph(keyspace);
         return Pair.with(graph, keyspace);
     }
 }

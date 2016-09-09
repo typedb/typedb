@@ -59,8 +59,8 @@ class CountMapReduce implements MapReduce<Serializable, Long, Serializable, Long
 
     }
 
-    public CountMapReduce(Set<Type> types) {
-        selectedTypes = types.stream().map(Type::getId).collect(Collectors.toSet());
+    public CountMapReduce(Set<String> types) {
+        selectedTypes = types;
     }
 
     @Override

@@ -62,9 +62,9 @@ public class Analytics {
             Sets.newHashSet(degree, GraqlType.HAS_RESOURCE.getId(degree));
 
     /**
-     * The concept types that define which instances appear in the subgraph.
+     * The concept type ids that define which instances appear in the subgraph.
      */
-    private final Set<Type> allTypes = new HashSet<>();
+    private final Set<String> allTypes = new HashSet<>();
 
     /**
      * Create a graph computer from a Mindmaps Graph. The computer operates on all instances in the graph.
@@ -93,10 +93,12 @@ public class Analytics {
                 .forEach(excludedTypes::add);
 
         // fetch all types
-        allTypes.addAll(graph.getMetaType().instances().stream()
+        graph.getMetaType().instances().stream()
                 .filter(concept -> !excludedTypes.contains(concept))
                 .map(Concept::asType)
-                .collect(Collectors.toList()));
+                .collect(Collectors.toList()).forEach(type -> allTypes.add(type.getId()));
+
+        graph.close();
     }
 
     /**
@@ -111,7 +113,7 @@ public class Analytics {
 
         // use ako relations to add subtypes of the provided types
         for (Type t : types) {
-            this.allTypes.addAll(t.subTypes());
+            t.subTypes().forEach(subtype -> allTypes.add(subtype.getId()));
         }
     }
 
@@ -136,7 +138,7 @@ public class Analytics {
         Map<Instance, Long> allDegrees = new HashMap<>();
         MindmapsComputer computer = MindmapsClient.getGraphComputer(keySpace);
         ComputerResult result = computer.compute(new DegreeVertexProgram(allTypes));
-        MindmapsGraph graph = MindmapsClient.getGraphBatchLoading(keySpace);
+        MindmapsGraph graph = MindmapsClient.getGraph(keySpace);
         result.graph().traversal().V().forEachRemaining(v -> {
             if (v.keys().contains(DegreeVertexProgram.DEGREE)) {
                 Instance instance = graph.getInstance(v.value(ITEM_IDENTIFIER.name()));
@@ -167,7 +169,7 @@ public class Analytics {
     }
 
     private void insertOntology(String resourceTypeId, ResourceType.DataType resourceDataType) {
-        MindmapsGraph graph = MindmapsClient.getGraphBatchLoading(keySpace);
+        MindmapsGraph graph = MindmapsClient.getGraph(keySpace);
         ResourceType resource = graph.putResourceType(resourceTypeId, resourceDataType);
         RoleType degreeOwner = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
         RoleType degreeValue = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
@@ -175,13 +177,14 @@ public class Analytics {
                 .hasRole(degreeOwner)
                 .hasRole(degreeValue);
 
-        for (Type type : allTypes) {
-            type.playsRole(degreeOwner);
+        for (String type : allTypes) {
+            graph.getType(type).playsRole(degreeOwner);
         }
         resource.playsRole(degreeValue);
 
         try {
             graph.commit();
+            graph.close();
         } catch (MindmapsValidationException e) {
             throw new RuntimeException(ErrorMessage.ONTOLOGY_MUTATION.getMessage(e.getMessage()),e);
         }
