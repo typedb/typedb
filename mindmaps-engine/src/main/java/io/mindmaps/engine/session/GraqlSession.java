@@ -168,7 +168,7 @@ class GraqlSession {
         // Expand match query with reasoner, if there are any rules in the graph
         // TODO: Make sure reasoner still applies things such as limit, even with rules in the graph
         if (!reasoner.getRules().isEmpty()) {
-            query.setMatchQuery(reasoner.expand(query.getMatchQuery()));
+            query.setMatchQuery(reasoner.resolveToQuery(query.getMatchQuery()));
         }
 
         return query.resultsString();

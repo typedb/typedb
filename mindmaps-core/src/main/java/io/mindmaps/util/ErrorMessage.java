@@ -149,6 +149,8 @@ public enum ErrorMessage {
     NO_TYPE_CONSTRAINTS("Attempted to return constraints from non-relation atom"),
     LOOP_CLAUSE("Unable to find suitable starting atom (loop?)"),
     NON_ATOMIC_QUERY("Addressed query is not atomic"),
+    MULTI_VALUE_VAR("Multi value variable found [$s] on query construction"),
+    NO_ATOMS_SELECTED("No atoms were selected from query [$s]"),
 
     //--------------------------------------------- Analytics Errors -----------------------------------------------
     ONTOLOGY_MUTATION("The mutations to the ontology have not been successfully committed. Validation Errors: [%s]"),

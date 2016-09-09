@@ -5,6 +5,8 @@ insert
 #################################################
 
 "entity" isa entity-type;
+"start" ako entity;
+"end" ako entity;
 "a-entity" ako entity;
 "b-entity" ako entity;
 

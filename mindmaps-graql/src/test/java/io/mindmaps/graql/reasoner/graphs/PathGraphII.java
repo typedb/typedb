@@ -35,11 +35,12 @@ public class PathGraphII extends GenericGraph {
 
     private static void buildExtensionalDB(int n, int m) {
         EntityType vertex = mindmaps.getEntityType("vertex");
+        EntityType startVertex = mindmaps.getEntityType("start-vertex");
         RoleType arcFrom = mindmaps.getRoleType("arc-from");
         RoleType arcTo = mindmaps.getRoleType("arc-to");
 
         RelationType arc = mindmaps.getRelationType("arc");
-        mindmaps.putEntity("a0", vertex);
+        mindmaps.putEntity("a0", startVertex);
 
         for(int i = 0 ; i < n ;i++)
             for(int j = 0; j < m; j++)
