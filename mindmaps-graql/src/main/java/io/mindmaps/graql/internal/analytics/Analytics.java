@@ -71,7 +71,7 @@ public class Analytics {
      */
     public Analytics(String keySpace) {
         this.keySpace = keySpace;
-        MindmapsGraph graph = MindmapsClient.getGraphBatchLoading(this.keySpace);
+        MindmapsGraph graph = MindmapsClient.getGraph(this.keySpace);
 
         // collect meta-types to exclude them as they do not have instances
         Set<Concept> excludedTypes = new HashSet<>();

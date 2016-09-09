@@ -114,6 +114,7 @@ public class AnalyticsTest {
         // create 3 instances
         System.out.println();
         System.out.println("Creating 3 instances");
+        graph = MindmapsClient.getGraph(keyspace);
         EntityType thing = graph.putEntityType("thing");
         EntityType anotherThing = graph.putEntityType("another");
         graph.putEntity("1", thing);
@@ -756,6 +757,7 @@ public class AnalyticsTest {
 
         Analytics analytics = new Analytics(keyspace);
         Map<Instance, Long> degrees = analytics.degrees();
+        graph = MindmapsClient.getGraph(keyspace);
         assertTrue(degrees.get(graph.getRelation(relationId)).equals(3L));
         assertTrue(degrees.get(graph.getEntity(marlonId)).equals(1L));
     }
