@@ -62,11 +62,6 @@ public class Analytics {
             Sets.newHashSet(degree, GraqlType.HAS_RESOURCE.getId(degree));
 
     /**
-     * The graph computer.
-     */
-    private final MindmapsComputer computer;
-
-    /**
      * The concept types that define which instances appear in the subgraph.
      */
     private final Set<Type> allTypes = new HashSet<>();
@@ -77,7 +72,6 @@ public class Analytics {
     public Analytics(String keySpace) {
         this.keySpace = keySpace;
         MindmapsGraph graph = MindmapsClient.getGraphBatchLoading(this.keySpace);
-        computer = MindmapsClient.getGraphComputer(this.keySpace);
 
         // collect meta-types to exclude them as they do not have instances
         Set<Concept> excludedTypes = new HashSet<>();
@@ -114,7 +108,6 @@ public class Analytics {
      */
     public Analytics(String keySpace, Set<Type> types) {
         this.keySpace = keySpace;
-        computer = MindmapsClient.getGraphComputer(this.keySpace);
 
         // use ako relations to add subtypes of the provided types
         for (Type t : types) {
@@ -128,6 +121,7 @@ public class Analytics {
      * @return the number of instances
      */
     public long count() {
+        MindmapsComputer computer = MindmapsClient.getGraphComputer(keySpace);
         ComputerResult result = computer.compute(new CountMapReduce(allTypes));
         Map<String, Long> count = result.memory().get(CountMapReduce.DEFAULT_MEMORY_KEY);
         return count.containsKey(CountMapReduce.DEFAULT_MEMORY_KEY) ? count.get(CountMapReduce.DEFAULT_MEMORY_KEY) : 0L;
@@ -140,6 +134,7 @@ public class Analytics {
      */
     public Map<Instance, Long> degrees() {
         Map<Instance, Long> allDegrees = new HashMap<>();
+        MindmapsComputer computer = MindmapsClient.getGraphComputer(keySpace);
         ComputerResult result = computer.compute(new DegreeVertexProgram(allTypes));
         MindmapsGraph graph = MindmapsClient.getGraphBatchLoading(keySpace);
         result.graph().traversal().V().forEachRemaining(v -> {
@@ -159,9 +154,14 @@ public class Analytics {
      */
     private void degreesAndPersist(String resourceType) {
         insertOntology(resourceType, ResourceType.DataType.LONG);
+        MindmapsComputer computer = MindmapsClient.getGraphComputer(keySpace);
         computer.compute(new DegreeAndPersistVertexProgram(keySpace,allTypes));
     }
 
+    /**
+     * Compute the number of relations that each instance takes part in and persist this information in the graph. The
+     * degree is stored as a resource of type "degree" attached to the relevant instance.
+     */
     public void degreesAndPersist() throws ExecutionException, InterruptedException {
         degreesAndPersist(degree);
     }
