@@ -88,6 +88,16 @@ class InsertQueryImpl implements InsertQueryAdmin {
     }
 
     @Override
+    public Stream<String> resultsString() {
+        return stream().map(Concept::getId);
+    }
+
+    @Override
+    public boolean isReadOnly() {
+        return false;
+    }
+
+    @Override
     public Stream<Concept> stream() {
         MindmapsGraph theGraph =
                 getGraph().orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage()));

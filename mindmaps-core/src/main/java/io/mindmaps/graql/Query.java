@@ -20,6 +20,8 @@ package io.mindmaps.graql;
 
 import io.mindmaps.MindmapsGraph;
 
+import java.util.stream.Stream;
+
 public interface Query<T> {
 
     /**
@@ -30,4 +32,13 @@ public interface Query<T> {
 
     T execute();
 
+    /**
+     * Execute the query and return a human-readable stream of results
+     */
+    Stream<String> resultsString();
+
+    /**
+     * Whether this query will modify the graph
+     */
+    boolean isReadOnly();
 }

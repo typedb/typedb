@@ -19,14 +19,17 @@
 package io.mindmaps.graql.internal.query;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.internal.analytics.Analytics;
+import io.mindmaps.util.ErrorMessage;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
@@ -74,6 +77,23 @@ class ComputeQueryImpl implements ComputeQuery {
             }
         }
 
+    }
+
+    @Override
+    public Stream<String> resultsString() {
+        Object computeResult = execute();
+        if (computeResult instanceof Map) {
+            Map<Instance, ?> map = (Map<Instance, ?>) computeResult;
+            return map.entrySet().stream().map(e -> e.getKey().getId() + "\t" + e.getValue());
+        } else {
+            return Stream.of(computeResult.toString());
+        }
+    }
+
+    @Override
+    public boolean isReadOnly() {
+        // A compute query may modify the graph based on which method is being used
+        return false;
     }
 
     @Override

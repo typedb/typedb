@@ -36,6 +36,16 @@ import static java.util.stream.Collectors.toList;
 @SuppressWarnings("UnusedReturnValue")
 interface MatchQueryInternal extends MatchQueryAdmin {
 
+    @Override
+    default Stream<String> resultsString() {
+        return stream().map(Object::toString);
+    }
+
+    @Override
+    default boolean isReadOnly() {
+        return true;
+    }
+
     /**
      * Execute the query using the given graph.
      * @param graph the graph to use to execute the query

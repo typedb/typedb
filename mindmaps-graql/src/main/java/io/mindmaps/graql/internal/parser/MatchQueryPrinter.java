@@ -59,6 +59,11 @@ public class MatchQueryPrinter implements Query<Stream<String>> {
      * @return a stream of strings, where each string represents a result
      */
     public Stream<String> execute() {
+        return resultsString();
+    }
+
+    @Override
+    public Stream<String> resultsString() {
         return matchQuery.stream().map(results -> {
             StringBuilder str = new StringBuilder();
 
@@ -72,6 +77,11 @@ public class MatchQueryPrinter implements Query<Stream<String>> {
 
             return str.toString();
         });
+    }
+
+    @Override
+    public boolean isReadOnly() {
+        return true;
     }
 
     private List<Getter> getGetters(String name) {

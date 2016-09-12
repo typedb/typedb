@@ -19,21 +19,16 @@
 package io.mindmaps.engine.session;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.Concept;
-import io.mindmaps.concept.Instance;
 import io.mindmaps.exception.ConceptException;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.*;
-import io.mindmaps.graql.internal.parser.ANSI;
 import io.mindmaps.graql.internal.parser.MatchQueryPrinter;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Stream;
 
 import static io.mindmaps.util.REST.RemoteShell.*;
 
@@ -81,40 +76,22 @@ class GraqlSession {
                 QueryParser parser = QueryParser.create(graph);
                 String queryString = json.at(QUERY).asString();
 
-                Object query = parser.parseQuery(queryString);
-
-                Stream<String> results = Stream.empty();
+                Query<?> query = parser.parseQuery(queryString);
 
                 if (query instanceof MatchQueryPrinter) {
-                    results = streamMatchQuery((MatchQueryPrinter) query);
-                } else if (query instanceof AskQuery) {
-                    results = streamAskQuery((AskQuery) query);
-                } else if (query instanceof InsertQuery) {
-                    results = streamInsertQuery((InsertQuery) query);
-                    reasoner.linkConceptTypes();
-                } else if (query instanceof DeleteQuery) {
-                    executeDeleteQuery((DeleteQuery) query);
-                    reasoner.linkConceptTypes();
-                } else if (query instanceof AggregateQuery) {
-                    results = streamAggregateQuery((AggregateQuery) query);
-                } else if (query instanceof ComputeQuery) {
-                    Object computeResult = ((ComputeQuery) query).execute();
-                    if (computeResult instanceof Map) {
-                        Map<Instance, ?> map = (Map<Instance, ?>) computeResult;
-                        results = map.entrySet().stream().map(e -> e.getKey().getId() + "\t" + e.getValue());
-                    } else {
-                        results = Stream.of(computeResult.toString());
-                    }
-                } else {
-                    errorMessage = "Unrecognized query " + query;
+                    reasonMatchQuery((MatchQueryPrinter) query);
                 }
 
                 // Return results unless query is cancelled
-                results.forEach(result -> {
+                query.resultsString().forEach(result -> {
                     if (queryCancelled) return;
                     sendQueryResult(result);
                 });
                 queryCancelled = false;
+
+                if (!query.isReadOnly()) {
+                    reasoner.linkConceptTypes();
+                }
 
             } catch (IllegalArgumentException | IllegalStateException | ConceptException e) {
                 errorMessage = e.getMessage();
@@ -161,49 +138,14 @@ class GraqlSession {
     }
 
     /**
-     * Return a stream of match query results
+     * Apply reasoner to match query
      */
-    private Stream<String> streamMatchQuery(MatchQueryPrinter query) {
-
+    private void reasonMatchQuery(MatchQueryPrinter query) {
         // Expand match query with reasoner, if there are any rules in the graph
         // TODO: Make sure reasoner still applies things such as limit, even with rules in the graph
         if (!reasoner.getRules().isEmpty()) {
             query.setMatchQuery(reasoner.resolveToQuery(query.getMatchQuery()));
         }
-
-        return query.resultsString();
-    }
-
-    /**
-     * Return a stream containing the single ask query result
-     */
-    private Stream<String> streamAskQuery(AskQuery query) {
-        if (query.execute()) {
-            return Stream.of(ANSI.color("True", ANSI.GREEN));
-        } else {
-            return Stream.of(ANSI.color("False", ANSI.RED));
-        }
-    }
-
-    /**
-     * Return a stream of insert query results
-     */
-    private Stream<String> streamInsertQuery(InsertQuery query) {
-        return query.stream().map(Concept::getId);
-    }
-
-    /**
-     * Execute the given delete query
-     */
-    private void executeDeleteQuery(DeleteQuery query) {
-        query.execute();
-    }
-
-    /**
-     * Return a stream containing the single aggregate query result
-     */
-    private Stream<String> streamAggregateQuery(AggregateQuery query) {
-        return Stream.of(query.execute().toString());
     }
 
     /**
