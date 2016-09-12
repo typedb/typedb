@@ -75,6 +75,7 @@ class ComputeQueryImpl implements ComputeQuery {
                 throw new RuntimeException(ErrorMessage.NO_ANALYTICS_METHOD.getMessage(computeMethod));
             }
         }
+
     }
 
     @Override

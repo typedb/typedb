@@ -32,14 +32,14 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * Main program to migrate CSV files into a Mindmaps graph. For use from a command line.
- * Expected arguments are the CSV file and the Mindmaps engine URL.
- * Additionally, name of CSV entity and name of Mindmaps graph can be provided.
+ * Expected arguments are the CSV file and the Mindmaps graph name.
+ * Additionally, name of CSV entity and url of Mindmaps engine can be provided.
  */
 public class Main {
 
     static void die(String errorMsg) {
         System.out.println(errorMsg);
-        System.out.println("\nSyntax: CSVMigrator -file <csv filename> [-graph <graph name>] [-engine <Mindmaps engine URL>] [-as <Mindmaps graph name>]");
+        System.out.println("\nSyntax: ./migration.sh csv -file <csv filename> -graph <graph name> [-engine <Mindmaps engine URL>] [-as <name of this entity type>]");
         System.exit(-1);
     }
 
@@ -60,6 +60,9 @@ public class Main {
             else if ("-as".equals(args[i])){
                 csvEntityType = args[++i];
             }
+            else if("csv".equals(args[0])) {
+                continue;
+            }
             else
                 die("Unknown option " + args[i]);
         }
@@ -71,14 +74,11 @@ public class Main {
         if(!csvFile.exists()){
             die("Cannot find file: " + csvFileName);
         }
-        if(engineURL == null){
-            die("Please specify the URL where engine is running using -engine option");
-        }
         if(graphName == null){
-            graphName = csvFile.getName().replaceAll("^[a-zA-Z]", "_");
+            die("Please provide the name of the graph using -graph");
         }
         if(csvEntityType == null){
-            csvEntityType = csvFile.getName().replaceAll("^[a-zA-Z]", "_");
+            csvEntityType = csvFile.getName().replaceAll("[^A-Za-z0-9]", "_");
         }
 
         System.out.println("Migrating " + csvFileName + " using MM Engine " +

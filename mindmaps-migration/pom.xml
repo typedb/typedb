@@ -21,14 +21,14 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>mindmaps-migration</artifactId>
   <parent>
-    <artifactId>mindmaps</artifactId>
-    <groupId>io.mindmaps</groupId>
-    <version>0.1.0-SNAPSHOT</version>
+      <artifactId>mindmaps</artifactId>
+      <groupId>io.mindmaps</groupId>
+      <version>0.2.0-SNAPSHOT</version>
   </parent>
   <packaging>pom</packaging>
   <modules>
       <module>owl</module>
       <module>csv</module>
       <module>sql</module>
-  </modules>  
+  </modules>
 </project>

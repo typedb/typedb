@@ -62,27 +62,16 @@ public class Analytics {
             Sets.newHashSet(degree, GraqlType.HAS_RESOURCE.getId(degree));
 
     /**
-     * A reference to the Mindmaps Graph that this subgraph belongs to.
+     * The concept type ids that define which instances appear in the subgraph.
      */
-    private final MindmapsGraph graph;
-
-    /**
-     * The graph computer.
-     */
-    private final MindmapsComputer computer;
-
-    /**
-     * The concept types that define which instances appear in the subgraph.
-     */
-    private final Set<Type> allTypes = new HashSet<>();
+    private final Set<String> allTypes = new HashSet<>();
 
     /**
      * Create a graph computer from a Mindmaps Graph. The computer operates on all instances in the graph.
      */
     public Analytics(String keySpace) {
         this.keySpace = keySpace;
-        graph = MindmapsClient.getGraph(this.keySpace);
-        computer = MindmapsClient.getGraphComputer(this.keySpace);
+        MindmapsGraph graph = MindmapsClient.getGraph(this.keySpace);
 
         // collect meta-types to exclude them as they do not have instances
         Set<Concept> excludedTypes = new HashSet<>();
@@ -104,10 +93,12 @@ public class Analytics {
                 .forEach(excludedTypes::add);
 
         // fetch all types
-        allTypes.addAll(graph.getMetaType().instances().stream()
+        graph.getMetaType().instances().stream()
                 .filter(concept -> !excludedTypes.contains(concept))
                 .map(Concept::asType)
-                .collect(Collectors.toList()));
+                .collect(Collectors.toList()).forEach(type -> allTypes.add(type.getId()));
+
+        graph.rollback();
     }
 
     /**
@@ -119,12 +110,10 @@ public class Analytics {
      */
     public Analytics(String keySpace, Set<Type> types) {
         this.keySpace = keySpace;
-        graph = MindmapsClient.getGraph(this.keySpace);
-        computer = MindmapsClient.getGraphComputer(this.keySpace);
 
         // use ako relations to add subtypes of the provided types
         for (Type t : types) {
-            this.allTypes.addAll(t.subTypes());
+            t.subTypes().forEach(subtype -> allTypes.add(subtype.getId()));
         }
     }
 
@@ -134,6 +123,7 @@ public class Analytics {
      * @return the number of instances
      */
     public long count() {
+        MindmapsComputer computer = MindmapsClient.getGraphComputer(keySpace);
         ComputerResult result = computer.compute(new CountMapReduce(allTypes));
         Map<String, Long> count = result.memory().get(CountMapReduce.DEFAULT_MEMORY_KEY);
         return count.containsKey(CountMapReduce.DEFAULT_MEMORY_KEY) ? count.get(CountMapReduce.DEFAULT_MEMORY_KEY) : 0L;
@@ -146,7 +136,9 @@ public class Analytics {
      */
     public Map<Instance, Long> degrees() {
         Map<Instance, Long> allDegrees = new HashMap<>();
+        MindmapsComputer computer = MindmapsClient.getGraphComputer(keySpace);
         ComputerResult result = computer.compute(new DegreeVertexProgram(allTypes));
+        MindmapsGraph graph = MindmapsClient.getGraph(keySpace);
         result.graph().traversal().V().forEachRemaining(v -> {
             if (v.keys().contains(DegreeVertexProgram.DEGREE)) {
                 Instance instance = graph.getInstance(v.value(ITEM_IDENTIFIER.name()));
@@ -164,29 +156,20 @@ public class Analytics {
      */
     private void degreesAndPersist(String resourceType) {
         insertOntology(resourceType, ResourceType.DataType.LONG);
-        ComputerResult result = computer.compute(new DegreeAndPersistVertexProgram(keySpace,allTypes));
-
-        // TODO: get rid of this in the future MASSIVE bottleneck
-        // collect relation ids and delete them in a single thread
-        result.graph().traversal().V().forEachRemaining(v -> {
-            if (v.keys().contains(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID)) {
-                Relation relation = graph.getRelation(v.value(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID));
-                relation.delete();
-            }
-        });
-
-        try {
-            graph.commit();
-        } catch (MindmapsValidationException e) {
-            e.printStackTrace();
-        }
+        MindmapsComputer computer = MindmapsClient.getGraphComputer(keySpace);
+        computer.compute(new DegreeAndPersistVertexProgram(keySpace,allTypes));
     }
 
+    /**
+     * Compute the number of relations that each instance takes part in and persist this information in the graph. The
+     * degree is stored as a resource of type "degree" attached to the relevant instance.
+     */
     public void degreesAndPersist() throws ExecutionException, InterruptedException {
         degreesAndPersist(degree);
     }
 
     private void insertOntology(String resourceTypeId, ResourceType.DataType resourceDataType) {
+        MindmapsGraph graph = MindmapsClient.getGraph(keySpace);
         ResourceType resource = graph.putResourceType(resourceTypeId, resourceDataType);
         RoleType degreeOwner = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
         RoleType degreeValue = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
@@ -194,8 +177,8 @@ public class Analytics {
                 .hasRole(degreeOwner)
                 .hasRole(degreeValue);
 
-        for (Type type : allTypes) {
-            type.playsRole(degreeOwner);
+        for (String type : allTypes) {
+            graph.getType(type).playsRole(degreeOwner);
         }
         resource.playsRole(degreeValue);
 
@@ -221,8 +204,9 @@ public class Analytics {
         return Analytics.analyticsElements.contains(getVertexType(vertex));
     }
 
-    public static String persistResource(MindmapsGraph mindmapsGraph, Vertex vertex,
+    public static String persistResource(String keySpace, Vertex vertex,
                                          String resourceName, long value) {
+        MindmapsGraph mindmapsGraph = MindmapsClient.getGraphBatchLoading(keySpace);
         ResourceType<Long> resourceType = mindmapsGraph.getResourceType(resourceName);
         RoleType resourceOwner = mindmapsGraph.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceName));
         RoleType resourceValue = mindmapsGraph.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceName));
@@ -244,13 +228,10 @@ public class Analytics {
                     .putRolePlayer(resourceOwner, instance)
                     .putRolePlayer(resourceValue, resource);
 
-            while (true) {
-                try {
-                    mindmapsGraph.commit();
-                    break;
-                } catch (Exception e) {
-                    throw new RuntimeException(ErrorMessage.BULK_PERSIST.getMessage(resourceType,e.getMessage()),e);
-                }
+            try {
+                mindmapsGraph.commit();
+            } catch (Exception e) {
+                throw new RuntimeException(ErrorMessage.BULK_PERSIST.getMessage(resourceType,e.getMessage()),e);
             }
             return null;
         }
@@ -263,18 +244,15 @@ public class Analytics {
         if (!relations.isEmpty()) {
             String oldAssertionId = relations.get(0).getId();
 
-            while (true) {
-                Resource<Long> resource = mindmapsGraph.putResource(value, resourceType);
+            Resource<Long> resource = mindmapsGraph.putResource(value, resourceType);
 
-                mindmapsGraph.addRelation(relationType)
-                        .putRolePlayer(resourceOwner, instance)
-                        .putRolePlayer(resourceValue, resource);
-                try {
-                    mindmapsGraph.commit();
-                    break;
-                } catch (Exception e) {
-                    throw new RuntimeException(ErrorMessage.BULK_PERSIST.getMessage(resourceType,e.getMessage()),e);
-                }
+            mindmapsGraph.addRelation(relationType)
+                    .putRolePlayer(resourceOwner, instance)
+                    .putRolePlayer(resourceValue, resource);
+            try {
+                mindmapsGraph.commit();
+            } catch (Exception e) {
+                throw new RuntimeException(ErrorMessage.BULK_PERSIST.getMessage(resourceType,e.getMessage()),e);
             }
 
             return oldAssertionId;

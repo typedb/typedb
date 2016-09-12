@@ -25,7 +25,7 @@
     <groupId>io.mindmaps</groupId>
     <artifactId>mindmaps</artifactId>
     <packaging>pom</packaging>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.2.0-SNAPSHOT</version>
     <name>MindmapsDB</name>
     <description>A distributed semantic graph database.</description>
     <url>http://mindmaps.io/platform.html</url>
@@ -42,10 +42,10 @@
           
         <module>mindmaps-dashboard</module>
     -->
+        <module>mindmaps-migration</module>
         <module>mindmaps-dist</module>
         <module>mindmaps-test</module>
         <module>mindmaps-core</module>
-        <module>mindmaps-migration</module>
     </modules>
 
     <properties>

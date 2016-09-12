@@ -19,13 +19,9 @@
 package io.mindmaps.graql.internal.analytics;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.Entity;
-import io.mindmaps.concept.EntityType;
-import io.mindmaps.concept.Instance;
-import io.mindmaps.concept.RelationType;
-import io.mindmaps.concept.Resource;
-import io.mindmaps.concept.RoleType;
+import io.mindmaps.concept.*;
 import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.QueryParser;
@@ -34,8 +30,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.Ignore;
 
+import javax.management.relation.Role;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
@@ -46,20 +42,10 @@ import static org.junit.Assert.*;
 
 public class GraqlTest {
 
-    String keyspace = "mindmapstest";
+    String keyspace;
     MindmapsGraph graph;
     private QueryParser qp;
     private QueryBuilder qb;
-
-    // concepts
-    EntityType thing;
-    Entity entity1;
-    Entity entity2;
-    Entity entity3;
-    Entity entity4;
-    RoleType relation1;
-    RoleType relation2;
-    RelationType related;
 
     @BeforeClass
     public static void startController() throws Exception {
@@ -103,12 +89,17 @@ public class GraqlTest {
 
         assertEquals(graqlCount, computeCount);
         assertEquals(3L, computeCount);
+
+        computeCount = ((Long) ((ComputeQuery) qp.parseQuery("compute count")).execute());
+
+        assertEquals(graqlCount, computeCount);
+        assertEquals(3L, computeCount);
     }
 
     @Test
     public void testGraqlCountSubgraph() throws Exception {
         // create 3 instances
-        thing = graph.putEntityType("thing");
+        EntityType thing = graph.putEntityType("thing");
         EntityType anotherThing = graph.putEntityType("another");
         graph.putEntity("1", thing);
         graph.putEntity("2", thing);
@@ -122,7 +113,18 @@ public class GraqlTest {
 
     @Test
     public void testDegrees() throws Exception {
-        instantiateSimpleConcepts();
+
+        // create 3 instances
+        EntityType thing = graph.putEntityType("thing");
+        Entity entity1 = graph.putEntity("1", thing);
+        Entity entity2 = graph.putEntity("2", thing);
+        Entity entity3 = graph.putEntity("3", thing);
+        Entity entity4 = graph.putEntity("4", thing);
+
+        RoleType relation1 = graph.putRoleType("relation1");
+        RoleType relation2 = graph.putRoleType("relation2");
+        thing.playsRole(relation1).playsRole(relation2);
+        RelationType related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
 
         // relate them
         String id1 = UUID.randomUUID().toString();
@@ -146,7 +148,13 @@ public class GraqlTest {
         Map<Instance, Long> degrees = ((Map) ((ComputeQuery) qp.parseQuery("compute degrees")).execute());
 
         // assert degrees are correct
-        instantiateSimpleConcepts();
+        graph = MindmapsClient.getGraph(keyspace);
+
+        entity1 = graph.getEntity("1");
+        entity2 = graph.getEntity("2");
+        entity3 = graph.getEntity("3");
+        entity4 = graph.getEntity("4");
+
         Map<Instance, Long> correctDegrees = new HashMap<>();
         correctDegrees.put(entity1, 1l);
         correctDegrees.put(entity2, 3l);
@@ -163,27 +171,20 @@ public class GraqlTest {
         });
     }
 
-    private void instantiateSimpleConcepts() {
-
-        // create 3 instances
-        thing = graph.putEntityType("thing");
-        entity1 = graph.putEntity("1", thing);
-        entity2 = graph.putEntity("2", thing);
-        entity3 = graph.putEntity("3", thing);
-        entity4 = graph.putEntity("4", thing);
-
-        relation1 = graph.putRoleType("relation1");
-        relation2 = graph.putRoleType("relation2");
-        thing.playsRole(relation1).playsRole(relation2);
-        related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
-
-    }
-
-    //TODO: Fix this test. Failing for the same reason as the equivalent test in AnalyticsTest.java
-    @Ignore
     @Test
     public void testDegreesAndPersist() throws Exception {
-        instantiateSimpleConcepts();
+
+        // create 3 instances
+        EntityType thing = graph.putEntityType("thing");
+        Entity entity1 = graph.putEntity("1", thing);
+        Entity entity2 = graph.putEntity("2", thing);
+        Entity entity3 = graph.putEntity("3", thing);
+        Entity entity4 = graph.putEntity("4", thing);
+
+        RoleType relation1 = graph.putRoleType("relation1");
+        RoleType relation2 = graph.putRoleType("relation2");
+        thing.playsRole(relation1).playsRole(relation2);
+        RelationType related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
 
         // relate them
         String id1 = UUID.randomUUID().toString();
@@ -207,9 +208,43 @@ public class GraqlTest {
         ((ComputeQuery) qp.parseQuery("compute degreesAndPersist")).execute();
 
         // assert persisted degrees are correct
-        instantiateSimpleConcepts();
+//        MindmapsGraph graph = MindmapsClient.getGraph(keyspace);
+        entity1 = graph.getEntity("1");
+        entity2 = graph.getEntity("2");
+        entity3 = graph.getEntity("3");
+        entity4 = graph.getEntity("4");
 
         Map<Instance, Long> correctDegrees = new HashMap<>();
+        correctDegrees.put(entity1, 1l);
+        correctDegrees.put(entity2, 3l);
+        correctDegrees.put(entity3, 1l);
+        correctDegrees.put(entity4, 1l);
+        correctDegrees.put(graph.getRelation(id1), 2l);
+        correctDegrees.put(graph.getRelation(id2), 2l);
+        correctDegrees.put(graph.getRelation(id3), 2l);
+
+        correctDegrees.entrySet().forEach(degree -> {
+            Instance instance = degree.getKey();
+            Collection<Resource<?>> resources = null;
+            if (instance.isEntity()) {
+                resources = instance.asEntity().resources();
+            } else if (instance.isRelation()) {
+                resources = instance.asRelation().resources();
+            }
+            assertTrue(resources.iterator().next().getValue().equals(degree.getValue()));
+        });
+
+        // compute degrees again
+        ((ComputeQuery) qp.parseQuery("compute degreesAndPersist")).execute();
+
+        // assert persisted degrees are correct
+        graph = MindmapsClient.getGraph(keyspace);
+        entity1 = graph.getEntity("1");
+        entity2 = graph.getEntity("2");
+        entity3 = graph.getEntity("3");
+        entity4 = graph.getEntity("4");
+
+        correctDegrees = new HashMap<>();
         correctDegrees.put(entity1, 1l);
         correctDegrees.put(entity2, 3l);
         correctDegrees.put(entity3, 1l);

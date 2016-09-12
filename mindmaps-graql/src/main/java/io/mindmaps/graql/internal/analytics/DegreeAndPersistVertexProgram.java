@@ -20,10 +20,11 @@ package io.mindmaps.graql.internal.analytics;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.util.Schema;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.concept.Type;
-import io.mindmaps.factory.MindmapsClient;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
@@ -77,9 +78,9 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
     public DegreeAndPersistVertexProgram() {
     }
 
-    public DegreeAndPersistVertexProgram(String keySpace, Set<Type> types) {
+    public DegreeAndPersistVertexProgram(String keySpace, Set<String> types) {
         this.keySpace = keySpace;
-        selectedTypes = types.stream().map(Type::getId).collect(Collectors.toSet());
+        selectedTypes = types;
     }
 
     @Override
@@ -108,7 +109,7 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
 
     @Override
     public GraphComputer.Persist getPreferredPersist() {
-        return GraphComputer.Persist.VERTEX_PROPERTIES;
+        return GraphComputer.Persist.NOTHING;
     }
 
     @Override
@@ -141,6 +142,7 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
 
     @Override
     public void execute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
+        MindmapsGraph mindmapsGraph = MindmapsClient.getGraphBatchLoading(keySpace);
         switch (memory.getIteration()) {
             case 0:
                 if (selectedTypes.contains(getVertexType(vertex)) && !isAnalyticsElement(vertex)) {
@@ -173,19 +175,28 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
                     if (baseTypes.contains(vertex.label()) ||
                             vertex.label().equals(Schema.BaseType.RELATION.name())) {
                         long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
-                        String oldAssertionId = Analytics.persistResource(mindmapsGraph, vertex, Analytics.degree, edgeCount);
+                        String oldAssertionId = Analytics.persistResource(keySpace, vertex, Analytics.degree, edgeCount);
                         if (oldAssertionId != null) {
                             vertex.property(OLD_ASSERTION_ID, oldAssertionId);
                         }
                     }
                 }
                 break;
+            case 3:
+                if(vertex.property(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID).isPresent()) {
+                    mindmapsGraph.getRelation(vertex.value(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID)).delete();
+                    try {
+                        mindmapsGraph.commit();
+                    } catch (MindmapsValidationException e) {
+                        throw new RuntimeException("Failed to delete relation during bulk resource mutation.",e);
+                    }
+                }
         }
     }
 
     @Override
     public boolean terminate(final Memory memory) {
-        return memory.getIteration() == 2;
+        return memory.getIteration() == 3;
     }
 
     @Override
@@ -193,9 +204,4 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
         return StringFactory.vertexProgramString(this);
     }
 
-    @Override
-
-    public void workerIterationStart(Memory memory) {
-        mindmapsGraph = MindmapsClient.getGraph(keySpace);
-    }
 }

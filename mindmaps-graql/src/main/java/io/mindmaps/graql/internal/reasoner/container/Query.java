@@ -23,8 +23,6 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.Disjunction;
 import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.concept.RelationType;
-import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.*;
 import io.mindmaps.graql.admin.PatternAdmin;
@@ -32,25 +30,21 @@ import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.query.*;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
-import io.mindmaps.graql.internal.reasoner.predicate.Relation;
-import io.mindmaps.graql.internal.reasoner.predicate.Substitution;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.mindmaps.graql.internal.reasoner.Utility.computeRoleCombinations;
 
 public class  Query {
 
-    private final MindmapsGraph graph;
+    protected final MindmapsGraph graph;
+    protected final Set<Atomic> atomSet;
 
-    private final Set<Atomic> atomSet;
-    private final Map<Type, Set<Atomic>> typeAtomMap;
-
-    private Atomic parentAtom = null;
-
-    private final Set<String> selectVars;
     private final Conjunction<PatternAdmin> pattern;
+    private final Set<String> selectVars;
+
+    private final Map<Type, Set<Atomic>> typeAtomMap;
+    private Atomic parentAtom = null;
 
     public Query(String query, MindmapsGraph graph) {
         this.graph = graph;
@@ -95,7 +89,7 @@ public class  Query {
         this.typeAtomMap = getTypeAtomMap(atomSet);
     }
 
-    public Query(Atomic atom) {
+    protected Query(Atomic atom) {
         if (atom.getParentQuery() == null)
             throw new IllegalArgumentException(ErrorMessage.PARENT_MISSING.getMessage(atom.toString()));
         this.graph = atom.getParentQuery().getGraph();
@@ -342,7 +336,7 @@ public class  Query {
         return qb.match(Patterns.disjunction(conjs)).select(selectVars);
     }
 
-    private Conjunction<PatternAdmin> getPattern() {
+    protected Conjunction<PatternAdmin> getPattern() {
         return pattern;
     }
     public PatternAdmin getExpandedPattern() {
@@ -423,14 +417,14 @@ public class  Query {
         return val;
     }
 
-    private void addAtom(Atomic atom) {
+    protected void addAtom(Atomic atom) {
         if(!containsAtom(atom)) {
             atomSet.add(atom);
             pattern.getPatterns().add(atom.getPattern());
         }
     }
 
-    private void removeAtom(Atomic atom) {
+    protected void removeAtom(Atomic atom) {
         atomSet.remove(atom);
         pattern.getPatterns().remove(atom.getPattern());
     }
@@ -465,7 +459,7 @@ public class  Query {
 
     }
 
-    /** NB: only for atomic queries
+    /**
      * @param q query to be compared with
      * @return true if two queries are alpha-equivalent
      */
@@ -481,42 +475,4 @@ public class  Query {
 
         return equivalent;
     }
-
-    private void materialize() {
-        if (!getMatchQuery().ask().execute()) {
-            InsertQuery insert = Graql.insert(getPattern().getVars()).withGraph(graph);
-            insert.execute();
-        }
-    }
-
-    //only for atomic queries
-    public void materialize(Set<Substitution> subs) {
-        subs.forEach(this::addAtom);
-
-        //extrapolate if needed
-        Atomic atom = selectAtoms().iterator().next();
-        if(atom.isRelation() && (atom.getRoleVarTypeMap().isEmpty() || !((Relation) atom).hasExplicitRoleTypes() )){
-            String relTypeId = atom.getTypeId();
-            RelationType relType = graph.getRelationType(relTypeId);
-            Set<String> vars = atom.getVarNames();
-            Set<RoleType> roles = Sets.newHashSet(relType.hasRoles());
-
-            Set<Map<String, String>> roleMaps = new HashSet<>();
-            computeRoleCombinations(vars, roles, new HashMap<>(), roleMaps);
-
-            removeAtom(atom);
-            roleMaps.forEach( map -> {
-                Relation relationWithRoles = new Relation(relTypeId, map);
-                addAtom(relationWithRoles);
-                materialize();
-                removeAtom(relationWithRoles);
-            });
-            addAtom(atom);
-        }
-        else
-            materialize();
-
-        subs.forEach(this::removeAtom);
-    }
-
 }

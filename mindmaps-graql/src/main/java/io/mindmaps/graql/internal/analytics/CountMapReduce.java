@@ -59,8 +59,8 @@ class CountMapReduce implements MapReduce<Serializable, Long, Serializable, Long
 
     }
 
-    public CountMapReduce(Set<Type> types) {
-        selectedTypes = types.stream().map(Type::getId).collect(Collectors.toSet());
+    public CountMapReduce(Set<String> types) {
+        selectedTypes = types;
     }
 
     @Override
@@ -92,10 +92,13 @@ class CountMapReduce implements MapReduce<Serializable, Long, Serializable, Long
         if (selectedTypes != null) {
             if (selectedTypes.contains(getVertexType(vertex))) {
                 emitter.emit(this.memoryKey, 1l);
+                return;
             }
         } else if (baseTypes.contains(vertex.label())) {
             emitter.emit(this.memoryKey, 1l);
+            return;
         }
+        emitter.emit(this.memoryKey, 0l);
     }
 
     @Override
