@@ -19,10 +19,15 @@
 
 package io.mindmaps.graql;
 
+import io.mindmaps.MindmapsGraph;
+
 /**
  * An aggregate query produced from a {@link MatchQuery}.
  *
  * @param <T> the type of the result of the aggregate query
  */
 public interface AggregateQuery<T> extends Query<T> {
+
+    @Override
+    AggregateQuery<T> withGraph(MindmapsGraph graph);
 }

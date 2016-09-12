@@ -18,6 +18,7 @@
 
 package io.mindmaps.graql.internal.query;
 
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.Aggregate;
 import io.mindmaps.graql.AggregateQuery;
@@ -37,6 +38,11 @@ class AggregateQueryImpl<T> implements AggregateQuery<T> {
     AggregateQueryImpl(MatchQueryAdmin matchQuery, Aggregate<? super Map<String, Concept>, T> aggregate) {
         this.matchQuery = matchQuery;
         this.aggregate = aggregate;
+    }
+
+    @Override
+    public AggregateQuery<T> withGraph(MindmapsGraph graph) {
+        return new AggregateQueryImpl<>(matchQuery.withGraph(graph).admin(), aggregate);
     }
 
     @Override

@@ -18,7 +18,15 @@
 
 package io.mindmaps.graql;
 
+import io.mindmaps.MindmapsGraph;
+
 public interface Query<T> {
+
+    /**
+     * @param graph the graph to execute the query on
+     * @return a new query with the graph set
+     */
+    Query<T> withGraph(MindmapsGraph graph);
 
     T execute();
 

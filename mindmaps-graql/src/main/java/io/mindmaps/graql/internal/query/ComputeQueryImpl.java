@@ -37,16 +37,10 @@ class ComputeQueryImpl implements ComputeQuery {
     private Optional<Set<String>> typeIds;
     private final String computeMethod;
 
-    ComputeQueryImpl(MindmapsGraph graph, String computeMethod) {
+    ComputeQueryImpl(MindmapsGraph graph, String computeMethod, Optional<Set<String>> typeIds) {
         this.graph = graph;
         this.computeMethod = computeMethod;
-        this.typeIds = Optional.empty();
-    }
-
-    ComputeQueryImpl(MindmapsGraph graph, String computeMethod, Set<String> typeIds) {
-        this.graph = graph;
-        this.computeMethod = computeMethod;
-        this.typeIds = Optional.of(typeIds);
+        this.typeIds = typeIds;
     }
 
     @Override
@@ -88,4 +82,8 @@ class ComputeQueryImpl implements ComputeQuery {
         return "compute " + computeMethod + subtypes;
     }
 
+    @Override
+    public ComputeQuery withGraph(MindmapsGraph graph) {
+        return new ComputeQueryImpl(graph, computeMethod, typeIds);
+    }
 }

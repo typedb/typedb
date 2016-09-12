@@ -18,8 +18,13 @@
 
 package io.mindmaps.graql;
 
+import io.mindmaps.MindmapsGraph;
+
 /**
  * A query that triggers an OLAP computation on a graph.
  */
 public interface ComputeQuery extends Query<Object> {
+
+    @Override
+    ComputeQuery withGraph(MindmapsGraph graph);
 }
