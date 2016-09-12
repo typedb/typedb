@@ -50,7 +50,7 @@ public interface Getter {
     static Getter value() {
         return result -> {
             if (result.isResource()) {
-                return " " + colorKeyword("value") + StringConverter.valueToString(result.asResource().getValue());
+                return colorKeyword(" value ") + StringConverter.valueToString(result.asResource().getValue());
             } else {
                 return "";
             }
@@ -69,13 +69,13 @@ public interface Getter {
      * @return a getter that will get all resources' values of a given type of a concept
      */
     static Getter has(String resourceType) {
-        String hasType = colorKeyword("has ") + colorType(resourceType);
+        String hasType = colorKeyword(" has ") + colorType(resourceType) + " ";
 
         return result -> {
             StringBuilder str = new StringBuilder();
             resources(result).stream()
                     .filter(r -> r.type().getId().equals(resourceType))
-                    .forEach(r -> str.append(" ").append(hasType).append(" \"").append(r.getValue()).append("\""));
+                    .forEach(r -> str.append(hasType).append(StringConverter.valueToString(r.getValue())));
             return str.toString();
         };
     }
