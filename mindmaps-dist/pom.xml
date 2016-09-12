@@ -57,6 +57,12 @@
             <groupId>io.mindmaps</groupId>
             <artifactId>migration-owl</artifactId>
             <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-databind</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- Cassandra uses airline for command line parsing -->
         <dependency>
