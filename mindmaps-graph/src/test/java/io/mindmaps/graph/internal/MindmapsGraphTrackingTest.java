@@ -91,7 +91,7 @@ public class MindmapsGraphTrackingTest {
 
         // check the concept tracker is empty
         modifiedConcepts = mindmapsGraph.getModifiedConcepts();
-        assertEquals(4, modifiedConcepts.size());
+        assertEquals(10, modifiedConcepts.size());
 
         // add primitive edges in as many ways as possible
         c1.superType(c2);

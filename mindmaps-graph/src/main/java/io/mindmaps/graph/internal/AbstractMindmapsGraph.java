@@ -19,14 +19,6 @@
 package io.mindmaps.graph.internal;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.Schema;
-import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.util.REST;
-import io.mindmaps.exception.ConceptException;
-import io.mindmaps.exception.ConceptIdNotUniqueException;
-import io.mindmaps.exception.GraphRuntimeException;
-import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.exception.MoreThanOneConceptException;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
@@ -39,13 +31,19 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.RuleType;
 import io.mindmaps.concept.Type;
+import io.mindmaps.exception.ConceptException;
+import io.mindmaps.exception.ConceptIdNotUniqueException;
+import io.mindmaps.exception.GraphRuntimeException;
+import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.exception.MoreThanOneConceptException;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.util.REST;
+import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -60,7 +58,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
@@ -158,8 +155,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
 
     @Override
     public GraphTraversalSource getTinkerTraversal(){
-        ReadOnlyStrategy readOnlyStrategy = ReadOnlyStrategy.instance();
-        return getTinkerPopGraph().traversal().asBuilder().with(readOnlyStrategy).create(getTinkerPopGraph());
+        return getTinkerPopGraph().traversal();
     }
 
     public ElementFactory getElementFactory(){
@@ -332,7 +328,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         }
         return null;
     }
-    public ConceptImpl getConceptByBaseIdentifier(long baseIdentifier) {
+    public ConceptImpl getConceptByBaseIdentifier(Object baseIdentifier) {
         GraphTraversal<Vertex, Vertex> traversal = getTinkerTraversal().V(baseIdentifier);
         if (traversal.hasNext()) {
             return elementFactory.buildUnknownConcept(traversal.next());
@@ -549,7 +545,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         String fromRoleValue = fromRole.getId();
         String toIdValue = toRolePlayer.getId();
         String toRoleValue = toRole.getId();
-        Long assertionIdValue = relation.getBaseIdentifier();
+        Object assertionIdValue = relation.getBaseIdentifier();
 
         if(relationIdValue != null)
             hash += relationIdValue;
@@ -584,17 +580,13 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
             return null;
     }
 
-    public void handleTransaction(Consumer<Transaction> method){
+    @Override
+    public void rollback() {
         try {
-            method.accept(getTinkerPopGraph().tx());
+            getTinkerPopGraph().tx().rollback();
         } catch (UnsupportedOperationException e){
             LOG.warn(ErrorMessage.TRANSACTIONS_NOT_SUPPORTED.getMessage(graph.getClass().getName()));
         }
-    }
-
-    @Override
-    public void rollback() {
-        handleTransaction(Transaction::rollback);
         getConceptLog().clearTransaction();
     }
 
@@ -626,20 +618,20 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
             modifiedConcepts.put(Schema.BaseType.CASTING, castings);
 
         LOG.info("Graph is valid. Committing graph . . . ");
-        handleTransaction(Transaction::commit);
-
-        try {
-            rollback();
-        } catch (Exception e) {
-            LOG.error("Failed to create new graph after committing", e);
-            e.printStackTrace();
-        }
-
+        commitTx();
         LOG.info("Graph committed.");
 
         if(modifiedConcepts.size() > 0)
             submitCommitLogs(modifiedConcepts);
     }
+    protected void commitTx(){
+        try {
+            getTinkerPopGraph().tx().commit();
+        } catch (UnsupportedOperationException e){
+            LOG.warn(ErrorMessage.TRANSACTIONS_NOT_SUPPORTED.getMessage(graph.getClass().getName()));
+        }
+    }
+
 
     protected void validateGraph() throws MindmapsValidationException {
         Validator validator = new Validator(this);
