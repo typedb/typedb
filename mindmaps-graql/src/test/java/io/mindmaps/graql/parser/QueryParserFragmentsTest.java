@@ -35,6 +35,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 
+import static io.mindmaps.graql.Graql.parsePatterns;
 import static org.junit.Assert.*;
 
 public class QueryParserFragmentsTest {
@@ -57,7 +58,7 @@ public class QueryParserFragmentsTest {
     public void testParseInfinitePatternsStream() throws IOException {
         InputStream stream = new InfiniteStream("$x isa person; ($x, $y) isa has-cast;\n");
 
-        Iterator<Pattern> patterns = qb.parsePatterns(stream).iterator();
+        Iterator<Pattern> patterns = parsePatterns(stream).iterator();
 
         VarAdmin var1 = patterns.next().admin().asVar();
         assertEquals("$x isa person", var1.toString());

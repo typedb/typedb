@@ -26,7 +26,6 @@ import io.mindmaps.graql.internal.parser.QueryParser;
 import io.mindmaps.graql.internal.query.Patterns;
 import io.mindmaps.graql.internal.query.Queries;
 import io.mindmaps.graql.internal.util.AdminConverter;
-import io.mindmaps.util.ErrorMessage;
 
 import java.io.InputStream;
 import java.util.*;
@@ -91,13 +90,11 @@ public class QueryBuilder {
     }
 
     public ComputeQuery compute(String computeMethod) {
-        MindmapsGraph theGraph = graph.orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage()));
-        return Queries.compute(theGraph, computeMethod);
+        return Queries.compute(graph, computeMethod);
     }
 
     public ComputeQuery compute(String computeMethod, Set<String> typeIds) {
-        MindmapsGraph theGraph = graph.orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage()));
-        return Queries.compute(theGraph, computeMethod, typeIds);
+        return Queries.compute(graph, computeMethod, typeIds);
     }
 
     /**

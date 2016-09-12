@@ -36,11 +36,11 @@ import static java.util.stream.Collectors.toSet;
 
 class ComputeQueryImpl implements ComputeQuery {
 
-    private final MindmapsGraph graph;
+    private final Optional<MindmapsGraph> graph;
     private Optional<Set<String>> typeIds;
     private final String computeMethod;
 
-    ComputeQueryImpl(MindmapsGraph graph, String computeMethod, Optional<Set<String>> typeIds) {
+    ComputeQueryImpl(Optional<MindmapsGraph> graph, String computeMethod, Optional<Set<String>> typeIds) {
         this.graph = graph;
         this.computeMethod = computeMethod;
         this.typeIds = typeIds;
@@ -48,10 +48,12 @@ class ComputeQueryImpl implements ComputeQuery {
 
     @Override
     public Object execute() {
-        String keyspace = graph.getKeyspace();
+        MindmapsGraph theGraph = graph.orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage()));
+
+        String keyspace = theGraph.getKeyspace();
 
         Analytics analytics = typeIds.map(ids -> {
-            Set<Type> types = ids.stream().map(graph::getType).collect(toSet());
+            Set<Type> types = ids.stream().map(theGraph::getType).collect(toSet());
             return new Analytics(keyspace, types);
         }).orElseGet(() ->
             new Analytics(keyspace)
@@ -104,6 +106,6 @@ class ComputeQueryImpl implements ComputeQuery {
 
     @Override
     public ComputeQuery withGraph(MindmapsGraph graph) {
-        return new ComputeQueryImpl(graph, computeMethod, typeIds);
+        return new ComputeQueryImpl(Optional.of(graph), computeMethod, typeIds);
     }
 }

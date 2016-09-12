@@ -256,7 +256,7 @@ public class QueryParserTest {
 
     @Test
     public void testPositiveAskQuery() {
-        assertTrue(qb.parseAsk("match $x isa movie id 'Godfather' ask").execute());
+        assertTrue(parseAsk("match $x isa movie id 'Godfather' ask").withGraph(mindmapsGraph).execute());
     }
 
     @Test
@@ -270,10 +270,10 @@ public class QueryParserTest {
         String varString = "id \"123\", isa movie has title \"The Title\"";
         assertFalse(qb.match(var).ask().execute());
 
-        qb.parseInsert("insert " + varString).execute();
+        parseInsert("insert " + varString).withGraph(mindmapsGraph).execute();
         assertTrue(qb.match(var).ask().execute());
 
-        qb.parseDelete("match $x " + varString + " delete $x").execute();
+        parseDelete("match $x " + varString + " delete $x").withGraph(mindmapsGraph).execute();
         assertFalse(qb.match(var).ask().execute());
     }
 
@@ -392,9 +392,8 @@ public class QueryParserTest {
 
     @Test
     public void testQueryParserWithoutGraph() {
-        QueryBuilder queryBuilderWithoutGraph = Graql.withoutGraph();
         String queryString = "match $x isa movie select $x";
-        MatchQuery query = queryBuilderWithoutGraph.parseMatch("match $x isa movie select $x").getMatchQuery();
+        MatchQuery query = parseMatch("match $x isa movie select $x").getMatchQuery();
         assertEquals(queryString, query.toString());
         assertTrue(query.withGraph(mindmapsGraph).stream().findAny().isPresent());
     }
@@ -419,7 +418,7 @@ public class QueryParserTest {
     @Test
     public void testParseAggregateToString() {
         String query = "match $x isa movie aggregate group $x (count as c)";
-        assertEquals(query, qb.parse(query).toString());
+        assertEquals(query, parseAggregate(query).withGraph(mindmapsGraph).toString());
     }
 
     @Test
@@ -443,6 +442,11 @@ public class QueryParserTest {
         Concept result = query.execute();
 
         assertEquals("movie", result.type().getId());
+    }
+
+    @Test
+    public void testParseCompute() {
+        assertEquals("compute count", parseCompute("compute count").toString());
     }
 
     @Test
