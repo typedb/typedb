@@ -18,8 +18,10 @@
 
 package io.mindmaps.graql.internal.parser;
 
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.Query;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +31,7 @@ import java.util.stream.Stream;
 /**
  * A printer for a MatchQuery, that uses a map of Getters to decide what information to print
  */
-public class MatchQueryPrinter {
+public class MatchQueryPrinter implements Query<Stream<String>> {
 
     private MatchQuery matchQuery;
     private final Map<String, List<Getter>> getters;
@@ -56,7 +58,7 @@ public class MatchQueryPrinter {
     /**
      * @return a stream of strings, where each string represents a result
      */
-    public Stream<String> resultsString() {
+    public Stream<String> execute() {
         return matchQuery.stream().map(results -> {
             StringBuilder str = new StringBuilder();
 
@@ -83,5 +85,10 @@ public class MatchQueryPrinter {
         }
 
         return getterList;
+    }
+
+    @Override
+    public Query<Stream<String>> withGraph(MindmapsGraph graph) {
+        return new MatchQueryPrinter(matchQuery.withGraph(graph), getters);
     }
 }

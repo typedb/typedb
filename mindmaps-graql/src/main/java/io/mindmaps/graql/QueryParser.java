@@ -115,7 +115,7 @@ public class QueryParser {
      * @return
      * a query, the type will depend on the type of query.
      */
-    public Object parseQuery(String queryString) {
+    public Query<?> parseQuery(String queryString) {
         return parseQueryFragment(GraqlParser::queryEOF, QueryVisitor::visitQueryEOF, queryString);
     }
 
