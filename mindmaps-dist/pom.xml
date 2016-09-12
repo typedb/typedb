@@ -46,17 +46,17 @@
         <dependency>
             <groupId>io.mindmaps</groupId>
             <artifactId>migration-sql</artifactId>
-            <version>0.1.0</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.mindmaps</groupId>
             <artifactId>migration-csv</artifactId>
-            <version>0.1.0</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.mindmaps</groupId>
             <artifactId>migration-owl</artifactId>
-            <version>0.1.0</version>
+            <version>${project.version}</version>
         </dependency>
         <!-- Cassandra uses airline for command line parsing -->
         <dependency>
