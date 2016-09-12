@@ -76,11 +76,37 @@ public class ConfigProperties {
         return instance;
     }
 
-    public int getAvailableThreads() {
-        if (numOfThreads == -1)
-            computeThreadsNumber();
+    private ConfigProperties() {
+        prop = new Properties();
+        try {
+            prop.load(new FileInputStream(getConfigFilePath()));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        setLogConfigFile();
+        computeThreadsNumber();
+        LOG = LoggerFactory.getLogger(ConfigProperties.class);
+        LOG.info("Project directory in use: ["+getProjectPath()+"]");
+        LOG.info("Configuration file in use: [" + configFilePath + "]");
+        LOG.info("Number of threads set to [" + numOfThreads + "]");
 
-        return numOfThreads;
+    }
+
+
+    // Setters
+
+    private void setConfigFilePath() {
+        configFilePath = (System.getProperty(CONFIG_FILE_SYSTEM_PROPERTY) != null) ? System.getProperty(CONFIG_FILE_SYSTEM_PROPERTY) : ConfigProperties.DEFAULT_CONFIG_FILE;
+        if (!Paths.get(configFilePath).isAbsolute())
+            configFilePath = getProjectPath() + configFilePath;
+
+    }
+
+    private void setLogConfigFile() {
+        if (System.getProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY) == null)
+            System.setProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY, getProjectPath() + DEFAULT_LOG_CONFIG_FILE);
+
+        System.setProperty(LOG_FILE_OUTPUT_SYSTEM_PROPERTY,getPath(LOGGING_FILE_PATH));
     }
 
     private void computeThreadsNumber() {
@@ -92,8 +118,16 @@ public class ConfigProperties {
 
         if (numOfThreads > MAX_NUMBER_OF_THREADS)
             numOfThreads = MAX_NUMBER_OF_THREADS;
+    }
 
-        LOG.info("Number of threads set to [" + numOfThreads + "]");
+
+    // Getters
+
+    public int getAvailableThreads() {
+        if (numOfThreads == -1)
+            computeThreadsNumber();
+
+        return numOfThreads;
     }
 
     public String getPath(String path) {
@@ -111,33 +145,6 @@ public class ConfigProperties {
     String getConfigFilePath() {
         if (configFilePath == null) setConfigFilePath();
         return configFilePath;
-    }
-
-    private void setConfigFilePath() {
-        configFilePath = (System.getProperty(CONFIG_FILE_SYSTEM_PROPERTY) != null) ? System.getProperty(CONFIG_FILE_SYSTEM_PROPERTY) : ConfigProperties.DEFAULT_CONFIG_FILE;
-        if (!Paths.get(configFilePath).isAbsolute())
-            configFilePath = getProjectPath() + configFilePath;
-
-    }
-
-    private void setLogConfigFile() {
-        if (System.getProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY) == null)
-            System.setProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY, getProjectPath() + DEFAULT_LOG_CONFIG_FILE);
-
-        System.setProperty(LOG_FILE_OUTPUT_SYSTEM_PROPERTY,getPath(LOGGING_FILE_PATH));
-    }
-
-    private ConfigProperties() {
-        prop = new Properties();
-        try {
-            prop.load(new FileInputStream(getConfigFilePath()));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        setLogConfigFile();
-        LOG = LoggerFactory.getLogger(ConfigProperties.class);
-        LOG.info("Configuration file in use: [" + configFilePath + "]");
-
     }
 
     public Properties getProperties() {
