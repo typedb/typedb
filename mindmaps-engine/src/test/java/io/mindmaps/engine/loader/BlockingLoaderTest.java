@@ -23,7 +23,7 @@ import io.mindmaps.engine.controller.CommitLogController;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
-import io.mindmaps.graql.QueryParser;
+import io.mindmaps.graql.internal.parser.QueryParser;
 import org.junit.*;
 import org.slf4j.LoggerFactory;
 

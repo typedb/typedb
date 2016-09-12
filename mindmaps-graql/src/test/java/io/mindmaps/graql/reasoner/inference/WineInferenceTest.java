@@ -20,8 +20,9 @@ package io.mindmaps.graql.reasoner.inference;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.QueryParser;
+import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.reasoner.graphs.GenericGraph;
 import org.junit.BeforeClass;
@@ -33,19 +34,19 @@ import static org.junit.Assert.assertEquals;
 public class WineInferenceTest {
 
     private static Reasoner reasoner;
-    private static QueryParser qp;
+    private static QueryBuilder qb;
 
     @BeforeClass
     public static void setUpClass() {
         MindmapsGraph graph = GenericGraph.getGraph("wines-test.gql");
         reasoner = new Reasoner(graph);
-        qp = QueryParser.create(graph);
+        qb = Graql.withGraph(graph);
     }
 
     @Test
     public void testRecommendation() {
         String queryString = "match $x isa person;$y isa wine;($x, $y) isa wine-recommendation";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery query = qb.parseMatch(queryString).getMatchQuery();
         MatchQuery expandedQuery = reasoner.expand(query);
 
         String explicitQuery = "match $x isa person;$y isa wine;" +
@@ -56,8 +57,8 @@ public class WineInferenceTest {
                         "{$x id 'Eva';$y id 'Tamaioasa Romaneasca'} or" +
                         "{$x id 'Frank';$y id 'Riojo Blanco CVNE 2003'}";
 
-        assertQueriesEqual(reasoner.resolveToQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery).getMatchQuery());
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery).getMatchQuery()));
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {

@@ -23,7 +23,7 @@ import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.REST;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.factory.GraphFactory;
-import io.mindmaps.graql.QueryParser;
+import io.mindmaps.graql.internal.parser.QueryParser;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.engine.visualiser.HALConcept;
 import io.swagger.annotations.Api;

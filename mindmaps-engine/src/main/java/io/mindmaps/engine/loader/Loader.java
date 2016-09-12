@@ -18,7 +18,7 @@
 
 package io.mindmaps.engine.loader;
 
-import io.mindmaps.graql.QueryParser;
+import io.mindmaps.graql.internal.parser.QueryParser;
 import io.mindmaps.graql.Var;
 import mjson.Json;
 import org.slf4j.Logger;

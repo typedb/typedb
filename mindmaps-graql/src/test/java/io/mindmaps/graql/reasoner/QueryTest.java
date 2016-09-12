@@ -21,14 +21,16 @@ package io.mindmaps.graql.reasoner;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Rule;
-import io.mindmaps.graql.*;
-import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.Disjunction;
-import io.mindmaps.graql.internal.reasoner.container.QueryAnswers;
-import io.mindmaps.graql.reasoner.graphs.SNBGraph;
+import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.reasoner.container.Query;
+import io.mindmaps.graql.internal.reasoner.container.QueryAnswers;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
+import io.mindmaps.graql.reasoner.graphs.SNBGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -39,14 +41,12 @@ import static org.junit.Assert.assertTrue;
 public class QueryTest {
 
     private static MindmapsGraph graph;
-    private static QueryParser qp;
     private static QueryBuilder qb;
 
     @BeforeClass
     public static void setUpClass() {
 
         graph = SNBGraph.getGraph();
-        qp = QueryParser.create(graph);
         qb = Graql.withGraph(graph);
     }
 
@@ -156,7 +156,7 @@ public class QueryTest {
     public void testDisjunctiveQuery() {
         String queryString = "match $x isa person;{$y isa product} or {$y isa tag};($x, $y) isa recommendation";
 
-        MatchQuery sq = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery sq = qb.parseMatch(queryString).getMatchQuery();
         System.out.println(sq.toString());
 
         Query query = new Query(queryString, graph);
@@ -171,7 +171,7 @@ public class QueryTest {
     public void testDisjunctiveRule() {
         String queryString = "match $x isa person;{$y isa product} or {$y isa tag};($x, $y) isa recommendation";
 
-        MatchQuery sq = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery sq = qb.parseMatch(queryString).getMatchQuery();
         System.out.println(sq.toString());
 
         Query query = new Query(queryString, graph);
@@ -230,7 +230,7 @@ public class QueryTest {
     public void testQueryResults(){
         //QueryResults answers = new QueryResults(Sets.newHashSet(qp.parseMatchQuery("match $x isa person").getMatchQuery()));
 
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(qp.parseMatchQuery("match $x isa person").getMatchQuery()));
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(qb.parseMatch("match $x isa person").getMatchQuery()));
 
         answers.forEach(ans -> System.out.println(ans.toString()));
     }

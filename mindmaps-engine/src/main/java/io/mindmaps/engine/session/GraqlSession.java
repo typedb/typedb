@@ -23,6 +23,7 @@ import io.mindmaps.exception.ConceptException;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.*;
 import io.mindmaps.graql.internal.parser.MatchQueryPrinter;
+import io.mindmaps.graql.internal.parser.QueryParser;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
 

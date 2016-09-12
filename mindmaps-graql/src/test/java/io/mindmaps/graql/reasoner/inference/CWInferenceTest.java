@@ -21,14 +21,14 @@ package io.mindmaps.graql.reasoner.inference;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.RuleType;
+import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.QueryParser;
+import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.reasoner.graphs.CWGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static io.mindmaps.graql.internal.reasoner.Utility.printAnswers;
 import static org.junit.Assert.assertEquals;
 
 
@@ -36,13 +36,13 @@ public class CWInferenceTest {
 
     private static MindmapsGraph graph;
     private static Reasoner reasoner;
-    private static QueryParser qp;
+    private static QueryBuilder qb;
 
     @BeforeClass
     public static void setUpClass() {
         graph = CWGraph.getGraph();
         reasoner = new Reasoner(graph);
-        qp = QueryParser.create(graph);
+        qb = Graql.withGraph(graph);
     }
 
     private static void printMatchQuery(MatchQuery query) {
@@ -52,21 +52,21 @@ public class CWInferenceTest {
     @Test
     public void testWeapon() {
         String queryString = "match $x isa weapon";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery query = qb.parseMatch(queryString).getMatchQuery();
 
         String explicitQuery = "match \n" +
                 "{$x isa weapon} or {\n" +
                 "{{$x isa missile} or {$x isa rocket;$x has propulsion 'gsp';}} or {$x isa rocket;$x has propulsion 'gsp';}\n" +
                 "}";
 
-        assertQueriesEqual(reasoner.resolveToQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery).getMatchQuery());
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery).getMatchQuery()));
     }
 
     @Test
     public void testTransactionQuery() {
         String queryString = "match $x isa person;$z isa country;($x, $y, $z) isa transaction";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery query = qb.parseMatch(queryString).getMatchQuery();
 
         String explicitQuery = "match \n" +
                 "$x isa person;\n" +
@@ -81,14 +81,14 @@ public class CWInferenceTest {
                 "($z, $y) isa owns\n" +
                 "}";
 
-        assertQueriesEqual(reasoner.resolveToQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery).getMatchQuery());
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery).getMatchQuery()));
     }
 
     @Test
     public void testTransactionQuery2() {
         String queryString = "match $x isa person;$z isa country;$y isa weapon;($x, $y, $z) isa transaction";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery query = qb.parseMatch(queryString).getMatchQuery();
 
         String explicitQuery = "match \n" +
                 "$x isa person;\n" +
@@ -106,14 +106,14 @@ public class CWInferenceTest {
                 "($z, $y) isa owns\n" +
                 "}";
 
-        assertQueriesEqual(reasoner.resolveToQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery).getMatchQuery());
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery).getMatchQuery()));
     }
 
     @Test
     public void testQuery() {
         String queryString = "match $x isa criminal;";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery query = qb.parseMatch(queryString).getMatchQuery();
 
         String explicitQuery = "match " +
                 "{$x isa criminal} or {" +
@@ -136,14 +136,14 @@ public class CWInferenceTest {
                 "$z isa country\n" +
                 "}; select $x";
 
-        assertQueriesEqual(reasoner.resolveToQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery).getMatchQuery());
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery).getMatchQuery()));
     }
 
     @Test
     public void testQueryWithOr() {
         String queryString = "match {$x isa criminal} or {$x has nationality 'American';$x isa person}";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery query = qb.parseMatch(queryString).getMatchQuery();
 
         String explicitQuery = "match " +
             "{{$x isa criminal} or {$x has nationality 'American';\n" +
@@ -164,8 +164,8 @@ public class CWInferenceTest {
             "$x isa person;\n" +
             "$z isa country}} or {$x has nationality 'American';$x isa person} select $x";
 
-        assertQueriesEqual(reasoner.resolveToQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
-        assertQueriesEqual(reasoner.expand(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery).getMatchQuery());
+        assertQueriesEqual(reasoner.expand(query), qb.parseMatch(explicitQuery).getMatchQuery());
     }
 
 
@@ -181,7 +181,7 @@ public class CWInferenceTest {
 
         reasoner.linkConceptTypes();
         String queryString = "match $x isa criminal;";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery query = qb.parseMatch(queryString).getMatchQuery();
 
         String explicitQuery = "match " +
                 "{$x isa criminal} or {\n" +
@@ -202,8 +202,8 @@ public class CWInferenceTest {
                 "}" +
                 "} select $x";
 
-        assertQueriesEqual(reasoner.resolveToQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery).getMatchQuery());
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery).getMatchQuery()));
     }
 
     @Test
@@ -211,7 +211,7 @@ public class CWInferenceTest {
         String queryString = "match" +
                 "$y isa person;$yy isa country;$yyy isa weapon;\n" +
                 "($y, $yy, $yyy) isa transaction";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery query = qb.parseMatch(queryString).getMatchQuery();
 
         String explicitQuery = "match \n" +
                 "$y isa person;\n" +
@@ -229,8 +229,8 @@ public class CWInferenceTest {
                 "($yy, $yyy) isa owns\n" +
                 "}";
 
-        assertQueriesEqual(reasoner.resolveToQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery).getMatchQuery());
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery).getMatchQuery()));
     }
 
     @Test
@@ -238,7 +238,7 @@ public class CWInferenceTest {
         String queryString = "match" +
                 "$y isa person;$z isa country;$x isa weapon;\n" +
                 "($y, $z, $x) isa transaction";
-        MatchQuery query = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery query = qb.parseMatch(queryString).getMatchQuery();
 
         String explicitQuery = "match \n" +
                 "$y isa person;\n" +
@@ -256,8 +256,8 @@ public class CWInferenceTest {
                 "($z, $x) isa owns\n" +
                 "}";
 
-        assertQueriesEqual(reasoner.resolveToQuery(query), qp.parseMatchQuery(explicitQuery).getMatchQuery());
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qp.parseMatchQuery(explicitQuery).getMatchQuery()));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery).getMatchQuery());
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery).getMatchQuery()));
     }
 
 

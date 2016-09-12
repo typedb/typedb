@@ -24,14 +24,13 @@ import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.graql.QueryParser;
+import io.mindmaps.graql.internal.parser.QueryParser;
 import org.javatuples.Pair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import javax.management.relation.Role;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 

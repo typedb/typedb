@@ -23,7 +23,9 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
-import io.mindmaps.graql.*;
+import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.internal.reasoner.container.Query;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.Relation;
@@ -34,31 +36,32 @@ import org.junit.Test;
 
 import java.util.*;
 
-import static io.mindmaps.graql.internal.reasoner.Utility.*;
+import static io.mindmaps.graql.internal.reasoner.Utility.computeRoleCombinations;
+import static io.mindmaps.graql.internal.reasoner.Utility.printMatchQueryResults;
 
 public class AtomicTest {
 
     @Test
     public void testValuePredicate(){
         MindmapsGraph graph = SNBGraph.getGraph();
-        QueryParser qp = QueryParser.create(graph);
+        QueryBuilder qb = Graql.withGraph(graph);
         String queryString = "match " +
                 "$x1 isa person;\n" +
                 "$x2 isa tag;\n" +
                 "($x1, $x2) isa recommendation";
 
-        MatchQuery MQ = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery MQ = qb.parseMatch(queryString).getMatchQuery();
         printMatchQueryResults(MQ);
     }
 
     @Test
     public void testRelationConstructor(){
         MindmapsGraph graph = GenericGraph.getGraph("geo-test.gql");
-        QueryParser qp = QueryParser.create(graph);
+        QueryBuilder qb = Graql.withGraph(graph);
 
         String queryString = "match (geo-entity $x, entity-location $y) isa is-located-in;";
 
-        MatchQuery MQ = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery MQ = qb.parseMatch(queryString).getMatchQuery();
         Query query = new Query(MQ, graph);
 
         Atomic atom = query.selectAtoms().iterator().next();
@@ -78,11 +81,11 @@ public class AtomicTest {
     @Test
     public void testRelationConstructor2(){
         MindmapsGraph graph = GenericGraph.getGraph("geo-test.gql");
-        QueryParser qp = QueryParser.create(graph);
+        QueryBuilder qb = Graql.withGraph(graph);
 
         String queryString = "match ($x, $y, $z) isa ternary-relation-test";
 
-        MatchQuery MQ = qp.parseMatchQuery(queryString).getMatchQuery();
+        MatchQuery MQ = qb.parseMatch(queryString).getMatchQuery();
         Query query = new Query(MQ, graph);
 
         Atomic atom = query.selectAtoms().iterator().next();
