@@ -38,7 +38,7 @@ class AskQueryImpl implements AskQueryAdmin {
     }
 
     @Override
-    public boolean execute() {
+    public Boolean execute() {
         return matchQuery.iterator().hasNext();
     }
 

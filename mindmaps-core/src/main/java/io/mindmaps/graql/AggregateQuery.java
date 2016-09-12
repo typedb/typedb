@@ -24,11 +24,5 @@ package io.mindmaps.graql;
  *
  * @param <T> the type of the result of the aggregate query
  */
-public interface AggregateQuery<T> {
-
-    /**
-     * Execute the aggregate query.
-     * @return the result of the aggregate query
-     */
-    T execute();
+public interface AggregateQuery<T> extends Query<T> {
 }

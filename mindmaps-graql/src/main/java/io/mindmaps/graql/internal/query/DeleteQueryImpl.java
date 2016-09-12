@@ -62,8 +62,9 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
     }
 
     @Override
-    public void execute() {
+    public Void execute() {
         matchQuery.forEach(results -> results.forEach(this::deleteResult));
+        return null;
     }
 
     @Override

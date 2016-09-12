@@ -18,8 +18,8 @@
 
 package io.mindmaps.graql;
 
-/**
- * A query that triggers an OLAP computation on a graph.
- */
-public interface ComputeQuery extends Query<Object> {
+public interface Query<T> {
+
+    T execute();
+
 }

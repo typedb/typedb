@@ -50,7 +50,7 @@ class ComputeQueryImpl implements ComputeQuery {
     }
 
     @Override
-    public Object execute() throws ExecutionException, InterruptedException {
+    public Object execute() {
         String keyspace = graph.getKeyspace();
 
         Analytics analytics = typeIds.map(ids -> {
@@ -68,7 +68,11 @@ class ComputeQueryImpl implements ComputeQuery {
                 return analytics.degrees();
             }
             case "degreesAndPersist": {
-                analytics.degreesAndPersist();
+                try {
+                    analytics.degreesAndPersist();
+                } catch (ExecutionException | InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
                 return "Degrees have been persisted.";
             }
             default: {
