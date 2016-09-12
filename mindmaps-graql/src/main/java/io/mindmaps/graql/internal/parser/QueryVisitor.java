@@ -50,8 +50,8 @@ public class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Object visitQueryEOF(GraqlParser.QueryEOFContext ctx) {
-        return visitQuery(ctx.query());
+    public Query<?> visitQueryEOF(GraqlParser.QueryEOFContext ctx) {
+        return (Query<?>) visitQuery(ctx.query());
     }
 
     @Override
@@ -75,12 +75,12 @@ public class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Object visitComputeEOF(GraqlParser.ComputeEOFContext ctx) {
+    public ComputeQuery visitComputeEOF(GraqlParser.ComputeEOFContext ctx) {
         return visitComputeQuery(ctx.computeQuery());
     }
 
     @Override
-    public Object visitAggregateEOF(GraqlParser.AggregateEOFContext ctx) {
+    public AggregateQuery<?> visitAggregateEOF(GraqlParser.AggregateEOFContext ctx) {
         return visitAggregateQuery(ctx.aggregateQuery());
     }
 
@@ -137,7 +137,7 @@ public class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Object visitAggregateQuery(GraqlParser.AggregateQueryContext ctx) {
+    public AggregateQuery<?> visitAggregateQuery(GraqlParser.AggregateQueryContext ctx) {
         Aggregate aggregate = visitAggregate(ctx.aggregate());
         MatchQuery matchQuery = visitMatchQuery(ctx.matchQuery()).getMatchQuery();
         return matchQuery.aggregate(aggregate);

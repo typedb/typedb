@@ -19,14 +19,17 @@
 package io.mindmaps.graql.internal.query;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.internal.analytics.Analytics;
+import io.mindmaps.util.ErrorMessage;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
@@ -37,20 +40,14 @@ class ComputeQueryImpl implements ComputeQuery {
     private Optional<Set<String>> typeIds;
     private final String computeMethod;
 
-    ComputeQueryImpl(MindmapsGraph graph, String computeMethod) {
+    ComputeQueryImpl(MindmapsGraph graph, String computeMethod, Optional<Set<String>> typeIds) {
         this.graph = graph;
         this.computeMethod = computeMethod;
-        this.typeIds = Optional.empty();
-    }
-
-    ComputeQueryImpl(MindmapsGraph graph, String computeMethod, Set<String> typeIds) {
-        this.graph = graph;
-        this.computeMethod = computeMethod;
-        this.typeIds = Optional.of(typeIds);
+        this.typeIds = typeIds;
     }
 
     @Override
-    public Object execute() throws ExecutionException, InterruptedException {
+    public Object execute() {
         String keyspace = graph.getKeyspace();
 
         Analytics analytics = typeIds.map(ids -> {
@@ -68,7 +65,11 @@ class ComputeQueryImpl implements ComputeQuery {
                 return analytics.degrees();
             }
             case "degreesAndPersist": {
-                analytics.degreesAndPersist();
+                try {
+                    analytics.degreesAndPersist();
+                } catch (ExecutionException | InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
                 return "Degrees have been persisted.";
             }
             default: {
@@ -79,9 +80,30 @@ class ComputeQueryImpl implements ComputeQuery {
     }
 
     @Override
+    public Stream<String> resultsString() {
+        Object computeResult = execute();
+        if (computeResult instanceof Map) {
+            Map<Instance, ?> map = (Map<Instance, ?>) computeResult;
+            return map.entrySet().stream().map(e -> e.getKey().getId() + "\t" + e.getValue());
+        } else {
+            return Stream.of(computeResult.toString());
+        }
+    }
+
+    @Override
+    public boolean isReadOnly() {
+        // A compute query may modify the graph based on which method is being used
+        return false;
+    }
+
+    @Override
     public String toString() {
         String subtypes = typeIds.map(types -> " in " + types.stream().collect(joining(", "))).orElse("");
         return "compute " + computeMethod + subtypes;
     }
 
+    @Override
+    public ComputeQuery withGraph(MindmapsGraph graph) {
+        return new ComputeQueryImpl(graph, computeMethod, typeIds);
+    }
 }

@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * A DeleteQuery that will execute deletions for every result of a MatchQuery
@@ -62,8 +63,20 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
     }
 
     @Override
-    public void execute() {
+    public Void execute() {
         matchQuery.forEach(results -> results.forEach(this::deleteResult));
+        return null;
+    }
+
+    @Override
+    public Stream<String> resultsString() {
+        execute();
+        return Stream.empty();
+    }
+
+    @Override
+    public boolean isReadOnly() {
+        return false;
     }
 
     @Override

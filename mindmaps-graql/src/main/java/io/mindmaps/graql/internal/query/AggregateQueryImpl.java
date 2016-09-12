@@ -18,12 +18,14 @@
 
 package io.mindmaps.graql.internal.query;
 
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.Aggregate;
 import io.mindmaps.graql.AggregateQuery;
 import io.mindmaps.graql.admin.MatchQueryAdmin;
 
 import java.util.Map;
+import java.util.stream.Stream;
 
 /**
  * Implementation of AggregateQuery
@@ -40,8 +42,24 @@ class AggregateQueryImpl<T> implements AggregateQuery<T> {
     }
 
     @Override
+    public AggregateQuery<T> withGraph(MindmapsGraph graph) {
+        return new AggregateQueryImpl<>(matchQuery.withGraph(graph).admin(), aggregate);
+    }
+
+    @Override
     public T execute() {
         return aggregate.apply(matchQuery.stream());
+    }
+
+    @Override
+    public Stream<String> resultsString() {
+        return Stream.of(execute().toString());
+    }
+
+    @Override
+    public boolean isReadOnly() {
+        // An aggregate query may modify the graph if using a user-defined aggregate method
+        return false;
     }
 
     @Override

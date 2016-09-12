@@ -20,11 +20,25 @@ package io.mindmaps.graql;
 
 import io.mindmaps.MindmapsGraph;
 
-/**
- * A query that triggers an OLAP computation on a graph.
- */
-public interface ComputeQuery extends Query<Object> {
+import java.util.stream.Stream;
 
-    @Override
-    ComputeQuery withGraph(MindmapsGraph graph);
+public interface Query<T> {
+
+    /**
+     * @param graph the graph to execute the query on
+     * @return a new query with the graph set
+     */
+    Query<T> withGraph(MindmapsGraph graph);
+
+    T execute();
+
+    /**
+     * Execute the query and return a human-readable stream of results
+     */
+    Stream<String> resultsString();
+
+    /**
+     * Whether this query will modify the graph
+     */
+    boolean isReadOnly();
 }

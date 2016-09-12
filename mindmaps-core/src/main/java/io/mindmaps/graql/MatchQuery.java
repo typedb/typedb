@@ -26,6 +26,8 @@ import io.mindmaps.graql.admin.MatchQueryAdmin;
 import java.util.*;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.toList;
+
 /**
  * a query used for finding data in a graph that matches the given patterns.
  * <p>
@@ -34,7 +36,12 @@ import java.util.stream.Stream;
  * <p>
  * Each matching subgraph will produce a map, where keys are variable names and values are concepts in the graph.
  */
-public interface MatchQuery extends Streamable<Map<String, Concept>> {
+public interface MatchQuery extends Query<List<Map<String, Concept>>>, Streamable<Map<String, Concept>> {
+
+    @Override
+    default List<Map<String, Concept>> execute() {
+        return stream().collect(toList());
+    }
 
     /**
      * @param names an array of variable names to select

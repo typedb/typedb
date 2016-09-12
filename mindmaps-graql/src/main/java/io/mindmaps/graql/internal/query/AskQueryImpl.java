@@ -22,6 +22,9 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.AskQuery;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.admin.AskQueryAdmin;
+import io.mindmaps.graql.internal.parser.ANSI;
+
+import java.util.stream.Stream;
 
 /**
  * An AskQuery to check if a given pattern matches anywhere in the graph
@@ -38,8 +41,22 @@ class AskQueryImpl implements AskQueryAdmin {
     }
 
     @Override
-    public boolean execute() {
+    public Boolean execute() {
         return matchQuery.iterator().hasNext();
+    }
+
+    @Override
+    public Stream<String> resultsString() {
+        if (execute()) {
+            return Stream.of(ANSI.color("True", ANSI.GREEN));
+        } else {
+            return Stream.of(ANSI.color("False", ANSI.RED));
+        }
+    }
+
+    @Override
+    public boolean isReadOnly() {
+        return true;
     }
 
     @Override

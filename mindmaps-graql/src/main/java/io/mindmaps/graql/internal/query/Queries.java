@@ -75,11 +75,11 @@ public class Queries {
     }
 
     public static ComputeQuery compute(MindmapsGraph graph, String computeMethod) {
-        return new ComputeQueryImpl(graph, computeMethod);
+        return new ComputeQueryImpl(graph, computeMethod, Optional.empty());
     }
 
     public static ComputeQuery compute(MindmapsGraph graph, String computeMethod, Set<String> typeIds) {
-        return new ComputeQueryImpl(graph, computeMethod, typeIds);
+        return new ComputeQueryImpl(graph, computeMethod, Optional.of(typeIds));
     }
 
     public static <T> AggregateQuery<T> aggregate(MatchQueryAdmin matchQuery, Aggregate<? super Map<String, Concept>, T> aggregate) {

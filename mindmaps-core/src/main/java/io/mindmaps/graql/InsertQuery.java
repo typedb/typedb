@@ -32,18 +32,13 @@ import io.mindmaps.graql.admin.InsertQueryAdmin;
  * When built from a {@code MatchQuery}, the insert query will execute for each result of the {@code MatchQuery},
  * where variable names in the {@code InsertQuery} are bound to the concept in the result of the {@code MatchQuery}.
  */
-public interface InsertQuery extends Streamable<Concept> {
+public interface InsertQuery extends Query<Void>, Streamable<Concept> {
 
     /**
      * @param graph the graph to execute the query on
      * @return a new InsertQuery with the graph set
      */
     InsertQuery withGraph(MindmapsGraph graph);
-
-    /**
-     * Execute the insert query
-     */
-    void execute();
 
     /**
      * @return admin instance for inspecting and manipulating this query
