@@ -47,50 +47,50 @@ public class AdmissionsInferenceTest {
     @Test
     public void testConditionalAdmission() {
         String queryString = "match $x isa applicant; $x has admissionStatus 'conditional'";
-        MatchQuery query = qb.parseMatch(queryString).getMatchQuery();
+        MatchQuery query = qb.parseMatch(queryString);
         String explicitQuery = "match $x isa applicant, id 'Bob'";
-        assertQueriesEqual(reasoner.expand(query), qb.parseMatch(explicitQuery).getMatchQuery());
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery).getMatchQuery()));
+        assertQueriesEqual(reasoner.expand(query), qb.parseMatch(explicitQuery));
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
     }
 
     @Test
     public void testDeniedAdmission() {
         String queryString = "match $x isa applicant;$x has admissionStatus 'denied'";
-        MatchQuery query = qb.parseMatch(queryString).getMatchQuery();
+        MatchQuery query = qb.parseMatch(queryString);
         String explicitQuery = "match $x isa applicant, id 'Alice'";
         MatchQuery expandedQuery = reasoner.expand(query);
-        assertQueriesEqual(expandedQuery, qb.parseMatch(explicitQuery).getMatchQuery());
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery).getMatchQuery()));
+        assertQueriesEqual(expandedQuery, qb.parseMatch(explicitQuery));
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
     }
 
     @Test
     public void testProvisionalAdmission() {
         String queryString = "match $x isa applicant;$x has admissionStatus 'provisional'";
-        MatchQuery query = qb.parseMatch(queryString).getMatchQuery();
+        MatchQuery query = qb.parseMatch(queryString);
         String explicitQuery = "match $x isa applicant, id 'Denis'";
         MatchQuery expandedQuery = reasoner.expand(query);
-        assertQueriesEqual(expandedQuery, qb.parseMatch(explicitQuery).getMatchQuery());
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery).getMatchQuery()));
+        assertQueriesEqual(expandedQuery, qb.parseMatch(explicitQuery));
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
     }
 
     @Test
     public void testWaitForTranscriptAdmission() {
         String queryString = "match $x isa applicant;$x has admissionStatus 'wait for transcript'";
-        MatchQuery query = qb.parseMatch(queryString).getMatchQuery();
+        MatchQuery query = qb.parseMatch(queryString);
         String explicitQuery = "match $x isa applicant, id 'Frank'";
         MatchQuery expandedQuery = reasoner.expand(query);
-        assertQueriesEqual(expandedQuery, qb.parseMatch(explicitQuery).getMatchQuery());
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery).getMatchQuery()));
+        assertQueriesEqual(expandedQuery, qb.parseMatch(explicitQuery));
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
     }
 
     @Test
     public void testFullStatusAdmission() {
         String queryString = "match $x isa applicant;$x has admissionStatus 'full'";
-        MatchQuery query = qb.parseMatch(queryString).getMatchQuery();
+        MatchQuery query = qb.parseMatch(queryString);
         String explicitQuery = "match $x isa applicant; $x id 'Eva' or $x id 'Charlie'";
         MatchQuery expandedQuery = reasoner.expand(query);
-        assertQueriesEqual(expandedQuery, qb.parseMatch(explicitQuery).getMatchQuery());
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery).getMatchQuery()));
+        assertQueriesEqual(expandedQuery, qb.parseMatch(explicitQuery));
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {

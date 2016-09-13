@@ -50,7 +50,7 @@ public class AtomicTest {
                 "$x2 isa tag;\n" +
                 "($x1, $x2) isa recommendation";
 
-        MatchQuery MQ = qb.parseMatch(queryString).getMatchQuery();
+        MatchQuery MQ = qb.parseMatch(queryString);
         printMatchQueryResults(MQ);
     }
 
@@ -61,7 +61,7 @@ public class AtomicTest {
 
         String queryString = "match (geo-entity $x, entity-location $y) isa is-located-in;";
 
-        MatchQuery MQ = qb.parseMatch(queryString).getMatchQuery();
+        MatchQuery MQ = qb.parseMatch(queryString);
         Query query = new Query(MQ, graph);
 
         Atomic atom = query.selectAtoms().iterator().next();
@@ -85,7 +85,7 @@ public class AtomicTest {
 
         String queryString = "match ($x, $y, $z) isa ternary-relation-test";
 
-        MatchQuery MQ = qb.parseMatch(queryString).getMatchQuery();
+        MatchQuery MQ = qb.parseMatch(queryString);
         Query query = new Query(MQ, graph);
 
         Atomic atom = query.selectAtoms().iterator().next();

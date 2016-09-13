@@ -179,8 +179,8 @@ public class Reasoner {
     private void linkConceptTypes(Rule rule)
     {
         LOG.debug("Linking rule " + rule.getId() + "...");
-        MatchQuery qLHS = qb.parseMatch(rule.getLHS()).getMatchQuery();
-        MatchQuery qRHS = qb.parseMatch(rule.getRHS()).getMatchQuery();
+        MatchQuery qLHS = qb.parseMatch(rule.getLHS());
+        MatchQuery qRHS = qb.parseMatch(rule.getRHS());
 
         Set<Type> hypothesisConceptTypes = qLHS.admin().getTypes();
         Set<Type> conclusionConceptTypes = qRHS.admin().getTypes();
@@ -194,7 +194,7 @@ public class Reasoner {
 
     public Set<Rule> getRules() {
         Set<Rule> rules = new HashSet<>();
-        MatchQuery sq = qb.parseMatch("match $x isa inference-rule;").getMatchQuery();
+        MatchQuery sq = qb.parseMatch("match $x isa inference-rule;");
 
         List<Map<String, Concept>> results = Lists.newArrayList(sq);
 

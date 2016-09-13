@@ -49,15 +49,15 @@ public class GeoInferenceTest {
         String queryString = "match " +
                         "$x isa city;(geo-entity $x, entity-location $y) isa is-located-in;\n"+
                         "$y isa country;$y id 'Poland'; select $x";
-        MatchQuery query = qb.parseMatch(queryString).getMatchQuery();
+        MatchQuery query = qb.parseMatch(queryString);
         printMatchQueryResults(query.distinct());
 
         String explicitQuery = "match " +
                 "$x isa city;{$x id 'Warsaw'} or {$x id 'Wroclaw'};" +
                 "$y isa country;$y id 'Poland'; select $x";
 
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery).getMatchQuery());
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery).getMatchQuery()));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
     }
 
     @Test
@@ -65,13 +65,13 @@ public class GeoInferenceTest {
         String queryString = "match " +
                 "$x isa university;(geo-entity $x, entity-location $y) isa is-located-in;"+
                 "$y isa country;$y id 'Poland' select $x";
-        MatchQuery query = qb.parseMatch(queryString).getMatchQuery();
+        MatchQuery query = qb.parseMatch(queryString);
         String explicitQuery = "match " +
                 "$x isa university;{$x id 'University-of-Warsaw'} or {$x id 'Warsaw-Polytechnics'};" +
                 "$y isa country;$y id 'Poland'; select $x";
 
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery).getMatchQuery());
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery).getMatchQuery()));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {

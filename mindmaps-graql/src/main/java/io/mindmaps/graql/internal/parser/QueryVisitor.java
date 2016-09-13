@@ -41,7 +41,6 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     private final QueryBuilder queryBuilder;
     private final Stack<Var> patterns = new Stack<>();
-    private final Map<String, List<Getter>> getters = new HashMap<>();
     private final ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods;
 
     QueryVisitor(
@@ -56,7 +55,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public MatchQueryPrinter visitMatchEOF(GraqlParser.MatchEOFContext ctx) {
+    public MatchQuery visitMatchEOF(GraqlParser.MatchEOFContext ctx) {
         return visitMatchQuery(ctx.matchQuery());
     }
 
@@ -86,17 +85,15 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public MatchQueryPrinter visitMatchQuery(GraqlParser.MatchQueryContext ctx) {
+    public MatchQuery visitMatchQuery(GraqlParser.MatchQueryContext ctx) {
         Collection<Pattern> patterns = visitPatterns(ctx.patterns());
         MatchQuery matchQuery = queryBuilder.match(patterns);
-        MatchQuery matchQueryModified = visitModifiers(ctx.modifiers()).apply(matchQuery);
-        return new MatchQueryPrinter(matchQueryModified, getters);
+        return visitModifiers(ctx.modifiers()).apply(matchQuery);
     }
 
     @Override
     public AskQuery visitAskQuery(GraqlParser.AskQueryContext ctx) {
-        MatchQuery matchQuery = visitMatchQuery(ctx.matchQuery()).getMatchQuery();
-        return matchQuery.ask();
+        return visitMatchQuery(ctx.matchQuery()).ask();
     }
 
     @Override
@@ -104,8 +101,7 @@ class QueryVisitor extends GraqlBaseVisitor {
         Collection<Var> vars = visitInsertPatterns(ctx.insertPatterns());
 
         if (ctx.matchQuery() != null) {
-            MatchQuery matchQuery = visitMatchQuery(ctx.matchQuery()).getMatchQuery();
-            return matchQuery.insert(vars);
+            return visitMatchQuery(ctx.matchQuery()).insert(vars);
         } else {
             return queryBuilder.insert(vars);
         }
@@ -115,8 +111,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public DeleteQuery visitDeleteQuery(GraqlParser.DeleteQueryContext ctx) {
         Collection<Var> getters = visitDeletePatterns(ctx.deletePatterns());
-        MatchQuery matchQuery = visitMatchQuery(ctx.matchQuery()).getMatchQuery();
-        return matchQuery.delete(getters);
+        return visitMatchQuery(ctx.matchQuery()).delete(getters);
     }
 
     @Override
@@ -140,8 +135,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public AggregateQuery<?> visitAggregateQuery(GraqlParser.AggregateQueryContext ctx) {
         Aggregate aggregate = visitAggregate(ctx.aggregate());
-        MatchQuery matchQuery = visitMatchQuery(ctx.matchQuery()).getMatchQuery();
-        return matchQuery.aggregate(aggregate);
+        return visitMatchQuery(ctx.matchQuery()).aggregate(aggregate);
     }
 
     @Override
@@ -177,52 +171,6 @@ class QueryVisitor extends GraqlBaseVisitor {
     public NamedAggregate<?, ?> visitNamedAgg(GraqlParser.NamedAggContext ctx) {
         String name = visitId(ctx.id());
         return visitAggregate(ctx.aggregate()).as(name);
-    }
-
-    @Override
-    public UnaryOperator<MatchQuery> visitSelectors(GraqlParser.SelectorsContext ctx) {
-        getters.clear();
-        Set<String> names = ctx.selector().stream().map(this::visitSelector).collect(toSet());
-        return matchQuery -> matchQuery.select(names);
-    }
-
-    @Override
-    public String visitSelector(GraqlParser.SelectorContext ctx) {
-        String variable = getVariable(ctx.VARIABLE());
-        List<Getter> getters = ctx.getter().stream().map(this::visitGetter).distinct().collect(toList());
-        this.getters.put(variable, getters);
-
-        return variable;
-    }
-
-    @Override
-    public Getter visitGetterIsa(GraqlParser.GetterIsaContext ctx) {
-        return Getter.isa();
-    }
-
-    @Override
-    public Getter visitGetterId(GraqlParser.GetterIdContext ctx) {
-        return Getter.id();
-    }
-
-    @Override
-    public Getter visitGetterValue(GraqlParser.GetterValueContext ctx) {
-        return Getter.value();
-    }
-
-    @Override
-    public Getter visitGetterHas(GraqlParser.GetterHasContext ctx) {
-        return Getter.has(visitId(ctx.id()));
-    }
-
-    @Override
-    public Getter visitGetterLhs(GraqlParser.GetterLhsContext ctx) {
-        return Getter.lhs();
-    }
-
-    @Override
-    public Getter visitGetterRhs(GraqlParser.GetterRhsContext ctx) {
-        return Getter.rhs();
     }
 
     @Override
@@ -500,6 +448,12 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
+    public UnaryOperator<MatchQuery> visitModifierSelect(GraqlParser.ModifierSelectContext ctx) {
+        Set<String> names = ctx.VARIABLE().stream().map(this::getVariable).collect(toSet());
+        return matchQuery -> matchQuery.select(names);
+    }
+
+    @Override
     public UnaryOperator<MatchQuery> visitModifierLimit(GraqlParser.ModifierLimitContext ctx) {
         return matchQuery -> matchQuery.limit(getInteger(ctx.INTEGER()));
     }
@@ -537,10 +491,6 @@ class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public Pattern visitPatternSep(GraqlParser.PatternSepContext ctx) {
         return visitPattern(ctx.pattern());
-    }
-
-    private Getter visitGetter(GraqlParser.GetterContext ctx) {
-        return (Getter) visit(ctx);
     }
 
     private Aggregate<?, ?> visitAggregate(GraqlParser.AggregateContext ctx) {

@@ -156,7 +156,7 @@ public class QueryTest {
     public void testDisjunctiveQuery() {
         String queryString = "match $x isa person;{$y isa product} or {$y isa tag};($x, $y) isa recommendation";
 
-        MatchQuery sq = qb.parseMatch(queryString).getMatchQuery();
+        MatchQuery sq = qb.parseMatch(queryString);
         System.out.println(sq.toString());
 
         Query query = new Query(queryString, graph);
@@ -171,7 +171,7 @@ public class QueryTest {
     public void testDisjunctiveRule() {
         String queryString = "match $x isa person;{$y isa product} or {$y isa tag};($x, $y) isa recommendation";
 
-        MatchQuery sq = qb.parseMatch(queryString).getMatchQuery();
+        MatchQuery sq = qb.parseMatch(queryString);
         System.out.println(sq.toString());
 
         Query query = new Query(queryString, graph);
@@ -228,9 +228,9 @@ public class QueryTest {
 
     @Test
     public void testQueryResults(){
-        //QueryResults answers = new QueryResults(Sets.newHashSet(qp.parseMatchQuery("match $x isa person").getMatchQuery()));
+        //QueryResults answers = new QueryResults(Sets.newHashSet(qp.parseMatchQuery("match $x isa person")));
 
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(qb.parseMatch("match $x isa person").getMatchQuery()));
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(qb.parseMatch("match $x isa person")));
 
         answers.forEach(ans -> System.out.println(ans.toString()));
     }

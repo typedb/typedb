@@ -50,7 +50,7 @@ public class  Query {
 
     public Query(String query, MindmapsGraph graph) {
         this.graph = graph;
-        MatchQuery matchQuery = Graql.withGraph(graph).parseMatch(query).getMatchQuery();
+        MatchQuery matchQuery = Graql.withGraph(graph).parseMatch(query);
         this.pattern = matchQuery.admin().getPattern();
         this.selectVars = Sets.newHashSet(matchQuery.admin().getSelectedNames());
 
@@ -71,7 +71,7 @@ public class  Query {
     public Query(Query q) {
         this.graph = q.graph;
 
-        MatchQuery matchQuery = Graql.withGraph(graph).parseMatch(q.toString()).getMatchQuery();
+        MatchQuery matchQuery = Graql.withGraph(graph).parseMatch(q.toString());
         this.pattern = matchQuery.admin().getPattern();
         this.selectVars = Sets.newHashSet(matchQuery.admin().getSelectedNames());
         this.atomSet = getAtomSet(pattern);

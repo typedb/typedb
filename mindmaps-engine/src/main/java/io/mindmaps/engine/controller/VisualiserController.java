@@ -105,7 +105,7 @@ public class VisualiserController {
             final JSONArray halArray = new JSONArray();
 
             withGraph(graph).parseMatch(req.queryParams(REST.Request.QUERY_FIELD))
-                    .getMatchQuery().stream()
+                    .stream()
                     .forEach(x -> x.values()
                             .forEach(concept -> {
                                 LOG.debug("Building HAL resource for concept with id " + concept.getId().toString());
