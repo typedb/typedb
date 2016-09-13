@@ -18,6 +18,7 @@
 
 package io.mindmaps.graql.internal.parser;
 
+import io.mindmaps.concept.Type;
 import io.mindmaps.graql.internal.util.StringConverter;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Resource;
@@ -61,7 +62,14 @@ public interface Getter {
      * @return a getter that will get the id of the type of a concept
      */
     static Getter isa() {
-        return result -> colorKeyword(" isa ") + colorType(result.type().getId());
+        return result -> {
+            Type type = result.type();
+            if (type != null) {
+                return colorKeyword(" isa ") + colorType(type.getId());
+            } else {
+                return "";
+            }
+        };
     }
 
     /**
