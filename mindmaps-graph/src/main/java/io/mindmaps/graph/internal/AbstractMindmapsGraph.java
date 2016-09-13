@@ -620,6 +620,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         LOG.info("Graph is valid. Committing graph . . . ");
         commitTx();
         LOG.info("Graph committed.");
+        getConceptLog().clearTransaction();
 
         if(modifiedConcepts.size() > 0)
             submitCommitLogs(modifiedConcepts);
