@@ -38,6 +38,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -113,6 +114,7 @@ public class MindmapsGraphLowLevelTest {
         assertEquals(c1, c2);
     }
 
+    @Ignore
     @Test
     public void testReadOnlyTraversal(){
         expectedException.expect(VerificationException.class);
