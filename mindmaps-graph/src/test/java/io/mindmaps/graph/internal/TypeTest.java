@@ -329,14 +329,9 @@ public class TypeTest {
         Collection<? extends Concept> types = mindmapsGraph.getMetaType().instances();
         Collection<? extends Concept> data = production.instances();
 
-        assertEquals(17, types.size());
+        assertEquals(11, types.size());
         assertEquals(2, data.size());
 
-        assertTrue(types.contains(mindmapsGraph.getMetaType()));
-        assertTrue(types.contains(mindmapsGraph.getMetaRoleType()));
-        assertTrue(types.contains(mindmapsGraph.getMetaRelationType()));
-        assertTrue(types.contains(mindmapsGraph.getMetaRuleType()));
-        assertTrue(types.contains(mindmapsGraph.getMetaResourceType()));
         assertTrue(types.contains(actor));
         assertTrue(types.contains(movie));
         assertTrue(types.contains(production));

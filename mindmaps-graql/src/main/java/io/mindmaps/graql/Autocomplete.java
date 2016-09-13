@@ -23,6 +23,7 @@ import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.internal.parser.GraqlLexer;
+import io.mindmaps.util.Schema;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.Token;
@@ -134,7 +135,11 @@ public class Autocomplete {
      * @return all type IDs in the ontology
      */
     private static Stream<String> getTypes(MindmapsGraph graph) {
-        return graph.getMetaType().instances().stream().map(Concept::getId);
+        Stream<String> types = graph.getMetaType().instances().stream().map(Concept::getId);
+
+        Stream<String> metaTypes = Stream.of(Schema.MetaType.values()).map(Schema.MetaType::getId);
+
+        return Stream.concat(types, metaTypes);
     }
 
     /**
