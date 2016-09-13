@@ -26,7 +26,6 @@ import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.graql.QueryParser;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -36,14 +35,12 @@ import static org.junit.Assert.assertEquals;
 public class QueryToStringTest {
 
     private QueryBuilder qb;
-    private QueryParser qp;
 
     @Before
     public void setUp() {
         MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
         qb = withGraph(mindmapsGraph);
-        qp = QueryParser.create(mindmapsGraph);
     }
 
     @Test
@@ -158,6 +155,6 @@ public class QueryToStringTest {
     }
 
     private void assertValidToString(MatchQuery query) {
-        QueryParserTest.assertQueriesEqual(query, qp.parseMatchQuery(query.toString()));
+        QueryParserTest.assertQueriesEqual(query, qb.parseMatch(query.toString()));
     }
 }

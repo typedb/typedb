@@ -36,14 +36,14 @@ import static java.util.stream.Collectors.toSet;
 /**
  * ANTLR visitor class for parsing a query
  */
-public class QueryVisitor extends GraqlBaseVisitor {
+class QueryVisitor extends GraqlBaseVisitor {
 
     private final QueryBuilder queryBuilder;
     private final Stack<Var> patterns = new Stack<>();
     private final Map<String, List<Getter>> getters = new HashMap<>();
     private final ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods;
 
-    public QueryVisitor(
+    QueryVisitor(
             ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods, QueryBuilder queryBuilder) {
         this.aggregateMethods = aggregateMethods;
         this.queryBuilder = queryBuilder;

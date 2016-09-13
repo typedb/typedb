@@ -18,12 +18,12 @@
 
 package io.mindmaps.engine.controller;
 
-import io.mindmaps.util.REST;
-import io.mindmaps.graph.internal.AbstractMindmapsGraph;
-import io.mindmaps.factory.GraphFactory;
-import io.mindmaps.graql.QueryParser;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.engine.session.RemoteSession;
 import io.mindmaps.engine.util.ConfigProperties;
+import io.mindmaps.factory.GraphFactory;
+import io.mindmaps.graph.internal.AbstractMindmapsGraph;
+import io.mindmaps.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
@@ -40,6 +40,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import java.util.stream.Collectors;
 
+import static io.mindmaps.graql.Graql.withGraph;
 import static spark.Spark.*;
 
 
@@ -112,9 +113,9 @@ public class RemoteShellController {
 
 
         try {
-            QueryParser parser = QueryParser.create(GraphFactory.getInstance().getGraph(currentGraphName));
+            MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName);
 
-            return parser.parseMatchQuery(req.queryParams(REST.Request.QUERY_FIELD))
+            return withGraph(graph).parseMatch(req.queryParams(REST.Request.QUERY_FIELD))
                     .resultsString()
                     .map(x -> x.replaceAll("\u001B\\[\\d+[m]", ""))
                     .collect(Collectors.joining("\n"));

@@ -26,11 +26,11 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.internal.reasoner.container.AtomicQuery;
-import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.graql.internal.reasoner.container.Query;
 import io.mindmaps.graql.internal.reasoner.container.QueryAnswers;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.Relation;
+import io.mindmaps.util.ErrorMessage;
 import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,14 +44,14 @@ import static io.mindmaps.graql.internal.reasoner.Utility.*;
 public class Reasoner {
 
     private final MindmapsGraph graph;
-    private final QueryParser qp;
+    private final QueryBuilder qb;
     private final Logger LOG = LoggerFactory.getLogger(Reasoner.class);
 
     private final Map<String, Query> workingMemory = new HashMap<>();
 
     public Reasoner(MindmapsGraph graph){
         this.graph = graph;
-        qp =  QueryParser.create(graph);
+        qb = Graql.withGraph(graph);
 
         linkConceptTypes();
     }
@@ -179,8 +179,8 @@ public class Reasoner {
     private void linkConceptTypes(Rule rule)
     {
         LOG.debug("Linking rule " + rule.getId() + "...");
-        MatchQuery qLHS = qp.parseMatchQuery(rule.getLHS()).getMatchQuery();
-        MatchQuery qRHS = qp.parseMatchQuery(rule.getRHS()).getMatchQuery();
+        MatchQuery qLHS = qb.parseMatch(rule.getLHS()).getMatchQuery();
+        MatchQuery qRHS = qb.parseMatch(rule.getRHS()).getMatchQuery();
 
         Set<Type> hypothesisConceptTypes = qLHS.admin().getTypes();
         Set<Type> conclusionConceptTypes = qRHS.admin().getTypes();
@@ -194,7 +194,7 @@ public class Reasoner {
 
     public Set<Rule> getRules() {
         Set<Rule> rules = new HashSet<>();
-        MatchQuery sq = qp.parseMatchQuery("match $x isa inference-rule;").getMatchQuery();
+        MatchQuery sq = qb.parseMatch("match $x isa inference-rule;").getMatchQuery();
 
         List<Map<String, Concept>> results = Lists.newArrayList(sq);
 

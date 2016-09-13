@@ -23,7 +23,6 @@ import io.mindmaps.engine.controller.CommitLogController;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
-import io.mindmaps.graql.QueryParser;
 import org.junit.*;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +34,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+
+import static io.mindmaps.graql.Graql.parseInsert;
+import static io.mindmaps.graql.Graql.parsePatterns;
 
 public class BlockingLoaderTest {
 
@@ -66,7 +68,7 @@ public class BlockingLoaderTest {
         loader.setExecutorSize(2);
         loader.setBatchSize(10);
         try {
-            QueryParser.create().parsePatternsStream(new FileInputStream(fileData)).forEach(pattern -> loader.addToQueue(pattern.admin().asVar()));
+            parsePatterns(new FileInputStream(fileData)).forEach(pattern -> loader.addToQueue(pattern.admin().asVar()));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -81,7 +83,7 @@ public class BlockingLoaderTest {
         loader.setBatchSize(10);
         startTime = System.currentTimeMillis();
         try {
-            QueryParser.create().parsePatternsStream(new FileInputStream(fileData)).forEach(pattern -> loader.addToQueue(pattern.admin().asVar()));
+            parsePatterns(new FileInputStream(fileData)).forEach(pattern -> loader.addToQueue(pattern.admin().asVar()));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -109,7 +111,7 @@ public class BlockingLoaderTest {
                 e.printStackTrace();
             }
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-            QueryParser.create().parseInsertQuery(query).withGraph(graph).execute();
+            parseInsert(query).withGraph(graph).execute();
         try {
             graph.commit();
         } catch (MindmapsValidationException e) {

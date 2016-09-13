@@ -39,7 +39,7 @@ public class MatchQueryPrinter implements Query<Stream<String>> {
     /**
      * @param matchQuery the match query whose results should be printed
      */
-    public MatchQueryPrinter(MatchQuery matchQuery, Map<String, List<Getter>> getters) {
+    MatchQueryPrinter(MatchQuery matchQuery, Map<String, List<Getter>> getters) {
         this.matchQuery = matchQuery;
         this.getters = getters;
     }

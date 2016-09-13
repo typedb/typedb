@@ -20,16 +20,18 @@ package io.mindmaps.graql.internal.reasoner.container;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.concept.Type;
+import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.Disjunction;
-import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.concept.Type;
-import io.mindmaps.graql.*;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.query.*;
+import io.mindmaps.graql.internal.query.Patterns;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
+import io.mindmaps.util.ErrorMessage;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -48,8 +50,7 @@ public class  Query {
 
     public Query(String query, MindmapsGraph graph) {
         this.graph = graph;
-        QueryParser qp = QueryParser.create(graph);
-        MatchQuery matchQuery = qp.parseMatchQuery(query).getMatchQuery();
+        MatchQuery matchQuery = Graql.withGraph(graph).parseMatch(query).getMatchQuery();
         this.pattern = matchQuery.admin().getPattern();
         this.selectVars = Sets.newHashSet(matchQuery.admin().getSelectedNames());
 
@@ -69,9 +70,8 @@ public class  Query {
 
     public Query(Query q) {
         this.graph = q.graph;
-        QueryParser qp = QueryParser.create(graph);
 
-        MatchQuery matchQuery = qp.parseMatchQuery(q.toString()).getMatchQuery();
+        MatchQuery matchQuery = Graql.withGraph(graph).parseMatch(q.toString()).getMatchQuery();
         this.pattern = matchQuery.admin().getPattern();
         this.selectVars = Sets.newHashSet(matchQuery.admin().getSelectedNames());
         this.atomSet = getAtomSet(pattern);
