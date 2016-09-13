@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import java.io.FileInputStream;
 import java.nio.file.Paths;
 import java.util.Properties;
+import io.mindmaps.util.Version;
 
 public class ConfigProperties {
 
@@ -83,13 +84,13 @@ public class ConfigProperties {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        prop.put(PROJECT_VERSION,Version.VERSION);
         setLogConfigFile();
         computeThreadsNumber();
         LOG = LoggerFactory.getLogger(ConfigProperties.class);
         LOG.info("Project directory in use: ["+getProjectPath()+"]");
         LOG.info("Configuration file in use: [" + configFilePath + "]");
         LOG.info("Number of threads set to [" + numOfThreads + "]");
-
     }
 
 
