@@ -101,24 +101,13 @@ public final class Schema {
     }
 
     /**
-     * A property enum defining the unique mutable properties of the concept. The must be unique properties.
-     */
-    public enum ConceptPropertyUnique {
-        ITEM_IDENTIFIER(String.class), INDEX(String.class);
-
-        private final Class dataType;
-        ConceptPropertyUnique(Class dataType){
-            this.dataType = dataType;
-        }
-        public Class getDataType(){
-            return dataType;
-        }
-    }
-
-    /**
      * An enum which defines the non-unique mutable properties of the concept.
      */
     public enum ConceptProperty {
+        //Unique Properties
+        ITEM_IDENTIFIER(String.class), INDEX(String.class),
+
+        //Other Properties
         TYPE(String.class), IS_ABSTRACT(Boolean.class),
         REGEX(String.class), DATA_TYPE(String.class), IS_UNIQUE(Boolean.class),
         IS_MATERIALISED(Boolean.class), IS_EXPECTED(Boolean.class), RULE_LHS(String.class), RULE_RHS(String.class),

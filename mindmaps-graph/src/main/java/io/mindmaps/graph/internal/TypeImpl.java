@@ -161,7 +161,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
 
         //noinspection unchecked
         GraphTraversal<Vertex, Vertex> traversal = getMindmapsGraph().getTinkerPopGraph().traversal().V()
-                .has(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), getId())
+                .has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), getId())
                 .union(__.identity(), __.repeat(__.in(Schema.EdgeLabel.AKO.getLabel())).emit()).unfold()
                 .in(Schema.EdgeLabel.ISA.getLabel())
                 .union(__.identity(), __.repeat(__.in(Schema.EdgeLabel.AKO.getLabel())).emit()).unfold();

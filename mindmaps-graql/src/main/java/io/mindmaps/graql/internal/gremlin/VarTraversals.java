@@ -38,7 +38,7 @@ import java.util.stream.Stream;
 import static io.mindmaps.graql.Graql.eq;
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.*;
 import static io.mindmaps.util.Schema.ConceptProperty.*;
-import static io.mindmaps.util.Schema.ConceptPropertyUnique.ITEM_IDENTIFIER;
+import static io.mindmaps.util.Schema.ConceptProperty.ITEM_IDENTIFIER;
 import static io.mindmaps.util.Schema.EdgeLabel.*;
 import static io.mindmaps.util.Schema.EdgeProperty.TO_TYPE;
 

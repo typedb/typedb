@@ -80,7 +80,7 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
             }
 
             String index = generateResourceIndex(type().getId(), value.toString());
-            setUniqueProperty(Schema.ConceptPropertyUnique.INDEX, index);
+            setUniqueProperty(Schema.ConceptProperty.INDEX, index);
 
             return setProperty(dataType().getConceptProperty(), castValue(value));
         } catch (ClassCastException e) {

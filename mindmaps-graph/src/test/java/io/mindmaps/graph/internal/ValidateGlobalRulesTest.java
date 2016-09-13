@@ -101,7 +101,7 @@ public class ValidateGlobalRulesTest {
         }
 
         mindmapsGraph.getTinkerTraversal().V().
-                has(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), werewolf.getId()).
+                has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), werewolf.getId()).
                 outE(Schema.EdgeLabel.ISA.getLabel()).next().remove();
         ((Edge) mindmapsGraph.getTinkerTraversal().V(wolf.getBaseIdentifier()).outE(Schema.EdgeLabel.AKO.getLabel()).as("edge").otherV().hasId(creature.getBaseIdentifier()).select("edge").next()).remove();
         ((Edge) mindmapsGraph.getTinkerTraversal().V(creature.getBaseIdentifier()).outE(Schema.EdgeLabel.PLAYS_ROLE.getLabel()).as("edge").otherV().hasId(monster.getBaseIdentifier()).select("edge").next()).remove();
@@ -120,13 +120,13 @@ public class ValidateGlobalRulesTest {
         assertTrue(flags[0] || flags[1]);
 
         mindmapsGraph.getTinkerTraversal().V().
-                has(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), werewolf.getId()).
+                has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), werewolf.getId()).
                 outE(Schema.EdgeLabel.ISA.getLabel()).next().remove();
         mindmapsGraph.getTinkerTraversal().V().
-                has(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), wolf.getId()).
+                has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), wolf.getId()).
                 outE(Schema.EdgeLabel.ISA.getLabel()).next().remove();
         mindmapsGraph.getTinkerTraversal().V().
-                has(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), creature.getId()).
+                has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), creature.getId()).
                 outE(Schema.EdgeLabel.ISA.getLabel()).next().remove();
 
         werewolf.type(wolf);

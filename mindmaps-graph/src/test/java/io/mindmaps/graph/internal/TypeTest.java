@@ -136,7 +136,7 @@ public class TypeTest {
         assertFalse(c1.getAkoHierarchySuperSet().contains(c4));
 
         mindmapsGraph.getTinkerPopGraph().traversal().V().
-                has(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), c3.getId()).
+                has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), c3.getId()).
                 outE(Schema.EdgeLabel.ISA.getLabel()).next().remove();
         c3.superType(c4);
         boolean correctExceptionThrown = false;
@@ -239,7 +239,7 @@ public class TypeTest {
         conceptType.playsRole(roleType1).playsRole(roleType2);
         Set<RoleType> foundRoles = new HashSet<>();
         mindmapsGraph.getTinkerPopGraph().traversal().V(conceptType.getBaseIdentifier()).
-                out(Schema.EdgeLabel.PLAYS_ROLE.getLabel()).forEachRemaining(r -> foundRoles.add(mindmapsGraph.getRoleType(r.value(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name()))));
+                out(Schema.EdgeLabel.PLAYS_ROLE.getLabel()).forEachRemaining(r -> foundRoles.add(mindmapsGraph.getRoleType(r.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name()))));
 
         assertEquals(2, foundRoles.size());
         assertTrue(foundRoles.contains(roleType1));

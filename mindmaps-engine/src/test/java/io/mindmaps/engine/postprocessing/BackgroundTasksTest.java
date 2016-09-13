@@ -118,13 +118,13 @@ public class BackgroundTasksTest {
 
         //Get Needed Vertices
         Vertex mainRoleTypeVertex = rawGraph.traversal().V().
-                has(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), mainRoleTypeId).next();
+                has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), mainRoleTypeId).next();
 
         Vertex relationVertex = rawGraph.traversal().V().
-                has(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), relationId).next();
+                has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), relationId).next();
 
         Vertex mainInstanceVertex = rawGraph.traversal().V().
-                has(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), mainInstanceId).next();
+                has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), mainInstanceId).next();
 
         //Create Fake Casting
         Vertex castingVertex = rawGraph.addVertex(Schema.BaseType.CASTING.name());

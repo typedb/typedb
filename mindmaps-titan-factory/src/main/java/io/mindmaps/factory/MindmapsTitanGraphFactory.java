@@ -151,9 +151,6 @@ class MindmapsTitanGraphFactory extends AbstractMindmapsGraphFactory<MindmapsTit
         Arrays.stream(Schema.ConceptProperty.values()).forEach(property ->
                 makePropertyKey(management, property.name(), property.getDataType()));
 
-        Arrays.stream(Schema.ConceptPropertyUnique.values()).forEach(property ->
-                makePropertyKey(management, property.name(), property.getDataType()));
-
         Arrays.stream(Schema.EdgeProperty.values()).forEach(property ->
                 makePropertyKey(management, property.name(), property.getDataType()));
     }

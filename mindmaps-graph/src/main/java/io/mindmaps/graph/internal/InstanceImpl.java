@@ -66,7 +66,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      * @return The inner index value of some concepts.
      */
     public String getIndex(){
-        return getProperty(Schema.ConceptPropertyUnique.INDEX);
+        return (String) getProperty(Schema.ConceptProperty.INDEX);
     }
 
     /**
