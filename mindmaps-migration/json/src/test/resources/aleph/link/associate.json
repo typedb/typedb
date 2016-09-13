@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "/link/associate.json#",
+  "title": "Associate",
+  "plural": "Associates",
+  "sortIndex": 35,
+  "type": "object",
+  "faIcon": "fa-link",
+  "inline": false,
+  "graph": "edge",
+  "oneOf": [{"$ref": "/link/link.json#"}],
+  "required": [],
+  "properties": {
+    "person_left": {
+      "title": "First person",
+      "sortIndex": 90,
+      "$ref": "/entity/person.json#",
+      "rdfReverse": "associates_left"
+    },
+    "person_right": {
+      "title": "Second person",
+      "sortIndex": 85,
+      "$ref": "/entity/person.json#",
+      "rdfReverse": "associates_right"
+    }
+  }
+}

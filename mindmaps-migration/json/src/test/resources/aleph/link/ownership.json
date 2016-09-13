@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "/link/ownership.json#",
+  "title": "Ownership",
+  "plural": "Ownerships",
+  "description": "An ownership relation between a legal entity and an asset",
+  "sortIndex": 30,
+  "type": "object",
+  "faIcon": "fa-link",
+  "inline": false,
+  "graph": "edge",
+  "oneOf": [{"$ref": "/link/link.json#"}],
+  "required": [],
+  "properties": {
+    "type": {
+      "title": "Type",
+      "sortIndex": 80,
+      "description": "The type of ownership, e.g. beneficial or legal",
+      "type": ["string", "null"]
+    },
+    "share": {
+      "title": "Share",
+      "sortIndex": 78,
+      "description": "The share of the ownership, e.g. percentage or share count",
+      "type": ["string", "null"]
+    },
+    "valuation": {
+        "title": "Valuation",
+        "description": "The estimated value of the share",
+        "type": ["integer", "null"]
+    },
+    "valuation_currency": {
+        "title": "Currency of valuation",
+        "type": ["string", "null"]
+    },
+    "valuation_date": {
+        "title": "Valuation date",
+        "description": "When the valuation was made",
+        "type": ["string", "null"],
+        "format": "date"
+    },
+    "owner": {
+      "title": "Owner",
+      "description": "The owner",
+      "sortIndex": 91,
+      "$ref": "/entity/legal_person.json#",
+      "rdfReverse": "assets"
+    },
+    "asset": {
+      "title": "Asset",
+      "description": "That which is owned",
+      "sortIndex": 92,
+      "$ref": "/entity/asset.json#",
+      "rdfReverse": "owners"
+    }
+  }
+}

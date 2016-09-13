@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "/entity/contact_detail.json#",
+  "title": "Contact detail",
+  "plural": "Contact details",
+  "description": "A means of contacting an entity",
+  "type": "object",
+  "inline": true,
+  "properties": {
+    "id": {
+      "title": "ID",
+      "hidden": true,
+      "type": "string"
+    },
+    "label": {
+      "title": "Label",
+      "description": "A human-readable label for the contact detail",
+      "type": ["string", "null"]
+    },
+    "type": {
+      "title": "Type",
+      "description": "A type of medium, e.g. 'fax' or 'email'",
+      "type": "string",
+      "required": true
+    },
+    "value": {
+      "title": "Value",
+      "description": "A value, e.g. a phone number or email address",
+      "type": "string",
+      "required": true
+    },
+    "note": {
+      "title": "Note",
+      "description": "A note, e.g. for grouping contact details by physical location",
+      "type": ["string", "null"]
+    },
+    "valid_from": {
+      "title": "Valid from",
+      "description": "The date from which the contact detail is valid",
+      "type": ["string", "null"],
+      "format": "partial-date"
+    },
+    "valid_until": {
+      "title": "Valid until",
+      "description": "The date from which the contact detail is no longer valid",
+      "type": ["string", "null"],
+      "format": "partial-date"
+    }
+  }
+}

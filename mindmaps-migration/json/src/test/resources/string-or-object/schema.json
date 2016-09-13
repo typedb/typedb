@@ -1,0 +1,14 @@
+{
+  "id": "outer-thing.json#",
+  "type": "object",
+  "properties": {
+    "the-thing": {
+      "type": ["string", "object"],
+      "properties": {
+        "a-number": {
+          "type": "number"
+        }
+      }
+    }
+  }
+}
