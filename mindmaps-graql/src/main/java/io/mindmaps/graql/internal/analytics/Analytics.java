@@ -125,8 +125,8 @@ public class Analytics {
     public long count() {
         MindmapsComputer computer = MindmapsClient.getGraphComputer(keySpace);
         ComputerResult result = computer.compute(new CountMapReduce(allTypes));
-        Map<String, Long> count = result.memory().get(CountMapReduce.DEFAULT_MEMORY_KEY);
-        return count.containsKey(CountMapReduce.DEFAULT_MEMORY_KEY) ? count.get(CountMapReduce.DEFAULT_MEMORY_KEY) : 0L;
+        Map<String, Long> count = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
+        return count.getOrDefault(CountMapReduce.MEMORY_KEY,0L);
     }
 
     /**
@@ -157,7 +157,7 @@ public class Analytics {
     private void degreesAndPersist(String resourceType) {
         insertOntology(resourceType, ResourceType.DataType.LONG);
         MindmapsComputer computer = MindmapsClient.getGraphComputer(keySpace);
-        computer.compute(new DegreeAndPersistVertexProgram(keySpace,allTypes));
+        computer.compute(new DegreeAndPersistVertexProgram(keySpace, allTypes));
     }
 
     /**
