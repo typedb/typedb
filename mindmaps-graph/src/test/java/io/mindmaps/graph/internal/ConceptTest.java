@@ -119,7 +119,7 @@ public class ConceptTest {
     @Test(expected=RuntimeException.class)
     public void updateConceptFailTooManyConcepts()  {
         Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex();
-        vertex.property(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), "VALUE");
+        vertex.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), "VALUE");
         mindmapsGraph.putEntityType("VALUE");
     }
 

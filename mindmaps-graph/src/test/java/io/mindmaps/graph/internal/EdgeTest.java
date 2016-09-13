@@ -43,7 +43,7 @@ public class EdgeTest {
         mindmapsGraph = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
         entityType = mindmapsGraph.putEntityType("My Entity Type");
         entity = mindmapsGraph.putEntity("My entity", entityType);
-        Edge tinkerEdge = mindmapsGraph.getTinkerTraversal().V().has(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), entity.getId()).outE().next();
+        Edge tinkerEdge = mindmapsGraph.getTinkerTraversal().V().has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), entity.getId()).outE().next();
         edge = new EdgeImpl(tinkerEdge, mindmapsGraph);
     }
 
@@ -55,7 +55,7 @@ public class EdgeTest {
     @Test
     public void testEquals(){
         Entity entity2 = mindmapsGraph.putEntity("My entity 2", entityType);
-        Edge tinkerEdge = mindmapsGraph.getTinkerTraversal().V().has(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), entity2.getId()).outE().next();
+        Edge tinkerEdge = mindmapsGraph.getTinkerTraversal().V().has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), entity2.getId()).outE().next();
         EdgeImpl edge2 = new EdgeImpl(tinkerEdge, mindmapsGraph);
 
         assertEquals(edge, edge);

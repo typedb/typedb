@@ -101,35 +101,48 @@ public final class Schema {
     }
 
     /**
-     * A property enum defining the unique mutable properties of the concept. The must be unique properties.
-     */
-    public enum ConceptPropertyUnique {
-        ITEM_IDENTIFIER, INDEX
-    }
-
-    /**
      * An enum which defines the non-unique mutable properties of the concept.
      */
     public enum ConceptProperty {
-        TYPE, IS_ABSTRACT,
-        REGEX, DATA_TYPE, IS_UNIQUE,
-        IS_MATERIALISED, IS_EXPECTED, RULE_LHS, RULE_RHS,
-        VALUE_STRING, VALUE_LONG, VALUE_DOUBLE, VALUE_BOOLEAN
+        //Unique Properties
+        ITEM_IDENTIFIER(String.class), INDEX(String.class),
+
+        //Other Properties
+        TYPE(String.class), IS_ABSTRACT(Boolean.class),
+        REGEX(String.class), DATA_TYPE(String.class), IS_UNIQUE(Boolean.class),
+        IS_MATERIALISED(Boolean.class), IS_EXPECTED(Boolean.class), RULE_LHS(String.class), RULE_RHS(String.class),
+        VALUE_STRING(String.class), VALUE_LONG(Long.class), VALUE_DOUBLE(Double.class), VALUE_BOOLEAN(Boolean.class);
+
+        private final Class dataType;
+        ConceptProperty(Class dataType){
+            this.dataType = dataType;
+        }
+        public Class getDataType(){
+            return dataType;
+        }
     }
 
     /**
      * A property enum defining the possible labels that can go on the edge label.
      */
     public enum EdgeProperty {
-        ROLE_TYPE,
-        RELATION_ID,
-        RELATION_TYPE_ID,
-        TO_ID,
-        TO_ROLE,
-        TO_TYPE,
-        FROM_ID,
-        FROM_ROLE,
-        FROM_TYPE,
-        SHORTCUT_HASH
+        ROLE_TYPE(String.class),
+        RELATION_ID(String.class),
+        RELATION_TYPE_ID(String.class),
+        TO_ID(String.class),
+        TO_ROLE(String.class),
+        TO_TYPE(String.class),
+        FROM_ID(String.class),
+        FROM_ROLE(String.class),
+        FROM_TYPE(String.class),
+        SHORTCUT_HASH(String.class);
+
+        private final Class dataType;
+        EdgeProperty(Class dataType){
+            this.dataType = dataType;
+        }
+        public Class getDataType(){
+            return dataType;
+        }
     }
 }

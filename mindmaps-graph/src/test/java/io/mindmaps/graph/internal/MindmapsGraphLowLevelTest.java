@@ -89,9 +89,9 @@ public class MindmapsGraphLowLevelTest {
     public void testTooManyNodesForId() {
         Graph graph = mindmapsGraph.getTinkerPopGraph();
         Vertex v1 = graph.addVertex();
-        v1.property(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), "value");
+        v1.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), "value");
         Vertex v2 = graph.addVertex();
-        v2.property(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), "value");
+        v2.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), "value");
         mindmapsGraph.putEntityType("value");
     }
 
@@ -161,8 +161,8 @@ public class MindmapsGraphLowLevelTest {
     public void makeArtificialCasting(RoleTypeImpl role, InstanceImpl rolePlayer, RelationImpl relation) {
         String id = "FakeCasting " + UUID.randomUUID();
         Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
-        vertex.property(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), id);
-        vertex.property(Schema.ConceptPropertyUnique.INDEX.name(), CastingImpl.generateNewHash(role, rolePlayer));
+        vertex.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), id);
+        vertex.property(Schema.ConceptProperty.INDEX.name(), CastingImpl.generateNewHash(role, rolePlayer));
 
         CastingImpl casting = (CastingImpl) mindmapsGraph.getConcept(id);
         EdgeImpl edge = casting.addEdge(role, Schema.EdgeLabel.ISA); // Casting to Role

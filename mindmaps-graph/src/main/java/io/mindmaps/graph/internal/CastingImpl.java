@@ -77,7 +77,7 @@ class CastingImpl extends ConceptImpl {
             hash = "CastingBaseId_" + this.getBaseIdentifier() + UUID.randomUUID().toString();
         else
             hash = generateNewHash(role, rolePlayer);
-        setUniqueProperty(Schema.ConceptPropertyUnique.INDEX, hash);
+        setUniqueProperty(Schema.ConceptProperty.INDEX, hash);
         return this;
     }
 

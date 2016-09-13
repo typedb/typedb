@@ -28,7 +28,7 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.Optional;
 
-import static io.mindmaps.util.Schema.ConceptPropertyUnique.ITEM_IDENTIFIER;
+import static io.mindmaps.util.Schema.ConceptProperty.ITEM_IDENTIFIER;
 import static io.mindmaps.util.Schema.EdgeLabel.SHORTCUT;
 import static io.mindmaps.util.Schema.EdgeProperty.TO_TYPE;
 

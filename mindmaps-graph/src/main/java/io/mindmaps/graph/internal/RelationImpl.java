@@ -54,9 +54,9 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      */
     public void setHash(Map<RoleType, Instance> roleMap){
         if(roleMap == null || roleMap.isEmpty())
-            setUniqueProperty(Schema.ConceptPropertyUnique.INDEX, "RelationBaseId_" + getBaseIdentifier() + UUID.randomUUID().toString());
+            setUniqueProperty(Schema.ConceptProperty.INDEX, "RelationBaseId_" + getBaseIdentifier() + UUID.randomUUID().toString());
         else
-            setUniqueProperty(Schema.ConceptPropertyUnique.INDEX, generateNewHash(type(), roleMap));
+            setUniqueProperty(Schema.ConceptProperty.INDEX, generateNewHash(type(), roleMap));
     }
 
     /**

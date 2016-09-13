@@ -72,7 +72,7 @@ public class CastingTest {
     public void testEquals() throws Exception {
         Graph graph = mindmapsGraph.getTinkerPopGraph();
         Vertex v = graph.traversal().V(relation.getBaseIdentifier()).out(Schema.EdgeLabel.CASTING.getLabel()).next();
-        CastingImpl castingCopy = (CastingImpl) mindmapsGraph.getConcept(v.value(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name()));
+        CastingImpl castingCopy = (CastingImpl) mindmapsGraph.getConcept(v.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name()));
         assertEquals(casting, castingCopy);
 
         EntityType type = mindmapsGraph.putEntityType("Another entity type");
@@ -94,7 +94,7 @@ public class CastingTest {
 
         String id = UUID.randomUUID().toString();
         Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
-        vertex.property(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), id);
+        vertex.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), id);
 
         CastingImpl casting2 = (CastingImpl) mindmapsGraph.getConcept(id);
         boolean exceptionThrown = false;

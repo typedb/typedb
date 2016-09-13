@@ -45,7 +45,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import static io.mindmaps.util.Schema.ConceptPropertyUnique.ITEM_IDENTIFIER;
+import static io.mindmaps.util.Schema.ConceptProperty.ITEM_IDENTIFIER;
 
 /**
  * OLAP computations that can be applied to a Mindmaps Graph. The current implementation uses the SparkGraphComputer
@@ -213,7 +213,7 @@ public class Analytics {
         RelationType relationType = mindmapsGraph.getRelationType(GraqlType.HAS_RESOURCE.getId(resourceName));
 
         Instance instance =
-                mindmapsGraph.getInstance(vertex.value(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name()));
+                mindmapsGraph.getInstance(vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name()));
 
         List<Relation> relations = instance.relations(resourceOwner).stream()
                 .filter(relation -> relation.rolePlayers().size() == 2)
