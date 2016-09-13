@@ -18,8 +18,6 @@
 
 package io.mindmaps.graph.internal;
 
-import io.mindmaps.util.Schema;
-import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
@@ -31,14 +29,15 @@ import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.RuleType;
 import io.mindmaps.concept.Type;
+import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
+import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -112,7 +111,6 @@ public class MindmapsGraphLowLevelTest {
         assertEquals(c1, c2);
     }
 
-    @Ignore
     @Test
     public void testReadOnlyTraversal(){
         expectedException.expect(VerificationException.class);

@@ -480,6 +480,7 @@ public class AnalyticsTest {
         });
     }
 
+    @Ignore
     @Test
     public void testDegreeIsPersisted() throws Exception {
         // create a simple graph
