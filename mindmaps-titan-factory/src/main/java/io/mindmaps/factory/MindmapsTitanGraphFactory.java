@@ -24,7 +24,6 @@ import com.thinkaurelius.titan.core.RelationType;
 import com.thinkaurelius.titan.core.TitanFactory;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.VertexLabel;
-import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.schema.TitanIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
 import io.mindmaps.graph.internal.MindmapsTitanGraph;
@@ -32,7 +31,6 @@ import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
@@ -105,9 +103,8 @@ class MindmapsTitanGraphFactory extends AbstractMindmapsGraphFactory<MindmapsTit
         makeEdgeLabels(management);
         makePropertyKeys(management);
 
-        makeEdgeIndices(management);
+        makeIndicesVertexCentric(management);
         makeIndicesComposite(management);
-        makeIndicesMixed(management);
 
         management.commit();
     }
@@ -128,7 +125,7 @@ class MindmapsTitanGraphFactory extends AbstractMindmapsGraphFactory<MindmapsTit
         }
     }
 
-    private static void makeEdgeIndices(TitanManagement management){
+    private static void makeIndicesVertexCentric(TitanManagement management){
         ResourceBundle keys = ResourceBundle.getBundle("indices-edges");
         Set<String> edgeLabels = keys.keySet();
         for(String edgeLabel : edgeLabels){
@@ -183,41 +180,6 @@ class MindmapsTitanGraphFactory extends AbstractMindmapsGraphFactory<MindmapsTit
                 if (isUnique)
                     indexBuilder.unique();
                 indexBuilder.buildCompositeIndex();
-            }
-        }
-    }
-
-    private static void makeIndicesMixed(TitanManagement management){
-        ResourceBundle comboIndexConfig = ResourceBundle.getBundle("indices-mixed");
-        Set<String> comboIndexNames = comboIndexConfig.keySet();
-        for(String comboIndexName : comboIndexNames){
-            TitanIndex index = management.getGraphIndex(comboIndexName);
-            if(index == null) {
-                TitanManagement.IndexBuilder indexBuilder;
-                String [] indexArray = comboIndexConfig.getString(comboIndexName).split(":");
-                String indexType = indexArray[0];
-                String[] propertyKeys = indexArray[1].split(",");
-
-                switch (indexType) {
-                    case "Vertex":
-                        indexBuilder = management.buildIndex(comboIndexName, Vertex.class);
-                        break;
-                    case "Edge":
-                        indexBuilder = management.buildIndex(comboIndexName, Edge.class);
-                        break;
-                    default:
-                        throw new IllegalArgumentException("Indexing element of type [" + indexType + "] is not supported.");
-                }
-
-                for (String propertyKey : propertyKeys) {
-                    PropertyKey key = management.getPropertyKey(propertyKey);
-                    if(key.dataType().equals(String.class)){
-                        indexBuilder.addKey(key, Mapping.STRING.asParameter());
-                    } else {
-                        indexBuilder.addKey(key);
-                    }
-                }
-                indexBuilder.buildMixedIndex(SEARCH_KEY);
             }
         }
     }
