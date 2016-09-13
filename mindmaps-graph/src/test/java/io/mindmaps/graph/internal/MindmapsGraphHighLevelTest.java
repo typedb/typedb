@@ -115,7 +115,7 @@ public class MindmapsGraphHighLevelTest {
         //Checking it
         //Counts
         assertEquals(20, graph.getTinkerPopGraph().traversal().V().toList().size());
-        assertEquals(35, graph.getTinkerPopGraph().traversal().E().toList().size());
+        assertEquals(34, graph.getTinkerPopGraph().traversal().E().toList().size());
 
         assertion.getMappingCasting().forEach(casting ->{
             Edge edge = graph.getTinkerPopGraph().traversal().V(casting.getBaseIdentifier()).inE(Schema.EdgeLabel.CASTING.getLabel()).next();
@@ -197,7 +197,7 @@ public class MindmapsGraphHighLevelTest {
         long value = graph.getTinkerPopGraph().traversal().V().count().next();
         assertEquals(19, value);
         value = graph.getTinkerPopGraph().traversal().E().count().next();
-        assertEquals(28, value);
+        assertEquals(27, value);
 
         //First Check if Roles are set correctly.
         GraphTraversal<Vertex, Vertex> traversal = graph.getTinkerPopGraph().traversal().V(relationType.getBaseIdentifier()).out(Schema.EdgeLabel.HAS_ROLE.getLabel());
@@ -321,7 +321,7 @@ public class MindmapsGraphHighLevelTest {
         //Validation
         //Counts
         assertEquals(37, graph.getTinkerPopGraph().traversal().V().toList().size());
-        assertEquals(53, graph.getTinkerPopGraph().traversal().E().toList().size());
+        assertEquals(52, graph.getTinkerPopGraph().traversal().E().toList().size());
 
         assertEdgeCountOfVertex(type, Schema.EdgeLabel.ISA, 0, 1);
         assertEdgeCountOfVertex(relationType, Schema.EdgeLabel.ISA, 0, 1);

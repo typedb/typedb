@@ -165,7 +165,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
         Type type = null;
         boolean notFound = true;
 
-        while(notFound){
+        while(notFound && currentConcept != null){
             ConceptImpl concept = currentConcept.getParentIsa();
             if(concept != null){
                 //Checks the following case c1 -ako-> c2 -ako-> c3 -isa-> c1 is invalid

@@ -128,8 +128,6 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
             ruleType.setType(type.getId());
             entityType.setType(type.getId());
 
-            type.type(type);
-
             relationType.superType(type);
             roleType.superType(type);
             resourceType.superType(type);
