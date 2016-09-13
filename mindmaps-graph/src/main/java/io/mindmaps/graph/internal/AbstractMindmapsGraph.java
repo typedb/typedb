@@ -41,6 +41,7 @@ import io.mindmaps.util.REST;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -155,7 +156,8 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
 
     @Override
     public GraphTraversalSource getTinkerTraversal(){
-        return getTinkerPopGraph().traversal();
+        ReadOnlyStrategy readOnlyStrategy = ReadOnlyStrategy.instance();
+        return getTinkerPopGraph().traversal().asBuilder().with(readOnlyStrategy).create(getTinkerPopGraph());
     }
 
     public ElementFactory getElementFactory(){
