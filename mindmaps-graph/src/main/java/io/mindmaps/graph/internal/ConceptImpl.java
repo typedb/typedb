@@ -599,8 +599,8 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      *
      * @return The unique base identifier of this concept.
      */
-    public long getBaseIdentifier() {
-        return (long) vertex.id();
+    public Object getBaseIdentifier() {
+        return vertex.id();
     }
 
     /**
