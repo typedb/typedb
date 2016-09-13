@@ -138,12 +138,12 @@ public class SQLSchemaMigratorTest {
         graph.rollback();
 
         System.out.println(graph.getMetaType().instances());
-        assertTrue(graph.getMetaType().instances().size() == 8);
-        assertTrue(graph.getMetaEntityType().instances().size() == 0);
-        assertTrue(graph.getMetaRelationType().instances().size() == 0);
-        assertTrue(graph.getMetaResourceType().instances().size() == 0);
-        assertTrue(graph.getMetaRoleType().instances().size() == 0);
-        assertTrue(graph.getMetaRuleType().instances().size() == 2);
+        assertEquals(2, graph.getMetaType().instances().size());
+        assertEquals(0, graph.getMetaEntityType().instances().size());
+        assertEquals(0, graph.getMetaRelationType().instances().size());
+        assertEquals(0, graph.getMetaResourceType().instances().size());
+        assertEquals(0, graph.getMetaRoleType().instances().size());
+        assertEquals(2, graph.getMetaRuleType().instances().size());
     }
 
     @Test
