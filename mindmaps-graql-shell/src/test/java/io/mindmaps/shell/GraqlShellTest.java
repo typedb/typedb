@@ -159,7 +159,7 @@ public class GraqlShellTest {
         String result = testShell("match $x isa concept-type aggregate count\n");
 
         // Expect to see the whole meta-ontology
-        assertThat(result, containsString("\n8\n"));
+        assertThat(result, containsString("\n2\n"));
     }
 
     @Test
@@ -186,7 +186,8 @@ public class GraqlShellTest {
 
     @Test
     public void testAutocompleteFill() throws IOException {
-        String result = testShell("match $x isa concept-typ\t\n");
+        // The typo is deliberate because this is an auto-complete test
+        String result = testShell("match $x ako concept-typ\t\n");
         assertThat(result, containsString("\"relation-type\""));
     }
 

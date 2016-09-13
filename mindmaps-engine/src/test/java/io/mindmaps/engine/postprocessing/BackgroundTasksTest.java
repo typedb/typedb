@@ -34,6 +34,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.UUID;
+
 import static org.junit.Assert.assertEquals;
 
 public class BackgroundTasksTest {
@@ -53,9 +55,7 @@ public class BackgroundTasksTest {
         Thread.sleep(2000);
 
         backgroundTasks = BackgroundTasks.getInstance();
-        MindmapsClient.getGraph("mindmapstesting").clear();
-        mindmapsGraph = MindmapsClient.getGraph("mindmapstesting");
-
+        mindmapsGraph = MindmapsClient.getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
     }
 
     @After
