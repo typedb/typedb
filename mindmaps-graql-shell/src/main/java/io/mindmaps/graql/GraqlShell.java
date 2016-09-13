@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql;
 
-import io.mindmaps.graql.internal.shell.Version;
+import io.mindmaps.util.Version;
 import io.mindmaps.graql.internal.shell.ErrorMessage;
 import io.mindmaps.graql.internal.shell.GraQLCompleter;
 import io.mindmaps.graql.internal.shell.GraqlSignalHandler;

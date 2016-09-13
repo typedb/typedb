@@ -21,7 +21,9 @@ package io.mindmaps.engine.session;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.exception.ConceptException;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.graql.*;
+import io.mindmaps.graql.Autocomplete;
+import io.mindmaps.graql.Query;
+import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.internal.parser.MatchQueryPrinter;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
@@ -30,6 +32,7 @@ import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static io.mindmaps.graql.Graql.withGraph;
 import static io.mindmaps.util.REST.RemoteShell.*;
 
 /**
@@ -73,10 +76,9 @@ class GraqlSession {
             String errorMessage = null;
 
             try {
-                QueryParser parser = QueryParser.create(graph);
                 String queryString = json.at(QUERY).asString();
 
-                Query<?> query = parser.parseQuery(queryString);
+                Query<?> query = withGraph(graph).parse(queryString);
 
                 if (query instanceof MatchQueryPrinter) {
                     reasonMatchQuery((MatchQueryPrinter) query);

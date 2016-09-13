@@ -22,7 +22,8 @@ package io.mindmaps.graql.reasoner.graphs;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
-import io.mindmaps.graql.QueryParser;
+import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.QueryBuilder;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -54,11 +55,11 @@ public class SNBGraph {
     }
 
     private static void addOntology() {
-        QueryParser qp = QueryParser.create(mindmaps);
+        QueryBuilder qb = Graql.withGraph(mindmaps);
         try {
             List<String> lines = Files.readAllLines(Paths.get("src/test/resources/graql/ldbc-snb-ontology.gql"), StandardCharsets.UTF_8);
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-            qp.parseInsertQuery(query).execute();
+            qb.parse(query).execute();
         }
         catch (IOException e){
             e.printStackTrace();
@@ -67,7 +68,7 @@ public class SNBGraph {
         try {
             List<String> lines = Files.readAllLines(Paths.get("src/test/resources/graql/ldbc-snb-product-ontology.gql"), StandardCharsets.UTF_8);
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-            qp.parseInsertQuery(query).execute();
+            qb.parse(query).execute();
         }
         catch (IOException e){
             e.printStackTrace();
@@ -75,11 +76,11 @@ public class SNBGraph {
     }
 
     private static void addRules() {
-        QueryParser qp = QueryParser.create(mindmaps);
+        QueryBuilder qb = Graql.withGraph(mindmaps);
         try {
             List<String> lines = Files.readAllLines(Paths.get("src/test/resources/graql/ldbc-snb-rules.gql"), StandardCharsets.UTF_8);
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-            qp.parseInsertQuery(query).execute();
+            qb.parse(query).execute();
         }
         catch (IOException e){
             e.printStackTrace();
@@ -87,11 +88,11 @@ public class SNBGraph {
     }
 
     private static void addData() {
-        QueryParser qp = QueryParser.create(mindmaps);
+        QueryBuilder qb = Graql.withGraph(mindmaps);
         try {
             List<String> lines = Files.readAllLines(Paths.get("src/test/resources/graql/ldbc-snb-data.gql"), StandardCharsets.UTF_8);
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-            qp.parseInsertQuery(query).execute();
+            qb.parse(query).execute();
         }
         catch (IOException e){
             e.printStackTrace();
@@ -100,7 +101,7 @@ public class SNBGraph {
         try {
             List<String> lines = Files.readAllLines(Paths.get("src/test/resources/graql/ldbc-snb-product-data.gql"), StandardCharsets.UTF_8);
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-            qp.parseInsertQuery(query).execute();
+            qb.parse(query).execute();
         }
         catch (IOException e){
             e.printStackTrace();

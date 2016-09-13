@@ -19,13 +19,12 @@
 package io.mindmaps.engine.controller;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.util.REST;
 import io.mindmaps.concept.Concept;
-import io.mindmaps.factory.GraphFactory;
-import io.mindmaps.graql.QueryParser;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.engine.visualiser.HALConcept;
+import io.mindmaps.factory.GraphFactory;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
@@ -41,6 +40,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 
+import static io.mindmaps.graql.Graql.withGraph;
 import static spark.Spark.get;
 
 
@@ -101,10 +101,10 @@ public class VisualiserController {
 
         try {
 
-            QueryParser parser = QueryParser.create(GraphFactory.getInstance().getGraph(currentGraphName));
+            MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName);
             final JSONArray halArray = new JSONArray();
 
-            parser.parseMatchQuery(req.queryParams(REST.Request.QUERY_FIELD))
+            withGraph(graph).parseMatch(req.queryParams(REST.Request.QUERY_FIELD))
                     .getMatchQuery().stream()
                     .forEach(x -> x.values()
                             .forEach(concept -> {

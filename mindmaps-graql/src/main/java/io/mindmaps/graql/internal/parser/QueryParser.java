@@ -16,11 +16,10 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql;
+package io.mindmaps.graql.internal.parser;
 
 import com.google.common.collect.ImmutableMap;
-import io.mindmaps.MindmapsGraph;
-import io.mindmaps.graql.internal.parser.*;
+import io.mindmaps.graql.*;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 
@@ -42,36 +41,21 @@ public class QueryParser {
     private final Map<String, Function<List<Object>, Aggregate>> aggregateMethods = new HashMap<>();
 
     /**
-     * Create a query parser with no specified graph
+     * Create a query parser with the specified graph
+     *  @param queryBuilder the QueryBuilder to operate the query on
      */
-    private QueryParser() {
-        queryBuilder = withoutGraph();
+    private QueryParser(QueryBuilder queryBuilder) {
+        this.queryBuilder = queryBuilder;
         registerDefaultAggregates();
     }
 
     /**
      * Create a query parser with the specified graph
-     *  @param graph the graph to operate the query on
-     */
-    private QueryParser(MindmapsGraph graph) {
-        queryBuilder = withGraph(graph);
-        registerDefaultAggregates();
-    }
-
-    /**
-     *  @return a query parser with no graph specified
-     */
-    public static QueryParser create() {
-        return new QueryParser();
-    }
-
-    /**
-     * Create a query parser with the specified graph
-     *  @param graph the graph to operate the query on
+     *  @param queryBuilder the QueryBuilder to operate the query on
      *  @return a query parser that operates with the specified graph
      */
-    public static QueryParser create(MindmapsGraph graph) {
-        return new QueryParser(graph);
+    public static QueryParser create(QueryBuilder queryBuilder) {
+        return new QueryParser(queryBuilder);
     }
 
     public void registerAggregate(String name, Function<List<Object>, Aggregate> aggregateMethod) {
@@ -111,6 +95,22 @@ public class QueryParser {
     }
 
     /**
+     * @param queryString a string representing an aggregate query
+     * @return a parsed aggregate query
+     */
+    public AggregateQuery<?> parseAggregateQuery(String queryString) {
+        return parseQueryFragment(GraqlParser::aggregateEOF, QueryVisitor::visitAggregateEOF, queryString);
+    }
+
+    /**
+     * @param queryString a string representing a compute query
+     * @return a parsed compute query
+     */
+    public ComputeQuery parseComputeQuery(String queryString) {
+        return parseQueryFragment(GraqlParser::computeEOF, QueryVisitor::visitComputeEOF, queryString);
+    }
+
+    /**
      * @param queryString a string representing a query
      * @return
      * a query, the type will depend on the type of query.
@@ -120,14 +120,10 @@ public class QueryParser {
     }
 
     /**
-     * @param queryString a string representing a list of patterns
-     * @return a list of patterns
+     * @param inputStream a stream representing a list of patterns
+     * @return a stream of patterns
      */
-    public List<Pattern> parsePatterns(String queryString) {
-        return parseQueryFragment(GraqlParser::patterns, QueryVisitor::visitPatterns, queryString);
-    }
-
-    public Stream<Pattern> parsePatternsStream(InputStream inputStream) {
+    public Stream<Pattern> parsePatterns(InputStream inputStream) {
         GraqlLexer lexer = new GraqlLexer(new UnbufferedCharStream(inputStream));
         lexer.setTokenFactory(new CommonTokenFactory(true));
         UnbufferedTokenStream tokens = new UnbufferedTokenStream(lexer);

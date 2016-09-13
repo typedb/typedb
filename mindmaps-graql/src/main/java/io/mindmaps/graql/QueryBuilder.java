@@ -21,15 +21,16 @@ package io.mindmaps.graql;
 import com.google.common.collect.ImmutableSet;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.parser.MatchQueryPrinter;
+import io.mindmaps.graql.internal.parser.QueryParser;
 import io.mindmaps.graql.internal.query.Patterns;
 import io.mindmaps.graql.internal.query.Queries;
 import io.mindmaps.graql.internal.util.AdminConverter;
-import io.mindmaps.util.ErrorMessage;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Optional;
-import java.util.Set;
+import java.io.InputStream;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * A starting point for creating queries.
@@ -42,13 +43,16 @@ import java.util.Set;
 public class QueryBuilder {
 
     private final Optional<MindmapsGraph> graph;
+    private final QueryParser queryParser;
 
     QueryBuilder() {
         this.graph = Optional.empty();
+        queryParser = QueryParser.create(this);
     }
 
     QueryBuilder(MindmapsGraph graph) {
         this.graph = Optional.of(graph);
+        queryParser = QueryParser.create(this);
     }
 
     /**
@@ -86,13 +90,78 @@ public class QueryBuilder {
     }
 
     public ComputeQuery compute(String computeMethod) {
-        MindmapsGraph theGraph = graph.orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage()));
-        return Queries.compute(theGraph, computeMethod);
+        return Queries.compute(graph, computeMethod);
     }
 
     public ComputeQuery compute(String computeMethod, Set<String> typeIds) {
-        MindmapsGraph theGraph = graph.orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage()));
-        return Queries.compute(theGraph, computeMethod, typeIds);
+        return Queries.compute(graph, computeMethod, typeIds);
     }
 
+    /**
+     * @param queryString a string representing a match query
+     * @return the parsed match query
+     */
+    public MatchQueryPrinter parseMatch(String queryString) {
+        return queryParser.parseMatchQuery(queryString);
+    }
+
+    /**
+     * @param queryString a string representing an ask query
+     * @return a parsed ask query
+     */
+    public AskQuery parseAsk(String queryString) {
+        return queryParser.parseAskQuery(queryString);
+    }
+
+    /**
+     * @param queryString a string representing an insert query
+     * @return a parsed insert query
+     */
+    public InsertQuery parseInsert(String queryString) {
+        return queryParser.parseInsertQuery(queryString);
+    }
+
+    /**
+     * @param queryString a string representing a delete query
+     * @return a parsed delete query
+     */
+    public DeleteQuery parseDelete(String queryString) {
+        return queryParser.parseDeleteQuery(queryString);
+    }
+
+    /**
+     * @param queryString a string representing an aggregate query
+     * @return a parsed aggregate query
+     */
+    public AggregateQuery<?> parseAggregate(String queryString) {
+        return queryParser.parseAggregateQuery(queryString);
+    }
+
+    /**
+     * @param queryString a string representing a delete query
+     * @return a parsed compute query
+     */
+    public ComputeQuery parseCompute(String queryString) {
+        return queryParser.parseComputeQuery(queryString);
+    }
+
+    /**
+     * @param inputStream a stream representing a list of patterns
+     * @return a stream of patterns
+     */
+    public Stream<Pattern> parsePatterns(InputStream inputStream) {
+        return queryParser.parsePatterns(inputStream);
+    }
+
+    /**
+     * @param queryString a string representing a query
+     * @return a query, the type will depend on the type of query.
+     */
+    public Query<?> parse(String queryString) {
+        return queryParser.parseQuery(queryString);
+    }
+
+    public void registerAggregate(String name, Function<List<Object>, Aggregate> aggregateMethod) {
+        queryParser.registerAggregate(name, aggregateMethod);
+    }
 }

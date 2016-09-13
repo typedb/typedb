@@ -439,4 +439,12 @@ public class MatchQueryTest {
         // This should work despite akos
         qb.match(var().rel("x").rel("shareholder", "y").isa("ownership")).stream().count();
     }
+
+    @Test
+    public void testHasVariable() {
+        MatchQuery query = qb.match(var().id("Godfather").has("tmdb-vote-count", var("x")));
+
+        //noinspection OptionalGetWithoutIsPresent
+        assertEquals(1000L, query.get("x").findFirst().get().asResource().getValue());
+    }
 }

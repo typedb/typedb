@@ -24,15 +24,16 @@ import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.graql.QueryParser;
 import org.javatuples.Pair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import javax.management.relation.Role;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 import static io.mindmaps.IntegrationUtils.graphWithNewKeyspace;
@@ -44,7 +45,6 @@ public class GraqlTest {
 
     String keyspace;
     MindmapsGraph graph;
-    private QueryParser qp;
     private QueryBuilder qb;
 
     @BeforeClass
@@ -57,7 +57,6 @@ public class GraqlTest {
         Pair<MindmapsGraph, String> result = graphWithNewKeyspace();
         graph = result.getValue0();
         keyspace = result.getValue1();
-        qp = QueryParser.create(graph);
         qb = withGraph(graph);
     }
 
@@ -85,12 +84,12 @@ public class GraqlTest {
                 or(var("y").isa("entity-type"), var("y").isa("resource-type"), var("y").isa("relation-type"))
         ).stream().count();
 
-        long computeCount = ((Long) ((ComputeQuery) qp.parseQuery("compute count")).execute());
+        long computeCount = ((Long) ((ComputeQuery) qb.parse("compute count")).execute());
 
         assertEquals(graqlCount, computeCount);
         assertEquals(3L, computeCount);
 
-        computeCount = ((Long) ((ComputeQuery) qp.parseQuery("compute count")).execute());
+        computeCount = ((Long) ((ComputeQuery) qb.parse("compute count")).execute());
 
         assertEquals(graqlCount, computeCount);
         assertEquals(3L, computeCount);
@@ -106,7 +105,7 @@ public class GraqlTest {
         graph.putEntity("3", anotherThing);
         graph.commit();
 
-        long computeCount = ((Long) ((ComputeQuery) qp.parseQuery("compute count in thing, thing")).execute());
+        long computeCount = ((Long) ((ComputeQuery) qb.parse("compute count in thing, thing")).execute());
         assertEquals(2, computeCount);
     }
 
@@ -145,7 +144,7 @@ public class GraqlTest {
         graph.commit();
 
         // compute degrees
-        Map<Instance, Long> degrees = ((Map) ((ComputeQuery) qp.parseQuery("compute degrees")).execute());
+        Map<Instance, Long> degrees = ((Map) ((ComputeQuery) qb.parse("compute degrees")).execute());
 
         // assert degrees are correct
         graph = MindmapsClient.getGraph(keyspace);
@@ -205,7 +204,7 @@ public class GraqlTest {
         graph.commit();
 
         // compute degrees
-        ((ComputeQuery) qp.parseQuery("compute degreesAndPersist")).execute();
+        ((ComputeQuery) qb.parse("compute degreesAndPersist")).execute();
 
         // assert persisted degrees are correct
 //        MindmapsGraph graph = MindmapsClient.getGraph(keyspace);
@@ -235,7 +234,7 @@ public class GraqlTest {
         });
 
         // compute degrees again
-        ((ComputeQuery) qp.parseQuery("compute degreesAndPersist")).execute();
+        ((ComputeQuery) qb.parse("compute degreesAndPersist")).execute();
 
         // assert persisted degrees are correct
         graph = MindmapsClient.getGraph(keyspace);

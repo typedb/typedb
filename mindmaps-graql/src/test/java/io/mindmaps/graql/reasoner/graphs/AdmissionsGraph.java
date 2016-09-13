@@ -20,15 +20,10 @@ package io.mindmaps.graql.reasoner.graphs;
 
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.EntityType;
-import io.mindmaps.concept.Instance;
-import io.mindmaps.concept.RelationType;
-import io.mindmaps.concept.Resource;
-import io.mindmaps.concept.ResourceType;
-import io.mindmaps.concept.RoleType;
+import io.mindmaps.concept.*;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
-import io.mindmaps.graql.QueryParser;
+import io.mindmaps.graql.Graql;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -265,11 +260,10 @@ public class AdmissionsGraph {
     }
 
     private static void addRules() {
-        QueryParser qp = QueryParser.create(mindmaps);
         try {
             List<String> lines = Files.readAllLines(Paths.get("src/test/resources/graql/admission-rules.gql"), StandardCharsets.UTF_8);
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-            qp.parseInsertQuery(query).execute();
+            Graql.withGraph(mindmaps).parseInsert(query).execute();
         }
         catch (IOException e){
             e.printStackTrace();

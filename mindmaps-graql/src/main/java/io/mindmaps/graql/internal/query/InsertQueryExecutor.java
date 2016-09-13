@@ -133,9 +133,9 @@ class InsertQueryExecutor {
     private Concept insertVarResources(VarAdmin var) {
         Concept concept = getConcept(var);
 
-        if (!var.getResourceEqualsPredicates().isEmpty()) {
+        if (!var.getResources().isEmpty()) {
             Instance instance = concept.asInstance();
-            var.getResourceEqualsPredicates().forEach((type, values) -> addResources(instance, type, values));
+            var.getResources().forEach(resource -> attachResource(instance, getConcept(resource).asResource()));
         }
 
         return concept;
@@ -376,28 +376,12 @@ class InsertQueryExecutor {
     }
 
     /**
-     * Add resources to the given instance, using the has-resource relation
-     * @param instance the instance to add resources to
-     * @param resourceType the variable representing the resource type
-     * @param values a set of values to set on the resource instances
-     * @param <D> the type of the resources
-     */
-    private <D> void addResources(Instance instance, VarAdmin resourceType, Set<D> values) {
-        // We assume the resource type has the correct datatype. If it does not, core will catch the problem
-        //noinspection unchecked
-        ResourceType<D> type = getConcept(resourceType).asResourceType();
-        values.forEach(value -> addResource(instance, type, value));
-    }
-
-    /**
      * Add a resource to the given instance, using the has-resource relation
      * @param instance the instance to add a resource to
-     * @param type the resource type
-     * @param value the value to set on the resource instance
-     * @param <D> the type of the resource
+     * @param resource the resource instance
      */
-    private <D> void addResource(Instance instance, ResourceType<D> type, D value) {
-        Resource resource = graph.putResource(value, type);
+    private void attachResource(Instance instance, Resource resource) {
+        ResourceType type = resource.type();
 
         RelationType hasResource = graph.getRelationType(GraqlType.HAS_RESOURCE.getId(type.getId()));
         RoleType hasResourceTarget = graph.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(type.getId()));

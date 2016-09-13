@@ -25,7 +25,6 @@ import io.mindmaps.engine.postprocessing.BackgroundTasks;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
-import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.util.REST;
@@ -53,6 +52,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 
+import static io.mindmaps.graql.Graql.parseInsert;
+import static io.mindmaps.graql.Graql.parsePatterns;
 import static spark.Spark.post;
 
 
@@ -149,9 +150,9 @@ public class ImportController {
     void importDataFromFile(String dataFile, String graphName) {
         BlockingLoader loader = new BlockingLoader(graphName);
         try {
-            QueryParser.create().parsePatternsStream(new FileInputStream(dataFile)).forEach(pattern -> consumeEntity(pattern.admin().asVar(),loader));
+            parsePatterns(new FileInputStream(dataFile)).forEach(pattern -> consumeEntity(pattern.admin().asVar(),loader));
             loader.waitToFinish();
-            QueryParser.create().parsePatternsStream(new FileInputStream(dataFile)).forEach(pattern -> consumeRelationAndResource(pattern.admin().asVar(),loader));
+            parsePatterns(new FileInputStream(dataFile)).forEach(pattern -> consumeRelationAndResource(pattern.admin().asVar(),loader));
             loader.waitToFinish();
             BackgroundTasks.getInstance().forcePostprocessing();
         } catch (Exception e) {
@@ -210,7 +211,7 @@ public class ImportController {
 
         List<String> lines = Files.readAllLines(Paths.get(ontologyFile), StandardCharsets.UTF_8);
         String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-        QueryParser.create().parseInsertQuery(query).withGraph(graph).execute();
+        parseInsert(query).withGraph(graph).execute();
         graph.commit();
 
         LOG.info("Ontology loaded. ");

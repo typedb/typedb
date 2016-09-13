@@ -30,20 +30,21 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
+import static io.mindmaps.graql.Graql.var;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 /**
  * ANTLR visitor class for parsing a query
  */
-public class QueryVisitor extends GraqlBaseVisitor {
+class QueryVisitor extends GraqlBaseVisitor {
 
     private final QueryBuilder queryBuilder;
     private final Stack<Var> patterns = new Stack<>();
     private final Map<String, List<Getter>> getters = new HashMap<>();
     private final ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods;
 
-    public QueryVisitor(
+    QueryVisitor(
             ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods, QueryBuilder queryBuilder) {
         this.aggregateMethods = aggregateMethods;
         this.queryBuilder = queryBuilder;
@@ -298,8 +299,13 @@ public class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Void visitPropHasPred(GraqlParser.PropHasPredContext ctx) {
-        patterns.peek().has(visitId(ctx.id()), visitPredicate(ctx.predicate()));
+    public Void visitPropHasFull(GraqlParser.PropHasFullContext ctx) {
+        String type = visitId(ctx.id());
+        if (ctx.predicate() != null) {
+            patterns.peek().has(type, visitPredicate(ctx.predicate()));
+        } else {
+            patterns.peek().has(type, var(getVariable(ctx.VARIABLE())));
+        }
         return null;
     }
 
@@ -405,7 +411,7 @@ public class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public Var visitVariable(GraqlParser.VariableContext ctx) {
         if (ctx == null) {
-            return Graql.var();
+            return var();
         } else if (ctx.id() != null) {
             return Graql.id(visitId(ctx.id()));
         } else {
@@ -605,9 +611,9 @@ public class QueryVisitor extends GraqlBaseVisitor {
     private Var buildVar(TerminalNode variable) {
         Var var;
         if (variable != null) {
-            var = Graql.var(getVariable(variable));
+            var = var(getVariable(variable));
         } else {
-            var = Graql.var();
+            var = var();
         }
         return var;
     }

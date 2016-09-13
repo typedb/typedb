@@ -50,7 +50,7 @@ property       : edge
                | propLhs
                | propRhs
                | propHasFlag
-               | propHasPred
+               | propHasFull
                | propResource
                | propRel
                | isAbstract
@@ -86,7 +86,7 @@ propRhs        : 'rhs' '{' query '}' ;
 
 propHasFlag    : 'has' id ;
 propHas        : 'has' id value ;
-propHasPred    : 'has' id predicate ;
+propHasFull    : 'has' id (predicate | VARIABLE) ;
 
 propResource   : 'has-resource' variable ;
 
