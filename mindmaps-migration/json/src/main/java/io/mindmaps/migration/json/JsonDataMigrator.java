@@ -29,15 +29,19 @@ import java.util.UUID;
  * Migrator for migrating JSON data into Mindmaps instances
  */
 public class JsonDataMigrator {
-    private final MindmapsGraph graph;
+
+    private MindmapsGraph graph;
 
     /**
      * Create a JsonDataMigrator to migrate into the given graph
-     * @param graph a graph to migrate data into
      */
-    public JsonDataMigrator(MindmapsGraph graph) {
+    public JsonDataMigrator() {}
+
+    public JsonDataMigrator graph(MindmapsGraph graph){
         this.graph = graph;
+        return this;
     }
+
 
     /**
      * Migrate JSON data into Mindmaps instances

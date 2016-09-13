@@ -43,7 +43,7 @@ public class JsonDataMigratorTest {
     @Before
     public void setUp() {
         graph = MindmapsTestGraphFactory.newEmptyGraph();
-        migrator = new JsonDataMigrator(graph);
+        migrator = new JsonDataMigrator().graph(graph);
     }
 
     @Test
@@ -152,7 +152,7 @@ public class JsonDataMigratorTest {
 
     private void migrateSchema(String name) {
         Json.Schema schema = Util.readSchema(name);
-        new JsonSchemaMigrator(graph).migrateSchema(name, schema);
+        new JsonSchemaMigrator().graph(graph).migrateSchema(name, schema);
     }
 
     private Json readData(String name) {

@@ -41,7 +41,7 @@ import static java.util.stream.Collectors.toSet;
  */
 public class JsonSchemaMigrator {
 
-    private final MindmapsGraph graph;
+    private MindmapsGraph graph;
 
     private static final String ID_SUFFIX = ".json#";
 
@@ -52,10 +52,12 @@ public class JsonSchemaMigrator {
 
     /**
      * Create a JsonSchemaMigrator to migrate into the given graph
-     * @param graph a graph to migrate an ontology into
      */
-    public JsonSchemaMigrator(MindmapsGraph graph) {
+    public JsonSchemaMigrator() {}
+
+    public JsonSchemaMigrator graph(MindmapsGraph graph){
         this.graph = graph;
+        return this;
     }
 
     /**

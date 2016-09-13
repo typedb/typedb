@@ -46,7 +46,7 @@ public class JsonSchemaMigratorTest {
     @Before
     public void setUp() {
         graph = MindmapsTestGraphFactory.newEmptyGraph();
-        migrator = new JsonSchemaMigrator(graph);
+        migrator = new JsonSchemaMigrator().graph(graph);
     }
 
     @Test
