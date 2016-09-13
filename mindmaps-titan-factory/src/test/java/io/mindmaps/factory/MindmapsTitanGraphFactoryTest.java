@@ -23,8 +23,8 @@ import ch.qos.logback.classic.Logger;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
-import io.mindmaps.util.Schema;
 import io.mindmaps.graph.internal.MindmapsTitanGraph;
+import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -35,6 +35,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.Set;
@@ -128,26 +129,23 @@ public class MindmapsTitanGraphFactoryTest {
     @Test
     public void testVertexLabels(){
         TitanManagement management = sharedGraph.openManagement();
-
-        ResourceBundle keys = ResourceBundle.getBundle("base-types");
-        Set<String> keyString = keys.keySet();
-        for(String label : keyString){
-            assertNotNull(management.getVertexLabel(label));
-        }
+        Arrays.stream(Schema.BaseType.values()).forEach(baseType ->
+                assertNotNull(management.getVertexLabel(baseType.name())));
     }
 
     @Test
     public void testBatchLoading(){
         TitanManagement management = sharedGraph.openManagement();
 
-        ResourceBundle keys = ResourceBundle.getBundle("property-keys");
-        Set<String> keyString = keys.keySet();
-        for(String propertyKey : keyString){
-            assertNotNull(management.getPropertyKey(propertyKey));
-        }
+        Arrays.stream(Schema.ConceptProperty.values()).forEach(property ->
+                assertNotNull(management.getPropertyKey(property.name())));
+        Arrays.stream(Schema.ConceptPropertyUnique.values()).forEach(property ->
+                assertNotNull(management.getPropertyKey(property.name())));
+        Arrays.stream(Schema.EdgeProperty.values()).forEach(property ->
+                assertNotNull(management.getPropertyKey(property.name())));
 
-        keys = ResourceBundle.getBundle("indices-edges");
-        keyString = keys.keySet();
+        ResourceBundle keys = ResourceBundle.getBundle("indices-edges");
+        Set<String> keyString = keys.keySet();
         for(String label : keyString){
             assertNotNull(management.getEdgeLabel(label));
         }

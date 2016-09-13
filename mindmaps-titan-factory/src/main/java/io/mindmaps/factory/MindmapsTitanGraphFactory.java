@@ -18,20 +18,32 @@
 
 package io.mindmaps.factory;
 
-import com.thinkaurelius.titan.core.*;
+import com.thinkaurelius.titan.core.EdgeLabel;
+import com.thinkaurelius.titan.core.PropertyKey;
+import com.thinkaurelius.titan.core.RelationType;
+import com.thinkaurelius.titan.core.TitanFactory;
+import com.thinkaurelius.titan.core.TitanGraph;
+import com.thinkaurelius.titan.core.VertexLabel;
 import com.thinkaurelius.titan.core.schema.Mapping;
 import com.thinkaurelius.titan.core.schema.TitanIndex;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
-import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.graph.internal.MindmapsTitanGraph;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
-import org.apache.tinkerpop.gremlin.structure.*;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Transaction;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.PropertyResourceBundle;
+import java.util.ResourceBundle;
+import java.util.Set;
 
 class MindmapsTitanGraphFactory extends AbstractMindmapsGraphFactory<MindmapsTitanGraph, TitanGraph> {
     protected final Logger LOG = LoggerFactory.getLogger(MindmapsTitanGraphFactory.class);
@@ -99,12 +111,10 @@ class MindmapsTitanGraphFactory extends AbstractMindmapsGraphFactory<MindmapsTit
     }
 
     private static void makeVertexLabels(TitanManagement management){
-        ResourceBundle keys = ResourceBundle.getBundle("base-types");
-        Set<String> vertexLabels = keys.keySet();
-        for (String vertexLabel : vertexLabels) {
-            VertexLabel foundLabel = management.getVertexLabel(vertexLabel);
+        for (Schema.BaseType baseType : Schema.BaseType.values()) {
+            VertexLabel foundLabel = management.getVertexLabel(baseType.name());
             if(foundLabel == null)
-                management.makeVertexLabel(vertexLabel).make();
+                management.makeVertexLabel(baseType.name()).make();
         }
     }
 
@@ -136,19 +146,19 @@ class MindmapsTitanGraphFactory extends AbstractMindmapsGraphFactory<MindmapsTit
     }
 
     private static void makePropertyKeys(TitanManagement management){
-        ResourceBundle keys = ResourceBundle.getBundle("property-keys");
-        Set<String> keyString = keys.keySet();
-        for(String propertyKey : keyString){
-            try {
-                if (management.getPropertyKey(propertyKey) == null) {
-                    String type = keys.getString(propertyKey);
-                    if (management.getPropertyKey(propertyKey) == null) {
-                        management.makePropertyKey(propertyKey).dataType(Class.forName(type)).make();
-                    }
-                }
-            } catch(ClassNotFoundException e){
-                System.out.println("Cannot create index due to unknown java primitive type");
-                e.printStackTrace();
+        Arrays.stream(Schema.ConceptProperty.values()).forEach(property ->
+                makePropertyKey(management, property.name(), property.getDataType()));
+
+        Arrays.stream(Schema.ConceptPropertyUnique.values()).forEach(property ->
+                makePropertyKey(management, property.name(), property.getDataType()));
+
+        Arrays.stream(Schema.EdgeProperty.values()).forEach(property ->
+                makePropertyKey(management, property.name(), property.getDataType()));
+    }
+    private static void makePropertyKey(TitanManagement management, String propertyKey, Class type){
+        if (management.getPropertyKey(propertyKey) == null) {
+            if (management.getPropertyKey(propertyKey) == null) {
+                management.makePropertyKey(propertyKey).dataType(type).make();
             }
         }
     }
