@@ -102,12 +102,22 @@ class MindmapsTitanGraphFactory extends AbstractMindmapsGraphFactory<MindmapsTit
         TitanManagement management = graph.openManagement();
 
         makeVertexLabels(management);
+        makeEdgeLabels(management);
         makePropertyKeys(management);
-        makeEdges(management);
+
+        makeEdgeIndices(management);
         makeIndicesComposite(management);
         makeIndicesMixed(management);
 
         management.commit();
+    }
+
+    private static void makeEdgeLabels(TitanManagement management){
+        for (Schema.EdgeLabel edgeLabel : Schema.EdgeLabel.values()) {
+            EdgeLabel label = management.getEdgeLabel(edgeLabel.getLabel());
+            if(label == null)
+                management.makeEdgeLabel(edgeLabel.getLabel()).make();
+        }
     }
 
     private static void makeVertexLabels(TitanManagement management){
@@ -118,17 +128,10 @@ class MindmapsTitanGraphFactory extends AbstractMindmapsGraphFactory<MindmapsTit
         }
     }
 
-    private static void makeEdges(TitanManagement management){
+    private static void makeEdgeIndices(TitanManagement management){
         ResourceBundle keys = ResourceBundle.getBundle("indices-edges");
         Set<String> edgeLabels = keys.keySet();
         for(String edgeLabel : edgeLabels){
-            EdgeLabel label = management.getEdgeLabel(edgeLabel);
-            if(label == null)
-                label = management.makeEdgeLabel(edgeLabel).make();
-
-            if(label == null)
-                throw new RuntimeException("Trying to create edge index on label [" + edgeLabel + "] but label does not exist");
-
             String properties = keys.getString(edgeLabel);
             if(properties.length() > 0){
                 String[] propertyKey = keys.getString(edgeLabel).split(",");
@@ -138,8 +141,10 @@ class MindmapsTitanGraphFactory extends AbstractMindmapsGraphFactory<MindmapsTit
                         throw new RuntimeException("Trying to create edge index on label [" + edgeLabel + "] but the property [" + aPropertyKey + "] does not exist");
 
                     RelationType relationType = management.getRelationType(edgeLabel);
-                    if (management.getRelationIndex(relationType, edgeLabel + "by" + aPropertyKey) == null)
+                    if (management.getRelationIndex(relationType, edgeLabel + "by" + aPropertyKey) == null) {
+                        EdgeLabel label = management.getEdgeLabel(edgeLabel);
                         management.buildEdgeIndex(label, edgeLabel + "by" + aPropertyKey, Direction.OUT, Order.decr, key);
+                    }
                 }
             }
         }
