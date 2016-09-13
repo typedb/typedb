@@ -470,6 +470,14 @@ public class QueryParserTest {
         qb.parseMatch("match $x is");
     }
 
+    @Test
+    public void testHasVariable() {
+        MatchQuery query = qb.parseMatch("match Godfather has tmdb-vote-count $x").getMatchQuery();
+
+        //noinspection OptionalGetWithoutIsPresent
+        assertEquals(1000L, query.get("x").findFirst().get().asResource().getValue());
+    }
+
     @Test(expected = IllegalArgumentException.class)
     public void testMultipleQueriesThrowsIllegalArgumentException() {
         qb.parseInsert("insert $x isa movie; insert $y isa movie").execute();

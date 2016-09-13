@@ -20,16 +20,16 @@ package io.mindmaps.graql.internal.query;
 
 import com.google.common.collect.ImmutableMap;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.exception.ConceptException;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Resource;
+import io.mindmaps.exception.ConceptException;
 import io.mindmaps.graql.DeleteQuery;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.admin.DeleteQueryAdmin;
 import io.mindmaps.graql.admin.MatchQueryAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.validation.DeleteQueryValidator;
+import io.mindmaps.util.ErrorMessage;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -125,7 +125,11 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
                     )
             );
 
-            deleter.getResourceEqualsPredicates().forEach((type, values) -> deleteResources(id, type, values));
+            deleter.getResourcePredicates().forEach((type, predicates) -> {
+                Set<Object> values = new HashSet<>();
+                predicates.forEach(predicate -> predicate.equalsValue().ifPresent(values::add));
+                deleteResources(id, type, values);
+            });
         }
     }
 

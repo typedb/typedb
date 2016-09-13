@@ -22,31 +22,22 @@ import com.google.common.collect.Maps;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.graql.ValuePredicate;
 import io.mindmaps.graql.Var;
-import io.mindmaps.graql.admin.*;
-import io.mindmaps.graql.internal.util.StringConverter;
+import io.mindmaps.graql.admin.Conjunction;
+import io.mindmaps.graql.admin.Disjunction;
+import io.mindmaps.graql.admin.ValuePredicateAdmin;
+import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 import io.mindmaps.graql.internal.gremlin.VarTraversals;
+import io.mindmaps.graql.internal.util.StringConverter;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.Stack;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static io.mindmaps.graql.Graql.eq;
 import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.util.ErrorMessage.MULTIPLE_IDS;
-import static io.mindmaps.util.ErrorMessage.MULTIPLE_TYPES;
-import static io.mindmaps.util.ErrorMessage.SET_GENERATED_VARIABLE_NAME;
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toSet;
+import static io.mindmaps.util.ErrorMessage.*;
+import static java.util.stream.Collectors.*;
 
 /**
  * Implementation of Var interface
@@ -75,7 +66,7 @@ class VarImpl implements VarInternal {
     private final Set<VarAdmin> hasScope = new HashSet<>();
     private final Set<VarAdmin> hasResourceTypes = new HashSet<>();
 
-    private final Map<VarAdmin, Set<ValuePredicateAdmin>> resources = new HashMap<>();
+    private final Set<VarAdmin> resources = new HashSet<>();
 
     private final Set<VarAdmin.Casting> castings = new HashSet<>();
 
@@ -131,9 +122,7 @@ class VarImpl implements VarInternal {
 
             // Currently it is guaranteed that resource types are specified with an ID
             //noinspection OptionalGetWithoutIsPresent
-            var.getResourcePredicates().forEach(
-                    (type, values) -> values.forEach(value -> has(type.getId().get(), value))
-            );
+            var.getResources().forEach(resources::add);
 
             castings.addAll(var.getCastings());
         }
@@ -169,9 +158,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var has(String type) {
-        VarAdmin resourceVar = var().id(Objects.requireNonNull(type)).admin();
-        resources.putIfAbsent(resourceVar, new HashSet<>());
-        return this;
+        return has(type, var());
     }
 
     @Override
@@ -181,8 +168,12 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var has(String type, ValuePredicate predicate) {
-        VarAdmin resourceVar = var().id(Objects.requireNonNull(type)).admin();
-        resources.computeIfAbsent(resourceVar, k -> new HashSet<>()).add(predicate.admin());
+        return has(type, var().value(predicate));
+    }
+
+    @Override
+    public Var has(String type, Var var) {
+        resources.add(var.isa(type).admin());
         return this;
     }
 
@@ -339,11 +330,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public boolean usesNonEqualPredicate() {
-        Stream<ValuePredicateAdmin> predicates = Stream.of(
-                values.stream(),
-                resources.values().stream().flatMap(Collection::stream)
-        ).flatMap(Function.identity());
-
+        Stream<ValuePredicateAdmin> predicates = getInnerVars().stream().flatMap(v -> v.getValuePredicates().stream());
         return predicates.anyMatch(id -> !id.equalsValue().isPresent());
     }
 
@@ -399,9 +386,9 @@ class VarImpl implements VarInternal {
 
     @Override
     public Set<String> getResourceTypes() {
-        // Currently it is guaranteed that resource types are specified with an ID
+        // Currently it is guaranteed that resources have a type with an ID
         //noinspection OptionalGetWithoutIsPresent
-        return resources.keySet().stream().map(var -> var.getId().get()).collect(toSet());
+        return resources.stream().map(resource -> resource.getType().get().getId().get()).collect(toSet());
     }
 
     @Override
@@ -445,7 +432,10 @@ class VarImpl implements VarInternal {
 
     @Override
     public Set<?> getValueEqualsPredicates() {
-        return getEqualsPredicatesUnknownType(values);
+        return values.stream()
+                .map(ValuePredicateAdmin::equalsValue)
+                .flatMap(this::optionalToStream)
+                .collect(toSet());
     }
 
     @Override
@@ -464,13 +454,22 @@ class VarImpl implements VarInternal {
     }
 
     @Override
-    public Map<VarAdmin, Set<?>> getResourceEqualsPredicates() {
-        return Maps.transformValues(resources, this::getEqualsPredicatesUnknownType);
+    public Set<VarAdmin> getResources() {
+        return resources;
     }
 
     @Override
     public Map<VarAdmin, Set<ValuePredicateAdmin>> getResourcePredicates() {
-        return resources;
+        // The type of the resource is guaranteed to exist
+        //noinspection OptionalGetWithoutIsPresent
+        Function<VarAdmin, VarAdmin> type = v -> v.getType().get();
+
+        Function<VarAdmin, Stream<ValuePredicateAdmin>> predicates =
+                resource -> resource.getValuePredicates().stream();
+
+        Map<VarAdmin, List<VarAdmin>> groupedByType = resources.stream().collect(groupingBy(type));
+
+        return Maps.transformValues(groupedByType, vars -> vars.stream().flatMap(predicates).collect(toSet()));
     }
 
     public Set<VarAdmin.Casting> getCastings() {
@@ -499,7 +498,7 @@ class VarImpl implements VarInternal {
             var.getPlaysRoles().forEach(newVars::add);
             var.getScopes().forEach(newVars::add);
             var.getHasResourceTypes().forEach(newVars::add);
-            var.getResourcePredicates().keySet().forEach(newVars::add);
+            var.getResources().forEach(newVars::add);
 
             var.getCastings().forEach(casting -> {
                 casting.getRoleType().ifPresent(newVars::add);
@@ -525,6 +524,7 @@ class VarImpl implements VarInternal {
 
         Set<VarAdmin> innerVars = getInnerVars();
         innerVars.remove(this);
+        innerVars.removeAll(resources);
 
         if (!innerVars.stream().allMatch(v -> v.getIdOnly().isPresent() || v.hasNoProperties())) {
             throw new UnsupportedOperationException("Graql strings cannot represent a query with inner variables");
@@ -549,10 +549,22 @@ class VarImpl implements VarInternal {
 
         values.forEach(v -> properties.add("value " + v));
 
-        // Currently it is guaranteed that resource types are specified with an ID
-        //noinspection OptionalGetWithoutIsPresent
         resources.forEach(
-                (type, predicates) -> predicates.forEach(p -> properties.add("has " + type.getId().get() + " " + p))
+                resource -> {
+                    // Currently it is guaranteed that resources have a type specified
+                    //noinspection OptionalGetWithoutIsPresent
+                    String type = resource.getType().get().getId().get();
+
+                    String resourceRepr;
+                    if (resource.isUserDefinedName()) {
+                        resourceRepr = " " + resource.getName();
+                    } else if (resource.hasNoProperties()) {
+                        resourceRepr = "";
+                    } else {
+                        resourceRepr = " " + resource.getValuePredicates().iterator().next().toString();
+                    }
+                    properties.add("has " + type + resourceRepr);
+                }
         );
 
         lhs.ifPresent(s -> properties.add("lhs {" + s + "}"));
@@ -599,17 +611,6 @@ class VarImpl implements VarInternal {
      */
     private <T> Stream<T> optionalToStream(Optional<T> optional) {
         return optional.map(Stream::of).orElseGet(Stream::empty);
-    }
-
-    /**
-     * @param predicates a collection of predicates of an unknown type
-     * @return all values of predicates in the collection which are simple 'equals' predicates
-     */
-    private Set<?> getEqualsPredicatesUnknownType(Collection<ValuePredicateAdmin> predicates) {
-        return predicates.stream()
-                .map(ValuePredicateAdmin::equalsValue)
-                .flatMap(this::optionalToStream)
-                .collect(toSet());
     }
 
     /**
