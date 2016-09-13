@@ -165,14 +165,14 @@ public interface VarAdmin extends PatternAdmin, Var {
     Optional<String> getRhs();
 
     /**
+     * @return all resources that this instance must have
+     */
+    Set<VarAdmin> getResources();
+
+    /**
      * @return all predicates on resources of this variable (where the key is the resource type)
      */
     Map<VarAdmin, Set<ValuePredicateAdmin>> getResourcePredicates();
-
-    /**
-     * @return all values of resources on this variable (where the key is the resource type)
-     */
-    Map<VarAdmin, Set<?>> getResourceEqualsPredicates();
 
     /**
      * @return whether this variable uses any predicate that is not equality
