@@ -72,26 +72,14 @@ public class OntologyMutationTest {
         woman = mindmapsGraph.putEntityType("Woman").superType(person);
         car = mindmapsGraph.putEntityType("Car");
 
-        alice = mindmapsGraph.putEntity("Alice", woman);
-        bob = mindmapsGraph.putEntity("Bob", man);
+        alice = mindmapsGraph.addEntity(woman);
+        bob = mindmapsGraph.addEntity(man);
         relation = mindmapsGraph.addRelation(marriage).putRolePlayer(wife, alice).putRolePlayer(husband, bob);
         mindmapsGraph.commit();
     }
     @After
     public void destroyGraph()  throws Exception{
         mindmapsGraph.close();
-    }
-
-    @Test
-    public void testChangingInstanceType() throws MindmapsValidationException {
-        mindmapsGraph.putEntity("Bob", car);
-
-        expectedException.expect(MindmapsValidationException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.VALIDATION_CASTING.getMessage(car.getId(), bob.getId(), husband.getId()))
-        ));
-
-        mindmapsGraph.commit();
     }
 
     @Test

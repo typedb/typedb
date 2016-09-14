@@ -58,7 +58,7 @@ public class CastingTest {
         mindmapsGraph.initialiseMetaConcepts();
         role = (RoleTypeImpl) mindmapsGraph.putRoleType("Role");
         EntityTypeImpl conceptType = (EntityTypeImpl) mindmapsGraph.putEntityType("A thing");
-        rolePlayer = (InstanceImpl) mindmapsGraph.putEntity("role player main", conceptType);
+        rolePlayer = (InstanceImpl) mindmapsGraph.addEntity(conceptType);
         RelationTypeImpl relationType = (RelationTypeImpl) mindmapsGraph.putRelationType("A type");
         relation = (RelationImpl) mindmapsGraph.putRelation("a relation", relationType);
         casting = mindmapsGraph.putCasting(role, rolePlayer, relation);
@@ -77,7 +77,7 @@ public class CastingTest {
 
         EntityType type = mindmapsGraph.putEntityType("Another entity type");
         RoleTypeImpl role = (RoleTypeImpl) mindmapsGraph.putRoleType("Role 2");
-        InstanceImpl rolePlayer = (InstanceImpl) mindmapsGraph.putEntity("An instance", type);
+        InstanceImpl rolePlayer = (InstanceImpl) mindmapsGraph.addEntity(type);
         CastingImpl casting2 = mindmapsGraph.putCasting(role, rolePlayer, relation);
         assertNotEquals(casting, casting2);
     }
