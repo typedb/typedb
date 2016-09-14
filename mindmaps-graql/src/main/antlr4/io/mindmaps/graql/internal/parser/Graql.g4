@@ -45,6 +45,7 @@ property       : edge
                | propRel
                | isAbstract
                | propDatatype
+               | propRegex
                ;
 
 insertPatterns : insertPattern (';' insertPattern)* ';'? ;
@@ -59,6 +60,7 @@ insert         : edge
                | propResource
                | isAbstract
                | propDatatype
+               | propRegex
                ;
 
 deletePatterns : deletePattern (';' deletePattern)* ';'? ;
@@ -81,6 +83,8 @@ propHasFull    : 'has' id (predicate | VARIABLE) ;
 propResource   : 'has-resource' variable ;
 
 propDatatype   : 'datatype' DATATYPE ;
+
+propRegex      : 'regex' REGEX ;
 
 propRel        : '(' roleOpt (',' roleOpt)* ')' ;
 insertRel      : '(' roleplayerRole (',' roleplayerRole)* ')' ;

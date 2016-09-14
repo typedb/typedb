@@ -466,6 +466,13 @@ public class QueryParserTest {
         assertEquals(1000L, query.get("x").findFirst().get().asResource().getValue());
     }
 
+    @Test
+    public void testRegexResourceType() {
+        MatchQuery query = qb.parseMatch("match $x regex /(fe)?male/");
+        assertEquals(1, query.stream().count());
+        assertEquals("gender", query.get("x").findFirst().get().getId());
+    }
+
     @Test(expected = IllegalArgumentException.class)
     public void testMultipleQueriesThrowsIllegalArgumentException() {
         qb.parseInsert("insert $x isa movie; insert $y isa movie").execute();

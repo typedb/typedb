@@ -276,6 +276,12 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
+    public Void visitPropRegex(GraqlParser.PropRegexContext ctx) {
+        patterns.peek().regex(getRegex(ctx.REGEX()));
+        return null;
+    }
+
+    @Override
     public Collection<Var> visitInsertPatterns(GraqlParser.InsertPatternsContext ctx) {
         return ctx.insertPattern().stream()
                 .map(this::visitInsertPattern)
