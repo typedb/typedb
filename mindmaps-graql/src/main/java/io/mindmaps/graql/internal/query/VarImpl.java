@@ -49,6 +49,7 @@ class VarImpl implements VarInternal {
 
     private boolean abstractFlag = false;
     private Optional<ResourceType.DataType<?>> datatype = Optional.empty();
+    private Optional<String> regex = Optional.empty();
 
     private Optional<String> id = Optional.empty();
 
@@ -108,6 +109,7 @@ class VarImpl implements VarInternal {
             abstractFlag |= var.getAbstract();
 
             var.getDatatype().ifPresent(this::datatype);
+            var.getRegex().ifPresent(this::regex);
             var.getType().ifPresent(this::isa);
             var.getAko().ifPresent(this::ako);
 
@@ -296,6 +298,12 @@ class VarImpl implements VarInternal {
     }
 
     @Override
+    public Var regex(String regex) {
+        this.regex = Optional.of(regex);
+        return this;
+    }
+
+    @Override
     public Var lhs(String lhs) {
         this.lhs = Optional.of(lhs);
         return this;
@@ -342,6 +350,11 @@ class VarImpl implements VarInternal {
     @Override
     public Optional<ResourceType.DataType<?>> getDatatype() {
         return datatype;
+    }
+
+    @Override
+    public Optional<String> getRegex() {
+        return regex;
     }
 
     @Override

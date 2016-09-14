@@ -60,6 +60,7 @@ import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@SuppressWarnings("OptionalGetWithoutIsPresent")
 public class MatchQueryTest {
 
     private static MindmapsGraph mindmapsGraph;
@@ -443,8 +444,13 @@ public class MatchQueryTest {
     @Test
     public void testHasVariable() {
         MatchQuery query = qb.match(var().id("Godfather").has("tmdb-vote-count", var("x")));
-
-        //noinspection OptionalGetWithoutIsPresent
         assertEquals(1000L, query.get("x").findFirst().get().asResource().getValue());
+    }
+
+    @Test
+    public void testRegexResourceType() {
+        MatchQuery query = qb.match(var("x").regex("(fe)?male"));
+        assertEquals(1, query.stream().count());
+        assertEquals("gender", query.get("x").findFirst().get().getId());
     }
 }
