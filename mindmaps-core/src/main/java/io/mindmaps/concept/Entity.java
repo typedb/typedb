@@ -34,7 +34,8 @@ public interface Entity extends Instance{
 
     /**
      *
+     * @param resourceTypes Resource Types of the resources attached to this entity
      * @return A collection of resources attached to this Instance.
      */
-    Collection<Resource<?>> resources();
+    Collection<Resource<?>> resources(ResourceType ... resourceTypes);
 }
