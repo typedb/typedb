@@ -148,6 +148,7 @@ export default {
         graphResponse(resp, err) {
             if(resp != null) {
                 halParser.parseResponse(resp);
+                visualiser.centerNodes();
             }
             else {
                 this.showError(err);
