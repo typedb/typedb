@@ -542,7 +542,7 @@ public class Reasoner {
                 Set<AtomicQuery> subGoals = new HashSet<>();
                 Map<String, Type> varMap = atomicQuery.getVarTypeMap();
                 dAns = subAnswers.size();
-                System.out.println("iter: " + iter++ + " answers: " + dAns);
+                LOG.debug("iter: " + iter++ + " answers: " + dAns);
 
                 answer(atomicQuery, subGoals, matAnswers, varMap);
                 propagateAnswers(matAnswers);
