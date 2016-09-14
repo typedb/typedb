@@ -152,93 +152,74 @@ public class MovieGraphFactory {
     }
 
     private static void buildInstances() throws ParseException {
-        godfather = putEntity(movie, "Godfather");
+        godfather = putEntityWithName(movie, "Godfather");
         putResource(godfather, title, "Godfather");
         putResource(godfather, tmdbVoteCount, 1000L);
         putResource(godfather, tmdbVoteAverage, 8.6);
         putResource(godfather, releaseDate, DATE_FORMAT.parse("Sun Jan 01 00:00:00 GMT 1984").getTime());
 
-        theMuppets = putEntity(movie, "The Muppets");
+        theMuppets = putEntityWithName(movie, "The Muppets");
         putResource(theMuppets, title, "The Muppets");
         putResource(theMuppets, tmdbVoteCount, 100L);
         putResource(theMuppets, tmdbVoteAverage, 7.6);
         putResource(theMuppets, releaseDate, DATE_FORMAT.parse("Sat Feb 02 00:00:00 GMT 1985").getTime());
 
-        apocalypseNow = putEntity(movie, "Apocalypse Now");
+        apocalypseNow = putEntityWithName(movie, "Apocalypse Now");
         putResource(apocalypseNow, title, "Apocalypse Now");
         putResource(apocalypseNow, tmdbVoteCount, 400L);
         putResource(apocalypseNow, tmdbVoteAverage, 8.4);
 
-        heat = putEntity(movie, "Heat");
+        heat = putEntityWithName(movie, "Heat");
         putResource(heat, title, "Heat");
 
-        hocusPocus = putEntity(movie, "Hocus Pocus");
+        hocusPocus = putEntityWithName(movie, "Hocus Pocus");
         putResource(hocusPocus, title, "Hocus Pocus");
         putResource(hocusPocus, tmdbVoteCount, 435L);
 
-        spy = putEntity(movie, "Spy");
+        spy = putEntityWithName(movie, "Spy");
         putResource(spy, title, "Spy");
         putResource(spy, releaseDate, DATE_FORMAT.parse("Mon Mar 03 00:00:00 BST 1986").getTime());
 
-        chineseCoffee = putEntity(movie, "Chinese Coffee");
+        chineseCoffee = putEntityWithName(movie, "Chinese Coffee");
         putResource(chineseCoffee, title, "Chinese Coffee");
         putResource(chineseCoffee, tmdbVoteCount, 5L);
         putResource(chineseCoffee, tmdbVoteAverage, 3.1d);
         putResource(chineseCoffee, releaseDate, DATE_FORMAT.parse("Sat Sep 02 00:00:00 GMT 2000").getTime());
 
-        marlonBrando = putEntity(person, "Marlon Brando");
-        alPacino = putEntity(person, "Al Pacino");
-        missPiggy = putEntity(person, "Miss Piggy");
-        kermitTheFrog = putEntity(person, "Kermit The Frog");
-        martinSheen = putEntity(person, "Martin Sheen");
-        robertDeNiro = putEntity(person, "Robert de Niro");
-        judeLaw = putEntity(person, "Jude Law");
-        mirandaHeart = putEntity(person, "Miranda Heart");
-        betteMidler = putEntity(person, "Bette Midler");
-        sarahJessicaParker = putEntity(person, "Sarah Jessica Parker");
+        marlonBrando = putEntityWithName(person, "Marlon Brando");
+        alPacino = putEntityWithName(person, "Al Pacino");
+        missPiggy = putEntityWithName(person, "Miss Piggy");
+        kermitTheFrog = putEntityWithName(person, "Kermit The Frog");
+        martinSheen = putEntityWithName(person, "Martin Sheen");
+        robertDeNiro = putEntityWithName(person, "Robert de Niro");
+        judeLaw = putEntityWithName(person, "Jude Law");
+        mirandaHeart = putEntityWithName(person, "Miranda Heart");
+        betteMidler = putEntityWithName(person, "Bette Midler");
+        sarahJessicaParker = putEntityWithName(person, "Sarah Jessica Parker");
 
-        crime = putEntity(genre, "crime");
-        putResource(crime, name, "crime");
-        drama = putEntity(genre, "drama");
-        putResource(drama, name, "drama");
-        war = putEntity(genre, "war");
-        putResource(war, name, "war");
-        action = putEntity(genre, "action");
-        putResource(action, name, "action");
-        comedy = putEntity(genre, "comedy");
-        putResource(comedy, name, "comedy");
-        family = putEntity(genre, "family");
-        putResource(family, name, "family");
-        musical = putEntity(genre, "musical");
-        putResource(musical, name, "musical");
-        fantasy = putEntity(genre, "fantasy");
-        putResource(fantasy, name, "fantasy");
+        crime = putEntityWithName(genre, "crime");
+        drama = putEntityWithName(genre, "drama");
+        war = putEntityWithName(genre, "war");
+        action = putEntityWithName(genre, "action");
+        comedy = putEntityWithName(genre, "comedy");
+        family = putEntityWithName(genre, "family");
+        musical = putEntityWithName(genre, "musical");
+        fantasy = putEntityWithName(genre, "fantasy");
 
-        donVitoCorleone = putEntity(character, "Don Vito Corleone");
-        putResource(donVitoCorleone, name, "Don Vito Corleone");
-        michaelCorleone = putEntity(character, "Michael Corleone");
-        putResource(michaelCorleone, name, "Michael Corleone");
-        colonelWalterEKurtz = putEntity(character, "Colonel Walter E. Kurtz");
-        putResource(colonelWalterEKurtz, name, "Colonel Walter E. Kurtz");
-        benjaminLWillard = putEntity(character, "Benjamin L. Willard");
-        putResource(benjaminLWillard, name, "Benjamin L. Willard");
-        ltVincentHanna = putEntity(character, "Lt Vincent Hanna");
-        putResource(ltVincentHanna, name, "Lt Vincent Hanna");
-        neilMcCauley = putEntity(character, "Neil McCauley");
-        putResource(neilMcCauley, name, "Neil McCauley");
-        bradleyFine = putEntity(character, "Bradley Fine");
-        putResource(bradleyFine, name, "Bradley Fine");
-        nancyBArtingstall = putEntity(character, "Nancy B Artingstall");
-        putResource(nancyBArtingstall, name, "Nancy B Artingstall");
-        winifred = putEntity(character, "Winifred");
-        putResource(winifred, name, "Winifred");
-        sarah = putEntity(character, "Sarah");
-        putResource(sarah, name, "Sarah");
-        harry = putEntity(character, "Harry");
-        putResource(harry, name, "Harry");
+        donVitoCorleone = putEntityWithName(character, "Don Vito Corleone");
+        michaelCorleone = putEntityWithName(character, "Michael Corleone");
+        colonelWalterEKurtz = putEntityWithName(character, "Colonel Walter E. Kurtz");
+        benjaminLWillard = putEntityWithName(character, "Benjamin L. Willard");
+        ltVincentHanna = putEntityWithName(character, "Lt Vincent Hanna");
+        neilMcCauley = putEntityWithName(character, "Neil McCauley");
+        bradleyFine = putEntityWithName(character, "Bradley Fine");
+        nancyBArtingstall = putEntityWithName(character, "Nancy B Artingstall");
+        winifred = putEntityWithName(character, "Winifred");
+        sarah = putEntityWithName(character, "Sarah");
+        harry = putEntityWithName(character, "Harry");
 
-        cluster0 = putEntity(cluster, "0");
-        cluster1 = putEntity(cluster, "1");
+        cluster0 = putEntityWithName(cluster, "0");
+        cluster1 = putEntityWithName(cluster, "1");
     }
 
     private static void buildRelations() {
@@ -298,8 +279,10 @@ public class MovieGraphFactory {
                 .addConclusion(person).addConclusion(genre).addHypothesis(hasCast);
     }
 
-    private static Entity putEntity(EntityType type, String name) {
-        return mindmapsGraph.putEntity(name.replaceAll(" ", "-").replaceAll("\\.", ""), type);
+    private static Entity putEntityWithName(EntityType type, String value) {
+        Entity entity = mindmapsGraph.addEntity(type);
+        putResource(entity, name, value);
+        return entity;
     }
 
     private static void hasResource(EntityType type, ResourceType<?> resourceType) {
@@ -316,6 +299,9 @@ public class MovieGraphFactory {
 
         RoleType owner = mindmapsGraph.putRoleType("has-" + resourceType.getId() + "-owner");
         RoleType value = mindmapsGraph.putRoleType("has-" + resourceType.getId() + "-value");
+
+        instance.type().playsRole(owner);
+
         RelationType relationType = mindmapsGraph.putRelationType("has-" + resourceType.getId())
                 .hasRole(owner).hasRole(value);
 
