@@ -20,6 +20,7 @@ package io.mindmaps.graql.internal.reasoner.predicate;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.concept.Rule;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
@@ -127,6 +128,23 @@ public abstract class AtomBase implements Atomic{
         Type type = getParentQuery().getGraph().getType(getTypeId());
         return !type.getRulesOfConclusion().isEmpty();
     }
+
+    @Override
+    public boolean isRecursive(){
+        if (isResource()) return false;
+        boolean atomRecursive = false;
+
+        String typeId = getTypeId();
+        if (typeId.isEmpty()) return false;
+        Type type = getParentQuery().getGraph().getType(typeId);
+        Collection<Rule> presentInConclusion = type.getRulesOfConclusion();
+        Collection<Rule> presentInHypothesis = type.getRulesOfHypothesis();
+
+        for(Rule rule : presentInConclusion)
+            atomRecursive |= presentInHypothesis.contains(rule);
+
+        return atomRecursive;
+    }
     @Override
     public boolean containsVar(String name){ return varName.equals(name);}
 
@@ -159,13 +177,6 @@ public abstract class AtomBase implements Atomic{
     @Override
     public MatchQuery getMatchQuery(MindmapsGraph graph) {
         return getBaseMatchQuery(graph);
-    }
-
-    @Override
-    public MatchQuery getExpandedMatchQuery(MindmapsGraph graph) {
-        QueryBuilder qb = Graql.withGraph(graph);
-        Set<String> selectVars = Sets.newHashSet(varName);
-        return qb.match(getExpandedPattern()).select(selectVars);
     }
 
     @Override
@@ -231,7 +242,6 @@ public abstract class AtomBase implements Atomic{
     public Set<Atomic> getNeighbours(){
         Set<Atomic> neighbours = new HashSet<>();
         getParentQuery().getAtoms().forEach(atom ->{
-            //TODO allow unary predicates
             if (!atom.equals(this) &&
                     (!atom.isValuePredicate() && !atom.isUnary() || (atom.isRuleResolvable()) || atom.isResource()) ) {
                 Set<String> intersection = new HashSet<>(getVarNames());

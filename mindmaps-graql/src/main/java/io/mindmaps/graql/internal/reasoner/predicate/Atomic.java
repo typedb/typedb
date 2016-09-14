@@ -32,7 +32,6 @@ import java.util.Set;
 public interface Atomic {
 
     void print();
-
     void addExpansion(Query query);
     void removeExpansion(Query query);
 
@@ -65,8 +64,14 @@ public interface Atomic {
      * @return true if atom alpha-equivalent
      */
     default boolean isEquivalent(Object obj){ return false;}
+    default int equivalenceHashCode(){ return 1;}
 
+    /**
+     * @return true if the atom can be resolved by a rule (atom exists in one of the rule's head)
+     */
     default boolean isRuleResolvable(){ return false;}
+
+    default boolean isRecursive(){ return false;}
 
     /**
      * @param name variable name
@@ -90,7 +95,6 @@ public interface Atomic {
      * @return match query obtained by selecting free variables
      */
     MatchQuery getMatchQuery(MindmapsGraph graph);
-    MatchQuery getExpandedMatchQuery(MindmapsGraph graph);
 
     /**
      * @return the query this atom belongs to

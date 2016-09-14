@@ -88,22 +88,6 @@ public class Utility {
         return atom;
     }
 
-    public static boolean isAtomRecursive(Atomic atom, MindmapsGraph graph) {
-        if (atom.isResource()) return false;
-        boolean atomRecursive = false;
-
-        String typeId = atom.getTypeId();
-        if (typeId.isEmpty()) return false;
-        Type type = graph.getType(typeId);
-        Collection<Rule> presentInConclusion = type.getRulesOfConclusion();
-        Collection<Rule> presentInHypothesis = type.getRulesOfHypothesis();
-
-        for(Rule rule : presentInConclusion)
-            atomRecursive |= presentInHypothesis.contains(rule);
-
-        return atomRecursive;
-    }
-
     public static  boolean isRuleRecursive(Rule rule) {
         boolean ruleRecursive = false;
 

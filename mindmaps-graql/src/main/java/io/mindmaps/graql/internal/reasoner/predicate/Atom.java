@@ -46,12 +46,21 @@ public class Atom extends AtomBase{
     @Override
     public boolean isUnary(){ return true;}
 
-        @Override
+    @Override
     public boolean equals(Object obj) {
         if (!(obj instanceof Atom)) return false;
         Atom a2 = (Atom) obj;
         return this.typeId.equals(a2.getTypeId()) && this.varName.equals(a2.getVarName())
                 && this.val.equals(a2.getVal());
+    }
+
+    @Override
+    public int hashCode() {
+        int hashCode = 1;
+        hashCode = hashCode * 37 + this.typeId.hashCode();
+        hashCode = hashCode * 37 + this.val.hashCode();
+        hashCode = hashCode * 37 + this.varName.hashCode();
+        return hashCode;
     }
 
     @Override
@@ -62,11 +71,10 @@ public class Atom extends AtomBase{
     }
 
     @Override
-    public int hashCode() {
+    public int equivalenceHashCode(){
         int hashCode = 1;
         hashCode = hashCode * 37 + this.typeId.hashCode();
         hashCode = hashCode * 37 + this.val.hashCode();
-        hashCode = hashCode * 37 + this.varName.hashCode();
         return hashCode;
     }
 

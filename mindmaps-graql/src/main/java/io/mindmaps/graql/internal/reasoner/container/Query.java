@@ -26,16 +26,15 @@ import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.Disjunction;
+import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.query.Patterns;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
-import io.mindmaps.util.ErrorMessage;
 
 import java.util.*;
 import java.util.stream.Collectors;
-
 
 public class  Query {
 
@@ -99,7 +98,10 @@ public class  Query {
         atomSet = new HashSet<>();
         addAtom(atom);
         addAtomConstraints(atom.getSubstitutions());
-        if(atom.isRelation() || atom.isResource()) addAtomConstraints(atom.getTypeConstraints());
+        if(atom.isRelation() || atom.isResource())
+            addAtomConstraints(atom.getTypeConstraints()
+                                    .stream().filter(at -> !at.isRuleResolvable())
+                                    .collect(Collectors.toSet()));
 
         this.typeAtomMap = getTypeAtomMap(atomSet);
     }
@@ -475,4 +477,5 @@ public class  Query {
 
         return equivalent;
     }
+
 }

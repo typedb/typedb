@@ -29,29 +29,51 @@ import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.internal.reasoner.container.Query;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.Relation;
+import io.mindmaps.graql.reasoner.graphs.CWGraph;
 import io.mindmaps.graql.reasoner.graphs.GenericGraph;
-import io.mindmaps.graql.reasoner.graphs.SNBGraph;
 import javafx.util.Pair;
 import org.junit.Test;
 
 import java.util.*;
 
 import static io.mindmaps.graql.internal.reasoner.Utility.computeRoleCombinations;
-import static io.mindmaps.graql.internal.reasoner.Utility.printMatchQueryResults;
 
 public class AtomicTest {
 
     @Test
-    public void testValuePredicate(){
-        MindmapsGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = Graql.withGraph(graph);
-        String queryString = "match " +
-                "$x1 isa person;\n" +
-                "$x2 isa tag;\n" +
-                "($x1, $x2) isa recommendation";
+    public void testRoleInference(){
+        MindmapsGraph graph = CWGraph.getGraph();
 
-        MatchQuery MQ = qb.parseMatch(queryString);
-        printMatchQueryResults(MQ);
+        String queryString = "match isa owns, ($z, $y); $z isa country; $y isa weapon select $y, $z";
+        Query query = new Query(queryString, graph);
+        Atomic atom = query.getAtomsWithType(graph.getType("owns")).iterator().next();
+
+        Map<RoleType, Pair<String, Type>> roleMap = atom.getRoleVarTypeMap();
+
+        queryString = "match isa owns, ($z, $y); $z isa country; select $y, $z";
+        query = new Query(queryString, graph);
+        atom = query.getAtomsWithType(graph.getType("owns")).iterator().next();
+
+        Map<RoleType, Pair<String, Type>> roleMap2 = atom.getRoleVarTypeMap();
+
+        assert(roleMap.size() == 2 && roleMap2.size() == 2);
+    }
+
+    @Test
+    public void testRoleInference2(){
+        MindmapsGraph graph = CWGraph.getGraph();
+
+        String queryString = "match ($z, $y, $x), isa transaction;$z isa country;$x isa person select $x, $y, $z";
+        Query query = new Query(queryString, graph);
+        Atomic atom = query.getAtomsWithType(graph.getType("transaction")).iterator().next();
+        Map<RoleType, Pair<String, Type>> roleMap = atom.getRoleVarTypeMap();
+
+        queryString = "match ($z, $y, seller $x), isa transaction;$z isa country;$y isa weapon select $x, $y, $z";
+        query = new Query(queryString, graph);
+        atom = query.getAtomsWithType(graph.getType("transaction")).iterator().next();
+        Map<RoleType, Pair<String, Type>> roleMap2 = atom.getRoleVarTypeMap();
+
+        assert(roleMap.size() == 3 && roleMap2.size() == 3);
     }
 
     @Test
@@ -89,7 +111,7 @@ public class AtomicTest {
         Query query = new Query(MQ, graph);
 
         Atomic atom = query.selectAtoms().iterator().next();
-        Map<RoleType, Pair<String, Type>> rmap = ((Relation) atom).getRoleVarTypeMap();
+        Map<RoleType, Pair<String, Type>> rmap = atom.getRoleVarTypeMap();
 
         Set<String> vars = atom.getVarNames();
 
