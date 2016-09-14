@@ -47,6 +47,7 @@ public enum ErrorMessage {
     IMMUTABLE_VALUE("The value [%s] of concept [%s] cannot be changed to [%s] due to the property [%s] being immutable"),
     NULL_VALUE("The value of [%s] cannot be set to [null]"),
     CANNOT_LOAD_EXAMPLE("Cannot load example to this graph. Please try a new empty graph."),
+    META_TYPE_IMMUTABLE("The meta type [%s] is immutable"),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),

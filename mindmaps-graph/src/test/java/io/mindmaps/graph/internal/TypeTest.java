@@ -18,8 +18,6 @@
 
 package io.mindmaps.graph.internal;
 
-import io.mindmaps.util.Schema;
-import io.mindmaps.exception.ConceptException;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
@@ -27,7 +25,10 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.RuleType;
 import io.mindmaps.concept.Type;
+import io.mindmaps.exception.ConceptException;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.util.Schema;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,6 +38,8 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -87,7 +90,7 @@ public class TypeTest {
 
     @Test
     public void testGetPlayedRole() throws Exception{
-        Type creature = mindmapsGraph.putEntityType("creature");
+        EntityType creature = mindmapsGraph.putEntityType("creature");
         RoleType monster = mindmapsGraph.putRoleType("monster");
         RoleType animal = mindmapsGraph.putRoleType("animal");
         RoleType monsterSub = mindmapsGraph.putRoleType("monsterSub");
@@ -232,7 +235,7 @@ public class TypeTest {
 
     @Test
     public void allowsRoleType(){
-        TypeImpl conceptType = (TypeImpl) mindmapsGraph.putEntityType("ct");
+        EntityTypeImpl conceptType = (EntityTypeImpl) mindmapsGraph.putEntityType("ct");
         RoleType roleType1 = mindmapsGraph.putRoleType("rt1'");
         RoleType roleType2 = mindmapsGraph.putRoleType("rt2");
 
@@ -283,7 +286,7 @@ public class TypeTest {
 
     @Test
     public void testDeletePlaysRole(){
-        Type type = mindmapsGraph.putEntityType("A Concept Type");
+        EntityType type = mindmapsGraph.putEntityType("A Concept Type");
         RoleType role1 = mindmapsGraph.putRoleType("A Role 1");
         RoleType role2 = mindmapsGraph.putRoleType("A Role 2");
         assertEquals(0, type.playsRoles().size());
@@ -356,4 +359,29 @@ public class TypeTest {
         entityType3.superType(entityType1);
     }
 
+
+    @Test
+    public void testMetaTypeIsAbstractImmutable(){
+        Type meta = mindmapsGraph.getMetaRuleType();
+
+        expectedException.expect(ConceptException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(meta.getId()))
+        ));
+
+        meta.setAbstract(true);
+    }
+
+    @Test
+    public void testMetaTypePlaysRoleImmutable(){
+        Type meta = mindmapsGraph.getMetaRuleType();
+        RoleType roleType = mindmapsGraph.putRoleType("A Role");
+
+        expectedException.expect(ConceptException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(meta.getId()))
+        ));
+
+        meta.playsRole(roleType);
+    }
 }
