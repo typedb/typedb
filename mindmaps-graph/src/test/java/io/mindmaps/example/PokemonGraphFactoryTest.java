@@ -80,20 +80,26 @@ public class PokemonGraphFactoryTest {
 
     @Test
     public void testGraphHasPokemon() {
-        Entity bulbasaur = mindmapsGraph.getEntity("Bulbasaur");
+        Entity bulbasaur = mindmapsGraph.getResourcesByValue("Bulbasaur").
+                iterator().next().ownerInstances().
+                iterator().next().asEntity();
         assertTrue(bulbasaur.type().equals(mindmapsGraph.getEntityType("pokemon")));
     }
 
     @Test
     public void testGraphHasPokemonType() {
-        Entity poison = mindmapsGraph.getEntity("poison");
+        Entity poison = mindmapsGraph.getResourcesByValue("poison").
+                iterator().next().ownerInstances().
+                iterator().next().asEntity();
         assertTrue(poison.type().equals(mindmapsGraph.getEntityType("pokemon-type")));
     }
 
     @Test
     public void testBulbasaurHasResource() {
         ResourceType<Long> pokedexNo = mindmapsGraph.getResourceType("pokedex-no");
-        Entity weedle = mindmapsGraph.getEntity("Bulbasaur");
+        Entity weedle = mindmapsGraph.getResourcesByValue("Bulbasaur").
+                iterator().next().ownerInstances().
+                iterator().next().asEntity();
         Stream<Resource<?>> resources = weedle.resources().stream();
         assertTrue(resources.anyMatch(r -> r.type().equals(pokedexNo) && r.getValue().equals(1L)));
     }
@@ -102,8 +108,13 @@ public class PokemonGraphFactoryTest {
     public void testTypeIsSuperEffective() {
         RelationType relationType = mindmapsGraph.getRelationType("super-effective");
         RoleType role = mindmapsGraph.getRoleType("defending-type");
-        Entity poison = mindmapsGraph.getEntity("poison");
-        Entity grass = mindmapsGraph.getEntity("grass");
+
+        Resource<String> poisonName = mindmapsGraph.getResourcesByValue("poison").iterator().next();
+        Resource<String> grassName = mindmapsGraph.getResourcesByValue("grass").iterator().next();
+
+        Entity poison = poisonName.ownerInstances().iterator().next().asEntity();
+        Entity grass = grassName.ownerInstances().iterator().next().asEntity();
+
         Stream<Relation> relations = poison.relations().stream();
         assertTrue(relations.anyMatch(r -> r.type().equals(relationType)
                 && r.rolePlayers().get(role).equals(grass)));

@@ -36,6 +36,7 @@ public class PokemonGraphFactory{
     private static EntityType pokemonType;
     private static ResourceType<Long> pokedexNo;
     private static ResourceType<String> description;
+    private static ResourceType<String> name;
     private static ResourceType<Long> height;
     private static ResourceType<Long> weight;
     private static RoleType hasResourceTarget;
@@ -50,6 +51,26 @@ public class PokemonGraphFactory{
     private static RelationType evolution;
     private static RelationType hasType;
     private static RelationType superEffective;
+    private static Entity normal;
+    private static Entity fighting;
+    private static Entity flying;
+    private static Entity poison;
+    private static Entity ground;
+    private static Entity rock;
+    private static Entity bug;
+    private static Entity ghost;
+    private static Entity steel;
+    private static Entity fire;
+    private static Entity water;
+    private static Entity grass;
+    private static Entity electric;
+    private static Entity psychic;
+    private static Entity ice;
+    private static Entity dragon;
+    private static Entity dark;
+    private static Entity fairy;
+    private static Entity unknown;
+    private static Entity shadow;
 
     private PokemonGraphFactory(){
         throw new UnsupportedOperationException();
@@ -103,6 +124,7 @@ public class PokemonGraphFactory{
                 .playsRole(pokemonWithType);
 
         pokemonType = graph.putEntityType("pokemon-type")
+                .playsRole(hasResourceTarget)
                 .playsRole(typeOfPokemon)
                 .playsRole(defendingType)
                 .playsRole(attackingType);
@@ -111,6 +133,8 @@ public class PokemonGraphFactory{
                 .playsRole(hasResourceValue);
         description = graph.putResourceType("description", ResourceType.DataType.STRING)
                 .playsRole(hasResourceValue);
+        name = graph.putResourceType("name", ResourceType.DataType.STRING)
+                .playsRole(hasResourceValue);
         height = graph.putResourceType("height", ResourceType.DataType.LONG)
                 .playsRole(hasResourceValue);
         weight = graph.putResourceType("weight", ResourceType.DataType.LONG)
@@ -118,62 +142,62 @@ public class PokemonGraphFactory{
     }
 
     private static void buildInstances(MindmapsGraph graph) {
-        Entity bulbasaur = graph.putEntity("Bulbasaur", pokemon);
+        Entity bulbasaur = graph.addEntity(pokemon);
+        addResource(graph, bulbasaur, "Bulbasaur", name);
         addResource(graph,bulbasaur,1L,pokedexNo);
         addResource(graph,bulbasaur,"A strange seed was planted on its back at birth. The plant sprouts and grows with this POKéMON.",description);
         addResource(graph,bulbasaur,7L,height);
         addResource(graph,bulbasaur,69L,weight);
-        putTypes(graph,bulbasaur,
-                graph.getEntity("poison"),graph.getEntity("grass"));
+        putTypes(graph,bulbasaur, poison, grass);
 
-        Entity ivysaur = graph.putEntity("Ivysaur", pokemon);
+        Entity ivysaur = graph.addEntity(pokemon);
+        addResource(graph, ivysaur, "Ivysaur", name);
         addResource(graph,ivysaur,2L,pokedexNo);
         addResource(graph,ivysaur,"When the bulb on its back grows large, it appears to lose the ability to stand on its hind legs.",description);
         addResource(graph,ivysaur,10L,height);
         addResource(graph,ivysaur,130L,weight);
-        putTypes(graph,ivysaur,
-                graph.getEntity("poison"),graph.getEntity("grass"));
+        putTypes(graph,ivysaur, poison, grass);
         graph.addRelation(evolution)
                 .putRolePlayer(descendent,ivysaur)
                 .putRolePlayer(ancestor,bulbasaur);
 
-        Entity venusaur = graph.putEntity("Venusaur", pokemon);
+        Entity venusaur = graph.addEntity(pokemon);
+        addResource(graph, venusaur, "Venusaur", name);
         addResource(graph,venusaur,3L,pokedexNo);
         addResource(graph,venusaur,"The plant blooms when it is absorbing solar energy. It stays on the move to seek sunlight.",description);
         addResource(graph,venusaur,20L,height);
         addResource(graph,venusaur,1000L,weight);
-        putTypes(graph,venusaur,
-                graph.getEntity("poison"),graph.getEntity("grass"));
+        putTypes(graph,venusaur, poison, grass);
         graph.addRelation(evolution)
                 .putRolePlayer(descendent,venusaur)
                 .putRolePlayer(ancestor,ivysaur);
 
-        Entity charmander = graph.putEntity("Charmander", pokemon);
+        Entity charmander = graph.addEntity(pokemon);
+        addResource(graph, charmander, "CharmanderX", name);
         addResource(graph,charmander,4L,pokedexNo);
         addResource(graph,charmander,"Obviously prefers hot places. When it rains, steam is said to spout from the tip of its tail.",description);
         addResource(graph,charmander,6L,height);
         addResource(graph,charmander,85L,weight);
-        putTypes(graph,charmander,
-                graph.getEntity("fire"));
+        putTypes(graph,charmander, fire);
 
-        Entity charmeleon = graph.putEntity("Charmeleon", pokemon);
+        Entity charmeleon = graph.addEntity(pokemon);
+        addResource(graph, charmeleon, "CharmeleonX", name);
         addResource(graph,charmeleon,5L,pokedexNo);
         addResource(graph,charmeleon,"When it swings its burning tail, it elevates the temperature to unbearably high levels.",description);
         addResource(graph,charmeleon,11L,height);
         addResource(graph,charmeleon,190L,weight);
-        putTypes(graph,charmeleon,
-                graph.getEntity("fire"));
+        putTypes(graph,charmeleon, fire);
         graph.addRelation(evolution)
                 .putRolePlayer(descendent,charmeleon)
                 .putRolePlayer(ancestor, charmander);
 
-        Entity charizard = graph.putEntity("Charizard", pokemon);
+        Entity charizard = graph.addEntity(pokemon);
+        addResource(graph, charizard, "Charizard", name);
         addResource(graph,charizard,6L,pokedexNo);
         addResource(graph,charizard,"Spits fire that is hot enough to melt boulders. Known to cause forest fires unintentionally.",description);
         addResource(graph,charizard,17L,height);
         addResource(graph,charizard,905L,weight);
-        putTypes(graph,charizard,
-                graph.getEntity("fire"),graph.getEntity("flying"));
+        putTypes(graph,charizard, fire, flying);
         graph.addRelation(evolution)
                 .putRolePlayer(descendent,charizard)
                 .putRolePlayer(ancestor, charmeleon);
@@ -202,43 +226,63 @@ public class PokemonGraphFactory{
     }
 
     private static void buildRelations(MindmapsGraph graph) {
-        Entity normal = graph.putEntity("normal",pokemonType);
-        Entity fighting = graph.putEntity("fighting",pokemonType);
-        Entity flying = graph.putEntity("flying",pokemonType);
-        Entity poison = graph.putEntity("poison",pokemonType);
-        Entity ground = graph.putEntity("ground",pokemonType);
-        Entity rock = graph.putEntity("rock",pokemonType);
-        Entity bug = graph.putEntity("bug",pokemonType);
-        Entity ghost = graph.putEntity("ghost",pokemonType);
-        Entity steel = graph.putEntity("steel",pokemonType);
-        Entity fire = graph.putEntity("fire",pokemonType);
-        Entity water = graph.putEntity("water",pokemonType);
-        Entity grass = graph.putEntity("grass",pokemonType);
-        Entity electric = graph.putEntity("electric",pokemonType);
-        Entity psychic = graph.putEntity("psychic",pokemonType);
-        Entity ice = graph.putEntity("ice",pokemonType);
-        Entity dragon = graph.putEntity("dragon",pokemonType);
-        Entity dark = graph.putEntity("dark",pokemonType);
-        Entity fairy = graph.putEntity("fairy",pokemonType);
-        Entity unknown = graph.putEntity("unknown",pokemonType);
-        Entity shadow = graph.putEntity("shadow",pokemonType);
+        normal = graph.addEntity(pokemonType);
+        addResource(graph, normal, "normal", name);
+        fighting = graph.addEntity(pokemonType);
+        addResource(graph, fighting, "fighting", name);
+        flying = graph.addEntity(pokemonType);
+        addResource(graph, flying, "flying", name);
+        poison = graph.addEntity(pokemonType);
+        addResource(graph, poison, "poison", name);
+        ground = graph.addEntity(pokemonType);
+        addResource(graph, ground, "groun", name);
+        rock = graph.addEntity(pokemonType);
+        addResource(graph, rock, "rockX", name);
+        bug = graph.addEntity(pokemonType);
+        addResource(graph, bug, "bug", name);
+        ghost = graph.addEntity(pokemonType);
+        addResource(graph, ghost, "ghost", name);
+        steel = graph.addEntity(pokemonType);
+        addResource(graph, steel, "steel", name);
+        fire = graph.addEntity(pokemonType);
+        addResource(graph, fire, "fire", name);
+        water = graph.addEntity(pokemonType);
+        addResource(graph, water, "water", name);
+        grass = graph.addEntity(pokemonType);
+        addResource(graph, grass, "grass", name);
+        electric = graph.addEntity(pokemonType);
+        addResource(graph, electric, "electric", name);
+        psychic = graph.addEntity(pokemonType);
+        addResource(graph, psychic, "psychic", name);
+        ice = graph.addEntity(pokemonType);
+        addResource(graph, ice, "ice", name);
+        dragon = graph.addEntity(pokemonType);
+        addResource(graph, dragon, "dragon", name);
+        dark = graph.addEntity(pokemonType);
+        addResource(graph, dark, "dark", name);
+        fairy = graph.addEntity(pokemonType);
+        addResource(graph, fairy, "fairy", name);
+        unknown = graph.addEntity(pokemonType);
+        addResource(graph, unknown, "unknown", name);
+        shadow = graph.addEntity(pokemonType);
+        addResource(graph, shadow, "shadow", name);
 
-        putSuper(graph,normal,fighting);
-        putSuper(graph,rock,fighting);
-        putSuper(graph,fighting,flying);
-        putSuper(graph,bug,flying);
-        putSuper(graph,grass,flying);
-        putSuper(graph,grass,poison);
-        putSuper(graph,grass,bug);
-        putSuper(graph,grass,fire);
-        putSuper(graph,fairy,poison);
-        putSuper(graph,poison,ground);
-        putSuper(graph,ice,steel);
-        putSuper(graph,poison,psychic);
-        putSuper(graph,ground,grass);
-        putSuper(graph,rock,grass);
-        putSuper(graph,water,grass);
-        putSuper(graph,grass,ice);
+        putSuper(graph, normal, fighting);
+        putSuper(graph, rock, fighting);
+        putSuper(graph, fighting, flying);
+        putSuper(graph, bug, flying);
+        putSuper(graph, grass, flying);
+        putSuper(graph, grass, poison);
+        putSuper(graph, grass, bug);
+        putSuper(graph, grass, fire);
+        putSuper(graph, fairy, poison);
+        putSuper(graph, poison, ground);
+        putSuper(graph, ice, steel);
+        putSuper(graph, poison, psychic);
+        putSuper(graph, ground, grass);
+        putSuper(graph, rock, grass);
+        putSuper(graph, water, grass);
+        putSuper(graph, grass, ice);
     }
 
     private static void putSuper(MindmapsGraph graph, Entity defend, Entity attack) {
