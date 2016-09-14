@@ -110,37 +110,7 @@ public class  Query {
     public String toString() { return getMatchQuery().toString();}
 
     public MindmapsGraph getGraph(){ return graph;}
-    private Atomic getParentAtom(){ return parentAtom;}
-    private Query getParentQuery(){
-        return parentAtom != null? parentAtom.getParentQuery() : null;
-    }
     public void setParentAtom(Atomic par){ parentAtom = par;}
-
-
-    /**
-     * @return top atom of this branch
-     */
-    public Atomic getTopAtom() {
-        Atomic top = getParentAtom();
-        Query parentQuery = top != null? top.getParentQuery() : null;
-        while (parentQuery != null && parentQuery.getParentQuery() != null) {
-            parentQuery = parentQuery.getParentQuery();
-            if(parentQuery.getParentAtom() != null) top = parentQuery.getParentAtom();
-        }
-        return top;
-    }
-
-    /**
-     * @return top query in the tree
-     */
-    public Query getTopQuery() {
-        if (getParentQuery() == null) return this;
-        Query query = getParentQuery();
-        while(query.getParentQuery() != null)
-            query = query.getParentQuery();
-
-        return query;
-    }
 
     public Set<Atomic> getAtoms() { return new HashSet<>(atomSet);}
     public Set<Atomic> getAtomsWithType(Type type) {

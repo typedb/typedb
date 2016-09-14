@@ -141,7 +141,7 @@ public enum ErrorMessage {
 
 
     //--------------------------------------------- Reasoner Errors -----------------------------------------------
-    NON_HORN_RULE("The specified rule %s is not a Horn rule"),
+    NON_HORN_RULE("The specified rule [%s] is not a Horn rule"),
     PARENT_MISSING("Attempted operation on atom %s that does not have a parent"),
     PATTERN_NOT_VAR("The pattern [%s] is not a var"),
     MULTIPLE_RESOURCES("Multiple resource types found during data extraction in atom [%s]"),
@@ -152,6 +152,7 @@ public enum ErrorMessage {
     NON_ATOMIC_QUERY("Addressed query is not atomic"),
     MULTI_VALUE_VAR("Multi value variable found [$s] on query construction"),
     NO_ATOMS_SELECTED("No atoms were selected from query [$s]"),
+    MATERIALIZATION_ERROR("Not enough information available to materialize [$s]"),
 
     //--------------------------------------------- Analytics Errors -----------------------------------------------
     ONTOLOGY_MUTATION("The mutations to the ontology have not been successfully committed. Validation Errors: [%s]"),

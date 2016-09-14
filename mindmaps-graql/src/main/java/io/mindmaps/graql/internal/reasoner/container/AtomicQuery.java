@@ -30,6 +30,7 @@ import io.mindmaps.graql.internal.reasoner.predicate.Substitution;
 import io.mindmaps.util.ErrorMessage;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static io.mindmaps.graql.internal.reasoner.Utility.computeRoleCombinations;
 
@@ -102,6 +103,8 @@ public class AtomicQuery extends Query{
     public Set<AtomicQuery> getChildren(){ return children;}
 
     private void materialize() {
+        if( getAtoms().stream().filter(Atomic::isValuePredicate).collect(Collectors.toSet()).size() != getVarSet().size())
+            throw new IllegalStateException(ErrorMessage.MATERIALIZATION_ERROR.getMessage(this.toString()));
         if (!getMatchQuery().ask().execute()) {
             InsertQuery insert = Graql.insert(getPattern().getVars()).withGraph(graph);
             insert.execute();
