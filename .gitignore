@@ -1,9 +1,10 @@
 # Mac files #
 .DS_Store
 
-# IntelliJ files #
+# IDEA files #
 .idea/
 *.iml
+*.geany
 
 # Compiled files #
 out/
