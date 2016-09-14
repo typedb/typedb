@@ -308,7 +308,7 @@ public class TypeTest {
         assertNull(mindmapsGraph.getConcept("1"));
 
         toDelete = mindmapsGraph.putEntityType("2");
-        Instance instance = mindmapsGraph.putEntity("instance 1", toDelete);
+        Instance instance = mindmapsGraph.addEntity(toDelete);
 
         boolean conceptExceptionThrown = false;
         try{
@@ -323,11 +323,11 @@ public class TypeTest {
     public void testGetInstances(){
         EntityType entityType = mindmapsGraph.putEntityType("Entity");
         RoleType actor = mindmapsGraph.putRoleType("Actor");
-        mindmapsGraph.putEntity("Marlon Brando", entityType);
+        mindmapsGraph.addEntity(entityType);
         EntityType production = mindmapsGraph.putEntityType("Production");
         EntityType movie = mindmapsGraph.putEntityType("Movie").superType(production);
-        Instance musicVideo = mindmapsGraph.putEntity("Music Video", production);
-        Instance godfather = mindmapsGraph.putEntity("Godfather", movie);
+        Instance musicVideo = mindmapsGraph.addEntity(production);
+        Instance godfather = mindmapsGraph.addEntity(movie);
 
         Collection<? extends Concept> types = mindmapsGraph.getMetaType().instances();
         Collection<? extends Concept> data = production.instances();

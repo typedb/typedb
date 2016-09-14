@@ -51,10 +51,10 @@ public class PostprocessingTest {
         roleType2 = graph.putRoleType("role 2");
         relationType = graph.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
         EntityType thing = graph.putEntityType("thing").playsRole(roleType1).playsRole(roleType2);
-        instance1 = (InstanceImpl) graph.putEntity("1", thing);
-        instance2 = (InstanceImpl) graph.putEntity("2", thing);
-        instance3 = (InstanceImpl) graph.putEntity("3", thing);
-        instance4 = (InstanceImpl) graph.putEntity("4", thing);
+        instance1 = (InstanceImpl) graph.addEntity(thing);
+        instance2 = (InstanceImpl) graph.addEntity(thing);
+        instance3 = (InstanceImpl) graph.addEntity(thing);
+        instance4 = (InstanceImpl) graph.addEntity(thing);
 
         graph.addRelation(relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
         assertEquals(1, instance1.castings().size());
