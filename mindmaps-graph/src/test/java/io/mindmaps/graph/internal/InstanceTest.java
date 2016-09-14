@@ -205,9 +205,13 @@ public class InstanceTest {
     public void testResources(){
         EntityType randomThing = mindmapsGraph.putEntityType("A Thing");
         ResourceType resourceType = mindmapsGraph.putResourceType("A Resource Thing", ResourceType.DataType.STRING);
+        ResourceType resourceType2 = mindmapsGraph.putResourceType("A Resource Thing 2", ResourceType.DataType.STRING);
+
         RelationType hasResource = mindmapsGraph.putRelationType("Has Resource");
+
         RoleType resourceRole = mindmapsGraph.putRoleType("Resource Role");
         RoleType actorRole = mindmapsGraph.putRoleType("Actor");
+
         Entity pacino = mindmapsGraph.putEntity("pacino", randomThing);
         Resource birthplace = mindmapsGraph.putResource("a place", resourceType);
         Resource age = mindmapsGraph.putResource("100", resourceType);
@@ -215,18 +219,30 @@ public class InstanceTest {
         Resource birthDate = mindmapsGraph.putResource("10/10/10", resourceType);
         hasResource.hasRole(resourceRole).hasRole(actorRole);
 
+        Resource randomResource = mindmapsGraph.putResource("Random 1", resourceType2);
+        Resource randomResource2 = mindmapsGraph.putResource("Random 2", resourceType2);
+
         assertEquals(0, birthDate.ownerInstances().size());
         mindmapsGraph.addRelation(hasResource).putRolePlayer(actorRole, pacino).putRolePlayer(resourceRole, birthDate);
         mindmapsGraph.addRelation(hasResource).putRolePlayer(actorRole, pacino).putRolePlayer(resourceRole, birthplace);
         mindmapsGraph.addRelation(hasResource).putRolePlayer(actorRole, pacino).putRolePlayer(resourceRole, age);
         mindmapsGraph.addRelation(hasResource).putRolePlayer(actorRole, pacino).putRolePlayer(resourceRole, family);
 
+        mindmapsGraph.addRelation(hasResource).putRolePlayer(actorRole, pacino).putRolePlayer(resourceRole, randomResource);
+        mindmapsGraph.addRelation(hasResource).putRolePlayer(actorRole, pacino).putRolePlayer(resourceRole, randomResource2);
+
         assertEquals(1, birthDate.ownerInstances().size());
-        assertEquals(4, pacino.resources().size());
+        assertEquals(6, pacino.resources().size());
         assertTrue(pacino.resources().contains(birthDate));
         assertTrue(pacino.resources().contains(birthplace));
         assertTrue(pacino.resources().contains(age));
         assertTrue(pacino.resources().contains(family));
+        assertTrue(pacino.resources().contains(randomResource));
+        assertTrue(pacino.resources().contains(randomResource2));
+
+        assertEquals(2, pacino.resources(resourceType2).size());
+        assertTrue(pacino.resources(resourceType2).contains(randomResource));
+        assertTrue(pacino.resources(resourceType2).contains(randomResource2));
     }
 
     @Test
