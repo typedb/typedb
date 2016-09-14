@@ -66,7 +66,7 @@ public class QueryParser {
      * @param queryString a string representing a match query
      * @return the parsed match query
      */
-    public MatchQueryPrinter parseMatchQuery(String queryString) {
+    public MatchQuery parseMatchQuery(String queryString) {
         return parseQueryFragment(GraqlParser::matchEOF, QueryVisitor::visitMatchEOF, queryString);
     }
 

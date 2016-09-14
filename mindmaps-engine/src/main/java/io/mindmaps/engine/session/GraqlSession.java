@@ -22,9 +22,9 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.exception.ConceptException;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.Autocomplete;
+import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.Query;
 import io.mindmaps.graql.Reasoner;
-import io.mindmaps.graql.internal.parser.MatchQueryPrinter;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
 
@@ -80,8 +80,8 @@ class GraqlSession {
 
                 Query<?> query = withGraph(graph).parse(queryString);
 
-                if (query instanceof MatchQueryPrinter) {
-                    reasonMatchQuery((MatchQueryPrinter) query);
+                if (query instanceof MatchQuery) {
+                    query = reasonMatchQuery((MatchQuery) query);
                 }
 
                 // Return results unless query is cancelled
@@ -142,11 +142,13 @@ class GraqlSession {
     /**
      * Apply reasoner to match query
      */
-    private void reasonMatchQuery(MatchQueryPrinter query) {
+    private MatchQuery reasonMatchQuery(MatchQuery query) {
         // Expand match query with reasoner, if there are any rules in the graph
         // TODO: Make sure reasoner still applies things such as limit, even with rules in the graph
         if (!reasoner.getRules().isEmpty()) {
-            query.setMatchQuery(reasoner.resolveToQuery(query.getMatchQuery()));
+            return reasoner.resolveToQuery(query);
+        } else {
+            return query;
         }
     }
 

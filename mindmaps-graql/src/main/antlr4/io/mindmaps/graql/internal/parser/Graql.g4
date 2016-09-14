@@ -19,16 +19,6 @@ computeQuery   : 'compute' id ('in' subgraph)? ;
 
 subgraph       : id (',' id) * ;
 
-selectors      : selector (',' selector)* ;
-selector       : VARIABLE ('(' (getter ','?)* ')')? ;
-getter         : 'isa'      # getterIsa
-               | 'id'       # getterId
-               | 'value'    # getterValue
-               | 'has' id   # getterHas
-               | 'lhs'      # getterLhs
-               | 'rhs'      # getterRhs
-               ;
-
 aggregate      : id argument*                     # customAgg
                | '(' namedAgg (',' namedAgg)* ')' # selectAgg
                ;
@@ -129,7 +119,7 @@ value          : STRING  # valueString
                ;
 
 modifiers      : (','? modifier)* ;
-modifier       : 'select' selectors                               # modifierSelect
+modifier       : 'select' VARIABLE (',' VARIABLE)*                # modifierSelect
                | 'limit' INTEGER                                  # modifierLimit
                | 'offset' INTEGER                                 # modifierOffset
                | 'distinct'                                       # modifierDistinct

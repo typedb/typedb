@@ -51,7 +51,7 @@ public class ExamplesTest {
                 "insert id 'Alexander' isa person;"
         );
 
-        assertEquals(4, qb.parseMatch("match $p isa person").getMatchQuery().stream().count());
+        assertEquals(4, qb.parseMatch("match $p isa person").stream().count());
 
         load(
                 "insert school isa entity-type;",
@@ -61,7 +61,7 @@ public class ExamplesTest {
                 "insert id 'Cynicism' isa school;"
         );
 
-        assertEquals(1, qb.parseMatch("match $x id 'Cynicism'").getMatchQuery().stream().count());
+        assertEquals(1, qb.parseMatch("match $x id 'Cynicism'").stream().count());
 
         load(
                 "insert practice isa relation-type;",
@@ -78,7 +78,7 @@ public class ExamplesTest {
 
         assertEquals(
                 2,
-                qb.parseMatch("match (philosopher $x, Platonism) isa practice;").getMatchQuery().stream().count()
+                qb.parseMatch("match (philosopher $x, Platonism) isa practice;").stream().count()
         );
 
         load(
@@ -108,7 +108,7 @@ public class ExamplesTest {
                 "insert Alexander has title 'Lord of Asia';"
         );
 
-        MatchQuery pharaoh = qb.parseMatch("match $x has title contains 'Pharaoh'").getMatchQuery();
+        MatchQuery pharaoh = qb.parseMatch("match $x has title contains 'Pharaoh'");
         assertEquals("Alexander", pharaoh.iterator().next().get("x").getId());
 
         load(
@@ -136,7 +136,7 @@ public class ExamplesTest {
 
         assertEquals(
                 2,
-                qb.parseMatch("match (Socrates, $x) isa knowledge").getMatchQuery().stream().count()
+                qb.parseMatch("match (Socrates, $x) isa knowledge").stream().count()
         );
     }
 

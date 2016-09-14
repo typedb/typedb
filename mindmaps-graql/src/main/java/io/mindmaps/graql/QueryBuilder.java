@@ -21,7 +21,6 @@ package io.mindmaps.graql;
 import com.google.common.collect.ImmutableSet;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.parser.MatchQueryPrinter;
 import io.mindmaps.graql.internal.parser.QueryParser;
 import io.mindmaps.graql.internal.query.Patterns;
 import io.mindmaps.graql.internal.query.Queries;
@@ -101,7 +100,7 @@ public class QueryBuilder {
      * @param queryString a string representing a match query
      * @return the parsed match query
      */
-    public MatchQueryPrinter parseMatch(String queryString) {
+    public MatchQuery parseMatch(String queryString) {
         return queryParser.parseMatchQuery(queryString);
     }
 
