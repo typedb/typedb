@@ -123,6 +123,8 @@ class InsertQueryExecutor {
 
         var.getCastings().forEach(casting -> addCasting(var, casting));
 
+        var.getRegex().ifPresent(regex -> concept.asResourceType().setRegex(regex));
+
         return concept;
     }
 

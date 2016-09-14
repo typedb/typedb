@@ -38,6 +38,7 @@ import org.junit.rules.ExpectedException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static io.mindmaps.concept.ResourceType.DataType.*;
 import static io.mindmaps.graql.Graql.gt;
 import static io.mindmaps.graql.Graql.id;
 import static io.mindmaps.graql.Graql.var;
@@ -53,6 +54,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+@SuppressWarnings("OptionalGetWithoutIsPresent")
 public class InsertQueryTest {
 
     private MindmapsGraph mindmapsGraph;
@@ -229,26 +231,26 @@ public class InsertQueryTest {
     @Test
     public void testInsertDatatype() {
         qb.insert(
-                id("my-type").isa(RESOURCE_TYPE.getId()).datatype(ResourceType.DataType.LONG)
+                id("my-type").isa(RESOURCE_TYPE.getId()).datatype(LONG)
         ).execute();
 
         MatchQuery query = qb.match(var("x").id("my-type"));
         ResourceType.DataType datatype = query.iterator().next().get("x").asResourceType().getDataType();
 
-        assertEquals(ResourceType.DataType.LONG, datatype);
+        assertEquals(LONG, datatype);
     }
 
     @Test
     public void testInsertAkoResourceType() {
         qb.insert(
-                id("my-type").isa(RESOURCE_TYPE.getId()).datatype(ResourceType.DataType.STRING),
+                id("my-type").isa(RESOURCE_TYPE.getId()).datatype(STRING),
                 id("ako-type").ako("my-type")
         ).execute();
 
         MatchQuery query = qb.match(var("x").id("ako-type"));
         ResourceType.DataType datatype = query.iterator().next().get("x").asResourceType().getDataType();
 
-        assertEquals(ResourceType.DataType.STRING, datatype);
+        assertEquals(STRING, datatype);
     }
 
     @Test
@@ -385,7 +387,7 @@ public class InsertQueryTest {
     public void testInsertResourceTypeAndInstance() {
         qb.insert(
                 var("x").isa("movie").has("my-resource", "look a string"),
-                id("my-resource").isa("resource-type").datatype(ResourceType.DataType.STRING),
+                id("my-resource").isa("resource-type").datatype(STRING),
                 id("movie").hasResource("my-resource")
         ).execute();
     }
@@ -394,8 +396,8 @@ public class InsertQueryTest {
     public void testHasResource() {
         qb.insert(
                 id("a-new-type").isa("entity-type").hasResource("a-new-resource-type"),
-                id("a-new-resource-type").isa("resource-type").datatype(ResourceType.DataType.STRING),
-                id("an-unconnected-resource-type").isa("resource-type").datatype(ResourceType.DataType.LONG)
+                id("a-new-resource-type").isa("resource-type").datatype(STRING),
+                id("an-unconnected-resource-type").isa("resource-type").datatype(LONG)
         ).execute();
 
         // Make sure a-new-type can have the given resource type, but not other resource types
@@ -412,6 +414,14 @@ public class InsertQueryTest {
         assertTrue(qb.match(id("has-a-new-resource-type").hasRole("has-a-new-resource-type-value")).ask().execute());
         assertTrue(qb.match(id("a-new-type").playsRole("has-a-new-resource-type-owner")).ask().execute());
         assertTrue(qb.match(id("a-new-resource-type").playsRole("has-a-new-resource-type-value")).ask().execute());
+    }
+
+    @Test
+    public void testResourceTypeRegex() {
+        qb.insert(id("greeting").isa("resource-type").datatype(STRING).regex("hello|good day")).execute();
+
+        MatchQuery match = qb.match(var("x").id("greeting"));
+        assertEquals("hello|good day", match.get("x").findFirst().get().asResourceType().getRegex());
     }
 
     @Test

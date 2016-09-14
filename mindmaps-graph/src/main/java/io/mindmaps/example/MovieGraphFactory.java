@@ -110,7 +110,7 @@ public class MovieGraphFactory {
         tmdbVoteAverage = mindmapsGraph.putResourceType("tmdb-vote-average", ResourceType.DataType.DOUBLE);
         releaseDate = mindmapsGraph.putResourceType("release-date", ResourceType.DataType.LONG);
         runtime = mindmapsGraph.putResourceType("runtime", ResourceType.DataType.LONG);
-        gender = mindmapsGraph.putResourceType("gender", ResourceType.DataType.STRING);
+        gender = mindmapsGraph.putResourceType("gender", ResourceType.DataType.STRING).setRegex("(fe)?male");
         realName = mindmapsGraph.putResourceType("real-name", ResourceType.DataType.STRING);
         name = mindmapsGraph.putResourceType("name", ResourceType.DataType.STRING);
 

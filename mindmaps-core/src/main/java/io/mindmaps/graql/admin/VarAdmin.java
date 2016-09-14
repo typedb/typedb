@@ -90,6 +90,11 @@ public interface VarAdmin extends PatternAdmin, Var {
     Optional<ResourceType.DataType<?>> getDatatype();
 
     /**
+     * @return the regular expression that instances of this resource type should match, if one is set
+     */
+    Optional<String> getRegex();
+
+    /**
      * @return whether this variable is an abstract type
      */
     boolean getAbstract();

@@ -224,6 +224,13 @@ public interface Var extends Pattern {
     Var datatype(ResourceType.DataType<?> datatype);
 
     /**
+     * Specify the regular expression instances of this resource type must match
+     * @param regex the regex to set for this resource type variable
+     * @return this
+     */
+    Var regex(String regex);
+
+    /**
      * @param lhs the left-hand side of this rule
      * @return this
      */

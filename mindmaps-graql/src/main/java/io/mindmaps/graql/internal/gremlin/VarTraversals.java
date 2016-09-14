@@ -81,6 +81,10 @@ public class VarTraversals {
                 datatype -> addPropertyPattern(getName(), DATA_TYPE.name(), eq(datatype.getName()).admin(), VALUE_NONSPECIFIC)
         );
 
+        var.getRegex().ifPresent(
+                regex -> addPropertyPattern(getName(), REGEX.name(), eq(regex).admin(), VALUE_NONSPECIFIC)
+        );
+
         // Check ITEM_IDENTIFIER
         var.getId().ifPresent(
                 id -> {
