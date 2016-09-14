@@ -237,8 +237,8 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      * @param roleType The Role Type which the instances of this Type are allowed to play.
      * @return The Type itself.
      */
-    @Override
     public T playsRole(RoleType roleType) {
+        checkMetaType();
         putEdge(getMindmapsGraph().getElementFactory().buildRoleType(roleType), Schema.EdgeLabel.PLAYS_ROLE);
         return getThis();
     }
@@ -275,11 +275,19 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      *                    If the concept type is abstract it is not allowed to have any instances.
      * @return The Type itself.
      */
-    @Override
     public T setAbstract(Boolean isAbstract) {
+        checkMetaType();
         setProperty(Schema.ConceptProperty.IS_ABSTRACT, isAbstract);
         if(isAbstract)
             mindmapsGraph.getConceptLog().putConcept(this);
         return getThis();
+    }
+
+    private void checkMetaType(){
+        for (Schema.MetaType metaType : Schema.MetaType.values()) {
+            if(metaType.getId().equals(getId())){
+                throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(metaType.getId()));
+            }
+        }
     }
 }

@@ -19,8 +19,6 @@
 package io.mindmaps.example;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
@@ -29,7 +27,8 @@ import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.RuleType;
-import io.mindmaps.concept.Type;
+import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.util.ErrorMessage;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -303,7 +302,7 @@ public class MovieGraphFactory {
         return mindmapsGraph.putEntity(name.replaceAll(" ", "-").replaceAll("\\.", ""), type);
     }
 
-    private static void hasResource(Type type, ResourceType<?> resourceType) {
+    private static void hasResource(EntityType type, ResourceType<?> resourceType) {
         RoleType owner = mindmapsGraph.putRoleType("has-" + resourceType.getId() + "-owner");
         RoleType value = mindmapsGraph.putRoleType("has-" + resourceType.getId() + "-value");
         mindmapsGraph.putRelationType("has-" + resourceType.getId()).hasRole(owner).hasRole(value);
