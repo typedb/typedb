@@ -427,19 +427,10 @@ class QueryVisitor extends GraqlBaseVisitor {
     public UnaryOperator<MatchQuery> visitModifierOrderBy(GraqlParser.ModifierOrderByContext ctx) {
         // decide which ordering method to use
         String var = getVariable(ctx.VARIABLE());
-        if (ctx.id() != null) {
-            String type = visitId(ctx.id());
-            if (ctx.ORDER() != null) {
-                return matchQuery -> matchQuery.orderBy(var, type, getOrder(ctx.ORDER()));
-            } else {
-                return matchQuery -> matchQuery.orderBy(var, type);
-            }
+        if (ctx.ORDER() != null) {
+            return matchQuery -> matchQuery.orderBy(var, getOrder(ctx.ORDER()));
         } else {
-            if (ctx.ORDER() != null) {
-                return matchQuery -> matchQuery.orderBy(var, getOrder(ctx.ORDER()));
-            } else {
-                return matchQuery -> matchQuery.orderBy(var);
-            }
+            return matchQuery -> matchQuery.orderBy(var);
         }
     }
 

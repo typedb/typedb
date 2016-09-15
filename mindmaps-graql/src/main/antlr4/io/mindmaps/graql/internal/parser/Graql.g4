@@ -76,11 +76,11 @@ value          : STRING  # valueString
                ;
 
 modifiers      : (','? modifier)* ;
-modifier       : 'select' VARIABLE (',' VARIABLE)*                # modifierSelect
-               | 'limit' INTEGER                                  # modifierLimit
-               | 'offset' INTEGER                                 # modifierOffset
-               | 'distinct'                                       # modifierDistinct
-               | 'order' 'by' VARIABLE ('(' 'has' id ')')? ORDER? # modifierOrderBy
+modifier       : 'select' VARIABLE (',' VARIABLE)* # modifierSelect
+               | 'limit' INTEGER                   # modifierLimit
+               | 'offset' INTEGER                  # modifierOffset
+               | 'distinct'                        # modifierDistinct
+               | 'order' 'by' VARIABLE ORDER?      # modifierOrderBy
                ;
 
 // This rule is used for parsing streams of patterns separated by semicolons

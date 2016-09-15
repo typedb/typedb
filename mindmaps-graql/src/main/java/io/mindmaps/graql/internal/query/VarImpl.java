@@ -570,7 +570,7 @@ class VarImpl implements VarInternal {
 
                     String resourceRepr;
                     if (resource.isUserDefinedName()) {
-                        resourceRepr = " " + resource.getName();
+                        resourceRepr = " " + resource.getPrintableName();
                     } else if (resource.hasNoProperties()) {
                         resourceRepr = "";
                     } else {

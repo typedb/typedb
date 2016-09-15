@@ -120,25 +120,6 @@ public interface MatchQuery extends Query<List<Map<String, Concept>>>, Streamabl
     MatchQuery orderBy(String varName, boolean asc);
 
     /**
-     * Order the results by a resource in ascending order
-     * @param varName the variable name to order the results by
-     * @param resourceType the resource type attached to the variable to use for ordering
-     * @return a new MatchQuery with the given ordering
-     */
-    default MatchQuery orderBy(String varName, String resourceType) {
-        return orderBy(varName, resourceType, true);
-    }
-
-    /**
-     * Order the results by a resource
-     * @param varName the variable name to order the results by
-     * @param resourceType the resource type attached to the variable to use for ordering
-     * @param asc whether to use ascending order
-     * @return a new MatchQuery with the given ordering
-     */
-    MatchQuery orderBy(String varName, String resourceType, boolean asc);
-
-    /**
      * @param graph the graph to execute the query on
      * @return a new MatchQuery with the graph set
      */
