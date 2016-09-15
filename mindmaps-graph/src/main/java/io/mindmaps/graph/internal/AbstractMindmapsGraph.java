@@ -585,7 +585,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         try {
             getTinkerPopGraph().tx().rollback();
         } catch (UnsupportedOperationException e){
-            LOG.warn(ErrorMessage.TRANSACTIONS_NOT_SUPPORTED.getMessage(graph.getClass().getName()));
+            throw new UnsupportedOperationException(ErrorMessage.UNSUPPORTED_GRAPH.getMessage(getTinkerPopGraph().getClass().getName(), "rollback"));
         }
         getConceptLog().clearTransaction();
     }
