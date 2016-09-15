@@ -128,6 +128,13 @@ class GraqlSession {
     }
 
     /**
+     * Rollback the transaction, removing uncommitted changes
+     */
+    void rollback() {
+        queryExecutor.submit(graph::rollback);
+    }
+
+    /**
      * Find autocomplete results and send them to the client
      */
     void autocomplete(Json json) {

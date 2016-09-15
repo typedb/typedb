@@ -31,13 +31,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import static io.mindmaps.util.REST.RemoteShell.ACTION;
-import static io.mindmaps.util.REST.RemoteShell.ACTION_AUTOCOMPLETE;
-import static io.mindmaps.util.REST.RemoteShell.ACTION_COMMIT;
-import static io.mindmaps.util.REST.RemoteShell.ACTION_NAMESPACE;
-import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY;
-import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY_END;
-import static io.mindmaps.util.REST.RemoteShell.NAMESPACE;
+import static io.mindmaps.util.REST.RemoteShell.*;
 
 /**
  * Web socket for running a Graql shell
@@ -83,6 +77,9 @@ public class RemoteSession {
                     break;
                 case ACTION_COMMIT:
                     sessions.get(session).commit();
+                    break;
+                case ACTION_ROLLBACK:
+                    sessions.get(session).rollback();
                     break;
                 case ACTION_AUTOCOMPLETE:
                     sessions.get(session).autocomplete(json);

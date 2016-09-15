@@ -56,17 +56,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import static io.mindmaps.util.REST.RemoteShell.ACTION;
-import static io.mindmaps.util.REST.RemoteShell.ACTION_AUTOCOMPLETE;
-import static io.mindmaps.util.REST.RemoteShell.ACTION_COMMIT;
-import static io.mindmaps.util.REST.RemoteShell.ACTION_NAMESPACE;
-import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY;
-import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY_END;
-import static io.mindmaps.util.REST.RemoteShell.AUTOCOMPLETE_CURSOR;
-import static io.mindmaps.util.REST.RemoteShell.ERROR;
-import static io.mindmaps.util.REST.RemoteShell.NAMESPACE;
-import static io.mindmaps.util.REST.RemoteShell.QUERY;
-import static io.mindmaps.util.REST.RemoteShell.QUERY_LINES;
+import static io.mindmaps.util.REST.RemoteShell.*;
 import static io.mindmaps.util.REST.WebPath.REMOTE_SHELL_URI;
 
 /**
@@ -88,6 +78,7 @@ public class GraqlShell implements AutoCloseable {
 
     private static final String EDIT_COMMAND = "edit";
     private static final String COMMIT_COMMAND = "commit";
+    private static final String ROLLBACK_COMMAND = "rollback";
     private static final String LOAD_COMMAND = "load";
     private static final String CLEAR_COMMAND = "clear";
     private static final String EXIT_COMMAND = "exit";
@@ -249,6 +240,9 @@ public class GraqlShell implements AutoCloseable {
                 case COMMIT_COMMAND:
                     commit();
                     break;
+                case ROLLBACK_COMMAND:
+                    rollback();
+                    break;
                 case CLEAR_COMMAND:
                     console.clearScreen();
                     break;
@@ -350,6 +344,10 @@ public class GraqlShell implements AutoCloseable {
 
     private void commit() {
         sendJson(Json.object(ACTION, ACTION_COMMIT));
+    }
+
+    private void rollback() {
+        sendJson(Json.object(ACTION, ACTION_ROLLBACK));
     }
 
     /**
