@@ -73,7 +73,7 @@ public class PostprocessingTest {
         buildDuplicateCastingWithNewRelation(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance4);
         assertEquals(3, instance1.castings().size());
 
-        graph.fixDuplicateCasting(mainCasting.getId());
+        graph.fixDuplicateCasting(mainCasting.getBaseIdentifier());
         assertEquals(1, instance1.castings().size());
     }
 
@@ -127,7 +127,7 @@ public class PostprocessingTest {
         assertEquals(6, graph.getTinkerPopGraph().traversal().E().
                 hasLabel(Schema.EdgeLabel.SHORTCUT.getLabel()).toList().size());
 
-        graph.fixDuplicateCasting(mainCasting.getId());
+        graph.fixDuplicateCasting(mainCasting.getBaseIdentifier());
 
         assertEquals(2, instance1.relations().size());
         assertEquals(1, instance2.relations().size());

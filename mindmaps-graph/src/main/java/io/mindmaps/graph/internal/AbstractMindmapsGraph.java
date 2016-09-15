@@ -187,7 +187,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
 
     public Set<String> getModifiedCastingIds(){
         Set<String> relationIds = new HashSet<>();
-        getConceptLog().getModifiedCastings().forEach(c -> relationIds.add(c.getId()));
+        getConceptLog().getModifiedCastings().forEach(c -> relationIds.add(c.getBaseIdentifier().toString()));
         return relationIds;
     }
 
@@ -651,9 +651,9 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         for (Map.Entry<Schema.BaseType, Set<String>> entry : concepts.entrySet()) {
             Schema.BaseType type = entry.getKey();
 
-            for (String conceptId : entry.getValue()) {
+            for (String vertexId : entry.getValue()) {
                 JSONObject jsonObject = new JSONObject();
-                jsonObject.put("id", conceptId);
+                jsonObject.put("id", vertexId);
                 jsonObject.put("type", type.name());
                 jsonArray.put(jsonObject);
             }
@@ -678,9 +678,9 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
      * @param castingId The id of the casting to check for duplicates
      * @return true if some castings were merged
      */
-    public boolean fixDuplicateCasting(String castingId){
+    public boolean fixDuplicateCasting(Object castingId){
         //Get the Casting
-        ConceptImpl concept = (ConceptImpl) getConcept(castingId);
+        ConceptImpl concept = getConceptByBaseIdentifier(castingId);
         if(concept == null || !concept.isCasting())
             return false;
 

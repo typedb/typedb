@@ -99,7 +99,7 @@ public class MindmapsGraphLowLevelTest {
 
     @Test
     public void testGetConceptByBaseIdentifier() throws Exception {
-        assertNull(mindmapsGraph.getConceptByBaseIdentifier(1000));
+        assertNull(mindmapsGraph.getConceptByBaseIdentifier(1000L));
 
         ConceptImpl c1 = (ConceptImpl) mindmapsGraph.putEntityType("c1");
         ConceptImpl c2 = mindmapsGraph.getConceptByBaseIdentifier(c1.getBaseIdentifier());
@@ -129,7 +129,7 @@ public class MindmapsGraphLowLevelTest {
         RelationType relationType = mindmapsGraph.putRelationType("reltype");
         RoleTypeImpl role = (RoleTypeImpl) mindmapsGraph.putRoleType("Role");
         EntityType thing = mindmapsGraph.putEntityType("thing");
-        InstanceImpl rolePlayer = (InstanceImpl) mindmapsGraph.putEntity("rolePlayer", thing);
+        InstanceImpl rolePlayer = (InstanceImpl) mindmapsGraph.addEntity(thing);
         RelationImpl relation = (RelationImpl) mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType);
         CastingImpl casting = mindmapsGraph.putCasting(role, rolePlayer, relation);
 
@@ -153,7 +153,7 @@ public class MindmapsGraphLowLevelTest {
         RelationType relationType = mindmapsGraph.putRelationType("reltype");
         RoleTypeImpl role = (RoleTypeImpl) mindmapsGraph.putRoleType("Role");
         EntityType thing = mindmapsGraph.putEntityType("thing");
-        InstanceImpl rolePlayer = (InstanceImpl) mindmapsGraph.putEntity("rolePlayer", thing);
+        InstanceImpl rolePlayer = (InstanceImpl) mindmapsGraph.addEntity(thing);
         RelationImpl relation = (RelationImpl) mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType);
         CastingImpl casting1 = mindmapsGraph.putCasting(role, rolePlayer, relation);
         CastingImpl casting2 = mindmapsGraph.putCasting(role, rolePlayer, relation);
@@ -180,7 +180,7 @@ public class MindmapsGraphLowLevelTest {
         RelationType relationType = mindmapsGraph.putRelationType("RelationType");
         RoleTypeImpl role = (RoleTypeImpl) mindmapsGraph.putRoleType("role");
         EntityType thing = mindmapsGraph.putEntityType("thing");
-        InstanceImpl rolePlayer = (InstanceImpl) mindmapsGraph.putEntity("rolePlayer", thing);
+        InstanceImpl rolePlayer = (InstanceImpl) mindmapsGraph.addEntity(thing);
         RelationImpl relation = (RelationImpl) mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType);
 
         //First Casting
@@ -204,8 +204,8 @@ public class MindmapsGraphLowLevelTest {
         RoleTypeImpl role1 = (RoleTypeImpl) mindmapsGraph.putRoleType("Role1");
         RoleTypeImpl role2 = (RoleTypeImpl) mindmapsGraph.putRoleType("Role2");
 
-        InstanceImpl<?, ?> rolePlayer1 = (InstanceImpl) mindmapsGraph.putEntity("rolePlayer1", type);
-        InstanceImpl<?, ?> rolePlayer2 = (InstanceImpl) mindmapsGraph.putEntity("rolePlayer2", type);
+        InstanceImpl<?, ?> rolePlayer1 = (InstanceImpl) mindmapsGraph.addEntity(type);
+        InstanceImpl<?, ?> rolePlayer2 = (InstanceImpl) mindmapsGraph.addEntity(type);
 
         RelationImpl assertion = (RelationImpl) mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType).
                 putRolePlayer(role1, rolePlayer1).putRolePlayer(role2, null);
@@ -245,8 +245,8 @@ public class MindmapsGraphLowLevelTest {
     public void testGetConceptInstance(){
         assertNull(mindmapsGraph.getEntity("Bob"));
         EntityType type = mindmapsGraph.putEntityType("Parent");
-        Instance c2 = mindmapsGraph.putEntity("Bob", type);
-        assertEquals(c2, mindmapsGraph.getEntity("Bob"));
+        Instance c2 = mindmapsGraph.addEntity(type);
+        assertEquals(c2, mindmapsGraph.getEntity(c2.getId()));
     }
 
     @Test
@@ -382,11 +382,11 @@ public class MindmapsGraphLowLevelTest {
         RelationType b = mindmapsGraph.putRelationType("b");
         ResourceType<String> c = mindmapsGraph.putResourceType("c", ResourceType.DataType.STRING);
 
-        Entity instanceA = mindmapsGraph.putEntity("instanceA", a);
+        Entity instanceA = mindmapsGraph.addEntity(a);
         Relation instanceB = mindmapsGraph.putRelation(UUID.randomUUID().toString(), b);
         mindmapsGraph.putResource("1", c);
 
-        assertEquals(instanceA, mindmapsGraph.getInstance("instanceA"));
+        assertEquals(instanceA, mindmapsGraph.getInstance(instanceA.getId()));
     }
 
     @Test
@@ -401,11 +401,11 @@ public class MindmapsGraphLowLevelTest {
         RelationType relationType1 = mindmapsGraph.putRelationType("relation type 1").hasRole(roleType1).hasRole(roleType2);
         RelationType relationType2 = mindmapsGraph.putRelationType("relation type 2").hasRole(roleType3).hasRole(roleType4);
 
-        Entity entity1 = mindmapsGraph.putEntity("1", entityType);
-        Entity entity2 = mindmapsGraph.putEntity("2", entityType);
-        Entity entity3 = mindmapsGraph.putEntity("3", entityType);
-        Entity entity4 = mindmapsGraph.putEntity("4", entityType);
-        Entity entity5 = mindmapsGraph.putEntity("5", entityType);
+        Entity entity1 = mindmapsGraph.addEntity(entityType);
+        Entity entity2 = mindmapsGraph.addEntity(entityType);
+        Entity entity3 = mindmapsGraph.addEntity(entityType);
+        Entity entity4 = mindmapsGraph.addEntity(entityType);
+        Entity entity5 = mindmapsGraph.addEntity(entityType);
 
         mindmapsGraph.addRelation(relationType1).putRolePlayer(roleType1, entity1).putRolePlayer(roleType2, entity2);
         mindmapsGraph.addRelation(relationType1).putRolePlayer(roleType1, entity1).putRolePlayer(roleType2, entity3);
@@ -430,8 +430,6 @@ public class MindmapsGraphLowLevelTest {
         Type metaResourceType = mindmapsGraph.getMetaResourceType();
         Type metaRoleType = mindmapsGraph.getMetaRoleType();
         Type metaRuleType = mindmapsGraph.getMetaRuleType();
-        Type metaRuleConstraint = mindmapsGraph.getMetaRuleConstraint();
-        Type metaRuleInference = mindmapsGraph.getMetaRuleInference();
 
         EntityType sampleEntityType = mindmapsGraph.putEntityType("Sample Entity Type");
         RelationType sampleRelationType = mindmapsGraph.putRelationType("Sample Relation Type");
