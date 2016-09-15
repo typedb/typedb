@@ -96,7 +96,7 @@ public class MindmapsGraphTrackingTest {
         // add primitive edges in as many ways as possible
         c1.superType(c2);
 
-        c3 = mindmapsGraph.putEntity("instance", c2);
+        c3 = mindmapsGraph.addEntity(c2);
         newConcepts.push(c3);
 
         // verify the concepts that we expected are returned in the set
@@ -110,7 +110,7 @@ public class MindmapsGraphTrackingTest {
         EntityType entityType = mindmapsGraph.putEntityType("entityType");
         // add concepts to rootGraph
         newConcepts.push(
-                mindmapsGraph.putEntity("test id", entityType));
+                mindmapsGraph.addEntity(entityType));
         Type type = mindmapsGraph.putEntityType("test subject id");
 
         // delete some concepts
@@ -125,7 +125,7 @@ public class MindmapsGraphTrackingTest {
     public void testDeleteConceptFromPrimitiveEdgeWithinTransaction() throws ConceptException {
         // add concepts and edge to rootGraph
         EntityType type = mindmapsGraph.putEntityType("a type");
-        Instance instance = mindmapsGraph.putEntity("instance", type);
+        Instance instance = mindmapsGraph.addEntity(type);
 
         // delete a concept
         newConcepts.push(type);

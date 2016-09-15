@@ -109,7 +109,11 @@ public class MovieGraphFactoryTest {
     @Test
     public void testGodfatherHasResource() {
         ResourceType tmdbVoteCount = mindmapsGraph.getResourceType("tmdb-vote-count");
-        Entity godfather = mindmapsGraph.getEntity("Godfather");
+
+        Resource<String> resource = mindmapsGraph.getResourcesByValue("Godfather").iterator().next();
+        assertEquals(1, resource.ownerInstances().size());
+
+        Entity godfather = resource.ownerInstances().iterator().next().asEntity();
         Stream<Resource<?>> resources = godfather.resources().stream();
         assertTrue(resources.anyMatch(r -> r.type().equals(tmdbVoteCount) && r.getValue().equals(1000L)));
     }

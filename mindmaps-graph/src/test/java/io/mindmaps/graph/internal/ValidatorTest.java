@@ -38,8 +38,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -85,12 +83,12 @@ public class ValidatorTest {
         RoleType actor = mindmapsGraph.putRoleType("Actor");
         EntityType movie = mindmapsGraph.putEntityType("Movie");
         EntityType person = mindmapsGraph.putEntityType("Person");
-        Instance pacino = mindmapsGraph.putEntity("Pacino", person);
-        Instance godfather = mindmapsGraph.putEntity("Godfather", movie);
+        Instance pacino = mindmapsGraph.addEntity(person);
+        Instance godfather = mindmapsGraph.addEntity(movie);
         EntityType genre = mindmapsGraph.putEntityType("Genre");
         RoleType movieOfGenre = mindmapsGraph.putRoleType("Movie of Genre");
         RoleType movieGenre = mindmapsGraph.putRoleType("Movie Genre");
-        Instance crime = mindmapsGraph.putEntity("Crime", genre);
+        Instance crime = mindmapsGraph.addEntity(genre);
         RelationType movieHasGenre = mindmapsGraph.putRelationType("Movie Has Genre");
 
         //Construction
@@ -127,8 +125,8 @@ public class ValidatorTest {
         RelationType relationType = mindmapsGraph.putRelationType("kicks");
         RoleType kicker = mindmapsGraph.putRoleType("kicker");
         RoleType kickee = mindmapsGraph.putRoleType("kickee");
-        Instance kyle = mindmapsGraph.putEntity("kyle", fakeType);
-        Instance icke = mindmapsGraph.putEntity("icke", fakeType);
+        Instance kyle = mindmapsGraph.addEntity(fakeType);
+        Instance icke = mindmapsGraph.addEntity(fakeType);
 
         RelationImpl assertion = (RelationImpl) mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType).
                 putRolePlayer(kicker, kyle).putRolePlayer(kickee, icke);
@@ -177,8 +175,8 @@ public class ValidatorTest {
         RelationType relationType = mindmapsGraph.putRelationType("kicks");
         RoleType kicker = mindmapsGraph.putRoleType("kicker");
         RoleType kickee = mindmapsGraph.putRoleType("kickee");
-        InstanceImpl kyle = (InstanceImpl) mindmapsGraph.putEntity("kyle", fakeType);
-        InstanceImpl icke = (InstanceImpl) mindmapsGraph.putEntity("icke", fakeType);
+        InstanceImpl kyle = (InstanceImpl) mindmapsGraph.addEntity(fakeType);
+        InstanceImpl icke = (InstanceImpl) mindmapsGraph.addEntity(fakeType);
 
         Relation relation = mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType).
                 putRolePlayer(kicker, kyle).putRolePlayer(kickee, icke);
@@ -196,8 +194,8 @@ public class ValidatorTest {
         RelationType relationType = mindmapsGraph.putRelationType("kicks");
         RoleType kicker = mindmapsGraph.putRoleType("kicker");
         RoleType kickee = mindmapsGraph.putRoleType("kickee");
-        Instance kyle = mindmapsGraph.putEntity("kyle", fakeType);
-        Instance icke = mindmapsGraph.putEntity("icke", fakeType);
+        Instance kyle = mindmapsGraph.addEntity(fakeType);
+        Instance icke = mindmapsGraph.addEntity(fakeType);
 
         RelationImpl assertion = (RelationImpl) mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType).
                 putRolePlayer(kicker, kyle).putRolePlayer(kickee, icke);
@@ -213,7 +211,7 @@ public class ValidatorTest {
         EntityType x2 = mindmapsGraph.putEntityType("x2");
         EntityType x3 = mindmapsGraph.putEntityType("x3");
         EntityType x4 = mindmapsGraph.putEntityType("x4");
-        Instance x5 = mindmapsGraph.putEntity("x5", x1);
+        Instance x5 = mindmapsGraph.addEntity(x1);
 
         x1.setAbstract(true);
         x4.setAbstract(true);
@@ -245,12 +243,13 @@ public class ValidatorTest {
         movie.playsRole(feature);
 
         // add a single movie
-        Instance godfather = mindmapsGraph.putEntity("godfather", movie);
-
+        Instance godfather = mindmapsGraph.addEntity(movie);
+        String godFatherId = godfather.getId();
+        
         // add many random actors
         int n = 100;
         for (int i=0; i < n; i++) {
-            Instance newPerson = mindmapsGraph.putEntity(String.valueOf(i), person);
+            Instance newPerson = mindmapsGraph.addEntity(person);
             mindmapsGraph.putRelation(UUID.randomUUID().toString(), cast).
                     putRolePlayer(actor, newPerson).putRolePlayer(feature, godfather);
         }
@@ -258,7 +257,7 @@ public class ValidatorTest {
         mindmapsGraph.commit();
 
         // now try to delete all assertions and then the movie
-        godfather = mindmapsGraph.getEntity("godfather");
+        godfather = mindmapsGraph.getEntity(godFatherId);
         Collection<Relation> assertions = godfather.relations();
         Set<String> assertionIds = new HashSet<>();
         Set<String> castingIds = new HashSet<>();
@@ -279,31 +278,10 @@ public class ValidatorTest {
     }
 
     @Test
-    public void testChangeTypeOfEntity() throws MindmapsValidationException {
-        RoleType role1 = mindmapsGraph.putRoleType("role1");
-        RoleType role2 = mindmapsGraph.putRoleType("role2");
-        RelationType rel = mindmapsGraph.putRelationType("rel").hasRole(role1).hasRole(role2);
-        EntityType ent = mindmapsGraph.putEntityType("ent").playsRole(role1).playsRole(role2);
-        EntityType ent_t = mindmapsGraph.putEntityType("ent_t");
-        Entity ent1 = mindmapsGraph.putEntity("ent1", ent);
-        Entity ent2 = mindmapsGraph.putEntity("ent2", ent);
-        mindmapsGraph.addRelation(rel).putRolePlayer(role1, ent1).putRolePlayer(role2, ent2);
-        mindmapsGraph.commit();
-
-        expectedException.expect(MindmapsValidationException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.VALIDATION.getMessage(1))
-        ));
-
-        mindmapsGraph.putEntity("ent1", ent_t);
-        mindmapsGraph.commit();
-    }
-
-    @Test
     public void testRoleTypeCanPlayRoleIfAbstract() throws MindmapsValidationException {
         RoleType role1 = mindmapsGraph.putRoleType("role1").setAbstract(true);
         RoleType role2 = mindmapsGraph.putRoleType("role2").setAbstract(true);
-        EntityType entityType = mindmapsGraph.putEntityType("my type").playsRole(role1).playsRole(role2);
+        mindmapsGraph.putEntityType("my type").playsRole(role1).playsRole(role2);
         mindmapsGraph.commit();
     }
 
@@ -316,8 +294,8 @@ public class ValidatorTest {
         EntityType person = mindmapsGraph.putEntityType("person").playsRole(characterBeingPlayed).playsRole(personPlayingCharacter);
         EntityType character = mindmapsGraph.putEntityType("character").playsRole(characterBeingPlayed);
 
-        Entity matt = mindmapsGraph.putEntity("Matt", person);
-        Entity walker = mindmapsGraph.putEntity("Walker", character);
+        Entity matt = mindmapsGraph.addEntity(person);
+        Entity walker = mindmapsGraph.addEntity(character);
 
         mindmapsGraph.addRelation(playsChar).
                 putRolePlayer(personPlayingCharacter, matt).
