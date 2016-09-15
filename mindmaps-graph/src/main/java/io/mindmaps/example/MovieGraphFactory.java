@@ -132,6 +132,7 @@ public class MovieGraphFactory {
                 .playsRole(director).playsRole(actor).playsRole(characterBeingPlayed);
 
         hasResource(person, gender);
+        hasResource(person, name);
         hasResource(person, realName);
 
         genre = mindmapsGraph.putEntityType("genre").playsRole(genreOfProduction);
@@ -187,15 +188,25 @@ public class MovieGraphFactory {
         putResource(chineseCoffee, releaseDate, DATE_FORMAT.parse("Sat Sep 02 00:00:00 GMT 2000").getTime());
 
         marlonBrando = putEntity(person, "Marlon Brando");
+        putResource(marlonBrando, name, "Marlon Brando");
         alPacino = putEntity(person, "Al Pacino");
+        putResource(alPacino, name, "Al Pacino");
         missPiggy = putEntity(person, "Miss Piggy");
+        putResource(missPiggy, name, "Miss Piggy");
         kermitTheFrog = putEntity(person, "Kermit The Frog");
+        putResource(kermitTheFrog, name, "Kermit The Frog");
         martinSheen = putEntity(person, "Martin Sheen");
+        putResource(martinSheen, name, "Martin Sheen");
         robertDeNiro = putEntity(person, "Robert de Niro");
+        putResource(robertDeNiro, name, "Robert de Niro");
         judeLaw = putEntity(person, "Jude Law");
+        putResource(judeLaw, name, "Jude Law");
         mirandaHeart = putEntity(person, "Miranda Heart");
+        putResource(mirandaHeart, name, "Miranda Heart");
         betteMidler = putEntity(person, "Bette Midler");
+        putResource(betteMidler, name, "Bette Midler");
         sarahJessicaParker = putEntity(person, "Sarah Jessica Parker");
+        putResource(sarahJessicaParker, name, "Sarah Jessica Parker");
 
         crime = putEntity(genre, "crime");
         putResource(crime, name, "crime");

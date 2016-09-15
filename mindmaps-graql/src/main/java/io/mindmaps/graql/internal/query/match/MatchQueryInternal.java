@@ -170,11 +170,6 @@ interface MatchQueryInternal extends MatchQueryAdmin {
 
     @Override
     default MatchQuery orderBy(String varName, boolean asc) {
-        return new MatchQueryOrder(this, new MatchOrderImpl(varName, Optional.empty(), asc));
-    }
-
-    @Override
-    default MatchQuery orderBy(String varName, String resourceType, boolean asc) {
-        return new MatchQueryOrder(this, new MatchOrderImpl(varName, Optional.of(resourceType), asc));
+        return new MatchQueryOrder(this, new MatchOrderImpl(varName, asc));
     }
 }

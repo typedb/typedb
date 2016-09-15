@@ -56,8 +56,9 @@ public class QueryToStringTest {
                 or(
                         var("y").isa("person"),
                         var("y").isa("genre").value(neq("crime"))
-                )
-        ).select("x", "y").orderBy("y").limit(8).offset(4);
+                ),
+                var("y").has("name", var("n"))
+        ).select("x", "y").orderBy("n").limit(8).offset(4);
         assertValidToString(query);
     }
 
