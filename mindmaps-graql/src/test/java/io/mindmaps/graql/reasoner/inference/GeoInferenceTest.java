@@ -55,9 +55,9 @@ public class GeoInferenceTest {
         String explicitQuery = "match " +
                 "$x isa city;{$x id 'Warsaw'} or {$x id 'Wroclaw'};" +
                 "$y isa country;$y id 'Poland'; select $x";
-
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
+        
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
+        //assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery)());
     }
 
     @Test
@@ -70,8 +70,8 @@ public class GeoInferenceTest {
                 "$x isa university;{$x id 'University-of-Warsaw'} or {$x id 'Warsaw-Polytechnics'};" +
                 "$y isa country;$y id 'Poland'; select $x";
 
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
+        //assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery)());
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {

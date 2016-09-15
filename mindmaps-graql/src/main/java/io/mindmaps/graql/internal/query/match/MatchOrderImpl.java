@@ -19,8 +19,6 @@
 package io.mindmaps.graql.internal.query.match;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.Schema;
-import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -28,19 +26,15 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.Optional;
 
-import static io.mindmaps.util.Schema.ConceptProperty.ITEM_IDENTIFIER;
-import static io.mindmaps.util.Schema.EdgeLabel.SHORTCUT;
-import static io.mindmaps.util.Schema.EdgeProperty.TO_TYPE;
+import static io.mindmaps.util.Schema.ConceptProperty.*;
 
 class MatchOrderImpl implements MatchOrder {
 
     private final String var;
-    private final Optional<String> resourceType;
     private final boolean asc;
 
-    MatchOrderImpl(String var, Optional<String> resourceType, boolean asc) {
+    MatchOrderImpl(String var, boolean asc) {
         this.var = var;
-        this.resourceType = resourceType;
         this.asc = asc;
     }
 
@@ -51,41 +45,27 @@ class MatchOrderImpl implements MatchOrder {
 
     @Override
     public void orderTraversal(MindmapsGraph graph, GraphTraversal<Vertex, Map<String, Vertex>> traversal) {
-        if (resourceType.isPresent()) {
-            // Order by resource type
+        Comparator<Optional<Comparable>> comparator = new ResourceComparator();
+        if (!asc) comparator = comparator.reversed();
 
-            // Look up datatype of resource type
-            String typeId = resourceType.get();
-            Schema.ConceptProperty valueProp = graph.getResourceType(typeId).getDataType().getConceptProperty();
-
-            Comparator<Optional<Comparable>> comparator = new ResourceComparator();
-            if (!asc) comparator = comparator.reversed();
-
-            traversal.select(var).order().by(v -> getResourceValue(graph, v, typeId, valueProp), comparator);
-        } else {
-            // Order by ITEM_IDENTIFIER by default
-            Order order = asc ? Order.incr : Order.decr;
-            traversal.select(var).order().by(ITEM_IDENTIFIER.name(), order);
-        }
+        // Order by VALUE properties by default
+        traversal.select(var).order().by(v -> getValue(graph, v), comparator);
     }
 
     /**
-     * Get the value of an attached resource, used for ordering by resource
+     * Get the value of a resource
      * @param elem the element in the graph (a gremlin object)
-     * @param resourceTypeId the ID of a resource type
-     * @param value the VALUE property to use on the vertex
-     * @return the value of an attached resource, or nothing if there is no resource of this type
+     * @return the value of the concept, or nothing if there is no value
      */
-    private Optional<Comparable> getResourceValue(MindmapsGraph graph, Object elem, String resourceTypeId, Schema.ConceptProperty value) {
+    private Optional<Comparable> getValue(MindmapsGraph graph, Object elem) {
         return graph.getTinkerTraversal().V(elem)
-                .outE(SHORTCUT.getLabel()).has(TO_TYPE.name(), resourceTypeId).inV().values(value.name())
+                .values(VALUE_BOOLEAN.name(), VALUE_LONG.name(), VALUE_DOUBLE.name(), VALUE_STRING.name())
                 .tryNext().map(o -> (Comparable) o);
     }
 
     @Override
     public String toString() {
-        String resourceString = resourceType.map(r -> "(has " + r + ")").orElse("");
-        return "order by $" + var + resourceString + " ";
+        return "order by $" + var + " ";
     }
 
     /**

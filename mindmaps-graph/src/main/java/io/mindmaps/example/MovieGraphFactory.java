@@ -132,6 +132,7 @@ public class MovieGraphFactory {
                 .playsRole(director).playsRole(actor).playsRole(characterBeingPlayed);
 
         hasResource(person, gender);
+        hasResource(person, name);
         hasResource(person, realName);
 
         genre = mindmapsGraph.putEntityType("genre").playsRole(genreOfProduction);

@@ -76,6 +76,14 @@ public class Substitution extends AtomBase{
     }
 
     @Override
+    public int hashCode() {
+        int hashCode = 1;
+        hashCode = hashCode * 37 + this.val.hashCode();
+        hashCode = hashCode * 37 + this.varName.hashCode();
+        return hashCode;
+    }
+
+    @Override
     public boolean isEquivalent(Object obj){
         if (!(obj instanceof Substitution)) return false;
         Substitution a2 = (Substitution) obj;
@@ -83,10 +91,9 @@ public class Substitution extends AtomBase{
     }
 
     @Override
-    public int hashCode() {
+    public int equivalenceHashCode() {
         int hashCode = 1;
         hashCode = hashCode * 37 + this.val.hashCode();
-        hashCode = hashCode * 37 + this.varName.hashCode();
         return hashCode;
     }
 

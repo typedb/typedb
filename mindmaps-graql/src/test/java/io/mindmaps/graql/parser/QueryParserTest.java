@@ -184,8 +184,8 @@ public class QueryParserTest {
 
     @Test
     public void testOrderQuery() {
-        MatchQuery expected = qb.match(var("x").isa("movie")).orderBy("x", "release-date", false);
-        MatchQuery parsed = qb.parseMatch("match $x isa movie order by $x(has release-date) desc");
+        MatchQuery expected = qb.match(var("x").isa("movie").has("release-date", var("r"))).orderBy("r", false);
+        MatchQuery parsed = qb.parseMatch("match $x isa movie, has release-date $r order by $r desc");
         assertOrderedQueriesEqual(expected, parsed);
     }
 
