@@ -54,9 +54,7 @@ public class HALConcept {
 
         ConfigProperties prop = ConfigProperties.getInstance();
         int separationDegree = prop.getPropertyAsInt(ConfigProperties.HAL_DEGREE_PROPERTY);
-        resourceLinkPrefix = "http://" + prop.getProperty(ConfigProperties.SERVER_HOST_NAME) + ":"
-                + prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER)
-                + REST.WebPath.CONCEPT_BY_ID_URI;
+        resourceLinkPrefix = REST.WebPath.CONCEPT_BY_ID_URI;
 
         factory = new StandardRepresentationFactory();
         halResource = factory.newRepresentation(resourceLinkPrefix + concept.getId());
