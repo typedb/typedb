@@ -35,12 +35,13 @@ public class Statistics {
     public void cleanGraph() {
         graph.clear();
         graph.close();
+        System.out.println("After Done!!!");
     }
 
     @AfterClass
     public static void stop() {
         Spark.stop();
-        System.out.println("Done!!!");
+        System.out.println("AfterClass Done!!!");
     }
 
     @Test
