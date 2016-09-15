@@ -30,10 +30,7 @@ import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.util.REST;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 import static com.jayway.restassured.RestAssured.delete;
 import static com.jayway.restassured.RestAssured.given;
@@ -120,6 +117,7 @@ public class CommitLogControllerTest {
         graph.commit();
     }
 
+    @Ignore
     @Test
     public void testDeleteController() {
         assertEquals(4, cache.getCastingJobs().values().iterator().next().size());
