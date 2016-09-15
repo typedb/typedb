@@ -18,8 +18,13 @@
 package io.mindmaps.engine;
 
 
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.core.util.StatusPrinter;
 import io.mindmaps.engine.controller.*;
 import io.mindmaps.engine.util.ConfigProperties;
+import org.apache.commons.logging.Log;
+import org.slf4j.LoggerFactory;
+import spark.Spark;
 
 import static spark.Spark.*;
 
@@ -54,5 +59,20 @@ public class MindmapsEngineServer {
         // This method will block until all the controllers are ready to serve requests
         awaitInitialization();
 
+        printStartMessage(prop.getProperty(ConfigProperties.SERVER_HOST_NAME),prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER));
+    }
+
+
+    private static void printStartMessage(String host, String port){
+
+        System.out.print(
+                "  __  __ _           _                           ____  ____  \n" +
+                " |  \\/  (_)_ __   __| |_ __ ___   __ _ _ __  ___|  _ \\| __ ) \n" +
+                " | |\\/| | | '_ \\ / _` | '_ ` _ \\ / _` | '_ \\/ __| | | |  _ \\ \n" +
+                " | |  | | | | | | (_| | | | | | | (_| | |_) \\__ \\ |_| | |_) |\n" +
+                " |_|  |_|_|_| |_|\\__,_|_| |_| |_|\\__,_| .__/|___/____/|____/ \n" +
+                "                                      |_|                    \n\n");
+
+        System.out.println("Mindmaps Engine is ready. Listening on [http://" + host + ":" + port +"]");
     }
 }
