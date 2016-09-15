@@ -21,6 +21,8 @@ package io.mindmaps.graql.query;
 import com.google.common.collect.Lists;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.Resource;
+import io.mindmaps.concept.ResourceType;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.MatchQuery;
@@ -73,7 +75,7 @@ public class MatchQueryModifierTest {
                 var("x").isa("movie").has("tmdb-vote-count", var("v")),
                 var().rel("x").rel("y"),
                 or(
-                        var("y").isa("person").id("Marlon-Brando"),
+                        var("y").isa("person").has("name", "Marlon-Brando"),
                         var("y").isa("genre").has("name", "crime")
                 )
         ).orderBy("v", false);
@@ -88,12 +90,12 @@ public class MatchQueryModifierTest {
                 var().rel("x").rel("y"),
                 or(
                         var("y").isa("person"),
-                        var("y").isa("genre").value(neq("crime"))
+                        var("y").isa("genre").has("name", neq("crime"))
                 ),
                 var("y").has("name", var("n"))
         ).orderBy("n").offset(4).limit(8).select("x");
 
-        QueryUtil.assertResultsMatch(
+        QueryUtil.assertResultsMatchName(
                 query, "x", "movie", "Hocus-Pocus", "Spy", "The-Muppets", "Godfather", "Apocalypse-Now"
         );
     }
@@ -105,7 +107,7 @@ public class MatchQueryModifierTest {
         assertResultsOrderedByValue(query, "n", false);
 
         // Make sure all results are included
-        QueryUtil.assertResultsMatch(query, "the-movie", "movie", QueryUtil.movies);
+        QueryUtil.assertResultsMatchName(query, "the-movie", "movie", QueryUtil.movies);
     }
 
     @Test
@@ -123,7 +125,7 @@ public class MatchQueryModifierTest {
                 var().rel("x").rel("y"),
                 or(
                         var("y").isa("genre").has("name", "crime"),
-                        var("y").isa("person").id("Marlon-Brando")
+                        var("y").isa("person").has("name", "Marlon-Brando")
                 )
         ).select("x").orderBy("t", false).distinct();
 
@@ -139,7 +141,7 @@ public class MatchQueryModifierTest {
         ).select("x");
         List<Map<String, Concept>> nondistinctResults = Lists.newArrayList(query);
 
-        QueryUtil.assertResultsMatch(query, "x", "person", "Kermit-The-Frog", "Miss-Piggy");
+        QueryUtil.assertResultsMatchName(query, "x", "person", "Kermit-The-Frog", "Miss-Piggy");
         assertEquals(4, nondistinctResults.size());
     }
 
@@ -152,23 +154,27 @@ public class MatchQueryModifierTest {
         ).distinct().select("x");
         List<Map<String, Concept>> distinctResults = Lists.newArrayList(query);
 
-        QueryUtil.assertResultsMatch(query, "x", "person", "Kermit-The-Frog", "Miss-Piggy");
+        QueryUtil.assertResultsMatchName(query, "x", "person", "Kermit-The-Frog", "Miss-Piggy");
         assertEquals(2, distinctResults.size());
     }
 
-    private void assertOrderedResultsMatch(MatchQuery query, String var, String expectedType, String... expectedIds) {
-        Queue<String> expectedQueue = new LinkedList<>(Arrays.asList(expectedIds));
+    private void assertOrderedResultsMatch(MatchQuery query, String var, String expectedType, String... expectedNames) {
+        Queue<String> expectedQueue = new LinkedList<>(Arrays.asList(expectedNames));
 
         query.forEach(results -> {
             Concept result = results.get(var);
             assertNotNull(result);
 
-            String expectedId = expectedQueue.poll();
-            if (expectedId != null) assertEquals(expectedId, result.getId());
+            String expectedName = expectedQueue.poll();
+            ResourceType<String> name = mindmapsGraph.getResourceType("name");
+            Collection<Resource<?>> resources = result.asEntity().resources();
+            Object actualName = resources.stream().filter(r -> r.type().equals(name)).findAny().get().getValue();
+
+            if (expectedName != null) assertEquals(expectedName, actualName);
             if (expectedType != null) assertEquals(expectedType, result.type().getId());
         });
 
-        assertTrue("expected ids not found: " + expectedQueue, expectedQueue.isEmpty());
+        assertTrue("expected names not found: " + expectedQueue, expectedQueue.isEmpty());
     }
 
     private void assertResultsOrderedByValue(MatchQuery query, String var, boolean asc) {

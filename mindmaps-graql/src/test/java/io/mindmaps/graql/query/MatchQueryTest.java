@@ -21,6 +21,7 @@ package io.mindmaps.graql.query;
 import com.google.common.collect.Lists;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
@@ -67,19 +68,19 @@ public class MatchQueryTest {
     public void testMovieQuery() {
         MatchQuery query = qb.match(var("x").isa("movie"));
 
-        QueryUtil.assertResultsMatch(query, "x", "movie", QueryUtil.movies);
+        QueryUtil.assertResultsMatchName(query, "x", "movie", QueryUtil.movies);
     }
 
     @Test
     public void testProductionQuery() {
         MatchQuery query = qb.match(var("x").isa("production"));
 
-        QueryUtil.assertResultsMatch(query, "x", "movie", QueryUtil.movies);
+        QueryUtil.assertResultsMatchName(query, "x", "movie", QueryUtil.movies);
     }
 
     @Test
     public void testValueQuery() {
-        MatchQuery query = qb.match(var("tgf").value("Godfather"));
+        MatchQuery query = qb.match(var("tgf").value("Godfather").isa("title"));
         List<Map<String, Concept>> results = Lists.newArrayList(query);
 
         assertEquals(1, results.size());
@@ -95,7 +96,7 @@ public class MatchQueryTest {
     public void testRoleOnlyQuery() {
         MatchQuery query = qb.match(var().rel("actor", "x"));
 
-        QueryUtil.assertResultsMatch(
+        QueryUtil.assertResultsMatchName(
                 query, "x", "person",
                 "Marlon-Brando", "Al-Pacino", "Miss-Piggy", "Kermit-The-Frog", "Martin-Sheen", "Robert-de-Niro",
                 "Jude-Law", "Miranda-Heart", "Bette-Midler", "Sarah-Jessica-Parker"
@@ -109,7 +110,7 @@ public class MatchQueryTest {
                         .has("title", any(lt("Juno").and(gt("Godfather")), eq("Apocalypse Now"), eq("Spy")).and(neq("Apocalypse Now")))
         );
 
-        QueryUtil.assertResultsMatch(query, "x", "movie", "Hocus-Pocus", "Heat", "Spy");
+        QueryUtil.assertResultsMatchName(query, "x", "movie", "Hocus-Pocus", "Heat", "Spy");
     }
 
     @Test
@@ -118,7 +119,7 @@ public class MatchQueryTest {
                 var("x").isa("movie").has("title", all(lte("Juno"), gte("Godfather"), neq("Heat")).or(eq("The Muppets")))
         );
 
-        QueryUtil.assertResultsMatch(query, "x", "movie", "Hocus-Pocus", "Godfather", "The-Muppets");
+        QueryUtil.assertResultsMatchName(query, "x", "movie", "Hocus-Pocus", "Godfather", "The-Muppets");
     }
 
     @Test
@@ -127,7 +128,7 @@ public class MatchQueryTest {
                 var("x").isa("genre").has("name", regex("^f.*y$"))
         );
 
-        QueryUtil.assertResultsMatch(query, "x", "genre", "family", "fantasy");
+        QueryUtil.assertResultsMatchName(query, "x", "genre", "family", "fantasy");
     }
 
     @Test
@@ -136,7 +137,7 @@ public class MatchQueryTest {
                 var("x").isa("character").has("name", contains("ar"))
         );
 
-        QueryUtil.assertResultsMatch(query, "x", "character", "Sarah", "Benjamin-L-Willard", "Harry");
+        QueryUtil.assertResultsMatchName(query, "x", "character", "Sarah", "Benjamin L. Willard", "Harry");
     }
 
     @Test
@@ -145,7 +146,7 @@ public class MatchQueryTest {
                 var("type").playsRole("character-being-played")
         );
 
-        QueryUtil.assertResultsMatch(query, "type", ENTITY_TYPE.getId(), "character", "person");
+        QueryUtil.assertResultsMatchId(query, "type", ENTITY_TYPE.getId(), "character", "person");
     }
 
     @Test
@@ -153,7 +154,7 @@ public class MatchQueryTest {
         MatchQuery query = qb.match(
                 var("x").isa("movie"),
                 var("y").isa("person"),
-                var("z").isa("character").id("Don-Vito-Corleone"),
+                var("z").isa("character").has("name", "Don Vito Corleone"),
                 var().rel("x").rel("y").rel("z")
         ).select("x", "y");
         List<Map<String, Concept>> results = Lists.newArrayList(query);
@@ -161,15 +162,22 @@ public class MatchQueryTest {
         assertEquals(1, results.size());
 
         Map<String, Concept> result = results.get(0);
-        assertEquals("Godfather", result.get("x").getId());
-        assertEquals("Marlon-Brando", result.get("y").getId());
+
+        Resource<?> xName = result.get("x").asEntity().resources().stream()
+                .filter(r -> r.type().getId().equals("name")).findAny().get();
+
+        Resource<?> yName = result.get("y").asEntity().resources().stream()
+                .filter(r -> r.type().getId().equals("name")).findAny().get();
+
+        assertEquals("Godfather", xName.getValue());
+        assertEquals("Marlon-Brando", yName.getValue());
     }
 
     @Test
     public void testIdQuery() {
         MatchQuery query = qb.match(or(var("x").id("character"), var("x").id("person")));
 
-        QueryUtil.assertResultsMatch(query, "x", ENTITY_TYPE.getId(), "character", "person");
+        QueryUtil.assertResultsMatchId(query, "x", ENTITY_TYPE.getId(), "character", "person");
     }
 
     @Test
@@ -179,20 +187,20 @@ public class MatchQueryTest {
                 var().rel("x").rel("y"),
                 var("y").isa("movie"),
                 var().rel("y").rel("z"),
-                var("z").isa("person").id("Marlon-Brando")
+                var("z").isa("person").has("name", "Marlon-Brando")
         ).select("x");
 
-        QueryUtil.assertResultsMatch(query, "x", "person", "Marlon-Brando", "Al-Pacino", "Martin-Sheen");
+        QueryUtil.assertResultsMatchName(query, "x", "person", "Marlon-Brando", "Al-Pacino", "Martin-Sheen");
     }
 
     @Test
     public void testRoleQuery() {
         MatchQuery query = qb.match(
                 var().rel("actor", "x").rel("y"),
-                var("y").id("Apocalypse-Now")
+                var("y").has("name", "Apocalypse-Now")
         ).select("x");
 
-        QueryUtil.assertResultsMatch(query, "x", "person", "Marlon-Brando", "Martin-Sheen");
+        QueryUtil.assertResultsMatchName(query, "x", "person", "Marlon-Brando", "Martin-Sheen");
     }
 
     @Test
@@ -201,13 +209,13 @@ public class MatchQueryTest {
                 var("x").has("release-date", DATE_FORMAT.parse("Mon Mar 03 00:00:00 BST 1986").getTime())
         );
 
-        QueryUtil.assertResultsMatch(query, "x", "movie", "Spy");
+        QueryUtil.assertResultsMatchName(query, "x", "movie", "Spy");
     }
 
     @Test
     public void testNameQuery() {
         MatchQuery query = qb.match(var("x").has("title", "Godfather"));
-        QueryUtil.assertResultsMatch(query, "x", "movie", "Godfather");
+        QueryUtil.assertResultsMatchName(query, "x", "movie", "Godfather");
     }
 
 
@@ -217,7 +225,7 @@ public class MatchQueryTest {
                 var("x").has("tmdb-vote-count", lte(400))
         );
 
-        QueryUtil.assertResultsMatch(query, "x", "movie", "Apocalypse-Now", "The-Muppets", "Chinese-Coffee");
+        QueryUtil.assertResultsMatchName(query, "x", "movie", "Apocalypse-Now", "The-Muppets", "Chinese-Coffee");
     }
 
     @Test
@@ -226,7 +234,7 @@ public class MatchQueryTest {
                 var("x").has("tmdb-vote-average", gt(7.8))
         );
 
-        QueryUtil.assertResultsMatch(query, "x", "movie", "Apocalypse-Now", "Godfather");
+        QueryUtil.assertResultsMatchName(query, "x", "movie", "Apocalypse-Now", "Godfather");
     }
 
     @Test
@@ -235,7 +243,7 @@ public class MatchQueryTest {
                 var("x").has("release-date", gte(DATE_FORMAT.parse("Tue Jun 23 12:34:56 GMT 1984").getTime()))
         );
 
-        QueryUtil.assertResultsMatch(query, "x", "movie", "Spy", "The-Muppets", "Chinese-Coffee");
+        QueryUtil.assertResultsMatchName(query, "x", "movie", "Spy", "The-Muppets", "Chinese-Coffee");
     }
 
     @Test
@@ -257,11 +265,11 @@ public class MatchQueryTest {
     public void testAssertionQuery() {
         MatchQuery query = qb.match(
                 var("a").rel("production-with-cast", "x").rel("y"),
-                var("y").id("Miss-Piggy"),
+                var("y").has("name", "Miss-Piggy"),
                 var("a").isa("has-cast")
         ).select("x");
 
-        QueryUtil.assertResultsMatch(query, "x", "movie", "The-Muppets");
+        QueryUtil.assertResultsMatchName(query, "x", "movie", "The-Muppets");
     }
 
     @Test
@@ -274,19 +282,19 @@ public class MatchQueryTest {
                 )
         );
 
-        QueryUtil.assertResultsMatch(query, "x", "movie", "Godfather", "Apocalypse-Now", "Heat", "The-Muppets", "Chinese-Coffee");
+        QueryUtil.assertResultsMatchName(query, "x", "movie", "Godfather", "Apocalypse-Now", "Heat", "The-Muppets", "Chinese-Coffee");
     }
 
     @Test
     public void testTypeAsVariable() {
         MatchQuery query = qb.match(id("genre").playsRole(var("x")));
-        QueryUtil.assertResultsMatch(query, "x", null, "genre-of-production", "has-name-owner");
+        QueryUtil.assertResultsMatchId(query, "x", null, "genre-of-production", "has-name-owner");
     }
 
     @Test
     public void testVariableAsRoleType() {
         MatchQuery query = qb.match(var().rel(var().id("genre-of-production"), "y"));
-        QueryUtil.assertResultsMatch(
+        QueryUtil.assertResultsMatchName(
                 query, "y", null,
                 "crime", "drama", "war", "action", "comedy", "family", "musical", "comedy", "fantasy"
         );
@@ -298,7 +306,7 @@ public class MatchQueryTest {
                 var().rel(var("x").isa("movie")).rel("genre-of-production", var().has("name", "crime"))
         );
 
-        QueryUtil.assertResultsMatch(query, "x", null, "Godfather", "Heat");
+        QueryUtil.assertResultsMatchName(query, "x", null, "Godfather", "Heat");
     }
 
     @Test
@@ -309,14 +317,14 @@ public class MatchQueryTest {
                         .rel(var().has("name", "crime"))
         );
 
-        QueryUtil.assertResultsMatch(query, "x", null, "Godfather", "Heat");
+        QueryUtil.assertResultsMatchName(query, "x", null, "Godfather", "Heat");
     }
 
     @Test
     public void testAkoSelf() {
         MatchQuery query = qb.match(id("movie").ako(var("x")));
 
-        QueryUtil.assertResultsMatch(query, "x", ENTITY_TYPE.getId(), "movie", "production");
+        QueryUtil.assertResultsMatchId(query, "x", ENTITY_TYPE.getId(), "movie", "production");
     }
 
     @Test
@@ -347,47 +355,47 @@ public class MatchQueryTest {
     public void testRobertDeNiroNotRelatedToSelf() {
         MatchQuery query = qb.match(
                 var().rel("x").rel("y").isa("has-cast"),
-                var("y").id("Robert-de-Niro")
+                var("y").has("name", "Robert-de-Niro")
         ).select("x");
 
-        QueryUtil.assertResultsMatch(query, "x", null, "Heat", "Neil-McCauley");
+        QueryUtil.assertResultsMatchName(query, "x", null, "Heat", "Neil McCauley");
     }
 
     @Test
     public void testKermitIsRelatedToSelf() {
         MatchQuery query = qb.match(
                 var().rel("x").rel("y").isa("has-cast"),
-                var("y").id("Kermit-The-Frog")
+                var("y").has("name", "Kermit-The-Frog")
         ).select("x");
 
-        QueryUtil.assertResultsMatch(query, "x", null, "The-Muppets", "Kermit-The-Frog");
+        QueryUtil.assertResultsMatchName(query, "x", null, "The-Muppets", "Kermit-The-Frog");
     }
 
     @Test
     public void testMatchDataType() {
         MatchQuery query = qb.match(var("x").datatype(ResourceType.DataType.DOUBLE));
-        QueryUtil.assertResultsMatch(query, "x", RESOURCE_TYPE.getId(), "tmdb-vote-average");
+        QueryUtil.assertResultsMatchId(query, "x", RESOURCE_TYPE.getId(), "tmdb-vote-average");
 
         query = qb.match(var("x").datatype(ResourceType.DataType.LONG));
-        QueryUtil.assertResultsMatch(query, "x", RESOURCE_TYPE.getId(), "tmdb-vote-count", "runtime", "release-date");
+        QueryUtil.assertResultsMatchId(query, "x", RESOURCE_TYPE.getId(), "tmdb-vote-count", "runtime", "release-date");
 
         query = qb.match(var("x").datatype(ResourceType.DataType.BOOLEAN));
         assertEquals(0, query.stream().count());
 
         query = qb.match(var("x").datatype(ResourceType.DataType.STRING));
-        QueryUtil.assertResultsMatch(query, "x", RESOURCE_TYPE.getId(), "title", "gender", "real-name", "name");
+        QueryUtil.assertResultsMatchId(query, "x", RESOURCE_TYPE.getId(), "title", "gender", "real-name", "name");
     }
 
     @Test
     public void testSelectRuleTypes() {
         MatchQuery query = qb.match(var("x").isa(RULE_TYPE.getId()));
-        QueryUtil.assertResultsMatch(query, "x", RULE_TYPE.getId(), "a-rule-type", "inference-rule", "constraint-rule");
+        QueryUtil.assertResultsMatchId(query, "x", RULE_TYPE.getId(), "a-rule-type", "inference-rule", "constraint-rule");
     }
 
     @Test
     public void testMatchRuleRightHandSide() {
         MatchQuery query = qb.match(var("x").lhs("expect-lhs").rhs("expect-rhs"));
-        QueryUtil.assertResultsMatch(query, "x", "a-rule-type", "expectation-rule");
+        QueryUtil.assertResultsMatchId(query, "x", "a-rule-type", "expectation-rule");
         assertTrue(query.iterator().next().get("x").asRule().getExpectation());
     }
 
@@ -427,7 +435,7 @@ public class MatchQueryTest {
 
     @Test
     public void testHasVariable() {
-        MatchQuery query = qb.match(var().id("Godfather").has("tmdb-vote-count", var("x")));
+        MatchQuery query = qb.match(var().has("name", "Godfather").has("tmdb-vote-count", var("x")));
         assertEquals(1000L, query.get("x").findFirst().get().asResource().getValue());
     }
 

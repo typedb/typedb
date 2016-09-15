@@ -46,13 +46,13 @@ public class QueryBuilderTest {
     @Test
     public void testBuildQueryGraphFirst() {
         MatchQuery query = withGraph(mindmapsGraph).match(var("x").isa("movie"));
-        QueryUtil.assertResultsMatch(query, "x", "movie", QueryUtil.movies);
+        QueryUtil.assertResultsMatchName(query, "x", "movie", QueryUtil.movies);
     }
 
     @Test
     public void testBuildMatchQueryGraphLast() {
         MatchQuery query = match(var("x").isa("movie")).withGraph(mindmapsGraph);
-        QueryUtil.assertResultsMatch(query, "x", "movie", QueryUtil.movies);
+        QueryUtil.assertResultsMatchName(query, "x", "movie", QueryUtil.movies);
     }
 
     @Test

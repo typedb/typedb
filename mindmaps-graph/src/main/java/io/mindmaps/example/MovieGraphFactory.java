@@ -159,13 +159,13 @@ public class MovieGraphFactory {
         putResource(godfather, tmdbVoteAverage, 8.6);
         putResource(godfather, releaseDate, DATE_FORMAT.parse("Sun Jan 01 00:00:00 GMT 1984").getTime());
 
-        theMuppets = putEntityWithName(movie, "The Muppets");
+        theMuppets = putEntityWithName(movie, "The-Muppets");
         putResource(theMuppets, title, "The Muppets");
         putResource(theMuppets, tmdbVoteCount, 100L);
         putResource(theMuppets, tmdbVoteAverage, 7.6);
         putResource(theMuppets, releaseDate, DATE_FORMAT.parse("Sat Feb 02 00:00:00 GMT 1985").getTime());
 
-        apocalypseNow = putEntityWithName(movie, "Apocalypse Now");
+        apocalypseNow = putEntityWithName(movie, "Apocalypse-Now");
         putResource(apocalypseNow, title, "Apocalypse Now");
         putResource(apocalypseNow, tmdbVoteCount, 400L);
         putResource(apocalypseNow, tmdbVoteAverage, 8.4);
@@ -173,7 +173,7 @@ public class MovieGraphFactory {
         heat = putEntityWithName(movie, "Heat");
         putResource(heat, title, "Heat");
 
-        hocusPocus = putEntityWithName(movie, "Hocus Pocus");
+        hocusPocus = putEntityWithName(movie, "Hocus-Pocus");
         putResource(hocusPocus, title, "Hocus Pocus");
         putResource(hocusPocus, tmdbVoteCount, 435L);
 
@@ -181,22 +181,22 @@ public class MovieGraphFactory {
         putResource(spy, title, "Spy");
         putResource(spy, releaseDate, DATE_FORMAT.parse("Mon Mar 03 00:00:00 BST 1986").getTime());
 
-        chineseCoffee = putEntityWithName(movie, "Chinese Coffee");
+        chineseCoffee = putEntityWithName(movie, "Chinese-Coffee");
         putResource(chineseCoffee, title, "Chinese Coffee");
         putResource(chineseCoffee, tmdbVoteCount, 5L);
         putResource(chineseCoffee, tmdbVoteAverage, 3.1d);
         putResource(chineseCoffee, releaseDate, DATE_FORMAT.parse("Sat Sep 02 00:00:00 GMT 2000").getTime());
 
-        marlonBrando = putEntityWithName(person, "Marlon Brando");
-        alPacino = putEntityWithName(person, "Al Pacino");
-        missPiggy = putEntityWithName(person, "Miss Piggy");
-        kermitTheFrog = putEntityWithName(person, "Kermit The Frog");
-        martinSheen = putEntityWithName(person, "Martin Sheen");
-        robertDeNiro = putEntityWithName(person, "Robert de Niro");
-        judeLaw = putEntityWithName(person, "Jude Law");
-        mirandaHeart = putEntityWithName(person, "Miranda Heart");
-        betteMidler = putEntityWithName(person, "Bette Midler");
-        sarahJessicaParker = putEntityWithName(person, "Sarah Jessica Parker");
+        marlonBrando = putEntityWithName(person, "Marlon-Brando");
+        alPacino = putEntityWithName(person, "Al-Pacino");
+        missPiggy = putEntityWithName(person, "Miss-Piggy");
+        kermitTheFrog = putEntityWithName(person, "Kermit-The-Frog");
+        martinSheen = putEntityWithName(person, "Martin-Sheen");
+        robertDeNiro = putEntityWithName(person, "Robert-de-Niro");
+        judeLaw = putEntityWithName(person, "Jude-Law");
+        mirandaHeart = putEntityWithName(person, "Miranda-Heart");
+        betteMidler = putEntityWithName(person, "Bette-Midler");
+        sarahJessicaParker = putEntityWithName(person, "Sarah-Jessica-Parker");
 
         crime = putEntityWithName(genre, "crime");
         drama = putEntityWithName(genre, "drama");

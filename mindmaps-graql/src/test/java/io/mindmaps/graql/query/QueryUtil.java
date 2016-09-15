@@ -20,7 +20,9 @@ package io.mindmaps.graql.query;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.Resource;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
@@ -32,7 +34,7 @@ class QueryUtil {
         "Godfather", "The-Muppets", "Apocalypse-Now", "Heat", "Hocus-Pocus", "Spy", "Chinese-Coffee"
     };
 
-    public static void assertResultsMatch(
+    public static void assertResultsMatchId(
             Iterable<Map<String, Concept>> query, String var, String type, String... expectedIds
     ) {
         Set<String> expectedSet = Sets.newHashSet(expectedIds);
@@ -42,8 +44,33 @@ class QueryUtil {
             Concept result = results.get(var);
             assertNotNull(result);
             String id = result.getId();
+
             assertTrue("Unexpected id: " + id, expectedSet.contains(id));
             unfoundSet.remove(id);
+            if (type != null) assertEquals(type, result.type().getId());
+        });
+
+        assertTrue("expected ids not found: " + unfoundSet, unfoundSet.isEmpty());
+    }
+
+    public static void assertResultsMatchName(
+            Iterable<Map<String, Concept>> query, String var, String type, String... expectedNames
+    ) {
+        Set<String> expectedSet = Sets.newHashSet(expectedNames);
+        Set<String> unfoundSet = Sets.newHashSet(expectedNames);
+
+        query.forEach(results -> {
+            Concept result = results.get(var);
+            assertNotNull(result);
+
+            Collection<Resource<?>> resources = result.asEntity().resources();
+
+            String name = (String) resources.stream()
+                    .filter(r -> r.type().getId().equals("name"))
+                    .findAny().get().getValue();
+
+            assertTrue("Unexpected name: " + name, expectedSet.contains(name));
+            unfoundSet.remove(name);
             if (type != null) assertEquals(type, result.type().getId());
         });
 

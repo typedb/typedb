@@ -244,7 +244,7 @@ public class QueryParserTest {
 
     @Test
     public void testPositiveAskQuery() {
-        assertTrue(parseAsk("match $x isa movie id 'Godfather' ask").withGraph(mindmapsGraph).execute());
+        assertTrue(parseAsk("match $x isa movie has name 'Godfather' ask").withGraph(mindmapsGraph).execute());
     }
 
     @Test
@@ -460,7 +460,7 @@ public class QueryParserTest {
 
     @Test
     public void testHasVariable() {
-        MatchQuery query = qb.parseMatch("match Godfather has tmdb-vote-count $x");
+        MatchQuery query = qb.parseMatch("match has name 'Godfather' has tmdb-vote-count $x");
 
         //noinspection OptionalGetWithoutIsPresent
         assertEquals(1000L, query.get("x").findFirst().get().asResource().getValue());
