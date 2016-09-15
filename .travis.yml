@@ -9,7 +9,8 @@ cache:
 notifications:
   slack: mindmapsdb:3M1bWW0kGQ7LdniMmKeaY3o5
 script:
-    - mvn test jacoco:report coveralls:report -q
+    - mvn test cobertura:cobertura coveralls:report -q
+
 before_install:
   - sudo apt-get -y install npm
   - sudo npm install -g npm
