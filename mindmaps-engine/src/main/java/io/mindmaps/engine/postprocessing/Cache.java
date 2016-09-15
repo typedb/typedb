@@ -24,7 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Cache {
-    private final Map<String, Set<String>> castingsToPostProcess;
+    private final Map<String, Set<String>> castings;
+    private final Map<String, Set<String>> resources;
     private final AtomicBoolean saveInProgress;
 
     private static Cache instance=null;
@@ -35,7 +36,8 @@ public class Cache {
     }
 
     private Cache(){
-        castingsToPostProcess = new ConcurrentHashMap<>();
+        castings = new ConcurrentHashMap<>();
+        resources = new ConcurrentHashMap<>();
         saveInProgress = new AtomicBoolean(false);
     }
 
@@ -44,7 +46,7 @@ public class Cache {
     }
 
     public Map<String, Set<String>> getCastingJobs() {
-        return castingsToPostProcess;
+        return castings;
     }
     public void addJobCasting(String graphName, Set<String> conceptIds) {
         getCastingJobs().computeIfAbsent(graphName, (key) -> ConcurrentHashMap.newKeySet()).addAll(conceptIds);

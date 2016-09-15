@@ -705,12 +705,16 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         Set<RelationImpl> duplicateRelations = mergeCastings(casting, castings);
 
         //Remove Redundant Relations
-        deleteDuplicateRelations(duplicateRelations);
+        deleteRelations(duplicateRelations);
 
         return true;
     }
 
-    private void deleteDuplicateRelations(Set<RelationImpl> relations){
+    /**
+     *
+     * @param relations The duplicate relations to be merged
+     */
+    private void deleteRelations(Set<RelationImpl> relations){
         for (RelationImpl relation : relations) {
             String relationID = relation.getId();
 
@@ -730,6 +734,12 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         }
     }
 
+    /**
+     *
+     * @param mainCasting The main casting to absorb all of the edges
+     * @param castings The castings to whose edges will be transferred to the main casting and deleted.
+     * @return A set of possible duplicate relations.
+     */
     private Set<RelationImpl> mergeCastings(CastingImpl mainCasting, Set<CastingImpl> castings){
         RoleType role = mainCasting.getRole();
         Set<RelationImpl> relations = mainCasting.getRelations();
@@ -762,9 +772,112 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         return relationsToClean;
     }
 
+    /**
+     *
+     * @param mainRelation The main relation to compare
+     * @param otherRelation The relation to compare it with
+     * @return True if the roleplayers of the relations are the same.
+     */
     private boolean relationsEqual(Relation mainRelation, Relation otherRelation){
         return mainRelation.rolePlayers().equals(otherRelation.rolePlayers()) &&
                 mainRelation.type().equals(otherRelation.type());
+    }
+
+    /**
+     *
+     * @param resourceIds The resourceIDs which possible contain duplicates.
+     * @return True if a commit is required.
+     */
+    public boolean fixDuplicateResources(Set<String> resourceIds){
+        boolean commitRequired = false;
+
+        Set<ResourceImpl> resources = resourceIds.stream().map(this::getConceptByBaseIdentifier)
+                .filter(ConceptImpl::isResource)
+                .map(concept -> (ResourceImpl) concept)
+                .collect(Collectors.toSet());
+
+        Map<String, Set<ResourceImpl>> resourceMap = formatResourcesByType(resources);
+
+        for (Map.Entry<String, Set<ResourceImpl>> entry : resourceMap.entrySet()) {
+            Set<ResourceImpl> dups = entry.getValue();
+            if(dups.size() > 1){ //Found Duplicate
+                mergeResources(dups);
+                commitRequired = true;
+            }
+        }
+
+        return commitRequired;
+    }
+
+    /**
+     *
+     * @param resources A list of resources containing possible duplicates.
+     * @return A map of resource indices to resources. If there is more than one resource for a specific
+     *         resource index then there are duplicate resources which need to be merged.
+     */
+    private Map<String, Set<ResourceImpl>> formatResourcesByType(Set<ResourceImpl> resources){
+        Map<String, Set<ResourceImpl>> resourceMap = new HashMap<>();
+
+        resources.forEach(resource -> {
+            String resourceKey = resource.getProperty(Schema.ConceptProperty.INDEX).toString();
+            resourceMap.computeIfAbsent(resourceKey, (key) -> new HashSet<>()).add(resource);
+        });
+
+        return resourceMap;
+    }
+
+    /**
+     *
+     * @param resources A set of resources which should all be merged.
+     */
+    private void mergeResources(Set<ResourceImpl> resources){
+        Iterator<ResourceImpl> it = resources.iterator();
+        ResourceImpl<?> mainResource = it.next();
+        HashSet<RelationImpl> relationsToRemove = new HashSet<>();
+
+        while(it.hasNext()){
+            ResourceImpl<?> otherResource = it.next();
+            Collection<Relation> otherRelations = otherResource.relations();
+
+            for (Relation otherRelation : otherRelations) {
+                if(relationCopied(mainResource, otherResource, otherRelation)){
+                    relationsToRemove.add((RelationImpl) otherRelation);
+                }
+            }
+        }
+
+        deleteRelations(relationsToRemove);
+    }
+
+    /**
+     *
+     * @param main The main instance to possibly acquire a new relation
+     * @param other The other instance which already posses the relation
+     * @param otherRelation The other relation to potentially be absorbed
+     * @return true if the relation was copied to the main instance
+     */
+    private boolean relationCopied(Instance main, Instance other, Relation otherRelation){
+        RelationType relationType = otherRelation.type();
+        Map<RoleType, Instance> rolePlayers = otherRelation.rolePlayers();
+
+        //Replace all occurrences of other with main. That we we can quickly find out if the relation on main exists
+        for (RoleType roleType : rolePlayers.keySet()) {
+            if(rolePlayers.get(roleType).equals(other)){
+                rolePlayers.put(roleType, main);
+            }
+        }
+
+        Relation foundRelation = getRelation(relationType, rolePlayers);
+
+        if(foundRelation != null){
+            return false; // The relation already exists, no need to copy
+        }
+
+        //Relation was not found so create a new one
+        Relation relation = addRelation(relationType);
+        rolePlayers.entrySet().forEach(entry -> relation.putRolePlayer(entry.getKey(), entry.getValue()));
+
+        return true;
     }
 
 }

@@ -28,16 +28,16 @@ class ConceptFixer {
     private static final Logger LOG = LoggerFactory.getLogger(ConceptFixer.class);
     private static final int MAX_RETRY = 10;
 
-    public static void checkCasting(MindmapsGraph graph, String castingId){
+    public static void checkCasting(Cache cache, MindmapsGraph graph, String castingId){
         boolean notDone = true;
         int retry = 0;
 
         while(notDone) {
             try {
-
                 if (((AbstractMindmapsGraph)graph).fixDuplicateCasting(castingId)) {
                     graph.commit();
                 }
+                cache.deleteJobCasting(graph.getKeyspace(), castingId);
                 notDone = false;
             } catch (Exception e) {
                 LOG.error(ErrorMessage.POSTPROCESSING_ERROR.getMessage("casting", e.getMessage()), e);
