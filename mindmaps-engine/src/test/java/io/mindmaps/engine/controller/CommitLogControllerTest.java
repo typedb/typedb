@@ -118,7 +118,6 @@ public class CommitLogControllerTest {
     }
 
     @Ignore
-    @Test
     public void testDeleteController() {
         assertEquals(4, cache.getCastingJobs().values().iterator().next().size());
 
