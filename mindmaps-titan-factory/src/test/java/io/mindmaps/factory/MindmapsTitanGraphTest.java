@@ -32,7 +32,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class MindmapsTitanGraphTest {
     private static final String TEST_CONFIG = "../conf/test/mindmaps-test.properties";
@@ -103,5 +105,14 @@ public class MindmapsTitanGraphTest {
         });
 
         assertEquals(9, mindmapsGraph.getTinkerTraversal().V().toList().size());
+    }
+
+    @Test
+    public void testRollback() {
+        assertNull(mindmapsGraph.getEntityType("X"));
+        mindmapsGraph.putEntityType("X");
+        assertNotNull(mindmapsGraph.getEntityType("X"));
+        mindmapsGraph.rollback();
+        assertNull(mindmapsGraph.getEntityType("X"));
     }
 }

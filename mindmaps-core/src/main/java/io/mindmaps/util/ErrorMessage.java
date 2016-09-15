@@ -48,6 +48,7 @@ public enum ErrorMessage {
     NULL_VALUE("The value of [%s] cannot be set to [null]"),
     CANNOT_LOAD_EXAMPLE("Cannot load example to this graph. Please try a new empty graph."),
     META_TYPE_IMMUTABLE("The meta type [%s] is immutable"),
+    UNSUPPORTED_GRAPH("The graph backend of [%s] does not support an [%s] operation."),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
