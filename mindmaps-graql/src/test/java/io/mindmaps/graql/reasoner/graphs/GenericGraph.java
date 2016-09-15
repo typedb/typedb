@@ -33,7 +33,7 @@ import java.util.List;
 public class GenericGraph {
 
     protected static MindmapsGraph mindmaps;
-    private static String filePath = "src/test/resources/graql/";
+    private final static String filePath = "src/test/resources/graql/";
 
     public static MindmapsGraph getGraph(String graqlFile) {
         mindmaps = MindmapsTestGraphFactory.newEmptyGraph();

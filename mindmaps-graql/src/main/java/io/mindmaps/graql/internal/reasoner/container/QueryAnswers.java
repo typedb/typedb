@@ -73,15 +73,41 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
         return join;
     }
 
-    public void materialize(AtomicQuery atomicQuery){
+    public void materialize(AtomicQuery query){
         this.forEach(answer -> {
             Set<Substitution> subs = new HashSet<>();
             answer.forEach((var, con) -> {
                 Substitution sub = new Substitution(var, con);
-                if (!atomicQuery.containsAtom(sub))
+                if (!query.containsAtom(sub))
                     subs.add(sub);
             });
-            atomicQuery.materialize(subs);
+            query.materialize(subs);
         });
+    }
+
+    public QueryAnswers unify(Map<String, String> unifiers){
+        return unify(unifiers, new HashMap<>(), new HashMap<>());
+    }
+
+    public QueryAnswers unify(Map<String, String> unifiers, Map<String, Concept> subVars, Map<String, Concept> constraints){
+        QueryAnswers unifiedAnswers = new QueryAnswers();
+        this.forEach(entry -> {
+            Map<String, Concept> answer = new HashMap<>(subVars);
+            boolean isCompatible = true;
+            Iterator<String> it = entry.keySet().iterator();
+            while (it.hasNext() && isCompatible) {
+                String var = it.next();
+                Concept con = entry.get(var);
+                if (unifiers.containsKey(var)) var = unifiers.get(var);
+                if (constraints.containsKey(var) && !constraints.get(var).equals(con))
+                    isCompatible = false;
+                else
+                    answer.put(var, con);
+            }
+            if (isCompatible && !answer.isEmpty())
+                unifiedAnswers.add(answer);
+        });
+
+        return unifiedAnswers;
     }
 }
