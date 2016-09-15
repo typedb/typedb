@@ -16,17 +16,17 @@ import java.util.Set;
 
 import static io.mindmaps.graql.internal.analytics.Analytics.getVertexType;
 
-public class MaxMapReduce extends MindmapsMapReduce<Number> {
+public class MinMapReduce extends MindmapsMapReduce<Number> {
 
-    public static final String MEMORY_KEY = "max";
+    public static final String MEMORY_KEY = "min";
     public static final String SELECTED_DATA_TYPE = "SELECTED_DATA_TYPE";
 
     private String resourceDataType = null;
 
-    public MaxMapReduce() {
+    public MinMapReduce() {
     }
 
-    public MaxMapReduce(Set<String> selectedTypes, Map<String, String> resourceTypes) {
+    public MinMapReduce(Set<String> selectedTypes, Map<String, String> resourceTypes) {
         this.selectedTypes = selectedTypes;
         resourceDataType = resourceTypes.get(selectedTypes.iterator().next());
     }
@@ -50,13 +50,13 @@ public class MaxMapReduce extends MindmapsMapReduce<Number> {
                 emitter.emit(MEMORY_KEY, vertex.value(Schema.ConceptProperty.VALUE_LONG.name()));
                 return;
             }
-            emitter.emit(MEMORY_KEY, Long.MIN_VALUE);
+            emitter.emit(MEMORY_KEY, Long.MAX_VALUE);
         } else {
             if (selectedTypes.contains(getVertexType(vertex))) {
                 emitter.emit(MEMORY_KEY, vertex.value(Schema.ConceptProperty.VALUE_DOUBLE.name()));
                 return;
             }
-            emitter.emit(MEMORY_KEY, Double.MIN_VALUE);
+            emitter.emit(MEMORY_KEY, Double.MAX_VALUE);
         }
     }
 
@@ -64,11 +64,11 @@ public class MaxMapReduce extends MindmapsMapReduce<Number> {
     public void reduce(final Serializable key, final Iterator<Number> values,
                        final ReduceEmitter<Serializable, Number> emitter) {
         if (resourceDataType.equals(ResourceType.DataType.LONG.getName())) {
-            emitter.emit(key, IteratorUtils.reduce(values, Long.MIN_VALUE,
-                    (a, b) -> a.longValue() > b.longValue() ? a : b));
+            emitter.emit(key, IteratorUtils.reduce(values, Long.MAX_VALUE,
+                    (a, b) -> a.longValue() < b.longValue() ? a : b));
         } else {
-            emitter.emit(key, IteratorUtils.reduce(values, Double.MIN_VALUE,
-                    (a, b) -> a.doubleValue() > b.doubleValue() ? a : b));
+            emitter.emit(key, IteratorUtils.reduce(values, Double.MAX_VALUE,
+                    (a, b) -> a.doubleValue() < b.doubleValue() ? a : b));
         }
     }
 
@@ -85,9 +85,9 @@ public class MaxMapReduce extends MindmapsMapReduce<Number> {
 
     @Override
     public Map<Serializable, Number> generateFinalResult(Iterator<KeyValue<Serializable, Number>> keyValues) {
-        final Map<Serializable, Number> max = new HashMap<>();
-        keyValues.forEachRemaining(pair -> max.put(pair.getKey(), pair.getValue()));
-        return max;
+        final Map<Serializable, Number> min = new HashMap<>();
+        keyValues.forEachRemaining(pair -> min.put(pair.getKey(), pair.getValue()));
+        return min;
     }
 
 }

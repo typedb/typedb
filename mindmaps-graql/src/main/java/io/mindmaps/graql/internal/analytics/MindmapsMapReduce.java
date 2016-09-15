@@ -21,7 +21,6 @@ package io.mindmaps.graql.internal.analytics;
 import io.mindmaps.util.ErrorMessage;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
-import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -29,7 +28,8 @@ import java.util.Map;
 /**
  * A map reduce task specific to Mindmaps with common method implementations.
  */
-public abstract class MindmapsMapReduce<T> extends CommonOLAP implements MapReduce<Serializable, T, Serializable, T, Map<Serializable, T>>  {
+public abstract class MindmapsMapReduce<T> extends CommonOLAP
+        implements MapReduce<Serializable, T, Serializable, T, Map<Serializable, T>> {
     static final String MAP_REDUCE_MEMORY_KEY = "MindmapsMapReduce.memoryKey";
 
     @Override
@@ -56,7 +56,8 @@ public abstract class MindmapsMapReduce<T> extends CommonOLAP implements MapRedu
             final MindmapsMapReduce clone = (MindmapsMapReduce) super.clone();
             return clone;
         } catch (final CloneNotSupportedException e) {
-            throw new IllegalStateException(ErrorMessage.CLONE_FAILED.getMessage(this.getClass().toString(),e.getMessage()),e);
+            throw new IllegalStateException(ErrorMessage.CLONE_FAILED.getMessage(this.getClass().toString(),
+                    e.getMessage()), e);
         }
     }
 }
