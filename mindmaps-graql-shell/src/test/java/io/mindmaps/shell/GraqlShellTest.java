@@ -24,7 +24,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.*;
-import java.util.Arrays;
 import java.util.Random;
 
 import static org.hamcrest.CoreMatchers.allOf;
@@ -143,15 +142,10 @@ public class GraqlShellTest {
     public void testInsertOutput() throws IOException {
         String[] result = testShell("insert a-type isa entity-type; thingy isa a-type\n").split("\r\n?|\n");
 
-        // Expect ten lines output - four for the license, one for the query, four results and a new prompt
-        assertEquals(10, result.length);
+        // Expect six lines output - four for the license, one for the query, no results and a new prompt
+        assertEquals(6, result.length);
         assertEquals(">>> insert a-type isa entity-type; thingy isa a-type", result[4]);
-        assertEquals(">>> ", result[9]);
-
-        assertThat(
-                Arrays.toString(Arrays.copyOfRange(result, 5, 9)),
-                allOf(containsString("a-type"), containsString("entity-type"), containsString("thingy"))
-        );
+        assertEquals(">>> ", result[5]);
     }
 
     @Test
