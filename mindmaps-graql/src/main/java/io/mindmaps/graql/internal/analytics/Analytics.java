@@ -145,12 +145,11 @@ public class Analytics {
     }
 
     /**
-     * Maximum value of the selected resource-type.
+     * Compute the mean of instances of the selected resource-type.
      *
-     * @return max of the selected resource-type
+     * @return mean
      */
-    public Number max() {
-
+    public double mean() {
         if (allTypes.size() != 1)
             throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                     .getMessage(this.getClass().toString()));
@@ -160,18 +159,18 @@ public class Analytics {
                     .getMessage(this.getClass().toString()));
 
         MindmapsComputer computer = MindmapsClient.getGraphComputer(keySpace);
-        ComputerResult result = computer.compute(new MaxMapReduce(allTypes, resourceTypes));
-        Map<String, Number> max = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
-        return max.get(MaxMapReduce.MEMORY_KEY);
+        ComputerResult result = computer.compute(new MeanMapReduce(allTypes, resourceTypes));
+        Map<String, Map<String, Number>> mean = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
+        Map<String, Number> meanPair = mean.get(MeanMapReduce.MEMORY_KEY);
+        return meanPair.get(MeanMapReduce.SUM).doubleValue() / meanPair.get(MeanMapReduce.COUNT).longValue();
     }
 
     /**
      * Minimum value of the selected resource-type.
      *
-     * @return min of the selected resource-type
+     * @return min
      */
     public Number min() {
-
         if (allTypes.size() != 1)
             throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                     .getMessage(this.getClass().toString()));
@@ -184,6 +183,26 @@ public class Analytics {
         ComputerResult result = computer.compute(new MinMapReduce(allTypes, resourceTypes));
         Map<String, Number> min = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
         return min.get(MinMapReduce.MEMORY_KEY);
+    }
+
+    /**
+     * Maximum value of the selected resource-type.
+     *
+     * @return max
+     */
+    public Number max() {
+        if (allTypes.size() != 1)
+            throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
+                    .getMessage(this.getClass().toString()));
+        String type = allTypes.iterator().next();
+        if (!resourceTypes.containsKey(type))
+            throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
+                    .getMessage(this.getClass().toString()));
+
+        MindmapsComputer computer = MindmapsClient.getGraphComputer(keySpace);
+        ComputerResult result = computer.compute(new MaxMapReduce(allTypes, resourceTypes));
+        Map<String, Number> max = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
+        return max.get(MaxMapReduce.MEMORY_KEY);
     }
 
     /**

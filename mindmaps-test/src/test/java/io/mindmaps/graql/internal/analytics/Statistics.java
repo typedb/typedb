@@ -18,6 +18,7 @@ public class Statistics {
 
     String keyspace;
     MindmapsGraph graph;
+    double delta = 0.000001;
 
     @BeforeClass
     public static void startController() throws Exception {
@@ -45,7 +46,7 @@ public class Statistics {
     }
 
     @Test
-    public void testMaxAndMin() throws Exception {
+    public void testMaxMinMean() throws Exception {
         EntityType thing = graph.putEntityType("thing");
         EntityType anotherThing = graph.putEntityType("another");
 
@@ -82,32 +83,39 @@ public class Statistics {
         graph.putResource(1.8, resourceType1);
 
         ResourceType resourceType2 = graph.putResourceType("resourceType2", ResourceType.DataType.LONG);
-        graph.putResource(Long.MIN_VALUE, resourceType2);
+        graph.putResource(4, resourceType2);
         graph.putResource(-1L, resourceType2);
         graph.putResource(0L, resourceType2);
 
         graph.commit();
 
-        Analytics computer = new Analytics(keyspace);
-        computer.degreesAndPersist();
+//        Analytics computer0 = new Analytics(keyspace);
+//        computer0.degreesAndPersist();
         graph = MindmapsClient.getGraph(keyspace);
+        Analytics computer;
 
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
-        assertEquals(1.8, computer.max());
+        assertEquals(1.5, computer.mean(), delta);
+
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
+        assertEquals(1.0, computer.mean(), delta);
 
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
-        assertEquals(1.2, computer.min());
+        assertEquals(1.8, computer.max().doubleValue(), delta);
+
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
+        assertEquals(1.2, computer.min().doubleValue(), delta);
 
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
-        assertEquals(0L, computer.max());
+        assertEquals(4L, computer.max());
 
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
-        assertEquals(Long.MIN_VALUE, computer.min());
+        assertEquals(-1L, computer.min());
 
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType("degree")));
-        assertEquals(3L, computer.max());
-
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType("degree")));
-        assertEquals(0L, computer.min());
+//        computer = new Analytics(keyspace, Collections.singleton(graph.getType("degree")));
+//        assertEquals(3L, computer.max());
+//
+//        computer = new Analytics(keyspace, Collections.singleton(graph.getType("degree")));
+//        assertEquals(0L, computer.min());
     }
 }
