@@ -40,6 +40,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import spark.Spark;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -56,6 +57,8 @@ import static org.junit.Assert.assertTrue;
 public class BackgroundTasksTest {
     private BackgroundTasks backgroundTasks;
     private MindmapsGraph mindmapsGraph;
+    private Cache cache;
+    private String keyspace;
 
     @BeforeClass
     public static void startController() {
@@ -66,16 +69,20 @@ public class BackgroundTasksTest {
     public void setUp() throws Exception {
         new GraphFactoryController();
         new CommitLogController();
+        Thread.sleep(5000);
 
-        Thread.sleep(2000);
-
+        cache = Cache.getInstance();
+        keyspace = UUID.randomUUID().toString().replaceAll("-", "a");
         backgroundTasks = BackgroundTasks.getInstance();
-        mindmapsGraph = MindmapsClient.getGraphBatchLoading(UUID.randomUUID().toString().replaceAll("-", "a"));
+        mindmapsGraph = MindmapsClient.getGraphBatchLoading(keyspace);
     }
 
     @After
-    public void cleanup() {
-        mindmapsGraph.clear();
+    public void takeDown() throws InterruptedException {
+        cache.getCastingJobs().clear();
+        cache.getResourceJobs().clear();
+        Spark.stop();
+        Thread.sleep(5000);
     }
 
     @Test
@@ -112,6 +119,7 @@ public class BackgroundTasksTest {
         //Check the graph is broken
         assertEquals(6, ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
 
+        waitForCache(true, keyspace);
         //Now fix everything
         backgroundTasks.forcePostprocessing();
 
@@ -155,7 +163,7 @@ public class BackgroundTasksTest {
     }
 
     @Test
-    public void testMergeDuplicateResources() throws MindmapsValidationException {
+    public void testMergeDuplicateResources() throws MindmapsValidationException, InterruptedException {
         String keyspace = "TestBatchGraph";
         String value = "1";
         String sample = "Sample";
@@ -194,11 +202,31 @@ public class BackgroundTasksTest {
 
         assertTrue(resources.size() > 1);
 
+        waitForCache(false, keyspace);
         //Now fix everything
         backgroundTasks.forcePostprocessing();
 
         //Check it's fixed
         graph.rollback();
         assertEquals(1, graph.getResourceType(sample).instances().size());
+    }
+
+    private void waitForCache(boolean isCasting, String keyspace) throws InterruptedException {
+        boolean flag = true;
+        while(flag){
+            if(isCasting){
+                if(cache.getCastingJobs().get(keyspace).size() == 0){
+                    Thread.sleep(1000);
+                } else{
+                    flag = false;
+                }
+            } else {
+                if(cache.getResourceJobs().get(keyspace).size() == 0){
+                    Thread.sleep(1000);
+                } else {
+                    flag = false;
+                }
+            }
+        }
     }
 }
