@@ -69,7 +69,7 @@ export function resourceProperties(resource) {
         id: resource[API.KEY_ID],
         type: resource[API.KEY_TYPE],
         baseType: resource[API.KEY_BASE_TYPE],
-        label: resource[API.KEY_ID]
+        label: buildLabel(resource)
     };
 }
 
@@ -94,3 +94,14 @@ function weight(baseType) {
         return 0;
 }
 
+function buildLabel(resource) {
+    var label = resource[API.KEY_ID];
+
+    if(API.KEY_VALUE in resource)
+        label = resource[API.KEY_VALUE] || label;
+
+    if(resource[API.KEY_BASE_TYPE] === API.ENTITY_TYPE)
+        label = resource[API.KEY_TYPE] + ": " + label;
+
+    return label;
+}
