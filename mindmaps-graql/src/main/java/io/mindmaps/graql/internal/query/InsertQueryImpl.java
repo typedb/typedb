@@ -89,7 +89,8 @@ class InsertQueryImpl implements InsertQueryAdmin {
 
     @Override
     public Stream<String> resultsString() {
-        return stream().map(Concept::getId);
+        execute();
+        return Stream.empty();
     }
 
     @Override
