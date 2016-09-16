@@ -32,6 +32,7 @@ import org.junit.Test;
 import java.util.Map;
 import java.util.Set;
 
+import static io.mindmaps.graql.internal.reasoner.Utility.printMatchQueryResults;
 import static org.junit.Assert.assertEquals;
 
 public class RecursiveInferenceTest {
@@ -247,7 +248,7 @@ public class RecursiveInferenceTest {
                 "{$x id 'm';$y id 'n'} or {$x id 'm';$y id 'o'} or {$x id 'p';$y id 'm'} or" +
                 "{$x id 'g';$y id 'f'} or {$x id 'h';$y id 'f'} or {$x id 'i';$y id 'f'} or" +
                 "{$x id 'j';$y id 'f'} or {$x id 'f';$y id 'k'}";
-        
+
         assertEquals(answers, Sets.newHashSet(qb.parseMatch(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
     }
@@ -263,7 +264,7 @@ public class RecursiveInferenceTest {
         String queryString = "match (N-rA: $x, N-rB: $y) isa N; $x id 'c' select $y";
         MatchQuery query = qb.parseMatch(queryString);
         String explicitQuery = "match $y isa a-entity";
-        
+
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
     }
@@ -280,7 +281,7 @@ public class RecursiveInferenceTest {
         String explicitQuery = "match $y isa a-entity";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(queryString));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
     }
 
     /** test 6.1 from Cao p 71*/

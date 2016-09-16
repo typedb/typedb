@@ -28,6 +28,7 @@ import io.mindmaps.concept.Type;
 import io.mindmaps.graql.internal.reasoner.container.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.container.Query;
 import io.mindmaps.graql.internal.reasoner.container.QueryAnswers;
+import io.mindmaps.graql.internal.reasoner.container.ReasonerMatchQuery;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.Relation;
 import javafx.util.Pair;
@@ -390,7 +391,7 @@ public class Reasoner {
         //identify extra subs contribute to/constraining answers
         Map<String, Concept> subVars = new HashMap<>();
         Map<String, Concept> constraints = new HashMap<>();
-        if (parentQuery.getSelectVars().size() != childQuery.getSelectVars().size()){
+        if (parentQuery.getSelectedNames().size() != childQuery.getSelectedNames().size()){
             Set<Atomic> childSubs = childQuery.getAtoms().stream().filter(Atomic::isValuePredicate).collect(Collectors.toSet());
             Set<Atomic> parentSubs = parentQuery.getAtoms().stream().filter(Atomic::isValuePredicate).collect(Collectors.toSet());
 
@@ -404,7 +405,7 @@ public class Reasoner {
                 String var = sub.getVarName();
                 Concept con = graph.getConcept(sub.getVal());
                 if (unifiers.containsKey(var)) var = unifiers.get(var);
-                if (childQuery.getSelectVars().size() > parentQuery.getSelectVars().size())
+                if (childQuery.getSelectedNames().size() > parentQuery.getSelectedNames().size())
                     constraints.put(var, con);
                 else
                     subVars.put(var, con);
@@ -412,7 +413,7 @@ public class Reasoner {
         }
 
         QueryAnswers unifiedAnswers = answers.unify(unifiers, subVars, constraints);
-        return unifiedAnswers.filter(parentQuery.getSelectVars());
+        return unifiedAnswers.filter(parentQuery.getSelectedNames());
     }
 
     private QueryAnswers memoryLookup(AtomicQuery atomicQuery, Map<AtomicQuery, QueryAnswers> matAnswers) {
@@ -430,8 +431,8 @@ public class Reasoner {
         QueryAnswers newAnswers = new QueryAnswers();
         if(answers.isEmpty()) return newAnswers;
 
-        Set<String> queryVars = atomicQuery.getSelectVars();
-        Set<String> headVars = ruleHead.getSelectVars();
+        Set<String> queryVars = atomicQuery.getSelectedNames();
+        Set<String> headVars = ruleHead.getSelectedNames();
         Set<Atomic> extraSubs = new HashSet<>();
         if(queryVars.size() > headVars.size()){
             extraSubs.addAll(ruleHead.getSubstitutions()
@@ -517,7 +518,7 @@ public class Reasoner {
                 }
 
                 QueryAnswers answers = propagateHeadSubstitutions(atomicQuery, ruleHead, subs);
-                QueryAnswers filteredAnswers = answers.filter(atomicQuery.getSelectVars());
+                QueryAnswers filteredAnswers = answers.filter(atomicQuery.getSelectedNames());
 
                 recordAnswers(atomicQuery, filteredAnswers, matAnswers);
 
@@ -567,7 +568,7 @@ public class Reasoner {
             answers = answers.join(subAnswers);
         }
 
-        return answers.filter(query.getSelectVars());
+        return answers.filter(query.getSelectedNames());
     }
 
     private void expandAtomicQuery(Atomic atom, Set<Query> subGoals, Map<String, Type> varMap) {
@@ -614,8 +615,8 @@ public class Reasoner {
 
     public MatchQuery resolveToQuery(MatchQuery inputQuery) {
         Query query = new Query(inputQuery, graph);
-        resolveQuery(query, true);
-        return inputQuery;
+        QueryAnswers answers = resolveQuery(query, false);
+        return new ReasonerMatchQuery(query, answers);
     }
 
     /**

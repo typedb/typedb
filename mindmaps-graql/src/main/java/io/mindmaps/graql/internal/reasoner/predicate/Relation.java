@@ -179,7 +179,7 @@ public class Relation extends AtomBase {
         Map<String, Pair<Type, RoleType>> roleVarTypeMap = new HashMap<>();
         if (getParentQuery() == null) return roleVarTypeMap;
 
-        MindmapsGraph graph =  getParentQuery().getGraph();
+        MindmapsGraph graph =  getParentQuery().getGraph().orElse(null);
         String relTypeId = getTypeId();
         Set<String> vars = getVarNames();
         Map<String, Type> varTypeMap = getParentQuery().getVarTypeMap();
@@ -196,7 +196,7 @@ public class Relation extends AtomBase {
                 roleVarTypeMap.put(var, new Pair<>(type, graph.getRoleType(roleTypeId)));
             else {
                 if (type != null) {
-                    Set<RoleType> cRoles = getCompatibleRoleTypes(type.getId(), relTypeId, getParentQuery().getGraph());
+                    Set<RoleType> cRoles = getCompatibleRoleTypes(type.getId(), relTypeId, getParentQuery().getGraph().orElse(null));
 
                     /**if roleType is unambigous*/
                     if (cRoles.size() == 1)
@@ -219,7 +219,8 @@ public class Relation extends AtomBase {
 
         if (getParentQuery() == null) return roleVarTypeMap;
 
-        MindmapsGraph graph =  getParentQuery().getGraph();
+
+        MindmapsGraph graph =  getParentQuery().getGraph().orElse(null);
         Map<String, Type> varTypeMap = getParentQuery().getVarTypeMap();
         Set<String> allocatedVars = new HashSet<>();
         Set<RoleType> allocatedRoles = new HashSet<>();

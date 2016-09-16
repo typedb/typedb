@@ -39,7 +39,7 @@ import static io.mindmaps.graql.internal.query.match.MatchQueryInternal.colorTyp
 import static java.util.stream.Collectors.toList;
 
 @SuppressWarnings("UnusedReturnValue")
-interface MatchQueryInternal extends MatchQueryAdmin {
+public interface MatchQueryInternal extends MatchQueryAdmin {
 
     /**
      * @param keyword a keyword to color-code using ANSI colors

@@ -125,7 +125,7 @@ public abstract class AtomBase implements Atomic{
     public boolean isType(){ return !typeId.isEmpty();}
     @Override
     public boolean isRuleResolvable(){
-        Type type = getParentQuery().getGraph().getType(getTypeId());
+        Type type = getParentQuery().getGraph().orElse(null).getType(getTypeId());
         return !type.getRulesOfConclusion().isEmpty();
     }
 
@@ -136,7 +136,7 @@ public abstract class AtomBase implements Atomic{
 
         String typeId = getTypeId();
         if (typeId.isEmpty()) return false;
-        Type type = getParentQuery().getGraph().getType(typeId);
+        Type type = getParentQuery().getGraph().orElse(null).getType(typeId);
         Collection<Rule> presentInConclusion = type.getRulesOfConclusion();
         Collection<Rule> presentInHypothesis = type.getRulesOfHypothesis();
 
