@@ -53,28 +53,24 @@ public class MeanMapReduce extends MindmapsMapReduce<Map<String, Number>> {
                 pair.put(SUM, vertex.value(Schema.ConceptProperty.VALUE_LONG.name()));
                 pair.put(COUNT, 1L);
                 emitter.emit(MEMORY_KEY, pair);
-//                emitter.emit(MEMORY_KEY, new MeanPair(vertex.value(Schema.ConceptProperty.VALUE_LONG.name()), 1L));
                 return;
             }
             Map<String, Number> emptyPair = new HashMap<>(2);
             emptyPair.put(SUM, 0);
             emptyPair.put(COUNT, 0);
             emitter.emit(MEMORY_KEY, emptyPair);
-//            emitter.emit(MEMORY_KEY, new MeanPair());
         } else {
             if (selectedTypes.contains(getVertexType(vertex))) {
                 Map<String, Number> pair = new HashMap<>(2);
                 pair.put(SUM, vertex.value(Schema.ConceptProperty.VALUE_DOUBLE.name()));
                 pair.put(COUNT, 1L);
                 emitter.emit(MEMORY_KEY, pair);
-//                emitter.emit(MEMORY_KEY, new MeanPair(vertex.value(Schema.ConceptProperty.VALUE_DOUBLE.name()), 1L));
                 return;
             }
             Map<String, Number> emptyPair = new HashMap<>(2);
             emptyPair.put(SUM, 0);
             emptyPair.put(COUNT, 0);
             emitter.emit(MEMORY_KEY, emptyPair);
-//            emitter.emit(MEMORY_KEY, new MeanPair());
         }
     }
 
@@ -109,32 +105,5 @@ public class MeanMapReduce extends MindmapsMapReduce<Map<String, Number>> {
         final Map<Serializable, Map<String, Number>> mean = new HashMap<>();
         keyValues.forEachRemaining(pair -> mean.put(pair.getKey(), pair.getValue()));
         return mean;
-    }
-
-    public class MeanPair implements Serializable {
-        private double sum = 0;
-        private long count = 0;
-
-        private MeanPair() {
-
-        }
-
-        private MeanPair(double sum, long count) {
-            this.sum = sum;
-            this.count = count;
-        }
-
-        private MeanPair(Number sum, long count) {
-            this.sum = sum.doubleValue();
-            this.count = count;
-        }
-
-        public double getSum() {
-            return sum;
-        }
-
-        public long getCount() {
-            return count;
-        }
     }
 }
