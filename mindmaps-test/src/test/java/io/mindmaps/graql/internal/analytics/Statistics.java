@@ -8,11 +8,15 @@ import org.junit.*;
 import spark.Spark;
 
 import java.util.Collections;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import static io.mindmaps.IntegrationUtils.graphWithNewKeyspace;
 import static io.mindmaps.IntegrationUtils.startTestEngine;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class Statistics {
 
@@ -78,44 +82,78 @@ public class Statistics {
                 .putRolePlayer(relation2, entity4);
 
         ResourceType resourceType1 = graph.putResourceType("resourceType1", ResourceType.DataType.DOUBLE);
-        graph.putResource(1.2, resourceType1);
-        graph.putResource(1.5, resourceType1);
-        graph.putResource(1.8, resourceType1);
-
         ResourceType resourceType2 = graph.putResourceType("resourceType2", ResourceType.DataType.LONG);
+        graph.putResourceType("resourceType3", ResourceType.DataType.STRING);
+        Analytics computer;
+
+        graph.commit();
+        graph = MindmapsClient.getGraph(keyspace);
+
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
+        assertFalse(computer.mean().isPresent());
+
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
+        assertFalse(computer.mean().isPresent());
+
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
+        assertFalse(computer.max().isPresent());
+
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
+        assertFalse(computer.min().isPresent());
+
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
+        assertFalse(computer.max().isPresent());
+
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
+        assertFalse(computer.min().isPresent());
+
         graph.putResource(4, resourceType2);
         graph.putResource(-1L, resourceType2);
         graph.putResource(0L, resourceType2);
 
+        graph.putResource(1.2, resourceType1);
+        graph.putResource(1.5, resourceType1);
+        graph.putResource(1.8, resourceType1);
+
         graph.commit();
-
-//        Analytics computer0 = new Analytics(keyspace);
-//        computer0.degreesAndPersist();
         graph = MindmapsClient.getGraph(keyspace);
-        Analytics computer;
 
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
-        assertEquals(1.5, computer.mean(), delta);
+        assertEquals(1.5, computer.mean().get(), delta);
 
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
-        assertEquals(1.0, computer.mean(), delta);
+        assertEquals(1.0, computer.mean().get(), delta);
 
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
-        assertEquals(1.8, computer.max().doubleValue(), delta);
+        assertEquals(1.8, computer.max().get().doubleValue(), delta);
 
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
-        assertEquals(1.2, computer.min().doubleValue(), delta);
+        assertEquals(1.2, computer.min().get().doubleValue(), delta);
 
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
-        assertEquals(4L, computer.max());
+        assertEquals(4L, computer.max().get());
 
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
-        assertEquals(-1L, computer.min());
+        assertEquals(-1L, computer.min().get());
 
-//        computer = new Analytics(keyspace, Collections.singleton(graph.getType("degree")));
-//        assertEquals(3L, computer.max());
-//
-//        computer = new Analytics(keyspace, Collections.singleton(graph.getType("degree")));
-//        assertEquals(0L, computer.min());
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("thing")));
+        assertExceptionThrown(computer::max);
+        assertExceptionThrown(computer::min);
+        assertExceptionThrown(computer::mean);
+
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType3")));
+        assertExceptionThrown(computer::max);
+        assertExceptionThrown(computer::min);
+        assertExceptionThrown(computer::mean);
+    }
+
+    private void assertExceptionThrown(Supplier<Optional> method) {
+        boolean exceptionThrown = false;
+        try {
+            method.get();
+        } catch (IllegalStateException e) {
+            exceptionThrown = true;
+        }
+        assertTrue(exceptionThrown);
     }
 }
