@@ -1,0 +1,62 @@
+insert
+
+###################################################
+####################Ontology######################
+#################################################
+
+"person" isa entity-type;
+
+"parent" isa role-type;
+"child" isa role-type;
+"Parent" isa relation-type, has-role parent, has-role child;
+person plays-role parent, plays-role child;
+
+"sibA" isa role-type;
+"sibB" isa role-type;
+"Sibling" isa relation-type, has-role sibA, has-role sibB;
+person plays-role sibA, plays-role sibB;
+
+"SG-role-A" isa role-type;
+"SG-role-B" isa role-type;
+"SameGen" isa relation-type, has-role SG-role-A, has-role SG-role-B;
+person plays-role SG-role-A, plays-role SG-role-B;
+
+####################################################
+##################DATA#############################
+####################################################
+
+"ann" isa person;
+"bill" isa person;
+"john" isa person;
+"peter" isa person;
+
+(parent 'john', child 'ann') isa Parent;
+(parent 'john', child 'peter') isa Parent;
+(parent 'john', child 'bill') isa Parent;
+
+####################################################
+##################RULES#############################
+####################################################
+
+"R1" isa inference-rule,
+lhs {match
+($x, $y) isa Sibling},
+rhs {match
+($x, $y) isa SameGen};
+
+"R2" isa inference-rule,
+lhs {match
+(parent $x, child $u) isa Parent;
+($u, $v) isa SameGen;
+(parent $y, child $v) isa Parent;
+select $x, $y},
+rhs {match
+($x, $y) isa SameGen};
+
+"R3" isa inference-rule,
+lhs {match
+(parent $z, child $x) isa Parent;
+(parent $z, child $y) isa Parent;
+select $x, $y},
+rhs {match
+($x, $y) isa Sibling};
