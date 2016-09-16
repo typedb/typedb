@@ -20,12 +20,15 @@ package io.mindmaps.graql.internal.reasoner.container;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.Disjunction;
+import io.mindmaps.graql.internal.query.match.MatchOrder;
+import io.mindmaps.graql.internal.query.match.MatchQueryInternal;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
@@ -35,8 +38,9 @@ import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public class  Query {
+public class Query implements MatchQueryInternal {
 
     protected final MindmapsGraph graph;
     protected final Set<Atomic> atomSet;
@@ -91,7 +95,7 @@ public class  Query {
     protected Query(Atomic atom) {
         if (atom.getParentQuery() == null)
             throw new IllegalArgumentException(ErrorMessage.PARENT_MISSING.getMessage(atom.toString()));
-        this.graph = atom.getParentQuery().getGraph();
+        this.graph = atom.getParentQuery().getGraph().orElse(null);
         this.pattern = Patterns.conjunction(Sets.newHashSet());
         this.selectVars = Sets.newHashSet(atom.getMatchQuery(graph).admin().getSelectedNames());
 
@@ -109,9 +113,27 @@ public class  Query {
     @Override
     public String toString() { return getMatchQuery().toString();}
 
-    public MindmapsGraph getGraph(){ return graph;}
-    public void setParentAtom(Atomic par){ parentAtom = par;}
+    @Override
+    public Set<Type> getTypes(MindmapsGraph graph){ return getMatchQuery().admin().getTypes(graph);}
 
+    @Override
+    public Set<Type> getTypes() { return getMatchQuery().admin().getTypes(); }
+
+    @Override
+    public Set<String> getSelectedNames() { return selectVars;}
+
+    @Override
+    public Stream<Map<String, Concept>> stream(Optional<MindmapsGraph> graph, Optional<MatchOrder> order) {
+        return getMatchQuery().stream();
+    }
+
+    @Override
+    public Optional<MindmapsGraph> getGraph(){ return Optional.of(graph);}
+
+    @Override
+    public Conjunction<PatternAdmin> getPattern(){ return pattern;}
+
+    public void setParentAtom(Atomic par){ parentAtom = par;}
     public Set<Atomic> getAtoms() { return new HashSet<>(atomSet);}
     public Set<Atomic> getAtomsWithType(Type type) {
         return typeAtomMap.get(type);
@@ -120,7 +142,6 @@ public class  Query {
         return getAtoms().stream().filter(Atomic::isValuePredicate).collect(Collectors.toSet());
     }
 
-    public Set<String> getSelectVars(){ return selectVars;}
     public Set<String> getVarSet() {
         Set<String> vars = new HashSet<>();
         atomSet.forEach(atom -> vars.addAll(atom.getVarNames()));
@@ -308,9 +329,6 @@ public class  Query {
         return qb.match(Patterns.disjunction(conjs)).select(selectVars);
     }
 
-    protected Conjunction<PatternAdmin> getPattern() {
-        return pattern;
-    }
     public PatternAdmin getExpandedPattern() {
         return getExpandedMatchQuery().admin().getPattern();
     }
