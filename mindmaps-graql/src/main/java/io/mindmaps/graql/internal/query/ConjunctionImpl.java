@@ -27,10 +27,8 @@ import io.mindmaps.graql.admin.VarAdmin;
 
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Collectors.*;
 
 class ConjunctionImpl<T extends PatternAdmin> implements Conjunction<T> {
 
@@ -92,7 +90,7 @@ class ConjunctionImpl<T extends PatternAdmin> implements Conjunction<T> {
 
     @Override
     public String toString() {
-        return patterns.stream().map(Object::toString).collect(Collectors.joining("; "));
+        return "{" + patterns.stream().map(s -> s + ";").collect(joining(" ")) + "}";
     }
 
     @Override

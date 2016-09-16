@@ -44,7 +44,7 @@ public class AtomicTest {
     public void testRoleInference(){
         MindmapsGraph graph = CWGraph.getGraph();
 
-        String queryString = "match isa owns, ($z, $y); $z isa country; $y isa weapon select $y, $z";
+        String queryString = "match isa owns, ($z, $y); $z isa country; $y isa weapon; select $y, $z";
         Query query = new Query(queryString, graph);
         Atomic atom = query.getAtomsWithType(graph.getType("owns")).iterator().next();
 
@@ -63,12 +63,12 @@ public class AtomicTest {
     public void testRoleInference2(){
         MindmapsGraph graph = CWGraph.getGraph();
 
-        String queryString = "match ($z, $y, $x), isa transaction;$z isa country;$x isa person select $x, $y, $z";
+        String queryString = "match ($z, $y, $x), isa transaction;$z isa country;$x isa person; select $x, $y, $z";
         Query query = new Query(queryString, graph);
         Atomic atom = query.getAtomsWithType(graph.getType("transaction")).iterator().next();
         Map<RoleType, Pair<String, Type>> roleMap = atom.getRoleVarTypeMap();
 
-        queryString = "match ($z, $y, seller: $x), isa transaction;$z isa country;$y isa weapon select $x, $y, $z";
+        queryString = "match ($z, $y, seller: $x), isa transaction;$z isa country;$y isa weapon; select $x, $y, $z";
         query = new Query(queryString, graph);
         atom = query.getAtomsWithType(graph.getType("transaction")).iterator().next();
         Map<RoleType, Pair<String, Type>> roleMap2 = atom.getRoleVarTypeMap();
@@ -105,7 +105,7 @@ public class AtomicTest {
         MindmapsGraph graph = GenericGraph.getGraph("geo-test.gql");
         QueryBuilder qb = Graql.withGraph(graph);
 
-        String queryString = "match ($x, $y, $z) isa ternary-relation-test";
+        String queryString = "match ($x, $y, $z) isa ternary-relation-test;";
 
         MatchQuery MQ = qb.parseMatch(queryString);
         Query query = new Query(MQ, graph);

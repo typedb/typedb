@@ -87,7 +87,7 @@ public class GraqlShellIT {
 
     @Test
     public void testExecuteOption() throws IOException {
-        String result = testShell("", "-e", "match $x isa role-type ask");
+        String result = testShell("", "-e", "match $x isa role-type; ask");
 
         // When using '-e', only results should be printed, no prompt or query
         assertThat(result, allOf(containsString("False"), not(containsString(">>>")), not(containsString("match"))));
@@ -96,9 +96,8 @@ public class GraqlShellIT {
     @Test
     public void testFileOption() throws IOException {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
-        String result = testShell("", err, "-f", "src/test/graql/shell-test.gql");
+        testShell("", err, "-f", "src/test/graql/shell-test.gql");
         assertEquals(err.toString(), "");
-        assertThat(result, allOf(containsString("person"), containsString("bob")));
     }
 
     @Test
@@ -112,14 +111,14 @@ public class GraqlShellIT {
 
     @Test
     public void testAskQuery() throws IOException {
-        String result = testShell("match $x isa relation-type ask\n");
+        String result = testShell("match $x isa relation-type; ask\n");
         assertThat(result, containsString("False"));
     }
 
     @Test
     public void testInsertQuery() throws IOException {
         String result = testShell(
-                "match $x isa entity-type ask\ninsert my-type isa entity-type\nmatch $x isa entity-type ask\n"
+                "match $x isa entity-type; ask\ninsert my-type isa entity-type;\nmatch $x isa entity-type; ask\n"
         );
         assertThat(result, allOf(containsString("False"), containsString("True")));
     }
@@ -158,7 +157,7 @@ public class GraqlShellIT {
 
     @Test
     public void testAutocompleteFill() throws IOException {
-        String result = testShell("match $x isa typ\t\n");
+        String result = testShell("match $x ako typ\t;\n");
         assertThat(result, containsString("\"relation-type\""));
     }
 
@@ -196,7 +195,7 @@ public class GraqlShellIT {
     @Test
     public void testInvalidQuery() throws IOException {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
-        testShell("insert movie isa entity-type; moon isa movie; europa isa moon\n", err);
+        testShell("insert movie isa entity-type; moon isa movie; europa isa moon;\n", err);
 
         assertThat(err.toString(), allOf(containsString("moon"), containsString("not"), containsString("type")));
     }
@@ -220,6 +219,7 @@ public class GraqlShellIT {
     public void fuzzTest() throws IOException {
         int repeats = 100;
         for (int i = 0; i < repeats; i ++) {
+            System.out.println(i);
             testShell(randomString(i));
         }
     }
