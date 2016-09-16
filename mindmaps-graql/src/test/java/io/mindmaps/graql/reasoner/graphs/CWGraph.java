@@ -192,7 +192,7 @@ public class CWGraph {
                 "$x isa person;$x has nationality 'American';" +
                 "$y isa weapon;" +
                 "$z isa country;$z has alignment 'hostile';" +
-                "(seller $x, transaction-item $y, buyer $z) isa transaction;" +
+                "(seller: $x, transaction-item: $y, buyer: $z) isa transaction;" +
                 "select $x";
 
         String R1_RHS = "match $x isa criminal";
@@ -228,7 +228,7 @@ public class CWGraph {
                 "($x, $y) isa is-paid-by;\n" +
                 "($y, $z) isa owns";
 
-        String R5_RHS = "match (seller $x, buyer $y, transaction-item $z) isa transaction";
+        String R5_RHS = "match (seller: $x, buyer: $y, transaction-item: $z) isa transaction";
 
         mindmaps.putRule("R5", R5_LHS, R5_RHS, inferenceRule);
     }

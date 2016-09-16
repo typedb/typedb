@@ -53,7 +53,7 @@ property       : 'isa' variable                   # isa
                | 'regex' REGEX                    # propRegex
                ;
 
-casting        : variable? variable ;
+casting        : (variable ':')? variable ;
 
 variable       : id | VARIABLE ;
 

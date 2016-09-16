@@ -81,7 +81,7 @@ public class QueryParserTest {
         MatchQuery parsed = qb.parseMatch(
                 "match\n" +
                         "$brando value \"Marl B\" isa person;\n" +
-                        "(actor $brando, $char, production-with-cast $prod)\n" +
+                        "(actor: $brando, $char, production-with-cast: $prod)\n" +
                         "select $char, $prod"
         );
 
@@ -215,7 +215,7 @@ public class QueryParserTest {
 
         MatchQuery parsed = qb.parseMatch(
                 "match" +
-                        "($p $x, $y);" +
+                        "($p: $x, $y);" +
                         "$x isa $z;" +
                         "$y value 'crime';" +
                         "$z ako production;" +
@@ -278,8 +278,8 @@ public class QueryParserTest {
                 "$x id 'Pichu' isa pokemon;" +
                 "$y id 'Pikachu' isa pokemon;" +
                 "$z id 'Raichu' isa pokemon;" +
-                "(evolves-from $x ,evolves-to $y) isa evolution;" +
-                "(evolves-from $y, evolves-to $z) isa evolution;"
+                "(evolves-from: $x ,evolves-to: $y) isa evolution;" +
+                "(evolves-from: $y, evolves-to: $z) isa evolution;"
         ).execute();
 
         assertTrue(qb.match(id("pokemon").isa(ENTITY_TYPE.getId())).ask().execute());

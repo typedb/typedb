@@ -25,13 +25,13 @@ start-vertex plays-role path-from;
 
 "R1" isa inference-rule,
 lhs {match
-(arc-from $x, arc-to $y) isa arc},
+(arc-from: $x, arc-to: $y) isa arc},
 rhs {match
-(path-from $x, path-to $y) isa path};
+(path-from: $x, path-to: $y) isa path};
 
 "R2" isa inference-rule,
 lhs {match
-(path-from $x, path-to $z) isa path;
-(path-from $z, path-to $y) isa path},
+(path-from: $x, path-to: $z) isa path;
+(path-from: $z, path-to: $y) isa path},
 rhs {match
-(path-from $x, path-to $y) isa path};
+(path-from: $x, path-to: $y) isa path};
