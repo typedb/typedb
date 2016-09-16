@@ -213,6 +213,15 @@ public class GraqlShellIT {
     }
 
     @Test
+    public void testRollback() throws IOException {
+        String[] result = testShell("insert E isa entity-type;\nrollback\nmatch $x isa entity-type\n").split("\n");
+
+        // Make sure there are no results for match query
+        assertEquals(">>> match $x isa entity-type", result[result.length-2]);
+        assertEquals(">>> ", result[result.length-1]);
+    }
+
+    @Test
     public void fuzzTest() throws IOException {
         int repeats = 100;
         for (int i = 0; i < repeats; i ++) {
