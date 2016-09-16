@@ -52,6 +52,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -788,7 +789,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
      * @param resourceIds The resourceIDs which possible contain duplicates.
      * @return True if a commit is required.
      */
-    public boolean fixDuplicateResources(Set<String> resourceIds){
+    public boolean fixDuplicateResources(Set<Object> resourceIds){
         boolean commitRequired = false;
 
         Set<ResourceImpl> resources = resourceIds.stream().map(this::getConceptByBaseIdentifier)
@@ -833,20 +834,17 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     private void mergeResources(Set<ResourceImpl> resources){
         Iterator<ResourceImpl> it = resources.iterator();
         ResourceImpl<?> mainResource = it.next();
-        HashSet<RelationImpl> relationsToRemove = new HashSet<>();
 
         while(it.hasNext()){
             ResourceImpl<?> otherResource = it.next();
             Collection<Relation> otherRelations = otherResource.relations();
 
             for (Relation otherRelation : otherRelations) {
-                if(relationCopied(mainResource, otherResource, otherRelation)){
-                    relationsToRemove.add((RelationImpl) otherRelation);
-                }
+                copyRelation(mainResource, otherResource, otherRelation);
             }
-        }
 
-        deleteRelations(relationsToRemove);
+            otherResource.delete();
+        }
     }
 
     /**
@@ -854,9 +852,8 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
      * @param main The main instance to possibly acquire a new relation
      * @param other The other instance which already posses the relation
      * @param otherRelation The other relation to potentially be absorbed
-     * @return true if the relation was copied to the main instance
      */
-    private boolean relationCopied(Instance main, Instance other, Relation otherRelation){
+    private void copyRelation(Instance main, Instance other, Relation otherRelation){
         RelationType relationType = otherRelation.type();
         Map<RoleType, Instance> rolePlayers = otherRelation.rolePlayers();
 
@@ -869,15 +866,16 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
 
         Relation foundRelation = getRelation(relationType, rolePlayers);
 
+        //Delete old Relation
+        deleteRelations(Collections.singleton((RelationImpl) otherRelation));
+
         if(foundRelation != null){
-            return false; // The relation already exists, no need to copy
+            return;
         }
 
         //Relation was not found so create a new one
         Relation relation = addRelation(relationType);
         rolePlayers.entrySet().forEach(entry -> relation.putRolePlayer(entry.getKey(), entry.getValue()));
-
-        return true;
     }
 
 }
