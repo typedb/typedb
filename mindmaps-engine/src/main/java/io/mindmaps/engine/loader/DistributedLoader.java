@@ -105,7 +105,7 @@ public class DistributedLoader extends Loader {
     }
 
     public void submitBatch(Collection<Var> batch) {
-        String batchedString = batch.stream().map(Object::toString).collect(Collectors.joining(";"));
+        String batchedString = batch.stream().map(b -> b + ";").collect(Collectors.joining(" "));
 
         if (batchedString.length() == 0) { return; }
 
