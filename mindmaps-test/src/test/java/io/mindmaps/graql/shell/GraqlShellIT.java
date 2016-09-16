@@ -128,7 +128,7 @@ public class GraqlShellIT {
     public void testInsertOutput() throws IOException {
         String[] result = testShell("insert a-type isa entity-type; thingy isa a-type\n").split("\r\n?|\n");
 
-        // Expect six lines output - four for the license, one for the query, four results and a new prompt
+        // Expect six lines output - four for the license, one for the query, no results and a new prompt
         assertEquals(6, result.length);
         assertEquals(">>> insert a-type isa entity-type; thingy isa a-type", result[4]);
         assertEquals(">>> ", result[5]);
