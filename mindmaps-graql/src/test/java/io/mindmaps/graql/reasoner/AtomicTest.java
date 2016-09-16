@@ -68,7 +68,7 @@ public class AtomicTest {
         Atomic atom = query.getAtomsWithType(graph.getType("transaction")).iterator().next();
         Map<RoleType, Pair<String, Type>> roleMap = atom.getRoleVarTypeMap();
 
-        queryString = "match ($z, $y, seller $x), isa transaction;$z isa country;$y isa weapon select $x, $y, $z";
+        queryString = "match ($z, $y, seller: $x), isa transaction;$z isa country;$y isa weapon select $x, $y, $z";
         query = new Query(queryString, graph);
         atom = query.getAtomsWithType(graph.getType("transaction")).iterator().next();
         Map<RoleType, Pair<String, Type>> roleMap2 = atom.getRoleVarTypeMap();
@@ -81,7 +81,7 @@ public class AtomicTest {
         MindmapsGraph graph = GenericGraph.getGraph("geo-test.gql");
         QueryBuilder qb = Graql.withGraph(graph);
 
-        String queryString = "match (geo-entity $x, entity-location $y) isa is-located-in;";
+        String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
 
         MatchQuery MQ = qb.parseMatch(queryString);
         Query query = new Query(MQ, graph);

@@ -70,15 +70,15 @@ public class ExamplesTest {
                 "insert practice has-role philosopher, has-role philosophy;",
                 "insert person plays-role philosopher;",
                 "insert school plays-role philosophy;",
-                "insert (philosopher Socrates, philosophy Platonism) isa practice;",
-                "insert (philosopher Plato, philosophy Idealism) isa practice;",
-                "insert (philosopher Plato, philosophy Platonism) isa practice;",
-                "insert (philosopher Aristotle, philosophy Peripateticism) isa practice;"
+                "insert (philosopher: Socrates, philosophy: Platonism) isa practice;",
+                "insert (philosopher: Plato, philosophy: Idealism) isa practice;",
+                "insert (philosopher: Plato, philosophy: Platonism) isa practice;",
+                "insert (philosopher: Aristotle, philosophy: Peripateticism) isa practice;"
         );
 
         assertEquals(
                 2,
-                qb.parseMatch("match (philosopher $x, Platonism) isa practice;").stream().count()
+                qb.parseMatch("match (philosopher: $x, Platonism) isa practice;").stream().count()
         );
 
         load(
@@ -87,9 +87,9 @@ public class ExamplesTest {
                 "insert student isa role-type;",
                 "insert education has-role teacher, has-role student;",
                 "insert person plays-role teacher, plays-role student;",
-                "insert (teacher Socrates, student Plato) isa education;",
-                "insert (teacher Plato, student Aristotle) isa education;",
-                "insert (teacher Aristotle, student Alexander) isa education;"
+                "insert (teacher: Socrates, student: Plato) isa education;",
+                "insert (teacher: Plato, student: Aristotle) isa education;",
+                "insert (teacher: Aristotle, student: Alexander) isa education;"
         );
 
         load(
@@ -121,17 +121,17 @@ public class ExamplesTest {
                 "insert fact has-resource description",
                 "insert person plays-role thinker",
                 "insert id 'sun-fact' isa fact, has description 'The Sun is bigger than the Earth';",
-                "insert (thinker Aristotle, thought sun-fact) isa knowledge;",
+                "insert (thinker: Aristotle, thought: sun-fact) isa knowledge;",
                 "insert id 'cave-fact' isa fact, has description 'Caves are mostly pretty dark';",
-                "insert (thinker Plato, thought cave-fact) isa knowledge;",
+                "insert (thinker: Plato, thought: cave-fact) isa knowledge;",
                 "insert id 'nothing' isa fact;",
-                "insert (thinker Socrates, thought nothing) isa knowledge;"
+                "insert (thinker: Socrates, thought: nothing) isa knowledge;"
         );
 
         load(
                 "insert knowledge plays-role thought;",
                 "match $socratesKnowsNothing (Socrates, nothing) " +
-                "insert (thinker Socrates, thought $socratesKnowsNothing) isa knowledge"
+                "insert (thinker: Socrates, thought: $socratesKnowsNothing) isa knowledge"
         );
 
         assertEquals(

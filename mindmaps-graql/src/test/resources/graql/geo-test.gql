@@ -56,29 +56,29 @@ entity plays-role role1, plays-role role2, plays-role role3;
 "University-College-London" isa university;
 "University-of-Munich" isa university;
 
-(geo-entity 'Warsaw-Polytechnics', entity-location 'Warsaw') isa is-located-in;
-(geo-entity 'University-of-Warsaw', entity-location 'Warsaw') isa is-located-in;
-(geo-entity 'Imperial-College-London', entity-location 'London') isa is-located-in;
-(geo-entity 'University-College-London', entity-location 'London') isa is-located-in;
+(geo-entity: 'Warsaw-Polytechnics', entity-location: 'Warsaw') isa is-located-in;
+(geo-entity: 'University-of-Warsaw', entity-location: 'Warsaw') isa is-located-in;
+(geo-entity: 'Imperial-College-London', entity-location: 'London') isa is-located-in;
+(geo-entity: 'University-College-London', entity-location: 'London') isa is-located-in;
 
-(geo-entity 'Warsaw', entity-location 'Masovia') isa is-located-in;
-(geo-entity 'Masovia', entity-location 'Poland') isa is-located-in;
-(geo-entity 'Wroclaw', entity-location 'Silesia') isa is-located-in;
-(geo-entity 'Silesia', entity-location 'Poland') isa is-located-in;
-(geo-entity 'Poland', entity-location 'Europe') isa is-located-in;
+(geo-entity: 'Warsaw', entity-location: 'Masovia') isa is-located-in;
+(geo-entity: 'Masovia', entity-location: 'Poland') isa is-located-in;
+(geo-entity: 'Wroclaw', entity-location: 'Silesia') isa is-located-in;
+(geo-entity: 'Silesia', entity-location: 'Poland') isa is-located-in;
+(geo-entity: 'Poland', entity-location: 'Europe') isa is-located-in;
 
-(geo-entity 'London', entity-location 'GreaterLondon') isa is-located-in;
-(geo-entity 'GreaterLondon', entity-location 'England') isa is-located-in;
-(geo-entity 'England', entity-location 'Europe') isa is-located-in;
+(geo-entity: 'London', entity-location: 'GreaterLondon') isa is-located-in;
+(geo-entity: 'GreaterLondon', entity-location: 'England') isa is-located-in;
+(geo-entity: 'England', entity-location: 'Europe') isa is-located-in;
 
-(geo-entity 'Munich', entity-location 'Bavaria') isa is-located-in;
-(geo-entity 'Bavaria', entity-location 'Germany') isa is-located-in;
-(geo-entity 'Germany', entity-location 'Europe') isa is-located-in;
+(geo-entity: 'Munich', entity-location: 'Bavaria') isa is-located-in;
+(geo-entity: 'Bavaria', entity-location: 'Germany') isa is-located-in;
+(geo-entity: 'Germany', entity-location: 'Europe') isa is-located-in;
 
-(geo-entity 'Milan', entity-location 'Lombardy') isa is-located-in;
-(geo-entity 'Lombardy', entity-location 'Italy') isa is-located-in;
-(geo-entity 'Italy', entity-location 'Europe') isa is-located-in;
+(geo-entity: 'Milan', entity-location: 'Lombardy') isa is-located-in;
+(geo-entity: 'Lombardy', entity-location: 'Italy') isa is-located-in;
+(geo-entity: 'Italy', entity-location: 'Europe') isa is-located-in;
 
-(geo-entity 'Paris', entity-location 'IleDeFrance') isa is-located-in;
-(geo-entity 'IleDeFrance', entity-location 'France') isa is-located-in;
-(geo-entity 'France', entity-location 'Europe') isa is-located-in;
+(geo-entity: 'Paris', entity-location: 'IleDeFrance') isa is-located-in;
+(geo-entity: 'IleDeFrance', entity-location: 'France') isa is-located-in;
+(geo-entity: 'France', entity-location: 'Europe') isa is-located-in;

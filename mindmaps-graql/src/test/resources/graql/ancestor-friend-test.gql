@@ -32,10 +32,10 @@ Person plays-role person, plays-role ancestor-friend;
 "d" isa Person;
 "g" isa Person;
 
-(parent 'a', child 'b') isa Parent;
-(parent 'b', child 'c') isa Parent;
-(friendA 'a', friendB 'g') isa Friend;
-(friendA 'c', friendB 'd') isa Friend;
+(parent: 'a', child: 'b') isa Parent;
+(parent: 'b', child: 'c') isa Parent;
+(friendA: 'a', friendB: 'g') isa Friend;
+(friendA: 'c', friendB: 'd') isa Friend;
 
 ####################################################
 ##################RULES#############################
@@ -49,7 +49,7 @@ rhs {match
 
 "R2" isa inference-rule,
 lhs {match
-(parent $x, child $z) isa Parent;
-(person $z, ancestor-friend $y) isa Ancestor-friend select $x, $y},
+(parent: $x, child: $z) isa Parent;
+(person: $z, ancestor-friend: $y) isa Ancestor-friend select $x, $y},
 rhs {match
-(person $x, ancestor-friend $y) isa Ancestor-friend};
+(person: $x, ancestor-friend: $y) isa Ancestor-friend};
