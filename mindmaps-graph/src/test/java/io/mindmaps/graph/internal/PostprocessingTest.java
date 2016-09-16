@@ -18,9 +18,12 @@
 
 package io.mindmaps.graph.internal;
 
+import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Relation;
 import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.Resource;
+import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.util.Schema;
@@ -30,7 +33,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class PostprocessingTest {
     private AbstractMindmapsGraph graph;
@@ -73,7 +82,7 @@ public class PostprocessingTest {
         buildDuplicateCastingWithNewRelation(relationType, (RoleTypeImpl) roleType1, instance1, roleType2, instance4);
         assertEquals(3, instance1.castings().size());
 
-        graph.fixDuplicateCasting(mainCasting.getId());
+        graph.fixDuplicateCasting(mainCasting.getBaseIdentifier());
         assertEquals(1, instance1.castings().size());
     }
 
@@ -127,7 +136,7 @@ public class PostprocessingTest {
         assertEquals(6, graph.getTinkerPopGraph().traversal().E().
                 hasLabel(Schema.EdgeLabel.SHORTCUT.getLabel()).toList().size());
 
-        graph.fixDuplicateCasting(mainCasting.getId());
+        graph.fixDuplicateCasting(mainCasting.getBaseIdentifier());
 
         assertEquals(2, instance1.relations().size());
         assertEquals(1, instance2.relations().size());
@@ -136,5 +145,104 @@ public class PostprocessingTest {
         assertEquals(4, graph.getTinkerTraversal().E().
                 hasLabel(Schema.EdgeLabel.SHORTCUT.getLabel()).toList().size());
 
+    }
+
+    @Test
+    public void testMergingResourcesSimple(){
+        ResourceType resourceType = graph.putResourceType("Resource Type", ResourceType.DataType.STRING);
+
+        //Create fake resources
+        Set<Object> resourceIds = new HashSet<>();
+        resourceIds.add(createFakeResource(resourceType, "1").getBaseIdentifier());
+        resourceIds.add(createFakeResource(resourceType, "1").getBaseIdentifier());
+        resourceIds.add(createFakeResource(resourceType, "1").getBaseIdentifier());
+        resourceIds.add(createFakeResource(resourceType, "2").getBaseIdentifier());
+        resourceIds.add(createFakeResource(resourceType, "3").getBaseIdentifier());
+
+        //Check we have duplicate resources
+        assertEquals(5, resourceType.instances().size());
+
+        //Fix duplicates
+        graph.fixDuplicateResources(resourceIds);
+
+        //Check we no longer have duplicates
+        assertEquals(3, resourceType.instances().size());
+    }
+
+    @Test
+    public void testMergingResourcesWithRelations(){
+        RoleType roleEntity = graph.putRoleType("A Entity Role Type");
+        RoleType roleResource = graph.putRoleType("A Resource Role Type");
+        RelationType relationType = graph.putRelationType("A Relation Type").hasRole(roleEntity).hasRole(roleResource);
+        ResourceType<String> resourceType = graph.putResourceType("Resource Type", ResourceType.DataType.STRING).playsRole(roleResource);
+        EntityType entityType = graph.putEntityType("An Entity Type").playsRole(roleEntity);
+        Entity e1 = graph.addEntity(entityType);
+        Entity e2 = graph.addEntity(entityType);
+        Entity e3 = graph.addEntity(entityType);
+
+        //Create fake resources
+        Set<Object> resourceIds = new HashSet<>();
+        ResourceImpl<?> r1 = createFakeResource(resourceType, "1");
+        ResourceImpl<?> r11 = createFakeResource(resourceType, "1");
+        ResourceImpl<?> r111 = createFakeResource(resourceType, "1");
+        ResourceImpl<?> r2 = createFakeResource(resourceType, "2");
+        ResourceImpl<?> r3 = createFakeResource(resourceType, "3");
+
+        resourceIds.add(r1.getBaseIdentifier());
+        resourceIds.add(r11.getBaseIdentifier());
+        resourceIds.add(r111.getBaseIdentifier());
+        resourceIds.add(r2.getBaseIdentifier());
+        resourceIds.add(r3.getBaseIdentifier());
+
+        //Give resources some relationships
+        graph.addRelation(relationType).putRolePlayer(roleResource, r1).putRolePlayer(roleEntity, e1);
+        graph.addRelation(relationType).putRolePlayer(roleResource, r11).putRolePlayer(roleEntity, e1); //When merging this relation should not be absorbed
+        graph.addRelation(relationType).putRolePlayer(roleResource, r11).putRolePlayer(roleEntity, e2); //Absorb
+        graph.addRelation(relationType).putRolePlayer(roleResource, r111).putRolePlayer(roleEntity, e2); //Don't Absorb
+        graph.addRelation(relationType).putRolePlayer(roleResource, r111).putRolePlayer(roleEntity, e3); //Absorb
+
+        //Check everything is broken
+        assertEquals(5, resourceType.instances().size());
+        assertEquals(1, r1.relations().size());
+        assertEquals(2, r11.relations().size());
+        assertEquals(1, r1.relations().size());
+        assertEquals(6, graph.getTinkerTraversal().V().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
+
+        r1.relations().forEach(rel -> assertTrue(rel.rolePlayers().values().contains(e1)));
+
+        //Now fix everything
+        graph.fixDuplicateResources(resourceIds);
+
+        //Check everything is in order
+        assertEquals(3, resourceType.instances().size());
+
+        //Get back the surviving resource
+        Resource<String> foundR1 = null;
+        for (Resource<String> resource : resourceType.instances()) {
+            if(resource.getValue().equals("1")){
+                foundR1 = resource;
+                break;
+            }
+        }
+
+        assertNotNull(foundR1);
+        assertEquals(3, foundR1.relations().size());
+        assertTrue(foundR1.ownerInstances().contains(e1));
+        assertTrue(foundR1.ownerInstances().contains(e2));
+
+        assertEquals(4, graph.getTinkerTraversal().V().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
+    }
+
+
+    private ResourceImpl createFakeResource(ResourceType type, String value){
+        String index = ResourceImpl.generateResourceIndex(type.getId(), value);
+        Vertex resourceVertex = graph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
+
+        resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), ((ResourceTypeImpl)type).getVertex());
+        resourceVertex.property(Schema.ConceptProperty.INDEX.name(), index);
+        resourceVertex.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), UUID.randomUUID().toString());
+        resourceVertex.property(Schema.ConceptProperty.VALUE_STRING.name(), value);
+
+        return new ResourceImpl(resourceVertex, graph);
     }
 }

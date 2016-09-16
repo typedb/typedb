@@ -111,6 +111,7 @@ public class BlockingLoader extends Loader {
                     insert(batch).withGraph(graph).execute();
                     graph.commit();
                     cache.addJobCasting(graphName, graph.getModifiedCastingIds());
+                    cache.addJobResource(graphName, graph.getModifiedResourceIds());
                     return;
 
                 } catch (MindmapsValidationException e) {

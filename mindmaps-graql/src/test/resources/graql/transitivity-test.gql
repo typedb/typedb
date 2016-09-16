@@ -50,23 +50,23 @@ entity plays-role H-role-A, plays-role H-role-B;
 "u" isa entity;
 "v" isa entity;
 
-(E-role-A 'i', E-role-B 'j') isa E;
-(E-role-A 'l', E-role-B 'm') isa E;
-(E-role-A 'n', E-role-B 'o') isa E;
-(E-role-A 'q', E-role-B 'r') isa E;
-(E-role-A 't', E-role-B 'u') isa E;
+(E-role-A: 'i', E-role-B: 'j') isa E;
+(E-role-A: 'l', E-role-B: 'm') isa E;
+(E-role-A: 'n', E-role-B: 'o') isa E;
+(E-role-A: 'q', E-role-B: 'r') isa E;
+(E-role-A: 't', E-role-B: 'u') isa E;
 
-(F-role-A 'i', F-role-B 'i') isa F;
-(F-role-A 'i', F-role-B 'k') isa F;
-(F-role-A 'k', F-role-B 'l') isa F;
+(F-role-A: 'i', F-role-B: 'i') isa F;
+(F-role-A: 'i', F-role-B: 'k') isa F;
+(F-role-A: 'k', F-role-B: 'l') isa F;
 
-(G-role-A 'm', G-role-B 'n') isa G;
-(G-role-A 'p', G-role-B 'q') isa G;
-(G-role-A 's', G-role-B 't') isa G;
+(G-role-A: 'm', G-role-B: 'n') isa G;
+(G-role-A: 'p', G-role-B: 'q') isa G;
+(G-role-A: 's', G-role-B: 't') isa G;
 
-(H-role-A 'o', H-role-B 'p') isa H;
-(H-role-A 'r', H-role-B 's') isa H;
-(H-role-A 'u', H-role-B 'v') isa H;
+(H-role-A: 'o', H-role-B: 'p') isa H;
+(H-role-A: 'r', H-role-B: 's') isa H;
+(H-role-A: 'u', H-role-B: 'v') isa H;
 
 ################################################################
 ################################RULES#################################
@@ -74,17 +74,17 @@ entity plays-role H-role-A, plays-role H-role-B;
 
 "R1" isa inference-rule,
 lhs {match
-(E-role-A $x, E-role-B $y) isa E},
+(E-role-A: $x, E-role-B: $y) isa E},
 rhs {match
-(R-role-A $x, R-role-B $y) isa R};
+(R-role-A: $x, R-role-B: $y) isa R};
 
 "R2" isa inference-rule,
 lhs {match
-(F-role-A $x, F-role-B $t) isa F;
-(R-role-A $t, R-role-B $u) isa R;
-(G-role-A $u, G-role-B $v) isa G;
-(R-role-A $v, R-role-B $w) isa R;
-(H-role-A $w, H-role-B $y) isa H select $x, $y},
+(F-role-A: $x, F-role-B: $t) isa F;
+(R-role-A: $t, R-role-B: $u) isa R;
+(G-role-A: $u, G-role-B: $v) isa G;
+(R-role-A: $v, R-role-B: $w) isa R;
+(H-role-A: $w, H-role-B: $y) isa H select $x, $y},
 rhs {match
-(R-role-A $x, R-role-B $y) isa R};
+(R-role-A: $x, R-role-B: $y) isa R};
 

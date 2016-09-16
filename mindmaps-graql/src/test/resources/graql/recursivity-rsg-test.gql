@@ -52,25 +52,25 @@ person plays-role flat-from, plays-role flat-to;
 "o" isa person;
 "p" isa person;
 
-(up-from 'a', up-to 'e') isa up;
-(up-from 'a', up-to 'f') isa up;
-(up-from 'f', up-to 'm') isa up;
-(up-from 'g', up-to 'n') isa up;
-(up-from 'h', up-to 'n') isa up;
-(up-from 'i', up-to 'o') isa up;
-(up-from 'j', up-to 'o') isa up;
+(up-from: 'a', up-to: 'e') isa up;
+(up-from: 'a', up-to: 'f') isa up;
+(up-from: 'f', up-to: 'm') isa up;
+(up-from: 'g', up-to: 'n') isa up;
+(up-from: 'h', up-to: 'n') isa up;
+(up-from: 'i', up-to: 'o') isa up;
+(up-from: 'j', up-to: 'o') isa up;
 
-(flat-from 'g', flat-to 'f') isa flat;
-(flat-from 'm', flat-to 'n') isa flat;
-(flat-from 'm', flat-to 'o') isa flat;
-(flat-from 'p', flat-to 'm') isa flat;
+(flat-from: 'g', flat-to: 'f') isa flat;
+(flat-from: 'm', flat-to: 'n') isa flat;
+(flat-from: 'm', flat-to: 'o') isa flat;
+(flat-from: 'p', flat-to: 'm') isa flat;
 
-(down-from 'l', down-to 'f') isa down;
-(down-from 'm', down-to 'f') isa down;
-(down-from 'g', down-to 'b') isa down;
-(down-from 'h', down-to 'c') isa down;
-(down-from 'i', down-to 'd') isa down;
-(down-from 'p', down-to 'k') isa down;
+(down-from: 'l', down-to: 'f') isa down;
+(down-from: 'm', down-to: 'f') isa down;
+(down-from: 'g', down-to: 'b') isa down;
+(down-from: 'h', down-to: 'c') isa down;
+(down-from: 'i', down-to: 'd') isa down;
+(down-from: 'p', down-to: 'k') isa down;
 
 ####################################################
 ##################RULES#############################
@@ -78,15 +78,15 @@ person plays-role flat-from, plays-role flat-to;
 
 "R1" isa inference-rule,
 lhs {match
-(flat-from $x, flat-to $y) isa flat},
+(flat-from: $x, flat-to: $y) isa flat},
 rhs {match
-(RSG-from $x, RSG-to $y) isa RevSG};
+(RSG-from: $x, RSG-to: $y) isa RevSG};
 
 "R2" isa inference-rule,
 lhs {match
-(up-from $x, up-to $x1) isa up;
-(RSG-from $y1, RSG-to $x1) isa RevSG;
-(down-from $y1, down-to $y) isa down;
+(up-from: $x, up-to: $x1) isa up;
+(RSG-from: $y1, RSG-to: $x1) isa RevSG;
+(down-from: $y1, down-to: $y) isa down;
 select $x, $y},
 rhs {match
-(RSG-from $x, RSG-to $y) isa RevSG};
+(RSG-from: $x, RSG-to: $y) isa RevSG};

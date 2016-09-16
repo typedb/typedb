@@ -19,30 +19,59 @@
 package io.mindmaps.engine.postprocessing;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
+import io.mindmaps.util.ErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Set;
 
 class ConceptFixer {
     private static final Logger LOG = LoggerFactory.getLogger(ConceptFixer.class);
     private static final int MAX_RETRY = 10;
 
-    public static void checkCasting(MindmapsGraph graph, String castingId){
+    public static void checkCasting(Cache cache, MindmapsGraph graph, String castingId){
         boolean notDone = true;
         int retry = 0;
 
         while(notDone) {
             try {
-
                 if (((AbstractMindmapsGraph)graph).fixDuplicateCasting(castingId)) {
                     graph.commit();
                 }
+                cache.deleteJobCasting(graph.getKeyspace(), castingId);
                 notDone = false;
             } catch (Exception e) {
                 LOG.error(ErrorMessage.POSTPROCESSING_ERROR.getMessage("casting", e.getMessage()), e);
                 if(retry ++ > MAX_RETRY){
                     LOG.error(ErrorMessage.UNABLE_TO_ANALYSE_CONCEPT.getMessage(castingId, e.getMessage()), e);
+                    notDone = false;
+                } else {
+                    performRetry(retry);
+                }
+            }
+        }
+    }
+
+    public static void checkResources(Cache cache, MindmapsGraph graph, Set<String> resourceIds){
+        boolean notDone = true;
+        int retry = 0;
+
+        while(notDone) {
+            try {
+                if (((AbstractMindmapsGraph)graph).fixDuplicateResources(resourceIds)) {
+                    graph.commit();
+                }
+                resourceIds.forEach(resourceId -> cache.deleteJobResource(graph.getKeyspace(), resourceId));
+                notDone = false;
+            } catch (Exception e) {
+                LOG.error(ErrorMessage.POSTPROCESSING_ERROR.getMessage("resource", e.getMessage()), e);
+                if(retry ++ > MAX_RETRY){
+                    String message = "";
+                    for (String resourceId : resourceIds) {
+                        message += resourceId;
+                    }
+                    LOG.error(ErrorMessage.UNABLE_TO_ANALYSE_CONCEPT.getMessage(message, e.getMessage()), e);
                     notDone = false;
                 } else {
                     performRetry(retry);

@@ -52,6 +52,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -186,9 +187,11 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     }
 
     public Set<String> getModifiedCastingIds(){
-        Set<String> relationIds = new HashSet<>();
-        getConceptLog().getModifiedCastings().forEach(c -> relationIds.add(c.getId()));
-        return relationIds;
+        return getConceptLog().getModifiedCastingIds();
+    }
+
+    public Set<String> getModifiedResourceIds(){
+        return getConceptLog().getModifiedResourceIds();
     }
 
     public ConceptLog getConceptLog() {
@@ -613,9 +616,12 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
 
         Map<Schema.BaseType, Set<String>> modifiedConcepts = new HashMap<>();
         Set<String> castings = getModifiedCastingIds();
+        Set<String> resources = getModifiedResourceIds();
 
         if(castings.size() > 0)
             modifiedConcepts.put(Schema.BaseType.CASTING, castings);
+        if(resources.size() > 0)
+            modifiedConcepts.put(Schema.BaseType.RESOURCE, resources);
 
         LOG.info("Graph is valid. Committing graph . . . ");
         commitTx();
@@ -651,9 +657,9 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         for (Map.Entry<Schema.BaseType, Set<String>> entry : concepts.entrySet()) {
             Schema.BaseType type = entry.getKey();
 
-            for (String conceptId : entry.getValue()) {
+            for (String vertexId : entry.getValue()) {
                 JSONObject jsonObject = new JSONObject();
-                jsonObject.put("id", conceptId);
+                jsonObject.put("id", vertexId);
                 jsonObject.put("type", type.name());
                 jsonArray.put(jsonObject);
             }
@@ -678,9 +684,9 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
      * @param castingId The id of the casting to check for duplicates
      * @return true if some castings were merged
      */
-    public boolean fixDuplicateCasting(String castingId){
+    public boolean fixDuplicateCasting(Object castingId){
         //Get the Casting
-        ConceptImpl concept = (ConceptImpl) getConcept(castingId);
+        ConceptImpl concept = getConceptByBaseIdentifier(castingId);
         if(concept == null || !concept.isCasting())
             return false;
 
@@ -705,12 +711,16 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         Set<RelationImpl> duplicateRelations = mergeCastings(casting, castings);
 
         //Remove Redundant Relations
-        deleteDuplicateRelations(duplicateRelations);
+        deleteRelations(duplicateRelations);
 
         return true;
     }
 
-    private void deleteDuplicateRelations(Set<RelationImpl> relations){
+    /**
+     *
+     * @param relations The duplicate relations to be merged
+     */
+    private void deleteRelations(Set<RelationImpl> relations){
         for (RelationImpl relation : relations) {
             String relationID = relation.getId();
 
@@ -730,6 +740,12 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         }
     }
 
+    /**
+     *
+     * @param mainCasting The main casting to absorb all of the edges
+     * @param castings The castings to whose edges will be transferred to the main casting and deleted.
+     * @return A set of possible duplicate relations.
+     */
     private Set<RelationImpl> mergeCastings(CastingImpl mainCasting, Set<CastingImpl> castings){
         RoleType role = mainCasting.getRole();
         Set<RelationImpl> relations = mainCasting.getRelations();
@@ -762,9 +778,112 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         return relationsToClean;
     }
 
+    /**
+     *
+     * @param mainRelation The main relation to compare
+     * @param otherRelation The relation to compare it with
+     * @return True if the roleplayers of the relations are the same.
+     */
     private boolean relationsEqual(Relation mainRelation, Relation otherRelation){
         return mainRelation.rolePlayers().equals(otherRelation.rolePlayers()) &&
                 mainRelation.type().equals(otherRelation.type());
+    }
+
+    /**
+     *
+     * @param resourceIds The resourceIDs which possible contain duplicates.
+     * @return True if a commit is required.
+     */
+    public boolean fixDuplicateResources(Set<Object> resourceIds){
+        boolean commitRequired = false;
+
+        Set<ResourceImpl> resources = new HashSet<>();
+        for (Object resourceId : resourceIds) {
+            ConceptImpl concept = getConceptByBaseIdentifier(resourceId);
+            if(concept != null && concept.isResource()){
+                resources.add((ResourceImpl) concept);
+            }
+        }
+
+        Map<String, Set<ResourceImpl>> resourceMap = formatResourcesByType(resources);
+
+        for (Map.Entry<String, Set<ResourceImpl>> entry : resourceMap.entrySet()) {
+            Set<ResourceImpl> dups = entry.getValue();
+            if(dups.size() > 1){ //Found Duplicate
+                mergeResources(dups);
+                commitRequired = true;
+            }
+        }
+
+        return commitRequired;
+    }
+
+    /**
+     *
+     * @param resources A list of resources containing possible duplicates.
+     * @return A map of resource indices to resources. If there is more than one resource for a specific
+     *         resource index then there are duplicate resources which need to be merged.
+     */
+    private Map<String, Set<ResourceImpl>> formatResourcesByType(Set<ResourceImpl> resources){
+        Map<String, Set<ResourceImpl>> resourceMap = new HashMap<>();
+
+        resources.forEach(resource -> {
+            String resourceKey = resource.getProperty(Schema.ConceptProperty.INDEX).toString();
+            resourceMap.computeIfAbsent(resourceKey, (key) -> new HashSet<>()).add(resource);
+        });
+
+        return resourceMap;
+    }
+
+    /**
+     *
+     * @param resources A set of resources which should all be merged.
+     */
+    private void mergeResources(Set<ResourceImpl> resources){
+        Iterator<ResourceImpl> it = resources.iterator();
+        ResourceImpl<?> mainResource = it.next();
+
+        while(it.hasNext()){
+            ResourceImpl<?> otherResource = it.next();
+            Collection<Relation> otherRelations = otherResource.relations();
+
+            for (Relation otherRelation : otherRelations) {
+                copyRelation(mainResource, otherResource, otherRelation);
+            }
+
+            otherResource.delete();
+        }
+    }
+
+    /**
+     *
+     * @param main The main instance to possibly acquire a new relation
+     * @param other The other instance which already posses the relation
+     * @param otherRelation The other relation to potentially be absorbed
+     */
+    private void copyRelation(Instance main, Instance other, Relation otherRelation){
+        RelationType relationType = otherRelation.type();
+        Map<RoleType, Instance> rolePlayers = otherRelation.rolePlayers();
+
+        //Replace all occurrences of other with main. That we we can quickly find out if the relation on main exists
+        for (RoleType roleType : rolePlayers.keySet()) {
+            if(rolePlayers.get(roleType).equals(other)){
+                rolePlayers.put(roleType, main);
+            }
+        }
+
+        Relation foundRelation = getRelation(relationType, rolePlayers);
+
+        //Delete old Relation
+        deleteRelations(Collections.singleton((RelationImpl) otherRelation));
+
+        if(foundRelation != null){
+            return;
+        }
+
+        //Relation was not found so create a new one
+        Relation relation = addRelation(relationType);
+        rolePlayers.entrySet().forEach(entry -> relation.putRolePlayer(entry.getKey(), entry.getValue()));
     }
 
 }

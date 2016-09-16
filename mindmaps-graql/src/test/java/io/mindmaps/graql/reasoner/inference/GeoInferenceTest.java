@@ -47,7 +47,7 @@ public class GeoInferenceTest {
     @Test
     public void testQuery() {
         String queryString = "match " +
-                        "$x isa city;(geo-entity $x, entity-location $y) isa is-located-in;\n"+
+                        "$x isa city;(geo-entity: $x, entity-location: $y) isa is-located-in;\n"+
                         "$y isa country;$y id 'Poland'; select $x";
         MatchQuery query = qb.parseMatch(queryString);
         printMatchQueryResults(query.distinct());
@@ -63,7 +63,7 @@ public class GeoInferenceTest {
     @Test
     public void testQuery2() {
         String queryString = "match " +
-                "$x isa university;(geo-entity $x, entity-location $y) isa is-located-in;"+
+                "$x isa university;(geo-entity: $x, entity-location: $y) isa is-located-in;"+
                 "$y isa country;$y id 'Poland' select $x";
         MatchQuery query = qb.parseMatch(queryString);
         String explicitQuery = "match " +

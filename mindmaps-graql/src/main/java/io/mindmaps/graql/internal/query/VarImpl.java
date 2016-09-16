@@ -679,7 +679,7 @@ class VarImpl implements VarInternal {
 
         @Override
         public String toString() {
-            return getRoleType().map(r -> r.getPrintableName() + " ").orElse("") + getRolePlayer().getPrintableName();
+            return getRoleType().map(r -> r.getPrintableName() + ": ").orElse("") + getRolePlayer().getPrintableName();
         }
     }
 }

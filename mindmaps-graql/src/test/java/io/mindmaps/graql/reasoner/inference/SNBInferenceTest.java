@@ -46,7 +46,7 @@ public class SNBInferenceTest {
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match " +
-                "$x isa university;$y isa country;(located-subject $x, subject-location $y) isa resides";
+                "$x isa university;$y isa country;(located-subject: $x, subject-location: $y) isa resides";
         MatchQuery query = qb.parseMatch(queryString);
 
         String explicitQuery = "match " +

@@ -128,15 +128,10 @@ public class GraqlShellIT {
     public void testInsertOutput() throws IOException {
         String[] result = testShell("insert a-type isa entity-type; thingy isa a-type\n").split("\r\n?|\n");
 
-        // Expect ten lines output - four for the license, one for the query, four results and a new prompt
-        assertEquals(10, result.length);
+        // Expect six lines output - four for the license, one for the query, no results and a new prompt
+        assertEquals(6, result.length);
         assertEquals(">>> insert a-type isa entity-type; thingy isa a-type", result[4]);
-        assertEquals(">>> ", result[9]);
-
-        assertThat(
-                Arrays.toString(Arrays.copyOfRange(result, 5, 9)),
-                allOf(containsString("a-type"), containsString("entity-type"), containsString("thingy"))
-        );
+        assertEquals(">>> ", result[5]);
     }
 
     @Test
@@ -210,6 +205,15 @@ public class GraqlShellIT {
     public void testComputeCount() throws IOException {
         String result = testShell("insert X isa entity-type; a isa X; b isa X; c isa X;\ncommit\ncompute count\n");
         assertThat(result, containsString("\n3\n"));
+    }
+
+    @Test
+    public void testRollback() throws IOException {
+        String[] result = testShell("insert E isa entity-type;\nrollback\nmatch $x isa entity-type\n").split("\n");
+
+        // Make sure there are no results for match query
+        assertEquals(">>> match $x isa entity-type", result[result.length-2]);
+        assertEquals(">>> ", result[result.length-1]);
     }
 
     @Test

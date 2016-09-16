@@ -20,22 +20,22 @@ package io.mindmaps.engine.controller;
 
 import com.jayway.restassured.http.ContentType;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.Entity;
-import io.mindmaps.concept.EntityType;
-import io.mindmaps.concept.RelationType;
-import io.mindmaps.concept.RoleType;
+import io.mindmaps.concept.*;
 import io.mindmaps.engine.Util;
 import io.mindmaps.engine.postprocessing.Cache;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.MindmapsClient;
+import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import io.mindmaps.util.REST;
+import io.mindmaps.util.Schema;
 import org.junit.*;
+
+import java.util.UUID;
 
 import static com.jayway.restassured.RestAssured.delete;
 import static com.jayway.restassured.RestAssured.given;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 
 public class CommitLogControllerTest {
     private Cache cache;
@@ -55,12 +55,16 @@ public class CommitLogControllerTest {
 
         String commitLog = "{\n" +
                 "    \"concepts\":[\n" +
-                "        {\"id\":\"1\", \"type\":\"CASTING\"}, \n" +
-                "        {\"id\":\"2\", \"type\":\"CASTING\"}, \n" +
-                "        {\"id\":\"3\", \"type\":\"CASTING\"}, \n" +
-                "        {\"id\":\"4\", \"type\":\"CASTING\"}, \n" +
-                "        {\"id\":\"5\", \"type\":\"RELATION\"},\n" +
-                "        {\"id\":\"6\", \"type\":\"RELATION\"}\n" +
+                "        {\"id\":\"1\", \"type\":\"" + Schema.BaseType.CASTING + "\"}, \n" +
+                "        {\"id\":\"2\", \"type\":\"" + Schema.BaseType.CASTING + "\"}, \n" +
+                "        {\"id\":\"3\", \"type\":\"" + Schema.BaseType.CASTING + "\"}, \n" +
+                "        {\"id\":\"4\", \"type\":\"" + Schema.BaseType.CASTING + "\"}, \n" +
+                "        {\"id\":\"5\", \"type\":\"" + Schema.BaseType.RELATION + "\"},\n" +
+                "        {\"id\":\"6\", \"type\":\"" + Schema.BaseType.RESOURCE + "\"},\n" +
+                "        {\"id\":\"7\", \"type\":\"" + Schema.BaseType.RESOURCE + "\"},\n" +
+                "        {\"id\":\"8\", \"type\":\"" + Schema.BaseType.RELATION + "\"},\n" +
+                "        {\"id\":\"9\", \"type\":\"" + Schema.BaseType.RELATION + "\"},\n" +
+                "        {\"id\":\"10\", \"type\":\"" + Schema.BaseType.RELATION + "\"}\n" +
                 "    ]\n" +
                 "}";
 
@@ -77,6 +81,7 @@ public class CommitLogControllerTest {
     @Test
     public void testControllerWorking() {
         assertEquals(4, cache.getCastingJobs().values().iterator().next().size());
+        assertEquals(2, cache.getResourceJobs().values().iterator().next().size());
     }
 
     @Test
@@ -90,18 +95,29 @@ public class CommitLogControllerTest {
         addSomeData(bob);
 
         assertEquals(2, cache.getCastingJobs().get(BOB).size());
+        assertEquals(1, cache.getResourceJobs().get(BOB).size());
 
         assertNull(cache.getCastingJobs().get(TIM));
+        assertNull(cache.getResourceJobs().get(TIM));
 
         addSomeData(tim);
 
         assertEquals(2, cache.getCastingJobs().get(TIM).size());
+        assertEquals(1, cache.getResourceJobs().get(TIM).size());
 
         MindmapsClient.getGraph(BOB).clear();
         MindmapsClient.getGraph(TIM).clear();
 
         assertEquals(0, cache.getCastingJobs().get(BOB).size());
         assertEquals(0, cache.getCastingJobs().get(TIM).size());
+        assertEquals(0, cache.getResourceJobs().get(BOB).size());
+        assertEquals(0, cache.getResourceJobs().get(TIM).size());
+
+        cache.getResourceJobs().get(BOB).forEach(resourceId -> {
+            Concept concept = ((AbstractMindmapsGraph) bob).getConceptByBaseIdentifier(resourceId);
+            assertTrue(concept.isResource());
+        });
+
     }
 
     private void addSomeData(MindmapsGraph graph) throws MindmapsValidationException {
@@ -109,20 +125,23 @@ public class CommitLogControllerTest {
         RoleType role2 = graph.putRoleType("Role 2");
         RelationType relationType = graph.putRelationType("A Relation Type").hasRole(role1).hasRole(role2);
         EntityType type = graph.putEntityType("A Thing").playsRole(role1).playsRole(role2);
-        Entity entity1 = graph.addEntity(type);
-        Entity entity2 = graph.addEntity(type);
+        ResourceType<String> resourceType = graph.putResourceType("A Resource Type Thing", ResourceType.DataType.STRING).playsRole(role1).playsRole(role2);
+        Entity entity = graph.addEntity(type);
+        Resource resource = graph.putResource(UUID.randomUUID().toString(), resourceType);
 
-        graph.addRelation(relationType).putRolePlayer(role1, entity1).putRolePlayer(role2, entity2);
+        graph.addRelation(relationType).putRolePlayer(role1, entity).putRolePlayer(role2, resource);
 
         graph.commit();
     }
 
     @Ignore
-    public void testDeleteController() {
+    public void testDeleteController() throws InterruptedException {
         assertEquals(4, cache.getCastingJobs().values().iterator().next().size());
 
         delete(REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.GRAPH_NAME_PARAM + "=" + "test").
                 then().statusCode(200).extract().response().andReturn();
+
+        Thread.sleep(2000);
 
         assertEquals(0, cache.getCastingJobs().values().iterator().next().size());
     }

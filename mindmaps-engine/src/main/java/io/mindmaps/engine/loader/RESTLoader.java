@@ -136,6 +136,7 @@ public class RESTLoader {
                     withGraph(graph).parseInsert(batch).execute();
                     graph.commit();
                     cache.addJobCasting(name, graph.getModifiedCastingIds());
+                    cache.addJobResource(name, graph.getModifiedResourceIds());
                     loaderState.get(uuid).setState(State.FINISHED);
                     finishedJobs.incrementAndGet();
                     return;
