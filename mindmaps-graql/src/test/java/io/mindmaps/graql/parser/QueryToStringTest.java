@@ -84,7 +84,7 @@ public class QueryToStringTest {
 
     @Test
     public void testQueryWithHasScopeToString() {
-        assertEquals("match $x has-scope $y", qb.match(var("x").hasScope(var("y"))).toString());
+        assertEquals("match $x has-scope $y;", qb.match(var("x").hasScope(var("y"))).toString());
     }
 
     @Test
@@ -99,12 +99,12 @@ public class QueryToStringTest {
 
     @Test
     public void testQueryWithRhsToString() {
-        assertValidToString(qb.match(var("x").rhs("match $x isa movie delete $x")));
+        assertValidToString(qb.match(var("x").rhs("match $x isa movie; delete $x;")));
     }
 
     @Test
     public void testQueryWithLhsToString() {
-        assertValidToString(qb.match(var("x").lhs("match $x isa person ask")));
+        assertValidToString(qb.match(var("x").lhs("match $x isa person; ask")));
     }
 
     @Test
@@ -120,7 +120,7 @@ public class QueryToStringTest {
     @Test
     public void testQuoteIds() {
         assertEquals(
-                "match $a (\"hello\\tworld\")",
+                "match $a (\"hello\\tworld\");",
                 match(var("a").rel(id("hello\tworld"))).toString()
         );
     }
@@ -128,7 +128,7 @@ public class QueryToStringTest {
     @Test
     public void testQuoteIdsNumbers() {
         assertEquals(
-                "match $a (\"1hi\")",
+                "match $a (\"1hi\");",
                 match(var("a").rel(id("1hi"))).toString()
         );
     }

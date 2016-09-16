@@ -51,13 +51,13 @@ public class CWInferenceTest {
 
     @Test
     public void testWeapon() {
-        String queryString = "match $x isa weapon";
+        String queryString = "match $x isa weapon;";
         MatchQuery query = qb.parseMatch(queryString);
 
         String explicitQuery = "match \n" +
-                "{$x isa weapon} or {\n" +
-                "{{$x isa missile} or {$x isa rocket;$x has propulsion 'gsp';}} or {$x isa rocket;$x has propulsion 'gsp';}\n" +
-                "}";
+                "{$x isa weapon;} or {\n" +
+                "{{$x isa missile;} or {$x isa rocket;$x has propulsion 'gsp';};} or {$x isa rocket;$x has propulsion 'gsp';};\n" +
+                "};";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
         //assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
@@ -65,21 +65,21 @@ public class CWInferenceTest {
 
     @Test
     public void testTransactionQuery() {
-        String queryString = "match $x isa person;$z isa country;($x, $y, $z) isa transaction";
+        String queryString = "match $x isa person;$z isa country;($x, $y, $z) isa transaction;";
         MatchQuery query = qb.parseMatch(queryString);
 
         String explicitQuery = "match \n" +
                 "$x isa person;\n" +
                 "$z isa country;\n" +
-                "{($x, $y, $z) isa transaction} or {\n" +
+                "{($x, $y, $z) isa transaction;} or {\n" +
                 "$x isa person;\n" +
                 "$z isa country;\n" +
-                "{{$y isa weapon} or {\n" +
-                "{{$y isa missile} or {$y isa rocket;$y has propulsion 'gsp';}} or {$y isa rocket;$y has propulsion 'gsp';};\n" +
-                "}} or {{$y isa missile} or {$y isa rocket;$y has propulsion 'gsp';};};\n" +
+                "{{$y isa weapon;} or {\n" +
+                "{{$y isa missile;} or {$y isa rocket;$y has propulsion 'gsp';};} or {$y isa rocket;$y has propulsion 'gsp';};\n" +
+                "};} or {{$y isa missile;} or {$y isa rocket;$y has propulsion 'gsp';};};\n" +
                 "($x, $z) isa is-paid-by;\n" +
-                "($z, $y) isa owns\n" +
-                "}";
+                "($z, $y) isa owns;\n" +
+                "};";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
         //assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
@@ -87,24 +87,24 @@ public class CWInferenceTest {
 
     @Test
     public void testTransactionQuery2() {
-        String queryString = "match $x isa person;$z isa country;$y isa weapon;($x, $y, $z) isa transaction";
+        String queryString = "match $x isa person;$z isa country;$y isa weapon;($x, $y, $z) isa transaction;";
         MatchQuery query = qb.parseMatch(queryString);
 
         String explicitQuery = "match \n" +
                 "$x isa person;\n" +
                 "$z isa country;\n" +
-                "{$y isa weapon} or {\n" +
-                "{{$y isa missile} or {$y isa rocket;$y has propulsion 'gsp';}} or {$y isa rocket;$y has propulsion 'gsp';};\n" +
+                "{$y isa weapon;} or {\n" +
+                "{{$y isa missile;} or {$y isa rocket;$y has propulsion 'gsp';};} or {$y isa rocket;$y has propulsion 'gsp';};\n" +
                 "};\n" +
-                "{($x, $y, $z) isa transaction} or {\n" +
+                "{($x, $y, $z) isa transaction;} or {\n" +
                 "$x isa person;\n" +
                 "$z isa country;\n" +
-                "{{$y isa weapon} or {\n" +
-                "{{$y isa missile} or {$y isa rocket;$y has propulsion 'gsp';}} or {$y isa rocket;$y has propulsion 'gsp';};\n" +
-                "}} or {{$y isa missile} or {$y isa rocket;$y has propulsion 'gsp';};};\n" +
+                "{{$y isa weapon;} or {\n" +
+                "{{$y isa missile;} or {$y isa rocket;$y has propulsion 'gsp';};} or {$y isa rocket;$y has propulsion 'gsp';};\n" +
+                "};} or {{$y isa missile;} or {$y isa rocket;$y has propulsion 'gsp';};};\n" +
                 "($x, $z) isa is-paid-by;\n" +
-                "($z, $y) isa owns\n" +
-                "}";
+                "($z, $y) isa owns;\n" +
+                "};";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
         //assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
@@ -116,21 +116,21 @@ public class CWInferenceTest {
         MatchQuery query = qb.parseMatch(queryString);
 
         String explicitQuery = "match " +
-                "{$x isa criminal} or {" +
+                "{$x isa criminal;} or {" +
                 "$x has nationality 'American';" +
                 "($x, $y, $z) isa transaction or {" +
                     "$x isa person;$z isa country;" +
-                    "{ {$y isa weapon} or { {$y isa missile} or {$y isa rocket;$y has propulsion 'gsp'} } };\n" +
-                    "($x, $z) isa is-paid-by;($z, $y) isa owns" +
+                    "{ {$y isa weapon;} or { {$y isa missile;} or {$y isa rocket;$y has propulsion 'gsp';}; }; };\n" +
+                    "($x, $z) isa is-paid-by;($z, $y) isa owns;" +
                     "};" +
-                "{$y isa weapon} or {$y isa missile} or {$y has propulsion 'gsp';$y isa rocket};\n" +
-                "{$z has alignment 'hostile'} or {" +
+                "{$y isa weapon;} or {$y isa missile;} or {$y has propulsion 'gsp';$y isa rocket;};\n" +
+                "{$z has alignment 'hostile';} or {" +
                     "$y1 isa country;$y1 id 'America';" +
                     "($z, $y1) isa is-enemy-of;" +
                     "$z isa country;" +
                     "};" +
                 "$x isa person;" +
-                "$z isa country" +
+                "$z isa country;" +
                 "}; select $x";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
@@ -139,7 +139,7 @@ public class CWInferenceTest {
 
     @Test
     public void testQueryWithOr() {
-        String queryString = "match {$x isa criminal} or {$x has nationality 'American';$x isa person}";
+        String queryString = "match {$x isa criminal;} or {$x has nationality 'American';$x isa person;};";
         MatchQuery query = qb.parseMatch(queryString);
 
         String explicitQuery = "match " +
@@ -168,24 +168,24 @@ public class CWInferenceTest {
     public void testVarSub() {
         String queryString = "match" +
                 "$y isa person;$yy isa country;$yyy isa weapon;\n" +
-                "($y, $yy, $yyy) isa transaction";
+                "($y, $yy, $yyy) isa transaction;";
         MatchQuery query = qb.parseMatch(queryString);
 
         String explicitQuery = "match \n" +
                 "$y isa person;\n" +
                 "$yy isa country;\n" +
-                "{$yyy isa weapon} or {\n" +
-                "{{$yyy isa missile} or {$yyy isa rocket;$yyy has propulsion 'gsp';}} or {$yyy isa rocket;$yyy has propulsion 'gsp';};\n" +
+                "{$yyy isa weapon;} or {\n" +
+                "{{$yyy isa missile;} or {$yyy isa rocket;$yyy has propulsion 'gsp';};} or {$yyy isa rocket;$yyy has propulsion 'gsp';};\n" +
                 "};\n" +
-                "{($y, $yy, $yyy) isa transaction} or {\n" +
+                "{($y, $yy, $yyy) isa transaction;} or {\n" +
                 "$y isa person;\n" +
                 "$yy isa country;\n" +
-                "{{$yyy isa weapon} or {\n" +
-                "{{$yyy isa missile} or {$yyy isa rocket;$yyy has propulsion 'gsp';}} or {$yyy isa rocket;$yyy has propulsion 'gsp';};\n" +
-                "}} or {{$yyy isa missile} or {$yyy isa rocket;$yyy has propulsion 'gsp';};};\n" +
+                "{{$yyy isa weapon;} or {\n" +
+                "{{$yyy isa missile;} or {$yyy isa rocket;$yyy has propulsion 'gsp';};} or {$yyy isa rocket;$yyy has propulsion 'gsp';};\n" +
+                "};} or {{$yyy isa missile;} or {$yyy isa rocket;$yyy has propulsion 'gsp';};};\n" +
                 "($y, $yy) isa is-paid-by;\n" +
-                "($yy, $yyy) isa owns\n" +
-                "}";
+                "($yy, $yyy) isa owns;\n" +
+                "};";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
         //assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
@@ -195,24 +195,24 @@ public class CWInferenceTest {
     public void testVarSub2() {
         String queryString = "match" +
                 "$y isa person;$z isa country;$x isa weapon;\n" +
-                "($y, $z, $x) isa transaction";
+                "($y, $z, $x) isa transaction;";
         MatchQuery query = qb.parseMatch(queryString);
 
         String explicitQuery = "match \n" +
                 "$y isa person;\n" +
                 "$z isa country;\n" +
-                "{$x isa weapon} or {\n" +
-                "{{$x isa missile} or {$x isa rocket;$x has propulsion 'gsp';}} or {$x isa rocket;$x has propulsion 'gsp';};\n" +
+                "{$x isa weapon;} or {\n" +
+                "{{$x isa missile;} or {$x isa rocket;$x has propulsion 'gsp';};} or {$x isa rocket;$x has propulsion 'gsp';};\n" +
                 "};\n" +
-                "{($y, $z, $x) isa transaction} or {\n" +
+                "{($y, $z, $x) isa transaction;} or {\n" +
                 "$y isa person;\n" +
                 "$z isa country;\n" +
-                "{{$x isa weapon} or {\n" +
-                "{{$x isa missile} or {$x isa rocket;$x has propulsion 'gsp';}} or {$x isa rocket;$x has propulsion 'gsp';};\n" +
-                "}} or {{$x isa missile} or {$x isa rocket;$x has propulsion 'gsp';};};\n" +
+                "{{$x isa weapon;} or {\n" +
+                "{{$x isa missile;} or {$x isa rocket;$x has propulsion 'gsp';};} or {$x isa rocket;$x has propulsion 'gsp';};\n" +
+                "};} or {{$x isa missile;} or {$x isa rocket;$x has propulsion 'gsp';};};\n" +
                 "($y, $z) isa is-paid-by;\n" +
-                "($z, $x) isa owns\n" +
-                "}";
+                "($z, $x) isa owns;\n" +
+                "};";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
         //assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
@@ -227,8 +227,8 @@ public class CWInferenceTest {
 
         localGraph.putEntityType("region");
 
-        String R6_LHS = "match $x isa region";
-        String R6_RHS = "match $x isa country";
+        String R6_LHS = "match $x isa region;";
+        String R6_RHS = "match $x isa country;";
         localGraph.putRule("R6", R6_LHS, R6_RHS, inferenceRule);
 
         localReasoner.linkConceptTypes();
@@ -236,23 +236,23 @@ public class CWInferenceTest {
         MatchQuery query = lqb.parseMatch(queryString);
 
         String explicitQuery = "match " +
-                "{$x isa criminal} or {\n" +
+                "{$x isa criminal;} or {\n" +
                 "$x has nationality 'American';\n" +
                 "($x, $y, $z) isa transaction or {" +
                 "$x isa person ;\n" +
-                "{$z isa country} or {$z isa region};\n" +
-                "{ {$y isa weapon} or { {$y isa missile} or {$y isa rocket;$y has propulsion 'gsp'} } };\n" +
+                "{$z isa country;} or {$z isa region;};\n" +
+                "{ {$y isa weapon;} or { {$y isa missile;} or {$y isa rocket;$y has propulsion 'gsp';}; }; };\n" +
                 "($x, $z) isa is-paid-by;\n" +
-                "($z, $y) isa owns\n" +
+                "($z, $y) isa owns;\n" +
                 "};\n" +
-                "{$y isa weapon} or {{$y isa missile} or {$y has propulsion 'gsp';$y isa rocket}};\n" +
-                "{$z has alignment 'hostile'} or {" +
+                "{$y isa weapon;} or {{$y isa missile;} or {$y has propulsion 'gsp';$y isa rocket;};};\n" +
+                "{$z has alignment 'hostile';} or {" +
                 "$yy id 'America';\n" +
                 "($z, $yy) isa is-enemy-of;\n" +
                 "$z isa country;\n" +
-                "$yy isa country" +
-                "}" +
-                "} select $x";
+                "$yy isa country;" +
+                "};" +
+                "}; select $x";
 
         assertEquals(localReasoner.resolve(query), Sets.newHashSet(lqb.parseMatch(explicitQuery)));
         //assertQueriesEqual(reasoner.resolveToQuery(query), lqb.parseMatch(explicitQuery));

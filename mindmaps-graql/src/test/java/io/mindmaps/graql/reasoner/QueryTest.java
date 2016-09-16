@@ -52,7 +52,7 @@ public class QueryTest {
 
     @Test
     public void testValuePredicate(){
-        String queryString = "match $x isa person;$x value 'Bob'";
+        String queryString = "match $x isa person;$x value 'Bob';";
 
         Query query = new Query(queryString, graph);
         boolean containsAtom = false;
@@ -65,7 +65,7 @@ public class QueryTest {
     @Test
     public void testCopyConstructor(){
 
-        String queryString = "match $x isa person;$y isa product;($x, $y) isa recommendation";
+        String queryString = "match $x isa person;$y isa product;($x, $y) isa recommendation;";
 
         Rule r = graph.getRule("R53");
 
@@ -82,7 +82,7 @@ public class QueryTest {
 
     @Test
     public void testExpansion() {
-        String queryString = "match $x isa person;$y isa product;($x, $y) isa recommendation";
+        String queryString = "match $x isa person;$y isa product;($x, $y) isa recommendation;";
 
         String LHS = "match $x isa person;$t isa tag, value 'Michelangelo';\n" +
                 "($x, $t) isa tagging;\n" +
@@ -101,7 +101,7 @@ public class QueryTest {
 
     @Test
     public void testExpansion2() {
-        String queryString = "match $x isa person;$y isa product;($x, $y) isa recommendation";
+        String queryString = "match $x isa person;$y isa product;($x, $y) isa recommendation;";
 
         String LHS = "match $x isa person;$t isa tag, value 'Michelangelo';\n" +
                 "($x, $t) isa tagging;\n" +
@@ -129,7 +129,7 @@ public class QueryTest {
 
     @Test
     public void testDisjunctiveNormalForm() {
-        String queryString = "match $x isa person;$y isa product;($x, $y) isa recommendation";
+        String queryString = "match $x isa person;$y isa product;($x, $y) isa recommendation;";
 
         String LHS = "match $x isa person;$t isa tag, value 'Michelangelo';\n" +
                 "($x, $t) isa tagging;\n" +
@@ -154,14 +154,14 @@ public class QueryTest {
 
     @Test
     public void testDisjunctiveQuery() {
-        String queryString = "match $x isa person;{$y isa product} or {$y isa tag};($x, $y) isa recommendation";
+        String queryString = "match $x isa person;{$y isa product;} or {$y isa tag;};($x, $y) isa recommendation;";
 
         MatchQuery sq = qb.parseMatch(queryString);
         System.out.println(sq.toString());
 
         Query query = new Query(queryString, graph);
         Atomic atom = query.getAtomsWithType(graph.getEntityType("product")).iterator().next();
-        query.expandAtomByQuery(atom, new Query("match $y isa product;$y value 'blabla'", graph) );
+        query.expandAtomByQuery(atom, new Query("match $y isa product;$y value 'blabla';", graph) );
         System.out.println(query.getExpandedMatchQuery().toString());
 
         System.out.println();
@@ -169,7 +169,7 @@ public class QueryTest {
 
     @Test
     public void testDisjunctiveRule() {
-        String queryString = "match $x isa person;{$y isa product} or {$y isa tag};($x, $y) isa recommendation";
+        String queryString = "match $x isa person;{$y isa product;} or {$y isa tag;};($x, $y) isa recommendation;";
 
         MatchQuery sq = qb.parseMatch(queryString);
         System.out.println(sq.toString());
@@ -184,7 +184,7 @@ public class QueryTest {
 
     @Test
     public void testNonHornClauseQuery() {
-        String queryString = "match $x isa person;$y isa product;($x, $y) isa recommendation";
+        String queryString = "match $x isa person;$y isa product;($x, $y) isa recommendation;";
 
         Query query = new Query(queryString, graph);
         Query expansionQuery = new Query(graph.getRule("R7a").getLHS(), graph);
@@ -196,10 +196,10 @@ public class QueryTest {
 
     @Test
     public void testTwinPattern() {
-        String queryString = "match $x isa person;$x id 'Bob'";
-        String queryString2 = "match $x isa person, id 'Bob'";
-        String queryString3 = "match $x isa person, value 'Bob'";
-        String queryString4 = "match $x isa person;$x value 'Bob'";
+        String queryString = "match $x isa person;$x id 'Bob';";
+        String queryString2 = "match $x isa person, id 'Bob';";
+        String queryString3 = "match $x isa person, value 'Bob';";
+        String queryString4 = "match $x isa person;$x value 'Bob';";
 
         Query query = new Query(queryString, graph);
         Query query2 = new Query(queryString2, graph);
@@ -230,7 +230,7 @@ public class QueryTest {
     public void testQueryResults(){
         //QueryResults answers = new QueryResults(Sets.newHashSet(qp.parseMatchQuery("match $x isa person")));
 
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(qb.parseMatch("match $x isa person")));
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(qb.parseMatch("match $x isa person;")));
 
         answers.forEach(ans -> System.out.println(ans.toString()));
     }
