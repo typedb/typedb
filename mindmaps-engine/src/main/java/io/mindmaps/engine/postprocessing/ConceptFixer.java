@@ -53,8 +53,31 @@ class ConceptFixer {
         }
     }
 
-    public static void checkResources(Cache cache, MindmapsGraph graph, Set<String> relationIds){
+    public static void checkResources(Cache cache, MindmapsGraph graph, Set<String> resourceIds){
+        boolean notDone = true;
+        int retry = 0;
 
+        while(notDone) {
+            try {
+                if (((AbstractMindmapsGraph)graph).fixDuplicateResources(resourceIds)) {
+                    graph.commit();
+                }
+                resourceIds.forEach(resourceId -> cache.deleteJobResource(graph.getKeyspace(), resourceId));
+                notDone = false;
+            } catch (Exception e) {
+                LOG.error(ErrorMessage.POSTPROCESSING_ERROR.getMessage("resource", e.getMessage()), e);
+                if(retry ++ > MAX_RETRY){
+                    String message = "";
+                    for (String resourceId : resourceIds) {
+                        message += resourceId;
+                    }
+                    LOG.error(ErrorMessage.UNABLE_TO_ANALYSE_CONCEPT.getMessage(message, e.getMessage()), e);
+                    notDone = false;
+                } else {
+                    performRetry(retry);
+                }
+            }
+        }
     }
 
     private static int performRetry(int retry){

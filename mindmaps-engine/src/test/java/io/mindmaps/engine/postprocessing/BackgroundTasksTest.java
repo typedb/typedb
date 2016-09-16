@@ -70,7 +70,7 @@ public class BackgroundTasksTest {
         Thread.sleep(2000);
 
         backgroundTasks = BackgroundTasks.getInstance();
-        mindmapsGraph = MindmapsClient.getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        mindmapsGraph = MindmapsClient.getGraphBatchLoading(UUID.randomUUID().toString().replaceAll("-", "a"));
     }
 
     @After
@@ -167,14 +167,15 @@ public class BackgroundTasksTest {
         graph.putResourceType(sample, ResourceType.DataType.STRING);
         graph.commit();
 
-        for(int i = 0; i < 50; i ++) {
+        for(int i = 0; i < 10; i ++) {
             futures.add(pool.submit(() -> {
-                MindmapsGraph innerGraph = MindmapsClient.getGraphBatchLoading(keyspace);
-                innerGraph.putResource(value, innerGraph.getResourceType(sample));
                 try {
+                    MindmapsGraph innerGraph = MindmapsClient.getGraphBatchLoading(keyspace);
+                    innerGraph.putResource(value, innerGraph.getResourceType(sample));
                     innerGraph.commit();
                 } catch (MindmapsValidationException e) {
                     e.printStackTrace();
+                } catch (IllegalArgumentException ignored) {
                 }
             }));
         }

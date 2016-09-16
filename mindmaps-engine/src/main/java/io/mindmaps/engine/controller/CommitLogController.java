@@ -63,6 +63,7 @@ public class CommitLogController {
         }
 
         cache.getCastingJobs().computeIfPresent(graphName, (key, set) -> {set.clear(); return set;});
+        cache.getResourceJobs().computeIfPresent(graphName, (key, set) -> {set.clear(); return set;});
 
         return "The cache of Graph [" + graphName + "] has been cleared";
     }

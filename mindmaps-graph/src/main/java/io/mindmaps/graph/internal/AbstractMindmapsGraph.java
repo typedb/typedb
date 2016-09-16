@@ -621,7 +621,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         if(castings.size() > 0)
             modifiedConcepts.put(Schema.BaseType.CASTING, castings);
         if(resources.size() > 0)
-            modifiedConcepts.put(Schema.BaseType.RESOURCE, castings);
+            modifiedConcepts.put(Schema.BaseType.RESOURCE, resources);
 
         LOG.info("Graph is valid. Committing graph . . . ");
         commitTx();
@@ -797,10 +797,13 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     public boolean fixDuplicateResources(Set<Object> resourceIds){
         boolean commitRequired = false;
 
-        Set<ResourceImpl> resources = resourceIds.stream().map(this::getConceptByBaseIdentifier)
-                .filter(ConceptImpl::isResource)
-                .map(concept -> (ResourceImpl) concept)
-                .collect(Collectors.toSet());
+        Set<ResourceImpl> resources = new HashSet<>();
+        for (Object resourceId : resourceIds) {
+            ConceptImpl concept = getConceptByBaseIdentifier(resourceId);
+            if(concept != null && concept.isResource()){
+                resources.add((ResourceImpl) concept);
+            }
+        }
 
         Map<String, Set<ResourceImpl>> resourceMap = formatResourcesByType(resources);
 
