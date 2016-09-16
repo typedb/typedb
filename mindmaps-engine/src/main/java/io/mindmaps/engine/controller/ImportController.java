@@ -27,6 +27,7 @@ import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -40,7 +41,9 @@ import spark.Response;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -93,10 +96,9 @@ public class ImportController {
     @ApiImplicitParam(name = "path", value = "File path on the server.", required = true, dataType = "string", paramType = "body")
 
     private String importDataREST(Request req, Response res) {
-
         try {
             JSONObject bodyObject = new JSONObject(req.body());
-            String pathToFile = bodyObject.get(REST.Request.PATH_FIELD).toString();
+            final String pathToFile = bodyObject.get(REST.Request.PATH_FIELD).toString();
             final String graphName;
 
             if (bodyObject.has(REST.Request.GRAPH_NAME_PARAM))
@@ -104,12 +106,19 @@ public class ImportController {
             else
                 graphName = defaultGraphName;
 
+            File f = new File(pathToFile);
+            if (!f.exists()) throw new FileNotFoundException(ErrorMessage.NO_GRAQL_FILE.getMessage(pathToFile));
+
             Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(pathToFile, graphName));
         } catch (JSONException j) {
             LOG.error("Malformed request.");
             j.printStackTrace();
             res.status(400);
             return j.getMessage();
+        } catch (FileNotFoundException e) {
+            LOG.error(e.getMessage());
+            res.status(400);
+            return e.getMessage();
         }
 
         return "Loading successfully started.";

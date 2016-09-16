@@ -78,7 +78,8 @@ start)
         echo "Cassandra already running"
     else
         # cassandra has not already started
-        echo -n "Starting cassandra"
+        echo -n "Starting cassandra "
+        echo ""
         # we hide errors because of a java bug that prints "Cass JavaLaunchHelper is implemented in both..."
         `dirname $path`/cassandra -p $CASSANDRA_PS
 
@@ -91,7 +92,7 @@ start)
         # engine has not already started
         echo -n "Starting engine"
         SCRIPTPATH=`cd "$(dirname "$0")" && pwd -P`
-        java -cp "`dirname $path`/../lib/*" -Dmindmaps.dir=$SCRIPTPATH io.mindmaps.engine.MindmapsEngineServer > /dev/null &
+        java -cp "`dirname $path`/../lib/*" -Dmindmaps.dir=$SCRIPTPATH io.mindmaps.engine.MindmapsEngineServer &
         echo $!>$ENGINE_PS
         wait_for_engine
     fi
