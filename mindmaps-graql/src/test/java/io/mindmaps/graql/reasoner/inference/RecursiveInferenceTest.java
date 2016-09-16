@@ -221,9 +221,15 @@ public class RecursiveInferenceTest {
         MatchQuery query = qb.parseMatch(queryString);
         String explicitQuery = "match $y isa b-entity";
 
-        Set<Map<String, Concept>> answers = reasoner.resolve(query);
+        /*
+        String explicitQuery = "match " +
+                "{$x id 'a';$y id 'b'} or {$x id 'a';$y id 'c'} or {$x id 'a';$y id 'd'} or" +
+                "{$x id 'm';$y id 'n'} or {$x id 'm';$y id 'o'} or {$x id 'p';$y id 'm'} or" +
+                "{$x id 'g';$y id 'f'} or {$x id 'h';$y id 'f'} or {$x id 'i';$y id 'f'} or" +
+                "{$x id 'j';$y id 'f'} or {$x id 'f';$y id 'k'}";
+           */
 
-        assertEquals(answers, Sets.newHashSet(qb.parseMatch(explicitQuery)));
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
     }
 

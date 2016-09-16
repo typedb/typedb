@@ -45,17 +45,21 @@ import static spark.Spark.get;
 
 
 @Path("/graph")
-@Api(value = "/graph", description = "Endpoints used to query the graph by ID or Gralq match query and build HAL objects.")
+@Api(value = "/graph", description = "Endpoints used to query the graph by ID or Graql match query and build HAL objects.")
 @Produces({"application/json", "text/plain"})
 public class VisualiserController {
 
     private final Logger LOG = LoggerFactory.getLogger(VisualiserController.class);
 
     private String defaultGraphName;
+    private int separationDegree;
+    private final int MATCH_QUERY_FIXED_DEGREE = 0;
 
     public VisualiserController() {
 
         defaultGraphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+        separationDegree = ConfigProperties.getInstance().getPropertyAsInt(ConfigProperties.HAL_DEGREE_PROPERTY);
+
 
         get(REST.WebPath.CONCEPT_BY_ID_URI + REST.Request.ID_PARAMETER, this::getConceptById);
         get(REST.WebPath.GRAPH_MATCH_QUERY_URI, this::matchQuery);
@@ -75,8 +79,8 @@ public class VisualiserController {
 
         Concept concept = graph.getConcept(req.params(REST.Request.ID_PARAMETER));
         if (concept != null) {
-            LOG.debug("Building HAL resource for concept with id " + concept.getId().toString());
-            return new HALConcept(concept).render();
+            LOG.trace("Building HAL resource for concept with id " + concept.getId().toString());
+            return new HALConcept(concept,separationDegree).render();
         }
         else {
             res.status(404);
@@ -108,8 +112,8 @@ public class VisualiserController {
                     .stream()
                     .forEach(x -> x.values()
                             .forEach(concept -> {
-                                LOG.debug("Building HAL resource for concept with id " + concept.getId().toString());
-                                halArray.put(new JSONObject(new HALConcept(concept).render()));
+                                LOG.trace("Building HAL resource for concept with id " + concept.getId().toString());
+                                halArray.put(new JSONObject(new HALConcept(concept,MATCH_QUERY_FIXED_DEGREE).render()));
                             }));
             LOG.debug("Done building resources.");
             return halArray.toString();

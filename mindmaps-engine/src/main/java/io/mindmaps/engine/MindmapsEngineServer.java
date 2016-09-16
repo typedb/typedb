@@ -23,6 +23,10 @@ import io.mindmaps.engine.util.ConfigProperties;
 
 import static spark.Spark.*;
 
+/**
+ * Main class in charge to start a web server and all the REST controllers.
+ */
+
 public class MindmapsEngineServer {
 
     public static void main(String[] args) {
@@ -39,7 +43,7 @@ public class MindmapsEngineServer {
         // Set port
         port(prop.getPropertyAsInt(ConfigProperties.SERVER_PORT_NUMBER));
 
-        // Set the static files folder
+        // Set the external static files folder
         staticFiles.externalLocation(prop.getPath(ConfigProperties.STATIC_FILES_PATH));
 
         // Start all the controllers
@@ -54,5 +58,18 @@ public class MindmapsEngineServer {
         // This method will block until all the controllers are ready to serve requests
         awaitInitialization();
 
+        printStartMessage(prop.getProperty(ConfigProperties.SERVER_HOST_NAME), prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER));
+    }
+
+
+    /**
+     * Method that prints directly to stdout welcome message and listening address.
+     * Log is not applicable here since all the log messages are redirected to a log file.
+     * @param host Host address to which Mindmaps Engine is bound to
+     * @param port Web server port number
+     */
+    private static void printStartMessage(String host, String port) {
+        System.out.print(ConfigProperties.MINDMAPS_ASCII);
+        System.out.println("Mindmaps Engine is ready. Listening on [http://" + host + ":" + port + "]");
     }
 }

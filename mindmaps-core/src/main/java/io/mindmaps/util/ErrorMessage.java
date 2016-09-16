@@ -125,6 +125,7 @@ public enum ErrorMessage {
 
     //--------------------------------------------- Engine Errors -----------------------------------------------
     NO_CONFIG_FILE("Cannot find config file [%s]"),
+    NO_GRAQL_FILE("Cannot find Graql file [%s]"),
     ILLEGAL_ARGUMENT_EXCEPTION("Illegal argument exception caused by [%s]"),
     CONCEPT_ID_NOT_FOUND("ID [%s] not found in the graph."),
     FAILED_TRANSACTION("Could not commit to graph after %s retries"),
