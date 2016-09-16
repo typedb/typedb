@@ -18,7 +18,6 @@
 
 package io.mindmaps.engine.postprocessing;
 
-import io.mindmaps.MindmapsGraph;
 import io.mindmaps.engine.loader.RESTLoader;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
@@ -108,15 +107,13 @@ public class BackgroundTasks {
     private void performCastingFix() {
         cache.getCastingJobs().entrySet().parallelStream().forEach(entry -> {
 
-            MindmapsGraph graph;
             try {
-                graph = GraphFactory.getInstance().getGraph(entry.getKey());
-
                 Set<String> castingIds = new HashSet<>();
                 castingIds.addAll(entry.getValue());
 
                 for (String castingId : castingIds) {
-                    futures.add(postpool.submit(() -> ConceptFixer.checkCasting(cache, graph, castingId)));
+                    futures.add(postpool.submit(() ->
+                            ConceptFixer.checkCasting(cache, GraphFactory.getInstance().getGraph(entry.getKey()), castingId)));
                 }
             } catch (RuntimeException e) {
                 LOG.error("Error while trying to perform post processing on graph [" + entry.getKey() + "]");

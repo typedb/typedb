@@ -35,10 +35,12 @@ import java.util.stream.Collectors;
 class ConceptLog {
     private Set<ConceptImpl> modifiedConcepts;
     private Set<ConceptImpl> modifiedCastings;
+    private Set<ConceptImpl> modifiedResources;
 
     ConceptLog() {
         modifiedCastings = new HashSet<>();
         modifiedConcepts = new HashSet<>();
+        modifiedResources = new HashSet<>();
     }
 
     /**
@@ -47,6 +49,7 @@ class ConceptLog {
     public void clearTransaction(){
         modifiedConcepts.clear();
         modifiedCastings.clear();
+        modifiedResources.clear();
     }
 
     /**
@@ -58,6 +61,8 @@ class ConceptLog {
             modifiedConcepts.add(concept);
             if (Schema.BaseType.CASTING.name().equals(concept.getBaseType()))
                 modifiedCastings.add(concept);
+            if (Schema.BaseType.RESOURCE.name().equals(concept.getBaseType()))
+                modifiedResources.add(concept);
         }
     }
 
@@ -74,9 +79,16 @@ class ConceptLog {
      *
      * @return All the castings which have been affected within the transaction in some way
      */
-    public Set<ConceptImpl> getModifiedCastings () {
-        modifiedCastings = modifiedCastings.stream().filter(ConceptImpl::isAlive).collect(Collectors.toSet());
-        return modifiedCastings;
+    public Set<String> getModifiedCastingIds() {
+        return modifiedCastings.stream().filter(ConceptImpl::isAlive).map(concept -> concept.getBaseIdentifier().toString()).collect(Collectors.toSet());
+    }
+
+    /**
+     *
+     * @return All the castings which have been affected within the transaction in some way
+     */
+    public Set<String> getModifiedResourceIds() {
+        return modifiedResources.stream().filter(ConceptImpl::isAlive).map(concept -> concept.getBaseIdentifier().toString()).collect(Collectors.toSet());
     }
 
     /**
@@ -85,6 +97,8 @@ class ConceptLog {
      */
     public void removeConcept(ConceptImpl c){
         modifiedConcepts.remove(c);
+        modifiedCastings.remove(c);
+        modifiedResources.remove(c);
     }
 
 }

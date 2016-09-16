@@ -19,10 +19,12 @@
 package io.mindmaps.engine.postprocessing;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
+import io.mindmaps.util.ErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Set;
 
 class ConceptFixer {
     private static final Logger LOG = LoggerFactory.getLogger(ConceptFixer.class);
@@ -49,6 +51,10 @@ class ConceptFixer {
                 }
             }
         }
+    }
+
+    public static void checkResources(Cache cache, MindmapsGraph graph, Set<String> relationIds){
+
     }
 
     private static int performRetry(int retry){

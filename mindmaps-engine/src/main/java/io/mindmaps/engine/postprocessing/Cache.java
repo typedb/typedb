@@ -45,17 +45,26 @@ public class Cache {
         return saveInProgress.get();
     }
 
+    //-------------------- Casting Jobs
     public Map<String, Set<String>> getCastingJobs() {
         return castings;
     }
     public void addJobCasting(String graphName, Set<String> conceptIds) {
         getCastingJobs().computeIfAbsent(graphName, (key) -> ConcurrentHashMap.newKeySet()).addAll(conceptIds);
     }
-    public void addJobCasting(String graphName, String conceptId) {
-        getCastingJobs().computeIfAbsent(graphName, (key) ->  ConcurrentHashMap.newKeySet()).add(conceptId);
-    }
     public void deleteJobCasting(String graphName, String conceptId) {
         getCastingJobs().get(graphName).remove(conceptId);
+    }
+
+    //-------------------- Resource Jobs
+    public Map<String, Set<String>> getResourceJobs() {
+        return resources;
+    }
+    public void addJobResource(String graphName, Set<String> conceptIds) {
+        getResourceJobs().computeIfAbsent(graphName, (key) -> ConcurrentHashMap.newKeySet()).addAll(conceptIds);
+    }
+    public void deleteJobResource(String graphName, String conceptId) {
+        getResourceJobs().get(graphName).remove(conceptId);
     }
 
 

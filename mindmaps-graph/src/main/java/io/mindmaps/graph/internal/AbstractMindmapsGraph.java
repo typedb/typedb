@@ -187,9 +187,11 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     }
 
     public Set<String> getModifiedCastingIds(){
-        Set<String> relationIds = new HashSet<>();
-        getConceptLog().getModifiedCastings().forEach(c -> relationIds.add(c.getBaseIdentifier().toString()));
-        return relationIds;
+        return getConceptLog().getModifiedCastingIds();
+    }
+
+    public Set<String> getModifiedResourceIds(){
+        return getConceptLog().getModifiedResourceIds();
     }
 
     public ConceptLog getConceptLog() {
@@ -614,9 +616,12 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
 
         Map<Schema.BaseType, Set<String>> modifiedConcepts = new HashMap<>();
         Set<String> castings = getModifiedCastingIds();
+        Set<String> resources = getModifiedResourceIds();
 
         if(castings.size() > 0)
             modifiedConcepts.put(Schema.BaseType.CASTING, castings);
+        if(resources.size() > 0)
+            modifiedConcepts.put(Schema.BaseType.RESOURCE, castings);
 
         LOG.info("Graph is valid. Committing graph . . . ");
         commitTx();

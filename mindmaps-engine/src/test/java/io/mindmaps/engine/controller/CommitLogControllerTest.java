@@ -30,6 +30,7 @@ import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.util.REST;
+import io.mindmaps.util.Schema;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -58,12 +59,16 @@ public class CommitLogControllerTest {
 
         String commitLog = "{\n" +
                 "    \"concepts\":[\n" +
-                "        {\"id\":\"1\", \"type\":\"CASTING\"}, \n" +
-                "        {\"id\":\"2\", \"type\":\"CASTING\"}, \n" +
-                "        {\"id\":\"3\", \"type\":\"CASTING\"}, \n" +
-                "        {\"id\":\"4\", \"type\":\"CASTING\"}, \n" +
-                "        {\"id\":\"5\", \"type\":\"RELATION\"},\n" +
-                "        {\"id\":\"6\", \"type\":\"RELATION\"}\n" +
+                "        {\"id\":\"1\", \"type\":\"" + Schema.BaseType.CASTING + "\"}, \n" +
+                "        {\"id\":\"2\", \"type\":\"" + Schema.BaseType.CASTING + "\"}, \n" +
+                "        {\"id\":\"3\", \"type\":\"" + Schema.BaseType.CASTING + "\"}, \n" +
+                "        {\"id\":\"4\", \"type\":\"" + Schema.BaseType.CASTING + "\"}, \n" +
+                "        {\"id\":\"5\", \"type\":\"" + Schema.BaseType.RELATION + "\"},\n" +
+                "        {\"id\":\"6\", \"type\":\"" + Schema.BaseType.RESOURCE + "\"},\n" +
+                "        {\"id\":\"7\", \"type\":\"" + Schema.BaseType.RESOURCE + "\"},\n" +
+                "        {\"id\":\"8\", \"type\":\"" + Schema.BaseType.RELATION + "\"},\n" +
+                "        {\"id\":\"9\", \"type\":\"" + Schema.BaseType.RELATION + "\"},\n" +
+                "        {\"id\":\"10\", \"type\":\"" + Schema.BaseType.RELATION + "\"}\n" +
                 "    ]\n" +
                 "}";
 
@@ -80,6 +85,7 @@ public class CommitLogControllerTest {
     @Test
     public void testControllerWorking() {
         assertEquals(4, cache.getCastingJobs().values().iterator().next().size());
+        assertEquals(2, cache.getResourceJobs().values().iterator().next().size());
     }
 
     @Test
