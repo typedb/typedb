@@ -19,10 +19,17 @@
 package io.mindmaps.engine.postprocessing;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.*;
+import io.mindmaps.concept.EntityType;
+import io.mindmaps.concept.Instance;
+import io.mindmaps.concept.Relation;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.Resource;
+import io.mindmaps.concept.ResourceType;
+import io.mindmaps.concept.RoleType;
 import io.mindmaps.engine.controller.CommitLogController;
 import io.mindmaps.engine.controller.GraphFactoryController;
 import io.mindmaps.engine.util.ConfigProperties;
+import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import io.mindmaps.util.Schema;
@@ -34,9 +41,17 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class BackgroundTasksTest {
     private BackgroundTasks backgroundTasks;
@@ -55,7 +70,7 @@ public class BackgroundTasksTest {
         Thread.sleep(2000);
 
         backgroundTasks = BackgroundTasks.getInstance();
-        mindmapsGraph = MindmapsClient.getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        mindmapsGraph = MindmapsClient.getGraphBatchLoading(UUID.randomUUID().toString().replaceAll("-", "a"));
     }
 
     @After
@@ -137,5 +152,53 @@ public class BackgroundTasksTest {
         edge.property(Schema.EdgeProperty.ROLE_TYPE.name(), mainRoleTypeId);
 
         rawGraph.tx().commit();
+    }
+
+    @Test
+    public void testMergeDuplicateResources() throws MindmapsValidationException {
+        String keyspace = "TestBatchGraph";
+        String value = "1";
+        String sample = "Sample";
+        ExecutorService pool = Executors.newFixedThreadPool(10);
+        Set<Future> futures = new HashSet<>();
+
+        //Create Graph With Duplicate Resources
+        MindmapsGraph graph = MindmapsClient.getGraphBatchLoading(keyspace);
+        graph.putResourceType(sample, ResourceType.DataType.STRING);
+        graph.commit();
+
+        for(int i = 0; i < 10; i ++) {
+            futures.add(pool.submit(() -> {
+                try {
+                    MindmapsGraph innerGraph = MindmapsClient.getGraphBatchLoading(keyspace);
+                    innerGraph.putResource(value, innerGraph.getResourceType(sample));
+                    innerGraph.commit();
+                } catch (MindmapsValidationException e) {
+                    e.printStackTrace();
+                } catch (IllegalArgumentException ignored) {
+                }
+            }));
+        }
+
+        futures.forEach(f -> {
+            try {
+                f.get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+        });
+
+        //Check duplicates have been created
+        graph = MindmapsClient.getGraphBatchLoading(keyspace);
+        Collection<Resource<Object>> resources = graph.getResourceType(sample).instances();
+
+        assertTrue(resources.size() > 1);
+
+        //Now fix everything
+        backgroundTasks.forcePostprocessing();
+
+        //Check it's fixed
+        graph.rollback();
+        assertEquals(1, graph.getResourceType(sample).instances().size());
     }
 }

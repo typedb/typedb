@@ -30,6 +30,8 @@ import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 
+import java.util.Collections;
+
 import static spark.Spark.delete;
 import static spark.Spark.post;
 
@@ -61,6 +63,7 @@ public class CommitLogController {
         }
 
         cache.getCastingJobs().computeIfPresent(graphName, (key, set) -> {set.clear(); return set;});
+        cache.getResourceJobs().computeIfPresent(graphName, (key, set) -> {set.clear(); return set;});
 
         return "The cache of Graph [" + graphName + "] has been cleared";
     }
@@ -88,8 +91,10 @@ public class CommitLogController {
 
             switch (type){
                 case CASTING:
-                    cache.addJobCasting(graphName, conceptId);
+                    cache.addJobCasting(graphName, Collections.singleton(conceptId));
                     break;
+                case RESOURCE:
+                    cache.addJobResource(graphName, Collections.singleton(conceptId));
                 default:
                     LOG.warn(ErrorMessage.CONCEPT_POSTPROCESSING.getMessage(conceptId, type.name()));
             }
