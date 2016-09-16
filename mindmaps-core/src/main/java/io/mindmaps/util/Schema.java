@@ -65,7 +65,7 @@ public final class Schema {
      * The concepts which represent our internal schema
      */
     public enum MetaType {
-        TYPE("concept-type"),
+        TYPE("type"),
         ENTITY_TYPE("entity-type"),
         ROLE_TYPE("role-type"),
         RESOURCE_TYPE("resource-type"),

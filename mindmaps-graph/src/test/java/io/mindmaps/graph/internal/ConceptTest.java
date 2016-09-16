@@ -437,8 +437,8 @@ public class ConceptTest {
     public void reservedTest(){
         expectedException.expect(ConceptException.class);
         expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.ID_RESERVED.getMessage("concept-type"))
+                containsString(ErrorMessage.ID_RESERVED.getMessage("type"))
         ));
-        mindmapsGraph.putEntityType("concept-type");
+        mindmapsGraph.putEntityType("type");
     }
 }
