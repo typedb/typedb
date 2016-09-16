@@ -217,6 +217,14 @@ public class GraqlShellIT {
     }
 
     @Test
+    public void testErrorWhenEngineNotRunning() throws IOException {
+        ByteArrayOutputStream err = new ByteArrayOutputStream();
+        testShell("", err, "-u", "localhost:7654");
+
+        assertFalse(err.toString().isEmpty());
+    }
+
+    @Test
     public void fuzzTest() throws IOException {
         int repeats = 100;
         for (int i = 0; i < repeats; i ++) {

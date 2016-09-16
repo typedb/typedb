@@ -18,13 +18,16 @@
 
 package io.mindmaps.graql;
 
+import org.eclipse.jetty.websocket.api.Session;
+
 import java.net.URI;
+import java.util.concurrent.Future;
 
 /**
  * Interface for connecting a Graql websocket to a remote URI. Used for mocking in tests.
  */
 public interface GraqlClient {
-    void connect(Object websocket, URI uri);
+    Future<Session> connect(Object websocket, URI uri);
 
     void close();
 }
