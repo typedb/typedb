@@ -51,13 +51,13 @@ public class AtomicQueryTest {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(ErrorMessage.NON_ATOMIC_QUERY.getMessage());
 
-        String queryString = "match $x isa person;$y isa product;($x, $y) isa recommendation";
+        String queryString = "match $x isa person;$y isa product;($x, $y) isa recommendation;";
         AtomicQuery atomicQuery = new AtomicQuery(queryString, graph);
     }
 
     @Test
     public void testCopyConstructor(){
-        String queryString = "match ($x, $y) isa recommendation";
+        String queryString = "match ($x, $y) isa recommendation;";
         AtomicQuery atomicQuery = new AtomicQuery(queryString, graph);
 
         assert(atomicQuery.equals(new AtomicQuery(atomicQuery)));
@@ -85,14 +85,14 @@ public class AtomicQueryTest {
     @Test
     public void testMaterialize(){
 
-        assert(!qb.parseAsk("match ($x, $y) isa recommendation;$x id 'Bob';$y id 'Colour of Magic' ask").execute());
+        assert(!qb.parseAsk("match ($x, $y) isa recommendation;$x id 'Bob';$y id 'Colour of Magic'; ask").execute());
 
         String queryString = "match ($x, $y) isa recommendation;";
         AtomicQuery atomicQuery = new AtomicQuery(queryString, graph);
         atomicQuery.materialize(Sets.newHashSet(new Substitution("x", graph.getConcept("Bob"))
                                                 , new Substitution("y", graph.getConcept("Colour of Magic"))));
 
-        assert(qb.parseAsk("match ($x, $y) isa recommendation;$x id 'Bob';$y id 'Colour of Magic' ask").execute());
+        assert(qb.parseAsk("match ($x, $y) isa recommendation;$x id 'Bob';$y id 'Colour of Magic'; ask").execute());
     }
 
 }

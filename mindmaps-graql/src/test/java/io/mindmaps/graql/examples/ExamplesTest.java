@@ -51,7 +51,7 @@ public class ExamplesTest {
                 "insert id 'Alexander' isa person;"
         );
 
-        assertEquals(4, qb.parseMatch("match $p isa person").stream().count());
+        assertEquals(4, qb.parseMatch("match $p isa person;").stream().count());
 
         load(
                 "insert school isa entity-type;",
@@ -61,7 +61,7 @@ public class ExamplesTest {
                 "insert id 'Cynicism' isa school;"
         );
 
-        assertEquals(1, qb.parseMatch("match $x id 'Cynicism'").stream().count());
+        assertEquals(1, qb.parseMatch("match $x id 'Cynicism';").stream().count());
 
         load(
                 "insert practice isa relation-type;",
@@ -93,22 +93,22 @@ public class ExamplesTest {
         );
 
         load(
-                "insert title isa resource-type, datatype string",
-                "insert epithet isa resource-type, datatype string",
-                "insert person has-resource title",
-                "insert person has-resource epithet"
+                "insert title isa resource-type, datatype string;",
+                "insert epithet isa resource-type, datatype string;",
+                "insert person has-resource title;",
+                "insert person has-resource epithet;"
         );
 
         load(
                 "insert Alexander has epithet 'The Great';",
                 "insert Alexander has title 'Hegemon';",
-                "insert Alexander has title 'King of Macedon'",
-                "insert Alexander has title 'Shah of Persia'",
+                "insert Alexander has title 'King of Macedon';",
+                "insert Alexander has title 'Shah of Persia';",
                 "insert Alexander has title 'Pharaoh of Egypt';",
                 "insert Alexander has title 'Lord of Asia';"
         );
 
-        MatchQuery pharaoh = qb.parseMatch("match $x has title contains 'Pharaoh'");
+        MatchQuery pharaoh = qb.parseMatch("match $x has title contains 'Pharaoh';");
         assertEquals("Alexander", pharaoh.iterator().next().get("x").getId());
 
         load(
@@ -117,9 +117,9 @@ public class ExamplesTest {
                 "insert thought isa role-type;",
                 "insert knowledge has-role thinker, has-role thought;",
                 "insert fact isa entity-type, plays-role thought;",
-                "insert description isa resource-type, datatype string",
-                "insert fact has-resource description",
-                "insert person plays-role thinker",
+                "insert description isa resource-type, datatype string;",
+                "insert fact has-resource description;",
+                "insert person plays-role thinker;",
                 "insert id 'sun-fact' isa fact, has description 'The Sun is bigger than the Earth';",
                 "insert (thinker: Aristotle, thought: sun-fact) isa knowledge;",
                 "insert id 'cave-fact' isa fact, has description 'Caves are mostly pretty dark';",
@@ -130,13 +130,13 @@ public class ExamplesTest {
 
         load(
                 "insert knowledge plays-role thought;",
-                "match $socratesKnowsNothing (Socrates, nothing) " +
-                "insert (thinker: Socrates, thought: $socratesKnowsNothing) isa knowledge"
+                "match $socratesKnowsNothing (Socrates, nothing); " +
+                "insert (thinker: Socrates, thought: $socratesKnowsNothing) isa knowledge;"
         );
 
         assertEquals(
                 2,
-                qb.parseMatch("match (Socrates, $x) isa knowledge").stream().count()
+                qb.parseMatch("match (Socrates, $x) isa knowledge;").stream().count()
         );
     }
 

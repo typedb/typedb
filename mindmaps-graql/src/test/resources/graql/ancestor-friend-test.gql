@@ -43,13 +43,13 @@ Person plays-role person, plays-role ancestor-friend;
 
 "R1" isa inference-rule,
 lhs {match
-($x, $y) isa Friend},
+($x, $y) isa Friend;},
 rhs {match
-($x, $y) isa Ancestor-friend};
+($x, $y) isa Ancestor-friend;};
 
 "R2" isa inference-rule,
 lhs {match
 (parent: $x, child: $z) isa Parent;
-(person: $z, ancestor-friend: $y) isa Ancestor-friend select $x, $y},
+(person: $z, ancestor-friend: $y) isa Ancestor-friend; select $x, $y},
 rhs {match
-(person: $x, ancestor-friend: $y) isa Ancestor-friend};
+(person: $x, ancestor-friend: $y) isa Ancestor-friend;};
