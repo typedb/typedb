@@ -119,7 +119,7 @@ public class BackgroundTasksTest {
         //Check the graph is broken
         assertEquals(6, ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
 
-        waitForCache(true, keyspace);
+        waitForCache(true, keyspace, 4);
         //Now fix everything
         backgroundTasks.forcePostprocessing();
 
@@ -202,7 +202,7 @@ public class BackgroundTasksTest {
 
         assertTrue(resources.size() > 1);
 
-        waitForCache(false, keyspace);
+        waitForCache(false, keyspace, 2);
         //Now fix everything
         backgroundTasks.forcePostprocessing();
 
@@ -211,17 +211,17 @@ public class BackgroundTasksTest {
         assertEquals(1, graph.getResourceType(sample).instances().size());
     }
 
-    private void waitForCache(boolean isCasting, String keyspace) throws InterruptedException {
+    private void waitForCache(boolean isCasting, String keyspace, int value) throws InterruptedException {
         boolean flag = true;
         while(flag){
             if(isCasting){
-                if(cache.getCastingJobs().get(keyspace).size() == 0){
+                if(cache.getCastingJobs().get(keyspace).size() < value){
                     Thread.sleep(1000);
                 } else{
                     flag = false;
                 }
             } else {
-                if(cache.getResourceJobs().get(keyspace).size() == 0){
+                if(cache.getResourceJobs().get(keyspace).size() < value){
                     Thread.sleep(1000);
                 } else {
                     flag = false;

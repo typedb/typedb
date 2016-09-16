@@ -86,12 +86,31 @@ public class CommitLogControllerTest {
         cache.getResourceJobs().clear();
     }
 
-
-
     @Test
     public void testControllerWorking() throws InterruptedException {
+        waitForCache(true, "test", 1);
         assertEquals(4, cache.getCastingJobs().values().iterator().next().size());
+        waitForCache(false, "test", 1);
         assertEquals(2, cache.getResourceJobs().values().iterator().next().size());
+    }
+
+    private void waitForCache(boolean isCasting, String keyspace, int value) throws InterruptedException {
+        boolean flag = true;
+        while(flag){
+            if(isCasting){
+                if(cache.getCastingJobs().get(keyspace).size() < value){
+                    Thread.sleep(1000);
+                } else{
+                    flag = false;
+                }
+            } else {
+                if(cache.getResourceJobs().get(keyspace).size() < value){
+                    Thread.sleep(1000);
+                } else {
+                    flag = false;
+                }
+            }
+        }
     }
 
     @Test
