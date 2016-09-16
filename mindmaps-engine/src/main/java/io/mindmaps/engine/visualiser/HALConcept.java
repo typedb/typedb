@@ -22,7 +22,6 @@ import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
 import io.mindmaps.concept.*;
-import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.util.REST;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,11 +50,7 @@ public class HALConcept {
     public HALConcept(Concept concept, int separationDegree) {
 
         //building HAL concepts using: https://github.com/HalBuilder/halbuilder-core
-
-        ConfigProperties prop = ConfigProperties.getInstance();
-        resourceLinkPrefix = "http://" + prop.getProperty(ConfigProperties.SERVER_HOST_NAME) + ":"
-                + prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER)
-                + REST.WebPath.CONCEPT_BY_ID_URI;
+        resourceLinkPrefix = REST.WebPath.CONCEPT_BY_ID_URI;
 
         factory = new StandardRepresentationFactory();
         halResource = factory.newRepresentation(resourceLinkPrefix + concept.getId());
@@ -157,7 +152,7 @@ public class HALConcept {
             if (!isResource) {
                 attachAssertion(halResource,rel,rolePlayedByCurrentConcept,separationDegree);
             } else {
-                attachResource(halResource,resourceToUse,rolePlayedByCurrentConcept);
+                attachRelation(halResource,resourceToUse,rolePlayedByCurrentConcept);
             }
         });
     }
@@ -168,7 +163,7 @@ public class HALConcept {
         halResource.withRepresentation(role, relationResource);
     }
 
-    private void attachResource(Representation halResource, Concept resourceToUse, String role){
+    private void attachRelation(Representation halResource, Concept resourceToUse, String role){
         Representation resourceResource = factory.newRepresentation(resourceLinkPrefix + resourceToUse.getId());
         handleConcept(resourceResource, resourceToUse.asResource(), 0);
         halResource.withRepresentation(role, resourceResource);

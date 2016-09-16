@@ -109,6 +109,14 @@ export default class Visualiser {
     }
 
     /**
+     * Center nodes on graph
+     */
+    centerNodes() {
+        this.network.fit({animation: false});
+        return this;
+    }
+
+    /**
      * Add a node to the graph. This can be called at any time *after* render().
      */
     addNode(id, label, type, baseType) {

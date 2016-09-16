@@ -18,15 +18,14 @@
 package io.mindmaps.engine;
 
 
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.core.util.StatusPrinter;
 import io.mindmaps.engine.controller.*;
 import io.mindmaps.engine.util.ConfigProperties;
-import org.apache.commons.logging.Log;
-import org.slf4j.LoggerFactory;
-import spark.Spark;
 
 import static spark.Spark.*;
+
+/**
+ * Main class in charge to start a web server and all the REST controllers.
+ */
 
 public class MindmapsEngineServer {
 
@@ -44,7 +43,7 @@ public class MindmapsEngineServer {
         // Set port
         port(prop.getPropertyAsInt(ConfigProperties.SERVER_PORT_NUMBER));
 
-        // Set the static files folder
+        // Set the external static files folder
         staticFiles.externalLocation(prop.getPath(ConfigProperties.STATIC_FILES_PATH));
 
         // Start all the controllers
@@ -59,20 +58,18 @@ public class MindmapsEngineServer {
         // This method will block until all the controllers are ready to serve requests
         awaitInitialization();
 
-        printStartMessage(prop.getProperty(ConfigProperties.SERVER_HOST_NAME),prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER));
+        printStartMessage(prop.getProperty(ConfigProperties.SERVER_HOST_NAME), prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER));
     }
 
 
-    private static void printStartMessage(String host, String port){
-
-        System.out.print(
-                "  __  __ _           _                           ____  ____  \n" +
-                " |  \\/  (_)_ __   __| |_ __ ___   __ _ _ __  ___|  _ \\| __ ) \n" +
-                " | |\\/| | | '_ \\ / _` | '_ ` _ \\ / _` | '_ \\/ __| | | |  _ \\ \n" +
-                " | |  | | | | | | (_| | | | | | | (_| | |_) \\__ \\ |_| | |_) |\n" +
-                " |_|  |_|_|_| |_|\\__,_|_| |_| |_|\\__,_| .__/|___/____/|____/ \n" +
-                "                                      |_|                    \n\n");
-
-        System.out.println("Mindmaps Engine is ready. Listening on [http://" + host + ":" + port +"]");
+    /**
+     * Method that prints directly to stdout welcome message and listening address.
+     * Log is not applicable here since all the log messages are redirected to a log file.
+     * @param host Host address to which Mindmaps Engine is bound to
+     * @param port Web server port number
+     */
+    private static void printStartMessage(String host, String port) {
+        System.out.print(ConfigProperties.MINDMAPS_ASCII);
+        System.out.println("Mindmaps Engine is ready. Listening on [http://" + host + ":" + port + "]");
     }
 }

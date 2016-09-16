@@ -163,4 +163,12 @@ public class ConfigProperties {
     public long getPropertyAsLong(String property) {
         return Long.parseLong(prop.getProperty(property));
     }
+
+    public static final String MINDMAPS_ASCII =
+            "  __  __ _           _                           ____  ____  \n" +
+            " |  \\/  (_)_ __   __| |_ __ ___   __ _ _ __  ___|  _ \\| __ ) \n" +
+            " | |\\/| | | '_ \\ / _` | '_ ` _ \\ / _` | '_ \\/ __| | | |  _ \\ \n" +
+            " | |  | | | | | | (_| | | | | | | (_| | |_) \\__ \\ |_| | |_) |\n" +
+            " |_|  |_|_|_| |_|\\__,_|_| |_| |_|\\__,_| .__/|___/____/|____/ \n" +
+            "                                      |_|                    \n\n";
 }

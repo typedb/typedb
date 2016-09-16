@@ -1,186 +1,4 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-// shim for using process in browser
-var process = module.exports = {};
-
-// cached from whatever global is present so that test runners that stub it
-// don't break things.  But we need to wrap it in a try catch in case it is
-// wrapped in strict mode code which doesn't define any globals.  It's inside a
-// function because try/catches deoptimize in certain engines.
-
-var cachedSetTimeout;
-var cachedClearTimeout;
-
-function defaultSetTimout() {
-    throw new Error('setTimeout has not been defined');
-}
-function defaultClearTimeout () {
-    throw new Error('clearTimeout has not been defined');
-}
-(function () {
-    try {
-        if (typeof setTimeout === 'function') {
-            cachedSetTimeout = setTimeout;
-        } else {
-            cachedSetTimeout = defaultSetTimout;
-        }
-    } catch (e) {
-        cachedSetTimeout = defaultSetTimout;
-    }
-    try {
-        if (typeof clearTimeout === 'function') {
-            cachedClearTimeout = clearTimeout;
-        } else {
-            cachedClearTimeout = defaultClearTimeout;
-        }
-    } catch (e) {
-        cachedClearTimeout = defaultClearTimeout;
-    }
-} ())
-function runTimeout(fun) {
-    if (cachedSetTimeout === setTimeout) {
-        //normal enviroments in sane situations
-        return setTimeout(fun, 0);
-    }
-    // if setTimeout wasn't available but was latter defined
-    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
-        cachedSetTimeout = setTimeout;
-        return setTimeout(fun, 0);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedSetTimeout(fun, 0);
-    } catch(e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
-            return cachedSetTimeout.call(null, fun, 0);
-        } catch(e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
-            return cachedSetTimeout.call(this, fun, 0);
-        }
-    }
-
-
-}
-function runClearTimeout(marker) {
-    if (cachedClearTimeout === clearTimeout) {
-        //normal enviroments in sane situations
-        return clearTimeout(marker);
-    }
-    // if clearTimeout wasn't available but was latter defined
-    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
-        cachedClearTimeout = clearTimeout;
-        return clearTimeout(marker);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedClearTimeout(marker);
-    } catch (e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
-            return cachedClearTimeout.call(null, marker);
-        } catch (e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
-            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
-            return cachedClearTimeout.call(this, marker);
-        }
-    }
-
-
-
-}
-var queue = [];
-var draining = false;
-var currentQueue;
-var queueIndex = -1;
-
-function cleanUpNextTick() {
-    if (!draining || !currentQueue) {
-        return;
-    }
-    draining = false;
-    if (currentQueue.length) {
-        queue = currentQueue.concat(queue);
-    } else {
-        queueIndex = -1;
-    }
-    if (queue.length) {
-        drainQueue();
-    }
-}
-
-function drainQueue() {
-    if (draining) {
-        return;
-    }
-    var timeout = runTimeout(cleanUpNextTick);
-    draining = true;
-
-    var len = queue.length;
-    while(len) {
-        currentQueue = queue;
-        queue = [];
-        while (++queueIndex < len) {
-            if (currentQueue) {
-                currentQueue[queueIndex].run();
-            }
-        }
-        queueIndex = -1;
-        len = queue.length;
-    }
-    currentQueue = null;
-    draining = false;
-    runClearTimeout(timeout);
-}
-
-process.nextTick = function (fun) {
-    var args = new Array(arguments.length - 1);
-    if (arguments.length > 1) {
-        for (var i = 1; i < arguments.length; i++) {
-            args[i - 1] = arguments[i];
-        }
-    }
-    queue.push(new Item(fun, args));
-    if (queue.length === 1 && !draining) {
-        runTimeout(drainQueue);
-    }
-};
-
-// v8 likes predictible objects
-function Item(fun, array) {
-    this.fun = fun;
-    this.array = array;
-}
-Item.prototype.run = function () {
-    this.fun.apply(null, this.array);
-};
-process.title = 'browser';
-process.browser = true;
-process.env = {};
-process.argv = [];
-process.version = ''; // empty string to avoid regexp issues
-process.versions = {};
-
-function noop() {}
-
-process.on = noop;
-process.addListener = noop;
-process.once = noop;
-process.off = noop;
-process.removeListener = noop;
-process.removeAllListeners = noop;
-process.emit = noop;
-
-process.binding = function (name) {
-    throw new Error('process.binding is not supported');
-};
-
-process.cwd = function () { return '/' };
-process.chdir = function (dir) {
-    throw new Error('process.chdir is not supported');
-};
-process.umask = function() { return 0; };
-
-},{}],2:[function(require,module,exports){
 (function (global){
 
 /* **********************************************
@@ -965,7 +783,7 @@ Prism.languages.js = Prism.languages.javascript;
 })();
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],3:[function(require,module,exports){
+},{}],2:[function(require,module,exports){
 //     Underscore.js 1.8.3
 //     http://underscorejs.org
 //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -2515,7 +2333,7 @@ Prism.languages.js = Prism.languages.javascript;
   }
 }.call(this));
 
-},{}],4:[function(require,module,exports){
+},{}],3:[function(require,module,exports){
 /**
  * vis.js
  * https://github.com/almende/vis
@@ -2561,7 +2379,7 @@ i.selected===!1&&(i.x=n.from.x,i.y=n.from.y),o.selected===!1&&(o.x=n.to.x,o.y=n.
 }}function u(t,e,i,o,n){var s={from:e,to:i,type:o};return t.edge&&(s.attr=a({},t.edge)),s.attr=a(s.attr||{},n),s}function c(){for(L=E.NULL,N="";" "===z||"	"===z||"\n"===z||"\r"===z;)n();do{var t=!1;if("#"===z){for(var e=I-1;" "===P.charAt(e)||"	"===P.charAt(e);)e--;if("\n"===P.charAt(e)||""===P.charAt(e)){for(;""!=z&&"\n"!=z;)n();t=!0}}if("/"===z&&"/"===s()){for(;""!=z&&"\n"!=z;)n();t=!0}if("/"===z&&"*"===s()){for(;""!=z;){if("*"===z&&"/"===s()){n(),n();break}n()}t=!0}for(;" "===z||"	"===z||"\n"===z||"\r"===z;)n()}while(t);if(""===z)return void(L=E.DELIMITER);var i=z+s();if(S[i])return L=E.DELIMITER,N=i,n(),void n();if(S[z])return L=E.DELIMITER,N=z,void n();if(r(z)||"-"===z){for(N+=z,n();r(z);)N+=z,n();return"false"===N?N=!1:"true"===N?N=!0:isNaN(Number(N))||(N=Number(N)),void(L=E.IDENTIFIER)}if('"'===z){for(n();""!=z&&('"'!=z||'"'===z&&'"'===s());)N+=z,'"'===z&&n(),n();if('"'!=z)throw _('End of string " expected');return n(),void(L=E.IDENTIFIER)}for(L=E.UNKNOWN;""!=z;)N+=z,n();throw new SyntaxError('Syntax error in part "'+x(N,30)+'"')}function p(){var t={};if(o(),c(),"strict"===N&&(t.strict=!0,c()),("graph"===N||"digraph"===N)&&(t.type=N,c()),L===E.IDENTIFIER&&(t.id=N,c()),"{"!=N)throw _("Angle bracket { expected");if(c(),f(t),"}"!=N)throw _("Angle bracket } expected");if(c(),""!==N)throw _("End of file expected");return c(),delete t.node,delete t.edge,delete t.graph,t}function f(t){for(;""!==N&&"}"!=N;)m(t),";"===N&&c()}function m(t){var e=v(t);if(e)return void b(t,e);var i=g(t);if(!i){if(L!=E.IDENTIFIER)throw _("Identifier expected");var o=N;if(c(),"="===N){if(c(),L!=E.IDENTIFIER)throw _("Identifier expected");t[o]=N,c()}else y(t,o)}}function v(t){var e=null;if("subgraph"===N&&(e={},e.type="subgraph",c(),L===E.IDENTIFIER&&(e.id=N,c())),"{"===N){if(c(),e||(e={}),e.parent=t,e.node=t.node,e.edge=t.edge,e.graph=t.graph,f(e),"}"!=N)throw _("Angle bracket } expected");c(),delete e.node,delete e.edge,delete e.graph,delete e.parent,t.subgraphs||(t.subgraphs=[]),t.subgraphs.push(e)}return e}function g(t){return"node"===N?(c(),t.node=w(),"node"):"edge"===N?(c(),t.edge=w(),"edge"):"graph"===N?(c(),t.graph=w(),"graph"):null}function y(t,e){var i={id:e},o=w();o&&(i.attr=o),d(t,i),b(t,e)}function b(t,e){for(;"->"===N||"--"===N;){var i,o=N;c();var n=v(t);if(n)i=n;else{if(L!=E.IDENTIFIER)throw _("Identifier or subgraph expected");i=N,d(t,{id:i}),c()}var s=w(),r=u(t,e,i,o,s);l(t,r),e=i}}function w(){for(var t=null;"["===N;){for(c(),t={};""!==N&&"]"!=N;){if(L!=E.IDENTIFIER)throw _("Attribute name expected");var e=N;if(c(),"="!=N)throw _("Equal sign = expected");if(c(),L!=E.IDENTIFIER)throw _("Attribute value expected");var i=N;h(t,e,i),c(),","==N&&c()}if("]"!=N)throw _("Bracket ] expected");c()}return t}function _(t){return new SyntaxError(t+', got "'+x(N,30)+'" (char '+I+")")}function x(t,e){return t.length<=e?t:t.substr(0,27)+"..."}function k(t,e,i){Array.isArray(t)?t.forEach(function(t){Array.isArray(e)?e.forEach(function(e){i(t,e)}):i(t,e)}):Array.isArray(e)?e.forEach(function(e){i(t,e)}):i(t,e)}function O(t,e,i){for(var o=e.split("."),n=o.pop(),s=t,r=0;r<o.length;r++){var a=o[r];a in s||(s[a]={}),s=s[a]}return s[n]=i,t}function D(t,e){var i={};for(var o in t)if(t.hasOwnProperty(o)){var n=e[o];Array.isArray(n)?n.forEach(function(e){O(i,e,t[o])}):"string"==typeof n?O(i,n,t[o]):O(i,o,t[o])}return i}function M(t){var e=i(t),o={nodes:[],edges:[],options:{}};if(e.nodes&&e.nodes.forEach(function(t){var e={id:t.id,label:String(t.label||t.id)};a(e,D(t.attr,C)),e.image&&(e.shape="image"),o.nodes.push(e)}),e.edges){var n=function(t){var e={from:t.from,to:t.to};return a(e,D(t.attr,T)),e.arrows="->"===t.type?"to":void 0,e};e.edges.forEach(function(t){var e,i;e=t.from instanceof Object?t.from.nodes:{id:t.from},i=t.to instanceof Object?t.to.nodes:{id:t.to},t.from instanceof Object&&t.from.edges&&t.from.edges.forEach(function(t){var e=n(t);o.edges.push(e)}),k(e,i,function(e,i){var s=u(o,e.id,i.id,t.type,t.attr),r=n(s);o.edges.push(r)}),t.to instanceof Object&&t.to.edges&&t.to.edges.forEach(function(t){var e=n(t);o.edges.push(e)})})}return e.attr&&(o.options=e.attr),o}var C={fontsize:"font.size",fontcolor:"font.color",labelfontcolor:"font.color",fontname:"font.face",color:["color.border","color.background"],fillcolor:"color.background",tooltip:"title",labeltooltip:"title"},T=Object.create(C);T.color="color.color";var E={NULL:0,DELIMITER:1,IDENTIFIER:2,UNKNOWN:3},S={"{":!0,"}":!0,"[":!0,"]":!0,";":!0,"=":!0,",":!0,"->":!0,"--":!0},P="",I=0,z="",N="",L=E.NULL,A=/[a-zA-Z_0-9.:#]/;e.parseDOT=i,e.DOTToGraph=M},function(t,e){function i(t,e){var i=[],o=[],n={edges:{inheritColor:!1},nodes:{fixed:!1,parseColor:!1}};void 0!==e&&(void 0!==e.fixed&&(n.nodes.fixed=e.fixed),void 0!==e.parseColor&&(n.nodes.parseColor=e.parseColor),void 0!==e.inheritColor&&(n.edges.inheritColor=e.inheritColor));for(var s=t.edges,r=t.nodes,a=0;a<s.length;a++){var h={},d=s[a];h.id=d.id,h.from=d.source,h.to=d.target,h.attributes=d.attributes,h.label=d.label,h.title=void 0!==d.attributes?d.attributes.title:void 0,"Directed"===d.type&&(h.arrows="to"),d.color&&n.inheritColor===!1&&(h.color=d.color),i.push(h)}for(var a=0;a<r.length;a++){var l={},u=r[a];l.id=u.id,l.attributes=u.attributes,l.title=u.title,l.x=u.x,l.y=u.y,l.label=u.label,l.title=void 0!==u.attributes?u.attributes.title:void 0,n.nodes.parseColor===!0?l.color=u.color:l.color=void 0!==u.color?{background:u.color,border:u.color,highlight:{background:u.color,border:u.color},hover:{background:u.color,border:u.color}}:void 0,l.size=u.size,l.fixed=n.nodes.fixed&&void 0!==u.x&&void 0!==u.y,o.push(l)}return{nodes:o,edges:i}}e.parseGephi=i},function(t,e){function i(t,e){if(!(t instanceof e))throw new TypeError("Cannot call a class as a function")}Object.defineProperty(e,"__esModule",{value:!0});var o=function(){function t(t,e){for(var i=0;i<e.length;i++){var o=e[i];o.enumerable=o.enumerable||!1,o.configurable=!0,"value"in o&&(o.writable=!0),Object.defineProperty(t,o.key,o)}}return function(e,i,o){return i&&t(e.prototype,i),o&&t(e,o),e}}(),n=function(){function t(e){i(this,t),this.images={},this.imageBroken={},this.callback=e}return o(t,[{key:"_addImageToCache",value:function(t,e){0===e.width&&(document.body.appendChild(e),e.width=e.offsetWidth,e.height=e.offsetHeight,document.body.removeChild(e)),this.images[t]=e}},{key:"_tryloadBrokenUrl",value:function(t,e,i){var o=this;void 0!==t&&void 0!==e&&void 0!==i&&(i.onerror=function(){console.error("Could not load brokenImage:",e),o._addImageToCache(t,new Image)},i.src=e)}},{key:"_redrawWithImage",value:function(t){this.callback&&this.callback(t)}},{key:"load",value:function(t,e,i){var o=this,n=this.images[t];if(n)return n;var s=new Image;return s.onload=function(){o._addImageToCache(t,s),o._redrawWithImage(s)},s.onerror=function(){console.error("Could not load image:",t),o._tryloadBrokenUrl(t,e,s)},s.src=t,s}}]),t}();e["default"]=n,t.exports=e["default"]},function(t,e){e.en={edit:"Edit",del:"Delete selected",back:"Back",addNode:"Add Node",addEdge:"Add Edge",editNode:"Edit Node",editEdge:"Edit Edge",addDescription:"Click in an empty space to place a new node.",edgeDescription:"Click on a node and drag the edge to another node to connect them.",editEdgeDescription:"Click on the control points and drag them to a node to connect to it.",createEdgeError:"Cannot link edges to a cluster.",deleteClusterError:"Clusters cannot be deleted.",editClusterError:"Clusters cannot be edited."},e.en_EN=e.en,e.en_US=e.en,e.de={edit:"Editieren",del:"Lösche Auswahl",back:"Zurück",addNode:"Knoten hinzufügen",addEdge:"Kante hinzufügen",editNode:"Knoten editieren",editEdge:"Kante editieren",addDescription:"Klicke auf eine freie Stelle, um einen neuen Knoten zu plazieren.",edgeDescription:"Klicke auf einen Knoten und ziehe die Kante zu einem anderen Knoten, um diese zu verbinden.",editEdgeDescription:"Klicke auf die Verbindungspunkte und ziehe diese auf einen Knoten, um sie zu verbinden.",createEdgeError:"Es ist nicht möglich, Kanten mit Clustern zu verbinden.",deleteClusterError:"Cluster können nicht gelöscht werden.",editClusterError:"Cluster können nicht editiert werden."},e.de_DE=e.de,e.es={edit:"Editar",del:"Eliminar selección",back:"Átras",addNode:"Añadir nodo",addEdge:"Añadir arista",editNode:"Editar nodo",editEdge:"Editar arista",addDescription:"Haga clic en un lugar vacío para colocar un nuevo nodo.",edgeDescription:"Haga clic en un nodo y arrastre la arista hacia otro nodo para conectarlos.",editEdgeDescription:"Haga clic en un punto de control y arrastrelo a un nodo para conectarlo.",createEdgeError:"No se puede conectar una arista a un grupo.",deleteClusterError:"No es posible eliminar grupos.",editClusterError:"No es posible editar grupos."},e.es_ES=e.es,e.nl={edit:"Wijzigen",del:"Selectie verwijderen",back:"Terug",addNode:"Node toevoegen",addEdge:"Link toevoegen",editNode:"Node wijzigen",editEdge:"Link wijzigen",addDescription:"Klik op een leeg gebied om een nieuwe node te maken.",edgeDescription:"Klik op een node en sleep de link naar een andere node om ze te verbinden.",editEdgeDescription:"Klik op de verbindingspunten en sleep ze naar een node om daarmee te verbinden.",createEdgeError:"Kan geen link maken naar een cluster.",deleteClusterError:"Clusters kunnen niet worden verwijderd.",editClusterError:"Clusters kunnen niet worden aangepast."},e.nl_NL=e.nl,e.nl_BE=e.nl}])});
 
 
-},{}],5:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 var Vue // late bind
 var map = Object.create(null)
 var shimmed = false
@@ -2862,7 +2680,7 @@ function format (id) {
   return match ? match[0] : id
 }
 
-},{}],6:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 /*!
  * vue-router v0.7.13
  * (c) 2016 Evan You
@@ -5572,7 +5390,7 @@ function format (id) {
   return Router;
 
 }));
-},{}],7:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 (function (process,global){
 /*!
  * Vue.js v1.0.26
@@ -15649,7 +15467,7 @@ setTimeout(function () {
 
 module.exports = Vue;
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":1}],8:[function(require,module,exports){
+},{"_process":19}],7:[function(require,module,exports){
 var inserted = exports.cache = {}
 
 exports.insert = function (css) {
@@ -15669,7 +15487,7 @@ exports.insert = function (css) {
   return elem
 }
 
-},{}],9:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 var __vueify_insert__ = require("vueify/lib/insert-css")
 var __vueify_style__ = __vueify_insert__.insert("\n")
 'use strict';
@@ -15713,12 +15531,12 @@ if (module.hot) {(function () {  module.hot.accept()
     document.head.removeChild(__vueify_style__)
   })
   if (!module.hot.data) {
-    hotAPI.createRecord("_v-586e6f82", module.exports)
+    hotAPI.createRecord("_v-06fb3320", module.exports)
   } else {
-    hotAPI.update("_v-586e6f82", module.exports, (typeof module.exports === "function" ? module.exports.options : module.exports).template)
+    hotAPI.update("_v-06fb3320", module.exports, (typeof module.exports === "function" ? module.exports.options : module.exports).template)
   }
 })()}
-},{"../js/EngineClient.js":12,"vue":7,"vue-hot-reload-api":5,"vueify/lib/insert-css":8}],10:[function(require,module,exports){
+},{"../js/EngineClient.js":11,"vue":6,"vue-hot-reload-api":4,"vueify/lib/insert-css":7}],9:[function(require,module,exports){
 var __vueify_insert__ = require("vueify/lib/insert-css")
 var __vueify_style__ = __vueify_insert__.insert("\n.pe-7s-refresh {\n    padding-left: 5px;\n    padding-right: 0px;\n}\n.error-pre {\n    margin-top: 10px;\n    margin-bottom: 0px;\n}\n")
 'use strict';
@@ -15774,12 +15592,12 @@ if (module.hot) {(function () {  module.hot.accept()
     document.head.removeChild(__vueify_style__)
   })
   if (!module.hot.data) {
-    hotAPI.createRecord("_v-36be6a78", module.exports)
+    hotAPI.createRecord("_v-6701a119", module.exports)
   } else {
-    hotAPI.update("_v-36be6a78", module.exports, (typeof module.exports === "function" ? module.exports.options : module.exports).template)
+    hotAPI.update("_v-6701a119", module.exports, (typeof module.exports === "function" ? module.exports.options : module.exports).template)
   }
 })()}
-},{"../js/EngineClient.js":12,"vue":7,"vue-hot-reload-api":5,"vueify/lib/insert-css":8}],11:[function(require,module,exports){
+},{"../js/EngineClient.js":11,"vue":6,"vue-hot-reload-api":4,"vueify/lib/insert-css":7}],10:[function(require,module,exports){
 var __vueify_insert__ = require("vueify/lib/insert-css")
 var __vueify_style__ = __vueify_insert__.insert("\n.search-button {\n    width: 100%;\n}\n.graph-row {\n    padding-top: 20px;\n}\n.graph-div {\n    height: 60vh;\n}\n.pe-7s-angle-right-circle {\n    padding-left: 5px;\n}\n.pe-7s-refresh {\n    padding-right: 0px;\n    padding-left: 5px;\n}\n.form-buttons {\n    padding-bottom: 0px;\n    margin-bottom: 0px;\n}\n")
 'use strict';
@@ -15863,6 +15681,7 @@ exports.default = {
         graphResponse: function graphResponse(resp, err) {
             if (resp != null) {
                 halParser.parseResponse(resp);
+                visualiser.centerNodes();
             } else {
                 this.showError(err);
             }
@@ -15922,12 +15741,12 @@ if (module.hot) {(function () {  module.hot.accept()
     document.head.removeChild(__vueify_style__)
   })
   if (!module.hot.data) {
-    hotAPI.createRecord("_v-1d85f79d", module.exports)
+    hotAPI.createRecord("_v-761af5be", module.exports)
   } else {
-    hotAPI.update("_v-1d85f79d", module.exports, (typeof module.exports === "function" ? module.exports.options : module.exports).template)
+    hotAPI.update("_v-761af5be", module.exports, (typeof module.exports === "function" ? module.exports.options : module.exports).template)
   }
 })()}
-},{"../js/EngineClient.js":12,"../js/HAL/HALParser.js":15,"../js/prismGraql.js":16,"../js/visualiser/Visualiser.js":18,"prismjs":2,"underscore":3,"vue":7,"vue-hot-reload-api":5,"vueify/lib/insert-css":8}],12:[function(require,module,exports){
+},{"../js/EngineClient.js":11,"../js/HAL/HALParser.js":14,"../js/prismGraql.js":15,"../js/visualiser/Visualiser.js":17,"prismjs":1,"underscore":2,"vue":6,"vue-hot-reload-api":4,"vueify/lib/insert-css":7}],11:[function(require,module,exports){
 /*
  * MindmapsDB - A Distributed Semantic Database
  * Copyright (C) 2016  Mindmaps Research Ltd
@@ -16077,7 +15896,7 @@ var EngineClient = function () {
 exports.default = EngineClient;
 ;
 
-},{}],13:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -16119,7 +15938,7 @@ var KEY_BASE_TYPE = exports.KEY_BASE_TYPE = "_baseType";
 
 var EDGE_LABEL_ISA = exports.EDGE_LABEL_ISA = "isa";
 
-},{}],14:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -16218,7 +16037,7 @@ function weight(baseType) {
     if (baseType in weightMap) return weightMap[baseType];else return 0;
 }
 
-},{"./APITerms":13}],15:[function(require,module,exports){
+},{"./APITerms":12}],14:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -16365,7 +16184,7 @@ var HALParser = function () {
 
 exports.default = HALParser;
 
-},{"./APITerms":13,"./APIUtils":14,"underscore":3}],16:[function(require,module,exports){
+},{"./APITerms":12,"./APIUtils":13,"underscore":2}],15:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -16428,7 +16247,7 @@ var graql = exports.graql = {
     }
 };
 
-},{}],17:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 /*
  * MindmapsDB - A Distributed Semantic Database
  * Copyright (C) 2016  Mindmaps Research Ltd
@@ -16600,7 +16419,7 @@ var Style = function () {
 exports.default = Style;
 ;
 
-},{"../HAL/APITerms":13}],18:[function(require,module,exports){
+},{"../HAL/APITerms":12}],17:[function(require,module,exports){
 /*
  * MindmapsDB - A Distributed Semantic Database
  * Copyright (C) 2016  Mindmaps Research Ltd
@@ -16744,6 +16563,17 @@ var Visualiser = function () {
         }
 
         /**
+         * Center nodes on graph
+         */
+
+    }, {
+        key: 'centerNodes',
+        value: function centerNodes() {
+            this.network.fit({ animation: false });
+            return this;
+        }
+
+        /**
          * Add a node to the graph. This can be called at any time *after* render().
          */
 
@@ -16865,7 +16695,7 @@ var Visualiser = function () {
 
 exports.default = Visualiser;
 
-},{"./Style":17,"underscore":3,"vis":4}],19:[function(require,module,exports){
+},{"./Style":16,"underscore":2,"vis":3}],18:[function(require,module,exports){
 'use strict';
 
 /*
@@ -16915,4 +16745,166 @@ router.redirect({
 
 router.start(app, '#app');
 
-},{"./components/main.vue":9,"./components/status.vue":10,"./components/visualiser.vue":11,"vue":7,"vue-router":6}]},{},[19]);
+},{"./components/main.vue":8,"./components/status.vue":9,"./components/visualiser.vue":10,"vue":6,"vue-router":5}],19:[function(require,module,exports){
+// shim for using process in browser
+var process = module.exports = {};
+
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
+
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+(function () {
+    try {
+        cachedSetTimeout = setTimeout;
+    } catch (e) {
+        cachedSetTimeout = function () {
+            throw new Error('setTimeout is not defined');
+        }
+    }
+    try {
+        cachedClearTimeout = clearTimeout;
+    } catch (e) {
+        cachedClearTimeout = function () {
+            throw new Error('clearTimeout is not defined');
+        }
+    }
+} ())
+function runTimeout(fun) {
+    if (cachedSetTimeout === setTimeout) {
+        //normal enviroments in sane situations
+        return setTimeout(fun, 0);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedSetTimeout(fun, 0);
+    } catch(e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+            return cachedSetTimeout.call(null, fun, 0);
+        } catch(e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+            return cachedSetTimeout.call(this, fun, 0);
+        }
+    }
+
+
+}
+function runClearTimeout(marker) {
+    if (cachedClearTimeout === clearTimeout) {
+        //normal enviroments in sane situations
+        return clearTimeout(marker);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedClearTimeout(marker);
+    } catch (e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+            return cachedClearTimeout.call(null, marker);
+        } catch (e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+            return cachedClearTimeout.call(this, marker);
+        }
+    }
+
+
+
+}
+var queue = [];
+var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    if (!draining || !currentQueue) {
+        return;
+    }
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
+}
+
+function drainQueue() {
+    if (draining) {
+        return;
+    }
+    var timeout = runTimeout(cleanUpNextTick);
+    draining = true;
+
+    var len = queue.length;
+    while(len) {
+        currentQueue = queue;
+        queue = [];
+        while (++queueIndex < len) {
+            if (currentQueue) {
+                currentQueue[queueIndex].run();
+            }
+        }
+        queueIndex = -1;
+        len = queue.length;
+    }
+    currentQueue = null;
+    draining = false;
+    runClearTimeout(timeout);
+}
+
+process.nextTick = function (fun) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
+        runTimeout(drainQueue);
+    }
+};
+
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
+process.versions = {};
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+};
+
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+process.umask = function() { return 0; };
+
+},{}]},{},[18]);
