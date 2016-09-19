@@ -83,68 +83,91 @@ public class Statistics {
 
         ResourceType resourceType1 = graph.putResourceType("resourceType1", ResourceType.DataType.DOUBLE);
         ResourceType resourceType2 = graph.putResourceType("resourceType2", ResourceType.DataType.LONG);
-        graph.putResourceType("resourceType3", ResourceType.DataType.STRING);
+        ResourceType resourceType3 = graph.putResourceType("resourceType3", ResourceType.DataType.LONG);
+        ResourceType resourceType4 = graph.putResourceType("resourceType4", ResourceType.DataType.STRING);
+
         Analytics computer;
 
         graph.commit();
         graph = MindmapsClient.getGraph(keyspace);
 
+        // resource-type has no instance
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
         assertFalse(computer.mean().isPresent());
-
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
         assertFalse(computer.mean().isPresent());
 
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
         assertFalse(computer.max().isPresent());
-
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
-        assertFalse(computer.min().isPresent());
-
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
         assertFalse(computer.max().isPresent());
 
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
+        assertFalse(computer.min().isPresent());
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
         assertFalse(computer.min().isPresent());
 
-        graph.putResource(4, resourceType2);
-        graph.putResource(-1L, resourceType2);
-        graph.putResource(0L, resourceType2);
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
+        assertFalse(computer.sum().isPresent());
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
+        assertFalse(computer.sum().isPresent());
 
         graph.putResource(1.2, resourceType1);
         graph.putResource(1.5, resourceType1);
         graph.putResource(1.8, resourceType1);
+
+        graph.putResource(4L, resourceType2);
+        graph.putResource(-1L, resourceType2);
+        graph.putResource(0L, resourceType2);
+
+        graph.putResource("a", resourceType4);
+        graph.putResource("b", resourceType4);
+        graph.putResource("c", resourceType4);
+
 
         graph.commit();
         graph = MindmapsClient.getGraph(keyspace);
 
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
         assertEquals(1.5, computer.mean().get(), delta);
-
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
         assertEquals(1.0, computer.mean().get(), delta);
 
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
         assertEquals(1.8, computer.max().get().doubleValue(), delta);
-
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
-        assertEquals(1.2, computer.min().get().doubleValue(), delta);
-
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
         assertEquals(4L, computer.max().get());
 
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
+        assertEquals(1.2, computer.min().get().doubleValue(), delta);
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
         assertEquals(-1L, computer.min().get());
 
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
+        assertEquals(4.5, computer.sum().get().doubleValue(), delta);
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
+        assertEquals(3L, computer.sum().get());
+
+        // if it's not a resource-type
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("thing")));
         assertExceptionThrown(computer::max);
         assertExceptionThrown(computer::min);
         assertExceptionThrown(computer::mean);
+        assertExceptionThrown(computer::sum);
 
+        // resource-type has no instance
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType3")));
+        assertFalse(computer.mean().isPresent());
+        assertFalse(computer.max().isPresent());
+        assertFalse(computer.min().isPresent());
+        assertFalse(computer.sum().isPresent());
+
+        // resource-type has incorrect data type
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType4")));
         assertExceptionThrown(computer::max);
         assertExceptionThrown(computer::min);
         assertExceptionThrown(computer::mean);
+        assertExceptionThrown(computer::sum);
     }
 
     private void assertExceptionThrown(Supplier<Optional> method) {
