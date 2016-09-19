@@ -118,7 +118,7 @@ public class AdminTest {
     @Test
     public void testInsertQueryWithMatchQuery() {
         InsertQuery query = qb.match(var("x").isa("movie")).insert(var().id("123").isa("movie"));
-        assertEquals(Optional.of("match $x isa movie"), query.admin().getMatchQuery().map(Object::toString));
+        assertEquals(Optional.of("match $x isa movie;"), query.admin().getMatchQuery().map(Object::toString));
     }
 
     @Test
@@ -137,7 +137,7 @@ public class AdminTest {
     @Test
     public void testDeleteQueryPattern() {
         DeleteQuery query = qb.match(var("x").isa("movie")).delete("x");
-        assertEquals("match $x isa movie", query.admin().getMatchQuery().toString());
+        assertEquals("match $x isa movie;", query.admin().getMatchQuery().toString());
     }
 
     @Test

@@ -43,21 +43,21 @@ entity plays-role P-rA plays-role P-rB;
 
 "R1" isa inference-rule,
 lhs {match
-(R-rA: $x, R-rB: $y) isa R},
+(R-rA: $x, R-rB: $y) isa R;},
 rhs {match
-(N-rA: $x, N-rB: $y) isa N};
+(N-rA: $x, N-rB: $y) isa N;};
 
 "R2" isa inference-rule,
 lhs {match
 (P-rA: $x, P-rB: $z) isa P;
 (N-rA: $z, N-rB: $w) isa N;
-(Q-rA: $w, Q-rB: $y) isa Q},
+(Q-rA: $w, Q-rB: $y) isa Q;},
 rhs {match
-(N-rA: $x, N-rB: $y) isa N};
+(N-rA: $x, N-rB: $y) isa N;};
 
 "R3" isa inference-rule,
 lhs {match
 (N-rA: $x, N-rB: $y) isa N;
-$x id 'c'},
+$x id 'c';},
 rhs {match
-$y isa S};
+$y isa S;};

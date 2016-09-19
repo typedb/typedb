@@ -27,13 +27,13 @@ argument       : VARIABLE  # variableArgument
                ;
 namedAgg       : aggregate 'as' id ;
 
-patterns       : pattern (';' pattern)* ';'? ;
+patterns       : (pattern ';')+ ;
 pattern        : varPattern                    # varPatternCase
                | pattern 'or' pattern          # orPattern
                | '{' patterns '}'              # andPattern
                ;
 
-varPatterns    : varPattern (';' varPattern)* ';'? ;
+varPatterns    : (varPattern ';')+ ;
 varPattern     : variable | variable? property (','? property)* ;
 
 property       : 'isa' variable                   # isa
@@ -75,7 +75,7 @@ value          : STRING  # valueString
                | BOOLEAN # valueBoolean
                ;
 
-modifiers      : (','? modifier)* ;
+modifiers      : (modifier ','?)* ;
 modifier       : 'select' VARIABLE (',' VARIABLE)* # modifierSelect
                | 'limit' INTEGER                   # modifierLimit
                | 'offset' INTEGER                  # modifierOffset

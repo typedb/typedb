@@ -47,10 +47,10 @@ lhs {match
 (ancestor: $z, descendant: $y) isa Ancestor;
 select $x, $y},
 rhs {match
-(ancestor: $x, descendant: $y) isa Ancestor};
+(ancestor: $x, descendant: $y) isa Ancestor;};
 
 "R2" isa inference-rule,
 lhs {match
-(parent: $x, child: $y) isa Parent},
+(parent: $x, child: $y) isa Parent;},
 rhs {match
-(ancestor: $x, descendant: $y) isa Ancestor};
+(ancestor: $x, descendant: $y) isa Ancestor;};
