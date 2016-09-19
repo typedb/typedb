@@ -41,20 +41,20 @@ entity plays-role P-roleA, plays-role P-roleB;
 "R1" isa inference-rule,
 lhs {match
 $x isa q;
-($x, $y) isa TC},
+($x, $y) isa TC;},
 rhs {match
-($x, $y) isa N-TC};
+($x, $y) isa N-TC;};
 
 "R2" isa inference-rule,
 lhs {match
-($x, $y) isa P},
+($x, $y) isa P;},
 rhs {match
-($x, $y) isa TC};
+($x, $y) isa TC;};
 
 "R3" isa inference-rule,
 lhs {match
 ($x, $z) isa P;
-($z, $y) isa TC select $x, $y},
+($z, $y) isa TC; select $x, $y},
 rhs {match
-($x, $y) isa TC};
+($x, $y) isa TC;};
 

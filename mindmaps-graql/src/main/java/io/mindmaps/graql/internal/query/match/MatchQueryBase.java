@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.mindmaps.util.Schema.ConceptProperty.ITEM_IDENTIFIER;
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -113,7 +114,7 @@ public class MatchQueryBase implements MatchQueryInternal {
 
     @Override
     public String toString() {
-        return "match " + pattern;
+        return "match " + pattern.getPatterns().stream().map(p -> p + ";").collect(joining(" "));
     }
 
     /**

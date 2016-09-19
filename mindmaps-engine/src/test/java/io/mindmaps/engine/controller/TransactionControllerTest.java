@@ -32,6 +32,7 @@ import org.junit.Test;
 
 import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.given;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -57,7 +58,7 @@ public class TransactionControllerTest {
 
     @Test
     public void insertValidQuery() {
-        String exampleInsertQuery = "insert id \"actor-123\" isa Man";
+        String exampleInsertQuery = "insert id \"actor-123\" isa Man;";
         String transactionUUID = given().body(exampleInsertQuery).
                 when().post(REST.WebPath.NEW_TRANSACTION_URI + "?graphName=mindmapstest").body().asString();
         int i = 0;
@@ -84,7 +85,7 @@ public class TransactionControllerTest {
                 when().post(REST.WebPath.NEW_TRANSACTION_URI + "?graphName=mindmapstest").body().asString();
         int i = 0;
         String status = "QUEUED";
-        while (i < 1 && !status.equals("ERROR")) {
+        while (i < 10 && !status.equals("ERROR")) {
             i++;
             try {
                 Thread.sleep(500);
@@ -94,7 +95,7 @@ public class TransactionControllerTest {
                 e.printStackTrace();
             }
         }
-        assertTrue(status.equals("ERROR"));
+        assertEquals("ERROR", status);
     }
 
     @Test
