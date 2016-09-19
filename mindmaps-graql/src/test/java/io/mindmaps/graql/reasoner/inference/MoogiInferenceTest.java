@@ -6,9 +6,9 @@ import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
+import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
 import io.mindmaps.graql.reasoner.graphs.GenericGraph;
-import io.mindmaps.graql.reasoner.graphs.SNBGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -18,6 +18,7 @@ import static org.junit.Assert.assertEquals;
 
 public class MoogiInferenceTest{
 
+    private static MindmapsGraph graph;
     private static Reasoner reasoner;
     private static QueryBuilder qb;
     private static String dataDir = "femtomoogi/";
@@ -29,7 +30,7 @@ public class MoogiInferenceTest{
 
     @BeforeClass
     public static void setUpClass() {
-        MindmapsGraph graph = GenericGraph.getGraph(schemaFile, entityFile, assertionFile2, assertionFile, ruleFile);
+        graph = GenericGraph.getGraph(schemaFile/*, entityFile, assertionFile2, assertionFile, ruleFile*/);
         reasoner = new Reasoner(graph);
         qb = Graql.withGraph(graph);
     }
@@ -37,24 +38,40 @@ public class MoogiInferenceTest{
     @Test
     public void test() {
 
-        String queryString = "match $z isa genre; $z has description 'science fiction'";
+        String queryString = "match (production-with-genre: $x, genre-of-production: $y) isa has-genre;" +
+                             "$x isa movie; $y isa genre; $y has description 'science fiction'; select $x";
         MatchQuery query = qb.parseMatch(queryString);
 
         QueryAnswers answers = reasoner.resolve(query);
 
-        String testQuery = "match (production-with-genre: $x, genre-of-production: $y) isa has-genre;"+
-                            "$y has description 'Sci-Fi';$x isa movie; select $x(has title)";
-        printMatchQueryResults(qb.parseMatch(testQuery));
+        String explicitQuery = "match (production-with-genre: $x, genre-of-production: $y) isa has-genre;"+
+                            "$y has description 'Sci-Fi' or $y has description 'science fiction' or $y has description 'Science Fiction';" +
+                            "$x isa movie; select $x";
 
-        printAnswers(answers);
+        assertEquals(answers, Sets.newHashSet(qb.parseMatch(explicitQuery)));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
+    }
 
-        /*
-        String explicitQuery = "match " +
-                "$x isa university;$x id 'University of Cambridge';$y isa country;$y id 'UK'";
+    @Test
+    public void testActorDirector(){
+        String queryString = "match $x has status 'actor-director';";
+        String explicitQuery = "match (actor: $x) isa has-cast;(director: $x) isa production-crew;";
+
+        MatchQuery query = qb.parseMatch(queryString);
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
-           */
+    }
+
+    @Test
+    public void testPerson(){
+        String queryString = "match $x isa person;$x has name 'Bob';";
+        MatchQuery query = qb.parseMatch(queryString);
+        query.toString();
+        //Query q = new Query(query, graph);
+
+
+        //MatchQuery mq = reasoner.resolveToQuery(query);
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {

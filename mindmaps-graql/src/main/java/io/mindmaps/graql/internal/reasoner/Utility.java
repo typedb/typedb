@@ -108,6 +108,7 @@ public class Utility {
         }
         return equivalentQuery;
     }
+
     public static Set<RoleType> getCompatibleRoleTypes(String typeId, String relId, MindmapsGraph graph) {
         Set<RoleType> cRoles = new HashSet<>();
 

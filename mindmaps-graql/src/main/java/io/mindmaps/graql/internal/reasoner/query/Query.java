@@ -134,6 +134,11 @@ public class Query implements MatchQueryInternal {
     @Override
     public Conjunction<PatternAdmin> getPattern(){ return pattern;}
 
+    public QueryAnswers getAnswers(){ throw new IllegalStateException("dupa");}
+    public void DBlookup(){ throw new IllegalStateException("dupa");}
+    public void memoryLookup(Map<AtomicQuery, QueryAnswers> matAnswers){throw new IllegalStateException("dupa");}
+    public void propagateAnswers(Map<AtomicQuery, QueryAnswers> matAnswers){throw new IllegalStateException("dupa");}
+
     public void setParentAtom(Atomic par){ parentAtom = par;}
     public Set<Atomic> getAtoms() { return new HashSet<>(atomSet);}
     public Set<Atomic> getAtomsWithType(Type type) {
@@ -214,7 +219,7 @@ public class Query implements MatchQueryInternal {
         changeVarName("temp", from);
     }
 
-    public void changeVarNames(Map<String, String> unifiers) {
+    public void unify(Map<String, String> unifiers) {
         if (unifiers.size() == 0) return;
         Map<String, String> mappings = new HashMap<>(unifiers);
         Map<String, String> appliedMappings = new HashMap<>();
