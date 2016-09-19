@@ -85,7 +85,7 @@ function weight(baseType) {
         "entity-type": 1,
         "relation-type": 2,
         "role-type": 3,
-        "concept-type": 4
+        "type": 4
     };
 
     if (baseType in weightMap)
