@@ -89,7 +89,7 @@ class ConceptFixer {
         try {
             Thread.sleep((long) Math.ceil(waitTime * 1000));
         } catch (InterruptedException e1) {
-            e1.printStackTrace();
+            LOG.error("Exception",e1);
         }
 
         return retry;

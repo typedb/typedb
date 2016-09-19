@@ -31,8 +31,8 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                     <div class="form-group">
                         <textarea class="form-control" rows="3" placeholder=">>" v-model="graqlQuery"></textarea>
                     </div>
-                    <div class="form-group from-buttons">
-                        <button @click="notify" class="btn btn-default">Submit<i class="pe-7s-angle-right-circle"></i></button>
+                    <div class="from-buttons">
+                        <button @click="notify" class="btn btn-default search-button">Submit<i class="pe-7s-angle-right-circle"></i></button>
                         <button @click="clearGraph" class="btn btn-default">Clear<i class="pe-7s-refresh"></i></button>
                     </div>
                 </div>
@@ -42,7 +42,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 
     <div class="row" v-show="errorMessage">
         <div class="col-xs-12">
-            <div class="panel panel-filled panel-c-danger">
+            <div class="panel panel-filled" v-bind:class="errorPanelClass">
                 <div class="panel-body">
                     {{errorMessage}}
                 </div>
@@ -50,30 +50,32 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
         </div>
     </div>
 
-    <div class="row graph-row" v-show="graphActive">
+    <div class="row tab-row">
         <div class="col-xs-12">
-        <div class="panel panel-filled">
-            <div class="panel-body">
-                <div class="graph-div" v-el:graph @contextmenu="suppressEventDefault"></div>
+            <div class="tabs-container">
+                <ul class="nav nav-tabs">
+                    <li class="active"><a data-toggle="tab" href="#tab-1" aria-expanded="true">Visualiser</a></li>
+                    <li class=""><a data-toggle="tab" href="#tab-2" aria-expanded="false">Shell</a></li>
+                </ul>
+                <div class="tab-content">
+                    <div id="tab-1" class="tab-pane active">
+                        <div class="panel-body">
+                            <div class="graph-div" v-el:graph @contextmenu="suppressEventDefault"></div>
+                        </div>
+                    </div>
+                    <div id="tab-2" class="tab-pane">
+                        <div class="panel-body">
+                            <pre class="language-graql">{{{graqlResponse}}}</pre>
+                        </div>
+                    </div>
             </div>
         </div>
-        </div>
     </div>
-
-    <div class="row" v-show="graqlResponse">
-        <div class="col-xs-12">
-            <pre class="language-graql">{{{graqlResponse}}}</pre>
-        </div>
-    </div>
-
 </div>
 </template>
 
 <style>
-.search-button {
-    width: 100%;
-}
-.graph-row {
+.tab-row {
     padding-top: 20px;
 }
 .graph-div {
@@ -106,7 +108,7 @@ export default {
         return {
             graqlQuery: undefined,
             errorMessage: undefined,
-            graphActive: false,
+            errorPanelClass: undefined,
             graqlResponse: undefined,
             visualiser: {},
             engineClient: {},
@@ -134,21 +136,39 @@ export default {
         typeQueryResponse(resp, err) {
             if(resp != undefined) {
                 halParser.parseHalObject(resp);
-                this.graphActive = true;
             } else {
                 this.showError(err);
             }
         },
 
         showError(msg) {
+            this.errorPanelClass = 'panel-c-danger';
             this.errorMessage = msg;
             $('.search-button').removeClass('btn-default').addClass('btn-danger');
         },
 
+        showWarning(msg) {
+            this.errorPanelClass = 'panel-c-warning';
+            this.errorMessage = msg;
+            $('.search-button').removeClass('btn-default').addClass('btn-warning');
+        },
+
+        resetMsg() {
+            this.errorMessage = undefined;
+            $('.search-button')
+                .removeClass('btn-danger')
+                .removeClass('btn-warning')
+                .addClass('btn-default');
+        },
+
         graphResponse(resp, err) {
             if(resp != null) {
-                halParser.parseResponse(resp);
-                visualiser.centerNodes();
+                if(!halParser.parseResponse(resp)) {
+                    this.showWarning("Sorry, no results found for your query.");
+                }
+                else {
+                    visualiser.centerNodes();
+                }
             }
             else {
                 this.showError(err);
@@ -157,6 +177,8 @@ export default {
 
         shellResponse(resp, err) {
             if(resp != null) {
+                console.log('response is:');
+                console.log(resp);
                 this.graqlResponse = Prism.highlight(resp, PLang.graql);
             }
             else {
@@ -170,17 +192,16 @@ export default {
 
             engineClient.graqlHAL(this.graqlQuery, this.graphResponse);
             engineClient.graqlShell(this.graqlQuery, this.shellResponse);
-
-            this.graphActive = true;
-            this.errorMessage = undefined;
-            $('.search-button').removeClass('btn-danger').addClass('btn-default');
+            this.resetMsg();
         },
 
         clearGraph() {
+            // Reset all interface elements to default
             this.graqlQuery = undefined;
-            this.errorMessage = undefined;
-            this.graphActive = false;
             this.graqlResponse = undefined;
+            this.resetMsg();
+
+            // And clear the graph
             visualiser.clearGraph();
         },
 
@@ -190,7 +211,6 @@ export default {
                 visualiser.clearGraph();
 
             _.map(param.nodes, x => { engineClient.request({url: x, callback: this.typeQueryResponse}) });
-
         },
 
         rightClick(param) {

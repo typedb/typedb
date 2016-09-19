@@ -35,13 +35,7 @@
         <module>mindmaps-graql</module>
         <module>mindmaps-graql-shell</module>
         <module>mindmaps-engine</module>
-        <!--
-          Temporarily commented out because of issues using
-          npm through mvn - all dashboard final JS files
-          are currently pushed pre-built to the repo.
-
         <module>mindmaps-dashboard</module>
-    -->
         <module>mindmaps-migration</module>
         <module>mindmaps-dist</module>
         <module>mindmaps-test</module>

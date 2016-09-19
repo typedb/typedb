@@ -111,8 +111,7 @@ public class ImportController {
 
             Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(pathToFile, graphName));
         } catch (JSONException j) {
-            LOG.error("Malformed request.");
-            j.printStackTrace();
+            LOG.error("Malformed request.",j);
             res.status(400);
             return j.getMessage();
         } catch (FileNotFoundException e) {
@@ -143,13 +142,11 @@ public class ImportController {
                 graphName = defaultGraphName;
             importOntologyFromFile(pathToFile, graphName);
         } catch (JSONException j) {
-            LOG.error("Malformed request.");
-            j.printStackTrace();
+            LOG.error("Malformed request.",j);
             res.status(400);
             return j.getMessage();
         } catch (Exception e) {
-            LOG.error("Exception while loading ontology.");
-            e.printStackTrace();
+            LOG.error("Exception while loading ontology.",e);
             res.status(500);
             return e.getMessage();
         }
@@ -165,8 +162,7 @@ public class ImportController {
             loader.waitToFinish();
             BackgroundTasks.getInstance().forcePostprocessing();
         } catch (Exception e) {
-            LOG.error("Exception while batch loading data.");
-            e.printStackTrace();
+            LOG.error("Exception while batch loading data.",e);
         }
     }
 
