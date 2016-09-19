@@ -25,10 +25,10 @@ import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.Type;
-import io.mindmaps.graql.internal.reasoner.container.AtomicQuery;
-import io.mindmaps.graql.internal.reasoner.container.Query;
-import io.mindmaps.graql.internal.reasoner.container.QueryAnswers;
-import io.mindmaps.graql.internal.reasoner.container.ReasonerMatchQuery;
+import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
+import io.mindmaps.graql.internal.reasoner.query.Query;
+import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
+import io.mindmaps.graql.internal.reasoner.query.ReasonerMatchQuery;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.Relation;
 import javafx.util.Pair;
@@ -608,7 +608,7 @@ public class Reasoner {
      * @param inputQuery the query string to be expanded
      * @return set of answers
      */
-    public Set<Map<String, Concept>> resolve(MatchQuery inputQuery) {
+    public QueryAnswers resolve(MatchQuery inputQuery) {
         Query query = new Query(inputQuery, graph);
         return resolveQuery(query, false);
     }

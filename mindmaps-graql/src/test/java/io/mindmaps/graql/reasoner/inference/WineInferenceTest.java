@@ -47,7 +47,6 @@ public class WineInferenceTest {
     public void testRecommendation() {
         String queryString = "match $x isa person;$y isa wine;($x, $y) isa wine-recommendation";
         MatchQuery query = qb.parseMatch(queryString);
-        MatchQuery expandedQuery = reasoner.expand(query);
 
         String explicitQuery = "match $x isa person;$y isa wine;" +
                             "{$x id 'Bob';$y id 'White Champagne'} or" +

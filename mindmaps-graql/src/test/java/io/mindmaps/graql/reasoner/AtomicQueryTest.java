@@ -22,7 +22,7 @@ import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.graql.internal.reasoner.container.AtomicQuery;
+import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
 import io.mindmaps.graql.internal.reasoner.predicate.Substitution;

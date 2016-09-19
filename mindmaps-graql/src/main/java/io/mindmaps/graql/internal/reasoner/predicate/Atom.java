@@ -20,7 +20,7 @@ package io.mindmaps.graql.internal.reasoner.predicate;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.reasoner.container.Query;
+import io.mindmaps.graql.internal.reasoner.query.Query;
 
 import java.util.*;
 import java.util.stream.Collectors;

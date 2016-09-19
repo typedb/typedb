@@ -34,19 +34,19 @@ entity plays-role S-from plays-role S-to;
 
 "R1" isa inference-rule,
 lhs {match
-(Q-from $x, Q-to $y) isa Q},
+(Q-from: $x, Q-to: $y) isa Q},
 rhs {match
-(P-from $x, P-to $y) isa P};
+(P-from: $x, P-to: $y) isa P};
 
 "R2" isa inference-rule,
 lhs {match
-(Q-from $x, Q-to $z) isa Q;
-(P-from $z, P-to $y) isa P},
+(Q-from: $x, Q-to: $z) isa Q;
+(P-from: $z, P-to: $y) isa P},
 rhs {match
-(P-from $x, P-to $y) isa P};
+(P-from: $x, P-to: $y) isa P};
 
 "R3" isa inference-rule,
 lhs {match
-(P-from $x, P-to $y) isa P},
+(P-from: $x, P-to: $y) isa P},
 rhs {match
-(S-from $x, S-to $y) isa S};
+(S-from: $x, S-to: $y) isa S};
