@@ -12,4 +12,4 @@ script:
     - mvn test jacoco:report coveralls:report -q
 before_install:
   - sudo apt-get -y install npm
-  - sudo npm install -g npm
+  - npm install -g npm
