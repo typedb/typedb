@@ -93,11 +93,6 @@ public class Statistics {
 
         // resource-type has no instance
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
-        assertFalse(computer.mean().isPresent());
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
-        assertFalse(computer.mean().isPresent());
-
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
         assertFalse(computer.max().isPresent());
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
         assertFalse(computer.max().isPresent());
@@ -111,6 +106,16 @@ public class Statistics {
         assertFalse(computer.sum().isPresent());
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
         assertFalse(computer.sum().isPresent());
+
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
+        assertFalse(computer.mean().isPresent());
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
+        assertFalse(computer.mean().isPresent());
+
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
+        assertFalse(computer.std().isPresent());
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
+        assertFalse(computer.std().isPresent());
 
         graph.putResource(1.2, resourceType1);
         graph.putResource(1.5, resourceType1);
@@ -124,14 +129,8 @@ public class Statistics {
         graph.putResource("b", resourceType4);
         graph.putResource("c", resourceType4);
 
-
         graph.commit();
         graph = MindmapsClient.getGraph(keyspace);
-
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
-        assertEquals(1.5, computer.mean().get(), delta);
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
-        assertEquals(1.0, computer.mean().get(), delta);
 
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
         assertEquals(1.8, computer.max().get().doubleValue(), delta);
@@ -148,12 +147,23 @@ public class Statistics {
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
         assertEquals(3L, computer.sum().get());
 
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
+        assertEquals(1.5, computer.mean().get(), delta);
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
+        assertEquals(1.0, computer.mean().get(), delta);
+
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
+        assertEquals(Math.sqrt(0.06), computer.std().get(), delta);
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
+        assertEquals(Math.sqrt(14.0 / 3.0), computer.std().get(), delta);
+
         // if it's not a resource-type
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("thing")));
         assertExceptionThrown(computer::max);
         assertExceptionThrown(computer::min);
         assertExceptionThrown(computer::mean);
         assertExceptionThrown(computer::sum);
+        assertExceptionThrown(computer::std);
 
         // resource-type has no instance
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType3")));
@@ -161,6 +171,7 @@ public class Statistics {
         assertFalse(computer.max().isPresent());
         assertFalse(computer.min().isPresent());
         assertFalse(computer.sum().isPresent());
+        assertFalse(computer.std().isPresent());
 
         // resource-type has incorrect data type
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType4")));
@@ -168,6 +179,7 @@ public class Statistics {
         assertExceptionThrown(computer::min);
         assertExceptionThrown(computer::mean);
         assertExceptionThrown(computer::sum);
+        assertExceptionThrown(computer::std);
     }
 
     private void assertExceptionThrown(Supplier<Optional> method) {

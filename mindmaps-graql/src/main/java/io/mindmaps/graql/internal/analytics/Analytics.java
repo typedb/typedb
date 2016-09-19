@@ -143,26 +143,6 @@ public class Analytics {
     }
 
     /**
-     * Compute the mean of instances of the selected resource-type.
-     *
-     * @return mean
-     */
-    public Optional<Double> mean() {
-        checkNumberOfTypes();
-        String type = allTypes.iterator().next();
-        checkResourceType(type);
-
-        if (!hasInstance(type)) return Optional.empty();
-
-        MindmapsComputer computer = MindmapsClient.getGraphComputer(keySpace);
-        ComputerResult result = computer.compute(new MeanMapReduce(allTypes, resourceTypes));
-        Map<String, Map<String, Number>> mean = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
-        Map<String, Number> meanPair = mean.get(MeanMapReduce.MEMORY_KEY);
-        return Optional.of(meanPair.get(MeanMapReduce.SUM).doubleValue() /
-                meanPair.get(MeanMapReduce.COUNT).longValue());
-    }
-
-    /**
      * Minimum value of the selected resource-type.
      *
      * @return min
@@ -216,25 +196,46 @@ public class Analytics {
         return Optional.of(max.get(SumMapReduce.MEMORY_KEY));
     }
 
-    private void checkResourceType(String type) {
-        if (!resourceTypes.containsKey(type))
-            throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
-                    .getMessage(this.getClass().toString()));
-        if (!resourceTypes.get(type).equals(ResourceType.DataType.LONG.getName()) &&
-                !resourceTypes.get(type).equals(ResourceType.DataType.DOUBLE.getName()))
-            throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
-                    .getMessage(this.getClass().toString()));
+    /**
+     * Compute the mean of instances of the selected resource-type.
+     *
+     * @return mean
+     */
+    public Optional<Double> mean() {
+        checkNumberOfTypes();
+        String type = allTypes.iterator().next();
+        checkResourceType(type);
+
+        if (!hasInstance(type)) return Optional.empty();
+
+        MindmapsComputer computer = MindmapsClient.getGraphComputer(keySpace);
+        ComputerResult result = computer.compute(new MeanMapReduce(allTypes, resourceTypes));
+        Map<String, Map<String, Number>> mean = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
+        Map<String, Number> meanPair = mean.get(MeanMapReduce.MEMORY_KEY);
+        return Optional.of(meanPair.get(MeanMapReduce.SUM).doubleValue() /
+                meanPair.get(MeanMapReduce.COUNT).longValue());
     }
 
-    private boolean hasInstance(String type) {
-        MindmapsGraph graph = MindmapsClient.getGraph(this.keySpace);
-        return withGraph(graph).match(var("x").isa(type)).ask().execute();
-    }
+    /**
+     * Compute the standard deviation of instances of the selected resource-type.
+     *
+     * @return standard deviation
+     */
+    public Optional<Double> std() {
+        checkNumberOfTypes();
+        String type = allTypes.iterator().next();
+        checkResourceType(type);
 
-    private void checkNumberOfTypes() {
-        if (allTypes.size() != 1)
-            throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
-                    .getMessage(this.getClass().toString()));
+        if (!hasInstance(type)) return Optional.empty();
+
+        MindmapsComputer computer = MindmapsClient.getGraphComputer(keySpace);
+        ComputerResult result = computer.compute(new StdMapReduce(allTypes, resourceTypes));
+        Map<String, Map<String, Number>> std = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
+        Map<String, Number> stdTuple = std.get(StdMapReduce.MEMORY_KEY);
+        double squareSum = stdTuple.get(StdMapReduce.SQUARE_SUM).doubleValue();
+        double sum = stdTuple.get(StdMapReduce.SUM).doubleValue();
+        long count = stdTuple.get(StdMapReduce.COUNT).longValue();
+        return Optional.of(Math.sqrt(squareSum / count - (sum / count) * (sum / count)));
     }
 
     /**
@@ -372,5 +373,26 @@ public class Analytics {
 
     public static String getVertexType(Vertex vertex) {
         return vertex.value(Schema.ConceptProperty.TYPE.name());
+    }
+
+    private void checkResourceType(String type) {
+        if (!resourceTypes.containsKey(type))
+            throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
+                    .getMessage(this.getClass().toString()));
+        if (!resourceTypes.get(type).equals(ResourceType.DataType.LONG.getName()) &&
+                !resourceTypes.get(type).equals(ResourceType.DataType.DOUBLE.getName()))
+            throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
+                    .getMessage(this.getClass().toString()));
+    }
+
+    private boolean hasInstance(String type) {
+        MindmapsGraph graph = MindmapsClient.getGraph(this.keySpace);
+        return withGraph(graph).match(var("x").isa(type)).ask().execute();
+    }
+
+    private void checkNumberOfTypes() {
+        if (allTypes.size() != 1)
+            throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
+                    .getMessage(this.getClass().toString()));
     }
 }
