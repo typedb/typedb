@@ -81,7 +81,7 @@ public abstract class Loader {
         }
         catch (IllegalArgumentException e){
             System.out.println(vars);
-            e.printStackTrace();
+            LOG.error("IllegalArgumentException",e);
         }
     }
 

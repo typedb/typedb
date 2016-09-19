@@ -164,7 +164,7 @@ public class RESTLoader {
                     try {
                         lastJobFinished.set(System.currentTimeMillis());
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        LOG.error("Exception",e);
                     }
                 }
             }
@@ -186,12 +186,10 @@ public class RESTLoader {
 
     private void handleError(Exception e, int i) {
         LOG.error("Caught exception ", e);
-        e.printStackTrace();
-
         try {
             Thread.sleep((i + 2) * 1000);
         } catch (InterruptedException e1) {
-            e1.printStackTrace();
+            LOG.error("Caught exception ", e1);
         }
     }
 

@@ -24,6 +24,8 @@ import io.mindmaps.engine.util.ConfigProperties;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiOperation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
 
@@ -43,6 +45,8 @@ public class TransactionController {
 
     RESTLoader loader;
     String defaultGraphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+    private final Logger LOG = LoggerFactory.getLogger(TransactionController.class);
+
 
     public TransactionController() {
 
@@ -83,7 +87,7 @@ public class TransactionController {
         try {
             return loader.getStatus(UUID.fromString(req.params(REST.Request.UUID_PARAMETER)));
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.error("Exception",e);
             res.status(400);
             return e.getMessage();
         }
@@ -97,7 +101,7 @@ public class TransactionController {
         try {
             return loader.getLoaderState();
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.error("Exception",e);
             res.status(500);
             return e.getMessage();
         }
