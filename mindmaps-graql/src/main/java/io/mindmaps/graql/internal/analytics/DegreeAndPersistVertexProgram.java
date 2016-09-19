@@ -18,36 +18,21 @@
 
 package io.mindmaps.graql.internal.analytics;
 
-import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.util.Schema;
-import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.concept.Type;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
-import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
-import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
-import org.apache.tinkerpop.gremlin.process.computer.util.ConfigurationTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.stream.Collectors;
-
-import static io.mindmaps.graql.internal.analytics.Analytics.TYPE;
-import static io.mindmaps.graql.internal.analytics.Analytics.getVertexType;
-import static io.mindmaps.graql.internal.analytics.Analytics.isAnalyticsElement;
 
 public class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
 

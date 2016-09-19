@@ -23,6 +23,7 @@ import io.mindmaps.graql.internal.shell.ErrorMessage;
 import io.mindmaps.graql.internal.shell.GraQLCompleter;
 import io.mindmaps.graql.internal.shell.GraqlSignalHandler;
 import io.mindmaps.graql.internal.shell.ShellCommandCompleter;
+import io.mindmaps.util.Version;
 import jline.console.ConsoleReader;
 import jline.console.completer.AggregateCompleter;
 import jline.console.history.FileHistory;

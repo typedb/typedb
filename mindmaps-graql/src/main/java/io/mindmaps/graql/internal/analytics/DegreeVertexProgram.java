@@ -18,24 +18,13 @@
 
 package io.mindmaps.graql.internal.analytics;
 
-import com.google.common.collect.Sets;
 import io.mindmaps.util.Schema;
-import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.concept.Type;
-import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.*;
-import org.apache.tinkerpop.gremlin.process.computer.util.ConfigurationTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
 import java.util.*;
-import java.util.stream.Collectors;
-
-import static io.mindmaps.graql.internal.analytics.Analytics.*;
 
 public class DegreeVertexProgram extends MindmapsVertexProgram<Long> {
 
