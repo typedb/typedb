@@ -29,7 +29,11 @@ import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import io.mindmaps.util.REST;
 import io.mindmaps.util.Schema;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import spark.Spark;
 
 import java.util.UUID;
 
@@ -47,6 +51,8 @@ public class CommitLogControllerTest {
 
     @Before
     public void setUp() throws Exception {
+        Spark.stop();
+        Thread.sleep(2000);
         new CommitLogController();
         new GraphFactoryController();
         Util.setRestAssuredBaseURI(ConfigProperties.getInstance().getProperties());
@@ -71,17 +77,40 @@ public class CommitLogControllerTest {
         given().contentType(ContentType.JSON).body(commitLog).when().
                 post(REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.GRAPH_NAME_PARAM + "=" + "test").
                 then().statusCode(200).extract().response().andReturn();
+        Thread.sleep(2000);
     }
 
     @After
-    public void takeDown() {
+    public void takeDown() throws InterruptedException {
         cache.getCastingJobs().clear();
+        cache.getResourceJobs().clear();
     }
 
     @Test
-    public void testControllerWorking() {
+    public void testControllerWorking() throws InterruptedException {
+        waitForCache(true, "test", 1);
         assertEquals(4, cache.getCastingJobs().values().iterator().next().size());
+        waitForCache(false, "test", 1);
         assertEquals(2, cache.getResourceJobs().values().iterator().next().size());
+    }
+
+    private void waitForCache(boolean isCasting, String keyspace, int value) throws InterruptedException {
+        boolean flag = true;
+        while(flag){
+            if(isCasting){
+                if(cache.getCastingJobs().get(keyspace).size() < value){
+                    Thread.sleep(1000);
+                } else{
+                    flag = false;
+                }
+            } else {
+                if(cache.getResourceJobs().get(keyspace).size() < value){
+                    Thread.sleep(1000);
+                } else {
+                    flag = false;
+                }
+            }
+        }
     }
 
     @Test
@@ -134,14 +163,12 @@ public class CommitLogControllerTest {
         graph.commit();
     }
 
-    @Ignore
+    @Test
     public void testDeleteController() throws InterruptedException {
         assertEquals(4, cache.getCastingJobs().values().iterator().next().size());
 
         delete(REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.GRAPH_NAME_PARAM + "=" + "test").
                 then().statusCode(200).extract().response().andReturn();
-
-        Thread.sleep(2000);
 
         assertEquals(0, cache.getCastingJobs().values().iterator().next().size());
     }
