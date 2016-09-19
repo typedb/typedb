@@ -51,7 +51,7 @@ import static spark.Spark.*;
 public class RemoteShellController {
 
     private final Logger LOG = LoggerFactory.getLogger(RemoteShellController.class);
-    private final int WEBSOCKET_TIMEOUT = 600000;
+    private final int WEBSOCKET_TIMEOUT = 3600000;
 
 
     String defaultGraphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
@@ -90,7 +90,7 @@ public class RemoteShellController {
 
             return responseObj.toString();
         }catch(Exception e){
-            e.printStackTrace();
+            LOG.error("New Exception",e);
             res.status(500);
             return e.getMessage();
         }
@@ -120,7 +120,7 @@ public class RemoteShellController {
                     .map(x -> x.replaceAll("\u001B\\[\\d+[m]", ""))
                     .collect(Collectors.joining("\n"));
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.error("New Exception",e);
             res.status(500);
             return e.getMessage();
         }

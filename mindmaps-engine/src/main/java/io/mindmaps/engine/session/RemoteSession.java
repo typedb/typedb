@@ -26,6 +26,8 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -40,6 +42,8 @@ import static io.mindmaps.util.REST.RemoteShell.*;
 public class RemoteSession {
     private final Map<Session, GraqlSession> sessions = new HashMap<>();
     private final Function<String, MindmapsGraph> getGraph;
+    private final Logger LOG = LoggerFactory.getLogger(RemoteSession.class);
+
 
     // This constructor is magically invoked by spark's websocket stuff
     @SuppressWarnings("unused")
@@ -86,7 +90,7 @@ public class RemoteSession {
                     break;
             }
         } catch (Throwable e) {
-            e.printStackTrace();
+            LOG.error("Exception",e);
             throw e;
         }
     }

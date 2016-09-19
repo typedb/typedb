@@ -43,8 +43,10 @@ public class HALConcept {
 
     private final String resourceLinkPrefix;
     private final Logger LOG = LoggerFactory.getLogger(HALConcept.class);
-    private final String ROOT_CONCEPT = "concept-type";
+    private final String ROOT_CONCEPT = "type";
     private final String ISA_EDGE = "isa";
+    private final String AKO_EDGE = "ako";
+
 
 
     public HALConcept(Concept concept, int separationDegree) {
@@ -58,7 +60,7 @@ public class HALConcept {
         try {
             handleConcept(halResource, concept, separationDegree);
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.error("Exception while building HAL representation",e);
         }
     }
 
@@ -85,17 +87,37 @@ public class HALConcept {
     }
 
     private void embedType(Representation halResource, Concept concept) {
-        Representation HALType = factory.newRepresentation(resourceLinkPrefix + concept.type().getId());
-        generateStateAndLinks(HALType, concept.type());
-        halResource.withRepresentation(ISA_EDGE, HALType);
+
+        // temp fix until a new behaviour is defined
+        String typeID = (concept.isInstance()) ? concept.type().getId() : ROOT_CONCEPT;
+        Representation HALType = factory.newRepresentation(resourceLinkPrefix + typeID);
+
+
+        if (concept.isInstance()) {
+            generateStateAndLinks(HALType, concept.type());
+            halResource.withRepresentation(ISA_EDGE, HALType);
+
+        } else {
+            HALType.withProperty("_id", ROOT_CONCEPT)
+                    .withProperty("_type", ROOT_CONCEPT)
+                    .withProperty("_baseType", ROOT_CONCEPT);
+            halResource.withRepresentation(AKO_EDGE, HALType);
+
+        }
+
     }
 
     private void generateStateAndLinks(Representation resource, Concept concept) {
 
         //State
-        resource.withProperty("_id", concept.getId())
-                .withProperty("_type", concept.type().getId())
-                .withProperty("_baseType", concept.type().type().getId());
+        if (concept.isInstance())
+            resource.withProperty("_id", concept.getId())
+                    .withProperty("_type", concept.type().getId())
+                    .withProperty("_baseType", concept.type().type().getId());
+        else // temp fix until a new behaviour is defined
+            resource.withProperty("_id", concept.getId())
+                    .withProperty("_type", (concept.type() == null) ? ROOT_CONCEPT : concept.type().getId())
+                    .withProperty("_baseType", ROOT_CONCEPT);
 
         if (concept.isResource()) {
             resource.withProperty("value", concept.asResource().getValue());
@@ -150,20 +172,20 @@ public class HALConcept {
 
             //If the current relation is to a resource we don't show the assertion, but directly the resource node.
             if (!isResource) {
-                attachAssertion(halResource,rel,rolePlayedByCurrentConcept,separationDegree);
+                attachRelation(halResource, rel, rolePlayedByCurrentConcept, separationDegree);
             } else {
-                attachRelation(halResource,resourceToUse,rolePlayedByCurrentConcept);
+                attachResource(halResource, resourceToUse, rolePlayedByCurrentConcept);
             }
         });
     }
 
-    private void attachAssertion(Representation halResource, Concept rel, String role, int separationDegree){
+    private void attachRelation(Representation halResource, Concept rel, String role, int separationDegree) {
         Representation relationResource = factory.newRepresentation(resourceLinkPrefix + rel.getId());
         handleConcept(relationResource, rel, separationDegree - 1);
         halResource.withRepresentation(role, relationResource);
     }
 
-    private void attachRelation(Representation halResource, Concept resourceToUse, String role){
+    private void attachResource(Representation halResource, Concept resourceToUse, String role) {
         Representation resourceResource = factory.newRepresentation(resourceLinkPrefix + resourceToUse.getId());
         handleConcept(resourceResource, resourceToUse.asResource(), 0);
         halResource.withRepresentation(role, resourceResource);

@@ -120,8 +120,7 @@ public class BackgroundTasks {
                             ConceptFixer.checkCasting(cache, GraphFactory.getInstance().getGraphBatchLoading(entry.getKey()), castingId)));
                 }
             } catch (RuntimeException e) {
-                LOG.error("Error while trying to perform post processing on graph [" + entry.getKey() + "]");
-                e.printStackTrace();
+                LOG.error("Error while trying to perform post processing on graph [" + entry.getKey() + "]",e);
             }
 
         });
@@ -133,8 +132,7 @@ public class BackgroundTasks {
                 futures.add(postpool.submit(() ->
                         ConceptFixer.checkResources(cache, GraphFactory.getInstance().getGraphBatchLoading(entry.getKey()), entry.getValue())));
             } catch (RuntimeException e) {
-                LOG.error("Error while trying to perform post processing on graph [" + entry.getKey() + "]");
-                e.printStackTrace();
+                LOG.error("Error while trying to perform post processing on graph [" + entry.getKey() + "]",e);
             }
         });
     }
@@ -170,7 +168,7 @@ public class BackgroundTasks {
             try {
                 Thread.sleep(30000);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                LOG.error("Exception",e);
             }
         }
     }

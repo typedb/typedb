@@ -54,6 +54,8 @@ public class VisualiserController {
     private String defaultGraphName;
     private int separationDegree;
     private final int MATCH_QUERY_FIXED_DEGREE = 0;
+    //TODO: implement a pagination system instead of liming the result with hard-coded limit.
+    private final int SAFETY_LIMIT=100;
 
     public VisualiserController() {
 
@@ -69,7 +71,10 @@ public class VisualiserController {
     @Path("/concept/:uuid")
     @ApiOperation(
             value = "Return the HAL representation of a given concept.")
-    @ApiImplicitParam(name = "id", value = "ID of the concept", required = true, dataType = "string", paramType = "path")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "id", value = "ID of the concept", required = true, dataType = "string", paramType = "path"),
+            @ApiImplicitParam(name = "graphName", value = "Name of graph to use", dataType = "string", paramType = "query")
+    })
     private String getConceptById(Request req, Response res) {
 
         String graphNameParam = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
@@ -79,10 +84,9 @@ public class VisualiserController {
 
         Concept concept = graph.getConcept(req.params(REST.Request.ID_PARAMETER));
         if (concept != null) {
-            LOG.trace("Building HAL resource for concept with id " + concept.getId().toString());
-            return new HALConcept(concept,separationDegree).render();
-        }
-        else {
+            LOG.trace("Building HAL resource for concept with id {}", concept.getId());
+            return new HALConcept(concept, separationDegree).render();
+        } else {
             res.status(404);
             return ErrorMessage.CONCEPT_ID_NOT_FOUND.getMessage(req.params(REST.Request.ID_PARAMETER));
         }
@@ -109,16 +113,16 @@ public class VisualiserController {
             final JSONArray halArray = new JSONArray();
 
             withGraph(graph).parseMatch(req.queryParams(REST.Request.QUERY_FIELD))
-                    .stream()
+                    .stream().limit(SAFETY_LIMIT)
                     .forEach(x -> x.values()
                             .forEach(concept -> {
-                                LOG.trace("Building HAL resource for concept with id " + concept.getId().toString());
-                                halArray.put(new JSONObject(new HALConcept(concept,MATCH_QUERY_FIXED_DEGREE).render()));
+                                LOG.trace("Building HAL resource for concept with id {}", concept.getId());
+                                halArray.put(new JSONObject(new HALConcept(concept, MATCH_QUERY_FIXED_DEGREE).render()));
                             }));
             LOG.debug("Done building resources.");
             return halArray.toString();
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.error("New Exception",e);
             res.status(500);
             return e.getMessage();
         }

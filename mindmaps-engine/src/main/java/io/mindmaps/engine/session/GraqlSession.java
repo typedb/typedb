@@ -19,6 +19,7 @@
 package io.mindmaps.engine.session;
 
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.engine.controller.TransactionController;
 import io.mindmaps.exception.ConceptException;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.Autocomplete;
@@ -27,6 +28,8 @@ import io.mindmaps.graql.Query;
 import io.mindmaps.graql.Reasoner;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
@@ -42,6 +45,8 @@ class GraqlSession {
     private final Session session;
     private final MindmapsGraph graph;
     private final Reasoner reasoner;
+    private final Logger LOG = LoggerFactory.getLogger(GraqlSession.class);
+
 
     private boolean queryCancelled = false;
 
@@ -99,7 +104,7 @@ class GraqlSession {
                 errorMessage = e.getMessage();
             } catch (Throwable e) {
                 errorMessage = "An unexpected error occurred";
-                e.printStackTrace();
+                LOG.error(errorMessage,e);
             } finally {
                 if (errorMessage != null) {
                     sendQueryError(errorMessage);
