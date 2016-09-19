@@ -258,7 +258,7 @@ public class AnalyticsTest {
         });
     }
 
-    @Ignore
+//    @Ignore
     @Test
     public void testDegreesAndPersist() throws Exception {
         // create instances

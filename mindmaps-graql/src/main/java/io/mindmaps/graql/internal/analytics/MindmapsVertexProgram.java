@@ -18,8 +18,40 @@
 
 package io.mindmaps.graql.internal.analytics;
 
+import io.mindmaps.util.ErrorMessage;
+import org.apache.commons.configuration.Configuration;
+import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
+import org.apache.tinkerpop.gremlin.process.computer.Memory;
+import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
+
 /**
  * A vertex program specific to Mindmaps with common method implementations.
  */
-public abstract class MindmapsVertexProgram extends CommonOLAP {
+public abstract class MindmapsVertexProgram<T> extends CommonOLAP implements VertexProgram<T> {
+
+    @Override
+    public void storeState(final Configuration configuration) {
+        super.storeState(configuration);
+
+        // store class name for reflection on spark executor
+        configuration.setProperty(VERTEX_PROGRAM, this.getClass().getName());
+    }
+
+    @Override
+    public void setup(final Memory memory) {}
+
+    @Override
+    public GraphComputer.ResultGraph getPreferredResultGraph() {
+        return GraphComputer.ResultGraph.NEW;
+    }
+
+    @Override
+    public MindmapsVertexProgram clone() {
+        try {
+            final MindmapsVertexProgram clone = (MindmapsVertexProgram) super.clone();
+            return clone;
+        } catch (final CloneNotSupportedException e) {
+            throw new IllegalStateException(ErrorMessage.CLONE_FAILED.getMessage(this.getClass().toString(),e.getMessage()),e);
+        }
+    }
 }

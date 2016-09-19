@@ -94,4 +94,8 @@ abstract class CommonOLAP {
                 persistentProperties.put(key,configuration.getProperty(PREFIX_PERSISTENT_PROPERTIES + "." + key)));
     }
 
+    public String toString() {
+        return this.getClass().getSimpleName();
+    }
+
 }

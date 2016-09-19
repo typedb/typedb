@@ -45,10 +45,10 @@ public abstract class MindmapsMapReduce<T> extends CommonOLAP
         return MAP_REDUCE_MEMORY_KEY;
     }
 
-    @Override
-    public String toString() {
-        return this.getClass().getSimpleName();
-    }
+//    @Override
+//    public String toString() {
+//        return this.getClass().getSimpleName();
+//    }
 
     @Override
     public MapReduce<Serializable, T, Serializable, T, Map<Serializable, T>> clone() {

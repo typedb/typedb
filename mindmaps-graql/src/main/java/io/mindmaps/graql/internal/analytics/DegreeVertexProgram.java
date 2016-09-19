@@ -37,16 +37,13 @@ import java.util.stream.Collectors;
 
 import static io.mindmaps.graql.internal.analytics.Analytics.*;
 
-/**
- *
- */
-
-public class DegreeVertexProgram implements VertexProgram<Long> {
+public class DegreeVertexProgram extends MindmapsVertexProgram<Long> {
 
     private final MessageScope.Local<Long> countMessageScopeIn = MessageScope.Local.of(__::inE);
     private final MessageScope.Local<Long> countMessageScopeOut = MessageScope.Local.of(__::outE);
 
     public static final String DEGREE = "analytics.degreeVertexProgram.degree";
+    public static final String MEMORY_KEY = "degree";
 
     private static final String TRAVERSAL_SUPPLIER = "analytics.degreeVertexProgram.traversalSupplier";
 
@@ -58,35 +55,11 @@ public class DegreeVertexProgram implements VertexProgram<Long> {
             Schema.BaseType.ENTITY.name(),
             Schema.BaseType.RESOURCE.name());
 
-    private Set<String> selectedTypes = null;
-
     public DegreeVertexProgram() {
     }
 
     public DegreeVertexProgram(Set<String> types) {
         selectedTypes = types;
-    }
-
-    @Override
-    public void loadState(final Graph graph, final Configuration configuration) {
-        this.selectedTypes = new HashSet<>();
-        configuration.getKeys(TYPE).forEachRemaining(key -> selectedTypes.add(configuration.getString(key)));
-    }
-
-    @Override
-    public void storeState(final Configuration configuration) {
-        configuration.setProperty(VERTEX_PROGRAM, DegreeVertexProgram.class.getName());
-        Iterator iterator = selectedTypes.iterator();
-        int count = 0;
-        while (iterator.hasNext()) {
-            configuration.addProperty(TYPE + "." + count, iterator.next());
-            count++;
-        }
-    }
-
-    @Override
-    public GraphComputer.ResultGraph getPreferredResultGraph() {
-        return GraphComputer.ResultGraph.NEW;
     }
 
     @Override
@@ -105,21 +78,6 @@ public class DegreeVertexProgram implements VertexProgram<Long> {
         set.add(this.countMessageScopeOut);
         set.add(this.countMessageScopeIn);
         return set;
-    }
-
-    @Override
-    public DegreeVertexProgram clone() {
-        try {
-            final DegreeVertexProgram clone = (DegreeVertexProgram) super.clone();
-            return clone;
-        } catch (final CloneNotSupportedException e) {
-            throw new IllegalStateException(ErrorMessage.CLONE_FAILED.getMessage(this.getClass().toString(),e.getMessage()),e);
-        }
-    }
-
-    @Override
-    public void setup(final Memory memory) {
-
     }
 
     @Override
@@ -166,11 +124,6 @@ public class DegreeVertexProgram implements VertexProgram<Long> {
     @Override
     public boolean terminate(final Memory memory) {
         return memory.getIteration() == 2;
-    }
-
-    @Override
-    public String toString() {
-        return StringFactory.vertexProgramString(this);
     }
 
 }
