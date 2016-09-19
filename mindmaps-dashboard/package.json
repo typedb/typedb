@@ -37,7 +37,7 @@
     ]
   },
   "scripts": {
-    "preinstall": "npm install browserify vueify babelify",
+    "preinstall": "npm install -g browserify vueify babelify",
     "test": "ava"
   },
   "ava": {
