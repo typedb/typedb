@@ -42,18 +42,9 @@ public class DegreeVertexProgram extends MindmapsVertexProgram<Long> {
     private final MessageScope.Local<Long> countMessageScopeIn = MessageScope.Local.of(__::inE);
     private final MessageScope.Local<Long> countMessageScopeOut = MessageScope.Local.of(__::outE);
 
-    public static final String DEGREE = "analytics.degreeVertexProgram.degree";
     public static final String MEMORY_KEY = "degree";
 
-    private static final String TRAVERSAL_SUPPLIER = "analytics.degreeVertexProgram.traversalSupplier";
-
-    private ConfigurationTraversal<Vertex, Edge> configurationTraversal;
-
-    private static final Set<String> COMPUTE_KEYS = Collections.singleton(DEGREE);
-
-    private HashSet<String> baseTypes = Sets.newHashSet(
-            Schema.BaseType.ENTITY.name(),
-            Schema.BaseType.RESOURCE.name());
+    private static final Set<String> COMPUTE_KEYS = Collections.singleton(MEMORY_KEY);
 
     public DegreeVertexProgram() {
     }
@@ -85,16 +76,18 @@ public class DegreeVertexProgram extends MindmapsVertexProgram<Long> {
         switch (memory.getIteration()) {
             case 0:
                 if (selectedTypes.contains(getVertexType(vertex)) && !isAnalyticsElement(vertex)) {
-                    if (baseTypes.contains(vertex.label())) {
+                    String type = vertex.label();
+                    if (type.equals(Schema.BaseType.ENTITY.name()) || type.equals(Schema.BaseType.RESOURCE.name())) {
                         messenger.sendMessage(this.countMessageScopeIn, 1L);
-                    } else if (vertex.label().equals(Schema.BaseType.RELATION.name())) {
+                    } else if (type.equals(Schema.BaseType.RELATION.name())) {
                         messenger.sendMessage(this.countMessageScopeIn, 1L);
                         messenger.sendMessage(this.countMessageScopeOut, -1L);
                     }
                 }
                 break;
             case 1:
-                if (vertex.label().equals(Schema.BaseType.CASTING.name())) {
+                String type = vertex.label();
+                if (type.equals(Schema.BaseType.CASTING.name())) {
                     boolean hasRolePlayer = false;
                     long assertionCount = 0;
                     Iterator<Long> iterator = messenger.receiveMessages();
@@ -111,10 +104,9 @@ public class DegreeVertexProgram extends MindmapsVertexProgram<Long> {
                 break;
             case 2:
                 if (!isAnalyticsElement(vertex) && selectedTypes.contains(getVertexType(vertex))) {
-                    if (baseTypes.contains(vertex.label()) ||
-                            vertex.label().equals(Schema.BaseType.RELATION.name())) {
+                    if (baseTypes.contains(vertex.label())) {
                         long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
-                        vertex.property(DEGREE, edgeCount);
+                        vertex.property(MEMORY_KEY, edgeCount);
                     }
                 }
                 break;

@@ -249,9 +249,9 @@ public class Analytics {
         ComputerResult result = computer.compute(new DegreeVertexProgram(allTypes));
         MindmapsGraph graph = MindmapsClient.getGraph(keySpace);
         result.graph().traversal().V().forEachRemaining(v -> {
-            if (v.keys().contains(DegreeVertexProgram.DEGREE)) {
+            if (v.keys().contains(DegreeVertexProgram.MEMORY_KEY)) {
                 Instance instance = graph.getInstance(v.value(ITEM_IDENTIFIER.name()));
-                allDegrees.put(instance, v.value(DegreeVertexProgram.DEGREE));
+                allDegrees.put(instance, v.value(DegreeVertexProgram.MEMORY_KEY));
             }
         });
         return allDegrees;

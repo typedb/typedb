@@ -22,12 +22,28 @@ import io.mindmaps.util.ErrorMessage;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
+import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * A vertex program specific to Mindmaps with common method implementations.
  */
 public abstract class MindmapsVertexProgram<T> extends CommonOLAP implements VertexProgram<T> {
+
+    final MessageScope.Local<Long> countMessageScopeIn = MessageScope.Local.of(__::inE);
+    final MessageScope.Local<Long> countMessageScopeOut = MessageScope.Local.of(__::outE);
+
+    @Override
+    public Set<MessageScope> getMessageScopes(final Memory memory) {
+        final Set<MessageScope> set = new HashSet<>();
+        set.add(countMessageScopeOut);
+        set.add(countMessageScopeIn);
+        return set;
+    }
 
     @Override
     public void storeState(final Configuration configuration) {

@@ -49,29 +49,14 @@ import static io.mindmaps.graql.internal.analytics.Analytics.TYPE;
 import static io.mindmaps.graql.internal.analytics.Analytics.getVertexType;
 import static io.mindmaps.graql.internal.analytics.Analytics.isAnalyticsElement;
 
-public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
+public class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
 
-    private final MessageScope.Local<Long> countMessageScopeIn = MessageScope.Local.of(__::inE);
-    private final MessageScope.Local<Long> countMessageScopeOut = MessageScope.Local.of(__::outE);
-    private MindmapsGraph mindmapsGraph;
 
-    public static final String DEGREE = "analytics.degreeAndPersistVertexProgram.degree";
+    public static final String MEMORY_KEY = "oldAssertionId";
 
-    public static final String OLD_ASSERTION_ID = "analytics.degreeAndPersistVertexProgram.oldAssertionId";
+    private static final String KEYSPACE_KEY = "keyspace";
 
-    private static final String TRAVERSAL_SUPPLIER = "analytics.degreeAndPersistVertexProgram.traversalSupplier";
-
-    private static final String KEYSPACE = "analytics.degreeAndPersistVertexProgram.keySpace";
-
-    private ConfigurationTraversal<Vertex, Edge> configurationTraversal;
-
-    private static final Set<String> COMPUTE_KEYS = Collections.singleton(OLD_ASSERTION_ID);
-
-    private final HashSet<String> baseTypes = Sets.newHashSet(
-            Schema.BaseType.ENTITY.name(),
-            Schema.BaseType.RESOURCE.name());
-
-    private Set<String> selectedTypes = null;
+    private static final Set<String> COMPUTE_KEYS = Collections.singleton(MEMORY_KEY);
 
     private String keySpace;
 
@@ -79,32 +64,14 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
     }
 
     public DegreeAndPersistVertexProgram(String keySpace, Set<String> types) {
-        this.keySpace = keySpace;
+        persistentProperties.put(KEYSPACE_KEY,keySpace);
         selectedTypes = types;
     }
 
     @Override
     public void loadState(final Graph graph, final Configuration configuration) {
-        this.selectedTypes = new HashSet<>();
-        configuration.getKeys(TYPE).forEachRemaining(key -> selectedTypes.add(configuration.getString(key)));
-        keySpace = configuration.getString(KEYSPACE);
-    }
-
-    @Override
-    public void storeState(final Configuration configuration) {
-        configuration.setProperty(VERTEX_PROGRAM, DegreeAndPersistVertexProgram.class.getName());
-        Iterator iterator = selectedTypes.iterator();
-        int count = 0;
-        while (iterator.hasNext()) {
-            configuration.addProperty(TYPE + "." + count, iterator.next());
-            count++;
-        }
-        configuration.setProperty(KEYSPACE, keySpace);
-    }
-
-    @Override
-    public GraphComputer.ResultGraph getPreferredResultGraph() {
-        return GraphComputer.ResultGraph.NEW;
+        super.loadState(graph, configuration);
+        keySpace = (String) persistentProperties.get(KEYSPACE_KEY);
     }
 
     @Override
@@ -118,38 +85,16 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
     }
 
     @Override
-    public Set<MessageScope> getMessageScopes(final Memory memory) {
-        final Set<MessageScope> set = new HashSet<>();
-        set.add(this.countMessageScopeOut);
-        set.add(this.countMessageScopeIn);
-        return set;
-    }
-
-    @Override
-    public DegreeAndPersistVertexProgram clone() {
-        try {
-            final DegreeAndPersistVertexProgram clone = (DegreeAndPersistVertexProgram) super.clone();
-            return clone;
-        } catch (final CloneNotSupportedException e) {
-            throw new IllegalStateException(ErrorMessage.CLONE_FAILED.getMessage(this.getClass().toString(), e.getMessage()), e);
-        }
-    }
-
-    @Override
-    public void setup(final Memory memory) {
-
-    }
-
-    @Override
     public void execute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
         switch (memory.getIteration()) {
             case 0:
                 if (selectedTypes.contains(getVertexType(vertex)) && !isAnalyticsElement(vertex)) {
-                    if (baseTypes.contains(vertex.label())) {
-                        messenger.sendMessage(this.countMessageScopeIn, 1L);
-                    } else if (vertex.label().equals(Schema.BaseType.RELATION.name())) {
-                        messenger.sendMessage(this.countMessageScopeOut, -1L);
-                        messenger.sendMessage(this.countMessageScopeIn, 1L);
+                    String type = vertex.label();
+                    if (type.equals(Schema.BaseType.ENTITY.name()) || type.equals(Schema.BaseType.RESOURCE.name())) {
+                        messenger.sendMessage(countMessageScopeIn, 1L);
+                    } else if (type.equals(Schema.BaseType.RELATION.name())) {
+                        messenger.sendMessage(countMessageScopeOut, -1L);
+                        messenger.sendMessage(countMessageScopeIn, 1L);
                     }
                 }
                 break;
@@ -164,27 +109,25 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
                         else hasRolePlayer = true;
                     }
                     if (hasRolePlayer) {
-                        messenger.sendMessage(this.countMessageScopeIn, 1L);
-                        messenger.sendMessage(this.countMessageScopeOut, assertionCount);
+                        messenger.sendMessage(countMessageScopeIn, 1L);
+                        messenger.sendMessage(countMessageScopeOut, assertionCount);
                     }
                 }
                 break;
             case 2:
                 if (!isAnalyticsElement(vertex) && selectedTypes.contains(getVertexType(vertex))) {
-                    if (baseTypes.contains(vertex.label()) ||
-                            vertex.label().equals(Schema.BaseType.RELATION.name())) {
+                    if (baseTypes.contains(vertex.label())) {
                         long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
                         String oldAssertionId = Analytics.persistResource(keySpace, vertex, Analytics.degree, edgeCount);
                         if (oldAssertionId != null) {
-                            vertex.property(OLD_ASSERTION_ID, oldAssertionId);
+                            vertex.property(MEMORY_KEY, oldAssertionId);
                         }
                     }
                 }
                 break;
             case 3:
-                if (vertex.property(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID).isPresent()) {
-                    MindmapsGraph mindmapsGraph = MindmapsClient.getGraphBatchLoading(keySpace);
-                    mindmapsGraph.getRelation(vertex.value(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID)).delete();
+                if(vertex.property(DegreeAndPersistVertexProgram.MEMORY_KEY).isPresent()) {
+                    mindmapsGraph.getRelation(vertex.value(DegreeAndPersistVertexProgram.MEMORY_KEY)).delete();
                     try {
                         mindmapsGraph.commit();
                     } catch (MindmapsValidationException e) {
@@ -197,11 +140,6 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
     @Override
     public boolean terminate(final Memory memory) {
         return memory.getIteration() == 3;
-    }
-
-    @Override
-    public String toString() {
-        return StringFactory.vertexProgramString(this);
     }
 
 }
