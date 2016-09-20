@@ -57,7 +57,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
 
         edges.forEachRemaining(edge -> {
             RoleTypeImpl roleType = getMindmapsGraph().getElementFactory().buildRoleType(edge.inVertex());
-            roleType.subTypes().forEach(role -> rolesPlayed.add(getMindmapsGraph().getElementFactory().buildRoleType(role)));
+            roleType.subTypes().forEach(role -> rolesPlayed.add(role.asRoleType()));
         });
 
         return rolesPlayed;
@@ -146,7 +146,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      */
     private Collection<TypeImpl> getSubConceptTypes(){
         Collection<TypeImpl> subSet = new HashSet<>();
-        getIncomingNeighbours(Schema.EdgeLabel.AKO).forEach(concept -> subSet.add(getMindmapsGraph().getElementFactory().buildSpecificConceptType(concept)));
+        getIncomingNeighbours(Schema.EdgeLabel.AKO).forEach(concept -> subSet.add((TypeImpl) concept));
         return subSet;
     }
 
@@ -193,7 +193,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
     @Override
     public Collection<Rule> getRulesOfHypothesis() {
         Set<Rule> rules = new HashSet<>();
-        getIncomingNeighbours(Schema.EdgeLabel.HYPOTHESIS).forEach(concept -> rules.add(getMindmapsGraph().getElementFactory().buildRule(concept)));
+        getIncomingNeighbours(Schema.EdgeLabel.HYPOTHESIS).forEach(concept -> rules.add(concept.asRule()));
         return rules;
     }
 
@@ -204,7 +204,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
     @Override
     public Collection<Rule> getRulesOfConclusion() {
         Set<Rule> rules = new HashSet<>();
-        getIncomingNeighbours(Schema.EdgeLabel.CONCLUSION).forEach(concept -> rules.add(getMindmapsGraph().getElementFactory().buildRule(concept)));
+        getIncomingNeighbours(Schema.EdgeLabel.CONCLUSION).forEach(concept -> rules.add(concept.asRule()));
         return rules;
     }
 
@@ -227,7 +227,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
 
         deleteEdges(Direction.OUT, Schema.EdgeLabel.AKO);
         deleteEdges(Direction.OUT, Schema.EdgeLabel.ISA);
-        putEdge(getMindmapsGraph().getElementFactory().buildSpecificConceptType(type), Schema.EdgeLabel.AKO);
+        putEdge(type, Schema.EdgeLabel.AKO);
         type(); //Check if there is a circular ako loop
         return getThis();
     }
@@ -239,7 +239,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      */
     public T playsRole(RoleType roleType) {
         checkMetaType();
-        putEdge(getMindmapsGraph().getElementFactory().buildRoleType(roleType), Schema.EdgeLabel.PLAYS_ROLE);
+        putEdge(roleType, Schema.EdgeLabel.PLAYS_ROLE);
         return getThis();
     }
 
@@ -250,7 +250,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      */
     @Override
     public T deletePlaysRole(RoleType roleType) {
-        deleteEdgeTo(Schema.EdgeLabel.PLAYS_ROLE, getMindmapsGraph().getElementFactory().buildRoleType(roleType));
+        deleteEdgeTo(Schema.EdgeLabel.PLAYS_ROLE, roleType);
 
         //Add castings to tracking to make sure they can still be played.
         instances().forEach(concept -> {
