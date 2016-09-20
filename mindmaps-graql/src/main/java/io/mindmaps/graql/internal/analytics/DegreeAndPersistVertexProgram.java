@@ -99,7 +99,7 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
             configuration.addProperty(TYPE + "." + count, iterator.next());
             count++;
         }
-        configuration.setProperty(KEYSPACE,keySpace);
+        configuration.setProperty(KEYSPACE, keySpace);
     }
 
     @Override
@@ -131,7 +131,7 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
             final DegreeAndPersistVertexProgram clone = (DegreeAndPersistVertexProgram) super.clone();
             return clone;
         } catch (final CloneNotSupportedException e) {
-            throw new IllegalStateException(ErrorMessage.CLONE_FAILED.getMessage(this.getClass().toString(),e.getMessage()),e);
+            throw new IllegalStateException(ErrorMessage.CLONE_FAILED.getMessage(this.getClass().toString(), e.getMessage()), e);
         }
     }
 
@@ -142,7 +142,6 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
 
     @Override
     public void execute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
-        MindmapsGraph mindmapsGraph = MindmapsClient.getGraphBatchLoading(keySpace);
         switch (memory.getIteration()) {
             case 0:
                 if (selectedTypes.contains(getVertexType(vertex)) && !isAnalyticsElement(vertex)) {
@@ -183,12 +182,13 @@ public class DegreeAndPersistVertexProgram implements VertexProgram<Long> {
                 }
                 break;
             case 3:
-                if(vertex.property(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID).isPresent()) {
+                if (vertex.property(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID).isPresent()) {
+                    MindmapsGraph mindmapsGraph = MindmapsClient.getGraphBatchLoading(keySpace);
                     mindmapsGraph.getRelation(vertex.value(DegreeAndPersistVertexProgram.OLD_ASSERTION_ID)).delete();
                     try {
                         mindmapsGraph.commit();
                     } catch (MindmapsValidationException e) {
-                        throw new RuntimeException("Failed to delete relation during bulk resource mutation.",e);
+                        throw new RuntimeException("Failed to delete relation during bulk resource mutation.", e);
                     }
                 }
         }
