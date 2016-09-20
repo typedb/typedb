@@ -22,14 +22,14 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.graql.internal.reasoner.container.AtomicQuery;
+import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.internal.reasoner.container.Query;
+import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 
 import java.util.*;

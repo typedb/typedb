@@ -23,7 +23,7 @@ import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.reasoner.container.Query;
+import io.mindmaps.graql.internal.reasoner.query.Query;
 
 import java.util.Set;
 

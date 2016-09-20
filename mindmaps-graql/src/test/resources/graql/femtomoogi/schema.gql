@@ -1,0 +1,630 @@
+insert
+"production" isa entity-type
+	is-abstract
+	## Filming details
+	plays-role production-with-crew
+    plays-role production-with-cast
+    plays-role production-with-company
+
+    plays-role production-with-location
+
+    plays-role production-with-language
+
+    ## Reactions
+    plays-role production-with-certificate
+    plays-role nominee
+
+    plays-role subject-with-review
+
+    ## Indexing details
+    plays-role production-with-genre
+    plays-role production-with-mood
+    plays-role production-with-cluster
+    plays-role subject-with-keyword
+
+    plays-role production-with-stream
+
+	has-resource title
+    has-resource original-title
+    has-resource alternate-titles
+
+    has-resource imdb-vote
+    has-resource rotten-tomatoes-critic-rating
+    has-resource rotten-tomatoes-critic-fresh-votes
+    has-resource rotten-tomatoes-critic-rotten-votes
+    has-resource rotten-tomatoes-critic-total-votes
+    has-resource rotten-tomatoes-user-rating
+    has-resource rotten-tomatoes-user-total-votes
+    has-resource rotten-tomatoes-user-meter
+    has-resource rotten-tomatoes-total-meter
+    has-resource rotten-tomatoes-url
+    has-resource free-web-sources
+    has-resource free-ios-sources
+    has-resource free-android-sources
+    has-resource tv-everywhere-web-sources
+    has-resource tv-everywhere-ios-sources
+    has-resource tv-everywhere-android-sources
+    has-resource subscription-web-sources
+    has-resource subscription-ios-sources
+    has-resource subscription-android-sources
+    has-resource purchase-web-sources
+    has-resource purchase-ios-sources
+    has-resource purchase-android-sources
+    has-resource guidebox-web-trailer
+    has-resource guidebox-ios-trailer
+    has-resource guidebox-android-trailer
+    has-resource youtube-trailer
+    has-resource tmdb-id
+    has-resource guidebox-id
+    has-resource imdb-identifier
+    has-resource freebase-identifier
+    has-resource wikidata-id
+    has-resource tagline
+    has-resource metacritic-link
+    has-resource images
+    has-resource alternate-versions
+    has-resource backdrops
+    has-resource revenue
+    has-resource budget
+    has-resource soundtracks
+    has-resource runtime
+    has-resource metascore
+    has-resource tmdb-popularity
+    has-resource tmdb-vote-count
+    has-resource tmdb-vote-average
+    has-resource status
+    has-resource links
+    has-resource overview
+    has-resource release-date;
+
+"movie" ako production
+    plays-role movie-with-keyword-person;
+
+"tv-series" ako production;
+
+"production-crew" isa relation-type
+    has-role production-with-crew
+    has-role director
+    has-role production-designer
+    has-role composer
+    has-role editor
+    has-role animator
+    has-role writer
+    has-role producer
+    has-role art-director
+    has-role photography-director
+    has-role costume-designer;
+"production-with-crew" isa role-type;
+"crew-member" isa role-type is-abstract;
+"director" ako crew-member;
+"production-designer" ako crew-member;
+"composer" ako crew-member;
+"editor" ako crew-member;
+"animator" ako crew-member;
+"writer" ako crew-member;
+"costume-designer" ako crew-member;
+"producer" ako crew-member;
+"photography-director" ako crew-member;
+"art-director" ako crew-member;
+
+"has-cast" isa relation-type
+    has-role character-being-played
+    has-role actor
+    has-role production-with-cast
+    has-resource billing-number;
+"character-being-played" isa role-type;
+"actor" isa role-type;
+"production-with-cast" isa role-type;
+
+"has-production-company" isa relation-type
+    has-role production-with-company
+    has-role production-company;
+"production-with-company" isa role-type;
+"production-company" isa role-type;
+
+"production-location" isa relation-type
+    has-role production-with-location
+    has-role location-of-subject
+    has-role filming-location
+    has-role narrative-location;
+"production-with-location" isa role-type;
+"location-of-subject" isa role-type;
+"narrative-location" isa role-type;
+"filming-location" isa role-type;
+
+"production-language" isa relation-type
+    has-role production-with-language
+    has-role language-of-subject
+    has-role original-language
+    has-role translation;
+"production-with-language" isa role-type;
+"language-of-subject" isa role-type;
+"original-language" isa role-type;
+"translation" isa role-type;
+
+"has-certificate" isa relation-type
+    has-role production-with-certificate
+    has-role certificate-of-production;
+"production-with-certificate" isa role-type;
+"certificate-of-production" isa role-type;
+
+
+"accolade" isa relation-type
+    has-role nominee
+    has-role award-of-subject
+    has-role nominated-award;
+"nominee" isa role-type;
+"award-of-subject" isa role-type;
+"nominated-award" isa role-type;
+
+"has-review" isa relation-type
+    has-role subject-with-review
+    has-role review-of-subject;
+"subject-with-review" isa role-type;
+"review-of-subject" isa role-type;
+
+"has-genre" isa relation-type
+    has-role production-with-genre
+    has-role genre-of-production;
+"production-with-genre" isa role-type;
+"genre-of-production" isa role-type;
+
+"has-mood" isa relation-type
+    has-role production-with-mood
+    has-role mood-of-production
+    has-resource weight;
+"production-with-mood" isa role-type;
+"mood-of-production" isa role-type;
+
+"has-cluster" isa relation-type
+    has-role production-with-cluster
+    has-role cluster-of-production
+    has-resource weight;
+"production-with-cluster" isa role-type;
+"cluster-of-production" isa role-type;
+
+"has-keyword" isa relation-type
+    has-role subject-with-keyword
+    has-role keyword-of-subject;
+"subject-with-keyword" isa role-type;
+"keyword-of-subject" isa role-type;
+
+"has-streaming-service" isa relation-type
+    has-role streaming-provider
+    has-role streaming-url-role
+    has-role production-with-stream;
+"streaming-provider" isa role-type;
+"streaming-url-role" isa role-type;
+"production-with-stream" isa role-type;
+
+"person" isa entity-type
+    plays-role crew-member
+    plays-role actor
+    plays-role board-member
+    plays-role character-being-played
+    plays-role relative
+    plays-role nominee
+    plays-role detailed-person
+    plays-role keyword-person
+
+    has-resource name
+    has-resource imdb-identifier
+    has-resource images
+    has-resource birthday
+    has-resource also-known-as
+    has-resource cause-of-death
+    has-resource place-of-birth
+    has-resource biography
+    has-resource child-string
+    has-resource gender
+    has-resource freebase-identifier
+    has-resource residence
+    has-resource deathday
+    has-resource has-spouse
+    has-resource homepage;
+"relative" isa role-type is-abstract;
+
+"marriage" isa relation-type
+    has-role spouse1
+    has-role spouse2;
+"spouse" ako relative, is-abstract;
+"spouse1" ako spouse;
+"spouse2" ako spouse;
+
+"has-child" isa relation-type
+    has-role parent
+    has-role child;
+"parent" ako relative;
+"child" ako relative;
+
+"has-partner" isa relation-type
+    has-role person-has-partner
+    has-role partner;
+"person-has-partner" ako relative;
+"partner" ako relative;
+
+"personal-details" isa relation-type
+    has-role detailed-person
+    has-role country-of-citizenship
+    has-role education-company
+    has-role occupation-of-person
+    has-role location-of-birth
+    has-role location-of-death;
+"detailed-person" isa role-type;
+"country-of-citizenship" isa role-type;
+"education-company" isa role-type;
+"occupation-of-person" isa role-type;
+"location-of-birth" isa role-type;
+"location-of-death" isa role-type;
+
+"person-via-keyword" isa relation-type
+    has-role keyword-person
+    has-role movie-with-keyword-person;
+"keyword-person" isa role-type;
+"movie-with-keyword-person" isa role-type;
+
+"company" isa entity-type
+    plays-role production-company
+    plays-role streaming-provider
+    plays-role education-company
+
+    plays-role company-with-board
+
+    plays-role company-with-headquarters
+
+    plays-role nominee
+
+    has-resource parent-company
+    has-resource industry
+    has-resource headquarters
+    has-resource freebase-identifier
+    has-resource inception
+    has-resource dissolved
+    has-resource owned-by
+    has-resource images
+    has-resource homepage
+    has-resource imdb-identifier
+    has-resource name;
+
+"company-board" isa relation-type
+    has-role company-with-board
+    has-role ceo
+    has-role founder
+    has-role chairperson;
+"company-with-board" isa role-type;
+"board-member" isa role-type is-abstract;
+"ceo" ako board-member;
+"founder" ako board-member;
+"chairperson" ako board-member;
+
+"company-has-headquarters-location" isa relation-type
+    has-role company-with-headquarters
+    has-role location-of-headquarters;
+"company-with-headquarters" isa role-type;
+"location-of-headquarters" isa role-type;
+
+"location" isa entity-type
+    plays-role parent-of-feature
+    plays-role location-of-headquarters
+    plays-role location-of-birth
+    plays-role location-of-death
+    plays-role location-of-subject
+    plays-role narrative-location
+    plays-role filming-location
+    plays-role country-of-citizenship
+    has-resource name;
+
+"country" ako location
+    has-resource iso-3166;
+
+"language" isa entity-type
+    plays-role language-of-subject
+    plays-role original-language
+    plays-role translation
+    has-resource name
+    has-resource iso-639-1
+    has-resource iso-639-2
+    has-resource iso-639-3
+    has-resource wikimedia-language-code;
+
+"award" isa entity-type
+    plays-role award-of-subject
+    plays-role nominated-award
+    has-resource description
+    has-resource name;
+
+"parent-feature" isa relation-type
+    has-role parent-of-feature
+    has-role child-of-feature;
+"parent-of-feature" isa role-type;
+"child-of-feature" isa role-type;
+
+"character" isa entity-type
+    plays-role character-being-played
+    has-resource name;
+
+"certificate" isa entity-type
+    plays-role certificate-of-production
+    has-resource description;
+
+"genre" isa entity-type
+    plays-role genre-of-production
+    has-resource weight
+    has-resource description;
+
+"keyword" isa entity-type
+    plays-role keyword-of-subject
+    has-resource name
+    has-resource weight;
+
+"review" isa entity-type
+    plays-role review-of-subject
+    has-resource content
+    has-resource media-type
+    has-resource author;
+
+"occupation" isa entity-type
+    plays-role occupation-of-person
+    has-resource description;
+
+"cluster" isa entity-type
+    plays-role cluster-of-production
+    has-resource description
+    has-resource cluster-id;
+
+"mood" isa entity-type
+    plays-role mood-of-production
+    has-resource description;
+
+
+### RESOURCE TYPES:
+
+"title" isa resource-type
+    datatype string;
+
+"alternate-titles" isa resource-type
+    datatype string;
+
+"original-title" isa resource-type
+    datatype string;
+
+"imdb-vote" isa resource-type
+    datatype long;
+
+"rotten-tomatoes-critic-rating" isa resource-type
+    datatype double;
+
+"rotten-tomatoes-critic-fresh-votes" isa resource-type
+    datatype long;
+
+"rotten-tomatoes-critic-rotten-votes" isa resource-type
+    datatype long;
+
+"rotten-tomatoes-critic-total-votes" isa resource-type
+    datatype long;
+
+"rotten-tomatoes-user-rating" isa resource-type
+    datatype double;
+
+"rotten-tomatoes-user-total-votes" isa resource-type
+    datatype long;
+
+"rotten-tomatoes-user-meter" isa resource-type
+    datatype long;
+
+"rotten-tomatoes-total-meter" isa resource-type
+    datatype long;
+
+"rotten-tomatoes-url" isa resource-type
+    datatype string;
+
+"free-web-sources" isa resource-type
+    datatype string;
+
+"free-ios-sources" isa resource-type
+    datatype string;
+
+"free-android-sources" isa resource-type
+    datatype string;
+
+"tv-everywhere-web-sources" isa resource-type
+    datatype string;
+
+"tv-everywhere-ios-sources" isa resource-type
+    datatype string;
+
+"tv-everywhere-android-sources" isa resource-type
+    datatype string;
+
+"subscription-web-sources" isa resource-type
+    datatype string;
+
+"subscription-ios-sources" isa resource-type
+    datatype string;
+
+"subscription-android-sources" isa resource-type
+    datatype string;
+
+"purchase-web-sources" isa resource-type
+    datatype string;
+
+"purchase-ios-sources" isa resource-type
+    datatype string;
+
+"purchase-android-sources" isa resource-type
+    datatype string;
+
+"guidebox-web-trailer" isa resource-type
+    datatype string;
+
+"guidebox-ios-trailer" isa resource-type
+    datatype string;
+
+"guidebox-android-trailer" isa resource-type
+    datatype string;
+
+"youtube-trailer" isa resource-type
+    datatype string;
+
+"tmdb-id" isa resource-type
+    datatype string;
+
+"guidebox-id" isa resource-type
+    datatype string;
+
+"imdb-identifier" isa resource-type
+    datatype string;
+
+"freebase-identifier" isa resource-type
+    datatype string;
+
+"tagline" isa resource-type
+    datatype string;
+
+"metacritic-link" isa resource-type
+    datatype string;
+
+"wikidata-id" isa resource-type
+    datatype string;
+
+"links" isa resource-type
+    datatype string;
+
+"tmdb-vote-average" isa resource-type
+    datatype double;
+
+"overview" isa resource-type
+    datatype string;
+
+"metascore" isa resource-type
+    datatype double;
+
+"revenue" isa resource-type
+    datatype double;
+
+"tmdb-popularity" isa resource-type
+    datatype double;
+
+"runtime" isa resource-type
+    datatype double;
+
+"tmdb-vote-count" isa resource-type
+    datatype double;
+
+"images" isa resource-type
+    datatype string;
+
+"budget" isa resource-type
+    datatype double;
+
+"soundtracks" isa resource-type
+    datatype string;
+
+"backdrops" isa resource-type
+    datatype string;
+
+"alternate-versions" isa resource-type
+    datatype string;
+
+"release-date" isa resource-type
+    datatype long;
+
+"status" isa resource-type
+    datatype string;
+
+"name" isa resource-type
+    datatype string;
+
+"has-spouse" isa resource-type
+    datatype string;
+
+"also-known-as" isa resource-type
+    datatype string;
+
+"biography" isa resource-type
+    datatype string;
+
+"deathday" isa resource-type
+    datatype long;
+
+"birthday" isa resource-type
+    datatype long;
+
+"place-of-birth" isa resource-type
+    datatype string;
+
+"homepage" isa resource-type
+    datatype string;
+
+"residence" isa resource-type
+    datatype string;
+
+"gender" isa resource-type
+    datatype string;
+
+"cause-of-death" isa resource-type
+    datatype string;
+
+"child-string" isa resource-type
+    datatype string;
+
+"headquarters" isa resource-type
+    datatype string;
+
+"parent-company" isa resource-type
+    datatype string;
+
+"inception" isa resource-type
+    datatype long;
+
+"dissolved" isa resource-type
+    datatype long;
+
+"industry" isa resource-type
+    datatype string;
+
+"owned-by" isa resource-type
+    datatype string;
+
+"description" isa resource-type
+    datatype string;
+
+"weight" isa resource-type
+    datatype double;
+
+"iso-639-1" isa resource-type
+    datatype string;
+
+"iso-639-2" isa resource-type
+    datatype string;
+
+"iso-639-3" isa resource-type
+    datatype string;
+
+"wikimedia-language-code" isa resource-type
+    datatype string;
+
+"author" isa resource-type
+    datatype string;
+
+"media-type" isa resource-type
+    datatype string;
+
+"content" isa resource-type
+    datatype string;
+
+"billing-number" isa resource-type
+    datatype long;
+
+"streaming-url" isa entity-type
+    has-resource url
+    plays-role streaming-url-role;
+
+"url" isa resource-type
+    datatype string;
+
+"iso-3166" isa resource-type
+    datatype string;
+
+"cluster-id" isa resource-type
+    datatype string;

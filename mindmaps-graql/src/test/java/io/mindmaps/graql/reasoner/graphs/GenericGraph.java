@@ -43,9 +43,12 @@ public class GenericGraph {
         return mindmaps;
     }
 
-    public static MindmapsGraph getGraph(String ontologyFile, String ruleFile, String dataFile) {
-        MindmapsGraph mindmaps = MindmapsTestGraphFactory.newEmptyGraph();
-        buildGraph(ontologyFile, ruleFile, dataFile);
+    public static MindmapsGraph getGraph(String ontologyFile, String... files) {
+        mindmaps = MindmapsTestGraphFactory.newEmptyGraph();
+        loadGraqlFile(ontologyFile);
+        for( String graqlFile : files) {
+            loadGraqlFile(graqlFile);
+        }
         commit();
 
         return mindmaps;
@@ -55,13 +58,8 @@ public class GenericGraph {
         loadGraqlFile(graqlFile);
     }
 
-    private static void buildGraph(String ontologyFile, String ruleFile, String dataFile) {
-        loadGraqlFile(ontologyFile);
-        loadGraqlFile(ruleFile);
-        loadGraqlFile(dataFile);
-    }
-
     private static void loadGraqlFile(String fileName) {
+        System.out.println("Loading " + fileName);
         if (fileName.isEmpty()) return;
 
         QueryBuilder qb = Graql.withGraph(mindmaps);
