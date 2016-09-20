@@ -37,28 +37,8 @@ export function leftSignificant(l, r) {
     if(idR === typeL || idR  === baseTypeL)
         return true;
 
-    else if(idL === typeR || idL === baseTypeR)
-        return false;
-
     else
-        return (weight(baseTypeL) > weight(baseTypeR));
-}
-
-/**
- * Given a relationship between two hal resources and the default role name @roleName, what label should the relationship
- * be assigned?
- */
-export function relationshipLabel(a, b, roleName) {
-    var typeA = a[API.KEY_TYPE];
-    var typeB = b[API.KEY_TYPE];
-
-    var idA = a[API.KEY_ID];
-    var idB = b[API.KEY_ID];
-
-    if(idA === typeB || idB === typeA)
-        return API.EDGE_LABEL_ISA;
-
-    return roleName;
+        return false;
 }
 
 /**
@@ -76,24 +56,6 @@ export function resourceProperties(resource) {
 /*
  Internal functions
  */
-
-/**
- * Calculate weight of a hal resource based on its type; used to establish directionality of a relationship between resources.
- */
-function weight(baseType) {
-    var weightMap = {
-        "entity-type": 1,
-        "relation-type": 2,
-        "role-type": 3,
-        "type": 4
-    };
-
-    if (baseType in weightMap)
-        return weightMap[baseType];
-    else
-        return 0;
-}
-
 function buildLabel(resource) {
     var label = resource[API.KEY_ID];
 
