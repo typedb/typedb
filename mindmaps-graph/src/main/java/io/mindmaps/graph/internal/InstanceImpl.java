@@ -115,7 +115,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
         InstanceImpl<?, ?> parent = this;
 
         parent.castings().forEach(c -> {
-            CastingImpl casting = getMindmapsGraph().getElementFactory().buildCasting(c);
+            CastingImpl casting = c.asCasting();
             if (roleTypeItemIdentifier.size() != 0) {
                 if (roleTypeItemIdentifier.contains(casting.getType()))
                     relations.addAll(casting.getRelations());
@@ -135,7 +135,7 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     public Collection<RoleType> playsRoles() {
         Set<RoleType> roleTypes = new HashSet<>();
         ConceptImpl<?, ?> parent = this;
-        parent.getIncomingNeighbours(Schema.EdgeLabel.ROLE_PLAYER).forEach(c -> roleTypes.add(getMindmapsGraph().getElementFactory().buildCasting(c).getRole()));
+        parent.getIncomingNeighbours(Schema.EdgeLabel.ROLE_PLAYER).forEach(c -> roleTypes.add(c.asCasting().getRole()));
         return roleTypes;
     }
 }

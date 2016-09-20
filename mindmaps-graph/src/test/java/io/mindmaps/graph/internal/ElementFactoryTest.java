@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-
+/*
 package io.mindmaps.graph.internal;
 
 import io.mindmaps.util.Schema;
@@ -261,4 +261,4 @@ public class ElementFactoryTest {
         assertThat(mindmapsGraph.getElementFactory().buildSpecificInstance(c2), instanceOf(Relation.class));
         assertThat(mindmapsGraph.getElementFactory().buildSpecificInstance(c3), instanceOf(Resource.class));
     }
-}
+}*/

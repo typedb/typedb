@@ -36,36 +36,21 @@ final class ElementFactory {
     public RelationImpl buildRelation(Vertex v){
         return new RelationImpl(v, mindmapsGraph);
     }
-    public RelationImpl buildRelation(Concept c){
-        return buildRelation(((ConceptImpl) c).getVertex());
-    }
 
     public CastingImpl buildCasting(Vertex v){
         return new CastingImpl(v, mindmapsGraph);
-    }
-    public CastingImpl buildCasting(Concept c){
-        return buildCasting(((ConceptImpl) c).getVertex());
     }
 
     public TypeImpl buildConceptType(Vertex v){
         return  new TypeImpl(v, mindmapsGraph);
     }
-    public TypeImpl buildConceptType(Concept c){
-        return buildConceptType(((ConceptImpl) c).getVertex());
-    }
 
     public RuleTypeImpl buildRuleType(Vertex v){
         return  new RuleTypeImpl(v, mindmapsGraph);
     }
-    public RuleTypeImpl buildRuleType(Concept c){
-        return buildRuleType(((ConceptImpl) c).getVertex());
-    }
 
     public RoleTypeImpl buildRoleType(Vertex v){
         return new RoleTypeImpl(v, mindmapsGraph);
-    }
-    public RoleTypeImpl buildRoleType(Concept c){
-        return buildRoleType(((ConceptImpl) c).getVertex());
     }
 
     public <V> ResourceTypeImpl<V> buildResourceType(Vertex v){
@@ -81,29 +66,17 @@ final class ElementFactory {
     public RelationTypeImpl buildRelationType(Vertex v){
         return  new RelationTypeImpl(v, mindmapsGraph);
     }
-    public RelationTypeImpl buildRelationType(Concept c){
-        return buildRelationType(((ConceptImpl) c).getVertex());
-    }
 
     public EntityTypeImpl buildEntityType(Vertex v){
         return  new EntityTypeImpl(v, mindmapsGraph);
-    }
-    public EntityTypeImpl buildEntityType(Concept c){
-        return buildEntityType(((ConceptImpl) c).getVertex());
     }
 
     public EntityImpl buildEntity(Vertex v){
         return  new EntityImpl(v, mindmapsGraph);
     }
-    public EntityImpl buildEntity(Concept c){
-        return buildEntity(((ConceptImpl) c).getVertex());
-    }
 
     public <V> ResourceImpl <V> buildResource(Vertex v){
         return  new ResourceImpl<>(v, mindmapsGraph);
-    }
-    public <V> ResourceImpl <V> buildResource(Concept c){
-        return  buildResource(((ConceptImpl) c).getVertex());
     }
 
     public RuleImpl buildRule(Vertex v){
@@ -112,12 +85,6 @@ final class ElementFactory {
     public RuleImpl buildRule(Vertex v, String lhs, String rhs){
         return  new RuleImpl(v, mindmapsGraph, lhs, rhs);
     }
-    public RuleImpl buildRule(ConceptImpl c){
-        return  buildRule(c.getVertex(),
-                c.getProperty(Schema.ConceptProperty.RULE_LHS).toString(),
-                c.getProperty(Schema.ConceptProperty.RULE_RHS).toString());
-    }
-
 
     public ConceptImpl buildUnknownConcept(Concept concept){
         return  buildUnknownConcept(((ConceptImpl) concept).getVertex());
@@ -169,10 +136,6 @@ final class ElementFactory {
         return concept;
     }
 
-    public TypeImpl buildSpecificConceptType(Concept concept){
-        return buildSpecificConceptType(((ConceptImpl) concept).getVertex());
-    }
-
     public TypeImpl buildSpecificConceptType(Vertex vertex){
         Schema.BaseType type = Schema.BaseType.valueOf(vertex.label());
         TypeImpl conceptType;
@@ -196,30 +159,6 @@ final class ElementFactory {
                 conceptType = buildConceptType(vertex);
         }
         return conceptType;
-    }
-
-
-    public InstanceImpl buildSpecificInstance(Concept concept){
-        return  buildSpecificInstance(((ConceptImpl) concept).getVertex());
-    }
-
-    public InstanceImpl buildSpecificInstance(Vertex vertex){
-        Schema.BaseType type = Schema.BaseType.valueOf(vertex.label());
-        InstanceImpl conceptInstance;
-        switch (type){
-            case RELATION:
-                conceptInstance = buildRelation(vertex);
-                break;
-            case RESOURCE:
-                conceptInstance = buildResource(vertex);
-                break;
-            case RULE:
-                conceptInstance = buildRule(vertex);
-                break;
-            default:
-                conceptInstance = buildEntity(vertex);
-        }
-        return conceptInstance;
     }
 
     public EdgeImpl buildEdge(org.apache.tinkerpop.gremlin.structure.Edge edge, AbstractMindmapsGraph mindmapsGraph){

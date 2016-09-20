@@ -173,7 +173,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
                     throw new ConceptException(ErrorMessage.LOOP_DETECTED.getMessage(toString(), Schema.EdgeLabel.AKO.getLabel() + " " + Schema.EdgeLabel.ISA.getLabel()));
                 }
                 notFound = false;
-                type = getMindmapsGraph().getElementFactory().buildSpecificConceptType(concept);
+                type = concept.asType();
             } else {
                 currentConcept = currentConcept.getParentAko();
                 if(visitedConcepts.contains(currentConcept)){
@@ -424,7 +424,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      */
     public T type(Type type) {
         deleteEdges(Direction.OUT, Schema.EdgeLabel.ISA);
-        putEdge(getMindmapsGraph().getElementFactory().buildSpecificConceptType(type), Schema.EdgeLabel.ISA);
+        putEdge(type, Schema.EdgeLabel.ISA);
         setType(String.valueOf(type.getId()));
 
         //Put any castings back into tracking to make sure the type is still valid
@@ -461,7 +461,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
     public TypeImpl getParentIsa(){
         Concept isaParent = getOutgoingNeighbour(Schema.EdgeLabel.ISA);
         if(isaParent != null){
-            return getMindmapsGraph().getElementFactory().buildSpecificConceptType(isaParent);
+            return (TypeImpl) isaParent;
         } else {
             return null;
         }
@@ -474,7 +474,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
     public TypeImpl getParentAko(){
         Concept akoParent = getOutgoingNeighbour(Schema.EdgeLabel.AKO);
         if(akoParent != null){
-            return getMindmapsGraph().getElementFactory().buildSpecificConceptType(akoParent);
+            return (TypeImpl) akoParent;
         } else {
             return null;
         }
@@ -643,10 +643,11 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
     //--------- Create Links -------//
     /**
      *
-     * @param toConcept the target concept
+     * @param to the target concept
      * @param type the type of the edge to create
      */
-    void putEdge(ConceptImpl toConcept, Schema.EdgeLabel type){
+    void putEdge(Concept to, Schema.EdgeLabel type){
+        ConceptImpl toConcept = (ConceptImpl) to;
         GraphTraversal<Vertex, Edge> traversal = mindmapsGraph.getTinkerPopGraph().traversal().V(getBaseIdentifier()).outE(type.getLabel()).as("edge").otherV().hasId(toConcept.getBaseIdentifier()).select("edge");
         if(!traversal.hasNext())
             addEdge(toConcept, type);
@@ -691,9 +692,9 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @param type The type of the edge
      * @param toConcept The target concept
      */
-    void deleteEdgeTo(Schema.EdgeLabel type, ConceptImpl toConcept){
+    void deleteEdgeTo(Schema.EdgeLabel type, Concept toConcept){
         GraphTraversal<Vertex, Edge> traversal = mindmapsGraph.getTinkerPopGraph().traversal().V(getBaseIdentifier()).
-                outE(type.getLabel()).as("edge").otherV().hasId(toConcept.getBaseIdentifier()).select("edge");
+                outE(type.getLabel()).as("edge").otherV().hasId(((ConceptImpl) toConcept).getBaseIdentifier()).select("edge");
         if(traversal.hasNext())
             traversal.next().remove();
     }

@@ -57,7 +57,7 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
         Set<Instance> owners = new HashSet<>();
         this.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).forEach(concept -> {
             if(!concept.getBaseType().equals(Schema.BaseType.RESOURCE.name()))
-                owners.add(getMindmapsGraph().getElementFactory().buildSpecificInstance(concept));
+                owners.add(concept.asInstance());
         });
         return owners;
     }
