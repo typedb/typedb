@@ -18,7 +18,6 @@
 
 package io.mindmaps.graph.internal;
 
-import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -59,9 +58,6 @@ final class ElementFactory {
     public <V> ResourceTypeImpl<V> buildResourceType(Vertex v, ResourceType.DataType<V> type){
         return new ResourceTypeImpl<>(v, mindmapsGraph, type);
     }
-    public <V> ResourceTypeImpl<V> buildResourceType(Concept c, ResourceType.DataType<V> type){
-        return buildResourceType(((ConceptImpl) c).getVertex(), type);
-    }
 
     public RelationTypeImpl buildRelationType(Vertex v){
         return  new RelationTypeImpl(v, mindmapsGraph);
@@ -84,10 +80,6 @@ final class ElementFactory {
     }
     public RuleImpl buildRule(Vertex v, String lhs, String rhs){
         return  new RuleImpl(v, mindmapsGraph, lhs, rhs);
-    }
-
-    public ConceptImpl buildUnknownConcept(Concept concept){
-        return  buildUnknownConcept(((ConceptImpl) concept).getVertex());
     }
 
     /**

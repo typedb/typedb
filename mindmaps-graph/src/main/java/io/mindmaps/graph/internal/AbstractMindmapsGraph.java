@@ -250,7 +250,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     public EntityType putEntityType(String itemIdentifier) {
         return putConceptType(itemIdentifier, Schema.BaseType.ENTITY_TYPE, getMetaEntityType()).asEntityType();
     }
-    private Type putConceptType(String itemIdentifier, Schema.BaseType baseType, Type metaType) {
+    private TypeImpl putConceptType(String itemIdentifier, Schema.BaseType baseType, Type metaType) {
         TypeImpl conceptType = elementFactory.buildSpecificConceptType(putVertex(itemIdentifier, baseType));
         conceptType.type(metaType);
         return conceptType;
@@ -268,7 +268,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
 
     @Override
     public <V> ResourceType <V> putResourceType(String id, ResourceType.DataType<V> type) {
-        return elementFactory.buildResourceType(putConceptType(id, Schema.BaseType.RESOURCE_TYPE, getMetaResourceType()), type);
+        return elementFactory.buildResourceType(putConceptType(id, Schema.BaseType.RESOURCE_TYPE, getMetaResourceType()).getVertex(), type);
     }
 
     @Override

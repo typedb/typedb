@@ -99,7 +99,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      */
     @Override
     public void delete() throws ConceptException {
-        ConceptImpl properType = getMindmapsGraph().getElementFactory().buildUnknownConcept(this);
+        ConceptImpl properType = getMindmapsGraph().getElementFactory().buildUnknownConcept(vertex);
         properType.innerDelete(); //This will execute the proper deletion method.
     }
 
