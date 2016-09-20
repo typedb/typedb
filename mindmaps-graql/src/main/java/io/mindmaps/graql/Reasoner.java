@@ -19,7 +19,6 @@
 package io.mindmaps.graql;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.RoleType;

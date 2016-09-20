@@ -44,7 +44,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      */
     public Set<CastingImpl> getMappingCasting() {
         Set<CastingImpl> castings = new HashSet<>();
-        getOutgoingNeighbours(Schema.EdgeLabel.CASTING).forEach(casting -> castings.add(getMindmapsGraph().getElementFactory().buildCasting(casting)));
+        getOutgoingNeighbours(Schema.EdgeLabel.CASTING).forEach(casting -> castings.add(casting.asCasting()));
         return castings;
     }
 
@@ -104,7 +104,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
     @Override
     public Set<Instance> scopes() {
         HashSet<Instance> scopes = new HashSet<>();
-        getOutgoingNeighbours(Schema.EdgeLabel.HAS_SCOPE).forEach(concept -> scopes.add(getMindmapsGraph().getElementFactory().buildSpecificInstance(concept)));
+        getOutgoingNeighbours(Schema.EdgeLabel.HAS_SCOPE).forEach(concept -> scopes.add(concept.asInstance()));
         return scopes;
     }
 
@@ -115,7 +115,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      */
     @Override
     public Relation scope(Instance instance) {
-        putEdge(getMindmapsGraph().getElementFactory().buildEntity(instance), Schema.EdgeLabel.HAS_SCOPE);
+        putEdge(instance, Schema.EdgeLabel.HAS_SCOPE);
         return this;
     }
 
@@ -175,7 +175,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      */
     @Override
     public Relation deleteScope(Instance scope) throws ConceptException {
-        deleteEdgeTo(Schema.EdgeLabel.HAS_SCOPE, getMindmapsGraph().getElementFactory().buildEntity(scope));
+        deleteEdgeTo(Schema.EdgeLabel.HAS_SCOPE, scope);
         return this;
     }
 
@@ -189,7 +189,7 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
         // tracking
         rolePlayers.forEach(r -> {
             if(r != null)
-                getMindmapsGraph().getConceptLog().putConcept(getMindmapsGraph().getElementFactory().buildSpecificInstance(r));
+                getMindmapsGraph().getConceptLog().putConcept((ConceptImpl) r);
         });
         this.getMappingCasting().forEach(c -> getMindmapsGraph().getConceptLog().putConcept(c));
 

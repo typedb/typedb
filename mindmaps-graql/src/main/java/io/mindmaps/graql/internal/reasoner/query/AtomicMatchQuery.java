@@ -4,10 +4,7 @@ import com.google.common.collect.Sets;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.mindmaps.graql.internal.reasoner.Utility.findEquivalentAtomicQuery;
