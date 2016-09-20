@@ -48,7 +48,6 @@ public class HALConcept {
     private final String AKO_EDGE = "ako";
 
 
-
     public HALConcept(Concept concept, int separationDegree) {
 
         //building HAL concepts using: https://github.com/HalBuilder/halbuilder-core
@@ -60,7 +59,7 @@ public class HALConcept {
         try {
             handleConcept(halResource, concept, separationDegree);
         } catch (Exception e) {
-            LOG.error("Exception while building HAL representation",e);
+            LOG.error("Exception while building HAL representation", e);
         }
     }
 
@@ -89,19 +88,15 @@ public class HALConcept {
     private void embedType(Representation halResource, Concept concept) {
 
         // temp fix until a new behaviour is defined
-        String typeID = (concept.isInstance()) ? concept.type().getId() : ROOT_CONCEPT;
-        Representation HALType = factory.newRepresentation(resourceLinkPrefix + typeID);
-
-
-        if (concept.type() !=null) {
+        Representation HALType;
+        if (concept.type() != null) {
+            HALType = factory.newRepresentation(resourceLinkPrefix + concept.type().getId());
             generateStateAndLinks(HALType, concept.type());
             halResource.withRepresentation(ISA_EDGE, HALType);
         } else {
-            HALType.withProperty("_id", ROOT_CONCEPT)
-                    .withProperty("_type", ROOT_CONCEPT)
-                    .withProperty("_baseType", ROOT_CONCEPT);
+            HALType = factory.newRepresentation(resourceLinkPrefix + ROOT_CONCEPT);
+            HALType.withProperty("_id", ROOT_CONCEPT).withProperty("_type", ROOT_CONCEPT).withProperty("_baseType", ROOT_CONCEPT);
             halResource.withRepresentation(AKO_EDGE, HALType);
-
         }
 
     }
