@@ -218,7 +218,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         return baseType.name() + "-" + type.getId() + "-" + UUID.randomUUID().toString();
     }
 
-    private Vertex putVertex(String itemIdentifier, Schema.BaseType baseType){
+    private Vertex putTypeVertex(String itemIdentifier, Schema.BaseType baseType){
         if(Schema.MetaType.isMetaId(itemIdentifier)){
             throw new ConceptException(ErrorMessage.ID_RESERVED.getMessage(itemIdentifier));
         }
@@ -238,7 +238,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
 
     @Override
     public Entity putEntity(String itemIdentifier, EntityType type) {
-        EntityImpl thing = elementFactory.buildEntity(putVertex(itemIdentifier, Schema.BaseType.ENTITY));
+        EntityImpl thing = elementFactory.buildEntity(putTypeVertex(itemIdentifier, Schema.BaseType.ENTITY));
         thing.type(type);
         return thing;
     }
@@ -253,7 +253,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         return putConceptType(itemIdentifier, Schema.BaseType.ENTITY_TYPE, getMetaEntityType()).asEntityType();
     }
     private TypeImpl putConceptType(String itemIdentifier, Schema.BaseType baseType, Type metaType) {
-        TypeImpl conceptType = elementFactory.buildSpecificConceptType(putVertex(itemIdentifier, baseType));
+        TypeImpl conceptType = elementFactory.buildSpecificConceptType(putTypeVertex(itemIdentifier, baseType));
         conceptType.type(metaType);
         return conceptType;
     }
@@ -299,7 +299,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
 
     @Override
     public Rule putRule(String itemIdentifier, String lhs, String rhs, RuleType type) {
-        return elementFactory.buildRule(putVertex(itemIdentifier, Schema.BaseType.RULE), lhs, rhs).type(type);
+        return elementFactory.buildRule(putTypeVertex(itemIdentifier, Schema.BaseType.RULE), lhs, rhs).type(type);
     }
 
     @Override
@@ -309,7 +309,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
 
     @Override
     public Relation putRelation(String itemIdentifier, RelationType type) {
-        RelationImpl relation = elementFactory.buildRelation(putVertex(itemIdentifier, Schema.BaseType.RELATION));
+        RelationImpl relation = elementFactory.buildRelation(putTypeVertex(itemIdentifier, Schema.BaseType.RELATION));
         relation.setHash(null);
         relation.type(type);
         return relation;
