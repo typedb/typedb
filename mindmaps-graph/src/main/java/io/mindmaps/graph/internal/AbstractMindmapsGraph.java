@@ -210,6 +210,8 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     private Vertex addInstanceVertex(Schema.BaseType baseType, Type type){
         Vertex v = addVertex(baseType);
         v.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), generateInstanceId(baseType, type));
+        v.property(Schema.ConceptProperty.TYPE.name(), type.getId());
+        v.addEdge(Schema.EdgeLabel.ISA.getLabel(), ((TypeImpl) type).getVertex());
         return v;
     }
     private String generateInstanceId(Schema.BaseType baseType, Type type){
@@ -243,7 +245,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
 
     @Override
     public Entity addEntity(EntityType type) {
-        return elementFactory.buildEntity(addInstanceVertex(Schema.BaseType.ENTITY, type)).type(type);
+        return elementFactory.buildEntity(addInstanceVertex(Schema.BaseType.ENTITY, type));
     }
 
     @Override
@@ -278,9 +280,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         ConceptImpl concept = getConcept(Schema.ConceptProperty.INDEX, index);
 
         if(concept == null){
-            resource = elementFactory.buildResource(addInstanceVertex(Schema.BaseType.RESOURCE, type));
-            resource.type(type);
-            resource.setValue(value);
+            resource = elementFactory.buildResource(addInstanceVertex(Schema.BaseType.RESOURCE, type), value);
         } else {
             if(concept.isResource()) {
                 resource = (ResourceImpl<V>) concept.asResource();
@@ -304,7 +304,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
 
     @Override
     public Rule addRule(String lhs, String rhs, RuleType type) {
-        return elementFactory.buildRule(addInstanceVertex(Schema.BaseType.RULE, type), lhs, rhs).type(type);
+        return elementFactory.buildRule(addInstanceVertex(Schema.BaseType.RULE, type), lhs, rhs);
     }
 
     @Override
@@ -319,7 +319,6 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     public Relation addRelation(RelationType type) {
         RelationImpl relation = elementFactory.buildRelation(addInstanceVertex(Schema.BaseType.RELATION, type));
         relation.setHash(null);
-        relation.type(type);
         return relation;
     }
 
@@ -457,7 +456,6 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     //------------------------------------ Construction
     private CastingImpl addCasting(RoleTypeImpl role, InstanceImpl rolePlayer){
         CastingImpl casting = elementFactory.buildCasting(addInstanceVertex(Schema.BaseType.CASTING, role)).setHash(role, rolePlayer);
-        casting.type(role);
         if(rolePlayer != null) {
             EdgeImpl castingToRolePlayer = addEdge(casting, rolePlayer, Schema.EdgeLabel.ROLE_PLAYER); // Casting to RolePlayer
             castingToRolePlayer.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId());

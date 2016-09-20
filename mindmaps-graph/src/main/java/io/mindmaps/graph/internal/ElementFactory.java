@@ -71,8 +71,11 @@ final class ElementFactory {
         return  new EntityImpl(v, mindmapsGraph);
     }
 
-    public <V> ResourceImpl <V> buildResource(Vertex v){
-        return  new ResourceImpl<>(v, mindmapsGraph);
+    public <V> ResourceImpl <V> buildResource(Vertex v, V value){
+        if(value == null){
+            return new ResourceImpl<>(v, mindmapsGraph);
+        }
+        return new ResourceImpl<>(v, mindmapsGraph, value);
     }
 
     public RuleImpl buildRule(Vertex v){
@@ -116,7 +119,7 @@ final class ElementFactory {
                 concept = buildResourceType(v);
                 break;
             case RESOURCE:
-                concept = buildResource(v);
+                concept = buildResource(v, null);
                 break;
             case RULE:
                 concept = buildRule(v);

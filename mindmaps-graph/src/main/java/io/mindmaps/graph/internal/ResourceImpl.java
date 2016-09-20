@@ -36,6 +36,10 @@ import java.util.regex.Pattern;
  * @param <D> The data type of this resource. Supported Types include: String, Long, Double, and Boolean
  */
 class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> implements Resource<D> {
+    ResourceImpl(Vertex v, AbstractMindmapsGraph mindmapsGraph, D value) {
+        super(v, mindmapsGraph);
+        setValue(value);
+    }
     ResourceImpl(Vertex v, AbstractMindmapsGraph mindmapsGraph) {
         super(v, mindmapsGraph);
     }
@@ -67,7 +71,7 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
      * @param value The value to store on the resource
      * @return The Resource itself
      */
-    public Resource<D> setValue(D value) {
+    private Resource<D> setValue(D value) {
         try {
             ResourceType<D> resourceType = type();
 
@@ -79,10 +83,9 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
                 }
             }
 
-            String index = generateResourceIndex(type().getId(), value.toString());
-            setUniqueProperty(Schema.ConceptProperty.INDEX, index);
+            setImmutableProperty(dataType().getConceptProperty(), castValue(value));
 
-            return setProperty(dataType().getConceptProperty(), castValue(value));
+            return setUniqueProperty(Schema.ConceptProperty.INDEX, generateResourceIndex(type().getId(), value.toString()));
         } catch (ClassCastException e) {
             throw new RuntimeException(ErrorMessage.INVALID_DATATYPE.getMessage(value, dataType().getName()));
         }
