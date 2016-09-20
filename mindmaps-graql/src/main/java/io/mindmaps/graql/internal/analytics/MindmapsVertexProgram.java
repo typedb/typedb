@@ -16,18 +16,10 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-/*
- * Keys used in HAL API JSON Objects
+package io.mindmaps.graql.internal.analytics;
+
+/**
+ * A vertex program specific to Mindmaps with common method implementations.
  */
-
-export const RELATION_TYPE = "relation-type";
-export const TYPE_TYPE = "type";
-export const RULE_TYPE = "rule-type";
-export const RESOURCE_TYPE = "resource-type";
-export const ROLE_TYPE = "role-type";
-export const ENTITY_TYPE = "entity-type";
-
-export const KEY_ID = "_id";
-export const KEY_EMBEDDED = "_embedded";
-export const KEY_TYPE = "_type";
-export const KEY_BASE_TYPE = "_baseType";
+public abstract class MindmapsVertexProgram extends CommonOLAP {
+}
