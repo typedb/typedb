@@ -14,8 +14,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import static io.mindmaps.graql.internal.analytics.Analytics.getVertexType;
-
 public class MaxMapReduce extends MindmapsMapReduce<Number> {
 
     public static final String MEMORY_KEY = "max";

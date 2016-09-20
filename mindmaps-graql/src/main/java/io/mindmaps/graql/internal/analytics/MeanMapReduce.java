@@ -14,8 +14,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import static io.mindmaps.graql.internal.analytics.Analytics.getVertexType;
-
 public class MeanMapReduce extends MindmapsMapReduce<Map<String, Number>> {
     public static final String MEMORY_KEY = "mean";
     public static final String SELECTED_DATA_TYPE = "SELECTED_DATA_TYPE";
