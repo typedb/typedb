@@ -18,15 +18,10 @@
 
 package io.mindmaps.graql.internal.analytics;
 
-import io.mindmaps.MindmapsGraph;
-import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.util.Schema;
-import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
@@ -43,7 +38,7 @@ public class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
 
     private static final Set<String> COMPUTE_KEYS = Collections.singleton(MEMORY_KEY);
 
-    private String keySpace;
+    BulkResourceMutate bulkResourceMutate;
 
     public DegreeAndPersistVertexProgram() {
     }
@@ -51,12 +46,6 @@ public class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
     public DegreeAndPersistVertexProgram(String keySpace, Set<String> types) {
         persistentProperties.put(KEYSPACE_KEY,keySpace);
         selectedTypes = types;
-    }
-
-    @Override
-    public void loadState(final Graph graph, final Configuration configuration) {
-        super.loadState(graph, configuration);
-        keySpace = (String) persistentProperties.get(KEYSPACE_KEY);
     }
 
     @Override
@@ -103,23 +92,23 @@ public class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
                 if (!isAnalyticsElement(vertex) && selectedTypes.contains(getVertexType(vertex))) {
                     if (baseTypes.contains(vertex.label())) {
                         long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
-                        String oldAssertionId = Analytics.persistResource(keySpace, vertex, Analytics.degree, edgeCount);
-                        if (oldAssertionId != null) {
-                            vertex.property(MEMORY_KEY, oldAssertionId);
-                        }
+                        bulkResourceMutate.putValue(vertex,edgeCount,MEMORY_KEY);
                     }
                 }
                 break;
             case 3:
-                if(vertex.property(DegreeAndPersistVertexProgram.MEMORY_KEY).isPresent()) {
-                    mindmapsGraph.getRelation(vertex.value(DegreeAndPersistVertexProgram.MEMORY_KEY)).delete();
-                    try {
-                        mindmapsGraph.commit();
-                    } catch (MindmapsValidationException e) {
-                        throw new RuntimeException("Failed to delete relation during bulk resource mutation.", e);
-                    }
-                }
+                bulkResourceMutate.cleanup(vertex,MEMORY_KEY);
         }
+    }
+
+    @Override
+    public void workerIterationStart(Memory memory) {
+        bulkResourceMutate = new BulkResourceMutate<Long>((String) persistentProperties.get(KEYSPACE_KEY));
+    }
+
+    @Override
+    public void workerIterationEnd(Memory memory) {
+        bulkResourceMutate.close();
     }
 
     @Override

@@ -308,64 +308,6 @@ public class Analytics {
 
     }
 
-    public static String persistResource(String keySpace, Vertex vertex,
-                                         String resourceName, long value) {
-        MindmapsGraph mindmapsGraph = MindmapsClient.getGraphBatchLoading(keySpace);
-        ResourceType<Long> resourceType = mindmapsGraph.getResourceType(resourceName);
-        RoleType resourceOwner = mindmapsGraph.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceName));
-        RoleType resourceValue = mindmapsGraph.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceName));
-        RelationType relationType = mindmapsGraph.getRelationType(GraqlType.HAS_RESOURCE.getId(resourceName));
-
-        Instance instance =
-                mindmapsGraph.getInstance(vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name()));
-
-        List<Relation> relations = instance.relations(resourceOwner).stream()
-                .filter(relation -> relation.rolePlayers().size() == 2)
-                .filter(relation -> relation.rolePlayers().containsKey(resourceValue) &&
-                        relation.rolePlayers().get(resourceValue).type().getId().equals(resourceName))
-                .collect(Collectors.toList());
-
-        if (relations.isEmpty()) {
-            Resource<Long> resource = mindmapsGraph.putResource(value, resourceType);
-
-            mindmapsGraph.addRelation(relationType)
-                    .putRolePlayer(resourceOwner, instance)
-                    .putRolePlayer(resourceValue, resource);
-
-            try {
-                mindmapsGraph.commit();
-//                mindmapsGraph.close();
-            } catch (Exception e) {
-                throw new RuntimeException(ErrorMessage.BULK_PERSIST.getMessage(resourceType, e.getMessage()), e);
-            }
-            return null;
-        }
-
-        relations = relations.stream()
-                .filter(relation ->
-                        (long) relation.rolePlayers().get(resourceValue).asResource().getValue() != value)
-                .collect(Collectors.toList());
-
-        if (!relations.isEmpty()) {
-            String oldAssertionId = relations.get(0).getId();
-
-            Resource<Long> resource = mindmapsGraph.putResource(value, resourceType);
-
-            mindmapsGraph.addRelation(relationType)
-                    .putRolePlayer(resourceOwner, instance)
-                    .putRolePlayer(resourceValue, resource);
-            try {
-                mindmapsGraph.commit();
-            } catch (Exception e) {
-                throw new RuntimeException(ErrorMessage.BULK_PERSIST.getMessage(resourceType, e.getMessage()), e);
-            }
-
-            return oldAssertionId;
-        } else {
-            return null;
-        }
-    }
-
     private void checkResourceType(String type) {
         if (!resourceTypes.containsKey(type))
             throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
