@@ -6,10 +6,10 @@ import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
-import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
 import io.mindmaps.graql.reasoner.graphs.GenericGraph;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static io.mindmaps.graql.internal.reasoner.Utility.printAnswers;
@@ -65,13 +65,9 @@ public class MoogiInferenceTest{
 
     @Test
     public void testPerson(){
-        String queryString = "match $x isa person;$x has name 'Bob';";
+        String queryString = "match $x isa person has name;";
         MatchQuery query = qb.parseMatch(queryString);
-        query.toString();
-        //Query q = new Query(query, graph);
-
-
-        //MatchQuery mq = reasoner.resolveToQuery(query);
+        MatchQuery mq = reasoner.resolveToQuery(query);
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {

@@ -75,7 +75,7 @@ public class Query implements MatchQueryInternal {
     public Query(Query q) {
         this.graph = q.graph;
 
-        MatchQuery matchQuery = Graql.withGraph(graph).parseMatch(q.toString());
+        MatchQuery matchQuery = q.getMatchQuery();
         this.pattern = matchQuery.admin().getPattern();
         this.selectVars = Sets.newHashSet(matchQuery.admin().getSelectedNames());
         this.atomSet = getAtomSet(pattern);
