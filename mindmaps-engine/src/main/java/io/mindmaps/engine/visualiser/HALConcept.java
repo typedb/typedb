@@ -201,7 +201,7 @@ public class HALConcept {
             type.instances().forEach(instance -> {
                 Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId());
                 handleConcept(instanceResource, instance, separationDegree - 1);
-                halResource.withRepresentation(instance.getId(), instanceResource);
+                halResource.withRepresentation(ISA_EDGE, instanceResource);
             });
         }
         type.subTypes().forEach(instance -> {
@@ -209,7 +209,8 @@ public class HALConcept {
             if (!instance.getId().equals(type.getId())) {
                 Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId());
                 handleConcept(instanceResource, instance, separationDegree - 1);
-                halResource.withRepresentation(instance.getId(), instanceResource);
+                // TODO: fix directionality of the AKO edge
+                halResource.withRepresentation(AKO_EDGE, instanceResource);
             }
         });
     }
