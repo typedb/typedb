@@ -113,7 +113,7 @@ public class MindmapsClient {
     private static ConfigureFactory configureGraphFactory(String uri, String graphType){
         try {
             String restFactoryUri = uri + GRAPH_FACTORY_URI + "?" + GRAPH_CONFIG_PARAM + "=" + graphType;
-            String config = EngineCommunicator.contactEngine(restFactoryUri, "GET");
+            String config = EngineCommunicator.contactEngine(restFactoryUri, REST.HttpConn.GET_METHOD);
 
             //TODO: We should make config handling generic rather than through files. Using a temp file here is a bit strange
             //Creating Temp File

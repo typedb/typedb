@@ -20,6 +20,7 @@ package io.mindmaps.graph.internal;
 
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.util.TitanCleanup;
+import io.mindmaps.util.REST;
 
 public class MindmapsTitanGraph extends AbstractMindmapsGraph<TitanGraph> {
     public MindmapsTitanGraph(TitanGraph graph, String name, String engineUrl, boolean batchLoading){
@@ -31,6 +32,6 @@ public class MindmapsTitanGraph extends AbstractMindmapsGraph<TitanGraph> {
         TitanGraph titanGraph = getTinkerPopGraph();
         titanGraph.close();
         TitanCleanup.clear(titanGraph);
-        EngineCommunicator.contactEngine(getCommitLogEndPoint(), "DELETE");
+        EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.DELETE_METHOD);
     }
 }

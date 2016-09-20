@@ -594,6 +594,14 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     }
 
     /**
+     * Clears the graph completely.
+     */
+    @Override
+    public void clear() {
+        getTinkerPopGraph().traversal().V().drop().iterate();
+    }
+
+    /**
      * Closes the current graph, rendering it unusable.
      */
     @Override
@@ -669,7 +677,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         JSONObject postObject = new JSONObject();
         postObject.put("concepts", jsonArray);
 
-        String result = EngineCommunicator.contactEngine(getCommitLogEndPoint(), "POST", postObject.toString());
+        String result = EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.POST_METHOD, postObject.toString());
         LOG.info("Response from engine [" + result + "]");
     }
     protected String getCommitLogEndPoint(){

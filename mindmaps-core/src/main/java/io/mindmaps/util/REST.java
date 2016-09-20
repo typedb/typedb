@@ -49,6 +49,8 @@ public class REST {
         public static final String CONTENT_LENGTH = "Content-Length";
         public static final String CONTENT_TYPE = "Content-Type";
         public static final String POST_METHOD = "POST";
+        public static final String DELETE_METHOD = "DELETE";
+        public static final String GET_METHOD = "GET";
         public static final String APPLICATION_POST_TYPE = "application/POST";
     }
 

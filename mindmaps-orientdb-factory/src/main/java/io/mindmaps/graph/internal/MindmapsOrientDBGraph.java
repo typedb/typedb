@@ -10,11 +10,6 @@ public class MindmapsOrientDBGraph extends AbstractMindmapsGraph<OrientGraph> {
     }
 
     @Override
-    public void clear() {
-        getTinkerPopGraph().traversal().V().drop().iterate();
-    }
-
-    @Override
     protected void commitTx(){
         getTinkerPopGraph().commit();
     }

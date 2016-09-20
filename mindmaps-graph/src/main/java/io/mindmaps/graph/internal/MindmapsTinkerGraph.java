@@ -28,12 +28,4 @@ public class MindmapsTinkerGraph extends AbstractMindmapsGraph<TinkerGraph> {
     public MindmapsTinkerGraph(TinkerGraph tinkerGraph, String name, boolean batchLoading){
         super(tinkerGraph, name, "localhost", batchLoading);
     }
-
-    /**
-     * Clears the graph completely.
-     */
-    @Override
-    public void clear() {
-        getTinkerPopGraph().traversal().V().drop().iterate();
-    }
 }
