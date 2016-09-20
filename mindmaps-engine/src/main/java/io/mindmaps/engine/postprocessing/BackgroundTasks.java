@@ -21,20 +21,13 @@ package io.mindmaps.engine.postprocessing;
 import io.mindmaps.engine.loader.RESTLoader;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
-import org.apache.tinkerpop.shaded.minlog.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BackgroundTasks {
@@ -177,7 +170,7 @@ public class BackgroundTasks {
         long total = 0L;
         LOG.info(typeName + " Jobs:");
         for (Map.Entry<String, Set<String>> entry : jobs.entrySet()) {
-            Log.info("        Post processing step [" + typeName + " for Graph [" + entry.getKey() + "] has jobs : " + entry.getValue().size());
+            LOG.info("        Post processing step [" + typeName + " for Graph [" + entry.getKey() + "] has jobs : " + entry.getValue().size());
             total += entry.getValue().size();
         }
         LOG.info("    Total " + typeName + " Jobs: " + total);

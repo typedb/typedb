@@ -93,10 +93,9 @@ public class HALConcept {
         Representation HALType = factory.newRepresentation(resourceLinkPrefix + typeID);
 
 
-        if (concept.isInstance()) {
+        if (concept.type() !=null) {
             generateStateAndLinks(HALType, concept.type());
             halResource.withRepresentation(ISA_EDGE, HALType);
-
         } else {
             HALType.withProperty("_id", ROOT_CONCEPT)
                     .withProperty("_type", ROOT_CONCEPT)

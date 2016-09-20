@@ -16,7 +16,8 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.shell;import ch.qos.logback.classic.Level;
+package io.mindmaps.shell;
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import io.mindmaps.graql.GraqlShell;
 import org.junit.After;

@@ -20,6 +20,8 @@ package io.mindmaps.engine;
 
 import io.mindmaps.engine.controller.*;
 import io.mindmaps.engine.util.ConfigProperties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static spark.Spark.*;
 
@@ -29,6 +31,9 @@ import static spark.Spark.*;
 
 public class MindmapsEngineServer {
 
+    private static Logger LOG = null;
+
+
     public static void main(String[] args) {
         start();
     }
@@ -36,6 +41,8 @@ public class MindmapsEngineServer {
     public static void start() {
 
         ConfigProperties prop = ConfigProperties.getInstance();
+
+        LOG = LoggerFactory.getLogger(MindmapsEngineServer.class);
 
         // Set host name
         ipAddress(prop.getProperty(ConfigProperties.SERVER_HOST_NAME));
@@ -58,18 +65,19 @@ public class MindmapsEngineServer {
         // This method will block until all the controllers are ready to serve requests
         awaitInitialization();
 
-        printStartMessage(prop.getProperty(ConfigProperties.SERVER_HOST_NAME), prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER));
+        printStartMessage(prop.getProperty(ConfigProperties.SERVER_HOST_NAME), prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER),prop.getLogFilePath());
     }
 
 
     /**
-     * Method that prints directly to stdout welcome message and listening address.
-     * Log is not applicable here since all the log messages are redirected to a log file.
+     * Method that prints a welcome message, listening address and path to the LOG that will be used.
      * @param host Host address to which Mindmaps Engine is bound to
      * @param port Web server port number
+     * @param logFilePath Path to the LOG file.
      */
-    private static void printStartMessage(String host, String port) {
-        System.out.print(ConfigProperties.MINDMAPS_ASCII);
-        System.out.println("Mindmaps Engine is ready. Listening on [http://" + host + ":" + port + "]");
+    private static void printStartMessage(String host, String port, String logFilePath) {
+        LOG.info(ConfigProperties.MINDMAPS_ASCII);
+        LOG.info("Mindmaps Engine is ready. Listening on [http://" + host + ":" + port + "]");
+        LOG.info("Mindmaps LOG file located at ["+logFilePath+"]");
     }
 }

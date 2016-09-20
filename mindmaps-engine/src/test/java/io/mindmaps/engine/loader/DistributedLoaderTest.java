@@ -18,7 +18,6 @@
 
 package io.mindmaps.engine.loader;
 
-import ch.qos.logback.classic.Logger;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.engine.controller.CommitLogController;
 import io.mindmaps.engine.controller.TransactionController;
@@ -28,6 +27,7 @@ import io.mindmaps.factory.GraphFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
@@ -47,7 +47,7 @@ import static org.junit.Assert.assertNotNull;
 
 public class DistributedLoaderTest {
 
-    private final Logger LOG = (Logger) LoggerFactory.getLogger(DistributedLoaderTest.class);
+    private final Logger LOG = LoggerFactory.getLogger(DistributedLoaderTest.class);
 
     private MindmapsGraph graph;
 

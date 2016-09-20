@@ -1,0 +1,629 @@
+2016-09-19 12:31:05,089 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:91] Project directory in use: [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/]
+2016-09-19 12:31:05,093 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:92] Configuration file in use: [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/../conf/main/mindmaps-engine.properties]
+2016-09-19 12:31:05,093 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:93] Number of threads set to [8]
+2016-09-19 12:36:05,214 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:90] Starting maintenance.
+2016-09-19 12:36:05,215 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:101] Scanning for duplicate castings . . .
+2016-09-19 12:36:05,215 INFO [pool-4-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:163] --------------------Current Status of Post Processing--------------------
+2016-09-19 12:36:05,215 INFO [pool-4-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Casting Jobs:
+2016-09-19 12:36:05,216 INFO [pool-4-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Casting Jobs: 0
+2016-09-19 12:36:05,216 INFO [pool-4-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Resources Jobs:
+2016-09-19 12:36:05,216 INFO [pool-4-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Resources Jobs: 0
+2016-09-19 12:36:05,216 INFO [pool-4-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:166] Save in Progress: false
+2016-09-19 12:36:05,216 INFO [pool-4-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:167] Current Stage: Scanning for duplicate castings . . .
+2016-09-19 12:36:05,216 INFO [pool-4-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:168] -------------------------------------------------------------------------
+2016-09-19 12:36:05,220 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:106] Scanning for duplicate resources . . .
+2016-09-19 12:36:05,221 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:95] Maintenance completed.
+2016-09-19 12:39:05,620 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:91] Project directory in use: [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/]
+2016-09-19 12:39:05,624 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:92] Configuration file in use: [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/../conf/main/mindmaps-engine.properties]
+2016-09-19 12:39:05,624 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:93] Number of threads set to [8]
+2016-09-19 12:39:14,763 ERROR [qtp229595155-17] i.m.e.c.VisualiserController [VisualiserController.java:123] New Exception
+java.lang.IllegalArgumentException: syntax error at line 1: 
+match $x sko type
+         ^
+mismatched input 'sko' expecting {<EOF>, ',', ';', 'or', 'select', 'limit', 'offset', 'distinct', 'order'}
+	at io.mindmaps.graql.internal.parser.QueryParser.parseQueryFragment(QueryParser.java:225) ~[classes/:na]
+	at io.mindmaps.graql.internal.parser.QueryParser.parseQueryFragment(QueryParser.java:184) ~[classes/:na]
+	at io.mindmaps.graql.internal.parser.QueryParser.parseMatchQuery(QueryParser.java:70) ~[classes/:na]
+	at io.mindmaps.graql.QueryBuilder.parseMatch(QueryBuilder.java:104) ~[classes/:na]
+	at io.mindmaps.engine.controller.VisualiserController.matchQuery(VisualiserController.java:113) ~[classes/:na]
+	at spark.RouteImpl$1.handle(RouteImpl.java:61) ~[spark-core-2.5.jar:na]
+	at spark.http.matching.Routes.execute(Routes.java:61) ~[spark-core-2.5.jar:na]
+	at spark.http.matching.MatcherFilter.doFilter(MatcherFilter.java:126) ~[spark-core-2.5.jar:na]
+	at spark.embeddedserver.jetty.JettyHandler.doHandle(JettyHandler.java:50) ~[spark-core-2.5.jar:na]
+	at org.eclipse.jetty.server.session.SessionHandler.doScope(SessionHandler.java:189) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:141) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.handler.HandlerList.handle(HandlerList.java:52) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.handler.HandlerWrapper.handle(HandlerWrapper.java:119) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.Server.handle(Server.java:517) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.HttpChannel.handle(HttpChannel.java:308) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.HttpConnection.onFillable(HttpConnection.java:242) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.io.AbstractConnection$ReadCallback.succeeded(AbstractConnection.java:261) ~[jetty-io-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.io.FillInterest.fillable(FillInterest.java:95) ~[jetty-io-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.io.SelectChannelEndPoint$2.run(SelectChannelEndPoint.java:75) ~[jetty-io-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.produceAndRun(ExecuteProduceConsume.java:213) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.run(ExecuteProduceConsume.java:147) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:654) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.QueuedThreadPool$3.run(QueuedThreadPool.java:572) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at java.lang.Thread.run(Thread.java:745) ~[na:1.8.0_102]
+2016-09-19 12:44:05,744 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:90] Starting maintenance.
+2016-09-19 12:44:05,745 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:101] Scanning for duplicate castings . . .
+2016-09-19 12:44:05,745 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:163] --------------------Current Status of Post Processing--------------------
+2016-09-19 12:44:05,745 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Casting Jobs:
+2016-09-19 12:44:05,746 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Casting Jobs: 0
+2016-09-19 12:44:05,746 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Resources Jobs:
+2016-09-19 12:44:05,746 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Resources Jobs: 0
+2016-09-19 12:44:05,746 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:166] Save in Progress: false
+2016-09-19 12:44:05,746 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:167] Current Stage: Scanning for duplicate castings . . .
+2016-09-19 12:44:05,746 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:168] -------------------------------------------------------------------------
+2016-09-19 12:44:05,749 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:106] Scanning for duplicate resources . . .
+2016-09-19 12:44:05,749 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:95] Maintenance completed.
+2016-09-19 12:47:55,952 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:91] Project directory in use: [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/]
+2016-09-19 12:47:55,957 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:92] Configuration file in use: [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/../conf/main/mindmaps-engine.properties]
+2016-09-19 12:47:55,957 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:93] Number of threads set to [8]
+2016-09-19 12:48:01,225 ERROR [qtp1050544974-14] i.m.e.c.RemoteShellController [RemoteShellController.java:123] New Exception
+java.lang.IllegalArgumentException: syntax error at line 1: 
+match $x sko type
+         ^
+mismatched input 'sko' expecting {<EOF>, ',', ';', 'or', 'select', 'limit', 'offset', 'distinct', 'order'}
+	at io.mindmaps.graql.internal.parser.QueryParser.parseQueryFragment(QueryParser.java:225) ~[classes/:na]
+	at io.mindmaps.graql.internal.parser.QueryParser.parseQueryFragment(QueryParser.java:184) ~[classes/:na]
+	at io.mindmaps.graql.internal.parser.QueryParser.parseMatchQuery(QueryParser.java:70) ~[classes/:na]
+	at io.mindmaps.graql.QueryBuilder.parseMatch(QueryBuilder.java:104) ~[classes/:na]
+	at io.mindmaps.engine.controller.RemoteShellController.matchQuery(RemoteShellController.java:118) ~[classes/:na]
+	at spark.RouteImpl$1.handle(RouteImpl.java:61) ~[spark-core-2.5.jar:na]
+	at spark.http.matching.Routes.execute(Routes.java:61) ~[spark-core-2.5.jar:na]
+	at spark.http.matching.MatcherFilter.doFilter(MatcherFilter.java:126) ~[spark-core-2.5.jar:na]
+	at spark.embeddedserver.jetty.JettyHandler.doHandle(JettyHandler.java:50) ~[spark-core-2.5.jar:na]
+	at org.eclipse.jetty.server.session.SessionHandler.doScope(SessionHandler.java:189) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:141) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.handler.HandlerList.handle(HandlerList.java:52) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.handler.HandlerWrapper.handle(HandlerWrapper.java:119) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.Server.handle(Server.java:517) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.HttpChannel.handle(HttpChannel.java:308) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.HttpConnection.onFillable(HttpConnection.java:242) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.io.AbstractConnection$ReadCallback.succeeded(AbstractConnection.java:261) ~[jetty-io-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.io.FillInterest.fillable(FillInterest.java:95) ~[jetty-io-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.io.SelectChannelEndPoint$2.run(SelectChannelEndPoint.java:75) ~[jetty-io-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.produceAndRun(ExecuteProduceConsume.java:213) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.run(ExecuteProduceConsume.java:147) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:654) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.QueuedThreadPool$3.run(QueuedThreadPool.java:572) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at java.lang.Thread.run(Thread.java:745) ~[na:1.8.0_102]
+2016-09-19 12:48:01,225 ERROR [qtp1050544974-21] i.m.e.c.VisualiserController [VisualiserController.java:123] New Exception
+java.lang.IllegalArgumentException: syntax error at line 1: 
+match $x sko type
+         ^
+mismatched input 'sko' expecting {<EOF>, ',', ';', 'or', 'select', 'limit', 'offset', 'distinct', 'order'}
+	at io.mindmaps.graql.internal.parser.QueryParser.parseQueryFragment(QueryParser.java:225) ~[classes/:na]
+	at io.mindmaps.graql.internal.parser.QueryParser.parseQueryFragment(QueryParser.java:184) ~[classes/:na]
+	at io.mindmaps.graql.internal.parser.QueryParser.parseMatchQuery(QueryParser.java:70) ~[classes/:na]
+	at io.mindmaps.graql.QueryBuilder.parseMatch(QueryBuilder.java:104) ~[classes/:na]
+	at io.mindmaps.engine.controller.VisualiserController.matchQuery(VisualiserController.java:113) ~[classes/:na]
+	at spark.RouteImpl$1.handle(RouteImpl.java:61) ~[spark-core-2.5.jar:na]
+	at spark.http.matching.Routes.execute(Routes.java:61) ~[spark-core-2.5.jar:na]
+	at spark.http.matching.MatcherFilter.doFilter(MatcherFilter.java:126) ~[spark-core-2.5.jar:na]
+	at spark.embeddedserver.jetty.JettyHandler.doHandle(JettyHandler.java:50) ~[spark-core-2.5.jar:na]
+	at org.eclipse.jetty.server.session.SessionHandler.doScope(SessionHandler.java:189) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:141) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.handler.HandlerList.handle(HandlerList.java:52) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.handler.HandlerWrapper.handle(HandlerWrapper.java:119) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.Server.handle(Server.java:517) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.HttpChannel.handle(HttpChannel.java:308) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.HttpConnection.onFillable(HttpConnection.java:242) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.io.AbstractConnection$ReadCallback.succeeded(AbstractConnection.java:261) ~[jetty-io-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.io.FillInterest.fillable(FillInterest.java:95) ~[jetty-io-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.io.SelectChannelEndPoint$2.run(SelectChannelEndPoint.java:75) ~[jetty-io-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.produceAndRun(ExecuteProduceConsume.java:213) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.run(ExecuteProduceConsume.java:147) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:654) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.QueuedThreadPool$3.run(QueuedThreadPool.java:572) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at java.lang.Thread.run(Thread.java:745) ~[na:1.8.0_102]
+2016-09-19 12:52:56,059 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:90] Starting maintenance.
+2016-09-19 12:52:56,061 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:101] Scanning for duplicate castings . . .
+2016-09-19 12:52:56,061 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:163] --------------------Current Status of Post Processing--------------------
+2016-09-19 12:52:56,061 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Casting Jobs:
+2016-09-19 12:52:56,061 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Casting Jobs: 0
+2016-09-19 12:52:56,061 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Resources Jobs:
+2016-09-19 12:52:56,061 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Resources Jobs: 0
+2016-09-19 12:52:56,062 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:166] Save in Progress: false
+2016-09-19 12:52:56,062 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:167] Current Stage: Scanning for duplicate castings . . .
+2016-09-19 12:52:56,062 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:168] -------------------------------------------------------------------------
+2016-09-19 12:52:56,064 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:106] Scanning for duplicate resources . . .
+2016-09-19 12:52:56,065 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:95] Maintenance completed.
+2016-09-19 12:57:56,044 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:90] Starting maintenance.
+2016-09-19 12:57:56,045 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:101] Scanning for duplicate castings . . .
+2016-09-19 12:57:56,045 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:163] --------------------Current Status of Post Processing--------------------
+2016-09-19 12:57:56,045 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:106] Scanning for duplicate resources . . .
+2016-09-19 12:57:56,045 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Casting Jobs:
+2016-09-19 12:57:56,046 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:95] Maintenance completed.
+2016-09-19 12:57:56,046 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Casting Jobs: 0
+2016-09-19 12:57:56,046 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Resources Jobs:
+2016-09-19 12:57:56,046 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Resources Jobs: 0
+2016-09-19 12:57:56,047 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:166] Save in Progress: false
+2016-09-19 12:57:56,047 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:167] Current Stage: Scanning for duplicate resources . . .
+2016-09-19 12:57:56,047 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:168] -------------------------------------------------------------------------
+2016-09-19 13:02:56,039 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:90] Starting maintenance.
+2016-09-19 13:02:56,040 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:101] Scanning for duplicate castings . . .
+2016-09-19 13:02:56,040 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:163] --------------------Current Status of Post Processing--------------------
+2016-09-19 13:02:56,040 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:106] Scanning for duplicate resources . . .
+2016-09-19 13:02:56,040 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Casting Jobs:
+2016-09-19 13:02:56,040 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:95] Maintenance completed.
+2016-09-19 13:02:56,041 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Casting Jobs: 0
+2016-09-19 13:02:56,041 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Resources Jobs:
+2016-09-19 13:02:56,041 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Resources Jobs: 0
+2016-09-19 13:02:56,041 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:166] Save in Progress: false
+2016-09-19 13:02:56,041 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:167] Current Stage: Scanning for duplicate resources . . .
+2016-09-19 13:02:56,041 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:168] -------------------------------------------------------------------------
+2016-09-19 13:07:56,034 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:90] Starting maintenance.
+2016-09-19 13:07:56,034 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:101] Scanning for duplicate castings . . .
+2016-09-19 13:07:56,034 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:163] --------------------Current Status of Post Processing--------------------
+2016-09-19 13:07:56,034 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:106] Scanning for duplicate resources . . .
+2016-09-19 13:07:56,034 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Casting Jobs:
+2016-09-19 13:07:56,035 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:95] Maintenance completed.
+2016-09-19 13:07:56,035 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Casting Jobs: 0
+2016-09-19 13:07:56,035 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Resources Jobs:
+2016-09-19 13:07:56,035 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Resources Jobs: 0
+2016-09-19 13:07:56,035 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:166] Save in Progress: false
+2016-09-19 13:07:56,035 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:167] Current Stage: Scanning for duplicate resources . . .
+2016-09-19 13:07:56,035 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:168] -------------------------------------------------------------------------
+2016-09-19 13:12:56,022 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:90] Starting maintenance.
+2016-09-19 13:12:56,023 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:101] Scanning for duplicate castings . . .
+2016-09-19 13:12:56,023 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:163] --------------------Current Status of Post Processing--------------------
+2016-09-19 13:12:56,023 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:106] Scanning for duplicate resources . . .
+2016-09-19 13:12:56,023 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Casting Jobs:
+2016-09-19 13:12:56,023 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:95] Maintenance completed.
+2016-09-19 13:12:56,024 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Casting Jobs: 0
+2016-09-19 13:12:56,024 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Resources Jobs:
+2016-09-19 13:12:56,024 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Resources Jobs: 0
+2016-09-19 13:12:56,024 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:166] Save in Progress: false
+2016-09-19 13:12:56,024 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:167] Current Stage: Scanning for duplicate resources . . .
+2016-09-19 13:12:56,024 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:168] -------------------------------------------------------------------------
+2016-09-19 13:17:56,016 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:90] Starting maintenance.
+2016-09-19 13:17:56,017 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:101] Scanning for duplicate castings . . .
+2016-09-19 13:17:56,017 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:163] --------------------Current Status of Post Processing--------------------
+2016-09-19 13:17:56,017 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:106] Scanning for duplicate resources . . .
+2016-09-19 13:17:56,017 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Casting Jobs:
+2016-09-19 13:17:56,018 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:95] Maintenance completed.
+2016-09-19 13:17:56,018 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Casting Jobs: 0
+2016-09-19 13:17:56,018 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Resources Jobs:
+2016-09-19 13:17:56,018 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Resources Jobs: 0
+2016-09-19 13:17:56,018 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:166] Save in Progress: false
+2016-09-19 13:17:56,018 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:167] Current Stage: Scanning for duplicate resources . . .
+2016-09-19 13:17:56,018 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:168] -------------------------------------------------------------------------
+2016-09-19 13:22:56,013 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:90] Starting maintenance.
+2016-09-19 13:22:56,013 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:101] Scanning for duplicate castings . . .
+2016-09-19 13:22:56,013 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:163] --------------------Current Status of Post Processing--------------------
+2016-09-19 13:22:56,013 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:106] Scanning for duplicate resources . . .
+2016-09-19 13:22:56,013 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Casting Jobs:
+2016-09-19 13:22:56,014 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:95] Maintenance completed.
+2016-09-19 13:22:56,014 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Casting Jobs: 0
+2016-09-19 13:22:56,014 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Resources Jobs:
+2016-09-19 13:22:56,014 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Resources Jobs: 0
+2016-09-19 13:22:56,014 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:166] Save in Progress: false
+2016-09-19 13:22:56,015 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:167] Current Stage: Scanning for duplicate resources . . .
+2016-09-19 13:22:56,015 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:168] -------------------------------------------------------------------------
+2016-09-19 13:35:11,381 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:90] Starting maintenance.
+2016-09-19 13:35:11,381 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:101] Scanning for duplicate castings . . .
+2016-09-19 13:35:11,381 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:163] --------------------Current Status of Post Processing--------------------
+2016-09-19 13:35:11,381 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:106] Scanning for duplicate resources . . .
+2016-09-19 13:35:11,382 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Casting Jobs:
+2016-09-19 13:35:11,382 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:95] Maintenance completed.
+2016-09-19 13:35:11,382 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Casting Jobs: 0
+2016-09-19 13:35:11,382 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Resources Jobs:
+2016-09-19 13:35:11,382 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Resources Jobs: 0
+2016-09-19 13:35:11,383 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:166] Save in Progress: false
+2016-09-19 13:35:11,383 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:167] Current Stage: Scanning for duplicate resources . . .
+2016-09-19 13:35:11,383 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:168] -------------------------------------------------------------------------
+2016-09-19 13:40:11,364 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:90] Starting maintenance.
+2016-09-19 13:40:11,365 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:101] Scanning for duplicate castings . . .
+2016-09-19 13:40:11,365 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:163] --------------------Current Status of Post Processing--------------------
+2016-09-19 13:40:11,365 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:106] Scanning for duplicate resources . . .
+2016-09-19 13:40:11,365 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Casting Jobs:
+2016-09-19 13:40:11,366 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:95] Maintenance completed.
+2016-09-19 13:40:11,366 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Casting Jobs: 0
+2016-09-19 13:40:11,366 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Resources Jobs:
+2016-09-19 13:40:11,366 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Resources Jobs: 0
+2016-09-19 13:40:11,366 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:166] Save in Progress: false
+2016-09-19 13:40:11,367 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:167] Current Stage: Scanning for duplicate resources . . .
+2016-09-19 13:40:11,367 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:168] -------------------------------------------------------------------------
+2016-09-19 13:45:11,361 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:90] Starting maintenance.
+2016-09-19 13:45:11,362 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:101] Scanning for duplicate castings . . .
+2016-09-19 13:45:11,362 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:163] --------------------Current Status of Post Processing--------------------
+2016-09-19 13:45:11,362 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:106] Scanning for duplicate resources . . .
+2016-09-19 13:45:11,362 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Casting Jobs:
+2016-09-19 13:45:11,362 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:95] Maintenance completed.
+2016-09-19 13:45:11,362 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Casting Jobs: 0
+2016-09-19 13:45:11,363 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Resources Jobs:
+2016-09-19 13:45:11,363 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Resources Jobs: 0
+2016-09-19 13:45:11,363 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:166] Save in Progress: false
+2016-09-19 13:45:11,363 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:167] Current Stage: Scanning for duplicate resources . . .
+2016-09-19 13:45:11,363 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:168] -------------------------------------------------------------------------
+2016-09-19 13:50:11,354 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:90] Starting maintenance.
+2016-09-19 13:50:11,354 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:101] Scanning for duplicate castings . . .
+2016-09-19 13:50:11,354 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:163] --------------------Current Status of Post Processing--------------------
+2016-09-19 13:50:11,355 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:106] Scanning for duplicate resources . . .
+2016-09-19 13:50:11,355 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Casting Jobs:
+2016-09-19 13:50:11,355 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:95] Maintenance completed.
+2016-09-19 13:50:11,355 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Casting Jobs: 0
+2016-09-19 13:50:11,356 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Resources Jobs:
+2016-09-19 13:50:11,356 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Resources Jobs: 0
+2016-09-19 13:50:11,356 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:166] Save in Progress: false
+2016-09-19 13:50:11,356 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:167] Current Stage: Scanning for duplicate resources . . .
+2016-09-19 13:50:11,356 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:168] -------------------------------------------------------------------------
+2016-09-19 13:55:11,343 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:90] Starting maintenance.
+2016-09-19 13:55:11,344 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:101] Scanning for duplicate castings . . .
+2016-09-19 13:55:11,344 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:163] --------------------Current Status of Post Processing--------------------
+2016-09-19 13:55:11,344 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:106] Scanning for duplicate resources . . .
+2016-09-19 13:55:11,344 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Casting Jobs:
+2016-09-19 13:55:11,344 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:95] Maintenance completed.
+2016-09-19 13:55:11,345 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Casting Jobs: 0
+2016-09-19 13:55:11,345 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Resources Jobs:
+2016-09-19 13:55:11,345 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Resources Jobs: 0
+2016-09-19 13:55:11,345 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:166] Save in Progress: false
+2016-09-19 13:55:11,345 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:167] Current Stage: Scanning for duplicate resources . . .
+2016-09-19 13:55:11,345 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:168] -------------------------------------------------------------------------
+2016-09-19 14:00:11,336 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:90] Starting maintenance.
+2016-09-19 14:00:11,336 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:101] Scanning for duplicate castings . . .
+2016-09-19 14:00:11,336 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:163] --------------------Current Status of Post Processing--------------------
+2016-09-19 14:00:11,336 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:106] Scanning for duplicate resources . . .
+2016-09-19 14:00:11,337 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Casting Jobs:
+2016-09-19 14:00:11,337 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:95] Maintenance completed.
+2016-09-19 14:00:11,337 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Casting Jobs: 0
+2016-09-19 14:00:11,337 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Resources Jobs:
+2016-09-19 14:00:11,337 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Resources Jobs: 0
+2016-09-19 14:00:11,338 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:166] Save in Progress: false
+2016-09-19 14:00:11,338 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:167] Current Stage: Scanning for duplicate resources . . .
+2016-09-19 14:00:11,338 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:168] -------------------------------------------------------------------------
+2016-09-19 14:05:10,260 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:90] Starting maintenance.
+2016-09-19 14:05:10,260 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:101] Scanning for duplicate castings . . .
+2016-09-19 14:05:10,261 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:163] --------------------Current Status of Post Processing--------------------
+2016-09-19 14:05:10,261 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:106] Scanning for duplicate resources . . .
+2016-09-19 14:05:10,261 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Casting Jobs:
+2016-09-19 14:05:10,261 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:95] Maintenance completed.
+2016-09-19 14:05:10,261 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Casting Jobs: 0
+2016-09-19 14:05:10,262 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Resources Jobs:
+2016-09-19 14:05:10,262 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Resources Jobs: 0
+2016-09-19 14:05:10,262 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:166] Save in Progress: false
+2016-09-19 14:05:10,262 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:167] Current Stage: Scanning for duplicate resources . . .
+2016-09-19 14:05:10,262 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:168] -------------------------------------------------------------------------
+2016-09-19 14:10:10,250 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:90] Starting maintenance.
+2016-09-19 14:10:10,251 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:101] Scanning for duplicate castings . . .
+2016-09-19 14:10:10,251 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:163] --------------------Current Status of Post Processing--------------------
+2016-09-19 14:10:10,251 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:106] Scanning for duplicate resources . . .
+2016-09-19 14:10:10,251 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Casting Jobs:
+2016-09-19 14:10:10,251 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:95] Maintenance completed.
+2016-09-19 14:10:10,252 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Casting Jobs: 0
+2016-09-19 14:10:10,252 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Resources Jobs:
+2016-09-19 14:10:10,252 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Resources Jobs: 0
+2016-09-19 14:10:10,252 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:166] Save in Progress: false
+2016-09-19 14:10:10,252 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:167] Current Stage: Scanning for duplicate resources . . .
+2016-09-19 14:10:10,252 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:168] -------------------------------------------------------------------------
+2016-09-19 14:12:38,661 ERROR [qtp1050544974-51] i.m.e.c.VisualiserController [VisualiserController.java:123] New Exception
+java.lang.IllegalStateException: id 'concept-type' not found
+	at io.mindmaps.graql.internal.validation.Validator.validate(Validator.java:54) ~[classes/:na]
+	at io.mindmaps.graql.internal.query.match.MatchQueryBase.stream(MatchQueryBase.java:67) ~[classes/:na]
+	at io.mindmaps.graql.internal.query.match.MatchQueryGraph.stream(MatchQueryGraph.java:52) ~[classes/:na]
+	at io.mindmaps.graql.internal.query.match.MatchQueryInternal.stream(MatchQueryInternal.java:111) ~[classes/:na]
+	at io.mindmaps.engine.controller.VisualiserController.matchQuery(VisualiserController.java:114) ~[classes/:na]
+	at spark.RouteImpl$1.handle(RouteImpl.java:61) ~[spark-core-2.5.jar:na]
+	at spark.http.matching.Routes.execute(Routes.java:61) ~[spark-core-2.5.jar:na]
+	at spark.http.matching.MatcherFilter.doFilter(MatcherFilter.java:126) ~[spark-core-2.5.jar:na]
+	at spark.embeddedserver.jetty.JettyHandler.doHandle(JettyHandler.java:50) ~[spark-core-2.5.jar:na]
+	at org.eclipse.jetty.server.session.SessionHandler.doScope(SessionHandler.java:189) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:141) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.handler.HandlerList.handle(HandlerList.java:52) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.handler.HandlerWrapper.handle(HandlerWrapper.java:119) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.Server.handle(Server.java:517) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.HttpChannel.handle(HttpChannel.java:308) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.HttpConnection.onFillable(HttpConnection.java:242) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.io.AbstractConnection$ReadCallback.succeeded(AbstractConnection.java:261) ~[jetty-io-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.io.FillInterest.fillable(FillInterest.java:95) ~[jetty-io-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.io.SelectChannelEndPoint$2.run(SelectChannelEndPoint.java:75) ~[jetty-io-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.produceAndRun(ExecuteProduceConsume.java:213) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.run(ExecuteProduceConsume.java:147) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:654) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.QueuedThreadPool$3.run(QueuedThreadPool.java:572) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at java.lang.Thread.run(Thread.java:745) ~[na:1.8.0_102]
+2016-09-19 14:12:38,661 ERROR [qtp1050544974-53] i.m.e.c.RemoteShellController [RemoteShellController.java:123] New Exception
+java.lang.IllegalStateException: id 'concept-type' not found
+	at io.mindmaps.graql.internal.validation.Validator.validate(Validator.java:54) ~[classes/:na]
+	at io.mindmaps.graql.internal.query.match.MatchQueryBase.stream(MatchQueryBase.java:67) ~[classes/:na]
+	at io.mindmaps.graql.internal.query.match.MatchQueryGraph.stream(MatchQueryGraph.java:52) ~[classes/:na]
+	at io.mindmaps.graql.internal.query.match.MatchQueryInternal.stream(MatchQueryInternal.java:111) ~[classes/:na]
+	at io.mindmaps.graql.internal.query.match.MatchQueryInternal.resultsString(MatchQueryInternal.java:62) ~[classes/:na]
+	at io.mindmaps.engine.controller.RemoteShellController.matchQuery(RemoteShellController.java:119) ~[classes/:na]
+	at spark.RouteImpl$1.handle(RouteImpl.java:61) ~[spark-core-2.5.jar:na]
+	at spark.http.matching.Routes.execute(Routes.java:61) ~[spark-core-2.5.jar:na]
+	at spark.http.matching.MatcherFilter.doFilter(MatcherFilter.java:126) ~[spark-core-2.5.jar:na]
+	at spark.embeddedserver.jetty.JettyHandler.doHandle(JettyHandler.java:50) ~[spark-core-2.5.jar:na]
+	at org.eclipse.jetty.server.session.SessionHandler.doScope(SessionHandler.java:189) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:141) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.handler.HandlerList.handle(HandlerList.java:52) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.handler.HandlerWrapper.handle(HandlerWrapper.java:119) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.Server.handle(Server.java:517) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.HttpChannel.handle(HttpChannel.java:308) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.HttpConnection.onFillable(HttpConnection.java:242) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.io.AbstractConnection$ReadCallback.succeeded(AbstractConnection.java:261) ~[jetty-io-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.io.FillInterest.fillable(FillInterest.java:95) ~[jetty-io-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.io.SelectChannelEndPoint$2.run(SelectChannelEndPoint.java:75) ~[jetty-io-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.produceAndRun(ExecuteProduceConsume.java:213) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.run(ExecuteProduceConsume.java:147) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:654) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.QueuedThreadPool$3.run(QueuedThreadPool.java:572) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at java.lang.Thread.run(Thread.java:745) ~[na:1.8.0_102]
+2016-09-19 14:15:10,243 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:90] Starting maintenance.
+2016-09-19 14:15:10,245 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:101] Scanning for duplicate castings . . .
+2016-09-19 14:15:10,245 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:163] --------------------Current Status of Post Processing--------------------
+2016-09-19 14:15:10,246 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:106] Scanning for duplicate resources . . .
+2016-09-19 14:15:10,246 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Casting Jobs:
+2016-09-19 14:15:10,246 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:95] Maintenance completed.
+2016-09-19 14:15:10,246 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Casting Jobs: 0
+2016-09-19 14:15:10,247 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Resources Jobs:
+2016-09-19 14:15:10,247 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Resources Jobs: 0
+2016-09-19 14:15:10,247 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:166] Save in Progress: false
+2016-09-19 14:15:10,247 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:167] Current Stage: Scanning for duplicate resources . . .
+2016-09-19 14:15:10,247 INFO [pool-23-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:168] -------------------------------------------------------------------------
+2016-09-19 14:18:29,021 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:91] Project directory in use: [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/]
+2016-09-19 14:18:29,026 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:92] Configuration file in use: [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/../conf/main/mindmaps-engine.properties]
+2016-09-19 14:18:29,026 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:93] Number of threads set to [8]
+2016-09-19 14:19:43,662 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:91] Project directory in use: [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/]
+2016-09-19 14:19:43,666 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:92] Configuration file in use: [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/../conf/main/mindmaps-engine.properties]
+2016-09-19 14:19:43,666 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:93] Number of threads set to [8]
+2016-09-19 14:19:55,326 ERROR [qtp953419771-20] i.m.e.c.RemoteShellController [RemoteShellController.java:123] New Exception
+com.thinkaurelius.titan.core.SchemaViolationException: Adding this property for key [ITEM_IDENTIFIER] and value [entity-type] violates a uniqueness constraint [byItemIdentifier]
+	at com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx.addProperty(StandardTitanTx.java:780) ~[titan-core-1.1.0-20160623.145620-2.jar:na]
+	at com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx.addProperty(StandardTitanTx.java:706) ~[titan-core-1.1.0-20160623.145620-2.jar:na]
+	at com.thinkaurelius.titan.graphdb.vertices.AbstractVertex.property(AbstractVertex.java:135) ~[titan-core-1.1.0-20160623.145620-2.jar:na]
+	at com.thinkaurelius.titan.core.TitanVertex.property(TitanVertex.java:58) ~[titan-core-1.1.0-20160623.145620-2.jar:na]
+	at com.thinkaurelius.titan.core.TitanVertex.property(TitanVertex.java:19) ~[titan-core-1.1.0-20160623.145620-2.jar:na]
+	at io.mindmaps.graph.internal.ConceptImpl.setProperty(ConceptImpl.java:79) ~[classes/:na]
+	at io.mindmaps.graph.internal.ConceptImpl.setProperty(ConceptImpl.java:544) ~[classes/:na]
+	at io.mindmaps.graph.internal.AbstractMindmapsGraph.initialiseMetaConcepts(AbstractMindmapsGraph.java:115) ~[classes/:na]
+	at io.mindmaps.graph.internal.AbstractMindmapsGraph.<init>(AbstractMindmapsGraph.java:84) ~[classes/:na]
+	at io.mindmaps.graph.internal.MindmapsTitanGraph.<init>(MindmapsTitanGraph.java:26) ~[classes/:na]
+	at io.mindmaps.factory.MindmapsTitanGraphFactory.buildMindmapsGraphFromTinker(MindmapsTitanGraphFactory.java:62) ~[classes/:na]
+	at io.mindmaps.factory.MindmapsTitanGraphFactory.buildMindmapsGraphFromTinker(MindmapsTitanGraphFactory.java:46) ~[classes/:na]
+	at io.mindmaps.factory.AbstractMindmapsGraphFactory.getMindmapsGraphFromMap(AbstractMindmapsGraphFactory.java:72) ~[classes/:na]
+	at io.mindmaps.factory.AbstractMindmapsGraphFactory.getGraph(AbstractMindmapsGraphFactory.java:46) ~[classes/:na]
+	at io.mindmaps.factory.AbstractMindmapsGraphFactory.getGraph(AbstractMindmapsGraphFactory.java:27) ~[classes/:na]
+	at io.mindmaps.factory.GraphFactory.getGraph(GraphFactory.java:43) ~[classes/:na]
+	at io.mindmaps.engine.controller.RemoteShellController.matchQuery(RemoteShellController.java:116) ~[classes/:na]
+	at spark.RouteImpl$1.handle(RouteImpl.java:61) ~[spark-core-2.5.jar:na]
+	at spark.http.matching.Routes.execute(Routes.java:61) ~[spark-core-2.5.jar:na]
+	at spark.http.matching.MatcherFilter.doFilter(MatcherFilter.java:126) ~[spark-core-2.5.jar:na]
+	at spark.embeddedserver.jetty.JettyHandler.doHandle(JettyHandler.java:50) ~[spark-core-2.5.jar:na]
+	at org.eclipse.jetty.server.session.SessionHandler.doScope(SessionHandler.java:189) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:141) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.handler.HandlerList.handle(HandlerList.java:52) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.handler.HandlerWrapper.handle(HandlerWrapper.java:119) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.Server.handle(Server.java:517) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.HttpChannel.handle(HttpChannel.java:308) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.HttpConnection.onFillable(HttpConnection.java:242) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.io.AbstractConnection$ReadCallback.succeeded(AbstractConnection.java:261) ~[jetty-io-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.io.FillInterest.fillable(FillInterest.java:95) ~[jetty-io-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.io.SelectChannelEndPoint$2.run(SelectChannelEndPoint.java:75) ~[jetty-io-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.produceAndRun(ExecuteProduceConsume.java:213) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.run(ExecuteProduceConsume.java:147) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:654) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.QueuedThreadPool$3.run(QueuedThreadPool.java:572) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at java.lang.Thread.run(Thread.java:745) ~[na:1.8.0_102]
+2016-09-19 14:19:56,008 ERROR [qtp953419771-19] i.m.e.c.VisualiserController [VisualiserController.java:125] New Exception
+com.thinkaurelius.titan.core.SchemaViolationException: Adding this property for key [ITEM_IDENTIFIER] and value [entity-type] violates a uniqueness constraint [byItemIdentifier]
+	at com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx.addProperty(StandardTitanTx.java:780) ~[titan-core-1.1.0-20160623.145620-2.jar:na]
+	at com.thinkaurelius.titan.graphdb.transaction.StandardTitanTx.addProperty(StandardTitanTx.java:706) ~[titan-core-1.1.0-20160623.145620-2.jar:na]
+	at com.thinkaurelius.titan.graphdb.vertices.AbstractVertex.property(AbstractVertex.java:135) ~[titan-core-1.1.0-20160623.145620-2.jar:na]
+	at com.thinkaurelius.titan.core.TitanVertex.property(TitanVertex.java:58) ~[titan-core-1.1.0-20160623.145620-2.jar:na]
+	at com.thinkaurelius.titan.core.TitanVertex.property(TitanVertex.java:19) ~[titan-core-1.1.0-20160623.145620-2.jar:na]
+	at io.mindmaps.graph.internal.ConceptImpl.setProperty(ConceptImpl.java:79) ~[classes/:na]
+	at io.mindmaps.graph.internal.ConceptImpl.setProperty(ConceptImpl.java:544) ~[classes/:na]
+	at io.mindmaps.graph.internal.AbstractMindmapsGraph.initialiseMetaConcepts(AbstractMindmapsGraph.java:115) ~[classes/:na]
+	at io.mindmaps.graph.internal.AbstractMindmapsGraph.<init>(AbstractMindmapsGraph.java:84) ~[classes/:na]
+	at io.mindmaps.graph.internal.MindmapsTitanGraph.<init>(MindmapsTitanGraph.java:26) ~[classes/:na]
+	at io.mindmaps.factory.MindmapsTitanGraphFactory.buildMindmapsGraphFromTinker(MindmapsTitanGraphFactory.java:62) ~[classes/:na]
+	at io.mindmaps.factory.MindmapsTitanGraphFactory.buildMindmapsGraphFromTinker(MindmapsTitanGraphFactory.java:46) ~[classes/:na]
+	at io.mindmaps.factory.AbstractMindmapsGraphFactory.getMindmapsGraphFromMap(AbstractMindmapsGraphFactory.java:72) ~[classes/:na]
+	at io.mindmaps.factory.AbstractMindmapsGraphFactory.getGraph(AbstractMindmapsGraphFactory.java:46) ~[classes/:na]
+	at io.mindmaps.factory.AbstractMindmapsGraphFactory.getGraph(AbstractMindmapsGraphFactory.java:27) ~[classes/:na]
+	at io.mindmaps.factory.GraphFactory.getGraph(GraphFactory.java:43) ~[classes/:na]
+	at io.mindmaps.engine.controller.VisualiserController.matchQuery(VisualiserController.java:112) ~[classes/:na]
+	at spark.RouteImpl$1.handle(RouteImpl.java:61) ~[spark-core-2.5.jar:na]
+	at spark.http.matching.Routes.execute(Routes.java:61) ~[spark-core-2.5.jar:na]
+	at spark.http.matching.MatcherFilter.doFilter(MatcherFilter.java:126) ~[spark-core-2.5.jar:na]
+	at spark.embeddedserver.jetty.JettyHandler.doHandle(JettyHandler.java:50) ~[spark-core-2.5.jar:na]
+	at org.eclipse.jetty.server.session.SessionHandler.doScope(SessionHandler.java:189) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:141) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.handler.HandlerList.handle(HandlerList.java:52) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.handler.HandlerWrapper.handle(HandlerWrapper.java:119) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.Server.handle(Server.java:517) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.HttpChannel.handle(HttpChannel.java:308) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.HttpConnection.onFillable(HttpConnection.java:242) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.io.AbstractConnection$ReadCallback.succeeded(AbstractConnection.java:261) ~[jetty-io-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.io.FillInterest.fillable(FillInterest.java:95) ~[jetty-io-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.io.SelectChannelEndPoint$2.run(SelectChannelEndPoint.java:75) ~[jetty-io-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.produceAndRun(ExecuteProduceConsume.java:213) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.run(ExecuteProduceConsume.java:147) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:654) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.QueuedThreadPool$3.run(QueuedThreadPool.java:572) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at java.lang.Thread.run(Thread.java:745) ~[na:1.8.0_102]
+2016-09-19 14:24:43,789 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:90] Starting maintenance.
+2016-09-19 14:24:43,791 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:101] Scanning for duplicate castings . . .
+2016-09-19 14:24:43,791 INFO [pool-41-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:163] --------------------Current Status of Post Processing--------------------
+2016-09-19 14:24:43,791 INFO [pool-41-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Casting Jobs:
+2016-09-19 14:24:43,791 INFO [pool-41-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Casting Jobs: 0
+2016-09-19 14:24:43,791 INFO [pool-41-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:180] Resources Jobs:
+2016-09-19 14:24:43,792 INFO [pool-41-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:185]     Total Resources Jobs: 0
+2016-09-19 14:24:43,792 INFO [pool-41-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:166] Save in Progress: false
+2016-09-19 14:24:43,792 INFO [pool-41-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:167] Current Stage: Scanning for duplicate castings . . .
+2016-09-19 14:24:43,792 INFO [pool-41-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:168] -------------------------------------------------------------------------
+2016-09-19 14:24:43,794 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:106] Scanning for duplicate resources . . .
+2016-09-19 14:24:43,795 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:95] Maintenance completed.
+2016-09-19 15:31:35,865 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:91] Project directory in use: [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/]
+2016-09-19 15:31:35,870 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:92] Configuration file in use: [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/../conf/main/mindmaps-engine.properties]
+2016-09-19 15:31:35,870 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:93] Number of threads set to [8]
+2016-09-19 15:33:53,799 INFO [qtp545288317-20] i.m.g.i.AbstractMindmapsGraph [AbstractMindmapsGraph.java:626] Graph is valid. Committing graph . . . 
+2016-09-19 15:33:53,803 INFO [qtp545288317-20] i.m.g.i.AbstractMindmapsGraph [AbstractMindmapsGraph.java:628] Graph committed.
+2016-09-19 15:33:53,803 INFO [qtp545288317-20] i.m.e.c.ImportController [ImportController.java:215] Loading new ontology .. 
+2016-09-19 15:33:53,808 ERROR [qtp545288317-20] i.m.e.c.ImportController [ImportController.java:149] Exception while loading ontology.
+java.nio.file.NoSuchFileException: /Users/marcoscoppetta/Mindmaps/sample-datasets/movies/small-dataset/schema.gql
+	at sun.nio.fs.UnixException.translateToIOException(UnixException.java:86) ~[na:1.8.0_102]
+	at sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:102) ~[na:1.8.0_102]
+	at sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:107) ~[na:1.8.0_102]
+	at sun.nio.fs.UnixFileSystemProvider.newByteChannel(UnixFileSystemProvider.java:214) ~[na:1.8.0_102]
+	at java.nio.file.Files.newByteChannel(Files.java:361) ~[na:1.8.0_102]
+	at java.nio.file.Files.newByteChannel(Files.java:407) ~[na:1.8.0_102]
+	at java.nio.file.spi.FileSystemProvider.newInputStream(FileSystemProvider.java:384) ~[na:1.8.0_102]
+	at java.nio.file.Files.newInputStream(Files.java:152) ~[na:1.8.0_102]
+	at java.nio.file.Files.newBufferedReader(Files.java:2784) ~[na:1.8.0_102]
+	at java.nio.file.Files.readAllLines(Files.java:3202) ~[na:1.8.0_102]
+	at io.mindmaps.engine.controller.ImportController.importOntologyFromFile(ImportController.java:217) ~[classes/:na]
+	at io.mindmaps.engine.controller.ImportController.importOntologyREST(ImportController.java:143) ~[classes/:na]
+	at spark.RouteImpl$1.handle(RouteImpl.java:61) ~[spark-core-2.5.jar:na]
+	at spark.http.matching.Routes.execute(Routes.java:61) ~[spark-core-2.5.jar:na]
+	at spark.http.matching.MatcherFilter.doFilter(MatcherFilter.java:126) ~[spark-core-2.5.jar:na]
+	at spark.embeddedserver.jetty.JettyHandler.doHandle(JettyHandler.java:50) ~[spark-core-2.5.jar:na]
+	at org.eclipse.jetty.server.session.SessionHandler.doScope(SessionHandler.java:189) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.handler.ScopedHandler.handle(ScopedHandler.java:141) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.handler.HandlerList.handle(HandlerList.java:52) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.handler.HandlerWrapper.handle(HandlerWrapper.java:119) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.Server.handle(Server.java:517) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.HttpChannel.handle(HttpChannel.java:308) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.server.HttpConnection.onFillable(HttpConnection.java:242) ~[jetty-server-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.io.AbstractConnection$ReadCallback.succeeded(AbstractConnection.java:261) ~[jetty-io-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.io.FillInterest.fillable(FillInterest.java:95) ~[jetty-io-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.io.SelectChannelEndPoint$2.run(SelectChannelEndPoint.java:75) ~[jetty-io-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.produceAndRun(ExecuteProduceConsume.java:213) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume.run(ExecuteProduceConsume.java:147) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.QueuedThreadPool.runJob(QueuedThreadPool.java:654) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at org.eclipse.jetty.util.thread.QueuedThreadPool$3.run(QueuedThreadPool.java:572) ~[jetty-util-9.3.6.v20151106.jar:9.3.6.v20151106]
+	at java.lang.Thread.run(Thread.java:745) ~[na:1.8.0_102]
+2016-09-19 15:36:35,959 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:90] Starting maintenance.
+2016-09-19 15:36:35,960 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:101] Scanning for duplicate castings . . .
+2016-09-19 15:36:35,960 INFO [pool-38-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:161] --------------------Current Status of Post Processing--------------------
+2016-09-19 15:36:35,960 INFO [pool-38-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:178] Casting Jobs:
+2016-09-19 15:36:35,961 INFO [pool-38-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:183]     Total Casting Jobs: 0
+2016-09-19 15:36:35,961 INFO [pool-38-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:178] Resources Jobs:
+2016-09-19 15:36:35,961 INFO [pool-38-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:183]     Total Resources Jobs: 0
+2016-09-19 15:36:35,961 INFO [pool-38-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:164] Save in Progress: false
+2016-09-19 15:36:35,961 INFO [pool-38-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:165] Current Stage: Scanning for duplicate castings . . .
+2016-09-19 15:36:35,961 INFO [pool-38-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:166] -------------------------------------------------------------------------
+2016-09-19 15:36:35,963 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:106] Scanning for duplicate resources . . .
+2016-09-19 15:36:35,964 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:95] Maintenance completed.
+2016-09-19 17:16:39,934 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:91] Project directory in use: [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/]
+2016-09-19 17:16:39,938 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:92] Configuration file in use: [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/../conf/main/mindmaps-engine.properties]
+2016-09-19 17:16:39,938 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:93] Number of threads set to [8]
+2016-09-19 17:16:39,938 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:94] Logging configuration file in use:[/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/../conf/main/logback.xml]
+2016-09-19 17:21:40,035 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:90] Starting maintenance.
+2016-09-19 17:21:40,037 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:101] Scanning for duplicate castings . . .
+2016-09-19 17:21:40,037 INFO [pool-24-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:161] --------------------Current Status of Post Processing--------------------
+2016-09-19 17:21:40,037 INFO [pool-24-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:178] Casting Jobs:
+2016-09-19 17:21:40,038 INFO [pool-24-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:183]     Total Casting Jobs: 0
+2016-09-19 17:21:40,038 INFO [pool-24-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:178] Resources Jobs:
+2016-09-19 17:21:40,038 INFO [pool-24-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:183]     Total Resources Jobs: 0
+2016-09-19 17:21:40,038 INFO [pool-24-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:164] Save in Progress: false
+2016-09-19 17:21:40,038 INFO [pool-24-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:165] Current Stage: Scanning for duplicate castings . . .
+2016-09-19 17:21:40,038 INFO [pool-24-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:166] -------------------------------------------------------------------------
+2016-09-19 17:21:40,040 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:106] Scanning for duplicate resources . . .
+2016-09-19 17:21:40,040 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:95] Maintenance completed.
+2016-09-19 17:26:40,022 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:90] Starting maintenance.
+2016-09-19 17:26:40,025 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:101] Scanning for duplicate castings . . .
+2016-09-19 17:26:40,025 INFO [pool-24-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:161] --------------------Current Status of Post Processing--------------------
+2016-09-19 17:26:40,025 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:106] Scanning for duplicate resources . . .
+2016-09-19 17:26:40,025 INFO [pool-24-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:178] Casting Jobs:
+2016-09-19 17:26:40,026 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:95] Maintenance completed.
+2016-09-19 17:26:40,026 INFO [pool-24-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:183]     Total Casting Jobs: 0
+2016-09-19 17:26:40,026 INFO [pool-24-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:178] Resources Jobs:
+2016-09-19 17:26:40,026 INFO [pool-24-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:183]     Total Resources Jobs: 0
+2016-09-19 17:26:40,027 INFO [pool-24-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:164] Save in Progress: false
+2016-09-19 17:26:40,027 INFO [pool-24-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:165] Current Stage: Scanning for duplicate resources . . .
+2016-09-19 17:26:40,027 INFO [pool-24-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:166] -------------------------------------------------------------------------
+2016-09-19 17:27:16,812 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:91] Project directory in use: [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/]
+2016-09-19 17:27:16,816 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:92] Configuration file in use: [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/../conf/main/mindmaps-engine.properties]
+2016-09-19 17:27:16,816 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:93] Number of threads set to [8]
+2016-09-19 17:27:16,816 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:94] Logging configuration file in use:[/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/../conf/main/logback.xml]
+2016-09-19 17:27:32,368 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:91] Project directory in use: [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/]
+2016-09-19 17:27:32,372 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:92] Configuration file in use: [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/../conf/main/mindmaps-engine.properties]
+2016-09-19 17:27:32,372 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:93] Number of threads set to [8]
+2016-09-19 17:27:32,372 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:94] Logging configuration file in use:[/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/../conf/main/logback.xml]
+2016-09-19 17:32:32,450 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:90] Starting maintenance.
+2016-09-19 17:32:32,451 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:101] Scanning for duplicate castings . . .
+2016-09-19 17:32:32,451 INFO [pool-4-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:161] --------------------Current Status of Post Processing--------------------
+2016-09-19 17:32:32,451 INFO [pool-4-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:178] Casting Jobs:
+2016-09-19 17:32:32,452 INFO [pool-4-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:183]     Total Casting Jobs: 0
+2016-09-19 17:32:32,452 INFO [pool-4-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:178] Resources Jobs:
+2016-09-19 17:32:32,452 INFO [pool-4-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:183]     Total Resources Jobs: 0
+2016-09-19 17:32:32,452 INFO [pool-4-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:164] Save in Progress: false
+2016-09-19 17:32:32,452 INFO [pool-4-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:165] Current Stage: Scanning for duplicate castings . . .
+2016-09-19 17:32:32,452 INFO [pool-4-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:166] -------------------------------------------------------------------------
+2016-09-19 17:32:32,456 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:106] Scanning for duplicate resources . . .
+2016-09-19 17:32:32,457 INFO [pool-2-thread-1] i.m.e.p.BackgroundTasks [BackgroundTasks.java:95] Maintenance completed.
+2016-09-19 17:37:01,909 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:91] Project directory in use: [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/]
+2016-09-19 17:37:01,912 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:92] Configuration file in use: [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/../conf/main/mindmaps-engine.properties]
+2016-09-19 17:37:01,912 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:93] Number of threads set to [8]
+2016-09-19 17:37:01,912 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:94] Logging configuration file in use:[/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/../conf/main/logback.xml]
+2016-09-19 17:37:02,202 INFO [main] i.m.e.MindmapsEngineServer [MindmapsEngineServer.java:79]   __  __ _           _                           ____  ____  
+ |  \/  (_)_ __   __| |_ __ ___   __ _ _ __  ___|  _ \| __ ) 
+ | |\/| | | '_ \ / _` | '_ ` _ \ / _` | '_ \/ __| | | |  _ \ 
+ | |  | | | | | | (_| | | | | | | (_| | |_) \__ \ |_| | |_) |
+ |_|  |_|_|_| |_|\__,_|_| |_| |_|\__,_| .__/|___/____/|____/ 
+                                      |_|                    
+
+
+2016-09-19 17:37:02,203 INFO [main] i.m.e.MindmapsEngineServer [MindmapsEngineServer.java:80] Mindmaps Engine is ready. Listening on [http://0.0.0.0:4567]
+2016-09-19 17:37:02,204 INFO [main] i.m.e.MindmapsEngineServer [MindmapsEngineServer.java:81] LOG file located at [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/../logs/mindmaps.log]
+2016-09-19 17:37:32,307 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:91] Project directory in use: [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/]
+2016-09-19 17:37:32,310 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:92] Configuration file in use: [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/../conf/main/mindmaps-engine.properties]
+2016-09-19 17:37:32,310 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:93] Number of threads set to [8]
+2016-09-19 17:37:32,310 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:94] Logging configuration file in use:[/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/../conf/main/logback.xml]
+2016-09-19 17:37:32,643 INFO [main] i.m.e.MindmapsEngineServer [MindmapsEngineServer.java:79]   __  __ _           _                           ____  ____  
+ |  \/  (_)_ __   __| |_ __ ___   __ _ _ __  ___|  _ \| __ ) 
+ | |\/| | | '_ \ / _` | '_ ` _ \ / _` | '_ \/ __| | | |  _ \ 
+ | |  | | | | | | (_| | | | | | | (_| | |_) \__ \ |_| | |_) |
+ |_|  |_|_|_| |_|\__,_|_| |_| |_|\__,_| .__/|___/____/|____/ 
+                                      |_|                    
+
+
+2016-09-19 17:37:32,643 INFO [main] i.m.e.MindmapsEngineServer [MindmapsEngineServer.java:80] Mindmaps Engine is ready. Listening on [http://0.0.0.0:4567]
+2016-09-19 17:37:32,644 INFO [main] i.m.e.MindmapsEngineServer [MindmapsEngineServer.java:81] LOG file located at [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/../logs/mindmaps.log]
+2016-09-19 17:39:03,660 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:91] Project directory in use: [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/]
+2016-09-19 17:39:03,663 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:92] Configuration file in use: [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/../conf/main/mindmaps-engine.properties]
+2016-09-19 17:39:03,664 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:93] Number of threads set to [8]
+2016-09-19 17:39:03,664 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:94] Logging configuration file in use:[/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/../conf/main/logback.xml]
+2016-09-19 17:39:03,987 INFO [main] i.m.e.MindmapsEngineServer [MindmapsEngineServer.java:79]   __  __ _           _                           ____  ____  
+ |  \/  (_)_ __   __| |_ __ ___   __ _ _ __  ___|  _ \| __ ) 
+ | |\/| | | '_ \ / _` | '_ ` _ \ / _` | '_ \/ __| | | |  _ \ 
+ | |  | | | | | | (_| | | | | | | (_| | |_) \__ \ |_| | |_) |
+ |_|  |_|_|_| |_|\__,_|_| |_| |_|\__,_| .__/|___/____/|____/ 
+                                      |_|                    
+
+
+2016-09-19 17:39:03,988 INFO [main] i.m.e.MindmapsEngineServer [MindmapsEngineServer.java:80] Mindmaps Engine is ready. Listening on [http://0.0.0.0:4567]
+2016-09-19 17:39:03,988 INFO [main] i.m.e.MindmapsEngineServer [MindmapsEngineServer.java:81] Mindmaps LOG file located at [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/../logs/mindmaps.log]
+2016-09-19 17:41:05,901 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:91] Project directory in use: [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/]
+2016-09-19 17:41:05,906 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:92] Configuration file in use: [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/../conf/main/mindmaps-engine.properties]
+2016-09-19 17:41:05,906 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:93] Number of threads set to [8]
+2016-09-19 17:41:05,906 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:94] Logging configuration file in use:[/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/../conf/main/logback.xml]
+2016-09-19 17:41:06,228 INFO [main] i.m.e.MindmapsEngineServer [MindmapsEngineServer.java:79]   __  __ _           _                           ____  ____  
+ |  \/  (_)_ __   __| |_ __ ___   __ _ _ __  ___|  _ \| __ ) 
+ | |\/| | | '_ \ / _` | '_ ` _ \ / _` | '_ \/ __| | | |  _ \ 
+ | |  | | | | | | (_| | | | | | | (_| | |_) \__ \ |_| | |_) |
+ |_|  |_|_|_| |_|\__,_|_| |_| |_|\__,_| .__/|___/____/|____/ 
+                                      |_|                    
+
+
+2016-09-19 17:41:06,228 INFO [main] i.m.e.MindmapsEngineServer [MindmapsEngineServer.java:80] Mindmaps Engine is ready.
+2016-09-19 17:41:06,228 INFO [main] i.m.e.MindmapsEngineServer [MindmapsEngineServer.java:81] Listening on [http://0.0.0.0:4567]
+2016-09-19 17:41:06,228 INFO [main] i.m.e.MindmapsEngineServer [MindmapsEngineServer.java:82] Mindmaps LOG file located at [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/../logs/mindmaps.log]
+2016-09-19 17:41:23,587 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:91] Project directory in use: [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/]
+2016-09-19 17:41:23,591 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:92] Configuration file in use: [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/../conf/main/mindmaps-engine.properties]
+2016-09-19 17:41:23,591 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:93] Number of threads set to [8]
+2016-09-19 17:41:23,591 INFO [main] i.m.e.u.ConfigProperties [ConfigProperties.java:94] Logging configuration file in use:[/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/../conf/main/logback.xml]
+2016-09-19 17:41:23,925 INFO [main] i.m.e.MindmapsEngineServer [MindmapsEngineServer.java:79]   __  __ _           _                           ____  ____  
+ |  \/  (_)_ __   __| |_ __ ___   __ _ _ __  ___|  _ \| __ ) 
+ | |\/| | | '_ \ / _` | '_ ` _ \ / _` | '_ \/ __| | | |  _ \ 
+ | |  | | | | | | (_| | | | | | | (_| | |_) \__ \ |_| | |_) |
+ |_|  |_|_|_| |_|\__,_|_| |_| |_|\__,_| .__/|___/____/|____/ 
+                                      |_|                    
+
+
+2016-09-19 17:41:23,926 INFO [main] i.m.e.MindmapsEngineServer [MindmapsEngineServer.java:80] Mindmaps Engine is ready. Listening on [http://0.0.0.0:4567]
+2016-09-19 17:41:23,926 INFO [main] i.m.e.MindmapsEngineServer [MindmapsEngineServer.java:81] Mindmaps LOG file located at [/Users/marcoscoppetta/Mindmaps/mindmapsdb/mindmaps-engine/../logs/mindmaps.log]

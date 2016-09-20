@@ -55,7 +55,7 @@ public class VisualiserController {
     private int separationDegree;
     private final int MATCH_QUERY_FIXED_DEGREE = 0;
     //TODO: implement a pagination system instead of liming the result with hard-coded limit.
-    private final int SAFETY_LIMIT=100;
+    private final int SAFETY_LIMIT=200;
 
     public VisualiserController() {
 
