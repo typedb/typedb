@@ -258,7 +258,7 @@ public class AnalyticsTest {
         });
     }
 
-    //    @Ignore
+    @Ignore
     @Test
     public void testDegreesAndPersist() throws Exception {
         // create instances
@@ -481,7 +481,7 @@ public class AnalyticsTest {
         });
     }
 
-    //    @Ignore
+    @Ignore
     @Test
     public void testDegreeIsPersisted() throws Exception {
         // create a simple graph
@@ -764,6 +764,7 @@ public class AnalyticsTest {
         assertTrue(degrees.get(graph.getEntity(marlonId)).equals(1L));
     }
 
+    @Ignore
     @Test
     public void testDegreeIsCorrectOneRoleplayerMultipleRoles() throws MindmapsValidationException, ExecutionException, InterruptedException {
         // create a simple graph
