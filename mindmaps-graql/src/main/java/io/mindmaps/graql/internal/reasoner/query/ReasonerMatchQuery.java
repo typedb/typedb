@@ -1,4 +1,4 @@
-package io.mindmaps.graql.internal.reasoner.container;
+package io.mindmaps.graql.internal.reasoner.query;
 
 
 import io.mindmaps.concept.Concept;

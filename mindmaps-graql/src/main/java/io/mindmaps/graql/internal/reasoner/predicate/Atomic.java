@@ -23,7 +23,7 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.admin.PatternAdmin;
-import io.mindmaps.graql.internal.reasoner.container.Query;
+import io.mindmaps.graql.internal.reasoner.query.Query;
 import javafx.util.Pair;
 
 import java.util.Map;
