@@ -24,7 +24,7 @@ import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
-import io.mindmaps.graql.internal.reasoner.container.QueryAnswers;
+import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
 import io.mindmaps.graql.reasoner.graphs.SNBGraph;
 import org.junit.Ignore;
 import org.junit.Test;

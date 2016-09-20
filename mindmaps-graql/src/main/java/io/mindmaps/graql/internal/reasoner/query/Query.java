@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql.internal.reasoner.container;
+package io.mindmaps.graql.internal.reasoner.query;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
@@ -29,6 +29,7 @@ import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.Disjunction;
 import io.mindmaps.graql.internal.query.match.MatchOrder;
 import io.mindmaps.graql.internal.query.match.MatchQueryInternal;
+import io.mindmaps.graql.internal.reasoner.container.AtomConjunction;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
@@ -74,7 +75,7 @@ public class Query implements MatchQueryInternal {
     public Query(Query q) {
         this.graph = q.graph;
 
-        MatchQuery matchQuery = Graql.withGraph(graph).parseMatch(q.toString());
+        MatchQuery matchQuery = q.getMatchQuery();
         this.pattern = matchQuery.admin().getPattern();
         this.selectVars = Sets.newHashSet(matchQuery.admin().getSelectedNames());
         this.atomSet = getAtomSet(pattern);
