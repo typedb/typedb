@@ -33,6 +33,7 @@ import io.mindmaps.concept.Type;
 import io.mindmaps.exception.ConceptException;
 import io.mindmaps.exception.ConceptIdNotUniqueException;
 import io.mindmaps.exception.InvalidConceptTypeException;
+import io.mindmaps.exception.InvalidConceptValueException;
 import io.mindmaps.exception.MoreThanOneEdgeException;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
@@ -733,7 +734,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * Checks if the underlaying vertex has not been removed and if it is not a ghost
      * @return true if the underlying vertex has not been removed.
      */
-    public boolean isAlive () {
+    boolean isAlive() {
         if(vertex == null)
             return false;
 
@@ -741,6 +742,21 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
             return vertex.property(Schema.BaseType.TYPE.name()).isPresent();
         } catch (IllegalStateException e){
             return false;
+        }
+    }
+
+    void setImmutableProperty(Schema.ConceptProperty conceptProperty, Object value){
+        if(value == null){
+            throw new InvalidConceptValueException(ErrorMessage.NULL_VALUE.getMessage(conceptProperty.name()));
+        }
+
+        if(getProperty(conceptProperty) != null){
+            Object foundValue = getProperty(conceptProperty);
+            if(!foundValue.equals(value)){
+                throw new InvalidConceptValueException(ErrorMessage.IMMUTABLE_VALUE.getMessage(foundValue, this, value, conceptProperty.name()));
+            }
+        } else {
+            setProperty(conceptProperty, value);
         }
     }
     

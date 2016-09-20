@@ -138,4 +138,6 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
         parent.getIncomingNeighbours(Schema.EdgeLabel.ROLE_PLAYER).forEach(c -> roleTypes.add(c.asCasting().getRole()));
         return roleTypes;
     }
+
+
 }

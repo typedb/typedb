@@ -40,15 +40,7 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
 
     ResourceTypeImpl(Vertex v, AbstractMindmapsGraph mindmapsGraph, DataType<D> type) {
         super(v, mindmapsGraph);
-        setDataType(type);
-    }
-
-    /**
-     *
-     * @param type The data type of the resource
-     */
-    private void setDataType(DataType<D> type) {
-        setProperty(Schema.ConceptProperty.DATA_TYPE, type.getName());
+        setImmutableProperty(Schema.ConceptProperty.DATA_TYPE, type.getName());
     }
 
     /**
