@@ -103,21 +103,27 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     public boolean initialiseMetaConcepts(){
         if(isMetaOntologyNotInitialised()){
             TypeImpl type = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE));
-            TypeImpl entityType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE));
-            TypeImpl relationType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE));
-            TypeImpl resourceType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE));
-            TypeImpl roleType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE));
-            TypeImpl ruleType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE));
-            RuleTypeImpl inferenceRuleType = elementFactory.buildRuleType(addVertex(Schema.BaseType.RULE_TYPE));
-            RuleTypeImpl constraintRuleType = elementFactory.buildRuleType(addVertex(Schema.BaseType.RULE_TYPE));
-
             type.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.TYPE.getId());
+
+            TypeImpl entityType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE));
             entityType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.ENTITY_TYPE.getId());
+
+            TypeImpl relationType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE));
             relationType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.RELATION_TYPE.getId());
+
+            TypeImpl resourceType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE));
             resourceType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.RESOURCE_TYPE.getId());
+
+            TypeImpl roleType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE));
             roleType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.ROLE_TYPE.getId());
+
+            TypeImpl ruleType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE));
             ruleType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.RULE_TYPE.getId());
+
+            RuleTypeImpl inferenceRuleType = elementFactory.buildRuleType(addVertex(Schema.BaseType.RULE_TYPE));
             inferenceRuleType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.INFERENCE_RULE.getId());
+
+            RuleTypeImpl constraintRuleType = elementFactory.buildRuleType(addVertex(Schema.BaseType.RULE_TYPE));
             constraintRuleType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.CONSTRAINT_RULE.getId());
 
             type.setType(type.getId());
