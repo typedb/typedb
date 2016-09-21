@@ -90,7 +90,8 @@ public class PostprocessingTest {
         RelationImpl relation = (RelationImpl) graph.addRelation(relationType).putRolePlayer(otherRoleType, otherInstance);
 
         //Create Fake Casting
-        Vertex castingVertex = graph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
+        Vertex castingVertex = graph.getTinkerPopGraph().addVertex();
+        castingVertex.property(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.CASTING.name());
         castingVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), mainRoleType.getVertex());
 
         Edge edge = castingVertex.addEdge(Schema.EdgeLabel.ROLE_PLAYER.getLabel(), mainInstance.getVertex());
@@ -206,7 +207,7 @@ public class PostprocessingTest {
         assertEquals(1, r1.relations().size());
         assertEquals(2, r11.relations().size());
         assertEquals(1, r1.relations().size());
-        assertEquals(6, graph.getTinkerTraversal().V().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
+        assertEquals(6, graph.getTinkerTraversal().V().has(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.RELATION.name()).toList().size());
 
         r1.relations().forEach(rel -> assertTrue(rel.rolePlayers().values().contains(e1)));
 
@@ -230,13 +231,14 @@ public class PostprocessingTest {
         assertTrue(foundR1.ownerInstances().contains(e1));
         assertTrue(foundR1.ownerInstances().contains(e2));
 
-        assertEquals(4, graph.getTinkerTraversal().V().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
+        assertEquals(4, graph.getTinkerTraversal().V().has(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.RELATION.name()).toList().size());
     }
 
 
     private ResourceImpl createFakeResource(ResourceType type, String value){
         String index = ResourceImpl.generateResourceIndex(type.getId(), value);
-        Vertex resourceVertex = graph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
+        Vertex resourceVertex = graph.getTinkerPopGraph().addVertex();
+        resourceVertex.property(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.RESOURCE.name());
 
         resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), ((ResourceTypeImpl)type).getVertex());
         resourceVertex.property(Schema.ConceptProperty.INDEX.name(), index);
