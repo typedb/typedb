@@ -42,65 +42,81 @@ public class CommitLogController {
     private final Cache cache;
     private final Logger LOG = LoggerFactory.getLogger(CommitLogController.class);
 
-    public CommitLogController(){
+    public CommitLogController() {
         cache = Cache.getInstance();
         post(REST.WebPath.COMMIT_LOG_URI, this::submitConcepts);
         delete(REST.WebPath.COMMIT_LOG_URI, this::deleteConcepts);
     }
 
     /**
-     *
      * @param req The request which contains the graph to be post processed
      * @param res The current response code
      * @return The result of clearing the post processing for a single graph
      */
-    private String deleteConcepts(Request req, Response res){
-        String graphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
+    private String deleteConcepts(Request req, Response res) {
+        try {
+            String graphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
 
-        if(graphName == null){
-            res.status(400);
-           return ErrorMessage.NO_PARAMETER_PROVIDED.getMessage(REST.Request.GRAPH_NAME_PARAM, "delete");
+            if (graphName == null) {
+                res.status(400);
+                return ErrorMessage.NO_PARAMETER_PROVIDED.getMessage(REST.Request.GRAPH_NAME_PARAM, "delete");
+            }
+
+            cache.getCastingJobs().computeIfPresent(graphName, (key, set) -> {
+                set.clear();
+                return set;
+            });
+            cache.getResourceJobs().computeIfPresent(graphName, (key, set) -> {
+                set.clear();
+                return set;
+            });
+
+            return "The cache of Graph [" + graphName + "] has been cleared";
+        } catch (Exception e) {
+            LOG.error("Exception", e);
+            res.status(500);
+            return e.getMessage();
         }
-
-        cache.getCastingJobs().computeIfPresent(graphName, (key, set) -> {set.clear(); return set;});
-        cache.getResourceJobs().computeIfPresent(graphName, (key, set) -> {set.clear(); return set;});
-
-        return "The cache of Graph [" + graphName + "] has been cleared";
     }
 
     /**
-     *
      * @param req The request which contains the graph to be post processed
      * @param res The current response code
      * @return The result of adding something for post processing
      */
     private String submitConcepts(Request req, Response res) {
-        String graphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
+        try {
+            String graphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
 
-        if(graphName == null){
-            graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
-        }
-        LOG.info("Commit log received for graph [" + graphName + "]");
-
-        JSONArray jsonArray = (JSONArray) new JSONObject(req.body()).get("concepts");
-
-        for (Object object : jsonArray) {
-            JSONObject jsonObject = (JSONObject) object;
-            String conceptId = jsonObject.getString("id");
-            Schema.BaseType type = Schema.BaseType.valueOf(jsonObject.getString("type"));
-
-            switch (type){
-                case CASTING:
-                    cache.addJobCasting(graphName, Collections.singleton(conceptId));
-                    break;
-                case RESOURCE:
-                    cache.addJobResource(graphName, Collections.singleton(conceptId));
-                default:
-                    LOG.warn(ErrorMessage.CONCEPT_POSTPROCESSING.getMessage(conceptId, type.name()));
+            if (graphName == null) {
+                graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
             }
-        }
+            LOG.info("Commit log received for graph [" + graphName + "]");
 
-        long numJobs =  cache.getCastingJobs().get(graphName).size();
-        return "Graph [" + graphName + "] now has [" + numJobs + "] post processing jobs";
+            JSONArray jsonArray = (JSONArray) new JSONObject(req.body()).get("concepts");
+
+            for (Object object : jsonArray) {
+                JSONObject jsonObject = (JSONObject) object;
+                String conceptId = jsonObject.getString("id");
+                Schema.BaseType type = Schema.BaseType.valueOf(jsonObject.getString("type"));
+
+                switch (type) {
+                    case CASTING:
+                        cache.addJobCasting(graphName, Collections.singleton(conceptId));
+                        break;
+                    case RESOURCE:
+                        cache.addJobResource(graphName, Collections.singleton(conceptId));
+                    default:
+                        LOG.warn(ErrorMessage.CONCEPT_POSTPROCESSING.getMessage(conceptId, type.name()));
+                }
+            }
+
+            long numJobs = cache.getCastingJobs().get(graphName).size();
+            return "Graph [" + graphName + "] now has [" + numJobs + "] post processing jobs";
+        } catch (Exception e) {
+            LOG.error("Exception", e);
+            res.status(500);
+            return e.getMessage();
+        }
     }
 }
