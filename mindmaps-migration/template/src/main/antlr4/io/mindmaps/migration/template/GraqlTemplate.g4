@@ -1,5 +1,10 @@
 grammar GraqlTemplate;
 
+@lexer::members {
+    public static final int WHITESPACE = 1;
+    public static final int COMMENTS = 2;
+}
+
 template
  : block EOF
  ;
@@ -42,4 +47,4 @@ LBRACKET    : '{';
 RBRACKET    : '}';
 WORD        : (~([ \t\r\n])+);
 
-WS : [ \t\r\n]+ -> channel(HIDDEN) ;
+WS : [ \t\r\n]+ -> channel(1) ;

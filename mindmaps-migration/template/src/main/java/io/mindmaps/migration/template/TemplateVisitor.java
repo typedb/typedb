@@ -18,22 +18,29 @@
 
 package io.mindmaps.migration.template;
 
-import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.Map;
+import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Collectors.joining;
 
 /**
  * ANTLR visitor class for parsing a template
  */
 @SuppressWarnings("unchecked")
-class TemplateVisitor extends GraqlTemplateBaseVisitor {
+class TemplateVisitor extends GraqlTemplateBaseVisitor<String> {
+
+    private CommonTokenStream tokens;
+    private StringBuilder result;
 
     private Scope scope;
 
-    TemplateVisitor(Map<String, Object> data){
+    TemplateVisitor(CommonTokenStream tokens, Map<String, Object> data){
+        this.tokens = tokens;
         scope = new Scope(data);
     }
 
@@ -50,59 +57,72 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor {
     // ;
     @Override
     public String visitBlock(GraqlTemplateParser.BlockContext ctx) {
-        visitFiller(ctx.filler(0));
-        // return visitChildren(ctx);
-        return null;
+        return visitFiller(ctx.filler(0));
     }
 
     @Override
     public String visitStatement(GraqlTemplateParser.StatementContext ctx) {
-        // return visitChildren(ctx);
-        return null;
+         return visitChildren(ctx);
     }
 
     @Override
     public String visitForStatement(GraqlTemplateParser.ForStatementContext ctx) {
-        // return visitChildren(ctx);
-        return null;
+         return visitChildren(ctx);
     }
 
     @Override
     public String visitNullableStatement(GraqlTemplateParser.NullableStatementContext ctx) {
-        // return visitChildren(ctx);
-        return null;
+         return visitChildren(ctx);
     }
 
     @Override
     public String visitNoescpStatement(GraqlTemplateParser.NoescpStatementContext ctx) {
-        // return visitChildren(ctx);
-        return null;
+         return visitChildren(ctx);
     }
 
+    // reproduce the filler in the exact same way it appears in the template, replacing any identifiers
+    // with the data in the data in the current context
+    //
     // filler      : (WORD | identifier)+;
     @Override
     public String visitFiller(GraqlTemplateParser.FillerContext ctx) {
-        // return visitChildren(ctx);
-        System.out.println(ctx);
-
-        for(TerminalNode node: ctx.WORD()){
-            System.out.println(node.getText());
-        }
-
-        for(String identifier: ctx.identifier().stream().map(this::visitIdentifier).collect(toSet())){
-            System.out.println(scope.getData(identifier));
-        }
-
-        System.out.println(ctx.getText());
-        ctx.children.forEach(System.out::println);
-        
-
-        return null;
+        return visitChildren(ctx);
     }
 
     @Override
     public String visitIdentifier(GraqlTemplateParser.IdentifierContext ctx) {
-        // return visitChildren(ctx);
-        return ctx.getText();
+        // make this format types
+        return scope.getData(ctx.getText()).toString() + whitespace(ctx);
+    }
+
+    @Override
+    public String visitTerminal(TerminalNode node){
+        return node.getText() + whitespace(node);
+    }
+
+    @Override
+    protected String aggregateResult(String aggregate, String nextResult) {
+        if (aggregate == null) {
+            return nextResult;
+        }
+
+        if (nextResult == null) {
+            return aggregate;
+        }
+
+        return aggregate + nextResult;
+    }
+
+    private String whitespace(ParserRuleContext ctx){
+        return hidden(ctx.getStop().getTokenIndex()).collect(joining(""));
+    }
+
+    private String whitespace(TerminalNode node){
+        Token token = node.getSymbol();
+        return hidden(token.getTokenIndex()).collect(joining(""));
+    }
+
+    private Stream<String> hidden(int tokenIndex){
+        return tokens.getHiddenTokensToRight(tokenIndex).stream().map(Token::getText);
     }
 }

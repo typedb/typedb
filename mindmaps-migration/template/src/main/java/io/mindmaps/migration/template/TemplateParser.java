@@ -28,15 +28,16 @@ import java.util.Map;
 public class TemplateParser {
 
 
-    public void parseTemplate(String templateString, Map<String, Object> data){
+    public String parseTemplate(String templateString, Map<String, Object> data){
 
         GraqlTemplateLexer lexer = getLexer(templateString);
-        GraqlTemplateParser parser = getParser(lexer);
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        GraqlTemplateParser parser = getParser(tokens);
         parser.setBuildParseTree(true);
         ParseTree tree = parser.template();
 
-        TemplateVisitor visitor = new TemplateVisitor(data);
-        visitor.visit(tree);
+        TemplateVisitor visitor = new TemplateVisitor(tokens, data);
+        return visitor.visit(tree);
     }
 
     private GraqlTemplateLexer getLexer(String templateString){
@@ -44,7 +45,7 @@ public class TemplateParser {
         return new GraqlTemplateLexer(inputStream);
     }
 
-    private GraqlTemplateParser getParser(GraqlTemplateLexer lexer){
-        return new GraqlTemplateParser(new CommonTokenStream(lexer));
+    private GraqlTemplateParser getParser(CommonTokenStream tokens){
+        return new GraqlTemplateParser(tokens);
     }
 }

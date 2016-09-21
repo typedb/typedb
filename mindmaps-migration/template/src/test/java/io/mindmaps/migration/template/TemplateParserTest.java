@@ -25,6 +25,8 @@ import org.junit.Test;
 
 import java.util.Map;
 
+import static junit.framework.TestCase.assertEquals;
+
 public class TemplateParserTest {
 
     private static TemplateParser parser;
@@ -37,12 +39,15 @@ public class TemplateParserTest {
     @Test
     public void visitFillerTest(){
         String template = "insert $x isa person has name %name ";
+        String expected = "insert $x isa person has name Phil Collins ";
 
         String json = "{\"name\" : \"Phil Collins\"}";
         Map<String, Object> data = Json.read(json).asMap();
 
-        parser.parseTemplate(template, data);
+        String result = parser.parseTemplate(template, data);
+
+        assertEquals(expected, result);
     }
 
-
+    
 }
