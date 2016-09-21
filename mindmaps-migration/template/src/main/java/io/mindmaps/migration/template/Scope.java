@@ -24,23 +24,16 @@ public class Scope {
 
     private Scope parent;
     private Map<String, String> variables;
-    private Map<String, Object> data;
 
-    public Scope(Map<String, Object> data){
-        this(data, null);
+    public Scope(){
+        this(null);
     }
 
-    public Scope(Map<String, Object> data, Scope parent){
-        this.data = data;
+    public Scope(Scope parent){
         this.parent = parent;
     }
 
     public Scope getParent() {
         return parent;
-    }
-
-    public Object getData(String identifier){
-        identifier = identifier.replace("%", "");
-        return data.get(identifier);
     }
 }

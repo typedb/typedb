@@ -18,6 +18,7 @@
 
 package io.mindmaps.migration.template;
 
+import junit.framework.Assert;
 import mjson.Json;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -44,6 +45,8 @@ public class TemplateParserTest {
 
         String json = "{\"name\" : \"Phil Collins\"}";
         assertParseEquals(template, json, expected);
+
+
     }
 
     @Test
@@ -65,6 +68,11 @@ public class TemplateParserTest {
     }
 
     @Test
+    public void quotingWhenReplacementInVariableTest(){
+        assertTrue(false);
+    }
+
+    @Test
     public void noSpacesBetweenTokensTest(){
         assertTrue(false);
     }
@@ -83,9 +91,34 @@ public class TemplateParserTest {
         assertParseEquals(template, json, expected);
     }
 
+    @Test
+    public void forLoopOverArrayTest(){
+        String template = "( for %whale in %whales ) {" +
+                "\t\t\t$x isa whale has name %whale ;\n}";
+
+        String json = "{\"whales\": [" +
+                "\"shamu\"," +
+                "\"dory\"" +
+                "]}";
+
+        String expected =
+                "\t\t\t$x isa whale has name \"shamu\" ;\n" +
+                "\t\t\t$x isa whale has name \"dory\" ;\n";
+
+        assertParseEquals(template, json, expected);
+    }
+
+    @Test
+    public void leftRightWhitespaceMaintainedTest(){
+        String template = "      \t\nmaintain the space\n\n   \t\n\n      this too \n\t";
+        String expected = "      \t\nmaintain the space\n\n   \t\n\n      this too \n\t";
+
+        String json = "{}";
+        assertParseEquals(template, json, expected);
+    }
+
     private void assertParseEquals(String template, String json, String expected){
-        Map<String, Object> data = Json.read(json).asMap();
-        String result = parser.parseTemplate(template, data);
+        String result = parser.parseTemplate(template, Json.read(json));
         assertEquals(expected, result);
     }
 }
