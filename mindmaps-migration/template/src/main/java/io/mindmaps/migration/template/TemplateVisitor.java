@@ -23,9 +23,11 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static io.mindmaps.migration.template.ValueFormatter.format;
 import static java.util.stream.Collectors.joining;
 
 /**
@@ -91,8 +93,7 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<String> {
 
     @Override
     public String visitIdentifier(GraqlTemplateParser.IdentifierContext ctx) {
-        // make this format types
-        return scope.getData(ctx.getText()).toString() + whitespace(ctx);
+        return format(scope.getData(ctx.getText())) + whitespace(ctx);
     }
 
     @Override
@@ -123,6 +124,12 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<String> {
     }
 
     private Stream<String> hidden(int tokenIndex){
-        return tokens.getHiddenTokensToRight(tokenIndex).stream().map(Token::getText);
+        List<Token> hidden = tokens.getHiddenTokensToRight(tokenIndex);
+
+        if(hidden == null){
+            return Stream.of("");
+        }
+
+        return hidden.stream().map(Token::getText);
     }
 }
