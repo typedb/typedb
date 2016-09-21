@@ -109,11 +109,8 @@ public class MindmapsOrientDBGraphFactory extends AbstractMindmapsGraphFactory<M
                 indexConfig.setProperty(UNIQUE, "UNIQUE");
             }
 
-            for (Schema.BaseType baseType : Schema.BaseType.values()) {
-                graph.createVertexIndex(conceptProperty, baseType.name(), indexConfig);
-            }
+            graph.createVertexIndex(conceptProperty, "vertex", indexConfig);
         }
-
 
         return graph;
     }
