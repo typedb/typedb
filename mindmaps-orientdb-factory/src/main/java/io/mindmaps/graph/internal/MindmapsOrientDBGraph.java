@@ -1,8 +1,9 @@
 package io.mindmaps.graph.internal;
 
 import org.apache.tinkerpop.gremlin.orientdb.OrientGraph;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 public class MindmapsOrientDBGraph extends AbstractMindmapsGraph<OrientGraph> {
     public MindmapsOrientDBGraph(OrientGraph graph, String name, String engineUrl, boolean batchLoading){
@@ -15,7 +16,7 @@ public class MindmapsOrientDBGraph extends AbstractMindmapsGraph<OrientGraph> {
     }
 
     @Override
-    public GraphTraversalSource getTinkerTraversal(){
-        return getTinkerPopGraph().traversal().withStrategies(ReadOnlyStrategy.instance());
+    public GraphTraversal<Vertex, Vertex> getTinkerTraversal(){
+        return getTinkerPopGraph().traversal().withStrategies(ReadOnlyStrategy.instance()).V().hasLabel("vertex");
     }
 }

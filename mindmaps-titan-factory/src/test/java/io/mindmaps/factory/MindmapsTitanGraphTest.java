@@ -71,7 +71,7 @@ public class MindmapsTitanGraphTest {
             }
         });
 
-        assertEquals(108, mindmapsGraph.getTinkerTraversal().V().toList().size());
+        assertEquals(108, mindmapsGraph.getTinkerTraversal().toList().size());
     }
     private void addEntityType(MindmapsGraph mindmapsGraph){
         mindmapsGraph.putEntityType(UUID.randomUUID().toString());
@@ -87,7 +87,7 @@ public class MindmapsTitanGraphTest {
         ExecutorService pool = Executors.newFixedThreadPool(10);
         Set<Future> futures = new HashSet<>();
         mindmapsGraph.putEntityType(UUID.randomUUID().toString());
-        assertEquals(9, mindmapsGraph.getTinkerTraversal().V().toList().size());
+        assertEquals(9, mindmapsGraph.getTinkerTraversal().toList().size());
 
         for(int i = 0; i < 100; i ++){
             futures.add(pool.submit(() -> {
@@ -104,7 +104,7 @@ public class MindmapsTitanGraphTest {
             }
         });
 
-        assertEquals(9, mindmapsGraph.getTinkerTraversal().V().toList().size());
+        assertEquals(9, mindmapsGraph.getTinkerTraversal().toList().size());
     }
 
     @Test

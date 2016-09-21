@@ -143,7 +143,7 @@ public class PostprocessingTest {
         assertEquals(1, instance2.relations().size());
         assertEquals(1, instance3.relations().size());
 
-        assertEquals(4, graph.getTinkerTraversal().E().
+        assertEquals(4, graph.getTinkerPopGraph().traversal().E().
                 hasLabel(Schema.EdgeLabel.SHORTCUT.getLabel()).toList().size());
 
     }
@@ -207,7 +207,7 @@ public class PostprocessingTest {
         assertEquals(1, r1.relations().size());
         assertEquals(2, r11.relations().size());
         assertEquals(1, r1.relations().size());
-        assertEquals(6, graph.getTinkerTraversal().V().has(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.RELATION.name()).toList().size());
+        assertEquals(6, graph.getTinkerTraversal().has(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.RELATION.name()).toList().size());
 
         r1.relations().forEach(rel -> assertTrue(rel.rolePlayers().values().contains(e1)));
 
@@ -231,7 +231,7 @@ public class PostprocessingTest {
         assertTrue(foundR1.ownerInstances().contains(e1));
         assertTrue(foundR1.ownerInstances().contains(e2));
 
-        assertEquals(4, graph.getTinkerTraversal().V().has(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.RELATION.name()).toList().size());
+        assertEquals(4, graph.getTinkerTraversal().has(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.RELATION.name()).toList().size());
     }
 
 

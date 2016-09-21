@@ -80,7 +80,7 @@ public class MindmapsTinkerGraphTest {
         Set<Future> futures = new HashSet<>();
         AbstractMindmapsGraph transcation = (AbstractMindmapsGraph) mindmapsGraph;
         transcation.putEntityType(UUID.randomUUID().toString());
-        assertEquals(9, transcation.getTinkerTraversal().V().toList().size());
+        assertEquals(9, transcation.getTinkerTraversal().toList().size());
 
         for(int i = 0; i < 100; i ++){
             futures.add(pool.submit(() -> {
@@ -97,7 +97,7 @@ public class MindmapsTinkerGraphTest {
             }
         });
 
-        assertEquals(109, transcation.getTinkerTraversal().V().toList().size()); //This is due to tinkergraphs not being thread local
+        assertEquals(109, transcation.getTinkerTraversal().toList().size()); //This is due to tinkergraphs not being thread local
     }
 
     @Test
