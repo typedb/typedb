@@ -18,11 +18,11 @@
 
 package io.mindmaps.engine.controller;
 
-import io.mindmaps.util.Schema;
-import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.util.REST;
 import io.mindmaps.engine.postprocessing.Cache;
 import io.mindmaps.engine.util.ConfigProperties;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.util.REST;
+import io.mindmaps.util.Schema;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -31,6 +31,7 @@ import spark.Request;
 import spark.Response;
 
 import java.util.Collections;
+import java.util.Set;
 
 import static spark.Spark.delete;
 import static spark.Spark.post;
@@ -42,44 +43,34 @@ public class CommitLogController {
     private final Cache cache;
     private final Logger LOG = LoggerFactory.getLogger(CommitLogController.class);
 
-    public CommitLogController() {
+    public CommitLogController(){
         cache = Cache.getInstance();
         post(REST.WebPath.COMMIT_LOG_URI, this::submitConcepts);
         delete(REST.WebPath.COMMIT_LOG_URI, this::deleteConcepts);
     }
 
     /**
+     *
      * @param req The request which contains the graph to be post processed
      * @param res The current response code
      * @return The result of clearing the post processing for a single graph
      */
-    private String deleteConcepts(Request req, Response res) {
-        try {
-            String graphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
+    private String deleteConcepts(Request req, Response res){
+        String graphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
 
-            if (graphName == null) {
-                res.status(400);
-                return ErrorMessage.NO_PARAMETER_PROVIDED.getMessage(REST.Request.GRAPH_NAME_PARAM, "delete");
-            }
-
-            cache.getCastingJobs().computeIfPresent(graphName, (key, set) -> {
-                set.clear();
-                return set;
-            });
-            cache.getResourceJobs().computeIfPresent(graphName, (key, set) -> {
-                set.clear();
-                return set;
-            });
-
-            return "The cache of Graph [" + graphName + "] has been cleared";
-        } catch (Exception e) {
-            LOG.error("Exception", e);
-            res.status(500);
-            return e.getMessage();
+        if(graphName == null){
+            res.status(400);
+           return ErrorMessage.NO_PARAMETER_PROVIDED.getMessage(REST.Request.GRAPH_NAME_PARAM, "delete");
         }
+
+        cache.getCastingJobs().computeIfPresent(graphName, (key, set) -> {set.clear(); return set;});
+        cache.getResourceJobs().computeIfPresent(graphName, (key, set) -> {set.clear(); return set;});
+
+        return "The cache of Graph [" + graphName + "] has been cleared";
     }
 
     /**
+     *
      * @param req The request which contains the graph to be post processed
      * @param res The current response code
      * @return The result of adding something for post processing
@@ -111,12 +102,19 @@ public class CommitLogController {
                 }
             }
 
-            long numJobs = cache.getCastingJobs().get(graphName).size();
+            long numJobs = getJobCount(cache.getCastingJobs().get(graphName));
+            numJobs += getJobCount(cache.getResourceJobs().get(graphName));
+
             return "Graph [" + graphName + "] now has [" + numJobs + "] post processing jobs";
-        } catch (Exception e) {
-            LOG.error("Exception", e);
+        } catch(Exception e){
+            LOG.error("Exception when submitting commit log", e);
             res.status(500);
             return e.getMessage();
         }
+    }
+    private long getJobCount(Set jobs){
+        if(jobs != null)
+            return jobs.size();
+        return 0L;
     }
 }
