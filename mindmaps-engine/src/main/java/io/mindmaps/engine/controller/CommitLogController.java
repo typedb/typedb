@@ -18,11 +18,11 @@
 
 package io.mindmaps.engine.controller;
 
-import io.mindmaps.util.Schema;
-import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.util.REST;
 import io.mindmaps.engine.postprocessing.Cache;
 import io.mindmaps.engine.util.ConfigProperties;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.util.REST;
+import io.mindmaps.util.Schema;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -31,6 +31,7 @@ import spark.Request;
 import spark.Response;
 
 import java.util.Collections;
+import java.util.Set;
 
 import static spark.Spark.delete;
 import static spark.Spark.post;
@@ -100,7 +101,14 @@ public class CommitLogController {
             }
         }
 
-        long numJobs =  cache.getCastingJobs().get(graphName).size();
+        long numJobs = getJobCount(cache.getCastingJobs().get(graphName));
+        numJobs += getJobCount(cache.getResourceJobs().get(graphName));
+
         return "Graph [" + graphName + "] now has [" + numJobs + "] post processing jobs";
+    }
+    private long getJobCount(Set jobs){
+        if(jobs != null)
+            return jobs.size();
+        return 0L;
     }
 }
