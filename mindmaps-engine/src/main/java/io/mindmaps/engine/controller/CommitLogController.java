@@ -76,35 +76,41 @@ public class CommitLogController {
      * @return The result of adding something for post processing
      */
     private String submitConcepts(Request req, Response res) {
-        String graphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
+        try {
+            String graphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
 
-        if(graphName == null){
-            graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
-        }
-        LOG.info("Commit log received for graph [" + graphName + "]");
-
-        JSONArray jsonArray = (JSONArray) new JSONObject(req.body()).get("concepts");
-
-        for (Object object : jsonArray) {
-            JSONObject jsonObject = (JSONObject) object;
-            String conceptId = jsonObject.getString("id");
-            Schema.BaseType type = Schema.BaseType.valueOf(jsonObject.getString("type"));
-
-            switch (type){
-                case CASTING:
-                    cache.addJobCasting(graphName, Collections.singleton(conceptId));
-                    break;
-                case RESOURCE:
-                    cache.addJobResource(graphName, Collections.singleton(conceptId));
-                default:
-                    LOG.warn(ErrorMessage.CONCEPT_POSTPROCESSING.getMessage(conceptId, type.name()));
+            if (graphName == null) {
+                graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
             }
+            LOG.info("Commit log received for graph [" + graphName + "]");
+
+            JSONArray jsonArray = (JSONArray) new JSONObject(req.body()).get("concepts");
+
+            for (Object object : jsonArray) {
+                JSONObject jsonObject = (JSONObject) object;
+                String conceptId = jsonObject.getString("id");
+                Schema.BaseType type = Schema.BaseType.valueOf(jsonObject.getString("type"));
+
+                switch (type) {
+                    case CASTING:
+                        cache.addJobCasting(graphName, Collections.singleton(conceptId));
+                        break;
+                    case RESOURCE:
+                        cache.addJobResource(graphName, Collections.singleton(conceptId));
+                    default:
+                        LOG.warn(ErrorMessage.CONCEPT_POSTPROCESSING.getMessage(conceptId, type.name()));
+                }
+            }
+
+            long numJobs = getJobCount(cache.getCastingJobs().get(graphName));
+            numJobs += getJobCount(cache.getResourceJobs().get(graphName));
+
+            return "Graph [" + graphName + "] now has [" + numJobs + "] post processing jobs";
+        } catch(Exception e){
+            LOG.error("Exception when submitting commit log", e);
+            res.status(500);
+            return e.getMessage();
         }
-
-        long numJobs = getJobCount(cache.getCastingJobs().get(graphName));
-        numJobs += getJobCount(cache.getResourceJobs().get(graphName));
-
-        return "Graph [" + graphName + "] now has [" + numJobs + "] post processing jobs";
     }
     private long getJobCount(Set jobs){
         if(jobs != null)
