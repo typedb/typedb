@@ -145,10 +145,14 @@ public class Query implements MatchQueryInternal {
         return ruleResolvable;
     }
 
-    public QueryAnswers getAnswers(){ throw new IllegalStateException("dupa");}
-    public void DBlookup(){ throw new IllegalStateException("dupa");}
-    public void memoryLookup(Map<AtomicQuery, QueryAnswers> matAnswers){throw new IllegalStateException("dupa");}
-    public void propagateAnswers(Map<AtomicQuery, QueryAnswers> matAnswers){throw new IllegalStateException("dupa");}
+    public QueryAnswers getAnswers(){ throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());}
+    public void DBlookup(){ throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());}
+    public void memoryLookup(Map<AtomicQuery, QueryAnswers> matAnswers){
+        throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
+    }
+    public void propagateAnswers(Map<AtomicQuery, QueryAnswers> matAnswers){
+        throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
+    }
 
     public void setParentAtom(Atomic par){ parentAtom = par;}
     public Set<Atomic> getAtoms() { return new HashSet<>(atomSet);}
