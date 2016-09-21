@@ -152,6 +152,25 @@ public class Utility {
         });
     }
 
+    /**
+     * generate a fresh variable avoiding global variables and variables from the same query
+     * @param globalVars global variables to avoid
+     * @param childVars  variables from the query var belongs to
+     * @param var        variable to be generated a fresh replacement
+     * @return fresh variables
+     */
+    public static String createFreshVariable(Set<String> globalVars, Set<String> childVars, String var) {
+        String fresh = var;
+        while (globalVars.contains(fresh) || childVars.contains(fresh)) {
+            String valFree = fresh.replaceAll("[^0-9]", "");
+            int value = valFree.equals("") ? 0 : Integer.parseInt(valFree);
+            fresh = fresh.replaceAll("\\d+", "") + (++value);
+        }
+        return fresh;
+    }
+
+
+
     public static boolean checkTypesCompatible(Type aType, Type bType) {
         return aType.equals(bType) || aType.subTypes().contains(bType) || bType.subTypes().contains(aType);
     }

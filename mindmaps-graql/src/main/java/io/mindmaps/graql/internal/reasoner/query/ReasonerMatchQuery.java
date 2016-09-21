@@ -17,6 +17,11 @@ public class ReasonerMatchQuery extends Query{
         answers = new QueryAnswers();
     }
 
+    public ReasonerMatchQuery(MatchQuery query, MindmapsGraph graph, QueryAnswers ans){
+        super(query, graph);
+        answers = new QueryAnswers(ans);
+    }
+
     public ReasonerMatchQuery(Query query, QueryAnswers ans){
         super(query);
         answers = new QueryAnswers(ans);

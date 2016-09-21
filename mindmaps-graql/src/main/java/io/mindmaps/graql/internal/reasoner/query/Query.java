@@ -41,6 +41,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static io.mindmaps.graql.internal.reasoner.Utility.createFreshVariable;
+
 public class Query implements MatchQueryInternal {
 
     protected final MindmapsGraph graph;
@@ -134,6 +136,15 @@ public class Query implements MatchQueryInternal {
     @Override
     public Conjunction<PatternAdmin> getPattern(){ return pattern;}
 
+    public boolean isRuleResolvable(){
+        boolean ruleResolvable = false;
+        Iterator<Atomic> it = atomSet.iterator();
+        while(it.hasNext() && !ruleResolvable)
+            ruleResolvable = it.next().isRuleResolvable();
+
+        return ruleResolvable;
+    }
+
     public QueryAnswers getAnswers(){ throw new IllegalStateException("dupa");}
     public void DBlookup(){ throw new IllegalStateException("dupa");}
     public void memoryLookup(Map<AtomicQuery, QueryAnswers> matAnswers){throw new IllegalStateException("dupa");}
@@ -219,7 +230,22 @@ public class Query implements MatchQueryInternal {
         changeVarName("temp", from);
     }
 
-    public void unify(Map<String, String> unifiers) {
+    public void changeVarName(String from, String to) {
+        Set<Atomic> toRemove = new HashSet<>();
+        Set<Atomic> toAdd = new HashSet<>();
+
+        atomSet.stream().filter(atom -> atom.getVarNames().contains(from)).forEach(toRemove::add);
+        toRemove.forEach(atom -> toAdd.add(AtomicFactory.create(atom)));
+        toRemove.forEach(this::removeAtom);
+        toAdd.forEach(atom -> atom.changeEachVarName(from, to));
+        toAdd.forEach(this::addAtom);
+
+        Map<String, String> mapping = new HashMap<>();
+        mapping.put(from, to);
+        updateSelectedVars(mapping);
+    }
+
+    public void unify(Map<String, String> unifiers, Set<String> globalVars) {
         if (unifiers.size() == 0) return;
         Map<String, String> mappings = new HashMap<>(unifiers);
         Map<String, String> appliedMappings = new HashMap<>();
@@ -256,21 +282,24 @@ public class Query implements MatchQueryInternal {
         toAdd.forEach(this::addAtom);
 
         updateSelectedVars(mappings);
+        resolveCaptures(globalVars);
     }
 
-    public void changeVarName(String from, String to) {
-        Set<Atomic> toRemove = new HashSet<>();
-        Set<Atomic> toAdd = new HashSet<>();
+    /**
+     * finds captured variable occurrences in a query and replaces them with fresh variables
+     * @param globalVars global variables to be avoided when creating fresh variables
+     */
+    private void resolveCaptures(Set<String> globalVars) {
+        //find captures
+        Set<String> captures = new HashSet<>();
+        getVarSet().forEach(v -> {
+            if (v.contains("capture")) captures.add(v);
+        });
 
-        atomSet.stream().filter(atom -> atom.getVarNames().contains(from)).forEach(toRemove::add);
-        toRemove.forEach(atom -> toAdd.add(AtomicFactory.create(atom)));
-        toRemove.forEach(this::removeAtom);
-        toAdd.forEach(atom -> atom.changeEachVarName(from, to));
-        toAdd.forEach(this::addAtom);
-
-        Map<String, String> mapping = new HashMap<>();
-        mapping.put(from, to);
-        updateSelectedVars(mapping);
+        captures.forEach(cap -> {
+            String fresh = createFreshVariable(globalVars, getVarSet(), cap.replace("captured->", ""));
+            changeVarName(cap, fresh);
+        });
     }
 
     private Disjunction<Conjunction<VarAdmin>> getDNF(){

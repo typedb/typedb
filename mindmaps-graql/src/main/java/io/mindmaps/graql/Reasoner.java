@@ -24,6 +24,7 @@ import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.Type;
+import io.mindmaps.graql.internal.reasoner.rule.InferenceRule;
 import io.mindmaps.graql.internal.reasoner.query.*;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.Relation;
@@ -150,7 +151,6 @@ public class Reasoner {
         return children;
     }
 
-
     private Set<Rule> getRuleChildren(Rule parent) {
         Set<Rule> children = new HashSet<>();
         Collection<Type> types = parent.getHypothesisTypes();
@@ -230,101 +230,10 @@ public class Reasoner {
         }
     }
 
-    /**
-     * generate a fresh variable avoiding global variables and variables from the same query
-     *
-     * @param globalVars global variables to avoid
-     * @param childVars  variables from the query var belongs to
-     * @param var        variable to be generated a fresh replacement
-     * @return fresh variables
-     */
-    private String createFreshVariable(Set<String> globalVars, Set<String> childVars, String var) {
-        String fresh = var;
-        while (globalVars.contains(fresh) || childVars.contains(fresh)) {
-            String valFree = fresh.replaceAll("[^0-9]", "");
-            int value = valFree.equals("") ? 0 : Integer.parseInt(valFree);
-            fresh = fresh.replaceAll("\\d+", "") + (++value);
-        }
-        return fresh;
-    }
-
-    /**
-     * finds captured variable occurrences in a query and replaces them with fresh variables
-     *
-     * @param query      input query with var captures
-     * @param globalVars global variables to be avoided when creating fresh variables
-     */
-    private void resolveCaptures(Query query, Set<String> globalVars) {
-        //find captures
-        Set<String> captures = new HashSet<>();
-        query.getVarSet().forEach(v -> {
-            if (v.contains("capture")) captures.add(v);
-        });
-
-        captures.forEach(cap -> {
-            String fresh = createFreshVariable(globalVars, query.getVarSet(), cap.replace("captured->", ""));
-            query.changeVarName(cap, fresh);
-        });
-    }
-
-    /**
-     * propagate variables to child via a relation atom (atom variables are bound)
-     *
-     * @param childHead    child rule head
-     * @param childBody    child rule body
-     * @param parentAtom   parent atom (predicate) being resolved (subgoal)
-     * @param parentLHS    parent query
-     * @param globalVarMap map containing global vars and their types
-     */
-    private void unifyRuleViaAtom(Query childHead, Query childBody, Atomic parentAtom, Query parentLHS,
-                                  Map<String, Type> globalVarMap) {
-        Atomic childAtom = getRuleConclusionAtom(childBody, childHead);
-        Map<String, String> unifiers = childAtom.getUnifiers(parentAtom);
-
-        /**do alpha-conversion*/
-        childHead.unify(unifiers);
-        childBody.unify(unifiers);
-        resolveCaptures(childBody, globalVarMap.keySet());
-
-        /**check free variables for possible captures*/
-        Set<String> childFVs = childBody.getVarSet();
-        Set<String> parentBVs = parentAtom.getVarNames();
-        Set<String> parentVars = parentLHS.getVarSet();
-        parentBVs.forEach(childFVs::remove);
-
-        childFVs.forEach(chVar -> {
-            // if (x e P) v (x e G)
-            // x -> fresh
-            if (parentVars.contains(chVar) || globalVarMap.containsKey(chVar)) {
-                String freshVar = createFreshVariable(globalVarMap.keySet(), childBody.getVarSet(), chVar);
-                childBody.changeVarName(chVar, freshVar);
-            }
-        });
-    }
-
-    /**
-     * make child query consistent by performing variable substitution so that parent variables are propagated
-     * @param rule         to be unified
-     * @param parentAtom   parent atom (predicate) being resolved (subgoal)
-     * @param globalVarMap map containing global vars and their types
-     */
-    private Pair<Query, AtomicQuery> unifyRule(Rule rule, Atomic parentAtom, Map<String, Type> globalVarMap) {
-        Query parent = parentAtom.getParentQuery();
-        Query ruleBody = new Query(rule.getLHS(), graph);
-        AtomicQuery ruleHead = new AtomicQuery(rule.getRHS(), graph);
-
-        unifyRuleViaAtom(ruleHead, ruleBody, parentAtom, parent, globalVarMap);
-
-        //update global vars
-        Map<String, Type> varTypeMap = ruleBody.getVarTypeMap();
-        for (Map.Entry<String, Type> entry : varTypeMap.entrySet())
-            globalVarMap.putIfAbsent(entry.getKey(), entry.getValue());
-
-        return new Pair<>(ruleBody, ruleHead);
-    }
-
     private Query applyRuleToAtom(Atomic parentAtom, Rule child, Map<String, Type> varMap) {
-        Query ruleBody = unifyRule(child, parentAtom, varMap).getKey();
+        InferenceRule childRule = new InferenceRule(child, graph);
+        childRule.unify(parentAtom, varMap);
+        Query ruleBody = childRule.getBody();
         parentAtom.addExpansion(ruleBody);
 
         return ruleBody;
@@ -355,16 +264,6 @@ public class Reasoner {
             matAnswers.get(atomicQuery).addAll(atomicQuery.getAnswers());
         else
             matAnswers.put(atomicQuery, atomicQuery.getAnswers());
-    }
-
-    private void propagateConstraints(Atomic parentAtom, Query ruleHead, Query ruleBody){
-        ruleHead.addAtomConstraints(parentAtom.getSubstitutions());
-        ruleHead.addAtomConstraints(ruleBody.getSubstitutions());
-        ruleBody.addAtomConstraints(parentAtom.getSubstitutions());
-        if(parentAtom.isRelation()) {
-            ruleHead.addAtomConstraints(parentAtom.getTypeConstraints());
-            ruleBody.addAtomConstraints(parentAtom.getTypeConstraints());
-        }
     }
 
     private QueryAnswers propagateHeadSubstitutions(Query atomicQuery, Query ruleHead, QueryAnswers answers){
@@ -400,12 +299,11 @@ public class Reasoner {
 
         if(queryAdmissible) {
             Set<Rule> rules = getAtomChildren(atom);
-            for (Rule rule : rules) {
-                Pair<Query, AtomicQuery> ruleQuery = unifyRule(rule, atom, varMap);
-                Query ruleBody = ruleQuery.getKey();
-                AtomicQuery ruleHead = ruleQuery.getValue();
-
-                propagateConstraints(atom, ruleHead, ruleBody);
+            for (Rule rl : rules) {
+                InferenceRule rule = new InferenceRule(rl, graph);
+                rule.unify(atom, varMap);
+                Query ruleBody = rule.getBody();
+                AtomicQuery ruleHead = rule.getHead();
 
                 Set<Atomic> atoms = ruleBody.selectAtoms();
                 Iterator<Atomic> atIt = atoms.iterator();
@@ -435,7 +333,6 @@ public class Reasoner {
     }
 
     private QueryAnswers resolveAtomicQuery(AtomicQuery atomicQuery) {
-        //QueryAnswers subAnswers = new QueryAnswers();
         int dAns;
         int iter = 0;
 
@@ -451,12 +348,9 @@ public class Reasoner {
                 Set<AtomicQuery> subGoals = new HashSet<>();
                 Map<String, Type> varMap = atomicQuery.getVarTypeMap();
                 dAns = atomicQuery.getAnswers().size();
-                LOG.debug("iter: " + iter++ + " answers: " + dAns);
-
+                System.out.println("iter: " + iter++ + " answers: " + dAns);
                 answer(atomicQuery, subGoals, matAnswers, varMap);
                 propagateAnswers(matAnswers);
-                //subAnswers =
-                //subAnswers = matAnswers.get(atomicQuery);
                 dAns = atomicQuery.getAnswers().size() - dAns;
             } while (dAns != 0);
             return atomicQuery.getAnswers();
@@ -525,7 +419,7 @@ public class Reasoner {
     public MatchQuery resolveToQuery(MatchQuery inputQuery) {
         Query query = new Query(inputQuery, graph);
         QueryAnswers answers = resolveQuery(query, false);
-        return new ReasonerMatchQuery(query, answers);
+        return new ReasonerMatchQuery(inputQuery, graph, answers);
     }
 
     /**
