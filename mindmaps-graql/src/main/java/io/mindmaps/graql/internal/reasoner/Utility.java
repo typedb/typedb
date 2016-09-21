@@ -23,13 +23,10 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
-import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.RoleType;
-import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 
 import java.util.*;
@@ -66,38 +63,6 @@ public class Utility {
         }
     }
 
-    public static Type getRuleConclusionType(Rule rule) {
-        Set<Type> types = new HashSet<>();
-        Collection<Type> unfilteredTypes = rule.getConclusionTypes();
-        for(Type type : unfilteredTypes)
-            if (!type.isRoleType()) types.add(type);
-
-        if (types.size() > 1)
-            throw new IllegalArgumentException(ErrorMessage.NON_HORN_RULE.getMessage(rule.getId()));
-
-        return types.iterator().next();
-    }
-
-    public static Atomic getRuleConclusionAtom(Query ruleLHS, Query ruleRHS) {
-        Set<Atomic> atoms = ruleRHS.getAtoms();
-        if (atoms.size() > 1)
-            throw new IllegalArgumentException(ErrorMessage.NON_HORN_RULE.getMessage(ruleLHS.toString()));
-
-        Atomic atom = atoms.iterator().next();
-        atom.setParentQuery(ruleLHS);
-        return atom;
-    }
-
-    public static  boolean isRuleRecursive(Rule rule) {
-        boolean ruleRecursive = false;
-
-        Type RHStype = getRuleConclusionType(rule);
-        if (rule.getHypothesisTypes().contains(RHStype) )
-            ruleRecursive = true;
-
-        return ruleRecursive;
-    }
-
     public static AtomicQuery findEquivalentAtomicQuery(AtomicQuery query, Set<AtomicQuery> queries) {
         AtomicQuery equivalentQuery = null;
         Iterator<AtomicQuery> it = queries.iterator();
@@ -108,6 +73,7 @@ public class Utility {
         }
         return equivalentQuery;
     }
+
     public static Set<RoleType> getCompatibleRoleTypes(String typeId, String relId, MindmapsGraph graph) {
         Set<RoleType> cRoles = new HashSet<>();
 
@@ -150,6 +116,25 @@ public class Utility {
             tempRoles.add(role);
         });
     }
+
+    /**
+     * generate a fresh variable avoiding global variables and variables from the same query
+     * @param globalVars global variables to avoid
+     * @param childVars  variables from the query var belongs to
+     * @param var        variable to be generated a fresh replacement
+     * @return fresh variables
+     */
+    public static String createFreshVariable(Set<String> globalVars, Set<String> childVars, String var) {
+        String fresh = var;
+        while (globalVars.contains(fresh) || childVars.contains(fresh)) {
+            String valFree = fresh.replaceAll("[^0-9]", "");
+            int value = valFree.equals("") ? 0 : Integer.parseInt(valFree);
+            fresh = fresh.replaceAll("\\d+", "") + (++value);
+        }
+        return fresh;
+    }
+
+
 
     public static boolean checkTypesCompatible(Type aType, Type bType) {
         return aType.equals(bType) || aType.subTypes().contains(bType) || bType.subTypes().contains(aType);

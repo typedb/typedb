@@ -106,6 +106,8 @@ public interface Atomic {
      */
     void setParentQuery(Query q);
 
+    Map<String, String> getUnifiers(Atomic parentAtom);
+
     /**
      * change each variable occurrence in the atom
      * if capture occurs it is marked with a "capture-><name of the captured occurrence>" name
