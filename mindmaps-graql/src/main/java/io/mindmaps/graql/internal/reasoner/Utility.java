@@ -23,13 +23,10 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
-import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.RoleType;
-import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 
 import java.util.*;
@@ -64,38 +61,6 @@ public class Utility {
             }
             System.out.println();
         }
-    }
-
-    public static Type getRuleConclusionType(Rule rule) {
-        Set<Type> types = new HashSet<>();
-        Collection<Type> unfilteredTypes = rule.getConclusionTypes();
-        for(Type type : unfilteredTypes)
-            if (!type.isRoleType()) types.add(type);
-
-        if (types.size() > 1)
-            throw new IllegalArgumentException(ErrorMessage.NON_HORN_RULE.getMessage(rule.getId()));
-
-        return types.iterator().next();
-    }
-
-    public static Atomic getRuleConclusionAtom(Query ruleLHS, Query ruleRHS) {
-        Set<Atomic> atoms = ruleRHS.getAtoms();
-        if (atoms.size() > 1)
-            throw new IllegalArgumentException(ErrorMessage.NON_HORN_RULE.getMessage(ruleLHS.toString()));
-
-        Atomic atom = atoms.iterator().next();
-        atom.setParentQuery(ruleLHS);
-        return atom;
-    }
-
-    public static  boolean isRuleRecursive(Rule rule) {
-        boolean ruleRecursive = false;
-
-        Type RHStype = getRuleConclusionType(rule);
-        if (rule.getHypothesisTypes().contains(RHStype) )
-            ruleRecursive = true;
-
-        return ruleRecursive;
     }
 
     public static AtomicQuery findEquivalentAtomicQuery(AtomicQuery query, Set<AtomicQuery> queries) {

@@ -7,7 +7,6 @@ import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.util.ErrorMessage;
-import javafx.util.Pair;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -18,15 +17,13 @@ import static io.mindmaps.graql.internal.reasoner.Utility.createFreshVariable;
 
 public class InferenceRule {
 
-    private final MindmapsGraph graph;
     private final Query body;
     private final AtomicQuery head;
 
     private final Rule rule;
 
-    public InferenceRule(Rule rl, MindmapsGraph gr){
+    public InferenceRule(Rule rl, MindmapsGraph graph){
         this.rule = rl;
-        this.graph = gr;
         body = new Query(rule.getLHS(), graph);
         head = new AtomicQuery(rule.getRHS(), graph);
     }
@@ -34,7 +31,7 @@ public class InferenceRule {
     public Query getBody(){return body;}
     public AtomicQuery getHead(){return head;}
 
-    public Type getRuleConclusionType() {
+    private Type getRuleConclusionType() {
         Set<Type> types = new HashSet<>();
         Collection<Type> unfilteredTypes = rule.getConclusionTypes();
         for(Type type : unfilteredTypes)
@@ -42,18 +39,6 @@ public class InferenceRule {
 
         if (types.size() > 1)
             throw new IllegalArgumentException(ErrorMessage.NON_HORN_RULE.getMessage(rule.getId()));
-
-        return types.iterator().next();
-    }
-
-    public static Type getRuleConclusionType(Rule rl) {
-        Set<Type> types = new HashSet<>();
-        Collection<Type> unfilteredTypes = rl.getConclusionTypes();
-        for(Type type : unfilteredTypes)
-            if (!type.isRoleType()) types.add(type);
-
-        if (types.size() > 1)
-            throw new IllegalArgumentException(ErrorMessage.NON_HORN_RULE.getMessage(rl.getId()));
 
         return types.iterator().next();
     }
@@ -71,17 +56,7 @@ public class InferenceRule {
     public boolean isRuleRecursive() {
         boolean ruleRecursive = false;
 
-        Type RHStype = getRuleConclusionType(rule);
-        if (rule.getHypothesisTypes().contains(RHStype) )
-            ruleRecursive = true;
-
-        return ruleRecursive;
-    }
-
-    public static boolean isRuleRecursive(Rule rule) {
-        boolean ruleRecursive = false;
-
-        Type RHStype = getRuleConclusionType(rule);
+        Type RHStype = getRuleConclusionType();
         if (rule.getHypothesisTypes().contains(RHStype) )
             ruleRecursive = true;
 
@@ -108,11 +83,11 @@ public class InferenceRule {
         Atomic childAtom = getRuleConclusionAtom();
         Map<String, String> unifiers = childAtom.getUnifiers(parentAtom);
 
-        /**do alpha-conversion*/
+        //do alpha-conversion
         head.unify(unifiers, globalVarMap.keySet());
         body.unify(unifiers, globalVarMap.keySet());
 
-        /**check free variables for possible captures*/
+        //check free variables for possible captures
         Set<String> childFVs = body.getVarSet();
         Set<String> parentBVs = parentAtom.getVarNames();
         Set<String> parentVars = parentLHS.getVarSet();
@@ -135,13 +110,11 @@ public class InferenceRule {
      */
    public void unify(Atomic parentAtom, Map<String, Type> globalVarMap) {
         Query parent = parentAtom.getParentQuery();
-        Query ruleBody = new Query(rule.getLHS(), graph);
-        AtomicQuery ruleHead = new AtomicQuery(rule.getRHS(), graph);
 
         unifyViaAtom(parentAtom, parent, globalVarMap);
 
         //update global vars
-        Map<String, Type> varTypeMap = ruleBody.getVarTypeMap();
+        Map<String, Type> varTypeMap = body.getVarTypeMap();
         for (Map.Entry<String, Type> entry : varTypeMap.entrySet())
             globalVarMap.putIfAbsent(entry.getKey(), entry.getValue());
 

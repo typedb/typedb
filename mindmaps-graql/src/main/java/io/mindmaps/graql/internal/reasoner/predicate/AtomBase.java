@@ -86,7 +86,7 @@ public abstract class AtomBase implements Atomic{
                 throw new IllegalArgumentException(ErrorMessage.MULTIPLE_RESOURCES.getMessage(var.toString()));
 
             Map.Entry<VarAdmin, Set<ValuePredicateAdmin>> entry = resourceMap.entrySet().iterator().next();
-            vTypeId = entry.getKey().getId().isPresent()? entry.getKey().getId().get() : "";
+            vTypeId = entry.getKey().getId().orElse("");
         }
         else
             vTypeId = var.getType().flatMap(VarAdmin::getId).orElse("");

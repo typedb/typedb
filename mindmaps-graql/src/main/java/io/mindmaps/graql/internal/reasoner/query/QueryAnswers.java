@@ -116,7 +116,7 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
     /**
      * unify answers with parentQuery
      * @param parentQuery parent atomic query containing target variables
-     * @return
+     * @return unified answers
      */
     public static QueryAnswers getUnifiedAnswers(AtomicQuery parentQuery, AtomicQuery childQuery, QueryAnswers answers){
         MindmapsGraph graph = childQuery.getGraph().orElse(null);

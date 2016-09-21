@@ -255,7 +255,7 @@ public class Query implements MatchQueryInternal {
             String replacementVar = mapping.getValue();
 
             if(!appliedMappings.containsKey(varToReplace) || !appliedMappings.get(varToReplace).equals(replacementVar)) {
-                /**bidirectional mapping*/
+                //bidirectional mapping
                 if (mappings.containsKey(replacementVar) && mappings.get(replacementVar).equals(varToReplace)) {
                     exchangeRelVarNames(varToReplace, replacementVar);
                     appliedMappings.put(varToReplace, replacementVar);
@@ -374,11 +374,11 @@ public class Query implements MatchQueryInternal {
         Set<VarAdmin> vars = pat.getVars();
         vars.forEach(var -> {
             if(var.getType().isPresent() && (var.getId().isPresent() || !var.getValueEqualsPredicates().isEmpty())) {
-                VarAdmin typeVar = Graql.var(var.getName()).isa(var.getType().get()).admin();
+                VarAdmin typeVar = Graql.var(var.getName()).isa(var.getType().orElse(null)).admin();
                 atoms.add(AtomicFactory.create(typeVar, this));
 
                 if (var.getId().isPresent()) {
-                    VarAdmin sub = Graql.var(var.getName()).id(var.getId().get()).admin();
+                    VarAdmin sub = Graql.var(var.getName()).id(var.getId().orElse(null)).admin();
                     atoms.add(AtomicFactory.create(sub, this));
                 }
                 else if (!var.getValueEqualsPredicates().isEmpty()){
