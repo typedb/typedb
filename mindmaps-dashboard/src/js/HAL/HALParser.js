@@ -73,16 +73,15 @@ export default class HALParser {
     parseEmbedded(objs, parent, roleName) {
         _.map(objs, obj => {
             // Add resource and iterate its _embedded field
-            var label = APIUtils.relationshipLabel(obj, parent, roleName);
             var hrefA = this.getHref(obj);
             var hrefB = this.getHref(parent);
 
             this.newResource(hrefA, APIUtils.resourceProperties(obj));
 
             if(APIUtils.leftSignificant(obj, parent))
-                this.newRelationship(hrefA, hrefB, label);
+                this.newRelationship(hrefA, hrefB, roleName);
             else
-                this.newRelationship(hrefB, hrefA, label);
+                this.newRelationship(hrefB, hrefA, roleName);
 
             this.parseHalObject(obj);
 

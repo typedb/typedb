@@ -31,6 +31,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import static com.jayway.restassured.RestAssured.get;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -98,17 +101,17 @@ public class VisualiserControllerTest {
     public void getTypeByID() {
         Response response = get(REST.WebPath.CONCEPT_BY_ID_URI+"Man?graphName="+graphName).then().statusCode(200).extract().response().andReturn();
         JSONObject message = new JSONObject(response.getBody().asString());
-        System.out.println(message.toString());
 
         assertEquals(message.getString("_type"),"entity-type");
         assertEquals(message.getString("_id"),"Man");
         assertEquals(message.getString("_baseType"),"type");
         assertEquals(message.getJSONObject("_links").getJSONObject("self").getString("href"),"/graph/concept/Man");
 
-        JSONObject embeddedType = message.getJSONObject("_embedded").getJSONArray("ako").getJSONObject(0);
-        assertEquals(embeddedType.getString("_baseType"),"type");
-        assertEquals(embeddedType.getString("_type"),"type");
-        assertEquals(embeddedType.getString("_id"),"type");
+        JSONArray isaEmbeddedArray = message.getJSONObject("_embedded").getJSONArray("isa");
+        Set<String> ids = new HashSet<>();
+        isaEmbeddedArray.forEach(x ->ids.add(((JSONObject)x).getString("_id")));
+        assertTrue(ids.contains("actor-123"));
+        assertTrue(ids.contains("entity-type"));
     }
 
     @Test

@@ -8,7 +8,8 @@
         <file>${mindmaps.log}</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <!-- rollover at the beginning of each month (add '-dd' to have a daily rollover)-->
-            <fileNamePattern>mindmaps-%d{yyyy-MM}.%i.log</fileNamePattern>
+            <!-- improve this by handling only log path without name included-->
+            <fileNamePattern>${mindmaps.log}-%d{yyyy-MM}.%i.log</fileNamePattern>
             <!-- each file should be at most 50MB, keep 60 days worth of history, but at most 1GB -->
             <maxFileSize>50MB</maxFileSize>
             <maxHistory>60</maxHistory>

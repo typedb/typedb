@@ -177,8 +177,6 @@ export default {
 
         shellResponse(resp, err) {
             if(resp != null) {
-                console.log('response is:');
-                console.log(resp);
                 this.graqlResponse = Prism.highlight(resp, PLang.graql);
             }
             else {
