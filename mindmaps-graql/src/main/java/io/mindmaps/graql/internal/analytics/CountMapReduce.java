@@ -25,19 +25,11 @@ import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import java.io.Serializable;
 import java.util.*;
 
-import static io.mindmaps.graql.internal.analytics.Analytics.getVertexType;
-
-/**
- *
- */
-
 class CountMapReduce extends MindmapsMapReduce<Long> {
 
     public static final String MEMORY_KEY = "count";
 
-    public CountMapReduce() {
-
-    }
+    public CountMapReduce() {}
 
     public CountMapReduce(Set<String> types) {
         selectedTypes = types;

@@ -173,7 +173,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
 
         if(vertices.hasNext()){
             Vertex vertex = vertices.next();
-            if(vertices.hasNext())
+            if(!isBatchLoadingEnabled() && vertices.hasNext())
                 throw new MoreThanOneConceptException(ErrorMessage.TOO_MANY_CONCEPTS.getMessage(key.name(), value));
             return elementFactory.buildUnknownConcept(vertex);
         } else {
