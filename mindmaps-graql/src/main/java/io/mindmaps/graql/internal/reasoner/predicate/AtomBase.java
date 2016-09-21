@@ -86,7 +86,7 @@ public abstract class AtomBase implements Atomic{
                 throw new IllegalArgumentException(ErrorMessage.MULTIPLE_RESOURCES.getMessage(var.toString()));
 
             Map.Entry<VarAdmin, Set<ValuePredicateAdmin>> entry = resourceMap.entrySet().iterator().next();
-            vTypeId = entry.getKey().getId().isPresent()? entry.getKey().getId().get() : "";
+            vTypeId = entry.getKey().getId().orElse("");
         }
         else
             vTypeId = var.getType().flatMap(VarAdmin::getId).orElse("");
@@ -220,6 +220,31 @@ public abstract class AtomBase implements Atomic{
     public String getTypeId(){ return typeId;}
     @Override
     public String getVal(){ return null;}
+
+    @Override
+    public Map<String, String> getUnifiers(Atomic parentAtom) {
+        Set<String> varsToAllocate = parentAtom.getVarNames();
+
+        Set<String> childBVs = getVarNames();
+
+        Map<String, String> unifiers = new HashMap<>();
+        Map<String, Pair<Type, RoleType>> childMap = getVarTypeRoleMap();
+        Map<RoleType, Pair<String, Type>> parentMap = parentAtom.getRoleVarTypeMap();
+
+        for (String chVar : childBVs) {
+            RoleType role = childMap.containsKey(chVar) ? childMap.get(chVar).getValue() : null;
+            String pVar = role != null && parentMap.containsKey(role) ? parentMap.get(role).getKey() : "";
+            if (pVar.isEmpty())
+                pVar = varsToAllocate.iterator().next();
+
+            if (!chVar.equals(pVar))
+                unifiers.put(chVar, pVar);
+
+            varsToAllocate.remove(pVar);
+        }
+
+        return unifiers;
+    }
 
     @Override
     public Set<Query> getExpansions(){ return expansions;}
