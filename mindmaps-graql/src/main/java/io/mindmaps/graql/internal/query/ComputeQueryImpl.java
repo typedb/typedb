@@ -53,7 +53,11 @@ class ComputeQueryImpl implements ComputeQuery {
         String keyspace = theGraph.getKeyspace();
 
         Analytics analytics = typeIds.map(ids -> {
-            Set<Type> types = ids.stream().map(theGraph::getType).collect(toSet());
+            Set<Type> types = ids.stream().map(id -> {
+                Type type = theGraph.getType(id);
+                if (type == null) throw new IllegalStateException(ErrorMessage.ID_NOT_FOUND.getMessage(id));
+                return type;
+            }).collect(toSet());
             return new Analytics(keyspace, types);
         }).orElseGet(() ->
             new Analytics(keyspace)
@@ -74,6 +78,21 @@ class ComputeQueryImpl implements ComputeQuery {
                 }
                 return "Degrees have been persisted.";
             }
+            case "max": {
+                return analytics.max();
+            }
+            case "mean": {
+                return analytics.mean();
+            }
+            case "min": {
+                return analytics.min();
+            }
+            case "std": {
+                return analytics.std();
+            }
+            case "sum": {
+                return analytics.sum();
+            }
             default: {
                 throw new RuntimeException(ErrorMessage.NO_ANALYTICS_METHOD.getMessage(computeMethod));
             }
@@ -87,6 +106,8 @@ class ComputeQueryImpl implements ComputeQuery {
         if (computeResult instanceof Map) {
             Map<Instance, ?> map = (Map<Instance, ?>) computeResult;
             return map.entrySet().stream().map(e -> e.getKey().getId() + "\t" + e.getValue());
+        } else if (computeResult instanceof Optional) {
+            return ((Optional) computeResult).isPresent() ? Stream.of(((Optional) computeResult).get().toString()) : Stream.of("There are no instances of this resource type.");
         } else {
             return Stream.of(computeResult.toString());
         }

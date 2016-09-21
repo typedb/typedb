@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
 
 public class BulkResourceMutate <T>{
 
-    int batchSize = 1;
+    int batchSize = 100;
     boolean havePutValue = false;
     boolean haveCalledCleanup = false;
     private MindmapsGraph graph;
