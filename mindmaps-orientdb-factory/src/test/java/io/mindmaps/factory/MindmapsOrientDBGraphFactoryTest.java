@@ -82,7 +82,9 @@ public class MindmapsOrientDBGraphFactoryTest {
         for (Schema.BaseType baseType : Schema.BaseType.values()) {
             assertEquals(6, mindmapsGraph.getTinkerPopGraph().getVertexIndexedKeys(baseType.name()).size());
         }
+
     }
+
 
 
 }

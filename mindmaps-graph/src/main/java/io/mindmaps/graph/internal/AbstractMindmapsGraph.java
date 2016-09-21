@@ -187,6 +187,15 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         }
     }
 
+    public Set<ConceptImpl> getConcepts(Schema.ConceptProperty key, Object value){
+        Set<ConceptImpl> concepts = new HashSet<>();
+        getTinkerTraversal().V().has(key.name(), value).
+            forEachRemaining(v -> {
+                concepts.add(elementFactory.buildUnknownConcept(v));
+            });
+        return concepts;
+    }
+
 
     public Set<ConceptImpl> getModifiedConcepts(){
         return getConceptLog().getModifiedConcepts();
@@ -374,12 +383,12 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         HashSet<Resource<V>> resources = new HashSet<>();
         ResourceType.DataType dataType = ResourceType.DataType.SUPPORTED_TYPES.get(value.getClass().getTypeName());
 
-        getTinkerTraversal().V().has(dataType.getConceptProperty().name(), value).
-                forEachRemaining(v -> {
-                    Concept resource = validConceptOfType(elementFactory.buildUnknownConcept(v), ResourceImpl.class);
-                    if(resource != null && resource.isResource())
-                        resources.add(resource.asResource());
-                });
+        getConcepts(dataType.getConceptProperty(), value).forEach(concept -> {
+            if(concept != null && concept.isResource()) {
+                Concept resource = validConceptOfType(concept, ResourceImpl.class);
+                resources.add(resource.asResource());
+            }
+        });
 
         return resources;
     }
