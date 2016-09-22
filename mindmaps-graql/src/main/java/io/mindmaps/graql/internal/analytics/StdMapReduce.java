@@ -15,57 +15,36 @@ import java.util.Map;
 import java.util.Set;
 
 public class StdMapReduce extends MindmapsMapReduce<Map<String, Number>> {
+
     public static final String MEMORY_KEY = "std";
-    private static final String SELECTED_DATA_TYPE = "SELECTED_DATA_TYPE";
+    private static final String RESOURCE_TYPE_KEY = "RESOURCE_TYPE_KEY";
+    private static final String RESOURCE_DATA_TYPE_KEY = "RESOURCE_DATA_TYPE_KEY";
 
     public static final String COUNT = "C";
     public static final String SUM = "S";
     public static final String SQUARE_SUM = "SM";
 
-    private String resourceDataType = null;
-
     public StdMapReduce() {
     }
 
-    public StdMapReduce(Set<String> selectedTypes, Map<String, String> resourceTypes) {
+    public StdMapReduce(Set<String> selectedTypes, String resourceDataType) {
         this.selectedTypes = selectedTypes;
-        resourceDataType = resourceTypes.get(selectedTypes.iterator().next());
-    }
-
-    @Override
-    public void storeState(final Configuration configuration) {
-        super.storeState(configuration);
-        configuration.addProperty(SELECTED_DATA_TYPE, resourceDataType);
-    }
-
-    @Override
-    public void loadState(final Graph graph, final Configuration configuration) {
-        super.loadState(graph, configuration);
-        resourceDataType = configuration.getString(SELECTED_DATA_TYPE);
+        String resourceDataTypeValue = resourceDataType.equals(ResourceType.DataType.LONG.getName()) ?
+                Schema.ConceptProperty.VALUE_LONG.name() : Schema.ConceptProperty.VALUE_DOUBLE.name();
+        persistentProperties.put(RESOURCE_DATA_TYPE_KEY, resourceDataTypeValue);
     }
 
     @Override
     public void map(final Vertex vertex, final MapEmitter<Serializable, Map<String, Number>> emitter) {
-        if (resourceDataType.equals(ResourceType.DataType.LONG.getName())) {
-            if (selectedTypes.contains(getVertexType(vertex))) {
-                Map<String, Number> tuple = new HashMap<>(3);
-                long value = vertex.value(Schema.ConceptProperty.VALUE_LONG.name());
-                tuple.put(SUM, value);
-                tuple.put(SQUARE_SUM, value * value);
-                tuple.put(COUNT, 1L);
-                emitter.emit(MEMORY_KEY, tuple);
-                return;
-            }
-        } else {
-            if (selectedTypes.contains(getVertexType(vertex))) {
-                Map<String, Number> tuple = new HashMap<>(3);
-                double value = vertex.value(Schema.ConceptProperty.VALUE_DOUBLE.name());
-                tuple.put(SUM, value);
-                tuple.put(SQUARE_SUM, value * value);
-                tuple.put(COUNT, 1L);
-                emitter.emit(MEMORY_KEY, tuple);
-                return;
-            }
+        if (selectedTypes.contains(getVertexType(vertex))) {
+            Map<String, Number> tuple = new HashMap<>(3);
+            Number value = vertex.value((String) persistentProperties.get(RESOURCE_DATA_TYPE_KEY));
+            double doubleValue = value.doubleValue();
+            tuple.put(SUM, value);
+            tuple.put(SQUARE_SUM, doubleValue * doubleValue);
+            tuple.put(COUNT, 1L);
+            emitter.emit(MEMORY_KEY, tuple);
+            return;
         }
         Map<String, Number> emptyTuple = new HashMap<>(3);
         emptyTuple.put(SUM, 0);
