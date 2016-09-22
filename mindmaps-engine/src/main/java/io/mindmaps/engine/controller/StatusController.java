@@ -22,6 +22,7 @@ import io.mindmaps.util.REST;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import spark.Request;
 import spark.Response;
@@ -43,11 +44,13 @@ public class StatusController {
 
     public StatusController() {
 
-        get(REST.WebPath.GET_STATUS_URI, this::getStatus);
+        get(REST.WebPath.GET_STATUS_CONFIG_URI, this::getStatus);
+        get(REST.WebPath.GET_STATUS_GRAPHS_URI, this::getGraphNames);
+
     }
 
     @GET
-    @Path("/")
+    @Path("/config")
     @ApiOperation(
             value = "Return config file as a JSONObject.")
     private String getStatus(Request req, Response res) {
@@ -62,6 +65,24 @@ public class StatusController {
         }
 
         return configObj.toString();
+    }
+
+    @GET
+    @Path("/graphs")
+    @ApiOperation(
+            value = "Return the list of available graphs names.")
+    private String getGraphNames(Request req, Response res) {
+
+        JSONArray namesList = new JSONArray();
+        namesList.put("mindmaps");
+        namesList.put("golden-eye");
+        namesList.put("you-only-live-twice");
+        namesList.put("the-world-is-not-enough");
+        namesList.put("thunderball");
+        namesList.put("diamonds-are-forever");
+        namesList.put("live-and-let-die");
+
+        return namesList.toString();
     }
 
 

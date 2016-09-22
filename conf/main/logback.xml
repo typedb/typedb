@@ -1,15 +1,16 @@
 <configuration debug="false">
+    <property file="${mindmaps.dir}/../conf/main/mindmaps-engine.properties" />
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%msg%n</pattern>
         </encoder>
     </appender>
     <appender name="ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${mindmaps.log}</file>
+        <file>${logging.file}</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <!-- rollover at the beginning of each month (add '-dd' to have a daily rollover)-->
             <!-- improve this by handling only log path without name included-->
-            <fileNamePattern>${mindmaps.log}-%d{yyyy-MM}.%i.log</fileNamePattern>
+            <fileNamePattern>${logging.file}-%d{yyyy-MM}.%i.log</fileNamePattern>
             <!-- each file should be at most 50MB, keep 60 days worth of history, but at most 1GB -->
             <maxFileSize>50MB</maxFileSize>
             <maxHistory>60</maxHistory>
