@@ -25,10 +25,12 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.IntStream;
 
 import static io.mindmaps.migration.template.Value.concat;
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * ANTLR visitor class for parsing a template
@@ -55,21 +57,31 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
     }
 
     // block
-    // : (filler | statement)+
+    // : (statement | replace | graql)+
     // ;
     @Override
     public Value visitBlock(GraqlTemplateParser.BlockContext ctx) {
 
-        scope = new Scope(scope);
-        scope.assign(context.asMap());
+        // get the graql variables in this scope
+        Set<String> graqlVariables = ctx.graql().stream()
+                .map(GraqlTemplateParser.GraqlContext::graqlVar)
+                .filter(v -> v != null)
+                .map(GraqlTemplateParser.GraqlVarContext::GRAQLVAR)
+                .map(TerminalNode::getSymbol)
+                .map(Token::getText)
+                .collect(toSet());
 
+        // create the scope of this block
+        scope = new Scope(scope, context.asMap(), graqlVariables);
+
+        // traverse the parse tree
         Value returnValue = visitChildren(ctx);
 
+        // exit the scope of this block
         scope = scope.up();
 
         return returnValue;
     }
-
 
     // statement
     // : forStatement
@@ -96,31 +108,13 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         if(array.isList()){
             for (Object object : array.asList()) {
                 scope.assign(variable.asString(), object);
+                scope.nextIteration();
 
                 returnValue = concat(returnValue, this.visit(ctx.block()));
             }
         }
 
         return returnValue;
-    }
-
-    @Override
-    public Value visitNullableStatement(GraqlTemplateParser.NullableStatementContext ctx) {
-         return visitChildren(ctx);
-    }
-
-    @Override
-    public Value visitNoescpStatement(GraqlTemplateParser.NoescpStatementContext ctx) {
-         return visitChildren(ctx);
-    }
-
-    // reproduce the filler in the exact same way it appears in the template, replacing any identifiers
-    // with the data in the data in the current context
-    //
-    // filler      : (WORD | resolve)+;
-    @Override
-    public Value visitFiller(GraqlTemplateParser.FillerContext ctx) {
-        return visitChildren(ctx);
     }
 
     @Override
@@ -141,6 +135,17 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
     @Override
     public Value visitTerminal(TerminalNode node){
         return new Value(lws(node) + node.getText() + rws(node));
+    }
+
+    @Override
+    public Value visitGraqlVar(GraqlTemplateParser.GraqlVarContext ctx){
+        String var = ctx.getText();
+
+        if(scope.isLocal(var) && !scope.isGlobalScope()){
+            var = var + scope.iteration();
+        }
+
+        return new Value(lws(ctx.GRAQLVAR()) + var + rws(ctx.GRAQLVAR()));
     }
 
     @Override

@@ -10,7 +10,7 @@ template
  ;
 
 block
- : (statement | filler)+
+ : (statement | replace | graql)+
  ;
 
 statement
@@ -20,7 +20,7 @@ statement
  ;
 
 forStatement
- : '(' FOR variable 'in' resolve ')' LBRACKET block RBRACKET
+ : LPAREN FOR variable IN resolve RPAREN LBRACKET block RBRACKET
  ;
 
 nullableStatement
@@ -31,14 +31,14 @@ noescpStatement
  : NOESCP
  ;
 
-filler      : (statement | replace | any)+;
-
+graqlVar    : GRAQLVAR;
 variable    : IDENTIFIER;
 resolve     : IDENTIFIER;
 replace     : IDENTIFIER;
 
-any
- : IN
+graql
+ : graqlVar
+ | IN
  | FOR
  | NULLABLE
  | NOESCP
@@ -55,6 +55,7 @@ NULLABLE    : 'nullable' ;
 NOESCP      : 'noescp' ;
 
 IDENTIFIER  : '%' [a-zA-Z0-9_-]+;
+GRAQLVAR    : '$' [a-zA-S0-9_-]+;
 LPAREN      : '(';
 RPAREN      : ')';
 LBRACKET    : '{';

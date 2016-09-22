@@ -140,14 +140,14 @@ public class TemplateParserTest {
 
         String expected = "insert\n" +
                 "    $x isa person;\n" +
-                "        $y isa address;\n" +
-                "        $y has street \\\"Collins Ave\\\" ;\n" +
-                "        $y has number 8855 ;\n" +
-                "        ($x, $y) isa resides;\n" +
-                "        $y isa address;\n" +
-                "        $y has street \\\"Hornsey St\\\" ;\n" +
-                "        $y has number 8 ;\n" +
-                "        ($x, $y) isa resides;\n";
+                "        $y0 isa address;\n" +
+                "        $y0 has street \\\"Collins Ave\\\" ;\n" +
+                "        $y0 has number 8855 ;\n" +
+                "        ($x, $y0) isa resides;\n" +
+                "        $y1 isa address;\n" +
+                "        $y1 has street \\\"Hornsey St\\\" ;\n" +
+                "        $y1 has number 8 ;\n" +
+                "        ($x, $y1) isa resides;\n";
 
         assertParseEquals(template, json, expected);
     }
@@ -194,20 +194,20 @@ public class TemplateParserTest {
                 "}";
 
         String expected = "" +
-                "insert $x isa person has name \\\"Elmo\\\" ;\n" +
-                "    insert $y isa address ;\n" +
-                "        $y has street \\\"North Pole\\\" ;\n" +
-                "        $y has number 100 ;\n" +
-                "        ($x, $y) isa resides;\n" +
-                "    insert $y isa address ;\n" +
-                "        $y has street \\\"South Pole\\\" ;\n" +
-                "        $y has number -100 ;\n" +
-                "        ($x, $y) isa resides;\n" +
-                "insert $x isa person has name \\\"Flounder\\\" ;\n" +
-                "    insert $y isa address ;\n" +
-                "        $y has street \\\"Under the sea\\\" ;\n" +
-                "        $y has number 22 ;\n" +
-                "        ($x, $y) isa resides;\n";
+                "insert $x0 isa person has name \\\"Elmo\\\" ;\n" +
+                "    insert $y0 isa address ;\n" +
+                "        $y0 has street \\\"North Pole\\\" ;\n" +
+                "        $y0 has number 100 ;\n" +
+                "        ($x0, $y0) isa resides;\n" +
+                "    insert $y1 isa address ;\n" +
+                "        $y1 has street \\\"South Pole\\\" ;\n" +
+                "        $y1 has number -100 ;\n" +
+                "        ($x, $y1) isa resides;\n" +
+                "insert $x1 isa person has name \\\"Flounder\\\" ;\n" +
+                "    insert $y2 isa address ;\n" +
+                "        $y2 has street \\\"Under the sea\\\" ;\n" +
+                "        $y2 has number 22 ;\n" +
+                "        ($x1, $y2) isa resides;\n";
 
         assertParseEquals(template, json, expected);
     }

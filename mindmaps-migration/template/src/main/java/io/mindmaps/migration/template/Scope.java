@@ -18,26 +18,30 @@
 
 package io.mindmaps.migration.template;
 
-import mjson.Json;
-
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static io.mindmaps.migration.template.ValueFormatter.format;
+import static java.util.stream.Collectors.toMap;
 
 public class Scope {
 
     private Scope parent;
     private Map<String, Value> variables;
-    private String block;
+    private Set<String> graqlVariables;
+    private int iteration;
 
     public Scope(){
-        this(null);
+        this(null, Collections.emptyMap(), Collections.emptySet());
     }
 
-    public Scope(Scope parent){
+    public Scope(Scope parent,
+                 Map<String, Object> data,
+                 Set<String> graqlVariables){
         this.parent = parent;
-        this.variables = new HashMap<>();
+
+        this.iteration = parent == null ? 0 : parent.iteration();
+        this.variables = convertMap(data);
+        this.graqlVariables = getLocalVariables(this.parent, graqlVariables);
     }
 
     public Scope up() {
@@ -46,15 +50,10 @@ public class Scope {
 
     public void assign(String variable, Object value) {
         if (value instanceof Map) {
-            assign((Map) value);
+            this.variables.putAll(convertMap((Map) value));
         } else {
             this.variables.put(variable, new Value(value));
         }
-    }
-
-    public void assign(Map<String, Object> context) {
-        context.entrySet().stream()
-                .forEach(e -> variables.put(e.getKey(), new Value(e.getValue())));
     }
 
     public boolean isGlobalScope() {
@@ -77,5 +76,34 @@ public class Scope {
             // Unknown variable
             return null;
         }
+    }
+
+    public boolean isLocal(String var){
+        return graqlVariables.contains(var);
+    }
+
+    public void nextIteration(){
+        iteration++;
+    }
+
+    public int iteration(){
+        return iteration;
+    }
+
+    private Set<String> getLocalVariables(Scope scope, Set<String> currentVariables){
+        if(scope == null){
+           return currentVariables;
+        }
+
+        currentVariables.removeAll(scope.graqlVariables);
+        return getLocalVariables(scope.parent, currentVariables);
+    }
+
+    private Map<String, Value> convertMap(Map<String, Object> toConvert){
+        return toConvert.entrySet().stream()
+            .collect(toMap(
+                    Map.Entry::getKey,
+                    e -> new Value(e.getValue())
+            ));
     }
 }
