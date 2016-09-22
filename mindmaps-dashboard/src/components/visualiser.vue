@@ -29,7 +29,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                 </div>
                 <div class="panel-body">
                     <div class="form-group">
-                        <textarea class="form-control" rows="3" placeholder=">>" v-model="graqlQuery"></textarea>
+                        <textarea class="form-control" rows="3" placeholder=">>" v-model="graqlQuery" @keydown.enter="notify($event)" @keydown.delete="clearGraph($event)"></textarea>
                     </div>
                     <div class="from-buttons">
                         <button @click="notify" class="btn btn-default search-button">Submit<i class="pe-7s-angle-right-circle"></i></button>
@@ -83,6 +83,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                             <pre class="language-graql">{{{graqlResponse}}}</pre>
                         </div>
                     </div>
+                </div>
             </div>
         </div>
     </div>
@@ -221,7 +222,10 @@ export default {
             }
         },
 
-        notify() {
+        notify(ev) {
+            if(ev != null && !ev.shiftKey)
+                return;
+
             if(this.graqlQuery == undefined)
                 return;
 
@@ -230,7 +234,10 @@ export default {
             this.resetMsg();
         },
 
-        clearGraph() {
+        clearGraph(ev) {
+            if(ev != null && !ev.shiftKey)
+                return;
+
             // Reset all interface elements to default
             this.graqlQuery = undefined;
             this.graqlResponse = undefined;
@@ -252,7 +259,7 @@ export default {
             param.nodes.map(x => { visualiser.deleteNode(x) });
         },
 
-        suppressEventDefault(e){
+        suppressEventDefault(e) {
             e.preventDefault();
         },
 
