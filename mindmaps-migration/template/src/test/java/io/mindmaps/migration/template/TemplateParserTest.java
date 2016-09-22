@@ -140,8 +140,69 @@ public class TemplateParserTest {
         assertParseEquals(template, json, expected);
     }
 
+    @Test
+    public void doubleNestedForTest(){
+
+        String template = "" +
+                "( for %person in %people ) {\n" +
+                "insert $x isa person has name %name ;\n" +
+                "    ( for %address in %addresses ) {\n" +
+                "    insert $y isa address ;\n" +
+                "        $y has street %street ;\n" +
+                "        $y has number %number ;\n" +
+                "        ($x, $y) isa resides;\n" +
+                "    }\n" +
+                "}";
+
+        String json = "{\n" +
+                "    \"people\" : [\n" +
+                "        {\n" +
+                "            \"name\" : \"Elmo\",\n" +
+                "            \"addresses\" : [\n" +
+                "                {\n" +
+                "                    \"street\" : \"North Pole\",\n" +
+                "                    \"number\" : 100\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"street\" : \"South Pole\",\n" +
+                "                    \"number\" : -100\n" +
+                "                }\n" +
+                "            ]\n" +
+                "        },\n" +
+                "        {\n" +
+                "            \"name\" : \"Flounder\",\n" +
+                "            \"addresses\" : [\n" +
+                "                {\n" +
+                "                    \"street\" : \"Under the sea\",\n" +
+                "                    \"number\" : 22\n" +
+                "                }\n" +
+                "            ]\n" +
+                "        }\n" +
+                "    ]\n" +
+                "}";
+
+        String expected = "" +
+                "insert $x isa person has name \\\"Elmo\\\" ;\n" +
+                "    insert $y isa address ;\n" +
+                "        $y has street \\\"North Pole\\\" ;\n" +
+                "        $y has number 100 ;\n" +
+                "        ($x, $y) isa resides;\n" +
+                "    insert $y isa address ;\n" +
+                "        $y has street \\\"South Pole\\\" ;\n" +
+                "        $y has number -100 ;\n" +
+                "        ($x, $y) isa resides;\n" +
+                "insert $x isa person has name \\\"Flounder\\\" ;\n" +
+                "    insert $y isa address ;\n" +
+                "        $y has street \\\"Under the sea\\\" ;\n" +
+                "        $y has number 22 ;\n" +
+                "        ($x, $y) isa resides;\n";
+
+        assertParseEquals(template, json, expected);
+    }
+
     private void assertParseEquals(String template, String json, String expected){
         Value result = parser.parseTemplate(template, Json.read(json));
+        System.out.println(result.asString());
         assertEquals(expected, result.asString());
     }
 }
