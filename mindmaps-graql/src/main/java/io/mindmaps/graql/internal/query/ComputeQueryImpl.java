@@ -21,6 +21,7 @@ package io.mindmaps.graql.internal.query;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.Type;
+import io.mindmaps.exception.InvalidConceptTypeException;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.util.ErrorMessage;
@@ -55,7 +56,7 @@ class ComputeQueryImpl implements ComputeQuery {
         Analytics analytics = typeIds.map(ids -> {
             Set<Type> types = ids.stream().map(id -> {
                 Type type = theGraph.getType(id);
-                if (type == null) throw new IllegalStateException(ErrorMessage.ID_NOT_FOUND.getMessage(id));
+                if (type == null) throw new IllegalArgumentException(ErrorMessage.ID_NOT_FOUND.getMessage(id));
                 return type;
             }).collect(toSet());
             return new Analytics(keyspace, types);
@@ -63,39 +64,43 @@ class ComputeQueryImpl implements ComputeQuery {
             new Analytics(keyspace)
         );
 
-        switch (computeMethod) {
-            case "count": {
-                return analytics.count();
-            }
-            case "degrees": {
-                return analytics.degrees();
-            }
-            case "degreesAndPersist": {
-                try {
-                    analytics.degreesAndPersist();
-                } catch (ExecutionException | InterruptedException e) {
-                    throw new RuntimeException(e);
+        try {
+            switch (computeMethod) {
+                case "count": {
+                    return analytics.count();
                 }
-                return "Degrees have been persisted.";
+                case "degrees": {
+                    return analytics.degrees();
+                }
+                case "degreesAndPersist": {
+                    try {
+                        analytics.degreesAndPersist();
+                    } catch (ExecutionException | InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                    return "Degrees have been persisted.";
+                }
+                case "max": {
+                    return analytics.max();
+                }
+                case "mean": {
+                    return analytics.mean();
+                }
+                case "min": {
+                    return analytics.min();
+                }
+                case "std": {
+                    return analytics.std();
+                }
+                case "sum": {
+                    return analytics.sum();
+                }
+                default: {
+                    throw new RuntimeException(ErrorMessage.NO_ANALYTICS_METHOD.getMessage(computeMethod));
+                }
             }
-            case "max": {
-                return analytics.max();
-            }
-            case "mean": {
-                return analytics.mean();
-            }
-            case "min": {
-                return analytics.min();
-            }
-            case "std": {
-                return analytics.std();
-            }
-            case "sum": {
-                return analytics.sum();
-            }
-            default: {
-                throw new RuntimeException(ErrorMessage.NO_ANALYTICS_METHOD.getMessage(computeMethod));
-            }
+        } catch (InvalidConceptTypeException e) {
+            throw new IllegalArgumentException(ErrorMessage.MUST_BE_RESOURCE_TYPE.getMessage(typeIds),e);
         }
 
     }

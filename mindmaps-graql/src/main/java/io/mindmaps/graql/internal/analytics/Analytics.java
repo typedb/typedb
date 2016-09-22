@@ -309,9 +309,10 @@ public class Analytics {
     }
 
     private void checkResourceType(String type) {
-        if (!resourceTypes.containsKey(type))
-            throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
-                    .getMessage(this.getClass().toString()));
+//        if (!resourceTypes.containsKey(type))
+//            throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
+//                    .getMessage(this.getClass().toString()));
+        MindmapsClient.getGraph(keySpace).getType(type).asResourceType();
         if (!resourceTypes.get(type).equals(ResourceType.DataType.LONG.getName()) &&
                 !resourceTypes.get(type).equals(ResourceType.DataType.DOUBLE.getName()))
             throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
@@ -325,7 +326,7 @@ public class Analytics {
 
     private void checkNumberOfTypes() {
         if (allTypes.size() != 1)
-            throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
+            throw new IllegalArgumentException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                     .getMessage(this.getClass().toString()));
     }
 }

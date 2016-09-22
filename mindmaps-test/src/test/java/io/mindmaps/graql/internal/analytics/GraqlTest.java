@@ -263,7 +263,7 @@ public class GraqlTest {
         });
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testInvalidIdWithAnalytics() {
         ((ComputeQuery) qb.parse("compute sum in thing")).execute();
     }
@@ -287,5 +287,21 @@ public class GraqlTest {
         result = (Optional<Number>) ((ComputeQuery) qb.parse("compute mean in thing")).execute();
         assertEquals(2.0, (double) result.orElse(0L), 0.1);
 
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testNonResourceTypeAsSubgraphForAnalytics() throws MindmapsValidationException {
+        EntityType thing = graph.putEntityType("thing");
+        graph.commit();
+
+        ((ComputeQuery) qb.parse("compute sum in thing")).execute();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testErrorWhenNoSubgrapForAnalytics() throws MindmapsValidationException {
+        ((ComputeQuery) qb.parse("compute sum")).execute();
+        ((ComputeQuery) qb.parse("compute min")).execute();
+        ((ComputeQuery) qb.parse("compute max")).execute();
+        ((ComputeQuery) qb.parse("compute mean")).execute();
     }
 }
