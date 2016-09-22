@@ -73,11 +73,7 @@ class ComputeQueryImpl implements ComputeQuery {
                     return analytics.degrees();
                 }
                 case "degreesAndPersist": {
-                    try {
-                        analytics.degreesAndPersist();
-                    } catch (ExecutionException | InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
+                    analytics.degreesAndPersist();
                     return "Degrees have been persisted.";
                 }
                 case "max": {
