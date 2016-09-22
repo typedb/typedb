@@ -18,13 +18,9 @@
 
 package io.mindmaps.migration.template;
 
-import junit.framework.Assert;
 import mjson.Json;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.util.Map;
 
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertEquals;
@@ -40,19 +36,17 @@ public class TemplateParserTest {
 
     @Test
     public void oneValueOneLineTest(){
-        String template = "insert $x isa person has name %name ";
-        String expected = "insert $x isa person has name \"Phil Collins\" ";
+        String template = "insert $x isa person has name %name    ";
+        String expected = "insert $x isa person has name \\\"Phil Collins\\\"    ";
 
         String json = "{\"name\" : \"Phil Collins\"}";
         assertParseEquals(template, json, expected);
-
-
     }
 
     @Test
     public void multiValueOneLineTest(){
         String template = "insert $x isa person has name %name , has feet %numFeet";
-        String expected = "insert $x isa person has name \"Phil Collins\" , has feet 3";
+        String expected = "insert $x isa person has name \\\"Phil Collins\\\" , has feet 3";
 
         String json = "{\"name\" : \"Phil Collins\", \"numFeet\":3}";
         assertParseEquals(template, json, expected);
@@ -60,8 +54,8 @@ public class TemplateParserTest {
 
     @Test(expected = AssertionError.class)
     public void dataMissingTest() {
-        String template = "insert $x isa person has name %name , has feet %numFeet";
-        String expected = "insert $x isa person has name \"Phil Collins\", has feet 3 ";
+        String template = "insert $x isa person has name %name , has feet %numFeet ";
+        String expected = "insert $x isa person has name \\\"Phil Collins\\\", has feet 3 ";
 
         String json = "{\"name\" : \"Phil Collins\", \"feet\":3}";
         assertParseEquals(template, json, expected);
@@ -80,7 +74,7 @@ public class TemplateParserTest {
     @Test
     public void multipleDataTypesTest(){
         String template = "first is a %string , second a %long , third a %double , fourth a %bool";
-        String expected = "first is a \"string\" , second a 40 , third a 0.001 , fourth a false";
+        String expected = "first is a \\\"string\\\" , second a 40 , third a 0.001 , fourth a false";
 
         String json = "{" +
                 "\"string\" : \"string\", " +
@@ -102,23 +96,52 @@ public class TemplateParserTest {
                 "]}";
 
         String expected =
-                "\t\t\t$x isa whale has name \"shamu\" ;\n" +
-                "\t\t\t$x isa whale has name \"dory\" ;\n";
+                "\t\t\t$x isa whale has name \\\"shamu\\\" ;\n" +
+                "\t\t\t$x isa whale has name \\\"dory\\\" ;\n";
 
         assertParseEquals(template, json, expected);
     }
 
     @Test
-    public void leftRightWhitespaceMaintainedTest(){
-        String template = "      \t\nmaintain the space\n\n   \t\n\n      this too \n\t";
-        String expected = "      \t\nmaintain the space\n\n   \t\n\n      this too \n\t";
+    public void forLoopOverObjectsTest(){
+        String template = "insert\n" +
+                "    $x isa person;\n" +
+                "    ( for %addr in %addresses ) {\n" +
+                "        $y isa address;\n" +
+                "        $y has street %street ;\n" +
+                "        $y has number %houseNumber ;\n" +
+                "        ($x, $y) isa resides;\n" +
+                "    }";
 
-        String json = "{}";
+        String json = "{\n" +
+                "    \"addresses\" : [\n" +
+                "        {\n" +
+                "            \"street\" : \"Collins Ave\",\n" +
+                "            \"houseNumber\": 8855\n" +
+                "        },\n" +
+                "        {\n" +
+                "            \"street\" : \"Hornsey St\",\n" +
+                "            \"houseNumber\" : 8\n" +
+                "        }\n" +
+                "    ]\n" +
+                "}";
+
+        String expected = "insert\n" +
+                "    $x isa person;\n" +
+                "        $y isa address;\n" +
+                "        $y has street \\\"Collins Ave\\\" ;\n" +
+                "        $y has number 8855 ;\n" +
+                "        ($x, $y) isa resides;\n" +
+                "        $y isa address;\n" +
+                "        $y has street \\\"Hornsey St\\\" ;\n" +
+                "        $y has number 8 ;\n" +
+                "        ($x, $y) isa resides;\n";
+
         assertParseEquals(template, json, expected);
     }
 
     private void assertParseEquals(String template, String json, String expected){
-        String result = parser.parseTemplate(template, Json.read(json));
-        assertEquals(expected, result);
+        Value result = parser.parseTemplate(template, Json.read(json));
+        assertEquals(expected, result.asString());
     }
 }

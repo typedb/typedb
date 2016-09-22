@@ -18,12 +18,18 @@
 
 package io.mindmaps.migration.template;
 
+import mjson.Json;
+
+import java.util.HashMap;
 import java.util.Map;
+
+import static io.mindmaps.migration.template.ValueFormatter.format;
 
 public class Scope {
 
     private Scope parent;
-    private Map<String, String> variables;
+    private Map<String, Value> variables;
+    private String block;
 
     public Scope(){
         this(null);
@@ -31,9 +37,45 @@ public class Scope {
 
     public Scope(Scope parent){
         this.parent = parent;
+        this.variables = new HashMap<>();
     }
 
-    public Scope getParent() {
+    public Scope up() {
         return parent;
+    }
+
+    public void assign(String variable, Object value) {
+        if (value instanceof Map) {
+            assign((Map) value);
+        } else {
+            this.variables.put(variable, new Value(value));
+        }
+    }
+
+    public void assign(Map<String, Object> context) {
+        context.entrySet().stream()
+                .forEach(e -> variables.put(e.getKey(), new Value(e.getValue())));
+    }
+
+    public boolean isGlobalScope() {
+        return parent == null;
+    }
+
+    public Value resolve(String var) {
+        var = var.replace("%", "");
+
+        Value value = variables.get(var);
+        if(value != null) {
+            // The variable resides in this scope
+            return format(value);
+        }
+        else if(!isGlobalScope()) {
+            // Let the parent scope look for the variable
+            return parent.resolve(var);
+        }
+        else {
+            // Unknown variable
+            return null;
+        }
     }
 }

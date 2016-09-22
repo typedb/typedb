@@ -20,12 +20,12 @@ package io.mindmaps.migration.template;
 
 public class ValueFormatter {
 
-    public static String format(Object o) {
+    public static Value format(Value val) {
 
-        if(o instanceof String){
-            return "\"" + (String) o + "\"";
+        if(val.isString()){
+            return new Value("\\\"" + val + "\\\"");
         }
 
-        return o.toString();
+        return val;
     }
 }

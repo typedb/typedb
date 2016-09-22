@@ -20,31 +20,29 @@ package io.mindmaps.migration.template;
 
 import mjson.Json;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.IntStream;
 
-import static io.mindmaps.migration.template.ValueFormatter.format;
+import static io.mindmaps.migration.template.Value.concat;
+import static java.util.stream.Collectors.joining;
 
 /**
  * ANTLR visitor class for parsing a template
  */
-@SuppressWarnings("unchecked")
-class TemplateVisitor extends GraqlTemplateBaseVisitor<String> {
+class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
 
     private CommonTokenStream tokens;
-    private StringBuilder result;
 
     private Scope scope;
     private Json context;
-    private int wsToken;
 
     TemplateVisitor(CommonTokenStream tokens, Json context){
         this.tokens = tokens;
         this.context = context;
-        this.wsToken = -1;
         scope = new Scope();
     }
 
@@ -52,7 +50,7 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<String> {
     // : block EOF
     // ;
     @Override
-    public String visitTemplate(GraqlTemplateParser.TemplateContext ctx) {
+    public Value visitTemplate(GraqlTemplateParser.TemplateContext ctx) {
         return visitBlock(ctx.block());
     }
 
@@ -60,8 +58,16 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<String> {
     // : (filler | statement)+
     // ;
     @Override
-    public String visitBlock(GraqlTemplateParser.BlockContext ctx) {
-        return visitChildren(ctx);
+    public Value visitBlock(GraqlTemplateParser.BlockContext ctx) {
+
+        scope = new Scope(scope);
+        scope.assign(context.asMap());
+
+        Value returnValue = visitChildren(ctx);
+
+        scope = scope.up();
+
+        return returnValue;
     }
 
 
@@ -71,82 +77,74 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<String> {
     // | noescpStatement
     // ;
     @Override
-    public String visitStatement(GraqlTemplateParser.StatementContext ctx) {
+    public Value visitStatement(GraqlTemplateParser.StatementContext ctx) {
          return visitChildren(ctx);
     }
 
     // forStatement
-    // : LPAREN FOR identifier IN identifier RPAREN LBRACKET block RBRACKET
+    // : LPAREN FOR variable IN resolve RPAREN LBRACKET block RBRACKET
     // ;
     @Override
-    public String visitForStatement(GraqlTemplateParser.ForStatementContext ctx) {
+    public Value visitForStatement(GraqlTemplateParser.ForStatementContext ctx) {
 
-        String innerVar = ctx.identifier(0).getText();
-        String outerVar = ctx.identifier(1).getText();
+        // resolved variable
+        Value variable = this.visitVariable(ctx.variable());
+        Value array = this.visitResolve(ctx.resolve());
 
-        // stringbuilder to hold result
-        StringBuilder builder = new StringBuilder();
+        Value returnValue = Value.VOID;
 
-        // enter data block
-        context = context.at(clean(outerVar));
+        if(array.isList()){
+            for (Object object : array.asList()) {
+                scope.assign(variable.asString(), object);
 
-        for(Json data:context.asJsonList()){
-
-            // set context to the current element
-            this.context = data;
-
-            // visit inner block with new data context
-            builder.append(visitBlock(ctx.block()));
-
-            wsToken = ctx.LBRACKET().getSymbol().getTokenIndex();
+                returnValue = concat(returnValue, this.visit(ctx.block()));
+            }
         }
 
-        // leave data block
-        context = context.dup();
-
-        return builder.toString();
+        return returnValue;
     }
 
     @Override
-    public String visitNullableStatement(GraqlTemplateParser.NullableStatementContext ctx) {
+    public Value visitNullableStatement(GraqlTemplateParser.NullableStatementContext ctx) {
          return visitChildren(ctx);
     }
 
     @Override
-    public String visitNoescpStatement(GraqlTemplateParser.NoescpStatementContext ctx) {
+    public Value visitNoescpStatement(GraqlTemplateParser.NoescpStatementContext ctx) {
          return visitChildren(ctx);
     }
 
     // reproduce the filler in the exact same way it appears in the template, replacing any identifiers
     // with the data in the data in the current context
     //
-    // filler      : (WORD | identifier)+;
+    // filler      : (WORD | resolve)+;
     @Override
-    public String visitFiller(GraqlTemplateParser.FillerContext ctx) {
+    public Value visitFiller(GraqlTemplateParser.FillerContext ctx) {
         return visitChildren(ctx);
     }
 
-    // identifier  : IDENTIFIER;
     @Override
-    public String visitIdentifier(GraqlTemplateParser.IdentifierContext ctx) {
-        Object value = "";
-        if(context.isString()){
-            value = context;
-        }
-        else if(context.isObject()){
-            value = context.at(clean(ctx.getText()));
-        }
-
-        return lws(ctx) + format(value) + rws(ctx);
+    public Value visitVariable(GraqlTemplateParser.VariableContext ctx) {
+        return new Value(ctx.getText().replace("%", ""));
     }
 
     @Override
-    public String visitTerminal(TerminalNode node){
-        return lws(node) + node.getText() + rws(node);
+    public Value visitResolve(GraqlTemplateParser.ResolveContext ctx) {
+        return scope.resolve(ctx.getText());
     }
 
     @Override
-    protected String aggregateResult(String aggregate, String nextResult) {
+    public Value visitReplace(GraqlTemplateParser.ReplaceContext ctx) {
+        return concat(new Value(lws(ctx.IDENTIFIER())), scope.resolve(ctx.getText()), new Value(rws(ctx.IDENTIFIER())));
+    }
+
+    @Override
+    public Value visitTerminal(TerminalNode node){
+        return new Value(lws(node) + node.getText() + rws(node));
+    }
+
+    @Override
+    protected Value aggregateResult(Value aggregate, Value nextResult) {
         if (aggregate == null) {
             return nextResult;
         }
@@ -155,39 +153,43 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<String> {
             return aggregate;
         }
 
-        return aggregate + nextResult;
-    }
-
-    private String clean(String identifier){
-       return identifier.replace("%", "");
-    }
-
-    private String rws(ParserRuleContext ctx){
-        return calculateWhiteSpace(tokens.getHiddenTokensToRight(ctx.getStart().getTokenIndex()));
+        return concat(aggregate, nextResult);
     }
 
     private String rws(TerminalNode node){
         Token token = node.getSymbol();
-        return calculateWhiteSpace(tokens.getHiddenTokensToRight(token.getTokenIndex()));
-    }
 
-    private String lws(ParserRuleContext ctx){
-        return calculateWhiteSpace(tokens.getHiddenTokensToLeft(ctx.getStart().getTokenIndex()));
+        List<Token> hidden = tokens.getHiddenTokensToRight(token.getTokenIndex());
+        if(hidden == null){ return ""; }
+
+        Integer newline = newlineOrEOF(hidden);
+        return newline != null ? wsFrom(0, newline, hidden) : "";
     }
 
     private String lws(TerminalNode node) {
         Token token = node.getSymbol();
-        return calculateWhiteSpace(tokens.getHiddenTokensToLeft(token.getTokenIndex()));
-    }
 
-
-    private String calculateWhiteSpace(List<Token> hidden){
+        List<Token> hidden = tokens.getHiddenTokensToLeft(token.getTokenIndex());
         if(hidden == null){ return ""; }
 
-        int hiddenWsToken = hidden.get(0).getTokenIndex();
-        if(wsToken >= hiddenWsToken){ return ""; }
+        Integer newline = newlineOrEOF(hidden);
+        newline = newline == null ? 0 : newline;
+        return wsFrom(newline, hidden.size(), hidden);
+    }
 
-        wsToken = hiddenWsToken;
-        return hidden.get(0).getText();
+    private Integer newlineOrEOF(List<Token> hidden){
+        Optional<Token> newline = IntStream.range(0, hidden.size())
+                .mapToObj(hidden::get)
+                .filter(h -> h.getText().equals("\n") || h.getTokenIndex() == tokens.index() - 1)
+                .findFirst();
+
+        return newline.isPresent() ? hidden.indexOf(newline.get()) + 1 : null;
+    }
+
+    private String wsFrom(int start, int end, List<Token> hidden){
+        return IntStream.range(start, end)
+                .mapToObj(hidden::get)
+                .map(Token::getText)
+                .collect(joining(""));
     }
 }

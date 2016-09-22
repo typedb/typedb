@@ -21,15 +21,12 @@ package io.mindmaps.migration.template;
 import mjson.Json;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
-
-import java.util.Map;
 
 public class TemplateParser {
 
 
-    public String parseTemplate(String templateString, Json data){
+    public Value parseTemplate(String templateString, Json data){
 
         GraqlTemplateLexer lexer = getLexer(templateString);
         CommonTokenStream tokens = new CommonTokenStream(lexer);

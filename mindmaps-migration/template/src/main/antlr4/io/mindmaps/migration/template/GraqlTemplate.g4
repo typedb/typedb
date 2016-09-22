@@ -20,7 +20,7 @@ statement
  ;
 
 forStatement
- : LPAREN FOR identifier IN identifier RPAREN LBRACKET block RBRACKET
+ : LPAREN FOR variable IN resolve RPAREN LBRACKET block RBRACKET
  ;
 
 nullableStatement
@@ -31,8 +31,11 @@ noescpStatement
  : NOESCP
  ;
 
-filler      : (WORD | identifier)+;
-identifier  : IDENTIFIER;
+filler      : (WORD | replace)+;
+
+variable    : IDENTIFIER;
+resolve     : IDENTIFIER;
+replace     : IDENTIFIER;
 
 // reserved
 FOR         : 'for' ;
@@ -47,4 +50,4 @@ LBRACKET    : '{';
 RBRACKET    : '}';
 WORD        : (~([ \t\r\n])+);
 
-WS : [ \t\r\n]+ -> channel(1) ;
+WS : [ \t\r\n] -> channel(1) ;
