@@ -40,7 +40,6 @@ public abstract class AtomBase implements Atomic{
     protected final String typeId;
 
     protected final PatternAdmin atomPattern;
-    protected final Set<Query> expansions = new HashSet<>();
 
     private Query parent = null;
 
@@ -73,7 +72,6 @@ public abstract class AtomBase implements Atomic{
         Pair<String, String> varData = extractDataFromVar(atomPattern.asVar());
         varName = varData.getKey();
         typeId = varData.getValue();
-        a.expansions.forEach(exp -> expansions.add(new Query(exp)));
     }
 
     private Pair<String, String> extractDataFromVar(VarAdmin var) {
@@ -103,20 +101,6 @@ public abstract class AtomBase implements Atomic{
         System.out.println("varName: " + varName + " typeId: " + typeId);
         if (isValuePredicate()) System.out.println("isValuePredicate");
         System.out.println();
-    }
-
-    @Override
-    public void addExpansion(Query query){
-        query.setParentAtom(this);
-        expansions.add(query);
-    }
-
-    @Override
-    public void removeExpansion(Query query){
-        if(expansions.contains(query)) {
-            query.setParentAtom(null);
-            expansions.remove(query);
-        }
     }
 
     @Override
@@ -150,13 +134,6 @@ public abstract class AtomBase implements Atomic{
 
     @Override
     public PatternAdmin getPattern(){ return atomPattern;}
-    @Override
-    public PatternAdmin getExpandedPattern() {
-        Set<PatternAdmin> expandedPattern = new HashSet<>();
-        expandedPattern.add(atomPattern);
-        expansions.forEach(q -> expandedPattern.add(q.getExpandedPattern()));
-        return Patterns.disjunction(expandedPattern);
-    }
 
     private MatchQuery getBaseMatchQuery(MindmapsGraph graph) {
         QueryBuilder qb = Graql.withGraph(graph);
@@ -247,9 +224,6 @@ public abstract class AtomBase implements Atomic{
     }
 
     @Override
-    public Set<Query> getExpansions(){ return expansions;}
-
-    @Override
     public Set<Atomic> getSubstitutions() {
         Set<Atomic> subs = new HashSet<>();
         getParentQuery().getAtoms().forEach( atom ->{
@@ -264,19 +238,6 @@ public abstract class AtomBase implements Atomic{
         throw new IllegalArgumentException(ErrorMessage.NO_TYPE_CONSTRAINTS.getMessage());
     }
 
-    public Set<Atomic> getNeighbours(){
-        Set<Atomic> neighbours = new HashSet<>();
-        getParentQuery().getAtoms().forEach(atom ->{
-            if (!atom.equals(this) &&
-                    (!atom.isValuePredicate() && !atom.isUnary() || (atom.isRuleResolvable()) || atom.isResource()) ) {
-                Set<String> intersection = new HashSet<>(getVarNames());
-                intersection.retainAll(atom.getVarNames());
-                if (!intersection.isEmpty()) neighbours.add(atom);
-            }
-        });
-        return neighbours;
-    }
-
     @Override
     public Map<String, Set<Atomic>> getVarSubMap() {
         Map<String, Set<Atomic>> map = new HashMap<>();
@@ -287,28 +248,6 @@ public abstract class AtomBase implements Atomic{
             else
                 map.put(var, Sets.newHashSet(sub));
         });
-        return map;
-    }
-
-    @Override
-    public Map<String, Set<Atomic>> getVarConstraintMap() {
-        Map<String, Set<Atomic>> map = new HashMap<>();
-        getSubstitutions().forEach( sub -> {
-            String var = sub.getVarName();
-            if (map.containsKey(var))
-                map.get(var).add(sub);
-            else
-                map.put(var, Sets.newHashSet(sub));
-        });
-        if (isRelation()){
-            getTypeConstraints().forEach( cstr -> {
-                String var = cstr.getVarName();
-                if (map.containsKey(var))
-                    map.get(var).add(cstr);
-                else
-                    map.put(var, Sets.newHashSet(cstr));
-            });
-        }
         return map;
     }
 

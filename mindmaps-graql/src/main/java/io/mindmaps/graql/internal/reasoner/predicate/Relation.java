@@ -55,9 +55,6 @@ public class Relation extends AtomBase {
     public Relation(Relation a) {
         super(a);
         castings.addAll(a.getPattern().asVar().getCastings());
-
-        expansions.forEach(this::removeExpansion);
-        a.expansions.forEach(exp -> expansions.add(new Query(exp)));
     }
 
     //rolePlayer-roleType

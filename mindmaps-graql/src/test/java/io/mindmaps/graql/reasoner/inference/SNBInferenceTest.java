@@ -491,7 +491,6 @@ public class SNBInferenceTest {
                 "} select $x, $y";
 
         MatchQuery query = qb.parseMatch(queryString);
-        MatchQuery expandedQuery = reasoner.expand(query);
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {

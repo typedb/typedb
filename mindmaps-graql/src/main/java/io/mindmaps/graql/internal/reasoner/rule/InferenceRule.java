@@ -64,9 +64,9 @@ public class InferenceRule {
     }
 
     private void propagateConstraints(Atomic parentAtom){
-        head.addAtomConstraints(parentAtom.getSubstitutions());
-        head.addAtomConstraints(body.getSubstitutions());
         body.addAtomConstraints(parentAtom.getSubstitutions());
+        head.addAtomConstraints(body.getSubstitutions());
+
         if(parentAtom.isRelation()) {
             head.addAtomConstraints(parentAtom.getTypeConstraints());
             body.addAtomConstraints(parentAtom.getTypeConstraints());

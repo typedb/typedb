@@ -165,15 +165,6 @@ public class Reasoner {
         }
     }
 
-    private Query applyRuleToAtom(Atomic parentAtom, Rule child, Map<String, Type> varMap) {
-        InferenceRule childRule = new InferenceRule(child, graph);
-        childRule.unify(parentAtom, varMap);
-        Query ruleBody = childRule.getBody();
-        parentAtom.addExpansion(ruleBody);
-
-        return ruleBody;
-    }
-
     private void propagateAnswers(Map<AtomicQuery, QueryAnswers> matAnswers){
         matAnswers.keySet().forEach( aq -> {
            if (aq.getParent() == null) aq.propagateAnswers(matAnswers);
@@ -295,38 +286,6 @@ public class Reasoner {
         return answers.filter(query.getSelectedNames());
     }
 
-    private void expandAtomicQuery(Atomic atom, Set<Query> subGoals, Map<String, Type> varMap) {
-        AtomicQuery query = new AtomicMatchQuery(atom);
-        boolean queryAdmissible = true;
-        Iterator<Query> it = subGoals.iterator();
-        while( it.hasNext() && queryAdmissible)
-            queryAdmissible = !query.isEquivalent(it.next());
-
-        if(queryAdmissible) {
-            Set<Rule> rules = getAtomChildren(atom);
-            for (Rule rule : rules) {
-                Query qr = applyRuleToAtom(atom, rule, varMap);
-
-                //go through each unified atom
-                Set<Atomic> atoms = qr.getAtoms();
-                atoms.forEach(a -> {
-                    if (atom.isRecursive())
-                        subGoals.add(query);
-                    expandAtomicQuery(a, subGoals, varMap);
-                });
-            }
-        }
-    }
-
-    private void expandQuery(Query query, Map<String, Type> varMap) {
-        Set<Atomic> atoms = query.getAtoms();
-
-        atoms.forEach(atom -> {
-            Set<Query> subGoals = new HashSet<>();
-            expandAtomicQuery(atom, subGoals, varMap);
-        });
-    }
-
     /**
      * Resolve a given query string using the rule base
      * @param inputQuery the query string to be expanded
@@ -343,17 +302,4 @@ public class Reasoner {
         QueryAnswers answers = resolveQuery(query, false);
         return new ReasonerMatchQuery(inputQuery, graph, answers);
     }
-
-    /**
-     * Expand a given query string using the rule base
-     * @param inputQuery the query string to be expanded
-     * @return expanded query string
-     */
-    public MatchQuery expand(MatchQuery inputQuery) {
-        Query query = new Query(inputQuery, graph);
-        Map<String, Type> varMap = query.getVarTypeMap();
-        expandQuery(query, varMap);
-        return query.getExpandedMatchQuery();
-    }
-
 }

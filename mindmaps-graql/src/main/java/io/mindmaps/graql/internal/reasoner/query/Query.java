@@ -24,12 +24,9 @@ import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.admin.Conjunction;
-import io.mindmaps.graql.admin.Disjunction;
 import io.mindmaps.graql.internal.query.match.MatchOrder;
 import io.mindmaps.graql.internal.query.match.MatchQueryInternal;
-import io.mindmaps.graql.internal.reasoner.container.AtomConjunction;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
@@ -82,16 +79,6 @@ public class Query implements MatchQueryInternal {
         this.selectVars = Sets.newHashSet(matchQuery.admin().getSelectedNames());
         this.atomSet = getAtomSet(pattern);
 
-        //copy expansions
-        for (Atomic qAtom : q.atomSet) {
-            Set<Query> expansions = qAtom.getExpansions();
-            for (Query exp : expansions) {
-                atomSet.forEach(atom ->
-                {
-                    if (atom.equals(qAtom)) atom.addExpansion(new Query(exp));
-                });
-            }
-        }
         this.typeAtomMap = getTypeAtomMap(atomSet);
     }
 
@@ -169,28 +156,7 @@ public class Query implements MatchQueryInternal {
         return vars;
     }
 
-    public void expandAtomByQuery(Atomic atom, Query query) {
-        atomSet.stream().filter(a -> a.equals(atom)).forEach(a -> a.addExpansion(query));
-    }
-
-    public void removeExpansionFromAtom(Atomic atom, Query query) {
-        atomSet.stream().filter(a -> a.equals(atom)).forEach(a -> {
-            PatternAdmin atomPattern = a.getPattern();
-            PatternAdmin expandedAtomPattern = a.getExpandedPattern();
-            a.removeExpansion(query);
-
-            replacePattern(expandedAtomPattern, atomPattern);
-        });
-    }
-
-    private boolean containsVar(String var) {
-        boolean varContained = false;
-        Iterator<Atomic> it = atomSet.iterator();
-        while(it.hasNext() && !varContained)
-            varContained = it.next().containsVar(var);
-
-        return varContained;
-    }
+    private boolean containsVar(String var) { return getVarSet().contains(var);}
 
     public boolean containsAtom(Atomic atom){ return atomSet.contains(atom);}
     private boolean containsEquivalentAtom(Atomic atom){
@@ -306,70 +272,11 @@ public class Query implements MatchQueryInternal {
         });
     }
 
-    private Disjunction<Conjunction<VarAdmin>> getDNF(){
-        return pattern.getDisjunctiveNormalForm();}
-
-    /**
-     * @return set of conjunctions from the DNF
-     */
-    private Set<AtomConjunction> getAtomConjunctions() {
-        Set<AtomConjunction> conj = new HashSet<>();
-        getDNF().getPatterns().forEach(c -> conj.add(new AtomConjunction(c)));
-        return conj;
-    }
-
-    /**
-     * @return set of conjunctions from the DNF taking into account atom expansions
-     */
-    private Set<AtomConjunction> getExpandedAtomConjunctions() {
-        Set<AtomConjunction> conj = new HashSet<>();
-        getExpandedDNF().getPatterns().forEach(c -> conj.add(new AtomConjunction(c)));
-        return conj;
-    }
-
-    private Disjunction<Conjunction<VarAdmin>> getExpandedDNF() {
-        return getExpandedMatchQuery().admin().getPattern().getDisjunctiveNormalForm();
-    }
-
     public MatchQuery getMatchQuery() {
         if (selectVars.isEmpty())
             return Graql.match(pattern).withGraph(graph);
         else
             return Graql.match(pattern).select(selectVars).withGraph(graph);
-    }
-
-    public MatchQuery getExpandedMatchQuery() {
-        Set<AtomConjunction> conjunctions = getAtomConjunctions();
-        atomSet.forEach(atom -> {
-            if (!atom.getExpansions().isEmpty()) {
-                //find base conjunctions
-                Set<AtomConjunction> baseConjunctions = new HashSet<>();
-                conjunctions.forEach(conj -> {
-                    if(conj.contains(atom))
-                        baseConjunctions.add(conj.remove(atom));
-                });
-
-                for (Query exp : atom.getExpansions()) {
-                    Set<AtomConjunction> childConjunctions = exp.getExpandedAtomConjunctions();
-
-                    childConjunctions.forEach(chConj -> {
-                        baseConjunctions.forEach( bConj -> {
-                            AtomConjunction conj = bConj.conjunction(chConj, graph);
-                            if (conj != null) conjunctions.add(conj);
-                        });
-                    });
-                }
-            }
-        });
-        QueryBuilder qb = Graql.withGraph(graph);
-
-        Set<Conjunction<VarAdmin>> conjs = new HashSet<>();
-        conjunctions.forEach(conj -> conjs.add(conj.getConjunction()));
-        return qb.match(Patterns.disjunction(conjs)).select(selectVars);
-    }
-
-    public PatternAdmin getExpandedPattern() {
-        return getExpandedMatchQuery().admin().getPattern();
     }
 
     private Set<Atomic> getAtomSet(Conjunction<PatternAdmin> pat) {
