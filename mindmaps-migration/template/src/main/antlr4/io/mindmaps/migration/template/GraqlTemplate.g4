@@ -10,7 +10,7 @@ template
  ;
 
 block
- : (filler | statement)+
+ : (statement | filler)+
  ;
 
 statement
@@ -20,7 +20,7 @@ statement
  ;
 
 forStatement
- : LPAREN FOR variable IN resolve RPAREN LBRACKET block RBRACKET
+ : '(' FOR variable 'in' resolve ')' LBRACKET block RBRACKET
  ;
 
 nullableStatement
@@ -31,11 +31,22 @@ noescpStatement
  : NOESCP
  ;
 
-filler      : (WORD | replace)+;
+filler      : (statement | replace | any)+;
 
 variable    : IDENTIFIER;
 resolve     : IDENTIFIER;
 replace     : IDENTIFIER;
+
+any
+ : IN
+ | FOR
+ | NULLABLE
+ | NOESCP
+ | LPAREN
+ | RPAREN
+ | LBRACKET
+ | RBRACKET
+ | NOT_WS;
 
 // reserved
 FOR         : 'for' ;
@@ -48,6 +59,6 @@ LPAREN      : '(';
 RPAREN      : ')';
 LBRACKET    : '{';
 RBRACKET    : '}';
-WORD        : (~([ \t\r\n])+);
+NOT_WS      : ~[ \t\r\n];
 
 WS : [ \t\r\n] -> channel(1) ;

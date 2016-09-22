@@ -68,7 +68,19 @@ public class TemplateParserTest {
 
     @Test
     public void noSpacesBetweenTokensTest(){
-        assertTrue(false);
+        String template = "(for %whale in %whales){" +
+                "\t\t\t$x isa whale has name ,%whale;\n}";
+
+        String json = "{\"whales\": [" +
+                "\"shamu\"," +
+                "\"dory\"" +
+                "]}";
+
+        String expected =
+                "\t\t\t$x isa whale has name ,\\\"shamu\\\";\n" +
+                        "\t\t\t$x isa whale has name ,\\\"dory\\\";\n";
+
+        assertParseEquals(template, json, expected);
     }
 
     @Test
