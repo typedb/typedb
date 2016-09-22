@@ -223,7 +223,7 @@ export default {
         },
 
         notify(ev) {
-            if(ev != null && !ev.shiftKey)
+            if(ev instanceof KeyboardEvent && !ev.shiftKey)
                 return;
 
             if(this.graqlQuery == undefined)
@@ -235,7 +235,7 @@ export default {
         },
 
         clearGraph(ev) {
-            if(ev != null && !ev.shiftKey)
+            if(ev instanceof KeyboardEvent && !ev.shiftKey)
                 return;
 
             // Reset all interface elements to default
