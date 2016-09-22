@@ -26,6 +26,8 @@ public final class Schema {
         throw new UnsupportedOperationException();
     }
 
+    public static String VERTEX_LABEL = "CONCEPT";
+
     /**
      * The different types of edges between vertices
      */
