@@ -289,14 +289,14 @@ public class Analytics {
 
     private String checkSelectedTypesHaveCorrectDataType(Set<String> types) {
         if (types == null || types.isEmpty())
-            throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
+            throw new IllegalArgumentException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                     .getMessage(this.getClass().toString()));
 
         String dataType = null;
         for (String type : types) {
             // check if the selected type is a resource-type
             if (!resourceTypes.containsKey(type))
-                throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
+                throw new IllegalArgumentException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                         .getMessage(this.getClass().toString()));
 
             if (dataType == null) {
