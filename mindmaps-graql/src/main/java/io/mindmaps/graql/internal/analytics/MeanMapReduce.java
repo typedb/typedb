@@ -23,6 +23,7 @@ public class MeanMapReduce extends MindmapsMapReduce<Map<String, Number>> {
 
     private String resourceDataType = null;
 
+    //Needed internally for OLAP tasks
     public MeanMapReduce() {
     }
 
