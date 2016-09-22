@@ -66,7 +66,7 @@ abstract class CommonOLAP {
      *
      * @param configuration the apache config object that will be propagated
      */
-    public void storeState(final Configuration configuration) {
+    void storeState(final Configuration configuration) {
         // store selectedTypes
         selectedTypes.forEach(typeId -> configuration.addProperty(PREFIX_SELECTED_TYPE_KEY+"."+typeId,typeId));
 
@@ -84,7 +84,7 @@ abstract class CommonOLAP {
      * @param graph         the tinker graph
      * @param configuration the apache config object containing the values
      */
-    public void loadState(final Graph graph, final Configuration configuration) {
+    void loadState(final Graph graph, final Configuration configuration) {
         // load selected types
         configuration.subset(PREFIX_SELECTED_TYPE_KEY).getKeys().forEachRemaining(key ->
                 selectedTypes.add(configuration.getString(PREFIX_SELECTED_TYPE_KEY+"."+key)));
