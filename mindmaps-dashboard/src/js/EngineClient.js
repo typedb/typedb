@@ -108,4 +108,16 @@ export default class EngineClient {
 
         this.request(request);
     }
+
+    /**
+     * Get meta ontology type instances.
+     */
+    getMetaTypes(fn) {
+        var request = {
+            url: "/shell/metaTypeInstances",
+            callback: fn
+        }
+
+        this.request(request);
+    }
 };

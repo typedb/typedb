@@ -20,7 +20,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 <div class="container-fluid">
     <div class="row">
         <div class="col-xs-12">
-            <div class="panel panel-filled">
+            <div class="panel panel-filled" style="margin-bottom: 0px;">
                 <div class="panel-heading">
                     <div class="panel-tools">
                         <i @click="clearGraph" class="pe-7s-refresh"></i>
@@ -34,7 +34,22 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                     <div class="from-buttons">
                         <button @click="notify" class="btn btn-default search-button">Submit<i class="pe-7s-angle-right-circle"></i></button>
                         <button @click="clearGraph" class="btn btn-default">Clear<i class="pe-7s-refresh"></i></button>
+                        <button @click="getMetaTypes" class="btn btn-info">Show Types<i class="types-button" v-bind:class="[typeInstances ? 'pe-7s-angle-up-circle' : 'pe-7s-angle-down-circle']"></i></button>
                     </div>
+                </div>
+            </div>
+            <div class="panel panel-c-info panel-collapse" v-show="typeInstances">
+                <div class="panel-body">
+
+                    <div v-for="k in typeKeys">
+                        <h4>
+                            <button @click="toggleElement(k+'-group')" class="btn btn-link">{{prettify(k)}}</button>
+                        </h4>
+                        <div class="row m-t-md type-row btn-group {{k}}-group" style="display: none;">
+                            <button v-for="i in typeInstances[k]" @click="typeQuery(k, i)" class="btn btn-default">{{i}}</button>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -92,6 +107,19 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
     padding-bottom: 0px;
     margin-bottom: 0px;
 }
+.types-button {
+    padding-left: 5px;
+}
+.type-row {
+    margin-top: 2px;
+    margin-bottom: 10px;
+    margin-left: 5px;
+}
+h4 {
+    margin-top: 0px;
+    margin-bottom: 0px;
+    margin-left: -10px;
+}
 </style>
 
 <script>
@@ -112,13 +140,16 @@ export default {
             graqlResponse: undefined,
             visualiser: {},
             engineClient: {},
-            halParser: {}
+            halParser: {},
+
+            typeInstances: false,
+            typeKeys: []
         }
     },
 
     created() {
         visualiser = new Visualiser();
-        visualiser.setOnClick(this.leftClick)
+        visualiser.setOnDoubleClick(this.leftClick)
                   .setOnRightClick(this.rightClick);
 
         engineClient = new EngineClient();
@@ -133,6 +164,12 @@ export default {
     },
 
     methods: {
+        typeQuery(t, ti) {
+            this.graqlQuery = "match $x "+(t === 'roles' ? 'plays-role':'isa')+" "+ti+";";
+            this.typeInstances = false;
+            this.notify();
+        },
+
         typeQueryResponse(resp, err) {
             if(resp != undefined) {
                 halParser.parseHalObject(resp);
@@ -217,6 +254,22 @@ export default {
 
         suppressEventDefault(e){
             e.preventDefault();
+        },
+
+        getMetaTypes() {
+            if(this.typeInstances)
+                this.typeInstances = false;
+            else
+                engineClient.getMetaTypes(x => {if(x != null) { this.typeInstances = x; this.typeKeys = _.keys(x)}});
+        },
+
+        toggleElement(e) {
+            console.log(e);
+            $('.'+e).toggle();
+        },
+
+        prettify(text) {
+            return text.charAt(0).toUpperCase() + text.slice(1);
         }
     }
 }
