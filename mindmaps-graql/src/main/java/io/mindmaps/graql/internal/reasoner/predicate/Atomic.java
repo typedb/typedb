@@ -29,11 +29,9 @@ import javafx.util.Pair;
 import java.util.Map;
 import java.util.Set;
 
-public interface Atomic {
+public interface Atomic{
 
     void print();
-    void addExpansion(Query query);
-    void removeExpansion(Query query);
 
     /**
      * @return true if the atom corresponds to a unary predicate
@@ -83,11 +81,6 @@ public interface Atomic {
      * @return the corresponding pattern
      * */
     PatternAdmin getPattern();
-    /**
-     * @return the corresponding pattern with all expansions
-     * */
-
-    PatternAdmin getExpandedPattern();
 
     /**
      *
@@ -128,14 +121,10 @@ public interface Atomic {
     String getTypeId();
     String getVal();
 
-    Set<Query> getExpansions();
-
     Set<Atomic> getSubstitutions();
     Set<Atomic> getTypeConstraints();
-    Set<Atomic> getNeighbours();
 
     Map<String, Set<Atomic>> getVarSubMap();
-    Map<String, Set<Atomic>> getVarConstraintMap();
 
     Map<String, Pair<Type, RoleType>> getVarTypeRoleMap();
     Map<RoleType, Pair<String, Type>> getRoleVarTypeMap();
