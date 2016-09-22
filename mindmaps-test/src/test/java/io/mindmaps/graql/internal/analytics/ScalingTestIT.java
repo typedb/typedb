@@ -19,24 +19,38 @@
 package io.mindmaps.graql.internal.analytics;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.*;
-import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.concept.Entity;
+import io.mindmaps.concept.EntityType;
+import io.mindmaps.concept.Relation;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.RoleType;
 import io.mindmaps.engine.loader.DistributedLoader;
+import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.MindmapsClient;
 import org.javatuples.Pair;
-import org.junit.*;
-
-import static io.mindmaps.IntegrationUtils.graphWithNewKeyspace;
-import static org.junit.Assert.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
+import static io.mindmaps.IntegrationUtils.graphWithNewKeyspace;
 import static io.mindmaps.IntegrationUtils.startTestEngine;
 import static io.mindmaps.graql.Graql.var;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class ScalingTestIT {
 
@@ -118,7 +132,7 @@ public class ScalingTestIT {
             Long stopTime = 0L;
 
             for (int i=0;i<REPEAT;i++) {
-                writer.println("gremlin count is: " + graph.getTinkerTraversal().V().count().next());
+                writer.println("gremlin count is: " + graph.getTinkerTraversal().count().next());
                 writer.println("repeat number: "+i);
                 writer.flush();
                 startTime = System.currentTimeMillis();
@@ -186,7 +200,7 @@ public class ScalingTestIT {
                 writer.println("stop generate graph " + System.currentTimeMillis()/1000L + "s");
 
                 graph = MindmapsClient.getGraph(keyspace);
-                writer.println("gremlin count is: " + graph.getTinkerTraversal().V().count().next());
+                writer.println("gremlin count is: " + graph.getTinkerTraversal().count().next());
 
                 Analytics computer = new Analytics(CURRENT_KEYSPACE);
 
@@ -208,7 +222,7 @@ public class ScalingTestIT {
                 writer.println("stop mutate graph " + System.currentTimeMillis() / 1000L + "s");
 
                 graph = MindmapsClient.getGraph(CURRENT_KEYSPACE);
-                writer.println("gremlin count is: " + graph.getTinkerTraversal().V().count().next());
+                writer.println("gremlin count is: " + graph.getTinkerTraversal().count().next());
 
                 writer.println("mutate degree");
                 computer = new Analytics(CURRENT_KEYSPACE);

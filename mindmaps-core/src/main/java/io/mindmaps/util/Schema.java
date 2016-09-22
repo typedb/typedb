@@ -26,6 +26,8 @@ public final class Schema {
         throw new UnsupportedOperationException();
     }
 
+    public static String VERTEX_LABEL = "CONCEPT";
+
     /**
      * The different types of edges between vertices
      */
@@ -108,7 +110,7 @@ public final class Schema {
         ITEM_IDENTIFIER(String.class), INDEX(String.class),
 
         //Other Properties
-        TYPE(String.class), IS_ABSTRACT(Boolean.class),
+        BASE_TYPE(String.class), TYPE(String.class), IS_ABSTRACT(Boolean.class),
         REGEX(String.class), DATA_TYPE(String.class), IS_UNIQUE(Boolean.class),
         IS_MATERIALISED(Boolean.class), IS_EXPECTED(Boolean.class), RULE_LHS(String.class), RULE_RHS(String.class),
         VALUE_STRING(String.class), VALUE_LONG(Long.class), VALUE_DOUBLE(Double.class), VALUE_BOOLEAN(Boolean.class);

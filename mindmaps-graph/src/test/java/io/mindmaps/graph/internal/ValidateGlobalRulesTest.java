@@ -18,7 +18,6 @@
 
 package io.mindmaps.graph.internal;
 
-import io.mindmaps.util.Schema;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
@@ -26,6 +25,7 @@ import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
+import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.junit.After;
 import org.junit.Before;
@@ -100,9 +100,9 @@ public class ValidateGlobalRulesTest {
             assertTrue(ValidateGlobalRules.validatePlaysRoleStructure(casting));
         }
 
-        mindmapsGraph.getTinkerTraversal().V().
+        ((Edge) mindmapsGraph.getTinkerTraversal().
                 has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), werewolf.getId()).
-                outE(Schema.EdgeLabel.ISA.getLabel()).next().remove();
+                outE(Schema.EdgeLabel.ISA.getLabel()).next()).remove();
         ((Edge) mindmapsGraph.getTinkerTraversal().V(wolf.getBaseIdentifier()).outE(Schema.EdgeLabel.AKO.getLabel()).as("edge").otherV().hasId(creature.getBaseIdentifier()).select("edge").next()).remove();
         ((Edge) mindmapsGraph.getTinkerTraversal().V(creature.getBaseIdentifier()).outE(Schema.EdgeLabel.PLAYS_ROLE.getLabel()).as("edge").otherV().hasId(monster.getBaseIdentifier()).select("edge").next()).remove();
 
@@ -119,15 +119,15 @@ public class ValidateGlobalRulesTest {
         assertFalse(flags[0] && flags[1]);
         assertTrue(flags[0] || flags[1]);
 
-        mindmapsGraph.getTinkerTraversal().V().
+        ((Edge) mindmapsGraph.getTinkerTraversal().V().
                 has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), werewolf.getId()).
-                outE(Schema.EdgeLabel.ISA.getLabel()).next().remove();
-        mindmapsGraph.getTinkerTraversal().V().
+                outE(Schema.EdgeLabel.ISA.getLabel()).next()).remove();
+        ((Edge) mindmapsGraph.getTinkerTraversal().V().
                 has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), wolf.getId()).
-                outE(Schema.EdgeLabel.ISA.getLabel()).next().remove();
-        mindmapsGraph.getTinkerTraversal().V().
+                outE(Schema.EdgeLabel.ISA.getLabel()).next()).remove();
+        ((Edge) mindmapsGraph.getTinkerTraversal().V().
                 has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), creature.getId()).
-                outE(Schema.EdgeLabel.ISA.getLabel()).next().remove();
+                outE(Schema.EdgeLabel.ISA.getLabel()).next()).remove();
 
         werewolf.type(wolf);
         wolf.playsRole(animal);

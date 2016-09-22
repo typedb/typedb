@@ -5,6 +5,7 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import io.mindmaps.graph.internal.MindmapsOrientDBGraph;
+import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.orientdb.OrientGraph;
 import org.junit.After;
 import org.junit.Before;
@@ -73,6 +74,17 @@ public class MindmapsOrientDBGraphFactoryTest {
         mindmapsGraph.commit();
         assertEquals(15, mindmapsGraph.getTinkerPopGraph().traversal().V().toList().size());
     }
+
+    @Test
+    public void testVertexIndices(){
+        MindmapsOrientDBGraph mindmapsGraph = orientGraphFactory.getGraph(TEST_NAME, TEST_URI, null, false);
+        assertEquals(6, mindmapsGraph.getTinkerPopGraph().getVertexIndexedKeys(Schema.VERTEX_LABEL).size());
+
+        assertNotNull(mindmapsGraph.getMetaEntityType());
+        assertNotNull(mindmapsGraph.getMetaRelationType());
+        assertNotNull(mindmapsGraph.getMetaType());
+    }
+
 
 
 }

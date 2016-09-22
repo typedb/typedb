@@ -110,21 +110,21 @@ public class BackgroundTasksTest {
         mindmapsGraph.commit();
 
         //Check Number of castings is as expected
-        assertEquals(2, ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
+        assertEquals(2, ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph().traversal().V().has(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.CASTING.name()).toList().size());
 
         //Break The Graph With Fake Castings
         buildDuplicateCasting(relationTypeId, mainRoleTypeId, mainInstanceId, otherRoleTypeId, otherInstanceId3);
         buildDuplicateCasting(relationTypeId, mainRoleTypeId, mainInstanceId, otherRoleTypeId, otherInstanceId4);
 
         //Check the graph is broken
-        assertEquals(6, ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
+        assertEquals(6, ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph().traversal().V().has(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.CASTING.name()).toList().size());
 
         waitForCache(true, keyspace, 4);
         //Now fix everything
         backgroundTasks.forcePostprocessing();
 
         //Check it's all fixed
-        assertEquals(4, ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
+        assertEquals(4, ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph().traversal().V().has(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.CASTING.name()).toList().size());
     }
 
     private void buildDuplicateCasting(String relationTypeId, String mainRoleTypeId, String mainInstanceId, String otherRoleTypeId, String otherInstanceId) throws Exception {
@@ -150,7 +150,8 @@ public class BackgroundTasksTest {
                 has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), mainInstanceId).next();
 
         //Create Fake Casting
-        Vertex castingVertex = rawGraph.addVertex(Schema.BaseType.CASTING.name());
+        Vertex castingVertex = rawGraph.addVertex();
+        castingVertex.property(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.CASTING.name());
         castingVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), mainRoleTypeVertex);
 
         Edge edge = castingVertex.addEdge(Schema.EdgeLabel.ROLE_PLAYER.getLabel(), mainInstanceVertex);
