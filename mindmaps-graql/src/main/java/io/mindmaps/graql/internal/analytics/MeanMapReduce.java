@@ -16,7 +16,7 @@ import java.util.Set;
 
 public class MeanMapReduce extends MindmapsMapReduce<Map<String, Number>> {
     public static final String MEMORY_KEY = "mean";
-    public static final String SELECTED_DATA_TYPE = "SELECTED_DATA_TYPE";
+    private static final String SELECTED_DATA_TYPE = "SELECTED_DATA_TYPE";
 
     public static final String COUNT = "C";
     public static final String SUM = "S";

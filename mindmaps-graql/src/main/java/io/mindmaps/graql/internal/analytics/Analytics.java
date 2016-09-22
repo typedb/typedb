@@ -23,9 +23,6 @@ import io.mindmaps.MindmapsComputer;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Instance;
-import io.mindmaps.concept.Relation;
-import io.mindmaps.concept.RelationType;
-import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
@@ -33,13 +30,10 @@ import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 
 import static io.mindmaps.graql.Graql.var;
 import static io.mindmaps.graql.Graql.withGraph;
@@ -52,7 +46,7 @@ import static io.mindmaps.util.Schema.ConceptProperty.ITEM_IDENTIFIER;
 
 public class Analytics {
 
-    public final String keySpace;
+    private final String keySpace;
     // TODO: allow user specified resources
     public static final String degree = "degree";
 
@@ -105,7 +99,7 @@ public class Analytics {
         graph.rollback();
 
         // add analytics ontology - hard coded for now
-        insertOntology(degree, ResourceType.DataType.LONG);
+        mutateResourceOntology(degree, ResourceType.DataType.LONG);
     }
 
     /**
@@ -130,7 +124,7 @@ public class Analytics {
         }
 
         // add analytics ontology - hard coded for now
-        insertOntology(degree, ResourceType.DataType.LONG);
+        mutateResourceOntology(degree, ResourceType.DataType.LONG);
     }
 
     /**
@@ -275,7 +269,7 @@ public class Analytics {
      * Compute the number of relations that each instance takes part in and persist this information in the graph. The
      * degree is stored as a resource of type "degree" attached to the relevant instance.
      */
-    public void degreesAndPersist() throws ExecutionException, InterruptedException {
+    public void degreesAndPersist() {
         degreesAndPersist(degree);
     }
 
@@ -286,7 +280,7 @@ public class Analytics {
      * @param resourceTypeId    the ID of a resource type used to persist information
      * @param resourceDataType  the datatype of the resource type
      */
-    private void insertOntology(String resourceTypeId, ResourceType.DataType resourceDataType) {
+    private void mutateResourceOntology(String resourceTypeId, ResourceType.DataType resourceDataType) {
         MindmapsGraph graph = MindmapsClient.getGraph(keySpace);
         ResourceType resource = graph.putResourceType(resourceTypeId, resourceDataType);
         RoleType degreeOwner = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));

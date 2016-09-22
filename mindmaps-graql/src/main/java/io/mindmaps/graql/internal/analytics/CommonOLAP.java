@@ -38,13 +38,13 @@ abstract class CommonOLAP {
     /**
      * The types that are reserved by analytics and are not "seen" by analytics.
      */
-    private static Set<String> analyticsElements =
+    private static final Set<String> analyticsElements =
             Sets.newHashSet(Analytics.degree, GraqlType.HAS_RESOURCE.getId(Analytics.degree));
 
     /**
      * The concepts that can be "seen" by analytics by default.
      */
-    Set<String> baseTypes = Sets.newHashSet(
+    final Set<String> baseTypes = Sets.newHashSet(
             Schema.BaseType.ENTITY.name(),
             Schema.BaseType.RELATION.name(),
             Schema.BaseType.RESOURCE.name());
@@ -57,7 +57,7 @@ abstract class CommonOLAP {
     /**
      * Properties that will be reloaded whenever the class is instantiated in a spark executor.
      */
-    Map<String,Object> persistentProperties = new HashMap<>();
+    final Map<String,Object> persistentProperties = new HashMap<>();
 
 
     /**
@@ -66,7 +66,7 @@ abstract class CommonOLAP {
      *
      * @param configuration the apache config object that will be propagated
      */
-    public void storeState(final Configuration configuration) {
+    void storeState(final Configuration configuration) {
         // store selectedTypes
         selectedTypes.forEach(typeId -> configuration.addProperty(PREFIX_SELECTED_TYPE_KEY+"."+typeId,typeId));
 
@@ -81,10 +81,10 @@ abstract class CommonOLAP {
      * Load <code>persistentProperties</code> and any hard coded fields from an apache config object for use by the
      * spark executor.
      *
-     * @param graph
+     * @param graph         the tinker graph
      * @param configuration the apache config object containing the values
      */
-    public void loadState(final Graph graph, final Configuration configuration) {
+    void loadState(final Graph graph, final Configuration configuration) {
         // load selected types
         configuration.subset(PREFIX_SELECTED_TYPE_KEY).getKeys().forEachRemaining(key ->
                 selectedTypes.add(configuration.getString(PREFIX_SELECTED_TYPE_KEY+"."+key)));
@@ -106,7 +106,7 @@ abstract class CommonOLAP {
      * @param vertex    the Tinkerpop vertex
      * @return          the type
      */
-    public static String getVertexType(Vertex vertex) {
+    static String getVertexType(Vertex vertex) {
         return vertex.value(Schema.ConceptProperty.TYPE.name());
     }
 
@@ -116,7 +116,7 @@ abstract class CommonOLAP {
      * @param vertex    the Tinkerpop vertex
      * @return          if the type is reserved or not
      */
-    public static boolean isAnalyticsElement(Vertex vertex) {
+    static boolean isAnalyticsElement(Vertex vertex) {
         return analyticsElements.contains(getVertexType(vertex));
     }
 }

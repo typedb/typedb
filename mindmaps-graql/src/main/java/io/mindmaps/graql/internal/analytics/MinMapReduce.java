@@ -2,9 +2,7 @@ package io.mindmaps.graql.internal.analytics;
 
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.util.Schema;
-import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
@@ -14,7 +12,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-public class MinMapReduce extends MindmapsMapReduce<Number> {
+class MinMapReduce extends MindmapsMapReduce<Number> {
 
     public static final String MEMORY_KEY = "min";
     public static final String SELECTED_DATA_TYPE = "SELECTED_DATA_TYPE";

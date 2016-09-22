@@ -20,7 +20,6 @@ package io.mindmaps.graql.internal.analytics;
 
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.*;
-import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.util.ErrorMessage;
@@ -41,15 +40,15 @@ import java.util.stream.Collectors;
  * separate iteration from <code>putValue</code> to ensure that the graph remains sound.
  */
 
-public class BulkResourceMutate <T>{
+class BulkResourceMutate <T>{
 
-    int batchSize = 100;
-    boolean havePutValue = false;
-    boolean haveCalledCleanup = false;
+    private int batchSize = 100;
+    private boolean havePutValue = false;
+    private boolean haveCalledCleanup = false;
     private MindmapsGraph graph;
     private int currentNumberOfVertices = 0;
-    private String resourceTypeId = Analytics.degree;
-    private String keyspace;
+    private final String resourceTypeId = Analytics.degree;
+    private final String keyspace;
 
     private ResourceType<T> resourceType;
     private RoleType resourceOwner;
@@ -85,27 +84,15 @@ public class BulkResourceMutate <T>{
 
         if(vertex.property(deleteKey).isPresent()) {
             graph.getRelation(vertex.value(deleteKey)).delete();
-            try {
-                graph.commit();
-            } catch (MindmapsValidationException e) {
-                throw new RuntimeException("Failed to delete relation during bulk resource mutation.",e);
-            }
         }
 
         if (currentNumberOfVertices >= batchSize) flush();
     }
 
     /**
-     * Commit all remaining operations and close the connection to the graph.
-     */
-    void close() {
-        flush();
-    }
-
-    /**
      * Force all pending operations in the batch to be committed.
      */
-    private void flush() {
+    void flush() {
         initialiseGraph();
         try {
             graph.commit();

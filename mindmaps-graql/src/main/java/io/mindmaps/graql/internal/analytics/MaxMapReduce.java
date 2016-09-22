@@ -17,7 +17,7 @@ import java.util.Set;
 public class MaxMapReduce extends MindmapsMapReduce<Number> {
 
     public static final String MEMORY_KEY = "max";
-    public static final String SELECTED_DATA_TYPE = "SELECTED_DATA_TYPE";
+    private static final String SELECTED_DATA_TYPE = "SELECTED_DATA_TYPE";
 
     private String resourceDataType = null;
 
