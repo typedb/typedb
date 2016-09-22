@@ -26,10 +26,7 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.MindmapsClient;
 import org.javatuples.Pair;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -67,9 +64,11 @@ public class ConcurrencyTest {
         graph.close();
     }
 
+    @Ignore
     @Test
     public void testSameGraphMultipleThreads() throws InterruptedException {
         int numberOfThread = 3;
+        graph.close();
         ExecutorService executor = Executors.newFixedThreadPool(numberOfThread);
         for (int i=0;i<numberOfThread;i++) {
             executor.submit(() -> {

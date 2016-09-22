@@ -15,7 +15,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import spark.Spark;
-import sun.plugin.dom.exception.InvalidStateException;
 
 import java.util.Collections;
 import java.util.Optional;
