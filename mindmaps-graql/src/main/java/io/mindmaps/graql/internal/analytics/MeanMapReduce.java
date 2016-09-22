@@ -15,70 +15,46 @@ import java.util.Map;
 import java.util.Set;
 
 public class MeanMapReduce extends MindmapsMapReduce<Map<String, Number>> {
+
     public static final String MEMORY_KEY = "mean";
-    public static final String SELECTED_DATA_TYPE = "SELECTED_DATA_TYPE";
+    private static final String RESOURCE_TYPE_KEY = "RESOURCE_TYPE_KEY";
+    private static final String RESOURCE_DATA_TYPE_KEY = "RESOURCE_DATA_TYPE_KEY";
 
     public static final String COUNT = "C";
     public static final String SUM = "S";
 
-    private String resourceDataType = null;
-
     public MeanMapReduce() {
     }
 
-    public MeanMapReduce(Set<String> selectedTypes, Map<String, String> resourceTypes) {
+    public MeanMapReduce(Set<String> selectedTypes, String resourceDataType) {
         this.selectedTypes = selectedTypes;
-        resourceDataType = resourceTypes.get(selectedTypes.iterator().next());
-    }
-
-    @Override
-    public void storeState(final Configuration configuration) {
-        super.storeState(configuration);
-        configuration.addProperty(SELECTED_DATA_TYPE, resourceDataType);
-    }
-
-    @Override
-    public void loadState(final Graph graph, final Configuration configuration) {
-        super.loadState(graph, configuration);
-        resourceDataType = configuration.getString(SELECTED_DATA_TYPE);
+        String resourceDataTypeValue = resourceDataType.equals(ResourceType.DataType.LONG.getName()) ?
+                Schema.ConceptProperty.VALUE_LONG.name() : Schema.ConceptProperty.VALUE_DOUBLE.name();
+        persistentProperties.put(RESOURCE_DATA_TYPE_KEY, resourceDataTypeValue);
     }
 
     @Override
     public void map(final Vertex vertex, final MapEmitter<Serializable, Map<String, Number>> emitter) {
-        if (resourceDataType.equals(ResourceType.DataType.LONG.getName())) {
-            if (selectedTypes.contains(getVertexType(vertex))) {
-                Map<String, Number> pair = new HashMap<>(2);
-                pair.put(SUM, vertex.value(Schema.ConceptProperty.VALUE_LONG.name()));
-                pair.put(COUNT, 1L);
-                emitter.emit(MEMORY_KEY, pair);
-                return;
-            }
-            Map<String, Number> emptyPair = new HashMap<>(2);
-            emptyPair.put(SUM, 0);
-            emptyPair.put(COUNT, 0);
-            emitter.emit(MEMORY_KEY, emptyPair);
-        } else {
-            if (selectedTypes.contains(getVertexType(vertex))) {
-                Map<String, Number> pair = new HashMap<>(2);
-                pair.put(SUM, vertex.value(Schema.ConceptProperty.VALUE_DOUBLE.name()));
-                pair.put(COUNT, 1L);
-                emitter.emit(MEMORY_KEY, pair);
-                return;
-            }
-            Map<String, Number> emptyPair = new HashMap<>(2);
-            emptyPair.put(SUM, 0);
-            emptyPair.put(COUNT, 0);
-            emitter.emit(MEMORY_KEY, emptyPair);
+        if (selectedTypes.contains(getVertexType(vertex))) {
+            Map<String, Number> tuple = new HashMap<>(2);
+            tuple.put(SUM, vertex.value((String) persistentProperties.get(RESOURCE_DATA_TYPE_KEY)));
+            tuple.put(COUNT, 1L);
+            emitter.emit(MEMORY_KEY, tuple);
+            return;
         }
+        Map<String, Number> emptyTuple = new HashMap<>(2);
+        emptyTuple.put(SUM, 0);
+        emptyTuple.put(COUNT, 0);
+        emitter.emit(MEMORY_KEY, emptyTuple);
     }
 
     @Override
     public void reduce(final Serializable key, final Iterator<Map<String, Number>> values,
                        final ReduceEmitter<Serializable, Map<String, Number>> emitter) {
-        Map<String, Number> emptyPair = new HashMap<>(2);
-        emptyPair.put(SUM, 0);
-        emptyPair.put(COUNT, 0);
-        emitter.emit(key, IteratorUtils.reduce(values, emptyPair,
+        Map<String, Number> emptyTuple = new HashMap<>(2);
+        emptyTuple.put(SUM, 0);
+        emptyTuple.put(COUNT, 0);
+        emitter.emit(key, IteratorUtils.reduce(values, emptyTuple,
                 (a, b) -> {
                     a.put(COUNT, a.get(COUNT).longValue() + b.get(COUNT).longValue());
                     a.put(SUM, a.get(SUM).doubleValue() + b.get(SUM).doubleValue());

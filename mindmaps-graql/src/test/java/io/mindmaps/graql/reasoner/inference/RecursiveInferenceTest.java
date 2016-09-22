@@ -32,7 +32,6 @@ import org.junit.Test;
 import java.util.Map;
 import java.util.Set;
 
-import static io.mindmaps.graql.internal.reasoner.Utility.printMatchQueryResults;
 import static org.junit.Assert.assertEquals;
 
 public class RecursiveInferenceTest {

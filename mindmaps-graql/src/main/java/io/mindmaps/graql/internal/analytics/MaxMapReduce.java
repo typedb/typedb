@@ -17,33 +17,19 @@ import java.util.Set;
 public class MaxMapReduce extends MindmapsMapReduce<Number> {
 
     public static final String MEMORY_KEY = "max";
-    public static final String SELECTED_DATA_TYPE = "SELECTED_DATA_TYPE";
-
-    private String resourceDataType = null;
+    private static final String RESOURCE_DATA_TYPE_KEY = "RESOURCE_DATA_TYPE_KEY";
 
     public MaxMapReduce() {
     }
 
-    public MaxMapReduce(Set<String> selectedTypes, Map<String, String> resourceTypes) {
+    public MaxMapReduce(Set<String> selectedTypes, String resourceDataType) {
         this.selectedTypes = selectedTypes;
-        resourceDataType = resourceTypes.get(selectedTypes.iterator().next());
-    }
-
-    @Override
-    public void storeState(final Configuration configuration) {
-        super.storeState(configuration);
-        configuration.addProperty(SELECTED_DATA_TYPE, resourceDataType);
-    }
-
-    @Override
-    public void loadState(final Graph graph, final Configuration configuration) {
-        super.loadState(graph, configuration);
-        resourceDataType = configuration.getString(SELECTED_DATA_TYPE);
+        persistentProperties.put(RESOURCE_DATA_TYPE_KEY, resourceDataType);
     }
 
     @Override
     public void map(final Vertex vertex, final MapEmitter<Serializable, Number> emitter) {
-        if (resourceDataType.equals(ResourceType.DataType.LONG.getName())) {
+        if (persistentProperties.get(RESOURCE_DATA_TYPE_KEY).equals(ResourceType.DataType.LONG.getName())) {
             if (selectedTypes.contains(getVertexType(vertex))) {
                 emitter.emit(MEMORY_KEY, vertex.value(Schema.ConceptProperty.VALUE_LONG.name()));
                 return;
@@ -61,7 +47,7 @@ public class MaxMapReduce extends MindmapsMapReduce<Number> {
     @Override
     public void reduce(final Serializable key, final Iterator<Number> values,
                        final ReduceEmitter<Serializable, Number> emitter) {
-        if (resourceDataType.equals(ResourceType.DataType.LONG.getName())) {
+        if (persistentProperties.get(RESOURCE_DATA_TYPE_KEY).equals(ResourceType.DataType.LONG.getName())) {
             emitter.emit(key, IteratorUtils.reduce(values, Long.MIN_VALUE,
                     (a, b) -> a.longValue() > b.longValue() ? a : b));
         } else {

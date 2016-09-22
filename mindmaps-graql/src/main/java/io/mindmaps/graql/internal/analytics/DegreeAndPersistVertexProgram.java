@@ -29,16 +29,16 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 
-public class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
+class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
 
 
-    public static final String MEMORY_KEY = "oldAssertionId";
+    private static final String MEMORY_KEY = "oldAssertionId";
 
     private static final String KEYSPACE_KEY = "keyspace";
 
     private static final Set<String> COMPUTE_KEYS = Collections.singleton(MEMORY_KEY);
 
-    BulkResourceMutate bulkResourceMutate;
+    private BulkResourceMutate bulkResourceMutate;
 
     public DegreeAndPersistVertexProgram() {
     }
@@ -108,7 +108,7 @@ public class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
 
     @Override
     public void workerIterationEnd(Memory memory) {
-        bulkResourceMutate.close();
+        bulkResourceMutate.flush();
     }
 
     @Override

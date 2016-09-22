@@ -2,9 +2,7 @@ package io.mindmaps.graql.internal.analytics;
 
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.util.Schema;
-import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
@@ -14,24 +12,22 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-public class MinMapReduce extends MindmapsMapReduce<Number> {
+class MinMapReduce extends MindmapsMapReduce<Number> {
 
     public static final String MEMORY_KEY = "min";
-    public static final String SELECTED_DATA_TYPE = "SELECTED_DATA_TYPE";
     private static final String RESOURCE_DATA_TYPE_KEY = "RESOURCE_DATA_TYPE_KEY";
 
     public MinMapReduce() {
     }
 
-    public MinMapReduce(Set<String> selectedTypes, Map<String, String> resourceTypes) {
+    public MinMapReduce(Set<String> selectedTypes, String resourceDataType) {
         this.selectedTypes = selectedTypes;
-        String resourceDataType = resourceTypes.get(selectedTypes.iterator().next());
-        persistentProperties.put(RESOURCE_DATA_TYPE_KEY,resourceDataType);
+        persistentProperties.put(RESOURCE_DATA_TYPE_KEY, resourceDataType);
     }
 
     @Override
     public void map(final Vertex vertex, final MapEmitter<Serializable, Number> emitter) {
-        if (((String)persistentProperties.get(RESOURCE_DATA_TYPE_KEY)).equals(ResourceType.DataType.LONG.getName())) {
+        if (persistentProperties.get(RESOURCE_DATA_TYPE_KEY).equals(ResourceType.DataType.LONG.getName())) {
             if (selectedTypes.contains(getVertexType(vertex))) {
                 emitter.emit(MEMORY_KEY, vertex.value(Schema.ConceptProperty.VALUE_LONG.name()));
                 return;
@@ -49,7 +45,7 @@ public class MinMapReduce extends MindmapsMapReduce<Number> {
     @Override
     public void reduce(final Serializable key, final Iterator<Number> values,
                        final ReduceEmitter<Serializable, Number> emitter) {
-        if (((String)persistentProperties.get(RESOURCE_DATA_TYPE_KEY)).equals(ResourceType.DataType.LONG.getName())) {
+        if (persistentProperties.get(RESOURCE_DATA_TYPE_KEY).equals(ResourceType.DataType.LONG.getName())) {
             emitter.emit(key, IteratorUtils.reduce(values, Long.MAX_VALUE,
                     (a, b) -> a.longValue() < b.longValue() ? a : b));
         } else {

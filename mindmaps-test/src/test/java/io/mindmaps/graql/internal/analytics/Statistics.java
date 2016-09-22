@@ -3,6 +3,7 @@ package io.mindmaps.graql.internal.analytics;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.*;
 import io.mindmaps.factory.MindmapsClient;
+import org.elasticsearch.common.collect.Sets;
 import org.javatuples.Pair;
 import org.junit.*;
 import spark.Spark;
@@ -85,6 +86,8 @@ public class Statistics {
         ResourceType resourceType2 = graph.putResourceType("resourceType2", ResourceType.DataType.LONG);
         ResourceType resourceType3 = graph.putResourceType("resourceType3", ResourceType.DataType.LONG);
         ResourceType resourceType4 = graph.putResourceType("resourceType4", ResourceType.DataType.STRING);
+        ResourceType resourceType5 = graph.putResourceType("resourceType5", ResourceType.DataType.LONG);
+        ResourceType resourceType6 = graph.putResourceType("resourceType6", ResourceType.DataType.DOUBLE);
 
         Analytics computer;
 
@@ -125,6 +128,14 @@ public class Statistics {
         graph.putResource(-1L, resourceType2);
         graph.putResource(0L, resourceType2);
 
+        graph.putResource(6L, resourceType5);
+        graph.putResource(7L, resourceType5);
+        graph.putResource(8L, resourceType5);
+
+        graph.putResource(7.2, resourceType6);
+        graph.putResource(7.5, resourceType6);
+        graph.putResource(7.8, resourceType6);
+
         graph.putResource("a", resourceType4);
         graph.putResource("b", resourceType4);
         graph.putResource("c", resourceType4);
@@ -132,30 +143,65 @@ public class Statistics {
         graph.commit();
         graph = MindmapsClient.getGraph(keyspace);
 
+        // test max
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
         assertEquals(1.8, computer.max().get().doubleValue(), delta);
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
         assertEquals(4L, computer.max().get());
+        computer = new Analytics(keyspace,
+                Sets.newHashSet(graph.getType("resourceType1"), graph.getType("resourceType6")));
+        assertEquals(7.8, computer.max().get().doubleValue(), delta);
+        computer = new Analytics(keyspace,
+                Sets.newHashSet(graph.getType("resourceType2"), graph.getType("resourceType5")));
+        assertEquals(8L, computer.max().get());
 
+        // test min
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
         assertEquals(1.2, computer.min().get().doubleValue(), delta);
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
         assertEquals(-1L, computer.min().get());
+        computer = new Analytics(keyspace,
+                Sets.newHashSet(graph.getType("resourceType1"), graph.getType("resourceType6")));
+        assertEquals(1.2, computer.min().get().doubleValue(), delta);
+        computer = new Analytics(keyspace,
+                Sets.newHashSet(graph.getType("resourceType2"), graph.getType("resourceType5")));
+        assertEquals(-1L, computer.min().get());
 
+        // test sum
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
         assertEquals(4.5, computer.sum().get().doubleValue(), delta);
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
         assertEquals(3L, computer.sum().get());
+        computer = new Analytics(keyspace,
+                Sets.newHashSet(graph.getType("resourceType1"), graph.getType("resourceType6")));
+        assertEquals(27.0, computer.sum().get().doubleValue(), delta);
+        computer = new Analytics(keyspace,
+                Sets.newHashSet(graph.getType("resourceType2"), graph.getType("resourceType5")));
+        assertEquals(24L, computer.sum().get());
 
+        // test mean
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
         assertEquals(1.5, computer.mean().get(), delta);
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
         assertEquals(1.0, computer.mean().get(), delta);
+        computer = new Analytics(keyspace,
+                Sets.newHashSet(graph.getType("resourceType1"), graph.getType("resourceType6")));
+        assertEquals(4.5, computer.mean().get(), delta);
+        computer = new Analytics(keyspace,
+                Sets.newHashSet(graph.getType("resourceType2"), graph.getType("resourceType5")));
+        assertEquals(4.0, computer.mean().get(), delta);
 
+        // test std
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
         assertEquals(Math.sqrt(0.06), computer.std().get(), delta);
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
         assertEquals(Math.sqrt(14.0 / 3.0), computer.std().get(), delta);
+        computer = new Analytics(keyspace,
+                Sets.newHashSet(graph.getType("resourceType1"), graph.getType("resourceType6")));
+        assertEquals(Math.sqrt(9.06), computer.std().get(), delta);
+        computer = new Analytics(keyspace,
+                Sets.newHashSet(graph.getType("resourceType2"), graph.getType("resourceType5")));
+        assertEquals(Math.sqrt(70.0 / 6.0), computer.std().get(), delta);
 
         // if it's not a resource-type
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("thing")));
@@ -175,6 +221,15 @@ public class Statistics {
 
         // resource-type has incorrect data type
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType4")));
+        assertExceptionThrown(computer::max);
+        assertExceptionThrown(computer::min);
+        assertExceptionThrown(computer::mean);
+        assertExceptionThrown(computer::sum);
+        assertExceptionThrown(computer::std);
+
+        // resource-types have different data types
+        computer = new Analytics(keyspace,
+                Sets.newHashSet(graph.getType("resourceType1"), graph.getType("resourceType2")));
         assertExceptionThrown(computer::max);
         assertExceptionThrown(computer::min);
         assertExceptionThrown(computer::mean);
