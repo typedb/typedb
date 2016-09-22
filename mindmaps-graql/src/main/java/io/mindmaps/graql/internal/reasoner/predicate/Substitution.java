@@ -110,7 +110,7 @@ public class Substitution extends AtomBase{
             else
                 value = valuePredicates.iterator().next().getPredicate().getValue().toString();
         }
-        else if(var.admin().getId().isPresent()) value = var.admin().getId().isPresent()? var.admin().getId().get() : "";
+        else if(var.admin().getId().isPresent()) value = var.admin().getId().orElse("");
         return value;
     }
 

@@ -57,7 +57,7 @@ public class GeoInferenceTest {
                 "$y isa country;$y id 'Poland'; select $x";
         
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
-        //assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery)());
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
     }
 
     @Test
@@ -71,7 +71,7 @@ public class GeoInferenceTest {
                 "$y isa country;$y id 'Poland'; select $x";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
-        //assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery)());
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {

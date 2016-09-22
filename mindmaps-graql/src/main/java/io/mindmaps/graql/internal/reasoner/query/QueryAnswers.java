@@ -18,7 +18,9 @@
 
 package io.mindmaps.graql.internal.reasoner.query;
 
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
+import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.Substitution;
 
 import java.util.*;
@@ -89,7 +91,7 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
         return unify(unifiers, new HashMap<>(), new HashMap<>());
     }
 
-    public QueryAnswers unify(Map<String, String> unifiers, Map<String, Concept> subVars, Map<String, Concept> constraints){
+    private QueryAnswers unify(Map<String, String> unifiers, Map<String, Concept> subVars, Map<String, Concept> constraints){
         QueryAnswers unifiedAnswers = new QueryAnswers();
         this.forEach(entry -> {
             Map<String, Concept> answer = new HashMap<>(subVars);
@@ -109,5 +111,45 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
         });
 
         return unifiedAnswers;
+    }
+
+    /**
+     * unify answers with parentQuery
+     * @param parentQuery parent atomic query containing target variables
+     * @return unified answers
+     */
+    public static QueryAnswers getUnifiedAnswers(AtomicQuery parentQuery, AtomicQuery childQuery, QueryAnswers answers){
+        MindmapsGraph graph = childQuery.getGraph().orElse(null);
+        Atomic childAtom = childQuery.getAtom();
+        Atomic parentAtom = parentQuery.getAtom();
+
+        Map<String, String> unifiers = childAtom.getUnifiers(parentAtom);
+
+        //identify extra subs contribute to/constraining answers
+        Map<String, Concept> subVars = new HashMap<>();
+        Map<String, Concept> constraints = new HashMap<>();
+        if (parentQuery.getSelectedNames().size() != childQuery.getSelectedNames().size()){
+            Set<Atomic> childSubs = childQuery.getAtoms().stream().filter(Atomic::isValuePredicate).collect(Collectors.toSet());
+            Set<Atomic> parentSubs = parentQuery.getAtoms().stream().filter(Atomic::isValuePredicate).collect(Collectors.toSet());
+
+            Set<Atomic> extraSubs = childSubs.size() > parentSubs.size()? childSubs : parentSubs;
+            if (childSubs.size() > parentSubs.size())
+                extraSubs.removeAll(parentSubs);
+            else
+                extraSubs.removeAll(childSubs);
+
+            extraSubs.forEach( sub -> {
+                String var = sub.getVarName();
+                Concept con = graph.getConcept(sub.getVal());
+                if (unifiers.containsKey(var)) var = unifiers.get(var);
+                if (childQuery.getSelectedNames().size() > parentQuery.getSelectedNames().size())
+                    constraints.put(var, con);
+                else
+                    subVars.put(var, con);
+            });
+        }
+
+        QueryAnswers unifiedAnswers = answers.unify(unifiers, subVars, constraints);
+        return unifiedAnswers.filter(parentQuery.getSelectedNames());
     }
 }
