@@ -91,6 +91,7 @@ public class ConfigProperties {
         LOG.info("Project directory in use: ["+getProjectPath()+"]");
         LOG.info("Configuration file in use: [" + configFilePath + "]");
         LOG.info("Number of threads set to [" + numOfThreads + "]");
+        LOG.info("Logging configuration file in use:["+System.getProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY)+"]");
     }
 
 
@@ -123,6 +124,10 @@ public class ConfigProperties {
 
 
     // Getters
+
+    public String getLogFilePath(){
+        return System.getProperty(LOG_FILE_OUTPUT_SYSTEM_PROPERTY);
+    }
 
     public int getAvailableThreads() {
         if (numOfThreads == -1)

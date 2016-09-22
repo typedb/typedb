@@ -120,7 +120,7 @@ public class ImportController {
             return e.getMessage();
         }
 
-        return "Loading successfully started.";
+        return "Loading successfully STARTED. \n";
     }
 
 
@@ -150,7 +150,7 @@ public class ImportController {
             res.status(500);
             return e.getMessage();
         }
-        return "Ontology successfully loaded.";
+        return "Ontology successfully loaded. \n";
     }
 
     void importDataFromFile(String dataFile, String graphName) {
