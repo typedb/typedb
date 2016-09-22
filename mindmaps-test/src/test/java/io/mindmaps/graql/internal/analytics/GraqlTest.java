@@ -24,16 +24,15 @@ import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.util.ErrorMessage;
 import org.javatuples.Pair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 import static io.mindmaps.IntegrationUtils.graphWithNewKeyspace;
@@ -262,5 +261,47 @@ public class GraqlTest {
             }
             assertTrue(resources.iterator().next().getValue().equals(degree.getValue()));
         });
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testInvalidIdWithAnalytics() {
+        ((ComputeQuery) qb.parse("compute sum in thing")).execute();
+    }
+
+    @Test
+    public void testStatisticsMethods() throws MindmapsValidationException {
+
+        ResourceType<Long> thing = graph.putResourceType("thing", ResourceType.DataType.LONG);
+        graph.putResource(1L,thing);
+        graph.putResource(2L,thing);
+        graph.putResource(3L,thing);
+        graph.commit();
+
+        // use graql to compute various statistics
+        Optional<Number> result = (Optional<Number>) ((ComputeQuery) qb.parse("compute sum in thing")).execute();
+        assertEquals(6L,(long) result.orElse(0L));
+        result = (Optional<Number>) ((ComputeQuery) qb.parse("compute min in thing")).execute();
+        assertEquals(1L,(long) result.orElse(0L));
+        result = (Optional<Number>) ((ComputeQuery) qb.parse("compute max in thing")).execute();
+        assertEquals(3L,(long) result.orElse(0L));
+        result = (Optional<Number>) ((ComputeQuery) qb.parse("compute mean in thing")).execute();
+        assertEquals(2.0, (double) result.orElse(0L), 0.1);
+
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testNonResourceTypeAsSubgraphForAnalytics() throws MindmapsValidationException {
+        EntityType thing = graph.putEntityType("thing");
+        graph.commit();
+
+        ((ComputeQuery) qb.parse("compute sum in thing")).execute();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testErrorWhenNoSubgrapForAnalytics() throws MindmapsValidationException {
+        ((ComputeQuery) qb.parse("compute sum")).execute();
+        ((ComputeQuery) qb.parse("compute min")).execute();
+        ((ComputeQuery) qb.parse("compute max")).execute();
+        ((ComputeQuery) qb.parse("compute mean")).execute();
     }
 }

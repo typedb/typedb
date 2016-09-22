@@ -16,7 +16,7 @@ import java.util.Set;
 
 public class SumMapReduce extends MindmapsMapReduce<Number> {
     public static final String MEMORY_KEY = "sum";
-    public static final String SELECTED_DATA_TYPE = "SELECTED_DATA_TYPE";
+    private static final String SELECTED_DATA_TYPE = "SELECTED_DATA_TYPE";
 
     private String resourceDataType = null;
 
