@@ -28,4 +28,13 @@ public class ValueFormatter {
 
         return val;
     }
+
+    public static Value formatVar(Value var){
+        String variable = var.toString();
+        if(variable.contains(" ")){
+            return new Value(variable.replace(" ", "-"));
+        }
+
+        return var;
+    }
 }

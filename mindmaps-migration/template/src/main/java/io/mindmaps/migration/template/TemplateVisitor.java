@@ -29,6 +29,8 @@ import java.util.*;
 import java.util.stream.IntStream;
 
 import static io.mindmaps.migration.template.Value.concat;
+import static io.mindmaps.migration.template.ValueFormatter.format;
+import static io.mindmaps.migration.template.ValueFormatter.formatVar;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
@@ -140,7 +142,7 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
     @Override
     public Value visitReplace(GraqlTemplateParser.ReplaceContext ctx) {
         Variable var = new Variable(ctx.getText());
-        return whitespace(scope.resolve(var.cleaned()), ctx);
+        return whitespace(format(scope.resolve(var.cleaned())), ctx);
     }
 
     @Override
@@ -159,6 +161,12 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         }
 
         return concat(aggregate, nextResult);
+    }
+
+    @Override
+    public Value visitCombo(GraqlTemplateParser.ComboContext ctx){
+        Variable var = new Variable(ctx.getText());
+        return whitespace("$" + formatVar(scope.resolve(var.cleaned())), ctx);
     }
 
     private Set<Variable> variablesInContext(GraqlTemplateParser.BlockContext ctx){

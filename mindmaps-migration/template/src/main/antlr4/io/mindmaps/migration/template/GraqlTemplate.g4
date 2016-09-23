@@ -35,7 +35,7 @@ element     : VAR;
 resolve     : VAR;
 replace     : VAR;
 variable    : replace | combo | GRAQLVAR;
-combo       : '$' replace;
+combo       : DOLLAR replace;
 
 graql
  : variable
@@ -43,6 +43,7 @@ graql
  | FOR
  | NULLABLE
  | NOESCP
+ | DOLLAR
  | LPAREN
  | RPAREN
  | LBRACKET
@@ -62,6 +63,7 @@ LPAREN      : '(';
 RPAREN      : ')';
 LBRACKET    : '{';
 RBRACKET    : '}';
+DOLLAR      : '$';
 NOT_WS      : ~[ \t\r\n];
 
 WS : [ \t\r\n] -> channel(1) ;

@@ -26,7 +26,7 @@ public class Variable {
 
     public Variable(String var){
         this.variable = var;
-        if(var.contains("%$")){
+        if(var.contains("$%")){
             this.comboVariable = true;
         } else if(var.contains("$")){
             this.graqlVariable = true;
@@ -50,10 +50,11 @@ public class Variable {
     }
 
     public Variable cleaned(){
-        if(isGraqlVariable()){
+        if(isComboVariable()){
+            return new Variable(variable.replace("$%", ""));
+        } else if(isGraqlVariable()){
             return new Variable(variable.replace("$", ""));
-        }
-        else {
+        } else {
             return new Variable(variable.replace("%", ""));
         }
     }
