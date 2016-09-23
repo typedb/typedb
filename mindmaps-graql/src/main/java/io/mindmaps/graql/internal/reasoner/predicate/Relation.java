@@ -57,6 +57,11 @@ public class Relation extends AtomBase {
         castings.addAll(a.getPattern().asVar().getCastings());
     }
 
+    @Override
+    public Atomic clone(){
+        return new Relation(this);
+    }
+
     //rolePlayer-roleType
     static private VarAdmin constructRelPattern(String id, Map<String, String> roleMap) {
         Var var = Graql.var().isa(id);
@@ -107,8 +112,6 @@ public class Relation extends AtomBase {
 
     @Override
     public boolean isRelation(){ return true;}
-    @Override
-    public boolean isValuePredicate(){ return false;}
     @Override
     public boolean isResource(){ return false;}
     @Override

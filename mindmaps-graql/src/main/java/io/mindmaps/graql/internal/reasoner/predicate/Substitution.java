@@ -56,6 +56,11 @@ public class Substitution extends AtomBase{
         this.val = con == null? val : con.getId();
     }
 
+    @Override
+    public Atomic clone(){
+        return new Substitution(this);
+    }
+
     static private VarAdmin createPattern(String name, Concept con, String val){
         if (con == null)
             return Graql.var(name).id(val).admin().asVar();
@@ -64,7 +69,7 @@ public class Substitution extends AtomBase{
     }
 
     @Override
-    public boolean isValuePredicate(){ return true;}
+    public boolean isSubstitution(){ return true;}
     @Override
     public boolean isRuleResolvable(){ return false;}
 

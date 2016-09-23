@@ -43,6 +43,12 @@ public class Atom extends AtomBase{
         super(a);
         this.val = extractValue(a.getPattern().asVar());
     }
+
+    @Override
+    public Atomic clone(){
+        return new Atom(this);
+    }
+
     @Override
     public boolean isUnary(){ return true;}
 
@@ -82,7 +88,6 @@ public class Atom extends AtomBase{
     public void print() {
         System.out.println("atom: \npattern: " + toString());
         System.out.println("varName: " + varName + " typeId: " + typeId + " val: " + val);
-        if (isValuePredicate()) System.out.println("isValuePredicate");
         System.out.println();
     }
 

@@ -129,8 +129,8 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
         Map<String, Concept> subVars = new HashMap<>();
         Map<String, Concept> constraints = new HashMap<>();
         if (parentQuery.getSelectedNames().size() != childQuery.getSelectedNames().size()){
-            Set<Atomic> childSubs = childQuery.getAtoms().stream().filter(Atomic::isValuePredicate).collect(Collectors.toSet());
-            Set<Atomic> parentSubs = parentQuery.getAtoms().stream().filter(Atomic::isValuePredicate).collect(Collectors.toSet());
+            Set<Atomic> childSubs = childQuery.getSubstitutions();
+            Set<Atomic> parentSubs = parentQuery.getSubstitutions();
 
             Set<Atomic> extraSubs = childSubs.size() > parentSubs.size()? childSubs : parentSubs;
             if (childSubs.size() > parentSubs.size())

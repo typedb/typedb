@@ -74,6 +74,9 @@ public abstract class AtomBase implements Atomic{
         typeId = varData.getValue();
     }
 
+    @Override
+    public Atomic clone(){ return null;}
+
     private Pair<String, String> extractDataFromVar(VarAdmin var) {
         String vTypeId;
         String vName = var.getName();
@@ -99,7 +102,6 @@ public abstract class AtomBase implements Atomic{
     public void print() {
         System.out.println("atom: \npattern: " + toString());
         System.out.println("varName: " + varName + " typeId: " + typeId);
-        if (isValuePredicate()) System.out.println("isValuePredicate");
         System.out.println();
     }
 
@@ -227,7 +229,7 @@ public abstract class AtomBase implements Atomic{
     public Set<Atomic> getSubstitutions() {
         Set<Atomic> subs = new HashSet<>();
         getParentQuery().getAtoms().forEach( atom ->{
-            if(atom.isValuePredicate() && containsVar(atom.getVarName()) )
+            if(atom.isSubstitution() && containsVar(atom.getVarName()) )
                 subs.add(atom);
         });
         return subs;
