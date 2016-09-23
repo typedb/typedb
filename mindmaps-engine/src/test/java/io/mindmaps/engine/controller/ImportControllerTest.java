@@ -29,6 +29,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import spark.Spark;
 
 import static com.jayway.restassured.RestAssured.given;
 
@@ -73,15 +74,16 @@ public class ImportControllerTest {
             e.printStackTrace();
         }
 
-         Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getConcept("X506965727265204162656c").getId());
-         GraphFactory.getInstance().getGraphBatchLoading(graphName).clear();
+        Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getConcept("X506965727265204162656c").getId());
+        GraphFactory.getInstance().getGraphBatchLoading(graphName).clear();
+        Spark.stop();
+
     }
 
     @Test
     public void testLoadOntologyAndDataDistributed() {
         String ontologyPath = getClass().getClassLoader().getResource("dblp-ontology.gql").getPath();
         String dataPath = getClass().getClassLoader().getResource("small_nametags.gql").getPath();
-
 
 
         Response ontologyResponse = given().contentType("application/json").
@@ -91,7 +93,7 @@ public class ImportControllerTest {
         ontologyResponse.then().assertThat().statusCode(200);
 
         Response dataResponse = given().contentType("application/json").
-                body(Json.object("path", dataPath,"hosts",Json.array().add("127.0.0.1")).toString()).when().
+                body(Json.object("path", dataPath, "hosts", Json.array().add("127.0.0.1")).toString()).when().
                 post(REST.WebPath.IMPORT_DISTRIBUTED_URI);
 
         dataResponse.then().assertThat().statusCode(200);
@@ -105,6 +107,7 @@ public class ImportControllerTest {
 
         Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getConcept("X506965727265204162656c").getId());
         GraphFactory.getInstance().getGraphBatchLoading(graphName).clear();
+        Spark.stop();
     }
 
     @Test
@@ -115,13 +118,13 @@ public class ImportControllerTest {
 
 
         Response ontologyResponse = given().contentType("application/json").
-                body(Json.object("path", ontologyPath,"graphName",customGraph).toString()).when().
+                body(Json.object("path", ontologyPath, "graphName", customGraph).toString()).when().
                 post(REST.WebPath.IMPORT_ONTOLOGY_URI);
 
         ontologyResponse.then().assertThat().statusCode(200);
 
         Response dataResponse = given().contentType("application/json").
-                body(Json.object("path", dataPath,"graphName",customGraph).toString()).when().
+                body(Json.object("path", dataPath, "graphName", customGraph).toString()).when().
                 post(REST.WebPath.IMPORT_DATA_URI);
 
         dataResponse.then().assertThat().statusCode(200);
@@ -135,6 +138,8 @@ public class ImportControllerTest {
 
         Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(customGraph).getConcept("X506965727265204162656c").getId());
         GraphFactory.getInstance().getGraphBatchLoading(customGraph).clear();
+        Spark.stop();
+
     }
 
 
