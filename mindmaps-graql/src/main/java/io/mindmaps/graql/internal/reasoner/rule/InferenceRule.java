@@ -76,28 +76,27 @@ public class InferenceRule {
     /**
      * propagate variables to child via a relation atom (atom variables are bound)
      * @param parentAtom   parent atom (predicate) being resolved (subgoal)
-     * @param parentLHS    parent query
-     * @param globalVarMap map containing global vars and their types
      */
-    private void unifyViaAtom(Atomic parentAtom, Query parentLHS, Map<String, Type> globalVarMap) {
+    private void unifyViaAtom(Atomic parentAtom) {
         Atomic childAtom = getRuleConclusionAtom();
+        Query parent = parentAtom.getParentQuery();
         Map<String, String> unifiers = childAtom.getUnifiers(parentAtom);
 
         //do alpha-conversion
-        head.unify(unifiers, globalVarMap.keySet());
-        body.unify(unifiers, globalVarMap.keySet());
+        head.unify(unifiers);
+        body.unify(unifiers);
 
         //check free variables for possible captures
         Set<String> childFVs = body.getVarSet();
         Set<String> parentBVs = parentAtom.getVarNames();
-        Set<String> parentVars = parentLHS.getVarSet();
+        Set<String> parentVars = parent.getVarSet();
         parentBVs.forEach(childFVs::remove);
 
         childFVs.forEach(chVar -> {
             // if (x e P) v (x e G)
             // x -> fresh
-            if (parentVars.contains(chVar) || globalVarMap.containsKey(chVar)) {
-                String freshVar = createFreshVariable(globalVarMap.keySet(), body.getVarSet(), chVar);
+            if (parentVars.contains(chVar) /*|| globalVarMap.containsKey(chVar)*/) {
+                String freshVar = createFreshVariable(body.getVarSet(), chVar);
                 body.changeVarName(chVar, freshVar);
             }
         });
@@ -106,18 +105,9 @@ public class InferenceRule {
     /**
      * make child query consistent by performing variable substitution so that parent variables are propagated
      * @param parentAtom   parent atom (predicate) being resolved (subgoal)
-     * @param globalVarMap map containing global vars and their types
      */
-   public void unify(Atomic parentAtom, Map<String, Type> globalVarMap) {
-        Query parent = parentAtom.getParentQuery();
-
-        unifyViaAtom(parentAtom, parent, globalVarMap);
-
-        //update global vars
-        Map<String, Type> varTypeMap = body.getVarTypeMap();
-        for (Map.Entry<String, Type> entry : varTypeMap.entrySet())
-            globalVarMap.putIfAbsent(entry.getKey(), entry.getValue());
-
+   public void unify(Atomic parentAtom) {
+        unifyViaAtom(parentAtom);
         propagateConstraints(parentAtom);
     }
 }
