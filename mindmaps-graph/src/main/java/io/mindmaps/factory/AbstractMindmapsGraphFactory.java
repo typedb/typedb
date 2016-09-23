@@ -22,15 +22,19 @@ import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 abstract class AbstractMindmapsGraphFactory<M extends AbstractMindmapsGraph<G>, G extends Graph> implements MindmapsGraphFactory<M, G>{
     private final Map<String, M> openMindmapsGraphs;
     private final Map<String, G> openGraphs;
+    private final Set<String> openKeyspaces;
 
     AbstractMindmapsGraphFactory(){
         openMindmapsGraphs = new HashMap<>();
         openGraphs = new HashMap<>();
+        openKeyspaces = new HashSet<>();
     }
 
     abstract boolean isClosed(G innerGraph);
@@ -45,6 +49,7 @@ abstract class AbstractMindmapsGraphFactory<M extends AbstractMindmapsGraph<G>, 
         if(!openMindmapsGraphs.containsKey(key) || isClosed(openMindmapsGraphs.get(key))){
             openMindmapsGraphs.put(key, getMindmapsGraphFromMap(name, address, pathToConfig, batchLoading));
         }
+        openKeyspaces.add(name);
         return openMindmapsGraphs.get(key);
     }
 
@@ -54,7 +59,13 @@ abstract class AbstractMindmapsGraphFactory<M extends AbstractMindmapsGraph<G>, 
         if(!openGraphs.containsKey(key) || isClosed(openGraphs.get(key))){
             openGraphs.put(key, buildTinkerPopGraph(name, address, pathToConfig));
         }
+        openKeyspaces.add(name);
         return openGraphs.get(key);
+    }
+
+    @Override
+    public Set<String> openGraphs(){
+        return openKeyspaces;
     }
 
     private boolean isClosed(M mindmapsGraph) {

@@ -19,11 +19,11 @@
 package io.mindmaps.factory;
 
 import io.mindmaps.MindmapsComputer;
-import io.mindmaps.graph.internal.MindmapsComputerImpl;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.graph.internal.EngineCommunicator;
+import io.mindmaps.graph.internal.MindmapsComputerImpl;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.REST;
-import io.mindmaps.graph.internal.EngineCommunicator;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import java.io.BufferedWriter;
@@ -31,7 +31,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.PropertyResourceBundle;
+import java.util.Set;
 
 import static io.mindmaps.util.REST.Request.GRAPH_CONFIG_PARAM;
 import static io.mindmaps.util.REST.WebPath.GRAPH_FACTORY_URI;
@@ -137,6 +139,17 @@ public class MindmapsClient {
         } catch (IOException e) {
             throw new IllegalArgumentException(ErrorMessage.CONFIG_NOT_FOUND.getMessage(uri, e.getMessage()));
         }
+    }
+
+    /**
+     *
+     * @return The names of all the graphs which have been opened using this client
+     */
+    @SuppressWarnings("unchecked")
+    public static Set<String> openGraphs(){
+        Set<String> names = new HashSet<>();
+        MindmapsFactoryBuilder.getFactories().forEach(factory -> names.addAll(factory.openGraphs()));
+        return names;
     }
 
     private static class ConfigureFactory {
