@@ -20,6 +20,7 @@ package io.mindmaps.engine.controller;
 
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.engine.loader.BlockingLoader;
+import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.engine.loader.Loader;
 import io.mindmaps.engine.postprocessing.BackgroundTasks;
 import io.mindmaps.engine.util.ConfigProperties;
@@ -48,15 +49,13 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 
 import static io.mindmaps.graql.Graql.parseInsert;
 import static io.mindmaps.graql.Graql.parsePatterns;
+import static spark.Spark.ipAddress;
 import static spark.Spark.post;
 
 
@@ -81,10 +80,49 @@ public class ImportController {
 
         post(REST.WebPath.IMPORT_DATA_URI, this::importDataREST);
         post(REST.WebPath.IMPORT_ONTOLOGY_URI, this::importOntologyREST);
+        post(REST.WebPath.IMPORT_DISTRIBUTED_URI, this::importDataRESTDistributed);
 
         entitiesMap = new ConcurrentHashMap<>();
         relationsList = new ArrayList<>();
         defaultGraphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+    }
+
+    @POST
+    @Path("/distribute/data")
+    @ApiOperation(
+            value = "Import data from a Graql file. It performs batch loading.",
+            notes = "This is a separate import from ontology, since a batch loading is performed to optimise the loading speed. ")
+    @ApiImplicitParam(name = "path", value = "File path on the server.", required = true, dataType = "string", paramType = "body")
+
+    private String importDataRESTDistributed(Request req, Response res) {
+        try {
+            JSONObject bodyObject = new JSONObject(req.body());
+            final String pathToFile = bodyObject.get(REST.Request.PATH_FIELD).toString();
+            final String graphName;
+            final Collection<String> hosts = new HashSet<>();
+            bodyObject.getJSONArray("hosts").forEach(x->hosts.add(((String) x)));
+
+            if (bodyObject.has(REST.Request.GRAPH_NAME_PARAM))
+                graphName = bodyObject.get(REST.Request.GRAPH_NAME_PARAM).toString();
+            else
+                graphName = defaultGraphName;
+
+            File f = new File(pathToFile);
+            if (!f.exists()) throw new FileNotFoundException(ErrorMessage.NO_GRAQL_FILE.getMessage(pathToFile));
+
+            Loader loader = new DistributedLoader(graphName,hosts);
+            Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(pathToFile, loader));
+        } catch (JSONException j) {
+            LOG.error("Malformed request.",j);
+            res.status(400);
+            return j.getMessage();
+        } catch (FileNotFoundException e) {
+            LOG.error(e.getMessage());
+            res.status(400);
+            return e.getMessage();
+        }
+
+        return "Loading successfully STARTED. \n";
     }
 
 
@@ -109,7 +147,8 @@ public class ImportController {
             File f = new File(pathToFile);
             if (!f.exists()) throw new FileNotFoundException(ErrorMessage.NO_GRAQL_FILE.getMessage(pathToFile));
 
-            Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(pathToFile, graphName));
+            final Loader loader = new BlockingLoader(graphName);
+            Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(pathToFile, loader));
         } catch (JSONException j) {
             LOG.error("Malformed request.",j);
             res.status(400);
@@ -153,8 +192,8 @@ public class ImportController {
         return "Ontology successfully loaded. \n";
     }
 
-    void importDataFromFile(String dataFile, String graphName) {
-        BlockingLoader loader = new BlockingLoader(graphName);
+    void importDataFromFile(String dataFile, Loader loaderParam) {
+        Loader loader = loaderParam;
         try {
             parsePatterns(new FileInputStream(dataFile)).forEach(pattern -> consumeEntity(pattern.admin().asVar(),loader));
             loader.waitToFinish();

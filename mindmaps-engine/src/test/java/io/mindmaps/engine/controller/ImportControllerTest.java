@@ -19,6 +19,7 @@
 package io.mindmaps.engine.controller;
 
 import com.jayway.restassured.response.Response;
+import io.mindmaps.engine.MindmapsEngineServer;
 import io.mindmaps.engine.Util;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
@@ -33,7 +34,6 @@ import static com.jayway.restassured.RestAssured.given;
 
 public class ImportControllerTest {
 
-    ImportController importer;
     String graphName;
 
     @BeforeClass
@@ -44,12 +44,8 @@ public class ImportControllerTest {
     @Before
     public void setUp() throws Exception {
         graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
-        importer = new ImportController();
-        new CommitLogController();
-        new GraphFactoryController();
-        new ImportController();
+        MindmapsEngineServer.start();
         Util.setRestAssuredBaseURI(ConfigProperties.getInstance().getProperties());
-
     }
 
     @Test
@@ -79,6 +75,36 @@ public class ImportControllerTest {
 
          Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getConcept("X506965727265204162656c").getId());
          GraphFactory.getInstance().getGraphBatchLoading(graphName).clear();
+    }
+
+    @Test
+    public void testLoadOntologyAndDataDistributed() {
+        String ontologyPath = getClass().getClassLoader().getResource("dblp-ontology.gql").getPath();
+        String dataPath = getClass().getClassLoader().getResource("small_nametags.gql").getPath();
+
+
+
+        Response ontologyResponse = given().contentType("application/json").
+                body(Json.object("path", ontologyPath).toString()).when().
+                post(REST.WebPath.IMPORT_ONTOLOGY_URI);
+
+        ontologyResponse.then().assertThat().statusCode(200);
+
+        Response dataResponse = given().contentType("application/json").
+                body(Json.object("path", dataPath,"hosts",Json.array().add("127.0.0.1")).toString()).when().
+                post(REST.WebPath.IMPORT_DISTRIBUTED_URI);
+
+        dataResponse.then().assertThat().statusCode(200);
+
+        //TODO: find a proper way to notify a client when loading is done. Something slightly more elegant than a thread sleep.
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getConcept("X506965727265204162656c").getId());
+        GraphFactory.getInstance().getGraphBatchLoading(graphName).clear();
     }
 
     @Test

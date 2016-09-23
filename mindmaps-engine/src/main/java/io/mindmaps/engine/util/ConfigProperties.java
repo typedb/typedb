@@ -41,6 +41,8 @@ public class ConfigProperties {
     public static final String BATCH_SIZE_PROPERTY = "blockingLoader.batch-size";
 
     public static final String NUM_THREADS_PROPERTY = "loader.threads";
+    public static final String POLLING_FREQUENCY_PROPERTY = "loader.polling-frequency";
+
 
     public static final String SERVER_HOST_NAME = "server.host";
     public static final String SERVER_PORT_NUMBER = "server.port";
