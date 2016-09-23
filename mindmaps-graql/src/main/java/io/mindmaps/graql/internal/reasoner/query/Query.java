@@ -24,12 +24,9 @@ import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.admin.Conjunction;
-import io.mindmaps.graql.admin.Disjunction;
 import io.mindmaps.graql.internal.query.match.MatchOrder;
 import io.mindmaps.graql.internal.query.match.MatchQueryInternal;
-import io.mindmaps.graql.internal.reasoner.container.AtomConjunction;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
@@ -40,6 +37,8 @@ import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static io.mindmaps.graql.internal.reasoner.Utility.createFreshVariable;
 
 public class Query implements MatchQueryInternal {
 
@@ -80,16 +79,6 @@ public class Query implements MatchQueryInternal {
         this.selectVars = Sets.newHashSet(matchQuery.admin().getSelectedNames());
         this.atomSet = getAtomSet(pattern);
 
-        //copy expansions
-        for (Atomic qAtom : q.atomSet) {
-            Set<Query> expansions = qAtom.getExpansions();
-            for (Query exp : expansions) {
-                atomSet.forEach(atom ->
-                {
-                    if (atom.equals(qAtom)) atom.addExpansion(new Query(exp));
-                });
-            }
-        }
         this.typeAtomMap = getTypeAtomMap(atomSet);
     }
 
@@ -134,13 +123,31 @@ public class Query implements MatchQueryInternal {
     @Override
     public Conjunction<PatternAdmin> getPattern(){ return pattern;}
 
+    public boolean isRuleResolvable(){
+        boolean ruleResolvable = false;
+        Iterator<Atomic> it = atomSet.iterator();
+        while(it.hasNext() && !ruleResolvable)
+            ruleResolvable = it.next().isRuleResolvable();
+
+        return ruleResolvable;
+    }
+
+    public QueryAnswers getAnswers(){ throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());}
+    public void DBlookup(){ throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());}
+    public void memoryLookup(Map<AtomicQuery, QueryAnswers> matAnswers){
+        throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
+    }
+    public void propagateAnswers(Map<AtomicQuery, QueryAnswers> matAnswers){
+        throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
+    }
+
     public void setParentAtom(Atomic par){ parentAtom = par;}
     public Set<Atomic> getAtoms() { return new HashSet<>(atomSet);}
     public Set<Atomic> getAtomsWithType(Type type) {
         return typeAtomMap.get(type);
     }
     public Set<Atomic> getSubstitutions(){
-        return getAtoms().stream().filter(Atomic::isValuePredicate).collect(Collectors.toSet());
+        return getAtoms().stream().filter(Atomic::isSubstitution).collect(Collectors.toSet());
     }
 
     public Set<String> getVarSet() {
@@ -149,28 +156,7 @@ public class Query implements MatchQueryInternal {
         return vars;
     }
 
-    public void expandAtomByQuery(Atomic atom, Query query) {
-        atomSet.stream().filter(a -> a.equals(atom)).forEach(a -> a.addExpansion(query));
-    }
-
-    public void removeExpansionFromAtom(Atomic atom, Query query) {
-        atomSet.stream().filter(a -> a.equals(atom)).forEach(a -> {
-            PatternAdmin atomPattern = a.getPattern();
-            PatternAdmin expandedAtomPattern = a.getExpandedPattern();
-            a.removeExpansion(query);
-
-            replacePattern(expandedAtomPattern, atomPattern);
-        });
-    }
-
-    private boolean containsVar(String var) {
-        boolean varContained = false;
-        Iterator<Atomic> it = atomSet.iterator();
-        while(it.hasNext() && !varContained)
-            varContained = it.next().containsVar(var);
-
-        return varContained;
-    }
+    private boolean containsVar(String var) { return getVarSet().contains(var);}
 
     public boolean containsAtom(Atomic atom){ return atomSet.contains(atom);}
     private boolean containsEquivalentAtom(Atomic atom){
@@ -214,7 +200,22 @@ public class Query implements MatchQueryInternal {
         changeVarName("temp", from);
     }
 
-    public void changeVarNames(Map<String, String> unifiers) {
+    public void changeVarName(String from, String to) {
+        Set<Atomic> toRemove = new HashSet<>();
+        Set<Atomic> toAdd = new HashSet<>();
+
+        atomSet.stream().filter(atom -> atom.getVarNames().contains(from)).forEach(toRemove::add);
+        toRemove.forEach(atom -> toAdd.add(AtomicFactory.create(atom)));
+        toRemove.forEach(this::removeAtom);
+        toAdd.forEach(atom -> atom.changeEachVarName(from, to));
+        toAdd.forEach(this::addAtom);
+
+        Map<String, String> mapping = new HashMap<>();
+        mapping.put(from, to);
+        updateSelectedVars(mapping);
+    }
+
+    public void unify(Map<String, String> unifiers, Set<String> globalVars) {
         if (unifiers.size() == 0) return;
         Map<String, String> mappings = new HashMap<>(unifiers);
         Map<String, String> appliedMappings = new HashMap<>();
@@ -224,7 +225,7 @@ public class Query implements MatchQueryInternal {
             String replacementVar = mapping.getValue();
 
             if(!appliedMappings.containsKey(varToReplace) || !appliedMappings.get(varToReplace).equals(replacementVar)) {
-                /**bidirectional mapping*/
+                //bidirectional mapping
                 if (mappings.containsKey(replacementVar) && mappings.get(replacementVar).equals(varToReplace)) {
                     exchangeRelVarNames(varToReplace, replacementVar);
                     appliedMappings.put(varToReplace, replacementVar);
@@ -251,46 +252,24 @@ public class Query implements MatchQueryInternal {
         toAdd.forEach(this::addAtom);
 
         updateSelectedVars(mappings);
-    }
-
-    public void changeVarName(String from, String to) {
-        Set<Atomic> toRemove = new HashSet<>();
-        Set<Atomic> toAdd = new HashSet<>();
-
-        atomSet.stream().filter(atom -> atom.getVarNames().contains(from)).forEach(toRemove::add);
-        toRemove.forEach(atom -> toAdd.add(AtomicFactory.create(atom)));
-        toRemove.forEach(this::removeAtom);
-        toAdd.forEach(atom -> atom.changeEachVarName(from, to));
-        toAdd.forEach(this::addAtom);
-
-        Map<String, String> mapping = new HashMap<>();
-        mapping.put(from, to);
-        updateSelectedVars(mapping);
-    }
-
-    private Disjunction<Conjunction<VarAdmin>> getDNF(){
-        return pattern.getDisjunctiveNormalForm();}
-
-    /**
-     * @return set of conjunctions from the DNF
-     */
-    private Set<AtomConjunction> getAtomConjunctions() {
-        Set<AtomConjunction> conj = new HashSet<>();
-        getDNF().getPatterns().forEach(c -> conj.add(new AtomConjunction(c)));
-        return conj;
+        resolveCaptures(globalVars);
     }
 
     /**
-     * @return set of conjunctions from the DNF taking into account atom expansions
+     * finds captured variable occurrences in a query and replaces them with fresh variables
+     * @param globalVars global variables to be avoided when creating fresh variables
      */
-    private Set<AtomConjunction> getExpandedAtomConjunctions() {
-        Set<AtomConjunction> conj = new HashSet<>();
-        getExpandedDNF().getPatterns().forEach(c -> conj.add(new AtomConjunction(c)));
-        return conj;
-    }
+    private void resolveCaptures(Set<String> globalVars) {
+        //find captures
+        Set<String> captures = new HashSet<>();
+        getVarSet().forEach(v -> {
+            if (v.contains("capture")) captures.add(v);
+        });
 
-    private Disjunction<Conjunction<VarAdmin>> getExpandedDNF() {
-        return getExpandedMatchQuery().admin().getPattern().getDisjunctiveNormalForm();
+        captures.forEach(cap -> {
+            String fresh = createFreshVariable(globalVars, getVarSet(), cap.replace("captured->", ""));
+            changeVarName(cap, fresh);
+        });
     }
 
     public MatchQuery getMatchQuery() {
@@ -300,51 +279,17 @@ public class Query implements MatchQueryInternal {
             return Graql.match(pattern).select(selectVars).withGraph(graph);
     }
 
-    public MatchQuery getExpandedMatchQuery() {
-        Set<AtomConjunction> conjunctions = getAtomConjunctions();
-        atomSet.forEach(atom -> {
-            if (!atom.getExpansions().isEmpty()) {
-                //find base conjunctions
-                Set<AtomConjunction> baseConjunctions = new HashSet<>();
-                conjunctions.forEach(conj -> {
-                    if(conj.contains(atom))
-                        baseConjunctions.add(conj.remove(atom));
-                });
-
-                for (Query exp : atom.getExpansions()) {
-                    Set<AtomConjunction> childConjunctions = exp.getExpandedAtomConjunctions();
-
-                    childConjunctions.forEach(chConj -> {
-                        baseConjunctions.forEach( bConj -> {
-                            AtomConjunction conj = bConj.conjunction(chConj, graph);
-                            if (conj != null) conjunctions.add(conj);
-                        });
-                    });
-                }
-            }
-        });
-        QueryBuilder qb = Graql.withGraph(graph);
-
-        Set<Conjunction<VarAdmin>> conjs = new HashSet<>();
-        conjunctions.forEach(conj -> conjs.add(conj.getConjunction()));
-        return qb.match(Patterns.disjunction(conjs)).select(selectVars);
-    }
-
-    public PatternAdmin getExpandedPattern() {
-        return getExpandedMatchQuery().admin().getPattern();
-    }
-
     private Set<Atomic> getAtomSet(Conjunction<PatternAdmin> pat) {
         Set<Atomic> atoms = new HashSet<>();
 
         Set<VarAdmin> vars = pat.getVars();
         vars.forEach(var -> {
             if(var.getType().isPresent() && (var.getId().isPresent() || !var.getValueEqualsPredicates().isEmpty())) {
-                VarAdmin typeVar = Graql.var(var.getName()).isa(var.getType().get()).admin();
+                VarAdmin typeVar = Graql.var(var.getName()).isa(var.getType().orElse(null)).admin();
                 atoms.add(AtomicFactory.create(typeVar, this));
 
                 if (var.getId().isPresent()) {
-                    VarAdmin sub = Graql.var(var.getName()).id(var.getId().get()).admin();
+                    VarAdmin sub = Graql.var(var.getName()).id(var.getId().orElse(null)).admin();
                     atoms.add(AtomicFactory.create(sub, this));
                 }
                 else if (!var.getValueEqualsPredicates().isEmpty()){
@@ -426,7 +371,7 @@ public class Query implements MatchQueryInternal {
                 Atomic lcon = AtomicFactory.create(con);
                 lcon.setParentQuery(this);
                 addAtom(lcon);
-                if (lcon.isValuePredicate())
+                if (lcon.isSubstitution())
                     selectVars.remove(lcon.getVarName());
             }
         });
@@ -438,7 +383,7 @@ public class Query implements MatchQueryInternal {
      */
     public Set<Atomic> selectAtoms() {
         Set<Atomic> atoms = new HashSet<>(atomSet).stream()
-                .filter(atom -> !atom.isValuePredicate()).collect(Collectors.toSet());
+                .filter(atom -> !atom.isSubstitution()).collect(Collectors.toSet());
         if (atoms.size() == 1) return atoms;
 
         Set<Atomic> selectedAtoms = atoms.stream()

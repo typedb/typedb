@@ -55,9 +55,11 @@ public class Relation extends AtomBase {
     public Relation(Relation a) {
         super(a);
         castings.addAll(a.getPattern().asVar().getCastings());
+    }
 
-        expansions.forEach(this::removeExpansion);
-        a.expansions.forEach(exp -> expansions.add(new Query(exp)));
+    @Override
+    public Atomic clone(){
+        return new Relation(this);
     }
 
     //rolePlayer-roleType
@@ -110,8 +112,6 @@ public class Relation extends AtomBase {
 
     @Override
     public boolean isRelation(){ return true;}
-    @Override
-    public boolean isValuePredicate(){ return false;}
     @Override
     public boolean isResource(){ return false;}
     @Override
@@ -191,14 +191,14 @@ public class Relation extends AtomBase {
                 if (c.getRolePlayer().getName().equals(var))
                     roleTypeId = c.getRoleType().flatMap(VarAdmin::getId).orElse("");
             }
-            /**roletype explicit*/
+            //roletype explicit
             if (!roleTypeId.isEmpty())
                 roleVarTypeMap.put(var, new Pair<>(type, graph.getRoleType(roleTypeId)));
             else {
                 if (type != null) {
                     Set<RoleType> cRoles = getCompatibleRoleTypes(type.getId(), relTypeId, getParentQuery().getGraph().orElse(null));
 
-                    /**if roleType is unambigous*/
+                    //if roleType is unambigous
                     if (cRoles.size() == 1)
                         roleVarTypeMap.put(var, new Pair<>(type, cRoles.iterator().next()));
                     else
@@ -245,7 +245,7 @@ public class Relation extends AtomBase {
 
             if (type != null) {
                 Set<RoleType> cRoles = getCompatibleRoleTypes(type.getId(), relTypeId, graph);
-                /**if roleType is unambigous*/
+                //if roleType is unambigous
                 if (cRoles.size() == 1) {
                     RoleType role = cRoles.iterator().next();
                     roleVarTypeMap.put(role, new Pair<>(var, type));

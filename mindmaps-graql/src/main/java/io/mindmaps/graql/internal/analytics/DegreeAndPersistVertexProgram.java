@@ -29,16 +29,16 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 
-public class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
+class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
 
 
-    public static final String MEMORY_KEY = "oldAssertionId";
+    private static final String MEMORY_KEY = "oldAssertionId";
 
     private static final String KEYSPACE_KEY = "keyspace";
 
     private static final Set<String> COMPUTE_KEYS = Collections.singleton(MEMORY_KEY);
 
-    BulkResourceMutate bulkResourceMutate;
+    private BulkResourceMutate bulkResourceMutate;
 
     public DegreeAndPersistVertexProgram() {
     }
@@ -63,7 +63,7 @@ public class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
         switch (memory.getIteration()) {
             case 0:
                 if (selectedTypes.contains(getVertexType(vertex)) && !isAnalyticsElement(vertex)) {
-                    String type = vertex.label();
+                    String type = vertex.value(Schema.ConceptProperty.BASE_TYPE.name());
                     if (type.equals(Schema.BaseType.ENTITY.name()) || type.equals(Schema.BaseType.RESOURCE.name())) {
                         messenger.sendMessage(countMessageScopeIn, 1L);
                     } else if (type.equals(Schema.BaseType.RELATION.name())) {
@@ -73,7 +73,7 @@ public class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
                 }
                 break;
             case 1:
-                if (vertex.label().equals(Schema.BaseType.CASTING.name())) {
+                if (vertex.value(Schema.ConceptProperty.BASE_TYPE.name()).equals(Schema.BaseType.CASTING.name())) {
                     boolean hasRolePlayer = false;
                     long assertionCount = 0;
                     Iterator<Long> iterator = messenger.receiveMessages();
@@ -90,7 +90,7 @@ public class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
                 break;
             case 2:
                 if (!isAnalyticsElement(vertex) && selectedTypes.contains(getVertexType(vertex))) {
-                    if (baseTypes.contains(vertex.label())) {
+                    if (baseTypes.contains(vertex.value(Schema.ConceptProperty.BASE_TYPE.name()).toString())) {
                         long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
                         bulkResourceMutate.putValue(vertex,edgeCount,MEMORY_KEY);
                     }
@@ -108,7 +108,7 @@ public class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
 
     @Override
     public void workerIterationEnd(Memory memory) {
-        bulkResourceMutate.close();
+        bulkResourceMutate.flush();
     }
 
     @Override

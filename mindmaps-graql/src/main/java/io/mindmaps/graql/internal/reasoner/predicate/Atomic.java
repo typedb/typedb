@@ -29,11 +29,10 @@ import javafx.util.Pair;
 import java.util.Map;
 import java.util.Set;
 
-public interface Atomic {
+public interface Atomic extends Cloneable{
 
     void print();
-    void addExpansion(Query query);
-    void removeExpansion(Query query);
+    Atomic clone();
 
     /**
      * @return true if the atom corresponds to a unary predicate
@@ -53,7 +52,7 @@ public interface Atomic {
     /**
      * @return true if the atom corresponds to a value predicate (~unifier)
      * */
-    default boolean isValuePredicate(){ return false;}
+    default boolean isSubstitution(){ return false;}
 
     /**
      * @return true if the atom corresponds to a resource predicate
@@ -83,11 +82,6 @@ public interface Atomic {
      * @return the corresponding pattern
      * */
     PatternAdmin getPattern();
-    /**
-     * @return the corresponding pattern with all expansions
-     * */
-
-    PatternAdmin getExpandedPattern();
 
     /**
      *
@@ -105,6 +99,8 @@ public interface Atomic {
      * @param q query this atom is supposed to belong to
      */
     void setParentQuery(Query q);
+
+    Map<String, String> getUnifiers(Atomic parentAtom);
 
     /**
      * change each variable occurrence in the atom
@@ -126,14 +122,10 @@ public interface Atomic {
     String getTypeId();
     String getVal();
 
-    Set<Query> getExpansions();
-
     Set<Atomic> getSubstitutions();
     Set<Atomic> getTypeConstraints();
-    Set<Atomic> getNeighbours();
 
     Map<String, Set<Atomic>> getVarSubMap();
-    Map<String, Set<Atomic>> getVarConstraintMap();
 
     Map<String, Pair<Type, RoleType>> getVarTypeRoleMap();
     Map<RoleType, Pair<String, Type>> getRoleVarTypeMap();

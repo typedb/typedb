@@ -40,7 +40,6 @@ import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.REST;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -103,21 +102,27 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     public boolean initialiseMetaConcepts(){
         if(isMetaOntologyNotInitialised()){
             TypeImpl type = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE));
-            TypeImpl entityType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE));
-            TypeImpl relationType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE));
-            TypeImpl resourceType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE));
-            TypeImpl roleType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE));
-            TypeImpl ruleType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE));
-            RuleTypeImpl inferenceRuleType = elementFactory.buildRuleType(addVertex(Schema.BaseType.RULE_TYPE));
-            RuleTypeImpl constraintRuleType = elementFactory.buildRuleType(addVertex(Schema.BaseType.RULE_TYPE));
-
             type.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.TYPE.getId());
+
+            TypeImpl entityType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE));
             entityType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.ENTITY_TYPE.getId());
+
+            TypeImpl relationType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE));
             relationType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.RELATION_TYPE.getId());
+
+            TypeImpl resourceType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE));
             resourceType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.RESOURCE_TYPE.getId());
+
+            TypeImpl roleType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE));
             roleType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.ROLE_TYPE.getId());
+
+            TypeImpl ruleType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE));
             ruleType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.RULE_TYPE.getId());
+
+            RuleTypeImpl inferenceRuleType = elementFactory.buildRuleType(addVertex(Schema.BaseType.RULE_TYPE));
             inferenceRuleType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.INFERENCE_RULE.getId());
+
+            RuleTypeImpl constraintRuleType = elementFactory.buildRuleType(addVertex(Schema.BaseType.RULE_TYPE));
             constraintRuleType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.CONSTRAINT_RULE.getId());
 
             type.setType(type.getId());
@@ -154,9 +159,9 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     }
 
     @Override
-    public GraphTraversalSource getTinkerTraversal(){
+    public GraphTraversal<Vertex, Vertex> getTinkerTraversal(){
         ReadOnlyStrategy readOnlyStrategy = ReadOnlyStrategy.instance();
-        return getTinkerPopGraph().traversal().asBuilder().with(readOnlyStrategy).create(getTinkerPopGraph());
+        return getTinkerPopGraph().traversal().asBuilder().with(readOnlyStrategy).create(getTinkerPopGraph()).V();
     }
 
     public ElementFactory getElementFactory(){
@@ -169,7 +174,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     }
 
     public ConceptImpl getConcept(Schema.ConceptProperty key, String value) {
-        Iterator<Vertex> vertices = getTinkerTraversal().V().has(key.name(), value);
+        Iterator<Vertex> vertices = getTinkerTraversal().has(key.name(), value);
 
         if(vertices.hasNext()){
             Vertex vertex = vertices.next();
@@ -179,6 +184,15 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         } else {
             return null;
         }
+    }
+
+    public Set<ConceptImpl> getConcepts(Schema.ConceptProperty key, Object value){
+        Set<ConceptImpl> concepts = new HashSet<>();
+        getTinkerTraversal().V().has(key.name(), value).
+            forEachRemaining(v -> {
+                concepts.add(elementFactory.buildUnknownConcept(v));
+            });
+        return concepts;
     }
 
 
@@ -205,7 +219,9 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     //----------------------------------------------Concept Functionality-----------------------------------------------
     //------------------------------------ Construction
     private Vertex addVertex(Schema.BaseType baseType){
-        return getTinkerPopGraph().addVertex(baseType.name());
+        Vertex v = getTinkerPopGraph().addVertex(Schema.VERTEX_LABEL);
+        v.property(Schema.ConceptProperty.BASE_TYPE.name(), baseType.name());
+        return v;
     }
     private Vertex addInstanceVertex(Schema.BaseType baseType, Type type){
         Vertex v = addVertex(baseType);
@@ -368,12 +384,12 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         HashSet<Resource<V>> resources = new HashSet<>();
         ResourceType.DataType dataType = ResourceType.DataType.SUPPORTED_TYPES.get(value.getClass().getTypeName());
 
-        getTinkerTraversal().V().has(dataType.getConceptProperty().name(), value).
-                forEachRemaining(v -> {
-                    Concept resource = validConceptOfType(elementFactory.buildUnknownConcept(v), ResourceImpl.class);
-                    if(resource != null && resource.isResource())
-                        resources.add(resource.asResource());
-                });
+        getConcepts(dataType.getConceptProperty(), value).forEach(concept -> {
+            if(concept != null && concept.isResource()) {
+                Concept resource = validConceptOfType(concept, ResourceImpl.class);
+                resources.add(resource.asResource());
+            }
+        });
 
         return resources;
     }

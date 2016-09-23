@@ -93,7 +93,8 @@ public class CastingTest {
         assertEquals(role, casting.getRole());
 
         String id = UUID.randomUUID().toString();
-        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
+        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex();
+        vertex.property(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.CASTING.name());
         vertex.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), id);
 
         CastingImpl casting2 = (CastingImpl) mindmapsGraph.getConcept(id);

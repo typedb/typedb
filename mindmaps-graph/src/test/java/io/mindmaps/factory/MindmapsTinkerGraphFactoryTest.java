@@ -84,4 +84,16 @@ public class MindmapsTinkerGraphFactoryTest {
         Graph mg1 = tinkerGraphFactory.getTinkerPopGraph("name", null, null, false);
         assertThat(mg1, instanceOf(TinkerGraph.class));
     }
+
+    @Test
+    public void testOpenGraphNames(){
+        tinkerGraphFactory.getTinkerPopGraph("name1", null, null, false);
+        tinkerGraphFactory.getTinkerPopGraph("name2", null, null, false);
+        tinkerGraphFactory.getTinkerPopGraph("name3", null, null, false);
+
+        assertEquals(3, tinkerGraphFactory.openGraphs().size());
+        assertTrue(tinkerGraphFactory.openGraphs().contains("name1"));
+        assertTrue(tinkerGraphFactory.openGraphs().contains("name2"));
+        assertTrue(tinkerGraphFactory.openGraphs().contains("name3"));
+    }
 }

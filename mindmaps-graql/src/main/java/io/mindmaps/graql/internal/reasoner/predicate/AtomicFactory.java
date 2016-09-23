@@ -52,10 +52,6 @@ public class AtomicFactory {
     }
 
     public static Atomic create(Atomic atom) {
-        if(atom.isRelation())
-            return new Relation((Relation) atom);
-        else if (atom.isValuePredicate())
-            return new Substitution((Substitution) atom);
-        else return new Atom((Atom)atom);
+        return atom.clone();
     }
 }

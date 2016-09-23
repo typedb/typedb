@@ -18,6 +18,7 @@
 
 package io.mindmaps.engine.controller;
 
+import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.util.REST;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.swagger.annotations.Api;
@@ -73,16 +74,7 @@ public class StatusController {
             value = "Return the list of available graphs names.")
     private String getGraphNames(Request req, Response res) {
 
-        JSONArray namesList = new JSONArray();
-        namesList.put("mindmaps");
-        namesList.put("golden-eye");
-        namesList.put("you-only-live-twice");
-        namesList.put("the-world-is-not-enough");
-        namesList.put("thunderball");
-        namesList.put("diamonds-are-forever");
-        namesList.put("live-and-let-die");
-
-        return namesList.toString();
+        return MindmapsClient.openGraphs().toString();
     }
 
 

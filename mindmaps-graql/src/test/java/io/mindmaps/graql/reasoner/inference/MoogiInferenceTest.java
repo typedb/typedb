@@ -6,10 +6,13 @@ import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
+
+import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
 import io.mindmaps.graql.reasoner.graphs.GenericGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static io.mindmaps.graql.internal.reasoner.Utility.printAnswers;
 import static org.junit.Assert.assertEquals;
 
 public class MoogiInferenceTest {
@@ -56,6 +59,15 @@ public class MoogiInferenceTest {
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
     }
+
+    @Test
+    public void testPopularActor(){
+        String queryString = "match $x has status 'popular actor'; limit 10";
+        MatchQuery query = qb.parseMatch(queryString);
+        MatchQuery mq = reasoner.resolveToQuery(query);
+        System.out.println();
+    }
+
 
     @Test
     public void testPerson(){

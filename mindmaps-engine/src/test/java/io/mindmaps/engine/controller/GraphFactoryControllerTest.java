@@ -34,7 +34,10 @@ import static io.mindmaps.util.REST.Request.GRAPH_CONFIG_PARAM;
 import static io.mindmaps.util.REST.WebPath.GRAPH_FACTORY_URI;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 public class GraphFactoryControllerTest {
     @Before
@@ -50,6 +53,18 @@ public class GraphFactoryControllerTest {
         Response response = get(GRAPH_FACTORY_URI).then().statusCode(200).extract().response().andReturn();
         String config = response.getBody().prettyPrint();
         assertTrue(config.contains("factory"));
+    }
+
+    @Test
+    public void testClientOpenGraphs(){
+        MindmapsClient.getGraph("mindmapstest1");
+        MindmapsClient.getGraphBatchLoading("mindmapstest1");
+
+        MindmapsClient.getGraph("mindmapstest2");
+        MindmapsClient.getGraphBatchLoading("mindmapstest2");
+
+        assertTrue(MindmapsClient.openGraphs().contains("mindmapstest1"));
+        assertTrue(MindmapsClient.openGraphs().contains("mindmapstest2"));
     }
 
     @Test

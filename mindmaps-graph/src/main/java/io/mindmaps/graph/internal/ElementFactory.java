@@ -91,7 +91,7 @@ final class ElementFactory {
      * @return A concept built to the correct type
      */
     public ConceptImpl buildUnknownConcept(Vertex v){
-        Schema.BaseType type = Schema.BaseType.valueOf(v.label());
+        Schema.BaseType type = Schema.BaseType.valueOf(v.value(Schema.ConceptProperty.BASE_TYPE.name()));
         ConceptImpl concept = null;
         switch (type){
             case RELATION:
@@ -132,7 +132,7 @@ final class ElementFactory {
     }
 
     public TypeImpl buildSpecificConceptType(Vertex vertex){
-        Schema.BaseType type = Schema.BaseType.valueOf(vertex.label());
+        Schema.BaseType type = Schema.BaseType.valueOf(vertex.value(Schema.ConceptProperty.BASE_TYPE.name()));
         TypeImpl conceptType;
         switch (type){
             case ROLE_TYPE:

@@ -145,8 +145,8 @@ public class MindmapsGraphLowLevelTest {
         assertEquals(casting.getBaseIdentifier(), casting_role.outVertex().id());
         assertEquals(casting.getBaseIdentifier(), casting_rolePlayer.outVertex().id());
 
-        assertEquals(Schema.BaseType.ROLE_TYPE.name(), roleVertex.label());
-        assertEquals(Schema.BaseType.RELATION.name(), assertionVertex.label());
+        assertEquals(Schema.BaseType.ROLE_TYPE.name(), roleVertex.value(Schema.ConceptProperty.BASE_TYPE.name()));
+        assertEquals(Schema.BaseType.RELATION.name(), assertionVertex.value(Schema.ConceptProperty.BASE_TYPE.name()));
     }
 
     @Test
@@ -163,7 +163,8 @@ public class MindmapsGraphLowLevelTest {
 
     public void makeArtificialCasting(RoleTypeImpl role, InstanceImpl rolePlayer, RelationImpl relation) {
         String id = "FakeCasting " + UUID.randomUUID();
-        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
+        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex();
+        vertex.property(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.CASTING.name());
         vertex.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), id);
         vertex.property(Schema.ConceptProperty.INDEX.name(), CastingImpl.generateNewHash(role, rolePlayer));
 

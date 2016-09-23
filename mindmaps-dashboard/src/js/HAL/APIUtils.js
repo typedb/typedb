@@ -28,15 +28,11 @@ import * as API from './APITerms';
  */
 export function leftSignificant(l, r) {
     var baseTypeL = l[API.KEY_BASE_TYPE];
-    var baseTypeR = r[API.KEY_BASE_TYPE];
     var typeL = l[API.KEY_TYPE];
-    var typeR = r[API.KEY_TYPE];
-    var idL = l[API.KEY_ID];
     var idR = r[API.KEY_ID];
 
     if(idR === typeL || idR  === baseTypeL)
         return true;
-
     else
         return false;
 }

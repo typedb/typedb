@@ -113,6 +113,7 @@ export default class Visualiser {
      */
     centerNodes() {
         this.network.fit({animation: false});
+        this.network.on("stabilizationIterationsDone", () => { network.setOptions({physics: false}) });
         return this;
     }
 

@@ -72,7 +72,7 @@ class ConjunctionQuery {
      * @return a gremlin traversal that represents this inner query
      */
     GraphTraversal<Vertex, Map<String, Vertex>> getTraversal() {
-        GraphTraversal<Vertex, Vertex> traversal = graph.getTinkerTraversal().V();
+        GraphTraversal<Vertex, Vertex> traversal = graph.getTinkerTraversal();
 
         Set<String> foundNames = new HashSet<>();
 

@@ -199,9 +199,9 @@ public class ImportController {
 
     void importDataFromFile(String dataFile, Loader loaderParam) {
         try {
-            parsePatterns(new FileInputStream(dataFile)).forEach(pattern -> consumeEntity(pattern.admin().asVar(), loaderParam));
+            parsePatterns(new FileInputStream(dataFile)).parallel().forEach(pattern -> consumeEntity(pattern.admin().asVar(), loaderParam));
             loaderParam.waitToFinish();
-            parsePatterns(new FileInputStream(dataFile)).forEach(pattern -> consumeRelationAndResource(pattern.admin().asVar(), loaderParam));
+            parsePatterns(new FileInputStream(dataFile)).parallel().forEach(pattern -> consumeRelationAndResource(pattern.admin().asVar(), loaderParam));
             loaderParam.waitToFinish();
             BackgroundTasks.getInstance().forcePostprocessing();
         } catch (Exception e) {
