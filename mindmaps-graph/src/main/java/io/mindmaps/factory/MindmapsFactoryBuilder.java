@@ -22,6 +22,7 @@ import io.mindmaps.util.ErrorMessage;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.MissingResourceException;
@@ -53,6 +54,10 @@ class MindmapsFactoryBuilder {
         } catch(MissingResourceException e){
             throw new IllegalArgumentException(ErrorMessage.MISSING_FACTORY_DEFINITION.getMessage());
         }
+    }
+
+    static Collection<MindmapsGraphFactory> getFactories(){
+        return openFactories.values();
     }
 
     /**
