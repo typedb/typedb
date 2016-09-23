@@ -95,7 +95,7 @@ public class InferenceRule {
         childFVs.forEach(chVar -> {
             // if (x e P) v (x e G)
             // x -> fresh
-            if (parentVars.contains(chVar) /*|| globalVarMap.containsKey(chVar)*/) {
+            if (parentVars.contains(chVar)) {
                 String freshVar = createFreshVariable(body.getVarSet(), chVar);
                 body.changeVarName(chVar, freshVar);
             }
