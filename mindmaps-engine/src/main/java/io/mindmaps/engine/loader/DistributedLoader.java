@@ -95,12 +95,15 @@ public class DistributedLoader extends Loader {
      * Block the main thread until all of the transactions have finished loading
      */
     public void waitToFinish() {
-        flush();
-        try {
-            future.get();
-        } catch (InterruptedException | ExecutionException e) {
-            LOG.error(e.getMessage());
+        if(future != null){
+            flush();
+            try {
+                future.get();
+            } catch (InterruptedException | ExecutionException e) {
+                LOG.error(e.getMessage());
+            }
         }
+
         LOG.info("All tasks done!");
     }
 

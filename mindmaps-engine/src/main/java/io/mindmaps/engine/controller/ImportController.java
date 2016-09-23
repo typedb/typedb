@@ -32,6 +32,7 @@ import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -90,9 +91,13 @@ public class ImportController {
     @POST
     @Path("/distribute/data")
     @ApiOperation(
-            value = "Import data from a Graql file. It performs batch loading.",
+            value = "Import data from a Graql file. It performs batch loading and distributed the batches to remote hosts.",
             notes = "This is a separate import from ontology, since a batch loading is performed to optimise the loading speed. ")
-    @ApiImplicitParam(name = "path", value = "File path on the server.", required = true, dataType = "string", paramType = "body")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "path", value = "File path on the server.", required = true, dataType = "string", paramType = "body"),
+            @ApiImplicitParam(name = "hosts", value = "Collection of hosts' addresses.", required = true, dataType = "string", paramType = "body"),
+
+    })
 
     private String importDataRESTDistributed(Request req, Response res) {
         try {
@@ -122,7 +127,7 @@ public class ImportController {
             return e.getMessage();
         }
 
-        return "Loading successfully STARTED. \n";
+        return "Distributed loading successfully STARTED. \n";
     }
 
 
@@ -193,12 +198,11 @@ public class ImportController {
     }
 
     void importDataFromFile(String dataFile, Loader loaderParam) {
-        Loader loader = loaderParam;
         try {
-            parsePatterns(new FileInputStream(dataFile)).forEach(pattern -> consumeEntity(pattern.admin().asVar(),loader));
-            loader.waitToFinish();
-            parsePatterns(new FileInputStream(dataFile)).forEach(pattern -> consumeRelationAndResource(pattern.admin().asVar(),loader));
-            loader.waitToFinish();
+            parsePatterns(new FileInputStream(dataFile)).forEach(pattern -> consumeEntity(pattern.admin().asVar(), loaderParam));
+            loaderParam.waitToFinish();
+            parsePatterns(new FileInputStream(dataFile)).forEach(pattern -> consumeRelationAndResource(pattern.admin().asVar(), loaderParam));
+            loaderParam.waitToFinish();
             BackgroundTasks.getInstance().forcePostprocessing();
         } catch (Exception e) {
             LOG.error("Exception while batch loading data.",e);
