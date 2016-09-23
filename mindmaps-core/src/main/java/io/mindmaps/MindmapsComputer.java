@@ -31,9 +31,10 @@ public interface MindmapsComputer {
      * Execute the given vertex program using a graph computer.
      *
      * @param program   the vertex program
+     * @param mapReduce a list of mapReduce job
      * @return          the result of the computation
      */
-    ComputerResult compute(VertexProgram program);
+    ComputerResult compute(VertexProgram program, MapReduce... mapReduce);
 
     /**
      * Execute the given map reduce job using a graph computer.
