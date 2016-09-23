@@ -74,8 +74,7 @@ public abstract class AtomBase implements Atomic{
         typeId = varData.getValue();
     }
 
-    @Override
-    public Atomic clone(){ return null;}
+    public abstract Atomic clone();
 
     private Pair<String, String> extractDataFromVar(VarAdmin var) {
         String vTypeId;
@@ -159,7 +158,12 @@ public abstract class AtomBase implements Atomic{
     }
 
     @Override
-    public Query getParentQuery(){return parent;}
+    public Query getParentQuery(){
+        if(parent == null)
+            throw new IllegalStateException(ErrorMessage.PARENT_MISSING.getMessage());
+        return parent;
+    }
+
     @Override
     public void setParentQuery(Query q){ parent = q;}
 

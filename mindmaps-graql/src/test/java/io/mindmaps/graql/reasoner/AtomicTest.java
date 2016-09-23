@@ -26,19 +26,112 @@ import io.mindmaps.concept.Type;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.Reasoner;
+import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.Relation;
 import io.mindmaps.graql.reasoner.graphs.CWGraph;
 import io.mindmaps.graql.reasoner.graphs.GenericGraph;
+import io.mindmaps.graql.reasoner.graphs.SNBGraph;
+import io.mindmaps.util.ErrorMessage;
 import javafx.util.Pair;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.*;
 
 import static io.mindmaps.graql.internal.reasoner.Utility.computeRoleCombinations;
 
 public class AtomicTest {
+
+    @org.junit.Rule
+    public final ExpectedException exception = ExpectedException.none();
+
+    @Test
+    public void testNonVar(){
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(ErrorMessage.PATTERN_NOT_VAR.getMessage());
+
+        MindmapsGraph graph = SNBGraph.getGraph();
+        QueryBuilder qb = Graql.withGraph(graph);
+        String atomString = "match $x isa person;";
+
+        Query query = new Query(atomString, graph);
+        Atomic atom = AtomicFactory.create(qb.parseMatch(atomString).admin().getPattern());
+    }
+
+    @Test
+    public void testNonVa2r(){
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(ErrorMessage.PATTERN_NOT_VAR.getMessage());
+
+        MindmapsGraph graph = SNBGraph.getGraph();
+        QueryBuilder qb = Graql.withGraph(graph);
+        String atomString = "match $x isa person;";
+
+        Query query = new Query(atomString, graph);
+        Atomic atom =  AtomicFactory.create(qb.parseMatch(atomString).admin().getPattern(), query);
+    }
+
+    @Test
+    public void testParentMissing(){
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(ErrorMessage.PATTERN_NOT_VAR.getMessage());
+
+        MindmapsGraph graph = SNBGraph.getGraph();
+        QueryBuilder qb = Graql.withGraph(graph);
+        String recRelString = "match ($x, $y) isa resides;";
+
+        Atomic recRel = AtomicFactory.create(qb.parseMatch(recRelString).admin().getPattern().getPatterns().iterator().next());
+
+        assert(recRel.isRecursive());
+    }
+
+    @Test
+    public void testRecursive(){
+        MindmapsGraph graph = SNBGraph.getGraph();
+        QueryBuilder qb = Graql.withGraph(graph);
+        Reasoner reasoner = new Reasoner(graph);
+
+        String recRelString = "match ($x, $y) isa resides;";
+        String nrecRelString = "match ($x, $y) isa recommendation;";
+
+        Atomic recRel = AtomicFactory
+                .create(qb.parseMatch(recRelString).admin().getPattern().getPatterns().iterator().next()
+                        , new Query(recRelString, graph));
+        Atomic nrecRel = AtomicFactory
+                .create(qb.parseMatch(nrecRelString).admin().getPattern().getPatterns().iterator().next()
+                        , new Query(recRelString, graph));
+
+        assert(recRel.isRecursive());
+        assert(!nrecRel.isRecursive());
+    }
+
+    @Test
+    public void testFactory(){
+        MindmapsGraph graph = SNBGraph.getGraph();
+        QueryBuilder qb = Graql.withGraph(graph);
+        String atomString = "match $x isa person;";
+        String relString = "match ($x, $y) isa recommendation;";
+        String subString = "match $x id 'Bob';";
+        String resString = "match $x has gender 'male';";
+
+        Atomic atom = AtomicFactory.create(qb.parseMatch(atomString).admin().getPattern().getPatterns().iterator().next());
+        Atomic relation = AtomicFactory.create(qb.parseMatch(relString).admin().getPattern().getPatterns().iterator().next());
+        Atomic sub = AtomicFactory.create(qb.parseMatch(subString).admin().getPattern().getPatterns().iterator().next());
+        Atomic res = AtomicFactory.create(qb.parseMatch(resString).admin().getPattern().getPatterns().iterator().next());
+
+        assert(atom.isUnary() && atom.isType());
+        assert(relation.isRelation());
+        assert(sub.isSubstitution());
+        assert(res.isResource());
+    }
+
+    @Test
+    public void testRecursiveAtom(){
+
+    }
 
     @Test
     public void testRoleInference(){
