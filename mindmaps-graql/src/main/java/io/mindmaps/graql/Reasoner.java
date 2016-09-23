@@ -50,50 +50,46 @@ public class Reasoner {
         linkConceptTypes();
     }
 
-    private boolean checkChildApplicableToAtomViaRelation(Atomic parentAtom, Query parent, InferenceRule child) {
+    private boolean checkRuleApplicableToAtom(Atomic parentAtom, InferenceRule child) {
         boolean relRelevant = true;
+        Query parent = parentAtom.getParentQuery();
         Atomic childAtom = child.getRuleConclusionAtom();
-        Map<RoleType, Pair<String, Type>> childRoleVarTypeMap = childAtom.getRoleVarTypeMap();
 
-        //Check for role compatibility
-        Map<RoleType, Pair<String, Type>> parentRoleVarTypeMap = parentAtom.getRoleVarTypeMap();
-        for (Map.Entry<RoleType, Pair<String, Type>> entry : parentRoleVarTypeMap.entrySet()) {
-            RoleType role = entry.getKey();
-            Type pType = entry.getValue().getValue();
-            if (pType != null) {
-                //vars can be matched by role types
-                if (childRoleVarTypeMap.containsKey(role)) {
-                    Type chType = childRoleVarTypeMap.get(role).getValue();
-                    //check type compatibility
-                    if (chType != null) {
-                        relRelevant &= pType.equals(chType) || chType.subTypes().contains(pType);
+        if (parentAtom.isRelation()) {
+            Map<RoleType, Pair<String, Type>> childRoleVarTypeMap = childAtom.getRoleVarTypeMap();
+            //Check for role compatibility
+            Map<RoleType, Pair<String, Type>> parentRoleVarTypeMap = parentAtom.getRoleVarTypeMap();
+            for (Map.Entry<RoleType, Pair<String, Type>> entry : parentRoleVarTypeMap.entrySet()) {
+                RoleType role = entry.getKey();
+                Type pType = entry.getValue().getValue();
+                if (pType != null) {
+                    //vars can be matched by role types
+                    if (childRoleVarTypeMap.containsKey(role)) {
+                        Type chType = childRoleVarTypeMap.get(role).getValue();
+                        //check type compatibility
+                        if (chType != null) {
+                            relRelevant &= pType.equals(chType) || chType.subTypes().contains(pType);
 
-                        //Check for any constraints on the variables
-                        String chVar = childRoleVarTypeMap.get(role).getKey();
-                        String pVar = entry.getValue().getKey();
-                        String chVal = child.getBody().getValue(chVar);
-                        String pVal = parent.getValue(pVar);
-                        if (!chVal.isEmpty() && !pVal.isEmpty())
-                            relRelevant &= chVal.equals(pVal);
+                            //Check for any constraints on the variables
+                            String chVar = childRoleVarTypeMap.get(role).getKey();
+                            String pVar = entry.getValue().getKey();
+                            String chVal = child.getBody().getValue(chVar);
+                            String pVal = parent.getValue(pVar);
+                            if (!chVal.isEmpty() && !pVal.isEmpty())
+                                relRelevant &= chVal.equals(pVal);
+                        }
                     }
                 }
             }
         }
+        else if (parentAtom.isResource())
+            relRelevant = parentAtom.getVal().equals(childAtom.getVal());
 
         return relRelevant;
     }
 
-    private boolean checkChildApplicableToAtomViaResource(Atomic parent, InferenceRule child) {
-        Atomic childAtom = child.getRuleConclusionAtom();
-        String childVal = childAtom.getVal();
-        String val = parent.getVal();
-
-        return val.equals(childVal);
-    }
-
-    private Set<Rule> getAtomChildren(Atomic atom) {
+    private Set<Rule> getApplicableRules(Atomic atom) {
         Set<Rule> children = new HashSet<>();
-        Query parent = atom.getParentQuery();
 
         String typeId = atom.getTypeId();
         if (typeId.isEmpty()) return children;
@@ -101,20 +97,11 @@ public class Reasoner {
 
         Collection<Rule> rulesFromType = type.getRulesOfConclusion();
 
-        for (Rule rule : rulesFromType) {
-            boolean ruleRelevant = true;
+        rulesFromType.forEach( rule -> {
             InferenceRule child = workingMemory.get(rule.getId());
-            if (atom.isResource())
-                ruleRelevant = checkChildApplicableToAtomViaResource(atom, child);
-            else if (atom.isRelation()) {
-                LOG.debug("Checking relevance of rule " + rule.getId());
-                ruleRelevant = checkChildApplicableToAtomViaRelation(atom, parent, child);
-                if (!ruleRelevant)
-                    LOG.debug("Rule " + rule.getId() + " not relevant through type " + type.getId());
-            }
-
+            boolean ruleRelevant = checkRuleApplicableToAtom(atom, child);
             if (ruleRelevant) children.add(rule);
-        }
+        });
 
         return children;
     }
@@ -210,7 +197,7 @@ public class Reasoner {
         boolean queryAdmissible = !subGoals.contains(atomicQuery);
 
         if(queryAdmissible) {
-            Set<Rule> rules = getAtomChildren(atom);
+            Set<Rule> rules = getApplicableRules(atom);
             for (Rule rl : rules) {
                 InferenceRule rule = new InferenceRule(rl, graph);
                 rule.unify(atom, varMap);
@@ -287,7 +274,7 @@ public class Reasoner {
     }
 
     /**
-     * Resolve a given query string using the rule base
+     * Resolve a given query using the rule base
      * @param inputQuery the query string to be expanded
      * @return set of answers
      */

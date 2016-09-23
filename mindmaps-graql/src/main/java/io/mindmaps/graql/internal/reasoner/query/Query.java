@@ -147,7 +147,7 @@ public class Query implements MatchQueryInternal {
         return typeAtomMap.get(type);
     }
     public Set<Atomic> getSubstitutions(){
-        return getAtoms().stream().filter(Atomic::isValuePredicate).collect(Collectors.toSet());
+        return getAtoms().stream().filter(Atomic::isSubstitution).collect(Collectors.toSet());
     }
 
     public Set<String> getVarSet() {
@@ -371,7 +371,7 @@ public class Query implements MatchQueryInternal {
                 Atomic lcon = AtomicFactory.create(con);
                 lcon.setParentQuery(this);
                 addAtom(lcon);
-                if (lcon.isValuePredicate())
+                if (lcon.isSubstitution())
                     selectVars.remove(lcon.getVarName());
             }
         });
@@ -383,7 +383,7 @@ public class Query implements MatchQueryInternal {
      */
     public Set<Atomic> selectAtoms() {
         Set<Atomic> atoms = new HashSet<>(atomSet).stream()
-                .filter(atom -> !atom.isValuePredicate()).collect(Collectors.toSet());
+                .filter(atom -> !atom.isSubstitution()).collect(Collectors.toSet());
         if (atoms.size() == 1) return atoms;
 
         Set<Atomic> selectedAtoms = atoms.stream()

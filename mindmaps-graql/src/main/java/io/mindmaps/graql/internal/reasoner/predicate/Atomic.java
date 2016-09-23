@@ -29,9 +29,10 @@ import javafx.util.Pair;
 import java.util.Map;
 import java.util.Set;
 
-public interface Atomic{
+public interface Atomic extends Cloneable{
 
     void print();
+    Atomic clone();
 
     /**
      * @return true if the atom corresponds to a unary predicate
@@ -51,7 +52,7 @@ public interface Atomic{
     /**
      * @return true if the atom corresponds to a value predicate (~unifier)
      * */
-    default boolean isValuePredicate(){ return false;}
+    default boolean isSubstitution(){ return false;}
 
     /**
      * @return true if the atom corresponds to a resource predicate
