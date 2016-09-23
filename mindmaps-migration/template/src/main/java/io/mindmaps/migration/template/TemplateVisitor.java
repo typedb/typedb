@@ -20,6 +20,8 @@ package io.mindmaps.migration.template;
 
 import mjson.Json;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
@@ -36,7 +38,7 @@ import static java.util.stream.Collectors.toSet;
 class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
 
     private CommonTokenStream tokens;
-    private Map<String, Integer> iteration;
+    private Map<Variable, Integer> iteration = new HashMap<>();
 
     private Scope scope;
     private Json context;
@@ -45,7 +47,6 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         this.tokens = tokens;
         this.context = context;
         scope = new Scope();
-        iteration = new HashMap<>();
     }
 
     // template
@@ -62,22 +63,12 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
     @Override
     public Value visitBlock(GraqlTemplateParser.BlockContext ctx) {
 
-        // get the graql variables in this scope
-        Set<String> graqlVariables = ctx.graql().stream()
-                .map(GraqlTemplateParser.GraqlContext::graqlVar)
-                .filter(v -> v != null)
-                .map(GraqlTemplateParser.GraqlVarContext::GRAQLVAR)
-                .map(TerminalNode::getSymbol)
-                .map(Token::getText)
-                .collect(toSet());
-
         // create the scope of this block
-        scope = new Scope(scope, context.asMap(), graqlVariables);
+        scope = new Scope(scope, variablesInContext(ctx), context.asMap());
 
         // increase the iteration of vars local to this block
-        graqlVariables.stream()
-                .filter(scope::isLocalVar)
-                .forEach(var -> iteration.compute(var, (k, v) -> v==null ? 0 : v+1));
+        scope.variables().stream()
+                .forEach(var -> iteration.compute(var, (k, v) -> v == null ? 0 : v + 1));
 
         // traverse the parse tree
         Value returnValue = visitChildren(ctx);
@@ -105,14 +96,14 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
     public Value visitForStatement(GraqlTemplateParser.ForStatementContext ctx) {
 
         // resolved variable
-        Value variable = this.visitVariable(ctx.variable());
+        Variable variable = this.visitVariable(ctx.variable()).asVariable();
         Value array = this.visitResolve(ctx.resolve());
 
         Value returnValue = Value.VOID;
 
         if(array.isList()){
             for (Object object : array.asList()) {
-                scope.assign(variable.asString(), object);
+                scope.assign(variable.cleaned(), object);
 
                 returnValue = concat(returnValue, this.visit(ctx.block()));
             }
@@ -123,29 +114,30 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
 
     @Override
     public Value visitVariable(GraqlTemplateParser.VariableContext ctx) {
-        return new Value(ctx.getText().replace("%", ""));
+        Variable var = new Variable(ctx.getText());
+
+        if(var.isGraqlVariable()){
+            return whitespace(var.variable() + iteration.get(var), ctx);
+        } else {
+            return new Value(var);
+        }
     }
 
     @Override
     public Value visitResolve(GraqlTemplateParser.ResolveContext ctx) {
-        return scope.resolve(ctx.getText());
+        Variable var = new Variable(ctx.getText());
+        return scope.resolve(var.cleaned());
     }
 
     @Override
     public Value visitReplace(GraqlTemplateParser.ReplaceContext ctx) {
-        return concat(new Value(lws(ctx.IDENTIFIER())), scope.resolve(ctx.getText()), new Value(rws(ctx.IDENTIFIER())));
+        Variable var = new Variable(ctx.getText());
+        return whitespace(scope.resolve(var.cleaned()), ctx);
     }
 
     @Override
     public Value visitTerminal(TerminalNode node){
-        return new Value(lws(node) + node.getText() + rws(node));
-    }
-
-    @Override
-    public Value visitGraqlVar(GraqlTemplateParser.GraqlVarContext ctx){
-        String var = ctx.getText();
-
-        return new Value(lws(ctx.GRAQLVAR()) + (var + iteration.get(var)) + rws(ctx.GRAQLVAR()));
+        return whitespace(node.getText(), node);
     }
 
     @Override
@@ -161,20 +153,47 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         return concat(aggregate, nextResult);
     }
 
-    private String rws(TerminalNode node){
-        Token token = node.getSymbol();
+    private Set<Variable> variablesInContext(GraqlTemplateParser.BlockContext ctx){
+        return ctx.graql().stream()
+                .map(GraqlTemplateParser.GraqlContext::variable)
+                .filter(v -> v != null)
+                .map(RuleContext::getText)
+                .map(Variable::new)
+                .collect(toSet());
+    }
 
-        List<Token> hidden = tokens.getHiddenTokensToRight(token.getTokenIndex());
+    // Methods to maintain whitespace in the template
+
+    private Value whitespace(Object obj, ParserRuleContext ctx){
+        return whitespace(obj, ctx.getStart(), ctx.getStop());
+    }
+
+    private Value whitespace(Object obj, TerminalNode node){
+        Token tok = node.getSymbol();
+        return whitespace(obj, tok, tok);
+    }
+
+    private Value whitespace(Object obj, Token startToken, Token stopToken){
+        String lws = lwhitespace(startToken.getTokenIndex());
+        String rws = rwhitespace(stopToken.getTokenIndex());
+
+        if(obj == null){
+            return new Value(lws + Value.NULL.toString() + rws);
+        }
+
+        return new Value(lws + obj.toString() + rws);
+    }
+
+    private String rwhitespace(int tokenIndex){
+        List<Token> hidden = tokens.getHiddenTokensToRight(tokenIndex);
         if(hidden == null){ return ""; }
 
         Integer newline = newlineOrEOF(hidden);
         return newline != null ? wsFrom(0, newline, hidden) : "";
     }
 
-    private String lws(TerminalNode node) {
-        Token token = node.getSymbol();
-
-        List<Token> hidden = tokens.getHiddenTokensToLeft(token.getTokenIndex());
+    private String lwhitespace(int tokenIndex) {
+        List<Token> hidden = tokens.getHiddenTokensToLeft(tokenIndex);
         if(hidden == null){ return ""; }
 
         Integer newline = newlineOrEOF(hidden);

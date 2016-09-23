@@ -18,7 +18,9 @@
 
 package io.mindmaps.migration.template;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
 
 import static io.mindmaps.migration.template.ValueFormatter.format;
 import static java.util.stream.Collectors.toMap;
@@ -26,37 +28,39 @@ import static java.util.stream.Collectors.toMap;
 public class Scope {
 
     private Scope parent;
-    private Map<String, Value> variables;
-    private Set<String> localGraqlVariables;
+    private Map<Variable, Value> variables;
 
     public Scope(){
-        this(null, Collections.emptyMap(), Collections.emptySet());
+        this(null, Collections.emptySet(), Collections.emptyMap());
     }
 
     public Scope(Scope parent,
-                 Map<String, Object> data,
-                 Set<String> graqlVariables){
-        this.parent = parent;
+                 Set<Variable> variables,
+                 Map<String, Object> data){
 
-        this.variables = convertMap(data);
-        this.localGraqlVariables = getLocalVariables(this.parent, graqlVariables);
+        this.parent = parent;
+        this.variables = localVariables(this.parent, variables)
+                .stream()
+                .collect(toMap(
+                        v -> v,
+                        v -> Value.VOID));
+        this.putData(data);
     }
 
     public Scope up() {
         return parent;
     }
 
-    public void assign(String variable, Object value) {
+    @SuppressWarnings("unchecked")
+    public void assign(Variable variable, Object value) {
         if (value instanceof Map) {
-            this.variables.putAll(convertMap((Map) value));
+            this.putData((Map) value);
         } else {
             this.variables.put(variable, new Value(value));
         }
     }
 
-    public Value resolve(String var) {
-        var = var.replace("%", "");
-
+    public Value resolve(Variable var) {
         Value value = variables.get(var);
         if(value != null) {
             // The variable resides in this scope
@@ -72,28 +76,29 @@ public class Scope {
         }
     }
 
-    public boolean isLocalVar(String var){
-        return localGraqlVariables.contains(var);
+    public boolean isLocalVar(Variable var){
+        return variables.keySet().contains(var);
     }
 
     public boolean isGlobalScope() {
         return parent == null;
     }
 
-    private Set<String> getLocalVariables(Scope scope, Set<String> currentVariables){
+    public Set<Variable> variables(){
+        return variables.keySet();
+    }
+
+    private Set<Variable> localVariables(Scope scope, Set<Variable> currentVariables){
         if(scope == null){
            return currentVariables;
         }
 
-        currentVariables.removeAll(scope.localGraqlVariables);
-        return getLocalVariables(scope.parent, currentVariables);
+        currentVariables.removeAll(scope.variables.keySet());
+        return localVariables(scope.parent, currentVariables);
     }
 
-    private Map<String, Value> convertMap(Map<String, Object> toConvert){
-        return toConvert.entrySet().stream()
-            .collect(toMap(
-                    Map.Entry::getKey,
-                    e -> new Value(e.getValue())
-            ));
+    private void putData(Map<String, Object> data){
+        data.entrySet()
+                .forEach(e -> variables.put(new Variable(e.getKey()), new Value(e.getValue())));
     }
 }

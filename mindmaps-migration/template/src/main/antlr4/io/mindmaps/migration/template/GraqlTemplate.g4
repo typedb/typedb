@@ -31,13 +31,12 @@ noescpStatement
  : NOESCP
  ;
 
-graqlVar    : GRAQLVAR;
-variable    : IDENTIFIER;
+variable    : IDENTIFIER | GRAQLVAR;
 resolve     : IDENTIFIER;
 replace     : IDENTIFIER;
 
 graql
- : graqlVar
+ : variable
  | IN
  | FOR
  | NULLABLE

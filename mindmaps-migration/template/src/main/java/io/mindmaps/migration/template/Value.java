@@ -38,7 +38,7 @@ public class Value {
 
         this.value = value;
 
-        if(!(isString() || isList()|| isBoolean() || isNumber())){
+        if(!(isString() || isList()|| isBoolean() || isNumber() || isVariable())){
             throw new RuntimeException("unsupported type");
         }
     }
@@ -75,6 +75,10 @@ public class Value {
         return this == VOID;
     }
 
+    public boolean isVariable(){
+        return value instanceof Variable;
+    }
+
     public String asString(){
         return (String) value;
     }
@@ -93,6 +97,10 @@ public class Value {
 
     public boolean asBoolean(){
         return (Boolean) value;
+    }
+
+    public Variable asVariable(){
+        return (Variable) value;
     }
 
     public static Value concat(Value... values){
