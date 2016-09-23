@@ -178,7 +178,7 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         String rws = rwhitespace(stopToken.getTokenIndex());
 
         if(obj == null){
-            return new Value(lws + Value.NULL.toString() + rws);
+           obj = Value.NULL;
         }
 
         return new Value(lws + obj.toString() + rws);
