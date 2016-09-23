@@ -23,9 +23,7 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.IntStream;
 
 import static io.mindmaps.migration.template.Value.concat;
@@ -38,6 +36,7 @@ import static java.util.stream.Collectors.toSet;
 class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
 
     private CommonTokenStream tokens;
+    private Map<String, Integer> iteration;
 
     private Scope scope;
     private Json context;
@@ -46,6 +45,7 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         this.tokens = tokens;
         this.context = context;
         scope = new Scope();
+        iteration = new HashMap<>();
     }
 
     // template
@@ -73,6 +73,11 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
 
         // create the scope of this block
         scope = new Scope(scope, context.asMap(), graqlVariables);
+
+        // increase the iteration of vars local to this block
+        graqlVariables.stream()
+                .filter(scope::isLocalVar)
+                .forEach(var -> iteration.compute(var, (k, v) -> v==null ? 0 : v+1));
 
         // traverse the parse tree
         Value returnValue = visitChildren(ctx);
@@ -108,7 +113,6 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         if(array.isList()){
             for (Object object : array.asList()) {
                 scope.assign(variable.asString(), object);
-                scope.nextIteration();
 
                 returnValue = concat(returnValue, this.visit(ctx.block()));
             }
@@ -141,11 +145,7 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
     public Value visitGraqlVar(GraqlTemplateParser.GraqlVarContext ctx){
         String var = ctx.getText();
 
-        if(scope.isLocal(var) && !scope.isGlobalScope()){
-            var = var + scope.iteration();
-        }
-
-        return new Value(lws(ctx.GRAQLVAR()) + var + rws(ctx.GRAQLVAR()));
+        return new Value(lws(ctx.GRAQLVAR()) + (var + iteration.get(var)) + rws(ctx.GRAQLVAR()));
     }
 
     @Override

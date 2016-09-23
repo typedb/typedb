@@ -27,8 +27,7 @@ public class Scope {
 
     private Scope parent;
     private Map<String, Value> variables;
-    private Set<String> graqlVariables;
-    private int iteration;
+    private Set<String> localGraqlVariables;
 
     public Scope(){
         this(null, Collections.emptyMap(), Collections.emptySet());
@@ -39,9 +38,8 @@ public class Scope {
                  Set<String> graqlVariables){
         this.parent = parent;
 
-        this.iteration = parent == null ? 0 : parent.iteration();
         this.variables = convertMap(data);
-        this.graqlVariables = getLocalVariables(this.parent, graqlVariables);
+        this.localGraqlVariables = getLocalVariables(this.parent, graqlVariables);
     }
 
     public Scope up() {
@@ -54,10 +52,6 @@ public class Scope {
         } else {
             this.variables.put(variable, new Value(value));
         }
-    }
-
-    public boolean isGlobalScope() {
-        return parent == null;
     }
 
     public Value resolve(String var) {
@@ -78,16 +72,12 @@ public class Scope {
         }
     }
 
-    public boolean isLocal(String var){
-        return graqlVariables.contains(var);
+    public boolean isLocalVar(String var){
+        return localGraqlVariables.contains(var);
     }
 
-    public void nextIteration(){
-        iteration++;
-    }
-
-    public int iteration(){
-        return iteration;
+    public boolean isGlobalScope() {
+        return parent == null;
     }
 
     private Set<String> getLocalVariables(Scope scope, Set<String> currentVariables){
@@ -95,7 +85,7 @@ public class Scope {
            return currentVariables;
         }
 
-        currentVariables.removeAll(scope.graqlVariables);
+        currentVariables.removeAll(scope.localGraqlVariables);
         return getLocalVariables(scope.parent, currentVariables);
     }
 

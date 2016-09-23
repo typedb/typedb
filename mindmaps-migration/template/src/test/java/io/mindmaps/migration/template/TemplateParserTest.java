@@ -37,7 +37,7 @@ public class TemplateParserTest {
     @Test
     public void oneValueOneLineTest(){
         String template = "insert $x isa person has name %name    ";
-        String expected = "insert $x isa person has name \\\"Phil Collins\\\"    ";
+        String expected = "insert $x0 isa person has name \\\"Phil Collins\\\"    ";
 
         String json = "{\"name\" : \"Phil Collins\"}";
         assertParseEquals(template, json, expected);
@@ -46,7 +46,7 @@ public class TemplateParserTest {
     @Test
     public void multiValueOneLineTest(){
         String template = "insert $x isa person has name %name , has feet %numFeet";
-        String expected = "insert $x isa person has name \\\"Phil Collins\\\" , has feet 3";
+        String expected = "insert $x0 isa person has name \\\"Phil Collins\\\" , has feet 3";
 
         String json = "{\"name\" : \"Phil Collins\", \"numFeet\":3}";
         assertParseEquals(template, json, expected);
@@ -55,7 +55,7 @@ public class TemplateParserTest {
     @Test(expected = AssertionError.class)
     public void dataMissingTest() {
         String template = "insert $x isa person has name %name , has feet %numFeet ";
-        String expected = "insert $x isa person has name \\\"Phil Collins\\\", has feet 3 ";
+        String expected = "insert $x0 isa person has name \\\"Phil Collins\\\", has feet 3 ";
 
         String json = "{\"name\" : \"Phil Collins\", \"feet\":3}";
         assertParseEquals(template, json, expected);
@@ -77,8 +77,8 @@ public class TemplateParserTest {
                 "]}";
 
         String expected =
-                "\t\t\t$x isa whale has name ,\\\"shamu\\\";\n" +
-                        "\t\t\t$x isa whale has name ,\\\"dory\\\";\n";
+                "\t\t\t$x0 isa whale has name ,\\\"shamu\\\";\n" +
+                        "\t\t\t$x1 isa whale has name ,\\\"dory\\\";\n";
 
         assertParseEquals(template, json, expected);
     }
@@ -108,8 +108,8 @@ public class TemplateParserTest {
                 "]}";
 
         String expected =
-                "\t\t\t$x isa whale has name \\\"shamu\\\" ;\n" +
-                "\t\t\t$x isa whale has name \\\"dory\\\" ;\n";
+                "\t\t\t$x0 isa whale has name \\\"shamu\\\" ;\n" +
+                "\t\t\t$x1 isa whale has name \\\"dory\\\" ;\n";
 
         assertParseEquals(template, json, expected);
     }
@@ -139,15 +139,15 @@ public class TemplateParserTest {
                 "}";
 
         String expected = "insert\n" +
-                "    $x isa person;\n" +
+                "    $x0 isa person;\n" +
                 "        $y0 isa address;\n" +
                 "        $y0 has street \\\"Collins Ave\\\" ;\n" +
                 "        $y0 has number 8855 ;\n" +
-                "        ($x, $y0) isa resides;\n" +
+                "        ($x0, $y0) isa resides;\n" +
                 "        $y1 isa address;\n" +
                 "        $y1 has street \\\"Hornsey St\\\" ;\n" +
                 "        $y1 has number 8 ;\n" +
-                "        ($x, $y1) isa resides;\n";
+                "        ($x0, $y1) isa resides;\n";
 
         assertParseEquals(template, json, expected);
     }
@@ -202,7 +202,7 @@ public class TemplateParserTest {
                 "    insert $y1 isa address ;\n" +
                 "        $y1 has street \\\"South Pole\\\" ;\n" +
                 "        $y1 has number -100 ;\n" +
-                "        ($x, $y1) isa resides;\n" +
+                "        ($x0, $y1) isa resides;\n" +
                 "insert $x1 isa person has name \\\"Flounder\\\" ;\n" +
                 "    insert $y2 isa address ;\n" +
                 "        $y2 has street \\\"Under the sea\\\" ;\n" +
