@@ -54,11 +54,17 @@ public class ConfigProperties {
 
     public static final String STATIC_FILES_PATH = "server.static-file-dir";
     public static final String LOGGING_FILE_PATH = "logging.file";
+    public static final String LOGGING_LEVEL = "logging.level";
+
 
     public static final String PROJECT_VERSION = "project.version";
 
     public static final String CURRENT_DIR_SYSTEM_PROPERTY = "mindmaps.dir";
     public static final String CONFIG_FILE_SYSTEM_PROPERTY = "mindmaps.conf";
+    public static final String LOG_FILE_OUTPUT_SYSTEM_PROPERTY = "mindmaps.log.file";
+    public static final String LOG_LEVEL_SYSTEM_PROPERTY = "mindmaps.log.level";
+
+
 
     public static final String LOG_FILE_CONFIG_SYSTEM_PROPERTY = "logback.configurationFile";
 
@@ -86,6 +92,7 @@ public class ConfigProperties {
         }
         prop.put(PROJECT_VERSION,Version.VERSION);
         setLogConfigFile();
+        setLogLevel();
         computeThreadsNumber();
         LOG = LoggerFactory.getLogger(ConfigProperties.class);
         LOG.info("Project directory in use: ["+getProjectPath()+"]");
@@ -112,10 +119,19 @@ public class ConfigProperties {
     /**
      * Check if the JVM argument "-Dlogback.configurationFile" is set.
      * If it is not set, it sets it to the default one.
+     * It also sets the -Dmindmaps.log.file system property equal to the one specified in mindmaps-engine.properties.
+     * The mindmaps.log.file property will be used by logback.xml
      */
     private void setLogConfigFile() {
         if (System.getProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY) == null)
             System.setProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY, getProjectPath() + DEFAULT_LOG_CONFIG_FILE);
+
+        System.setProperty(LOG_FILE_OUTPUT_SYSTEM_PROPERTY,getPath(LOGGING_FILE_PATH));
+    }
+
+    private void setLogLevel() {
+        if (System.getProperty(LOG_LEVEL_SYSTEM_PROPERTY) == null)
+            System.setProperty(LOG_LEVEL_SYSTEM_PROPERTY, prop.getProperty(LOGGING_LEVEL));
     }
 
     /**
@@ -141,9 +157,8 @@ public class ConfigProperties {
      * @return The path to the mindmaps.log file in use.
      */
     public String getLogFilePath(){
-        return getPath(LOGGING_FILE_PATH);
+        return System.getProperty(LOG_FILE_OUTPUT_SYSTEM_PROPERTY);
     }
-
     public int getAvailableThreads() {
         if (numOfThreads == -1)
             computeThreadsNumber();
