@@ -22,7 +22,6 @@ import mjson.Json;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertEquals;
 
 public class TemplateParserTest {
@@ -63,7 +62,25 @@ public class TemplateParserTest {
 
     @Test
     public void quotingWhenReplacementInVariableTest(){
-        assertTrue(false);
+       String template = "" +
+               "insert \n" +
+               "( for %address in %addresses){\n" +
+               "   $%address has address %address;\n" +
+               "}";
+
+        String json = "" +
+                "{" +
+                "   \"addresses\":[" +
+                "       \"22 Hornsey\"," +
+                "       \"Something\"" +
+                "   ]" +
+                "}";
+
+        String expected = "insert \n" +
+                "   $22-Hornsey has address \\\"22 Hornsey\\\";\n" +
+                "   $Something has address \\\"Something\\\";\n";
+
+        assertParseEquals(template, json, expected);
     }
 
     @Test

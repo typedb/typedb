@@ -96,7 +96,7 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
     public Value visitForStatement(GraqlTemplateParser.ForStatementContext ctx) {
 
         // resolved variable
-        Variable variable = this.visitVariable(ctx.variable()).asVariable();
+        Variable variable = this.visitElement(ctx.element()).asVariable();
         Value array = this.visitResolve(ctx.resolve());
 
         Value returnValue = Value.VOID;
@@ -113,11 +113,19 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
     }
 
     @Override
+    public Value visitElement(GraqlTemplateParser.ElementContext ctx){
+        Variable var = new Variable(ctx.getText());
+        return new Value(var);
+    }
+
+    @Override
     public Value visitVariable(GraqlTemplateParser.VariableContext ctx) {
         Variable var = new Variable(ctx.getText());
 
         if(var.isGraqlVariable()){
             return whitespace(var.variable() + iteration.get(var), ctx);
+        } else if(var.isComboVariable()){
+            return visitCombo(ctx.combo());
         } else {
             return new Value(var);
         }

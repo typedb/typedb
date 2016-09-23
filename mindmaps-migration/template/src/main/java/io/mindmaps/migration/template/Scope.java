@@ -62,9 +62,11 @@ public class Scope {
 
     public Value resolve(Variable var) {
         Value value = variables.get(var);
-        if(value != null) {
+        if(value != null && !var.isComboVariable()) {
             // The variable resides in this scope
             return format(value);
+        } else if (value != null){
+            return value;
         }
         else if(!isGlobalScope()) {
             // Let the parent scope look for the variable

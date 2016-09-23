@@ -20,7 +20,7 @@ statement
  ;
 
 forStatement
- : LPAREN FOR variable IN resolve RPAREN LBRACKET block RBRACKET
+ : LPAREN FOR element IN resolve RPAREN LBRACKET block RBRACKET
  ;
 
 nullableStatement
@@ -31,9 +31,11 @@ noescpStatement
  : NOESCP
  ;
 
-variable    : IDENTIFIER | GRAQLVAR;
-resolve     : IDENTIFIER;
-replace     : IDENTIFIER;
+element     : VAR;
+resolve     : VAR;
+replace     : VAR;
+variable    : replace | combo | GRAQLVAR;
+combo       : '$' replace;
 
 graql
  : variable
@@ -45,7 +47,8 @@ graql
  | RPAREN
  | LBRACKET
  | RBRACKET
- | NOT_WS;
+ | NOT_WS
+ ;
 
 // reserved
 FOR         : 'for' ;
@@ -53,8 +56,8 @@ IN          : 'in' ;
 NULLABLE    : 'nullable' ;
 NOESCP      : 'noescp' ;
 
-IDENTIFIER  : '%' [a-zA-Z0-9_-]+;
-GRAQLVAR    : '$' [a-zA-S0-9_-]+;
+VAR         : '%' [a-zA-Z0-9_-]+;
+GRAQLVAR    : '$' [a-zA-Z0-9_-]+;
 LPAREN      : '(';
 RPAREN      : ')';
 LBRACKET    : '{';

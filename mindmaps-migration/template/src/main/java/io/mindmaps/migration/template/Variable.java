@@ -21,11 +21,16 @@ package io.mindmaps.migration.template;
 public class Variable {
 
     private String variable;
-    private boolean graqlVariable;
+    private boolean graqlVariable = false;
+    private boolean comboVariable = false;
 
     public Variable(String var){
         this.variable = var;
-        this.graqlVariable = var.contains("$");
+        if(var.contains("%$")){
+            this.comboVariable = true;
+        } else if(var.contains("$")){
+            this.graqlVariable = true;
+        }
     }
 
     public String getVariable() {
@@ -34,6 +39,10 @@ public class Variable {
 
     public boolean isGraqlVariable() {
         return graqlVariable;
+    }
+
+    public boolean isComboVariable(){
+        return comboVariable;
     }
 
     public String variable(){
