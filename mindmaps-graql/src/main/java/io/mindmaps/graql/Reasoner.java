@@ -187,8 +187,7 @@ public class Reasoner {
         return newAnswers;
     }
 
-    private QueryAnswers answer(AtomicQuery atomicQuery, Set<AtomicQuery> subGoals, Map<AtomicQuery, QueryAnswers> matAnswers,
-                                Map<String, Type> varMap) {
+    private QueryAnswers answer(AtomicQuery atomicQuery, Set<AtomicQuery> subGoals, Map<AtomicQuery, QueryAnswers> matAnswers) {
         Atomic atom = atomicQuery.getAtom();
 
         atomicQuery.DBlookup();
@@ -200,7 +199,7 @@ public class Reasoner {
             Set<Rule> rules = getApplicableRules(atom);
             for (Rule rl : rules) {
                 InferenceRule rule = new InferenceRule(rl, graph);
-                rule.unify(atom, varMap);
+                rule.unify(atom);
                 Query ruleBody = rule.getBody();
                 AtomicQuery ruleHead = rule.getHead();
 
@@ -211,12 +210,12 @@ public class Reasoner {
                 Atomic at = atIt.next();
                 AtomicQuery childAtomicQuery = new AtomicMatchQuery(at);
                 atomicQuery.establishRelation(childAtomicQuery);
-                QueryAnswers subs = answer(childAtomicQuery, subGoals, matAnswers, varMap);
+                QueryAnswers subs = answer(childAtomicQuery, subGoals, matAnswers);
                 while(atIt.hasNext()){
                     at = atIt.next();
                     childAtomicQuery = new AtomicMatchQuery(at);
                     atomicQuery.establishRelation(childAtomicQuery);
-                    QueryAnswers localSubs = answer(childAtomicQuery, subGoals, matAnswers, varMap);
+                    QueryAnswers localSubs = answer(childAtomicQuery, subGoals, matAnswers);
                     subs = subs.join(localSubs);
                 }
 
@@ -245,10 +244,9 @@ public class Reasoner {
 
             do {
                 Set<AtomicQuery> subGoals = new HashSet<>();
-                Map<String, Type> varMap = atomicQuery.getVarTypeMap();
                 dAns = atomicQuery.getAnswers().size();
                 LOG.debug("iter: " + iter++ + " answers: " + dAns);
-                answer(atomicQuery, subGoals, matAnswers, varMap);
+                answer(atomicQuery, subGoals, matAnswers);
                 propagateAnswers(matAnswers);
                 dAns = atomicQuery.getAnswers().size() - dAns;
             } while (dAns != 0);

@@ -119,14 +119,13 @@ public class Utility {
 
     /**
      * generate a fresh variable avoiding global variables and variables from the same query
-     * @param globalVars global variables to avoid
-     * @param childVars  variables from the query var belongs to
+     * @param vars  vars to be avoided
      * @param var        variable to be generated a fresh replacement
      * @return fresh variables
      */
-    public static String createFreshVariable(Set<String> globalVars, Set<String> childVars, String var) {
+    public static String createFreshVariable(Set<String> vars, String var) {
         String fresh = var;
-        while (globalVars.contains(fresh) || childVars.contains(fresh)) {
+        while (vars.contains(fresh)) {
             String valFree = fresh.replaceAll("[^0-9]", "");
             int value = valFree.equals("") ? 0 : Integer.parseInt(valFree);
             fresh = fresh.replaceAll("\\d+", "") + (++value);

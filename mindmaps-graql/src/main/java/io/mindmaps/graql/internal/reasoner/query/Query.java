@@ -215,7 +215,7 @@ public class Query implements MatchQueryInternal {
         updateSelectedVars(mapping);
     }
 
-    public void unify(Map<String, String> unifiers, Set<String> globalVars) {
+    public void unify(Map<String, String> unifiers) {
         if (unifiers.size() == 0) return;
         Map<String, String> mappings = new HashMap<>(unifiers);
         Map<String, String> appliedMappings = new HashMap<>();
@@ -252,14 +252,12 @@ public class Query implements MatchQueryInternal {
         toAdd.forEach(this::addAtom);
 
         updateSelectedVars(mappings);
-        resolveCaptures(globalVars);
     }
 
     /**
      * finds captured variable occurrences in a query and replaces them with fresh variables
-     * @param globalVars global variables to be avoided when creating fresh variables
      */
-    private void resolveCaptures(Set<String> globalVars) {
+    private void resolveCaptures() {
         //find captures
         Set<String> captures = new HashSet<>();
         getVarSet().forEach(v -> {
@@ -267,7 +265,7 @@ public class Query implements MatchQueryInternal {
         });
 
         captures.forEach(cap -> {
-            String fresh = createFreshVariable(globalVars, getVarSet(), cap.replace("captured->", ""));
+            String fresh = createFreshVariable(getVarSet(), cap.replace("captured->", ""));
             changeVarName(cap, fresh);
         });
     }
