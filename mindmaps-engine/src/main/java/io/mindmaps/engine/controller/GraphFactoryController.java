@@ -34,7 +34,7 @@ import static spark.Spark.get;
 
 
 /**
- * REST controller used by MindmapsClient to retrieve graph configuration for a given graph name.
+ * REST controller used by MindmapsGraphFactoryImpl to retrieve graph configuration for a given graph name.
  */
 
 public class GraphFactoryController {

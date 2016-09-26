@@ -63,7 +63,7 @@ public class MindmapsTitanGraphFactoryTest {
     private static TitanGraph noIndexGraph;
     private static TitanGraph indexGraph;
 
-    private static MindmapsGraphFactory titanGraphFactory ;
+    private static MindmapsInternalFactory titanGraphFactory ;
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
@@ -72,7 +72,7 @@ public class MindmapsTitanGraphFactoryTest {
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.OFF);
 
-        titanGraphFactory = new MindmapsTitanGraphFactory();
+        titanGraphFactory = new MindmapsTitanInternalFactory();
 
         sharedGraph = ((MindmapsTitanGraph) titanGraphFactory.getGraph(TEST_SHARED, TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING)).getTinkerPopGraph();
 

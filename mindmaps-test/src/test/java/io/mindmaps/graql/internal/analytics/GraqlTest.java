@@ -220,7 +220,7 @@ public class GraqlTest {
         ((ComputeQuery) qb.parse("compute degreesAndPersist")).execute();
 
         // assert persisted degrees are correct
-//        MindmapsGraph graph = MindmapsClient.getGraph(keyspace);
+//        MindmapsGraph graph = MindmapsGraphFactoryImpl.getGraph(keyspace);
         entity1 = graph.getEntity("1");
         entity2 = graph.getEntity("2");
         entity3 = graph.getEntity("3");

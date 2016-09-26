@@ -20,6 +20,7 @@ package io.mindmaps.factory;
 
 import io.mindmaps.MindmapsComputer;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.MindmapsGraphFactory;
 import io.mindmaps.graph.internal.EngineCommunicator;
 import io.mindmaps.graph.internal.MindmapsComputerImpl;
 import io.mindmaps.util.ErrorMessage;
@@ -43,11 +44,11 @@ import static io.mindmaps.util.REST.WebPath.GRAPH_FACTORY_URI;
  * This is to abstract away factories and the backend from the user.
  * The deployer of engine decides on the backend and this class will handle producing the correct graphs.
  */
-public class MindmapsClient {
+public class MindmapsGraphFactoryImpl implements MindmapsGraphFactory{
     private static final String COMPUTER = "graph.computer";
     private final String uri;
 
-    public MindmapsClient(String uri){
+    public MindmapsGraphFactoryImpl(String uri){
         this.uri = uri;
     }
 
@@ -130,9 +131,9 @@ public class MindmapsClient {
     private static class ConfigureFactory {
         String path;
         String graphComputer;
-        MindmapsGraphFactory factory;
+        MindmapsInternalFactory factory;
 
-        ConfigureFactory(String path, String graphComputer, MindmapsGraphFactory factory){
+        ConfigureFactory(String path, String graphComputer, MindmapsInternalFactory factory){
             this.path = path;
             this.graphComputer = graphComputer;
             this.factory = factory;

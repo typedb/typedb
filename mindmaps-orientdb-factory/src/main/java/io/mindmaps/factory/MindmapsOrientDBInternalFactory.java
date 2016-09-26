@@ -16,13 +16,13 @@ import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-public class MindmapsOrientDBGraphFactory extends AbstractMindmapsGraphFactory<MindmapsOrientDBGraph, OrientGraph>{
-    private final Logger LOG = LoggerFactory.getLogger(MindmapsOrientDBGraphFactory.class);
+public class MindmapsOrientDBInternalFactory extends AbstractMindmapsInternalFactory<MindmapsOrientDBGraph, OrientGraph> {
+    private final Logger LOG = LoggerFactory.getLogger(MindmapsOrientDBInternalFactory.class);
     private final Map<String, OrientGraphFactory> openFactories;
     private static final String KEY_TYPE = "keytype";
     private static final String UNIQUE = "type";
 
-    public MindmapsOrientDBGraphFactory(){
+    public MindmapsOrientDBInternalFactory(){
         super();
         openFactories = new HashMap<>();
     }

@@ -30,10 +30,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 
-public class MindmapsTitanHadoopGraphFactory extends AbstractMindmapsGraphFactory<AbstractMindmapsGraph<HadoopGraph>, HadoopGraph> {
+public class MindmapsTitanHadoopInternalFactory extends AbstractMindmapsInternalFactory<AbstractMindmapsGraph<HadoopGraph>, HadoopGraph> {
     private static final String CLUSTER_KEYSPACE = "titanmr.ioformat.conf.storage.cassandra.keyspace";
     private static final String INPUT_KEYSPACE = "cassandra.input.keyspace";
-    private final Logger LOG = LoggerFactory.getLogger(MindmapsTitanHadoopGraphFactory.class);
+    private final Logger LOG = LoggerFactory.getLogger(MindmapsTitanHadoopInternalFactory.class);
 
     @Override
     boolean isClosed(HadoopGraph innerGraph) {

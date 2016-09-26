@@ -22,7 +22,7 @@ import com.jayway.restassured.response.Response;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.engine.Util;
 import io.mindmaps.engine.util.ConfigProperties;
-import io.mindmaps.factory.MindmapsClient;
+import io.mindmaps.factory.MindmapsGraphFactoryImpl;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import io.mindmaps.graph.internal.Mindmaps;
 import io.mindmaps.graph.internal.MindmapsComputerImpl;
@@ -65,8 +65,8 @@ public class GraphFactoryControllerTest {
         Mindmaps.connect().getGraph("mindmapstest2");
         Mindmaps.connect().getGraphBatchLoading("mindmapstest2");
 
-        assertTrue(MindmapsClient.openGraphs().contains("mindmapstest1"));
-        assertTrue(MindmapsClient.openGraphs().contains("mindmapstest2"));
+        assertTrue(MindmapsGraphFactoryImpl.openGraphs().contains("mindmapstest1"));
+        assertTrue(MindmapsGraphFactoryImpl.openGraphs().contains("mindmapstest2"));
     }
 
     @Test
