@@ -10,40 +10,29 @@ template
  ;
 
 block
- : (statement | replace | graql)+
+ : (statement | graql)+
  ;
 
 statement
  : forStatement
- | nullableStatement
- | noescpStatement
  ;
 
 forStatement
  : LPAREN FOR element IN resolve RPAREN LBRACKET block RBRACKET
  ;
 
-nullableStatement
- : NULLABLE
- ;
-
-noescpStatement
- : NOESCP
- ;
-
-element     : VAR;
-resolve     : VAR;
-replace     : VAR;
-variable    : replace | combo | GRAQLVAR;
-combo       : DOLLAR replace;
+element     : TVAR;
+resolve     : TVAR (DVAR)*;
+replace     : TVAR (DVAR)*;
+variable    : replace | DOLLAR replace | GVAR;
 
 graql
  : variable
  | IN
  | FOR
- | NULLABLE
- | NOESCP
  | DOLLAR
+ | PERCENT
+ | DOT
  | LPAREN
  | RPAREN
  | LBRACKET
@@ -54,16 +43,17 @@ graql
 // reserved
 FOR         : 'for' ;
 IN          : 'in' ;
-NULLABLE    : 'nullable' ;
-NOESCP      : 'noescp' ;
 
-VAR         : '%' [a-zA-Z0-9_-]+;
-GRAQLVAR    : '$' [a-zA-Z0-9_-]+;
+GVAR        : '$' [a-zA-Z0-9_-]+;
+TVAR        : '%' [a-zA-Z0-9_-]+;
+DVAR        : '.' [a-zA-Z0-9_-]+;
 LPAREN      : '(';
 RPAREN      : ')';
 LBRACKET    : '{';
 RBRACKET    : '}';
 DOLLAR      : '$';
+PERCENT     : '%';
+DOT         : '.';
 NOT_WS      : ~[ \t\r\n];
 
 WS : [ \t\r\n] -> channel(1) ;
