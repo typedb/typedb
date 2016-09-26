@@ -55,7 +55,7 @@ public class Variable {
         } else if(isGraqlVariable()){
             return new Variable(variable.replace("$", ""));
         } else {
-            return new Variable(variable.replace("%", "").replace(".", ""));
+            return new Variable(variable.replace("%", ""));
         }
     }
 

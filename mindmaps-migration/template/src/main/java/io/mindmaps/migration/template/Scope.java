@@ -43,7 +43,7 @@ public class Scope {
                 .collect(toMap(
                         v -> v,
                         v -> Value.VOID));
-        this.assign(data);
+        this.assign("", data);
     }
 
     public Scope up() {
@@ -53,15 +53,10 @@ public class Scope {
     @SuppressWarnings("unchecked")
     public void assign(Variable variable, Object value) {
         if (value instanceof Map) {
-            this.assign((Map) value);
+            this.assign("", (Map) value);
         } else {
             this.variables.put(variable, new Value(value));
         }
-    }
-
-    public void assign(Map<String, Object> data){
-        data.entrySet()
-                .forEach(e -> variables.put(new Variable(e.getKey()), new Value(e.getValue())));
     }
 
     public Value resolve(Variable var) {
@@ -99,5 +94,19 @@ public class Scope {
 
         currentVariables.removeAll(scope.variables.keySet());
         return localVariables(scope.parent, currentVariables);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void assign(String prefix, Map<String, Object> data){
+        for(String key:data.keySet()){
+            Object value = data.get(key);
+
+            if(value instanceof Map){
+                assign(key + ".", (Map) value);
+            }
+            else {
+                variables.put(new Variable(prefix + key), new Value(value));
+            }
+        }
     }
 }

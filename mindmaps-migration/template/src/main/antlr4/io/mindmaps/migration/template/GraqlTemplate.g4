@@ -24,7 +24,7 @@ forStatement
 element     : TVAR;
 resolve     : TVAR (DVAR)*;
 replace     : resolve;
-variable    : replace | DOLLAR replace | GVAR;
+variable    : replace | DOLLAR resolve | GVAR;
 
 graql
  : variable
