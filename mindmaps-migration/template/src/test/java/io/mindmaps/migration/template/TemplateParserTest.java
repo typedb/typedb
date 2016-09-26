@@ -265,12 +265,33 @@ public class TemplateParserTest {
 
     @Test
     public void doubleDotTest(){
-        assertTrue(false);
+        String json  = "{\n" +
+                "\t\"person\" : {\n" +
+                "\t\t\"name\" : {\n" +
+                "\t\t\t\"firstName\" : \"Phil\"\n" +
+                "\t\t}\n" +
+                "\t}\n" +
+                "}";
+
+        String template = "$x isa person has name %person.name.firstName\n";
+
+        String expected = "$x0 isa person has name \\\"Phil\\\"\n";
+
+        assertParseEquals(template, json, expected);
     }
 
     @Test
     public void comboVarDotTest(){
-        assertTrue(false);
+       String json = "{\n" +
+               "\t\"person\" : {\n" +
+               "\t\t\"name\" : \"Phil Collins\"\n" +
+               "\t}\n" +
+               "}";
+
+        String template = "$%person.name isa person";
+        String expected = "$Phil-Collins isa person";
+
+        assertParseEquals(template, json, expected);
     }
 
     private void assertParseEquals(String template, String json, String expected){

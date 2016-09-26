@@ -102,7 +102,7 @@ public class Scope {
             Object value = data.get(key);
 
             if(value instanceof Map){
-                assign(key + ".", (Map) value);
+                assign(prefix + key + ".", (Map) value);
             }
             else {
                 variables.put(new Variable(prefix + key), new Value(value));
