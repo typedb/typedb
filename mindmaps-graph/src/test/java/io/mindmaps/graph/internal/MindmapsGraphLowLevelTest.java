@@ -121,7 +121,7 @@ public class MindmapsGraphLowLevelTest {
                 containsString("not read only")
         ));
 
-        mindmapsGraph.getTinkerTraversal().V().drop().iterate();
+        mindmapsGraph.getTinkerTraversal().drop().iterate();
     }
 
     @Test
