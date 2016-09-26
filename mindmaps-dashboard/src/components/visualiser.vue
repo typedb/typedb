@@ -43,7 +43,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 
                     <div v-for="k in typeKeys">
                         <h4>
-                            <button @click="toggleElement(k+'-group')" class="btn btn-link">{{prettify(k)}}</button>
+                            <button @click="toggleElement(k+'-group')" class="btn btn-link">{{k | capitalize }}</button>
                         </h4>
                         <div class="row m-t-md type-row btn-group {{k}}-group" style="display: none;">
                             <button v-for="i in typeInstances[k]" @click="typeQuery(k, i)" class="btn btn-default">{{i}}</button>
@@ -223,7 +223,8 @@ export default {
         },
 
         notify(ev) {
-            if(ev instanceof KeyboardEvent && !ev.shiftKey)
+            // Shift + Enter just adds a new line
+            if(ev instanceof KeyboardEvent && ev.shiftKey)
                 return;
 
             if(this.graqlQuery == undefined)
@@ -249,7 +250,7 @@ export default {
 
         leftClick(param) {
             const eventKeys = param.event.srcEvent;
-            if(eventKeys.shiftKey)
+            if(!eventKeys.shiftKey)
                 visualiser.clearGraph();
 
             _.map(param.nodes, x => { engineClient.request({url: x, callback: this.typeQueryResponse}) });
@@ -273,10 +274,6 @@ export default {
         toggleElement(e) {
             console.log(e);
             $('.'+e).toggle();
-        },
-
-        prettify(text) {
-            return text.charAt(0).toUpperCase() + text.slice(1);
         }
     }
 }
