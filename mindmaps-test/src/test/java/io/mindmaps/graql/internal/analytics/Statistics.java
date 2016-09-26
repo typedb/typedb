@@ -7,6 +7,7 @@ import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.Mindmaps;
+import io.mindmaps.exception.InvalidConceptTypeException;
 import org.elasticsearch.common.collect.Sets;
 import org.javatuples.Pair;
 import org.junit.After;

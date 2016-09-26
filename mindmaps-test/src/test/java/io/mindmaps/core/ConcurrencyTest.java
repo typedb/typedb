@@ -18,13 +18,13 @@
 
 package io.mindmaps.core;
 
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.factory.MindmapsClient;
 import org.javatuples.Pair;
 import org.junit.*;
 
@@ -34,7 +34,6 @@ import java.util.concurrent.TimeUnit;
 
 import static io.mindmaps.IntegrationUtils.graphWithNewKeyspace;
 import static io.mindmaps.IntegrationUtils.startTestEngine;
-import static org.junit.Assert.assertNotNull;
 
 /**
  *
@@ -81,7 +80,7 @@ public class ConcurrencyTest {
         }
         executor.awaitTermination(5000, TimeUnit.MILLISECONDS);
 
-        MindmapsGraph graph = MindmapsClient.getGraph(keyspace);
+        MindmapsGraph graph = Mindmaps.factory().getGraph(keyspace);
 
         graph.getRoleType("related1");
         graph.getRoleType("related2");
@@ -93,7 +92,7 @@ public class ConcurrencyTest {
     }
 
     public void createGraph() throws MindmapsValidationException {
-        MindmapsGraph graph = MindmapsClient.getGraph(keyspace);
+        MindmapsGraph graph = Mindmaps.factory().getGraph(keyspace);
         RoleType related1 = graph.putRoleType("related1");
         RoleType related2 = graph.putRoleType("related2");
 
