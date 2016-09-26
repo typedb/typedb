@@ -86,7 +86,7 @@ public class Query {
         GraphTraversal<Vertex, Map<String, Vertex>> traversal =
                 graph.getTinkerTraversal().limit(1).union(collect);
 
-        order.ifPresent(o -> o.orderTraversal(graph, traversal));
+        order.ifPresent(o -> o.orderTraversal(traversal));
 
         String[] namesArray = names.toArray(new String[names.size()]);
 
