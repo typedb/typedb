@@ -39,14 +39,17 @@ public class ImportControllerTest {
 
     @BeforeClass
     public static void startController() {
+        Spark.stop();
         System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY, ConfigProperties.TEST_CONFIG_FILE);
+
     }
 
     @Before
     public void setUp() throws Exception {
         graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
-        MindmapsEngineServer.start();
         Util.setRestAssuredBaseURI(ConfigProperties.getInstance().getProperties());
+        MindmapsEngineServer.start();
+
     }
 
     @Test

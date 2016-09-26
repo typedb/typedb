@@ -18,12 +18,10 @@
 
 package io.mindmaps.engine.controller;
 
-import io.mindmaps.factory.MindmapsClient;
-import io.mindmaps.util.REST;
 import io.mindmaps.engine.util.ConfigProperties;
+import io.mindmaps.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import org.json.JSONArray;
 import org.json.JSONObject;
 import spark.Request;
 import spark.Response;
@@ -31,7 +29,6 @@ import spark.Response;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-
 import java.util.Enumeration;
 import java.util.Properties;
 
@@ -46,7 +43,6 @@ public class StatusController {
     public StatusController() {
 
         get(REST.WebPath.GET_STATUS_CONFIG_URI, this::getStatus);
-        get(REST.WebPath.GET_STATUS_GRAPHS_URI, this::getGraphNames);
 
     }
 
@@ -67,15 +63,5 @@ public class StatusController {
 
         return configObj.toString();
     }
-
-    @GET
-    @Path("/graphs")
-    @ApiOperation(
-            value = "Return the list of available graphs names.")
-    private String getGraphNames(Request req, Response res) {
-
-        return MindmapsClient.openGraphs().toString();
-    }
-
 
 }
