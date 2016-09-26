@@ -18,7 +18,6 @@
 
 package io.mindmaps.graql;
 
-import io.mindmaps.util.Version;
 import io.mindmaps.graql.internal.shell.ErrorMessage;
 import io.mindmaps.graql.internal.shell.GraQLCompleter;
 import io.mindmaps.graql.internal.shell.GraqlSignalHandler;
@@ -28,13 +27,9 @@ import jline.console.ConsoleReader;
 import jline.console.completer.AggregateCompleter;
 import jline.console.history.FileHistory;
 import mjson.Json;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.*;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
@@ -57,6 +52,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
+import static io.mindmaps.graql.internal.shell.ErrorMessage.SESSION_CLOSED;
 import static io.mindmaps.util.REST.RemoteShell.*;
 import static io.mindmaps.util.REST.WebPath.REMOTE_SHELL_URI;
 
@@ -173,6 +169,8 @@ public class GraqlShell implements AutoCloseable {
             }
         } catch (IOException | InterruptedException | ExecutionException | URISyntaxException e) {
             System.err.println(e.toString());
+        } catch (WebSocketException e) {
+            System.err.println(SESSION_CLOSED.getMessage());
         } finally {
             client.close();
         }
