@@ -32,7 +32,7 @@ public class ValueFormatter {
     public static Value formatVar(Value var){
         String variable = var.toString();
         if(variable.contains(" ")){
-            return new Value(variable.replace(" ", "-"));
+            return new Value(variable.replaceAll("(\\S)\\s(\\S)", "$1-$2"));
         }
 
         return var;

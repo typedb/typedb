@@ -131,7 +131,7 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         Variable var = new Variable(ctx.getText());
 
         if(var.isComboVariable()){
-            return whitespace("$" + formatVar(visitChildren(ctx)), ctx);
+            return formatVar(visitChildren(ctx));
         } else if(var.isGraqlVariable()){
             return whitespace(var.variable() + iteration.get(var), ctx);
         } else {
