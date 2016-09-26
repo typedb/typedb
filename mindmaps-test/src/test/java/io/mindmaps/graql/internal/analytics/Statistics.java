@@ -213,11 +213,11 @@ public class Statistics {
 
         // if it's not a resource-type
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("thing")));
-        assertInvalidExceptionThrown(computer::max);
-        assertInvalidExceptionThrown(computer::min);
-        assertInvalidExceptionThrown(computer::mean);
-        assertInvalidExceptionThrown(computer::sum);
-        assertInvalidExceptionThrown(computer::std);
+        assertExceptionThrown(computer::max);
+        assertExceptionThrown(computer::min);
+        assertExceptionThrown(computer::mean);
+        assertExceptionThrown(computer::sum);
+        assertExceptionThrown(computer::std);
 
         // resource-type has no instance
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType3")));
@@ -243,16 +243,6 @@ public class Statistics {
         assertExceptionThrown(computer::mean);
         assertExceptionThrown(computer::sum);
         assertExceptionThrown(computer::std);
-    }
-
-    private void assertInvalidExceptionThrown(Supplier<Optional> method) {
-        boolean exceptionThrown = false;
-        try {
-            method.get();
-        } catch (InvalidConceptTypeException e) {
-            exceptionThrown = true;
-        }
-        assertTrue(exceptionThrown);
     }
 
     private void assertExceptionThrown(Supplier<Optional> method) {
