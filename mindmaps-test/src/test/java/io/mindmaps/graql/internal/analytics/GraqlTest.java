@@ -26,10 +26,7 @@ import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.util.ErrorMessage;
 import org.javatuples.Pair;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 
 import java.util.*;
@@ -169,6 +166,7 @@ public class GraqlTest {
         });
     }
 
+    @Ignore
     @Test
     public void testDegreesAndPersist() throws Exception {
 

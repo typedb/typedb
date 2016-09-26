@@ -188,7 +188,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
 
     public Set<ConceptImpl> getConcepts(Schema.ConceptProperty key, Object value){
         Set<ConceptImpl> concepts = new HashSet<>();
-        getTinkerTraversal().V().has(key.name(), value).
+        getTinkerTraversal().has(key.name(), value).
             forEachRemaining(v -> {
                 concepts.add(elementFactory.buildUnknownConcept(v));
             });
@@ -347,7 +347,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         return null;
     }
     public ConceptImpl getConceptByBaseIdentifier(Object baseIdentifier) {
-        GraphTraversal<Vertex, Vertex> traversal = getTinkerTraversal().V(baseIdentifier);
+        GraphTraversal<Vertex, Vertex> traversal = getTinkerPopGraph().traversal().V(baseIdentifier);
         if (traversal.hasNext()) {
             return elementFactory.buildUnknownConcept(traversal.next());
         } else {
@@ -535,7 +535,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         InstanceImpl toRolePlayer = (InstanceImpl) to;
 
         String hash = calculateShortcutHash(relation, relationType, fromRole, fromRolePlayer, toRole, toRolePlayer);
-        boolean exists = getTinkerTraversal().V(fromRolePlayer.getBaseIdentifier()).
+        boolean exists = getTinkerPopGraph().traversal().V(fromRolePlayer.getBaseIdentifier()).
                     local(outE(Schema.EdgeLabel.SHORTCUT.getLabel()).has(Schema.EdgeProperty.SHORTCUT_HASH.name(), hash)).
                     hasNext();
 
@@ -721,7 +721,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         RoleType role = casting.getRole();
 
         //Traversal here is used to take advantage of vertex centric index
-        List<Vertex> castingVertices = getTinkerTraversal().V(rolePlayer.getBaseIdentifier()).
+        List<Vertex> castingVertices = getTinkerPopGraph().traversal().V(rolePlayer.getBaseIdentifier()).
                 inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 has(Schema.EdgeProperty.ROLE_TYPE.name(), role.getId()).otherV().toList();
 
@@ -752,7 +752,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
             //Kill Shortcut Edges
             relation.rolePlayers().values().forEach(instance -> {
                 if(instance != null) {
-                    List<Edge> edges = getTinkerTraversal().V().
+                    List<Edge> edges = getTinkerTraversal().
                             has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), instance.getId()).
                             bothE(Schema.EdgeLabel.SHORTCUT.getLabel()).
                             has(Schema.EdgeProperty.RELATION_ID.name(), relationID).toList();
@@ -797,7 +797,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
                 }
             }
 
-            getTinkerTraversal().V(otherCasting.getBaseIdentifier()).next().remove();
+            getTinkerPopGraph().traversal().V(otherCasting.getBaseIdentifier()).next().remove();
         }
 
         return relationsToClean;

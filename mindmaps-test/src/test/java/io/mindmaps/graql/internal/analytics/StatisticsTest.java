@@ -2,6 +2,7 @@ package io.mindmaps.graql.internal.analytics;
 
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.*;
+import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.MindmapsClient;
 import org.elasticsearch.common.collect.Sets;
 import org.javatuples.Pair;
@@ -10,19 +11,17 @@ import spark.Spark;
 
 import java.util.Collections;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Supplier;
 
 import static io.mindmaps.IntegrationUtils.graphWithNewKeyspace;
 import static io.mindmaps.IntegrationUtils.startTestEngine;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
-public class Statistics {
+public class StatisticsTest {
 
     String keyspace;
     MindmapsGraph graph;
+    Analytics computer;
     double delta = 0.000001;
 
     @BeforeClass
@@ -41,6 +40,7 @@ public class Statistics {
     public void cleanGraph() {
         graph.clear();
         graph.close();
+        System.out.println("After Done!!!");
     }
 
     @AfterClass
@@ -49,49 +49,10 @@ public class Statistics {
         System.out.println("AfterClass Done!!!");
     }
 
+    @Ignore
     @Test
     public void testStatistics() throws Exception {
-        EntityType thing = graph.putEntityType("thing");
-        EntityType anotherThing = graph.putEntityType("another");
-
-        Entity entity1 = graph.putEntity("1", thing);
-        Entity entity2 = graph.putEntity("2", thing);
-        Entity entity3 = graph.putEntity("3", thing);
-        Entity entity4 = graph.putEntity("4", thing);
-
-        RoleType relation1 = graph.putRoleType("relation1");
-        RoleType relation2 = graph.putRoleType("relation2");
-        thing.playsRole(relation1).playsRole(relation2);
-        anotherThing.playsRole(relation1).playsRole(relation2);
-        RelationType related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
-
-        // relate them
-        String id1 = UUID.randomUUID().toString();
-        graph.putRelation(id1, related)
-                .putRolePlayer(relation1, entity1)
-                .putRolePlayer(relation2, entity2);
-
-        String id2 = UUID.randomUUID().toString();
-        graph.putRelation(id2, related)
-                .putRolePlayer(relation1, entity2)
-                .putRolePlayer(relation2, entity3);
-
-        String id3 = UUID.randomUUID().toString();
-        graph.putRelation(id3, related)
-                .putRolePlayer(relation1, entity2)
-                .putRolePlayer(relation2, entity4);
-
-        ResourceType resourceType1 = graph.putResourceType("resourceType1", ResourceType.DataType.DOUBLE);
-        ResourceType resourceType2 = graph.putResourceType("resourceType2", ResourceType.DataType.LONG);
-        ResourceType resourceType3 = graph.putResourceType("resourceType3", ResourceType.DataType.LONG);
-        ResourceType resourceType4 = graph.putResourceType("resourceType4", ResourceType.DataType.STRING);
-        ResourceType resourceType5 = graph.putResourceType("resourceType5", ResourceType.DataType.LONG);
-        ResourceType resourceType6 = graph.putResourceType("resourceType6", ResourceType.DataType.DOUBLE);
-
-        Analytics computer;
-
-        graph.commit();
-        graph = MindmapsClient.getGraph(keyspace);
+        buildTestGraphWithoutResource();
 
         // resource-type has no instance
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
@@ -119,28 +80,33 @@ public class Statistics {
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
         assertFalse(computer.std().isPresent());
 
-        graph.putResource(1.2, resourceType1);
-        graph.putResource(1.5, resourceType1);
-        graph.putResource(1.8, resourceType1);
+        addResources();
 
-        graph.putResource(4L, resourceType2);
-        graph.putResource(-1L, resourceType2);
-        graph.putResource(0L, resourceType2);
+        // resource has no owner
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
+        assertFalse(computer.max().isPresent());
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
+        assertFalse(computer.max().isPresent());
 
-        graph.putResource(6L, resourceType5);
-        graph.putResource(7L, resourceType5);
-        graph.putResource(8L, resourceType5);
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
+        assertFalse(computer.min().isPresent());
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
+        assertFalse(computer.min().isPresent());
 
-        graph.putResource(7.2, resourceType6);
-        graph.putResource(7.5, resourceType6);
-        graph.putResource(7.8, resourceType6);
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
+        assertFalse(computer.sum().isPresent());
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
+        assertFalse(computer.sum().isPresent());
 
-        graph.putResource("a", resourceType4);
-        graph.putResource("b", resourceType4);
-        graph.putResource("c", resourceType4);
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
+        assertFalse(computer.mean().isPresent());
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
+        assertFalse(computer.mean().isPresent());
 
-        graph.commit();
-        graph = MindmapsClient.getGraph(keyspace);
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
+        assertFalse(computer.std().isPresent());
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType2")));
+        assertFalse(computer.std().isPresent());
 
         // test max
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
@@ -240,9 +206,72 @@ public class Statistics {
         boolean exceptionThrown = false;
         try {
             method.get();
-        } catch (IllegalStateException | IllegalArgumentException e) {
+        } catch (IllegalStateException e) {
             exceptionThrown = true;
         }
         assertTrue(exceptionThrown);
+    }
+
+    private void buildTestGraphWithoutResource() throws MindmapsValidationException {
+        EntityType thing = graph.putEntityType("thing");
+        EntityType anotherThing = graph.putEntityType("another");
+
+        Entity entity1 = graph.putEntity("1", thing);
+        Entity entity2 = graph.putEntity("2", thing);
+        Entity entity3 = graph.putEntity("3", thing);
+        Entity entity4 = graph.putEntity("4", thing);
+
+        RoleType relation1 = graph.putRoleType("relation1");
+        RoleType relation2 = graph.putRoleType("relation2");
+        thing.playsRole(relation1).playsRole(relation2);
+        anotherThing.playsRole(relation1).playsRole(relation2);
+        RelationType related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
+
+        graph.addRelation(related)
+                .putRolePlayer(relation1, entity1)
+                .putRolePlayer(relation2, entity2);
+        graph.addRelation(related)
+                .putRolePlayer(relation1, entity2)
+                .putRolePlayer(relation2, entity3);
+        graph.addRelation(related)
+                .putRolePlayer(relation1, entity2)
+                .putRolePlayer(relation2, entity4);
+
+        ResourceType resourceType1 = graph.putResourceType("resourceType1", ResourceType.DataType.DOUBLE);
+        ResourceType resourceType2 = graph.putResourceType("resourceType2", ResourceType.DataType.LONG);
+        ResourceType resourceType3 = graph.putResourceType("resourceType3", ResourceType.DataType.LONG);
+        ResourceType resourceType4 = graph.putResourceType("resourceType4", ResourceType.DataType.STRING);
+        ResourceType resourceType5 = graph.putResourceType("resourceType5", ResourceType.DataType.LONG);
+        ResourceType resourceType6 = graph.putResourceType("resourceType6", ResourceType.DataType.DOUBLE);
+
+        graph.commit();
+        graph = MindmapsClient.getGraph(keyspace);
+    }
+
+    private void addResources() throws MindmapsValidationException {
+        graph = MindmapsClient.getGraph(keyspace);
+
+        graph.putResource(1.2, graph.getResourceType("resourceType1"));
+        graph.putResource(1.5, graph.getResourceType("resourceType1"));
+        graph.putResource(1.8, graph.getResourceType("resourceType1"));
+
+        graph.putResource(4L, graph.getResourceType("resourceType2"));
+        graph.putResource(-1L, graph.getResourceType("resourceType2"));
+        graph.putResource(0L, graph.getResourceType("resourceType2"));
+
+        graph.putResource(6L, graph.getResourceType("resourceType5"));
+        graph.putResource(7L, graph.getResourceType("resourceType5"));
+        graph.putResource(8L, graph.getResourceType("resourceType5"));
+
+        graph.putResource(7.2, graph.getResourceType("resourceType6"));
+        graph.putResource(7.5, graph.getResourceType("resourceType6"));
+        graph.putResource(7.8, graph.getResourceType("resourceType6"));
+
+        graph.putResource("a", graph.getResourceType("resourceType4"));
+        graph.putResource("b", graph.getResourceType("resourceType4"));
+        graph.putResource("c", graph.getResourceType("resourceType4"));
+
+        graph.commit();
+        graph = MindmapsClient.getGraph(keyspace);
     }
 }

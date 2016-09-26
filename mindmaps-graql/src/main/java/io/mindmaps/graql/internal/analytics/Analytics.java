@@ -145,14 +145,11 @@ public class Analytics {
      * @return min
      */
     public Optional<Number> min() {
-        checkNumberOfTypes();
-        String type = allTypes.iterator().next();
-        checkResourceType(type);
-
-        if (!hasInstance(type)) return Optional.empty();
+        String dataType = checkSelectedTypesHaveCorrectDataType(allTypes);
+        if (!selectedTypesHaveInstance(allTypes)) return Optional.empty();
 
         MindmapsComputer computer = MindmapsClient.getGraphComputer(keySpace);
-        ComputerResult result = computer.compute(new MinMapReduce(allTypes, resourceTypes));
+        ComputerResult result = computer.compute(new MinMapReduce(allTypes, dataType));
         Map<String, Number> min = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
         return Optional.of(min.get(MinMapReduce.MEMORY_KEY));
     }
@@ -163,14 +160,11 @@ public class Analytics {
      * @return max
      */
     public Optional<Number> max() {
-        checkNumberOfTypes();
-        String type = allTypes.iterator().next();
-        checkResourceType(type);
-
-        if (!hasInstance(type)) return Optional.empty();
+        String dataType = checkSelectedTypesHaveCorrectDataType(allTypes);
+        if (!selectedTypesHaveInstance(allTypes)) return Optional.empty();
 
         MindmapsComputer computer = MindmapsClient.getGraphComputer(keySpace);
-        ComputerResult result = computer.compute(new MaxMapReduce(allTypes, resourceTypes));
+        ComputerResult result = computer.compute(new MaxMapReduce(allTypes, dataType));
         Map<String, Number> max = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
         return Optional.of(max.get(MaxMapReduce.MEMORY_KEY));
     }
@@ -181,14 +175,11 @@ public class Analytics {
      * @return sum
      */
     public Optional<Number> sum() {
-        checkNumberOfTypes();
-        String type = allTypes.iterator().next();
-        checkResourceType(type);
-
-        if (!hasInstance(type)) return Optional.empty();
+        String dataType = checkSelectedTypesHaveCorrectDataType(allTypes);
+        if (!selectedTypesHaveInstance(allTypes)) return Optional.empty();
 
         MindmapsComputer computer = MindmapsClient.getGraphComputer(keySpace);
-        ComputerResult result = computer.compute(new SumMapReduce(allTypes, resourceTypes));
+        ComputerResult result = computer.compute(new SumMapReduce(allTypes, dataType));
         Map<String, Number> max = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
         return Optional.of(max.get(SumMapReduce.MEMORY_KEY));
     }
@@ -199,14 +190,11 @@ public class Analytics {
      * @return mean
      */
     public Optional<Double> mean() {
-        checkNumberOfTypes();
-        String type = allTypes.iterator().next();
-        checkResourceType(type);
-
-        if (!hasInstance(type)) return Optional.empty();
+        String dataType = checkSelectedTypesHaveCorrectDataType(allTypes);
+        if (!selectedTypesHaveInstance(allTypes)) return Optional.empty();
 
         MindmapsComputer computer = MindmapsClient.getGraphComputer(keySpace);
-        ComputerResult result = computer.compute(new MeanMapReduce(allTypes, resourceTypes));
+        ComputerResult result = computer.compute(new MeanMapReduce(allTypes, dataType));
         Map<String, Map<String, Number>> mean = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
         Map<String, Number> meanPair = mean.get(MeanMapReduce.MEMORY_KEY);
         return Optional.of(meanPair.get(MeanMapReduce.SUM).doubleValue() /
@@ -219,14 +207,11 @@ public class Analytics {
      * @return standard deviation
      */
     public Optional<Double> std() {
-        checkNumberOfTypes();
-        String type = allTypes.iterator().next();
-        checkResourceType(type);
-
-        if (!hasInstance(type)) return Optional.empty();
+        String dataType = checkSelectedTypesHaveCorrectDataType(allTypes);
+        if (!selectedTypesHaveInstance(allTypes)) return Optional.empty();
 
         MindmapsComputer computer = MindmapsClient.getGraphComputer(keySpace);
-        ComputerResult result = computer.compute(new StdMapReduce(allTypes, resourceTypes));
+        ComputerResult result = computer.compute(new StdMapReduce(allTypes, dataType));
         Map<String, Map<String, Number>> std = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
         Map<String, Number> stdTuple = std.get(StdMapReduce.MEMORY_KEY);
         double squareSum = stdTuple.get(StdMapReduce.SQUARE_SUM).doubleValue();
@@ -277,8 +262,8 @@ public class Analytics {
      * Add the analytics elements to the ontology of the graph specified in <code>keySpace</code>. The ontology elements
      * are related to the resource type <code>resourceTypeId</code> used to persist data computed by analytics.
      *
-     * @param resourceTypeId    the ID of a resource type used to persist information
-     * @param resourceDataType  the datatype of the resource type
+     * @param resourceTypeId   the ID of a resource type used to persist information
+     * @param resourceDataType the datatype of the resource type
      */
     private void mutateResourceOntology(String resourceTypeId, ResourceType.DataType resourceDataType) {
         MindmapsGraph graph = MindmapsClient.getGraph(keySpace);
@@ -302,25 +287,43 @@ public class Analytics {
 
     }
 
-    private void checkResourceType(String type) {
-//        if (!resourceTypes.containsKey(type))
-//            throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
-//                    .getMessage(this.getClass().toString()));
-        MindmapsClient.getGraph(keySpace).getType(type).asResourceType();
-        if (!resourceTypes.get(type).equals(ResourceType.DataType.LONG.getName()) &&
-                !resourceTypes.get(type).equals(ResourceType.DataType.DOUBLE.getName()))
-            throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
-                    .getMessage(this.getClass().toString()));
-    }
-
-    private boolean hasInstance(String type) {
-        MindmapsGraph graph = MindmapsClient.getGraph(this.keySpace);
-        return withGraph(graph).match(var("x").isa(type)).ask().execute();
-    }
-
-    private void checkNumberOfTypes() {
-        if (allTypes.size() != 1)
+    private String checkSelectedTypesHaveCorrectDataType(Set<String> types) {
+        if (types == null || types.isEmpty())
             throw new IllegalArgumentException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                     .getMessage(this.getClass().toString()));
+
+        String dataType = null;
+        for (String type : types) {
+            // check if the selected type is a resource-type
+            if (!resourceTypes.containsKey(type))
+                throw new IllegalArgumentException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
+                        .getMessage(this.getClass().toString()));
+
+            if (dataType == null) {
+                // check if the resource-type has data-type LONG or DOUBLE
+                dataType = resourceTypes.get(type);
+
+                if (!dataType.equals(ResourceType.DataType.LONG.getName()) &&
+                        !dataType.equals(ResourceType.DataType.DOUBLE.getName()))
+                    throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
+                            .getMessage(this.getClass().toString()));
+
+            } else {
+                // check if all the resource-types have the same data-type
+                if (!dataType.equals(resourceTypes.get(type)))
+                    throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
+                            .getMessage(this.getClass().toString()));
+            }
+        }
+        return dataType;
+    }
+
+    private boolean selectedTypesHaveInstance(Set<String> types) {
+        MindmapsGraph graph = MindmapsClient.getGraph(this.keySpace);
+        for (String type : types) {
+            if (withGraph(graph).match(var().isa(type)).ask().execute())
+                return true;
+        }
+        return false;
     }
 }
