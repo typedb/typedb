@@ -31,7 +31,7 @@ import io.mindmaps.engine.controller.GraphFactoryController;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
-import io.mindmaps.graph.internal.Mindmaps;
+import io.mindmaps.Mindmaps;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -73,7 +73,7 @@ public class BackgroundTasksTest {
         cache = Cache.getInstance();
         keyspace = UUID.randomUUID().toString().replaceAll("-", "a");
         backgroundTasks = BackgroundTasks.getInstance();
-        mindmapsGraph = Mindmaps.connect().getGraphBatchLoading(keyspace);
+        mindmapsGraph = Mindmaps.factory().getGraphBatchLoading(keyspace);
     }
 
     @After
@@ -171,14 +171,14 @@ public class BackgroundTasksTest {
         Set<Future> futures = new HashSet<>();
 
         //Create Graph With Duplicate Resources
-        MindmapsGraph graph = Mindmaps.connect().getGraphBatchLoading(keyspace);
+        MindmapsGraph graph = Mindmaps.factory().getGraphBatchLoading(keyspace);
         graph.putResourceType(sample, ResourceType.DataType.STRING);
         graph.commit();
 
         for(int i = 0; i < 10; i ++) {
             futures.add(pool.submit(() -> {
                 try {
-                    MindmapsGraph innerGraph = Mindmaps.connect().getGraphBatchLoading(keyspace);
+                    MindmapsGraph innerGraph = Mindmaps.factory().getGraphBatchLoading(keyspace);
                     innerGraph.putResource(value, innerGraph.getResourceType(sample));
                     innerGraph.commit();
                 } catch (MindmapsValidationException e) {
@@ -197,7 +197,7 @@ public class BackgroundTasksTest {
         });
 
         //Check duplicates have been created
-        graph = Mindmaps.connect().getGraphBatchLoading(keyspace);
+        graph = Mindmaps.factory().getGraphBatchLoading(keyspace);
         Collection<Resource<Object>> resources = graph.getResourceType(sample).instances();
 
         if(resources.size() > 1) {

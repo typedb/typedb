@@ -1,4 +1,4 @@
-package io.mindmaps.graph.internal;
+package io.mindmaps;
 
 import io.mindmaps.factory.MindmapsGraphFactoryImpl;
 
@@ -11,10 +11,10 @@ public class Mindmaps {
 
     /**
      *
-     * @param uri The engine uri to connect to
+     * @param uri The engine uri to factory to
      * @return A mindmaps client instance which can talk to the engine at the specified uri
      */
-    public static MindmapsGraphFactoryImpl connect(String uri){
+    public static MindmapsGraphFactory factory(String uri){
         return clients.computeIfAbsent(uri, MindmapsGraphFactoryImpl::new);
     }
 
@@ -22,7 +22,7 @@ public class Mindmaps {
      *
      * @return A mindmaps client instance which can talk a local instance of engine
      */
-    public static MindmapsGraphFactoryImpl connect(){
+    public static MindmapsGraphFactory factory(){
         return clients.computeIfAbsent(DEFAULT_ENGINE_URI, MindmapsGraphFactoryImpl::new);
     }
 }

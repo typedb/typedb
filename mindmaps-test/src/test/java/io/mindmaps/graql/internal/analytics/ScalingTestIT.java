@@ -26,7 +26,7 @@ import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.graph.internal.Mindmaps;
+import io.mindmaps.Mindmaps;
 import org.javatuples.Pair;
 import org.junit.After;
 import org.junit.Before;
@@ -199,7 +199,7 @@ public class ScalingTestIT {
                 addNodes(CURRENT_KEYSPACE, 0, graphSize);
                 writer.println("stop generate graph " + System.currentTimeMillis()/1000L + "s");
 
-                graph = Mindmaps.connect().getGraph(keyspace);
+                graph = Mindmaps.factory().getGraph(keyspace);
                 writer.println("gremlin count is: " + graph.getTinkerTraversal().count().next());
 
                 Analytics computer = new Analytics(CURRENT_KEYSPACE);
@@ -221,7 +221,7 @@ public class ScalingTestIT {
 
                 writer.println("stop mutate graph " + System.currentTimeMillis() / 1000L + "s");
 
-                graph = Mindmaps.connect().getGraph(CURRENT_KEYSPACE);
+                graph = Mindmaps.factory().getGraph(CURRENT_KEYSPACE);
                 writer.println("gremlin count is: " + graph.getTinkerTraversal().count().next());
 
                 writer.println("mutate degree");
@@ -266,7 +266,7 @@ public class ScalingTestIT {
         computer.degreesAndPersist();
 
         // assert mutated degrees are as expected
-        graph = Mindmaps.connect().getGraph(keyspace);
+        graph = Mindmaps.factory().getGraph(keyspace);
         EntityType thing = graph.getEntityType("thing");
         Collection<Entity> things = thing.instances();
 
@@ -284,7 +284,7 @@ public class ScalingTestIT {
         computer.degreesAndPersist();
 
         // assert mutated degrees are as expected
-        graph = Mindmaps.connect().getGraph(keyspace);
+        graph = Mindmaps.factory().getGraph(keyspace);
         thing = graph.getEntityType("thing");
         things = thing.instances();
 
@@ -342,7 +342,7 @@ public class ScalingTestIT {
     }
 
     private void simpleOntology(String keyspace) throws MindmapsValidationException {
-        MindmapsGraph graph = Mindmaps.connect().getGraph(keyspace);
+        MindmapsGraph graph = Mindmaps.factory().getGraph(keyspace);
         EntityType thing = graph.putEntityType("thing");
         RoleType relation1 = graph.putRoleType("relation1");
         RoleType relation2 = graph.putRoleType("relation2");
@@ -353,7 +353,7 @@ public class ScalingTestIT {
 
     private Set<String> makeSuperNodes(String keyspace) throws MindmapsValidationException {
         // make the supernodes
-        MindmapsGraph graph = Mindmaps.connect().getGraph(keyspace);
+        MindmapsGraph graph = Mindmaps.factory().getGraph(keyspace);
         EntityType thing = graph.getEntityType("thing");
         RoleType relation1 = graph.getRoleType("relation1");
         RoleType relation2 = graph.getRoleType("relation2");

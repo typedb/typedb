@@ -32,7 +32,7 @@ import io.mindmaps.engine.postprocessing.Cache;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
-import io.mindmaps.graph.internal.Mindmaps;
+import io.mindmaps.Mindmaps;
 import io.mindmaps.util.REST;
 import io.mindmaps.util.Schema;
 import org.junit.After;
@@ -101,8 +101,8 @@ public class CommitLogControllerTest {
         final String BOB = "bob";
         final String TIM = "tim";
 
-        MindmapsGraph bob = Mindmaps.connect().getGraph(BOB);
-        MindmapsGraph tim = Mindmaps.connect().getGraph(TIM);
+        MindmapsGraph bob = Mindmaps.factory().getGraph(BOB);
+        MindmapsGraph tim = Mindmaps.factory().getGraph(TIM);
 
         addSomeData(bob);
 
@@ -117,8 +117,8 @@ public class CommitLogControllerTest {
         assertEquals(2, cache.getCastingJobs().get(TIM).size());
         assertEquals(1, cache.getResourceJobs().get(TIM).size());
 
-        Mindmaps.connect().getGraph(BOB).clear();
-        Mindmaps.connect().getGraph(TIM).clear();
+        Mindmaps.factory().getGraph(BOB).clear();
+        Mindmaps.factory().getGraph(TIM).clear();
 
         assertEquals(0, cache.getCastingJobs().get(BOB).size());
         assertEquals(0, cache.getCastingJobs().get(TIM).size());

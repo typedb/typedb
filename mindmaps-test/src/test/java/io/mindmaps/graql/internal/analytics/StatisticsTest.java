@@ -7,7 +7,7 @@ import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.graph.internal.Mindmaps;
+import io.mindmaps.Mindmaps;
 import org.elasticsearch.common.collect.Sets;
 import org.javatuples.Pair;
 import org.junit.After;
@@ -256,11 +256,11 @@ public class StatisticsTest {
         graph.putResourceType("resourceType6", ResourceType.DataType.DOUBLE);
 
         graph.commit();
-        graph = Mindmaps.connect().getGraph(keyspace);
+        graph = Mindmaps.factory().getGraph(keyspace);
     }
 
     private void addResources() throws MindmapsValidationException {
-        graph = Mindmaps.connect().getGraph(keyspace);
+        graph = Mindmaps.factory().getGraph(keyspace);
 
         graph.putResource(1.2, graph.getResourceType("resourceType1"));
         graph.putResource(1.5, graph.getResourceType("resourceType1"));
@@ -283,6 +283,6 @@ public class StatisticsTest {
         graph.putResource("c", graph.getResourceType("resourceType4"));
 
         graph.commit();
-        graph = Mindmaps.connect().getGraph(keyspace);
+        graph = Mindmaps.factory().getGraph(keyspace);
     }
 }
