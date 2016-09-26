@@ -95,8 +95,7 @@ public class ImportController {
             notes = "This is a separate import from ontology, since a batch loading is performed to optimise the loading speed. ")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "path", value = "File path on the server.", required = true, dataType = "string", paramType = "body"),
-            @ApiImplicitParam(name = "hosts", value = "Collection of hosts' addresses.", required = true, dataType = "string", paramType = "body"),
-
+            @ApiImplicitParam(name = "hosts", value = "Collection of hosts' addresses.", required = true, dataType = "string", paramType = "body")
     })
 
     private String importDataRESTDistributed(Request req, Response res) {
@@ -197,7 +196,7 @@ public class ImportController {
         return "Ontology successfully loaded. \n";
     }
 
-    void importDataFromFile(String dataFile, Loader loaderParam) {
+    private void importDataFromFile(String dataFile, Loader loaderParam) {
         try {
             parsePatterns(new FileInputStream(dataFile)).forEach(pattern -> consumeEntity(pattern.admin().asVar(), loaderParam));
             loaderParam.waitToFinish();
@@ -251,7 +250,7 @@ public class ImportController {
 
     }
 
-    void importOntologyFromFile(String ontologyFile, String graphName) throws IOException, MindmapsValidationException {
+    private void importOntologyFromFile(String ontologyFile, String graphName) throws IOException, MindmapsValidationException {
 
         MindmapsGraph graph = GraphFactory.getInstance().getGraphBatchLoading(graphName);
 

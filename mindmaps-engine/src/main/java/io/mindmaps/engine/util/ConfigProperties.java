@@ -24,7 +24,13 @@ import org.slf4j.LoggerFactory;
 import java.io.FileInputStream;
 import java.nio.file.Paths;
 import java.util.Properties;
+
 import io.mindmaps.util.Version;
+
+
+/**
+ * Singleton class used to read config file and make all the settings available to the Mindmaps Engine classes.
+ */
 
 public class ConfigProperties {
 
@@ -67,7 +73,6 @@ public class ConfigProperties {
     public static final String LOG_LEVEL_SYSTEM_PROPERTY = "mindmaps.log.level";
 
 
-
     public static final String LOG_FILE_CONFIG_SYSTEM_PROPERTY = "logback.configurationFile";
 
 
@@ -92,15 +97,15 @@ public class ConfigProperties {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        prop.put(PROJECT_VERSION,Version.VERSION);
+        prop.put(PROJECT_VERSION, Version.VERSION);
         setLogConfigFile();
         setLogLevel();
         computeThreadsNumber();
         LOG = LoggerFactory.getLogger(ConfigProperties.class);
-        LOG.info("Project directory in use: ["+getProjectPath()+"]");
+        LOG.info("Project directory in use: [" + getProjectPath() + "]");
         LOG.info("Configuration file in use: [" + configFilePath + "]");
         LOG.info("Number of threads set to [" + numOfThreads + "]");
-        LOG.info("Logging configuration file in use:["+System.getProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY)+"]");
+        LOG.info("Logging configuration file in use:[" + System.getProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY) + "]");
     }
 
 
@@ -128,9 +133,14 @@ public class ConfigProperties {
         if (System.getProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY) == null)
             System.setProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY, getProjectPath() + DEFAULT_LOG_CONFIG_FILE);
 
-        System.setProperty(LOG_FILE_OUTPUT_SYSTEM_PROPERTY,getPath(LOGGING_FILE_PATH));
+        System.setProperty(LOG_FILE_OUTPUT_SYSTEM_PROPERTY, getPath(LOGGING_FILE_PATH));
     }
 
+    /**
+     * Set Mindmaps logging level.
+     * If the -Dmindmaps.log.level is set, that value will be used,
+     * otherwise it will be used the one specified in the config file.
+     */
     private void setLogLevel() {
         if (System.getProperty(LOG_LEVEL_SYSTEM_PROPERTY) == null)
             System.setProperty(LOG_LEVEL_SYSTEM_PROPERTY, prop.getProperty(LOGGING_LEVEL));
@@ -158,9 +168,14 @@ public class ConfigProperties {
     /**
      * @return The path to the mindmaps.log file in use.
      */
-    public String getLogFilePath(){
+    public String getLogFilePath() {
         return System.getProperty(LOG_FILE_OUTPUT_SYSTEM_PROPERTY);
     }
+
+    /**
+     *
+     * @return Number of available threads to be used to instantiate new threadpools.
+     */
     public int getAvailableThreads() {
         if (numOfThreads == -1)
             computeThreadsNumber();
@@ -169,10 +184,9 @@ public class ConfigProperties {
     }
 
     /**
-     *
      * @param path The name of the property inside the Properties map that refers to a path
      * @return The requested property as a full path. If it is specified as a relative path,
-     *          this method will return the path prepended with the project path.
+     * this method will return the path prepended with the project path.
      */
     public String getPath(String path) {
         String propertyPath = prop.getProperty(path);
@@ -183,19 +197,17 @@ public class ConfigProperties {
     }
 
     /**
-     *
      * @return The project path. If it is not specified as a JVM parameter it will be set equal to
-     *          user.dir folder.
+     * user.dir folder.
      */
     private static String getProjectPath() {
-        if(System.getProperty(CURRENT_DIR_SYSTEM_PROPERTY) == null)
-            System.setProperty(CURRENT_DIR_SYSTEM_PROPERTY,System.getProperty("user.dir"));
+        if (System.getProperty(CURRENT_DIR_SYSTEM_PROPERTY) == null)
+            System.setProperty(CURRENT_DIR_SYSTEM_PROPERTY, System.getProperty("user.dir"));
 
-        return  System.getProperty(CURRENT_DIR_SYSTEM_PROPERTY) + "/";
+        return System.getProperty(CURRENT_DIR_SYSTEM_PROPERTY) + "/";
     }
 
     /**
-     *
      * @return The path to the config file currently in use. Default: /conf/main/mindmaps-engine.properties
      */
     String getConfigFilePath() {
@@ -221,9 +233,9 @@ public class ConfigProperties {
 
     public static final String MINDMAPS_ASCII =
             "  __  __ _           _                           ____  ____  \n" +
-            " |  \\/  (_)_ __   __| |_ __ ___   __ _ _ __  ___|  _ \\| __ ) \n" +
-            " | |\\/| | | '_ \\ / _` | '_ ` _ \\ / _` | '_ \\/ __| | | |  _ \\ \n" +
-            " | |  | | | | | | (_| | | | | | | (_| | |_) \\__ \\ |_| | |_) |\n" +
-            " |_|  |_|_|_| |_|\\__,_|_| |_| |_|\\__,_| .__/|___/____/|____/ \n" +
-            "                                      |_|                    \n\n";
+                    " |  \\/  (_)_ __   __| |_ __ ___   __ _ _ __  ___|  _ \\| __ ) \n" +
+                    " | |\\/| | | '_ \\ / _` | '_ ` _ \\ / _` | '_ \\/ __| | | |  _ \\ \n" +
+                    " | |  | | | | | | (_| | | | | | | (_| | |_) \\__ \\ |_| | |_) |\n" +
+                    " |_|  |_|_|_| |_|\\__,_|_| |_| |_|\\__,_| .__/|___/____/|____/ \n" +
+                    "                                      |_|                    \n\n";
 }
