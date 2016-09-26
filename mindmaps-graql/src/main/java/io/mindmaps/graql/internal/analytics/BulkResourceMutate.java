@@ -19,8 +19,13 @@
 package io.mindmaps.graql.internal.analytics;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.*;
-import io.mindmaps.factory.MindmapsClient;
+import io.mindmaps.concept.Instance;
+import io.mindmaps.concept.Relation;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.Resource;
+import io.mindmaps.concept.ResourceType;
+import io.mindmaps.concept.RoleType;
+import io.mindmaps.graph.internal.Mindmaps;
 import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
@@ -112,7 +117,7 @@ class BulkResourceMutate <T>{
 
     private void initialiseGraph() {
         if (graph == null) {
-            graph = MindmapsClient.getGraphBatchLoading(keyspace);
+            graph = Mindmaps.connect().getGraphBatchLoading(keyspace);
             refreshOntologyElements();
         }
     }

@@ -23,7 +23,7 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.engine.loader.BlockingLoader;
 import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.engine.loader.Loader;
-import io.mindmaps.factory.MindmapsClient;
+import io.mindmaps.graph.internal.Mindmaps;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -84,8 +84,8 @@ public class Main {
 
         try{
 
-            MindmapsGraph graph = engineURL == null ? MindmapsClient.getGraph(graphName)
-                                                    : MindmapsClient.getGraph(graphName, engineURL);
+            MindmapsGraph graph = engineURL == null ? Mindmaps.connect().getGraph(graphName)
+                                                    : Mindmaps.connect(engineURL).getGraph(graphName);
 
             Loader loader = engineURL == null ? new BlockingLoader(graphName)
                                               : new DistributedLoader(graphName, Lists.newArrayList(engineURL));

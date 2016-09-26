@@ -44,34 +44,19 @@ import static io.mindmaps.util.REST.WebPath.GRAPH_FACTORY_URI;
  * The deployer of engine decides on the backend and this class will handle producing the correct graphs.
  */
 public class MindmapsClient {
-    private static final String DEFAULT_URI = "localhost:4567";
     private static final String COMPUTER = "graph.computer";
+    private final String uri;
+
+    public MindmapsClient(String uri){
+        this.uri = uri;
+    }
 
     /**
      *
      * @param name The desired name for the mindmaps graph
      * @return A new or existing mindmaps graph with the defined name
      */
-    public static MindmapsGraph getGraph(String name){
-        return getGraph(name, DEFAULT_URI);
-    }
-
-    /**
-     *
-     * @param name The desired name for the mindmaps graph
-     * @return A new or existing mindmaps graph with the defined name connecting to the specified remote uri with batch loading enabled
-     */
-    public static MindmapsGraph getGraphBatchLoading(String name){
-        return getGraphBatchLoading(name, DEFAULT_URI);
-    }
-
-    /**
-     *
-     * @param name The desired name for the mindmaps graph
-     * @param uri The remote uri fo where engine is located
-     * @return A new or existing mindmaps graph with the defined name connecting to the specified remote uri
-     */
-    public static MindmapsGraph getGraph(String name, String uri){
+    public MindmapsGraph getGraph(String name){
         ConfigureFactory configuredFactory = configureGraphFactory(uri, REST.GraphConfig.DEFAULT);
         return configuredFactory.factory.getGraph(name, uri, configuredFactory.path, false);
     }
@@ -79,10 +64,9 @@ public class MindmapsClient {
     /**
      *
      * @param name The desired name for the mindmaps graph
-     * @param uri The remote uri fo where engine is located
      * @return A new or existing mindmaps graph with the defined name connecting to the specified remote uri with batch loading enabled
      */
-    public static MindmapsGraph getGraphBatchLoading(String name, String uri){
+    public MindmapsGraph getGraphBatchLoading(String name){
         ConfigureFactory configuredFactory = configureGraphFactory(uri, REST.GraphConfig.BATCH);
         return configuredFactory.factory.getGraph(name, uri, configuredFactory.path, true);
     }
@@ -91,16 +75,7 @@ public class MindmapsClient {
      *
      * @return A new or existing mindmaps graph compute with the defined name
      */
-    public static MindmapsComputer getGraphComputer(String name) {
-        return getGraphComputer(name, DEFAULT_URI);
-    }
-
-    /**
-     *
-     * @param uri The remote uri fo where engine is located
-     * @return A new or existing mindmaps graph compute with the defined name
-     */
-    public static MindmapsComputer getGraphComputer(String name, String uri) {
+    public MindmapsComputer getGraphComputer(String name) {
         ConfigureFactory configuredFactory = configureGraphFactory(uri, REST.GraphConfig.COMPUTER);
         Graph graph = configuredFactory.factory.getTinkerPopGraph(name, uri, configuredFactory.path, false);
         return new MindmapsComputerImpl(graph, configuredFactory.graphComputer);
