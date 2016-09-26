@@ -19,6 +19,7 @@
 package io.mindmaps.migration.template;
 
 import java.util.List;
+import java.util.Map;
 
 public class Value {
 
@@ -38,7 +39,7 @@ public class Value {
 
         this.value = value;
 
-        if(!(isString() || isList()|| isBoolean() || isNumber() || isVariable())){
+        if(!(isString() || isList()|| isBoolean() || isNumber() || isObject() || isVariable())){
             throw new RuntimeException("unsupported type");
         }
     }
@@ -67,6 +68,10 @@ public class Value {
         return value instanceof Boolean;
     }
 
+    public boolean isObject(){
+        return value instanceof Map;
+    }
+
     public boolean isNull(){
         return this == NULL;
     }
@@ -93,6 +98,10 @@ public class Value {
 
     public List<Object> asList(){
         return (List) value;
+    }
+
+    public Map<String, Object> asObject(){
+        return (Map) value;
     }
 
     public boolean asBoolean(){

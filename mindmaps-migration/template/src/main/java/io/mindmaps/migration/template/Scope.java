@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-import static io.mindmaps.migration.template.ValueFormatter.format;
 import static java.util.stream.Collectors.toMap;
 
 public class Scope {
@@ -44,7 +43,7 @@ public class Scope {
                 .collect(toMap(
                         v -> v,
                         v -> Value.VOID));
-        this.putData(data);
+        this.assign(data);
     }
 
     public Scope up() {
@@ -54,10 +53,15 @@ public class Scope {
     @SuppressWarnings("unchecked")
     public void assign(Variable variable, Object value) {
         if (value instanceof Map) {
-            this.putData((Map) value);
+            this.assign((Map) value);
         } else {
             this.variables.put(variable, new Value(value));
         }
+    }
+
+    public void assign(Map<String, Object> data){
+        data.entrySet()
+                .forEach(e -> variables.put(new Variable(e.getKey()), new Value(e.getValue())));
     }
 
     public Value resolve(Variable var) {
@@ -95,10 +99,5 @@ public class Scope {
 
         currentVariables.removeAll(scope.variables.keySet());
         return localVariables(scope.parent, currentVariables);
-    }
-
-    private void putData(Map<String, Object> data){
-        data.entrySet()
-                .forEach(e -> variables.put(new Variable(e.getKey()), new Value(e.getValue())));
     }
 }

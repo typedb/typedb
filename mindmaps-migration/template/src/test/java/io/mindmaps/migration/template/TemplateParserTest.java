@@ -23,6 +23,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TemplateParserTest {
 
@@ -227,6 +228,49 @@ public class TemplateParserTest {
                 "        ($x1, $y2) isa resides;\n";
 
         assertParseEquals(template, json, expected);
+    }
+
+    @Test
+    public void unsupportedTypeExceptionTest(){
+        assertTrue(false);
+    }
+
+    @Test
+    public void dotNotationTest(){
+        String template = "" +
+                "$x isa person has name %name;\n" +
+                "$y isa address;\n" +
+                "$y has street %address.street;\n" +
+                "$y has number %address.number;\n" +
+                "($x, $y) isa resides;";
+
+        String json = "" +
+                "{\n" +
+                "\t\"name\" : \"Phil Collins\",\n" +
+                "\t\"address\" : {\n" +
+                "\t\t\"street\": \"Collins Ave\",\n" +
+                "\t\t\"number\": 01\n" +
+                "\t}\n" +
+                "}\n";
+
+        String expected = "" +
+                "$x0 isa person has name \\\"Phil Collins\\\";\n" +
+                "$y0 isa address;\n" +
+                "$y0 has street \\\"Collins Ave\\\";\n" +
+                "$y0 has number 1;\n" +
+                "($x0, $y0) isa resides;";
+
+        assertParseEquals(template, json, expected);
+    }
+
+    @Test
+    public void doubleDotTest(){
+        assertTrue(false);
+    }
+
+    @Test
+    public void comboVarDotTest(){
+        assertTrue(false);
     }
 
     private void assertParseEquals(String template, String json, String expected){

@@ -23,7 +23,7 @@ forStatement
 
 element     : TVAR;
 resolve     : TVAR (DVAR)*;
-replace     : TVAR (DVAR)*;
+replace     : resolve;
 variable    : replace | DOLLAR replace | GVAR;
 
 graql

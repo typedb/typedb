@@ -81,18 +81,8 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         return returnValue;
     }
 
-    // statement
-    // : forStatement
-    // | nullableStatement
-    // | noescpStatement
-    // ;
-    @Override
-    public Value visitStatement(GraqlTemplateParser.StatementContext ctx) {
-         return visitChildren(ctx);
-    }
-
     // forStatement
-    // : LPAREN FOR variable IN resolve RPAREN LBRACKET block RBRACKET
+    // : LPAREN FOR element IN resolve RPAREN LBRACKET block RBRACKET
     // ;
     @Override
     public Value visitForStatement(GraqlTemplateParser.ForStatementContext ctx) {
@@ -114,35 +104,49 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         return returnValue;
     }
 
+    // element     : TVAR;
     @Override
     public Value visitElement(GraqlTemplateParser.ElementContext ctx){
         Variable var = new Variable(ctx.getText());
         return new Value(var);
     }
 
+    // resolve     : TVAR (DVAR)*
+    @Override
+    public Value visitResolve(GraqlTemplateParser.ResolveContext ctx) {
+        // resolve base value
+        Variable tVar = new Variable(ctx.TVAR().getText());
+        Value value = scope.resolve(tVar.cleaned());
+
+        // resolve any inner vars
+        for(TerminalNode dVarString:ctx.DVAR()){
+            scope.assign(value.asObject());
+
+            Variable dVar = new Variable(dVarString.getText());
+            value = scope.resolve(dVar.cleaned());
+        }
+
+        return value;
+    }
+
+    // replace     : resolve;
+    @Override
+    public Value visitReplace(GraqlTemplateParser.ReplaceContext ctx) {
+        return whitespace(format(visitChildren(ctx)), ctx);
+    }
+
+    // variable    : DOLLAR replace | replace | GVAR;
     @Override
     public Value visitVariable(GraqlTemplateParser.VariableContext ctx) {
         Variable var = new Variable(ctx.getText());
 
-        if(var.isGraqlVariable()){
+        if(var.isComboVariable()){
+            return whitespace("$" + formatVar(scope.resolve(var.cleaned())), ctx);
+        } else if(var.isGraqlVariable()){
             return whitespace(var.variable() + iteration.get(var), ctx);
-        } else if(var.isComboVariable()){
-            return visitCombo(ctx.combo());
         } else {
-            return new Value(var);
+            return visitChildren(ctx);
         }
-    }
-
-    @Override
-    public Value visitResolve(GraqlTemplateParser.ResolveContext ctx) {
-        Variable var = new Variable(ctx.getText());
-        return scope.resolve(var.cleaned());
-    }
-
-    @Override
-    public Value visitReplace(GraqlTemplateParser.ReplaceContext ctx) {
-        Variable var = new Variable(ctx.getText());
-        return whitespace(format(scope.resolve(var.cleaned())), ctx);
     }
 
     @Override
@@ -161,12 +165,6 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         }
 
         return concat(aggregate, nextResult);
-    }
-
-    @Override
-    public Value visitCombo(GraqlTemplateParser.ComboContext ctx){
-        Variable var = new Variable(ctx.getText());
-        return whitespace("$" + formatVar(scope.resolve(var.cleaned())), ctx);
     }
 
     private Set<Variable> variablesInContext(GraqlTemplateParser.BlockContext ctx){
