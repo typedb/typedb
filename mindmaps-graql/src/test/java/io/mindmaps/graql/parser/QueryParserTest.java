@@ -82,7 +82,7 @@ public class QueryParserTest {
                 "match\n" +
                         "$brando value \"Marl B\" isa person;\n" +
                         "(actor: $brando, $char, production-with-cast: $prod);\n" +
-                        "select $char, $prod"
+                        "select $char, $prod;"
         );
 
         assertQueriesEqual(expected, parsed);
@@ -170,7 +170,7 @@ public class QueryParserTest {
         ).limit(4).offset(2).distinct().orderBy("y");
 
         MatchQuery parsed =
-                qb.parseMatch("match ($x, $y); $y isa movie; limit 4 offset 2, distinct order by $y");
+                qb.parseMatch("match ($x, $y); $y isa movie; limit 4; offset 2; distinct; order by $y;");
 
         assertOrderedQueriesEqual(expected, parsed);
     }
@@ -178,14 +178,14 @@ public class QueryParserTest {
     @Test
     public void testOntologyQuery() {
         MatchQuery expected = qb.match(var("x").playsRole("actor")).orderBy("x");
-        MatchQuery parsed = qb.parseMatch("match $x plays-role actor; order by $x asc");
+        MatchQuery parsed = qb.parseMatch("match $x plays-role actor; order by $x asc;");
         assertOrderedQueriesEqual(expected, parsed);
     }
 
     @Test
     public void testOrderQuery() {
         MatchQuery expected = qb.match(var("x").isa("movie").has("release-date", var("r"))).orderBy("r", false);
-        MatchQuery parsed = qb.parseMatch("match $x isa movie, has release-date $r; order by $r desc");
+        MatchQuery parsed = qb.parseMatch("match $x isa movie, has release-date $r; order by $r desc;");
         assertOrderedQueriesEqual(expected, parsed);
     }
 
@@ -380,8 +380,8 @@ public class QueryParserTest {
 
     @Test
     public void testQueryParserWithoutGraph() {
-        String queryString = "match $x isa movie; select $x";
-        MatchQuery query = parseMatch("match $x isa movie; select $x");
+        String queryString = "match $x isa movie; select $x;";
+        MatchQuery query = parseMatch("match $x isa movie; select $x;");
         assertEquals(queryString, query.toString());
         assertTrue(query.withGraph(mindmapsGraph).stream().findAny().isPresent());
     }

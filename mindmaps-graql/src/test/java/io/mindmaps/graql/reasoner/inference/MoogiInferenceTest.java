@@ -6,13 +6,10 @@ import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
-
-import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
 import io.mindmaps.graql.reasoner.graphs.GenericGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static io.mindmaps.graql.internal.reasoner.Utility.printAnswers;
 import static org.junit.Assert.assertEquals;
 
 public class MoogiInferenceTest {
@@ -38,12 +35,12 @@ public class MoogiInferenceTest {
     public void test() {
 
         String queryString = "match (production-with-genre: $x, genre-of-production: $y) isa has-genre;" +
-                             "$x isa movie; $y isa genre; $y has description 'science fiction'; select $x";
+                             "$x isa movie; $y isa genre; $y has description 'science fiction'; select $x;";
         MatchQuery query = qb.parseMatch(queryString);
 
         String explicitQuery = "match (production-with-genre: $x, genre-of-production: $y) isa has-genre;"+
                             "$y has description 'Sci-Fi' or $y has description 'science fiction' or $y has description 'Science Fiction';" +
-                            "$x isa movie; select $x";
+                            "$x isa movie; select $x;";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
@@ -62,7 +59,7 @@ public class MoogiInferenceTest {
 
     @Test
     public void testPopularActor(){
-        String queryString = "match $x has status 'popular actor'; limit 10";
+        String queryString = "match $x has status 'popular actor'; limit 10;";
         MatchQuery query = qb.parseMatch(queryString);
         MatchQuery mq = reasoner.resolveToQuery(query);
         System.out.println();

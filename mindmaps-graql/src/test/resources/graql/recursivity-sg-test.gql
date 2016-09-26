@@ -56,7 +56,7 @@ lhs {match
 (parent: $x, child: $u) isa Parent;
 ($u, $v) isa SameGen;
 (parent: $y, child: $v) isa Parent;
-select $x, $y},
+select $x, $y;},
 rhs {match
 ($x, $y) isa SameGen;};
 

@@ -20,16 +20,12 @@ package io.mindmaps.graql.reasoner;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.Rule;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.graql.admin.Conjunction;
-import io.mindmaps.graql.admin.Disjunction;
-import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
-import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.reasoner.graphs.SNBGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -91,11 +87,11 @@ public class QueryTest {
     public void testAlphaEquivalence() {
         String queryString = "match $x isa person;$t isa tag;$t value 'Michelangelo';" +
             "($x, $t) isa tagging;" +
-            "$y isa product;$y value 'Michelangelo  The Last Judgement'; select $x, $y";
+            "$y isa product;$y value 'Michelangelo  The Last Judgement'; select $x, $y;";
 
         String queryString2 = "match $x isa person;$y isa tag;$y value 'Michelangelo';" +
                 "($x, $y) isa tagging;" +
-                "$pr isa product;$pr value 'Michelangelo  The Last Judgement'; select $x, $pr";
+                "$pr isa product;$pr value 'Michelangelo  The Last Judgement'; select $x, $pr;";
 
         Query query = new Query(queryString, graph);
         Query query2 = new Query(queryString2, graph);

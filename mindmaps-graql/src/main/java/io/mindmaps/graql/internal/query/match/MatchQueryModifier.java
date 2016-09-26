@@ -83,4 +83,14 @@ abstract class MatchQueryModifier implements MatchQueryInternal {
     protected Stream<Map<String, Concept>> transformStream(Stream<Map<String, Concept>> stream) {
         return stream;
     }
+
+    /**
+     * @return a string representation of this modifier
+     */
+    protected abstract String modifierString();
+
+    @Override
+    public String toString() {
+        return inner.toString() + " " + modifierString() + ";";
+    }
 }

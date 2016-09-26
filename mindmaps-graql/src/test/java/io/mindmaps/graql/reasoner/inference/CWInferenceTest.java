@@ -131,7 +131,7 @@ public class CWInferenceTest {
                     "};" +
                 "$x isa person;" +
                 "$z isa country;" +
-                "}; select $x";
+                "}; select $x;";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
         //assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
@@ -159,7 +159,7 @@ public class CWInferenceTest {
             "};\n" +
             "{$y isa weapon} or {{$y isa missile} or {$y has propulsion 'gsp';$y isa rocket}};\n" +
             "$x isa person;\n" +
-            "$z isa country}} or {$x has nationality 'American';$x isa person} select $x";
+            "$z isa country}} or {$x has nationality 'American';$x isa person} select $x;";
 
         //assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
     }
@@ -252,7 +252,7 @@ public class CWInferenceTest {
                 "$z isa country;\n" +
                 "$yy isa country;" +
                 "};" +
-                "}; select $x";
+                "}; select $x;";
 
         assertEquals(localReasoner.resolve(query), Sets.newHashSet(lqb.parseMatch(explicitQuery)));
         //assertQueriesEqual(reasoner.resolveToQuery(query), lqb.parseMatch(explicitQuery));

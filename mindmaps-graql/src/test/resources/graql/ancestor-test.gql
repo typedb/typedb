@@ -45,7 +45,7 @@ Person plays-role ancestor, plays-role descendant;
 lhs {match
 (parent: $x, child: $z) isa Parent;
 (ancestor: $z, descendant: $y) isa Ancestor;
-select $x, $y},
+select $x, $y;},
 rhs {match
 (ancestor: $x, descendant: $y) isa Ancestor;};
 

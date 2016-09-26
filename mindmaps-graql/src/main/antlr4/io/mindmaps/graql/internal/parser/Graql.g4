@@ -10,12 +10,12 @@ deleteEOF      : deleteQuery EOF ;
 aggregateEOF   : aggregateQuery EOF ;
 computeEOF     : computeQuery EOF ;
 
-matchQuery     : 'match' patterns                                  # matchBase
-               | matchQuery ','? 'select' VARIABLE (',' VARIABLE)* # matchSelect
-               | matchQuery ','? 'limit' INTEGER                   # matchLimit
-               | matchQuery ','? 'offset' INTEGER                  # matchOffset
-               | matchQuery ','? 'distinct'                        # matchDistinct
-               | matchQuery ','? 'order' 'by' VARIABLE ORDER?      # matchOrderBy
+matchQuery     : 'match' patterns                                 # matchBase
+               | matchQuery 'select' VARIABLE (',' VARIABLE)* ';' # matchSelect
+               | matchQuery 'limit' INTEGER                   ';' # matchLimit
+               | matchQuery 'offset' INTEGER                  ';' # matchOffset
+               | matchQuery 'distinct'                        ';' # matchDistinct
+               | matchQuery 'order' 'by' VARIABLE ORDER?      ';' # matchOrderBy
                ;
 
 askQuery       : matchQuery 'ask' ;
