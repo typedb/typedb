@@ -78,7 +78,7 @@ public class RuleTest {
     public void testAddHypothesis() throws Exception {
         RuleType conceptType = mindmapsGraph.putRuleType("A Thing");
         Rule rule = mindmapsGraph.putRule("A Rule", "lhs", "rhs", conceptType);
-        Vertex ruleVertex = (Vertex) mindmapsGraph.getTinkerTraversal().V(((RuleImpl) rule).getBaseIdentifier()).next();
+        Vertex ruleVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(((RuleImpl) rule).getBaseIdentifier()).next();
         Type type1 = mindmapsGraph.putEntityType("A Concept Type 1");
         Type type2 = mindmapsGraph.putEntityType("A Concept Type 2");
         assertFalse(ruleVertex.edges(Direction.BOTH, Schema.EdgeLabel.HYPOTHESIS.getLabel()).hasNext());
@@ -90,7 +90,7 @@ public class RuleTest {
     public void testAddConclusion() throws Exception {
         RuleType conceptType = mindmapsGraph.putRuleType("A Thing");
         Rule rule = mindmapsGraph.putRule("A Rule", "lhs", "rhs", conceptType);
-        Vertex ruleVertex = (Vertex) mindmapsGraph.getTinkerTraversal().V(((RuleImpl) rule).getBaseIdentifier()).next();
+        Vertex ruleVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(((RuleImpl) rule).getBaseIdentifier()).next();
         Type type1 = mindmapsGraph.putEntityType("A Concept Type 1");
         Type type2 = mindmapsGraph.putEntityType("A Concept Type 2");
         assertFalse(ruleVertex.edges(Direction.BOTH, Schema.EdgeLabel.CONCLUSION.getLabel()).hasNext());

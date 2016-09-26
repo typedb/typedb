@@ -103,8 +103,8 @@ public class ValidateGlobalRulesTest {
         ((Edge) mindmapsGraph.getTinkerTraversal().
                 has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), werewolf.getId()).
                 outE(Schema.EdgeLabel.ISA.getLabel()).next()).remove();
-        ((Edge) mindmapsGraph.getTinkerTraversal().V(wolf.getBaseIdentifier()).outE(Schema.EdgeLabel.AKO.getLabel()).as("edge").otherV().hasId(creature.getBaseIdentifier()).select("edge").next()).remove();
-        ((Edge) mindmapsGraph.getTinkerTraversal().V(creature.getBaseIdentifier()).outE(Schema.EdgeLabel.PLAYS_ROLE.getLabel()).as("edge").otherV().hasId(monster.getBaseIdentifier()).select("edge").next()).remove();
+        ((Edge) mindmapsGraph.getTinkerPopGraph().traversal().V(wolf.getBaseIdentifier()).outE(Schema.EdgeLabel.AKO.getLabel()).as("edge").otherV().hasId(creature.getBaseIdentifier()).select("edge").next()).remove();
+        ((Edge) mindmapsGraph.getTinkerPopGraph().traversal().V(creature.getBaseIdentifier()).outE(Schema.EdgeLabel.PLAYS_ROLE.getLabel()).as("edge").otherV().hasId(monster.getBaseIdentifier()).select("edge").next()).remove();
 
         werewolf.type(wolf);
         wolf.type(creature);
@@ -119,13 +119,13 @@ public class ValidateGlobalRulesTest {
         assertFalse(flags[0] && flags[1]);
         assertTrue(flags[0] || flags[1]);
 
-        ((Edge) mindmapsGraph.getTinkerTraversal().V().
+        ((Edge) mindmapsGraph.getTinkerTraversal().
                 has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), werewolf.getId()).
                 outE(Schema.EdgeLabel.ISA.getLabel()).next()).remove();
-        ((Edge) mindmapsGraph.getTinkerTraversal().V().
+        ((Edge) mindmapsGraph.getTinkerTraversal().
                 has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), wolf.getId()).
                 outE(Schema.EdgeLabel.ISA.getLabel()).next()).remove();
-        ((Edge) mindmapsGraph.getTinkerTraversal().V().
+        ((Edge) mindmapsGraph.getTinkerTraversal().
                 has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), creature.getId()).
                 outE(Schema.EdgeLabel.ISA.getLabel()).next()).remove();
 
@@ -133,8 +133,8 @@ public class ValidateGlobalRulesTest {
         wolf.playsRole(animal);
         creature.playsRole(monster);
 
-        ((Edge) mindmapsGraph.getTinkerTraversal().V(creature.getBaseIdentifier()).outE(Schema.EdgeLabel.PLAYS_ROLE.getLabel()).as("edge").otherV().hasId(monster.getBaseIdentifier()).select("edge").next()).remove();
-        ((Edge) mindmapsGraph.getTinkerTraversal().V(hunter.getBaseIdentifier()).outE(Schema.EdgeLabel.PLAYS_ROLE.getLabel()).as("edge").otherV().hasId(witcher.getBaseIdentifier()).select("edge").next()).remove();
+        ((Edge) mindmapsGraph.getTinkerPopGraph().traversal().V(creature.getBaseIdentifier()).outE(Schema.EdgeLabel.PLAYS_ROLE.getLabel()).as("edge").otherV().hasId(monster.getBaseIdentifier()).select("edge").next()).remove();
+        ((Edge) mindmapsGraph.getTinkerPopGraph().traversal().V(hunter.getBaseIdentifier()).outE(Schema.EdgeLabel.PLAYS_ROLE.getLabel()).as("edge").otherV().hasId(witcher.getBaseIdentifier()).select("edge").next()).remove();
 
         for (CastingImpl casting : assertion.getMappingCasting()) {
             assertFalse(ValidateGlobalRules.validatePlaysRoleStructure(casting));
