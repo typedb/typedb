@@ -32,9 +32,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.PropertyResourceBundle;
-import java.util.Set;
 
 import static io.mindmaps.util.REST.Request.GRAPH_CONFIG_PARAM;
 import static io.mindmaps.util.REST.WebPath.GRAPH_FACTORY_URI;
@@ -115,17 +113,6 @@ public class MindmapsGraphFactoryImpl implements MindmapsGraphFactory{
         } catch (IOException e) {
             throw new IllegalArgumentException(ErrorMessage.CONFIG_NOT_FOUND.getMessage(uri, e.getMessage()));
         }
-    }
-
-    /**
-     *
-     * @return The names of all the graphs which have been opened using this client
-     */
-    @SuppressWarnings("unchecked")
-    public static Set<String> openGraphs(){
-        Set<String> names = new HashSet<>();
-        MindmapsFactoryBuilder.getFactories().forEach(factory -> names.addAll(factory.openGraphs()));
-        return names;
     }
 
     private static class ConfigureFactory {
