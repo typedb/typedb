@@ -84,7 +84,7 @@ lhs {match
 (R-role-A: $t, R-role-B: $u) isa R;
 (G-role-A: $u, G-role-B: $v) isa G;
 (R-role-A: $v, R-role-B: $w) isa R;
-(H-role-A: $w, H-role-B: $y) isa H; select $x, $y},
+(H-role-A: $w, H-role-B: $y) isa H; select $x, $y;},
 rhs {match
 (R-role-A: $x, R-role-B: $y) isa R;};
 

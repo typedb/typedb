@@ -5,7 +5,7 @@ lhs {match
 (production-with-genre: $x, genre-of-production: $y) isa has-genre;
 $y has description 'Sci-Fi';
 $z isa genre;
-$z has description 'science fiction'; select $x, $z},
+$z has description 'science fiction'; select $x, $z;},
 rhs {match (production-with-genre: $x, genre-of-production: $z) isa has-genre;};
 
 "R2" isa inference-rule,

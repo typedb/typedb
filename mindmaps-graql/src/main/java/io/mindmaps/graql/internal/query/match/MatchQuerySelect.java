@@ -25,8 +25,9 @@ import io.mindmaps.util.ErrorMessage;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.joining;
 
 /**
  * "Select" modifier for a match query that selects particular variables from the result.
@@ -51,8 +52,8 @@ class MatchQuerySelect extends MatchQueryModifier {
     }
 
     @Override
-    public String toString() {
-        return inner.toString() + " select " + names.stream().map(s -> "$" + s).collect(Collectors.joining(", "));
+    protected String modifierString() {
+        return "select " + names.stream().map(s -> "$" + s).collect(joining(", "));
     }
 
     @Override

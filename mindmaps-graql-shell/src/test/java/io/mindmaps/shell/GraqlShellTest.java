@@ -110,7 +110,7 @@ public class GraqlShellTest {
 
     @Test
     public void testExecuteOption() throws IOException {
-        String result = testShell("", "-e", "match $x isa role-type; ask");
+        String result = testShell("", "-e", "match $x isa role-type; ask;");
 
         // When using '-e', only results should be printed, no prompt or query
         assertThat(result, allOf(containsString("False"), not(containsString(">>>")), not(containsString("match"))));
@@ -127,14 +127,14 @@ public class GraqlShellTest {
 
     @Test
     public void testAskQuery() throws IOException {
-        String result = testShell("match $x isa relation-type; ask\n");
+        String result = testShell("match $x isa relation-type; ask;\n");
         assertThat(result, containsString("False"));
     }
 
     @Test
     public void testInsertQuery() throws IOException {
         String result = testShell(
-                "match $x isa entity-type; ask\ninsert my-type isa entity-type;\nmatch $x isa entity-type; ask\n"
+                "match $x isa entity-type; ask;\ninsert my-type isa entity-type;\nmatch $x isa entity-type; ask;\n"
         );
         assertThat(result, allOf(containsString("False"), containsString("True")));
     }
@@ -151,7 +151,7 @@ public class GraqlShellTest {
 
     @Test
     public void testAggregateQuery() throws IOException {
-        String result = testShell("match $x isa type; aggregate count\n");
+        String result = testShell("match $x isa type; aggregate count;\n");
 
         // Expect to see the whole meta-ontology
         assertThat(result, containsString("\n2\n"));
@@ -244,7 +244,7 @@ public class GraqlShellTest {
 
     @Test
     public void testLimit() throws IOException {
-        String result = testShell("match $x isa type; limit 1\n");
+        String result = testShell("match $x isa type; limit 1;\n");
 
         // Expect seven lines output - four for the license, one for the query, only one result and a new prompt
         assertEquals(result, 7, result.split("\n").length);

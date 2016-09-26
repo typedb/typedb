@@ -87,7 +87,7 @@ public class GraqlShellIT {
 
     @Test
     public void testExecuteOption() throws IOException {
-        String result = testShell("", "-e", "match $x isa role-type; ask");
+        String result = testShell("", "-e", "match $x isa role-type; ask;");
 
         // When using '-e', only results should be printed, no prompt or query
         assertThat(result, allOf(containsString("False"), not(containsString(">>>")), not(containsString("match"))));
@@ -111,14 +111,14 @@ public class GraqlShellIT {
 
     @Test
     public void testAskQuery() throws IOException {
-        String result = testShell("match $x isa relation-type; ask\n");
+        String result = testShell("match $x isa relation-type; ask;\n");
         assertThat(result, containsString("False"));
     }
 
     @Test
     public void testInsertQuery() throws IOException {
         String result = testShell(
-                "match $x isa entity-type; ask\ninsert my-type isa entity-type;\nmatch $x isa entity-type; ask\n"
+                "match $x isa entity-type; ask;\ninsert my-type isa entity-type;\nmatch $x isa entity-type; ask;\n"
         );
         assertThat(result, allOf(containsString("False"), containsString("True")));
     }
@@ -202,7 +202,7 @@ public class GraqlShellIT {
 
     @Test
     public void testComputeCount() throws IOException {
-        String result = testShell("insert X isa entity-type; a isa X; b isa X; c isa X;\ncommit\ncompute count\n");
+        String result = testShell("insert X isa entity-type; a isa X; b isa X; c isa X;\ncommit\ncompute count;\n");
         assertThat(result, containsString("\n3\n"));
     }
 

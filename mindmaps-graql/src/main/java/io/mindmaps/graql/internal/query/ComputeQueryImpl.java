@@ -29,7 +29,6 @@ import io.mindmaps.util.ErrorMessage;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
@@ -123,7 +122,7 @@ class ComputeQueryImpl implements ComputeQuery {
     @Override
     public String toString() {
         String subtypes = typeIds.map(types -> " in " + types.stream().collect(joining(", "))).orElse("");
-        return "compute " + computeMethod + subtypes;
+        return "compute " + computeMethod + subtypes + ";";
     }
 
     @Override

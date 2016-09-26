@@ -104,7 +104,7 @@ public class QueryToStringTest {
 
     @Test
     public void testQueryWithLhsToString() {
-        assertValidToString(qb.match(var("x").lhs("match $x isa person; ask")));
+        assertValidToString(qb.match(var("x").lhs("match $x isa person; ask;")));
     }
 
     @Test
@@ -140,13 +140,13 @@ public class QueryToStringTest {
 
     @Test
     public void testComputeQueryToString() {
-        assertEquals("compute count", qb.compute("count").toString());
+        assertEquals("compute count;", qb.compute("count").toString());
     }
 
     @Test
     public void testComputeQuerySubgraphToString() {
         ComputeQuery query = qb.compute("degrees", Sets.newHashSet("movie", "person"));
-        assertEquals("compute degrees in movie, person", query.toString());
+        assertEquals("compute degrees in movie, person;", query.toString());
     }
 
     @Test(expected=UnsupportedOperationException.class)

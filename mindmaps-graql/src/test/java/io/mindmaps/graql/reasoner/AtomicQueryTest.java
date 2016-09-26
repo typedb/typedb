@@ -85,14 +85,14 @@ public class AtomicQueryTest {
     @Test
     public void testMaterialize(){
 
-        assert(!qb.parseAsk("match ($x, $y) isa recommendation;$x id 'Bob';$y id 'Colour of Magic'; ask").execute());
+        assert(!qb.parseAsk("match ($x, $y) isa recommendation;$x id 'Bob';$y id 'Colour of Magic'; ask;").execute());
 
         String queryString = "match ($x, $y) isa recommendation;";
         AtomicQuery atomicQuery = new AtomicQuery(queryString, graph);
         atomicQuery.materialize(Sets.newHashSet(new Substitution("x", graph.getConcept("Bob"))
                                                 , new Substitution("y", graph.getConcept("Colour of Magic"))));
 
-        assert(qb.parseAsk("match ($x, $y) isa recommendation;$x id 'Bob';$y id 'Colour of Magic'; ask").execute());
+        assert(qb.parseAsk("match ($x, $y) isa recommendation;$x id 'Bob';$y id 'Colour of Magic'; ask;").execute());
     }
 
 }

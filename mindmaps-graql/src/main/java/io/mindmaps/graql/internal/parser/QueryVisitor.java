@@ -85,15 +85,48 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public AggregateQuery<?> visitAggregateEOF(GraqlParser.AggregateEOFContext ctx) {
-        return visitAggregateQuery(ctx.aggregateQuery());
+    public MatchQuery visitMatchBase(GraqlParser.MatchBaseContext ctx) {
+        Collection<Pattern> patterns = visitPatterns(ctx.patterns());
+        return queryBuilder.match(patterns);
     }
 
     @Override
-    public MatchQuery visitMatchQuery(GraqlParser.MatchQueryContext ctx) {
-        Collection<Pattern> patterns = visitPatterns(ctx.patterns());
-        MatchQuery matchQuery = queryBuilder.match(patterns);
-        return visitModifiers(ctx.modifiers()).apply(matchQuery);
+    public MatchQuery visitMatchSelect(GraqlParser.MatchSelectContext ctx) {
+        Set<String> names = ctx.VARIABLE().stream().map(this::getVariable).collect(toSet());
+        return visitMatchQuery(ctx.matchQuery()).select(names);
+    }
+
+    @Override
+    public MatchQuery visitMatchOffset(GraqlParser.MatchOffsetContext ctx) {
+        return visitMatchQuery(ctx.matchQuery()).offset(getInteger(ctx.INTEGER()));
+    }
+
+    @Override
+    public Object visitMatchOrderBy(GraqlParser.MatchOrderByContext ctx) {
+        MatchQuery matchQuery = visitMatchQuery(ctx.matchQuery());
+
+        // decide which ordering method to use
+        String var = getVariable(ctx.VARIABLE());
+        if (ctx.ORDER() != null) {
+            return matchQuery.orderBy(var, getOrder(ctx.ORDER()));
+        } else {
+            return matchQuery.orderBy(var);
+        }
+    }
+
+    @Override
+    public MatchQuery visitMatchLimit(GraqlParser.MatchLimitContext ctx) {
+        return visitMatchQuery(ctx.matchQuery()).limit(getInteger(ctx.INTEGER()));
+    }
+
+    @Override
+    public Object visitMatchDistinct(GraqlParser.MatchDistinctContext ctx) {
+        return visitMatchQuery(ctx.matchQuery()).distinct();
+    }
+
+    @Override
+    public AggregateQuery<?> visitAggregateEOF(GraqlParser.AggregateEOFContext ctx) {
+        return visitAggregateQuery(ctx.aggregateQuery());
     }
 
     @Override
@@ -397,46 +430,12 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public UnaryOperator<MatchQuery> visitModifiers(GraqlParser.ModifiersContext ctx) {
-        Stream<UnaryOperator<MatchQuery>> modifiers = ctx.modifier().stream().map(this::visitModifier);
-        return chainOperators(modifiers);
-    }
-
-    @Override
-    public UnaryOperator<MatchQuery> visitModifierSelect(GraqlParser.ModifierSelectContext ctx) {
-        Set<String> names = ctx.VARIABLE().stream().map(this::getVariable).collect(toSet());
-        return matchQuery -> matchQuery.select(names);
-    }
-
-    @Override
-    public UnaryOperator<MatchQuery> visitModifierLimit(GraqlParser.ModifierLimitContext ctx) {
-        return matchQuery -> matchQuery.limit(getInteger(ctx.INTEGER()));
-    }
-
-    @Override
-    public UnaryOperator<MatchQuery> visitModifierOffset(GraqlParser.ModifierOffsetContext ctx) {
-        return matchQuery -> matchQuery.offset(getInteger(ctx.INTEGER()));
-    }
-
-    @Override
-    public UnaryOperator<MatchQuery> visitModifierDistinct(GraqlParser.ModifierDistinctContext ctx) {
-        return MatchQuery::distinct;
-    }
-
-    @Override
-    public UnaryOperator<MatchQuery> visitModifierOrderBy(GraqlParser.ModifierOrderByContext ctx) {
-        // decide which ordering method to use
-        String var = getVariable(ctx.VARIABLE());
-        if (ctx.ORDER() != null) {
-            return matchQuery -> matchQuery.orderBy(var, getOrder(ctx.ORDER()));
-        } else {
-            return matchQuery -> matchQuery.orderBy(var);
-        }
-    }
-
-    @Override
     public Pattern visitPatternSep(GraqlParser.PatternSepContext ctx) {
         return visitPattern(ctx.pattern());
+    }
+
+    private MatchQuery visitMatchQuery(GraqlParser.MatchQueryContext ctx) {
+        return (MatchQuery) visit(ctx);
     }
 
     private Aggregate<?, ?> visitAggregate(GraqlParser.AggregateContext ctx) {
@@ -445,10 +444,6 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     private Pattern visitPattern(GraqlParser.PatternContext ctx) {
         return (Pattern) visit(ctx);
-    }
-
-    private UnaryOperator<MatchQuery> visitModifier(GraqlParser.ModifierContext ctx) {
-        return (UnaryOperator<MatchQuery>) visit(ctx);
     }
 
     private ValuePredicate visitPredicate(GraqlParser.PredicateContext ctx) {

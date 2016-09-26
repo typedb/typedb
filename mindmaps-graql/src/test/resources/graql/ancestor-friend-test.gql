@@ -50,6 +50,6 @@ rhs {match
 "R2" isa inference-rule,
 lhs {match
 (parent: $x, child: $z) isa Parent;
-(person: $z, ancestor-friend: $y) isa Ancestor-friend; select $x, $y},
+(person: $z, ancestor-friend: $y) isa Ancestor-friend; select $x, $y;},
 rhs {match
 (person: $x, ancestor-friend: $y) isa Ancestor-friend;};
