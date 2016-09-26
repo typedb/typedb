@@ -41,8 +41,7 @@ import java.util.stream.Stream;
 import static io.mindmaps.graql.Graql.*;
 import static io.mindmaps.util.Schema.MetaType.*;
 import static java.util.stream.Collectors.toList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
 public class MatchQueryTest {
@@ -436,5 +435,27 @@ public class MatchQueryTest {
         MatchQuery query = qb.match(var("x").regex("(fe)?male"));
         assertEquals(1, query.stream().count());
         assertEquals("gender", query.get("x").findFirst().get().getId());
+    }
+
+    @Test
+    public void testPlaysRoleAko() {
+        qb.insert(
+                id("c").ako(id("b").ako(id("a").isa("entity-type"))),
+                id("f").ako(id("e").ako(id("d").isa("role-type"))),
+                id("b").playsRole("e")
+        ).execute();
+
+        // Make sure AKOs are followed correctly...
+        assertTrue(qb.match(id("b").playsRole("e")).ask().execute());
+        assertTrue(qb.match(id("b").playsRole("f")).ask().execute());
+        assertTrue(qb.match(id("c").playsRole("e")).ask().execute());
+        assertTrue(qb.match(id("c").playsRole("f")).ask().execute());
+
+        // ...and not incorrectly
+        assertFalse(qb.match(id("a").playsRole("d")).ask().execute());
+        assertFalse(qb.match(id("a").playsRole("e")).ask().execute());
+        assertFalse(qb.match(id("a").playsRole("f")).ask().execute());
+        assertFalse(qb.match(id("b").playsRole("d")).ask().execute());
+        assertFalse(qb.match(id("c").playsRole("d")).ask().execute());
     }
 }
