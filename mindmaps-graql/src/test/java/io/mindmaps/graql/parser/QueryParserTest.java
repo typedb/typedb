@@ -244,12 +244,12 @@ public class QueryParserTest {
 
     @Test
     public void testPositiveAskQuery() {
-        assertTrue(parseAsk("match $x isa movie id 'Godfather'; ask").withGraph(mindmapsGraph).execute());
+        assertTrue(parseAsk("match $x isa movie id 'Godfather'; ask;").withGraph(mindmapsGraph).execute());
     }
 
     @Test
     public void testNegativeAskQuery() {
-        assertFalse(qb.parseAsk("match $x isa movie id 'Dogfather'; ask").execute());
+        assertFalse(qb.parseAsk("match $x isa movie id 'Dogfather'; ask;").execute());
     }
 
     @Test
@@ -322,8 +322,8 @@ public class QueryParserTest {
                 "insert concrete-type isa entity-type; abstract-type is-abstract isa entity-type;"
         ).execute();
 
-        assertFalse(qb.parseAsk("match concrete-type is-abstract; ask").execute());
-        assertTrue(qb.parseAsk("match abstract-type is-abstract; ask").execute());
+        assertFalse(qb.parseAsk("match concrete-type is-abstract; ask;").execute());
+        assertTrue(qb.parseAsk("match abstract-type is-abstract; ask;").execute());
     }
 
     @Test
@@ -360,7 +360,7 @@ public class QueryParserTest {
     @Test
     public void testComments() {
         assertTrue(qb.parseAsk(
-                "match \n# there's a comment here\n$x isa###WOW HERES ANOTHER###\r\nmovie; ask"
+                "match \n# there's a comment here\n$x isa###WOW HERES ANOTHER###\r\nmovie; ask;"
         ).execute());
     }
 
@@ -395,7 +395,7 @@ public class QueryParserTest {
     public void testParseAggregate() {
         //noinspection unchecked
         AggregateQuery<Map<String, Object>> query = (AggregateQuery<Map<String, Object>>)
-                qb.parse("match $x isa movie; aggregate (count as c, group $x as g)");
+                qb.parse("match $x isa movie; aggregate (count as c, group $x as g);");
 
         Map<String, Object> result = query.execute();
 
@@ -405,7 +405,7 @@ public class QueryParserTest {
 
     @Test
     public void testParseAggregateToString() {
-        String query = "match $x isa movie; aggregate group $x (count as c)";
+        String query = "match $x isa movie; aggregate group $x (count as c);";
         assertEquals(query, parseAggregate(query).withGraph(mindmapsGraph).toString());
     }
 
@@ -425,7 +425,7 @@ public class QueryParserTest {
 
         //noinspection unchecked
         AggregateQuery<Concept> query =
-                (AggregateQuery<Concept>) qb.parse("match $x isa movie; aggregate get-any $x");
+                (AggregateQuery<Concept>) qb.parse("match $x isa movie; aggregate get-any $x;");
 
         Concept result = query.execute();
 
@@ -434,7 +434,7 @@ public class QueryParserTest {
 
     @Test
     public void testParseCompute() {
-        assertEquals("compute count", parseCompute("compute count").toString());
+        assertEquals("compute count;", parseCompute("compute count;").toString());
     }
 
     @Test

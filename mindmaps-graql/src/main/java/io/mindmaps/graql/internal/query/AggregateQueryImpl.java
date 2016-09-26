@@ -64,6 +64,6 @@ class AggregateQueryImpl<T> implements AggregateQuery<T> {
 
     @Override
     public String toString() {
-        return matchQuery.toString() + " aggregate " + aggregate.toString();
+        return matchQuery.toString() + " aggregate " + aggregate.toString() + ";";
     }
 }

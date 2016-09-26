@@ -31,6 +31,7 @@ import io.mindmaps.Mindmaps;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.QueryBuilder;
 import org.javatuples.Pair;
+import org.junit.*;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -96,12 +97,12 @@ public class GraqlTest {
                 or(var("y").isa("entity-type"), var("y").isa("resource-type"), var("y").isa("relation-type"))
         ).stream().count();
 
-        long computeCount = ((Long) ((ComputeQuery) qb.parse("compute count")).execute());
+        long computeCount = ((Long) ((ComputeQuery) qb.parse("compute count;")).execute());
 
         assertEquals(graqlCount, computeCount);
         assertEquals(3L, computeCount);
 
-        computeCount = ((Long) ((ComputeQuery) qb.parse("compute count")).execute());
+        computeCount = ((Long) ((ComputeQuery) qb.parse("compute count;")).execute());
 
         assertEquals(graqlCount, computeCount);
         assertEquals(3L, computeCount);
@@ -117,7 +118,7 @@ public class GraqlTest {
         graph.putEntity("3", anotherThing);
         graph.commit();
 
-        long computeCount = ((Long) ((ComputeQuery) qb.parse("compute count in thing, thing")).execute());
+        long computeCount = ((Long) ((ComputeQuery) qb.parse("compute count in thing, thing;")).execute());
         assertEquals(2, computeCount);
     }
 
@@ -156,7 +157,7 @@ public class GraqlTest {
         graph.commit();
 
         // compute degrees
-        Map<Instance, Long> degrees = ((Map) ((ComputeQuery) qb.parse("compute degrees")).execute());
+        Map<Instance, Long> degrees = ((Map) ((ComputeQuery) qb.parse("compute degrees;")).execute());
 
         // assert degrees are correct
         graph = Mindmaps.factory().getGraph(keyspace);
@@ -217,7 +218,7 @@ public class GraqlTest {
         graph.commit();
 
         // compute degrees
-        ((ComputeQuery) qb.parse("compute degreesAndPersist")).execute();
+        ((ComputeQuery) qb.parse("compute degreesAndPersist;")).execute();
 
         // assert persisted degrees are correct
 //        MindmapsGraph graph = MindmapsGraphFactoryImpl.getGraph(keyspace);
@@ -247,7 +248,7 @@ public class GraqlTest {
         });
 
         // compute degrees again
-        ((ComputeQuery) qb.parse("compute degreesAndPersist")).execute();
+        ((ComputeQuery) qb.parse("compute degreesAndPersist;")).execute();
 
         // assert persisted degrees are correct
         graph = Mindmaps.factory().getGraph(keyspace);
@@ -279,7 +280,7 @@ public class GraqlTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testInvalidIdWithAnalytics() {
-        ((ComputeQuery) qb.parse("compute sum in thing")).execute();
+        ((ComputeQuery) qb.parse("compute sum in thing;")).execute();
     }
 
     @Test
@@ -292,13 +293,13 @@ public class GraqlTest {
         graph.commit();
 
         // use graql to compute various statistics
-        Optional<Number> result = (Optional<Number>) ((ComputeQuery) qb.parse("compute sum in thing")).execute();
+        Optional<Number> result = (Optional<Number>) ((ComputeQuery) qb.parse("compute sum in thing;")).execute();
         assertEquals(6L,(long) result.orElse(0L));
-        result = (Optional<Number>) ((ComputeQuery) qb.parse("compute min in thing")).execute();
+        result = (Optional<Number>) ((ComputeQuery) qb.parse("compute min in thing;")).execute();
         assertEquals(1L,(long) result.orElse(0L));
-        result = (Optional<Number>) ((ComputeQuery) qb.parse("compute max in thing")).execute();
+        result = (Optional<Number>) ((ComputeQuery) qb.parse("compute max in thing;")).execute();
         assertEquals(3L,(long) result.orElse(0L));
-        result = (Optional<Number>) ((ComputeQuery) qb.parse("compute mean in thing")).execute();
+        result = (Optional<Number>) ((ComputeQuery) qb.parse("compute mean in thing;")).execute();
         assertEquals(2.0, (double) result.orElse(0L), 0.1);
 
     }
@@ -308,14 +309,14 @@ public class GraqlTest {
         EntityType thing = graph.putEntityType("thing");
         graph.commit();
 
-        ((ComputeQuery) qb.parse("compute sum in thing")).execute();
+        ((ComputeQuery) qb.parse("compute sum in thing;")).execute();
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testErrorWhenNoSubgrapForAnalytics() throws MindmapsValidationException {
-        ((ComputeQuery) qb.parse("compute sum")).execute();
-        ((ComputeQuery) qb.parse("compute min")).execute();
-        ((ComputeQuery) qb.parse("compute max")).execute();
-        ((ComputeQuery) qb.parse("compute mean")).execute();
+        ((ComputeQuery) qb.parse("compute sum;")).execute();
+        ((ComputeQuery) qb.parse("compute min;")).execute();
+        ((ComputeQuery) qb.parse("compute max;")).execute();
+        ((ComputeQuery) qb.parse("compute mean;")).execute();
     }
 }

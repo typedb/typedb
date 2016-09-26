@@ -18,11 +18,11 @@ matchQuery     : 'match' patterns                                 # matchBase
                | matchQuery 'order' 'by' VARIABLE ORDER?      ';' # matchOrderBy
                ;
 
-askQuery       : matchQuery 'ask' ;
+askQuery       : matchQuery 'ask' ';' ;
 insertQuery    : matchQuery? 'insert' varPatterns ;
 deleteQuery    : matchQuery 'delete' varPatterns ;
-aggregateQuery : matchQuery 'aggregate' aggregate ;
-computeQuery   : 'compute' id ('in' subgraph)? ;
+aggregateQuery : matchQuery 'aggregate' aggregate ';' ;
+computeQuery   : 'compute' id ('in' subgraph)? ';' ;
 
 subgraph       : id (',' id) * ;
 
