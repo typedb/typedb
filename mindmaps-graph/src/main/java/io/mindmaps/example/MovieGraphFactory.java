@@ -19,8 +19,6 @@
 package io.mindmaps.example;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
@@ -29,7 +27,8 @@ import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.RuleType;
-import io.mindmaps.concept.Type;
+import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.util.ErrorMessage;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -111,7 +110,7 @@ public class MovieGraphFactory {
         tmdbVoteAverage = mindmapsGraph.putResourceType("tmdb-vote-average", ResourceType.DataType.DOUBLE);
         releaseDate = mindmapsGraph.putResourceType("release-date", ResourceType.DataType.LONG);
         runtime = mindmapsGraph.putResourceType("runtime", ResourceType.DataType.LONG);
-        gender = mindmapsGraph.putResourceType("gender", ResourceType.DataType.STRING);
+        gender = mindmapsGraph.putResourceType("gender", ResourceType.DataType.STRING).setRegex("(fe)?male");
         realName = mindmapsGraph.putResourceType("real-name", ResourceType.DataType.STRING);
         name = mindmapsGraph.putResourceType("name", ResourceType.DataType.STRING);
 
@@ -133,6 +132,7 @@ public class MovieGraphFactory {
                 .playsRole(director).playsRole(actor).playsRole(characterBeingPlayed);
 
         hasResource(person, gender);
+        hasResource(person, name);
         hasResource(person, realName);
 
         genre = mindmapsGraph.putEntityType("genre").playsRole(genreOfProduction);
@@ -188,15 +188,25 @@ public class MovieGraphFactory {
         putResource(chineseCoffee, releaseDate, DATE_FORMAT.parse("Sat Sep 02 00:00:00 GMT 2000").getTime());
 
         marlonBrando = putEntity(person, "Marlon Brando");
+        putResource(marlonBrando, name, "Marlon Brando");
         alPacino = putEntity(person, "Al Pacino");
+        putResource(alPacino, name, "Al Pacino");
         missPiggy = putEntity(person, "Miss Piggy");
+        putResource(missPiggy, name, "Miss Piggy");
         kermitTheFrog = putEntity(person, "Kermit The Frog");
+        putResource(kermitTheFrog, name, "Kermit The Frog");
         martinSheen = putEntity(person, "Martin Sheen");
+        putResource(martinSheen, name, "Martin Sheen");
         robertDeNiro = putEntity(person, "Robert de Niro");
+        putResource(robertDeNiro, name, "Robert de Niro");
         judeLaw = putEntity(person, "Jude Law");
+        putResource(judeLaw, name, "Jude Law");
         mirandaHeart = putEntity(person, "Miranda Heart");
+        putResource(mirandaHeart, name, "Miranda Heart");
         betteMidler = putEntity(person, "Bette Midler");
+        putResource(betteMidler, name, "Bette Midler");
         sarahJessicaParker = putEntity(person, "Sarah Jessica Parker");
+        putResource(sarahJessicaParker, name, "Sarah Jessica Parker");
 
         crime = putEntity(genre, "crime");
         putResource(crime, name, "crime");
@@ -303,7 +313,7 @@ public class MovieGraphFactory {
         return mindmapsGraph.putEntity(name.replaceAll(" ", "-").replaceAll("\\.", ""), type);
     }
 
-    private static void hasResource(Type type, ResourceType<?> resourceType) {
+    private static void hasResource(EntityType type, ResourceType<?> resourceType) {
         RoleType owner = mindmapsGraph.putRoleType("has-" + resourceType.getId() + "-owner");
         RoleType value = mindmapsGraph.putRoleType("has-" + resourceType.getId() + "-value");
         mindmapsGraph.putRelationType("has-" + resourceType.getId()).hasRole(owner).hasRole(value);

@@ -32,7 +32,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class MindmapsTitanGraphTest {
     private static final String TEST_CONFIG = "../conf/test/mindmaps-test.properties";
@@ -43,12 +45,12 @@ public class MindmapsTitanGraphTest {
 
     @Before
     public void setup(){
-        mindmapsGraph = new MindmapsTitanGraphFactory().getGraph(TEST_NAME, TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING);
+        mindmapsGraph = new MindmapsTitanInternalFactory().getGraph(TEST_NAME, TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING);
     }
 
     @After
     public void cleanup(){
-        MindmapsGraph mg = new MindmapsTitanGraphFactory().getGraph(TEST_NAME, TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING);
+        MindmapsGraph mg = new MindmapsTitanInternalFactory().getGraph(TEST_NAME, TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING);
         mg.clear();
     }
 
@@ -69,7 +71,7 @@ public class MindmapsTitanGraphTest {
             }
         });
 
-        assertEquals(108, mindmapsGraph.getTinkerTraversal().V().toList().size());
+        assertEquals(108, mindmapsGraph.getTinkerTraversal().toList().size());
     }
     private void addEntityType(MindmapsGraph mindmapsGraph){
         mindmapsGraph.putEntityType(UUID.randomUUID().toString());
@@ -85,7 +87,7 @@ public class MindmapsTitanGraphTest {
         ExecutorService pool = Executors.newFixedThreadPool(10);
         Set<Future> futures = new HashSet<>();
         mindmapsGraph.putEntityType(UUID.randomUUID().toString());
-        assertEquals(9, mindmapsGraph.getTinkerTraversal().V().toList().size());
+        assertEquals(9, mindmapsGraph.getTinkerTraversal().toList().size());
 
         for(int i = 0; i < 100; i ++){
             futures.add(pool.submit(() -> {
@@ -102,6 +104,15 @@ public class MindmapsTitanGraphTest {
             }
         });
 
-        assertEquals(9, mindmapsGraph.getTinkerTraversal().V().toList().size());
+        assertEquals(9, mindmapsGraph.getTinkerTraversal().toList().size());
+    }
+
+    @Test
+    public void testRollback() {
+        assertNull(mindmapsGraph.getEntityType("X"));
+        mindmapsGraph.putEntityType("X");
+        assertNotNull(mindmapsGraph.getEntityType("X"));
+        mindmapsGraph.rollback();
+        assertNull(mindmapsGraph.getEntityType("X"));
     }
 }

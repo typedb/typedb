@@ -25,9 +25,9 @@ import io.mindmaps.engine.postprocessing.BackgroundTasks;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
-import io.mindmaps.graql.QueryParser;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -41,7 +41,9 @@ import spark.Response;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -53,6 +55,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 
+import static io.mindmaps.graql.Graql.parseInsert;
+import static io.mindmaps.graql.Graql.parsePatterns;
 import static spark.Spark.post;
 
 
@@ -92,10 +96,9 @@ public class ImportController {
     @ApiImplicitParam(name = "path", value = "File path on the server.", required = true, dataType = "string", paramType = "body")
 
     private String importDataREST(Request req, Response res) {
-
         try {
             JSONObject bodyObject = new JSONObject(req.body());
-            String pathToFile = bodyObject.get(REST.Request.PATH_FIELD).toString();
+            final String pathToFile = bodyObject.get(REST.Request.PATH_FIELD).toString();
             final String graphName;
 
             if (bodyObject.has(REST.Request.GRAPH_NAME_PARAM))
@@ -103,15 +106,21 @@ public class ImportController {
             else
                 graphName = defaultGraphName;
 
+            File f = new File(pathToFile);
+            if (!f.exists()) throw new FileNotFoundException(ErrorMessage.NO_GRAQL_FILE.getMessage(pathToFile));
+
             Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(pathToFile, graphName));
         } catch (JSONException j) {
-            LOG.error("Malformed request.");
-            j.printStackTrace();
+            LOG.error("Malformed request.",j);
             res.status(400);
             return j.getMessage();
+        } catch (FileNotFoundException e) {
+            LOG.error(e.getMessage());
+            res.status(400);
+            return e.getMessage();
         }
 
-        return "Loading successfully started.";
+        return "Loading successfully STARTED. \n";
     }
 
 
@@ -133,30 +142,27 @@ public class ImportController {
                 graphName = defaultGraphName;
             importOntologyFromFile(pathToFile, graphName);
         } catch (JSONException j) {
-            LOG.error("Malformed request.");
-            j.printStackTrace();
+            LOG.error("Malformed request.",j);
             res.status(400);
             return j.getMessage();
         } catch (Exception e) {
-            LOG.error("Exception while loading ontology.");
-            e.printStackTrace();
+            LOG.error("Exception while loading ontology.",e);
             res.status(500);
             return e.getMessage();
         }
-        return "Ontology successfully loaded.";
+        return "Ontology successfully loaded. \n";
     }
 
     void importDataFromFile(String dataFile, String graphName) {
         BlockingLoader loader = new BlockingLoader(graphName);
         try {
-            QueryParser.create().parsePatternsStream(new FileInputStream(dataFile)).forEach(pattern -> consumeEntity(pattern.admin().asVar(),loader));
+            parsePatterns(new FileInputStream(dataFile)).forEach(pattern -> consumeEntity(pattern.admin().asVar(),loader));
             loader.waitToFinish();
-            QueryParser.create().parsePatternsStream(new FileInputStream(dataFile)).forEach(pattern -> consumeRelationAndResource(pattern.admin().asVar(),loader));
+            parsePatterns(new FileInputStream(dataFile)).forEach(pattern -> consumeRelationAndResource(pattern.admin().asVar(),loader));
             loader.waitToFinish();
             BackgroundTasks.getInstance().forcePostprocessing();
         } catch (Exception e) {
-            LOG.error("Exception while batch loading data.");
-            e.printStackTrace();
+            LOG.error("Exception while batch loading data.",e);
         }
     }
 
@@ -210,7 +216,7 @@ public class ImportController {
 
         List<String> lines = Files.readAllLines(Paths.get(ontologyFile), StandardCharsets.UTF_8);
         String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-        QueryParser.create().parseInsertQuery(query).withGraph(graph).execute();
+        parseInsert(query).withGraph(graph).execute();
         graph.commit();
 
         LOG.info("Ontology loaded. ");

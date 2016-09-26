@@ -26,18 +26,14 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import static io.mindmaps.util.REST.RemoteShell.ACTION;
-import static io.mindmaps.util.REST.RemoteShell.ACTION_AUTOCOMPLETE;
-import static io.mindmaps.util.REST.RemoteShell.ACTION_COMMIT;
-import static io.mindmaps.util.REST.RemoteShell.ACTION_NAMESPACE;
-import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY;
-import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY_END;
-import static io.mindmaps.util.REST.RemoteShell.NAMESPACE;
+import static io.mindmaps.util.REST.RemoteShell.*;
 
 /**
  * Web socket for running a Graql shell
@@ -46,6 +42,8 @@ import static io.mindmaps.util.REST.RemoteShell.NAMESPACE;
 public class RemoteSession {
     private final Map<Session, GraqlSession> sessions = new HashMap<>();
     private final Function<String, MindmapsGraph> getGraph;
+    private final Logger LOG = LoggerFactory.getLogger(RemoteSession.class);
+
 
     // This constructor is magically invoked by spark's websocket stuff
     @SuppressWarnings("unused")
@@ -84,12 +82,15 @@ public class RemoteSession {
                 case ACTION_COMMIT:
                     sessions.get(session).commit();
                     break;
+                case ACTION_ROLLBACK:
+                    sessions.get(session).rollback();
+                    break;
                 case ACTION_AUTOCOMPLETE:
                     sessions.get(session).autocomplete(json);
                     break;
             }
         } catch (Throwable e) {
-            e.printStackTrace();
+            LOG.error("Exception",e);
             throw e;
         }
     }

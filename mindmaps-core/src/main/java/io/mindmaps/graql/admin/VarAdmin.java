@@ -90,6 +90,11 @@ public interface VarAdmin extends PatternAdmin, Var {
     Optional<ResourceType.DataType<?>> getDatatype();
 
     /**
+     * @return the regular expression that instances of this resource type should match, if one is set
+     */
+    Optional<String> getRegex();
+
+    /**
      * @return whether this variable is an abstract type
      */
     boolean getAbstract();
@@ -165,14 +170,14 @@ public interface VarAdmin extends PatternAdmin, Var {
     Optional<String> getRhs();
 
     /**
+     * @return all resources that this instance must have
+     */
+    Set<VarAdmin> getResources();
+
+    /**
      * @return all predicates on resources of this variable (where the key is the resource type)
      */
     Map<VarAdmin, Set<ValuePredicateAdmin>> getResourcePredicates();
-
-    /**
-     * @return all values of resources on this variable (where the key is the resource type)
-     */
-    Map<VarAdmin, Set<?>> getResourceEqualsPredicates();
 
     /**
      * @return whether this variable uses any predicate that is not equality

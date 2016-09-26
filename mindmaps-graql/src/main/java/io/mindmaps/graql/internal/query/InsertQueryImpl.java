@@ -81,9 +81,21 @@ class InsertQueryImpl implements InsertQueryAdmin {
     }
 
     @Override
-    public void execute() {
+    public Void execute() {
         // Do nothing, just execute whole stream
         stream().forEach(c -> {});
+        return null;
+    }
+
+    @Override
+    public Stream<String> resultsString() {
+        execute();
+        return Stream.empty();
+    }
+
+    @Override
+    public boolean isReadOnly() {
+        return false;
     }
 
     @Override

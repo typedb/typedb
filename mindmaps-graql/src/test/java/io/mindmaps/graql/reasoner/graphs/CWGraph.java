@@ -192,16 +192,16 @@ public class CWGraph {
                 "$x isa person;$x has nationality 'American';" +
                 "$y isa weapon;" +
                 "$z isa country;$z has alignment 'hostile';" +
-                "(seller $x, transaction-item $y, buyer $z) isa transaction;" +
-                "select $x";
+                "(seller: $x, transaction-item: $y, buyer: $z) isa transaction;" +
+                "select $x;";
 
-        String R1_RHS = "match $x isa criminal";
+        String R1_RHS = "match $x isa criminal;";
 
         mindmaps.putRule("R1", R1_LHS, R1_RHS, inferenceRule);
 
         //R2: "Missiles are a kind of a weapon"
         String  R2_LHS = "match $x isa missile;";
-        String R2_RHS = "match $x isa weapon";
+        String R2_RHS = "match $x isa weapon;";
 
         mindmaps.putRule("R2", R2_LHS, R2_RHS, inferenceRule);
 
@@ -210,14 +210,14 @@ public class CWGraph {
                 "$x isa country;" +
                 "($x, $y) isa is-enemy-of;" +
                 "$y isa country;$y id 'America';" +
-                "select $x";
-        String R3_RHS = "match $x has alignment 'hostile'";
+                "select $x;";
+        String R3_RHS = "match $x has alignment 'hostile';";
 
         mindmaps.putRule("R3", R3_LHS, R3_RHS, inferenceRule);
 
         //R4: "If a rocket is self-propelled and guided, it is a missile"
-        String R4_LHS = "match $x isa rocket;$x has propulsion 'gsp'";
-        String R4_RHS = "match $x isa missile";
+        String R4_LHS = "match $x isa rocket;$x has propulsion 'gsp';";
+        String R4_RHS = "match $x isa missile;";
 
         mindmaps.putRule("R4", R4_LHS, R4_RHS, inferenceRule);
 
@@ -226,9 +226,9 @@ public class CWGraph {
                 "$y isa country;" +
                 "$z isa weapon;" +
                 "($x, $y) isa is-paid-by;\n" +
-                "($y, $z) isa owns";
+                "($y, $z) isa owns;";
 
-        String R5_RHS = "match (seller $x, buyer $y, transaction-item $z) isa transaction";
+        String R5_RHS = "match (seller: $x, buyer: $y, transaction-item: $z) isa transaction;";
 
         mindmaps.putRule("R5", R5_LHS, R5_RHS, inferenceRule);
     }

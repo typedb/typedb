@@ -20,16 +20,16 @@ package io.mindmaps.graql.internal.query;
 
 import com.google.common.collect.ImmutableMap;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.exception.ConceptException;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Resource;
+import io.mindmaps.exception.ConceptException;
 import io.mindmaps.graql.DeleteQuery;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.admin.DeleteQueryAdmin;
 import io.mindmaps.graql.admin.MatchQueryAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.validation.DeleteQueryValidator;
+import io.mindmaps.util.ErrorMessage;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * A DeleteQuery that will execute deletions for every result of a MatchQuery
@@ -62,8 +63,20 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
     }
 
     @Override
-    public void execute() {
+    public Void execute() {
         matchQuery.forEach(results -> results.forEach(this::deleteResult));
+        return null;
+    }
+
+    @Override
+    public Stream<String> resultsString() {
+        execute();
+        return Stream.empty();
+    }
+
+    @Override
+    public boolean isReadOnly() {
+        return false;
     }
 
     @Override
@@ -112,7 +125,11 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
                     )
             );
 
-            deleter.getResourceEqualsPredicates().forEach((type, values) -> deleteResources(id, type, values));
+            deleter.getResourcePredicates().forEach((type, predicates) -> {
+                Set<Object> values = new HashSet<>();
+                predicates.forEach(predicate -> predicate.equalsValue().ifPresent(values::add));
+                deleteResources(id, type, values);
+            });
         }
     }
 

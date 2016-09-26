@@ -19,12 +19,19 @@
 package io.mindmaps.engine.postprocessing;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.*;
+import io.mindmaps.concept.EntityType;
+import io.mindmaps.concept.Instance;
+import io.mindmaps.concept.Relation;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.Resource;
+import io.mindmaps.concept.ResourceType;
+import io.mindmaps.concept.RoleType;
 import io.mindmaps.engine.controller.CommitLogController;
 import io.mindmaps.engine.controller.GraphFactoryController;
 import io.mindmaps.engine.util.ConfigProperties;
-import io.mindmaps.factory.MindmapsClient;
+import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
+import io.mindmaps.Mindmaps;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -33,12 +40,24 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import spark.Spark;
+
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import static org.junit.Assert.assertEquals;
 
 public class BackgroundTasksTest {
     private BackgroundTasks backgroundTasks;
     private MindmapsGraph mindmapsGraph;
+    private Cache cache;
+    private String keyspace;
 
     @BeforeClass
     public static void startController() {
@@ -49,18 +68,20 @@ public class BackgroundTasksTest {
     public void setUp() throws Exception {
         new GraphFactoryController();
         new CommitLogController();
+        Thread.sleep(5000);
 
-        Thread.sleep(2000);
-
+        cache = Cache.getInstance();
+        keyspace = UUID.randomUUID().toString().replaceAll("-", "a");
         backgroundTasks = BackgroundTasks.getInstance();
-        MindmapsClient.getGraph("mindmapstesting").clear();
-        mindmapsGraph = MindmapsClient.getGraph("mindmapstesting");
-
+        mindmapsGraph = Mindmaps.factory().getGraphBatchLoading(keyspace);
     }
 
     @After
-    public void cleanup() {
-        mindmapsGraph.clear();
+    public void takeDown() throws InterruptedException {
+        cache.getCastingJobs().clear();
+        cache.getResourceJobs().clear();
+        Spark.stop();
+        Thread.sleep(5000);
     }
 
     @Test
@@ -88,20 +109,21 @@ public class BackgroundTasksTest {
         mindmapsGraph.commit();
 
         //Check Number of castings is as expected
-        assertEquals(2, ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
+        assertEquals(2, ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph().traversal().V().has(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.CASTING.name()).toList().size());
 
         //Break The Graph With Fake Castings
         buildDuplicateCasting(relationTypeId, mainRoleTypeId, mainInstanceId, otherRoleTypeId, otherInstanceId3);
         buildDuplicateCasting(relationTypeId, mainRoleTypeId, mainInstanceId, otherRoleTypeId, otherInstanceId4);
 
         //Check the graph is broken
-        assertEquals(6, ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
+        assertEquals(6, ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph().traversal().V().has(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.CASTING.name()).toList().size());
 
+        waitForCache(true, keyspace, 4);
         //Now fix everything
         backgroundTasks.forcePostprocessing();
 
         //Check it's all fixed
-        assertEquals(4, ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
+        assertEquals(4, ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph().traversal().V().has(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.CASTING.name()).toList().size());
     }
 
     private void buildDuplicateCasting(String relationTypeId, String mainRoleTypeId, String mainInstanceId, String otherRoleTypeId, String otherInstanceId) throws Exception {
@@ -118,16 +140,17 @@ public class BackgroundTasksTest {
 
         //Get Needed Vertices
         Vertex mainRoleTypeVertex = rawGraph.traversal().V().
-                has(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), mainRoleTypeId).next();
+                has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), mainRoleTypeId).next();
 
         Vertex relationVertex = rawGraph.traversal().V().
-                has(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), relationId).next();
+                has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), relationId).next();
 
         Vertex mainInstanceVertex = rawGraph.traversal().V().
-                has(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), mainInstanceId).next();
+                has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), mainInstanceId).next();
 
         //Create Fake Casting
-        Vertex castingVertex = rawGraph.addVertex(Schema.BaseType.CASTING.name());
+        Vertex castingVertex = rawGraph.addVertex();
+        castingVertex.property(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.CASTING.name());
         castingVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), mainRoleTypeVertex);
 
         Edge edge = castingVertex.addEdge(Schema.EdgeLabel.ROLE_PLAYER.getLabel(), mainInstanceVertex);
@@ -137,5 +160,73 @@ public class BackgroundTasksTest {
         edge.property(Schema.EdgeProperty.ROLE_TYPE.name(), mainRoleTypeId);
 
         rawGraph.tx().commit();
+    }
+
+    @Test
+    public void testMergeDuplicateResources() throws MindmapsValidationException, InterruptedException {
+        String keyspace = "TestBatchGraph";
+        String value = "1";
+        String sample = "Sample";
+        ExecutorService pool = Executors.newFixedThreadPool(10);
+        Set<Future> futures = new HashSet<>();
+
+        //Create Graph With Duplicate Resources
+        MindmapsGraph graph = Mindmaps.factory().getGraphBatchLoading(keyspace);
+        graph.putResourceType(sample, ResourceType.DataType.STRING);
+        graph.commit();
+
+        for(int i = 0; i < 10; i ++) {
+            futures.add(pool.submit(() -> {
+                try {
+                    MindmapsGraph innerGraph = Mindmaps.factory().getGraphBatchLoading(keyspace);
+                    innerGraph.putResource(value, innerGraph.getResourceType(sample));
+                    innerGraph.commit();
+                } catch (MindmapsValidationException e) {
+                    e.printStackTrace();
+                } catch (IllegalArgumentException ignored) {
+                }
+            }));
+        }
+
+        futures.forEach(f -> {
+            try {
+                f.get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+        });
+
+        //Check duplicates have been created
+        graph = Mindmaps.factory().getGraphBatchLoading(keyspace);
+        Collection<Resource<Object>> resources = graph.getResourceType(sample).instances();
+
+        if(resources.size() > 1) {
+            waitForCache(false, keyspace, 2);
+            //Now fix everything
+            backgroundTasks.forcePostprocessing();
+
+            //Check it's fixed
+            graph.rollback();
+            assertEquals(1, graph.getResourceType(sample).instances().size());
+        }
+    }
+
+    private void waitForCache(boolean isCasting, String keyspace, int value) throws InterruptedException {
+        boolean flag = true;
+        while(flag){
+            if(isCasting){
+                if(cache.getCastingJobs().get(keyspace).size() < value){
+                    Thread.sleep(1000);
+                } else{
+                    flag = false;
+                }
+            } else {
+                if(cache.getResourceJobs().get(keyspace).size() < value){
+                    Thread.sleep(1000);
+                } else {
+                    flag = false;
+                }
+            }
+        }
     }
 }

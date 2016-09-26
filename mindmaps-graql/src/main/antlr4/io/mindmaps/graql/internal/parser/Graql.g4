@@ -10,24 +10,21 @@ deleteEOF      : deleteQuery EOF ;
 aggregateEOF   : aggregateQuery EOF ;
 computeEOF     : computeQuery EOF ;
 
-matchQuery     : 'match' patterns modifiers ;
-askQuery       : matchQuery 'ask' ;
-insertQuery    : matchQuery? 'insert' insertPatterns ;
-deleteQuery    : matchQuery 'delete' deletePatterns ;
-aggregateQuery : matchQuery 'aggregate' aggregate ;
-computeQuery   : 'compute' id ('in' subgraph)? ;
+matchQuery     : 'match' patterns                                 # matchBase
+               | matchQuery 'select' VARIABLE (',' VARIABLE)* ';' # matchSelect
+               | matchQuery 'limit' INTEGER                   ';' # matchLimit
+               | matchQuery 'offset' INTEGER                  ';' # matchOffset
+               | matchQuery 'distinct'                        ';' # matchDistinct
+               | matchQuery 'order' 'by' VARIABLE ORDER?      ';' # matchOrderBy
+               ;
+
+askQuery       : matchQuery 'ask' ';' ;
+insertQuery    : matchQuery? 'insert' varPatterns ;
+deleteQuery    : matchQuery 'delete' varPatterns ;
+aggregateQuery : matchQuery 'aggregate' aggregate ';' ;
+computeQuery   : 'compute' id ('in' subgraph)? ';' ;
 
 subgraph       : id (',' id) * ;
-
-selectors      : selector (',' selector)* ;
-selector       : VARIABLE ('(' (getter ','?)* ')')? ;
-getter         : 'isa'      # getterIsa
-               | 'id'       # getterId
-               | 'value'    # getterValue
-               | 'has' id   # getterHas
-               | 'lhs'      # getterLhs
-               | 'rhs'      # getterRhs
-               ;
 
 aggregate      : id argument*                     # customAgg
                | '(' namedAgg (',' namedAgg)* ')' # selectAgg
@@ -37,76 +34,33 @@ argument       : VARIABLE  # variableArgument
                ;
 namedAgg       : aggregate 'as' id ;
 
-patterns       : pattern (';' pattern)* ';'? ;
-pattern        : variable? property (','? property)*  # varPattern
-               | pattern 'or' pattern                 # orPattern
-               | '{' patterns '}'                     # andPattern
+patterns       : (pattern ';')+ ;
+pattern        : varPattern                    # varPatternCase
+               | pattern 'or' pattern          # orPattern
+               | '{' patterns '}'              # andPattern
                ;
 
-property       : edge
-               | propId
-               | propValFlag
-               | propValPred
-               | propLhs
-               | propRhs
-               | propHasFlag
-               | propHasPred
-               | propResource
-               | propRel
-               | isAbstract
-               | propDatatype
+varPatterns    : (varPattern ';')+ ;
+varPattern     : variable | variable? property (','? property)* ;
+
+property       : 'isa' variable                   # isa
+               | 'ako' variable                   # ako
+               | 'has-role' variable              # hasRole
+               | 'plays-role' variable            # playsRole
+               | 'has-scope' variable             # hasScope
+               | 'id' STRING                      # propId
+               | 'value' predicate?               # propValue
+               | 'lhs' '{' query '}'              # propLhs
+               | 'rhs' '{' query '}'              # propRhs
+               | 'has' id (predicate | VARIABLE)? # propHas
+               | 'has-resource' variable          # propResource
+               | '(' casting (',' casting)* ')'   # propRel
+               | 'is-abstract'                    # isAbstract
+               | 'datatype' DATATYPE              # propDatatype
+               | 'regex' REGEX                    # propRegex
                ;
 
-insertPatterns : insertPattern (';' insertPattern)* ';'? ;
-insertPattern  : variable? insert (','? insert)* ;
-insert         : edge
-               | propId
-               | propVal
-               | propLhs
-               | propRhs
-               | insertRel
-               | propHas
-               | propResource
-               | isAbstract
-               | propDatatype
-               ;
-
-deletePatterns : deletePattern (';' deletePattern)* ';'? ;
-deletePattern  : VARIABLE (delete ','?)* delete? ;
-delete         : edge | propHasFlag | propHas ;
-
-propId         : 'id' STRING ;
-
-propValFlag    : 'value' ;
-propVal        : 'value' value ;
-propValPred    : 'value' predicate ;
-
-propLhs        : 'lhs' '{' query '}' ;
-propRhs        : 'rhs' '{' query '}' ;
-
-propHasFlag    : 'has' id ;
-propHas        : 'has' id value ;
-propHasPred    : 'has' id predicate ;
-
-propResource   : 'has-resource' variable ;
-
-propDatatype   : 'datatype' DATATYPE ;
-
-propRel        : '(' roleOpt (',' roleOpt)* ')' ;
-insertRel      : '(' roleplayerRole (',' roleplayerRole)* ')' ;
-
-roleOpt        : roleplayerRole | roleplayerOnly ;
-roleplayerRole : variable variable ;
-roleplayerOnly : variable ;
-
-isAbstract     : 'is-abstract' ;
-
-edge           : 'isa' variable        # isa
-               | 'ako' variable        # ako
-               | 'has-role' variable   # hasRole
-               | 'plays-role' variable # playsRole
-               | 'has-scope' variable  # hasScope
-               ;
+casting        : (variable ':')? variable ;
 
 variable       : id | VARIABLE ;
 
@@ -126,14 +80,6 @@ value          : STRING  # valueString
                | INTEGER # valueInteger
                | REAL    # valueReal
                | BOOLEAN # valueBoolean
-               ;
-
-modifiers      : (','? modifier)* ;
-modifier       : 'select' selectors                               # modifierSelect
-               | 'limit' INTEGER                                  # modifierLimit
-               | 'offset' INTEGER                                 # modifierOffset
-               | 'distinct'                                       # modifierDistinct
-               | 'order' 'by' VARIABLE ('(' 'has' id ')')? ORDER? # modifierOrderBy
                ;
 
 // This rule is used for parsing streams of patterns separated by semicolons

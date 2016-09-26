@@ -21,8 +21,9 @@ package io.mindmaps.graql.parser;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
+import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.Pattern;
-import io.mindmaps.graql.QueryParser;
+import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.admin.VarAdmin;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -33,14 +34,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
-import java.util.List;
 
+import static io.mindmaps.graql.Graql.parsePatterns;
 import static org.junit.Assert.*;
 
 public class QueryParserFragmentsTest {
 
     private static MindmapsGraph mindmapsGraph;
-    private QueryParser qp;
+    private QueryBuilder qb;
 
     @BeforeClass
     public static void setUpClass() {
@@ -50,30 +51,14 @@ public class QueryParserFragmentsTest {
 
     @Before
     public void setUp() {
-        qp = QueryParser.create(mindmapsGraph);
-    }
-
-    @Test
-    public void testParsePattern() {
-        List<Pattern> patterns = qp.parsePatterns("$x isa person; ($x, $y) isa has-cast;");
-
-        assertTrue(patterns.get(0).admin().isVar());
-        assertTrue(patterns.get(1).admin().isVar());
-
-        VarAdmin var1 = patterns.get(0).admin().asVar();
-        VarAdmin var2 = patterns.get(1).admin().asVar();
-
-        assertEquals("$x isa person", var1.toString());
-
-        assertTrue(var2.isRelation());
-        assertEquals(2, var2.getCastings().size());
+        qb = Graql.withGraph(mindmapsGraph);
     }
 
     @Test
     public void testParseInfinitePatternsStream() throws IOException {
         InputStream stream = new InfiniteStream("$x isa person; ($x, $y) isa has-cast;\n");
 
-        Iterator<Pattern> patterns = qp.parsePatternsStream(stream).iterator();
+        Iterator<Pattern> patterns = parsePatterns(stream).iterator();
 
         VarAdmin var1 = patterns.next().admin().asVar();
         assertEquals("$x isa person", var1.toString());
@@ -93,7 +78,7 @@ public class QueryParserFragmentsTest {
         String query = "$x isa person; ($x, $y) isa has-cast;";
         InputStream stream = new ByteArrayInputStream(query.getBytes(StandardCharsets.UTF_8));
 
-        Iterator<Pattern> patterns = qp.parsePatternsStream(stream).iterator();
+        Iterator<Pattern> patterns = qb.parsePatterns(stream).iterator();
 
         VarAdmin var1 = patterns.next().admin().asVar();
         assertEquals("$x isa person", var1.toString());

@@ -82,7 +82,7 @@ public class BlockingLoader extends Loader {
         try {
             executor.submit(() -> loadData(graphName, deepCopy));
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.error("Exception ",e);
             transactionsSemaphore.release();
         }
     }
@@ -111,6 +111,7 @@ public class BlockingLoader extends Loader {
                     insert(batch).withGraph(graph).execute();
                     graph.commit();
                     cache.addJobCasting(graphName, graph.getModifiedCastingIds());
+                    cache.addJobResource(graphName, graph.getModifiedResourceIds());
                     return;
 
                 } catch (MindmapsValidationException e) {
@@ -130,12 +131,10 @@ public class BlockingLoader extends Loader {
 
     private void handleError(Exception e, int i) {
         LOG.error("Caught exception ", e);
-        e.printStackTrace();
-
         try {
             Thread.sleep((i + 2) * 1000);
         } catch (InterruptedException e1) {
-            e1.printStackTrace();
+            LOG.error("Caught exception ", e1);
         }
     }
 }

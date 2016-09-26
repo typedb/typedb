@@ -18,15 +18,13 @@
 
 package io.mindmaps.engine.postprocessing;
 
-import io.mindmaps.MindmapsGraph;
+import io.mindmaps.engine.loader.RESTLoader;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
-import io.mindmaps.factory.MindmapsClient;
-import io.mindmaps.engine.loader.RESTLoader;
-import org.apache.tinkerpop.shaded.minlog.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.*;
@@ -35,7 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class BackgroundTasks {
     private static long timeLapse;
     private static final String CASTING_STAGE = "Scanning for duplicate castings . . .";
-    private static final String RELATION_STAGE = "Scanning for duplicate relations . . .";
+    private static final String RESOURCE_STAGE = "Scanning for duplicate resources . . .";
 
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
     private final Logger LOG = LoggerFactory.getLogger(BackgroundTasks.class);
@@ -95,24 +93,40 @@ public class BackgroundTasks {
         currentStage = CASTING_STAGE;
         LOG.info(currentStage);
         performCastingFix();
+        waitToContinue();
 
+        currentStage = RESOURCE_STAGE;
+        LOG.info(currentStage);
+        performResourceFix();
         waitToContinue();
     }
 
     private void performCastingFix() {
         cache.getCastingJobs().entrySet().parallelStream().forEach(entry -> {
 
-            MindmapsGraph graph;
             try {
-                graph = GraphFactory.getInstance().getGraph(entry.getKey());
-                for (String castingId : entry.getValue()) {
-                    futures.add(postpool.submit(() -> ConceptFixer.checkCasting(graph, castingId)));
+                Set<String> castingIds = new HashSet<>();
+                castingIds.addAll(entry.getValue());
+
+                for (String castingId : castingIds) {
+                    futures.add(postpool.submit(() ->
+                            ConceptFixer.checkCasting(cache, GraphFactory.getInstance().getGraphBatchLoading(entry.getKey()), castingId)));
                 }
             } catch (RuntimeException e) {
-                LOG.error("Error while trying to perform post processing on graph [" + entry.getKey() + "]");
-                e.printStackTrace();
+                LOG.error("Error while trying to perform post processing on graph [" + entry.getKey() + "]",e);
             }
 
+        });
+    }
+
+    private void performResourceFix(){
+        cache.getResourceJobs().entrySet().parallelStream().forEach(entry -> {
+            try {
+                futures.add(postpool.submit(() ->
+                        ConceptFixer.checkResources(cache, GraphFactory.getInstance().getGraphBatchLoading(entry.getKey()), entry.getValue())));
+            } catch (RuntimeException e) {
+                LOG.error("Error while trying to perform post processing on graph [" + entry.getKey() + "]",e);
+            }
         });
     }
 
@@ -139,6 +153,7 @@ public class BackgroundTasks {
         while (isRunning.get()) {
             LOG.info("--------------------Current Status of Post Processing--------------------");
             dumpStatsType("Casting", cache.getCastingJobs());
+            dumpStatsType("Resources", cache.getResourceJobs());
             LOG.info("Save in Progress: " + cache.isSaveInProgress());
             LOG.info("Current Stage: " + currentStage);
             LOG.info("-------------------------------------------------------------------------");
@@ -146,7 +161,7 @@ public class BackgroundTasks {
             try {
                 Thread.sleep(30000);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                LOG.error("Exception",e);
             }
         }
     }
@@ -155,7 +170,7 @@ public class BackgroundTasks {
         long total = 0L;
         LOG.info(typeName + " Jobs:");
         for (Map.Entry<String, Set<String>> entry : jobs.entrySet()) {
-            Log.info("        Post processing step [" + typeName + " for Graph [" + entry.getKey() + "] has jobs : " + entry.getValue().size());
+            LOG.info("        Post processing step [" + typeName + " for Graph [" + entry.getKey() + "] has jobs : " + entry.getValue().size());
             total += entry.getValue().size();
         }
         LOG.info("    Total " + typeName + " Jobs: " + total);

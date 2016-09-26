@@ -26,7 +26,6 @@ import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.graql.QueryParser;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -36,14 +35,12 @@ import static org.junit.Assert.assertEquals;
 public class QueryToStringTest {
 
     private QueryBuilder qb;
-    private QueryParser qp;
 
     @Before
     public void setUp() {
         MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
         qb = withGraph(mindmapsGraph);
-        qp = QueryParser.create(mindmapsGraph);
     }
 
     @Test
@@ -59,8 +56,9 @@ public class QueryToStringTest {
                 or(
                         var("y").isa("person"),
                         var("y").isa("genre").value(neq("crime"))
-                )
-        ).select("x", "y").orderBy("y").limit(8).offset(4);
+                ),
+                var("y").has("name", var("n"))
+        ).select("x", "y").orderBy("n").limit(8).offset(4);
         assertValidToString(query);
     }
 
@@ -86,7 +84,7 @@ public class QueryToStringTest {
 
     @Test
     public void testQueryWithHasScopeToString() {
-        assertEquals("match $x has-scope $y", qb.match(var("x").hasScope(var("y"))).toString());
+        assertEquals("match $x has-scope $y;", qb.match(var("x").hasScope(var("y"))).toString());
     }
 
     @Test
@@ -101,12 +99,12 @@ public class QueryToStringTest {
 
     @Test
     public void testQueryWithRhsToString() {
-        assertValidToString(qb.match(var("x").rhs("match $x isa movie delete $x")));
+        assertValidToString(qb.match(var("x").rhs("match $x isa movie; delete $x;")));
     }
 
     @Test
     public void testQueryWithLhsToString() {
-        assertValidToString(qb.match(var("x").lhs("match $x isa person ask")));
+        assertValidToString(qb.match(var("x").lhs("match $x isa person; ask;")));
     }
 
     @Test
@@ -122,7 +120,7 @@ public class QueryToStringTest {
     @Test
     public void testQuoteIds() {
         assertEquals(
-                "match $a (\"hello\\tworld\")",
+                "match $a (\"hello\\tworld\");",
                 match(var("a").rel(id("hello\tworld"))).toString()
         );
     }
@@ -130,7 +128,7 @@ public class QueryToStringTest {
     @Test
     public void testQuoteIdsNumbers() {
         assertEquals(
-                "match $a (\"1hi\")",
+                "match $a (\"1hi\");",
                 match(var("a").rel(id("1hi"))).toString()
         );
     }
@@ -142,13 +140,13 @@ public class QueryToStringTest {
 
     @Test
     public void testComputeQueryToString() {
-        assertEquals("compute count", qb.compute("count").toString());
+        assertEquals("compute count;", qb.compute("count").toString());
     }
 
     @Test
     public void testComputeQuerySubgraphToString() {
         ComputeQuery query = qb.compute("degrees", Sets.newHashSet("movie", "person"));
-        assertEquals("compute degrees in movie, person", query.toString());
+        assertEquals("compute degrees in movie, person;", query.toString());
     }
 
     @Test(expected=UnsupportedOperationException.class)
@@ -158,6 +156,6 @@ public class QueryToStringTest {
     }
 
     private void assertValidToString(MatchQuery query) {
-        QueryParserTest.assertQueriesEqual(query, qp.parseMatchQuery(query.toString()));
+        QueryParserTest.assertQueriesEqual(query, qb.parseMatch(query.toString()));
     }
 }

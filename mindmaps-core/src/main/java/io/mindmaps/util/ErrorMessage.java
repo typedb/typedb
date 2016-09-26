@@ -47,6 +47,8 @@ public enum ErrorMessage {
     IMMUTABLE_VALUE("The value [%s] of concept [%s] cannot be changed to [%s] due to the property [%s] being immutable"),
     NULL_VALUE("The value of [%s] cannot be set to [null]"),
     CANNOT_LOAD_EXAMPLE("Cannot load example to this graph. Please try a new empty graph."),
+    META_TYPE_IMMUTABLE("The meta type [%s] is immutable"),
+    UNSUPPORTED_GRAPH("The graph backend of [%s] does not support an [%s] operation."),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
@@ -123,6 +125,7 @@ public enum ErrorMessage {
 
     //--------------------------------------------- Engine Errors -----------------------------------------------
     NO_CONFIG_FILE("Cannot find config file [%s]"),
+    NO_GRAQL_FILE("Cannot find Graql file [%s]"),
     ILLEGAL_ARGUMENT_EXCEPTION("Illegal argument exception caused by [%s]"),
     CONCEPT_ID_NOT_FOUND("ID [%s] not found in the graph."),
     FAILED_TRANSACTION("Could not commit to graph after %s retries"),
@@ -140,7 +143,7 @@ public enum ErrorMessage {
 
 
     //--------------------------------------------- Reasoner Errors -----------------------------------------------
-    NON_HORN_RULE("The specified rule %s is not a Horn rule"),
+    NON_HORN_RULE("The specified rule [%s] is not a Horn rule"),
     PARENT_MISSING("Attempted operation on atom %s that does not have a parent"),
     PATTERN_NOT_VAR("The pattern [%s] is not a var"),
     MULTIPLE_RESOURCES("Multiple resource types found during data extraction in atom [%s]"),
@@ -151,11 +154,14 @@ public enum ErrorMessage {
     NON_ATOMIC_QUERY("Addressed query is not atomic"),
     MULTI_VALUE_VAR("Multi value variable found [$s] on query construction"),
     NO_ATOMS_SELECTED("No atoms were selected from query [$s]"),
+    MATERIALIZATION_ERROR("Not enough information available to materialize [$s]"),
+    ANSWER_ERROR("Answer method called on an instance with no answers"),
 
     //--------------------------------------------- Analytics Errors -----------------------------------------------
     ONTOLOGY_MUTATION("The mutations to the ontology have not been successfully committed. Validation Errors: [%s]"),
     BULK_PERSIST("The bulk persist operation on instances of concept type [%s] has failed with validation error: [%s]"),
-    CLONE_FAILED("The vertex program could not be cloned, check implementation of the clone method in class: [%s]. Stacktrace: [%s]");
+    CLONE_FAILED("The vertex program could not be cloned, check implementation of the clone method in class: [%s]. Stacktrace: [%s]"),
+    CANNOT_DELETE_AND_ADD("Both the putValue and cleanup methods have been called in the same iteration. This can corrupt the graph.");
 
     private final String message;
 

@@ -26,36 +26,41 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
 
+import static io.mindmaps.graql.Graql.var;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 /**
  * ANTLR visitor class for parsing a query
  */
-public class QueryVisitor extends GraqlBaseVisitor {
+// This class performs a lot of unchecked casts, because ANTLR's visit methods only return 'object'
+@SuppressWarnings("unchecked")
+class QueryVisitor extends GraqlBaseVisitor {
 
     private final QueryBuilder queryBuilder;
-    private final Stack<Var> patterns = new Stack<>();
-    private final Map<String, List<Getter>> getters = new HashMap<>();
     private final ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods;
 
-    public QueryVisitor(
+    QueryVisitor(
             ImmutableMap<String, Function<List<Object>, Aggregate>> aggregateMethods, QueryBuilder queryBuilder) {
         this.aggregateMethods = aggregateMethods;
         this.queryBuilder = queryBuilder;
     }
 
     @Override
-    public Object visitQueryEOF(GraqlParser.QueryEOFContext ctx) {
-        return visitQuery(ctx.query());
+    public Query<?> visitQueryEOF(GraqlParser.QueryEOFContext ctx) {
+        return (Query<?>) visitQuery(ctx.query());
     }
 
     @Override
-    public MatchQueryPrinter visitMatchEOF(GraqlParser.MatchEOFContext ctx) {
+    public MatchQuery visitMatchEOF(GraqlParser.MatchEOFContext ctx) {
         return visitMatchQuery(ctx.matchQuery());
     }
 
@@ -75,36 +80,66 @@ public class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Object visitComputeEOF(GraqlParser.ComputeEOFContext ctx) {
+    public ComputeQuery visitComputeEOF(GraqlParser.ComputeEOFContext ctx) {
         return visitComputeQuery(ctx.computeQuery());
     }
 
     @Override
-    public Object visitAggregateEOF(GraqlParser.AggregateEOFContext ctx) {
+    public MatchQuery visitMatchBase(GraqlParser.MatchBaseContext ctx) {
+        Collection<Pattern> patterns = visitPatterns(ctx.patterns());
+        return queryBuilder.match(patterns);
+    }
+
+    @Override
+    public MatchQuery visitMatchSelect(GraqlParser.MatchSelectContext ctx) {
+        Set<String> names = ctx.VARIABLE().stream().map(this::getVariable).collect(toSet());
+        return visitMatchQuery(ctx.matchQuery()).select(names);
+    }
+
+    @Override
+    public MatchQuery visitMatchOffset(GraqlParser.MatchOffsetContext ctx) {
+        return visitMatchQuery(ctx.matchQuery()).offset(getInteger(ctx.INTEGER()));
+    }
+
+    @Override
+    public Object visitMatchOrderBy(GraqlParser.MatchOrderByContext ctx) {
+        MatchQuery matchQuery = visitMatchQuery(ctx.matchQuery());
+
+        // decide which ordering method to use
+        String var = getVariable(ctx.VARIABLE());
+        if (ctx.ORDER() != null) {
+            return matchQuery.orderBy(var, getOrder(ctx.ORDER()));
+        } else {
+            return matchQuery.orderBy(var);
+        }
+    }
+
+    @Override
+    public MatchQuery visitMatchLimit(GraqlParser.MatchLimitContext ctx) {
+        return visitMatchQuery(ctx.matchQuery()).limit(getInteger(ctx.INTEGER()));
+    }
+
+    @Override
+    public Object visitMatchDistinct(GraqlParser.MatchDistinctContext ctx) {
+        return visitMatchQuery(ctx.matchQuery()).distinct();
+    }
+
+    @Override
+    public AggregateQuery<?> visitAggregateEOF(GraqlParser.AggregateEOFContext ctx) {
         return visitAggregateQuery(ctx.aggregateQuery());
     }
 
     @Override
-    public MatchQueryPrinter visitMatchQuery(GraqlParser.MatchQueryContext ctx) {
-        Collection<Pattern> patterns = visitPatterns(ctx.patterns());
-        MatchQuery matchQuery = queryBuilder.match(patterns);
-        MatchQuery matchQueryModified = visitModifiers(ctx.modifiers()).apply(matchQuery);
-        return new MatchQueryPrinter(matchQueryModified, getters);
-    }
-
-    @Override
     public AskQuery visitAskQuery(GraqlParser.AskQueryContext ctx) {
-        MatchQuery matchQuery = visitMatchQuery(ctx.matchQuery()).getMatchQuery();
-        return matchQuery.ask();
+        return visitMatchQuery(ctx.matchQuery()).ask();
     }
 
     @Override
     public InsertQuery visitInsertQuery(GraqlParser.InsertQueryContext ctx) {
-        Collection<Var> vars = visitInsertPatterns(ctx.insertPatterns());
+        Collection<Var> vars = visitVarPatterns(ctx.varPatterns());
 
         if (ctx.matchQuery() != null) {
-            MatchQuery matchQuery = visitMatchQuery(ctx.matchQuery()).getMatchQuery();
-            return matchQuery.insert(vars);
+            return visitMatchQuery(ctx.matchQuery()).insert(vars);
         } else {
             return queryBuilder.insert(vars);
         }
@@ -113,9 +148,8 @@ public class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public DeleteQuery visitDeleteQuery(GraqlParser.DeleteQueryContext ctx) {
-        Collection<Var> getters = visitDeletePatterns(ctx.deletePatterns());
-        MatchQuery matchQuery = visitMatchQuery(ctx.matchQuery()).getMatchQuery();
-        return matchQuery.delete(getters);
+        Collection<Var> getters = visitVarPatterns(ctx.varPatterns());
+        return visitMatchQuery(ctx.matchQuery()).delete(getters);
     }
 
     @Override
@@ -137,10 +171,9 @@ public class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Object visitAggregateQuery(GraqlParser.AggregateQueryContext ctx) {
+    public AggregateQuery<?> visitAggregateQuery(GraqlParser.AggregateQueryContext ctx) {
         Aggregate aggregate = visitAggregate(ctx.aggregate());
-        MatchQuery matchQuery = visitMatchQuery(ctx.matchQuery()).getMatchQuery();
-        return matchQuery.aggregate(aggregate);
+        return visitMatchQuery(ctx.matchQuery()).aggregate(aggregate);
     }
 
     @Override
@@ -158,7 +191,6 @@ public class QueryVisitor extends GraqlBaseVisitor {
         Set aggregates = ctx.namedAgg().stream().map(this::visitNamedAgg).collect(toSet());
 
         // We can't handle cases when the aggregate types are wrong, because the user can provide custom aggregates
-        //noinspection unchecked
         return Graql.select(aggregates);
     }
 
@@ -179,52 +211,6 @@ public class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public UnaryOperator<MatchQuery> visitSelectors(GraqlParser.SelectorsContext ctx) {
-        getters.clear();
-        Set<String> names = ctx.selector().stream().map(this::visitSelector).collect(toSet());
-        return matchQuery -> matchQuery.select(names);
-    }
-
-    @Override
-    public String visitSelector(GraqlParser.SelectorContext ctx) {
-        String variable = getVariable(ctx.VARIABLE());
-        List<Getter> getters = ctx.getter().stream().map(this::visitGetter).distinct().collect(toList());
-        this.getters.put(variable, getters);
-
-        return variable;
-    }
-
-    @Override
-    public Getter visitGetterIsa(GraqlParser.GetterIsaContext ctx) {
-        return Getter.isa();
-    }
-
-    @Override
-    public Getter visitGetterId(GraqlParser.GetterIdContext ctx) {
-        return Getter.id();
-    }
-
-    @Override
-    public Getter visitGetterValue(GraqlParser.GetterValueContext ctx) {
-        return Getter.value();
-    }
-
-    @Override
-    public Getter visitGetterHas(GraqlParser.GetterHasContext ctx) {
-        return Getter.has(visitId(ctx.id()));
-    }
-
-    @Override
-    public Getter visitGetterLhs(GraqlParser.GetterLhsContext ctx) {
-        return Getter.lhs();
-    }
-
-    @Override
-    public Getter visitGetterRhs(GraqlParser.GetterRhsContext ctx) {
-        return Getter.rhs();
-    }
-
-    @Override
     public List<Pattern> visitPatterns(GraqlParser.PatternsContext ctx) {
         return ctx.pattern().stream()
                 .map(this::visitPattern)
@@ -237,160 +223,115 @@ public class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
+    public List<Var> visitVarPatterns(GraqlParser.VarPatternsContext ctx) {
+        return ctx.varPattern().stream().map(this::visitVarPattern).collect(toList());
+    }
+
+    @Override
     public Pattern visitAndPattern(GraqlParser.AndPatternContext ctx) {
         return Graql.and(visitPatterns(ctx.patterns()));
     }
 
     @Override
     public Var visitVarPattern(GraqlParser.VarPatternContext ctx) {
-        Var pattern = visitVariable(ctx.variable());
-        patterns.push(pattern);
-        ctx.property().forEach(this::visit);
-        return patterns.pop();
+        Var var = visitVariable(ctx.variable());
+        return getVarProperties(ctx.property()).apply(var);
     }
 
     @Override
-    public Void visitPropId(GraqlParser.PropIdContext ctx) {
-        patterns.peek().id(getString(ctx.STRING()));
-        return null;
+    public UnaryOperator<Var> visitPropId(GraqlParser.PropIdContext ctx) {
+        return var -> var.id(getString(ctx.STRING()));
     }
 
     @Override
-    public Void visitPropValFlag(GraqlParser.PropValFlagContext ctx) {
-        patterns.peek().value();
-        return null;
+    public UnaryOperator<Var> visitPropValue(GraqlParser.PropValueContext ctx) {
+        if (ctx.predicate() != null) {
+            return var -> var.value(visitPredicate(ctx.predicate()));
+        } else {
+            return Var::value;
+        }
     }
 
     @Override
-    public Void visitPropVal(GraqlParser.PropValContext ctx) {
-        patterns.peek().value(visitValue(ctx.value()));
-        return null;
+    public UnaryOperator<Var> visitPropLhs(GraqlParser.PropLhsContext ctx) {
+        return var -> var.lhs(getOriginalText(ctx.query()));
     }
 
     @Override
-    public Void visitPropValPred(GraqlParser.PropValPredContext ctx) {
-        patterns.peek().value(visitPredicate(ctx.predicate()));
-        return null;
+    public UnaryOperator<Var> visitPropRhs(GraqlParser.PropRhsContext ctx) {
+        return var -> var.rhs(getOriginalText(ctx.query()));
     }
 
     @Override
-    public Void visitPropLhs(GraqlParser.PropLhsContext ctx) {
-        patterns.peek().lhs(getOriginalText(ctx.query()));
-        return null;
+    public UnaryOperator<Var> visitPropHas(GraqlParser.PropHasContext ctx) {
+        String type = visitId(ctx.id());
+
+        if (ctx.predicate() != null) {
+            return var -> var.has(type, visitPredicate(ctx.predicate()));
+        } else if (ctx.VARIABLE() != null) {
+            return var -> var.has(type, var(getVariable(ctx.VARIABLE())));
+        } else {
+            return var -> var.has(type);
+        }
     }
 
     @Override
-    public Void visitPropRhs(GraqlParser.PropRhsContext ctx) {
-        patterns.peek().rhs(getOriginalText(ctx.query()));
-        return null;
+    public UnaryOperator<Var> visitPropResource(GraqlParser.PropResourceContext ctx) {
+        return var -> var.hasResource(visitVariable(ctx.variable()));
     }
 
     @Override
-    public Void visitPropHasFlag(GraqlParser.PropHasFlagContext ctx) {
-        patterns.peek().has(visitId(ctx.id()));
-        return null;
+    public UnaryOperator<Var> visitIsAbstract(GraqlParser.IsAbstractContext ctx) {
+        return Var::isAbstract;
     }
 
     @Override
-    public Void visitPropHas(GraqlParser.PropHasContext ctx) {
-        patterns.peek().has(visitId(ctx.id()), visitValue(ctx.value()));
-        return null;
+    public UnaryOperator<Var> visitPropDatatype(GraqlParser.PropDatatypeContext ctx) {
+        return var -> var.datatype(getDatatype(ctx.DATATYPE()));
     }
 
     @Override
-    public Void visitPropHasPred(GraqlParser.PropHasPredContext ctx) {
-        patterns.peek().has(visitId(ctx.id()), visitPredicate(ctx.predicate()));
-        return null;
+    public UnaryOperator<Var> visitPropRegex(GraqlParser.PropRegexContext ctx) {
+        return var -> var.regex(getRegex(ctx.REGEX()));
     }
 
     @Override
-    public Object visitPropResource(GraqlParser.PropResourceContext ctx) {
-        patterns.peek().hasResource(visitVariable(ctx.variable()));
-        return null;
+    public UnaryOperator<Var> visitPropRel(GraqlParser.PropRelContext ctx) {
+        return getVarProperties(ctx.casting());
     }
 
     @Override
-    public Void visitIsAbstract(GraqlParser.IsAbstractContext ctx) {
-        patterns.peek().isAbstract();
-        return null;
+    public UnaryOperator<Var> visitCasting(GraqlParser.CastingContext ctx) {
+        if (ctx.variable().size() == 1) {
+            return var -> var.rel(visitVariable(ctx.variable(0)));
+        } else {
+            return var -> var.rel(visitVariable(ctx.variable(0)), visitVariable(ctx.variable(1)));
+        }
     }
 
     @Override
-    public Void visitPropDatatype(GraqlParser.PropDatatypeContext ctx) {
-        patterns.peek().datatype(getDatatype(ctx.DATATYPE()));
-        return null;
+    public UnaryOperator<Var> visitIsa(GraqlParser.IsaContext ctx) {
+        return var -> var.isa(visitVariable(ctx.variable()));
     }
 
     @Override
-    public Collection<Var> visitInsertPatterns(GraqlParser.InsertPatternsContext ctx) {
-        return ctx.insertPattern().stream()
-                .map(this::visitInsertPattern)
-                .collect(toList());
+    public UnaryOperator<Var> visitAko(GraqlParser.AkoContext ctx) {
+        return var -> var.ako(visitVariable(ctx.variable()));
     }
 
     @Override
-    public Var visitInsertPattern(GraqlParser.InsertPatternContext ctx) {
-        patterns.push(visitVariable(ctx.variable()));
-        ctx.insert().forEach(this::visit);
-        return patterns.pop();
+    public UnaryOperator<Var> visitHasRole(GraqlParser.HasRoleContext ctx) {
+        return var -> var.hasRole(visitVariable(ctx.variable()));
     }
 
     @Override
-    public Collection<Var> visitDeletePatterns(GraqlParser.DeletePatternsContext ctx) {
-        return ctx.deletePattern().stream()
-                .map(this::visitDeletePattern)
-                .collect(toList());
+    public UnaryOperator<Var> visitPlaysRole(GraqlParser.PlaysRoleContext ctx) {
+        return var -> var.playsRole(visitVariable(ctx.variable()));
     }
 
     @Override
-    public Var visitDeletePattern(GraqlParser.DeletePatternContext ctx) {
-        Var var = buildVar(ctx.VARIABLE());
-        patterns.push(var);
-        ctx.delete().forEach(this::visit);
-        return patterns.pop();
-    }
-
-    @Override
-    public Void visitRoleplayerRole(GraqlParser.RoleplayerRoleContext ctx) {
-        patterns.peek().rel(visitVariable(ctx.variable(0)), visitVariable(ctx.variable(1)));
-        return null;
-    }
-
-    @Override
-    public Void visitRoleplayerOnly(GraqlParser.RoleplayerOnlyContext ctx) {
-        patterns.peek().rel(visitVariable(ctx.variable()));
-        return null;
-    }
-
-
-    @Override
-    public Void visitIsa(GraqlParser.IsaContext ctx) {
-        patterns.peek().isa(visitVariable(ctx.variable()));
-        return null;
-    }
-
-    @Override
-    public Void visitAko(GraqlParser.AkoContext ctx) {
-        patterns.peek().ako(visitVariable(ctx.variable()));
-        return null;
-    }
-
-    @Override
-    public Void visitHasRole(GraqlParser.HasRoleContext ctx) {
-        patterns.peek().hasRole(visitVariable(ctx.variable()));
-        return null;
-    }
-
-    @Override
-    public Void visitPlaysRole(GraqlParser.PlaysRoleContext ctx) {
-        patterns.peek().playsRole(visitVariable(ctx.variable()));
-        return null;
-    }
-
-    @Override
-    public Void visitHasScope(GraqlParser.HasScopeContext ctx) {
-        patterns.peek().hasScope(visitVariable(ctx.variable()));
-        return null;
+    public UnaryOperator<Var> visitHasScope(GraqlParser.HasScopeContext ctx) {
+        return var -> var.hasScope(visitVariable(ctx.variable()));
     }
 
     @Override
@@ -405,7 +346,7 @@ public class QueryVisitor extends GraqlBaseVisitor {
     @Override
     public Var visitVariable(GraqlParser.VariableContext ctx) {
         if (ctx == null) {
-            return Graql.var();
+            return var();
         } else if (ctx.id() != null) {
             return Graql.id(visitId(ctx.id()));
         } else {
@@ -489,52 +430,12 @@ public class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public UnaryOperator<MatchQuery> visitModifiers(GraqlParser.ModifiersContext ctx) {
-        return ctx.modifier().stream().map(this::visitModifier).reduce(UnaryOperator.identity(), this::compose);
-    }
-
-    @Override
-    public UnaryOperator<MatchQuery> visitModifierLimit(GraqlParser.ModifierLimitContext ctx) {
-        return matchQuery -> matchQuery.limit(getInteger(ctx.INTEGER()));
-    }
-
-    @Override
-    public UnaryOperator<MatchQuery> visitModifierOffset(GraqlParser.ModifierOffsetContext ctx) {
-        return matchQuery -> matchQuery.offset(getInteger(ctx.INTEGER()));
-    }
-
-    @Override
-    public UnaryOperator<MatchQuery> visitModifierDistinct(GraqlParser.ModifierDistinctContext ctx) {
-        return MatchQuery::distinct;
-    }
-
-    @Override
-    public UnaryOperator<MatchQuery> visitModifierOrderBy(GraqlParser.ModifierOrderByContext ctx) {
-        // decide which ordering method to use
-        String var = getVariable(ctx.VARIABLE());
-        if (ctx.id() != null) {
-            String type = visitId(ctx.id());
-            if (ctx.ORDER() != null) {
-                return matchQuery -> matchQuery.orderBy(var, type, getOrder(ctx.ORDER()));
-            } else {
-                return matchQuery -> matchQuery.orderBy(var, type);
-            }
-        } else {
-            if (ctx.ORDER() != null) {
-                return matchQuery -> matchQuery.orderBy(var, getOrder(ctx.ORDER()));
-            } else {
-                return matchQuery -> matchQuery.orderBy(var);
-            }
-        }
-    }
-
-    @Override
     public Pattern visitPatternSep(GraqlParser.PatternSepContext ctx) {
         return visitPattern(ctx.pattern());
     }
 
-    private Getter visitGetter(GraqlParser.GetterContext ctx) {
-        return (Getter) visit(ctx);
+    private MatchQuery visitMatchQuery(GraqlParser.MatchQueryContext ctx) {
+        return (MatchQuery) visit(ctx);
     }
 
     private Aggregate<?, ?> visitAggregate(GraqlParser.AggregateContext ctx) {
@@ -543,12 +444,6 @@ public class QueryVisitor extends GraqlBaseVisitor {
 
     private Pattern visitPattern(GraqlParser.PatternContext ctx) {
         return (Pattern) visit(ctx);
-    }
-
-    private UnaryOperator<MatchQuery> visitModifier(GraqlParser.ModifierContext ctx) {
-        // All modifiers return UnaryOperator<MatchQuery>
-        //noinspection unchecked
-        return (UnaryOperator<MatchQuery>) visit(ctx);
     }
 
     private ValuePredicate visitPredicate(GraqlParser.PredicateContext ctx) {
@@ -575,8 +470,22 @@ public class QueryVisitor extends GraqlBaseVisitor {
         return StringConverter.unescapeString(unquoted);
     }
 
+    /**
+     * Compose two functions together into a single function
+     */
     private <T> UnaryOperator<T> compose(UnaryOperator<T> before, UnaryOperator<T> after) {
         return x -> after.apply(before.apply(x));
+    }
+
+    /**
+     * Chain a stream of functions into a single function, which applies each one after the other
+     */
+    private <T> UnaryOperator<T> chainOperators(Stream<UnaryOperator<T>> operators) {
+        return operators.reduce(UnaryOperator.identity(), this::compose);
+    }
+
+    private UnaryOperator<Var> getVarProperties(List<? extends ParserRuleContext> contexts) {
+        return chainOperators(contexts.stream().map(ctx -> (UnaryOperator<Var>) visit(ctx)));
     }
 
     private long getInteger(TerminalNode integer) {
@@ -605,9 +514,9 @@ public class QueryVisitor extends GraqlBaseVisitor {
     private Var buildVar(TerminalNode variable) {
         Var var;
         if (variable != null) {
-            var = Graql.var(getVariable(variable));
+            var = var(getVariable(variable));
         } else {
-            var = Graql.var();
+            var = var();
         }
         return var;
     }

@@ -84,9 +84,9 @@ public class Query {
         // Because 'union' accepts an array, we can't use generics...
         //noinspection unchecked
         GraphTraversal<Vertex, Map<String, Vertex>> traversal =
-                graph.getTinkerTraversal().V().limit(1).union(collect);
+                graph.getTinkerTraversal().limit(1).union(collect);
 
-        order.ifPresent(o -> o.orderTraversal(graph, traversal));
+        order.ifPresent(o -> o.orderTraversal(traversal));
 
         String[] namesArray = names.toArray(new String[names.size()]);
 

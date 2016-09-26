@@ -16,7 +16,8 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.shell;import ch.qos.logback.classic.Level;
+package io.mindmaps.shell;
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import io.mindmaps.graql.GraqlShell;
 import org.junit.After;
@@ -24,7 +25,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.*;
-import java.util.Arrays;
 import java.util.Random;
 
 import static org.hamcrest.CoreMatchers.allOf;
@@ -110,7 +110,7 @@ public class GraqlShellTest {
 
     @Test
     public void testExecuteOption() throws IOException {
-        String result = testShell("", "-e", "match $x isa role-type ask");
+        String result = testShell("", "-e", "match $x isa role-type; ask;");
 
         // When using '-e', only results should be printed, no prompt or query
         assertThat(result, allOf(containsString("False"), not(containsString(">>>")), not(containsString("match"))));
@@ -127,14 +127,14 @@ public class GraqlShellTest {
 
     @Test
     public void testAskQuery() throws IOException {
-        String result = testShell("match $x isa relation-type ask\n");
+        String result = testShell("match $x isa relation-type; ask;\n");
         assertThat(result, containsString("False"));
     }
 
     @Test
     public void testInsertQuery() throws IOException {
         String result = testShell(
-                "match $x isa entity-type ask\ninsert my-type isa entity-type\nmatch $x isa entity-type ask\n"
+                "match $x isa entity-type; ask;\ninsert my-type isa entity-type;\nmatch $x isa entity-type; ask;\n"
         );
         assertThat(result, allOf(containsString("False"), containsString("True")));
     }
@@ -143,23 +143,18 @@ public class GraqlShellTest {
     public void testInsertOutput() throws IOException {
         String[] result = testShell("insert a-type isa entity-type; thingy isa a-type\n").split("\r\n?|\n");
 
-        // Expect ten lines output - four for the license, one for the query, four results and a new prompt
-        assertEquals(10, result.length);
+        // Expect six lines output - four for the license, one for the query, no results and a new prompt
+        assertEquals(6, result.length);
         assertEquals(">>> insert a-type isa entity-type; thingy isa a-type", result[4]);
-        assertEquals(">>> ", result[9]);
-
-        assertThat(
-                Arrays.toString(Arrays.copyOfRange(result, 5, 9)),
-                allOf(containsString("a-type"), containsString("entity-type"), containsString("thingy"))
-        );
+        assertEquals(">>> ", result[5]);
     }
 
     @Test
     public void testAggregateQuery() throws IOException {
-        String result = testShell("match $x isa concept-type aggregate count\n");
+        String result = testShell("match $x isa type; aggregate count;\n");
 
         // Expect to see the whole meta-ontology
-        assertThat(result, containsString("\n8\n"));
+        assertThat(result, containsString("\n2\n"));
     }
 
     @Test
@@ -186,7 +181,8 @@ public class GraqlShellTest {
 
     @Test
     public void testAutocompleteFill() throws IOException {
-        String result = testShell("match $x isa concept-typ\t\n");
+        // The typo is deliberate because this is an auto-complete test
+        String result = testShell("match $x ako typ\t;\n");
         assertThat(result, containsString("\"relation-type\""));
     }
 
@@ -224,7 +220,7 @@ public class GraqlShellTest {
     @Test
     public void testInvalidQuery() throws IOException {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
-        testShell("insert movie isa entity-type; moon isa movie; europa isa moon\n", err);
+        testShell("insert movie isa entity-type; moon isa movie; europa isa moon;\n", err);
 
         assertThat(err.toString(), allOf(containsString("moon"), containsString("not"), containsString("type")));
 
@@ -238,8 +234,8 @@ public class GraqlShellTest {
         testShell(
                 "insert R isa relation-type, has-role R1, has-role R2; R1 isa role-type; R2 isa role-type;\n" +
                 "insert X isa entity-type, plays-role R1, plays-role R2;\n" +
-                "insert x isa X; (R1 x, R2 x) isa R\n" +
-                "insert x isa X; (R1 x, R2 x) isa R\n",
+                "insert x isa X; (R1: x, R2: x) isa R;\n" +
+                "insert x isa X; (R1: x, R2: x) isa R;\n",
                 err
         );
 
@@ -248,7 +244,7 @@ public class GraqlShellTest {
 
     @Test
     public void testLimit() throws IOException {
-        String result = testShell("match $x isa concept-type limit 1\n");
+        String result = testShell("match $x isa type; limit 1;\n");
 
         // Expect seven lines output - four for the license, one for the query, only one result and a new prompt
         assertEquals(result, 7, result.split("\n").length);

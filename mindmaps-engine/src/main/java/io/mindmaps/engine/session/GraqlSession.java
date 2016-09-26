@@ -19,22 +19,23 @@
 package io.mindmaps.engine.session;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.Concept;
-import io.mindmaps.concept.Instance;
+import io.mindmaps.engine.controller.TransactionController;
 import io.mindmaps.exception.ConceptException;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.graql.*;
-import io.mindmaps.graql.internal.parser.ANSI;
-import io.mindmaps.graql.internal.parser.MatchQueryPrinter;
+import io.mindmaps.graql.Autocomplete;
+import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.Query;
+import io.mindmaps.graql.Reasoner;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Stream;
 
+import static io.mindmaps.graql.Graql.withGraph;
 import static io.mindmaps.util.REST.RemoteShell.*;
 
 /**
@@ -44,6 +45,8 @@ class GraqlSession {
     private final Session session;
     private final MindmapsGraph graph;
     private final Reasoner reasoner;
+    private final Logger LOG = LoggerFactory.getLogger(GraqlSession.class);
+
 
     private boolean queryCancelled = false;
 
@@ -78,49 +81,30 @@ class GraqlSession {
             String errorMessage = null;
 
             try {
-                QueryParser parser = QueryParser.create(graph);
                 String queryString = json.at(QUERY).asString();
 
-                Object query = parser.parseQuery(queryString);
+                Query<?> query = withGraph(graph).parse(queryString);
 
-                Stream<String> results = Stream.empty();
-
-                if (query instanceof MatchQueryPrinter) {
-                    results = streamMatchQuery((MatchQueryPrinter) query);
-                } else if (query instanceof AskQuery) {
-                    results = streamAskQuery((AskQuery) query);
-                } else if (query instanceof InsertQuery) {
-                    results = streamInsertQuery((InsertQuery) query);
-                    reasoner.linkConceptTypes();
-                } else if (query instanceof DeleteQuery) {
-                    executeDeleteQuery((DeleteQuery) query);
-                    reasoner.linkConceptTypes();
-                } else if (query instanceof AggregateQuery) {
-                    results = streamAggregateQuery((AggregateQuery) query);
-                } else if (query instanceof ComputeQuery) {
-                    Object computeResult = ((ComputeQuery) query).execute();
-                    if (computeResult instanceof Map) {
-                        Map<Instance, ?> map = (Map<Instance, ?>) computeResult;
-                        results = map.entrySet().stream().map(e -> e.getKey().getId() + "\t" + e.getValue());
-                    } else {
-                        results = Stream.of(computeResult.toString());
-                    }
-                } else {
-                    errorMessage = "Unrecognized query " + query;
+                if (query instanceof MatchQuery) {
+                    query = reasonMatchQuery((MatchQuery) query);
                 }
 
                 // Return results unless query is cancelled
-                results.forEach(result -> {
+                query.resultsString().forEach(result -> {
                     if (queryCancelled) return;
                     sendQueryResult(result);
                 });
                 queryCancelled = false;
 
+                if (!query.isReadOnly()) {
+                    reasoner.linkConceptTypes();
+                }
+
             } catch (IllegalArgumentException | IllegalStateException | ConceptException e) {
                 errorMessage = e.getMessage();
             } catch (Throwable e) {
                 errorMessage = "An unexpected error occurred";
-                e.printStackTrace();
+                LOG.error(errorMessage,e);
             } finally {
                 if (errorMessage != null) {
                     sendQueryError(errorMessage);
@@ -149,6 +133,13 @@ class GraqlSession {
     }
 
     /**
+     * Rollback the transaction, removing uncommitted changes
+     */
+    void rollback() {
+        queryExecutor.submit(graph::rollback);
+    }
+
+    /**
      * Find autocomplete results and send them to the client
      */
     void autocomplete(Json json) {
@@ -161,49 +152,16 @@ class GraqlSession {
     }
 
     /**
-     * Return a stream of match query results
+     * Apply reasoner to match query
      */
-    private Stream<String> streamMatchQuery(MatchQueryPrinter query) {
-
+    private MatchQuery reasonMatchQuery(MatchQuery query) {
         // Expand match query with reasoner, if there are any rules in the graph
         // TODO: Make sure reasoner still applies things such as limit, even with rules in the graph
         if (!reasoner.getRules().isEmpty()) {
-            query.setMatchQuery(reasoner.resolveToQuery(query.getMatchQuery()));
-        }
-
-        return query.resultsString();
-    }
-
-    /**
-     * Return a stream containing the single ask query result
-     */
-    private Stream<String> streamAskQuery(AskQuery query) {
-        if (query.execute()) {
-            return Stream.of(ANSI.color("True", ANSI.GREEN));
+            return reasoner.resolveToQuery(query);
         } else {
-            return Stream.of(ANSI.color("False", ANSI.RED));
+            return query;
         }
-    }
-
-    /**
-     * Return a stream of insert query results
-     */
-    private Stream<String> streamInsertQuery(InsertQuery query) {
-        return query.stream().map(Concept::getId);
-    }
-
-    /**
-     * Execute the given delete query
-     */
-    private void executeDeleteQuery(DeleteQuery query) {
-        query.execute();
-    }
-
-    /**
-     * Return a stream containing the single aggregate query result
-     */
-    private Stream<String> streamAggregateQuery(AggregateQuery query) {
-        return Stream.of(query.execute().toString());
     }
 
     /**

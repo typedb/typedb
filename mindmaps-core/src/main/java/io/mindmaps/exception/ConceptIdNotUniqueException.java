@@ -26,7 +26,7 @@ import io.mindmaps.concept.Concept;
  * This exception is thrown when two concepts attept to have the same unique id.
  */
 public class ConceptIdNotUniqueException extends ConceptException {
-    public ConceptIdNotUniqueException(Concept concept, Schema.ConceptPropertyUnique type, String id) {
+    public ConceptIdNotUniqueException(Concept concept, Schema.ConceptProperty type, String id) {
         super(ErrorMessage.ID_NOT_UNIQUE.getMessage(concept.toString(), type.name(), id));
     }
 

@@ -26,6 +26,8 @@ import io.mindmaps.graql.admin.MatchQueryAdmin;
 import java.util.*;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.toList;
+
 /**
  * a query used for finding data in a graph that matches the given patterns.
  * <p>
@@ -34,7 +36,12 @@ import java.util.stream.Stream;
  * <p>
  * Each matching subgraph will produce a map, where keys are variable names and values are concepts in the graph.
  */
-public interface MatchQuery extends Streamable<Map<String, Concept>> {
+public interface MatchQuery extends Query<List<Map<String, Concept>>>, Streamable<Map<String, Concept>> {
+
+    @Override
+    default List<Map<String, Concept>> execute() {
+        return stream().collect(toList());
+    }
 
     /**
      * @param names an array of variable names to select
@@ -111,25 +118,6 @@ public interface MatchQuery extends Streamable<Map<String, Concept>> {
      * @return a new MatchQuery with the given ordering
      */
     MatchQuery orderBy(String varName, boolean asc);
-
-    /**
-     * Order the results by a resource in ascending order
-     * @param varName the variable name to order the results by
-     * @param resourceType the resource type attached to the variable to use for ordering
-     * @return a new MatchQuery with the given ordering
-     */
-    default MatchQuery orderBy(String varName, String resourceType) {
-        return orderBy(varName, resourceType, true);
-    }
-
-    /**
-     * Order the results by a resource
-     * @param varName the variable name to order the results by
-     * @param resourceType the resource type attached to the variable to use for ordering
-     * @param asc whether to use ascending order
-     * @return a new MatchQuery with the given ordering
-     */
-    MatchQuery orderBy(String varName, String resourceType, boolean asc);
 
     /**
      * @param graph the graph to execute the query on

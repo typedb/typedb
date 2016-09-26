@@ -18,17 +18,16 @@
 
 package io.mindmaps.engine.loader;
 
-import ch.qos.logback.classic.Logger;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.engine.controller.CommitLogController;
 import io.mindmaps.engine.controller.TransactionController;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
-import io.mindmaps.graql.QueryParser;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
@@ -41,12 +40,14 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 
+import static io.mindmaps.graql.Graql.parseInsert;
+import static io.mindmaps.graql.Graql.parsePatterns;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class DistributedLoaderTest {
 
-    private final Logger LOG = (Logger) LoggerFactory.getLogger(DistributedLoaderTest.class);
+    private final Logger LOG = LoggerFactory.getLogger(DistributedLoaderTest.class);
 
     private MindmapsGraph graph;
 
@@ -90,9 +91,7 @@ public class DistributedLoaderTest {
         loader.setBatchSize(50);
         loader.setPollingFrequency(1000);
         try {
-            QueryParser.create()
-                    .parsePatternsStream(new FileInputStream(file))
-                    .forEach(pattern -> loader.addToQueue(pattern.admin().asVar()));
+            parsePatterns(new FileInputStream(file)).forEach(pattern -> loader.addToQueue(pattern.admin().asVar()));
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -113,7 +112,7 @@ public class DistributedLoaderTest {
             e.printStackTrace();
         }
         String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-        QueryParser.create().parseInsertQuery(query).withGraph(graph).execute();
+        parseInsert(query).withGraph(graph).execute();
         try {
             graph.commit();
         } catch (MindmapsValidationException e) {

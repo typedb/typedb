@@ -18,17 +18,21 @@
 
 package io.mindmaps.graph.internal;
 
+import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.Relation;
 import io.mindmaps.concept.Resource;
+import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * This represents an instance of a Type. It represents data in the graph.
@@ -66,19 +70,23 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
      * @return The inner index value of some concepts.
      */
     public String getIndex(){
-        return getProperty(Schema.ConceptPropertyUnique.INDEX);
+        return (String) getProperty(Schema.ConceptProperty.INDEX);
     }
 
     /**
      *
      * @return All the {@link Resource} that this Instance is linked with
      */
-    public Collection<Resource<?>> resources() {
+    public Collection<Resource<?>> resources(ResourceType... resourceTypes) {
+        Set<String> resourceTypesIds = Arrays.stream(resourceTypes).map(Concept::getId).collect(Collectors.toSet());
+
         Set<Resource<?>> resources = new HashSet<>();
         this.getOutgoingNeighbours(Schema.EdgeLabel.SHORTCUT).forEach(concept -> {
             if(concept.isResource()) {
                 Resource<?> resource = concept.asResource();
-                resources.add(resource);
+                if(resourceTypesIds.isEmpty() || resourceTypesIds.contains(resource.type().getId())) {
+                    resources.add(resource);
+                }
             }
         });
         return resources;
@@ -102,15 +110,12 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     @Override
     public Collection<Relation> relations(RoleType... roleTypes) {
         Set<Relation> relations = new HashSet<>();
-        Set<String> roleTypeItemIdentifier = new HashSet<>();
-        for (RoleType roleType : roleTypes) {
-            roleTypeItemIdentifier.add(roleType.getId());
-        }
+        Set<String> roleTypeItemIdentifier = Arrays.stream(roleTypes).map(Concept::getId).collect(Collectors.toSet());
 
         InstanceImpl<?, ?> parent = this;
 
         parent.castings().forEach(c -> {
-            CastingImpl casting = getMindmapsGraph().getElementFactory().buildCasting(c);
+            CastingImpl casting = c.asCasting();
             if (roleTypeItemIdentifier.size() != 0) {
                 if (roleTypeItemIdentifier.contains(casting.getType()))
                     relations.addAll(casting.getRelations());
@@ -130,7 +135,9 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     public Collection<RoleType> playsRoles() {
         Set<RoleType> roleTypes = new HashSet<>();
         ConceptImpl<?, ?> parent = this;
-        parent.getIncomingNeighbours(Schema.EdgeLabel.ROLE_PLAYER).forEach(c -> roleTypes.add(getMindmapsGraph().getElementFactory().buildCasting(c).getRole()));
+        parent.getIncomingNeighbours(Schema.EdgeLabel.ROLE_PLAYER).forEach(c -> roleTypes.add(c.asCasting().getRole()));
         return roleTypes;
     }
+
+
 }

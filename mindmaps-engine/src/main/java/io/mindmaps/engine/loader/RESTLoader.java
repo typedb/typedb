@@ -18,25 +18,17 @@
 
 package io.mindmaps.engine.loader;
 
-import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.graph.internal.AbstractMindmapsGraph;
-import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.engine.postprocessing.BackgroundTasks;
 import io.mindmaps.engine.postprocessing.Cache;
 import io.mindmaps.engine.util.ConfigProperties;
+import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
-import io.mindmaps.graql.QueryParser;
+import io.mindmaps.graph.internal.AbstractMindmapsGraph;
+import io.mindmaps.util.ErrorMessage;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -47,6 +39,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static io.mindmaps.engine.loader.TransactionState.State;
+import static io.mindmaps.graql.Graql.withGraph;
 
 /**
  * Singleton class that handles insert queries received via REST end point.
@@ -140,9 +133,10 @@ public class RESTLoader {
                 AbstractMindmapsGraph graph;
                 try {
                     graph = (AbstractMindmapsGraph) GraphFactory.getInstance().getGraphBatchLoading(name);
-                    QueryParser.create(graph).parseInsertQuery(batch).execute();
+                    withGraph(graph).parseInsert(batch).execute();
                     graph.commit();
                     cache.addJobCasting(name, graph.getModifiedCastingIds());
+                    cache.addJobResource(name, graph.getModifiedResourceIds());
                     loaderState.get(uuid).setState(State.FINISHED);
                     finishedJobs.incrementAndGet();
                     return;
@@ -170,7 +164,7 @@ public class RESTLoader {
                     try {
                         lastJobFinished.set(System.currentTimeMillis());
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        LOG.error("Exception",e);
                     }
                 }
             }
@@ -192,12 +186,10 @@ public class RESTLoader {
 
     private void handleError(Exception e, int i) {
         LOG.error("Caught exception ", e);
-        e.printStackTrace();
-
         try {
             Thread.sleep((i + 2) * 1000);
         } catch (InterruptedException e1) {
-            e1.printStackTrace();
+            LOG.error("Caught exception ", e1);
         }
     }
 

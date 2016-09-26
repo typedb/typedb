@@ -74,7 +74,7 @@ class DisjunctionImpl<T extends PatternAdmin> implements Disjunction<T> {
 
     @Override
     public String toString() {
-        return patterns.stream().map(p -> "{" + p.toString() + "}").collect(Collectors.joining(" or "));
+        return patterns.stream().map(Object::toString).collect(Collectors.joining(" or "));
     }
 
     @Override

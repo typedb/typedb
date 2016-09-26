@@ -85,6 +85,15 @@ public interface Var extends Pattern {
     Var has(String type, ValuePredicate predicate);
 
     /**
+     * the variable must have a resource or name of the given type that matches the given predicate
+     *
+     * @param type a resource type in the ontology
+     * @param var a variable representing a resource
+     * @return this
+     */
+    Var has(String type, Var var);
+
+    /**
      * @param type a concept type id that the variable must be of this type
      * @return this
      */
@@ -213,6 +222,13 @@ public interface Var extends Pattern {
      * @return this
      */
     Var datatype(ResourceType.DataType<?> datatype);
+
+    /**
+     * Specify the regular expression instances of this resource type must match
+     * @param regex the regex to set for this resource type variable
+     * @return this
+     */
+    Var regex(String regex);
 
     /**
      * @param lhs the left-hand side of this rule

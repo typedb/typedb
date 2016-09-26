@@ -21,16 +21,18 @@ package io.mindmaps.graql;
 
 import com.google.common.collect.ImmutableSet;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.graql.internal.util.AdminConverter;
 import io.mindmaps.concept.Concept;
-import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.Disjunction;
+import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.internal.query.Patterns;
 import io.mindmaps.graql.internal.query.aggregate.Aggregates;
-import io.mindmaps.graql.internal.query.predicate.*;
+import io.mindmaps.graql.internal.query.predicate.Predicates;
+import io.mindmaps.graql.internal.util.AdminConverter;
 
+import java.io.InputStream;
 import java.util.*;
+import java.util.stream.Stream;
 
 public class Graql {
 
@@ -82,6 +84,70 @@ public class Graql {
      */
     public static InsertQuery insert(Collection<? extends Var> vars) {
         return withoutGraph().insert(vars);
+    }
+
+    /**
+     * @param queryString a string representing a match query
+     * @return the parsed match query
+     */
+    public static MatchQuery parseMatch(String queryString) {
+        return withoutGraph().parseMatch(queryString);
+    }
+
+    /**
+     * @param queryString a string representing an ask query
+     * @return a parsed ask query
+     */
+    public static AskQuery parseAsk(String queryString) {
+        return withoutGraph().parseAsk(queryString);
+    }
+
+    /**
+     * @param queryString a string representing an insert query
+     * @return a parsed insert query
+     */
+    public static InsertQuery parseInsert(String queryString) {
+        return withoutGraph().parseInsert(queryString);
+    }
+
+    /**
+     * @param queryString a string representing a delete query
+     * @return a parsed delete query
+     */
+    public static DeleteQuery parseDelete(String queryString) {
+        return withoutGraph().parseDelete(queryString);
+    }
+
+    /**
+     * @param queryString a string representing an aggregate query
+     * @return a parsed aggregate query
+     */
+    public static AggregateQuery<?> parseAggregate(String queryString) {
+        return withoutGraph().parseAggregate(queryString);
+    }
+
+    /**
+     * @param queryString a string representing a delete query
+     * @return a parsed compute query
+     */
+    public static ComputeQuery parseCompute(String queryString) {
+        return withoutGraph().parseCompute(queryString);
+    }
+
+    /**
+     * @param inputStream a stream representing a list of patterns
+     * @return a stream of patterns
+     */
+    public static Stream<Pattern> parsePatterns(InputStream inputStream) {
+        return withoutGraph().parsePatterns(inputStream);
+    }
+
+    /**
+     * @param queryString a string representing a query
+     * @return a query, the type will depend on the type of query.
+     */
+    public static Query<?> parse(String queryString) {
+        return withoutGraph().parse(queryString);
     }
 
 

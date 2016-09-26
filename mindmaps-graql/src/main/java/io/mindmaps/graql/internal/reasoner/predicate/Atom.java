@@ -20,7 +20,7 @@ package io.mindmaps.graql.internal.reasoner.predicate;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.reasoner.container.Query;
+import io.mindmaps.graql.internal.reasoner.query.Query;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -43,22 +43,21 @@ public class Atom extends AtomBase{
         super(a);
         this.val = extractValue(a.getPattern().asVar());
     }
+
+    @Override
+    public Atomic clone(){
+        return new Atom(this);
+    }
+
     @Override
     public boolean isUnary(){ return true;}
 
-        @Override
+    @Override
     public boolean equals(Object obj) {
         if (!(obj instanceof Atom)) return false;
         Atom a2 = (Atom) obj;
         return this.typeId.equals(a2.getTypeId()) && this.varName.equals(a2.getVarName())
                 && this.val.equals(a2.getVal());
-    }
-
-    @Override
-    public boolean isEquivalent(Object obj) {
-        if (!(obj instanceof Atom)) return false;
-        Atom a2 = (Atom) obj;
-        return this.typeId.equals(a2.getTypeId()) && this.val.equals(a2.getVal());
     }
 
     @Override
@@ -71,10 +70,24 @@ public class Atom extends AtomBase{
     }
 
     @Override
+    public boolean isEquivalent(Object obj) {
+        if (!(obj instanceof Atom)) return false;
+        Atom a2 = (Atom) obj;
+        return this.typeId.equals(a2.getTypeId()) && this.val.equals(a2.getVal());
+    }
+
+    @Override
+    public int equivalenceHashCode(){
+        int hashCode = 1;
+        hashCode = hashCode * 37 + this.typeId.hashCode();
+        hashCode = hashCode * 37 + this.val.hashCode();
+        return hashCode;
+    }
+
+    @Override
     public void print() {
         System.out.println("atom: \npattern: " + toString());
         System.out.println("varName: " + varName + " typeId: " + typeId + " val: " + val);
-        if (isValuePredicate()) System.out.println("isValuePredicate");
         System.out.println();
     }
 

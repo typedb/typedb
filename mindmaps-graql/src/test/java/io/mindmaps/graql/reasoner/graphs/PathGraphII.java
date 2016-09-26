@@ -34,6 +34,8 @@ public class PathGraphII extends GenericGraph {
     }
 
     private static void buildExtensionalDB(int n, int m) {
+        long startTime = System.currentTimeMillis();
+
         EntityType vertex = mindmaps.getEntityType("vertex");
         EntityType startVertex = mindmaps.getEntityType("start-vertex");
         RoleType arcFrom = mindmaps.getRoleType("arc-from");
@@ -64,5 +66,8 @@ public class PathGraphII extends GenericGraph {
                 }
             }
         }
+
+        long loadTime = System.currentTimeMillis() - startTime;
+        System.out.println("PathGraphII loading time: " + loadTime + " ms");
     }
 }

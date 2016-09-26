@@ -25,12 +25,17 @@ import io.mindmaps.engine.Util;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.util.REST;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import static com.jayway.restassured.RestAssured.get;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class VisualiserControllerTest {
@@ -60,11 +65,53 @@ public class VisualiserControllerTest {
     }
 
     @Test
-    public void getConceptByID() {
+    public void getEntityByID() {
         Response response = get(REST.WebPath.CONCEPT_BY_ID_URI+"actor-123?graphName="+graphName).then().statusCode(200).extract().response().andReturn();
         JSONObject message = new JSONObject(response.getBody().asString());
-        assertTrue(message.getString("_type").equals("Man"));
-        assertTrue(message.getString("_id").equals("actor-123"));
+        makeSureThisIsOurMan(message);
+    }
+
+    @Test
+    public void getEntityByMatchQuery() {
+        Response response = get(REST.WebPath.GRAPH_MATCH_QUERY_URI+"?graphName="+graphName+"&query=match $x isa Man;").then().statusCode(200).extract().response().andReturn();
+        JSONArray resultArray = new JSONArray(response.getBody().asString());
+        makeSureThisIsOurMan(resultArray.getJSONObject(0));
+    }
+
+    @Test
+    public void syntacticallyWrongMatchQuery() {
+        Response response = get(REST.WebPath.GRAPH_MATCH_QUERY_URI+"?graphName="+graphName+"&query=match ersouiuiwne is ieeui;").then().statusCode(500).extract().response().andReturn();
+        System.out.println(response.body().asString());
+
+    }
+
+    private void makeSureThisIsOurMan(JSONObject message){
+        assertEquals(message.getString("_type"),"Man");
+        assertEquals(message.getString("_id"),"actor-123");
+        assertEquals(message.getString("_baseType"),"entity-type");
+        assertEquals(message.getJSONObject("_links").getJSONObject("self").getString("href"),"/graph/concept/actor-123");
+
+        JSONObject embeddedType = message.getJSONObject("_embedded").getJSONArray("isa").getJSONObject(0);
+        assertEquals(embeddedType.getString("_baseType"),"type");
+        assertEquals(embeddedType.getString("_type"),"entity-type");
+        assertEquals(embeddedType.getString("_id"),"Man");
+    }
+
+    @Test
+    public void getTypeByID() {
+        Response response = get(REST.WebPath.CONCEPT_BY_ID_URI+"Man?graphName="+graphName).then().statusCode(200).extract().response().andReturn();
+        JSONObject message = new JSONObject(response.getBody().asString());
+
+        assertEquals(message.getString("_type"),"entity-type");
+        assertEquals(message.getString("_id"),"Man");
+        assertEquals(message.getString("_baseType"),"type");
+        assertEquals(message.getJSONObject("_links").getJSONObject("self").getString("href"),"/graph/concept/Man");
+
+        JSONArray isaEmbeddedArray = message.getJSONObject("_embedded").getJSONArray("isa");
+        Set<String> ids = new HashSet<>();
+        isaEmbeddedArray.forEach(x ->ids.add(((JSONObject)x).getString("_id")));
+        assertTrue(ids.contains("actor-123"));
+        assertTrue(ids.contains("entity-type"));
     }
 
     @Test

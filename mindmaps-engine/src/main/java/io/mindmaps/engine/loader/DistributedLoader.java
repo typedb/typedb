@@ -105,7 +105,7 @@ public class DistributedLoader extends Loader {
     }
 
     public void submitBatch(Collection<Var> batch) {
-        String batchedString = batch.stream().map(Object::toString).collect(Collectors.joining(";"));
+        String batchedString = batch.stream().map(b -> b + ";").collect(Collectors.joining(" "));
 
         if (batchedString.length() == 0) { return; }
 
@@ -211,7 +211,7 @@ public class DistributedLoader extends Loader {
             try {
                 Thread.sleep(pollingFrequency);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                LOG.error("Exception",e);
             }
         }
 
@@ -261,7 +261,7 @@ public class DistributedLoader extends Loader {
             urlConn = (HttpURLConnection) new URL(url).openConnection();
             urlConn.setDoOutput(true);
         } catch (IOException e) {
-            e.printStackTrace();
+            LOG.error("IOException",e);
         }
         return urlConn;
     }
@@ -303,7 +303,7 @@ public class DistributedLoader extends Loader {
         try {
             return connection.getResponseMessage();
         } catch (IOException e) {
-            e.printStackTrace();
+            LOG.error("IOException",e);
         }
         return null;
     }
@@ -317,7 +317,7 @@ public class DistributedLoader extends Loader {
         try {
             return IOUtils.toString(connection.getInputStream());
         } catch (IOException e) {
-            e.printStackTrace();
+            LOG.error("IOException",e);
         }
         return null;
     }
@@ -331,7 +331,7 @@ public class DistributedLoader extends Loader {
         try {
             return connection.getResponseCode();
         } catch (IOException e) {
-            e.printStackTrace();
+            LOG.error("IOException",e);
         }
         return 0;
     }

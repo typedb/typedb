@@ -26,11 +26,7 @@ import io.mindmaps.graql.admin.AskQueryAdmin;
  * <p>
  * An {@code AskQuery} is created from a {@code MatchQuery}, which describes what patterns it should find.
  */
-public interface AskQuery {
-    /**
-     * @return whether the given patterns can be found in the graph
-     */
-    boolean execute();
+public interface AskQuery extends Query<Boolean> {
 
     /**
      * @param graph the graph to execute the query on

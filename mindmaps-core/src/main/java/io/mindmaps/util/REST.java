@@ -49,6 +49,8 @@ public class REST {
         public static final String CONTENT_LENGTH = "Content-Length";
         public static final String CONTENT_TYPE = "Content-Type";
         public static final String POST_METHOD = "POST";
+        public static final String DELETE_METHOD = "DELETE";
+        public static final String GET_METHOD = "GET";
         public static final String APPLICATION_POST_TYPE = "application/POST";
     }
 
@@ -67,6 +69,7 @@ public class REST {
         public static final String ACTION_QUERY = "query";
         public static final String ACTION_QUERY_END = "queryEnd";
         public static final String ACTION_COMMIT = "commit";
+        public static final String ACTION_ROLLBACK = "rollback";
         public static final String ACTION_AUTOCOMPLETE = "autocomplete";
 
         public static final String NAMESPACE = "namespace";

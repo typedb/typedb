@@ -31,12 +31,7 @@ import io.mindmaps.graql.admin.DeleteQueryAdmin;
  * are provided, then the delete query will delete the concept bound to each given variable name. If property flags
  * are provided, e.g. {@code var("x").has("name")} then only those properties are deleted.
  */
-public interface DeleteQuery {
-
-    /**
-     * Execute the delete query
-     */
-    void execute();
+public interface DeleteQuery extends Query<Void> {
 
     /**
      * @param graph the graph to execute the query on

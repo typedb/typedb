@@ -23,8 +23,8 @@ import ch.qos.logback.classic.Logger;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
-import io.mindmaps.util.Schema;
 import io.mindmaps.graph.internal.MindmapsTitanGraph;
+import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -35,6 +35,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.Set;
@@ -62,7 +63,7 @@ public class MindmapsTitanGraphFactoryTest {
     private static TitanGraph noIndexGraph;
     private static TitanGraph indexGraph;
 
-    private static MindmapsGraphFactory titanGraphFactory ;
+    private static MindmapsInternalFactory titanGraphFactory ;
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
@@ -71,7 +72,7 @@ public class MindmapsTitanGraphFactoryTest {
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.OFF);
 
-        titanGraphFactory = new MindmapsTitanGraphFactory();
+        titanGraphFactory = new MindmapsTitanInternalFactory();
 
         sharedGraph = ((MindmapsTitanGraph) titanGraphFactory.getGraph(TEST_SHARED, TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING)).getTinkerPopGraph();
 
@@ -128,26 +129,20 @@ public class MindmapsTitanGraphFactoryTest {
     @Test
     public void testVertexLabels(){
         TitanManagement management = sharedGraph.openManagement();
-
-        ResourceBundle keys = ResourceBundle.getBundle("base-types");
-        Set<String> keyString = keys.keySet();
-        for(String label : keyString){
-            assertNotNull(management.getVertexLabel(label));
-        }
+        assertNotNull(management.getVertexLabel(Schema.VERTEX_LABEL));
     }
 
     @Test
     public void testBatchLoading(){
         TitanManagement management = sharedGraph.openManagement();
 
-        ResourceBundle keys = ResourceBundle.getBundle("property-keys");
-        Set<String> keyString = keys.keySet();
-        for(String propertyKey : keyString){
-            assertNotNull(management.getPropertyKey(propertyKey));
-        }
+        Arrays.stream(Schema.ConceptProperty.values()).forEach(property ->
+                assertNotNull(management.getPropertyKey(property.name())));
+        Arrays.stream(Schema.EdgeProperty.values()).forEach(property ->
+                assertNotNull(management.getPropertyKey(property.name())));
 
-        keys = ResourceBundle.getBundle("indices-edges");
-        keyString = keys.keySet();
+        ResourceBundle keys = ResourceBundle.getBundle("indices-edges");
+        Set<String> keyString = keys.keySet();
         for(String label : keyString){
             assertNotNull(management.getEdgeLabel(label));
         }
@@ -184,14 +179,14 @@ public class MindmapsTitanGraphFactoryTest {
 
         // Non-Indexed Lookup /////////////////////////////////////////////////////
         // time the same query multiple times
-        first = noIndexGraph.traversal().V().has(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(),String.valueOf(0)).next();
+        first = noIndexGraph.traversal().V().has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(),String.valueOf(0)).next();
         List<Object> result = new ArrayList<>();
         startTime = System.nanoTime();
         for (int i=0; i<nTimes; i++) {
             result = noIndexGraph.traversal().V(first).
                     outE(Schema.EdgeLabel.ISA.getLabel()).
                     has(Schema.ConceptProperty.TYPE.name(), String.valueOf(1)).inV().
-                    values(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name()).toList();
+                    values(Schema.ConceptProperty.ITEM_IDENTIFIER.name()).toList();
         }
         endTime = System.nanoTime();
         double duration = (endTime - startTime);  //divide by 1000000 to get milliseconds.
@@ -230,13 +225,13 @@ public class MindmapsTitanGraphFactoryTest {
         // Non-Indexed Gremlin Lookup ////////////////////////////////////////////////////
 
         // time the same query multiple times
-        first = noIndexGraph.traversal().V().has(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), String.valueOf(0)).next();
+        first = noIndexGraph.traversal().V().has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), String.valueOf(0)).next();
         List<Object> gremlinTraversalResult = new ArrayList<>();
         startTime = System.nanoTime();
         for (int i=0; i < nTimes; i++) {
             gremlinTraversalResult = noIndexGraph.traversal().V(first).
                     local(__.outE(Schema.EdgeLabel.ISA.getLabel()).order().by(Schema.ConceptProperty.TYPE.name(), Order.decr).range(0, 10)).
-                    inV().values(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name()).toList();
+                    inV().values(Schema.ConceptProperty.ITEM_IDENTIFIER.name()).toList();
         }
         endTime = System.nanoTime();
         double gremlinTraversalDuration = (endTime - startTime);  //divide by 1000000 to get milliseconds.
@@ -299,10 +294,10 @@ public class MindmapsTitanGraphFactoryTest {
     }
 
     private void assertIndexCorrect(Graph graph) {
-        assertTrue(graph.traversal().V().has(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), "www.mindmaps.com/action-movie/").hasNext());
+        assertTrue(graph.traversal().V().has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), "www.mindmaps.com/action-movie/").hasNext());
         assertEquals(2, graph.traversal().V().has(Schema.ConceptProperty.VALUE_STRING.name(), "hi there").count().next().longValue());
-        assertFalse(graph.traversal().V().has(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), "mind").hasNext());
-        assertFalse(graph.traversal().V().has(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), "www").hasNext());
+        assertFalse(graph.traversal().V().has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), "mind").hasNext());
+        assertFalse(graph.traversal().V().has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), "www").hasNext());
         assertFalse(graph.traversal().V().has(Schema.ConceptProperty.VALUE_STRING.name(), "hi").hasNext());
     }
 

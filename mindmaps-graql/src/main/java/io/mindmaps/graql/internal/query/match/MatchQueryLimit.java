@@ -41,7 +41,7 @@ class MatchQueryLimit extends MatchQueryModifier {
     }
 
     @Override
-    public String toString() {
-        return inner.toString() + " limit " + limit;
+    protected String modifierString() {
+        return "limit " + limit;
     }
 }

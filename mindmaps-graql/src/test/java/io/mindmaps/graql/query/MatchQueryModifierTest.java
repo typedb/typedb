@@ -20,33 +20,21 @@ package io.mindmaps.graql.query;
 
 import com.google.common.collect.Lists;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.mindmaps.util.Schema.ConceptPropertyUnique.ITEM_IDENTIFIER;
-import static io.mindmaps.graql.Graql.neq;
-import static io.mindmaps.graql.Graql.or;
-import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.graql.Graql.withGraph;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static io.mindmaps.graql.Graql.*;
+import static org.junit.Assert.*;
 
 public class MatchQueryModifierTest {
 
@@ -66,31 +54,31 @@ public class MatchQueryModifierTest {
 
     @Test
     public void testOffsetQuery() {
-        MatchQuery query = qb.match(var("x").isa("movie")).orderBy("x", false).offset(4);
+        MatchQuery query = qb.match(var("x").isa("movie").has("name", var("n"))).orderBy("n", false).offset(4);
 
-        assertResultsOrderedById(query, "x", false);
+        assertResultsOrderedByValue(query, "n", false);
     }
 
     @Test
     public void testLimitQuery() {
-        MatchQuery query = qb.match(var("x").isa("movie")).orderBy("x", true).offset(1).limit(3);
+        MatchQuery query = qb.match(var("x").isa("movie").has("title", var("t"))).orderBy("t", true).offset(1).limit(3);
 
-        assertResultsOrderedById(query, "x", true);
+        assertResultsOrderedByValue(query, "t", true);
         assertEquals(3, query.stream().count());
     }
 
     @Test
     public void testOrPatternOrderByResource() {
         MatchQuery query = qb.match(
-                var("x").isa("movie"),
+                var("x").isa("movie").has("tmdb-vote-count", var("v")),
                 var().rel("x").rel("y"),
                 or(
                         var("y").isa("person").id("Marlon-Brando"),
                         var("y").isa("genre").has("name", "crime")
                 )
-        ).orderBy("x", "tmdb-vote-count", false).select("x");
+        ).orderBy("v", false);
 
-        assertOrderedResultsMatch(query, "x", "movie", "Godfather", "Godfather", "Apocalypse-Now", "Heat");
+        assertOrderedResultsMatch(query, "x", "movie", "Godfather", "Godfather", "Apocalypse-Now");
     }
 
     @Test
@@ -101,8 +89,9 @@ public class MatchQueryModifierTest {
                 or(
                         var("y").isa("person"),
                         var("y").isa("genre").value(neq("crime"))
-                )
-        ).orderBy("y").offset(4).limit(8).select("x");
+                ),
+                var("y").has("name", var("n"))
+        ).orderBy("n").offset(4).limit(8).select("x");
 
         QueryUtil.assertResultsMatch(
                 query, "x", "movie", "Hocus-Pocus", "Spy", "The-Muppets", "Godfather", "Apocalypse-Now"
@@ -110,10 +99,10 @@ public class MatchQueryModifierTest {
     }
 
     @Test
-    public void testDegreeOrderedQuery() {
-        MatchQuery query = qb.match(var("the-movie").isa("movie")).orderBy("the-movie", false);
+    public void testValueOrderedQuery() {
+        MatchQuery query = qb.match(var("the-movie").isa("movie").has("title", var("n"))).orderBy("n", false);
 
-        assertResultsOrderedById(query, "the-movie", false);
+        assertResultsOrderedByValue(query, "n", false);
 
         // Make sure all results are included
         QueryUtil.assertResultsMatch(query, "the-movie", "movie", QueryUtil.movies);
@@ -121,25 +110,22 @@ public class MatchQueryModifierTest {
 
     @Test
     public void testVoteCountOrderedQuery() {
-        MatchQuery query = qb.match(var("z").isa("movie")).orderBy("z", "tmdb-vote-count", false);
+        MatchQuery query = qb.match(var("z").isa("movie").has("tmdb-vote-count", var("v"))).orderBy("v", false);
 
         // Make sure movies are in the correct order
         assertOrderedResultsMatch(query, "z", "movie", "Godfather", "Hocus-Pocus", "Apocalypse-Now", "The-Muppets");
-
-        // Movies without a tmdb-vote-count will still be at the end of the results
-        QueryUtil.assertResultsMatch(query, "z", "movie", QueryUtil.movies);
     }
 
     @Test
     public void testOrPatternDistinct() {
         MatchQuery query = qb.match(
-                var("x").isa("movie"),
+                var("x").isa("movie").has("title", var("t")),
                 var().rel("x").rel("y"),
                 or(
                         var("y").isa("genre").has("name", "crime"),
                         var("y").isa("person").id("Marlon-Brando")
                 )
-        ).select("x").orderBy("x", false).distinct();
+        ).select("x").orderBy("t", false).distinct();
 
         assertOrderedResultsMatch(query, "x", "movie", "Heat", "Godfather", "Apocalypse-Now");
     }
@@ -174,7 +160,6 @@ public class MatchQueryModifierTest {
         Queue<String> expectedQueue = new LinkedList<>(Arrays.asList(expectedIds));
 
         query.forEach(results -> {
-            assertEquals(1, results.size());
             Concept result = results.get(var);
             assertNotNull(result);
 
@@ -186,12 +171,9 @@ public class MatchQueryModifierTest {
         assertTrue("expected ids not found: " + expectedQueue, expectedQueue.isEmpty());
     }
 
-    private void assertResultsOrderedById(MatchQuery query, String var, boolean asc) {
-        GraphTraversalSource g = ((AbstractMindmapsGraph) mindmapsGraph).getTinkerTraversal();
-        Stream<String> ids = query.stream().map(results -> results.get(var)).map(
-                result -> (String) g.V().has("ITEM_IDENTIFIER", result.getId()).values(ITEM_IDENTIFIER.name()).next()
-        );
-        assertResultsOrdered(ids, asc);
+    private void assertResultsOrderedByValue(MatchQuery query, String var, boolean asc) {
+        Stream values = query.stream().map(result -> result.get(var).asResource().getValue());
+        assertResultsOrdered(values, asc);
     }
 
     private <T extends Comparable<T>> void assertResultsOrdered(Stream<T> results, boolean asc) {

@@ -20,27 +20,40 @@ package io.mindmaps.engine;
 
 import io.mindmaps.engine.controller.*;
 import io.mindmaps.engine.util.ConfigProperties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import static spark.Spark.port;
-import static spark.Spark.staticFiles;
+import static spark.Spark.*;
+
+/**
+ * Main class in charge to start a web server and all the REST controllers.
+ */
 
 public class MindmapsEngineServer {
+
+    private static Logger LOG = null;
+
 
     public static void main(String[] args) {
         start();
     }
 
     public static void start() {
+
         ConfigProperties prop = ConfigProperties.getInstance();
 
-        // Listening port
+        LOG = LoggerFactory.getLogger(MindmapsEngineServer.class);
+
+        // Set host name
+        ipAddress(prop.getProperty(ConfigProperties.SERVER_HOST_NAME));
+
+        // Set port
         port(prop.getPropertyAsInt(ConfigProperties.SERVER_PORT_NUMBER));
 
-        // Set the static files folder
+        // Set the external static files folder
         staticFiles.externalLocation(prop.getPath(ConfigProperties.STATIC_FILES_PATH));
 
-        // ----- APIs --------- //
-
+        // Start all the controllers
         new RemoteShellController();
         new VisualiserController();
         new GraphFactoryController();
@@ -49,5 +62,22 @@ public class MindmapsEngineServer {
         new TransactionController();
         new StatusController();
 
+        // This method will block until all the controllers are ready to serve requests
+        awaitInitialization();
+
+        printStartMessage(prop.getProperty(ConfigProperties.SERVER_HOST_NAME), prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER),prop.getLogFilePath());
+    }
+
+
+    /**
+     * Method that prints a welcome message, listening address and path to the LOG that will be used.
+     * @param host Host address to which Mindmaps Engine is bound to
+     * @param port Web server port number
+     * @param logFilePath Path to the LOG file.
+     */
+    private static void printStartMessage(String host, String port, String logFilePath) {
+        LOG.info(ConfigProperties.MINDMAPS_ASCII);
+        LOG.info("Mindmaps Engine is ready. Listening on [http://" + host + ":" + port + "]");
+        LOG.info("Mindmaps LOG file located at ["+logFilePath+"]");
     }
 }

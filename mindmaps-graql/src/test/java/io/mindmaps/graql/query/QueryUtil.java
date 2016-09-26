@@ -39,7 +39,6 @@ class QueryUtil {
         Set<String> unfoundSet = Sets.newHashSet(expectedIds);
 
         query.forEach(results -> {
-            assertEquals(1, results.size());
             Concept result = results.get(var);
             assertNotNull(result);
             String id = result.getId();

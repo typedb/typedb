@@ -38,28 +38,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static io.mindmaps.graql.Graql.all;
-import static io.mindmaps.graql.Graql.and;
-import static io.mindmaps.graql.Graql.any;
-import static io.mindmaps.graql.Graql.contains;
-import static io.mindmaps.graql.Graql.eq;
-import static io.mindmaps.graql.Graql.gt;
-import static io.mindmaps.graql.Graql.gte;
-import static io.mindmaps.graql.Graql.id;
-import static io.mindmaps.graql.Graql.lt;
-import static io.mindmaps.graql.Graql.lte;
-import static io.mindmaps.graql.Graql.neq;
-import static io.mindmaps.graql.Graql.or;
-import static io.mindmaps.graql.Graql.regex;
-import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.graql.Graql.withGraph;
-import static io.mindmaps.util.Schema.MetaType.ENTITY_TYPE;
-import static io.mindmaps.util.Schema.MetaType.RESOURCE_TYPE;
-import static io.mindmaps.util.Schema.MetaType.RULE_TYPE;
+import static io.mindmaps.graql.Graql.*;
+import static io.mindmaps.util.Schema.MetaType.*;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@SuppressWarnings("OptionalGetWithoutIsPresent")
 public class MatchQueryTest {
 
     private static MindmapsGraph mindmapsGraph;
@@ -361,7 +346,7 @@ public class MatchQueryTest {
     @Test
     public void testRobertDeNiroNotRelatedToSelf() {
         MatchQuery query = qb.match(
-                var().rel("x").rel("y"),
+                var().rel("x").rel("y").isa("has-cast"),
                 var("y").id("Robert-de-Niro")
         ).select("x");
 
@@ -371,7 +356,7 @@ public class MatchQueryTest {
     @Test
     public void testKermitIsRelatedToSelf() {
         MatchQuery query = qb.match(
-                var().rel("x").rel("y"),
+                var().rel("x").rel("y").isa("has-cast"),
                 var("y").id("Kermit-The-Frog")
         ).select("x");
 
@@ -438,5 +423,18 @@ public class MatchQueryTest {
 
         // This should work despite akos
         qb.match(var().rel("x").rel("shareholder", "y").isa("ownership")).stream().count();
+    }
+
+    @Test
+    public void testHasVariable() {
+        MatchQuery query = qb.match(var().id("Godfather").has("tmdb-vote-count", var("x")));
+        assertEquals(1000L, query.get("x").findFirst().get().asResource().getValue());
+    }
+
+    @Test
+    public void testRegexResourceType() {
+        MatchQuery query = qb.match(var("x").regex("(fe)?male"));
+        assertEquals(1, query.stream().count());
+        assertEquals("gender", query.get("x").findFirst().get().getId());
     }
 }

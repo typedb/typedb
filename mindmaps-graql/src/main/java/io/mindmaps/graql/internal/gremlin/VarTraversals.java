@@ -38,7 +38,6 @@ import java.util.stream.Stream;
 import static io.mindmaps.graql.Graql.eq;
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.*;
 import static io.mindmaps.util.Schema.ConceptProperty.*;
-import static io.mindmaps.util.Schema.ConceptPropertyUnique.ITEM_IDENTIFIER;
 import static io.mindmaps.util.Schema.EdgeLabel.*;
 import static io.mindmaps.util.Schema.EdgeProperty.TO_TYPE;
 
@@ -81,6 +80,10 @@ public class VarTraversals {
                 datatype -> addPropertyPattern(getName(), DATA_TYPE.name(), eq(datatype.getName()).admin(), VALUE_NONSPECIFIC)
         );
 
+        var.getRegex().ifPresent(
+                regex -> addPropertyPattern(getName(), REGEX.name(), eq(regex).admin(), VALUE_NONSPECIFIC)
+        );
+
         // Check ITEM_IDENTIFIER
         var.getId().ifPresent(
                 id -> {
@@ -113,18 +116,11 @@ public class VarTraversals {
             addPropertyPattern(getName(), Schema.ConceptProperty.RULE_RHS.name(), eq(rhs).admin(), VALUE_NONSPECIFIC);
         });
 
-        var.getResourcePredicates().forEach((type, predicates) -> {
-            // Currently it is guaranteed that resource types are specified with an ID
+        var.getResources().forEach(resource -> {
+            // Currently it is guaranteed that resources have a type
             //noinspection OptionalGetWithoutIsPresent
-            String typeId = type.getId().get();
-
-            if (predicates.isEmpty()) {
-                // Check that a resource of the specified type is connected
-                addResourcePattern(typeId);
-            } else {
-                // Check all predicates on connected resource's VALUE
-                predicates.forEach(predicate -> addResourcePattern(typeId, predicate));
-            }
+            String typeId = resource.getType().get().getId().get();
+            addResourcePattern(typeId, resource);
         });
 
         // Check identity of outgoing ISA, AKO, HAS_ROLE, PLAYS_ROLE and HAS_SCOPE edges
@@ -198,38 +194,25 @@ public class VarTraversals {
     }
 
     /**
-     * Add a pattern checking that this variable has a resource of the given type
+     * Add a pattern checking this variable has a resource of the given type matching the given predicate
      * @param typeId the resource type ID
-     * @return the variable name of the resource
+     * @param resource a variable representing a resource
      */
-    private String addResourcePattern(String typeId) {
+    private void addResourcePattern(String typeId, VarAdmin resource) {
         shortcutTraversal.setInvalid();
-
-        String resource = UUID.randomUUID().toString();
 
         addPattern(
                 new FragmentImpl(t ->
                         t.outE(SHORTCUT.getLabel()).has(TO_TYPE.name(), typeId).inV(),
-                        EDGE_UNBOUNDED, getName(), resource
+                        EDGE_UNBOUNDED, getName(), resource.getName()
                 ),
                 new FragmentImpl(t ->
                         t.inE(SHORTCUT.getLabel()).has(TO_TYPE.name(), typeId).outV(),
-                        EDGE_UNBOUNDED, resource, getName()
+                        EDGE_UNBOUNDED, resource.getName(), getName()
                 )
         );
 
-        return resource;
-    }
-
-    /**
-     * Add a pattern checking this variable has a resource of the given type matching the given predicate
-     * @param typeId the resource type ID
-     * @param predicate a predicate to match on a resource's VALUE
-     */
-    private void addResourcePattern(String typeId, ValuePredicateAdmin predicate) {
-        String resource = addResourcePattern(typeId);
-        Schema.ConceptProperty value = getValuePropertyForPredicate(predicate);
-        addPropertyPattern(resource, value.name(), predicate, getValuePriority(predicate));
+        innerVarTraversals.add(new VarTraversals(resource));
     }
 
     /**

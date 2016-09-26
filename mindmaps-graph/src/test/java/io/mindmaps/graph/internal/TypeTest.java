@@ -18,8 +18,6 @@
 
 package io.mindmaps.graph.internal;
 
-import io.mindmaps.util.Schema;
-import io.mindmaps.exception.ConceptException;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
@@ -27,7 +25,10 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.RuleType;
 import io.mindmaps.concept.Type;
+import io.mindmaps.exception.ConceptException;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.util.Schema;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,6 +38,8 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -87,7 +90,7 @@ public class TypeTest {
 
     @Test
     public void testGetPlayedRole() throws Exception{
-        Type creature = mindmapsGraph.putEntityType("creature");
+        EntityType creature = mindmapsGraph.putEntityType("creature");
         RoleType monster = mindmapsGraph.putRoleType("monster");
         RoleType animal = mindmapsGraph.putRoleType("animal");
         RoleType monsterSub = mindmapsGraph.putRoleType("monsterSub");
@@ -136,7 +139,7 @@ public class TypeTest {
         assertFalse(c1.getAkoHierarchySuperSet().contains(c4));
 
         mindmapsGraph.getTinkerPopGraph().traversal().V().
-                has(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name(), c3.getId()).
+                has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), c3.getId()).
                 outE(Schema.EdgeLabel.ISA.getLabel()).next().remove();
         c3.superType(c4);
         boolean correctExceptionThrown = false;
@@ -232,14 +235,14 @@ public class TypeTest {
 
     @Test
     public void allowsRoleType(){
-        TypeImpl conceptType = (TypeImpl) mindmapsGraph.putEntityType("ct");
+        EntityTypeImpl conceptType = (EntityTypeImpl) mindmapsGraph.putEntityType("ct");
         RoleType roleType1 = mindmapsGraph.putRoleType("rt1'");
         RoleType roleType2 = mindmapsGraph.putRoleType("rt2");
 
         conceptType.playsRole(roleType1).playsRole(roleType2);
         Set<RoleType> foundRoles = new HashSet<>();
         mindmapsGraph.getTinkerPopGraph().traversal().V(conceptType.getBaseIdentifier()).
-                out(Schema.EdgeLabel.PLAYS_ROLE.getLabel()).forEachRemaining(r -> foundRoles.add(mindmapsGraph.getRoleType(r.value(Schema.ConceptPropertyUnique.ITEM_IDENTIFIER.name()))));
+                out(Schema.EdgeLabel.PLAYS_ROLE.getLabel()).forEachRemaining(r -> foundRoles.add(mindmapsGraph.getRoleType(r.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name()))));
 
         assertEquals(2, foundRoles.size());
         assertTrue(foundRoles.contains(roleType1));
@@ -283,7 +286,7 @@ public class TypeTest {
 
     @Test
     public void testDeletePlaysRole(){
-        Type type = mindmapsGraph.putEntityType("A Concept Type");
+        EntityType type = mindmapsGraph.putEntityType("A Concept Type");
         RoleType role1 = mindmapsGraph.putRoleType("A Role 1");
         RoleType role2 = mindmapsGraph.putRoleType("A Role 2");
         assertEquals(0, type.playsRoles().size());
@@ -329,14 +332,9 @@ public class TypeTest {
         Collection<? extends Concept> types = mindmapsGraph.getMetaType().instances();
         Collection<? extends Concept> data = production.instances();
 
-        assertEquals(17, types.size());
+        assertEquals(11, types.size());
         assertEquals(2, data.size());
 
-        assertTrue(types.contains(mindmapsGraph.getMetaType()));
-        assertTrue(types.contains(mindmapsGraph.getMetaRoleType()));
-        assertTrue(types.contains(mindmapsGraph.getMetaRelationType()));
-        assertTrue(types.contains(mindmapsGraph.getMetaRuleType()));
-        assertTrue(types.contains(mindmapsGraph.getMetaResourceType()));
         assertTrue(types.contains(actor));
         assertTrue(types.contains(movie));
         assertTrue(types.contains(production));
@@ -361,4 +359,29 @@ public class TypeTest {
         entityType3.superType(entityType1);
     }
 
+
+    @Test
+    public void testMetaTypeIsAbstractImmutable(){
+        Type meta = mindmapsGraph.getMetaRuleType();
+
+        expectedException.expect(ConceptException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(meta.getId()))
+        ));
+
+        meta.setAbstract(true);
+    }
+
+    @Test
+    public void testMetaTypePlaysRoleImmutable(){
+        Type meta = mindmapsGraph.getMetaRuleType();
+        RoleType roleType = mindmapsGraph.putRoleType("A Role");
+
+        expectedException.expect(ConceptException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(meta.getId()))
+        ));
+
+        meta.playsRole(roleType);
+    }
 }

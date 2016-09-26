@@ -18,16 +18,13 @@
 
 package io.mindmaps.graql;
 
-import java.util.concurrent.ExecutionException;
+import io.mindmaps.MindmapsGraph;
 
 /**
  * A query that triggers an OLAP computation on a graph.
  */
-public interface ComputeQuery {
+public interface ComputeQuery extends Query<Object> {
 
-    /**
-     * Perform OLAP computation.
-     */
-    Object execute() throws ExecutionException, InterruptedException;
-
+    @Override
+    ComputeQuery withGraph(MindmapsGraph graph);
 }

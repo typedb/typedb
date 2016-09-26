@@ -19,13 +19,12 @@
 package io.mindmaps.engine.controller;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.util.REST;
 import io.mindmaps.concept.Concept;
-import io.mindmaps.factory.GraphFactory;
-import io.mindmaps.graql.QueryParser;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.engine.visualiser.HALConcept;
+import io.mindmaps.factory.GraphFactory;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
@@ -41,21 +40,28 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 
+import static io.mindmaps.graql.Graql.withGraph;
 import static spark.Spark.get;
 
 
 @Path("/graph")
-@Api(value = "/graph", description = "Endpoints used to query the graph by ID or Gralq match query and build HAL objects.")
+@Api(value = "/graph", description = "Endpoints used to query the graph by ID or Graql match query and build HAL objects.")
 @Produces({"application/json", "text/plain"})
 public class VisualiserController {
 
     private final Logger LOG = LoggerFactory.getLogger(VisualiserController.class);
 
     private String defaultGraphName;
+    private int separationDegree;
+    private final int MATCH_QUERY_FIXED_DEGREE = 0;
+    //TODO: implement a pagination system instead of liming the result with hard-coded limit.
+    private final int SAFETY_LIMIT=200;
 
     public VisualiserController() {
 
         defaultGraphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+        separationDegree = ConfigProperties.getInstance().getPropertyAsInt(ConfigProperties.HAL_DEGREE_PROPERTY);
+
 
         get(REST.WebPath.CONCEPT_BY_ID_URI + REST.Request.ID_PARAMETER, this::getConceptById);
         get(REST.WebPath.GRAPH_MATCH_QUERY_URI, this::matchQuery);
@@ -65,7 +71,10 @@ public class VisualiserController {
     @Path("/concept/:uuid")
     @ApiOperation(
             value = "Return the HAL representation of a given concept.")
-    @ApiImplicitParam(name = "id", value = "ID of the concept", required = true, dataType = "string", paramType = "path")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "id", value = "ID of the concept", required = true, dataType = "string", paramType = "path"),
+            @ApiImplicitParam(name = "graphName", value = "Name of graph to use", dataType = "string", paramType = "query")
+    })
     private String getConceptById(Request req, Response res) {
 
         String graphNameParam = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
@@ -75,10 +84,9 @@ public class VisualiserController {
 
         Concept concept = graph.getConcept(req.params(REST.Request.ID_PARAMETER));
         if (concept != null) {
-            LOG.debug("Building HAL resource for concept with id " + concept.getId().toString());
-            return new HALConcept(concept).render();
-        }
-        else {
+            LOG.trace("Building HAL resource for concept with id {}", concept.getId());
+            return new HALConcept(concept, separationDegree).render();
+        } else {
             res.status(404);
             return ErrorMessage.CONCEPT_ID_NOT_FOUND.getMessage(req.params(REST.Request.ID_PARAMETER));
         }
@@ -101,20 +109,20 @@ public class VisualiserController {
 
         try {
 
-            QueryParser parser = QueryParser.create(GraphFactory.getInstance().getGraph(currentGraphName));
+            MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName);
             final JSONArray halArray = new JSONArray();
 
-            parser.parseMatchQuery(req.queryParams(REST.Request.QUERY_FIELD))
-                    .getMatchQuery().stream()
+            withGraph(graph).parseMatch(req.queryParams(REST.Request.QUERY_FIELD))
+                    .stream().limit(SAFETY_LIMIT)
                     .forEach(x -> x.values()
                             .forEach(concept -> {
-                                LOG.debug("Building HAL resource for concept with id " + concept.getId().toString());
-                                halArray.put(new JSONObject(new HALConcept(concept).render()));
+                                LOG.trace("Building HAL resource for concept with id {}", concept.getId());
+                                halArray.put(new JSONObject(new HALConcept(concept, MATCH_QUERY_FIXED_DEGREE).render()));
                             }));
             LOG.debug("Done building resources.");
             return halArray.toString();
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.error("New Exception",e);
             res.status(500);
             return e.getMessage();
         }

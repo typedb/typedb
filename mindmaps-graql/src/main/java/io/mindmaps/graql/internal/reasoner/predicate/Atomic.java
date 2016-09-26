@@ -23,18 +23,16 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.admin.PatternAdmin;
-import io.mindmaps.graql.internal.reasoner.container.Query;
+import io.mindmaps.graql.internal.reasoner.query.Query;
 import javafx.util.Pair;
 
 import java.util.Map;
 import java.util.Set;
 
-public interface Atomic {
+public interface Atomic extends Cloneable{
 
     void print();
-
-    void addExpansion(Query query);
-    void removeExpansion(Query query);
+    Atomic clone();
 
     /**
      * @return true if the atom corresponds to a unary predicate
@@ -54,7 +52,7 @@ public interface Atomic {
     /**
      * @return true if the atom corresponds to a value predicate (~unifier)
      * */
-    default boolean isValuePredicate(){ return false;}
+    default boolean isSubstitution(){ return false;}
 
     /**
      * @return true if the atom corresponds to a resource predicate
@@ -65,8 +63,14 @@ public interface Atomic {
      * @return true if atom alpha-equivalent
      */
     default boolean isEquivalent(Object obj){ return false;}
+    default int equivalenceHashCode(){ return 1;}
 
+    /**
+     * @return true if the atom can be resolved by a rule (atom exists in one of the rule's head)
+     */
     default boolean isRuleResolvable(){ return false;}
+
+    default boolean isRecursive(){ return false;}
 
     /**
      * @param name variable name
@@ -78,11 +82,6 @@ public interface Atomic {
      * @return the corresponding pattern
      * */
     PatternAdmin getPattern();
-    /**
-     * @return the corresponding pattern with all expansions
-     * */
-
-    PatternAdmin getExpandedPattern();
 
     /**
      *
@@ -90,7 +89,6 @@ public interface Atomic {
      * @return match query obtained by selecting free variables
      */
     MatchQuery getMatchQuery(MindmapsGraph graph);
-    MatchQuery getExpandedMatchQuery(MindmapsGraph graph);
 
     /**
      * @return the query this atom belongs to
@@ -101,6 +99,8 @@ public interface Atomic {
      * @param q query this atom is supposed to belong to
      */
     void setParentQuery(Query q);
+
+    Map<String, String> getUnifiers(Atomic parentAtom);
 
     /**
      * change each variable occurrence in the atom
@@ -122,14 +122,10 @@ public interface Atomic {
     String getTypeId();
     String getVal();
 
-    Set<Query> getExpansions();
-
     Set<Atomic> getSubstitutions();
     Set<Atomic> getTypeConstraints();
-    Set<Atomic> getNeighbours();
 
     Map<String, Set<Atomic>> getVarSubMap();
-    Map<String, Set<Atomic>> getVarConstraintMap();
 
     Map<String, Pair<Type, RoleType>> getVarTypeRoleMap();
     Map<RoleType, Pair<String, Type>> getRoleVarTypeMap();

@@ -20,6 +20,7 @@ package io.mindmaps.graql.internal.reasoner.predicate;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.concept.Rule;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
@@ -28,7 +29,7 @@ import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.query.Patterns;
-import io.mindmaps.graql.internal.reasoner.container.Query;
+import io.mindmaps.graql.internal.reasoner.query.Query;
 import javafx.util.Pair;
 
 import java.util.*;
@@ -39,7 +40,6 @@ public abstract class AtomBase implements Atomic{
     protected final String typeId;
 
     protected final PatternAdmin atomPattern;
-    protected final Set<Query> expansions = new HashSet<>();
 
     private Query parent = null;
 
@@ -72,8 +72,9 @@ public abstract class AtomBase implements Atomic{
         Pair<String, String> varData = extractDataFromVar(atomPattern.asVar());
         varName = varData.getKey();
         typeId = varData.getValue();
-        a.expansions.forEach(exp -> expansions.add(new Query(exp)));
     }
+
+    public abstract Atomic clone();
 
     private Pair<String, String> extractDataFromVar(VarAdmin var) {
         String vTypeId;
@@ -85,7 +86,7 @@ public abstract class AtomBase implements Atomic{
                 throw new IllegalArgumentException(ErrorMessage.MULTIPLE_RESOURCES.getMessage(var.toString()));
 
             Map.Entry<VarAdmin, Set<ValuePredicateAdmin>> entry = resourceMap.entrySet().iterator().next();
-            vTypeId = entry.getKey().getId().isPresent()? entry.getKey().getId().get() : "";
+            vTypeId = entry.getKey().getId().orElse("");
         }
         else
             vTypeId = var.getType().flatMap(VarAdmin::getId).orElse("");
@@ -100,22 +101,7 @@ public abstract class AtomBase implements Atomic{
     public void print() {
         System.out.println("atom: \npattern: " + toString());
         System.out.println("varName: " + varName + " typeId: " + typeId);
-        if (isValuePredicate()) System.out.println("isValuePredicate");
         System.out.println();
-    }
-
-    @Override
-    public void addExpansion(Query query){
-        query.setParentAtom(this);
-        expansions.add(query);
-    }
-
-    @Override
-    public void removeExpansion(Query query){
-        if(expansions.contains(query)) {
-            query.setParentAtom(null);
-            expansions.remove(query);
-        }
     }
 
     @Override
@@ -124,21 +110,31 @@ public abstract class AtomBase implements Atomic{
     public boolean isType(){ return !typeId.isEmpty();}
     @Override
     public boolean isRuleResolvable(){
-        Type type = getParentQuery().getGraph().getType(getTypeId());
+        Type type = getParentQuery().getGraph().orElse(null).getType(getTypeId());
         return !type.getRulesOfConclusion().isEmpty();
+    }
+
+    @Override
+    public boolean isRecursive(){
+        if (isResource()) return false;
+        boolean atomRecursive = false;
+
+        String typeId = getTypeId();
+        if (typeId.isEmpty()) return false;
+        Type type = getParentQuery().getGraph().orElse(null).getType(typeId);
+        Collection<Rule> presentInConclusion = type.getRulesOfConclusion();
+        Collection<Rule> presentInHypothesis = type.getRulesOfHypothesis();
+
+        for(Rule rule : presentInConclusion)
+            atomRecursive |= presentInHypothesis.contains(rule);
+
+        return atomRecursive;
     }
     @Override
     public boolean containsVar(String name){ return varName.equals(name);}
 
     @Override
     public PatternAdmin getPattern(){ return atomPattern;}
-    @Override
-    public PatternAdmin getExpandedPattern() {
-        Set<PatternAdmin> expandedPattern = new HashSet<>();
-        expandedPattern.add(atomPattern);
-        expansions.forEach(q -> expandedPattern.add(q.getExpandedPattern()));
-        return Patterns.disjunction(expandedPattern);
-    }
 
     private MatchQuery getBaseMatchQuery(MindmapsGraph graph) {
         QueryBuilder qb = Graql.withGraph(graph);
@@ -162,14 +158,12 @@ public abstract class AtomBase implements Atomic{
     }
 
     @Override
-    public MatchQuery getExpandedMatchQuery(MindmapsGraph graph) {
-        QueryBuilder qb = Graql.withGraph(graph);
-        Set<String> selectVars = Sets.newHashSet(varName);
-        return qb.match(getExpandedPattern()).select(selectVars);
+    public Query getParentQuery(){
+        if(parent == null)
+            throw new IllegalStateException(ErrorMessage.PARENT_MISSING.getMessage());
+        return parent;
     }
 
-    @Override
-    public Query getParentQuery(){return parent;}
     @Override
     public void setParentQuery(Query q){ parent = q;}
 
@@ -211,13 +205,35 @@ public abstract class AtomBase implements Atomic{
     public String getVal(){ return null;}
 
     @Override
-    public Set<Query> getExpansions(){ return expansions;}
+    public Map<String, String> getUnifiers(Atomic parentAtom) {
+        Set<String> varsToAllocate = parentAtom.getVarNames();
+
+        Set<String> childBVs = getVarNames();
+
+        Map<String, String> unifiers = new HashMap<>();
+        Map<String, Pair<Type, RoleType>> childMap = getVarTypeRoleMap();
+        Map<RoleType, Pair<String, Type>> parentMap = parentAtom.getRoleVarTypeMap();
+
+        for (String chVar : childBVs) {
+            RoleType role = childMap.containsKey(chVar) ? childMap.get(chVar).getValue() : null;
+            String pVar = role != null && parentMap.containsKey(role) ? parentMap.get(role).getKey() : "";
+            if (pVar.isEmpty())
+                pVar = varsToAllocate.iterator().next();
+
+            if (!chVar.equals(pVar))
+                unifiers.put(chVar, pVar);
+
+            varsToAllocate.remove(pVar);
+        }
+
+        return unifiers;
+    }
 
     @Override
     public Set<Atomic> getSubstitutions() {
         Set<Atomic> subs = new HashSet<>();
         getParentQuery().getAtoms().forEach( atom ->{
-            if(atom.isValuePredicate() && containsVar(atom.getVarName()) )
+            if(atom.isSubstitution() && containsVar(atom.getVarName()) )
                 subs.add(atom);
         });
         return subs;
@@ -226,20 +242,6 @@ public abstract class AtomBase implements Atomic{
     @Override
     public Set<Atomic> getTypeConstraints(){
         throw new IllegalArgumentException(ErrorMessage.NO_TYPE_CONSTRAINTS.getMessage());
-    }
-
-    public Set<Atomic> getNeighbours(){
-        Set<Atomic> neighbours = new HashSet<>();
-        getParentQuery().getAtoms().forEach(atom ->{
-            //TODO allow unary predicates
-            if (!atom.equals(this) &&
-                    (!atom.isValuePredicate() && !atom.isUnary() || (atom.isRuleResolvable()) || atom.isResource()) ) {
-                Set<String> intersection = new HashSet<>(getVarNames());
-                intersection.retainAll(atom.getVarNames());
-                if (!intersection.isEmpty()) neighbours.add(atom);
-            }
-        });
-        return neighbours;
     }
 
     @Override
@@ -252,28 +254,6 @@ public abstract class AtomBase implements Atomic{
             else
                 map.put(var, Sets.newHashSet(sub));
         });
-        return map;
-    }
-
-    @Override
-    public Map<String, Set<Atomic>> getVarConstraintMap() {
-        Map<String, Set<Atomic>> map = new HashMap<>();
-        getSubstitutions().forEach( sub -> {
-            String var = sub.getVarName();
-            if (map.containsKey(var))
-                map.get(var).add(sub);
-            else
-                map.put(var, Sets.newHashSet(sub));
-        });
-        if (isRelation()){
-            getTypeConstraints().forEach( cstr -> {
-                String var = cstr.getVarName();
-                if (map.containsKey(var))
-                    map.get(var).add(cstr);
-                else
-                    map.put(var, Sets.newHashSet(cstr));
-            });
-        }
         return map;
     }
 

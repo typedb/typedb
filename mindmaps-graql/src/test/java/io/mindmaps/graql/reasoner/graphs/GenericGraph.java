@@ -21,7 +21,8 @@ package io.mindmaps.graql.reasoner.graphs;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.MindmapsTestGraphFactory;
-import io.mindmaps.graql.QueryParser;
+import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.QueryBuilder;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -32,7 +33,7 @@ import java.util.List;
 public class GenericGraph {
 
     protected static MindmapsGraph mindmaps;
-    private static String filePath = "src/test/resources/graql/";
+    private final static String filePath = "src/test/resources/graql/";
 
     public static MindmapsGraph getGraph(String graqlFile) {
         mindmaps = MindmapsTestGraphFactory.newEmptyGraph();
@@ -42,9 +43,12 @@ public class GenericGraph {
         return mindmaps;
     }
 
-    public static MindmapsGraph getGraph(String ontologyFile, String ruleFile, String dataFile) {
-        MindmapsGraph mindmaps = MindmapsTestGraphFactory.newEmptyGraph();
-        buildGraph(ontologyFile, ruleFile, dataFile);
+    public static MindmapsGraph getGraph(String ontologyFile, String... files) {
+        mindmaps = MindmapsTestGraphFactory.newEmptyGraph();
+        loadGraqlFile(ontologyFile);
+        for( String graqlFile : files) {
+            loadGraqlFile(graqlFile);
+        }
         commit();
 
         return mindmaps;
@@ -54,20 +58,15 @@ public class GenericGraph {
         loadGraqlFile(graqlFile);
     }
 
-    private static void buildGraph(String ontologyFile, String ruleFile, String dataFile) {
-        loadGraqlFile(ontologyFile);
-        loadGraqlFile(ruleFile);
-        loadGraqlFile(dataFile);
-    }
-
     private static void loadGraqlFile(String fileName) {
+        System.out.println("Loading " + fileName);
         if (fileName.isEmpty()) return;
 
-        QueryParser qp = QueryParser.create(mindmaps);
+        QueryBuilder qb = Graql.withGraph(mindmaps);
         try {
             List<String> lines = Files.readAllLines(Paths.get(filePath + fileName), StandardCharsets.UTF_8);
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-            qp.parseInsertQuery(query).execute();
+            qb.parseInsert(query).execute();
         }
         catch (IOException e){
             e.printStackTrace();
