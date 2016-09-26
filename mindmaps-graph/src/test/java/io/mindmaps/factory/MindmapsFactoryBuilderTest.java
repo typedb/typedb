@@ -47,14 +47,14 @@ public class MindmapsFactoryBuilderTest {
 
     @Test
     public void testBuildMindmapsFactory(){
-        MindmapsGraphFactory mgf = MindmapsFactoryBuilder.getFactory(TEST_CONFIG);
-        assertThat(mgf, instanceOf(MindmapsTinkerGraphFactory.class));
+        MindmapsInternalFactory mgf = MindmapsFactoryBuilder.getFactory(TEST_CONFIG);
+        assertThat(mgf, instanceOf(MindmapsTinkerInternalFactory.class));
     }
 
     @Test
     public void testSingleton(){
-        MindmapsGraphFactory mgf1 = MindmapsFactoryBuilder.getFactory(TEST_CONFIG);
-        MindmapsGraphFactory mgf2 = MindmapsFactoryBuilder.getFactory(TEST_CONFIG);
+        MindmapsInternalFactory mgf1 = MindmapsFactoryBuilder.getFactory(TEST_CONFIG);
+        MindmapsInternalFactory mgf2 = MindmapsFactoryBuilder.getFactory(TEST_CONFIG);
         assertEquals(mgf1, mgf2);
     }
 

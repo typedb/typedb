@@ -29,11 +29,11 @@ import static org.junit.Assert.assertThat;
 public class MindmapsTitanHadoopGraphFactoryTest {
     private final String TEST_CONFIG = "../conf/main/mindmaps-analytics.properties";
 
-    private MindmapsTitanHadoopGraphFactory factory;
+    private MindmapsTitanHadoopInternalFactory factory;
 
     @Before
     public void setUp() throws Exception {
-        factory = new MindmapsTitanHadoopGraphFactory();
+        factory = new MindmapsTitanHadoopInternalFactory();
     }
 
     @Test(expected=UnsupportedOperationException.class)

@@ -121,7 +121,7 @@ public class GraqlShell implements AutoCloseable {
         options.addOption("n", "name", true, "name of the graph");
         options.addOption("e", "execute", true, "query to execute");
         options.addOption("f", "file", true, "graql file path to execute");
-        options.addOption("u", "uri", true, "uri to connect to engine");
+        options.addOption("u", "uri", true, "uri to factory to engine");
         options.addOption("h", "help", false, "print usage message");
         options.addOption("v", "version", false, "print version");
 

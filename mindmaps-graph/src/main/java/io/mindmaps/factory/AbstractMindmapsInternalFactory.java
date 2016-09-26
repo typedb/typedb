@@ -26,12 +26,12 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-abstract class AbstractMindmapsGraphFactory<M extends AbstractMindmapsGraph<G>, G extends Graph> implements MindmapsGraphFactory<M, G>{
+abstract class AbstractMindmapsInternalFactory<M extends AbstractMindmapsGraph<G>, G extends Graph> implements MindmapsInternalFactory<M, G> {
     private final Map<String, M> openMindmapsGraphs;
     private final Map<String, G> openGraphs;
     private final Set<String> openKeyspaces;
 
-    AbstractMindmapsGraphFactory(){
+    AbstractMindmapsInternalFactory(){
         openMindmapsGraphs = new HashMap<>();
         openGraphs = new HashMap<>();
         openKeyspaces = new HashSet<>();

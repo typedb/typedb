@@ -43,12 +43,12 @@ import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-class MindmapsTitanGraphFactory extends AbstractMindmapsGraphFactory<MindmapsTitanGraph, TitanGraph> {
-    protected final Logger LOG = LoggerFactory.getLogger(MindmapsTitanGraphFactory.class);
+class MindmapsTitanInternalFactory extends AbstractMindmapsInternalFactory<MindmapsTitanGraph, TitanGraph> {
+    protected final Logger LOG = LoggerFactory.getLogger(MindmapsTitanInternalFactory.class);
     private final static String SEARCH_KEY = "search";
     private final static String DEFAULT_CONFIG = "backend-default";
 
-    public MindmapsTitanGraphFactory(){
+    public MindmapsTitanInternalFactory(){
         super();
     }
 

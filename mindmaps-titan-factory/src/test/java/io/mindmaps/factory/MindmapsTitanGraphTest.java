@@ -45,12 +45,12 @@ public class MindmapsTitanGraphTest {
 
     @Before
     public void setup(){
-        mindmapsGraph = new MindmapsTitanGraphFactory().getGraph(TEST_NAME, TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING);
+        mindmapsGraph = new MindmapsTitanInternalFactory().getGraph(TEST_NAME, TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING);
     }
 
     @After
     public void cleanup(){
-        MindmapsGraph mg = new MindmapsTitanGraphFactory().getGraph(TEST_NAME, TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING);
+        MindmapsGraph mg = new MindmapsTitanInternalFactory().getGraph(TEST_NAME, TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING);
         mg.clear();
     }
 
