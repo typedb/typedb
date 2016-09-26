@@ -52,7 +52,7 @@ public class TemplateParserTest {
         assertParseEquals(template, json, expected);
     }
 
-    @Test(expected = AssertionError.class)
+    @Test(expected = RuntimeException.class)
     public void dataMissingTest() {
         String template = "insert $x isa person has name %name , has feet %numFeet ";
         String expected = "insert $x0 isa person has name \\\"Phil Collins\\\", has feet 3 ";
@@ -289,6 +289,20 @@ public class TemplateParserTest {
                "}";
 
         String template = "$%person.name isa person";
+        String expected = "$Phil-Collins isa person";
+
+        assertParseEquals(template, json, expected);
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void wrongDataTest(){
+       String json = "{\n" +
+               "\t\"person\" : {\n" +
+               "\t\t\"name\" : \"Phil Collins\"\n" +
+               "\t}\n" +
+               "}";
+
+        String template = "$%person.namefhwablfewqhbfli isa person";
         String expected = "$Phil-Collins isa person";
 
         assertParseEquals(template, json, expected);

@@ -161,7 +161,10 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         return ctx.graql().stream()
                 .map(GraqlTemplateParser.GraqlContext::variable)
                 .filter(v -> v != null)
-                .map(RuleContext::getText)
+                .map(GraqlTemplateParser.VariableContext::GVAR)
+                .filter(v -> v != null)
+                .map(TerminalNode::getSymbol)
+                .map(Token::getText)
                 .map(Variable::new)
                 .collect(toSet());
     }

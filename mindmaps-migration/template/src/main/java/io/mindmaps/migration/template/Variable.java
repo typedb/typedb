@@ -33,10 +33,6 @@ public class Variable {
         }
     }
 
-    public String getVariable() {
-        return variable;
-    }
-
     public boolean isGraqlVariable() {
         return graqlVariable;
     }

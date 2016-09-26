@@ -71,7 +71,7 @@ public class Scope {
         }
         else {
             // Unknown variable
-            return null;
+            throw new RuntimeException("Variable " + var.variable() + " not found in data");
         }
     }
 
