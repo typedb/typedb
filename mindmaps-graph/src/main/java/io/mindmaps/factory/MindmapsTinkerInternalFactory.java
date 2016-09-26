@@ -27,10 +27,10 @@ import org.slf4j.LoggerFactory;
 /**
  * A graph factory which provides a mindmaps graph with a tinker graph backend.
  */
-class MindmapsTinkerGraphFactory extends AbstractMindmapsGraphFactory<MindmapsTinkerGraph, TinkerGraph> {
-    private final Logger LOG = LoggerFactory.getLogger(MindmapsTinkerGraphFactory.class);
+class MindmapsTinkerInternalFactory extends AbstractMindmapsInternalFactory<MindmapsTinkerGraph, TinkerGraph> {
+    private final Logger LOG = LoggerFactory.getLogger(MindmapsTinkerInternalFactory.class);
 
-    MindmapsTinkerGraphFactory(){
+    MindmapsTinkerInternalFactory(){
         super();
     }
 

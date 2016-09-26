@@ -53,7 +53,7 @@ public class TestOwlMindMapsBase {
  
     static MindmapsGraph graph =
              MindmapsTestGraphFactory.newEmptyGraph();  
-             // MindmapsClient.getGraph(OWL_TEST_GRAPH);
+             // MindmapsGraphFactoryImpl.getGraph(OWL_TEST_GRAPH);
     
     static OWLOntologyManager manager;
     

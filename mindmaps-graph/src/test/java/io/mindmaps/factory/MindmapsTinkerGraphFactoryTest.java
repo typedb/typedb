@@ -36,13 +36,13 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 
 public class MindmapsTinkerGraphFactoryTest {
-    private MindmapsGraphFactory tinkerGraphFactory;
+    private MindmapsInternalFactory tinkerGraphFactory;
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void setup() {
-        tinkerGraphFactory = new MindmapsTinkerGraphFactory();
+        tinkerGraphFactory = new MindmapsTinkerInternalFactory();
     }
 
     @Test

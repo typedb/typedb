@@ -1,12 +1,21 @@
 package io.mindmaps.graql.internal.analytics;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.*;
+import io.mindmaps.concept.Entity;
+import io.mindmaps.concept.EntityType;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.ResourceType;
+import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.factory.MindmapsClient;
+import io.mindmaps.Mindmaps;
 import org.elasticsearch.common.collect.Sets;
 import org.javatuples.Pair;
-import org.junit.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
 import spark.Spark;
 
 import java.util.Collections;
@@ -15,7 +24,9 @@ import java.util.function.Supplier;
 
 import static io.mindmaps.IntegrationUtils.graphWithNewKeyspace;
 import static io.mindmaps.IntegrationUtils.startTestEngine;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class StatisticsTest {
 
@@ -237,19 +248,19 @@ public class StatisticsTest {
                 .putRolePlayer(relation1, entity2)
                 .putRolePlayer(relation2, entity4);
 
-        ResourceType resourceType1 = graph.putResourceType("resourceType1", ResourceType.DataType.DOUBLE);
-        ResourceType resourceType2 = graph.putResourceType("resourceType2", ResourceType.DataType.LONG);
-        ResourceType resourceType3 = graph.putResourceType("resourceType3", ResourceType.DataType.LONG);
-        ResourceType resourceType4 = graph.putResourceType("resourceType4", ResourceType.DataType.STRING);
-        ResourceType resourceType5 = graph.putResourceType("resourceType5", ResourceType.DataType.LONG);
-        ResourceType resourceType6 = graph.putResourceType("resourceType6", ResourceType.DataType.DOUBLE);
+        graph.putResourceType("resourceType1", ResourceType.DataType.DOUBLE);
+        graph.putResourceType("resourceType2", ResourceType.DataType.LONG);
+        graph.putResourceType("resourceType3", ResourceType.DataType.LONG);
+        graph.putResourceType("resourceType4", ResourceType.DataType.STRING);
+        graph.putResourceType("resourceType5", ResourceType.DataType.LONG);
+        graph.putResourceType("resourceType6", ResourceType.DataType.DOUBLE);
 
         graph.commit();
-        graph = MindmapsClient.getGraph(keyspace);
+        graph = Mindmaps.factory().getGraph(keyspace);
     }
 
     private void addResources() throws MindmapsValidationException {
-        graph = MindmapsClient.getGraph(keyspace);
+        graph = Mindmaps.factory().getGraph(keyspace);
 
         graph.putResource(1.2, graph.getResourceType("resourceType1"));
         graph.putResource(1.5, graph.getResourceType("resourceType1"));
@@ -272,6 +283,6 @@ public class StatisticsTest {
         graph.putResource("c", graph.getResourceType("resourceType4"));
 
         graph.commit();
-        graph = MindmapsClient.getGraph(keyspace);
+        graph = Mindmaps.factory().getGraph(keyspace);
     }
 }

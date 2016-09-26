@@ -1,7 +1,7 @@
 package io.mindmaps.graph.internal;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.factory.MindmapsOrientDBGraphFactory;
+import io.mindmaps.factory.MindmapsOrientDBInternalFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -27,12 +27,12 @@ public class MindmapsOrientDBGraphTest {
 
     @Before
     public void setup(){
-        mindmapsGraph = new MindmapsOrientDBGraphFactory().getGraph(TEST_NAME, TEST_URI, null, TEST_BATCH_LOADING);
+        mindmapsGraph = new MindmapsOrientDBInternalFactory().getGraph(TEST_NAME, TEST_URI, null, TEST_BATCH_LOADING);
     }
 
     @After
     public void cleanup(){
-        MindmapsGraph mg = new MindmapsOrientDBGraphFactory().getGraph(TEST_NAME, TEST_URI, null, TEST_BATCH_LOADING);
+        MindmapsGraph mg = new MindmapsOrientDBInternalFactory().getGraph(TEST_NAME, TEST_URI, null, TEST_BATCH_LOADING);
         mg.clear();
     }
 

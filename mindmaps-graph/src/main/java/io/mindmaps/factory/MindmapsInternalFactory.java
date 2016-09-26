@@ -27,7 +27,7 @@ import java.util.Set;
  * The interface used to build new graphs from different vendors.
  * Adding new vendor support means implementing this interface.
  */
-interface MindmapsGraphFactory<M extends MindmapsGraph, T extends Graph> {
+interface MindmapsInternalFactory<M extends MindmapsGraph, T extends Graph> {
     /**
      *
      * @param name The name of the graph we should be initialising
