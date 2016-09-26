@@ -131,7 +131,7 @@ public class ScalingTestIT {
             Long startTime = 0L;
             Long stopTime = 0L;
 
-            graph = MindmapsClient.getGraph(keyspace);
+            graph = Mindmaps.factory().getGraph(keyspace);
 
             for (int i=0;i<REPEAT;i++) {
                 writer.println("gremlin count is: " + graph.getTinkerTraversal().count().next());
