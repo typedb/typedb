@@ -20,22 +20,34 @@ package io.mindmaps.engine.controller;
 
 import com.jayway.restassured.http.ContentType;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.*;
+import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.Entity;
+import io.mindmaps.concept.EntityType;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.Resource;
+import io.mindmaps.concept.ResourceType;
+import io.mindmaps.concept.RoleType;
 import io.mindmaps.engine.Util;
 import io.mindmaps.engine.postprocessing.Cache;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
+import io.mindmaps.graph.internal.Mindmaps;
 import io.mindmaps.util.REST;
 import io.mindmaps.util.Schema;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import java.util.UUID;
 
 import static com.jayway.restassured.RestAssured.delete;
 import static com.jayway.restassured.RestAssured.given;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class CommitLogControllerTest {
     private Cache cache;
@@ -89,8 +101,8 @@ public class CommitLogControllerTest {
         final String BOB = "bob";
         final String TIM = "tim";
 
-        MindmapsGraph bob = MindmapsClient.getGraph(BOB);
-        MindmapsGraph tim = MindmapsClient.getGraph(TIM);
+        MindmapsGraph bob = Mindmaps.connect().getGraph(BOB);
+        MindmapsGraph tim = Mindmaps.connect().getGraph(TIM);
 
         addSomeData(bob);
 
@@ -105,8 +117,8 @@ public class CommitLogControllerTest {
         assertEquals(2, cache.getCastingJobs().get(TIM).size());
         assertEquals(1, cache.getResourceJobs().get(TIM).size());
 
-        MindmapsClient.getGraph(BOB).clear();
-        MindmapsClient.getGraph(TIM).clear();
+        Mindmaps.connect().getGraph(BOB).clear();
+        Mindmaps.connect().getGraph(TIM).clear();
 
         assertEquals(0, cache.getCastingJobs().get(BOB).size());
         assertEquals(0, cache.getCastingJobs().get(TIM).size());

@@ -19,23 +19,39 @@
 package io.mindmaps.graql.internal.analytics;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.*;
+import io.mindmaps.concept.Entity;
+import io.mindmaps.concept.EntityType;
+import io.mindmaps.concept.Instance;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.Resource;
+import io.mindmaps.concept.ResourceType;
+import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.factory.MindmapsClient;
+import io.mindmaps.graph.internal.Mindmaps;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.util.ErrorMessage;
 import org.javatuples.Pair;
-import org.junit.*;
-import org.junit.rules.ExpectedException;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 import static io.mindmaps.IntegrationUtils.graphWithNewKeyspace;
 import static io.mindmaps.IntegrationUtils.startTestEngine;
-import static io.mindmaps.graql.Graql.*;
-import static org.junit.Assert.*;
+import static io.mindmaps.graql.Graql.or;
+import static io.mindmaps.graql.Graql.var;
+import static io.mindmaps.graql.Graql.withGraph;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class GraqlTest {
 
@@ -143,7 +159,7 @@ public class GraqlTest {
         Map<Instance, Long> degrees = ((Map) ((ComputeQuery) qb.parse("compute degrees")).execute());
 
         // assert degrees are correct
-        graph = MindmapsClient.getGraph(keyspace);
+        graph = Mindmaps.connect().getGraph(keyspace);
 
         entity1 = graph.getEntity("1");
         entity2 = graph.getEntity("2");
@@ -234,7 +250,7 @@ public class GraqlTest {
         ((ComputeQuery) qb.parse("compute degreesAndPersist")).execute();
 
         // assert persisted degrees are correct
-        graph = MindmapsClient.getGraph(keyspace);
+        graph = Mindmaps.connect().getGraph(keyspace);
         entity1 = graph.getEntity("1");
         entity2 = graph.getEntity("2");
         entity3 = graph.getEntity("3");

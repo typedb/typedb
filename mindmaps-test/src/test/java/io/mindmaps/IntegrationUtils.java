@@ -21,7 +21,7 @@ package io.mindmaps;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import io.mindmaps.engine.MindmapsEngineServer;
-import io.mindmaps.factory.MindmapsClient;
+import io.mindmaps.graph.internal.Mindmaps;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.javatuples.Pair;
 
@@ -51,7 +51,7 @@ public class IntegrationUtils {
 
     public static Pair<MindmapsGraph, String> graphWithNewKeyspace() {
         String keyspace = UUID.randomUUID().toString().replaceAll("-", "");
-        MindmapsGraph graph = MindmapsClient.getGraph(keyspace);
+        MindmapsGraph graph = Mindmaps.connect().getGraph(keyspace);
         return Pair.with(graph, keyspace);
     }
 }

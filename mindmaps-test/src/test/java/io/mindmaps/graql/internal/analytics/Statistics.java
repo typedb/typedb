@@ -1,11 +1,19 @@
 package io.mindmaps.graql.internal.analytics;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.*;
-import io.mindmaps.factory.MindmapsClient;
+import io.mindmaps.concept.Entity;
+import io.mindmaps.concept.EntityType;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.ResourceType;
+import io.mindmaps.concept.RoleType;
+import io.mindmaps.graph.internal.Mindmaps;
 import org.elasticsearch.common.collect.Sets;
 import org.javatuples.Pair;
-import org.junit.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import spark.Spark;
 
 import java.util.Collections;
@@ -91,7 +99,7 @@ public class Statistics {
         Analytics computer;
 
         graph.commit();
-        graph = MindmapsClient.getGraph(keyspace);
+        graph = Mindmaps.connect().getGraph(keyspace);
 
         // resource-type has no instance
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));
@@ -140,7 +148,7 @@ public class Statistics {
         graph.putResource("c", resourceType4);
 
         graph.commit();
-        graph = MindmapsClient.getGraph(keyspace);
+        graph = Mindmaps.connect().getGraph(keyspace);
 
         // test max
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));

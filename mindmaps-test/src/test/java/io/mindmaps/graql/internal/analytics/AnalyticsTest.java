@@ -29,19 +29,33 @@ import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
-import io.mindmaps.factory.MindmapsClient;
-import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.graph.internal.Mindmaps;
+import io.mindmaps.graql.internal.util.GraqlType;
 import org.apache.commons.collections.CollectionUtils;
 import org.javatuples.Pair;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 import static io.mindmaps.IntegrationUtils.graphWithNewKeyspace;
 import static io.mindmaps.IntegrationUtils.startTestEngine;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class AnalyticsTest {
 
@@ -94,7 +108,7 @@ public class AnalyticsTest {
         analytics.degreesAndPersist();
 
         // check that dog has a degree to confirm ako has been inferred
-        graph = MindmapsClient.getGraph(keyspace);
+        graph = Mindmaps.connect().getGraph(keyspace);
         foofoo = graph.getEntity("foofoo");
         Collection<Resource<?>> degrees = foofoo.resources();
         assertTrue(degrees.iterator().next().getValue().equals(0L));
@@ -114,7 +128,7 @@ public class AnalyticsTest {
         // create 3 instances
         System.out.println();
         System.out.println("Creating 3 instances");
-        graph = MindmapsClient.getGraph(keyspace);
+        graph = Mindmaps.connect().getGraph(keyspace);
         EntityType thing = graph.putEntityType("thing");
         EntityType anotherThing = graph.putEntityType("another");
         graph.putEntity("1", thing);
@@ -135,7 +149,7 @@ public class AnalyticsTest {
         System.out.println();
         System.out.println("Counting");
         startTime = System.currentTimeMillis();
-        graph = MindmapsClient.getGraph(keyspace);
+        graph = Mindmaps.connect().getGraph(keyspace);
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("thing")));
         Assert.assertEquals(2, computer.count());
         System.out.println();
@@ -225,14 +239,14 @@ public class AnalyticsTest {
         });
 
         // compute degrees on subgraph
-        graph = MindmapsClient.getGraph(keyspace);
+        graph = Mindmaps.connect().getGraph(keyspace);
         thing = graph.getEntityType("thing");
         related = graph.getRelationType("related");
         computer = new Analytics(keyspace, Sets.newHashSet(thing, related));
         graph.close();
         degrees = computer.degrees();
 
-        graph = MindmapsClient.getGraph(keyspace);
+        graph = Mindmaps.connect().getGraph(keyspace);
         correctDegrees.put(graph.getRelation(id3), 1l);
 
         assertTrue(!degrees.isEmpty());
@@ -301,7 +315,7 @@ public class AnalyticsTest {
         computer.degreesAndPersist();
 
         // fetch instances
-        graph = MindmapsClient.getGraph(keyspace);
+        graph = Mindmaps.connect().getGraph(keyspace);
         entity1 = graph.getEntity("1");
         entity2 = graph.getEntity("2");
         entity3 = graph.getEntity("3");
@@ -325,7 +339,7 @@ public class AnalyticsTest {
             computer.degreesAndPersist();
 
             // refresh everything after commit
-            graph = MindmapsClient.getGraph(keyspace);
+            graph = Mindmaps.connect().getGraph(keyspace);
             // fetch instances
             entity1 = graph.getEntity("1");
             entity2 = graph.getEntity("2");
@@ -358,7 +372,7 @@ public class AnalyticsTest {
             computer.degreesAndPersist();
 
             // after computation refresh concepts
-            graph = MindmapsClient.getGraph(keyspace);
+            graph = Mindmaps.connect().getGraph(keyspace);
 
             // fetch instances
             entity1 = graph.getEntity("1");
@@ -512,7 +526,7 @@ public class AnalyticsTest {
         analytics.degreesAndPersist();
 
         // check degrees are correct
-        graph = MindmapsClient.getGraph(keyspace);
+        graph = Mindmaps.connect().getGraph(keyspace);
         referenceDegrees.entrySet().forEach(entry -> {
             Instance instance = graph.getInstance(entry.getKey());
             if (instance.isEntity()) {
@@ -541,7 +555,7 @@ public class AnalyticsTest {
         analytics.degreesAndPersist();
 
         // check only expected resources exist
-        graph = MindmapsClient.getGraph(keyspace);
+        graph = Mindmaps.connect().getGraph(keyspace);
         rt = graph.getResourceType(Analytics.degree);
         degrees = rt.instances();
         degrees.forEach(i -> i.ownerInstances().iterator().forEachRemaining(r ->
@@ -617,7 +631,7 @@ public class AnalyticsTest {
         Analytics analytics = new Analytics(keyspace, ct);
         analytics.degreesAndPersist();
 
-        graph = MindmapsClient.getGraph(keyspace);
+        graph = Mindmaps.connect().getGraph(keyspace);
         ResourceType<Long> degreeResource = graph.getResourceType(Analytics.degree);
 
         // check degrees are correct
@@ -759,7 +773,7 @@ public class AnalyticsTest {
 
         Analytics analytics = new Analytics(keyspace);
         Map<Instance, Long> degrees = analytics.degrees();
-        graph = MindmapsClient.getGraph(keyspace);
+        graph = Mindmaps.connect().getGraph(keyspace);
         assertTrue(degrees.get(graph.getRelation(relationId)).equals(3L));
         assertTrue(degrees.get(graph.getEntity(marlonId)).equals(1L));
     }
