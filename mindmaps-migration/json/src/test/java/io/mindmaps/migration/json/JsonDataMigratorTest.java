@@ -19,11 +19,12 @@
 package io.mindmaps.migration.json;
 
 import com.google.common.collect.Sets;
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.*;
-import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.internal.util.GraqlType;
 import mjson.Json;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -42,8 +43,13 @@ public class JsonDataMigratorTest {
 
     @Before
     public void setUp() {
-        graph = MindmapsTestGraphFactory.newEmptyGraph();
+        graph =  Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph("default");
         migrator = new JsonDataMigrator().graph(graph);
+    }
+
+    @After
+    public void shutdown(){
+        graph.clear();
     }
 
     @Test

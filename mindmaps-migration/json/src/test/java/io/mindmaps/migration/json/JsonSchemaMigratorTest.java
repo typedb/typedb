@@ -18,10 +18,10 @@
 
 package io.mindmaps.migration.json;
 
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.*;
 import io.mindmaps.concept.ResourceType.DataType;
-import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.internal.util.GraqlType;
 import mjson.Json;
 import org.junit.*;
@@ -31,7 +31,6 @@ import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.function.Function;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.*;
@@ -46,8 +45,13 @@ public class JsonSchemaMigratorTest {
 
     @Before
     public void setUp() {
-        graph = MindmapsTestGraphFactory.newEmptyGraph();
+        graph =  Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph("default");
         migrator = new JsonSchemaMigrator().graph(graph);
+    }
+
+    @After
+    public void shutdown() {
+        graph.clear();
     }
 
     @Test
