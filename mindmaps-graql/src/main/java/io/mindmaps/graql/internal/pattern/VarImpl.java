@@ -50,9 +50,6 @@ class VarImpl implements VarInternal {
     private String name;
     private final boolean userDefinedName;
 
-    private Optional<VarAdmin> isa = Optional.empty();
-    private Optional<VarAdmin> ako = Optional.empty();
-
     private final Set<VarAdmin> hasRole = new HashSet<>();
     private final Set<VarAdmin> playsRole = new HashSet<>();
     private final Set<VarAdmin> hasScope = new HashSet<>();
@@ -177,7 +174,7 @@ class VarImpl implements VarInternal {
     public Var isa(Var type) {
         VarAdmin var = type.admin();
 
-        isa.ifPresent(
+        getType().ifPresent(
                 other -> {
                     if (!var.getName().equals(other.getName()) && !var.getIdOnly().equals(other.getIdOnly())) {
                         throw new IllegalStateException(
@@ -188,7 +185,7 @@ class VarImpl implements VarInternal {
                     }
                 }
         );
-        isa = Optional.of(var);
+        properties.add(new IsaProperty(var));
         return this;
     }
 
@@ -199,7 +196,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var ako(Var type) {
-        ako = Optional.of(type.admin());
+        properties.add(new AkoProperty(type.admin()));
         return this;
     }
 
@@ -312,7 +309,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Optional<VarAdmin> getType() {
-        return isa;
+        return getProperties(IsaProperty.class).findAny().map(IsaProperty::getType);
     }
 
     @Override
@@ -353,7 +350,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Optional<VarAdmin> getAko() {
-        return ako;
+        return getProperties(AkoProperty.class).findAny().map(AkoProperty::getSuperType);
     }
 
     @Override
@@ -396,7 +393,7 @@ class VarImpl implements VarInternal {
     @Override
     public boolean hasNoProperties() {
         // return true if this variable has any properties set
-        return properties.isEmpty() && !isa.isPresent() && !ako.isPresent() &&
+        return properties.isEmpty() &&
                 hasRole.isEmpty() && playsRole.isEmpty() && hasScope.isEmpty() && resources.isEmpty() &&
                 castings.isEmpty();
     }
@@ -404,7 +401,7 @@ class VarImpl implements VarInternal {
     @Override
     public Optional<String> getIdOnly() {
 
-        if (getId().isPresent() && properties.size() == 1 && !isa.isPresent() && !ako.isPresent() &&
+        if (getId().isPresent() && properties.size() == 1 &&
                 hasRole.isEmpty() && playsRole.isEmpty() && hasScope.isEmpty() && resources.isEmpty() &&
                 castings.isEmpty() && !userDefinedName) {
             return getId();
@@ -539,8 +536,6 @@ class VarImpl implements VarInternal {
             propertiesStrings.add("(" + castings.stream().map(Object::toString).collect(joining(", ")) + ")");
         }
 
-        isa.ifPresent(v -> propertiesStrings.add("isa " + v.getPrintableName()));
-        ako.ifPresent(v -> propertiesStrings.add("ako " + v.getPrintableName()));
         playsRole.forEach(v -> propertiesStrings.add("plays-role " + v.getPrintableName()));
         hasRole.forEach(v -> propertiesStrings.add("has-role " + v.getPrintableName()));
         hasScope.forEach(v -> propertiesStrings.add("has-scope " + v.getPrintableName()));
