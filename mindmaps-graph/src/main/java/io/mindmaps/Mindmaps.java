@@ -1,13 +1,15 @@
 package io.mindmaps;
 
 import io.mindmaps.factory.MindmapsGraphFactoryImpl;
+import io.mindmaps.factory.MindmapsGraphFactoryInMemory;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class Mindmaps {
     public static final String DEFAULT_URI = "localhost:4567";
-    private static final Map<String, MindmapsGraphFactoryImpl> clients = new HashMap<>();
+    public static final String IN_MEMORY = "in-memory";
+    private static final Map<String, MindmapsGraphFactory> clients = new HashMap<>();
 
     /**
      *
@@ -15,6 +17,9 @@ public class Mindmaps {
      * @return A mindmaps client instance which can talk to the engine at the specified uri
      */
     public static MindmapsGraphFactory factory(String uri){
+        if(IN_MEMORY.equals(uri)){
+            return clients.computeIfAbsent(uri, (key) -> MindmapsGraphFactoryInMemory.getInstance());
+        }
         return clients.computeIfAbsent(uri, MindmapsGraphFactoryImpl::new);
     }
 }
