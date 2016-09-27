@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
-public class AbstractProperty implements VarProperty {
+public class IsAbstractProperty implements VarProperty {
 
     @Override
     public String toString() {

@@ -279,7 +279,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var isAbstract() {
-        properties.add(new AbstractProperty());
+        properties.add(new IsAbstractProperty());
         return this;
     }
 
@@ -336,7 +336,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public boolean getAbstract() {
-        return getProperties(AbstractProperty.class).findAny().isPresent();
+        return getProperties(IsAbstractProperty.class).findAny().isPresent();
     }
 
     @Override
