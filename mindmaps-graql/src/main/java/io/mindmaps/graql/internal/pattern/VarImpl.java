@@ -28,6 +28,8 @@ import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 import io.mindmaps.graql.internal.gremlin.VarTraversals;
+import io.mindmaps.graql.internal.pattern.property.IdProperty;
+import io.mindmaps.graql.internal.pattern.property.VarProperty;
 import io.mindmaps.graql.internal.util.StringConverter;
 
 import java.util.*;
@@ -44,14 +46,14 @@ import static java.util.stream.Collectors.*;
  */
 class VarImpl implements VarInternal {
 
+    private Set<VarProperty> properties = new HashSet<>();
+
     private String name;
     private final boolean userDefinedName;
 
     private boolean abstractFlag = false;
     private Optional<ResourceType.DataType<?>> datatype = Optional.empty();
     private Optional<String> regex = Optional.empty();
-
-    private Optional<String> id = Optional.empty();
 
     private boolean valueFlag = false;
     private final Set<ValuePredicateAdmin> values = new HashSet<>();
@@ -132,12 +134,12 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var id(String id) {
-        this.id.ifPresent(
+        getId().ifPresent(
                 prevId -> {
                     if (!prevId.equals(id)) throw new IllegalStateException(MULTIPLE_IDS.getMessage(id, prevId));
                 }
         );
-        this.id = Optional.of(id);
+        properties.add(new IdProperty(id));
         return this;
     }
 
@@ -394,7 +396,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Optional<String> getId() {
-        return id;
+        return getProperties(IdProperty.class).findAny().map(IdProperty::getId);
     }
 
     @Override
@@ -407,14 +409,14 @@ class VarImpl implements VarInternal {
     @Override
     public boolean hasNoProperties() {
         // return true if this variable has any properties set
-        return !id.isPresent() && !valueFlag && values.isEmpty() && !isa.isPresent() && !ako.isPresent() &&
+        return !getId().isPresent() && !valueFlag && values.isEmpty() && !isa.isPresent() && !ako.isPresent() &&
                 hasRole.isEmpty() && playsRole.isEmpty() && hasScope.isEmpty() && resources.isEmpty() &&
                 castings.isEmpty();
     }
 
     @Override
     public Optional<String> getIdOnly() {
-        if (id.isPresent() && !valueFlag && values.isEmpty() && !isa.isPresent() && !ako.isPresent() &&
+        if (getId().isPresent() && !valueFlag && values.isEmpty() && !isa.isPresent() && !ako.isPresent() &&
                 hasRole.isEmpty() && playsRole.isEmpty() && hasScope.isEmpty() && resources.isEmpty() &&
                 castings.isEmpty() && !userDefinedName) {
             return getId();
@@ -527,13 +529,13 @@ class VarImpl implements VarInternal {
         Set<String> results = new HashSet<>();
         getId().ifPresent(results::add);
         getResourceTypes().forEach(results::add);
-        id.ifPresent(results::add);
+        getId().ifPresent(results::add);
         return results;
     }
 
     @Override
     public String toString() {
-        Set<String> properties = new HashSet<>();
+        Set<String> propertiesStrings = new HashSet<>();
 
         Set<VarAdmin> innerVars = getInnerVars();
         innerVars.remove(this);
@@ -543,24 +545,24 @@ class VarImpl implements VarInternal {
             throw new UnsupportedOperationException("Graql strings cannot represent a query with inner variables");
         }
 
-        id.ifPresent(i -> properties.add("id " + StringConverter.valueToString(i)));
+        properties.forEach(property -> propertiesStrings.add(property.toString()));
 
         if (isRelation()) {
-            properties.add("(" + castings.stream().map(Object::toString).collect(joining(", ")) + ")");
+            propertiesStrings.add("(" + castings.stream().map(Object::toString).collect(joining(", ")) + ")");
         }
 
-        isa.ifPresent(v -> properties.add("isa " + v.getPrintableName()));
-        ako.ifPresent(v -> properties.add("ako " + v.getPrintableName()));
-        playsRole.forEach(v -> properties.add("plays-role " + v.getPrintableName()));
-        hasRole.forEach(v -> properties.add("has-role " + v.getPrintableName()));
-        hasScope.forEach(v -> properties.add("has-scope " + v.getPrintableName()));
-        hasResourceTypes.forEach(v -> properties.add("has-resource " + v.getPrintableName()));
+        isa.ifPresent(v -> propertiesStrings.add("isa " + v.getPrintableName()));
+        ako.ifPresent(v -> propertiesStrings.add("ako " + v.getPrintableName()));
+        playsRole.forEach(v -> propertiesStrings.add("plays-role " + v.getPrintableName()));
+        hasRole.forEach(v -> propertiesStrings.add("has-role " + v.getPrintableName()));
+        hasScope.forEach(v -> propertiesStrings.add("has-scope " + v.getPrintableName()));
+        hasResourceTypes.forEach(v -> propertiesStrings.add("has-resource " + v.getPrintableName()));
 
-        getDatatypeName().ifPresent(d -> properties.add("datatype " + d));
+        getDatatypeName().ifPresent(d -> propertiesStrings.add("datatype " + d));
 
-        if (getAbstract()) properties.add("is-abstract");
+        if (getAbstract()) propertiesStrings.add("is-abstract");
 
-        values.forEach(v -> properties.add("value " + v));
+        values.forEach(v -> propertiesStrings.add("value " + v));
 
         resources.forEach(
                 resource -> {
@@ -576,16 +578,16 @@ class VarImpl implements VarInternal {
                     } else {
                         resourceRepr = " " + resource.getValuePredicates().iterator().next().toString();
                     }
-                    properties.add("has " + type + resourceRepr);
+                    propertiesStrings.add("has " + type + resourceRepr);
                 }
         );
 
-        lhs.ifPresent(s -> properties.add("lhs {" + s + "}"));
-        rhs.ifPresent(s -> properties.add("rhs {" + s + "}"));
+        lhs.ifPresent(s -> propertiesStrings.add("lhs {" + s + "}"));
+        rhs.ifPresent(s -> propertiesStrings.add("rhs {" + s + "}"));
 
         String name = isUserDefinedName() ? getPrintableName() + " " : "";
 
-        return name + properties.stream().collect(joining(", "));
+        return name + propertiesStrings.stream().collect(joining(", "));
     }
 
     /**
@@ -633,6 +635,10 @@ class VarImpl implements VarInternal {
         VarTraversals varTraversals = this.varPattern.orElseGet(() -> new VarTraversals(this));
         this.varPattern = Optional.of(varTraversals);
         return varTraversals;
+    }
+
+    private <T extends VarProperty> Stream<T> getProperties(Class<T> type) {
+        return properties.stream().filter(type::isInstance).map(type::cast);
     }
 
     @Override
