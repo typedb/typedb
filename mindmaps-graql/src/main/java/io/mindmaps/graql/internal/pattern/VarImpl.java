@@ -29,6 +29,7 @@ import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 import io.mindmaps.graql.internal.gremlin.VarTraversals;
 import io.mindmaps.graql.internal.pattern.property.IdProperty;
+import io.mindmaps.graql.internal.pattern.property.ValueProperty;
 import io.mindmaps.graql.internal.pattern.property.VarProperty;
 import io.mindmaps.graql.internal.util.StringConverter;
 
@@ -56,7 +57,6 @@ class VarImpl implements VarInternal {
     private Optional<String> regex = Optional.empty();
 
     private boolean valueFlag = false;
-    private final Set<ValuePredicateAdmin> values = new HashSet<>();
 
     private Optional<String> lhs = Optional.empty();
     private Optional<String> rhs = Optional.empty();
@@ -118,7 +118,7 @@ class VarImpl implements VarInternal {
             var.getId().ifPresent(this::id);
             var.getLhs().ifPresent(this::lhs);
             var.getRhs().ifPresent(this::rhs);
-            values.addAll(var.getValuePredicates());
+            var.getValuePredicates().forEach(this::value);
 
             hasRole.addAll(var.getHasRoles());
             playsRole.addAll(var.getPlaysRoles());
@@ -156,7 +156,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var value(ValuePredicate predicate) {
-        values.add(predicate.admin());
+        properties.add(new ValueProperty(predicate.admin()));
         return this;
     }
 
@@ -409,14 +409,15 @@ class VarImpl implements VarInternal {
     @Override
     public boolean hasNoProperties() {
         // return true if this variable has any properties set
-        return !getId().isPresent() && !valueFlag && values.isEmpty() && !isa.isPresent() && !ako.isPresent() &&
+        return properties.isEmpty() && !valueFlag && !isa.isPresent() && !ako.isPresent() &&
                 hasRole.isEmpty() && playsRole.isEmpty() && hasScope.isEmpty() && resources.isEmpty() &&
                 castings.isEmpty();
     }
 
     @Override
     public Optional<String> getIdOnly() {
-        if (getId().isPresent() && !valueFlag && values.isEmpty() && !isa.isPresent() && !ako.isPresent() &&
+
+        if (getId().isPresent() && properties.size() == 1 && !valueFlag && !isa.isPresent() && !ako.isPresent() &&
                 hasRole.isEmpty() && playsRole.isEmpty() && hasScope.isEmpty() && resources.isEmpty() &&
                 castings.isEmpty() && !userDefinedName) {
             return getId();
@@ -447,7 +448,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Set<?> getValueEqualsPredicates() {
-        return values.stream()
+        return getValuePredicates().stream()
                 .map(ValuePredicateAdmin::equalsValue)
                 .flatMap(this::optionalToStream)
                 .collect(toSet());
@@ -455,7 +456,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Set<ValuePredicateAdmin> getValuePredicates() {
-        return values;
+        return getProperties(ValueProperty.class).map(ValueProperty::getPredicate).collect(toSet());
     }
 
     @Override
@@ -561,8 +562,6 @@ class VarImpl implements VarInternal {
         getDatatypeName().ifPresent(d -> propertiesStrings.add("datatype " + d));
 
         if (getAbstract()) propertiesStrings.add("is-abstract");
-
-        values.forEach(v -> propertiesStrings.add("value " + v));
 
         resources.forEach(
                 resource -> {
