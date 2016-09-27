@@ -74,10 +74,13 @@ public class RemoteSession {
                     startSession(session, json);
                     break;
                 case ACTION_QUERY:
-                    sessions.get(session).executeQuery(json);
+                    sessions.get(session).receiveQuery(json);
                     break;
                 case ACTION_QUERY_END:
-                    sessions.get(session).stopQuery();
+                    sessions.get(session).executeQuery();
+                    break;
+                case ACTION_QUERY_ABORT:
+                    sessions.get(session).abortQuery();
                     break;
                 case ACTION_COMMIT:
                     sessions.get(session).commit();

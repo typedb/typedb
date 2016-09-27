@@ -17,8 +17,10 @@
  */
 
 package io.mindmaps.shell;
+
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import com.google.common.base.Strings;
 import io.mindmaps.graql.GraqlShell;
 import org.junit.After;
 import org.junit.Before;
@@ -256,6 +258,13 @@ public class GraqlShellTest {
         for (int i = 0; i < repeats; i ++) {
             testShell(randomString(i));
         }
+    }
+
+    @Test
+    public void testLargeQuery() throws IOException {
+        String id = Strings.repeat("really-", 1000) + "long-id";
+        String[] result = testShell("insert X isa entity-type; '" + id + "' isa X;\nmatch $x isa X;\n").split("\n");
+        assertThat(result[result.length-2], allOf(containsString("$x"), containsString(id)));
     }
 
     private String randomString(int length) {

@@ -18,6 +18,7 @@
 
 package io.mindmaps.graql;
 
+import com.google.common.base.Splitter;
 import io.mindmaps.graql.internal.shell.ErrorMessage;
 import io.mindmaps.graql.internal.shell.GraQLCompleter;
 import io.mindmaps.graql.internal.shell.GraqlSignalHandler;
@@ -80,6 +81,8 @@ public class GraqlShell implements AutoCloseable {
     private static final String CLEAR_COMMAND = "clear";
     private static final String EXIT_COMMAND = "exit";
     private static final String LICENSE_COMMAND = "license";
+
+    private static final int QUERY_CHUNK_SIZE = 1000;
 
     /**
      * Array of available commands in shell
@@ -307,8 +310,8 @@ public class GraqlShell implements AutoCloseable {
 
         switch (json.at(ACTION).asString()) {
             case ACTION_QUERY:
-                List<Json> lines = json.at(QUERY_LINES).asJsonList();
-                lines.forEach(line -> println(line.asString()));
+                String result = json.at(QUERY_RESULT).asString();
+                print(result);
                 break;
             case ACTION_QUERY_END:
                 // Alert the shell that the query has finished, so it can prompt for another query
@@ -324,10 +327,17 @@ public class GraqlShell implements AutoCloseable {
 
     private void executeQuery(String queryString) {
         try {
-            sendJson(Json.object(
-                    ACTION, ACTION_QUERY,
-                    QUERY, queryString
-            ));
+            // Split query into chunks
+            Iterable<String> splitQuery = Splitter.fixedLength(QUERY_CHUNK_SIZE).split(queryString);
+
+            for (String queryChunk : splitQuery) {
+                sendJson(Json.object(
+                        ACTION, ACTION_QUERY,
+                        QUERY, queryChunk
+                ));
+            }
+
+            sendJson(Json.object(ACTION, ACTION_QUERY_END));
 
             // Wait for the end of the query results before continuing
             waitingQuery = true;
@@ -381,7 +391,7 @@ public class GraqlShell implements AutoCloseable {
      */
     public void interrupt() {
         if (waitingQuery) {
-            sendJson(Json.object(ACTION, ACTION_QUERY_END));
+            sendJson(Json.object(ACTION, ACTION_QUERY_ABORT));
             waitingQuery = false;
         } else {
             System.exit(0);
