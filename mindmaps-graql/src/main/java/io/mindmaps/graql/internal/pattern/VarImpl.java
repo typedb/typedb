@@ -50,9 +50,6 @@ class VarImpl implements VarInternal {
     private String name;
     private final boolean userDefinedName;
 
-    private Optional<String> lhs = Optional.empty();
-    private Optional<String> rhs = Optional.empty();
-
     private Optional<VarAdmin> isa = Optional.empty();
     private Optional<VarAdmin> ako = Optional.empty();
 
@@ -297,13 +294,13 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var lhs(String lhs) {
-        this.lhs = Optional.of(lhs);
+        properties.add(new LhsProperty(lhs));
         return this;
     }
 
     @Override
     public Var rhs(String rhs) {
-        this.rhs = Optional.of(rhs);
+        properties.add(new RhsProperty(rhs));
         return this;
     }
 
@@ -451,12 +448,12 @@ class VarImpl implements VarInternal {
 
     @Override
     public Optional<String> getLhs() {
-        return lhs;
+        return getProperties(LhsProperty.class).findAny().map(LhsProperty::getLhs);
     }
 
     @Override
     public Optional<String> getRhs() {
-        return rhs;
+        return getProperties(RhsProperty.class).findAny().map(RhsProperty::getRhs);
     }
 
     @Override
@@ -566,9 +563,6 @@ class VarImpl implements VarInternal {
                     propertiesStrings.add("has " + type + resourceRepr);
                 }
         );
-
-        lhs.ifPresent(s -> propertiesStrings.add("lhs {" + s + "}"));
-        rhs.ifPresent(s -> propertiesStrings.add("rhs {" + s + "}"));
 
         String name = isUserDefinedName() ? getPrintableName() + " " : "";
 
