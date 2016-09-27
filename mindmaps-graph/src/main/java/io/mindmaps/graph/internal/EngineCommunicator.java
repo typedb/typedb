@@ -35,6 +35,7 @@ import java.net.URL;
 public class EngineCommunicator {
     private static final Logger LOG = LoggerFactory.getLogger(EngineCommunicator.class);
     private static final String DEFAULT_PROTOCOL = "http://";
+    private static final int MAX_RETRY = 5;
 
     /**
      *
@@ -47,38 +48,38 @@ public class EngineCommunicator {
         if(engineUrl == null)
             return "Engine Not Contacted";
 
-        try {
-            URL url = new URL(DEFAULT_PROTOCOL + engineUrl);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestProperty("Content-Type", "application/json");
-            connection.setRequestMethod(restType);
+        for(int i = 0; i < MAX_RETRY; i++) {
+            try {
+                URL url = new URL(DEFAULT_PROTOCOL + engineUrl);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestProperty("Content-Type", "application/json");
+                connection.setRequestMethod(restType);
 
-            if(body != null){
-                connection.setDoOutput(true);
-                try( DataOutputStream wr = new DataOutputStream(connection.getOutputStream())) {
-                    wr.write(body.getBytes());
+                if (body != null) {
+                    connection.setDoOutput(true);
+                    try (DataOutputStream wr = new DataOutputStream(connection.getOutputStream())) {
+                        wr.write(body.getBytes());
+                    }
                 }
+
+                if (connection.getResponseCode() != 200) {
+                    throw new IllegalArgumentException(ErrorMessage.INVALID_ENGINE_RESPONSE.getMessage(engineUrl, connection.getResponseCode()));
+                }
+
+                //Reading from Connection
+                BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = br.readLine()) != null) {
+                    sb.append("\n").append(line);
+                }
+                br.close();
+                return sb.toString();
+            } catch (IOException e) {
+                LOG.error(ErrorMessage.COULD_NOT_REACH_ENGINE.getMessage(engineUrl), e);
             }
-
-            if(connection.getResponseCode() != 200){
-                throw new IllegalArgumentException(ErrorMessage.INVALID_ENGINE_RESPONSE.getMessage(engineUrl, connection.getResponseCode()));
-            }
-
-            //Reading from Connection
-            BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-            StringBuilder sb = new StringBuilder();
-            String line;
-            while ((line = br.readLine()) != null) {
-                sb.append("\n").append(line);
-            }
-            br.close();
-
-            return sb.toString();
-
-        } catch (IOException e) {
-            LOG.error(ErrorMessage.COULD_NOT_REACH_ENGINE.getMessage(engineUrl), e);
-            return "Failed to contact Engine";
         }
+        throw new RuntimeException(ErrorMessage.COULD_NOT_REACH_ENGINE.getMessage(engineUrl));
     }
 
     /**
