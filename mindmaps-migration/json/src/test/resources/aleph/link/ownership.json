@@ -12,7 +12,7 @@
   "oneOf": [{"$ref": "/link/link.json#"}],
   "required": [],
   "properties": {
-    "type": {
+    "type1": {
       "title": "Type",
       "sortIndex": 80,
       "description": "The type of ownership, e.g. beneficial or legal",

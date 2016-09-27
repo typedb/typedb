@@ -39,7 +39,6 @@ class JsonMapper {
     static String subtypeName(Type conceptType, JsonType jsonType) {
         return String.format(SUBTYPE_NAME, conceptType.getId(), jsonType.getName());
     }
-
     /**
      * Get the name of a type representing items of a JSON array
      */

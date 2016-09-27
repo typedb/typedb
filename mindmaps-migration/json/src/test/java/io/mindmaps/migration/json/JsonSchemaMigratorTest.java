@@ -271,9 +271,9 @@ public class JsonSchemaMigratorTest {
         assertEquals("entity-asset", asset.getId());
 
         // Make sure $ref has worked correctly
-        Type ownersItems = graph.getType("owners-items");
+        Type ownersItems = graph.getType("owners-item");
 
-        assertRelationExists(graph.getType("type"), ownersItems);
+        assertRelationExists(graph.getType("owner"), ownersItems);
     }
 
     @Test
@@ -356,7 +356,7 @@ public class JsonSchemaMigratorTest {
             return null;
         }
 
-        Function<URI, Json> relativeReferenceResolver = docuri -> {
+        Json.Function<URI, Json> relativeReferenceResolver = docuri -> {
             try {
                 return Json.read(new File(alephBaseUri.getPath() + docuri.getPath()).toURI().toURL());
             } catch (Exception ex) {

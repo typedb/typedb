@@ -17,7 +17,7 @@
       "description": "A human-readable label for the contact detail",
       "type": ["string", "null"]
     },
-    "type": {
+    "type1": {
       "title": "Type",
       "description": "A type of medium, e.g. 'fax' or 'email'",
       "type": "string",

@@ -26,6 +26,7 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
 import mjson.Json;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,8 +43,8 @@ import static java.util.stream.Collectors.toSet;
 public class JsonSchemaMigrator {
 
     private MindmapsGraph graph;
-
     private static final String ID_SUFFIX = ".json#";
+    private Map<String, Type> migrated;
 
     // WARNING: This regex cannot perfectly match all emails because the definition is context-free
     private static final String EMAIL_REGEX =
@@ -53,7 +54,9 @@ public class JsonSchemaMigrator {
     /**
      * Create a JsonSchemaMigrator to migrate into the given graph
      */
-    public JsonSchemaMigrator() {}
+    public JsonSchemaMigrator() {
+        migrated = new HashMap<>();
+    }
 
     public JsonSchemaMigrator graph(MindmapsGraph graph){
         this.graph = graph;
@@ -66,7 +69,7 @@ public class JsonSchemaMigrator {
      * @return the root concept type representing the schema
      */
     public Type migrateSchema(Json.Schema schema) {
-        String id = schema.getJson().at("id").asString();
+        String id = schema.toJson().at("id").asString();
         if (id.startsWith("/")) id = id.substring(1);
         String name = id.substring(0, id.length() - ID_SUFFIX.length()).replace("/", "-");
         return migrateSchema(name, schema);
@@ -79,25 +82,29 @@ public class JsonSchemaMigrator {
      * @return the root concept type representing the schema
      */
     public Type migrateSchema(String name, Json.Schema schema) {
-        return migrateSchema(name, schema.getJson());
+        return migrateSchema(name, schema.toJson());
     }
 
     private Type migrateSchema(String name, Json schema) {
+        if(migrated.containsKey(name)){
+            return migrated.get(name);
+        }
+        
         Set<JsonType> types = getTypes(schema).collect(toSet());
 
         // Check if any subtypes are resource types
         boolean isResource = types.stream().anyMatch(JsonType::isResourceType);
 
         if (types.size() == 0) {
-            return graph.putEntityType(name);
+            return register(graph.putEntityType(name));
         } else if (types.size() == 1) {
             return migrateByType(name, schema, types.iterator().next(), isResource);
         } else {
             Type conceptType;
             if (isResource) {
-                conceptType = graph.putResourceType(name, JsonType.STRING.getDatatype());
+                conceptType = register(graph.putResourceType(name, JsonType.STRING.getDatatype()));
             } else {
-                conceptType = graph.putEntityType(name);
+                conceptType = register(graph.putEntityType(name));
             }
 
             // Create a subtype for each permitted type
@@ -114,7 +121,7 @@ public class JsonSchemaMigrator {
                 }
             }
 
-            return conceptType;
+            return register(conceptType);
         }
     }
 
@@ -122,7 +129,7 @@ public class JsonSchemaMigrator {
      * Migrate part of a JSON schema and produce a concept or resource type representing it
      */
     private Type migrateByType(String name, Json schema, JsonType type, boolean isResource) {
-        Type conceptType = isResource ? migrateResourceType(name, type) : graph.putEntityType(name);
+        Type conceptType = isResource ? migrateResourceType(name, type) : register(graph.putEntityType(name));
 
         switch (type) {
             case OBJECT:
@@ -142,9 +149,9 @@ public class JsonSchemaMigrator {
 
     private ResourceType migrateResourceType(String name, JsonType type){
         if(type.getDatatype() == null){
-           return graph.putResourceType(name, STRING);
+           return register(graph.putResourceType(name, STRING)).asResourceType();
         }
-        return graph.putResourceType(name, type.getDatatype());
+        return register(graph.putResourceType(name, type.getDatatype())).asResourceType();
     }
 
     private void migrateJsonString(Type conceptType, Json schema) {
@@ -229,5 +236,10 @@ public class JsonSchemaMigrator {
         }
 
         return types.map(Json::asString).map(JsonType::getType);
+    }
+
+    private Type register(Type type){
+        migrated.put(type.getId(), type);
+        return type;
     }
 }
