@@ -204,9 +204,6 @@ export default {
                 if(!halParser.parseResponse(resp)) {
                     this.showWarning("Sorry, no results found for your query.");
                 }
-                else {
-                    visualiser.centerNodes();
-                }
             }
             else {
                 this.showError(err);
