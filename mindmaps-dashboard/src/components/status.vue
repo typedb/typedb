@@ -100,7 +100,7 @@ export default {
     },
 
     attached() {
-        engineClient.getStatus(this.engineStatus);
+        engineClient.getConfig(this.engineStatus);
     },
 
     methods: {
@@ -117,7 +117,7 @@ export default {
         },
 
         retry() {
-            engineClient.getStatus(this.engineStatus);
+            engineClient.getConfig(this.engineStatus);
         }
     }
 
