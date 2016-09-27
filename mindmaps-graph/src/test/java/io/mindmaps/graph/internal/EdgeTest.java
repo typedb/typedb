@@ -18,14 +18,16 @@
 
 package io.mindmaps.graph.internal;
 
-import io.mindmaps.util.Schema;
+import io.mindmaps.Mindmaps;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
-import io.mindmaps.factory.MindmapsTestGraphFactory;
+import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -40,7 +42,7 @@ public class EdgeTest {
 
     @Before
     public void setUp(){
-        mindmapsGraph = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
+        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
         entityType = mindmapsGraph.putEntityType("My Entity Type");
         entity = mindmapsGraph.putEntity("My entity", entityType);
         Edge tinkerEdge = (Edge) mindmapsGraph.getTinkerTraversal().has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), entity.getId()).outE().next();

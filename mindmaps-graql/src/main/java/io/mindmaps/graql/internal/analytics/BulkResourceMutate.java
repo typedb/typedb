@@ -99,7 +99,7 @@ class BulkResourceMutate <T>{
 
     private void initialiseGraph() {
         if (graph == null) {
-            graph = Mindmaps.factory().getGraphBatchLoading(keyspace);
+            graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraphBatchLoading(keyspace);
             refreshOntologyElements();
         }
     }
