@@ -20,7 +20,7 @@ package io.mindmaps.graql.internal.pattern.property;
 
 import io.mindmaps.concept.ResourceType;
 
-public class DataTypeProperty implements VarProperty {
+public class DataTypeProperty extends AbstractNamedProperty {
 
     private final ResourceType.DataType<?> datatype;
 
@@ -33,11 +33,12 @@ public class DataTypeProperty implements VarProperty {
     }
 
     @Override
-    public String toString() {
-        return "datatype " + getName();
+    protected String getName() {
+        return "datatype";
     }
 
-    private String getName() {
+    @Override
+    protected String getProperty() {
         if (datatype == ResourceType.DataType.BOOLEAN) {
             return "boolean";
         } else if (datatype == ResourceType.DataType.DOUBLE) {

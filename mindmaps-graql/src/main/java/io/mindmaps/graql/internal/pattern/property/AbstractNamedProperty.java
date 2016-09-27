@@ -18,27 +18,14 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
-import io.mindmaps.graql.internal.util.StringConverter;
+abstract class AbstractNamedProperty implements VarProperty {
 
-public class IdProperty extends AbstractNamedProperty {
+    protected abstract String getName();
 
-    private final String id;
-
-    public IdProperty(String id) {
-        this.id = id;
-    }
-
-    public String getId() {
-        return id;
-    }
+    protected abstract String getProperty();
 
     @Override
-    protected String getName() {
-        return "id";
-    }
-
-    @Override
-    protected String getProperty() {
-        return StringConverter.valueToString(id);
+    public String toString() {
+        return getName() + " " + getProperty();
     }
 }

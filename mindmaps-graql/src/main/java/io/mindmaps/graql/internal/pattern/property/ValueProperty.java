@@ -20,7 +20,7 @@ package io.mindmaps.graql.internal.pattern.property;
 
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 
-public class ValueProperty implements VarProperty {
+public class ValueProperty extends AbstractNamedProperty {
 
     private final ValuePredicateAdmin predicate;
 
@@ -33,7 +33,12 @@ public class ValueProperty implements VarProperty {
     }
 
     @Override
-    public String toString() {
-        return "value " + predicate;
+    protected String getName() {
+        return "value";
+    }
+
+    @Override
+    protected String getProperty() {
+        return predicate.toString();
     }
 }

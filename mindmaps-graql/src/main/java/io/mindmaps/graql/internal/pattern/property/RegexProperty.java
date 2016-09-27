@@ -20,7 +20,7 @@ package io.mindmaps.graql.internal.pattern.property;
 
 import io.mindmaps.graql.internal.util.StringConverter;
 
-public class RegexProperty implements VarProperty {
+public class RegexProperty extends AbstractNamedProperty {
 
     private final String regex;
 
@@ -33,7 +33,12 @@ public class RegexProperty implements VarProperty {
     }
 
     @Override
-    public String toString() {
-        return "regex " + StringConverter.valueToString(regex);
+    protected String getName() {
+        return "regex";
+    }
+
+    @Override
+    protected String getProperty() {
+        return StringConverter.valueToString(regex);
     }
 }
