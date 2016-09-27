@@ -233,6 +233,7 @@ export default {
             engineClient.graqlHAL(this.graqlQuery, this.graphResponse);
             engineClient.graqlShell(this.graqlQuery, this.shellResponse);
             this.resetMsg();
+            ev.preventDefault();
         },
 
         clearGraph(ev) {

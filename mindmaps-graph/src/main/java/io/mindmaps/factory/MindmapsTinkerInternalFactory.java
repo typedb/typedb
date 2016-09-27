@@ -19,6 +19,7 @@
 package io.mindmaps.factory;
 
 import io.mindmaps.graph.internal.MindmapsTinkerGraph;
+import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +37,7 @@ class MindmapsTinkerInternalFactory extends AbstractMindmapsInternalFactory<Mind
 
     @Override
     boolean isClosed(TinkerGraph innerGraph) {
-        return false;
+        return !innerGraph.traversal().V().has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), Schema.MetaType.ENTITY_TYPE.getId()).hasNext();
     }
 
     @Override

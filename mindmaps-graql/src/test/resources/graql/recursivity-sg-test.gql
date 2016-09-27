@@ -47,7 +47,7 @@ entity plays-role SG-role-A, plays-role SG-role-B;
 
 "R1" isa inference-rule,
 lhs {match
-$x isa Human},
+$x isa Human;},
 rhs {match
 ($x, $x) isa SameGen;};
 

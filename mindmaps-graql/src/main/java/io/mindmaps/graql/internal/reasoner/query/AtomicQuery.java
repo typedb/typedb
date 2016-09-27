@@ -50,7 +50,16 @@ public class AtomicQuery extends Query{
 
     public AtomicQuery(AtomicQuery q){
         super(q);
-        atom = atomSet.iterator().next();
+        Atomic coreAtom = null;
+        Iterator<Atomic> it = atomSet.iterator();
+        while(it.hasNext() && coreAtom == null) {
+            Atomic at = it.next();
+            if (at.equals(q.getAtom())) coreAtom = at;
+        }
+        atom = coreAtom;
+
+        parent = q.getParent();
+        children.addAll(q.getChildren());
     }
 
     public AtomicQuery(Atomic at) {
@@ -115,7 +124,7 @@ public class AtomicQuery extends Query{
         subs.forEach(this::addAtom);
 
         //extrapolate if needed
-        Atomic atom = selectAtoms().iterator().next();
+        Atomic atom = getAtom();
         if(atom.isRelation() && (atom.getRoleVarTypeMap().isEmpty() || !((Relation) atom).hasExplicitRoleTypes() )){
             String relTypeId = atom.getTypeId();
             RelationType relType = graph.getRelationType(relTypeId);
@@ -127,7 +136,7 @@ public class AtomicQuery extends Query{
 
             removeAtom(atom);
             roleMaps.forEach( map -> {
-                Relation relationWithRoles = new Relation(relTypeId, map);
+                Relation relationWithRoles = new Relation(relTypeId, map, this.parent);
                 addAtom(relationWithRoles);
                 materialize();
                 removeAtom(relationWithRoles);

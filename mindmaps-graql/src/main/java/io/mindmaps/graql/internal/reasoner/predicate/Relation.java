@@ -47,8 +47,8 @@ public class Relation extends AtomBase {
         castings.addAll(pattern.getCastings());
     }
 
-    public Relation(String id, Map<String, String> roleMap){
-        super(constructRelPattern(id, roleMap));
+    public Relation(String id, Map<String, String> roleMap, Query par){
+        super(constructRelPattern(id, roleMap), par);
         castings.addAll(getPattern().asVar().getCastings());
     }
 
@@ -90,13 +90,16 @@ public class Relation extends AtomBase {
     public boolean isEquivalent(Object obj) {
         if (!(obj instanceof Relation)) return false;
         Relation a2 = (Relation) obj;
-        return this.getTypeId().equals(a2.getTypeId()) && a2.getRoleVarTypeMap().size() == this.getRoleVarTypeMap().size();
+        return this.getTypeId().equals(a2.getTypeId())
+                && getVarNames().size() == a2.getVarNames().size()
+                && a2.getRoleVarTypeMap().size() == this.getRoleVarTypeMap().size();
     }
 
     @Override
     public int equivalenceHashCode(){
         int hashCode = 1;
         hashCode = hashCode * 37 + this.typeId.hashCode();
+        hashCode = hashCode * 37 + this.getVarNames().size();
         hashCode = hashCode * 37 + this.getRoleVarTypeMap().size();
         return hashCode;
     }
