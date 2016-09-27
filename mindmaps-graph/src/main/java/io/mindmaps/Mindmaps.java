@@ -13,13 +13,13 @@ public class Mindmaps {
 
     /**
      *
-     * @param uri The engine uri to factory to
+     * @param location The location from which to create the graph
      * @return A mindmaps client instance which can talk to the engine at the specified uri
      */
-    public static MindmapsGraphFactory factory(String uri){
-        if(IN_MEMORY.equals(uri)){
-            return clients.computeIfAbsent(uri, (key) -> MindmapsGraphFactoryInMemory.getInstance());
+    public static MindmapsGraphFactory factory(String location){
+        if(IN_MEMORY.equals(location)){
+            return clients.computeIfAbsent(location, (key) -> MindmapsGraphFactoryInMemory.getInstance());
         }
-        return clients.computeIfAbsent(uri, MindmapsGraphFactoryImpl::new);
+        return clients.computeIfAbsent(location, MindmapsGraphFactoryImpl::new);
     }
 }
