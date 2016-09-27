@@ -25,7 +25,7 @@ import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.Disjunction;
 import io.mindmaps.graql.admin.PatternAdmin;
-import io.mindmaps.graql.internal.query.Patterns;
+import io.mindmaps.graql.internal.pattern.Patterns;
 import io.mindmaps.graql.internal.query.aggregate.Aggregates;
 import io.mindmaps.graql.internal.query.predicate.Predicates;
 import io.mindmaps.graql.internal.util.AdminConverter;

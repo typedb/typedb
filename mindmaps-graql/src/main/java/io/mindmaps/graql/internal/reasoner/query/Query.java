@@ -30,7 +30,7 @@ import io.mindmaps.graql.internal.query.match.MatchQueryInternal;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.query.Patterns;
+import io.mindmaps.graql.internal.pattern.Patterns;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
 

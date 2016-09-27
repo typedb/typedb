@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql.internal.query;
+package io.mindmaps.graql.internal.pattern;
 
 import com.google.common.collect.Maps;
 import io.mindmaps.concept.ResourceType;
