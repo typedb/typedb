@@ -15,45 +15,50 @@ block
 
 statement
  : forStatement
+ | ifStatement
  ;
 
 forStatement
- : LPAREN FOR element IN resolve RPAREN LBRACKET block RBRACKET
+ : LPAREN FOR variable IN resolve RPAREN LBRACKET block RBRACKET
+ ;
+
+ifStatement
+ : LPAREN IF resolve RPAREN LBRACKET block RBRACKET
  ;
 
 element     : TVAR;
 resolve     : TVAR (DVAR)*;
 replace     : resolve;
-variable    : replace | DOLLAR resolve | GVAR;
+
+type        : TVAR | CVAR | GVAR;
+
+gvar : GVAR VAR;
+tvar : GVAR{0,1} TVAR VAR (DVAR VAR)*;
 
 graql
- : variable
+ : gvar | tvar
  | IN
  | FOR
- | DOLLAR
- | PERCENT
- | DOT
  | LPAREN
  | RPAREN
- | LBRACKET
- | RBRACKET
  | NOT_WS
  ;
 
 // reserved
 FOR         : 'for' ;
 IN          : 'in' ;
+IF          : 'if' ;
 
-GVAR        : '$' [a-zA-Z0-9_-]+;
-TVAR        : '%' [a-zA-Z0-9_-]+;
-DVAR        : '.' [a-zA-Z0-9_-]+;
+VAR         : [a-zA-Z0-9_-]+;
+GVAR        : '$';
+TVAR        : '%';
+DVAR        : '.';
+CVAR        : GVAR TVAR;
+
 LPAREN      : '(';
 RPAREN      : ')';
 LBRACKET    : '{';
 RBRACKET    : '}';
-DOLLAR      : '$';
-PERCENT     : '%';
-DOT         : '.';
 NOT_WS      : ~[ \t\r\n];
 
 WS : [ \t\r\n] -> channel(1) ;
