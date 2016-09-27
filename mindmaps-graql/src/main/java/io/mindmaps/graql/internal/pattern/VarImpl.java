@@ -50,8 +50,6 @@ class VarImpl implements VarInternal {
     private String name;
     private final boolean userDefinedName;
 
-    private final Set<VarAdmin.Casting> castings = new HashSet<>();
-
     private Optional<VarTraversals> varPattern = Optional.empty();
 
     /**
@@ -105,7 +103,10 @@ class VarImpl implements VarInternal {
             //noinspection OptionalGetWithoutIsPresent
             ((VarInternal) var).getProperties(HasResourceProperty.class).forEach(properties::add);
 
-            castings.addAll(var.getCastings());
+            if (var.isRelation()) {
+                RelationProperty relationProperty = putRelationProperty();
+                var.getCastings().forEach(relationProperty::addCasting);
+            }
         }
     }
 
@@ -239,7 +240,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var rel(Var roleplayer) {
-        castings.add(new Casting(roleplayer.admin()));
+        putRelationProperty().addCasting(new Casting(roleplayer.admin()));
         return this;
     }
 
@@ -260,7 +261,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var rel(Var roletype, Var roleplayer) {
-        castings.add(new Casting(roletype.admin(), roleplayer.admin()));
+        putRelationProperty().addCasting(new Casting(roletype.admin(), roleplayer.admin()));
         return this;
     }
 
@@ -307,7 +308,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public boolean isRelation() {
-        return !castings.isEmpty();
+        return getProperties(RelationProperty.class).findAny().isPresent();
     }
 
     @Override
@@ -369,7 +370,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Set<String> getRoleTypes() {
-        return getIdNames(castings.stream().map(VarAdmin.Casting::getRoleType).flatMap(this::optionalToStream));
+        return getIdNames(getCastings().stream().map(VarAdmin.Casting::getRoleType).flatMap(this::optionalToStream));
     }
 
     @Override
@@ -385,13 +386,13 @@ class VarImpl implements VarInternal {
     @Override
     public boolean hasNoProperties() {
         // return true if this variable has any properties set
-        return properties.isEmpty() && castings.isEmpty();
+        return properties.isEmpty();
     }
 
     @Override
     public Optional<String> getIdOnly() {
 
-        if (getId().isPresent() && properties.size() == 1 && castings.isEmpty() && !userDefinedName) {
+        if (getId().isPresent() && properties.size() == 1 && !userDefinedName) {
             return getId();
         } else {
             return Optional.empty();
@@ -461,7 +462,7 @@ class VarImpl implements VarInternal {
     }
 
     public Set<VarAdmin.Casting> getCastings() {
-        return castings;
+        return getProperties(RelationProperty.class).flatMap(RelationProperty::getCastings).collect(toSet());
     }
 
     @Override
@@ -520,10 +521,6 @@ class VarImpl implements VarInternal {
 
         properties.forEach(property -> propertiesStrings.add(property.toString()));
 
-        if (isRelation()) {
-            propertiesStrings.add("(" + castings.stream().map(Object::toString).collect(joining(", ")) + ")");
-        }
-
         String name = isUserDefinedName() ? getPrintableName() + " " : "";
 
         return name + propertiesStrings.stream().collect(joining(", "));
@@ -553,6 +550,16 @@ class VarImpl implements VarInternal {
         VarTraversals varTraversals = this.varPattern.orElseGet(() -> new VarTraversals(this));
         this.varPattern = Optional.of(varTraversals);
         return varTraversals;
+    }
+
+    private RelationProperty putRelationProperty() {
+        Optional<RelationProperty> maybeProperty = getProperties(RelationProperty.class).findAny();
+
+        return maybeProperty.orElseGet(() -> {
+            RelationProperty property = new RelationProperty();
+            properties.add(property);
+            return property;
+        });
     }
 
     @Override
