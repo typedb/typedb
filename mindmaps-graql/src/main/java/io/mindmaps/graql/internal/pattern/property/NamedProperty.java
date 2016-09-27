@@ -16,26 +16,15 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql.internal.pattern;
+package io.mindmaps.graql.internal.pattern.property;
 
-import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.gremlin.MultiTraversal;
-import io.mindmaps.graql.internal.pattern.property.VarProperty;
+interface NamedProperty extends VarProperty {
 
-import java.util.Set;
-import java.util.stream.Stream;
+    String getName();
 
-/**
- * Internal interface for Var
- */
-public interface VarInternal extends VarAdmin {
+    String getProperty();
 
-    /**
-     * @return the gremlin traversals that describe this variable
-     */
-    Set<MultiTraversal> getMultiTraversals();
-
-    Stream<VarProperty> getProperties();
-
-    <T extends VarProperty> Stream<T> getProperties(Class<T> type);
+    default void buildString(StringBuilder builder) {
+        builder.append(getName()).append(" ").append(getProperty());
+    }
 }

@@ -18,16 +18,15 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
-import com.google.common.collect.Sets;
-import io.mindmaps.graql.internal.gremlin.*;
+import io.mindmaps.graql.internal.gremlin.FragmentPriority;
 import io.mindmaps.graql.internal.util.StringConverter;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
-
-import java.util.Collection;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static io.mindmaps.util.Schema.ConceptProperty.ITEM_IDENTIFIER;
 
-public class IdProperty extends AbstractNamedProperty {
+public class IdProperty implements NamedProperty, SingleTraversalProperty {
 
     private final String id;
 
@@ -40,24 +39,22 @@ public class IdProperty extends AbstractNamedProperty {
     }
 
     @Override
-    protected String getName() {
+    public String getName() {
         return "id";
     }
 
     @Override
-    protected String getProperty() {
+    public String getProperty() {
         return StringConverter.valueToString(id);
     }
 
     @Override
-    public boolean supportShortcuts() {
-        return false;
+    public GraphTraversal<Vertex, Vertex> applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
+        return traversal.has(ITEM_IDENTIFIER.name(), P.eq(id));
     }
 
     @Override
-    public Collection<MultiTraversal> getMultiTraversal(String start) {
-        Fragment fragment = new FragmentImpl(t -> t.has(ITEM_IDENTIFIER.name(), P.eq(id)), FragmentPriority.ID, start);
-        MultiTraversalImpl multiTraversal = new MultiTraversalImpl(fragment);
-        return Sets.newHashSet(multiTraversal);
+    public FragmentPriority getPriority() {
+        return FragmentPriority.ID;
     }
 }

@@ -19,8 +19,14 @@
 package io.mindmaps.graql.internal.pattern.property;
 
 import io.mindmaps.concept.ResourceType;
+import io.mindmaps.graql.internal.gremlin.FragmentPriority;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-public class DataTypeProperty extends AbstractNamedProperty {
+import static io.mindmaps.util.Schema.ConceptProperty.DATA_TYPE;
+
+public class DataTypeProperty implements NamedProperty, SingleTraversalProperty {
 
     private final ResourceType.DataType<?> datatype;
 
@@ -33,12 +39,12 @@ public class DataTypeProperty extends AbstractNamedProperty {
     }
 
     @Override
-    protected String getName() {
+    public String getName() {
         return "datatype";
     }
 
     @Override
-    protected String getProperty() {
+    public String getProperty() {
         if (datatype == ResourceType.DataType.BOOLEAN) {
             return "boolean";
         } else if (datatype == ResourceType.DataType.DOUBLE) {
@@ -50,5 +56,15 @@ public class DataTypeProperty extends AbstractNamedProperty {
         } else {
             throw new RuntimeException("Unknown data type: " + datatype.getName());
         }
+    }
+
+    @Override
+    public GraphTraversal<Vertex, Vertex> applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
+        return traversal.has(DATA_TYPE.name(), P.eq(datatype.getName()));
+    }
+
+    @Override
+    public FragmentPriority getPriority() {
+        return FragmentPriority.VALUE_NONSPECIFIC;
     }
 }

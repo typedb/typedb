@@ -18,7 +18,14 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
-public class RhsProperty extends AbstractNamedProperty {
+import io.mindmaps.graql.internal.gremlin.FragmentPriority;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+
+import static io.mindmaps.util.Schema.ConceptProperty.RULE_RHS;
+
+public class RhsProperty implements NamedProperty, SingleTraversalProperty {
 
     private final String rhs;
 
@@ -31,12 +38,22 @@ public class RhsProperty extends AbstractNamedProperty {
     }
 
     @Override
-    protected String getName() {
+    public String getName() {
         return "rhs";
     }
 
     @Override
-    protected String getProperty() {
+    public String getProperty() {
         return "{" + rhs + "}";
+    }
+
+    @Override
+    public GraphTraversal<Vertex, Vertex> applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
+        return traversal.has(RULE_RHS.name(), P.eq(rhs));
+    }
+
+    @Override
+    public FragmentPriority getPriority() {
+        return FragmentPriority.VALUE_NONSPECIFIC;
     }
 }

@@ -18,9 +18,15 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import io.mindmaps.graql.internal.gremlin.FragmentPriority;
 import io.mindmaps.graql.internal.util.StringConverter;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-public class RegexProperty extends AbstractNamedProperty {
+import static io.mindmaps.util.Schema.ConceptProperty.REGEX;
+
+public class RegexProperty implements SingleTraversalProperty, NamedProperty {
 
     private final String regex;
 
@@ -33,12 +39,22 @@ public class RegexProperty extends AbstractNamedProperty {
     }
 
     @Override
-    protected String getName() {
+    public String getName() {
         return "regex";
     }
 
     @Override
-    protected String getProperty() {
+    public String getProperty() {
         return StringConverter.valueToString(regex);
+    }
+
+    @Override
+    public GraphTraversal<Vertex, Vertex> applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
+        return traversal.has(REGEX.name(), P.eq(regex));
+    }
+
+    @Override
+    public FragmentPriority getPriority() {
+        return FragmentPriority.VALUE_NONSPECIFIC;
     }
 }

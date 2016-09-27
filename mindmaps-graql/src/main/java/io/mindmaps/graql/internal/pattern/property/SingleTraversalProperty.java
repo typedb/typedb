@@ -18,14 +18,23 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
-abstract class AbstractNamedProperty implements VarProperty {
+import com.google.common.collect.Sets;
+import io.mindmaps.graql.internal.gremlin.*;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-    protected abstract String getName();
+import java.util.Collection;
 
-    protected abstract String getProperty();
+interface SingleTraversalProperty extends VarProperty {
+
+    GraphTraversal<Vertex, Vertex> applyTraversal(GraphTraversal<Vertex, Vertex> traversal);
+
+    FragmentPriority getPriority();
 
     @Override
-    public final void buildString(StringBuilder builder) {
-        builder.append(getName()).append(" ").append(getProperty());
+    default Collection<MultiTraversal> getMultiTraversals(String start) {
+        Fragment fragment = new FragmentImpl(this::applyTraversal, getPriority(), start);
+        MultiTraversalImpl multiTraversal = new MultiTraversalImpl(fragment);
+        return Sets.newHashSet(multiTraversal);
     }
 }

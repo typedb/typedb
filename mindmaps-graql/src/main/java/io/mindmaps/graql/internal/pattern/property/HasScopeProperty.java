@@ -18,9 +18,18 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import com.google.common.collect.Sets;
 import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.gremlin.FragmentImpl;
+import io.mindmaps.graql.internal.gremlin.MultiTraversal;
+import io.mindmaps.graql.internal.gremlin.MultiTraversalImpl;
 
-public class HasScopeProperty extends AbstractNamedProperty {
+import java.util.Collection;
+
+import static io.mindmaps.graql.internal.gremlin.FragmentPriority.getEdgePriority;
+import static io.mindmaps.util.Schema.EdgeLabel.HAS_SCOPE;
+
+public class HasScopeProperty implements NamedProperty {
 
     private final VarAdmin scope;
 
@@ -33,12 +42,25 @@ public class HasScopeProperty extends AbstractNamedProperty {
     }
 
     @Override
-    protected String getName() {
+    public String getName() {
         return "has-scope";
     }
 
     @Override
-    protected String getProperty() {
+    public String getProperty() {
         return scope.getPrintableName();
+    }
+
+    @Override
+    public Collection<MultiTraversal> getMultiTraversals(String start) {
+        return Sets.newHashSet(new MultiTraversalImpl(
+                new FragmentImpl(t -> t.out(HAS_SCOPE.getLabel()), getEdgePriority(HAS_SCOPE, true), start, scope.getName()),
+                new FragmentImpl(t -> t.in(HAS_SCOPE.getLabel()), getEdgePriority(HAS_SCOPE, false), scope.getName(), start)
+        ));
+    }
+
+    @Override
+    public Collection<VarAdmin> getInnerVars() {
+        return Sets.newHashSet(scope);
     }
 }

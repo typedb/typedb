@@ -18,9 +18,22 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import com.google.common.collect.Sets;
 import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.gremlin.FragmentImpl;
+import io.mindmaps.graql.internal.gremlin.MultiTraversal;
+import io.mindmaps.graql.internal.gremlin.MultiTraversalImpl;
+import io.mindmaps.graql.internal.gremlin.ShortcutTraversal;
 
-public class IsaProperty extends AbstractNamedProperty {
+import java.util.Collection;
+import java.util.Optional;
+
+import static io.mindmaps.graql.internal.gremlin.FragmentPriority.getEdgePriority;
+import static io.mindmaps.graql.internal.gremlin.Traversals.inAkos;
+import static io.mindmaps.graql.internal.gremlin.Traversals.outAkos;
+import static io.mindmaps.util.Schema.EdgeLabel.ISA;
+
+public class IsaProperty implements NamedProperty {
 
     private final VarAdmin type;
 
@@ -33,12 +46,41 @@ public class IsaProperty extends AbstractNamedProperty {
     }
 
     @Override
-    protected String getName() {
+    public String getName() {
         return "isa";
     }
 
     @Override
-    protected String getProperty() {
+    public String getProperty() {
         return type.getPrintableName();
+    }
+
+    @Override
+    public void modifyShortcutTraversal(ShortcutTraversal shortcutTraversal) {
+        Optional<String> id = type.getId();
+        if (id.isPresent()){
+            shortcutTraversal.setType(id.get());
+        } else {
+            shortcutTraversal.setInvalid();
+        }
+    }
+
+    @Override
+    public Collection<MultiTraversal> getMultiTraversals(String start) {
+        return Sets.newHashSet(new MultiTraversalImpl(
+                new FragmentImpl(
+                        t -> outAkos(outAkos(t).out(ISA.getLabel())),
+                        getEdgePriority(ISA, true), start, type.getName()
+                ),
+                new FragmentImpl(
+                        t -> inAkos(inAkos(t).in(ISA.getLabel())),
+                        getEdgePriority(ISA, false), type.getName(), start
+                )
+        ));
+    }
+
+    @Override
+    public Collection<VarAdmin> getInnerVars() {
+        return Sets.newHashSet(type);
     }
 }

@@ -18,9 +18,20 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import com.google.common.collect.Sets;
 import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.gremlin.FragmentImpl;
+import io.mindmaps.graql.internal.gremlin.MultiTraversal;
+import io.mindmaps.graql.internal.gremlin.MultiTraversalImpl;
 
-public class PlaysRoleProperty extends AbstractNamedProperty {
+import java.util.Collection;
+
+import static io.mindmaps.graql.internal.gremlin.FragmentPriority.getEdgePriority;
+import static io.mindmaps.graql.internal.gremlin.Traversals.inAkos;
+import static io.mindmaps.graql.internal.gremlin.Traversals.outAkos;
+import static io.mindmaps.util.Schema.EdgeLabel.PLAYS_ROLE;
+
+public class PlaysRoleProperty implements NamedProperty {
 
     private final VarAdmin role;
 
@@ -33,12 +44,31 @@ public class PlaysRoleProperty extends AbstractNamedProperty {
     }
 
     @Override
-    protected String getName() {
+    public String getName() {
         return "plays-role";
     }
 
     @Override
-    protected String getProperty() {
+    public String getProperty() {
         return role.getPrintableName();
+    }
+
+    @Override
+    public Collection<MultiTraversal> getMultiTraversals(String start) {
+        return Sets.newHashSet(new MultiTraversalImpl(
+                new FragmentImpl(
+                        t -> inAkos(outAkos(t).out(PLAYS_ROLE.getLabel())),
+                        getEdgePriority(PLAYS_ROLE, true), start, role.getName()
+                ),
+                new FragmentImpl(
+                        t -> inAkos(outAkos(t).in(PLAYS_ROLE.getLabel())),
+                        getEdgePriority(PLAYS_ROLE, false), role.getName(), start
+                )
+        ));
+    }
+
+    @Override
+    public Collection<VarAdmin> getInnerVars() {
+        return Sets.newHashSet(role);
     }
 }

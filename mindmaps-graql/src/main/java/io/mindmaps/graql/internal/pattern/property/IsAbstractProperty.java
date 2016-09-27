@@ -18,10 +18,27 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
-public class IsAbstractProperty implements VarProperty {
+import io.mindmaps.graql.internal.gremlin.FragmentPriority;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+
+import static io.mindmaps.util.Schema.ConceptProperty.IS_ABSTRACT;
+
+public class IsAbstractProperty implements SingleTraversalProperty {
 
     @Override
     public void buildString(StringBuilder builder) {
         builder.append("is-abstract");
+    }
+
+    @Override
+    public GraphTraversal<Vertex, Vertex> applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
+        return traversal.has(IS_ABSTRACT.name(), P.eq(true));
+    }
+
+    @Override
+    public FragmentPriority getPriority() {
+        return FragmentPriority.EDGE_UNBOUNDED;
     }
 }

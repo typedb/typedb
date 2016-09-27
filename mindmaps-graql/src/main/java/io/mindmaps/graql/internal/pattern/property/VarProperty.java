@@ -18,7 +18,10 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import com.google.common.collect.Sets;
+import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
+import io.mindmaps.graql.internal.gremlin.ShortcutTraversal;
 
 import java.util.Collection;
 
@@ -26,7 +29,13 @@ public interface VarProperty {
 
     void buildString(StringBuilder builder);
 
-    boolean supportShortcuts();
+    default void modifyShortcutTraversal(ShortcutTraversal shortcutTraversal) {
+        shortcutTraversal.setInvalid();
+    }
 
-    Collection<MultiTraversal> getMultiTraversal(String start);
+    Collection<MultiTraversal> getMultiTraversals(String start);
+
+    default Collection<VarAdmin> getInnerVars() {
+        return Sets.newHashSet();
+    }
 }

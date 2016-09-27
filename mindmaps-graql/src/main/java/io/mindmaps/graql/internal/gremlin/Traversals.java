@@ -16,34 +16,25 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql.internal.pattern.property;
+package io.mindmaps.graql.internal.gremlin;
 
-import io.mindmaps.graql.internal.gremlin.FragmentPriority;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import static io.mindmaps.util.Schema.ConceptProperty.*;
+import static io.mindmaps.util.Schema.EdgeLabel.AKO;
 
-public class ValueFlagProperty implements SingleTraversalProperty {
+public class Traversals {
 
-    @Override
-    public void buildString(StringBuilder builder) {
-        builder.append("value");
+    private Traversals() {}
+
+    @SuppressWarnings("unchecked")
+    public static GraphTraversal<Vertex, Vertex> outAkos(GraphTraversal<Vertex, Vertex> traversal) {
+        return traversal.union(__.identity(), __.repeat(__.out(AKO.getLabel())).emit()).unfold();
     }
 
-    @Override
-    public GraphTraversal<Vertex, Vertex> applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
-        return traversal.or(
-                __.has(VALUE_STRING.name()),
-                __.has(VALUE_LONG.name()),
-                __.has(VALUE_DOUBLE.name()),
-                __.has(VALUE_BOOLEAN.name())
-        );
-    }
-
-    @Override
-    public FragmentPriority getPriority() {
-        return FragmentPriority.VALUE_NONSPECIFIC;
+    @SuppressWarnings("unchecked")
+    public static GraphTraversal<Vertex, Vertex> inAkos(GraphTraversal<Vertex, Vertex> traversal) {
+        return traversal.union(__.identity(), __.repeat(__.in(AKO.getLabel())).emit()).unfold();
     }
 }

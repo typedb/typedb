@@ -471,6 +471,16 @@ class VarImpl implements VarInternal {
     }
 
     @Override
+    public Stream<VarProperty> getProperties() {
+        return properties.stream();
+    }
+
+    @Override
+    public <T extends VarProperty> Stream<T> getProperties(Class<T> type) {
+        return getProperties().filter(type::isInstance).map(type::cast);
+    }
+
+    @Override
     public Set<VarAdmin> getInnerVars() {
         Stack<VarAdmin> newVars = new Stack<>();
         Set<VarAdmin> vars = new HashSet<>();
@@ -570,11 +580,6 @@ class VarImpl implements VarInternal {
             properties.add(property);
             return property;
         });
-    }
-
-    @Override
-    public <T extends VarProperty> Stream<T> getProperties(Class<T> type) {
-        return properties.stream().filter(type::isInstance).map(type::cast);
     }
 
     @Override

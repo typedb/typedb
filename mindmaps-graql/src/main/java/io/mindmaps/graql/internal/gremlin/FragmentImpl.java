@@ -51,7 +51,7 @@ public class FragmentImpl implements Fragment {
      * @param start the variable name that this fragment starts from in the query
      * @param end the variable name that this fragment ends at in the query
      */
-    FragmentImpl(
+    public FragmentImpl(
             UnaryOperator<GraphTraversal<Vertex, Vertex>> traversal,
             FragmentPriority priority, String start, String end
     ) {

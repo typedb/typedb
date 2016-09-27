@@ -18,9 +18,18 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import com.google.common.collect.Sets;
 import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.gremlin.FragmentImpl;
+import io.mindmaps.graql.internal.gremlin.MultiTraversal;
+import io.mindmaps.graql.internal.gremlin.MultiTraversalImpl;
 
-public class HasRoleProperty extends AbstractNamedProperty {
+import java.util.Collection;
+
+import static io.mindmaps.graql.internal.gremlin.FragmentPriority.getEdgePriority;
+import static io.mindmaps.util.Schema.EdgeLabel.HAS_ROLE;
+
+public class HasRoleProperty implements NamedProperty {
 
     private final VarAdmin role;
 
@@ -33,12 +42,25 @@ public class HasRoleProperty extends AbstractNamedProperty {
     }
 
     @Override
-    protected String getName() {
+    public String getName() {
         return "has-role";
     }
 
     @Override
-    protected String getProperty() {
+    public String getProperty() {
         return role.getPrintableName();
+    }
+
+    @Override
+    public Collection<MultiTraversal> getMultiTraversals(String start) {
+        return Sets.newHashSet(new MultiTraversalImpl(
+                new FragmentImpl(t -> t.out(HAS_ROLE.getLabel()), getEdgePriority(HAS_ROLE, true), start, role.getName()),
+                new FragmentImpl(t -> t.in(HAS_ROLE.getLabel()), getEdgePriority(HAS_ROLE, false), role.getName(), start)
+        ));
+    }
+
+    @Override
+    public Collection<VarAdmin> getInnerVars() {
+        return Sets.newHashSet(role);
     }
 }
