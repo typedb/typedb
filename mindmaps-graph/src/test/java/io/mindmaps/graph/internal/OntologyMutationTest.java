@@ -18,13 +18,13 @@
 
 package io.mindmaps.graph.internal;
 
+import io.mindmaps.Mindmaps;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.Relation;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.util.ErrorMessage;
 import org.junit.After;
 import org.junit.Before;
@@ -33,6 +33,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.Map;
+import java.util.UUID;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.core.StringContains.containsString;
@@ -55,7 +56,7 @@ public class OntologyMutationTest {
 
     @Before
     public void buildGraph() throws MindmapsValidationException {
-        mindmapsGraph = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
+        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
 
         //spouse = mindmapsGraph.putRoleType("Spouse");
         husband = mindmapsGraph.putRoleType("Husband");//.superType(spouse);

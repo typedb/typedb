@@ -18,13 +18,13 @@
 
 package io.mindmaps.graph.internal;
 
+import io.mindmaps.Mindmaps;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
-import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.util.ErrorMessage;
 import org.junit.Before;
 import org.junit.Test;
@@ -48,7 +48,7 @@ public class ResourceTest {
 
     @Before
     public void buildGraph() {
-        mindmapsGraph = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
+        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
         mindmapsGraph.initialiseMetaConcepts();
     }
 

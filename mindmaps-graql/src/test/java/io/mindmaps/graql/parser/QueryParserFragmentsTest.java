@@ -18,9 +18,9 @@
 
 package io.mindmaps.graql.parser;
 
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.example.MovieGraphFactory;
-import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.QueryBuilder;
@@ -34,9 +34,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
+import java.util.UUID;
 
 import static io.mindmaps.graql.Graql.parsePatterns;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class QueryParserFragmentsTest {
 
@@ -45,7 +48,7 @@ public class QueryParserFragmentsTest {
 
     @BeforeClass
     public static void setUpClass() {
-        mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
+        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
         MovieGraphFactory.loadGraph(mindmapsGraph);
     }
 

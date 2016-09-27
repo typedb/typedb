@@ -19,11 +19,11 @@
 
 package io.mindmaps.graql.query;
 
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Instance;
 import io.mindmaps.example.MovieGraphFactory;
-import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.AggregateQuery;
 import io.mindmaps.graql.QueryBuilder;
 import org.junit.Before;
@@ -32,6 +32,7 @@ import org.junit.Test;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import static io.mindmaps.graql.Graql.average;
 import static io.mindmaps.graql.Graql.count;
@@ -53,7 +54,7 @@ public class AggregateTest {
 
     @Before
     public void setUp() {
-        mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
+        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
         MovieGraphFactory.loadGraph(mindmapsGraph);
         qb = withGraph(this.mindmapsGraph);
     }

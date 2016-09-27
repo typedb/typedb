@@ -18,9 +18,8 @@
 
 package io.mindmaps.graph.internal;
 
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.Schema;
-import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
@@ -28,7 +27,8 @@ import io.mindmaps.concept.Relation;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
-import io.mindmaps.factory.MindmapsTestGraphFactory;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -77,7 +77,7 @@ public class MindmapsGraphHighLevelTest {
 
     @Before
     public void buildGraphAccessManager(){
-        mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
+        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
         graph = (AbstractMindmapsGraph) mindmapsGraph;
         graph.initialiseMetaConcepts();
 
@@ -555,7 +555,7 @@ public class MindmapsGraphHighLevelTest {
 
     @Test
     public void testPutRelationSimple(){
-        AbstractMindmapsGraph graph = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newBatchLoadingEmptyGraph();
+        AbstractMindmapsGraph graph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY).getGraphBatchLoading(UUID.randomUUID().toString().replaceAll("-", "a"));
 
         EntityType type = graph.putEntityType("Test");
         RoleType actor = graph.putRoleType("Actor");

@@ -20,12 +20,16 @@ package io.mindmaps.graql.parser;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.example.MovieGraphFactory;
-import io.mindmaps.factory.MindmapsTestGraphFactory;
-import io.mindmaps.graql.*;
+import io.mindmaps.graql.AggregateQuery;
+import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.Var;
 import io.mindmaps.graql.internal.query.aggregate.AbstractAggregate;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -37,13 +41,39 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Stream;
 
-import static io.mindmaps.graql.Graql.*;
-import static io.mindmaps.util.Schema.MetaType.*;
+import static io.mindmaps.graql.Graql.all;
+import static io.mindmaps.graql.Graql.and;
+import static io.mindmaps.graql.Graql.any;
+import static io.mindmaps.graql.Graql.contains;
+import static io.mindmaps.graql.Graql.eq;
+import static io.mindmaps.graql.Graql.gt;
+import static io.mindmaps.graql.Graql.gte;
+import static io.mindmaps.graql.Graql.id;
+import static io.mindmaps.graql.Graql.lt;
+import static io.mindmaps.graql.Graql.lte;
+import static io.mindmaps.graql.Graql.neq;
+import static io.mindmaps.graql.Graql.or;
+import static io.mindmaps.graql.Graql.parseAggregate;
+import static io.mindmaps.graql.Graql.parseAsk;
+import static io.mindmaps.graql.Graql.parseCompute;
+import static io.mindmaps.graql.Graql.parseDelete;
+import static io.mindmaps.graql.Graql.parseInsert;
+import static io.mindmaps.graql.Graql.parseMatch;
+import static io.mindmaps.graql.Graql.regex;
+import static io.mindmaps.graql.Graql.var;
+import static io.mindmaps.graql.Graql.withGraph;
+import static io.mindmaps.util.Schema.MetaType.ENTITY_TYPE;
+import static io.mindmaps.util.Schema.MetaType.RELATION_TYPE;
+import static io.mindmaps.util.Schema.MetaType.ROLE_TYPE;
+import static io.mindmaps.util.Schema.MetaType.RULE_TYPE;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.core.AllOf.allOf;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class QueryParserTest {
 
@@ -54,7 +84,7 @@ public class QueryParserTest {
 
     @BeforeClass
     public static void setUpClass() {
-        mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
+        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
         MovieGraphFactory.loadGraph(mindmapsGraph);
     }
 

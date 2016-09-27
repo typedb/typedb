@@ -18,13 +18,13 @@
 
 package io.mindmaps.graph.internal;
 
+import io.mindmaps.Mindmaps;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.exception.MoreThanOneEdgeException;
-import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
 import org.junit.After;
@@ -51,7 +51,7 @@ public class RoleTypeTest {
 
     @Before
     public void buildGraph(){
-        mindmapsGraph = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
+        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
         mindmapsGraph.initialiseMetaConcepts();
 
         roleType = mindmapsGraph.putRoleType("RoleType");

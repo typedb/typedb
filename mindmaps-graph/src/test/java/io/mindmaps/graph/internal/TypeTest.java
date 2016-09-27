@@ -18,6 +18,7 @@
 
 package io.mindmaps.graph.internal;
 
+import io.mindmaps.Mindmaps;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
@@ -26,7 +27,6 @@ import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.RuleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.exception.ConceptException;
-import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
 import org.junit.After;
@@ -37,6 +37,7 @@ import org.junit.rules.ExpectedException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -57,7 +58,7 @@ public class TypeTest {
 
     @Before
     public void buildGraph(){
-        mindmapsGraph = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
+        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
         mindmapsGraph.initialiseMetaConcepts();
         EntityType top = mindmapsGraph.putEntityType("top");
         EntityType middle1 = mindmapsGraph.putEntityType("mid1");
