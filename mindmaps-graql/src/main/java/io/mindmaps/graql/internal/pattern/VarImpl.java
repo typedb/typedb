@@ -50,8 +50,6 @@ class VarImpl implements VarInternal {
     private String name;
     private final boolean userDefinedName;
 
-    private Optional<String> regex = Optional.empty();
-
     private Optional<String> lhs = Optional.empty();
     private Optional<String> rhs = Optional.empty();
 
@@ -293,7 +291,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var regex(String regex) {
-        this.regex = Optional.of(regex);
+        properties.add(new RegexProperty(regex));
         return this;
     }
 
@@ -348,7 +346,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Optional<String> getRegex() {
-        return regex;
+        return getProperties(RegexProperty.class).findAny().map(RegexProperty::getRegex);
     }
 
     @Override
