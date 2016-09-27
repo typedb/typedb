@@ -52,8 +52,6 @@ class VarImpl implements VarInternal {
 
     private Optional<String> regex = Optional.empty();
 
-    private boolean valueFlag = false;
-
     private Optional<String> lhs = Optional.empty();
     private Optional<String> rhs = Optional.empty();
 
@@ -96,14 +94,12 @@ class VarImpl implements VarInternal {
         this.name = first.getName();
         this.userDefinedName = first.isUserDefinedName();
 
-        valueFlag = false;
-
         for (VarAdmin var : vars) {
             if (var.isUserDefinedName()) {
                 this.name = var.getName();
             }
 
-            valueFlag |= var.hasValue();
+            if (var.hasValue()) value();
             if (var.getAbstract()) isAbstract();
 
             var.getDatatype().ifPresent(this::datatype);
@@ -141,7 +137,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var value() {
-        valueFlag = true;
+        properties.add(new ValueFlagProperty());
         return this;
     }
 
@@ -357,7 +353,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public boolean hasValue() {
-        return valueFlag;
+        return getProperties(ValueFlagProperty.class).findAny().isPresent();
     }
 
     @Override
@@ -405,7 +401,7 @@ class VarImpl implements VarInternal {
     @Override
     public boolean hasNoProperties() {
         // return true if this variable has any properties set
-        return properties.isEmpty() && !valueFlag && !isa.isPresent() && !ako.isPresent() &&
+        return properties.isEmpty() && !isa.isPresent() && !ako.isPresent() &&
                 hasRole.isEmpty() && playsRole.isEmpty() && hasScope.isEmpty() && resources.isEmpty() &&
                 castings.isEmpty();
     }
@@ -413,7 +409,7 @@ class VarImpl implements VarInternal {
     @Override
     public Optional<String> getIdOnly() {
 
-        if (getId().isPresent() && properties.size() == 1 && !valueFlag && !isa.isPresent() && !ako.isPresent() &&
+        if (getId().isPresent() && properties.size() == 1 && !isa.isPresent() && !ako.isPresent() &&
                 hasRole.isEmpty() && playsRole.isEmpty() && hasScope.isEmpty() && resources.isEmpty() &&
                 castings.isEmpty() && !userDefinedName) {
             return getId();
