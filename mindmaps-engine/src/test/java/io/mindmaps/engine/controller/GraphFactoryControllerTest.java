@@ -26,8 +26,10 @@ import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import io.mindmaps.graph.internal.MindmapsComputerImpl;
 import io.mindmaps.util.REST.GraphConfig;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import spark.Spark;
 
 import static com.jayway.restassured.RestAssured.get;
 import static io.mindmaps.util.REST.Request.GRAPH_CONFIG_PARAM;
@@ -47,6 +49,12 @@ public class GraphFactoryControllerTest {
 
         new GraphFactoryController();
         Util.setRestAssuredBaseURI(ConfigProperties.getInstance().getProperties());
+    }
+
+    @After
+    public void tearDown() throws InterruptedException {
+        Spark.stop();
+        Thread.sleep(2000);
     }
 
     @Test

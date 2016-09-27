@@ -40,6 +40,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import spark.Spark;
 
 import java.util.UUID;
 
@@ -86,8 +87,10 @@ public class CommitLogControllerTest {
     }
 
     @After
-    public void takeDown() {
+    public void takeDown() throws InterruptedException {
         cache.getCastingJobs().clear();
+        Spark.stop();
+        Thread.sleep(2000);
     }
 
     @Test
