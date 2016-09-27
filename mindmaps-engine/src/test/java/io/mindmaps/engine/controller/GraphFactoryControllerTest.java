@@ -26,8 +26,7 @@ import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import io.mindmaps.graph.internal.MindmapsComputerImpl;
 import io.mindmaps.util.REST.GraphConfig;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import spark.Spark;
 
@@ -43,18 +42,15 @@ import static org.junit.Assert.assertTrue;
 
 
 public class GraphFactoryControllerTest {
-    @Before
-    public void setUp() throws Exception {
-        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY, ConfigProperties.TEST_CONFIG_FILE);
 
-        new GraphFactoryController();
-        Util.setRestAssuredBaseURI(ConfigProperties.getInstance().getProperties());
-    }
-
-    @After
-    public void tearDown() throws InterruptedException {
+    @BeforeClass
+    public static void setUpController() throws InterruptedException {
         Spark.stop();
-        Thread.sleep(2000);
+        Thread.sleep(5000);
+        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY, ConfigProperties.TEST_CONFIG_FILE);
+        Util.setRestAssuredBaseURI(ConfigProperties.getInstance().getProperties());
+        new GraphFactoryController();
+        Thread.sleep(5000);
     }
 
     @Test

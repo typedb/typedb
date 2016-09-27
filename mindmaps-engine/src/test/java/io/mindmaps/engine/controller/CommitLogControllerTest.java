@@ -90,7 +90,7 @@ public class CommitLogControllerTest {
     public void takeDown() throws InterruptedException {
         cache.getCastingJobs().clear();
         Spark.stop();
-        Thread.sleep(2000);
+        Thread.sleep(5000);
     }
 
     @Test
