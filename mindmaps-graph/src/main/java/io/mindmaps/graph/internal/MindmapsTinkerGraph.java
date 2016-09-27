@@ -26,6 +26,6 @@ import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
  */
 public class MindmapsTinkerGraph extends AbstractMindmapsGraph<TinkerGraph> {
     public MindmapsTinkerGraph(TinkerGraph tinkerGraph, String name, boolean batchLoading){
-        super(tinkerGraph, name, "localhost", batchLoading);
+        super(tinkerGraph, name, null, batchLoading);
     }
 }

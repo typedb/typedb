@@ -55,7 +55,7 @@ import static org.junit.Assert.assertTrue;
 
 public class MindmapsTitanGraphFactoryTest {
     private final static String TEST_CONFIG = "../conf/test/mindmaps-test.properties";
-    private final static String TEST_URI = "localhost";
+    private final static String TEST_URI = null;
     private final static String TEST_SHARED = "shared";
     private static final boolean TEST_BATCH_LOADING = false;
 
