@@ -78,8 +78,8 @@ public class BackgroundTasksTest {
 
     @After
     public void takeDown() throws InterruptedException {
-        cache.getCastingJobs().clear();
-        cache.getResourceJobs().clear();
+        cache.getCastingJobs(keyspace).clear();
+        cache.getResourceJobs(keyspace).clear();
         Spark.stop();
         Thread.sleep(5000);
     }
@@ -215,13 +215,13 @@ public class BackgroundTasksTest {
         boolean flag = true;
         while(flag){
             if(isCasting){
-                if(cache.getCastingJobs().get(keyspace).size() < value){
+                if(cache.getCastingJobs(keyspace).size() < value){
                     Thread.sleep(1000);
                 } else{
                     flag = false;
                 }
             } else {
-                if(cache.getResourceJobs().get(keyspace).size() < value){
+                if(cache.getResourceJobs(keyspace).size() < value){
                     Thread.sleep(1000);
                 } else {
                     flag = false;

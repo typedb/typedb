@@ -19,6 +19,7 @@
 package io.mindmaps.engine.controller;
 
 import com.jayway.restassured.http.ContentType;
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Entity;
@@ -32,7 +33,6 @@ import io.mindmaps.engine.postprocessing.Cache;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
-import io.mindmaps.Mindmaps;
 import io.mindmaps.util.REST;
 import io.mindmaps.util.Schema;
 import org.junit.After;
@@ -47,10 +47,10 @@ import java.util.UUID;
 import static com.jayway.restassured.RestAssured.delete;
 import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class CommitLogControllerTest {
+    public final String KEYSPACE = "test";
     private Cache cache;
 
     @BeforeClass
@@ -84,19 +84,19 @@ public class CommitLogControllerTest {
                 "}";
 
         given().contentType(ContentType.JSON).body(commitLog).when().
-                post(REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.GRAPH_NAME_PARAM + "=" + "test").
+                post(REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.GRAPH_NAME_PARAM + "=" + KEYSPACE).
                 then().statusCode(200).extract().response().andReturn();
     }
 
     @After
     public void takeDown() throws InterruptedException {
-        cache.getCastingJobs().clear();
+        cache.getCastingJobs(KEYSPACE).clear();
     }
 
     @Test
     public void testControllerWorking() {
-        assertEquals(4, cache.getCastingJobs().values().iterator().next().size());
-        assertEquals(2, cache.getResourceJobs().values().iterator().next().size());
+        assertEquals(4, cache.getCastingJobs(KEYSPACE).size());
+        assertEquals(2, cache.getResourceJobs(KEYSPACE).size());
     }
 
     @Test
@@ -109,26 +109,26 @@ public class CommitLogControllerTest {
 
         addSomeData(bob);
 
-        assertEquals(2, cache.getCastingJobs().get(BOB).size());
-        assertEquals(1, cache.getResourceJobs().get(BOB).size());
+        assertEquals(2, cache.getCastingJobs(BOB).size());
+        assertEquals(1, cache.getResourceJobs(BOB).size());
 
-        assertNull(cache.getCastingJobs().get(TIM));
-        assertNull(cache.getResourceJobs().get(TIM));
+        assertEquals(0, cache.getCastingJobs(TIM).size());
+        assertEquals(0, cache.getResourceJobs(TIM).size());
 
         addSomeData(tim);
 
-        assertEquals(2, cache.getCastingJobs().get(TIM).size());
-        assertEquals(1, cache.getResourceJobs().get(TIM).size());
+        assertEquals(2, cache.getCastingJobs(TIM).size());
+        assertEquals(1, cache.getResourceJobs(TIM).size());
 
         Mindmaps.factory().getGraph(BOB).clear();
         Mindmaps.factory().getGraph(TIM).clear();
 
-        assertEquals(0, cache.getCastingJobs().get(BOB).size());
-        assertEquals(0, cache.getCastingJobs().get(TIM).size());
-        assertEquals(0, cache.getResourceJobs().get(BOB).size());
-        assertEquals(0, cache.getResourceJobs().get(TIM).size());
+        assertEquals(0, cache.getCastingJobs(BOB).size());
+        assertEquals(0, cache.getCastingJobs(TIM).size());
+        assertEquals(0, cache.getResourceJobs(BOB).size());
+        assertEquals(0, cache.getResourceJobs(TIM).size());
 
-        cache.getResourceJobs().get(BOB).forEach(resourceId -> {
+        cache.getResourceJobs(BOB).forEach(resourceId -> {
             Concept concept = ((AbstractMindmapsGraph) bob).getConceptByBaseIdentifier(resourceId);
             assertTrue(concept.isResource());
         });
@@ -151,13 +151,13 @@ public class CommitLogControllerTest {
 
     @Ignore
     public void testDeleteController() throws InterruptedException {
-        assertEquals(4, cache.getCastingJobs().values().iterator().next().size());
+        assertEquals(4, cache.getCastingJobs(KEYSPACE).size());
 
-        delete(REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.GRAPH_NAME_PARAM + "=" + "test").
+        delete(REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.GRAPH_NAME_PARAM + "=" + KEYSPACE).
                 then().statusCode(200).extract().response().andReturn();
 
         Thread.sleep(2000);
 
-        assertEquals(0, cache.getCastingJobs().values().iterator().next().size());
+        assertEquals(0, cache.getCastingJobs(KEYSPACE).size());
     }
 }

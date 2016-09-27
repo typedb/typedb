@@ -63,8 +63,8 @@ public class CommitLogController {
            return ErrorMessage.NO_PARAMETER_PROVIDED.getMessage(REST.Request.GRAPH_NAME_PARAM, "delete");
         }
 
-        cache.getCastingJobs().computeIfPresent(graphName, (key, set) -> {set.clear(); return set;});
-        cache.getResourceJobs().computeIfPresent(graphName, (key, set) -> {set.clear(); return set;});
+        cache.getCastingJobs(graphName).clear();
+        cache.getResourceJobs(graphName).clear();
 
         return "The cache of Graph [" + graphName + "] has been cleared";
     }
@@ -102,8 +102,8 @@ public class CommitLogController {
                 }
             }
 
-            long numJobs = getJobCount(cache.getCastingJobs().get(graphName));
-            numJobs += getJobCount(cache.getResourceJobs().get(graphName));
+            long numJobs = getJobCount(cache.getCastingJobs(graphName));
+            numJobs += getJobCount(cache.getResourceJobs(graphName));
 
             return "Graph [" + graphName + "] now has [" + numJobs + "] post processing jobs";
         } catch(Exception e){

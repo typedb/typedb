@@ -25,9 +25,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class BackgroundTasks {
@@ -102,30 +107,29 @@ public class BackgroundTasks {
     }
 
     private void performCastingFix() {
-        cache.getCastingJobs().entrySet().parallelStream().forEach(entry -> {
-
+        cache.getKeyspaces().parallelStream().forEach(keyspace -> {
             try {
                 Set<String> castingIds = new HashSet<>();
-                castingIds.addAll(entry.getValue());
+                castingIds.addAll(cache.getCastingJobs(keyspace));
 
                 for (String castingId : castingIds) {
                     futures.add(postpool.submit(() ->
-                            ConceptFixer.checkCasting(cache, GraphFactory.getInstance().getGraphBatchLoading(entry.getKey()), castingId)));
+                            ConceptFixer.checkCasting(cache, GraphFactory.getInstance().getGraphBatchLoading(keyspace), castingId)));
                 }
             } catch (RuntimeException e) {
-                LOG.error("Error while trying to perform post processing on graph [" + entry.getKey() + "]",e);
+                LOG.error("Error while trying to perform post processing on graph [" + keyspace + "]",e);
             }
 
         });
     }
 
     private void performResourceFix(){
-        cache.getResourceJobs().entrySet().parallelStream().forEach(entry -> {
+        cache.getKeyspaces().parallelStream().forEach(keyspace -> {
             try {
                 futures.add(postpool.submit(() ->
-                        ConceptFixer.checkResources(cache, GraphFactory.getInstance().getGraphBatchLoading(entry.getKey()), entry.getValue())));
+                        ConceptFixer.checkResources(cache, GraphFactory.getInstance().getGraphBatchLoading(keyspace), cache.getResourceJobs(keyspace))));
             } catch (RuntimeException e) {
-                LOG.error("Error while trying to perform post processing on graph [" + entry.getKey() + "]",e);
+                LOG.error("Error while trying to perform post processing on graph [" + keyspace + "]",e);
             }
         });
     }
@@ -152,8 +156,8 @@ public class BackgroundTasks {
     private void dumpStats() {
         while (isRunning.get()) {
             LOG.info("--------------------Current Status of Post Processing--------------------");
-            dumpStatsType("Casting", cache.getCastingJobs());
-            dumpStatsType("Resources", cache.getResourceJobs());
+            dumpStatsType("Casting");
+            dumpStatsType("Resources");
             LOG.info("Save in Progress: " + cache.isSaveInProgress());
             LOG.info("Current Stage: " + currentStage);
             LOG.info("-------------------------------------------------------------------------");
@@ -166,13 +170,21 @@ public class BackgroundTasks {
         }
     }
 
-    private void dumpStatsType(String typeName, Map<String, Set<String>> jobs) {
+    private void dumpStatsType(String typeName) {
         long total = 0L;
         LOG.info(typeName + " Jobs:");
-        for (Map.Entry<String, Set<String>> entry : jobs.entrySet()) {
-            LOG.info("        Post processing step [" + typeName + " for Graph [" + entry.getKey() + "] has jobs : " + entry.getValue().size());
-            total += entry.getValue().size();
+
+        for (String keyspace : cache.getKeyspaces()) {
+            long numJobs = 0L;
+            if(typeName.equals("Casting")){
+                numJobs = cache.getCastingJobs(keyspace).size();
+            } else if(typeName.equals("Resources")){
+                numJobs = cache.getCastingJobs(keyspace).size();
+            }
+            LOG.info("        Post processing step [" + typeName + " for Graph [" + keyspace + "] has jobs : " + numJobs);
+            total += numJobs;
         }
+
         LOG.info("    Total " + typeName + " Jobs: " + total);
     }
 }
