@@ -32,10 +32,12 @@ public class AtomicMatchQuery extends AtomicQuery{
     @Override
     public QueryAnswers getAnswers(){ return answers;}
 
+    @Override
     public void DBlookup() {
         answers.addAll(Sets.newHashSet(getMatchQuery().distinct()));
     }
 
+    @Override
     public void memoryLookup(Map<AtomicQuery, QueryAnswers> matAnswers) {
         QueryAnswers memAnswers = new QueryAnswers();
 
@@ -46,11 +48,11 @@ public class AtomicMatchQuery extends AtomicQuery{
         answers.addAll(memAnswers);
     }
 
+    @Override
     public void propagateAnswers(Map<AtomicQuery, QueryAnswers> matAnswers) {
         getChildren().forEach(childQuery -> {
             QueryAnswers ans = getUnifiedAnswers(childQuery, this, matAnswers.get(this));
             childQuery.getAnswers().addAll(ans);
-            //matAnswers.get(childQuery).addAll(ans);
             childQuery.propagateAnswers(matAnswers);
         });
     }

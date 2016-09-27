@@ -119,6 +119,7 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
      * @return unified answers
      */
     public static QueryAnswers getUnifiedAnswers(AtomicQuery parentQuery, AtomicQuery childQuery, QueryAnswers answers){
+        if (parentQuery == childQuery) return new QueryAnswers(answers);
         MindmapsGraph graph = childQuery.getGraph().orElse(null);
         Atomic childAtom = childQuery.getAtom();
         Atomic parentAtom = parentQuery.getAtom();
