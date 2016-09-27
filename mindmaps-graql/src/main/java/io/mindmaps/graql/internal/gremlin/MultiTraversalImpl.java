@@ -22,14 +22,14 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Stream;
 
-class MultiTraversalImpl implements MultiTraversal {
+public class MultiTraversalImpl implements MultiTraversal {
 
     private final Collection<Fragment> fragments;
 
     /**
      * @param fragments an array of Fragments that this MultiTraversal contains
      */
-    MultiTraversalImpl(Fragment... fragments) {
+    public MultiTraversalImpl(Fragment... fragments) {
         this.fragments = Arrays.asList(fragments);
         this.fragments.forEach(f -> f.setMultiTraversal(this));
     }

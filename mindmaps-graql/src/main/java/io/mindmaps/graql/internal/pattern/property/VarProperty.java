@@ -18,7 +18,15 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import io.mindmaps.graql.internal.gremlin.MultiTraversal;
+
+import java.util.Collection;
+
 public interface VarProperty {
 
     void buildString(StringBuilder builder);
+
+    boolean supportShortcuts();
+
+    Collection<MultiTraversal> getMultiTraversal(String start);
 }

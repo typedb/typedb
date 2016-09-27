@@ -26,7 +26,7 @@ import io.mindmaps.graql.admin.ValuePredicateAdmin;
  * <p>
  * Higher priority patterns are expected to be more efficient and better filter the query and are executed first.
  */
-enum FragmentPriority {
+public enum FragmentPriority {
 
     /**
      * Looking up things by value. Values are non-unique so this is only slightly slower than lookup by ID

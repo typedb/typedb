@@ -23,6 +23,8 @@ import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.pattern.VarInternal;
+import io.mindmaps.graql.internal.pattern.property.IdProperty;
 import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
@@ -87,12 +89,12 @@ public class VarTraversals {
         );
 
         // Check ITEM_IDENTIFIER
-        var.getId().ifPresent(
-                id -> {
-                    shortcutTraversal.setInvalid();
-                    addPropertyPattern(getName(), ITEM_IDENTIFIER.name(), eq(id).admin(), ID);
-                }
-        );
+        ((VarInternal) var).getProperties(IdProperty.class).forEach(property -> {
+            if (!property.supportShortcuts()) {
+                shortcutTraversal.setInvalid();
+            }
+            traversals.addAll(property.getMultiTraversal(getName()));
+        });
 
         // Verify the concept has a VALUE
         if (var.hasValue()) {

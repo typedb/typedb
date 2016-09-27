@@ -43,7 +43,7 @@ import java.util.Optional;
  * A gremlin traversal is created from a {@code Query} by appending together fragments in order of priority, one from
  * each {@code MultiTraversal} describing the {@code Query}.
  */
-interface Fragment extends Comparable<Fragment> {
+public interface Fragment extends Comparable<Fragment> {
 
     /**
      * @return the MultiTraversal that contains this Fragment

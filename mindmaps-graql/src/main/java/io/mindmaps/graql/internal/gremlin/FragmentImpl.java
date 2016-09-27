@@ -25,7 +25,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
 
-class FragmentImpl implements Fragment {
+public class FragmentImpl implements Fragment {
 
     private final UnaryOperator<GraphTraversal<Vertex, Vertex>> traversalFunction;
     private final FragmentPriority priority;
@@ -38,7 +38,7 @@ class FragmentImpl implements Fragment {
      * @param priority the priority of this fragment, describing how expensive the traversal is expected to be
      * @param start the variable name that this fragment starts from in the query
      */
-    FragmentImpl(UnaryOperator<GraphTraversal<Vertex, Vertex>> traversal, FragmentPriority priority, String start) {
+    public FragmentImpl(UnaryOperator<GraphTraversal<Vertex, Vertex>> traversal, FragmentPriority priority, String start) {
         this.traversalFunction = traversal;
         this.priority = priority;
         this.start = start;

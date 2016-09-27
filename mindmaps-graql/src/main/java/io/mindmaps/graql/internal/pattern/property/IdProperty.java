@@ -18,7 +18,14 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import com.google.common.collect.Sets;
+import io.mindmaps.graql.internal.gremlin.*;
 import io.mindmaps.graql.internal.util.StringConverter;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+
+import java.util.Collection;
+
+import static io.mindmaps.util.Schema.ConceptProperty.ITEM_IDENTIFIER;
 
 public class IdProperty extends AbstractNamedProperty {
 
@@ -40,5 +47,17 @@ public class IdProperty extends AbstractNamedProperty {
     @Override
     protected String getProperty() {
         return StringConverter.valueToString(id);
+    }
+
+    @Override
+    public boolean supportShortcuts() {
+        return false;
+    }
+
+    @Override
+    public Collection<MultiTraversal> getMultiTraversal(String start) {
+        Fragment fragment = new FragmentImpl(t -> t.has(ITEM_IDENTIFIER.name(), P.eq(id)), FragmentPriority.ID, start);
+        MultiTraversalImpl multiTraversal = new MultiTraversalImpl(fragment);
+        return Sets.newHashSet(multiTraversal);
     }
 }
