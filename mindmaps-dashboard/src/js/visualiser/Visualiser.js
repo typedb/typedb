@@ -114,7 +114,7 @@ export default class Visualiser {
         this.network.on('doubleClick', this.callbacks.doubleClick);
         this.network.on('oncontext', this.callbacks.rightClick);
         this.network.on('hoverNode', this.callbacks.hover);
-        this.network.on('stabilized', () => { this.stopSimulation() });
+        this.network.on('stabilized', () => { this.setSimulation(false) });
 
         return this;
     }
@@ -171,6 +171,17 @@ export default class Visualiser {
         this.edges.clear();
     }
 
+    /**
+     * Stop/start physics simulation and all animation in displayed graph.
+     */
+    setSimulation(state) {
+        if(state)
+            this.network.startSimulation();
+        else
+            this.network.stopSimulation();
+        return this;
+    }
+
     /*
     Internal methods
     */
@@ -206,14 +217,5 @@ export default class Visualiser {
      */
     deleteEdges(nid) {
         this.edges.map(x => { if(x.to === nid || x.from === nid) this.edges.remove(x.id) });
-    }
-
-    /**
-     * Stop physics simulation and all animation in displayed graph.
-     */
-    stopSimulation() {
-        this.network.fit({animation: false});
-        this.network.setOptions({physics: false});
-        return this;
     }
 }

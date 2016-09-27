@@ -40,7 +40,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                                 <tr><td>Graph Computer config</td><td>{{response['graphdatabase.computer']}}</td></tr>
                                 <tr><td>Engine assets directory</td><td>{{response['server.static-file-dir']}}</td></tr>
                                 <tr><td>Log File</td><td>{{response['logging.file']}}</td></tr>
-                                <tr><td>Logging Level</td><td>{{response['logging.level.']}}</td></tr>
+                                <tr><td>Logging Level</td><td>{{response['logging.level']}}</td></tr>
                                 <tr><td>Background Tasks time lapse</td><td>{{response['backgroundTasks.time-lapse']}}</td></tr>
                                 <tr><td>Background Tasks post processing delay</td><td>{{response['backgroundTasks.post-processing-delay']}}</td></tr>
                                 <tr><td>Batch size</td><td>{{response['blockingLoader.batch-size']}}</td></tr>
