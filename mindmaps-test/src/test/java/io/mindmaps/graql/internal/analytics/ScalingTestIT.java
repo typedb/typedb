@@ -131,6 +131,8 @@ public class ScalingTestIT {
             Long startTime = 0L;
             Long stopTime = 0L;
 
+            graph = Mindmaps.factory().getGraph(keyspace);
+
             for (int i=0;i<REPEAT;i++) {
                 writer.println("gremlin count is: " + graph.getTinkerTraversal().count().next());
                 writer.println("repeat number: "+i);
@@ -275,6 +277,7 @@ public class ScalingTestIT {
             assertEquals(1L, thisThing.resources().size());
             assertEquals(0L, thisThing.resources().iterator().next().getValue());
         });
+        graph.close();
 
         // add edges to force mutation
         addEdges(keyspace, MAX_SIZE);
@@ -349,6 +352,7 @@ public class ScalingTestIT {
         thing.playsRole(relation1).playsRole(relation2);
         RelationType related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
         graph.commit();
+        graph.close();
     }
 
     private Set<String> makeSuperNodes(String keyspace) throws MindmapsValidationException {
