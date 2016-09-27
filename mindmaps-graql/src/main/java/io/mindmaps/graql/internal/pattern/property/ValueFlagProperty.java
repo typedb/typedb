@@ -21,7 +21,7 @@ package io.mindmaps.graql.internal.pattern.property;
 public class ValueFlagProperty implements VarProperty {
 
     @Override
-    public String toString() {
-        return "value";
+    public void buildString(StringBuilder builder) {
+        builder.append("value");
     }
 }

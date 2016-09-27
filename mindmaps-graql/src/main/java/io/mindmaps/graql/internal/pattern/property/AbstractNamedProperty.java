@@ -25,7 +25,7 @@ abstract class AbstractNamedProperty implements VarProperty {
     protected abstract String getProperty();
 
     @Override
-    public String toString() {
-        return getName() + " " + getProperty();
+    public final void buildString(StringBuilder builder) {
+        builder.append(getName()).append(" ").append(getProperty());
     }
 }

@@ -19,4 +19,6 @@
 package io.mindmaps.graql.internal.pattern.property;
 
 public interface VarProperty {
+
+    void buildString(StringBuilder builder);
 }

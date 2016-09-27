@@ -509,8 +509,6 @@ class VarImpl implements VarInternal {
 
     @Override
     public String toString() {
-        Set<String> propertiesStrings = new HashSet<>();
-
         Set<VarAdmin> innerVars = getInnerVars();
         innerVars.remove(this);
         innerVars.removeAll(getResources());
@@ -519,11 +517,23 @@ class VarImpl implements VarInternal {
             throw new UnsupportedOperationException("Graql strings cannot represent a query with inner variables");
         }
 
-        properties.forEach(property -> propertiesStrings.add(property.toString()));
+        StringBuilder builder = new StringBuilder();
 
         String name = isUserDefinedName() ? getPrintableName() + " " : "";
 
-        return name + propertiesStrings.stream().collect(joining(", "));
+        builder.append(name);
+
+        boolean first = true;
+
+        for (VarProperty property : properties) {
+            if (!first) {
+                builder.append(" ");
+            }
+            first = false;
+            property.buildString(builder);
+        }
+
+        return builder.toString();
     }
 
     /**

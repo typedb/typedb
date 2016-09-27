@@ -39,7 +39,7 @@ public class RelationProperty implements VarProperty {
     }
 
     @Override
-    public String toString() {
-        return "(" + castings.stream().map(Object::toString).collect(joining(", ")) + ")";
+    public void buildString(StringBuilder builder) {
+        builder.append("(").append(castings.stream().map(Object::toString).collect(joining(", "))).append(")");
     }
 }
