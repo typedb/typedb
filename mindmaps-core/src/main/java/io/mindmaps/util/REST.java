@@ -4,6 +4,8 @@ public class REST {
 
     public static class WebPath{
         public static final String IMPORT_DATA_URI =  "/import/batch/data";
+        public static final String IMPORT_DISTRIBUTED_URI =  "/import/distribute/data";
+
         public static final String IMPORT_ONTOLOGY_URI = "/import/ontology";
 
         public static final String GRAPH_FACTORY_URI = "/graph_factory";
@@ -12,8 +14,6 @@ public class REST {
         public static final String MATCH_QUERY_URI = "/shell/match";
         public static final String GRAPH_MATCH_QUERY_URI = "/graph/match";
 
-        public static final String HOME_URI = "/";
-
         public static final String CONCEPT_BY_ID_URI = "/graph/concept/" ;
 
         public static final String COMMIT_LOG_URI = "/commit_log";
@@ -21,7 +21,8 @@ public class REST {
         public static final String NEW_TRANSACTION_URI = "/transaction/new";
         public static final String TRANSACTION_STATUS_URI = "/transaction/status/";
         public static final String LOADER_STATE_URI = "/transaction/loaderState";
-        public static final String GET_STATUS_URI = "/status";
+        public static final String GET_STATUS_CONFIG_URI = "/status/config";
+
 
         public static final String REMOTE_SHELL_URI = "/shell/remote";
     }
