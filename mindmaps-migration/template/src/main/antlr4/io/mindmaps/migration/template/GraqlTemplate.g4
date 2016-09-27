@@ -19,24 +19,39 @@ statement
  ;
 
 forStatement
- : LPAREN FOR tvar IN resolve RPAREN LBRACKET block RBRACKET
+ : FOR LBRACKET variable RBRACKET DO LBRACKET block RBRACKET
  ;
 
 ifStatement
- : LPAREN IF resolve RPAREN LBRACKET block RBRACKET
+ : ifPartial elifPartial* elsePartial?
  ;
 
-gvar : GVAR VAR;
-tvar : TVAR VAR (DVAR VAR)*;
+ifPartial
+ : IF LBRACKET variable RBRACKET DO LBRACKET block RBRACKET
+ ;
 
-resolve     : tvar;
-replace     : resolve;
+elifPartial
+ : ELIF LBRACKET variable RBRACKET DO LBRACKET block RBRACKET
+ ;
+
+elsePartial
+ : ELSE LBRACKET block RBRACKET
+ ;
+
+replace
+ : LTRIANGLE variable RTRIANGLE
+ ;
+
+variable
+ : NOT_WS+
+ ;
 
 graql
- : gvar | replace
- | IN
+ : GVAR
+ | replace
  | IF
  | FOR
+ | DO
  | LPAREN
  | RPAREN
  | NOT_WS
@@ -44,18 +59,20 @@ graql
 
 // reserved
 FOR         : 'for' ;
-IN          : 'in' ;
 IF          : 'if' ;
+DO          : 'do';
+ELIF        : 'elif';
+ELSE        : 'else';
 
-VAR         : [a-zA-Z0-9_-]+;
-GVAR        : '$';
-TVAR        : '%';
+GVAR        : '$' [a-zA-Z0-9_-]+;
 DVAR        : '.';
 
 LPAREN      : '(';
 RPAREN      : ')';
 LBRACKET    : '{';
 RBRACKET    : '}';
+LTRIANGLE   : '<';
+RTRIANGLE   : '>';
 NOT_WS      : ~[ \t\r\n];
 
 WS : [ \t\r\n] -> channel(1) ;
