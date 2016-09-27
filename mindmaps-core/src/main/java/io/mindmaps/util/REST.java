@@ -69,13 +69,14 @@ public class REST {
         public static final String ACTION_NAMESPACE = "namespace";
         public static final String ACTION_QUERY = "query";
         public static final String ACTION_QUERY_END = "queryEnd";
+        public static final String ACTION_QUERY_ABORT = "queryAbort";
         public static final String ACTION_COMMIT = "commit";
         public static final String ACTION_ROLLBACK = "rollback";
         public static final String ACTION_AUTOCOMPLETE = "autocomplete";
 
         public static final String NAMESPACE = "namespace";
         public static final String QUERY = "query";
-        public static final String QUERY_LINES = "lines";
+        public static final String QUERY_RESULT = "result";
         public static final String AUTOCOMPLETE_CANDIDATES = "candidates";
         public static final String AUTOCOMPLETE_CURSOR = "cursor";
         public static final String ERROR = "error";

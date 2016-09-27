@@ -18,8 +18,8 @@
 
 package io.mindmaps.engine.session;
 
+import com.google.common.base.Splitter;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.engine.controller.TransactionController;
 import io.mindmaps.exception.ConceptException;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.Autocomplete;
@@ -44,9 +44,11 @@ import static io.mindmaps.util.REST.RemoteShell.*;
 class GraqlSession {
     private final Session session;
     private final MindmapsGraph graph;
+    private StringBuilder queryStringBuilder = new StringBuilder();
     private final Reasoner reasoner;
     private final Logger LOG = LoggerFactory.getLogger(GraqlSession.class);
 
+    private static final int QUERY_CHUNK_SIZE = 1000;
 
     private boolean queryCancelled = false;
 
@@ -73,15 +75,26 @@ class GraqlSession {
     }
 
     /**
+     * Receive and remember part of a query
+     */
+    void receiveQuery(Json json) {
+        queryExecutor.submit(() -> {
+            String queryString = json.at(QUERY).asString();
+            queryStringBuilder.append(queryString);
+        });
+    }
+
+    /**
      * Execute the Graql query described in the given JSON request
      */
-    void executeQuery(Json json) {
+    void executeQuery() {
         queryExecutor.submit(() -> {
 
             String errorMessage = null;
 
             try {
-                String queryString = json.at(QUERY).asString();
+                String queryString = queryStringBuilder.toString();
+                queryStringBuilder = new StringBuilder();
 
                 Query<?> query = withGraph(graph).parse(queryString);
 
@@ -115,7 +128,7 @@ class GraqlSession {
         });
     }
 
-    void stopQuery() {
+    void abortQuery() {
         queryCancelled = true;
     }
 
@@ -168,10 +181,15 @@ class GraqlSession {
      * Send a single query result back to the client
      */
     private void sendQueryResult(String result) {
-        sendJson(Json.object(
-                ACTION, ACTION_QUERY,
-                QUERY_LINES, Json.array(result)
-        ));
+        // Split result into chunks
+        Iterable<String> splitResult = Splitter.fixedLength(QUERY_CHUNK_SIZE).split(result + "\n");
+
+        for (String resultChunk : splitResult) {
+            sendJson(Json.object(
+                    ACTION, ACTION_QUERY,
+                    QUERY_RESULT, resultChunk
+            ));
+        }
     }
 
     /**
