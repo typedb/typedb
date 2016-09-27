@@ -28,6 +28,7 @@ import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 import io.mindmaps.graql.internal.gremlin.VarTraversals;
+import io.mindmaps.graql.internal.pattern.property.AbstractProperty;
 import io.mindmaps.graql.internal.pattern.property.IdProperty;
 import io.mindmaps.graql.internal.pattern.property.ValueProperty;
 import io.mindmaps.graql.internal.pattern.property.VarProperty;
@@ -52,7 +53,6 @@ class VarImpl implements VarInternal {
     private String name;
     private final boolean userDefinedName;
 
-    private boolean abstractFlag = false;
     private Optional<ResourceType.DataType<?>> datatype = Optional.empty();
     private Optional<String> regex = Optional.empty();
 
@@ -108,7 +108,7 @@ class VarImpl implements VarInternal {
             }
 
             valueFlag |= var.hasValue();
-            abstractFlag |= var.getAbstract();
+            if (var.getAbstract()) isAbstract();
 
             var.getDatatype().ifPresent(this::datatype);
             var.getRegex().ifPresent(this::regex);
@@ -289,7 +289,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var isAbstract() {
-        abstractFlag = true;
+        properties.add(new AbstractProperty());
         return this;
     }
 
@@ -346,7 +346,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public boolean getAbstract() {
-        return abstractFlag;
+        return getProperties(AbstractProperty.class).findAny().isPresent();
     }
 
     @Override
@@ -560,8 +560,6 @@ class VarImpl implements VarInternal {
         hasResourceTypes.forEach(v -> propertiesStrings.add("has-resource " + v.getPrintableName()));
 
         getDatatypeName().ifPresent(d -> propertiesStrings.add("datatype " + d));
-
-        if (getAbstract()) propertiesStrings.add("is-abstract");
 
         resources.forEach(
                 resource -> {
