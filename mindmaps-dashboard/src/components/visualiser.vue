@@ -227,6 +227,9 @@ export default {
             if(this.graqlQuery == undefined)
                 return;
 
+            // Enable graph animation
+            visualiser.setSimulation(true);
+
             engineClient.graqlHAL(this.graqlQuery, this.graphResponse);
             engineClient.graqlShell(this.graqlQuery, this.shellResponse);
             this.resetMsg();
@@ -249,6 +252,9 @@ export default {
             const eventKeys = param.event.srcEvent;
             if(!eventKeys.shiftKey)
                 visualiser.clearGraph();
+
+            // Enable graph animation
+            visualiser.setSimulation(true);
 
             _.map(param.nodes, x => { engineClient.request({url: x, callback: this.typeQueryResponse}) });
         },
