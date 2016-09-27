@@ -50,11 +50,6 @@ class VarImpl implements VarInternal {
     private String name;
     private final boolean userDefinedName;
 
-    private final Set<VarAdmin> hasRole = new HashSet<>();
-    private final Set<VarAdmin> playsRole = new HashSet<>();
-    private final Set<VarAdmin> hasScope = new HashSet<>();
-    private final Set<VarAdmin> hasResourceTypes = new HashSet<>();
-
     private final Set<VarAdmin> resources = new HashSet<>();
 
     private final Set<VarAdmin.Casting> castings = new HashSet<>();
@@ -104,9 +99,9 @@ class VarImpl implements VarInternal {
             var.getRhs().ifPresent(this::rhs);
             var.getValuePredicates().forEach(this::value);
 
-            hasRole.addAll(var.getHasRoles());
-            playsRole.addAll(var.getPlaysRoles());
-            hasScope.addAll(var.getScopes());
+            var.getHasRoles().forEach(this::hasRole);
+            var.getPlaysRoles().forEach(this::playsRole);
+            var.getScopes().forEach(this::hasScope);
 
             // Currently it is guaranteed that resource types are specified with an ID
             //noinspection OptionalGetWithoutIsPresent
@@ -207,7 +202,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var hasRole(Var type) {
-        hasRole.add(type.admin());
+        properties.add(new HasRoleProperty(type.admin()));
         return this;
     }
 
@@ -218,13 +213,13 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var playsRole(Var type) {
-        playsRole.add(type.admin());
+        properties.add(new PlaysRoleProperty(type.admin()));
         return this;
     }
 
     @Override
     public Var hasScope(Var type) {
-        hasScope.add(type.admin());
+        properties.add(new HasScopeProperty(type.admin()));
         return this;
     }
 
@@ -235,7 +230,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var hasResource(Var type) {
-        hasResourceTypes.add(type.admin());
+        properties.add(new HasResourceTypeProperty(type.admin()));
         return this;
     }
 
@@ -355,22 +350,23 @@ class VarImpl implements VarInternal {
 
     @Override
     public Set<VarAdmin> getHasRoles() {
-        return hasRole;
+        return getProperties(HasRoleProperty.class).map(HasRoleProperty::getRole).collect(toSet());
     }
 
     @Override
     public Set<VarAdmin> getPlaysRoles() {
-        return playsRole;
+        return getProperties(PlaysRoleProperty.class).map(PlaysRoleProperty::getRole).collect(toSet());
     }
 
     @Override
     public Set<VarAdmin> getScopes() {
-        return hasScope;
+        return getProperties(HasScopeProperty.class).map(HasScopeProperty::getScope).collect(toSet());
     }
 
     @Override
     public Set<VarAdmin> getHasResourceTypes() {
-        return hasResourceTypes;
+        return getProperties(HasResourceTypeProperty.class)
+                .map(HasResourceTypeProperty::getResourceType).collect(toSet());
     }
 
     @Override
@@ -393,16 +389,13 @@ class VarImpl implements VarInternal {
     @Override
     public boolean hasNoProperties() {
         // return true if this variable has any properties set
-        return properties.isEmpty() &&
-                hasRole.isEmpty() && playsRole.isEmpty() && hasScope.isEmpty() && resources.isEmpty() &&
-                castings.isEmpty();
+        return properties.isEmpty() && resources.isEmpty() && castings.isEmpty();
     }
 
     @Override
     public Optional<String> getIdOnly() {
 
-        if (getId().isPresent() && properties.size() == 1 &&
-                hasRole.isEmpty() && playsRole.isEmpty() && hasScope.isEmpty() && resources.isEmpty() &&
+        if (getId().isPresent() && properties.size() == 1 && resources.isEmpty() &&
                 castings.isEmpty() && !userDefinedName) {
             return getId();
         } else {
@@ -535,11 +528,6 @@ class VarImpl implements VarInternal {
         if (isRelation()) {
             propertiesStrings.add("(" + castings.stream().map(Object::toString).collect(joining(", ")) + ")");
         }
-
-        playsRole.forEach(v -> propertiesStrings.add("plays-role " + v.getPrintableName()));
-        hasRole.forEach(v -> propertiesStrings.add("has-role " + v.getPrintableName()));
-        hasScope.forEach(v -> propertiesStrings.add("has-scope " + v.getPrintableName()));
-        hasResourceTypes.forEach(v -> propertiesStrings.add("has-resource " + v.getPrintableName()));
 
         resources.forEach(
                 resource -> {
