@@ -19,6 +19,7 @@
 package io.mindmaps.migration.template;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -27,22 +28,20 @@ import static java.util.stream.Collectors.toMap;
 public class Scope {
 
     private Scope parent;
-    private Map<Variable, Value> variables;
+    private Map<String, Value> values;
+    private Set<String> variables;
 
     public Scope(){
         this(null, Collections.emptySet(), Collections.emptyMap());
     }
 
     public Scope(Scope parent,
-                 Set<Variable> variables,
+                 Set<String> variables,
                  Map<String, Object> data){
 
         this.parent = parent;
-        this.variables = localVariables(this.parent, variables)
-                .stream()
-                .collect(toMap(
-                        v -> v,
-                        v -> Value.VOID));
+        this.variables = localVariables(this.parent, variables);
+        this.values = new HashMap<>();
         this.assign("", data);
     }
 
@@ -51,16 +50,17 @@ public class Scope {
     }
 
     @SuppressWarnings("unchecked")
-    public void assign(Variable variable, Object value) {
+    public void assign(Object value) {
         if (value instanceof Map) {
-            this.assign("", (Map) value);
+            assign("", value);
         } else {
-            this.variables.put(variable, new Value(value));
+            assign(".", value);
         }
     }
 
-    public Value resolve(Variable var) {
-        Value value = variables.get(var);
+    public Value resolve(String var) {
+        Value value = values.get(var);
+
         if(value != null) {
             // The variable resides in this scope
             return value;
@@ -71,42 +71,37 @@ public class Scope {
         }
         else {
             // Unknown variable
-            throw new RuntimeException("Variable " + var.variable() + " not found in data");
+            throw new RuntimeException("Variable " + var + " not found in data");
         }
-    }
-
-    public boolean isLocalVar(Variable var){
-        return variables.keySet().contains(var);
     }
 
     public boolean isGlobalScope() {
         return parent == null;
     }
 
-    public Set<Variable> variables(){
-        return variables.keySet();
+    public Set<String> variables(){
+        return variables;
     }
 
-    private Set<Variable> localVariables(Scope scope, Set<Variable> currentVariables){
+    private Set<String> localVariables(Scope scope, Set<String> currentVariables){
         if(scope == null){
            return currentVariables;
         }
 
-        currentVariables.removeAll(scope.variables.keySet());
+        currentVariables.removeAll(scope.variables());
         return localVariables(scope.parent, currentVariables);
     }
 
     @SuppressWarnings("unchecked")
-    private void assign(String prefix, Map<String, Object> data){
-        for(String key:data.keySet()){
-            Object value = data.get(key);
-
-            if(value instanceof Map){
-                assign(prefix + key + ".", (Map) value);
+    private void assign(String prefix, Object value){
+        if(value instanceof Map){
+            Map<String, Object> map = (Map) value;
+            for(String key: map.keySet()) {
+                assign(prefix + key, map.get(key));
             }
-            else {
-                variables.put(new Variable(prefix + key), new Value(value));
-            }
+        }
+        else {
+            values.put(prefix, new Value(value));
         }
     }
 }

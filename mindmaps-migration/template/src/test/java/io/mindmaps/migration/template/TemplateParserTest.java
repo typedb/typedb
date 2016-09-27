@@ -36,7 +36,7 @@ public class TemplateParserTest {
 
     @Test
     public void oneValueOneLineTest(){
-        String template = "insert $x isa person has name %name    ";
+        String template = "insert $x isa person has name <name>    ";
         String expected = "insert $x0 isa person has name \\\"Phil Collins\\\"    ";
 
         String json = "{\"name\" : \"Phil Collins\"}";
@@ -45,7 +45,7 @@ public class TemplateParserTest {
 
     @Test
     public void multiValueOneLineTest(){
-        String template = "insert $x isa person has name %name , has feet %numFeet";
+        String template = "insert $x isa person has name <name> , has feet <numFeet>";
         String expected = "insert $x0 isa person has name \\\"Phil Collins\\\" , has feet 3";
 
         String json = "{\"name\" : \"Phil Collins\", \"numFeet\":3}";
@@ -54,7 +54,7 @@ public class TemplateParserTest {
 
     @Test(expected = RuntimeException.class)
     public void dataMissingTest() {
-        String template = "insert $x isa person has name %name , has feet %numFeet ";
+        String template = "insert $x isa person has name <name> , has feet <numFeet> ";
         String expected = "insert $x0 isa person has name \\\"Phil Collins\\\", has feet 3 ";
 
         String json = "{\"name\" : \"Phil Collins\", \"feet\":3}";
@@ -65,8 +65,8 @@ public class TemplateParserTest {
     public void quotingWhenReplacementInVariableTest(){
        String template = "" +
                "insert \n" +
-               "( for %address in %addresses){\n" +
-               "   $%address has address %address;\n" +
+               "for {addresses} do { \n" +
+               "   $<address> has address <address>;\n" +
                "}";
 
         String json = "" +
@@ -309,8 +309,8 @@ public class TemplateParserTest {
     }
 
     private void assertParseEquals(String template, String json, String expected){
-        Value result = parser.parseTemplate(template, Json.read(json));
-        System.out.println(result.asString());
-        assertEquals(expected, result.asString());
+        String result = parser.parseTemplate(template, Json.read(json));
+        System.out.println(result);
+        assertEquals(expected, result);
     }
 }

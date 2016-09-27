@@ -19,7 +19,7 @@ statement
  ;
 
 forStatement
- : FOR LBRACKET variable RBRACKET DO LBRACKET block RBRACKET
+ : FOR LBRACKET resolve RBRACKET DO LBRACKET block RBRACKET
  ;
 
 ifStatement
@@ -27,11 +27,11 @@ ifStatement
  ;
 
 ifPartial
- : IF LBRACKET variable RBRACKET DO LBRACKET block RBRACKET
+ : IF LBRACKET resolve RBRACKET DO LBRACKET block RBRACKET
  ;
 
 elifPartial
- : ELIF LBRACKET variable RBRACKET DO LBRACKET block RBRACKET
+ : ELIF LBRACKET resolve RBRACKET DO LBRACKET block RBRACKET
  ;
 
 elsePartial
@@ -39,15 +39,19 @@ elsePartial
  ;
 
 replace
- : LTRIANGLE variable RTRIANGLE
+ : LTRIANGLE resolve RTRIANGLE
  ;
 
-variable
+resolve
  : NOT_WS+
  ;
 
-graql
+gvar
  : GVAR
+ ;
+
+graql
+ : gvar
  | replace
  | IF
  | FOR

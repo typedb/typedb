@@ -1,4 +1,4 @@
-/*
+package io.mindmaps.migration.template;/*
  * MindmapsDB - A Distributed Semantic Database
  * Copyright (C) 2016  Mindmaps Research Ltd
  *
@@ -16,8 +16,9 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.migration.template;
 
+import io.mindmaps.migration.template.GraqlTemplateLexer;
+import io.mindmaps.migration.template.GraqlTemplateParser;
 import mjson.Json;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -25,8 +26,7 @@ import org.antlr.v4.runtime.tree.ParseTree;
 
 public class TemplateParser {
 
-
-    public Value parseTemplate(String templateString, Json data){
+    public String parseTemplate(String templateString, Json data){
 
         GraqlTemplateLexer lexer = getLexer(templateString);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
@@ -35,7 +35,7 @@ public class TemplateParser {
         ParseTree tree = parser.template();
 
         TemplateVisitor visitor = new TemplateVisitor(tokens, data);
-        return visitor.visit(tree);
+        return visitor.visit(tree).toString();
     }
 
     private GraqlTemplateLexer getLexer(String templateString){
