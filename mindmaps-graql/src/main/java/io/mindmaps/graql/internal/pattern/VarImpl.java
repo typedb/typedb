@@ -50,8 +50,6 @@ class VarImpl implements VarInternal {
     private String name;
     private final boolean userDefinedName;
 
-    private final Set<VarAdmin> resources = new HashSet<>();
-
     private final Set<VarAdmin.Casting> castings = new HashSet<>();
 
     private Optional<VarTraversals> varPattern = Optional.empty();
@@ -105,7 +103,7 @@ class VarImpl implements VarInternal {
 
             // Currently it is guaranteed that resource types are specified with an ID
             //noinspection OptionalGetWithoutIsPresent
-            var.getResources().forEach(resources::add);
+            ((VarInternal) var).getProperties(HasResourceProperty.class).forEach(properties::add);
 
             castings.addAll(var.getCastings());
         }
@@ -156,7 +154,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var has(String type, Var var) {
-        resources.add(var.isa(type).admin());
+        properties.add(new HasResourceProperty(type, var.admin()));
         return this;
     }
 
@@ -381,22 +379,19 @@ class VarImpl implements VarInternal {
 
     @Override
     public Set<String> getResourceTypes() {
-        // Currently it is guaranteed that resources have a type with an ID
-        //noinspection OptionalGetWithoutIsPresent
-        return resources.stream().map(resource -> resource.getType().get().getId().get()).collect(toSet());
+        return getProperties(HasResourceProperty.class).map(HasResourceProperty::getType).collect(toSet());
     }
 
     @Override
     public boolean hasNoProperties() {
         // return true if this variable has any properties set
-        return properties.isEmpty() && resources.isEmpty() && castings.isEmpty();
+        return properties.isEmpty() && castings.isEmpty();
     }
 
     @Override
     public Optional<String> getIdOnly() {
 
-        if (getId().isPresent() && properties.size() == 1 && resources.isEmpty() &&
-                castings.isEmpty() && !userDefinedName) {
+        if (getId().isPresent() && properties.size() == 1 && castings.isEmpty() && !userDefinedName) {
             return getId();
         } else {
             return Optional.empty();
@@ -448,19 +443,19 @@ class VarImpl implements VarInternal {
 
     @Override
     public Set<VarAdmin> getResources() {
-        return resources;
+        return getProperties(HasResourceProperty.class).map(HasResourceProperty::getResource).collect(toSet());
     }
 
     @Override
     public Map<VarAdmin, Set<ValuePredicateAdmin>> getResourcePredicates() {
-        // The type of the resource is guaranteed to exist
+        // Type of the resource is guaranteed to exist
         //noinspection OptionalGetWithoutIsPresent
         Function<VarAdmin, VarAdmin> type = v -> v.getType().get();
 
-        Function<VarAdmin, Stream<ValuePredicateAdmin>> predicates =
-                resource -> resource.getValuePredicates().stream();
+        Function<VarAdmin, Stream<ValuePredicateAdmin>> predicates = resource -> resource.getValuePredicates().stream();
 
-        Map<VarAdmin, List<VarAdmin>> groupedByType = resources.stream().collect(groupingBy(type));
+        Map<VarAdmin, List<VarAdmin>> groupedByType =
+                getProperties(HasResourceProperty.class).map(HasResourceProperty::getResource).collect(groupingBy(type));
 
         return Maps.transformValues(groupedByType, vars -> vars.stream().flatMap(predicates).collect(toSet()));
     }
@@ -517,7 +512,7 @@ class VarImpl implements VarInternal {
 
         Set<VarAdmin> innerVars = getInnerVars();
         innerVars.remove(this);
-        innerVars.removeAll(resources);
+        innerVars.removeAll(getResources());
 
         if (!innerVars.stream().allMatch(v -> v.getIdOnly().isPresent() || v.hasNoProperties())) {
             throw new UnsupportedOperationException("Graql strings cannot represent a query with inner variables");
@@ -528,24 +523,6 @@ class VarImpl implements VarInternal {
         if (isRelation()) {
             propertiesStrings.add("(" + castings.stream().map(Object::toString).collect(joining(", ")) + ")");
         }
-
-        resources.forEach(
-                resource -> {
-                    // Currently it is guaranteed that resources have a type specified
-                    //noinspection OptionalGetWithoutIsPresent
-                    String type = resource.getType().get().getId().get();
-
-                    String resourceRepr;
-                    if (resource.isUserDefinedName()) {
-                        resourceRepr = " " + resource.getPrintableName();
-                    } else if (resource.hasNoProperties()) {
-                        resourceRepr = "";
-                    } else {
-                        resourceRepr = " " + resource.getValuePredicates().iterator().next().toString();
-                    }
-                    propertiesStrings.add("has " + type + resourceRepr);
-                }
-        );
 
         String name = isUserDefinedName() ? getPrintableName() + " " : "";
 
@@ -578,7 +555,8 @@ class VarImpl implements VarInternal {
         return varTraversals;
     }
 
-    private <T extends VarProperty> Stream<T> getProperties(Class<T> type) {
+    @Override
+    public <T extends VarProperty> Stream<T> getProperties(Class<T> type) {
         return properties.stream().filter(type::isInstance).map(type::cast);
     }
 
