@@ -28,10 +28,7 @@ import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 import io.mindmaps.graql.internal.gremlin.VarTraversals;
-import io.mindmaps.graql.internal.pattern.property.AbstractProperty;
-import io.mindmaps.graql.internal.pattern.property.IdProperty;
-import io.mindmaps.graql.internal.pattern.property.ValueProperty;
-import io.mindmaps.graql.internal.pattern.property.VarProperty;
+import io.mindmaps.graql.internal.pattern.property.*;
 import io.mindmaps.graql.internal.util.StringConverter;
 
 import java.util.*;
@@ -53,7 +50,6 @@ class VarImpl implements VarInternal {
     private String name;
     private final boolean userDefinedName;
 
-    private Optional<ResourceType.DataType<?>> datatype = Optional.empty();
     private Optional<String> regex = Optional.empty();
 
     private boolean valueFlag = false;
@@ -295,7 +291,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var datatype(ResourceType.DataType<?> datatype) {
-        this.datatype = Optional.of(datatype);
+        properties.add(new DataTypeProperty(datatype));
         return this;
     }
 
@@ -351,7 +347,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Optional<ResourceType.DataType<?>> getDatatype() {
-        return datatype;
+        return getProperties(DataTypeProperty.class).findAny().map(DataTypeProperty::getDatatype);
     }
 
     @Override
@@ -559,8 +555,6 @@ class VarImpl implements VarInternal {
         hasScope.forEach(v -> propertiesStrings.add("has-scope " + v.getPrintableName()));
         hasResourceTypes.forEach(v -> propertiesStrings.add("has-resource " + v.getPrintableName()));
 
-        getDatatypeName().ifPresent(d -> propertiesStrings.add("datatype " + d));
-
         resources.forEach(
                 resource -> {
                     // Currently it is guaranteed that resources have a type specified
@@ -585,27 +579,6 @@ class VarImpl implements VarInternal {
         String name = isUserDefinedName() ? getPrintableName() + " " : "";
 
         return name + propertiesStrings.stream().collect(joining(", "));
-    }
-
-    /**
-     * @return the datatype's name (as referred to in native Graql), if one is specified
-     */
-    private Optional<String> getDatatypeName() {
-        return datatype.map(
-                d -> {
-                    if (d == ResourceType.DataType.BOOLEAN) {
-                        return "boolean";
-                    } else if (d == ResourceType.DataType.DOUBLE) {
-                        return "double";
-                    } else if (d == ResourceType.DataType.LONG) {
-                        return "long";
-                    } else if (d == ResourceType.DataType.STRING) {
-                        return "string";
-                    } else {
-                        throw new RuntimeException("Unknown data type: " + d.getName());
-                    }
-                }
-        );
     }
 
     /**
