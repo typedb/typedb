@@ -18,8 +18,8 @@
 
 package io.mindmaps.migration.json;
 
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.factory.MindmapsClient;
 import mjson.Json;
 import org.apache.commons.io.FileUtils;
 
@@ -99,8 +99,8 @@ public class Main {
         JsonDataMigrator dataMigrator = new JsonDataMigrator();
 
         try{
-            MindmapsGraph graph = engineURL == null ? MindmapsClient.getGraph(graphName)
-                    : MindmapsClient.getGraph(graphName, engineURL);
+            MindmapsGraph graph = engineURL == null ? Mindmaps.factory().getGraph(graphName)
+                                                    : Mindmaps.factory(engineURL).getGraph(graphName);
 
             if(jsonSchemaFile.isDirectory()){
                 System.out.println(FileUtils.listFiles(jsonSchemaFile, FILE_TYPES, true));

@@ -27,6 +27,7 @@ import mjson.Json;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 
+import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -357,7 +358,7 @@ public class JsonSchemaMigratorTest {
 
         Function<URI, Json> relativeReferenceResolver = docuri -> {
             try {
-                return Json.read(alephBaseUri.resolve(docuri).toURL());
+                return Json.read(new File(alephBaseUri.getPath() + docuri.getPath()).toURI().toURL());
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
