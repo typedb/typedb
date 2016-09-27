@@ -7,6 +7,7 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class MindmapsTest {
 
@@ -23,5 +24,14 @@ public class MindmapsTest {
 
         assertEquals(test1, test11);
         assertNotEquals(test1, test2);
+    }
+
+    @Test
+    public void testInMemoryClear(){
+        MindmapsGraph graph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph("default");
+        graph.clear();
+        graph =  Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph("default");
+        graph.putEntityType("A thing");
+        assertNotNull(graph.getEntityType("A thing"));
     }
 }
