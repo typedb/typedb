@@ -40,6 +40,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import spark.Spark;
 
 import java.util.UUID;
 
@@ -53,16 +54,18 @@ public class CommitLogControllerTest {
     private Cache cache;
 
     @BeforeClass
-    public static void startController() {
+    public static void setUpController() throws InterruptedException {
+        Spark.stop();
+        Thread.sleep(5000);
         System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY, ConfigProperties.TEST_CONFIG_FILE);
+        Util.setRestAssuredBaseURI(ConfigProperties.getInstance().getProperties());
+        new CommitLogController();
+        new GraphFactoryController();
+        Thread.sleep(5000);
     }
 
     @Before
     public void setUp() throws Exception {
-        new CommitLogController();
-        new GraphFactoryController();
-        Util.setRestAssuredBaseURI(ConfigProperties.getInstance().getProperties());
-
         cache = Cache.getInstance();
 
         String commitLog = "{\n" +
@@ -86,7 +89,7 @@ public class CommitLogControllerTest {
     }
 
     @After
-    public void takeDown() {
+    public void takeDown() throws InterruptedException {
         cache.getCastingJobs().clear();
     }
 
@@ -101,8 +104,8 @@ public class CommitLogControllerTest {
         final String BOB = "bob";
         final String TIM = "tim";
 
-        MindmapsGraph bob = Mindmaps.factory().getGraph(BOB);
-        MindmapsGraph tim = Mindmaps.factory().getGraph(TIM);
+        MindmapsGraph bob = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(BOB);
+        MindmapsGraph tim = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(TIM);
 
         addSomeData(bob);
 
@@ -117,8 +120,8 @@ public class CommitLogControllerTest {
         assertEquals(2, cache.getCastingJobs().get(TIM).size());
         assertEquals(1, cache.getResourceJobs().get(TIM).size());
 
-        Mindmaps.factory().getGraph(BOB).clear();
-        Mindmaps.factory().getGraph(TIM).clear();
+        Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(BOB).clear();
+        Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(TIM).clear();
 
         assertEquals(0, cache.getCastingJobs().get(BOB).size());
         assertEquals(0, cache.getCastingJobs().get(TIM).size());

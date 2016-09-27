@@ -16,13 +16,16 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.shell;import io.mindmaps.factory.MindmapsTestGraphFactory;
+package io.mindmaps.shell;
+
+import io.mindmaps.Mindmaps;
+import io.mindmaps.engine.session.RemoteSession;
 import io.mindmaps.graql.GraqlClient;
 import io.mindmaps.graql.GraqlShell;
-import io.mindmaps.engine.session.RemoteSession;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.fail;
@@ -31,7 +34,7 @@ class GraqlClientMock implements GraqlClient {
 
     private RemoteSession server = new RemoteSession(namespace -> {
         this.namespace = namespace;
-        return MindmapsTestGraphFactory.newEmptyGraph();
+        return Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
     });
 
     private String namespace = null;

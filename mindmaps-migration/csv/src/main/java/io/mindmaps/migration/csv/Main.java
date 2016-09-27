@@ -91,7 +91,7 @@ public class Main {
 
         //
         try{
-            MindmapsGraph graph = engineURL == null ? Mindmaps.factory().getGraph(graphName)
+            MindmapsGraph graph = engineURL == null ? Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(graphName)
                                                     : Mindmaps.factory(engineURL).getGraph(graphName);
 
             Loader loader = engineURL == null ? new BlockingLoader(graphName)

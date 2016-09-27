@@ -63,61 +63,51 @@ export default class EngineClient {
      * Query Engine for concepts by type.
      */
     conceptsByType(type, fn) {
-        var request = {
+        this.request({
             url: "/graph/concept/"+type,
             callback: fn
-        }
-
-        this.request(request);
+        });
     }
 
     /**
      * Send graql shell command to engine. Returns a string representing shell output.
      */
     graqlShell(query, fn) {
-        var request = {
+        this.request({
             url: "/shell/match?query="+query,
             callback: fn,
             dataType: "text",
             contentType: "application/text"
-        }
-
-        this.request(request);
+        });
     }
 
     /**
      * Send graql query to Engine, returns an array of HAL objects.
      */
     graqlHAL(query, fn) {
-        var request = {
+        this.request({
             url: "/graph/match?query="+query,
             callback: fn
-        }
-
-        this.request(request);
+        });
     }
 
     /**
      * Get current engine configuration.
      */
-    getStatus(fn) {
-        var request = {
-            url: "/status",
+    getConfig(fn) {
+        this.request({
+            url: "/status/config",
             callback: fn
-        }
-
-        this.request(request);
+        });
     }
 
     /**
      * Get meta ontology type instances.
      */
     getMetaTypes(fn) {
-        var request = {
+        this.request({
             url: "/shell/metaTypeInstances",
             callback: fn
-        }
-
-        this.request(request);
+        });
     }
 };

@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql;
 
-import io.mindmaps.util.Version;
+import com.google.common.base.Splitter;
 import io.mindmaps.graql.internal.shell.ErrorMessage;
 import io.mindmaps.graql.internal.shell.GraQLCompleter;
 import io.mindmaps.graql.internal.shell.GraqlSignalHandler;
@@ -28,13 +28,9 @@ import jline.console.ConsoleReader;
 import jline.console.completer.AggregateCompleter;
 import jline.console.history.FileHistory;
 import mjson.Json;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.*;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
@@ -57,6 +53,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
+import static io.mindmaps.graql.internal.shell.ErrorMessage.SESSION_CLOSED;
 import static io.mindmaps.util.REST.RemoteShell.*;
 import static io.mindmaps.util.REST.WebPath.REMOTE_SHELL_URI;
 
@@ -84,6 +81,8 @@ public class GraqlShell implements AutoCloseable {
     private static final String CLEAR_COMMAND = "clear";
     private static final String EXIT_COMMAND = "exit";
     private static final String LICENSE_COMMAND = "license";
+
+    private static final int QUERY_CHUNK_SIZE = 1000;
 
     /**
      * Array of available commands in shell
@@ -173,6 +172,8 @@ public class GraqlShell implements AutoCloseable {
             }
         } catch (IOException | InterruptedException | ExecutionException | URISyntaxException e) {
             System.err.println(e.toString());
+        } catch (WebSocketException e) {
+            System.err.println(SESSION_CLOSED.getMessage());
         } finally {
             client.close();
         }
@@ -309,8 +310,8 @@ public class GraqlShell implements AutoCloseable {
 
         switch (json.at(ACTION).asString()) {
             case ACTION_QUERY:
-                List<Json> lines = json.at(QUERY_LINES).asJsonList();
-                lines.forEach(line -> println(line.asString()));
+                String result = json.at(QUERY_RESULT).asString();
+                print(result);
                 break;
             case ACTION_QUERY_END:
                 // Alert the shell that the query has finished, so it can prompt for another query
@@ -326,10 +327,17 @@ public class GraqlShell implements AutoCloseable {
 
     private void executeQuery(String queryString) {
         try {
-            sendJson(Json.object(
-                    ACTION, ACTION_QUERY,
-                    QUERY, queryString
-            ));
+            // Split query into chunks
+            Iterable<String> splitQuery = Splitter.fixedLength(QUERY_CHUNK_SIZE).split(queryString);
+
+            for (String queryChunk : splitQuery) {
+                sendJson(Json.object(
+                        ACTION, ACTION_QUERY,
+                        QUERY, queryChunk
+                ));
+            }
+
+            sendJson(Json.object(ACTION, ACTION_QUERY_END));
 
             // Wait for the end of the query results before continuing
             waitingQuery = true;
@@ -383,7 +391,7 @@ public class GraqlShell implements AutoCloseable {
      */
     public void interrupt() {
         if (waitingQuery) {
-            sendJson(Json.object(ACTION, ACTION_QUERY_END));
+            sendJson(Json.object(ACTION, ACTION_QUERY_ABORT));
             waitingQuery = false;
         } else {
             System.exit(0);

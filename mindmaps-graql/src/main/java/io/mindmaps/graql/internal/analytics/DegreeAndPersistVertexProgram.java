@@ -96,8 +96,6 @@ class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
                     }
                 }
                 break;
-            case 3:
-                bulkResourceMutate.cleanup(vertex,MEMORY_KEY);
         }
     }
 
@@ -113,7 +111,7 @@ class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
 
     @Override
     public boolean terminate(final Memory memory) {
-        return memory.getIteration() == 3;
+        return memory.getIteration() == 2;
     }
 
 }

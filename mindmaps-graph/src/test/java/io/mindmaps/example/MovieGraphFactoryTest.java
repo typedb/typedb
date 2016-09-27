@@ -18,15 +18,15 @@
 
 package io.mindmaps.example;
 
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RuleType;
-import io.mindmaps.factory.MindmapsTestGraphFactory;
+import io.mindmaps.graph.internal.AbstractMindmapsGraph;
+import io.mindmaps.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -36,13 +36,14 @@ import org.junit.rules.ExpectedException;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.UUID;
 import java.util.stream.Stream;
 
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
 
 public class MovieGraphFactoryTest {
 
@@ -54,14 +55,14 @@ public class MovieGraphFactoryTest {
 
     @BeforeClass
     public static void setUp() throws IOException{
-        mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
+        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
         MovieGraphFactory.loadGraph(mindmapsGraph);
         graph = ((AbstractMindmapsGraph)mindmapsGraph).getTinkerPopGraph();
     }
 
     @Test
     public void failToLoad(){
-        MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
+        MindmapsGraph mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
         mindmapsGraph.putRelationType("fake");
 
         expectedException.expect(RuntimeException.class);

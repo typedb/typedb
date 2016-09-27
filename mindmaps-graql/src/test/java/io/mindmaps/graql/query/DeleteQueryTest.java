@@ -18,9 +18,9 @@
 
 package io.mindmaps.graql.query;
 
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.example.MovieGraphFactory;
-import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Var;
@@ -29,8 +29,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static io.mindmaps.util.Schema.MetaType.ENTITY_TYPE;
+import java.util.UUID;
+
 import static io.mindmaps.graql.Graql.var;
+import static io.mindmaps.util.Schema.MetaType.ENTITY_TYPE;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.assertEquals;
@@ -45,7 +47,7 @@ public class DeleteQueryTest {
 
     @Before
     public void setUp() {
-        MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
+        MindmapsGraph mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
         MovieGraphFactory.loadGraph(mindmapsGraph);
         qb = Graql.withGraph(mindmapsGraph);
     }

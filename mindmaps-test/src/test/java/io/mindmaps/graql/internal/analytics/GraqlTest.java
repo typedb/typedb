@@ -18,6 +18,7 @@
 
 package io.mindmaps.graql.internal.analytics;
 
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
@@ -27,11 +28,9 @@ import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.Mindmaps;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.QueryBuilder;
 import org.javatuples.Pair;
-import org.junit.*;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -160,7 +159,7 @@ public class GraqlTest {
         Map<Instance, Long> degrees = ((Map) ((ComputeQuery) qb.parse("compute degrees;")).execute());
 
         // assert degrees are correct
-        graph = Mindmaps.factory().getGraph(keyspace);
+        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(keyspace);
 
         entity1 = graph.getEntity("1");
         entity2 = graph.getEntity("2");
@@ -251,7 +250,7 @@ public class GraqlTest {
         ((ComputeQuery) qb.parse("compute degreesAndPersist;")).execute();
 
         // assert persisted degrees are correct
-        graph = Mindmaps.factory().getGraph(keyspace);
+        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(keyspace);
         entity1 = graph.getEntity("1");
         entity2 = graph.getEntity("2");
         entity3 = graph.getEntity("3");

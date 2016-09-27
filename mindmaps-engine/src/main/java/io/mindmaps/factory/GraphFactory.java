@@ -40,7 +40,8 @@ public class GraphFactory {
     }
 
     public synchronized MindmapsGraph getGraph(String name) {
-        return MindmapsFactoryBuilder.getFactory(graphConfig).getGraph(name, null, graphConfig, false);
+        return MindmapsFactoryBuilder.getFactory(graphConfig)
+                .getGraph(name, null, graphConfig, false);
     }
     public synchronized MindmapsGraph getGraphBatchLoading(String name) {
         return MindmapsFactoryBuilder.getFactory(graphBatchConfig).getGraph(name, null, graphBatchConfig, true);

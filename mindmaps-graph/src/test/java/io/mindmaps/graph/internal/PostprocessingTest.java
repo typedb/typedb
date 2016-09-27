@@ -18,6 +18,7 @@
 
 package io.mindmaps.graph.internal;
 
+import io.mindmaps.Mindmaps;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Relation;
@@ -25,7 +26,6 @@ import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
-import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -53,7 +53,7 @@ public class PostprocessingTest {
 
     @Before
     public void buildGraphAccessManager(){
-        graph = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
+        graph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
         graph.initialiseMetaConcepts();
 
         roleType1 = graph.putRoleType("role 1");

@@ -17,6 +17,7 @@
  */
 package test.io.mindmaps.migration.owl;
 
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Entity;
@@ -25,7 +26,6 @@ import io.mindmaps.concept.Relation;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.RoleType;
-import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.migration.owl.OWLMigrator;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -51,10 +51,7 @@ import java.util.Optional;
 public class TestOwlMindMapsBase {
     public static final String OWL_TEST_GRAPH = "owltestgraph";
  
-    static MindmapsGraph graph =
-             MindmapsTestGraphFactory.newEmptyGraph();  
-             // MindmapsGraphFactoryImpl.getGraph(OWL_TEST_GRAPH);
-    
+    static MindmapsGraph graph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(OWL_TEST_GRAPH);
     static OWLOntologyManager manager;
     
     @BeforeClass

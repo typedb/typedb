@@ -43,7 +43,7 @@ public class DistributedLoader extends Loader {
     private static ExecutorService executor = Executors.newSingleThreadExecutor();
     private Future future;
 
-    private int pollingFrequency;
+    private long pollingFrequency;
     private String graphName;
     private int currentHost;
     private String[] hostsArray;
@@ -67,7 +67,7 @@ public class DistributedLoader extends Loader {
         batch = new HashSet<>();
         hostsArray = hosts.toArray(new String[hosts.size()]);
         currentHost = 0;
-        pollingFrequency = 30000;
+        pollingFrequency = prop.getPropertyAsLong(ConfigProperties.POLLING_FREQUENCY_PROPERTY);
 
         threadsNumber = prop.getAvailableThreads() * 3;
 
@@ -87,7 +87,7 @@ public class DistributedLoader extends Loader {
         availability.keySet().forEach(h -> availability.put(h, new Semaphore(threadsNumber)));
     }
 
-    public void setPollingFrequency(int number){
+    public void setPollingFrequency(long number){
         this.pollingFrequency = number;
     }
 
@@ -95,12 +95,15 @@ public class DistributedLoader extends Loader {
      * Block the main thread until all of the transactions have finished loading
      */
     public void waitToFinish() {
-        flush();
-        try {
-            future.get();
-        } catch (InterruptedException | ExecutionException e) {
-            LOG.error(e.getMessage());
+        if(future != null){
+            flush();
+            try {
+                future.get();
+            } catch (InterruptedException | ExecutionException e) {
+                LOG.error(e.getMessage());
+            }
         }
+
         LOG.info("All tasks done!");
     }
 

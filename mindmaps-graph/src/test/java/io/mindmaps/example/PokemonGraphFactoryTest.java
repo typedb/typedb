@@ -18,15 +18,15 @@
 
 package io.mindmaps.example;
 
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.Relation;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
-import io.mindmaps.factory.MindmapsTestGraphFactory;
+import io.mindmaps.util.ErrorMessage;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,6 +34,7 @@ import org.junit.rules.ExpectedException;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import static junit.framework.TestCase.assertNotNull;
@@ -49,13 +50,13 @@ public class PokemonGraphFactoryTest {
 
     @Before
     public void setup() {
-        mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
+        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
         PokemonGraphFactory.loadGraph(mindmapsGraph);
     }
 
     @Test
     public void failToLoad(){
-        MindmapsGraph mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
+        MindmapsGraph mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
         mindmapsGraph.putRelationType("fake");
 
         expectedException.expect(RuntimeException.class);

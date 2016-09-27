@@ -19,11 +19,11 @@
 package io.mindmaps.graql.query;
 
 import com.google.common.collect.Lists;
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.example.MovieGraphFactory;
-import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
@@ -36,12 +36,30 @@ import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Stream;
 
-import static io.mindmaps.graql.Graql.*;
-import static io.mindmaps.util.Schema.MetaType.*;
+import static io.mindmaps.graql.Graql.all;
+import static io.mindmaps.graql.Graql.and;
+import static io.mindmaps.graql.Graql.any;
+import static io.mindmaps.graql.Graql.contains;
+import static io.mindmaps.graql.Graql.eq;
+import static io.mindmaps.graql.Graql.gt;
+import static io.mindmaps.graql.Graql.gte;
+import static io.mindmaps.graql.Graql.id;
+import static io.mindmaps.graql.Graql.lt;
+import static io.mindmaps.graql.Graql.lte;
+import static io.mindmaps.graql.Graql.neq;
+import static io.mindmaps.graql.Graql.or;
+import static io.mindmaps.graql.Graql.regex;
+import static io.mindmaps.graql.Graql.var;
+import static io.mindmaps.graql.Graql.withGraph;
+import static io.mindmaps.util.Schema.MetaType.ENTITY_TYPE;
+import static io.mindmaps.util.Schema.MetaType.RESOURCE_TYPE;
+import static io.mindmaps.util.Schema.MetaType.RULE_TYPE;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
@@ -54,7 +72,7 @@ public class MatchQueryTest {
 
     @BeforeClass
     public static void setUpClass() {
-        mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
+        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
         MovieGraphFactory.loadGraph(mindmapsGraph);
     }
 
@@ -400,7 +418,7 @@ public class MatchQueryTest {
 
     @Test
     public void testAkoRelationType() {
-        MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
+        MindmapsGraph graph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
         QueryBuilder qb = withGraph(graph);
 
         qb.insert(
@@ -436,5 +454,27 @@ public class MatchQueryTest {
         MatchQuery query = qb.match(var("x").regex("(fe)?male"));
         assertEquals(1, query.stream().count());
         assertEquals("gender", query.get("x").findFirst().get().getId());
+    }
+
+    @Test
+    public void testPlaysRoleAko() {
+        qb.insert(
+                id("c").ako(id("b").ako(id("a").isa("entity-type"))),
+                id("f").ako(id("e").ako(id("d").isa("role-type"))),
+                id("b").playsRole("e")
+        ).execute();
+
+        // Make sure AKOs are followed correctly...
+        assertTrue(qb.match(id("b").playsRole("e")).ask().execute());
+        assertTrue(qb.match(id("b").playsRole("f")).ask().execute());
+        assertTrue(qb.match(id("c").playsRole("e")).ask().execute());
+        assertTrue(qb.match(id("c").playsRole("f")).ask().execute());
+
+        // ...and not incorrectly
+        assertFalse(qb.match(id("a").playsRole("d")).ask().execute());
+        assertFalse(qb.match(id("a").playsRole("e")).ask().execute());
+        assertFalse(qb.match(id("a").playsRole("f")).ask().execute());
+        assertFalse(qb.match(id("b").playsRole("d")).ask().execute());
+        assertFalse(qb.match(id("c").playsRole("d")).ask().execute());
     }
 }

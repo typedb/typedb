@@ -48,8 +48,6 @@ import java.util.stream.Collectors;
 class BulkResourceMutate <T>{
 
     private int batchSize = 100;
-    private boolean havePutValue = false;
-    private boolean haveCalledCleanup = false;
     private MindmapsGraph graph;
     private int currentNumberOfVertices = 0;
     private final String resourceTypeId = Analytics.degree;
@@ -70,26 +68,10 @@ class BulkResourceMutate <T>{
     }
 
     void putValue(Vertex vertex,T value, String deleteKey) {
-        if (haveCalledCleanup) throw new RuntimeException(ErrorMessage.CANNOT_DELETE_AND_ADD.getMessage());
-        havePutValue = true;
         currentNumberOfVertices++;
         initialiseGraph();
 
-        String assertionId = persistResource(vertex, value);
-        if (assertionId!=null) vertex.property(deleteKey,assertionId);
-
-        if (currentNumberOfVertices >= batchSize) flush();
-    }
-
-    void cleanup(Vertex vertex, String deleteKey) {
-        if (havePutValue) throw new RuntimeException(ErrorMessage.CANNOT_DELETE_AND_ADD.getMessage());
-        haveCalledCleanup = true;
-        currentNumberOfVertices++;
-        initialiseGraph();
-
-        if(vertex.property(deleteKey).isPresent()) {
-            graph.getRelation(vertex.value(deleteKey)).delete();
-        }
+        persistResource(vertex, value);
 
         if (currentNumberOfVertices >= batchSize) flush();
     }
@@ -117,7 +99,7 @@ class BulkResourceMutate <T>{
 
     private void initialiseGraph() {
         if (graph == null) {
-            graph = Mindmaps.factory().getGraphBatchLoading(keyspace);
+            graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraphBatchLoading(keyspace);
             refreshOntologyElements();
         }
     }
@@ -131,7 +113,7 @@ class BulkResourceMutate <T>{
      * @param value     the value to attach to the vertex
      * @return          the ID of the old relation to be removed
      */
-    private String persistResource(Vertex vertex, T value) {
+    private void persistResource(Vertex vertex, T value) {
         Instance instance =
                 graph.getInstance(vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name()));
 
@@ -148,7 +130,7 @@ class BulkResourceMutate <T>{
                     .putRolePlayer(resourceOwner, instance)
                     .putRolePlayer(resourceValue, resource);
 
-            return null;
+            return;
         }
 
         relations = relations.stream()
@@ -157,7 +139,7 @@ class BulkResourceMutate <T>{
                 .collect(Collectors.toList());
 
         if (!relations.isEmpty()) {
-            String oldAssertionId = relations.get(0).getId();
+            graph.getRelation(relations.get(0).getId()).delete();
 
             Resource<T> resource = graph.putResource(value, resourceType);
 
@@ -165,9 +147,7 @@ class BulkResourceMutate <T>{
                     .putRolePlayer(resourceOwner, instance)
                     .putRolePlayer(resourceValue, resource);
 
-            return oldAssertionId;
-        } else {
-            return null;
+            return;
         }
     }
 }

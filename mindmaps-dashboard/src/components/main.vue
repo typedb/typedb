@@ -110,7 +110,7 @@ export default {
     },
 
     attached() {
-        engineClient.getStatus((r, e) => { this.version=(r == null ? 'error' : r['project.version']) });
+        engineClient.getConfig((r, e) => { this.version=(r == null ? 'error' : r['project.version']) });
     }
 }
 </script>
