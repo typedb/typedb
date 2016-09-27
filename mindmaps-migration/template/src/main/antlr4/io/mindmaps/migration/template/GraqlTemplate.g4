@@ -19,25 +19,23 @@ statement
  ;
 
 forStatement
- : LPAREN FOR variable IN resolve RPAREN LBRACKET block RBRACKET
+ : LPAREN FOR tvar IN resolve RPAREN LBRACKET block RBRACKET
  ;
 
 ifStatement
  : LPAREN IF resolve RPAREN LBRACKET block RBRACKET
  ;
 
-element     : TVAR;
-resolve     : TVAR (DVAR)*;
+gvar : GVAR VAR;
+tvar : TVAR VAR (DVAR VAR)*;
+
+resolve     : tvar;
 replace     : resolve;
 
-type        : TVAR | CVAR | GVAR;
-
-gvar : GVAR VAR;
-tvar : GVAR{0,1} TVAR VAR (DVAR VAR)*;
-
 graql
- : gvar | tvar
+ : gvar | replace
  | IN
+ | IF
  | FOR
  | LPAREN
  | RPAREN
@@ -53,7 +51,6 @@ VAR         : [a-zA-Z0-9_-]+;
 GVAR        : '$';
 TVAR        : '%';
 DVAR        : '.';
-CVAR        : GVAR TVAR;
 
 LPAREN      : '(';
 RPAREN      : ')';
