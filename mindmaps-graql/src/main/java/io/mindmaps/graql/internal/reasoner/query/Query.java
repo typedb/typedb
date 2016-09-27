@@ -272,9 +272,9 @@ public class Query implements MatchQueryInternal {
 
     public MatchQuery getMatchQuery() {
         if (selectVars.isEmpty())
-            return Graql.match(pattern).withGraph(graph);
+            return Graql.match(pattern.getPatterns()).withGraph(graph);
         else
-            return Graql.match(pattern).select(selectVars).withGraph(graph);
+            return Graql.match(pattern.getPatterns()).select(selectVars).withGraph(graph);
     }
 
     private Set<Atomic> getAtomSet(Conjunction<PatternAdmin> pat) {

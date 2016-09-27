@@ -240,7 +240,7 @@ public class Reasoner {
         }
         else {
             Map<AtomicQuery, QueryAnswers> matAnswers = new HashMap<>();
-            matAnswers.put(atomicQuery, new QueryAnswers());
+            matAnswers.put(atomicQuery, atomicQuery.getAnswers());
 
             do {
                 Set<AtomicQuery> subGoals = new HashSet<>();
