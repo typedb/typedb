@@ -91,12 +91,13 @@ class GraqlSession {
         queryExecutor.submit(() -> {
 
             String errorMessage = null;
+            Query<?> query = null;
 
             try {
                 String queryString = queryStringBuilder.toString();
                 queryStringBuilder = new StringBuilder();
 
-                Query<?> query = withGraph(graph).parse(queryString);
+                query = withGraph(graph).parse(queryString);
 
                 if (query instanceof MatchQuery) {
                     query = reasonMatchQuery((MatchQuery) query);
@@ -120,6 +121,9 @@ class GraqlSession {
                 LOG.error(errorMessage,e);
             } finally {
                 if (errorMessage != null) {
+                    if (query != null && !query.isReadOnly()) {
+                        attemptRollback();
+                    }
                     sendQueryError(errorMessage);
                 } else {
                     sendQueryEnd();
@@ -162,6 +166,13 @@ class GraqlSession {
             Autocomplete autocomplete = Autocomplete.create(graph, queryString, cursor);
             sendAutocomplete(autocomplete);
         });
+    }
+
+    private void attemptRollback() {
+        try {
+            graph.rollback();
+        } catch (UnsupportedOperationException ignored) {
+        }
     }
 
     /**
