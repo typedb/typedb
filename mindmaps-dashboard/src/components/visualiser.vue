@@ -94,9 +94,6 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 .tab-row {
     padding-top: 20px;
 }
-.graph-div {
-    height: 60vh;
-}
 .pe-7s-angle-right-circle {
     padding-left: 5px;
 }
@@ -161,7 +158,17 @@ export default {
     },
 
     attached() {
-        visualiser.render(this.$els.graph);
+        var graph = this.$els.graph;
+        visualiser.render(graph);
+
+        // set window height
+        var height = window.innerHeight - graph.offsetTop - $('.graph-div').offset().top;
+        $('.graph-div').height(height+"px");
+
+        window.onresize = function() {
+            var x = Math.abs(window.innerHeight - graph.offsetTop - $('.graph-div').offset().top);
+            $('.graph-div').height(x+"px");
+        };
     },
 
     methods: {
