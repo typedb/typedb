@@ -309,6 +309,27 @@ public class TemplateParserTest {
         assertParseEquals(template, json, expected);
     }
 
+    @Test
+    public void ifElseTest(){
+        String template = "" +
+                "if { firstName } do {\n" +
+                "    insert $person has name <firstName>;" +
+                "}" +
+                "else {" +
+                "    insert $person;" +
+                "}";
+
+        String json = "{ \"firstName\" : \"Phil\" }";
+        String expected = "    insert $person0 has name \\\"Phil\\\";";
+
+        assertParseEquals(template, json, expected);
+
+        json = "{}";
+        expected = "    insert $person0;";
+
+        assertParseEquals(template, json, expected);
+    }
+
     private void assertParseEquals(String template, String json, String expected){
         String result = parser.parseTemplate(template, Json.read(json));
         System.out.println(result);

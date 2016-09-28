@@ -106,6 +106,31 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
         return returnValue;
     }
 
+    // ifStatement
+    // : ifPartial elsePartial?
+    // ;
+    //
+    // ifPartial
+    // : IF LBRACKET resolve RBRACKET DO LBRACKET block RBRACKET
+    // ;
+    //
+    // elsePartial
+    // : ELSE LBRACKET block RBRACKET
+    // ;
+    @Override
+    public Object visitIfStatement(GraqlTemplateParser.IfStatementContext ctx){
+
+        if(this.visit(ctx.ifPartial().resolve()) != Value.NULL){
+            return this.visit(ctx.ifPartial().block());
+        }
+
+        if(ctx.elsePartial() != null){
+            return this.visit(ctx.elsePartial().block());
+        }
+
+        return Value.VOID;
+    }
+
     // resolve
     // : NOT_WS+
     // ;
@@ -115,18 +140,41 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
         return scope.resolve(ctx.getText());
     }
 
-    // replace
+    // replaceVal
     // : LTRIANGLE variable RTRIANGLE
     // ;
     @Override
-    public String visitReplace(GraqlTemplateParser.ReplaceContext ctx) {
+    public String visitReplaceVal(GraqlTemplateParser.ReplaceValContext ctx) {
+        Value resolved = visitResolve(ctx.resolve());
+
+        if(resolved == Value.NULL){
+            throw new RuntimeException("Value " + ctx.resolve() + " is not present in data");
+        }
+
         return whitespace(format(visitResolve(ctx.resolve())), ctx);
     }
 
+    // replaceVal
+    // : LTRIANGLE variable RTRIANGLE
+    // ;
+    @Override
+    public String visitReplaceVar(GraqlTemplateParser.ReplaceVarContext ctx) {
+        Value resolved = visitResolve(ctx.resolve());
+
+        if(resolved == Value.NULL){
+            throw new RuntimeException("Value " + ctx.resolve() + " is not present in data");
+        }
+
+        return whitespace(formatVar(visitResolve(ctx.resolve())), ctx);
+    }
+
+    // gvar
+    // : GVAR | '$' replace
+    // ;
     @Override
     public String visitGvar(GraqlTemplateParser.GvarContext ctx){
-        if(ctx.replace() != null){
-            return whitespace("$" + formatVar(visitResolve(ctx.replace().resolve())), ctx);
+        if(ctx.replaceVar() != null){
+            return visitChildren(ctx).toString();
         }
         return whitespace(ctx.getText() + iteration.get(ctx.getText()), ctx);
     }

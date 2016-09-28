@@ -34,7 +34,11 @@ elsePartial
  : ELSE LBRACKET block RBRACKET
  ;
 
-replace
+replaceVal
+ : LTRIANGLE resolve RTRIANGLE
+ ;
+
+replaceVar
  : LTRIANGLE resolve RTRIANGLE
  ;
 
@@ -43,12 +47,12 @@ resolve
  ;
 
 gvar
- : GVAR | '$' replace
+ : GVAR | '$' replaceVar
  ;
 
 graql
  : gvar
- | replace
+ | replaceVal
  | IF
  | FOR
  | DO
