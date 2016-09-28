@@ -36,7 +36,7 @@ import static io.mindmaps.graql.internal.reasoner.Utility.computeRoleCombination
 
 public class AtomicQuery extends Query{
 
-    final private Atomic atom;
+    private Atomic atom;
     private AtomicQuery parent = null;
 
     final private Set<AtomicQuery> children = new HashSet<>();
@@ -158,12 +158,7 @@ public class AtomicQuery extends Query{
     @Override
     public void unify(Map<String, String> unifiers) {
         super.unify(unifiers);
-        Map<String, String> mappings = new HashMap<>(unifiers);
-        Set<String> varIntersection = atom.getVarNames();
-        varIntersection.retainAll(mappings.keySet());
-
-        if (!varIntersection.isEmpty())
-            atom.changeEachVarName(mappings);
+        atom = selectAtoms().iterator().next();
     }
 
 
