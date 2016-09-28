@@ -66,7 +66,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
     </div>
 
     <div class="row tab-row">
-        <div class="col-xs-12">
+        <div class="tabs-col col-md-12">
             <div class="tabs-container">
                 <ul class="nav nav-tabs">
                     <li class="active"><a data-toggle="tab" href="#tab-1" aria-expanded="true">Visualiser</a></li>
@@ -77,6 +77,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                         <div class="panel-body">
                             <div class="graph-div" v-el:graph @contextmenu="suppressEventDefault"></div>
                         </div>
+
                     </div>
                     <div id="tab-2" class="tab-pane">
                         <div class="panel-body">
@@ -86,6 +87,30 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                 </div>
             </div>
         </div>
+
+        <div class="col-md-2" v-show="allNodeProps.length">
+            <div class="panel panel-filled panel-c-white">
+                <div class="panel-heading">
+                    <div class="panel-tools">
+                        <a class="panel-close" @click="closeConfigPanel"><i class="fa fa-times"></i></a>
+                    </div>
+                    Display Configuration
+                </div>
+                <div class="panel-body">
+                    Select which properties you wish to be show for all nodes of type [{{nodeType}}]:
+                    <br/>
+                    <ul class="dd-list">
+                        <li class="dd-item" v-for="prop in allNodeProps" v-bind:class="{'li-active':selectedProps.includes(prop)}">
+                            <div class="dd-handle" @click="configureNode(prop)"">{{prop}}</div>
+                        </li>
+                    </ul>
+                </div>
+                <div class="panel-footer" style="text-align: right">
+                    <button type="button" class="btn btn-warning" @click="closeConfigPanel">Done</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 </template>
@@ -118,6 +143,9 @@ h4 {
     margin-bottom: 0px;
     margin-left: -10px;
 }
+.li-active {
+     background-color: #337ab7;
+}
 </style>
 
 <script>
@@ -141,7 +169,11 @@ export default {
             halParser: {},
 
             typeInstances: false,
-            typeKeys: []
+            typeKeys: [],
+
+            allNodeProps: [],
+            selectedProps: [],
+            nodeType: undefined
         }
     },
 
@@ -279,7 +311,17 @@ export default {
         },
 
         rightClick(param) {
-            param.nodes.map(x => { visualiser.deleteNode(x) });
+            if(param.nodes.length === 0)
+                return;
+
+            if(param.event.shiftKey) {
+                param.nodes.map(x => { visualiser.deleteNode(x) });
+
+            } else {
+                $('.tabs-col').removeClass('col-md-12').addClass('col-md-10');
+                this.allNodeProps = ['penis'];
+                this.nodeType = "penis";
+            }
         },
 
         suppressEventDefault(e) {
@@ -295,6 +337,18 @@ export default {
 
         toggleElement(e) {
             $('.'+e).toggle();
+        },
+
+        configureNode(p) {
+            if(this.selectedProps.includes(p))
+                this.selectedProps = this.selectedProps.filter(x => x != p);
+            else
+                this.selectedProps.push(p)
+        },
+
+        closeConfigPanel() {
+            $('.tabs-col').removeClass('col-md-10').addClass('col-md-12');
+            this.allNodeProps = [];
         }
     }
 }
