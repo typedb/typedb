@@ -20,6 +20,7 @@ package io.mindmaps.graql.internal.reasoner.predicate;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.concept.RoleType;
@@ -141,12 +142,12 @@ public abstract class AtomBase implements Atomic{
         MatchQuery matchQuery = qb.match(getPattern());
 
         //add substitutions
-        Map<String, Set<Atomic>> varSubMap = getVarSubMap();
+        Map<String, Atomic> varSubMap = getVarSubMap();
         Set<String> selectVars = getVarNames();
         //form a disjunction of each set of subs for a given variable and add to query
-        varSubMap.forEach( (key, val) -> {
+        varSubMap.forEach( (var, sub) -> {
             Set<PatternAdmin> patterns = new HashSet<>();
-            val.forEach(sub -> patterns.add(sub.getPattern()));
+            patterns.add(sub.getPattern());
             matchQuery.admin().getPattern().getPatterns().add(Patterns.conjunction(patterns));
         });
         return matchQuery.admin().select(selectVars);
@@ -245,16 +246,27 @@ public abstract class AtomBase implements Atomic{
     }
 
     @Override
-    public Map<String, Set<Atomic>> getVarSubMap() {
-        Map<String, Set<Atomic>> map = new HashMap<>();
+    public Map<String, Atomic> getVarSubMap() {
+        Map<String, Atomic> map = new HashMap<>();
         getSubstitutions().forEach( sub -> {
             String var = sub.getVarName();
-            if (map.containsKey(var))
-                map.get(var).add(sub);
-            else
-                map.put(var, Sets.newHashSet(sub));
+            map.put(var, sub);
         });
         return map;
+    }
+
+    @Override
+    public Map<RoleType, String> getRoleConceptIdMap(){
+        Map<RoleType, String> roleConceptMap = new HashMap<>();
+        Map<String, Atomic> varSubMap = getVarSubMap();
+        Map<RoleType, Pair<String, Type>> roleVarMap = getRoleVarTypeMap();
+
+        roleVarMap.forEach( (role, varTypePair) -> {
+            String var = varTypePair.getKey();
+            roleConceptMap.put(role, varSubMap.containsKey(var) ? varSubMap.get(var).getVal() : "");
+        });
+
+        return roleConceptMap;
     }
 
     public Map<String, javafx.util.Pair<Type, RoleType>> getVarTypeRoleMap() {

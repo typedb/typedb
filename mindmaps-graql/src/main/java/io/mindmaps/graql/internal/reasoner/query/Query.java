@@ -241,9 +241,11 @@ public class Query implements MatchQueryInternal {
 
         atomSet.stream()
                 .filter(atom -> {
-                    Set<String> intersection = atom.getVarNames();
-                    atom.getVarNames().retainAll(mappings.keySet());
-                    return !intersection.isEmpty();
+                    Set<String> keyIntersection = atom.getVarNames();
+                    Set<String> valIntersection = atom.getVarNames();
+                    keyIntersection.retainAll(mappings.keySet());
+                    valIntersection.retainAll(mappings.values());
+                    return (!keyIntersection.isEmpty() || !valIntersection.isEmpty());
                 })
                 .forEach(toRemove::add);
         toRemove.forEach(atom -> toAdd.add(AtomicFactory.create(atom)));
@@ -252,6 +254,7 @@ public class Query implements MatchQueryInternal {
         toAdd.forEach(this::addAtom);
 
         updateSelectedVars(mappings);
+        resolveCaptures();
     }
 
     /**

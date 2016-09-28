@@ -19,6 +19,7 @@
 package io.mindmaps.graql.internal.reasoner.predicate;
 
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.Graql;
@@ -90,17 +91,27 @@ public class Relation extends AtomBase {
     public boolean isEquivalent(Object obj) {
         if (!(obj instanceof Relation)) return false;
         Relation a2 = (Relation) obj;
-        return this.getTypeId().equals(a2.getTypeId())
-                && getVarNames().size() == a2.getVarNames().size()
-                && a2.getRoleVarTypeMap().size() == this.getRoleVarTypeMap().size();
+        boolean isEquivalent = this.getTypeId().equals(a2.getTypeId());
+
+        //check whether subs correspond to same role players
+        Map<RoleType, String> roleConceptMap = getRoleConceptIdMap();
+        Map<RoleType, String> childRoleConceptMap = a2.getRoleConceptIdMap();
+        Iterator<RoleType> it = roleConceptMap.keySet().iterator();
+        while(it.hasNext() && isEquivalent){
+            RoleType role = it.next();
+            isEquivalent = childRoleConceptMap.containsKey(role) &&
+                    childRoleConceptMap.get(role).equals(roleConceptMap.get(role));
+        }
+
+        return isEquivalent;
+
     }
 
     @Override
     public int equivalenceHashCode(){
         int hashCode = 1;
         hashCode = hashCode * 37 + this.typeId.hashCode();
-        hashCode = hashCode * 37 + this.getVarNames().size();
-        hashCode = hashCode * 37 + this.getRoleVarTypeMap().size();
+        hashCode = hashCode * 37 + this.getRoleConceptIdMap().hashCode();
         return hashCode;
     }
 
