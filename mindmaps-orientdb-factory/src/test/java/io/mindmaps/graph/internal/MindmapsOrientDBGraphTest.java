@@ -27,13 +27,12 @@ public class MindmapsOrientDBGraphTest {
 
     @Before
     public void setup(){
-        mindmapsGraph = new MindmapsOrientDBInternalFactory().getGraph(TEST_NAME, TEST_URI, null, TEST_BATCH_LOADING);
+        mindmapsGraph = new MindmapsOrientDBInternalFactory(TEST_NAME, TEST_URI, null).getGraph(TEST_BATCH_LOADING);
     }
 
     @After
     public void cleanup(){
-        MindmapsGraph mg = new MindmapsOrientDBInternalFactory().getGraph(TEST_NAME, TEST_URI, null, TEST_BATCH_LOADING);
-        mg.clear();
+        mindmapsGraph.clear();
     }
 
     @Test

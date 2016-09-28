@@ -24,29 +24,29 @@ public class MindmapsOrientDBGraphFactoryTest {
 
     @Before
     public void setUp() throws Exception {
-        orientGraphFactory = new MindmapsOrientDBInternalFactory();
+        orientGraphFactory = new MindmapsOrientDBInternalFactory(TEST_NAME, TEST_URI, null);
     }
 
     @After
     public void clear() throws MindmapsValidationException {
-        MindmapsOrientDBGraph graph = orientGraphFactory.getGraph(TEST_NAME, TEST_URI, null, false);
+        MindmapsOrientDBGraph graph = orientGraphFactory.getGraph(false);
         graph.clear();
     }
 
     @Test
     public void testBuildSimpleGraph() throws Exception {
-        AbstractMindmapsGraph mindmapsGraph = orientGraphFactory.getGraph(TEST_NAME, TEST_URI, null, false);
+        AbstractMindmapsGraph mindmapsGraph = orientGraphFactory.getGraph(false);
         assertThat(mindmapsGraph.getTinkerPopGraph(), instanceOf(OrientGraph.class));
         assertEquals(8, mindmapsGraph.getTinkerPopGraph().traversal().V().toList().size());
     }
 
     @Test
     public void testBuildSingletonGraphs(){
-        AbstractMindmapsGraph<OrientGraph> mindmapsGraph1 = orientGraphFactory.getGraph(TEST_NAME + "1", TEST_URI, null, false);
-        AbstractMindmapsGraph<OrientGraph> mindmapsGraph2 = orientGraphFactory.getGraph(TEST_NAME + "2", TEST_URI, null, false);
-        AbstractMindmapsGraph<OrientGraph> mindmapsGraph3 = orientGraphFactory.getGraph(TEST_NAME + "3", TEST_URI, null, false);
+        AbstractMindmapsGraph<OrientGraph> mindmapsGraph1 = orientGraphFactory.getGraph(false);
+        AbstractMindmapsGraph<OrientGraph> mindmapsGraph2 = orientGraphFactory.getGraph(false);
+        AbstractMindmapsGraph<OrientGraph> mindmapsGraph3 = orientGraphFactory.getGraph(true);
 
-        assertNotEquals(mindmapsGraph1, mindmapsGraph2);
+        assertEquals(mindmapsGraph1, mindmapsGraph2);
         assertNotEquals(mindmapsGraph2, mindmapsGraph3);
 
         assertEquals(8, mindmapsGraph1.getTinkerPopGraph().traversal().V().toList().size());
@@ -56,7 +56,7 @@ public class MindmapsOrientDBGraphFactoryTest {
 
     @Test
     public void testBuildGraph() throws MindmapsValidationException {
-        MindmapsOrientDBGraph mindmapsGraph = orientGraphFactory.getGraph(TEST_NAME, TEST_URI, null, false);
+        MindmapsOrientDBGraph mindmapsGraph = orientGraphFactory.getGraph(false);
 
         assertEquals(8, mindmapsGraph.getTinkerPopGraph().traversal().V().toList().size());
         assertNotNull(mindmapsGraph.getMetaEntityType());
@@ -77,7 +77,7 @@ public class MindmapsOrientDBGraphFactoryTest {
 
     @Test
     public void testVertexIndices(){
-        MindmapsOrientDBGraph mindmapsGraph = orientGraphFactory.getGraph(TEST_NAME, TEST_URI, null, false);
+        MindmapsOrientDBGraph mindmapsGraph = orientGraphFactory.getGraph(false);
         assertEquals(6, mindmapsGraph.getTinkerPopGraph().getVertexIndexedKeys(Schema.VERTEX_LABEL).size());
 
         assertNotNull(mindmapsGraph.getMetaEntityType());
