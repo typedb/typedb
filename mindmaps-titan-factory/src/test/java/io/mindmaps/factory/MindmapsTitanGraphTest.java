@@ -42,17 +42,17 @@ public class MindmapsTitanGraphTest {
     private static final String TEST_NAME = "mindmapstest";
     private static final String TEST_URI = null;
     private static final boolean TEST_BATCH_LOADING = false;
+    private MindmapsInternalFactory factory;
     private MindmapsGraph mindmapsGraph;
 
     @Before
     public void setup(){
-        mindmapsGraph = new MindmapsTitanInternalFactory().getGraph(TEST_NAME, TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING);
+        mindmapsGraph = new MindmapsTitanInternalFactory(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph(TEST_BATCH_LOADING);
     }
 
     @After
     public void cleanup(){
-        MindmapsGraph mg = new MindmapsTitanInternalFactory().getGraph(TEST_NAME, TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING);
-        mg.clear();
+        mindmapsGraph.clear();
     }
 
     @Test

@@ -23,6 +23,7 @@ import ch.qos.logback.classic.Logger;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graph.internal.MindmapsTitanGraph;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
@@ -72,9 +73,9 @@ public class MindmapsTitanGraphFactoryTest {
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.OFF);
 
-        titanGraphFactory = new MindmapsTitanInternalFactory();
+        titanGraphFactory = new MindmapsTitanInternalFactory(TEST_SHARED, TEST_URI, TEST_CONFIG);
 
-        sharedGraph = ((MindmapsTitanGraph) titanGraphFactory.getGraph(TEST_SHARED, TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING)).getTinkerPopGraph();
+        sharedGraph = ((MindmapsTitanGraph) titanGraphFactory.getGraph(TEST_BATCH_LOADING)).getTinkerPopGraph();
 
         int max = 1000;
         noIndexGraph = getGraph();
@@ -102,8 +103,8 @@ public class MindmapsTitanGraphFactoryTest {
 
     @Test
     public void testSimpleBuild(){
-        MindmapsTitanGraph mg1 = (MindmapsTitanGraph) titanGraphFactory.getGraph(TEST_SHARED, TEST_URI, TEST_CONFIG, true);
-        MindmapsTitanGraph mg2 = (MindmapsTitanGraph) titanGraphFactory.getGraph(TEST_SHARED, TEST_URI, TEST_CONFIG, false);
+        MindmapsTitanGraph mg1 = (MindmapsTitanGraph) titanGraphFactory.getGraph(true);
+        MindmapsTitanGraph mg2 = (MindmapsTitanGraph) titanGraphFactory.getGraph(false);
 
         assertTrue(mg1.isBatchLoadingEnabled());
         assertFalse(mg2.isBatchLoadingEnabled());
@@ -150,12 +151,14 @@ public class MindmapsTitanGraphFactoryTest {
 
     @Test
     public void testSingleton(){
-        Graph graph1 = sharedGraph;
-        Graph graph2 = ((MindmapsTitanGraph) titanGraphFactory.getGraph("b", TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING)).getTinkerPopGraph();
-        Graph graph3 = ((MindmapsTitanGraph) titanGraphFactory.getGraph(TEST_SHARED, TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING)).getTinkerPopGraph();
+        MindmapsGraph mg1 = titanGraphFactory.getGraph(TEST_BATCH_LOADING);
+        MindmapsGraph mg2 = titanGraphFactory.getGraph(TEST_BATCH_LOADING);
 
-        assertEquals(graph1, graph3);
-        assertNotEquals(graph2, graph1);
+        Graph graph1 = ((MindmapsTitanGraph) titanGraphFactory.getGraph(TEST_BATCH_LOADING)).getTinkerPopGraph();
+        Graph graph2 = ((MindmapsTitanGraph) titanGraphFactory.getGraph(TEST_BATCH_LOADING)).getTinkerPopGraph();
+
+        assertEquals(mg1, mg2);
+        assertEquals(graph1, graph2);
     }
 
     @Test
@@ -279,7 +282,8 @@ public class MindmapsTitanGraphFactoryTest {
 
     private static TitanGraph getGraph() {
         String name = UUID.randomUUID().toString();
-        Graph graph = ((MindmapsTitanGraph) titanGraphFactory.getGraph(name, TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING)).getTinkerPopGraph();
+        titanGraphFactory = new MindmapsTitanInternalFactory(name, TEST_URI, TEST_CONFIG);
+        Graph graph = ((MindmapsTitanGraph) titanGraphFactory.getGraph(TEST_BATCH_LOADING)).getTinkerPopGraph();
         assertThat(graph, instanceOf(TitanGraph.class));
         return (TitanGraph) graph;
     }

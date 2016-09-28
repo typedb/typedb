@@ -64,9 +64,11 @@ abstract class AbstractMindmapsInternalFactory<M extends AbstractMindmapsGraph<G
     @Override
     public G getTinkerPopGraph(boolean batchLoading){
         if(batchLoading){
-            return getTinkerPopGraph(batchLoadingGraph, batchLoading);
+            batchLoadingGraph = getTinkerPopGraph(batchLoadingGraph, batchLoading);
+            return batchLoadingGraph;
         } else {
-            return getTinkerPopGraph(graph, batchLoading);
+            graph = getTinkerPopGraph(graph, batchLoading);
+            return graph;
         }
     }
     protected G getTinkerPopGraph(G graph, boolean batchLoading){
