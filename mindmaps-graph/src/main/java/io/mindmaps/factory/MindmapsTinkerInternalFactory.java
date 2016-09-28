@@ -42,14 +42,13 @@ class MindmapsTinkerInternalFactory extends AbstractMindmapsInternalFactory<Mind
 
     @Override
     MindmapsTinkerGraph buildMindmapsGraphFromTinker(TinkerGraph graph, boolean batchLoading) {
-        return new MindmapsTinkerGraph(getTinkerPopGraph(graph, batchLoading), super.keyspace, batchLoading);
+        return new MindmapsTinkerGraph(graph, super.keyspace, batchLoading);
     }
 
     @Override
-    TinkerGraph buildTinkerPopGraph(boolean batchLoading) {
-        LOG.warn("In memory Tinkergraph ignores the address [" + super.engineUrl + "], " +
-                 "the config path [" + super.config + "], and " +
-                 "the batch loading [" + batchLoading + "] parameters");
+    TinkerGraph buildTinkerPopGraph() {
+        LOG.warn("In memory Tinkergraph ignores the address [" + super.engineUrl + "] and " +
+                 "the config path [" + super.config + "]");
         return TinkerGraph.open();
     }
 }

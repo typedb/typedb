@@ -58,11 +58,11 @@ class MindmapsTitanInternalFactory extends AbstractMindmapsInternalFactory<Mindm
 
     @Override
     MindmapsTitanGraph buildMindmapsGraphFromTinker(TitanGraph graph, boolean batchLoading) {
-        return new MindmapsTitanGraph(getTinkerPopGraph(graph, batchLoading), super.keyspace, super.engineUrl, batchLoading);
+        return new MindmapsTitanGraph(graph, super.keyspace, super.engineUrl, batchLoading);
     }
 
     @Override
-    TitanGraph buildTinkerPopGraph(boolean batchLoading) {
+    TitanGraph buildTinkerPopGraph() {
         return newTitanGraph(super.keyspace, super.engineUrl, super.config);
     }
 

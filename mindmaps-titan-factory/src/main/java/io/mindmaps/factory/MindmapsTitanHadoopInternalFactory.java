@@ -50,7 +50,7 @@ public class MindmapsTitanHadoopInternalFactory extends AbstractMindmapsInternal
     }
 
     @Override
-    HadoopGraph buildTinkerPopGraph(boolean batchLoading) {
+    HadoopGraph buildTinkerPopGraph() {
         LOG.warn("Hadoop graph ignores parameter address [" + super.engineUrl + "]");
         return (HadoopGraph) GraphFactory.open(buildConfig(super.keyspace, super.config));
     }

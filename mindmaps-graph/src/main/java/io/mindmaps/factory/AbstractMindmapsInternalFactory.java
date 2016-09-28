@@ -42,7 +42,7 @@ abstract class AbstractMindmapsInternalFactory<M extends AbstractMindmapsGraph<G
 
     abstract M buildMindmapsGraphFromTinker(G graph, boolean batchLoading);
 
-    abstract G buildTinkerPopGraph(boolean batchLoading);
+    abstract G buildTinkerPopGraph();
 
     @Override
     public M getGraph(boolean batchLoading){
@@ -56,7 +56,7 @@ abstract class AbstractMindmapsInternalFactory<M extends AbstractMindmapsGraph<G
     }
     private M getGraph(M mindmapsGraph, G graph, boolean batchLoading){
         if(mindmapsGraph == null || isClosed(mindmapsGraph)){
-            mindmapsGraph = buildMindmapsGraphFromTinker(graph, batchLoading);
+            mindmapsGraph = buildMindmapsGraphFromTinker(getTinkerPopGraph(graph), batchLoading);
         }
         return mindmapsGraph;
     }
@@ -64,16 +64,16 @@ abstract class AbstractMindmapsInternalFactory<M extends AbstractMindmapsGraph<G
     @Override
     public G getTinkerPopGraph(boolean batchLoading){
         if(batchLoading){
-            batchLoadingGraph = getTinkerPopGraph(batchLoadingGraph, batchLoading);
+            batchLoadingGraph = getTinkerPopGraph(batchLoadingGraph);
             return batchLoadingGraph;
         } else {
-            graph = getTinkerPopGraph(graph, batchLoading);
+            graph = getTinkerPopGraph(graph);
             return graph;
         }
     }
-    protected G getTinkerPopGraph(G graph, boolean batchLoading){
+    protected G getTinkerPopGraph(G graph){
         if(graph == null || isClosed(graph)){
-            graph = buildTinkerPopGraph(batchLoading);
+            graph = buildTinkerPopGraph();
         }
         return graph;
     }
