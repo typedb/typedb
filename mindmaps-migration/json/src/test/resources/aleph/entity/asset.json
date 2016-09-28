@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "/entity/asset.json#",
+  "title": "Asset",
+  "plural": "Assets",
+  "description": "An asset owned by one or several owners",
+  "type": "object",
+  "sortIndex": 63,
+  "faIcon": "fa-map",
+  "graph": "node",
+  "oneOf": [{"$ref": "/entity/entity.json#"}],
+  "properties": {
+    "valuation": {
+      "sortIndex": 90,
+      "title": "Valuation",
+      "type": ["integer", "null"]
+    },
+    "valuation_currency": {
+      "sortIndex": 86,
+      "title": "Currency of valuation",
+      "type": ["string", "null"]
+    },
+    "valuation_date": {
+      "sortIndex": 88,
+      "title": "Date of valuation",
+      "type": ["string", "null"],
+      "format": "partial-date"
+
+    },
+    "owners": {
+      "title": "Owners",
+      "sortIndex": 99,
+      "type": "array",
+      "rdfReverse": "asset",
+      "items": {
+          "$ref": "/link/ownership.json#"
+      }
+    }
+  }
+}

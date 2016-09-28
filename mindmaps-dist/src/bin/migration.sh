@@ -9,6 +9,10 @@ elif [ $1 == "sql" ]
 then
   echo "sql migration starting"
   java -cp "`dirname $path`/../lib/*" io.mindmaps.migration.sql.Main ${1+"$@"}
+elif [ $1 == "json" ]
+then
+  echo "json migration starting"
+  java -cp "`dirname $path`/../lib/*" io.mindmaps.migration.json.Main ${1+"$@"}
 elif [ $1 == "owl" ]
 then
   echo "owl migration starting"

@@ -1,0 +1,17 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "id": "permission.json#",
+    "type": "object",
+    "properties": {
+        "role": {
+            "type": "integer"
+        },
+        "read": {
+            "type": "boolean"
+        },
+        "write": {
+            "type": "boolean"
+        }
+    },
+    "required": ["role", "read", "write"]
+}

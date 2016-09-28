@@ -1,0 +1,17 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "id": "alert.json#",
+    "type": "object",
+    "properties": {
+        "query_text": {
+            "type": ["string", "null"]
+        },
+        "entity_id": {
+            "type": ["string", "null"]
+        },
+        "label": {
+            "type": ["string", "null"]
+        }
+    },
+    "required": []
+}

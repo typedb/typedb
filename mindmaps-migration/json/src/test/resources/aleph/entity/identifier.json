@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "/entity/identifier.json#",
+  "title": "Identifier",
+  "plural": "Identifiers",
+  "description": "An issued identifier",
+  "type": "object",
+  "inline": true,
+  "properties": {
+    "id": {
+      "title": "ID",
+      "hidden": true,
+      "type": "string"
+    },
+    "identifier": {
+      "title": "Identifier",
+      "description": "An issued identifier, e.g. a DUNS number",
+      "type": "string",
+      "required": true
+    },
+    "scheme": {
+      "title": "Scheme",
+      "description": "An identifier scheme, e.g. DUNS",
+      "type": ["string", "null"]
+    }
+  }
+}

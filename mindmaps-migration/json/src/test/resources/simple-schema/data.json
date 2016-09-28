@@ -1,0 +1,20 @@
+{
+  "address": {
+    "streetAddress": {
+      "number": 21,
+      "street":"collins"
+    },
+    "streetAddress":"21 2nd Street",
+    "city": "New York"
+  },
+  "phoneNumber": [
+    {
+      "location": "home",
+      "code": 44
+    },
+    {
+      "location": "work",
+      "code": 45
+    }
+  ]
+}

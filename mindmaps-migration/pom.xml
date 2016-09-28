@@ -30,5 +30,6 @@
       <module>owl</module>
       <module>csv</module>
       <module>sql</module>
+      <module>json</module>
   </modules>
 </project>
