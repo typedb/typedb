@@ -18,10 +18,11 @@ public class Mindmaps {
      * @return A mindmaps client instance which can talk to the engine at the specified uri
      */
     public static MindmapsGraphFactory factory(String location, String keyspace){
-        String key = location + keyspace;
+        String finalKeyspace = keyspace.toLowerCase();
+        String key = location + finalKeyspace;
         if(IN_MEMORY.equals(location)){
-            return clients.computeIfAbsent(key, (k) -> new MindmapsGraphFactoryInMemory(keyspace));
+            return clients.computeIfAbsent(key, (k) -> new MindmapsGraphFactoryInMemory(finalKeyspace));
         }
-        return clients.computeIfAbsent(key, (k) -> new MindmapsGraphFactoryImpl(keyspace, location));
+        return clients.computeIfAbsent(key, (k) -> new MindmapsGraphFactoryImpl(finalKeyspace, location));
     }
 }

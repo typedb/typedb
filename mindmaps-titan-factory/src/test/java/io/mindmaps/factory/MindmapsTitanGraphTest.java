@@ -119,10 +119,11 @@ public class MindmapsTitanGraphTest {
 
     @Test
     public void testCaseSensitiveKeyspaces(){
-        MindmapsTitanInternalFactory factory = new MindmapsTitanInternalFactory();
-        MindmapsTitanGraph case1 = factory.getGraph("case", TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING);
-        MindmapsTitanGraph case2 = factory.getGraph("Case", TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING);
+        MindmapsTitanInternalFactory factory1 = new MindmapsTitanInternalFactory("case", TEST_URI, TEST_CONFIG);
+        MindmapsTitanInternalFactory factory2 = new MindmapsTitanInternalFactory("Case", TEST_URI, TEST_CONFIG);
+        MindmapsTitanGraph case1 = factory1.getGraph(TEST_BATCH_LOADING);
+        MindmapsTitanGraph case2 = factory2.getGraph(TEST_BATCH_LOADING);
 
-        assertEquals(case1, case2);
+        assertEquals(case1.getKeyspace(), case2.getKeyspace());
     }
 }

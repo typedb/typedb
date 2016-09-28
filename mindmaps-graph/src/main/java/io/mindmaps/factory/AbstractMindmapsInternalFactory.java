@@ -33,7 +33,7 @@ abstract class AbstractMindmapsInternalFactory<M extends AbstractMindmapsGraph<G
     private G batchLoadingGraph = null;
 
     AbstractMindmapsInternalFactory(String keyspace, String engineUrl, String config){
-        this.keyspace = keyspace;
+        this.keyspace = keyspace.toLowerCase();
         this.engineUrl = engineUrl;
         this.config = config;
     }

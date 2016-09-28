@@ -149,7 +149,7 @@ public class AnalyticsTest {
         System.out.println();
         System.out.println("Counting");
         startTime = System.currentTimeMillis();
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(keyspace);
+        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("thing")));
         Assert.assertEquals(2, computer.count());
         System.out.println();
@@ -555,7 +555,7 @@ public class AnalyticsTest {
         analytics.degreesAndPersist();
 
         // check only expected resources exist
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(keyspace);
+        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
         rt = graph.getResourceType(Analytics.degree);
         degrees = rt.instances();
         degrees.forEach(i -> i.ownerInstances().iterator().forEachRemaining(r ->

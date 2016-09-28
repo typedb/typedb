@@ -283,6 +283,6 @@ public class StatisticsTest {
         graph.putResource("c", graph.getResourceType("resourceType4"));
 
         graph.commit();
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(keyspace);
+        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
     }
 }
