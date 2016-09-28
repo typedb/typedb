@@ -20,6 +20,7 @@ package io.mindmaps.factory;
 
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.graph.internal.MindmapsTitanGraph;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -114,5 +115,14 @@ public class MindmapsTitanGraphTest {
         assertNotNull(mindmapsGraph.getEntityType("X"));
         mindmapsGraph.rollback();
         assertNull(mindmapsGraph.getEntityType("X"));
+    }
+
+    @Test
+    public void testCaseSensitiveKeyspaces(){
+        MindmapsTitanInternalFactory factory = new MindmapsTitanInternalFactory();
+        MindmapsTitanGraph case1 = factory.getGraph("case", TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING);
+        MindmapsTitanGraph case2 = factory.getGraph("Case", TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING);
+
+        assertEquals(case1, case2);
     }
 }

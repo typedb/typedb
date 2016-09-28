@@ -45,6 +45,7 @@ abstract class AbstractMindmapsInternalFactory<M extends AbstractMindmapsGraph<G
 
     @Override
     public M getGraph(String name, String address, String pathToConfig, boolean batchLoading){
+        name = name.toLowerCase();
         String key = generateKey(name, batchLoading);
         if(!openMindmapsGraphs.containsKey(key) || isClosed(openMindmapsGraphs.get(key))){
             openMindmapsGraphs.put(key, getMindmapsGraphFromMap(name, address, pathToConfig, batchLoading));
