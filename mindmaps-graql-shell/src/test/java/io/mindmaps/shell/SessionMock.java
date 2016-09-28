@@ -25,6 +25,8 @@ import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import static org.junit.Assert.assertFalse;
+
 public class SessionMock implements Session {
 
     private final Consumer<String> onMessage;
@@ -122,6 +124,8 @@ public class SessionMock implements Session {
 
             @Override
             public Future<Void> sendStringByFuture(String s) {
+                assertFalse("Message too long", s.length() > 2000);
+
                 onMessage.accept(s);
                 return null;
             }

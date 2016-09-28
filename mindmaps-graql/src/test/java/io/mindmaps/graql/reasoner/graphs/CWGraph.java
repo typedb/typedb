@@ -18,8 +18,8 @@
 
 package io.mindmaps.graql.reasoner.graphs;
 
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.RelationType;
@@ -27,7 +27,9 @@ import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.RuleType;
-import io.mindmaps.factory.MindmapsTestGraphFactory;
+import io.mindmaps.exception.MindmapsValidationException;
+
+import java.util.UUID;
 
 public class CWGraph {
 
@@ -59,7 +61,7 @@ public class CWGraph {
     private static Instance colonelWest, Nono, America, Tomahawk;
 
     public static MindmapsGraph getGraph() {
-        mindmaps = MindmapsTestGraphFactory.newEmptyGraph();
+        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
         buildGraph();
 
         try {
@@ -193,7 +195,7 @@ public class CWGraph {
                 "$y isa weapon;" +
                 "$z isa country;$z has alignment 'hostile';" +
                 "(seller: $x, transaction-item: $y, buyer: $z) isa transaction;" +
-                "select $x";
+                "select $x;";
 
         String R1_RHS = "match $x isa criminal;";
 
@@ -210,7 +212,7 @@ public class CWGraph {
                 "$x isa country;" +
                 "($x, $y) isa is-enemy-of;" +
                 "$y isa country;$y id 'America';" +
-                "select $x";
+                "select $x;";
         String R3_RHS = "match $x has alignment 'hostile';";
 
         mindmaps.putRule("R3", R3_LHS, R3_RHS, inferenceRule);

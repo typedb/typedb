@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "person.json#",
+  "type": "object",
+  "properties": {
+    "address": {
+      "type": "object",
+      "properties": {
+        "streetAddress": {
+          "type": "string"
+        },
+        "city": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "streetAddress",
+        "city"
+      ]
+    },
+    "phoneNumber": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "location": {
+            "type": "string"
+          },
+          "code": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "location",
+          "code"
+        ]
+      }
+    }
+  },
+  "required": [
+    "address",
+    "phoneNumber"
+  ]
+}

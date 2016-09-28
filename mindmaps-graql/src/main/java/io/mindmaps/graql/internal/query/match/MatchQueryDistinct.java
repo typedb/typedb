@@ -38,7 +38,7 @@ class MatchQueryDistinct extends MatchQueryModifier {
     }
 
     @Override
-    public String toString() {
-        return inner.toString() + " distinct";
+    protected String modifierString() {
+        return "distinct";
     }
 }

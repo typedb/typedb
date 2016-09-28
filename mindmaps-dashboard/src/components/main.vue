@@ -59,7 +59,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                 </li>
 
                 <li v-link-active>
-                    <a href="https://mindmaps.io/pages/index.html">Documentation</a>
+                    <a target="_blank" href="https://mindmaps.io/pages/index.html">Documentation</a>
                 </li>
 
                 <li class="nav-info">
@@ -110,7 +110,7 @@ export default {
     },
 
     attached() {
-        engineClient.getStatus((r, e) => { this.version=(r == null ? 'error' : r['project.version']) });
+        engineClient.getConfig((r, e) => { this.version=(r == null ? 'error' : r['project.version']) });
     }
 }
 </script>

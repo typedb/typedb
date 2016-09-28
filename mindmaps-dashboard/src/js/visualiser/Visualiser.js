@@ -50,7 +50,17 @@ export default class Visualiser {
         this.networkConfig = {
             autoResize: true,
             edges: { arrows: { to: true } },
-            physics: { solver: "forceAtlas2Based" },
+            physics: {
+                enabled: true,
+                solver: "forceAtlas2Based",
+                stabilization: {
+                    enabled: true,
+                    iterations: 10,
+                    fit: true
+                },
+                timestep: 0.3,
+                adaptiveTimestep: false
+            },
             interaction: {
                 hover: true,
                 multiselect: false
@@ -104,15 +114,8 @@ export default class Visualiser {
         this.network.on('doubleClick', this.callbacks.doubleClick);
         this.network.on('oncontext', this.callbacks.rightClick);
         this.network.on('hoverNode', this.callbacks.hover);
+        this.network.on('stabilized', () => { this.setSimulation(false) });
 
-        return this;
-    }
-
-    /**
-     * Center nodes on graph
-     */
-    centerNodes() {
-        this.network.fit({animation: false});
         return this;
     }
 
@@ -166,6 +169,17 @@ export default class Visualiser {
     clearGraph() {
         this.nodes.clear();
         this.edges.clear();
+    }
+
+    /**
+     * Stop/start physics simulation and all animation in displayed graph.
+     */
+    setSimulation(state) {
+        if(state)
+            this.network.startSimulation();
+        else
+            this.network.stopSimulation();
+        return this;
     }
 
     /*

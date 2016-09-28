@@ -20,7 +20,7 @@ package io.mindmaps.graql.internal.reasoner.predicate;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.reasoner.container.Query;
+import io.mindmaps.graql.internal.reasoner.query.Query;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -43,6 +43,12 @@ public class Atom extends AtomBase{
         super(a);
         this.val = extractValue(a.getPattern().asVar());
     }
+
+    @Override
+    public Atomic clone(){
+        return new Atom(this);
+    }
+
     @Override
     public boolean isUnary(){ return true;}
 
@@ -82,7 +88,6 @@ public class Atom extends AtomBase{
     public void print() {
         System.out.println("atom: \npattern: " + toString());
         System.out.println("varName: " + varName + " typeId: " + typeId + " val: " + val);
-        if (isValuePredicate()) System.out.println("isValuePredicate");
         System.out.println();
     }
 

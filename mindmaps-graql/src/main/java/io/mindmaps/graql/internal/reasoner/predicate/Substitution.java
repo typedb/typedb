@@ -23,7 +23,7 @@ import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.reasoner.container.Query;
+import io.mindmaps.graql.internal.reasoner.query.Query;
 
 import java.util.Set;
 
@@ -56,6 +56,11 @@ public class Substitution extends AtomBase{
         this.val = con == null? val : con.getId();
     }
 
+    @Override
+    public Atomic clone(){
+        return new Substitution(this);
+    }
+
     static private VarAdmin createPattern(String name, Concept con, String val){
         if (con == null)
             return Graql.var(name).id(val).admin().asVar();
@@ -64,7 +69,7 @@ public class Substitution extends AtomBase{
     }
 
     @Override
-    public boolean isValuePredicate(){ return true;}
+    public boolean isSubstitution(){ return true;}
     @Override
     public boolean isRuleResolvable(){ return false;}
 
@@ -110,7 +115,7 @@ public class Substitution extends AtomBase{
             else
                 value = valuePredicates.iterator().next().getPredicate().getValue().toString();
         }
-        else if(var.admin().getId().isPresent()) value = var.admin().getId().isPresent()? var.admin().getId().get() : "";
+        else if(var.admin().getId().isPresent()) value = var.admin().getId().orElse("");
         return value;
     }
 

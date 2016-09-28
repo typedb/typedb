@@ -297,7 +297,7 @@ storage_port: 7000
 # encryption_options
 ssl_storage_port: 7001
 
-# Address to bind to and tell other Cassandra nodes to connect to. You
+# Address to bind to and tell other Cassandra nodes to factory to. You
 # _must_ change this if you want multiple nodes to be able to
 # communicate!
 # 
@@ -337,7 +337,7 @@ native_transport_port: 9042
 start_rpc: true
 
 # The address to bind the Thrift RPC service and native transport
-# server -- clients connect here.
+# server -- clients factory here.
 #
 # Leaving this blank has the same effect it does for ListenAddress,
 # (i.e. it will be based on the configured hostname of the node).

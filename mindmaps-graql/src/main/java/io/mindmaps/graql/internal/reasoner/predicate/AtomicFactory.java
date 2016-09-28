@@ -20,7 +20,7 @@ package io.mindmaps.graql.internal.reasoner.predicate;
 
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.reasoner.container.Query;
+import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.util.ErrorMessage;
 
 public class AtomicFactory {
@@ -52,10 +52,6 @@ public class AtomicFactory {
     }
 
     public static Atomic create(Atomic atom) {
-        if(atom.isRelation())
-            return new Relation((Relation) atom);
-        else if (atom.isValuePredicate())
-            return new Substitution((Substitution) atom);
-        else return new Atom((Atom)atom);
+        return atom.clone();
     }
 }

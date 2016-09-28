@@ -18,13 +18,13 @@
 
 package io.mindmaps.graph.internal;
 
-import io.mindmaps.util.Schema;
-import io.mindmaps.exception.MoreThanOneEdgeException;
-import io.mindmaps.exception.NoEdgeException;
+import io.mindmaps.Mindmaps;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Relation;
-import io.mindmaps.factory.MindmapsTestGraphFactory;
+import io.mindmaps.exception.MoreThanOneEdgeException;
+import io.mindmaps.exception.NoEdgeException;
+import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
@@ -54,7 +54,7 @@ public class CastingTest {
 
     @Before
     public void setUp() {
-        mindmapsGraph = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
+        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
         mindmapsGraph.initialiseMetaConcepts();
         role = (RoleTypeImpl) mindmapsGraph.putRoleType("Role");
         EntityTypeImpl conceptType = (EntityTypeImpl) mindmapsGraph.putEntityType("A thing");
@@ -93,7 +93,8 @@ public class CastingTest {
         assertEquals(role, casting.getRole());
 
         String id = UUID.randomUUID().toString();
-        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
+        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex();
+        vertex.property(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.CASTING.name());
         vertex.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), id);
 
         CastingImpl casting2 = (CastingImpl) mindmapsGraph.getConcept(id);

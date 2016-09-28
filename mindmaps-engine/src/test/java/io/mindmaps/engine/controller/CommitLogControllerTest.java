@@ -19,38 +19,53 @@
 package io.mindmaps.engine.controller;
 
 import com.jayway.restassured.http.ContentType;
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.*;
+import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.Entity;
+import io.mindmaps.concept.EntityType;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.Resource;
+import io.mindmaps.concept.ResourceType;
+import io.mindmaps.concept.RoleType;
 import io.mindmaps.engine.Util;
 import io.mindmaps.engine.postprocessing.Cache;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.factory.MindmapsClient;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import io.mindmaps.util.REST;
 import io.mindmaps.util.Schema;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
+import spark.Spark;
 
 import java.util.UUID;
 
 import static com.jayway.restassured.RestAssured.delete;
 import static com.jayway.restassured.RestAssured.given;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class CommitLogControllerTest {
+    public final String KEYSPACE = "test";
     private Cache cache;
 
     @BeforeClass
-    public static void startController() {
+    public static void setUpController() throws InterruptedException {
+        Spark.stop();
+        Thread.sleep(5000);
         System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY, ConfigProperties.TEST_CONFIG_FILE);
+        Util.setRestAssuredBaseURI(ConfigProperties.getInstance().getProperties());
+        new CommitLogController();
+        new GraphFactoryController();
+        Thread.sleep(5000);
     }
 
     @Before
     public void setUp() throws Exception {
-        new CommitLogController();
-        new GraphFactoryController();
-        Util.setRestAssuredBaseURI(ConfigProperties.getInstance().getProperties());
-
         cache = Cache.getInstance();
 
         String commitLog = "{\n" +
@@ -69,19 +84,19 @@ public class CommitLogControllerTest {
                 "}";
 
         given().contentType(ContentType.JSON).body(commitLog).when().
-                post(REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.GRAPH_NAME_PARAM + "=" + "test").
+                post(REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.GRAPH_NAME_PARAM + "=" + KEYSPACE).
                 then().statusCode(200).extract().response().andReturn();
     }
 
     @After
-    public void takeDown() {
-        cache.getCastingJobs().clear();
+    public void takeDown() throws InterruptedException {
+        cache.getCastingJobs(KEYSPACE).clear();
     }
 
     @Test
     public void testControllerWorking() {
-        assertEquals(4, cache.getCastingJobs().values().iterator().next().size());
-        assertEquals(2, cache.getResourceJobs().values().iterator().next().size());
+        assertEquals(4, cache.getCastingJobs(KEYSPACE).size());
+        assertEquals(2, cache.getResourceJobs(KEYSPACE).size());
     }
 
     @Test
@@ -89,31 +104,31 @@ public class CommitLogControllerTest {
         final String BOB = "bob";
         final String TIM = "tim";
 
-        MindmapsGraph bob = MindmapsClient.getGraph(BOB);
-        MindmapsGraph tim = MindmapsClient.getGraph(TIM);
+        MindmapsGraph bob = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(BOB);
+        MindmapsGraph tim = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(TIM);
 
         addSomeData(bob);
 
-        assertEquals(2, cache.getCastingJobs().get(BOB).size());
-        assertEquals(1, cache.getResourceJobs().get(BOB).size());
+        assertEquals(2, cache.getCastingJobs(BOB).size());
+        assertEquals(1, cache.getResourceJobs(BOB).size());
 
-        assertNull(cache.getCastingJobs().get(TIM));
-        assertNull(cache.getResourceJobs().get(TIM));
+        assertEquals(0, cache.getCastingJobs(TIM).size());
+        assertEquals(0, cache.getResourceJobs(TIM).size());
 
         addSomeData(tim);
 
-        assertEquals(2, cache.getCastingJobs().get(TIM).size());
-        assertEquals(1, cache.getResourceJobs().get(TIM).size());
+        assertEquals(2, cache.getCastingJobs(TIM).size());
+        assertEquals(1, cache.getResourceJobs(TIM).size());
 
-        MindmapsClient.getGraph(BOB).clear();
-        MindmapsClient.getGraph(TIM).clear();
+        Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(BOB).clear();
+        Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(TIM).clear();
 
-        assertEquals(0, cache.getCastingJobs().get(BOB).size());
-        assertEquals(0, cache.getCastingJobs().get(TIM).size());
-        assertEquals(0, cache.getResourceJobs().get(BOB).size());
-        assertEquals(0, cache.getResourceJobs().get(TIM).size());
+        assertEquals(0, cache.getCastingJobs(BOB).size());
+        assertEquals(0, cache.getCastingJobs(TIM).size());
+        assertEquals(0, cache.getResourceJobs(BOB).size());
+        assertEquals(0, cache.getResourceJobs(TIM).size());
 
-        cache.getResourceJobs().get(BOB).forEach(resourceId -> {
+        cache.getResourceJobs(BOB).forEach(resourceId -> {
             Concept concept = ((AbstractMindmapsGraph) bob).getConceptByBaseIdentifier(resourceId);
             assertTrue(concept.isResource());
         });
@@ -136,13 +151,13 @@ public class CommitLogControllerTest {
 
     @Ignore
     public void testDeleteController() throws InterruptedException {
-        assertEquals(4, cache.getCastingJobs().values().iterator().next().size());
+        assertEquals(4, cache.getCastingJobs(KEYSPACE).size());
 
-        delete(REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.GRAPH_NAME_PARAM + "=" + "test").
+        delete(REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.GRAPH_NAME_PARAM + "=" + KEYSPACE).
                 then().statusCode(200).extract().response().andReturn();
 
         Thread.sleep(2000);
 
-        assertEquals(0, cache.getCastingJobs().values().iterator().next().size());
+        assertEquals(0, cache.getCastingJobs(KEYSPACE).size());
     }
 }

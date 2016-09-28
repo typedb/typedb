@@ -20,6 +20,7 @@ package io.mindmaps.factory;
 
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.graph.internal.MindmapsTitanGraph;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,18 +40,18 @@ import static org.junit.Assert.assertNull;
 public class MindmapsTitanGraphTest {
     private static final String TEST_CONFIG = "../conf/test/mindmaps-test.properties";
     private static final String TEST_NAME = "mindmapstest";
-    private static final String TEST_URI = "localhost";
+    private static final String TEST_URI = null;
     private static final boolean TEST_BATCH_LOADING = false;
     private MindmapsGraph mindmapsGraph;
 
     @Before
     public void setup(){
-        mindmapsGraph = new MindmapsTitanGraphFactory().getGraph(TEST_NAME, TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING);
+        mindmapsGraph = new MindmapsTitanInternalFactory().getGraph(TEST_NAME, TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING);
     }
 
     @After
     public void cleanup(){
-        MindmapsGraph mg = new MindmapsTitanGraphFactory().getGraph(TEST_NAME, TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING);
+        MindmapsGraph mg = new MindmapsTitanInternalFactory().getGraph(TEST_NAME, TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING);
         mg.clear();
     }
 
@@ -71,7 +72,7 @@ public class MindmapsTitanGraphTest {
             }
         });
 
-        assertEquals(108, mindmapsGraph.getTinkerTraversal().V().toList().size());
+        assertEquals(108, mindmapsGraph.getTinkerTraversal().toList().size());
     }
     private void addEntityType(MindmapsGraph mindmapsGraph){
         mindmapsGraph.putEntityType(UUID.randomUUID().toString());
@@ -87,7 +88,7 @@ public class MindmapsTitanGraphTest {
         ExecutorService pool = Executors.newFixedThreadPool(10);
         Set<Future> futures = new HashSet<>();
         mindmapsGraph.putEntityType(UUID.randomUUID().toString());
-        assertEquals(9, mindmapsGraph.getTinkerTraversal().V().toList().size());
+        assertEquals(9, mindmapsGraph.getTinkerTraversal().toList().size());
 
         for(int i = 0; i < 100; i ++){
             futures.add(pool.submit(() -> {
@@ -104,7 +105,7 @@ public class MindmapsTitanGraphTest {
             }
         });
 
-        assertEquals(9, mindmapsGraph.getTinkerTraversal().V().toList().size());
+        assertEquals(9, mindmapsGraph.getTinkerTraversal().toList().size());
     }
 
     @Test
@@ -114,5 +115,14 @@ public class MindmapsTitanGraphTest {
         assertNotNull(mindmapsGraph.getEntityType("X"));
         mindmapsGraph.rollback();
         assertNull(mindmapsGraph.getEntityType("X"));
+    }
+
+    @Test
+    public void testCaseSensitiveKeyspaces(){
+        MindmapsTitanInternalFactory factory = new MindmapsTitanInternalFactory();
+        MindmapsTitanGraph case1 = factory.getGraph("case", TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING);
+        MindmapsTitanGraph case2 = factory.getGraph("Case", TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING);
+
+        assertEquals(case1, case2);
     }
 }

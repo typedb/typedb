@@ -1,0 +1,7 @@
+{
+  "id": "thing.json#",
+  "type": ["array", "object"],
+  "items": {
+    "type": "object"
+  }
+}

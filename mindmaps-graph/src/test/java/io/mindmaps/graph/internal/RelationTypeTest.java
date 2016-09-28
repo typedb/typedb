@@ -18,11 +18,11 @@
 
 package io.mindmaps.graph.internal;
 
-import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.exception.ConceptException;
+import io.mindmaps.Mindmaps;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
-import io.mindmaps.factory.MindmapsTestGraphFactory;
+import io.mindmaps.exception.ConceptException;
+import io.mindmaps.util.ErrorMessage;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -30,10 +30,14 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.Collection;
+import java.util.UUID;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class RelationTypeTest {
 
@@ -48,7 +52,7 @@ public class RelationTypeTest {
 
     @Before
     public void setUp() throws ConceptException {
-        mindmapsGraph = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
+        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
         mindmapsGraph.initialiseMetaConcepts();
 
         //Building

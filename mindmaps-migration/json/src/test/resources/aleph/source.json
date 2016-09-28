@@ -1,0 +1,20 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "id": "source.json#",
+    "type": "object",
+    "properties": {
+        "label": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 255
+        },
+        "generate_entities": {
+            "type": "boolean"
+        },
+        "category": {
+            "type": "string",
+            "format": "source-category"
+        }
+    },
+    "required": ["label"]
+}

@@ -87,6 +87,6 @@ lhs {match
 (up-from: $x, up-to: $x1) isa up;
 (RSG-from: $y1, RSG-to: $x1) isa RevSG;
 (down-from: $y1, down-to: $y) isa down;
-select $x, $y},
+select $x, $y;},
 rhs {match
 (RSG-from: $x, RSG-to: $y) isa RevSG;};

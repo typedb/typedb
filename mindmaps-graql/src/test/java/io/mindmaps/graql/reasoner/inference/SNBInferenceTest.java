@@ -24,7 +24,7 @@ import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
-import io.mindmaps.graql.internal.reasoner.container.QueryAnswers;
+import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
 import io.mindmaps.graql.reasoner.graphs.SNBGraph;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -123,7 +123,7 @@ public class SNBInferenceTest {
                             "{($x, $y) isa resides} or\n" +
                             "{($x, $yy) isa resides; {(container-location $y, member-location $yy) isa sublocate} or\n" +
                             "{(container-location $y, member-location $yyyy) isa sublocate; (container-location $yyyy, member-location $yy) isa sublocate}}" +
-                            "select $x, $y";
+                            "select $x, $y;";
 
         //assertQueriesEqual(reasoner.expand(query), qb.parseMatch(explicitQuery));
     }
@@ -285,7 +285,7 @@ public class SNBInferenceTest {
         String queryString = "match $x isa person;\n" +
                 "($x, $y) isa recommendation;\n" +
                 "$c isa category;$c id 'book';\n" +
-                "($y, $c) isa typing; select $x, $y";
+                "($y, $c) isa typing; select $x, $y;";
         MatchQuery query = qb.parseMatch(queryString);
 
         String explicitQuery = "match " +
@@ -307,7 +307,7 @@ public class SNBInferenceTest {
         String queryString = "match $x isa person;\n" +
                 "($x, $y) isa recommendation;\n" +
                 "$c isa category;$c id 'Band';\n" +
-                "($y, $c) isa grouping; select $x, $y";
+                "($y, $c) isa grouping; select $x, $y;";
         MatchQuery query = qb.parseMatch(queryString);
 
         String explicitQuery = "match $x isa person;$y isa tag;" +
@@ -330,7 +330,7 @@ public class SNBInferenceTest {
         String queryString = "match $x isa person;$y isa product;\n" +
                     "($x, $y) isa recommendation;\n" +
                     "$z isa category;$z id 'motorbike';\n" +
-                    "($y, $z) isa typing; select $x, $y";
+                    "($y, $z) isa typing; select $x, $y;";
 
         MatchQuery query = qb.parseMatch(queryString);
 
@@ -352,7 +352,7 @@ public class SNBInferenceTest {
 
         //select people that have Chopin as a recommendation
         String queryString = "match $x isa person; $y isa tag; ($x, $y) isa tagging;\n" +
-                        "$z isa product;$z id 'Nocturnes'; ($x, $z) isa recommendation; select $x, $y";
+                        "$z isa product;$z id 'Nocturnes'; ($x, $z) isa recommendation; select $x, $y;";
 
         MatchQuery query = qb.parseMatch(queryString);
 
@@ -371,7 +371,7 @@ public class SNBInferenceTest {
         QueryBuilder qb = Graql.withGraph(graph);
         Reasoner reasoner = new Reasoner(graph);
 
-        String queryString = "match $x isa person;$pr isa product, id 'Nocturnes';($x, $pr) isa recommendation; select $x";
+        String queryString = "match $x isa person;$pr isa product, id 'Nocturnes';($x, $pr) isa recommendation; select $x;";
         MatchQuery query = qb.parseMatch(queryString);
 
         String explicitQuery = "match {$x id 'Frank';} or {$x id 'Karl Fischer';};";
@@ -390,12 +390,12 @@ public class SNBInferenceTest {
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match $x isa person; $y isa place; ($x, $y) isa resides;" +
-                        "$z isa person;$z id 'Miguel Gonzalez'; ($x, $z) isa knows; select $x, $y";
+                        "$z isa person;$z id 'Miguel Gonzalez'; ($x, $z) isa knows; select $x, $y;";
         MatchQuery query = qb.parseMatch(queryString);
         QueryAnswers answers = new QueryAnswers(reasoner.resolve(query));
 
         String queryString2 = "match $x isa person; $y isa person;$y id 'Miguel Gonzalez';" +
-                        "$z isa place; ($x, $y) isa knows; ($x, $z) isa resides; select $x, $z";
+                        "$z isa place; ($x, $y) isa knows; ($x, $z) isa resides; select $x, $z;";
         MatchQuery query2 = qb.parseMatch(queryString2);
         Map<String, String> unifiers = new HashMap<>();
         unifiers.put("z", "y");
@@ -418,14 +418,14 @@ public class SNBInferenceTest {
 
         //select recommendationS of Karl Fischer and their types
         String queryString = "match $p isa product;$x isa person;$x id 'Karl Fischer';" +
-                        "($x, $p) isa recommendation; ($p, $t) isa typing; select $p, $t";
+                        "($x, $p) isa recommendation; ($p, $t) isa typing; select $p, $t;";
         MatchQuery query = qb.parseMatch(queryString);
 
         String explicitQuery = "match $p isa product;\n" +
                 "$x isa person;$x id 'Karl Fischer';{($x, $p) isa recommendation;} or" +
                 "{$x isa person;$tt isa tag;$tt id 'Johann Wolfgang von Goethe';($x, $tt) isa tagging;$p isa product;$p id 'Faust';} or" +
                 "{$x isa person; $p isa product;$p id 'Nocturnes'; $tt isa tag; ($tt, $x), isa tagging;};" +
-                "($p, $t) isa typing; select $p, $t";
+                "($p, $t) isa typing; select $p, $t;";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
@@ -439,14 +439,14 @@ public class SNBInferenceTest {
 
         //select recommendationS of Karl Fischer and their types
         String queryString2 = "match $p isa product;$x isa person;$x id 'Karl Fischer';" +
-                "($p, $c) isa typing; ($x, $p) isa recommendation; select $p, $c";
+                "($p, $c) isa typing; ($x, $p) isa recommendation; select $p, $c;";
         MatchQuery query2 = qb.parseMatch(queryString2);
 
         String explicitQuery2 = "match $p isa product;\n" +
                 "$x isa person;$x id 'Karl Fischer';{($x, $p) isa recommendation;} or" +
                 "{$x isa person;$t isa tag, id 'Johann Wolfgang von Goethe';($x, $t) isa tagging;$p isa product;$p id 'Faust';} or" +
                 "{$x isa person; $p isa product;$p id 'Nocturnes'; $t isa tag; ($t, $x), isa tagging;};" +
-                "($p, $c) isa typing; select $p, $c";
+                "($p, $c) isa typing; select $p, $c;";
 
 
         assertEquals(reasoner.resolve(query2), Sets.newHashSet(qb.parseMatch(explicitQuery2)));
@@ -464,14 +464,14 @@ public class SNBInferenceTest {
 
         //select recommendation of Karl Fischer and their types
         String queryString = "match $p isa product;\n" +
-                "$x isa person;$x id 'Karl Fischer'; ($p, $x) isa recommendation; ($p, $t) isa typing; select $p, $t";
+                "$x isa person;$x id 'Karl Fischer'; ($p, $x) isa recommendation; ($p, $t) isa typing; select $p, $t;";
         MatchQuery query = qb.parseMatch(queryString);
 
         String explicitQuery = "match $p isa product;" +
                 "$x isa person;$x id 'Karl Fischer';{($x, $p) isa recommendation;} or" +
                 "{$x isa person; $p isa product;$p id 'Nocturnes'; $tt isa tag; ($tt, $x), isa tagging;} or" +
                 "{$x isa person;$tt isa tag;$tt id 'Johann Wolfgang von Goethe';($x, $tt) isa tagging;$p isa product;$p id 'Faust';}" +
-                ";($p, $t) isa typing; select $p, $t";
+                ";($p, $t) isa typing; select $p, $t;";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
@@ -488,10 +488,9 @@ public class SNBInferenceTest {
                 "{" +
                 "$x isa person;$t isa tag, id 'Enter_the_Chicken';" +
                 "($x, $t) isa tagging;$y isa tag;{$y id 'Buckethead'} or {$y id 'Primus'}" +
-                "} select $x, $y";
+                "} select $x, $y;";
 
         MatchQuery query = qb.parseMatch(queryString);
-        MatchQuery expandedQuery = reasoner.expand(query);
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {

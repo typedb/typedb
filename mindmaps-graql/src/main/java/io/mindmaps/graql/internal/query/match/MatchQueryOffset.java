@@ -41,7 +41,7 @@ class MatchQueryOffset extends MatchQueryModifier {
     }
 
     @Override
-    public String toString() {
-        return inner.toString() + " offset " + offset;
+    protected String modifierString() {
+        return "offset " + offset;
     }
 }

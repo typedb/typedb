@@ -58,14 +58,14 @@ entity plays-role B5-role-A, plays-role B5-role-B;
 "R1" isa inference-rule,
 lhs {match
 ($x, $z) isa P1;
-($z, $y) isa Q; select $x, $y},
+($z, $y) isa Q; select $x, $y;},
 rhs {match
 ($x, $y) isa P;};
 
 "R2" isa inference-rule,
 lhs {match
 ($x, $z) isa P;
-($z, $y) isa P2; select $x, $y},
+($z, $y) isa P2; select $x, $y;},
 rhs {match
 ($x, $y) isa Q;};
 
@@ -78,7 +78,7 @@ rhs {match
 "R4" isa inference-rule,
 lhs {match
 ($x, $z) isa B1;
-($z, $y) isa P1; select $x, $y},
+($z, $y) isa P1; select $x, $y;},
 rhs {match
 ($x, $y) isa P1;};
 
@@ -91,7 +91,7 @@ rhs {match
 "R6" isa inference-rule,
 lhs {match
 ($x, $z) isa B2;
-($z, $y) isa P2; select $x, $y},
+($z, $y) isa P2; select $x, $y;},
 rhs {match
 ($x, $y) isa P2;};
 

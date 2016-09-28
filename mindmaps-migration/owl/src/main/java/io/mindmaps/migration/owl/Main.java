@@ -19,7 +19,7 @@ package io.mindmaps.migration.owl;
 
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.RelationType;
-import io.mindmaps.factory.MindmapsClient;
+import io.mindmaps.Mindmaps;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 
 import java.io.File;
@@ -77,8 +77,8 @@ public class Main {
         OWLMigrator migrator = new OWLMigrator();
         
         try {
-            MindmapsGraph graph = engineUrl == null ? MindmapsClient.getGraph(graphName)
-                                                    : MindmapsClient.getGraph(graphName, engineUrl);            
+            MindmapsGraph graph = engineUrl == null ? Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(graphName)
+                                                    : Mindmaps.factory(engineUrl).getGraph(graphName);
             migrator.graph(graph)
                     .ontology(OWLManager.createOWLOntologyManager().loadOntologyFromOntologyDocument(owlfile))
                     .migrate();
@@ -97,7 +97,7 @@ public class Main {
     // stub to test and throw away stuff
     static void test() {
         try {
-            MindmapsGraph graph = MindmapsClient.getGraph("onco");
+            MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph("onco");
             graph.putRelationType("authorship");
             RelationType reltype = (RelationType)graph.getType("relation-type").instances().stream().findFirst().get();
             reltype.hasRoles().forEach(System.out::println);

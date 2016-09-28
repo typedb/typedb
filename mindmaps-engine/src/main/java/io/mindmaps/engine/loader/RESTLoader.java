@@ -185,7 +185,7 @@ public class RESTLoader {
     }
 
     private void handleError(Exception e, int i) {
-        LOG.error("Caught exception ", e);
+        LOG.error("Caught exception while trying to commit a new transaction.", e);
         try {
             Thread.sleep((i + 2) * 1000);
         } catch (InterruptedException e1) {

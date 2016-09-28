@@ -1,0 +1,28 @@
+insert
+
+"R1" isa inference-rule,
+lhs {match
+(production-with-genre: $x, genre-of-production: $y) isa has-genre;
+$y has description 'Sci-Fi';
+$z isa genre;
+$z has description 'science fiction'; select $x, $z;},
+rhs {match (production-with-genre: $x, genre-of-production: $z) isa has-genre;};
+
+"R2" isa inference-rule,
+lhs {match
+$x isa movie;
+$x has rotten-tomatoes-user-total-votes > 500;
+$x has rotten-tomatoes-user-rating >= 3.9;},
+rhs {match $x has status 'popular movie';};
+
+"R3" isa inference-rule,
+lhs {match
+(actor: $x, production-with-cast: $y) isa has-cast;
+$y has status "popular movie";},
+rhs {match $x has status 'popular actor';};
+
+"R4" isa inference-rule,
+lhs {match
+(actor: $x) isa has-cast;
+(director: $x) isa production-crew;},
+rhs {match $x has status 'actor-director';};

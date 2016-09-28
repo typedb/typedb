@@ -5,6 +5,7 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import io.mindmaps.graph.internal.MindmapsOrientDBGraph;
+import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.orientdb.OrientGraph;
 import org.junit.After;
 import org.junit.Before;
@@ -19,11 +20,11 @@ import static org.junit.Assert.assertThat;
 public class MindmapsOrientDBGraphFactoryTest {
     private final static String TEST_NAME = "MyGraph";
     private final static String TEST_URI = "memory";
-    private static MindmapsOrientDBGraphFactory orientGraphFactory ;
+    private static MindmapsOrientDBInternalFactory orientGraphFactory ;
 
     @Before
     public void setUp() throws Exception {
-        orientGraphFactory = new MindmapsOrientDBGraphFactory();
+        orientGraphFactory = new MindmapsOrientDBInternalFactory();
     }
 
     @After
@@ -73,6 +74,17 @@ public class MindmapsOrientDBGraphFactoryTest {
         mindmapsGraph.commit();
         assertEquals(15, mindmapsGraph.getTinkerPopGraph().traversal().V().toList().size());
     }
+
+    @Test
+    public void testVertexIndices(){
+        MindmapsOrientDBGraph mindmapsGraph = orientGraphFactory.getGraph(TEST_NAME, TEST_URI, null, false);
+        assertEquals(6, mindmapsGraph.getTinkerPopGraph().getVertexIndexedKeys(Schema.VERTEX_LABEL).size());
+
+        assertNotNull(mindmapsGraph.getMetaEntityType());
+        assertNotNull(mindmapsGraph.getMetaRelationType());
+        assertNotNull(mindmapsGraph.getMetaType());
+    }
+
 
 
 }

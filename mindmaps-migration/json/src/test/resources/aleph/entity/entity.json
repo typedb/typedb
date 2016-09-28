@@ -1,0 +1,78 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "/entity/entity.json#",
+  "title": "Other entities",
+  "type": "object",
+  "faIcon": "fa-square",
+  "properties": {
+    "id": {
+      "title": "ID",
+      "sortIndex": 1001,
+      "hidden": true,
+      "description": "The person's unique identifier",
+      "type": ["string", "null"]
+    },
+    "name": {
+      "title": "Name",
+      "sortIndex": 1000,
+      "description": "A primary name, e.g. a legally recognized name",
+      "type": ["string", "null"],
+      "minLength": 1,
+      "maxLength": 4096
+    },
+    "summary": {
+      "title": "Summary",
+      "sortIndex": 88,
+      "description": "A one-line account of a person's life",
+      "type": ["string", "null"]
+    },
+    "description": {
+      "sortIndex": 95,
+      "title": "Description",
+      "type": ["string", "null"]
+    },
+    "jurisdiction_code": {
+      "title": "Jurisdiction",
+      "description": "Code representing the jurisdiction/company register which is the canonical record of the company’s existence. Uses underscored ISO 3166-2 to represent it, e.g. es for Spain, us_de for Delaware",
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "string",
+          "format": "country-code",
+          "minLength": 2,
+          "maxLength": 5
+        }
+      ],
+      "sortIndex": 900
+    },
+    "register_name": {
+        "title": "Register name",
+        "sortIndex": 92,
+        "type": ["string", "null"]
+    },
+    "state": {
+      "title": "State",
+      "type": "string",
+      "enum": ["pending", "active", "deleted"]
+    },
+    "register_url": {
+      "title": "Register link",
+      "type": "string",
+      "format": "uri"
+    },
+    "identifiers": {
+      "title": "Identifiers",
+      "type": "array",
+      "items": {"$ref": "/entity/identifier.json#"}
+    },
+    "other_names": {
+      "description": "Alternate or former names",
+      "rdfReverse": "person",
+      "type": "array",
+      "items": {"$ref": "/entity/other_name.json#"}
+    }
+  },
+  "required": ["name"]
+}

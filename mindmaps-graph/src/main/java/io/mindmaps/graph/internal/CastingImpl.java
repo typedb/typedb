@@ -45,10 +45,10 @@ class CastingImpl extends ConceptImpl {
      *
      * @return The {@link RoleType} this casting is linked with
      */
-    public RoleTypeImpl getRole() {
+    public RoleType getRole() {
         Concept concept = getParentIsa();
         if(concept != null)
-            return getMindmapsGraph().getElementFactory().buildRoleType(concept);
+            return concept.asRoleType();
         else
             throw new NoEdgeException(toString(), Schema.BaseType.ROLE_TYPE.name());
     }
@@ -60,7 +60,7 @@ class CastingImpl extends ConceptImpl {
     public InstanceImpl getRolePlayer() {
         Concept concept = getOutgoingNeighbour(Schema.EdgeLabel.ROLE_PLAYER);
         if(concept != null)
-            return getMindmapsGraph().getElementFactory().buildSpecificInstance(concept);
+            return (InstanceImpl) concept;
         else
             return null;
     }
@@ -101,7 +101,7 @@ class CastingImpl extends ConceptImpl {
         Set<ConceptImpl> concepts = thisRef.getIncomingNeighbours(Schema.EdgeLabel.CASTING);
 
         if(concepts.size() > 0){
-            relations.addAll(concepts.stream().map(getMindmapsGraph().getElementFactory()::buildRelation).collect(Collectors.toList()));
+            relations.addAll(concepts.stream().map(concept -> (RelationImpl) concept).collect(Collectors.toList()));
         }
 
         return relations;

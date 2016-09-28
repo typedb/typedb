@@ -18,9 +18,8 @@
 
 package io.mindmaps.graph.internal;
 
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.Schema;
-import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
@@ -28,7 +27,8 @@ import io.mindmaps.concept.Relation;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
-import io.mindmaps.factory.MindmapsTestGraphFactory;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -77,7 +77,7 @@ public class MindmapsGraphHighLevelTest {
 
     @Before
     public void buildGraphAccessManager(){
-        mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
+        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
         graph = (AbstractMindmapsGraph) mindmapsGraph;
         graph.initialiseMetaConcepts();
 
@@ -555,7 +555,7 @@ public class MindmapsGraphHighLevelTest {
 
     @Test
     public void testPutRelationSimple(){
-        AbstractMindmapsGraph graph = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newBatchLoadingEmptyGraph();
+        AbstractMindmapsGraph graph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY).getGraphBatchLoading(UUID.randomUUID().toString().replaceAll("-", "a"));
 
         EntityType type = graph.putEntityType("Test");
         RoleType actor = graph.putRoleType("Actor");
@@ -573,7 +573,7 @@ public class MindmapsGraphHighLevelTest {
         assertEquals(0, graph.getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
         RelationImpl relation = (RelationImpl) graph.putRelation("a", cast).
                 putRolePlayer(actor, pacino).putRolePlayer(actor2, thing).putRolePlayer(actor3, godfather);
-        assertEquals(1, graph.getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
+        assertEquals(1, graph.getTinkerPopGraph().traversal().V().has(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.RELATION.name()).toList().size());
         assertNotEquals(String.valueOf(relation.getBaseIdentifier()), relation.getId());
 
         relation = (RelationImpl) graph.addRelation(cast).
@@ -604,11 +604,11 @@ public class MindmapsGraphHighLevelTest {
         Vertex godfather2Vertex = graph.getTinkerPopGraph().traversal().V(godfather2.getBaseIdentifier()).next();
         Vertex godfather3Vertex = graph.getTinkerPopGraph().traversal().V(godfather3.getBaseIdentifier()).next();
 
-        assertEquals(3, graph.getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.RELATION.name()).count().next().intValue());
-        assertEquals(4, graph.getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).count().next().intValue());
-        assertEquals(7, graph.getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.ENTITY.name()).count().next().intValue());
-        assertEquals(5, graph.getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.ROLE_TYPE.name()).count().next().intValue());
-        assertEquals(2, graph.getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.RELATION_TYPE.name()).count().next().intValue());
+        assertEquals(3, graph.getTinkerPopGraph().traversal().V().has(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.RELATION.name()).count().next().intValue());
+        assertEquals(4, graph.getTinkerPopGraph().traversal().V().has(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.CASTING.name()).count().next().intValue());
+        assertEquals(7, graph.getTinkerPopGraph().traversal().V().has(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.ENTITY.name()).count().next().intValue());
+        assertEquals(5, graph.getTinkerPopGraph().traversal().V().has(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.ROLE_TYPE.name()).count().next().intValue());
+        assertEquals(2, graph.getTinkerPopGraph().traversal().V().has(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.RELATION_TYPE.name()).count().next().intValue());
 
         Iterator<Edge> pacinoCastings = pacinoVertex.edges(Direction.IN, Schema.EdgeLabel.ROLE_PLAYER.getLabel());
         Iterator<Edge> godfatherCastings = godfatherVertex.edges(Direction.IN, Schema.EdgeLabel.ROLE_PLAYER.getLabel());

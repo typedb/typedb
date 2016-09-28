@@ -19,25 +19,28 @@
 package io.mindmaps.graql.query;
 
 import com.google.common.collect.Sets;
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Type;
 import io.mindmaps.example.MovieGraphFactory;
-import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.DeleteQuery;
 import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.Conjunction;
+import io.mindmaps.graql.admin.PatternAdmin;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Stream;
 
-import static io.mindmaps.graql.Graql.*;
+import static io.mindmaps.graql.Graql.id;
+import static io.mindmaps.graql.Graql.var;
+import static io.mindmaps.graql.Graql.withGraph;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
@@ -50,7 +53,7 @@ public class AdminTest {
 
     @BeforeClass
     public static void setUpClass() {
-        mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
+        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
         MovieGraphFactory.loadGraph(mindmapsGraph);
     }
 

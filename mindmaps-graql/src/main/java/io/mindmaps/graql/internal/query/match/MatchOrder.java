@@ -18,7 +18,6 @@
 
 package io.mindmaps.graql.internal.query.match;
 
-import io.mindmaps.MindmapsGraph;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -34,5 +33,5 @@ public interface MatchOrder {
      * Order the traversal
      * @param traversal the traversal to order
      */
-    void orderTraversal(MindmapsGraph graph, GraphTraversal<Vertex, Map<String, Vertex>> traversal);
+    void orderTraversal(GraphTraversal<Vertex, Map<String, Vertex>> traversal);
 }

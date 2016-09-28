@@ -55,7 +55,7 @@ import static org.junit.Assert.assertTrue;
 
 public class MindmapsTitanGraphFactoryTest {
     private final static String TEST_CONFIG = "../conf/test/mindmaps-test.properties";
-    private final static String TEST_URI = "localhost";
+    private final static String TEST_URI = null;
     private final static String TEST_SHARED = "shared";
     private static final boolean TEST_BATCH_LOADING = false;
 
@@ -63,7 +63,7 @@ public class MindmapsTitanGraphFactoryTest {
     private static TitanGraph noIndexGraph;
     private static TitanGraph indexGraph;
 
-    private static MindmapsGraphFactory titanGraphFactory ;
+    private static MindmapsInternalFactory titanGraphFactory ;
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
@@ -72,7 +72,7 @@ public class MindmapsTitanGraphFactoryTest {
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.OFF);
 
-        titanGraphFactory = new MindmapsTitanGraphFactory();
+        titanGraphFactory = new MindmapsTitanInternalFactory();
 
         sharedGraph = ((MindmapsTitanGraph) titanGraphFactory.getGraph(TEST_SHARED, TEST_URI, TEST_CONFIG, TEST_BATCH_LOADING)).getTinkerPopGraph();
 
@@ -129,8 +129,7 @@ public class MindmapsTitanGraphFactoryTest {
     @Test
     public void testVertexLabels(){
         TitanManagement management = sharedGraph.openManagement();
-        Arrays.stream(Schema.BaseType.values()).forEach(baseType ->
-                assertNotNull(management.getVertexLabel(baseType.name())));
+        assertNotNull(management.getVertexLabel(Schema.VERTEX_LABEL));
     }
 
     @Test

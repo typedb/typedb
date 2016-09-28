@@ -20,12 +20,16 @@ package io.mindmaps.graql.parser;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.example.MovieGraphFactory;
-import io.mindmaps.factory.MindmapsTestGraphFactory;
-import io.mindmaps.graql.*;
+import io.mindmaps.graql.AggregateQuery;
+import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.Var;
 import io.mindmaps.graql.internal.query.aggregate.AbstractAggregate;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -37,13 +41,39 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Stream;
 
-import static io.mindmaps.graql.Graql.*;
-import static io.mindmaps.util.Schema.MetaType.*;
+import static io.mindmaps.graql.Graql.all;
+import static io.mindmaps.graql.Graql.and;
+import static io.mindmaps.graql.Graql.any;
+import static io.mindmaps.graql.Graql.contains;
+import static io.mindmaps.graql.Graql.eq;
+import static io.mindmaps.graql.Graql.gt;
+import static io.mindmaps.graql.Graql.gte;
+import static io.mindmaps.graql.Graql.id;
+import static io.mindmaps.graql.Graql.lt;
+import static io.mindmaps.graql.Graql.lte;
+import static io.mindmaps.graql.Graql.neq;
+import static io.mindmaps.graql.Graql.or;
+import static io.mindmaps.graql.Graql.parseAggregate;
+import static io.mindmaps.graql.Graql.parseAsk;
+import static io.mindmaps.graql.Graql.parseCompute;
+import static io.mindmaps.graql.Graql.parseDelete;
+import static io.mindmaps.graql.Graql.parseInsert;
+import static io.mindmaps.graql.Graql.parseMatch;
+import static io.mindmaps.graql.Graql.regex;
+import static io.mindmaps.graql.Graql.var;
+import static io.mindmaps.graql.Graql.withGraph;
+import static io.mindmaps.util.Schema.MetaType.ENTITY_TYPE;
+import static io.mindmaps.util.Schema.MetaType.RELATION_TYPE;
+import static io.mindmaps.util.Schema.MetaType.ROLE_TYPE;
+import static io.mindmaps.util.Schema.MetaType.RULE_TYPE;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.core.AllOf.allOf;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class QueryParserTest {
 
@@ -54,7 +84,7 @@ public class QueryParserTest {
 
     @BeforeClass
     public static void setUpClass() {
-        mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
+        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
         MovieGraphFactory.loadGraph(mindmapsGraph);
     }
 
@@ -82,7 +112,7 @@ public class QueryParserTest {
                 "match\n" +
                         "$brando value \"Marl B\" isa person;\n" +
                         "(actor: $brando, $char, production-with-cast: $prod);\n" +
-                        "select $char, $prod"
+                        "select $char, $prod;"
         );
 
         assertQueriesEqual(expected, parsed);
@@ -170,7 +200,7 @@ public class QueryParserTest {
         ).limit(4).offset(2).distinct().orderBy("y");
 
         MatchQuery parsed =
-                qb.parseMatch("match ($x, $y); $y isa movie; limit 4 offset 2, distinct order by $y");
+                qb.parseMatch("match ($x, $y); $y isa movie; limit 4; offset 2; distinct; order by $y;");
 
         assertOrderedQueriesEqual(expected, parsed);
     }
@@ -178,14 +208,14 @@ public class QueryParserTest {
     @Test
     public void testOntologyQuery() {
         MatchQuery expected = qb.match(var("x").playsRole("actor")).orderBy("x");
-        MatchQuery parsed = qb.parseMatch("match $x plays-role actor; order by $x asc");
+        MatchQuery parsed = qb.parseMatch("match $x plays-role actor; order by $x asc;");
         assertOrderedQueriesEqual(expected, parsed);
     }
 
     @Test
     public void testOrderQuery() {
         MatchQuery expected = qb.match(var("x").isa("movie").has("release-date", var("r"))).orderBy("r", false);
-        MatchQuery parsed = qb.parseMatch("match $x isa movie, has release-date $r; order by $r desc");
+        MatchQuery parsed = qb.parseMatch("match $x isa movie, has release-date $r; order by $r desc;");
         assertOrderedQueriesEqual(expected, parsed);
     }
 
@@ -244,12 +274,12 @@ public class QueryParserTest {
 
     @Test
     public void testPositiveAskQuery() {
-        assertTrue(parseAsk("match $x isa movie id 'Godfather'; ask").withGraph(mindmapsGraph).execute());
+        assertTrue(parseAsk("match $x isa movie id 'Godfather'; ask;").withGraph(mindmapsGraph).execute());
     }
 
     @Test
     public void testNegativeAskQuery() {
-        assertFalse(qb.parseAsk("match $x isa movie id 'Dogfather'; ask").execute());
+        assertFalse(qb.parseAsk("match $x isa movie id 'Dogfather'; ask;").execute());
     }
 
     @Test
@@ -322,8 +352,8 @@ public class QueryParserTest {
                 "insert concrete-type isa entity-type; abstract-type is-abstract isa entity-type;"
         ).execute();
 
-        assertFalse(qb.parseAsk("match concrete-type is-abstract; ask").execute());
-        assertTrue(qb.parseAsk("match abstract-type is-abstract; ask").execute());
+        assertFalse(qb.parseAsk("match concrete-type is-abstract; ask;").execute());
+        assertTrue(qb.parseAsk("match abstract-type is-abstract; ask;").execute());
     }
 
     @Test
@@ -360,7 +390,7 @@ public class QueryParserTest {
     @Test
     public void testComments() {
         assertTrue(qb.parseAsk(
-                "match \n# there's a comment here\n$x isa###WOW HERES ANOTHER###\r\nmovie; ask"
+                "match \n# there's a comment here\n$x isa###WOW HERES ANOTHER###\r\nmovie; ask;"
         ).execute());
     }
 
@@ -380,8 +410,8 @@ public class QueryParserTest {
 
     @Test
     public void testQueryParserWithoutGraph() {
-        String queryString = "match $x isa movie; select $x";
-        MatchQuery query = parseMatch("match $x isa movie; select $x");
+        String queryString = "match $x isa movie; select $x;";
+        MatchQuery query = parseMatch("match $x isa movie; select $x;");
         assertEquals(queryString, query.toString());
         assertTrue(query.withGraph(mindmapsGraph).stream().findAny().isPresent());
     }
@@ -395,7 +425,7 @@ public class QueryParserTest {
     public void testParseAggregate() {
         //noinspection unchecked
         AggregateQuery<Map<String, Object>> query = (AggregateQuery<Map<String, Object>>)
-                qb.parse("match $x isa movie; aggregate (count as c, group $x as g)");
+                qb.parse("match $x isa movie; aggregate (count as c, group $x as g);");
 
         Map<String, Object> result = query.execute();
 
@@ -405,7 +435,7 @@ public class QueryParserTest {
 
     @Test
     public void testParseAggregateToString() {
-        String query = "match $x isa movie; aggregate group $x (count as c)";
+        String query = "match $x isa movie; aggregate group $x (count as c);";
         assertEquals(query, parseAggregate(query).withGraph(mindmapsGraph).toString());
     }
 
@@ -425,7 +455,7 @@ public class QueryParserTest {
 
         //noinspection unchecked
         AggregateQuery<Concept> query =
-                (AggregateQuery<Concept>) qb.parse("match $x isa movie; aggregate get-any $x");
+                (AggregateQuery<Concept>) qb.parse("match $x isa movie; aggregate get-any $x;");
 
         Concept result = query.execute();
 
@@ -434,7 +464,7 @@ public class QueryParserTest {
 
     @Test
     public void testParseCompute() {
-        assertEquals("compute count", parseCompute("compute count").toString());
+        assertEquals("compute count;", parseCompute("compute count;").toString());
     }
 
     @Test

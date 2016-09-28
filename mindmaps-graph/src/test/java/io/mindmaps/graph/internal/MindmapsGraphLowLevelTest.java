@@ -18,6 +18,7 @@
 
 package io.mindmaps.graph.internal;
 
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Entity;
@@ -31,7 +32,6 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.RuleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -66,7 +66,7 @@ public class MindmapsGraphLowLevelTest {
 
     @Before
     public void buildGraphAccessManager(){
-        mindmapsGraph = (AbstractMindmapsGraph) MindmapsTestGraphFactory.newEmptyGraph();
+        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
         mindmapsGraph.initialiseMetaConcepts();
     }
     @After
@@ -121,7 +121,7 @@ public class MindmapsGraphLowLevelTest {
                 containsString("not read only")
         ));
 
-        mindmapsGraph.getTinkerTraversal().V().drop().iterate();
+        mindmapsGraph.getTinkerTraversal().drop().iterate();
     }
 
     @Test
@@ -145,8 +145,8 @@ public class MindmapsGraphLowLevelTest {
         assertEquals(casting.getBaseIdentifier(), casting_role.outVertex().id());
         assertEquals(casting.getBaseIdentifier(), casting_rolePlayer.outVertex().id());
 
-        assertEquals(Schema.BaseType.ROLE_TYPE.name(), roleVertex.label());
-        assertEquals(Schema.BaseType.RELATION.name(), assertionVertex.label());
+        assertEquals(Schema.BaseType.ROLE_TYPE.name(), roleVertex.value(Schema.ConceptProperty.BASE_TYPE.name()));
+        assertEquals(Schema.BaseType.RELATION.name(), assertionVertex.value(Schema.ConceptProperty.BASE_TYPE.name()));
     }
 
     @Test
@@ -163,7 +163,8 @@ public class MindmapsGraphLowLevelTest {
 
     public void makeArtificialCasting(RoleTypeImpl role, InstanceImpl rolePlayer, RelationImpl relation) {
         String id = "FakeCasting " + UUID.randomUUID();
-        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
+        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex();
+        vertex.property(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.CASTING.name());
         vertex.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), id);
         vertex.property(Schema.ConceptProperty.INDEX.name(), CastingImpl.generateNewHash(role, rolePlayer));
 
@@ -451,7 +452,7 @@ public class MindmapsGraphLowLevelTest {
 
     @Test(expected=RuntimeException.class)
     public void testRollback() {
-        MindmapsGraph graph = MindmapsTestGraphFactory.newEmptyGraph();
+        MindmapsGraph graph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
         assertNull(graph.getEntityType("X"));
         graph.putEntityType("X");
         assertNotNull(graph.getEntityType("X"));

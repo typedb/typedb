@@ -71,7 +71,7 @@ class AskQueryImpl implements AskQueryAdmin {
 
     @Override
     public String toString() {
-        return matchQuery.toString() + " ask";
+        return matchQuery.toString() + " ask;";
     }
 
     @Override

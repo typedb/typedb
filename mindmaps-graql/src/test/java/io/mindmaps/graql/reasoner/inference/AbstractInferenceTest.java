@@ -45,8 +45,8 @@ public class AbstractInferenceTest {
     }
 
     /**silently allows multiple isas*/
-    @Ignore
     @Test
+    @Ignore
     public void testQuery() {
         String queryString = "match $x isa Q;";
         MatchQuery query = qb.parseMatch(queryString);
@@ -59,7 +59,7 @@ public class AbstractInferenceTest {
                 "}; select $x";
         
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
-        //assertQueriesEqual(reasoner.expand(query), qb.parseMatch(explicitQuery));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
     }
 
     /**silently allows multiple isas*/
@@ -69,7 +69,6 @@ public class AbstractInferenceTest {
         String queryString = "match " +
                         "$yy isa Q;$y isa P;($y, $yy) isa REL; select $yy";
         MatchQuery query = qb.parseMatch(queryString);
-        MatchQuery expQuery = reasoner.expand(query);
 
         String explicitQuery = "match " +
                                 "{$yy isa Q} or {" +
@@ -79,8 +78,9 @@ public class AbstractInferenceTest {
                                 "};" +
                                 "$y isa P;\n" +
                                 "($y, $yy) isa REL; select $yy";
-        assertQueriesEqual(expQuery, qb.parseMatch(explicitQuery));
+
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {

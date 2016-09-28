@@ -20,7 +20,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 <div class="container-fluid">
     <div class="row">
         <div class="col-xs-12">
-            <div class="panel panel-filled">
+            <div class="panel panel-filled" style="margin-bottom: 0px;">
                 <div class="panel-heading">
                     <div class="panel-tools">
                         <i @click="clearGraph" class="pe-7s-refresh"></i>
@@ -29,12 +29,27 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                 </div>
                 <div class="panel-body">
                     <div class="form-group">
-                        <textarea class="form-control" rows="3" placeholder=">>" v-model="graqlQuery"></textarea>
+                        <textarea class="form-control" rows="3" placeholder=">>" v-model="graqlQuery" @keydown.enter="notify($event)" @keydown.delete="clearGraph($event)"></textarea>
                     </div>
                     <div class="from-buttons">
                         <button @click="notify" class="btn btn-default search-button">Submit<i class="pe-7s-angle-right-circle"></i></button>
                         <button @click="clearGraph" class="btn btn-default">Clear<i class="pe-7s-refresh"></i></button>
+                        <button @click="getMetaTypes" class="btn btn-info">Show Types<i class="types-button" v-bind:class="[typeInstances ? 'pe-7s-angle-up-circle' : 'pe-7s-angle-down-circle']"></i></button>
                     </div>
+                </div>
+            </div>
+            <div class="panel panel-c-info panel-collapse" v-show="typeInstances">
+                <div class="panel-body">
+
+                    <div v-for="k in typeKeys">
+                        <h4>
+                            <button @click="toggleElement(k+'-group')" class="btn btn-link">{{k | capitalize }}</button>
+                        </h4>
+                        <div class="row m-t-md type-row btn-group {{k}}-group" style="display: none;">
+                            <button v-for="i in typeInstances[k]" @click="typeQuery(k, i)" class="btn btn-default">{{i}}</button>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -55,7 +70,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
             <div class="tabs-container">
                 <ul class="nav nav-tabs">
                     <li class="active"><a data-toggle="tab" href="#tab-1" aria-expanded="true">Visualiser</a></li>
-                    <li class=""><a data-toggle="tab" href="#tab-2" aria-expanded="false">Shell</a></li>
+                    <li class=""><a data-toggle="tab" href="#tab-2" aria-expanded="false">Console</a></li>
                 </ul>
                 <div class="tab-content">
                     <div id="tab-1" class="tab-pane active">
@@ -68,6 +83,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                             <pre class="language-graql">{{{graqlResponse}}}</pre>
                         </div>
                     </div>
+                </div>
             </div>
         </div>
     </div>
@@ -77,9 +93,6 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 <style>
 .tab-row {
     padding-top: 20px;
-}
-.graph-div {
-    height: 60vh;
 }
 .pe-7s-angle-right-circle {
     padding-left: 5px;
@@ -91,6 +104,19 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 .form-buttons {
     padding-bottom: 0px;
     margin-bottom: 0px;
+}
+.types-button {
+    padding-left: 5px;
+}
+.type-row {
+    margin-top: 2px;
+    margin-bottom: 10px;
+    margin-left: 5px;
+}
+h4 {
+    margin-top: 0px;
+    margin-bottom: 0px;
+    margin-left: -10px;
 }
 </style>
 
@@ -112,13 +138,16 @@ export default {
             graqlResponse: undefined,
             visualiser: {},
             engineClient: {},
-            halParser: {}
+            halParser: {},
+
+            typeInstances: false,
+            typeKeys: []
         }
     },
 
     created() {
         visualiser = new Visualiser();
-        visualiser.setOnClick(this.leftClick)
+        visualiser.setOnDoubleClick(this.leftClick)
                   .setOnRightClick(this.rightClick);
 
         engineClient = new EngineClient();
@@ -129,10 +158,26 @@ export default {
     },
 
     attached() {
-        visualiser.render(this.$els.graph);
+        var graph = this.$els.graph;
+        visualiser.render(graph);
+
+        // set window height
+        var height = window.innerHeight - graph.offsetTop - $('.graph-div').offset().top;
+        $('.graph-div').height(height+"px");
+
+        window.onresize = function() {
+            var x = Math.abs(window.innerHeight - graph.offsetTop - $('.graph-div').offset().top);
+            $('.graph-div').height(x+"px");
+        };
     },
 
     methods: {
+        typeQuery(t, ti) {
+            this.graqlQuery = "match $x "+(t === 'roles' ? 'plays-role':'isa')+" "+ti+";";
+            this.typeInstances = false;
+            this.notify();
+        },
+
         typeQueryResponse(resp, err) {
             if(resp != undefined) {
                 halParser.parseHalObject(resp);
@@ -166,9 +211,6 @@ export default {
                 if(!halParser.parseResponse(resp)) {
                     this.showWarning("Sorry, no results found for your query.");
                 }
-                else {
-                    visualiser.centerNodes();
-                }
             }
             else {
                 this.showError(err);
@@ -177,8 +219,6 @@ export default {
 
         shellResponse(resp, err) {
             if(resp != null) {
-                console.log('response is:');
-                console.log(resp);
                 this.graqlResponse = Prism.highlight(resp, PLang.graql);
             }
             else {
@@ -186,16 +226,27 @@ export default {
             }
         },
 
-        notify() {
+        notify(ev) {
+            // Shift + Enter just adds a new line
+            if(ev instanceof KeyboardEvent && ev.shiftKey)
+                return;
+
             if(this.graqlQuery == undefined)
                 return;
+
+            // Enable graph animation
+            visualiser.setSimulation(true);
 
             engineClient.graqlHAL(this.graqlQuery, this.graphResponse);
             engineClient.graqlShell(this.graqlQuery, this.shellResponse);
             this.resetMsg();
+            ev.preventDefault();
         },
 
-        clearGraph() {
+        clearGraph(ev) {
+            if(ev instanceof KeyboardEvent && !ev.shiftKey)
+                return;
+
             // Reset all interface elements to default
             this.graqlQuery = undefined;
             this.graqlResponse = undefined;
@@ -207,8 +258,11 @@ export default {
 
         leftClick(param) {
             const eventKeys = param.event.srcEvent;
-            if(eventKeys.shiftKey)
+            if(!eventKeys.shiftKey)
                 visualiser.clearGraph();
+
+            // Enable graph animation
+            visualiser.setSimulation(true);
 
             _.map(param.nodes, x => { engineClient.request({url: x, callback: this.typeQueryResponse}) });
         },
@@ -217,8 +271,20 @@ export default {
             param.nodes.map(x => { visualiser.deleteNode(x) });
         },
 
-        suppressEventDefault(e){
+        suppressEventDefault(e) {
             e.preventDefault();
+        },
+
+        getMetaTypes() {
+            if(this.typeInstances)
+                this.typeInstances = false;
+            else
+                engineClient.getMetaTypes(x => {if(x != null) { this.typeInstances = x; this.typeKeys = _.keys(x)}});
+        },
+
+        toggleElement(e) {
+            console.log(e);
+            $('.'+e).toggle();
         }
     }
 }

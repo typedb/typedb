@@ -155,11 +155,13 @@ public enum ErrorMessage {
     MULTI_VALUE_VAR("Multi value variable found [$s] on query construction"),
     NO_ATOMS_SELECTED("No atoms were selected from query [$s]"),
     MATERIALIZATION_ERROR("Not enough information available to materialize [$s]"),
+    ANSWER_ERROR("Answer method called on an instance with no answers"),
 
     //--------------------------------------------- Analytics Errors -----------------------------------------------
     ONTOLOGY_MUTATION("The mutations to the ontology have not been successfully committed. Validation Errors: [%s]"),
     BULK_PERSIST("The bulk persist operation on instances of concept type [%s] has failed with validation error: [%s]"),
-    CLONE_FAILED("The vertex program could not be cloned, check implementation of the clone method in class: [%s]. Stacktrace: [%s]");
+    CLONE_FAILED("The vertex program could not be cloned, check implementation of the clone method in class: [%s]. Stacktrace: [%s]"),
+    CANNOT_DELETE_AND_ADD("Both the putValue and cleanup methods have been called in the same iteration. This can corrupt the graph.");
 
     private final String message;
 

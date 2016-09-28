@@ -27,7 +27,9 @@ import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -38,7 +40,6 @@ import java.util.stream.Stream;
 import static io.mindmaps.graql.Graql.eq;
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.*;
 import static io.mindmaps.util.Schema.ConceptProperty.*;
-import static io.mindmaps.util.Schema.ConceptProperty.ITEM_IDENTIFIER;
 import static io.mindmaps.util.Schema.EdgeLabel.*;
 import static io.mindmaps.util.Schema.EdgeProperty.TO_TYPE;
 
@@ -221,7 +222,6 @@ public class VarTraversals {
      * @param edgeLabel the edge label name to follow
      * @param var the variable expected at the end of the edge
      */
-    @SuppressWarnings("unchecked")
     private void addEdgePattern(Schema.EdgeLabel edgeLabel, VarAdmin var) {
         String other = var.getName();
         Optional<String> typeName = var.getId();
@@ -235,30 +235,32 @@ public class VarTraversals {
         if (edgeLabel == ISA) {
             // Traverse inferred 'isa's by 'ako' edges
             addPattern(
-                    new FragmentImpl(t -> t
-                            .union(__.identity(), __.repeat(__.out(AKO.getLabel())).emit()).unfold()
-                            .out(ISA.getLabel())
-                            .union(__.identity(), __.repeat(__.out(AKO.getLabel())).emit()).unfold(),
+                    new FragmentImpl(
+                            t -> outAkos(outAkos(t).out(ISA.getLabel())),
                             getEdgePriority(edgeLabel, true), getName(), other
                     ),
-                    new FragmentImpl(t -> t
-                            .union(__.identity(), __.repeat(__.in(AKO.getLabel())).emit()).unfold()
-                            .in(ISA.getLabel())
-                            .union(__.identity(), __.repeat(__.in(AKO.getLabel())).emit()).unfold(),
+                    new FragmentImpl(
+                            t -> inAkos(inAkos(t).in(ISA.getLabel())),
+                            getEdgePriority(edgeLabel, false), other, getName()
+                    )
+            );
+        } else if (edgeLabel == PLAYS_ROLE) {
+            // Traverse inferred 'plays-role's by 'ako' edges
+            addPattern(
+                    new FragmentImpl(
+                            t -> inAkos(outAkos(t).out(PLAYS_ROLE.getLabel())),
+                            getEdgePriority(edgeLabel, true), getName(), other
+                    ),
+                    new FragmentImpl(
+                            t -> inAkos(outAkos(t).in(PLAYS_ROLE.getLabel())),
                             getEdgePriority(edgeLabel, false), other, getName()
                     )
             );
         } else if (edgeLabel == AKO) {
             // Traverse inferred 'ako' edges
             addPattern(
-                    new FragmentImpl(
-                            t -> t.union(__.identity(), __.repeat(__.out(AKO.getLabel())).emit()).unfold(),
-                            getEdgePriority(edgeLabel, true), getName(), other
-                    ),
-                    new FragmentImpl(
-                            t -> t.union(__.identity(), __.repeat(__.in(AKO.getLabel())).emit()).unfold(),
-                            getEdgePriority(edgeLabel, false), other, getName()
-                    )
+                    new FragmentImpl(this::outAkos, getEdgePriority(edgeLabel, true), getName(), other),
+                    new FragmentImpl(this::inAkos, getEdgePriority(edgeLabel, false), other, getName())
             );
         } else {
             String edge = edgeLabel.getLabel();
@@ -413,5 +415,15 @@ public class VarTraversals {
     private Schema.ConceptProperty getValuePropertyForPredicate(ValuePredicateAdmin predicate) {
         Object value = predicate.getInnerValues().iterator().next();
         return ResourceType.DataType.SUPPORTED_TYPES.get(value.getClass().getTypeName()).getConceptProperty();
+    }
+
+    @SuppressWarnings("unchecked")
+    private GraphTraversal<Vertex, Vertex> outAkos(GraphTraversal<Vertex, Vertex> traversal) {
+        return traversal.union(__.identity(), __.repeat(__.out(AKO.getLabel())).emit()).unfold();
+    }
+
+    @SuppressWarnings("unchecked")
+    private GraphTraversal<Vertex, Vertex> inAkos(GraphTraversal<Vertex, Vertex> traversal) {
+        return traversal.union(__.identity(), __.repeat(__.in(AKO.getLabel())).emit()).unfold();
     }
 }

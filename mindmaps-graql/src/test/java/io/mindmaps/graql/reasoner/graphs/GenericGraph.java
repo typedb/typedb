@@ -18,9 +18,9 @@
 
 package io.mindmaps.graql.reasoner.graphs;
 
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.QueryBuilder;
 
@@ -29,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.UUID;
 
 public class GenericGraph {
 
@@ -36,16 +37,19 @@ public class GenericGraph {
     private final static String filePath = "src/test/resources/graql/";
 
     public static MindmapsGraph getGraph(String graqlFile) {
-        mindmaps = MindmapsTestGraphFactory.newEmptyGraph();
+        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
         buildGraph(graqlFile);
         commit();
 
         return mindmaps;
     }
 
-    public static MindmapsGraph getGraph(String ontologyFile, String ruleFile, String dataFile) {
-        MindmapsGraph mindmaps = MindmapsTestGraphFactory.newEmptyGraph();
-        buildGraph(ontologyFile, ruleFile, dataFile);
+    public static MindmapsGraph getGraph(String ontologyFile, String... files) {
+        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        loadGraqlFile(ontologyFile);
+        for( String graqlFile : files) {
+            loadGraqlFile(graqlFile);
+        }
         commit();
 
         return mindmaps;
@@ -55,13 +59,8 @@ public class GenericGraph {
         loadGraqlFile(graqlFile);
     }
 
-    private static void buildGraph(String ontologyFile, String ruleFile, String dataFile) {
-        loadGraqlFile(ontologyFile);
-        loadGraqlFile(ruleFile);
-        loadGraqlFile(dataFile);
-    }
-
     private static void loadGraqlFile(String fileName) {
+        System.out.println("Loading " + fileName);
         if (fileName.isEmpty()) return;
 
         QueryBuilder qb = Graql.withGraph(mindmaps);

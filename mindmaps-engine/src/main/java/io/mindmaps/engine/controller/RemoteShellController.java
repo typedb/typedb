@@ -64,17 +64,17 @@ public class RemoteShellController {
         get(REST.WebPath.MATCH_QUERY_URI, this::matchQuery);
         get(REST.WebPath.META_TYPE_INSTANCES_URI, this::buildMetaTypeInstancesObject);
     }
+
     @GET
     @Path("/metaTypeInstances")
     @ApiOperation(
             value = "Produces a JSONObject containing meta-ontology types instances.",
             notes = "The built JSONObject will contain ontology nodes divided in roles, entities, relations and resources.",
             response = JSONObject.class)
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "graphName", value = "Name of graph tu use", dataType = "string", paramType = "query")
+    @ApiImplicitParam(name = "graphName", value = "Name of graph tu use", dataType = "string", paramType = "query")
 
-    })
-    private String buildMetaTypeInstancesObject(Request req, Response res){
+
+    private String buildMetaTypeInstancesObject(Request req, Response res) {
 
         String currentGraphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
         if (currentGraphName == null) currentGraphName = defaultGraphName;
@@ -89,8 +89,8 @@ public class RemoteShellController {
             responseObj.put(REST.Response.RESOURCES_JSON_FIELD, new JSONArray(graph.getMetaResourceType().instances().stream().map(x -> x.getId()).toArray()));
 
             return responseObj.toString();
-        }catch(Exception e){
-            LOG.error("New Exception",e);
+        } catch (Exception e) {
+            LOG.error("New Exception", e);
             res.status(500);
             return e.getMessage();
         }
@@ -102,12 +102,12 @@ public class RemoteShellController {
             value = "Executes match query on the server and produces a result string.")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "graphName", value = "Name of graph to use", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "query", value = "Match query to execute", required = true,dataType = "string", paramType = "query")
+            @ApiImplicitParam(name = "query", value = "Match query to execute", required = true, dataType = "string", paramType = "query")
     })
     private String matchQuery(Request req, Response res) {
 
         String currentGraphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
-        if(currentGraphName==null) currentGraphName = defaultGraphName;
+        if (currentGraphName == null) currentGraphName = defaultGraphName;
 
         LOG.debug("Received match query: \"" + req.queryParams(REST.Request.QUERY_FIELD) + "\"");
 
@@ -120,7 +120,7 @@ public class RemoteShellController {
                     .map(x -> x.replaceAll("\u001B\\[\\d+[m]", ""))
                     .collect(Collectors.joining("\n"));
         } catch (Exception e) {
-            LOG.error("New Exception",e);
+            LOG.error("New Exception", e);
             res.status(500);
             return e.getMessage();
         }

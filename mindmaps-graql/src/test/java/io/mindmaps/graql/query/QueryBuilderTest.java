@@ -18,16 +18,24 @@
 
 package io.mindmaps.graql.query;
 
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.example.MovieGraphFactory;
-import io.mindmaps.factory.MindmapsTestGraphFactory;
-import io.mindmaps.graql.*;
+import io.mindmaps.graql.AskQuery;
+import io.mindmaps.graql.DeleteQuery;
+import io.mindmaps.graql.InsertQuery;
+import io.mindmaps.graql.MatchQuery;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static io.mindmaps.graql.Graql.*;
+import java.util.UUID;
+
+import static io.mindmaps.graql.Graql.insert;
+import static io.mindmaps.graql.Graql.match;
+import static io.mindmaps.graql.Graql.var;
+import static io.mindmaps.graql.Graql.withGraph;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -39,7 +47,7 @@ public class QueryBuilderTest {
 
     @Before
     public void setUp() {
-        mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
+        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
         MovieGraphFactory.loadGraph(mindmapsGraph);
     }
 

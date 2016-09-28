@@ -19,12 +19,12 @@
 package io.mindmaps.graql.query;
 
 import com.google.common.collect.Sets;
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.example.MovieGraphFactory;
-import io.mindmaps.factory.MindmapsTestGraphFactory;
 import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.Pattern;
@@ -36,9 +36,11 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static io.mindmaps.concept.ResourceType.DataType.*;
+import static io.mindmaps.concept.ResourceType.DataType.LONG;
+import static io.mindmaps.concept.ResourceType.DataType.STRING;
 import static io.mindmaps.graql.Graql.gt;
 import static io.mindmaps.graql.Graql.id;
 import static io.mindmaps.graql.Graql.var;
@@ -64,7 +66,7 @@ public class InsertQueryTest {
 
     @Before
     public void setUp() {
-        mindmapsGraph = MindmapsTestGraphFactory.newEmptyGraph();
+        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
         MovieGraphFactory.loadGraph(mindmapsGraph);
         qb = withGraph(this.mindmapsGraph);
     }

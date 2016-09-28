@@ -24,7 +24,7 @@ import io.mindmaps.concept.Type;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.reasoner.container.Query;
+import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.util.ErrorMessage;
 import javafx.util.Pair;
 
@@ -47,17 +47,19 @@ public class Relation extends AtomBase {
         castings.addAll(pattern.getCastings());
     }
 
-    public Relation(String id, Map<String, String> roleMap){
-        super(constructRelPattern(id, roleMap));
+    public Relation(String id, Map<String, String> roleMap, Query par){
+        super(constructRelPattern(id, roleMap), par);
         castings.addAll(getPattern().asVar().getCastings());
     }
 
     public Relation(Relation a) {
         super(a);
         castings.addAll(a.getPattern().asVar().getCastings());
+    }
 
-        expansions.forEach(this::removeExpansion);
-        a.expansions.forEach(exp -> expansions.add(new Query(exp)));
+    @Override
+    public Atomic clone(){
+        return new Relation(this);
     }
 
     //rolePlayer-roleType
@@ -88,13 +90,16 @@ public class Relation extends AtomBase {
     public boolean isEquivalent(Object obj) {
         if (!(obj instanceof Relation)) return false;
         Relation a2 = (Relation) obj;
-        return this.getTypeId().equals(a2.getTypeId()) && a2.getRoleVarTypeMap().size() == this.getRoleVarTypeMap().size();
+        return this.getTypeId().equals(a2.getTypeId())
+                && getVarNames().size() == a2.getVarNames().size()
+                && a2.getRoleVarTypeMap().size() == this.getRoleVarTypeMap().size();
     }
 
     @Override
     public int equivalenceHashCode(){
         int hashCode = 1;
         hashCode = hashCode * 37 + this.typeId.hashCode();
+        hashCode = hashCode * 37 + this.getVarNames().size();
         hashCode = hashCode * 37 + this.getRoleVarTypeMap().size();
         return hashCode;
     }
@@ -110,8 +115,6 @@ public class Relation extends AtomBase {
 
     @Override
     public boolean isRelation(){ return true;}
-    @Override
-    public boolean isValuePredicate(){ return false;}
     @Override
     public boolean isResource(){ return false;}
     @Override
@@ -191,14 +194,14 @@ public class Relation extends AtomBase {
                 if (c.getRolePlayer().getName().equals(var))
                     roleTypeId = c.getRoleType().flatMap(VarAdmin::getId).orElse("");
             }
-            /**roletype explicit*/
+            //roletype explicit
             if (!roleTypeId.isEmpty())
                 roleVarTypeMap.put(var, new Pair<>(type, graph.getRoleType(roleTypeId)));
             else {
                 if (type != null) {
                     Set<RoleType> cRoles = getCompatibleRoleTypes(type.getId(), relTypeId, getParentQuery().getGraph().orElse(null));
 
-                    /**if roleType is unambigous*/
+                    //if roleType is unambigous
                     if (cRoles.size() == 1)
                         roleVarTypeMap.put(var, new Pair<>(type, cRoles.iterator().next()));
                     else
@@ -245,7 +248,7 @@ public class Relation extends AtomBase {
 
             if (type != null) {
                 Set<RoleType> cRoles = getCompatibleRoleTypes(type.getId(), relTypeId, graph);
-                /**if roleType is unambigous*/
+                //if roleType is unambigous
                 if (cRoles.size() == 1) {
                     RoleType role = cRoles.iterator().next();
                     roleVarTypeMap.put(role, new Pair<>(var, type));

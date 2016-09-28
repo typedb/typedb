@@ -21,6 +21,7 @@ package io.mindmaps.graql.internal.query;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.Type;
+import io.mindmaps.exception.InvalidConceptTypeException;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.util.ErrorMessage;
@@ -28,7 +29,6 @@ import io.mindmaps.util.ErrorMessage;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
@@ -53,30 +53,49 @@ class ComputeQueryImpl implements ComputeQuery {
         String keyspace = theGraph.getKeyspace();
 
         Analytics analytics = typeIds.map(ids -> {
-            Set<Type> types = ids.stream().map(theGraph::getType).collect(toSet());
+            Set<Type> types = ids.stream().map(id -> {
+                Type type = theGraph.getType(id);
+                if (type == null) throw new IllegalArgumentException(ErrorMessage.ID_NOT_FOUND.getMessage(id));
+                return type;
+            }).collect(toSet());
             return new Analytics(keyspace, types);
         }).orElseGet(() ->
             new Analytics(keyspace)
         );
 
-        switch (computeMethod) {
-            case "count": {
-                return analytics.count();
-            }
-            case "degrees": {
-                return analytics.degrees();
-            }
-            case "degreesAndPersist": {
-                try {
-                    analytics.degreesAndPersist();
-                } catch (ExecutionException | InterruptedException e) {
-                    throw new RuntimeException(e);
+        try {
+            switch (computeMethod) {
+                case "count": {
+                    return analytics.count();
                 }
-                return "Degrees have been persisted.";
+                case "degrees": {
+                    return analytics.degrees();
+                }
+                case "degreesAndPersist": {
+                    analytics.degreesAndPersist();
+                    return "Degrees have been persisted.";
+                }
+                case "max": {
+                    return analytics.max();
+                }
+                case "mean": {
+                    return analytics.mean();
+                }
+                case "min": {
+                    return analytics.min();
+                }
+                case "std": {
+                    return analytics.std();
+                }
+                case "sum": {
+                    return analytics.sum();
+                }
+                default: {
+                    throw new RuntimeException(ErrorMessage.NO_ANALYTICS_METHOD.getMessage(computeMethod));
+                }
             }
-            default: {
-                throw new RuntimeException(ErrorMessage.NO_ANALYTICS_METHOD.getMessage(computeMethod));
-            }
+        } catch (InvalidConceptTypeException e) {
+            throw new IllegalArgumentException(ErrorMessage.MUST_BE_RESOURCE_TYPE.getMessage(typeIds),e);
         }
 
     }
@@ -87,6 +106,8 @@ class ComputeQueryImpl implements ComputeQuery {
         if (computeResult instanceof Map) {
             Map<Instance, ?> map = (Map<Instance, ?>) computeResult;
             return map.entrySet().stream().map(e -> e.getKey().getId() + "\t" + e.getValue());
+        } else if (computeResult instanceof Optional) {
+            return ((Optional) computeResult).isPresent() ? Stream.of(((Optional) computeResult).get().toString()) : Stream.of("There are no instances of this resource type.");
         } else {
             return Stream.of(computeResult.toString());
         }
@@ -101,7 +122,7 @@ class ComputeQueryImpl implements ComputeQuery {
     @Override
     public String toString() {
         String subtypes = typeIds.map(types -> " in " + types.stream().collect(joining(", "))).orElse("");
-        return "compute " + computeMethod + subtypes;
+        return "compute " + computeMethod + subtypes + ";";
     }
 
     @Override

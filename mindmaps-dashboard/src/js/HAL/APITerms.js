@@ -31,5 +31,4 @@ export const KEY_ID = "_id";
 export const KEY_EMBEDDED = "_embedded";
 export const KEY_TYPE = "_type";
 export const KEY_BASE_TYPE = "_baseType";
-
-export const EDGE_LABEL_ISA = "isa";
+export const KEY_VALUE = "value";

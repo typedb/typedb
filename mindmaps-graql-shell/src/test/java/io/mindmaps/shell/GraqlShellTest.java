@@ -16,8 +16,11 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.shell;import ch.qos.logback.classic.Level;
+package io.mindmaps.shell;
+
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import com.google.common.base.Strings;
 import io.mindmaps.graql.GraqlShell;
 import org.junit.After;
 import org.junit.Before;
@@ -109,7 +112,7 @@ public class GraqlShellTest {
 
     @Test
     public void testExecuteOption() throws IOException {
-        String result = testShell("", "-e", "match $x isa role-type; ask");
+        String result = testShell("", "-e", "match $x isa role-type; ask;");
 
         // When using '-e', only results should be printed, no prompt or query
         assertThat(result, allOf(containsString("False"), not(containsString(">>>")), not(containsString("match"))));
@@ -126,14 +129,14 @@ public class GraqlShellTest {
 
     @Test
     public void testAskQuery() throws IOException {
-        String result = testShell("match $x isa relation-type; ask\n");
+        String result = testShell("match $x isa relation-type; ask;\n");
         assertThat(result, containsString("False"));
     }
 
     @Test
     public void testInsertQuery() throws IOException {
         String result = testShell(
-                "match $x isa entity-type; ask\ninsert my-type isa entity-type;\nmatch $x isa entity-type; ask\n"
+                "match $x isa entity-type; ask;\ninsert my-type isa entity-type;\nmatch $x isa entity-type; ask;\n"
         );
         assertThat(result, allOf(containsString("False"), containsString("True")));
     }
@@ -150,7 +153,7 @@ public class GraqlShellTest {
 
     @Test
     public void testAggregateQuery() throws IOException {
-        String result = testShell("match $x isa type; aggregate count\n");
+        String result = testShell("match $x isa type; aggregate count;\n");
 
         // Expect to see the whole meta-ontology
         assertThat(result, containsString("\n2\n"));
@@ -243,7 +246,7 @@ public class GraqlShellTest {
 
     @Test
     public void testLimit() throws IOException {
-        String result = testShell("match $x isa type; limit 1\n");
+        String result = testShell("match $x isa type; limit 1;\n");
 
         // Expect seven lines output - four for the license, one for the query, only one result and a new prompt
         assertEquals(result, 7, result.split("\n").length);
@@ -255,6 +258,13 @@ public class GraqlShellTest {
         for (int i = 0; i < repeats; i ++) {
             testShell(randomString(i));
         }
+    }
+
+    @Test
+    public void testLargeQuery() throws IOException {
+        String id = Strings.repeat("really-", 1000) + "long-id";
+        String[] result = testShell("insert X isa entity-type; '" + id + "' isa X;\nmatch $x isa X;\n").split("\n");
+        assertThat(result[result.length-2], allOf(containsString("$x"), containsString(id)));
     }
 
     private String randomString(int length) {

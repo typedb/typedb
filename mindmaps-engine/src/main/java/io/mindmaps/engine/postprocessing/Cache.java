@@ -18,6 +18,7 @@
 
 package io.mindmaps.engine.postprocessing;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -45,26 +46,35 @@ public class Cache {
         return saveInProgress.get();
     }
 
+    public Set<String> getKeyspaces(){
+        Set<String> keyspaces = new HashSet<>();
+        keyspaces.addAll(castings.keySet());
+        keyspaces.addAll(resources.keySet());
+        return keyspaces;
+    }
+
     //-------------------- Casting Jobs
-    public Map<String, Set<String>> getCastingJobs() {
-        return castings;
+    public Set<String> getCastingJobs(String keyspace) {
+        keyspace = keyspace.toLowerCase();
+        return castings.computeIfAbsent(keyspace, (key) -> ConcurrentHashMap.newKeySet());
     }
-    public void addJobCasting(String graphName, Set<String> conceptIds) {
-        getCastingJobs().computeIfAbsent(graphName, (key) -> ConcurrentHashMap.newKeySet()).addAll(conceptIds);
+    public void addJobCasting(String keyspace, Set<String> conceptIds) {
+        getCastingJobs(keyspace).addAll(conceptIds);
     }
-    public void deleteJobCasting(String graphName, String conceptId) {
-        getCastingJobs().get(graphName).remove(conceptId);
+    public void deleteJobCasting(String keyspace, String conceptId) {
+        getCastingJobs(keyspace).remove(conceptId);
     }
 
     //-------------------- Resource Jobs
-    public Map<String, Set<String>> getResourceJobs() {
-        return resources;
+    public Set<String> getResourceJobs(String keyspace) {
+        keyspace = keyspace.toLowerCase();
+        return resources.computeIfAbsent(keyspace, (key) -> ConcurrentHashMap.newKeySet());
     }
-    public void addJobResource(String graphName, Set<String> conceptIds) {
-        getResourceJobs().computeIfAbsent(graphName, (key) -> ConcurrentHashMap.newKeySet()).addAll(conceptIds);
+    public void addJobResource(String keyspace, Set<String> conceptIds) {
+        getResourceJobs(keyspace).addAll(conceptIds);
     }
-    public void deleteJobResource(String graphName, String conceptId) {
-        getResourceJobs().get(graphName).remove(conceptId);
+    public void deleteJobResource(String keyspace, String conceptId) {
+        getResourceJobs(keyspace).remove(conceptId);
     }
 
 
