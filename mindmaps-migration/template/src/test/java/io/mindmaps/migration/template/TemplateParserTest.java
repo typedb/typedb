@@ -66,7 +66,7 @@ public class TemplateParserTest {
        String template = "" +
                "insert \n" +
                "for {addresses} do { \n" +
-               "   $<address> has address <address>;\n" +
+               "   $<.> has address <.>;\n" +
                "}";
 
         String json = "" +
@@ -86,8 +86,8 @@ public class TemplateParserTest {
 
     @Test
     public void noSpacesBetweenTokensTest(){
-        String template = "(for %whale in %whales){" +
-                "\t\t\t$x isa whale has name ,%whale;\n}";
+        String template = "for {whales} do {" +
+                "\t\t\t$x isa whale has name, <.>;\n}";
 
         String json = "{\"whales\": [" +
                 "\"shamu\"," +
@@ -95,16 +95,16 @@ public class TemplateParserTest {
                 "]}";
 
         String expected =
-                "\t\t\t$x0 isa whale has name ,\\\"shamu\\\";\n" +
-                        "\t\t\t$x1 isa whale has name ,\\\"dory\\\";\n";
+                "\t\t\t$x0 isa whale has name, \\\"shamu\\\";\n" +
+                        "\t\t\t$x1 isa whale has name, \\\"dory\\\";\n";
 
         assertParseEquals(template, json, expected);
     }
 
     @Test
     public void multipleDataTypesTest(){
-        String template = "first is a %string , second a %long , third a %double , fourth a %bool";
-        String expected = "first is a \\\"string\\\" , second a 40 , third a 0.001 , fourth a false";
+        String template = "first is a <string>, second a <long>, third a <double>, fourth a <bool>";
+        String expected = "first is a \\\"string\\\", second a 40, third a 0.001, fourth a false";
 
         String json = "{" +
                 "\"string\" : \"string\", " +
@@ -117,8 +117,8 @@ public class TemplateParserTest {
 
     @Test
     public void forLoopOverArrayTest(){
-        String template = "( for %whale in %whales ) {" +
-                "\t\t\t$x isa whale has name %whale ;\n}";
+        String template = "for { whales } do {" +
+                "$x isa whale has name <.>;\n}";
 
         String json = "{\"whales\": [" +
                 "\"shamu\"," +
@@ -126,8 +126,8 @@ public class TemplateParserTest {
                 "]}";
 
         String expected =
-                "\t\t\t$x0 isa whale has name \\\"shamu\\\" ;\n" +
-                "\t\t\t$x1 isa whale has name \\\"dory\\\" ;\n";
+                "$x0 isa whale has name \\\"shamu\\\";\n" +
+                "$x1 isa whale has name \\\"dory\\\";\n";
 
         assertParseEquals(template, json, expected);
     }
@@ -136,10 +136,10 @@ public class TemplateParserTest {
     public void forLoopOverObjectsTest(){
         String template = "insert\n" +
                 "    $x isa person;\n" +
-                "    ( for %addr in %addresses ) {\n" +
+                "    for { addresses } do {\n" +
                 "        $y isa address;\n" +
-                "        $y has street %street ;\n" +
-                "        $y has number %houseNumber ;\n" +
+                "        $y has street <street> ;\n" +
+                "        $y has number <houseNumber> ;\n" +
                 "        ($x, $y) isa resides;\n" +
                 "    }";
 
@@ -174,12 +174,13 @@ public class TemplateParserTest {
     public void doubleNestedForTest(){
 
         String template = "" +
-                "( for %person in %people ) {\n" +
-                "insert $x isa person has name %name ;\n" +
-                "    ( for %address in %addresses ) {\n" +
+                "for { people } \n" +
+                "do { \n" +
+                "insert $x isa person has name <name>;\n" +
+                "    for { addresses } do {\n" +
                 "    insert $y isa address ;\n" +
-                "        $y has street %street ;\n" +
-                "        $y has number %number ;\n" +
+                "        $y has street <street> ;\n" +
+                "        $y has number <number> ;\n" +
                 "        ($x, $y) isa resides;\n" +
                 "    }\n" +
                 "}";
@@ -212,7 +213,7 @@ public class TemplateParserTest {
                 "}";
 
         String expected = "" +
-                "insert $x0 isa person has name \\\"Elmo\\\" ;\n" +
+                "insert $x0 isa person has name \\\"Elmo\\\";\n" +
                 "    insert $y0 isa address ;\n" +
                 "        $y0 has street \\\"North Pole\\\" ;\n" +
                 "        $y0 has number 100 ;\n" +
@@ -221,7 +222,7 @@ public class TemplateParserTest {
                 "        $y1 has street \\\"South Pole\\\" ;\n" +
                 "        $y1 has number -100 ;\n" +
                 "        ($x0, $y1) isa resides;\n" +
-                "insert $x1 isa person has name \\\"Flounder\\\" ;\n" +
+                "insert $x1 isa person has name \\\"Flounder\\\";\n" +
                 "    insert $y2 isa address ;\n" +
                 "        $y2 has street \\\"Under the sea\\\" ;\n" +
                 "        $y2 has number 22 ;\n" +
@@ -238,10 +239,10 @@ public class TemplateParserTest {
     @Test
     public void dotNotationTest(){
         String template = "" +
-                "$x isa person has name %name;\n" +
+                "$x isa person has name <name>;\n" +
                 "$y isa address;\n" +
-                "$y has street %address.street;\n" +
-                "$y has number %address.number;\n" +
+                "$y has street <address.street>;\n" +
+                "$y has number <address.number>;\n" +
                 "($x, $y) isa resides;";
 
         String json = "" +
@@ -273,7 +274,7 @@ public class TemplateParserTest {
                 "\t}\n" +
                 "}";
 
-        String template = "$x isa person has name %person.name.firstName\n";
+        String template = "$x isa person has name <person.name.firstName>\n";
 
         String expected = "$x0 isa person has name \\\"Phil\\\"\n";
 
@@ -288,7 +289,7 @@ public class TemplateParserTest {
                "\t}\n" +
                "}";
 
-        String template = "$%person.name isa person";
+        String template = "$<person.name> isa person";
         String expected = "$Phil-Collins isa person";
 
         assertParseEquals(template, json, expected);
@@ -302,7 +303,7 @@ public class TemplateParserTest {
                "\t}\n" +
                "}";
 
-        String template = "$%person.namefhwablfewqhbfli isa person";
+        String template = "$<person.namefhwablfewqhbfli> isa person";
         String expected = "$Phil-Collins isa person";
 
         assertParseEquals(template, json, expected);

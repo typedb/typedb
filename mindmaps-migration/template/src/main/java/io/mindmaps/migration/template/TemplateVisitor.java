@@ -92,7 +92,7 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
         // resolved variable
         Value resolved = this.visitResolve(ctx.resolve());
 
-        if(resolved.isList()) {
+        if(!resolved.isList()) {
             return Value.NULL;
         }
 
@@ -125,6 +125,9 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
 
     @Override
     public String visitGvar(GraqlTemplateParser.GvarContext ctx){
+        if(ctx.replace() != null){
+            return whitespace("$" + formatVar(visitResolve(ctx.replace().resolve())), ctx);
+        }
         return whitespace(ctx.getText() + iteration.get(ctx.getText()), ctx);
     }
 
@@ -173,7 +176,7 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
         String rws = rwhitespace(stopToken.getTokenIndex());
 
         if(obj == null){
-           obj = Value.NULL;
+           obj = lws + rws;
         }
 
         return lws + obj.toString() + rws;

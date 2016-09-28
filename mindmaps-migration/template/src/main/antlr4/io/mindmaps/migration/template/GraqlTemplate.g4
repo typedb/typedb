@@ -23,15 +23,11 @@ forStatement
  ;
 
 ifStatement
- : ifPartial elifPartial* elsePartial?
+ : ifPartial elsePartial?
  ;
 
 ifPartial
  : IF LBRACKET resolve RBRACKET DO LBRACKET block RBRACKET
- ;
-
-elifPartial
- : ELIF LBRACKET resolve RBRACKET DO LBRACKET block RBRACKET
  ;
 
 elsePartial
@@ -43,11 +39,11 @@ replace
  ;
 
 resolve
- : NOT_WS+
+ : (DO | NOT_WS | '.')+
  ;
 
 gvar
- : GVAR
+ : GVAR | '$' replace
  ;
 
 graql

@@ -29,12 +29,12 @@ public class ValueFormatter {
         return val;
     }
 
-    public static Value formatVar(Value var){
+    public static String formatVar(Value var){
         String variable = var.toString();
         if(variable.contains(" ")){
-            return new Value(variable.replaceAll("(\\S)\\s(\\S)", "$1-$2"));
+            return variable.replaceAll("(\\S)\\s(\\S)", "$1-$2");
         }
 
-        return var;
+        return variable;
     }
 }

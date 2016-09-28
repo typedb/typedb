@@ -96,8 +96,13 @@ public class Scope {
     private void assign(String prefix, Object value){
         if(value instanceof Map){
             Map<String, Object> map = (Map) value;
+
+            if(!prefix.isEmpty()){
+                prefix = prefix + ".";
+            }
+
             for(String key: map.keySet()) {
-                assign(prefix + key, map.get(key));
+                assign(prefix  + key, map.get(key));
             }
         }
         else {
