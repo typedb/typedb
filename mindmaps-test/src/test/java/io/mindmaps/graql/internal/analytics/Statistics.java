@@ -99,7 +99,7 @@ public class Statistics {
         Analytics computer;
 
         graph.commit();
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(keyspace);
+        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
 
         // resource-type has no instance
         computer = new Analytics(keyspace, Collections.singleton(graph.getType("resourceType1")));

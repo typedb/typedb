@@ -73,7 +73,7 @@ public class BackgroundTasksTest {
         cache = Cache.getInstance();
         keyspace = UUID.randomUUID().toString().replaceAll("-", "a");
         backgroundTasks = BackgroundTasks.getInstance();
-        mindmapsGraph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraphBatchLoading(keyspace);
+        mindmapsGraph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraphBatchLoading();
     }
 
     @After
@@ -171,14 +171,14 @@ public class BackgroundTasksTest {
         Set<Future> futures = new HashSet<>();
 
         //Create Graph With Duplicate Resources
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraphBatchLoading(keyspace);
+        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraphBatchLoading();
         graph.putResourceType(sample, ResourceType.DataType.STRING);
         graph.commit();
 
         for(int i = 0; i < 10; i ++) {
             futures.add(pool.submit(() -> {
                 try {
-                    MindmapsGraph innerGraph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraphBatchLoading(keyspace);
+                    MindmapsGraph innerGraph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraphBatchLoading();
                     innerGraph.putResource(value, innerGraph.getResourceType(sample));
                     innerGraph.commit();
                 } catch (MindmapsValidationException e) {
@@ -197,7 +197,7 @@ public class BackgroundTasksTest {
         });
 
         //Check duplicates have been created
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraphBatchLoading(keyspace);
+        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraphBatchLoading();
         Collection<Resource<Object>> resources = graph.getResourceType(sample).instances();
 
         if(resources.size() > 1) {

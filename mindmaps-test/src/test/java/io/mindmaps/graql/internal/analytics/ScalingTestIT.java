@@ -131,7 +131,7 @@ public class ScalingTestIT {
             Long startTime = 0L;
             Long stopTime = 0L;
 
-            graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(keyspace);
+            graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
 
             for (int i=0;i<REPEAT;i++) {
                 writer.println("gremlin count is: " + graph.getTinkerTraversal().count().next());
@@ -201,7 +201,7 @@ public class ScalingTestIT {
                 addNodes(CURRENT_KEYSPACE, 0, graphSize);
                 writer.println("stop generate graph " + System.currentTimeMillis()/1000L + "s");
 
-                graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(keyspace);
+                graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
                 writer.println("gremlin count is: " + graph.getTinkerTraversal().count().next());
 
                 Analytics computer = new Analytics(CURRENT_KEYSPACE);
@@ -223,7 +223,7 @@ public class ScalingTestIT {
 
                 writer.println("stop mutate graph " + System.currentTimeMillis() / 1000L + "s");
 
-                graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(CURRENT_KEYSPACE);
+                graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, CURRENT_KEYSPACE).getGraph();
                 writer.println("gremlin count is: " + graph.getTinkerTraversal().count().next());
 
                 writer.println("mutate degree");
@@ -268,7 +268,7 @@ public class ScalingTestIT {
         computer.degreesAndPersist();
 
         // assert mutated degrees are as expected
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(keyspace);
+        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
         EntityType thing = graph.getEntityType("thing");
         Collection<Entity> things = thing.instances();
 
@@ -287,7 +287,7 @@ public class ScalingTestIT {
         computer.degreesAndPersist();
 
         // assert mutated degrees are as expected
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(keyspace);
+        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
         thing = graph.getEntityType("thing");
         things = thing.instances();
 
@@ -345,7 +345,7 @@ public class ScalingTestIT {
     }
 
     private void simpleOntology(String keyspace) throws MindmapsValidationException {
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(keyspace);
+        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
         EntityType thing = graph.putEntityType("thing");
         RoleType relation1 = graph.putRoleType("relation1");
         RoleType relation2 = graph.putRoleType("relation2");
@@ -357,7 +357,7 @@ public class ScalingTestIT {
 
     private Set<String> makeSuperNodes(String keyspace) throws MindmapsValidationException {
         // make the supernodes
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(keyspace);
+        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
         EntityType thing = graph.getEntityType("thing");
         RoleType relation1 = graph.getRoleType("relation1");
         RoleType relation2 = graph.getRoleType("relation2");

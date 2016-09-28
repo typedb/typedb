@@ -77,8 +77,8 @@ public class Main {
         OWLMigrator migrator = new OWLMigrator();
         
         try {
-            MindmapsGraph graph = engineUrl == null ? Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(graphName)
-                                                    : Mindmaps.factory(engineUrl).getGraph(graphName);
+            MindmapsGraph graph = engineUrl == null ? Mindmaps.factory(Mindmaps.DEFAULT_URI, graphName).getGraph()
+                                                    : Mindmaps.factory(engineUrl, graphName).getGraph();
             migrator.graph(graph)
                     .ontology(OWLManager.createOWLOntologyManager().loadOntologyFromOntologyDocument(owlfile))
                     .migrate();
@@ -97,7 +97,7 @@ public class Main {
     // stub to test and throw away stuff
     static void test() {
         try {
-            MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph("onco");
+            MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, "onco").getGraph();
             graph.putRelationType("authorship");
             RelationType reltype = (RelationType)graph.getType("relation-type").instances().stream().findFirst().get();
             reltype.hasRoles().forEach(System.out::println);

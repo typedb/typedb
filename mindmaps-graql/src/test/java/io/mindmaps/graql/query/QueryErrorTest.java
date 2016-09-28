@@ -45,7 +45,7 @@ public class QueryErrorTest {
 
     @BeforeClass
     public static void setUpClass() {
-        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
     }
 
@@ -146,7 +146,7 @@ public class QueryErrorTest {
     @Test
     public void testExceptionWhenNoHasResourceRelation() {
         // Create a fresh graph, with no has-resource between person and name
-        MindmapsGraph empty = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        MindmapsGraph empty = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
 
         QueryBuilder emptyQb = withGraph(empty);
         emptyQb.insert(

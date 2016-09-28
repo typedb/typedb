@@ -45,7 +45,7 @@ public class JsonSchemaMigratorTest {
 
     @Before
     public void setUp() {
-        graph =  Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph("default");
+        graph =  Mindmaps.factory(Mindmaps.IN_MEMORY, "default").getGraph();
         migrator = new JsonSchemaMigrator().graph(graph);
     }
 

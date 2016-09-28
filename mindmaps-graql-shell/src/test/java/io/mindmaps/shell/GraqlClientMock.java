@@ -33,7 +33,7 @@ class GraqlClientMock implements GraqlClient {
 
     private RemoteSession server = new RemoteSession(namespace -> {
         this.namespace = namespace;
-        return Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        return Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
     });
 
     private String namespace = null;

@@ -50,7 +50,7 @@ public class IntegrationUtils {
 
     public static Pair<MindmapsGraph, String> graphWithNewKeyspace() {
         String keyspace = UUID.randomUUID().toString().replaceAll("-", "");
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(keyspace);
+        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
         return Pair.with(graph, keyspace);
     }
 }

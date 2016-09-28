@@ -51,7 +51,7 @@ import java.util.Optional;
 public class TestOwlMindMapsBase {
     public static final String OWL_TEST_GRAPH = "owltestgraph";
  
-    static MindmapsGraph graph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(OWL_TEST_GRAPH);
+    static MindmapsGraph graph = Mindmaps.factory(Mindmaps.IN_MEMORY, OWL_TEST_GRAPH).getGraph();
     static OWLOntologyManager manager;
     
     @BeforeClass

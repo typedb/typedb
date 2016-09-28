@@ -256,11 +256,11 @@ public class StatisticsTest {
         graph.putResourceType("resourceType6", ResourceType.DataType.DOUBLE);
 
         graph.commit();
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(keyspace);
+        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
     }
 
     private void addResources() throws MindmapsValidationException {
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(keyspace);
+        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
 
         graph.putResource(1.2, graph.getResourceType("resourceType1"));
         graph.putResource(1.5, graph.getResourceType("resourceType1"));

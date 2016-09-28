@@ -47,7 +47,7 @@ public class DeleteQueryTest {
 
     @Before
     public void setUp() {
-        MindmapsGraph mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        MindmapsGraph mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
         qb = Graql.withGraph(mindmapsGraph);
     }

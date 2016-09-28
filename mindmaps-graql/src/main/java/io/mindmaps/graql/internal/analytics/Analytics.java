@@ -65,7 +65,7 @@ public class Analytics {
     public Analytics(String keySpace) {
         this.keySpace = keySpace;
 
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(this.keySpace);
+        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, this.keySpace).getGraph();
 
         // collect resource-types for statistics
         graph.getMetaResourceType().instances()
@@ -114,7 +114,7 @@ public class Analytics {
      */
     public Analytics(String keySpace, Set<Type> types) {
         this.keySpace = keySpace;
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(this.keySpace);
+        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, this.keySpace).getGraph();
 
         // collect resource-types for statistics
         graph.getMetaResourceType().instances()
@@ -136,7 +136,7 @@ public class Analytics {
      * @return the number of instances
      */
     public long count() {
-        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraphComputer(keySpace);
+        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
         ComputerResult result = computer.compute(new CountMapReduce(allTypes));
         Map<String, Long> count = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
         return count.getOrDefault(CountMapReduce.MEMORY_KEY, 0L);
@@ -151,7 +151,7 @@ public class Analytics {
         String dataType = checkSelectedTypesHaveCorrectDataType(allTypes);
         if (!selectedTypesHaveInstance(allTypes)) return Optional.empty();
 
-        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraphComputer(keySpace);
+        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
         ComputerResult result = computer.compute(new MinMapReduce(allTypes, dataType));
         Map<String, Number> min = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
         return Optional.of(min.get(MinMapReduce.MEMORY_KEY));
@@ -166,7 +166,7 @@ public class Analytics {
         String dataType = checkSelectedTypesHaveCorrectDataType(allTypes);
         if (!selectedTypesHaveInstance(allTypes)) return Optional.empty();
 
-        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraphComputer(keySpace);
+        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
         ComputerResult result = computer.compute(new MaxMapReduce(allTypes, dataType));
         Map<String, Number> max = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
         return Optional.of(max.get(MaxMapReduce.MEMORY_KEY));
@@ -181,7 +181,7 @@ public class Analytics {
         String dataType = checkSelectedTypesHaveCorrectDataType(allTypes);
         if (!selectedTypesHaveInstance(allTypes)) return Optional.empty();
 
-        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraphComputer(keySpace);
+        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
         ComputerResult result = computer.compute(new SumMapReduce(allTypes, dataType));
         Map<String, Number> max = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
         return Optional.of(max.get(SumMapReduce.MEMORY_KEY));
@@ -196,7 +196,7 @@ public class Analytics {
         String dataType = checkSelectedTypesHaveCorrectDataType(allTypes);
         if (!selectedTypesHaveInstance(allTypes)) return Optional.empty();
 
-        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraphComputer(keySpace);
+        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
         ComputerResult result = computer.compute(new MeanMapReduce(allTypes, dataType));
         Map<String, Map<String, Number>> mean = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
         Map<String, Number> meanPair = mean.get(MeanMapReduce.MEMORY_KEY);
@@ -213,7 +213,7 @@ public class Analytics {
         String dataType = checkSelectedTypesHaveCorrectDataType(allTypes);
         if (!selectedTypesHaveInstance(allTypes)) return Optional.empty();
 
-        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraphComputer(keySpace);
+        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
         ComputerResult result = computer.compute(new StdMapReduce(allTypes, dataType));
         Map<String, Map<String, Number>> std = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
         Map<String, Number> stdTuple = std.get(StdMapReduce.MEMORY_KEY);
@@ -230,9 +230,9 @@ public class Analytics {
      */
     public Map<Instance, Long> degrees() {
         Map<Instance, Long> allDegrees = new HashMap<>();
-        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraphComputer(keySpace);
+        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
         ComputerResult result = computer.compute(new DegreeVertexProgram(allTypes));
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(keySpace);
+        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraph();
         result.graph().traversal().V().forEachRemaining(v -> {
             if (v.keys().contains(DegreeVertexProgram.MEMORY_KEY)) {
                 Instance instance = graph.getInstance(v.value(ITEM_IDENTIFIER.name()));
@@ -249,7 +249,7 @@ public class Analytics {
      * @param resourceType the type of the resource that will contain the degree
      */
     private void degreesAndPersist(String resourceType) {
-        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraphComputer(keySpace);
+        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
         computer.compute(new DegreeAndPersistVertexProgram(keySpace, allTypes));
     }
 
@@ -269,7 +269,7 @@ public class Analytics {
      * @param resourceDataType the datatype of the resource type
      */
     private void mutateResourceOntology(String resourceTypeId, ResourceType.DataType resourceDataType) {
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(keySpace);
+        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraph();
         ResourceType resource = graph.putResourceType(resourceTypeId, resourceDataType);
         RoleType degreeOwner = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
         RoleType degreeValue = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
@@ -322,7 +322,7 @@ public class Analytics {
     }
 
     private boolean selectedTypesHaveInstance(Set<String> types) {
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(this.keySpace);
+        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, this.keySpace).getGraph();
         for (String type : types) {
             if (withGraph(graph).match(var().isa(type)).ask().execute())
                 return true;
