@@ -26,7 +26,11 @@ import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.IntStream;
 
 import static io.mindmaps.migration.template.Value.concat;
@@ -129,6 +133,13 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
         }
 
         return Value.VOID;
+    }
+
+    @Override
+    public Object visitMacro(GraqlTemplateParser.MacroContext ctx){
+        ctx.MACRO();
+
+        return null;
     }
 
     // resolve

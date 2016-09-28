@@ -25,7 +25,7 @@ import org.junit.Test;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class TemplateParserTest {
+public class TemplateTest {
 
     private static TemplateParser parser;
 

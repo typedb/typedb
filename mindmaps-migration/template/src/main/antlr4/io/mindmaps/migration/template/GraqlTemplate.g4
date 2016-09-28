@@ -10,12 +10,13 @@ template
  ;
 
 block
- : (statement | graql)+
+ : (statement | graql)*
  ;
 
 statement
  : forStatement
  | ifStatement
+ | macro
  ;
 
 forStatement
@@ -28,6 +29,10 @@ ifStatement
 
 ifPartial
  : IF LBRACKET resolve RBRACKET DO LBRACKET block RBRACKET
+ ;
+
+macro
+ : MACRO LBRACKET block RBRACKET
  ;
 
 elsePartial
@@ -68,6 +73,7 @@ DO          : 'do';
 ELIF        : 'elif';
 ELSE        : 'else';
 
+MACRO       : '@' [a-zA-Z0-9_-]+;
 GVAR        : '$' [a-zA-Z0-9_-]+;
 DVAR        : '.';
 
