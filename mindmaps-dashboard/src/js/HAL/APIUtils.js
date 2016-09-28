@@ -45,7 +45,8 @@ export function resourceProperties(resource) {
         id: resource[API.KEY_ID],
         type: resource[API.KEY_TYPE],
         baseType: resource[API.KEY_BASE_TYPE],
-        label: buildLabel(resource)
+        label: buildLabel(resource),
+        ontology: resource[API.KEY_LINKS][API.KEY_ONTOLOGY][0][API.KEY_HREF]
     };
 }
 

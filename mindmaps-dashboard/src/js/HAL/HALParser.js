@@ -18,8 +18,8 @@
 
 import _ from 'underscore';
 
-import * as APITerms from './APITerms';
-import * as APIUtils from './APIUtils';
+import * as API from './APITerms';
+import * as Utils from './APIUtils';
 
 /*
  * Parses HAL responses with callbacks (for found HAL resources & relationships).
@@ -54,12 +54,12 @@ export default class HALParser {
     }
 
     parseHalObject(obj) {
-        this.newResource(this.getHref(obj), APIUtils.resourceProperties(obj));
+        this.newResource(this.getHref(obj), Utils.resourceProperties(obj));
 
         // Add assertions from _embedded
-        if(APITerms.KEY_EMBEDDED in obj) {
-            _.map(Object.keys(obj[APITerms.KEY_EMBEDDED]), key => {
-                this.parseEmbedded(obj[APITerms.KEY_EMBEDDED][key], obj, key)
+        if(API.KEY_EMBEDDED in obj) {
+            _.map(Object.keys(obj[API.KEY_EMBEDDED]), key => {
+                this.parseEmbedded(obj[API.KEY_EMBEDDED][key], obj, key)
             });
         }
     }
@@ -76,9 +76,9 @@ export default class HALParser {
             var hrefA = this.getHref(obj);
             var hrefB = this.getHref(parent);
 
-            this.newResource(hrefA, APIUtils.resourceProperties(obj));
+            this.newResource(hrefA, Utils.resourceProperties(obj));
 
-            if(APIUtils.leftSignificant(obj, parent))
+            if(Utils.leftSignificant(obj, parent))
                 this.newRelationship(hrefA, hrefB, roleName);
             else
                 this.newRelationship(hrefB, hrefA, roleName);
@@ -94,6 +94,6 @@ export default class HALParser {
      * @returns {string|string|*|o}
      */
     getHref(resource) {
-        return resource._links.self.href;
+        return resource[API.KEY_LINKS][API.KEY_SELF][API.KEY_URL];
     }
 }

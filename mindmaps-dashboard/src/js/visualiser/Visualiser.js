@@ -125,7 +125,7 @@ export default class Visualiser {
     /**
      * Add a node to the graph. This can be called at any time *after* render().
      */
-    addNode(id, label, type, baseType) {
+    addNode(id, label, type, baseType, ontologyHref) {
         if(!this.nodeExists(id))
             this.nodes.add({
                 id: id,
@@ -134,7 +134,8 @@ export default class Visualiser {
                 color: this.style.getNodeColour(baseType),
                 font: this.style.getNodeFont(baseType),
                 shape: this.style.getNodeShape(baseType),
-                selected: false
+                selected: false,
+                ontology: ontologyHref
             });
 
         return this;

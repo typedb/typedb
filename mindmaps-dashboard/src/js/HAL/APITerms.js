@@ -32,3 +32,7 @@ export const KEY_EMBEDDED = "_embedded";
 export const KEY_TYPE = "_type";
 export const KEY_BASE_TYPE = "_baseType";
 export const KEY_VALUE = "value";
+export const KEY_ONTOLOGY = "ontology";
+export const KEY_SELF = "self";
+export const KEY_LINKS = "_links";
+export const KEY_HREF = "href";

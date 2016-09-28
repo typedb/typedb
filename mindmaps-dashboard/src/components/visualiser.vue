@@ -147,13 +147,14 @@ export default {
 
     created() {
         visualiser = new Visualiser();
-        visualiser.setOnDoubleClick(this.leftClick)
-                  .setOnRightClick(this.rightClick);
+        visualiser.setOnDoubleClick(this.doubleClick)
+                  .setOnRightClick(this.rightClick)
+                  .setOnClick(this.leftClick);
 
         engineClient = new EngineClient();
 
         halParser = new HALParser();
-        halParser.setNewResource((id, p) => { visualiser.addNode(id, p.label, p.type, p.baseType) });
+        halParser.setNewResource((id, p) => { visualiser.addNode(id, p.label, p.type, p.baseType, p.ontology) });
         halParser.setNewRelationship((f, t, l) => { visualiser.addEdge(f, t, l) });
     },
 
@@ -179,6 +180,7 @@ export default {
         },
 
         typeQueryResponse(resp, err) {
+            console.log(resp);
             if(resp != undefined) {
                 halParser.parseHalObject(resp);
             } else {
@@ -257,6 +259,22 @@ export default {
         },
 
         leftClick(param) {
+            const eventKeys = param.event.srcEvent;
+            if(!eventKeys.altKey)
+                return;
+
+            _.map(param.nodes, x => {
+                console.log(visualiser.nodes._data[x].ontology);
+
+                engineClient.request({
+                    url: visualiser.nodes._data[x].ontology,
+                    callback: this.typeQueryResponse
+                });
+              });
+
+        },
+
+        doubleClick(param) {
             const eventKeys = param.event.srcEvent;
             if(!eventKeys.shiftKey)
                 visualiser.clearGraph();
