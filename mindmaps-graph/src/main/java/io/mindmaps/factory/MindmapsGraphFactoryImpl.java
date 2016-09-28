@@ -52,43 +52,43 @@ public class MindmapsGraphFactoryImpl implements MindmapsGraphFactory{
 
     /**
      *
-     * @param name The desired name for the mindmaps graph
+     * @param keyspace The desired name for the mindmaps graph
      * @return A new or existing mindmaps graph with the defined name
      */
-    public MindmapsGraph getGraph(String name){
-        ConfigureFactory configuredFactory = configureGraphFactory(uri, REST.GraphConfig.DEFAULT);
-        return configuredFactory.factory.getGraph(name, uri, configuredFactory.path, false);
+    public MindmapsGraph getGraph(String keyspace){
+        ConfigureFactory configuredFactory = configureGraphFactory(keyspace, uri, REST.GraphConfig.DEFAULT);
+        return configuredFactory.factory.getGraph(false);
     }
 
     /**
      *
-     * @param name The desired name for the mindmaps graph
+     * @param keyspace The desired name for the mindmaps graph
      * @return A new or existing mindmaps graph with the defined name connecting to the specified remote uri with batch loading enabled
      */
-    public MindmapsGraph getGraphBatchLoading(String name){
-        ConfigureFactory configuredFactory = configureGraphFactory(uri, REST.GraphConfig.BATCH);
-        return configuredFactory.factory.getGraph(name, uri, configuredFactory.path, true);
+    public MindmapsGraph getGraphBatchLoading(String keyspace){
+        ConfigureFactory configuredFactory = configureGraphFactory(keyspace, uri, REST.GraphConfig.BATCH);
+        return configuredFactory.factory.getGraph(true);
     }
 
     /**
-     *
+     * @param keyspace The desired name for the graph
      * @return A new or existing mindmaps graph compute with the defined name
      */
-    public MindmapsComputer getGraphComputer(String name) {
-        ConfigureFactory configuredFactory = configureGraphFactory(uri, REST.GraphConfig.COMPUTER);
-        Graph graph = configuredFactory.factory.getTinkerPopGraph(name, uri, configuredFactory.path, false);
+    public MindmapsComputer getGraphComputer(String keyspace) {
+        ConfigureFactory configuredFactory = configureGraphFactory(keyspace, uri, REST.GraphConfig.COMPUTER);
+        Graph graph = configuredFactory.factory.getTinkerPopGraph(false);
         return new MindmapsComputerImpl(graph, configuredFactory.graphComputer);
     }
 
     /**
      *
-     * @param uri The remote uri fo where engine is located
+     * @param engineUrl The remote uri fo where engine is located
      * @param graphType The type of graph to produce, default, batch, or compute
      * @return A new or existing mindmaps graph with the defined name connecting to the specified remote uri
      */
-    private static ConfigureFactory configureGraphFactory(String uri, String graphType){
+    private static ConfigureFactory configureGraphFactory(String keyspace, String engineUrl, String graphType){
         try {
-            String restFactoryUri = uri + GRAPH_FACTORY_URI + "?" + GRAPH_CONFIG_PARAM + "=" + graphType;
+            String restFactoryUri = engineUrl + GRAPH_FACTORY_URI + "?" + GRAPH_CONFIG_PARAM + "=" + graphType;
             String config = EngineCommunicator.contactEngine(restFactoryUri, REST.HttpConn.GET_METHOD);
 
             //TODO: We should make config handling generic rather than through files. Using a temp file here is a bit strange
@@ -109,9 +109,9 @@ public class MindmapsGraphFactoryImpl implements MindmapsGraphFactory{
                 computer = bundle.getString(COMPUTER);
             }
 
-            return new ConfigureFactory(path, computer, MindmapsFactoryBuilder.getFactory(bundle));
+            return new ConfigureFactory(path, computer, MindmapsFactoryBuilder.getFactory(keyspace, engineUrl, path));
         } catch (IOException e) {
-            throw new IllegalArgumentException(ErrorMessage.CONFIG_NOT_FOUND.getMessage(uri, e.getMessage()));
+            throw new IllegalArgumentException(ErrorMessage.CONFIG_NOT_FOUND.getMessage(engineUrl, e.getMessage()));
         }
     }
 

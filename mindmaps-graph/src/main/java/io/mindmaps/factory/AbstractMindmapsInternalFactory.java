@@ -21,70 +21,63 @@ package io.mindmaps.factory;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 abstract class AbstractMindmapsInternalFactory<M extends AbstractMindmapsGraph<G>, G extends Graph> implements MindmapsInternalFactory<M, G> {
-    private final Map<String, M> openMindmapsGraphs;
-    private final Map<String, G> openGraphs;
-    private final Set<String> openKeyspaces;
+    protected final String keyspace;
+    protected final String engineUrl;
+    protected final String config;
 
-    AbstractMindmapsInternalFactory(){
-        openMindmapsGraphs = new HashMap<>();
-        openGraphs = new HashMap<>();
-        openKeyspaces = new HashSet<>();
+    private M mindmapsGraph = null;
+    private M batchLoadingMindmapsGraph = null;
+
+    private G graph = null;
+    private G batchLoadingGraph = null;
+
+    AbstractMindmapsInternalFactory(String keyspace, String engineUrl, String config){
+        this.keyspace = keyspace;
+        this.engineUrl = engineUrl;
+        this.config = config;
     }
 
     abstract boolean isClosed(G innerGraph);
 
-    abstract M buildMindmapsGraphFromTinker(G graph, String name, String engineUrl, boolean batchLoading);
+    abstract M buildMindmapsGraphFromTinker(G graph, boolean batchLoading);
 
-    abstract G buildTinkerPopGraph(String name, String address, String pathToConfig);
+    abstract G buildTinkerPopGraph(boolean batchLoading);
 
     @Override
-    public M getGraph(String name, String address, String pathToConfig, boolean batchLoading){
-        name = name.toLowerCase();
-        String key = generateKey(name, batchLoading);
-        if(!openMindmapsGraphs.containsKey(key) || isClosed(openMindmapsGraphs.get(key))){
-            openMindmapsGraphs.put(key, getMindmapsGraphFromMap(name, address, pathToConfig, batchLoading));
+    public M getGraph(boolean batchLoading){
+        if(batchLoading){
+            batchLoadingMindmapsGraph = getGraph(batchLoadingMindmapsGraph, batchLoadingGraph, batchLoading);
+            return batchLoadingMindmapsGraph;
+        } else {
+            mindmapsGraph = getGraph(mindmapsGraph, graph, batchLoading);
+            return mindmapsGraph;
         }
-        openKeyspaces.add(name);
-        return openMindmapsGraphs.get(key);
+    }
+    private M getGraph(M mindmapsGraph, G graph, boolean batchLoading){
+        if(mindmapsGraph == null || isClosed(mindmapsGraph)){
+            mindmapsGraph = buildMindmapsGraphFromTinker(graph, batchLoading);
+        }
+        return mindmapsGraph;
     }
 
     @Override
-    public G getTinkerPopGraph(String name, String address, String pathToConfig, boolean batchLoading){
-        String key = generateKey(name, batchLoading);
-        if(!openGraphs.containsKey(key) || isClosed(openGraphs.get(key))){
-            openGraphs.put(key, buildTinkerPopGraph(name, address, pathToConfig));
+    public G getTinkerPopGraph(boolean batchLoading){
+        if(batchLoading){
+            return getTinkerPopGraph(batchLoadingGraph, batchLoading);
+        } else {
+            return getTinkerPopGraph(graph, batchLoading);
         }
-        openKeyspaces.add(name);
-        return openGraphs.get(key);
     }
-
-    @Override
-    public Set<String> openGraphs(){
-        return openKeyspaces;
+    protected G getTinkerPopGraph(G graph, boolean batchLoading){
+        if(graph == null || isClosed(graph)){
+            graph = buildTinkerPopGraph(batchLoading);
+        }
+        return graph;
     }
 
     private boolean isClosed(M mindmapsGraph) {
         G innerGraph = mindmapsGraph.getTinkerPopGraph();
         return isClosed(innerGraph);
-    }
-
-    private M getMindmapsGraphFromMap(String name, String address, String pathToConfig, boolean batchLoading) {
-        String key = generateKey(name, batchLoading);
-
-        if(!openGraphs.containsKey(key) || isClosed(openGraphs.get(key))){
-            openGraphs.put(key, this.buildTinkerPopGraph(name, address, pathToConfig));
-        }
-
-        return buildMindmapsGraphFromTinker(openGraphs.get(key), name, address, batchLoading);
-    }
-
-    private String generateKey(String name, boolean batchLoading){
-        return name + batchLoading;
     }
 }

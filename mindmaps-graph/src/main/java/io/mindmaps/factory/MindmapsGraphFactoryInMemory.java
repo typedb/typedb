@@ -23,13 +23,16 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.MindmapsGraphFactory;
 import io.mindmaps.util.ErrorMessage;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * A client for creating a mindmaps graph from a running engine.
  * This is to abstract away factories and the backend from the user.
  * The deployer of engine decides on the backend and this class will handle producing the correct graphs.
  */
 public class MindmapsGraphFactoryInMemory implements MindmapsGraphFactory {
-    private static final MindmapsInternalFactory IN_MEMORY_FACTORY = new MindmapsTinkerInternalFactory();
+    private static final Map<String, MindmapsTinkerInternalFactory> inMemoryFactories = new HashMap<>();
     private static MindmapsGraphFactoryInMemory instance;
 
     private MindmapsGraphFactoryInMemory(){}
@@ -42,13 +45,17 @@ public class MindmapsGraphFactoryInMemory implements MindmapsGraphFactory {
     }
 
     @Override
-    public MindmapsGraph getGraph(String name) {
-        return IN_MEMORY_FACTORY.getGraph(name, null, null, false);
+    public MindmapsGraph getGraph(String keyspace) {
+        return getFactory(keyspace).getGraph(false);
     }
 
     @Override
-    public MindmapsGraph getGraphBatchLoading(String name) {
-        return IN_MEMORY_FACTORY.getGraph(name, null, null, true);
+    public MindmapsGraph getGraphBatchLoading(String keyspace) {
+        return getFactory(keyspace).getGraph(true);
+    }
+
+    private MindmapsTinkerInternalFactory getFactory(String keyspace){
+        return inMemoryFactories.computeIfAbsent(keyspace, (key) -> new MindmapsTinkerInternalFactory(keyspace, null, null));
     }
 
     @Override
