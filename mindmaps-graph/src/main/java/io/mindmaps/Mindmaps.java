@@ -14,12 +14,14 @@ public class Mindmaps {
     /**
      *
      * @param location The location from which to create the graph
+     * @param keyspace THe keyspace of the factory to be bound to
      * @return A mindmaps client instance which can talk to the engine at the specified uri
      */
-    public static MindmapsGraphFactory factory(String location){
+    public static MindmapsGraphFactory factory(String location, String keyspace){
+        String key = location + keyspace;
         if(IN_MEMORY.equals(location)){
-            return clients.computeIfAbsent(location, (key) -> MindmapsGraphFactoryInMemory.getInstance());
+            return clients.computeIfAbsent(key, (k) -> new MindmapsGraphFactoryInMemory(keyspace));
         }
-        return clients.computeIfAbsent(location, MindmapsGraphFactoryImpl::new);
+        return clients.computeIfAbsent(key, (k) -> new MindmapsGraphFactoryImpl(keyspace, location));
     }
 }

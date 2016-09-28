@@ -55,14 +55,14 @@ public class MovieGraphFactoryTest {
 
     @BeforeClass
     public static void setUp() throws IOException{
-        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
         graph = ((AbstractMindmapsGraph)mindmapsGraph).getTinkerPopGraph();
     }
 
     @Test
     public void failToLoad(){
-        MindmapsGraph mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        MindmapsGraph mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         mindmapsGraph.putRelationType("fake");
 
         expectedException.expect(RuntimeException.class);

@@ -50,13 +50,13 @@ public class PokemonGraphFactoryTest {
 
     @Before
     public void setup() {
-        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         PokemonGraphFactory.loadGraph(mindmapsGraph);
     }
 
     @Test
     public void failToLoad(){
-        MindmapsGraph mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        MindmapsGraph mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         mindmapsGraph.putRelationType("fake");
 
         expectedException.expect(RuntimeException.class);

@@ -45,36 +45,35 @@ import static io.mindmaps.util.REST.WebPath.GRAPH_FACTORY_URI;
 public class MindmapsGraphFactoryImpl implements MindmapsGraphFactory{
     private static final String COMPUTER = "graph.computer";
     private final String uri;
+    private final String keyspace;
 
-    public MindmapsGraphFactoryImpl(String uri){
+    public MindmapsGraphFactoryImpl(String keyspace, String uri){
         this.uri = uri;
+        this.keyspace = keyspace;
     }
 
     /**
      *
-     * @param keyspace The desired name for the mindmaps graph
      * @return A new or existing mindmaps graph with the defined name
      */
-    public MindmapsGraph getGraph(String keyspace){
+    public MindmapsGraph getGraph(){
         ConfigureFactory configuredFactory = configureGraphFactory(keyspace, uri, REST.GraphConfig.DEFAULT);
         return configuredFactory.factory.getGraph(false);
     }
 
     /**
      *
-     * @param keyspace The desired name for the mindmaps graph
      * @return A new or existing mindmaps graph with the defined name connecting to the specified remote uri with batch loading enabled
      */
-    public MindmapsGraph getGraphBatchLoading(String keyspace){
+    public MindmapsGraph getGraphBatchLoading(){
         ConfigureFactory configuredFactory = configureGraphFactory(keyspace, uri, REST.GraphConfig.BATCH);
         return configuredFactory.factory.getGraph(true);
     }
 
     /**
-     * @param keyspace The desired name for the graph
      * @return A new or existing mindmaps graph compute with the defined name
      */
-    public MindmapsComputer getGraphComputer(String keyspace) {
+    public MindmapsComputer getGraphComputer() {
         ConfigureFactory configuredFactory = configureGraphFactory(keyspace, uri, REST.GraphConfig.COMPUTER);
         Graph graph = configuredFactory.factory.getTinkerPopGraph(false);
         return new MindmapsComputerImpl(graph, configuredFactory.graphComputer);
