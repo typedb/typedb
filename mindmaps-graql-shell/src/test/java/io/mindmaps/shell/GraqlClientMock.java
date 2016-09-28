@@ -22,13 +22,12 @@ import io.mindmaps.Mindmaps;
 import io.mindmaps.engine.session.RemoteSession;
 import io.mindmaps.graql.GraqlClient;
 import io.mindmaps.graql.GraqlShell;
+import org.eclipse.jetty.websocket.api.Session;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-
-import static org.junit.Assert.fail;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
 class GraqlClientMock implements GraqlClient {
 
@@ -39,7 +38,6 @@ class GraqlClientMock implements GraqlClient {
 
     private String namespace = null;
     private URI uri;
-    private boolean closed = false;
 
     String getNamespace() {
         return namespace;
@@ -49,12 +47,8 @@ class GraqlClientMock implements GraqlClient {
         return uri;
     }
 
-    boolean isClosed() {
-        return closed;
-    }
-
     @Override
-    public void connect(Object websocket, URI uri) {
+    public Future<Session> connect(Object websocket, URI uri) {
         this.uri = uri;
 
         GraqlShell client = (GraqlShell) websocket;
@@ -63,15 +57,12 @@ class GraqlClientMock implements GraqlClient {
         server.onConnect(serverSession);
 
         SessionMock clientSession = new SessionMock(serverSession, server::onMessage);
-        try {
-            client.onConnect(clientSession);
-        } catch (IOException | InterruptedException | ExecutionException e) {
-            fail();
-        }
+        CompletableFuture<Session> future = new CompletableFuture<>();
+        future.complete(clientSession);
+        return future;
     }
 
     @Override
     public void close() {
-        closed = true;
     }
 }
