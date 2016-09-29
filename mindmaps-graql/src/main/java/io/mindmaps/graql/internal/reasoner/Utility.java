@@ -22,6 +22,9 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.Var;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.RoleType;
@@ -115,6 +118,19 @@ public class Utility {
             tempVars.add(var);
             tempRoles.add(role);
         });
+    }
+
+    public static Var createRelationVar(RelationType relType){
+        Var var = Graql.var();
+        Collection<RoleType> roles = relType.hasRoles();
+        Set<String> vars = new HashSet<>();
+
+        roles.forEach(role -> {
+            String varName = createFreshVariable(vars, "x");
+            var.rel(role.getId(), varName);
+            vars.add(varName);
+        });
+        return var;
     }
 
     /**

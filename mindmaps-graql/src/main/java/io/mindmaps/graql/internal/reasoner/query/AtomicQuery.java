@@ -67,27 +67,11 @@ public class AtomicQuery extends Query{
         atom = at;
     }
 
-    //alpha-equivalence equality
     @Override
     public boolean equals(Object obj){
         if (!(obj instanceof AtomicQuery)) return false;
         AtomicQuery a2 = (AtomicQuery) obj;
         return this.isEquivalent(a2);
-    }
-
-    @Override
-    public int hashCode(){
-        int hashCode = 1;
-        SortedSet<Integer> hashes = new TreeSet<>();
-        atomSet.forEach(atom -> hashes.add(atom.equivalenceHashCode()));
-
-        Iterator<Integer> it = hashes.iterator();
-        while(it.hasNext()){
-            Integer hash = it.next();
-            hashCode = hashCode * 37 + hash;
-        }
-
-        return hashCode;
     }
 
     public void addChild(AtomicQuery q){

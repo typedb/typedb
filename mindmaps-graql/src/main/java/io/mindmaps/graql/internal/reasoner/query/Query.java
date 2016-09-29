@@ -100,6 +100,28 @@ public class Query implements MatchQueryInternal {
         this.typeAtomMap = getTypeAtomMap(atomSet);
     }
 
+    //alpha-equivalence equality
+    @Override
+    public boolean equals(Object obj){
+        if (!(obj instanceof Query)) return false;
+        Query a2 = (Query) obj;
+        return this.isEquivalent(a2);
+    }
+
+    @Override
+    public int hashCode(){
+        int hashCode = 1;
+        SortedSet<Integer> hashes = new TreeSet<>();
+        atomSet.forEach(atom -> hashes.add(atom.equivalenceHashCode()));
+
+        Iterator<Integer> it = hashes.iterator();
+        while(it.hasNext()){
+            Integer hash = it.next();
+            hashCode = hashCode * 37 + hash;
+        }
+        return hashCode;
+    }
+
     @Override
     public String toString() { return getMatchQuery().toString();}
 
