@@ -1,4 +1,4 @@
-package io.mindmaps.migration.template;/*
+/*
  * MindmapsDB - A Distributed Semantic Database
  * Copyright (C) 2016  Mindmaps Research Ltd
  *
@@ -16,8 +16,9 @@ package io.mindmaps.migration.template;/*
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
+package io.mindmaps.graql.internal.template;
 
-import io.mindmaps.migration.template.macro.Macro;
+import io.mindmaps.graql.internal.template.macro.Macro;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
@@ -30,9 +31,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.IntStream;
 
-import static io.mindmaps.migration.template.Value.concat;
-import static io.mindmaps.migration.template.ValueFormatter.format;
-import static io.mindmaps.migration.template.ValueFormatter.formatVar;
+import static io.mindmaps.graql.internal.template.Value.concat;
+import static io.mindmaps.graql.internal.template.Value.format;
+import static io.mindmaps.graql.internal.template.Value.formatVar;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 

@@ -16,14 +16,14 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.migration.template.macro;
+package io.mindmaps.graql.internal.template.macro;
 
-import io.mindmaps.migration.template.Scope;
+import io.mindmaps.graql.internal.template.Scope;
 
-/**
- * A macro function to perform on a template.
- */
-public interface Macro<S> {
+public class NoescpMacro implements Macro {
 
-    S apply(Scope scope);
+    @Override
+    public String apply(Scope scope) {
+        return null;
+    }
 }

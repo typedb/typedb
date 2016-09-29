@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.migration.template;
+package io.mindmaps.graql.internal.template;
 
 import java.util.List;
 
@@ -102,6 +102,24 @@ public class Value {
         }
 
         return new Value(builder.toString());
+    }
+
+    public static Value format(Value val) {
+
+        if(val.isString()){
+            return new Value("\\\"" + val + "\\\"");
+        }
+
+        return val;
+    }
+
+    public static String formatVar(Value var){
+        String variable = var.toString();
+        if(variable.contains(" ")){
+            return variable.replaceAll("(\\S)\\s(\\S)", "$1-$2");
+        }
+
+        return variable;
     }
 
     @Override

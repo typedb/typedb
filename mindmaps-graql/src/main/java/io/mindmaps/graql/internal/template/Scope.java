@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.migration.template;
+package io.mindmaps.graql.internal.template;
 
 import java.util.HashMap;
 import java.util.HashSet;

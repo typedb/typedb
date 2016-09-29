@@ -16,11 +16,14 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.migration.template;
+package io.mindmaps.graql.template;
 
-import mjson.Json;
+import io.mindmaps.graql.internal.template.TemplateParser;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.util.Collections;
+import java.util.Map;
 
 import static junit.framework.TestCase.assertEquals;
 
@@ -36,14 +39,15 @@ public class MacroTest {
     @Test
     public void noescpTest(){
         String template = "this is a \"@noescp{ <value> } inside a string\"";
-        String json = "{\"value\": \"whale\"}";
         String expected = "this is a \"whale inside a string\"";
 
-        assertParseEquals(template, json, expected);
+        Map<String, Object> data = Collections.singletonMap("value", "whale");
+
+        assertParseEquals(template, data, expected);
     }
 
-    private void assertParseEquals(String template, String json, String expected){
-        String result = parser.parseTemplate(template, Json.read(json).asMap());
+    private void assertParseEquals(String template, Map<String, Object> data, String expected){
+        String result = parser.parseTemplate(template, data);
         System.out.println(result);
         assertEquals(expected, result);
     }

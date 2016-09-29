@@ -16,11 +16,13 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.migration.template;
+package io.mindmaps.graql.template;
 
-import mjson.Json;
+import io.mindmaps.graql.internal.template.TemplateParser;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.util.*;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -39,8 +41,10 @@ public class TemplateTest {
         String template = "insert $x isa person has name <name>    ";
         String expected = "insert $x0 isa person has name \\\"Phil Collins\\\"    ";
 
-        String json = "{\"name\" : \"Phil Collins\"}";
-        assertParseEquals(template, json, expected);
+        Map<String, Object> data = new HashMap<>();
+        data.put("name", "Phil Collins");
+
+        assertParseEquals(template, data, expected);
     }
 
     @Test
@@ -48,8 +52,11 @@ public class TemplateTest {
         String template = "insert $x isa person has name <name> , has feet <numFeet>";
         String expected = "insert $x0 isa person has name \\\"Phil Collins\\\" , has feet 3";
 
-        String json = "{\"name\" : \"Phil Collins\", \"numFeet\":3}";
-        assertParseEquals(template, json, expected);
+        Map<String, Object> data = new HashMap<>();
+        data.put("name", "Phil Collins");
+        data.put("numFeet", 3);
+
+        assertParseEquals(template, data, expected);
     }
 
     @Test(expected = RuntimeException.class)
@@ -57,31 +64,30 @@ public class TemplateTest {
         String template = "insert $x isa person has name <name> , has feet <numFeet> ";
         String expected = "insert $x0 isa person has name \\\"Phil Collins\\\", has feet 3 ";
 
-        String json = "{\"name\" : \"Phil Collins\", \"feet\":3}";
-        assertParseEquals(template, json, expected);
+        Map<String, Object> data = new HashMap<>();
+        data.put("name", "Phil Collins");
+        data.put("feet", 3);
+
+        assertParseEquals(template, data, expected);
     }
 
     @Test
     public void quotingWhenReplacementInVariableTest(){
-       String template = "" +
+        String template = "" +
                "insert \n" +
                "for {addresses} do { \n" +
                "   $<.> has address <.>;\n" +
                "}";
 
-        String json = "" +
-                "{" +
-                "   \"addresses\":[" +
-                "       \"22 Hornsey\"," +
-                "       \"Something\"" +
-                "   ]" +
-                "}";
-
         String expected = "insert \n" +
                 "   $22-Hornsey has address \\\"22 Hornsey\\\";\n" +
                 "   $Something has address \\\"Something\\\";\n";
 
-        assertParseEquals(template, json, expected);
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("addresses", Arrays.asList("22 Hornsey", "Something"));
+
+        assertParseEquals(template, data, expected);
     }
 
     @Test
@@ -89,16 +95,14 @@ public class TemplateTest {
         String template = "for {whales} do {" +
                 "\t\t\t$x isa whale has name, <.>;\n}";
 
-        String json = "{\"whales\": [" +
-                "\"shamu\"," +
-                "\"dory\"" +
-                "]}";
-
         String expected =
-                "\t\t\t$x0 isa whale has name, \\\"shamu\\\";\n" +
+                        "\t\t\t$x0 isa whale has name, \\\"shamu\\\";\n" +
                         "\t\t\t$x1 isa whale has name, \\\"dory\\\";\n";
 
-        assertParseEquals(template, json, expected);
+        Map<String, Object> data = new HashMap<>();
+        data.put("whales", Arrays.asList("shamu", "dory"));
+
+        assertParseEquals(template, data, expected);
     }
 
     @Test
@@ -106,13 +110,13 @@ public class TemplateTest {
         String template = "first is a <string>, second a <long>, third a <double>, fourth a <bool>";
         String expected = "first is a \\\"string\\\", second a 40, third a 0.001, fourth a false";
 
-        String json = "{" +
-                "\"string\" : \"string\", " +
-                "\"long\" : 40, " +
-                "\"double\" : 0.001, " +
-                "\"bool\": false}";
+        Map<String, Object> data = new HashMap<>();
+        data.put("string", "string");
+        data.put("long", 40);
+        data.put("double", 0.001);
+        data.put("bool", false);
 
-        assertParseEquals(template, json, expected);
+        assertParseEquals(template, data, expected);
     }
 
     @Test
@@ -120,16 +124,14 @@ public class TemplateTest {
         String template = "for { whales } do {" +
                 "$x isa whale has name <.>;\n}";
 
-        String json = "{\"whales\": [" +
-                "\"shamu\"," +
-                "\"dory\"" +
-                "]}";
-
         String expected =
                 "$x0 isa whale has name \\\"shamu\\\";\n" +
                 "$x1 isa whale has name \\\"dory\\\";\n";
 
-        assertParseEquals(template, json, expected);
+        Map<String, Object> data = new HashMap<>();
+        data.put("whales", Arrays.asList("shamu", "dory"));
+
+        assertParseEquals(template, data, expected);
     }
 
     @Test
@@ -143,19 +145,6 @@ public class TemplateTest {
                 "        ($x, $y) isa resides;\n" +
                 "    }";
 
-        String json = "{\n" +
-                "    \"addresses\" : [\n" +
-                "        {\n" +
-                "            \"street\" : \"Collins Ave\",\n" +
-                "            \"houseNumber\": 8855\n" +
-                "        },\n" +
-                "        {\n" +
-                "            \"street\" : \"Hornsey St\",\n" +
-                "            \"houseNumber\" : 8\n" +
-                "        }\n" +
-                "    ]\n" +
-                "}";
-
         String expected = "insert\n" +
                 "    $x0 isa person;\n" +
                 "        $y0 isa address;\n" +
@@ -167,7 +156,18 @@ public class TemplateTest {
                 "        $y1 has number 8 ;\n" +
                 "        ($x0, $y1) isa resides;\n";
 
-        assertParseEquals(template, json, expected);
+        Map<String, Object> address1 = new HashMap<>();
+        address1.put("street", "Collins Ave");
+        address1.put("houseNumber", 8855);
+
+        Map<String, Object> address2 = new HashMap<>();
+        address2.put("street", "Hornsey St");
+        address2.put("houseNumber", 8);
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("addresses", Arrays.asList(address1, address2));
+
+        assertParseEquals(template, data, expected);
     }
 
     @Test
@@ -183,33 +183,6 @@ public class TemplateTest {
                 "        $y has number <number> ;\n" +
                 "        ($x, $y) isa resides;\n" +
                 "    }\n" +
-                "}";
-
-        String json = "{\n" +
-                "    \"people\" : [\n" +
-                "        {\n" +
-                "            \"name\" : \"Elmo\",\n" +
-                "            \"addresses\" : [\n" +
-                "                {\n" +
-                "                    \"street\" : \"North Pole\",\n" +
-                "                    \"number\" : 100\n" +
-                "                },\n" +
-                "                {\n" +
-                "                    \"street\" : \"South Pole\",\n" +
-                "                    \"number\" : -100\n" +
-                "                }\n" +
-                "            ]\n" +
-                "        },\n" +
-                "        {\n" +
-                "            \"name\" : \"Flounder\",\n" +
-                "            \"addresses\" : [\n" +
-                "                {\n" +
-                "                    \"street\" : \"Under the sea\",\n" +
-                "                    \"number\" : 22\n" +
-                "                }\n" +
-                "            ]\n" +
-                "        }\n" +
-                "    ]\n" +
                 "}";
 
         String expected = "" +
@@ -228,7 +201,30 @@ public class TemplateTest {
                 "        $y2 has number 22 ;\n" +
                 "        ($x1, $y2) isa resides;\n";
 
-        assertParseEquals(template, json, expected);
+        Map<String, Object> address1 = new HashMap<>();
+        address1.put("street", "North Pole");
+        address1.put("number", 100);
+
+        Map<String, Object> address2 = new HashMap<>();
+        address2.put("street", "South Pole");
+        address2.put("number", -100);
+
+        Map<String, Object> address3 = new HashMap<>();
+        address3.put("street", "Under the sea");
+        address3.put("number", 22);
+
+        Map<String, Object> person1 = new HashMap<>();
+        person1.put("name", "Elmo");
+        person1.put("addresses", Arrays.asList(address1, address2));
+
+        Map<String, Object> person2 = new HashMap<>();
+        person2.put("name", "Flounder");
+        person2.put("addresses", Collections.singletonList(address3));
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("people", Arrays.asList(person1, person2));
+
+        assertParseEquals(template, data, expected);
     }
 
     @Test
@@ -245,15 +241,6 @@ public class TemplateTest {
                 "$y has number <address.number>;\n" +
                 "($x, $y) isa resides;";
 
-        String json = "" +
-                "{\n" +
-                "\t\"name\" : \"Phil Collins\",\n" +
-                "\t\"address\" : {\n" +
-                "\t\t\"street\": \"Collins Ave\",\n" +
-                "\t\t\"number\": 01\n" +
-                "\t}\n" +
-                "}\n";
-
         String expected = "" +
                 "$x0 isa person has name \\\"Phil Collins\\\";\n" +
                 "$y0 isa address;\n" +
@@ -261,52 +248,48 @@ public class TemplateTest {
                 "$y0 has number 1;\n" +
                 "($x0, $y0) isa resides;";
 
-        assertParseEquals(template, json, expected);
+        Map<String, Object> address = new HashMap<>();
+        address.put("street", "Collins Ave");
+        address.put("number", 01);
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("name", "Phil Collins");
+        data.put("address", address);
+
+        assertParseEquals(template, data, expected);
     }
 
     @Test
     public void doubleDotTest(){
-        String json  = "{\n" +
-                "\t\"person\" : {\n" +
-                "\t\t\"name\" : {\n" +
-                "\t\t\t\"firstName\" : \"Phil\"\n" +
-                "\t\t}\n" +
-                "\t}\n" +
-                "}";
-
         String template = "$x isa person has name <person.name.firstName>\n";
-
         String expected = "$x0 isa person has name \\\"Phil\\\"\n";
 
-        assertParseEquals(template, json, expected);
+        Map<String, Object> data = new HashMap<>();
+        data.put("person", Collections.singletonMap("name", Collections.singletonMap("firstName", "Phil")));
+
+        assertParseEquals(template, data, expected);
     }
 
     @Test
     public void comboVarDotTest(){
-       String json = "{\n" +
-               "\t\"person\" : {\n" +
-               "\t\t\"name\" : \"Phil Collins\"\n" +
-               "\t}\n" +
-               "}";
-
         String template = "$<person.name> isa person";
         String expected = "$Phil-Collins isa person";
 
-        assertParseEquals(template, json, expected);
+        Map<String, Object> data = new HashMap<>();
+        data.put("person", Collections.singletonMap("name", "Phil Collins"));
+
+        assertParseEquals(template, data, expected);
     }
 
     @Test(expected = RuntimeException.class)
     public void wrongDataTest(){
-       String json = "{\n" +
-               "\t\"person\" : {\n" +
-               "\t\t\"name\" : \"Phil Collins\"\n" +
-               "\t}\n" +
-               "}";
-
         String template = "$<person.namefhwablfewqhbfli> isa person";
         String expected = "$Phil-Collins isa person";
 
-        assertParseEquals(template, json, expected);
+        Map<String, Object> data = new HashMap<>();
+        data.put("person", Collections.singletonMap("name", "Phil Collins"));
+
+        assertParseEquals(template, data, expected);
     }
 
     @Test
@@ -318,20 +301,21 @@ public class TemplateTest {
                 "else {" +
                 "    insert $person;" +
                 "}";
-
-        String json = "{ \"firstName\" : \"Phil\" }";
         String expected = "    insert $person0 has name \\\"Phil\\\";";
 
-        assertParseEquals(template, json, expected);
+        Map<String, Object> data = new HashMap<>();
+        data.put("firstName", "Phil");
 
-        json = "{}";
+        assertParseEquals(template, data, expected);
+
         expected = "    insert $person0;";
+        data = new HashMap<>();
 
-        assertParseEquals(template, json, expected);
+        assertParseEquals(template, data, expected);
     }
 
-    private void assertParseEquals(String template, String json, String expected){
-        String result = parser.parseTemplate(template, Json.read(json).asMap());
+    private void assertParseEquals(String template, Map<String, Object> data, String expected){
+        String result = parser.parseTemplate(template, data);
         System.out.println(result);
         assertEquals(expected, result);
     }
