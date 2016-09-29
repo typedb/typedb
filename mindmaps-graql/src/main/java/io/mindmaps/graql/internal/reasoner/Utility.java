@@ -151,19 +151,19 @@ public class Utility {
      * create transitive rule R(from: X, to: Y) :- R(from: X,to: Z), R(from: Z, to: Y)
      * @param ruleId rule identifier
      * @param relType transitive relation type
-     * @param from from directional role type
-     * @param to to directional role type
+     * @param fromRoleId  from directional role type id
+     * @param toRoleId to directional role type id
      * @param graph graph
-     * @return
+     * @return rule instance
      */
-    public static Rule createTransitiveRule(String ruleId, RelationType relType, RoleType from, RoleType to, MindmapsGraph graph){
+    public static Rule createTransitiveRule(String ruleId, RelationType relType, String fromRoleId, String toRoleId, MindmapsGraph graph){
         final int arity = relType.hasRoles().size();
         if (arity != 2)
             throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
 
-        Var startVar = Graql.var().isa(relType.getId()).rel(from.getId(), "x").rel(to.getId(), "z");
-        Var endVar = Graql.var().isa(relType.getId()).rel(from.getId(), "z").rel(to.getId(), "y");
-        Var headVar = Graql.var().isa(relType.getId()).rel(from.getId(), "x").rel(to.getId(), "y");
+        Var startVar = Graql.var().isa(relType.getId()).rel(fromRoleId, "x").rel(toRoleId, "z");
+        Var endVar = Graql.var().isa(relType.getId()).rel(fromRoleId, "z").rel(toRoleId, "y");
+        Var headVar = Graql.var().isa(relType.getId()).rel(fromRoleId, "x").rel(toRoleId, "y");
 
         String body = Graql.match(startVar, endVar).select("x", "y").toString();
         String head = Graql.match(headVar).select("x", "y").toString();
@@ -175,11 +175,11 @@ public class Utility {
      * @param ruleId rule identifier
      * @param parent relation type of parent
      * @param child relation type of child
-     * @param roleMappings map of corresponding role types
+     * @param roleMappings map of corresponding role type ids
      * @param graph graph
-     * @return
+     * @return rule instance
      */
-    public static Rule createSubPropertyRule(String ruleId, RelationType parent, RelationType child, Map<RoleType, RoleType> roleMappings,
+    public static Rule createSubPropertyRule(String ruleId, RelationType parent, RelationType child, Map<String, String> roleMappings,
                                              MindmapsGraph graph){
         final int parentArity = parent.hasRoles().size();
         final int childArity = child.hasRoles().size();
@@ -189,10 +189,11 @@ public class Utility {
         Var parentVar = Graql.var().isa(parent.getId());
         Var childVar = Graql.var().isa(child.getId());
         Set<String> vars = new HashSet<>();
-        roleMappings.forEach( (parentRole, childRole) -> {
+
+        roleMappings.forEach( (parentRoleId, childRoleId) -> {
             String varName = createFreshVariable(vars, "x");
-            parentVar.rel(parentRole.getId(), varName);
-            childVar.rel(childRole.getId(), varName);
+            parentVar.rel(parentRoleId, varName);
+            childVar.rel(childRoleId, varName);
             vars.add(varName);
         });
 

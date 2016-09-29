@@ -17,13 +17,7 @@
  */
 package io.mindmaps.migration.owl;
 
-import io.mindmaps.concept.Concept;
-import io.mindmaps.concept.Entity;
-import io.mindmaps.concept.EntityType;
-import io.mindmaps.concept.RelationType;
-import io.mindmaps.concept.Resource;
-import io.mindmaps.concept.ResourceType;
-import io.mindmaps.concept.RoleType;
+import io.mindmaps.concept.*;
 import io.mindmaps.exception.ConceptException;
 import org.semanticweb.owlapi.model.OWLAnnotationAssertionAxiom;
 import org.semanticweb.owlapi.model.OWLAnnotationProperty;
@@ -44,8 +38,16 @@ import org.semanticweb.owlapi.model.OWLObjectPropertyRangeAxiom;
 import org.semanticweb.owlapi.model.OWLSubClassOfAxiom;
 import org.semanticweb.owlapi.model.OWLSubDataPropertyOfAxiom;
 import org.semanticweb.owlapi.model.OWLSubObjectPropertyOfAxiom;
+import org.semanticweb.owlapi.model.OWLTransitiveObjectPropertyAxiom;
 
+import static io.mindmaps.graql.internal.reasoner.Utility.createSubPropertyRule;
+import static io.mindmaps.graql.internal.reasoner.Utility.createTransitiveRule;
+
+
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * <p>
@@ -170,7 +172,23 @@ public class OwlMindmapsGraphStoringVisitor implements OWLAxiomVisitorEx<Concept
             return null;
         RelationType subRelation = migrator.relation(axiom.getSubProperty().asOWLObjectProperty());
         RelationType superRelation = migrator.relation(axiom.getSuperProperty().asOWLObjectProperty());
+
+        Map<String, String> roleMap = new HashMap<>();
+        roleMap.put(migrator.namer().subjectRole(superRelation.getId()), migrator.namer().subjectRole(subRelation.getId()));
+        roleMap.put(migrator.namer().objectRole(superRelation.getId()), migrator.namer().objectRole(subRelation.getId()));
+        createSubPropertyRule(UUID.randomUUID().toString(), superRelation, subRelation, roleMap, migrator.graph());
+
         subRelation.superType(superRelation);
+        return null;
+    }
+
+    @Override
+    public Concept visit(OWLTransitiveObjectPropertyAxiom axiom) {
+        if (!axiom.getProperty().isOWLObjectProperty())
+            return null;
+        RelationType relation = migrator.relation(axiom.getProperty().asOWLObjectProperty());
+        createTransitiveRule(UUID.randomUUID().toString(), relation, migrator.namer().subjectRole(relation.getId()),
+                migrator.namer().objectRole(relation.getId()), migrator.graph());
         return null;
     }
 
