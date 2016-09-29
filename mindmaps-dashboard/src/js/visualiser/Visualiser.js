@@ -69,10 +69,13 @@ export default class Visualiser {
                 multiselect: false
             }
         };
+
+        // Additional properties to show in node label by type.
+        this.displayProperties = {};
     }
 
     /**
-     * Register callback for mouse click on nodes or edges
+     * Register callback for mouse click on nodes or edges.
      */
     setOnClick(fn) {
         this.callbacks.click = fn;
@@ -125,17 +128,19 @@ export default class Visualiser {
     /**
      * Add a node to the graph. This can be called at any time *after* render().
      */
-    addNode(id, label, type, baseType, ontologyHref) {
+    addNode(id, bp, ap) {
         if(!this.nodeExists(id))
             this.nodes.add({
                 id: id,
-                label: label,
-                type: type,
-                color: this.style.getNodeColour(baseType),
-                font: this.style.getNodeFont(baseType),
-                shape: this.style.getNodeShape(baseType),
+                label: this.generateLabel(bp.type, ap, bp.label),
+                baseLabel: bp.label,
+                type: bp.type,
+                color: this.style.getNodeColour(bp.baseType),
+                font: this.style.getNodeFont(bp.baseType),
+                shape: this.style.getNodeShape(bp.baseType),
                 selected: false,
-                ontology: ontologyHref
+                ontology: bp.ontology,
+                properties: ap
             });
 
         return this;
@@ -186,6 +191,24 @@ export default class Visualiser {
         return this;
     }
 
+    getNodeType(id) {
+        if(id in this.nodes._data)
+            return this.nodes._data[id].type;
+        return undefined;
+    }
+
+    getAllNodeProperties(id) {
+        if(id in this.nodes._data)
+            return Object.keys(this.nodes._data[id].properties);
+
+        return []
+    }
+
+    setDisplayProperties(type, properties) {
+        this.displayProperties[type] = properties;
+        this.updateNodeLabels(type);
+    }
+
     /*
     Internal methods
     */
@@ -221,5 +244,19 @@ export default class Visualiser {
      */
     deleteEdges(nid) {
         this.edges.map(x => { if(x.to === nid || x.from === nid) this.edges.remove(x.id) });
+    }
+
+    generateLabel(type, properties, label) {
+        if(type in this.displayProperties)
+            return this.displayProperties[type].reduce((l, x) => { return l + "\n"+x+": "+properties[x] }, "");
+        else
+            return label;
+    }
+
+    updateNodeLabels(type) {
+        this.nodes._data = _.mapObject(this.nodes._data,
+            (v, k) => { if(v.type === type) v.label = this.generateLabel(type, v.properties, v.baseLabel); return v; });
+
+        this.network.setData({nodes: this.nodes, edges: this.edges});
     }
 }

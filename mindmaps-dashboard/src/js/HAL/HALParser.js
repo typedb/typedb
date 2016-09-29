@@ -54,7 +54,7 @@ export default class HALParser {
     }
 
     parseHalObject(obj) {
-        this.newResource(this.getHref(obj), Utils.resourceProperties(obj));
+        this.newResource(this.getHref(obj), Utils.defaultProperties(obj), Utils.additionalProperties(obj));
 
         // Add assertions from _embedded
         if(API.KEY_EMBEDDED in obj) {
@@ -76,7 +76,7 @@ export default class HALParser {
             var hrefP = this.getHref(child);
             var hrefC = this.getHref(parent);
 
-            this.newResource(hrefP, Utils.resourceProperties(child));
+            this.newResource(hrefP, Utils.defaultProperties(child), Utils.additionalProperties(child));
 
             if(Utils.edgeLeftToRight(parent, child))
                 this.newRelationship(hrefP, hrefC, roleName);

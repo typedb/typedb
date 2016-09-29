@@ -38,7 +38,7 @@ export function edgeLeftToRight(a, b) {
 /**
  * Build a properties object for HalAPI.newResource() callback.
  */
-export function resourceProperties(resource) {
+export function defaultProperties(resource) {
     return {
         id: resource[API.KEY_ID],
         type: resource[API.KEY_TYPE],
@@ -46,6 +46,12 @@ export function resourceProperties(resource) {
         label: buildLabel(resource),
         ontology: resource[API.KEY_LINKS][API.KEY_ONTOLOGY][0][API.KEY_HREF]
     };
+}
+
+export function additionalProperties(resource) {
+    return Object.keys(resource)
+        .filter(x => !x.startsWith('_'))
+        .reduce((p, c) => {p[c] = resource[c]; return p}, {});
 }
 
 /*

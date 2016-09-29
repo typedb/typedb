@@ -88,7 +88,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
             </div>
         </div>
 
-        <div class="col-md-2" v-show="allNodeProps.length">
+        <div class="col-md-2" v-show="nodeType">
             <div class="panel panel-filled panel-c-white">
                 <div class="panel-heading">
                     <div class="panel-tools">
@@ -97,7 +97,8 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                     Display Configuration
                 </div>
                 <div class="panel-body">
-                    Select which properties you wish to be show for all nodes of type [{{nodeType}}]:
+                    <p v-show="allNodeProps.length">Select properties to be show on nodes of type "{{nodeType}}".</p>
+                    <p v-else>Sorry, theres nothing you can configure for nodes of type "{{nodeType}}".</p>
                     <br/>
                     <ul class="dd-list">
                         <li class="dd-item" v-for="prop in allNodeProps" v-bind:class="{'li-active':selectedProps.includes(prop)}">
@@ -110,7 +111,6 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                 </div>
             </div>
         </div>
-
     </div>
 </div>
 </template>
@@ -186,7 +186,7 @@ export default {
         engineClient = new EngineClient();
 
         halParser = new HALParser();
-        halParser.setNewResource((id, p) => { visualiser.addNode(id, p.label, p.type, p.baseType, p.ontology) });
+        halParser.setNewResource((id, p, a) => { visualiser.addNode(id, p, a) });
         halParser.setNewRelationship((f, t, l) => { visualiser.addEdge(f, t, l) });
     },
 
@@ -236,6 +236,7 @@ export default {
                 .removeClass('btn-danger')
                 .removeClass('btn-warning')
                 .addClass('btn-default');
+            this.closeConfigPanel();
         },
 
         graphResponse(resp, err) {
@@ -319,8 +320,10 @@ export default {
 
             } else {
                 $('.tabs-col').removeClass('col-md-12').addClass('col-md-10');
-                this.allNodeProps = ['penis'];
-                this.nodeType = "penis";
+
+                var node = param.nodes[0];
+                this.allNodeProps = visualiser.getAllNodeProperties(node);
+                this.nodeType = visualiser.getNodeType(node);
             }
         },
 
@@ -343,12 +346,16 @@ export default {
             if(this.selectedProps.includes(p))
                 this.selectedProps = this.selectedProps.filter(x => x != p);
             else
-                this.selectedProps.push(p)
+                this.selectedProps.push(p);
+
+            visualiser.setDisplayProperties(this.nodeType, this.selectedProps);
         },
 
         closeConfigPanel() {
             $('.tabs-col').removeClass('col-md-10').addClass('col-md-12');
+            this.nodeType = undefined;
             this.allNodeProps = [];
+            this.selectedProps = [];
         }
     }
 }
