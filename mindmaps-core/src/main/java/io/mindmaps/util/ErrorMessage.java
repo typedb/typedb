@@ -120,6 +120,7 @@ public enum ErrorMessage {
 
     DELETE_VALUE("deleting values is not supported"),
     DELETE_RESOURCE_TYPE_NO_ID("resource type to delete from concept %s has no id specified"),
+    DELETE_UNSUPPORTED_PROPERTY("deleting property '%s' is not supported"),
 
     FAILED_TO_BUILD_TRAVERSAL("failed to build a traversal from the graql query"),
 

@@ -21,20 +21,18 @@ package io.mindmaps.graql.internal.query;
 import com.google.common.collect.ImmutableMap;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
-import io.mindmaps.concept.Resource;
 import io.mindmaps.exception.ConceptException;
 import io.mindmaps.graql.DeleteQuery;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.admin.DeleteQueryAdmin;
 import io.mindmaps.graql.admin.MatchQueryAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.pattern.VarInternal;
 import io.mindmaps.graql.internal.validation.DeleteQueryValidator;
 import io.mindmaps.util.ErrorMessage;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -107,29 +105,7 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
             // Delete whole concept if nothing specified to delete
             deleteConcept(id);
         } else {
-            deleter.getHasRoles().forEach(
-                    role -> role.getId().ifPresent(
-                            typeName -> getGraph().getRelationType(id).deleteHasRole(getGraph().getRoleType(typeName))
-                    )
-            );
-
-            deleter.getPlaysRoles().forEach(
-                    role -> role.getId().ifPresent(
-                            typeName -> getGraph().getType(id).deletePlaysRole(getGraph().getRoleType(typeName))
-                    )
-            );
-
-            deleter.getScopes().forEach(
-                    scope -> scope.getId().ifPresent(
-                            scopeName -> getGraph().getRelation(id).deleteScope(getGraph().getInstance(scopeName))
-                    )
-            );
-
-            deleter.getResourcePredicates().forEach((type, predicates) -> {
-                Set<Object> values = new HashSet<>();
-                predicates.forEach(predicate -> predicate.equalsValue().ifPresent(values::add));
-                deleteResources(id, type, values);
-            });
+            ((VarInternal) deleter).getProperties().forEach(property -> property.deleteProperty(getGraph(), result));
         }
     }
 
@@ -142,43 +118,6 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
             getGraph().getConcept(id).delete();
         } catch (ConceptException e) {
             throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * Delete all resources of the given type and given values on the given concept
-     * @param id the ID of a concept
-     * @param type a variable representing the resource type
-     * @param values a set of values of resources
-     */
-    private void deleteResources(String id, VarAdmin type, Set<?> values) {
-        String typeId = type.getId().orElseThrow(
-                () -> new IllegalStateException(ErrorMessage.DELETE_RESOURCE_TYPE_NO_ID.getMessage(id))
-        );
-
-        resources(id).stream()
-                .filter(r -> r.type().getId().equals(typeId))
-                .filter(r -> values.isEmpty() || values.contains(r.getValue()))
-                .forEach(Concept::delete);
-    }
-
-    /**
-     * @param id the ID of a concept
-     * @return all resources on the given concept
-     */
-    private Collection<Resource<?>> resources(String id) {
-        // Get resources attached to a concept
-        // This method is necessary because the 'resource' method appears in 3 separate interfaces
-        Concept concept = getGraph().getConcept(id);
-
-        if (concept.isEntity()) {
-            return concept.asEntity().resources();
-        } else if (concept.isRelation()) {
-            return concept.asRelation().resources();
-        } else if (concept.isRule()) {
-            return concept.asRule().resources();
-        } else {
-            return new HashSet<>();
         }
     }
 

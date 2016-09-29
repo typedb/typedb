@@ -19,14 +19,21 @@
 package io.mindmaps.graql.internal.pattern.property;
 
 import com.google.common.collect.Sets;
+import io.mindmaps.MindmapsGraph;
+import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.Resource;
+import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.FragmentImpl;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 import io.mindmaps.graql.internal.gremlin.MultiTraversalImpl;
 
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Optional;
 
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNBOUNDED;
+import static io.mindmaps.graql.internal.util.CommonUtil.tryAny;
 import static io.mindmaps.util.Schema.EdgeLabel.SHORTCUT;
 import static io.mindmaps.util.Schema.EdgeProperty.TO_TYPE;
 
@@ -58,10 +65,8 @@ public class HasResourceProperty implements NamedProperty {
         String resourceRepr;
         if (resource.isUserDefinedName()) {
             resourceRepr = " " + resource.getPrintableName();
-        } else if (resource.hasNoProperties()) {
-            resourceRepr = "";
         } else {
-            resourceRepr = " " + resource.getValuePredicates().iterator().next().toString();
+            resourceRepr = tryAny(resource.getValuePredicates()).map(predicate -> " " + predicate).orElse("");
         }
         return resourceType + resourceRepr;
     }
@@ -83,5 +88,32 @@ public class HasResourceProperty implements NamedProperty {
     @Override
     public Collection<VarAdmin> getInnerVars() {
         return Sets.newHashSet(resource);
+    }
+
+    @Override
+    public void deleteProperty(MindmapsGraph graph, Concept concept) {
+        Optional<ValuePredicateAdmin> predicate = resource.getValuePredicates().stream().findAny();
+
+        resources(concept).stream()
+                .filter(r -> r.type().getId().equals(resourceType))
+                .filter(r -> predicate.map(p -> p.getPredicate().test(r.getValue())).orElse(true))
+                .forEach(Concept::delete);
+    }
+
+    /**
+     * @return all resources on the given concept
+     */
+    private Collection<Resource<?>> resources(Concept concept) {
+        // Get resources attached to a concept
+        // This method is necessary because the 'resource' method appears in 3 separate interfaces
+        if (concept.isEntity()) {
+            return concept.asEntity().resources();
+        } else if (concept.isRelation()) {
+            return concept.asRelation().resources();
+        } else if (concept.isRule()) {
+            return concept.asRule().resources();
+        } else {
+            return new HashSet<>();
+        }
     }
 }

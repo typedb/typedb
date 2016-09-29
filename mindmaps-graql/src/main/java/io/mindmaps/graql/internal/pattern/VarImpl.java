@@ -29,6 +29,7 @@ import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 import io.mindmaps.graql.internal.gremlin.VarTraversals;
 import io.mindmaps.graql.internal.pattern.property.*;
+import io.mindmaps.graql.internal.util.CommonUtil;
 import io.mindmaps.graql.internal.util.StringConverter;
 
 import java.util.*;
@@ -38,7 +39,8 @@ import java.util.stream.Stream;
 import static io.mindmaps.graql.Graql.eq;
 import static io.mindmaps.graql.Graql.var;
 import static io.mindmaps.util.ErrorMessage.*;
-import static java.util.stream.Collectors.*;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * Implementation of Var interface
@@ -370,7 +372,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Set<String> getRoleTypes() {
-        return getIdNames(getCastings().stream().map(VarAdmin.Casting::getRoleType).flatMap(this::optionalToStream));
+        return getIdNames(getCastings().stream().map(VarAdmin.Casting::getRoleType).flatMap(CommonUtil::optionalToStream));
     }
 
     @Override
@@ -423,7 +425,7 @@ class VarImpl implements VarInternal {
     public Set<?> getValueEqualsPredicates() {
         return getValuePredicates().stream()
                 .map(ValuePredicateAdmin::equalsValue)
-                .flatMap(this::optionalToStream)
+                .flatMap(CommonUtil::optionalToStream)
                 .collect(toSet());
     }
 
@@ -551,16 +553,7 @@ class VarImpl implements VarInternal {
      * @return the IDs of all variables that refer to things by id in the graph
      */
     private Set<String> getIdNames(Stream<VarAdmin> vars) {
-        return vars.map(VarAdmin::getId).flatMap(this::optionalToStream).collect(toSet());
-    }
-
-    /**
-     * @param optional the optional to change into a stream
-     * @param <T> the type in the optional
-     * @return a stream of one item if the optional has an element, else an empty stream
-     */
-    private <T> Stream<T> optionalToStream(Optional<T> optional) {
-        return optional.map(Stream::of).orElseGet(Stream::empty);
+        return vars.map(VarAdmin::getId).flatMap(CommonUtil::optionalToStream).collect(toSet());
     }
 
     /**

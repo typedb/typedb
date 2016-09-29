@@ -19,6 +19,8 @@
 package io.mindmaps.graql.internal.pattern.property;
 
 import com.google.common.collect.Sets;
+import io.mindmaps.MindmapsGraph;
+import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.FragmentImpl;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
@@ -29,6 +31,7 @@ import java.util.Collection;
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.getEdgePriority;
 import static io.mindmaps.graql.internal.gremlin.Traversals.inAkos;
 import static io.mindmaps.graql.internal.gremlin.Traversals.outAkos;
+import static io.mindmaps.graql.internal.pattern.property.VarProperties.failDelete;
 import static io.mindmaps.util.Schema.EdgeLabel.PLAYS_ROLE;
 
 public class PlaysRoleProperty implements NamedProperty {
@@ -70,5 +73,11 @@ public class PlaysRoleProperty implements NamedProperty {
     @Override
     public Collection<VarAdmin> getInnerVars() {
         return Sets.newHashSet(role);
+    }
+
+    @Override
+    public void deleteProperty(MindmapsGraph graph, Concept concept) {
+        String roleId = role.getId().orElseThrow(() -> failDelete(this));
+        concept.asType().deletePlaysRole(graph.getRoleType(roleId));
     }
 }
