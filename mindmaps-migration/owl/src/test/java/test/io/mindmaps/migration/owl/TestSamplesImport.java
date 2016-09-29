@@ -19,6 +19,8 @@ package test.io.mindmaps.migration.owl;
 
 import java.util.Optional;
 
+import io.mindmaps.concept.*;
+import io.mindmaps.graql.Reasoner;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.JUnitCore;
@@ -27,10 +29,6 @@ import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
 import org.semanticweb.owlapi.model.OWLOntology;
 
-import io.mindmaps.concept.Entity;
-import io.mindmaps.concept.EntityType;
-import io.mindmaps.concept.Resource;
-import io.mindmaps.concept.RoleType;
 import io.mindmaps.migration.owl.OwlModel;
 
 /**
@@ -98,6 +96,8 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
             final Entity work = migrator.graph().getEntity("eHamlet");
             Assert.assertNotNull(work);
             checkRelation(author, "op-wrote", work);
+            Reasoner reasoner = new Reasoner(migrator.graph());
+            Assert.assertTrue(!reasoner.getRules().isEmpty());
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
