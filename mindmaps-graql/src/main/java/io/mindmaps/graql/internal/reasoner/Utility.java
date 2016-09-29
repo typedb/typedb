@@ -29,6 +29,7 @@ import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.util.ErrorMessage;
+import javafx.util.Pair;
 
 import java.util.*;
 
@@ -199,6 +200,26 @@ public class Utility {
 
         String body = Graql.match(childVar).toString();
         String head = Graql.match(parentVar).toString();
+        return graph.putRule(ruleId, body, head, graph.getMetaRuleInference());
+    }
+
+    public static Rule createPropertyChainRule(String ruleId, RelationType relation, String fromRoleId, String toRoleId,
+                                             LinkedHashMap<RelationType, Pair<String, String>> chain, MindmapsGraph graph){
+        Stack<String> varNames = new Stack<>();
+        varNames.push("x");
+        Set<Var> bodyVars = new HashSet<>();
+        chain.forEach( (relType, rolePair) ->{
+            String varName = createFreshVariable(Sets.newHashSet(varNames), "x");
+            Var var = Graql.var().isa(relType.getId())
+                    .rel(rolePair.getKey(), varNames.peek())
+                    .rel(rolePair.getValue(), varName);
+            varNames.push(varName);
+            bodyVars.add(var);
+        });
+
+        Var headVar = Graql.var().isa(relation.getId()).rel(fromRoleId, "x").rel(toRoleId, varNames.peek());
+        String body = Graql.match(bodyVars).select("x", varNames.peek()).toString();
+        String head = Graql.match(headVar).toString();
         return graph.putRule(ruleId, body, head, graph.getMetaRuleInference());
     }
 

@@ -17,10 +17,15 @@
  */
 package test.io.mindmaps.migration.owl;
 
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 import io.mindmaps.concept.*;
+import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
+import io.mindmaps.graql.internal.reasoner.rule.InferenceRule;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.JUnitCore;
@@ -30,6 +35,8 @@ import org.junit.runner.notification.Failure;
 import org.semanticweb.owlapi.model.OWLOntology;
 
 import io.mindmaps.migration.owl.OwlModel;
+
+import static io.mindmaps.graql.internal.reasoner.Utility.printAnswers;
 
 /**
  * Load and verify the ontology from the test sample resources. 
@@ -177,8 +184,45 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
             t.printStackTrace(System.err);
             System.exit(-1);
         }
-    }   
-    
+    }
+
+    @Test
+    public void testFamilyOntology()   {
+        // Load
+        try {
+            OWLOntology O = loadOntologyFromResource("/io/mindmaps/migration/owl/samples/family.owl");
+            migrator.ontology(O).graph(graph).migrate();
+            migrator.graph().commit();
+        }
+        catch (Throwable t) {
+            t.printStackTrace(System.err);
+            System.exit(-1);
+        }
+        // Verify
+        try {
+            EntityType type = migrator.graph().getEntityType("tPerson");
+            Assert.assertNotNull(type);
+
+            RelationType ancestor = migrator.graph().getRelationType("op-hasAncestor");
+            RelationType isSiblingOf = migrator.graph().getRelationType("op-isSiblingOf");
+            RelationType isAuntOf = migrator.graph().getRelationType("op-isAuntOf");
+            RelationType isUncleOf = migrator.graph().getRelationType("op-isUncleOf");
+            RelationType bloodRelation = migrator.graph().getRelationType("op-isBloodRelationOf");
+
+            Assert.assertTrue(bloodRelation.subTypes().contains(ancestor));
+            Assert.assertTrue(bloodRelation.subTypes().contains(isSiblingOf));
+            Assert.assertTrue(bloodRelation.subTypes().contains(isAuntOf));
+            Assert.assertTrue(bloodRelation.subTypes().contains(isUncleOf));
+
+            Reasoner reasoner = new Reasoner(migrator.graph());
+            Assert.assertTrue(!reasoner.getRules().isEmpty());
+        }
+        catch (Throwable t) {
+            t.printStackTrace(System.err);
+            System.exit(-1);
+        }
+    }
+
     public static void main(String []argv) {
         JUnitCore junit = new JUnitCore();
         Result result = null;
