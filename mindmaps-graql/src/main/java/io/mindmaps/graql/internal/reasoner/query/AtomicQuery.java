@@ -36,7 +36,7 @@ import static io.mindmaps.graql.internal.reasoner.Utility.computeRoleCombination
 
 public class AtomicQuery extends Query{
 
-    final private Atomic atom;
+    private Atomic atom;
     private AtomicQuery parent = null;
 
     final private Set<AtomicQuery> children = new HashSet<>();
@@ -90,14 +90,20 @@ public class AtomicQuery extends Query{
         return hashCode;
     }
 
-    private void addChild(AtomicQuery q){
-        if (!this.isEquivalent(q)){
+    public void addChild(AtomicQuery q){
+        if (!this.isEquivalent(q) && atom.getTypeId().equals(q.getAtom().getTypeId())){
             children.add(q);
             q.setParent(this);
         }
     }
     private void setParent(AtomicQuery q){ parent = q;}
     public AtomicQuery getParent(){ return parent;}
+
+    /**
+     * establishes parent-child (if there is one) relation between this and aq query
+     * the relation expresses the relative level of specificity between queries with the parent being more specific
+     * @param aq query to compare
+     */
     public void establishRelation(AtomicQuery aq){
         Atomic aqAtom = aq.getAtom();
         if(atom.getTypeId().equals(aqAtom.getTypeId())) {
@@ -148,5 +154,13 @@ public class AtomicQuery extends Query{
 
         subs.forEach(this::removeAtom);
     }
+
+    @Override
+    public void unify(Map<String, String> unifiers) {
+        super.unify(unifiers);
+        atom = selectAtoms().iterator().next();
+    }
+
+
 
 }

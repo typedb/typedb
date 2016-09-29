@@ -19,6 +19,7 @@
 package io.mindmaps.graql.internal.reasoner.predicate;
 
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.MatchQuery;
@@ -125,9 +126,10 @@ public interface Atomic extends Cloneable{
     Set<Atomic> getSubstitutions();
     Set<Atomic> getTypeConstraints();
 
-    Map<String, Set<Atomic>> getVarSubMap();
+    Map<String, Atomic> getVarSubMap();
 
     Map<String, Pair<Type, RoleType>> getVarTypeRoleMap();
     Map<RoleType, Pair<String, Type>> getRoleVarTypeMap();
+    Map<RoleType, String> getRoleConceptIdMap();
 
 }
