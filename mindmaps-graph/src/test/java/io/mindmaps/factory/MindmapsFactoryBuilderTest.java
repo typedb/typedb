@@ -30,10 +30,13 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 
 public class MindmapsFactoryBuilderTest {
     private final static String TEST_CONFIG = "../conf/test/mindmaps-tinker-test.properties";
+    private final static String KEYSPACE = "keyspace";
+    private final static String ENGINE_URL = "rubbish";
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -47,15 +50,22 @@ public class MindmapsFactoryBuilderTest {
 
     @Test
     public void testBuildMindmapsFactory(){
-        MindmapsInternalFactory mgf = MindmapsFactoryBuilder.getFactory(TEST_CONFIG);
+        MindmapsInternalFactory mgf = MindmapsFactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_CONFIG);
         assertThat(mgf, instanceOf(MindmapsTinkerInternalFactory.class));
     }
 
     @Test
     public void testSingleton(){
-        MindmapsInternalFactory mgf1 = MindmapsFactoryBuilder.getFactory(TEST_CONFIG);
-        MindmapsInternalFactory mgf2 = MindmapsFactoryBuilder.getFactory(TEST_CONFIG);
+        MindmapsInternalFactory mgf1 = MindmapsFactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_CONFIG);
+        MindmapsInternalFactory mgf2 = MindmapsFactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_CONFIG);
+        MindmapsInternalFactory mgf3 = MindmapsFactoryBuilder.getFactory("key", ENGINE_URL, TEST_CONFIG);
+        MindmapsInternalFactory mgf4 = MindmapsFactoryBuilder.getFactory("key", ENGINE_URL, TEST_CONFIG);
+
         assertEquals(mgf1, mgf2);
+        assertEquals(mgf3, mgf4);
+        assertNotEquals(mgf1, mgf3);
+        assertEquals(mgf1.getGraph(true), mgf2.getGraph(true));
+        assertNotEquals(mgf1.getGraph(true), mgf3.getGraph(true));
     }
 
     @Test
@@ -64,7 +74,7 @@ public class MindmapsFactoryBuilderTest {
         expectedException.expectMessage(allOf(
                 containsString(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage("rubbish"))
         ));
-        MindmapsFactoryBuilder.getFactory("rubbish");
+        MindmapsFactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, "rubbish");
     }
 
 }

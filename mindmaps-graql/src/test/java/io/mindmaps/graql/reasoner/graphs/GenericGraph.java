@@ -37,7 +37,7 @@ public class GenericGraph {
     private final static String filePath = "src/test/resources/graql/";
 
     public static MindmapsGraph getGraph(String graqlFile) {
-        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         buildGraph(graqlFile);
         commit();
 
@@ -45,7 +45,7 @@ public class GenericGraph {
     }
 
     public static MindmapsGraph getGraph(String ontologyFile, String... files) {
-        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         loadGraqlFile(ontologyFile);
         for( String graqlFile : files) {
             loadGraqlFile(graqlFile);

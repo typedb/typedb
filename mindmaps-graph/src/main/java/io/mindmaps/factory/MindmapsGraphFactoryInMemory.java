@@ -29,30 +29,24 @@ import io.mindmaps.util.ErrorMessage;
  * The deployer of engine decides on the backend and this class will handle producing the correct graphs.
  */
 public class MindmapsGraphFactoryInMemory implements MindmapsGraphFactory {
-    private static final MindmapsInternalFactory IN_MEMORY_FACTORY = new MindmapsTinkerInternalFactory();
-    private static MindmapsGraphFactoryInMemory instance;
+    private final MindmapsTinkerInternalFactory factory;
 
-    private MindmapsGraphFactoryInMemory(){}
-
-    public static MindmapsGraphFactoryInMemory getInstance(){
-        if(instance == null){
-            instance = new MindmapsGraphFactoryInMemory();
-        }
-        return instance;
+    public MindmapsGraphFactoryInMemory(String keyspace){
+        factory = new MindmapsTinkerInternalFactory(keyspace, null, null);
     }
 
     @Override
-    public MindmapsGraph getGraph(String name) {
-        return IN_MEMORY_FACTORY.getGraph(name, null, null, false);
+    public MindmapsGraph getGraph() {
+        return factory.getGraph(false);
     }
 
     @Override
-    public MindmapsGraph getGraphBatchLoading(String name) {
-        return IN_MEMORY_FACTORY.getGraph(name, null, null, true);
+    public MindmapsGraph getGraphBatchLoading() {
+        return factory.getGraph(true);
     }
 
     @Override
-    public MindmapsComputer getGraphComputer(String name) {
+    public MindmapsComputer getGraphComputer() {
         throw new UnsupportedOperationException(ErrorMessage.UNSUPPORTED_GRAPH.getMessage("in-memory", "graph computer"));
     }
 }

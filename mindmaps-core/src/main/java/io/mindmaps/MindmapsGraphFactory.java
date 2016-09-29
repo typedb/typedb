@@ -3,21 +3,19 @@ package io.mindmaps;
 public interface MindmapsGraphFactory {
     /**
      *
-     * @param name The desired name for the mindmaps graph
-     * @return A new or existing mindmaps graph with the defined name
+     * @return A new or existing mindmaps graph with the defined keyspace
      */
-    MindmapsGraph getGraph(String name);
+    MindmapsGraph getGraph();
 
     /**
      *
-     * @param name The desired name for the mindmaps graph
-     * @return A new or existing mindmaps graph with the defined name connecting to the specified remote uri with batch loading enabled
+     * @return A new or existing mindmaps graph with the defined keyspace connecting to the specified remote uri with batch loading enabled
      */
-    MindmapsGraph getGraphBatchLoading(String name);
+    MindmapsGraph getGraphBatchLoading();
 
     /**
      *
-     * @return A new or existing mindmaps graph compute with the defined name
+     * @return A new or existing mindmaps graph compute with the defined keyspace
      */
-    MindmapsComputer getGraphComputer(String name);
+    MindmapsComputer getGraphComputer();
 }

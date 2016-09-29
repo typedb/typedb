@@ -23,7 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 public class MindmapsTitanHadoopGraphFactoryTest {
@@ -33,27 +33,25 @@ public class MindmapsTitanHadoopGraphFactoryTest {
 
     @Before
     public void setUp() throws Exception {
-        factory = new MindmapsTitanHadoopInternalFactory();
+        factory = new MindmapsTitanHadoopInternalFactory("rubbish", "rubbish", TEST_CONFIG);
     }
 
     @Test(expected=UnsupportedOperationException.class)
     public void buildMindmapsGraphFromTinker() throws Exception {
-        factory.getGraph("rubbish", "rubbish", TEST_CONFIG, false);
+        factory.getGraph(false);
     }
 
     @Test
     public void buildTinkerPopGraph() throws Exception {
-        assertThat(factory.getTinkerPopGraph("rubbish", "Rubbish", TEST_CONFIG, false), instanceOf(HadoopGraph.class));
+        assertThat(factory.getTinkerPopGraph(false), instanceOf(HadoopGraph.class));
     }
 
     @Test
     public void testSingleton(){
-        HadoopGraph graph1 = factory.getTinkerPopGraph("keyspace1", "rubbish", TEST_CONFIG, false);
-        HadoopGraph graph2 = factory.getTinkerPopGraph("keyspace2", "rubbish", TEST_CONFIG, false);
-        HadoopGraph graph3 = factory.getTinkerPopGraph("keyspace3", "rubbish", TEST_CONFIG, false);
+        HadoopGraph graph1 = factory.getTinkerPopGraph(false);
+        HadoopGraph graph2 = factory.getTinkerPopGraph(false);
 
-        assertNotEquals(graph1, graph2);
-        assertNotEquals(graph1, graph3);
+        assertEquals(graph1, graph2);
     }
 
 }

@@ -37,7 +37,7 @@ public class SNBGraph {
     private static MindmapsGraph mindmaps;
 
     public static MindmapsGraph getGraph() {
-        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         buildGraph();
 
         try {

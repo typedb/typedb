@@ -39,12 +39,11 @@ public class GraphFactory {
         graphBatchConfig = ConfigProperties.getInstance().getPath(ConfigProperties.GRAPH_BATCH_CONFIG_PROPERTY);
     }
 
-    public synchronized MindmapsGraph getGraph(String name) {
-        return MindmapsFactoryBuilder.getFactory(graphConfig)
-                .getGraph(name, null, graphConfig, false);
+    public synchronized MindmapsGraph getGraph(String keyspace) {
+        return MindmapsFactoryBuilder.getFactory(keyspace, null, graphConfig).getGraph(false);
     }
-    public synchronized MindmapsGraph getGraphBatchLoading(String name) {
-        return MindmapsFactoryBuilder.getFactory(graphBatchConfig).getGraph(name, null, graphBatchConfig, true);
+    public synchronized MindmapsGraph getGraphBatchLoading(String keyspace) {
+        return MindmapsFactoryBuilder.getFactory(keyspace, null, graphBatchConfig).getGraph(true);
     }
 }
 

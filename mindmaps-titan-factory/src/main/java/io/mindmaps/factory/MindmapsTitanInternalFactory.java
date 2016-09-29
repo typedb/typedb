@@ -45,11 +45,10 @@ import java.util.Set;
 
 class MindmapsTitanInternalFactory extends AbstractMindmapsInternalFactory<MindmapsTitanGraph, TitanGraph> {
     protected final Logger LOG = LoggerFactory.getLogger(MindmapsTitanInternalFactory.class);
-    private final static String SEARCH_KEY = "search";
     private final static String DEFAULT_CONFIG = "backend-default";
 
-    public MindmapsTitanInternalFactory(){
-        super();
+    MindmapsTitanInternalFactory(String keyspace, String engineUrl, String config) {
+        super(keyspace, engineUrl, config);
     }
 
     @Override
@@ -58,13 +57,13 @@ class MindmapsTitanInternalFactory extends AbstractMindmapsInternalFactory<Mindm
     }
 
     @Override
-    MindmapsTitanGraph buildMindmapsGraphFromTinker(TitanGraph graph, String name, String address, boolean batchLoading) {
-        return new MindmapsTitanGraph(graph, name, address, batchLoading);
+    MindmapsTitanGraph buildMindmapsGraphFromTinker(TitanGraph graph, boolean batchLoading) {
+        return new MindmapsTitanGraph(graph, super.keyspace, super.engineUrl, batchLoading);
     }
 
     @Override
-    TitanGraph buildTinkerPopGraph(String name, String address, String pathToConfig) {
-        return newTitanGraph(name, address, pathToConfig);
+    TitanGraph buildTinkerPopGraph() {
+        return newTitanGraph(super.keyspace, super.engineUrl, super.config);
     }
 
     private synchronized TitanGraph newTitanGraph(String name, String address, String pathToConfig){

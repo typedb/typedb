@@ -104,8 +104,8 @@ public class CommitLogControllerTest {
         final String BOB = "bob";
         final String TIM = "tim";
 
-        MindmapsGraph bob = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(BOB);
-        MindmapsGraph tim = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(TIM);
+        MindmapsGraph bob = Mindmaps.factory(Mindmaps.DEFAULT_URI, BOB).getGraph();
+        MindmapsGraph tim = Mindmaps.factory(Mindmaps.DEFAULT_URI, TIM).getGraph();
 
         addSomeData(bob);
 
@@ -120,8 +120,8 @@ public class CommitLogControllerTest {
         assertEquals(2, cache.getCastingJobs(TIM).size());
         assertEquals(1, cache.getResourceJobs(TIM).size());
 
-        Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(BOB).clear();
-        Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(TIM).clear();
+        Mindmaps.factory(Mindmaps.DEFAULT_URI, BOB).getGraph().clear();
+        Mindmaps.factory(Mindmaps.DEFAULT_URI, TIM).getGraph().clear();
 
         assertEquals(0, cache.getCastingJobs(BOB).size());
         assertEquals(0, cache.getCastingJobs(TIM).size());

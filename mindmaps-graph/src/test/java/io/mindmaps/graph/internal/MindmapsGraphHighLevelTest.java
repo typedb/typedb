@@ -77,7 +77,7 @@ public class MindmapsGraphHighLevelTest {
 
     @Before
     public void buildGraphAccessManager(){
-        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         graph = (AbstractMindmapsGraph) mindmapsGraph;
         graph.initialiseMetaConcepts();
 
@@ -555,7 +555,7 @@ public class MindmapsGraphHighLevelTest {
 
     @Test
     public void testPutRelationSimple(){
-        AbstractMindmapsGraph graph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY).getGraphBatchLoading(UUID.randomUUID().toString().replaceAll("-", "a"));
+        AbstractMindmapsGraph graph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraphBatchLoading();
 
         EntityType type = graph.putEntityType("Test");
         RoleType actor = graph.putRoleType("Actor");

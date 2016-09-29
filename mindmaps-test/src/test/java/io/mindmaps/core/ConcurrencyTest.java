@@ -80,7 +80,7 @@ public class ConcurrencyTest {
         }
         executor.awaitTermination(5000, TimeUnit.MILLISECONDS);
 
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(keyspace);
+        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
 
         graph.getRoleType("related1");
         graph.getRoleType("related2");
@@ -92,7 +92,7 @@ public class ConcurrencyTest {
     }
 
     public void createGraph() throws MindmapsValidationException {
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(keyspace);
+        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
         RoleType related1 = graph.putRoleType("related1");
         RoleType related2 = graph.putRoleType("related2");
 

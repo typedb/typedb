@@ -31,8 +31,8 @@ import org.slf4j.LoggerFactory;
 class MindmapsTinkerInternalFactory extends AbstractMindmapsInternalFactory<MindmapsTinkerGraph, TinkerGraph> {
     private final Logger LOG = LoggerFactory.getLogger(MindmapsTinkerInternalFactory.class);
 
-    MindmapsTinkerInternalFactory(){
-        super();
+    MindmapsTinkerInternalFactory(String keyspace, String engineUrl, String config){
+        super(keyspace, engineUrl, config);
     }
 
     @Override
@@ -41,13 +41,14 @@ class MindmapsTinkerInternalFactory extends AbstractMindmapsInternalFactory<Mind
     }
 
     @Override
-    MindmapsTinkerGraph buildMindmapsGraphFromTinker(TinkerGraph graph, String name, String address, boolean batchLoading) {
-        return new MindmapsTinkerGraph(graph, name, batchLoading);
+    MindmapsTinkerGraph buildMindmapsGraphFromTinker(TinkerGraph graph, boolean batchLoading) {
+        return new MindmapsTinkerGraph(graph, super.keyspace, batchLoading);
     }
 
     @Override
-    TinkerGraph buildTinkerPopGraph(String name, String address, String pathToConfig) {
-        LOG.warn("In memory Tinkergraph ignores the address [" + address + "] and config path [" + pathToConfig + "]parameters");
+    TinkerGraph buildTinkerPopGraph() {
+        LOG.warn("In memory Tinkergraph ignores the address [" + super.engineUrl + "] and " +
+                 "the config path [" + super.config + "]");
         return TinkerGraph.open();
     }
 }

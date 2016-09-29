@@ -42,7 +42,7 @@ public class EdgeTest {
 
     @Before
     public void setUp(){
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         entityType = mindmapsGraph.putEntityType("My Entity Type");
         entity = mindmapsGraph.putEntity("My entity", entityType);
         Edge tinkerEdge = (Edge) mindmapsGraph.getTinkerTraversal().has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), entity.getId()).outE().next();

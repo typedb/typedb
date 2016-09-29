@@ -51,7 +51,7 @@ public class RoleTypeTest {
 
     @Before
     public void buildGraph(){
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         mindmapsGraph.initialiseMetaConcepts();
 
         roleType = mindmapsGraph.putRoleType("RoleType");

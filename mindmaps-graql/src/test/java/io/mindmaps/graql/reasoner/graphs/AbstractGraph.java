@@ -41,7 +41,7 @@ public class AbstractGraph {
     private static Instance instanceU, instanceT, instanceP;
 
     public static MindmapsGraph getGraph() {
-        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         buildGraph();
 
         try {

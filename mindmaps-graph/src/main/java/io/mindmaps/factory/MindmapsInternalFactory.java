@@ -36,7 +36,7 @@ interface MindmapsInternalFactory<M extends MindmapsGraph, T extends Graph> {
      * @param batchLoading A flag which indicates if the graph has batch loading enabled or not.
      * @return An instance of Mindmaps graph
      */
-    M getGraph(String name, String address, String pathToConfig, boolean batchLoading);
+    M getGraph(boolean batchLoading);
 
     /**
      *
@@ -46,11 +46,5 @@ interface MindmapsInternalFactory<M extends MindmapsGraph, T extends Graph> {
      * @param batchLoading A flag which indicates if the graph has batch loading enabled or not.
      * @return An instance of a tinker graph
      */
-    T getTinkerPopGraph(String name, String address, String pathToConfig, boolean batchLoading);
-
-    /**
-     *
-     * @return the names of all the keyspaces which have opened using this factory
-     */
-    Set<String> openGraphs();
+    T getTinkerPopGraph(boolean batchLoading);
 }

@@ -53,7 +53,7 @@ public class PostprocessingTest {
 
     @Before
     public void buildGraphAccessManager(){
-        graph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        graph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         graph.initialiseMetaConcepts();
 
         roleType1 = graph.putRoleType("role 1");

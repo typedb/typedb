@@ -79,24 +79,24 @@ public class GraphFactoryControllerTest {
 
     @Test
     public void testMindmapsClientBatch() {
-        MindmapsGraph batch = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraphBatchLoading("mindmapstest");
+        MindmapsGraph batch = Mindmaps.factory(Mindmaps.DEFAULT_URI, "mindmapstest").getGraphBatchLoading();
         assertTrue(((AbstractMindmapsGraph) batch).isBatchLoadingEnabled());
     }
 
     @Test
     public void testMindmaps() {
-        AbstractMindmapsGraph graph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph("mindmapstest");
-        AbstractMindmapsGraph graph2 = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph("mindmapstest2");
-        AbstractMindmapsGraph graphCopy = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph("mindmapstest");
+        AbstractMindmapsGraph graph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.DEFAULT_URI, "mindmapstest").getGraph();
+        AbstractMindmapsGraph graph2 = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.DEFAULT_URI, "mindmapstest2").getGraph();
+        AbstractMindmapsGraph graphCopy = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.DEFAULT_URI, "mindmapstest").getGraph();
         assertNotEquals(0, graph.getTinkerPopGraph().traversal().V().toList().size());
         assertFalse(graph.isBatchLoadingEnabled());
         assertNotEquals(graph, graph2);
         assertEquals(graph, graphCopy);
         graph.close();
 
-        assertThat(Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraphComputer("Keyspace"), instanceOf(MindmapsComputerImpl.class));
+        assertThat(Mindmaps.factory(Mindmaps.DEFAULT_URI, "Keyspace").getGraphComputer(), instanceOf(MindmapsComputerImpl.class));
 
-        AbstractMindmapsGraph batch = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraphBatchLoading("mindmapstest");
+        AbstractMindmapsGraph batch = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.DEFAULT_URI, "mindmapstest").getGraphBatchLoading();
         assertTrue(batch.isBatchLoadingEnabled());
         assertNotEquals(graph, batch);
 

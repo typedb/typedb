@@ -66,7 +66,7 @@ public class MindmapsGraphLowLevelTest {
 
     @Before
     public void buildGraphAccessManager(){
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         mindmapsGraph.initialiseMetaConcepts();
     }
     @After
@@ -452,7 +452,7 @@ public class MindmapsGraphLowLevelTest {
 
     @Test(expected=RuntimeException.class)
     public void testRollback() {
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        MindmapsGraph graph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         assertNull(graph.getEntityType("X"));
         graph.putEntityType("X");
         assertNotNull(graph.getEntityType("X"));
