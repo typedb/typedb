@@ -25,8 +25,6 @@ import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import static io.mindmaps.graql.internal.gremlin.FragmentPriority.getValuePriority;
-
 public class ValueProperty implements NamedProperty, SingleTraversalProperty {
 
     private final ValuePredicateAdmin predicate;
@@ -57,7 +55,11 @@ public class ValueProperty implements NamedProperty, SingleTraversalProperty {
 
     @Override
     public FragmentPriority getPriority() {
-        return getValuePriority(predicate);
+        if (predicate.isSpecific()) {
+            return FragmentPriority.VALUE_SPECIFIC;
+        } else {
+            return FragmentPriority.VALUE_NONSPECIFIC;
+        }
     }
 
     /**

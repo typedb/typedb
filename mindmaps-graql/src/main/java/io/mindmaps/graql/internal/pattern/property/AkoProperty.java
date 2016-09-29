@@ -27,8 +27,8 @@ import io.mindmaps.graql.internal.gremlin.Traversals;
 
 import java.util.Collection;
 
-import static io.mindmaps.graql.internal.gremlin.FragmentPriority.getEdgePriority;
-import static io.mindmaps.util.Schema.EdgeLabel.AKO;
+import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_BOUNDED;
+import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNIQUE;
 
 public class AkoProperty implements NamedProperty {
 
@@ -55,8 +55,8 @@ public class AkoProperty implements NamedProperty {
     @Override
     public Collection<MultiTraversal> getMultiTraversals(String start) {
         return Sets.newHashSet(new MultiTraversalImpl(
-                new FragmentImpl(Traversals::outAkos, getEdgePriority(AKO, true), start, superType.getName()),
-                new FragmentImpl(Traversals::inAkos, getEdgePriority(AKO, false), superType.getName(), start)
+                new FragmentImpl(Traversals::outAkos, EDGE_UNIQUE, start, superType.getName()),
+                new FragmentImpl(Traversals::inAkos, EDGE_BOUNDED, superType.getName(), start)
         ));
     }
 

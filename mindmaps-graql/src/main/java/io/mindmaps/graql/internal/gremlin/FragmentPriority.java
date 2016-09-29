@@ -18,9 +18,6 @@
 
 package io.mindmaps.graql.internal.gremlin;
 
-import io.mindmaps.util.Schema;
-import io.mindmaps.graql.admin.ValuePredicateAdmin;
-
 /**
  * represents the priority of a {@code Fragment}.
  * <p>
@@ -73,39 +70,4 @@ public enum FragmentPriority {
     // TODO: Should this have higher priority?
     DISTINCT_CASTING;
 
-    /**
-     * @param edgeLabel the edge label to get the priority of moving along
-     * @param out whether we are going outbound on this edge
-     * @return the priority of travelling along the given edge in the given direction in a gremlin traversal
-     */
-    public static FragmentPriority getEdgePriority(Schema.EdgeLabel edgeLabel, boolean out) {
-        switch (edgeLabel) {
-            case ISA:
-                return out ? EDGE_UNIQUE : EDGE_UNBOUNDED;
-            case AKO:
-                return out ? EDGE_UNIQUE : EDGE_BOUNDED;
-            case HAS_ROLE:
-                return out ? EDGE_BOUNDED : EDGE_UNIQUE;
-            case PLAYS_ROLE:
-                return EDGE_BOUNDED;
-            case HAS_SCOPE:
-                return out ? EDGE_BOUNDED : EDGE_UNBOUNDED;
-            case CASTING:
-                return out ? EDGE_BOUNDED : EDGE_UNBOUNDED;
-            default:
-                return null;
-        }
-    }
-
-    /**
-     * @param predicate the predicate to get the priority of checking
-     * @return the priority of checking the given value predicate in a gremlin traversal
-     */
-    public static FragmentPriority getValuePriority(ValuePredicateAdmin predicate) {
-        if (predicate.isSpecific()) {
-            return VALUE_SPECIFIC;
-        } else {
-            return VALUE_NONSPECIFIC;
-        }
-    }
 }

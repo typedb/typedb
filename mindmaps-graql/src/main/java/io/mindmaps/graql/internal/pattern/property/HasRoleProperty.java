@@ -28,7 +28,8 @@ import io.mindmaps.graql.internal.gremlin.MultiTraversalImpl;
 
 import java.util.Collection;
 
-import static io.mindmaps.graql.internal.gremlin.FragmentPriority.getEdgePriority;
+import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_BOUNDED;
+import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNIQUE;
 import static io.mindmaps.graql.internal.pattern.property.VarProperties.failDelete;
 import static io.mindmaps.util.Schema.EdgeLabel.HAS_ROLE;
 
@@ -57,8 +58,8 @@ public class HasRoleProperty implements NamedProperty {
     @Override
     public Collection<MultiTraversal> getMultiTraversals(String start) {
         return Sets.newHashSet(new MultiTraversalImpl(
-                new FragmentImpl(t -> t.out(HAS_ROLE.getLabel()), getEdgePriority(HAS_ROLE, true), start, role.getName()),
-                new FragmentImpl(t -> t.in(HAS_ROLE.getLabel()), getEdgePriority(HAS_ROLE, false), role.getName(), start)
+                new FragmentImpl(t -> t.out(HAS_ROLE.getLabel()), EDGE_BOUNDED, start, role.getName()),
+                new FragmentImpl(t -> t.in(HAS_ROLE.getLabel()), EDGE_UNIQUE, role.getName(), start)
         ));
     }
 

@@ -28,7 +28,8 @@ import io.mindmaps.graql.internal.gremlin.ShortcutTraversal;
 import java.util.Collection;
 import java.util.Optional;
 
-import static io.mindmaps.graql.internal.gremlin.FragmentPriority.getEdgePriority;
+import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNBOUNDED;
+import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNIQUE;
 import static io.mindmaps.graql.internal.gremlin.Traversals.inAkos;
 import static io.mindmaps.graql.internal.gremlin.Traversals.outAkos;
 import static io.mindmaps.util.Schema.EdgeLabel.ISA;
@@ -70,11 +71,11 @@ public class IsaProperty implements NamedProperty {
         return Sets.newHashSet(new MultiTraversalImpl(
                 new FragmentImpl(
                         t -> outAkos(outAkos(t).out(ISA.getLabel())),
-                        getEdgePriority(ISA, true), start, type.getName()
+                        EDGE_UNIQUE, start, type.getName()
                 ),
                 new FragmentImpl(
                         t -> inAkos(inAkos(t).in(ISA.getLabel())),
-                        getEdgePriority(ISA, false), type.getName(), start
+                        EDGE_UNBOUNDED, type.getName(), start
                 )
         ));
     }
