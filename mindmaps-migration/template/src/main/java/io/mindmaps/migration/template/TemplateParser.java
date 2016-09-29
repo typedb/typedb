@@ -17,16 +17,26 @@ package io.mindmaps.migration.template;/*
  */
 
 
-import io.mindmaps.migration.template.GraqlTemplateLexer;
-import io.mindmaps.migration.template.GraqlTemplateParser;
-import mjson.Json;
+import io.mindmaps.migration.template.macro.Macro;
+import io.mindmaps.migration.template.macro.NoescpMacro;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
+
 public class TemplateParser {
 
-    public String parseTemplate(String templateString, Json data){
+    private static Map<String, Macro<Object>> macros;
+
+    static {
+        macros = new HashMap<>();
+        macros.put("noescp", new NoescpMacro());
+    }
+
+    public String parseTemplate(String templateString, Map<String, Object> data){
 
         GraqlTemplateLexer lexer = getLexer(templateString);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
@@ -34,8 +44,12 @@ public class TemplateParser {
         parser.setBuildParseTree(true);
         ParseTree tree = parser.template();
 
-        TemplateVisitor visitor = new TemplateVisitor(tokens, data);
+        TemplateVisitor visitor = new TemplateVisitor(tokens, data, macros);
         return visitor.visit(tree).toString();
+    }
+
+    private static void registerMacro(){
+
     }
 
     private GraqlTemplateLexer getLexer(String templateString){

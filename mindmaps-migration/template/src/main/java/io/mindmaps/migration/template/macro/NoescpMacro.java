@@ -18,5 +18,12 @@
 
 package io.mindmaps.migration.template.macro;
 
-public class NoescpMacro {
+import io.mindmaps.migration.template.Scope;
+
+public class NoescpMacro implements Macro {
+
+    @Override
+    public String apply(Scope scope) {
+        return null;
+    }
 }

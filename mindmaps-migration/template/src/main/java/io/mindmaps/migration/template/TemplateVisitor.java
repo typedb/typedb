@@ -17,12 +17,9 @@ package io.mindmaps.migration.template;/*
  */
 
 
-import io.mindmaps.migration.template.GraqlTemplateBaseVisitor;
-import io.mindmaps.migration.template.GraqlTemplateParser;
-import mjson.Json;
+import io.mindmaps.migration.template.macro.Macro;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
@@ -45,16 +42,16 @@ import static java.util.stream.Collectors.toSet;
 @SuppressWarnings("unchecked")
 class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
 
-    private CommonTokenStream tokens;
+    private final CommonTokenStream tokens;
+    private final Map<String, Macro<Object>> macros;
+
     private Map<String, Integer> iteration = new HashMap<>();
-
     private Scope scope;
-    private Json context;
 
-    TemplateVisitor(CommonTokenStream tokens, Json context){
+    TemplateVisitor(CommonTokenStream tokens, Map<String, Object> context, Map<String, Macro<Object>> macros){
         this.tokens = tokens;
-        this.context = context;
-        scope = new Scope();
+        this.macros = macros;
+        this.scope = new Scope(context);
     }
 
     // template
@@ -72,7 +69,7 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
     public Object visitBlock(GraqlTemplateParser.BlockContext ctx) {
 
         // create the scope of this block
-        scope = new Scope(scope, variablesInContext(ctx), context.asMap());
+        scope = new Scope(scope, variablesInContext(ctx));
 
         // increase the iteration of vars local to this block
         scope.variables().stream()
@@ -137,9 +134,8 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
 
     @Override
     public Object visitMacro(GraqlTemplateParser.MacroContext ctx){
-        ctx.MACRO();
-
-        return null;
+        String macro = ctx.MACRO().getText().replace("@", "");
+        return macros.get(macro).apply(scope);
     }
 
     // resolve

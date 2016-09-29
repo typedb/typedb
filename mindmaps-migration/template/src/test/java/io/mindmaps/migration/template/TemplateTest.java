@@ -331,7 +331,7 @@ public class TemplateTest {
     }
 
     private void assertParseEquals(String template, String json, String expected){
-        String result = parser.parseTemplate(template, Json.read(json));
+        String result = parser.parseTemplate(template, Json.read(json).asMap());
         System.out.println(result);
         assertEquals(expected, result);
     }

@@ -18,8 +18,8 @@
 
 package io.mindmaps.migration.template;
 
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -29,18 +29,16 @@ public class Scope {
     private Map<String, Value> values;
     private Set<String> variables;
 
-    public Scope(){
-        this(null, Collections.emptySet(), Collections.emptyMap());
+    public Scope(Map<String, Object> data){
+        this.values = new HashMap<>();
+        this.variables = new HashSet<>();
+        assign("", data);
     }
 
-    public Scope(Scope parent,
-                 Set<String> variables,
-                 Map<String, Object> data){
-
+    public Scope(Scope parent, Set<String> variables){
         this.parent = parent;
-        this.variables = localVariables(this.parent, variables);
         this.values = new HashMap<>();
-        this.assign("", data);
+        this.variables = localVariables(this.parent, variables);
     }
 
     public Scope up() {

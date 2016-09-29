@@ -34,12 +34,16 @@ public class MacroTest {
     }
 
     @Test
-    public static void noescpTest(){
+    public void noescpTest(){
+        String template = "this is a \"@noescp{ <value> } inside a string\"";
+        String json = "{\"value\": \"whale\"}";
+        String expected = "this is a \"whale inside a string\"";
 
+        assertParseEquals(template, json, expected);
     }
 
     private void assertParseEquals(String template, String json, String expected){
-        String result = parser.parseTemplate(template, Json.read(json));
+        String result = parser.parseTemplate(template, Json.read(json).asMap());
         System.out.println(result);
         assertEquals(expected, result);
     }
