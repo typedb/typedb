@@ -33,7 +33,7 @@ public class MacroTest {
 
     @BeforeClass
     public static void setup(){
-        parser = new TemplateParser();
+        parser = TemplateParser.create();
     }
 
     @Test

@@ -31,11 +31,31 @@ public class TemplateParser {
 
     private static Map<String, Macro<Object>> macros;
 
-    static {
-        macros = new HashMap<>();
-        macros.put("noescp", new NoescpMacro());
+    /**
+     * Create a template parser
+     */
+    private TemplateParser(){
+        registerDefaultMacros();
     }
 
+    /**
+     * Create a template parser
+     * @return a template parser
+     */
+    public static TemplateParser create(){
+        return new TemplateParser();
+    }
+
+    public void registerMacro(){
+
+    }
+
+    /**
+     * Parse and resolve a graql template
+     * @param templateString a string representing a graql template
+     * @param data data to use in template
+     * @return resolved graql query string
+     */
     public String parseTemplate(String templateString, Map<String, Object> data){
 
         GraqlTemplateLexer lexer = getLexer(templateString);
@@ -48,9 +68,6 @@ public class TemplateParser {
         return visitor.visit(tree).toString();
     }
 
-    private static void registerMacro(){
-
-    }
 
     private GraqlTemplateLexer getLexer(String templateString){
         ANTLRInputStream inputStream = new ANTLRInputStream(templateString);
@@ -59,5 +76,13 @@ public class TemplateParser {
 
     private GraqlTemplateParser getParser(CommonTokenStream tokens){
         return new GraqlTemplateParser(tokens);
+    }
+
+    /**
+     * Register the default macros that can be used by the visitor
+     */
+    private void registerDefaultMacros(){
+        macros = new HashMap<>();
+        macros.put("noescp", new NoescpMacro());
     }
 }

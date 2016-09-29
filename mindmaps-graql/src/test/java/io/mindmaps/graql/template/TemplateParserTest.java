@@ -27,13 +27,13 @@ import java.util.*;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class TemplateTest {
+public class TemplateParserTest {
 
     private static TemplateParser parser;
 
     @BeforeClass
     public static void setup(){
-        parser = new TemplateParser();
+        parser = TemplateParser.create();
     }
 
     @Test
