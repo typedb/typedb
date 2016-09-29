@@ -22,15 +22,13 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.*;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
-import io.mindmaps.concept.Concept;
-import io.mindmaps.concept.RoleType;
-import io.mindmaps.concept.Type;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
+import io.mindmaps.util.ErrorMessage;
 
 import java.util.*;
 
@@ -149,7 +147,59 @@ public class Utility {
         return fresh;
     }
 
+    /**
+     * create transitive rule R(from: X, to: Y) :- R(from: X,to: Z), R(from: Z, to: Y)
+     * @param ruleId rule identifier
+     * @param relType transitive relation type
+     * @param from from directional role type
+     * @param to to directional role type
+     * @param graph graph
+     * @return
+     */
+    public static Rule createTransitiveRule(String ruleId, RelationType relType, RoleType from, RoleType to, MindmapsGraph graph){
+        final int arity = relType.hasRoles().size();
+        if (arity != 2)
+            throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
 
+        Var startVar = Graql.var().isa(relType.getId()).rel(from.getId(), "x").rel(to.getId(), "z");
+        Var endVar = Graql.var().isa(relType.getId()).rel(from.getId(), "z").rel(to.getId(), "y");
+        Var headVar = Graql.var().isa(relType.getId()).rel(from.getId(), "x").rel(to.getId(), "y");
+
+        String body = Graql.match(startVar, endVar).select("x", "y").toString();
+        String head = Graql.match(headVar).select("x", "y").toString();
+        return graph.putRule(ruleId, body, head, graph.getMetaRuleInference());
+    }
+
+    /**
+     * creates rule parent :- child
+     * @param ruleId rule identifier
+     * @param parent relation type of parent
+     * @param child relation type of child
+     * @param roleMappings map of corresponding role types
+     * @param graph graph
+     * @return
+     */
+    public static Rule createSubPropertyRule(String ruleId, RelationType parent, RelationType child, Map<RoleType, RoleType> roleMappings,
+                                             MindmapsGraph graph){
+        final int parentArity = parent.hasRoles().size();
+        final int childArity = child.hasRoles().size();
+        if (parentArity != childArity || parentArity != roleMappings.size())
+            throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
+
+        Var parentVar = Graql.var().isa(parent.getId());
+        Var childVar = Graql.var().isa(child.getId());
+        Set<String> vars = new HashSet<>();
+        roleMappings.forEach( (parentRole, childRole) -> {
+            String varName = createFreshVariable(vars, "x");
+            parentVar.rel(parentRole.getId(), varName);
+            childVar.rel(childRole.getId(), varName);
+            vars.add(varName);
+        });
+
+        String body = Graql.match(childVar).toString();
+        String head = Graql.match(parentVar).toString();
+        return graph.putRule(ruleId, body, head, graph.getMetaRuleInference());
+    }
 
     public static boolean checkTypesCompatible(Type aType, Type bType) {
         return aType.equals(bType) || aType.subTypes().contains(bType) || bType.subTypes().contains(aType);

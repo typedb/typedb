@@ -29,8 +29,8 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.Map;
 
-import static io.mindmaps.graql.Reasoner.createSubPropertyRule;
-import static io.mindmaps.graql.Reasoner.createTransitiveRule;
+import static io.mindmaps.graql.internal.reasoner.Utility.createSubPropertyRule;
+import static io.mindmaps.graql.internal.reasoner.Utility.createTransitiveRule;
 import static org.junit.Assert.assertTrue;
 
 public class ReasonerTest {
