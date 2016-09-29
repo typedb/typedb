@@ -19,6 +19,7 @@
 package io.mindmaps.graql.internal.template;
 
 import java.util.List;
+import java.util.function.Function;
 
 public class Value {
 
@@ -104,23 +105,24 @@ public class Value {
         return new Value(builder.toString());
     }
 
-    public static Value format(Value val) {
+    // FORMATS
 
+    public static Function<Value, String> format = (val) -> {
         if(val.isString()){
-            return new Value("\\\"" + val + "\\\"");
+            return "\\\"" + val + "\\\"";
         }
 
-        return val;
-    }
+        return val.toString();
+    };
 
-    public static String formatVar(Value var){
+    public static Function<Value, String> formatVar = (var) -> {
         String variable = var.toString();
         if(variable.contains(" ")){
             return variable.replaceAll("(\\S)\\s(\\S)", "$1-$2");
         }
 
         return variable;
-    }
+    };
 
     @Override
     public String toString() {

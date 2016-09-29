@@ -18,12 +18,16 @@
 
 package io.mindmaps.graql.internal.template.macro;
 
+import io.mindmaps.graql.internal.template.TemplateVisitor;
+import io.mindmaps.graql.internal.template.GraqlTemplateParser;
 import io.mindmaps.graql.internal.template.Scope;
 
 /**
  * A macro function to perform on a template.
  */
-public interface Macro<S> {
+public interface Macro<String> {
 
-    S apply(Scope scope);
+    String apply(TemplateVisitor visitor, GraqlTemplateParser.BlockContext context, Scope scope);
+
+    String name();
 }

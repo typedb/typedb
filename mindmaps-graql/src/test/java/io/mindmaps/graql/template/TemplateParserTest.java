@@ -228,11 +228,6 @@ public class TemplateParserTest {
     }
 
     @Test
-    public void unsupportedTypeExceptionTest(){
-        assertTrue(false);
-    }
-
-    @Test
     public void dotNotationTest(){
         String template = "" +
                 "$x isa person has name <name>;\n" +

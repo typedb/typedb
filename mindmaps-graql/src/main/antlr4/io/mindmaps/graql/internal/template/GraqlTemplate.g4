@@ -10,7 +10,7 @@ template
  ;
 
 block
- : (statement | graql)*
+ : (statement | graql | replace)*
  ;
 
 statement
@@ -39,11 +39,7 @@ elsePartial
  : ELSE LBRACKET block RBRACKET
  ;
 
-replaceVal
- : LTRIANGLE resolve RTRIANGLE
- ;
-
-replaceVar
+replace
  : LTRIANGLE resolve RTRIANGLE
  ;
 
@@ -52,12 +48,11 @@ resolve
  ;
 
 gvar
- : GVAR | '$' replaceVar
+ : GVAR | '$' replace
  ;
 
 graql
  : gvar
- | replaceVal
  | IF
  | FOR
  | DO

@@ -18,12 +18,28 @@
 
 package io.mindmaps.graql.internal.template.macro;
 
+import io.mindmaps.graql.internal.template.GraqlTemplateParser;
 import io.mindmaps.graql.internal.template.Scope;
+import io.mindmaps.graql.internal.template.TemplateVisitor;
+import io.mindmaps.graql.internal.template.Value;
 
-public class NoescpMacro implements Macro {
+import java.util.function.Function;
+
+public class NoescpMacro implements Macro<String> {
+
+    public static Function<Value, String> formatWithoutEscape = Value::toString;
 
     @Override
-    public String apply(Scope scope) {
+    public String apply(TemplateVisitor visitor, GraqlTemplateParser.BlockContext context, Scope scope) {
+//        context.children.get(0).
+
+
+//        return visitor.visit(context.replace());
         return null;
+    }
+
+    @Override
+    public String name(){
+        return "noescp";
     }
 }

@@ -29,7 +29,7 @@ import java.util.Map;
 
 public class TemplateParser {
 
-    private static Map<String, Macro<Object>> macros;
+    private static Map<String, Macro<String>> macros;
 
     /**
      * Create a template parser
@@ -46,8 +46,8 @@ public class TemplateParser {
         return new TemplateParser();
     }
 
-    public void registerMacro(){
-
+    public void registerMacro(String name, Macro<String> macro){
+        macros.put(name, macro);
     }
 
     /**

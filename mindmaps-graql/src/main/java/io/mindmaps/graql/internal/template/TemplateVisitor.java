@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 
 import static io.mindmaps.graql.internal.template.Value.concat;
@@ -41,15 +42,15 @@ import static java.util.stream.Collectors.toSet;
  * ANTLR visitor class for parsing a template
  */
 @SuppressWarnings("unchecked")
-class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
+public class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
 
     private final CommonTokenStream tokens;
-    private final Map<String, Macro<Object>> macros;
+    private final Map<String, Macro<String>> macros;
 
     private Map<String, Integer> iteration = new HashMap<>();
     private Scope scope;
 
-    TemplateVisitor(CommonTokenStream tokens, Map<String, Object> context, Map<String, Macro<Object>> macros){
+    TemplateVisitor(CommonTokenStream tokens, Map<String, Object> context, Map<String, Macro<String>> macros){
         this.tokens = tokens;
         this.macros = macros;
         this.scope = new Scope(context);
@@ -136,7 +137,7 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
     @Override
     public Object visitMacro(GraqlTemplateParser.MacroContext ctx){
         String macro = ctx.MACRO().getText().replace("@", "");
-        return macros.get(macro).apply(scope);
+        return macros.get(macro).apply(this, ctx.block(), scope);
     }
 
     // resolve
@@ -152,28 +153,8 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
     // : LTRIANGLE variable RTRIANGLE
     // ;
     @Override
-    public String visitReplaceVal(GraqlTemplateParser.ReplaceValContext ctx) {
-        Value resolved = visitResolve(ctx.resolve());
-
-        if(resolved == Value.NULL){
-            throw new RuntimeException("Value " + ctx.resolve() + " is not present in data");
-        }
-
-        return whitespace(format(visitResolve(ctx.resolve())), ctx);
-    }
-
-    // replaceVal
-    // : LTRIANGLE variable RTRIANGLE
-    // ;
-    @Override
-    public String visitReplaceVar(GraqlTemplateParser.ReplaceVarContext ctx) {
-        Value resolved = visitResolve(ctx.resolve());
-
-        if(resolved == Value.NULL){
-            throw new RuntimeException("Value " + ctx.resolve() + " is not present in data");
-        }
-
-        return whitespace(formatVar(visitResolve(ctx.resolve())), ctx);
+    public String visitReplace(GraqlTemplateParser.ReplaceContext ctx) {
+        return whitespace(replace(ctx.resolve(), format), ctx);
     }
 
     // gvar
@@ -181,8 +162,8 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
     // ;
     @Override
     public String visitGvar(GraqlTemplateParser.GvarContext ctx){
-        if(ctx.replaceVar() != null){
-            return visitChildren(ctx).toString();
+        if(ctx.replace() != null){
+            return whitespace("$" + replace(ctx.replace().resolve(), formatVar), ctx);
         }
         return whitespace(ctx.getText() + iteration.get(ctx.getText()), ctx);
     }
@@ -203,6 +184,16 @@ class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
         }
 
         return concat(aggregate, nextResult);
+    }
+
+    public String replace(GraqlTemplateParser.ResolveContext ctx, Function<Value, String> format){
+        Value resolved = visitResolve(ctx);
+
+        if(resolved == Value.NULL){
+            throw new RuntimeException("Value " + ctx + " is not present in data");
+        }
+
+        return format.apply(resolved);
     }
 
     private Set<String> variablesInContext(GraqlTemplateParser.BlockContext ctx){
