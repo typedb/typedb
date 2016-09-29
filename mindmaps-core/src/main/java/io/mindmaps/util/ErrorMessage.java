@@ -156,6 +156,7 @@ public enum ErrorMessage {
     NO_ATOMS_SELECTED("No atoms were selected from query [$s]"),
     MATERIALIZATION_ERROR("Not enough information available to materialize [$s]"),
     ANSWER_ERROR("Answer method called on an instance with no answers"),
+    RULE_CREATION_ARITY_ERROR("Arity mismatch when creating rule"),
 
     //--------------------------------------------- Analytics Errors -----------------------------------------------
     ONTOLOGY_MUTATION("The mutations to the ontology have not been successfully committed. Validation Errors: [%s]"),

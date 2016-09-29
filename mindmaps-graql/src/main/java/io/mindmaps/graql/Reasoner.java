@@ -20,10 +20,7 @@ package io.mindmaps.graql;
 
 import com.google.common.collect.Lists;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.Concept;
-import io.mindmaps.concept.RoleType;
-import io.mindmaps.concept.Rule;
-import io.mindmaps.concept.Type;
+import io.mindmaps.concept.*;
 import io.mindmaps.graql.internal.reasoner.rule.InferenceRule;
 import io.mindmaps.graql.internal.reasoner.query.*;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
