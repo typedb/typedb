@@ -22,9 +22,11 @@ askQuery       : matchQuery 'ask' ';' ;
 insertQuery    : matchQuery? insert varPatterns ;
 deleteQuery    : matchQuery 'delete' varPatterns ;
 aggregateQuery : matchQuery 'aggregate' aggregate ';' ;
-computeQuery   : 'compute' id ('in' subgraph)? ';' ;
+computeQuery   : 'compute' id ('of' statTypes)? ('in' subgraph)? ';' ;
 
-subgraph       : id (',' id) * ;
+statTypes      : idList ;
+subgraph       : idList ;
+idList         : id (',' id)* ;
 
 aggregate      : id argument*                     # customAgg
                | '(' namedAgg (',' namedAgg)* ')' # selectAgg

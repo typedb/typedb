@@ -25,7 +25,6 @@ import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.util.ErrorMessage;
 
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -36,13 +35,15 @@ import static java.util.stream.Collectors.joining;
 class ComputeQueryImpl implements ComputeQuery {
 
     private final Optional<MindmapsGraph> graph;
-    private Set<String> typeIds;
+    private final Set<String> subTypeIds;
+    private final Set<String> statisticsResourceTypeIds;
     private final String computeMethod;
 
-    ComputeQueryImpl(Optional<MindmapsGraph> graph, String computeMethod, Set<String> typeIds) {
+    ComputeQueryImpl(Optional<MindmapsGraph> graph, String computeMethod, Set<String> subTypeIds, Set<String> statisticsResourceTypeIds) {
         this.graph = graph;
         this.computeMethod = computeMethod;
-        this.typeIds = typeIds;
+        this.subTypeIds = subTypeIds;
+        this.statisticsResourceTypeIds = statisticsResourceTypeIds;
     }
 
     @Override
@@ -93,17 +94,13 @@ class ComputeQueryImpl implements ComputeQuery {
                 }
             }
         } catch (InvalidConceptTypeException e) {
-            throw new IllegalArgumentException(ErrorMessage.MUST_BE_RESOURCE_TYPE.getMessage(typeIds),e);
+            throw new IllegalArgumentException(ErrorMessage.MUST_BE_RESOURCE_TYPE.getMessage(subTypeIds),e);
         }
 
     }
 
     private Analytics getAnalytics(String keyspace, boolean isStatistics) {
-        if (isStatistics) {
-            return new Analytics(keyspace, new HashSet<>(), typeIds);
-        } else {
-            return new Analytics(keyspace, typeIds, new HashSet<>());
-        }
+        return new Analytics(keyspace, subTypeIds, statisticsResourceTypeIds);
     }
 
     @Override
@@ -128,16 +125,16 @@ class ComputeQueryImpl implements ComputeQuery {
     @Override
     public String toString() {
         String subtypes;
-        if (typeIds.isEmpty()) {
+        if (subTypeIds.isEmpty()) {
             subtypes = "";
         } else {
-            subtypes = " in " + typeIds.stream().collect(joining(", "));
+            subtypes = " in " + subTypeIds.stream().collect(joining(", "));
         }
         return "compute " + computeMethod + subtypes + ";";
     }
 
     @Override
     public ComputeQuery withGraph(MindmapsGraph graph) {
-        return new ComputeQueryImpl(Optional.of(graph), computeMethod, typeIds);
+        return new ComputeQueryImpl(Optional.of(graph), computeMethod, subTypeIds, statisticsResourceTypeIds);
     }
 }
