@@ -96,7 +96,7 @@ public class RESTLoader {
         return instance;
     }
 
-    private void startPeriodPostProcessingCheck(){
+    private void startPeriodPostProcessingCheck() {
         long postProcessingDelay = ConfigProperties.getInstance().getPropertyAsLong(ConfigProperties.POSTPROCESSING_DELAY);
         Executors.newSingleThreadScheduledExecutor()
                 .scheduleAtFixedRate(() -> BackgroundTasks.getInstance().performPostprocessing(), postProcessingDelay,
@@ -143,16 +143,16 @@ public class RESTLoader {
 
                 } catch (MindmapsValidationException e) {
                     //If it's a validation exception there is no point in re-trying
-                    LOG.error("Input batch: {}",batch);
-                    LOG.error("Caused Exception: {}",ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));
+                    LOG.error("Input batch: {}", batch);
+                    LOG.error("Caused Exception: {}", ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));
                     loaderState.get(uuid).setState(State.ERROR);
                     loaderState.get(uuid).setException(ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));
                     errorJobs.incrementAndGet();
                     return;
                 } catch (IllegalArgumentException e) {
                     //If it's an illegal argument exception there is no point in re-trying
-                    LOG.error("Input batch: {}",batch);
-                    LOG.error("Caused Exception: {}",ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION.getMessage(e.getMessage()));
+                    LOG.error("Input batch: {}", batch);
+                    LOG.error("Caused Exception: {}", ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION.getMessage(e.getMessage()));
                     loaderState.get(uuid).setState(State.ERROR);
                     loaderState.get(uuid).setException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION.getMessage(e.getMessage()));
                     errorJobs.incrementAndGet();
@@ -164,7 +164,7 @@ public class RESTLoader {
                     try {
                         lastJobFinished.set(System.currentTimeMillis());
                     } catch (Exception e) {
-                        LOG.error("Exception",e);
+                        LOG.error("Exception", e);
                     }
                 }
             }
@@ -172,8 +172,8 @@ public class RESTLoader {
             loadingJobs.decrementAndGet();
         }
 
-        LOG.error("Input batch: {}",batch);
-        LOG.error("Caused Exception: {}",ErrorMessage.FAILED_TRANSACTION.getMessage(repeatCommits));
+        LOG.error("Input batch: {}", batch);
+        LOG.error("Caused Exception: {}", ErrorMessage.FAILED_TRANSACTION.getMessage(repeatCommits));
 
         loaderState.get(uuid).setState(State.ERROR);
         loaderState.get(uuid).setException(ErrorMessage.FAILED_TRANSACTION.getMessage(repeatCommits));
