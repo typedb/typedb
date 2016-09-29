@@ -23,18 +23,16 @@ import * as API from './APITerms';
  */
 
 /**
- * Used to infer directionality of a relationship between two hal resources: @l and @r.
- * The hal resources that is deemed more `significant` will have the relationship directed at it.
+ * Used to decide the directionality of a relationship between two resources, based on the API.KEY_DIRECTION property.
  */
-export function leftSignificant(l, r) {
-    var baseTypeL = l[API.KEY_BASE_TYPE];
-    var typeL = l[API.KEY_TYPE];
-    var idR = r[API.KEY_ID];
-
-    if(idR === typeL || idR  === baseTypeL)
-        return true;
+export function edgeLeftToRight(a, b) {
+    if(API.KEY_DIRECTION in b)
+        if(b[API.KEY_DIRECTION] === "OUT")
+            return false;
     else
-        return false;
+        console.log("API ERROR: ["+API.KEY_DIRECTION+"] not found in "+b[API.KEY_ID]);
+
+    return true;
 }
 
 /**

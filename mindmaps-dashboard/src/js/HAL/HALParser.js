@@ -71,19 +71,19 @@ export default class HALParser {
      * Parse resources from _embedded field of parent
      */
     parseEmbedded(objs, parent, roleName) {
-        _.map(objs, obj => {
+        _.map(objs, child => {
             // Add resource and iterate its _embedded field
-            var hrefA = this.getHref(obj);
-            var hrefB = this.getHref(parent);
+            var hrefP = this.getHref(child);
+            var hrefC = this.getHref(parent);
 
-            this.newResource(hrefA, Utils.resourceProperties(obj));
+            this.newResource(hrefP, Utils.resourceProperties(child));
 
-            if(Utils.leftSignificant(obj, parent))
-                this.newRelationship(hrefA, hrefB, roleName);
+            if(Utils.edgeLeftToRight(parent, child))
+                this.newRelationship(hrefP, hrefC, roleName);
             else
-                this.newRelationship(hrefB, hrefA, roleName);
+                this.newRelationship(hrefC, hrefP, roleName);
 
-            this.parseHalObject(obj);
+            this.parseHalObject(child);
 
         });
     }
@@ -94,6 +94,6 @@ export default class HALParser {
      * @returns {string|string|*|o}
      */
     getHref(resource) {
-        return resource[API.KEY_LINKS][API.KEY_SELF][API.KEY_URL];
+        return resource[API.KEY_LINKS][API.KEY_SELF][API.KEY_HREF];
     }
 }

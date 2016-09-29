@@ -36,3 +36,4 @@ export const KEY_ONTOLOGY = "ontology";
 export const KEY_SELF = "self";
 export const KEY_LINKS = "_links";
 export const KEY_HREF = "href";
+export const KEY_DIRECTION = "_direction";

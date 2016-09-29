@@ -180,12 +180,10 @@ export default {
         },
 
         typeQueryResponse(resp, err) {
-            console.log(resp);
-            if(resp != undefined) {
+            if(resp != undefined)
                 halParser.parseHalObject(resp);
-            } else {
+            else
                 this.showError(err);
-            }
         },
 
         showError(msg) {
@@ -210,38 +208,36 @@ export default {
 
         graphResponse(resp, err) {
             if(resp != null) {
-                if(!halParser.parseResponse(resp)) {
+                if(!halParser.parseResponse(resp))
                     this.showWarning("Sorry, no results found for your query.");
-                }
-            }
-            else {
+            } else {
                 this.showError(err);
             }
         },
 
         shellResponse(resp, err) {
-            if(resp != null) {
+            if(resp != null)
                 this.graqlResponse = Prism.highlight(resp, PLang.graql);
-            }
-            else {
+            else
                 this.showError(err);
-            }
         },
 
         notify(ev) {
-            // Shift + Enter just adds a new line
+            // Shift + Enter just adds a new line.
             if(ev instanceof KeyboardEvent && ev.shiftKey)
                 return;
 
             if(this.graqlQuery == undefined)
                 return;
 
-            // Enable graph animation
+            // Enable graph animation.
             visualiser.setSimulation(true);
 
             engineClient.graqlHAL(this.graqlQuery, this.graphResponse);
             engineClient.graqlShell(this.graqlQuery, this.shellResponse);
             this.resetMsg();
+
+            // Dont insert newline.
             ev.preventDefault();
         },
 
@@ -249,7 +245,7 @@ export default {
             if(ev instanceof KeyboardEvent && !ev.shiftKey)
                 return;
 
-            // Reset all interface elements to default
+            // Reset all interface elements to default.
             this.graqlQuery = undefined;
             this.graqlResponse = undefined;
             this.resetMsg();
@@ -263,14 +259,11 @@ export default {
             if(!eventKeys.altKey)
                 return;
 
-            _.map(param.nodes, x => {
-                console.log(visualiser.nodes._data[x].ontology);
-
-                engineClient.request({
-                    url: visualiser.nodes._data[x].ontology,
-                    callback: this.typeQueryResponse
-                });
-              });
+            _.map(param.nodes, x => { engineClient.request({
+                                        url: visualiser.nodes._data[x].ontology,
+                                        callback: this.typeQueryResponse
+                                    })
+            });
 
         },
 
@@ -297,11 +290,10 @@ export default {
             if(this.typeInstances)
                 this.typeInstances = false;
             else
-                engineClient.getMetaTypes(x => {if(x != null) { this.typeInstances = x; this.typeKeys = _.keys(x)}});
+                engineClient.getMetaTypes(x => { if(x != null){ this.typeInstances = x; this.typeKeys = _.keys(x) } });
         },
 
         toggleElement(e) {
-            console.log(e);
             $('.'+e).toggle();
         }
     }
