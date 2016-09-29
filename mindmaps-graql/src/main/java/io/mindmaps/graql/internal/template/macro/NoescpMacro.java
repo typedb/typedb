@@ -22,8 +22,11 @@ import io.mindmaps.graql.internal.template.GraqlTemplateParser;
 import io.mindmaps.graql.internal.template.Scope;
 import io.mindmaps.graql.internal.template.TemplateVisitor;
 import io.mindmaps.graql.internal.template.Value;
+import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.util.function.Function;
+
+import static io.mindmaps.graql.internal.template.Value.concat;
 
 public class NoescpMacro implements Macro<String> {
 
@@ -31,11 +34,20 @@ public class NoescpMacro implements Macro<String> {
 
     @Override
     public String apply(TemplateVisitor visitor, GraqlTemplateParser.BlockContext context, Scope scope) {
-//        context.children.get(0).
+        Value result = Value.VOID;
+        for(ParseTree tree:context.children){
+            if(tree instanceof GraqlTemplateParser.ReplaceContext){
+                GraqlTemplateParser.ReplaceContext replace = (GraqlTemplateParser.ReplaceContext) tree;
+                GraqlTemplateParser.ResolveContext resolve = replace.resolve();
+                String resolved = visitor.replace(resolve, formatWithoutEscape);
 
+                result = concat(result, visitor.whitespace(resolved, replace));
+            } else {
+                result = concat(result, visitor.visit(tree));
+            }
+        }
 
-//        return visitor.visit(context.replace());
-        return null;
+        return result.toString();
     }
 
     @Override

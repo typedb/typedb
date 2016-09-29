@@ -162,7 +162,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
     // ;
     @Override
     public String visitGvar(GraqlTemplateParser.GvarContext ctx){
-        if(ctx.replace() != null){
+        if(ctx.replace() != null) {
             return whitespace("$" + replace(ctx.replace().resolve(), formatVar), ctx);
         }
         return whitespace(ctx.getText() + iteration.get(ctx.getText()), ctx);
@@ -209,11 +209,11 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
 
     // Methods to maintain whitespace in the template
 
-    private String whitespace(Object obj, ParserRuleContext ctx){
+    public String whitespace(Object obj, ParserRuleContext ctx){
         return whitespace(obj, ctx.getStart(), ctx.getStop());
     }
 
-    private String whitespace(Object obj, TerminalNode node){
+    public String whitespace(Object obj, TerminalNode node){
         Token tok = node.getSymbol();
         return whitespace(obj, tok, tok);
     }

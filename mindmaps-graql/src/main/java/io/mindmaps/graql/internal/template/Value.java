@@ -97,6 +97,10 @@ public class Value {
     }
 
     public static Value concat(Object... objects){
+        if (objects.length == 1){
+           throw new RuntimeException("Attempting to concatenate one object");
+        }
+
         StringBuilder builder = new StringBuilder();
         for(Object value:objects){
             builder.append(value.toString());

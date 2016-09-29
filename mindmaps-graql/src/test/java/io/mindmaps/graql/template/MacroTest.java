@@ -23,6 +23,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 import static junit.framework.TestCase.assertEquals;
@@ -37,13 +38,25 @@ public class MacroTest {
     }
 
     @Test
-    public void noescpTest(){
-        String template = "this is a \"@noescp{ <value> } inside a string\"";
+    public void noescpOneVarTest(){
+        String template = "this is a \"@noescp{<value>} inside a string\"";
         String expected = "this is a \"whale inside a string\"";
 
         Map<String, Object> data = Collections.singletonMap("value", "whale");
 
-//        assertParseEquals(template, data, expected);
+        assertParseEquals(template, data, expected);
+    }
+
+    @Test
+    public void noescpMultiVarTest(){
+        String template = "\" My first name is @noescp{ <firstname> and my last name is <lastname>} \"";
+        String expected = "\" My first name is Phil and my last name is Collins \"";
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("firstname", "Phil");
+        data.put("lastname", "Collins");
+
+        assertParseEquals(template, data, expected);
     }
 
     private void assertParseEquals(String template, Map<String, Object> data, String expected){
