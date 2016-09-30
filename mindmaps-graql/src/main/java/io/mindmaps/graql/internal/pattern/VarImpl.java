@@ -19,6 +19,7 @@
 package io.mindmaps.graql.internal.pattern;
 
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.graql.ValuePredicate;
 import io.mindmaps.graql.Var;
@@ -28,6 +29,8 @@ import io.mindmaps.graql.internal.gremlin.VarTraversals;
 import io.mindmaps.graql.internal.pattern.property.*;
 import io.mindmaps.graql.internal.util.CommonUtil;
 import io.mindmaps.graql.internal.util.StringConverter;
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import java.util.*;
 import java.util.function.Function;
@@ -104,26 +107,19 @@ class VarImpl implements VarInternal {
 
             if (var.isRelation()) {
                 RelationProperty relationProperty = putRelationProperty();
-                var.getCastings().forEach(relationProperty::addCasting);
+                var.getCastings().forEach(casting -> relationProperty.addCasting(casting, properties));
             }
         }
     }
 
     @Override
     public Var id(String id) {
-        getId().ifPresent(
-                prevId -> {
-                    if (!prevId.equals(id)) throw new IllegalStateException(MULTIPLE_IDS.getMessage(id, prevId));
-                }
-        );
-        properties.add(new IdProperty(id));
-        return this;
+        return addProperty(new IdProperty(id));
     }
 
     @Override
     public Var value() {
-        properties.add(new ValueFlagProperty());
-        return this;
+        return addProperty(new ValueFlagProperty());
     }
 
     @Override
@@ -133,8 +129,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var value(ValuePredicate predicate) {
-        properties.add(new ValueProperty(predicate.admin()));
-        return this;
+        return addProperty(new ValueProperty(predicate.admin()));
     }
 
     @Override
@@ -154,8 +149,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var has(String type, Var var) {
-        properties.add(new HasResourceProperty(type, var.admin()));
-        return this;
+        return addProperty(new HasResourceProperty(type, var.admin()));
     }
 
     @Override
@@ -165,21 +159,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var isa(Var type) {
-        VarAdmin var = type.admin();
-
-        getType().ifPresent(
-                other -> {
-                    if (!var.getName().equals(other.getName()) && !var.getIdOnly().equals(other.getIdOnly())) {
-                        throw new IllegalStateException(
-                                MULTIPLE_TYPES.getMessage(
-                                        getPrintableName(), var.getPrintableName(), other.getPrintableName()
-                                )
-                        );
-                    }
-                }
-        );
-        properties.add(new IsaProperty(var));
-        return this;
+        return addProperty(new IsaProperty(type.admin()));
     }
 
     @Override
@@ -189,8 +169,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var ako(Var type) {
-        properties.add(new AkoProperty(type.admin()));
-        return this;
+        return addProperty(new AkoProperty(type.admin()));
     }
 
     @Override
@@ -200,8 +179,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var hasRole(Var type) {
-        properties.add(new HasRoleProperty(type.admin()));
-        return this;
+        return addProperty(new HasRoleProperty(type.admin()));
     }
 
     @Override
@@ -211,14 +189,12 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var playsRole(Var type) {
-        properties.add(new PlaysRoleProperty(type.admin()));
-        return this;
+        return addProperty(new PlaysRoleProperty(type.admin()));
     }
 
     @Override
     public Var hasScope(Var type) {
-        properties.add(new HasScopeProperty(type.admin()));
-        return this;
+        return addProperty(new HasScopeProperty(type.admin()));
     }
 
     @Override
@@ -228,8 +204,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var hasResource(Var type) {
-        properties.add(new HasResourceTypeProperty(type.admin()));
-        return this;
+        return addProperty(new HasResourceTypeProperty(type.admin()));
     }
 
     @Override
@@ -239,7 +214,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var rel(Var roleplayer) {
-        putRelationProperty().addCasting(new Casting(roleplayer.admin()));
+        putRelationProperty().addCasting(new Casting(roleplayer.admin()), properties);
         return this;
     }
 
@@ -260,45 +235,39 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var rel(Var roletype, Var roleplayer) {
-        putRelationProperty().addCasting(new Casting(roletype.admin(), roleplayer.admin()));
+        putRelationProperty().addCasting(new Casting(roletype.admin(), roleplayer.admin()), properties);
         return this;
     }
 
     @Override
     public Var isAbstract() {
-        properties.add(new IsAbstractProperty());
-        return this;
+        return addProperty(new IsAbstractProperty());
     }
 
     @Override
     public Var datatype(ResourceType.DataType<?> datatype) {
-        properties.add(new DataTypeProperty(datatype));
-        return this;
+        return addProperty(new DataTypeProperty(datatype));
     }
 
     @Override
     public Var regex(String regex) {
-        properties.add(new RegexProperty(regex));
-        return this;
+        return addProperty(new RegexProperty(regex));
     }
 
     @Override
     public Var lhs(String lhs) {
-        properties.add(new LhsProperty(lhs));
-        return this;
+        return addProperty(new LhsProperty(lhs));
     }
 
     @Override
     public Var rhs(String rhs) {
-        properties.add(new RhsProperty(rhs));
-        return this;
+        return addProperty(new RhsProperty(rhs));
     }
 
     @Override
     public VarInternal admin() {
         return this;
     }
-
 
     @Override
     public Optional<VarAdmin> getType() {
@@ -568,12 +537,35 @@ class VarImpl implements VarInternal {
     }
 
     private RelationProperty putRelationProperty() {
-        Optional<RelationProperty> maybeProperty = getProperties(RelationProperty.class).findAny();
+        Optional<RelationProperty> maybeProperty = getProperty(RelationProperty.class);
 
         return maybeProperty.orElseGet(() -> {
             RelationProperty property = new RelationProperty();
-            properties.add(property);
+            addProperty(property);
             return property;
+        });
+    }
+
+    /**
+     * Add a non-unique property
+     */
+    private Var addProperty(VarProperty property) {
+        if (property.isUnique()) {
+            testUniqueProperty((UniqueVarProperty) property);
+        }
+        properties.add(property);
+        return this;
+    }
+
+    /**
+     * Fail if there is already an equal property of this type
+     */
+    private void testUniqueProperty(UniqueVarProperty property) {
+        getProperty(property.getClass()).filter(other -> !other.equals(property)).ifPresent(other -> {
+            String message = CONFLICTING_PROPERTIES.getMessage(
+                    getPrintableName(), property.graqlString(), other.graqlString()
+            );
+            throw new IllegalStateException(message);
         });
     }
 
@@ -582,6 +574,29 @@ class VarImpl implements VarInternal {
         // a disjunction containing only one option
         Conjunction<VarAdmin> conjunction = Patterns.conjunction(Collections.singleton(this));
         return Patterns.disjunction(Collections.singleton(conjunction));
+    }
+
+    @Override
+    public int hashCode() {
+        return HashCodeBuilder.reflectionHashCode(this, excludeEqualityFields());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return EqualsBuilder.reflectionEquals(this, obj, excludeEqualityFields());
+    }
+
+    /**
+     * Fields to exclude when testing object equality
+     */
+    private Collection<String> excludeEqualityFields() {
+        Collection<String> excludeFields = Sets.newHashSet("varPattern");
+
+        if (!userDefinedName) {
+            excludeFields.add("name");
+        }
+
+        return excludeFields;
     }
 
     /**
@@ -622,6 +637,16 @@ class VarImpl implements VarInternal {
         @Override
         public String toString() {
             return getRoleType().map(r -> r.getPrintableName() + ": ").orElse("") + getRolePlayer().getPrintableName();
+        }
+
+        @Override
+        public int hashCode() {
+            return HashCodeBuilder.reflectionHashCode(this);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            return EqualsBuilder.reflectionEquals(this, obj);
         }
     }
 }

@@ -109,8 +109,7 @@ public class QueryErrorTest {
     public void testErrorMultipleIsa() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(
-                containsString("abc"), containsString("type"), containsString("person"), containsString("has-cast"),
-                containsString("separate"), containsString(";")
+                containsString("abc"), containsString("isa"), containsString("person"), containsString("has-cast")
         ));
         qb.match(var("abc").isa("person").isa("has-cast"));
     }

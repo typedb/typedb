@@ -19,30 +19,16 @@
 package io.mindmaps.graql.internal.query;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.Concept;
-import io.mindmaps.concept.Instance;
-import io.mindmaps.concept.Relation;
-import io.mindmaps.concept.RelationType;
-import io.mindmaps.concept.Resource;
-import io.mindmaps.concept.ResourceType;
-import io.mindmaps.concept.RoleType;
-import io.mindmaps.concept.Type;
+import io.mindmaps.concept.*;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.graql.internal.pattern.Patterns;
+import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.Stack;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -213,7 +199,9 @@ class InsertQueryExecutor {
         // "123" isa movie; $x id "123"; $y id "123"; ($y, $z)
         while (changed) {
             // Merge variable referred to by name...
-            boolean byNameChange = varsToMerge.addAll(varsByName.get(var.getName()));
+            List<VarAdmin> vars = varsByName.getOrDefault(var.getName(), Lists.newArrayList());
+            vars.add(var);
+            boolean byNameChange = varsToMerge.addAll(vars);
             var = Patterns.mergeVars(varsToMerge);
 
             // Then merge variables referred to by id...

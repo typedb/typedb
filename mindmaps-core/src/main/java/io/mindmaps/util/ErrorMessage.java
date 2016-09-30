@@ -89,11 +89,9 @@ public enum ErrorMessage {
     NOT_A_ROLE_TYPE("'%s' is not a role type. perhaps you meant 'isa %s'?"),
     NOT_A_RELATION_TYPE("'%s' is not a relation type. perhaps you forgot to separate your statements with a ';'?"),
     NOT_ROLE_IN_RELATION("'%s' is not a valid role type for relation type '%s'. valid role types are: '%s'"),
-    MULTIPLE_TYPES("%s have been given multiple types: %s and %s. " +
-            "perhaps you forgot to separate your statements with a ';'?"),
-    MULTIPLE_IDS("a concept cannot have multiple ids: %s and %s"),
     SET_GENERATED_VARIABLE_NAME("cannot set variable name '%s' on a variable without a user-defined name"),
     INSTANCE_OF_ROLE_TYPE("cannot get instances of role type %s"),
+    CONFLICTING_PROPERTIES("the following unique properties in '%s' conflict: '%s' and '%s'"),
 
     SELECT_NONE_SELECTED("no variables have been selected. at least one variable must be selected"),
     MATCH_NO_PATTERNS("no patterns have been provided in match query. at least one pattern must be provided"),

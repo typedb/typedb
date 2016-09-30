@@ -19,4 +19,8 @@
 package io.mindmaps.graql.admin;
 
 public interface UniqueVarProperty extends VarProperty {
+
+    default boolean isUnique() {
+        return true;
+    }
 }

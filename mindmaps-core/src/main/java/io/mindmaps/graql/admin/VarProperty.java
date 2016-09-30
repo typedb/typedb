@@ -36,4 +36,8 @@ public interface VarProperty {
     Collection<VarAdmin> getInnerVars();
 
     void deleteProperty(MindmapsGraph graph, Concept concept);
+
+    default boolean isUnique() {
+        return false;
+    }
 }

@@ -20,6 +20,7 @@ package io.mindmaps.graql.internal.pattern.property;
 
 import io.mindmaps.graql.admin.UniqueVarProperty;
 import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.admin.VarProperty;
 import io.mindmaps.graql.internal.gremlin.FragmentImpl;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 import io.mindmaps.graql.internal.gremlin.MultiTraversalImpl;
@@ -38,8 +39,14 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
 
     private final Set<VarAdmin.Casting> castings = new HashSet<>();
 
-    public void addCasting(VarAdmin.Casting casting) {
+    public void addCasting(VarAdmin.Casting casting, Collection<VarProperty> properties) {
+        // Re-add ourselves to the given collection because our hashCode and equality has changed
+        // TODO: Make RelationProperty immutable so this is no longer necessary
+        properties.remove(this);
+
         castings.add(casting);
+
+        properties.add(this);
     }
 
     public Stream<VarAdmin.Casting> getCastings() {
