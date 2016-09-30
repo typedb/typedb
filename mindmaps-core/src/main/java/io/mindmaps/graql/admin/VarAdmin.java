@@ -194,6 +194,8 @@ public interface VarAdmin extends PatternAdmin, Var {
 
     <T extends VarProperty> Stream<T> getProperties(Class<T> type);
 
+    <T extends UniqueVarProperty> Optional<T> getProperty(Class<T> type);
+
     /**
      * A casting, a pair of role type and role player (where the role type may not be present)
      */

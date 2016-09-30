@@ -302,12 +302,12 @@ class VarImpl implements VarInternal {
 
     @Override
     public Optional<VarAdmin> getType() {
-        return getProperties(IsaProperty.class).findAny().map(IsaProperty::getType);
+        return getProperty(IsaProperty.class).map(IsaProperty::getType);
     }
 
     @Override
     public boolean isRelation() {
-        return getProperties(RelationProperty.class).findAny().isPresent();
+        return getProperty(RelationProperty.class).isPresent();
     }
 
     @Override
@@ -323,27 +323,27 @@ class VarImpl implements VarInternal {
 
     @Override
     public boolean getAbstract() {
-        return getProperties(IsAbstractProperty.class).findAny().isPresent();
+        return getProperty(IsAbstractProperty.class).isPresent();
     }
 
     @Override
     public Optional<ResourceType.DataType<?>> getDatatype() {
-        return getProperties(DataTypeProperty.class).findAny().map(DataTypeProperty::getDatatype);
+        return getProperty(DataTypeProperty.class).map(DataTypeProperty::getDatatype);
     }
 
     @Override
     public Optional<String> getRegex() {
-        return getProperties(RegexProperty.class).findAny().map(RegexProperty::getRegex);
+        return getProperty(RegexProperty.class).map(RegexProperty::getRegex);
     }
 
     @Override
     public boolean hasValue() {
-        return getProperties(ValueFlagProperty.class).findAny().isPresent();
+        return getProperty(ValueFlagProperty.class).isPresent();
     }
 
     @Override
     public Optional<VarAdmin> getAko() {
-        return getProperties(AkoProperty.class).findAny().map(AkoProperty::getSuperType);
+        return getProperty(AkoProperty.class).map(AkoProperty::getSuperType);
     }
 
     @Override
@@ -374,7 +374,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Optional<String> getId() {
-        return getProperties(IdProperty.class).findAny().map(IdProperty::getId);
+        return getProperty(IdProperty.class).map(IdProperty::getId);
     }
 
     @Override
@@ -433,12 +433,12 @@ class VarImpl implements VarInternal {
 
     @Override
     public Optional<String> getLhs() {
-        return getProperties(LhsProperty.class).findAny().map(LhsProperty::getLhs);
+        return getProperty(LhsProperty.class).map(LhsProperty::getLhs);
     }
 
     @Override
     public Optional<String> getRhs() {
-        return getProperties(RhsProperty.class).findAny().map(RhsProperty::getRhs);
+        return getProperty(RhsProperty.class).map(RhsProperty::getRhs);
     }
 
     @Override
@@ -477,6 +477,11 @@ class VarImpl implements VarInternal {
     @Override
     public <T extends VarProperty> Stream<T> getProperties(Class<T> type) {
         return getProperties().filter(type::isInstance).map(type::cast);
+    }
+
+    @Override
+    public <T extends UniqueVarProperty> Optional<T> getProperty(Class<T> type) {
+        return getProperties().filter(type::isInstance).map(type::cast).findAny();
     }
 
     @Override

@@ -18,6 +18,7 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import io.mindmaps.graql.admin.UniqueVarProperty;
 import io.mindmaps.graql.internal.gremlin.FragmentPriority;
 import io.mindmaps.graql.internal.util.StringConverter;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -26,7 +27,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static io.mindmaps.util.Schema.ConceptProperty.ITEM_IDENTIFIER;
 
-public class IdProperty implements NamedProperty, SingleTraversalProperty {
+public class IdProperty implements NamedProperty, UniqueVarProperty, SingleTraversalProperty {
 
     private final String id;
 

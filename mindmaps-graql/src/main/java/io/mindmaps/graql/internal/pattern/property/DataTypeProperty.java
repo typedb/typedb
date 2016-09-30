@@ -19,6 +19,7 @@
 package io.mindmaps.graql.internal.pattern.property;
 
 import io.mindmaps.concept.ResourceType;
+import io.mindmaps.graql.admin.UniqueVarProperty;
 import io.mindmaps.graql.internal.gremlin.FragmentPriority;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -26,7 +27,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static io.mindmaps.util.Schema.ConceptProperty.DATA_TYPE;
 
-public class DataTypeProperty implements NamedProperty, SingleTraversalProperty {
+public class DataTypeProperty implements NamedProperty, UniqueVarProperty, SingleTraversalProperty {
 
     private final ResourceType.DataType<?> datatype;
 

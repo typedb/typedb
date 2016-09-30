@@ -19,6 +19,7 @@
 package io.mindmaps.graql.internal.pattern.property;
 
 import com.google.common.collect.Sets;
+import io.mindmaps.graql.admin.UniqueVarProperty;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.FragmentImpl;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
@@ -34,7 +35,7 @@ import static io.mindmaps.graql.internal.gremlin.Traversals.inAkos;
 import static io.mindmaps.graql.internal.gremlin.Traversals.outAkos;
 import static io.mindmaps.util.Schema.EdgeLabel.ISA;
 
-public class IsaProperty implements NamedProperty {
+public class IsaProperty implements UniqueVarProperty, NamedProperty {
 
     private final VarAdmin type;
 

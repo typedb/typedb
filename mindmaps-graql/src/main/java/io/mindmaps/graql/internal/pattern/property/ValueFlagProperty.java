@@ -18,6 +18,7 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import io.mindmaps.graql.admin.UniqueVarProperty;
 import io.mindmaps.graql.internal.gremlin.FragmentPriority;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -25,7 +26,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static io.mindmaps.util.Schema.ConceptProperty.*;
 
-public class ValueFlagProperty implements SingleTraversalProperty {
+public class ValueFlagProperty implements UniqueVarProperty, SingleTraversalProperty {
 
     @Override
     public void buildString(StringBuilder builder) {

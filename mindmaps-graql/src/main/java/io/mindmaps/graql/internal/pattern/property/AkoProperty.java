@@ -19,6 +19,7 @@
 package io.mindmaps.graql.internal.pattern.property;
 
 import com.google.common.collect.Sets;
+import io.mindmaps.graql.admin.UniqueVarProperty;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.FragmentImpl;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
@@ -30,7 +31,7 @@ import java.util.Collection;
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_BOUNDED;
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNIQUE;
 
-public class AkoProperty implements NamedProperty {
+public class AkoProperty implements NamedProperty, UniqueVarProperty {
 
     private final VarAdmin superType;
 

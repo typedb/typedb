@@ -18,6 +18,7 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import io.mindmaps.graql.admin.UniqueVarProperty;
 import io.mindmaps.graql.internal.gremlin.FragmentPriority;
 import io.mindmaps.graql.internal.util.StringConverter;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -26,7 +27,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static io.mindmaps.util.Schema.ConceptProperty.REGEX;
 
-public class RegexProperty implements SingleTraversalProperty, NamedProperty {
+public class RegexProperty implements UniqueVarProperty, SingleTraversalProperty, NamedProperty {
 
     private final String regex;
 

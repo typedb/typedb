@@ -18,6 +18,7 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import io.mindmaps.graql.admin.UniqueVarProperty;
 import io.mindmaps.graql.internal.gremlin.FragmentPriority;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -25,7 +26,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static io.mindmaps.util.Schema.ConceptProperty.RULE_LHS;
 
-public class LhsProperty implements NamedProperty, SingleTraversalProperty {
+public class LhsProperty implements UniqueVarProperty, NamedProperty, SingleTraversalProperty {
 
     private final String lhs;
 

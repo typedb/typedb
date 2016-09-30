@@ -18,6 +18,7 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import io.mindmaps.graql.admin.UniqueVarProperty;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.FragmentImpl;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
@@ -33,7 +34,7 @@ import static io.mindmaps.util.Schema.EdgeLabel.*;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
-public class RelationProperty implements VarPropertyInternal {
+public class RelationProperty implements UniqueVarProperty, VarPropertyInternal {
 
     private final Set<VarAdmin.Casting> castings = new HashSet<>();
 
