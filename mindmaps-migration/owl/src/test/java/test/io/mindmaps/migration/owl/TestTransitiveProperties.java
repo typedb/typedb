@@ -1,11 +1,8 @@
 package test.io.mindmaps.migration.owl;
 
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.semanticweb.HermiT.Configuration;
@@ -15,8 +12,6 @@ import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLDataFactory;
 import org.semanticweb.owlapi.model.OWLNamedIndividual;
 import org.semanticweb.owlapi.model.OWLOntology;
-
-import io.mindmaps.graql.Graql;
 
 public class TestTransitiveProperties extends TestOwlMindMapsBase {
 	private IRI baseIri = IRI.create("http://www.co-ode.org/roberts/family-tree.owl");
