@@ -3,6 +3,7 @@ package test.io.mindmaps.migration.owl;
 import org.junit.Before;
 import org.junit.Test;
 import org.semanticweb.HermiT.Reasoner;
+import org.semanticweb.HermiT.Configuration;
 import org.semanticweb.owlapi.model.OWLOntology;
 
 public class TestReasoning extends TestOwlMindMapsBase {
@@ -13,7 +14,7 @@ public class TestReasoning extends TestOwlMindMapsBase {
 	public void loadShakespeare() {
         try {
             OWLOntology O = loadOntologyFromResource("/io/mindmaps/migration/owl/samples/shakespeare.owl");   
-            reasoner = new Reasoner(O);
+            reasoner = new Reasoner(new Configuration(), O);
             migrator.ontology(O).graph(graph).migrate();
             migrator.graph().commit();
         }
