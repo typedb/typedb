@@ -349,7 +349,12 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     public ConceptImpl getConceptByBaseIdentifier(Object baseIdentifier) {
         GraphTraversal<Vertex, Vertex> traversal = getTinkerPopGraph().traversal().V(baseIdentifier);
         if (traversal.hasNext()) {
-            return elementFactory.buildUnknownConcept(traversal.next());
+            Vertex vertex = traversal.next();
+            if(vertex.property(Schema.ConceptProperty.BASE_TYPE.name()).isPresent()) {
+                return elementFactory.buildUnknownConcept(vertex);
+            } else {
+                return null; //If it is missing the base type it is a ghost and should be ignored
+            }
         } else {
             return null;
         }
