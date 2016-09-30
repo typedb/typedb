@@ -23,6 +23,7 @@ import io.mindmaps.exception.ConceptException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.UUID;
 import javafx.util.Pair;
 import org.semanticweb.owlapi.model.OWLAnnotationAssertionAxiom;
 import org.semanticweb.owlapi.model.OWLAnnotationProperty;
@@ -182,7 +183,7 @@ public class OwlMindmapsGraphStoringVisitor implements OWLAxiomVisitorEx<Concept
         Map<String, String> roleMap = new HashMap<>();
         roleMap.put(migrator.namer().subjectRole(superRelation.getId()), migrator.namer().subjectRole(subRelation.getId()));
         roleMap.put(migrator.namer().objectRole(superRelation.getId()), migrator.namer().objectRole(subRelation.getId()));
-        createSubPropertyRule("subproperty-" + superRelation.getId(), superRelation, subRelation, roleMap, migrator.graph());
+        createSubPropertyRule("sub-" + superRelation.getId() + UUID.randomUUID().toString(), superRelation, subRelation, roleMap, migrator.graph());
 
         subRelation.superType(superRelation);
         return null;
@@ -199,8 +200,8 @@ public class OwlMindmapsGraphStoringVisitor implements OWLAxiomVisitorEx<Concept
         Map<String, String> roleMap = new HashMap<>();
         roleMap.put(migrator.namer().subjectRole(relation.getId()), migrator.namer().objectRole(inverseRelation.getId()));
         roleMap.put(migrator.namer().objectRole(relation.getId()), migrator.namer().subjectRole(inverseRelation.getId()));
-        createSubPropertyRule("inverse-" + relation.getId(), relation, inverseRelation, roleMap, migrator.graph());
-        createSubPropertyRule("inverse-" + inverseRelation.getId(), inverseRelation, relation, roleMap, migrator.graph());
+        createSubPropertyRule("inv-" + relation.getId() + UUID.randomUUID().toString(), relation, inverseRelation, roleMap, migrator.graph());
+        createSubPropertyRule("inv-" + inverseRelation.getId() + UUID.randomUUID().toString(), inverseRelation, relation, roleMap, migrator.graph());
         return null;
     }
 
@@ -220,7 +221,7 @@ public class OwlMindmapsGraphStoringVisitor implements OWLAxiomVisitorEx<Concept
         if (!axiom.getProperty().isOWLObjectProperty())
             return null;
         RelationType relation = migrator.relation(axiom.getProperty().asOWLObjectProperty());
-        createTransitiveRule("transitivity-" + relation.getId(), relation, migrator.namer().subjectRole(relation.getId()),
+        createTransitiveRule("trst-" + relation.getId() + UUID.randomUUID().toString(), relation, migrator.namer().subjectRole(relation.getId()),
                 migrator.namer().objectRole(relation.getId()), migrator.graph());
         return null;
     }
@@ -237,7 +238,7 @@ public class OwlMindmapsGraphStoringVisitor implements OWLAxiomVisitorEx<Concept
             chain.put(relation,  new Pair<>(migrator.namer().subjectRole(relation.getId()), migrator.namer().objectRole(relation.getId())));
         });
 
-        createPropertyChainRule("property-chain-" + superRelation.getId() , superRelation, migrator.namer().subjectRole(superRelation.getId()),
+        createPropertyChainRule("pch-" + superRelation.getId() + UUID.randomUUID().toString() , superRelation, migrator.namer().subjectRole(superRelation.getId()),
                 migrator.namer().objectRole(superRelation.getId()), chain, migrator.graph());
         return null;
     }
