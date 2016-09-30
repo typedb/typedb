@@ -23,6 +23,7 @@ import io.mindmaps.concept.Concept;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.engine.visualiser.HALConcept;
 import io.mindmaps.factory.GraphFactory;
+import io.mindmaps.graql.Var;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.REST;
 import io.swagger.annotations.Api;
@@ -39,6 +40,10 @@ import spark.Response;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+
+import java.util.Collection;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static io.mindmaps.graql.Graql.withGraph;
 import static spark.Spark.get;
@@ -138,15 +143,17 @@ public class VisualiserController {
         String currentGraphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
         if (currentGraphName == null) currentGraphName = defaultGraphName;
 
-        LOG.debug("Received match query: \"" + req.queryParams(REST.Request.QUERY_FIELD) + "\"");
-
         try {
 
             MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName);
             final JSONArray halArray = new JSONArray();
 
-            withGraph(graph).parseMatch(req.queryParams(REST.Request.QUERY_FIELD))
-                    .parallelStream().limit(SAFETY_LIMIT)
+            LOG.debug("Start querying for :[{}]",req.queryParams(REST.Request.QUERY_FIELD));
+            Collection<Map<String,Concept>> list = withGraph(graph).parseMatch(req.queryParams(REST.Request.QUERY_FIELD))
+                    .limit(SAFETY_LIMIT)
+                    .stream().collect(Collectors.toList());
+            LOG.debug("Done querying.");
+            list.parallelStream()
                     .forEach(x -> x.values()
                             .forEach(concept -> {
                                 LOG.trace("Building HAL resource for concept with id {}", concept.getId());
