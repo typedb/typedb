@@ -1,0 +1,156 @@
+<?xml version="1.0"?>
+<rdf:RDF xmlns="http://www.co-ode.org/roberts/family-tree.owl#"
+     xml:base="http://www.co-ode.org/roberts/family-tree.owl"
+     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+     xmlns:owl2xml="http://www.w3.org/2006/12/owl2-xml#"
+     xmlns:owl="http://www.w3.org/2002/07/owl#"
+     xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+    <owl:Ontology rdf:about="">
+        <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A simple family relationships ontology and associated instances. the description is of the family of Robert Stevens and the intention is to use the minimal of asserted relationships and the maximum of inference. To do this  I&#39;ve used role chains, nominals and properties hierarchies.</rdfs:comment>
+    </owl:Ontology>
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isAncestorOf -->
+    <owl:ObjectProperty rdf:about="#isAncestorOf"/>
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isParentOf -->
+    <owl:ObjectProperty rdf:about="#isParentOf"/>
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isChildOf -->
+    <owl:ObjectProperty rdf:about="#isChildOf"/>
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#hasAncestor -->
+    <owl:ObjectProperty rdf:about="#hasAncestor">
+         <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#TransitiveProperty"/>
+         <rdfs:domain rdf:resource="#Person"/>
+         <rdfs:range rdf:resource="#Person"/>
+         <owl:inverseOf rdf:resource="#isAncestorOf"/>
+         <rdfs:subPropertyOf rdf:resource="#isBloodRelationOf"/>
+    </owl:ObjectProperty>
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isBloodRelationOf -->
+    <owl:ObjectProperty rdf:about="#isBloodRelationOf">
+         <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#SymmetricProperty"/>
+         <rdfs:domain rdf:resource="#Person"/>
+         <rdfs:range rdf:resource="#Person"/>
+         <rdfs:subPropertyOf rdf:resource="#isRelationOf"/>
+         <owl:propertyChainAxiom rdf:parseType="Collection">
+              <rdf:Description rdf:about="#hasAncestor"/>
+              <rdf:Description rdf:about="#isAncestorOf"/>
+         </owl:propertyChainAxiom>
+    </owl:ObjectProperty>
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isSiblingOf -->
+    <owl:ObjectProperty rdf:about="#isSiblingOf">
+          <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#SymmetricProperty"/>
+          <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#TransitiveProperty"/>
+          <rdfs:range rdf:resource="#Person"/>
+          <rdfs:domain rdf:resource="#Person"/>
+          <rdfs:subPropertyOf rdf:resource="#isBloodRelationOf"/>
+    </owl:ObjectProperty>
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isDirectSiblingOf -->
+    <owl:ObjectProperty rdf:about="#isDirectSiblingOf">
+          <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#SymmetricProperty"/>
+          <rdfs:range rdf:resource="#Person"/>
+          <rdfs:domain rdf:resource="#Person"/>
+          <rdfs:subPropertyOf rdf:resource="#isSiblingOf"/>
+    </owl:ObjectProperty>
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#hasBrother -->
+    <owl:ObjectProperty rdf:about="#hasBrother">
+         <rdfs:range rdf:resource="#Man"/>
+         <rdfs:domain rdf:resource="#Person"/>
+    </owl:ObjectProperty>
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#hasChild -->
+    <owl:ObjectProperty rdf:about="#hasChild">
+         <rdfs:domain rdf:resource="#Person"/>
+         <rdfs:range rdf:resource="#Person"/>
+         <owl:inverseOf rdf:resource="#isChildOf"/>
+         <owl:equivalentProperty rdf:resource="#isParentOf"/>
+    </owl:ObjectProperty>
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isSisterOf -->
+    <owl:ObjectProperty rdf:about="#isSisterOf">
+         <rdfs:range rdf:resource="#Person"/>
+         <rdfs:domain rdf:resource="#Woman"/>
+         <owl:inverseOf rdf:resource="#hasSister"/>
+         <rdfs:subPropertyOf rdf:resource="#isDirectSiblingOf"/>
+    </owl:ObjectProperty>
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#hasDaughter -->
+    <owl:ObjectProperty rdf:about="#hasDaughter">
+         <rdfs:domain rdf:resource="#Person"/>
+         <rdfs:range rdf:resource="#Woman"/>
+         <rdfs:subPropertyOf rdf:resource="#hasChild"/>
+         <owl:inverseOf rdf:resource="#isDaughterOf"/>
+    </owl:ObjectProperty>
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#hasFather -->
+    <owl:ObjectProperty rdf:about="#hasFather">
+         <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+         <rdfs:range rdf:resource="#Man"/>
+         <rdfs:domain rdf:resource="#Person"/>
+         <rdfs:subPropertyOf rdf:resource="#hasForeFather"/>
+         <rdfs:subPropertyOf rdf:resource="#hasParent"/>
+         <owl:inverseOf rdf:resource="#isFatherOf"/>
+    </owl:ObjectProperty>
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#hasMother -->
+    <owl:ObjectProperty rdf:about="#hasMother">
+         <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+         <rdfs:domain rdf:resource="#Person"/>
+         <rdfs:range rdf:resource="#Woman"/>
+         <rdfs:subPropertyOf rdf:resource="#hasForeMother"/>
+         <rdfs:subPropertyOf rdf:resource="#hasParent"/>
+         <owl:inverseOf rdf:resource="#isMotherOf"/>
+    </owl:ObjectProperty>
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#hasGrandfather -->
+    <owl:ObjectProperty rdf:about="#hasGrandfather">
+         <rdfs:range rdf:resource="#Man"/>
+         <rdfs:domain rdf:resource="#Person"/>
+         <rdfs:subPropertyOf rdf:resource="#hasGrandParent"/>
+         <owl:inverseOf rdf:resource="#isGrandfatherOf"/>
+         <owl:propertyChainAxiom rdf:parseType="Collection">
+            <rdf:Description rdf:about="#hasParent"/>
+            <rdf:Description rdf:about="#hasFather"/>
+         </owl:propertyChainAxiom>
+    </owl:ObjectProperty>
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#hasGrandmother -->
+    <owl:ObjectProperty rdf:about="#hasGrandmother">
+         <rdfs:domain rdf:resource="#Person"/>
+         <rdfs:range rdf:resource="#Woman"/>
+         <rdfs:subPropertyOf rdf:resource="#hasGrandParent"/>
+         <owl:inverseOf rdf:resource="#isGrandmotherOf"/>
+         <owl:propertyChainAxiom rdf:parseType="Collection">
+            <rdf:Description rdf:about="#hasParent"/>
+            <rdf:Description rdf:about="#hasMother"/>
+         </owl:propertyChainAxiom>
+    </owl:ObjectProperty>
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isAuntOf -->
+    <owl:ObjectProperty rdf:about="#isAuntOf">
+         <rdfs:range rdf:resource="#Person"/>
+         <rdfs:domain rdf:resource="#Woman"/>
+         <rdfs:subPropertyOf rdf:resource="#isBloodRelationOf"/>
+          <owl:propertyChainAxiom rdf:parseType="Collection">
+             <rdf:Description rdf:about="#isSisterOf"/>
+             <rdf:Description rdf:about="#isParentOf"/>
+          </owl:propertyChainAxiom>
+    </owl:ObjectProperty>
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isUncleOf -->
+    <owl:ObjectProperty rdf:about="#isUncleOf">
+         <rdfs:domain rdf:resource="#Man"/>
+         <rdfs:range rdf:resource="#Person"/>
+         <rdfs:subPropertyOf rdf:resource="#isBloodRelationOf"/>
+         <owl:propertyChainAxiom rdf:parseType="Collection">
+             <rdf:Description rdf:about="#isBrotherOf"/>
+             <rdf:Description rdf:about="#isParentOf"/>
+         </owl:propertyChainAxiom>
+    </owl:ObjectProperty>
+
+</rdf:RDF>

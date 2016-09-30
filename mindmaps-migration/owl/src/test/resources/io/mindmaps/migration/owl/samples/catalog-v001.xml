@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <catalog prefer="public" xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
     <group id="Folder Repository, directory=, recursive=true, Auto-Update=true, version=2" prefer="public" xml:base="">
-        <uri id="Automatically generated entry, Timestamp=1472066487723" name="http://www.workingontologist.org/Examples/Chapter3/Product.owl" uri="Product.owl"/>
-        <uri id="Automatically generated entry, Timestamp=1472066487723" name="http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl" uri="shakespeare.owl"/>
-        <uri id="Automatically generated entry, Timestamp=1472066487723" name="http://www.workingontologist.org/Examples/Chapter5/Shopping.owl" uri="Shopping.owl"/>
+        <uri id="Automatically generated entry, Timestamp=1475165165068" name="http://www.workingontologist.org/Examples/Chapter3/Product.owl" uri="Product.owl"/>
+        <uri id="Automatically generated entry, Timestamp=1475165165068" name="http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl" uri="shakespeare.owl"/>
+        <uri id="Automatically generated entry, Timestamp=1475165165068" name="http://www.workingontologist.org/Examples/Chapter5/Shopping.owl" uri="Shopping.owl"/>
     </group>
 </catalog>
