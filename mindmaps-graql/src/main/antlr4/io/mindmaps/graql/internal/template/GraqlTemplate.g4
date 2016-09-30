@@ -1,16 +1,11 @@
 grammar GraqlTemplate;
 
-@lexer::members {
-    public static final int WHITESPACE = 1;
-    public static final int COMMENTS = 2;
-}
-
 template
  : block EOF
  ;
 
 block
- : (statement | graql | replace)*
+ : (replace | gvar | statement | WORD | STRING | WS | ALLOWABLE)*
  ;
 
 statement
@@ -20,7 +15,7 @@ statement
  ;
 
 forStatement
- : FOR LBRACKET resolve RBRACKET DO LBRACKET block RBRACKET
+ : 'for' WS? '{' WS? resolve WS? '}' WS? 'do' WS? '{' block '}' WS?
  ;
 
 ifStatement
@@ -28,56 +23,37 @@ ifStatement
  ;
 
 ifPartial
- : IF LBRACKET resolve RBRACKET DO LBRACKET block RBRACKET
+ : 'id' '{' resolve '}' 'do' '{' block '}'
  ;
 
 macro
- : MACRO LBRACKET block RBRACKET
+ : MACRO '{' block '}'
  ;
 
 elsePartial
- : ELSE LBRACKET block RBRACKET
+ : 'else' '{' block '}'
  ;
 
+// no formatting
 replace
- : LTRIANGLE resolve RTRIANGLE
+ : WORD? '<' (WORD|STRING) '>' WORD?
  ;
 
+// get value
 resolve
- : (DO | NOT_WS | '.')+
+ : (WORD | '.')+ | STRING
  ;
 
 gvar
- : GVAR | '$' replace
+ : GVAR
  ;
-
-graql
- : gvar
- | IF
- | FOR
- | DO
- | LPAREN
- | RPAREN
- | NOT_WS
- ;
-
-// reserved
-FOR         : 'for' ;
-IF          : 'if' ;
-DO          : 'do';
-ELIF        : 'elif';
-ELSE        : 'else';
 
 MACRO       : '@' [a-zA-Z0-9_-]+;
 GVAR        : '$' [a-zA-Z0-9_-]+;
-DVAR        : '.';
 
-LPAREN      : '(';
-RPAREN      : ')';
-LBRACKET    : '{';
-RBRACKET    : '}';
-LTRIANGLE   : '<';
-RTRIANGLE   : '>';
-NOT_WS      : ~[ \t\r\n];
+ALLOWABLE   : ';' | '>' | '<' | ')' | '(' | ',';
+WS          : [ \t\r\n]+;
+WORD        : [a-zA-Z0-9_-]+;
+STRING      : '"' (~["\\] | ESCAPE_SEQ)* '"' | '\'' (~['\\] | ESCAPE_SEQ)* '\'';
 
-WS : [ \t\r\n] -> channel(1) ;
+fragment ESCAPE_SEQ : '\\' .;

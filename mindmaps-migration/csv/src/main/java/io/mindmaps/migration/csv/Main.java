@@ -19,16 +19,11 @@
 package io.mindmaps.migration.csv;
 
 import com.google.common.collect.Lists;
-import io.mindmaps.MindmapsGraph;
 import io.mindmaps.engine.loader.BlockingLoader;
 import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.engine.loader.Loader;
-import io.mindmaps.Mindmaps;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
 
 import java.io.File;
-import java.nio.charset.StandardCharsets;
 
 /**
  * Main program to migrate CSV files into a Mindmaps graph. For use from a command line.
@@ -85,34 +80,14 @@ public class Main {
                 (engineURL == null ? "local" : engineURL ) + " into graph " + graphName);
 
 
-        // perform migration
-        CSVSchemaMigrator schemaMigrator = new CSVSchemaMigrator();
-        CSVDataMigrator dataMigrator = new CSVDataMigrator();
-
         //
         try{
-            MindmapsGraph graph = engineURL == null ? Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(graphName)
-                                                    : Mindmaps.factory(engineURL).getGraph(graphName);
-
             Loader loader = engineURL == null ? new BlockingLoader(graphName)
                                               : new DistributedLoader(graphName, Lists.newArrayList(engineURL));
 
-            CSVParser csvParser = CSVParser.parse(csvFile.toURI().toURL(),
-                    StandardCharsets.UTF_8, CSVFormat.DEFAULT.withHeader());
+//            CSVMigrator migrator = new CSVMigrator(loader, batchSize);
 
-            schemaMigrator
-                    .graph(graph)
-                    .configure(csvEntityType, csvParser)
-                    .migrate(loader);
 
-            System.out.println("Schema migration successful");
-
-            dataMigrator
-                    .graph(graph)
-                    .configure(csvEntityType, csvParser)
-                    .migrate(loader);
-
-            System.out.println("DataType migration successful");
 
         }
         catch (Throwable throwable){

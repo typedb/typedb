@@ -113,7 +113,7 @@ public class Value {
 
     public static Function<Value, String> format = (val) -> {
         if(val.isString()){
-            return "\\\"" + val + "\\\"";
+            return "\"" + val + "\"";
         }
 
         return val.toString();

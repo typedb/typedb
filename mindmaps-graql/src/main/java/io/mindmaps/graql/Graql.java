@@ -157,7 +157,7 @@ public class Graql {
      * @param data data to use in template
      * @return a resolved graql query
      */
-    public static String parse(String template, Map<String, Object> data){
+    public static String parseTemplate(String template, Map<String, Object> data){
         return withoutGraph().parseTemplate(template, data);
     }
 

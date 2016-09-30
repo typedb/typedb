@@ -137,7 +137,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
     @Override
     public Object visitMacro(GraqlTemplateParser.MacroContext ctx){
         String macro = ctx.MACRO().getText().replace("@", "");
-        return macros.get(macro).apply(this, ctx.block(), scope);
+        return whitespace(macros.get(macro).apply(this, ctx.block(), scope), ctx);
     }
 
     // resolve

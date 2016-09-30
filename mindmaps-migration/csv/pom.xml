@@ -26,10 +26,6 @@
         <version>0.2.0-SNAPSHOT</version>
     </parent>
 
-    <properties>
-        <csv.version>1.2</csv.version>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>io.mindmaps</groupId>
@@ -48,8 +44,8 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-csv</artifactId>
+            <groupId>com.opencsv</groupId>
+            <artifactId>opencsv</artifactId>
             <version>${csv.version}</version>
         </dependency>
     </dependencies>

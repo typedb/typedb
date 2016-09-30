@@ -92,7 +92,7 @@ public abstract class Loader {
      */
     public void addToQueue(Collection<? extends Var> vars){
         batch.addAll(vars);
-        if(batch.size() > batchSize){
+        if(batch.size() >= batchSize){
             submitBatch(batch);
             batch.clear();
         }
@@ -104,6 +104,10 @@ public abstract class Loader {
      */
     public void setBatchSize(int size){
         this.batchSize = size;
+    }
+
+    public int getBatchSize(){
+        return this.batchSize;
     }
 
     public void setThreadsNumber(int number){

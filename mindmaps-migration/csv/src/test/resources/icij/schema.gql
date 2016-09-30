@@ -1,0 +1,54 @@
+insert
+
+address isa entity-type
+    has-resource location,
+    has-resource icij-id,
+    has-resource valid-until,
+    has-resource country-code,
+    has-resource country
+    has-resource node-id,
+    has-resource source;
+
+entity isa entity-type
+    has-resource name,
+    has-resource original-name,
+    has-resource former-name,
+    has-resource jurisdiction,
+    has-resource jurisdiction-description,
+    has-resource company-type,
+    has-resource location,
+    has-resource internal-id,
+    has-resource incorporation-date,
+    has-resource inactivation-date,
+    has-resource struck-off-date,
+    has-resource dorm-date,
+    has-resource status,
+    has-resource service-provider,
+    has-resource ibcRUC,
+    has-resource note,
+    has-resource country-code,
+    has-resource country
+    has-resource valid-until,
+    has-resource node-id,
+    has-resource source;
+
+intermediary isa entity-type
+    has-resource name,
+    has-resource internal-id,
+    has-resource location,
+    has-resource status,
+    has-resource valid-until,
+    has-resource country-code,
+    has-resource country
+    has-resource node-id,
+    has-resource source;
+
+officer isa entity-type
+    has-resource name,
+    has-resource icij-id,
+    has-resource valid-until,
+    has-resource country-code,
+    has-resource country
+    has-resource node-id,
+    has-resource source;
+

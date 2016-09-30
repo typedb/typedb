@@ -49,7 +49,7 @@ public class MacroTest {
 
     @Test
     public void noescpMultiVarTest(){
-        String template = "\" My first name is @noescp{ <firstname> and my last name is <lastname>} \"";
+        String template = "\" My first name is @noescp{<firstname> and my last name is <lastname>} \"";
         String expected = "\" My first name is Phil and my last name is Collins \"";
 
         Map<String, Object> data = new HashMap<>();
@@ -57,6 +57,11 @@ public class MacroTest {
         data.put("lastname", "Collins");
 
         assertParseEquals(template, data, expected);
+    }
+
+    @Test
+    public void variablesInsideMacroBlockTest(){
+
     }
 
     private void assertParseEquals(String template, Map<String, Object> data, String expected){
