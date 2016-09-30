@@ -15,6 +15,8 @@ public class REST {
         public static final String GRAPH_MATCH_QUERY_URI = "/graph/match";
 
         public static final String CONCEPT_BY_ID_URI = "/graph/concept/" ;
+        public static final String CONCEPT_BY_ID_ONTOLOGY_URI = "/graph/concept/ontology/" ;
+
 
         public static final String COMMIT_LOG_URI = "/commit_log";
 
