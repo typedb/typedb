@@ -34,8 +34,6 @@ public class GraqlClientImpl implements GraqlClient {
 
     private WebSocketClient client;
 
-    private final static long TIMEOUT = 3_600_000;
-
     @Override
     public Future<Session> connect(Object websocket, URI uri) {
         client = new WebSocketClient();
