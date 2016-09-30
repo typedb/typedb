@@ -25,13 +25,19 @@ import io.mindmaps.graql.internal.gremlin.FragmentImpl;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 import io.mindmaps.graql.internal.gremlin.MultiTraversalImpl;
 import io.mindmaps.graql.internal.gremlin.ShortcutTraversal;
+import io.mindmaps.graql.internal.util.CommonUtil;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.*;
 import java.util.stream.Stream;
 
-import static io.mindmaps.graql.internal.gremlin.FragmentPriority.*;
-import static io.mindmaps.util.Schema.EdgeLabel.*;
+import static io.mindmaps.graql.internal.gremlin.FragmentPriority.DISTINCT_CASTING;
+import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_BOUNDED;
+import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNBOUNDED;
+import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNIQUE;
+import static io.mindmaps.util.Schema.EdgeLabel.CASTING;
+import static io.mindmaps.util.Schema.EdgeLabel.ISA;
+import static io.mindmaps.util.Schema.EdgeLabel.ROLE_PLAYER;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
@@ -95,6 +101,11 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         );
 
         return Stream.concat(traversals, distinctCastingTraversals).collect(toSet());
+    }
+
+    @Override
+    public Stream<VarAdmin> getTypes() {
+        return castings.stream().map(VarAdmin.Casting::getRoleType).flatMap(CommonUtil::optionalToStream);
     }
 
     @Override

@@ -46,6 +46,11 @@ abstract class AbstractVarProperty implements VarPropertyInternal {
     }
 
     @Override
+    public Stream<VarAdmin> getTypes() {
+        return Stream.empty();
+    }
+
+    @Override
     public Stream<VarAdmin> getImplicitInnerVars() {
         return getInnerVars();
     }

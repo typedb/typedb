@@ -44,6 +44,11 @@ public interface VarProperty {
     }
 
     /**
+     * Get a stream of {@link VarAdmin} that must be types.
+     */
+    Stream<VarAdmin> getTypes();
+
+    /**
      * Get a stream of any inner {@link VarAdmin} within this `VarProperty`.
      */
     Stream<VarAdmin> getInnerVars();
