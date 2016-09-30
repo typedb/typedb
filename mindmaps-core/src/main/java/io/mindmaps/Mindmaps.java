@@ -10,7 +10,7 @@ import java.util.Map;
  * for testing or experimentation purposes. 
  * </p>
  * <p>
- * To establish a connection, you first need to obtain a {@link MindmapGraphFactory} by calling 
+ * To establish a connection, you first need to obtain a {@link MindmapsGraphFactory} by calling
  * the {@link #factory(String, String)} method. A {@link MindmapsGraphFactory} to a given physical 
  * location and specific database instance within that location. Once you've instantiated a factory, 
  * you can obtain as many concurrent graph connection, represented by the {@link MindmapsGraph}
