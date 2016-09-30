@@ -14,17 +14,15 @@ import org.semanticweb.owlapi.model.OWLOntology;
 
 import io.mindmaps.graql.Graql;
 
-public class TestReasoning extends TestOwlMindMapsBase {
+public class TestSubProperties extends TestOwlMindMapsBase {
 	private IRI baseIri = IRI.create("http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl");
-	private OWLOntology ontology = null;
-	private Reasoner reasoner = null;
+	private OWLOntology shakespeare = null;
 	
 	@Before
 	public void loadShakespeare() {
         try {
-            ontology = loadOntologyFromResource("/io/mindmaps/migration/owl/samples/shakespeare.owl");   
-            reasoner = new Reasoner(new Configuration(), ontology);
-            migrator.ontology(ontology).graph(graph).migrate();
+            shakespeare = loadOntologyFromResource("/io/mindmaps/migration/owl/samples/shakespeare.owl");               
+            migrator.ontology(shakespeare).graph(graph).migrate();
             migrator.graph().commit();
         }
         catch (Throwable t) {
@@ -35,6 +33,7 @@ public class TestReasoning extends TestOwlMindMapsBase {
 	
     @Test
     public void testSubpropertyInference() {
+    	Reasoner reasoner = new Reasoner(new Configuration(), shakespeare);
     	IRI createdProp = baseIri.resolve("#created");
     	Map<OWLNamedIndividual, Set<OWLNamedIndividual>> createdInstances = 
     			reasoner.getObjectPropertyInstances(manager.getOWLDataFactory().getOWLObjectProperty(createdProp));
@@ -42,5 +41,5 @@ public class TestReasoning extends TestOwlMindMapsBase {
     	int mmCount = Graql.withGraph(migrator.graph()).match(Graql.var("r").isa(migrator.namer().objectPropertyName(createdProp)))
     		.stream().mapToInt(M -> 1).sum();
     	Assert.assertEquals(owlCount, mmCount);
-    }	
+    }
 }
