@@ -87,7 +87,7 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
 
             return setUniqueProperty(Schema.ConceptProperty.INDEX, generateResourceIndex(type().getId(), value.toString()));
         } catch (ClassCastException e) {
-            throw new RuntimeException(ErrorMessage.INVALID_DATATYPE.getMessage(value, dataType().getName()));
+            throw new InvalidConceptValueException(ErrorMessage.INVALID_DATATYPE.getMessage(value, dataType().getName()));
         }
     }
 
@@ -114,8 +114,13 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
                 throw new ClassCastException();
             }
             return ((Number) value).longValue();
+        } else {
+            try {
+                return Class.forName(parentDataType.getName()).cast(value);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(ErrorMessage.INVALID_RESOURCE_CAST.getMessage(value, parentDataType.getName()));
+            }
         }
-        return value;
     }
 
     /**

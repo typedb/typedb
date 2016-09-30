@@ -147,4 +147,14 @@ public class ResourceTest {
         Resource<String> concept2 = mindmapsGraph.putResource("concept2", concept);
         assertTrue(concept2.toString().contains("Value"));
     }
+
+    @Test
+    public void testInvalidDataType(){
+        ResourceType stringResourceType = mindmapsGraph.putResourceType("Strung", ResourceType.DataType.STRING);
+        expectedException.expect(RuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.INVALID_DATATYPE.getMessage("1", String.class.getName()))
+        ));
+        mindmapsGraph.putResource(1L, stringResourceType);
+    }
 }
