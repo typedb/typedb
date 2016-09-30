@@ -49,7 +49,10 @@ export default class Visualiser {
         // vis.js default config
         this.networkConfig = {
             autoResize: true,
-            edges: { arrows: { to: true } },
+            edges: {
+                arrows: { to: true },
+                smooth: { type: 'continuous' }
+            },
             physics: {
                 enabled: true,
                 solver: "forceAtlas2Based",
