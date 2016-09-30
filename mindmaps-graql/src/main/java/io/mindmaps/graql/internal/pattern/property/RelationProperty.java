@@ -16,20 +16,30 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql.internal.query;
+package io.mindmaps.graql.internal.pattern.property;
 
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 
+import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Stream;
 
-/**
- * Internal interface for Var
- */
-public interface VarInternal extends VarAdmin {
+import static java.util.stream.Collectors.joining;
 
-    /**
-     * @return the gremlin traversals that describe this variable
-     */
-    Set<MultiTraversal> getMultiTraversals();
+public class RelationProperty implements VarProperty {
+
+    private final Set<VarAdmin.Casting> castings = new HashSet<>();
+
+    public void addCasting(VarAdmin.Casting casting) {
+        castings.add(casting);
+    }
+
+    public Stream<VarAdmin.Casting> getCastings() {
+        return castings.stream();
+    }
+
+    @Override
+    public void buildString(StringBuilder builder) {
+        builder.append("(").append(castings.stream().map(Object::toString).collect(joining(", "))).append(")");
+    }
 }

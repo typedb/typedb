@@ -23,7 +23,7 @@ import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.Disjunction;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.query.*;
+import io.mindmaps.graql.internal.pattern.Patterns;
 import org.junit.Test;
 
 import java.util.HashSet;
