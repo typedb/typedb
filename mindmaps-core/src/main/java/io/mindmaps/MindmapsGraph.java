@@ -39,7 +39,7 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
- * A thread bound mindmaps transaction
+ * A thread bound mindmaps graph
  */
 public interface MindmapsGraph extends AutoCloseable{
     //------------------------------------- Concept Construction ----------------------------------
@@ -104,23 +104,23 @@ public interface MindmapsGraph extends AutoCloseable{
      *           Supported types include: String, Long, Double, Boolean.
      * @param value A value for the Resource which is unique to it's type
      * @param type The resource type of this resource.
-     * @return new or existing Resource with the provided Id.
+     * @return new or existing Resource with the provided value.
      */
     <V> Resource <V> putResource(V value, ResourceType<V> type);
 
     /**
      *
      * @param id A unique Id for the Rule
-     * @param lhs A string representing the left hand side GraQL query.
-     * @param rhs A string representing the right hand side GraQL query.
+     * @param lhs A string representing the left hand side Graql query.
+     * @param rhs A string representing the right hand side Graql query.
      * @param type The rule type of this Rule
      * @return new or existing Rule with the provided Id.
      */
     Rule putRule(String id, String lhs, String rhs, RuleType type);
 
     /**
-     * @param lhs A string representing the left hand side GraQL query.
-     * @param rhs A string representing the right hand side GraQL query.
+     * @param lhs A string representing the left hand side Graql query.
+     * @param rhs A string representing the right hand side Graql query.
      * @param type The rule type of this Rule
      * @return a new Rule
      */
@@ -130,14 +130,14 @@ public interface MindmapsGraph extends AutoCloseable{
      *
      * @param id A unique Id for the Relation
      * @param type The relation type of this Relation
-     * @return A new empty relation which can be fully customised
+     * @return A new empty relation.
      */
     Relation putRelation(String id, RelationType type);
 
     /**
      *
      * @param type The relation type of this Relation
-     * @return A new empty relation which can be fully customised
+     * @return A new empty relation.
      */
     Relation addRelation(RelationType type);
     //------------------------------------- Concept Lookup ----------------------------------
