@@ -25,7 +25,7 @@ import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-public class ValueProperty implements NamedProperty, SingleTraversalProperty {
+public class ValueProperty extends AbstractVarProperty implements NamedProperty, SingleTraversalProperty {
 
     private final ValuePredicateAdmin predicate;
 

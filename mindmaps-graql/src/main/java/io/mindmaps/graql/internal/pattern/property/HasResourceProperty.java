@@ -37,7 +37,7 @@ import static io.mindmaps.graql.internal.util.CommonUtil.tryAny;
 import static io.mindmaps.util.Schema.EdgeLabel.SHORTCUT;
 import static io.mindmaps.util.Schema.EdgeProperty.TO_TYPE;
 
-public class HasResourceProperty implements NamedProperty {
+public class HasResourceProperty extends AbstractVarProperty implements NamedProperty {
 
     private final String resourceType;
     private final VarAdmin resource;

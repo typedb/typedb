@@ -26,7 +26,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static io.mindmaps.util.Schema.ConceptProperty.*;
 
-public class ValueFlagProperty implements UniqueVarProperty, SingleTraversalProperty {
+public class ValueFlagProperty extends AbstractVarProperty implements UniqueVarProperty, SingleTraversalProperty {
 
     @Override
     public void buildString(StringBuilder builder) {

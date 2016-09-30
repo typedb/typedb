@@ -31,7 +31,7 @@ import java.util.Collection;
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_BOUNDED;
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNIQUE;
 
-public class AkoProperty implements NamedProperty, UniqueVarProperty {
+public class AkoProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
     private final VarAdmin superType;
 

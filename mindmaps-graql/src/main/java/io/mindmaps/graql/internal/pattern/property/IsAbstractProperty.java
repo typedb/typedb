@@ -26,7 +26,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static io.mindmaps.util.Schema.ConceptProperty.IS_ABSTRACT;
 
-public class IsAbstractProperty implements UniqueVarProperty, SingleTraversalProperty {
+public class IsAbstractProperty extends AbstractVarProperty implements UniqueVarProperty, SingleTraversalProperty {
 
     @Override
     public void buildString(StringBuilder builder) {

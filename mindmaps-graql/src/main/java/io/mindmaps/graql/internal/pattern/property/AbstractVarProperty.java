@@ -18,12 +18,29 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import io.mindmaps.MindmapsGraph;
+import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.admin.VarProperty;
 import io.mindmaps.util.ErrorMessage;
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 
-class VarProperties {
+abstract class AbstractVarProperty implements VarPropertyInternal {
 
-    private VarProperties() {}
+    @Override
+    public final int hashCode() {
+        return HashCodeBuilder.reflectionHashCode(this);
+    }
+
+    @Override
+    public final boolean equals(Object obj) {
+        return EqualsBuilder.reflectionEquals(this, obj);
+    }
+
+    @Override
+    public void deleteProperty(MindmapsGraph graph, Concept concept) {
+        throw failDelete(this);
+    }
 
     static IllegalStateException failDelete(VarProperty property) {
         StringBuilder builder = new StringBuilder();

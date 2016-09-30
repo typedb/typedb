@@ -30,10 +30,9 @@ import java.util.Collection;
 
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_BOUNDED;
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNBOUNDED;
-import static io.mindmaps.graql.internal.pattern.property.VarProperties.failDelete;
 import static io.mindmaps.util.Schema.EdgeLabel.HAS_SCOPE;
 
-public class HasScopeProperty implements NamedProperty {
+public class HasScopeProperty extends AbstractVarProperty implements NamedProperty {
 
     private final VarAdmin scope;
 

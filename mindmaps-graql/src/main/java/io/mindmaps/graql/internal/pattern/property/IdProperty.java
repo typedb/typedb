@@ -27,7 +27,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static io.mindmaps.util.Schema.ConceptProperty.ITEM_IDENTIFIER;
 
-public class IdProperty implements NamedProperty, UniqueVarProperty, SingleTraversalProperty {
+public class IdProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty, SingleTraversalProperty {
 
     private final String id;
 

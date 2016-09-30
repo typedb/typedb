@@ -30,10 +30,9 @@ import java.util.Collection;
 
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_BOUNDED;
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNIQUE;
-import static io.mindmaps.graql.internal.pattern.property.VarProperties.failDelete;
 import static io.mindmaps.util.Schema.EdgeLabel.HAS_ROLE;
 
-public class HasRoleProperty implements NamedProperty {
+public class HasRoleProperty extends AbstractVarProperty implements NamedProperty {
 
     private final VarAdmin role;
 

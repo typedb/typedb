@@ -34,7 +34,7 @@ import static io.mindmaps.util.Schema.EdgeLabel.*;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
-public class RelationProperty implements UniqueVarProperty, VarPropertyInternal {
+public class RelationProperty extends AbstractVarProperty implements UniqueVarProperty, VarPropertyInternal {
 
     private final Set<VarAdmin.Casting> castings = new HashSet<>();
 

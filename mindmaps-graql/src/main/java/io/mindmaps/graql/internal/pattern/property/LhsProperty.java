@@ -26,7 +26,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static io.mindmaps.util.Schema.ConceptProperty.RULE_LHS;
 
-public class LhsProperty implements UniqueVarProperty, NamedProperty, SingleTraversalProperty {
+public class LhsProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty, SingleTraversalProperty {
 
     private final String lhs;
 

@@ -35,7 +35,7 @@ import static io.mindmaps.graql.internal.gremlin.Traversals.inAkos;
 import static io.mindmaps.graql.internal.gremlin.Traversals.outAkos;
 import static io.mindmaps.util.Schema.EdgeLabel.ISA;
 
-public class IsaProperty implements UniqueVarProperty, NamedProperty {
+public class IsaProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
 
     private final VarAdmin type;
 

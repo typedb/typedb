@@ -27,7 +27,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static io.mindmaps.util.Schema.ConceptProperty.DATA_TYPE;
 
-public class DataTypeProperty implements NamedProperty, UniqueVarProperty, SingleTraversalProperty {
+public class DataTypeProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty, SingleTraversalProperty {
 
     private final ResourceType.DataType<?> datatype;
 

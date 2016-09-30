@@ -29,7 +29,7 @@ import io.mindmaps.util.Schema;
 import java.util.Collection;
 import java.util.HashSet;
 
-public class HasResourceTypeProperty implements NamedProperty {
+public class HasResourceTypeProperty extends AbstractVarProperty implements NamedProperty {
 
     private final VarAdmin resourceType;
 

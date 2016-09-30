@@ -27,7 +27,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static io.mindmaps.util.Schema.ConceptProperty.REGEX;
 
-public class RegexProperty implements UniqueVarProperty, SingleTraversalProperty, NamedProperty {
+public class RegexProperty extends AbstractVarProperty implements UniqueVarProperty, SingleTraversalProperty, NamedProperty {
 
     private final String regex;
 

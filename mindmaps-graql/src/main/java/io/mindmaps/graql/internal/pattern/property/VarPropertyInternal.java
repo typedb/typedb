@@ -19,16 +19,12 @@
 package io.mindmaps.graql.internal.pattern.property;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.admin.VarProperty;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 import io.mindmaps.graql.internal.gremlin.ShortcutTraversal;
 
 import java.util.Collection;
-
-import static io.mindmaps.graql.internal.pattern.property.VarProperties.failDelete;
 
 public interface VarPropertyInternal extends VarProperty {
 
@@ -41,10 +37,5 @@ public interface VarPropertyInternal extends VarProperty {
     @Override
     default Collection<VarAdmin> getInnerVars() {
         return Sets.newHashSet();
-    }
-
-    @Override
-    default void deleteProperty(MindmapsGraph graph, Concept concept) {
-        throw failDelete(this);
     }
 }

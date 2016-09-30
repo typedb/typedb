@@ -27,6 +27,12 @@ public interface VarProperty {
 
     void buildString(StringBuilder builder);
 
+    default String graqlString() {
+        StringBuilder builder = new StringBuilder();
+        buildString(builder);
+        return builder.toString();
+    }
+
     Collection<VarAdmin> getInnerVars();
 
     void deleteProperty(MindmapsGraph graph, Concept concept);
