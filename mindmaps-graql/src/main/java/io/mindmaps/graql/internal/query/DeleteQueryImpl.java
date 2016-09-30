@@ -28,7 +28,6 @@ import io.mindmaps.graql.admin.DeleteQueryAdmin;
 import io.mindmaps.graql.admin.MatchQueryAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.pattern.VarInternal;
-import io.mindmaps.graql.internal.validation.DeleteQueryValidator;
 import io.mindmaps.util.ErrorMessage;
 
 import java.util.Collection;
@@ -54,10 +53,6 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
         this.deleters = ImmutableMap.copyOf(deletersMap);
 
         this.matchQuery = matchQuery.admin();
-
-        matchQuery.admin().getGraph().ifPresent(
-                graph -> new DeleteQueryValidator(this).validate(graph)
-        );
     }
 
     @Override

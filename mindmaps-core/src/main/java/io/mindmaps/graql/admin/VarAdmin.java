@@ -146,11 +146,6 @@ public interface VarAdmin extends PatternAdmin, Var {
     boolean hasNoProperties();
 
     /**
-     * @return whether this variable is specified to have a value
-     */
-    boolean hasValue();
-
-    /**
      * @return all predicates on the value of this variable
      */
     Set<ValuePredicateAdmin> getValuePredicates();

@@ -282,11 +282,6 @@ class VarImpl implements VarInternal {
     }
 
     @Override
-    public boolean hasValue() {
-        return getProperty(ValueFlagProperty.class).isPresent();
-    }
-
-    @Override
     public Optional<VarAdmin> getAko() {
         return getProperty(AkoProperty.class).map(AkoProperty::getSuperType);
     }
