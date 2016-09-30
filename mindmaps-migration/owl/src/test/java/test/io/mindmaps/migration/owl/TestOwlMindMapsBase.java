@@ -17,6 +17,18 @@
  */
 package test.io.mindmaps.migration.owl;
 
+import java.io.InputStream;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Optional;
+
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.semanticweb.owlapi.apibinding.OWLManager;
+import org.semanticweb.owlapi.model.OWLOntology;
+import org.semanticweb.owlapi.model.OWLOntologyManager;
+
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
@@ -27,18 +39,6 @@ import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.migration.owl.OWLMigrator;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.semanticweb.owlapi.apibinding.OWLManager;
-import org.semanticweb.owlapi.model.OWLOntology;
-import org.semanticweb.owlapi.model.OWLOntologyManager;
-
-import java.io.InputStream;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * Base class for OWL migrator unit tests: create and holds OWL manager and
@@ -51,16 +51,16 @@ import java.util.Optional;
 public class TestOwlMindMapsBase {
     public static final String OWL_TEST_GRAPH = "owltestgraph";
  
-    static MindmapsGraph graph = Mindmaps.factory(Mindmaps.IN_MEMORY, OWL_TEST_GRAPH).getGraph();
-    static OWLOntologyManager manager;
+    MindmapsGraph graph = Mindmaps.factory(Mindmaps.IN_MEMORY, "graph-" + this.getClass().getName()).getGraph();
+    OWLOntologyManager manager;
     
-    @BeforeClass
-    public static void initStatic() {
+    @Before
+    public void init() {
         manager = OWLManager.createOWLOntologyManager();
     }
     
-    @AfterClass
-    public static void closeGraph() {   
+    @After
+    public void closeGraph() {   
         graph.close();
     }
     

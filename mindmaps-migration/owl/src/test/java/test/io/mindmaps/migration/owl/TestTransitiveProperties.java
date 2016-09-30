@@ -19,9 +19,10 @@ import org.semanticweb.owlapi.model.OWLDataFactory;
 import org.semanticweb.owlapi.model.OWLNamedIndividual;
 import org.semanticweb.owlapi.model.OWLOntology;
 
-import io.mindmaps.graql.Graql;
 
+import io.mindmaps.graql.Graql;
 import static org.junit.Assert.assertEquals;
+
 
 public class TestTransitiveProperties extends TestOwlMindMapsBase {
 	private IRI baseIri = IRI.create("http://www.co-ode.org/roberts/family-tree.owl");

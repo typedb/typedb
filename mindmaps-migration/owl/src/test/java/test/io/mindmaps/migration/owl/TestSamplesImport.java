@@ -17,15 +17,8 @@
  */
 package test.io.mindmaps.migration.owl;
 
-import java.util.HashSet;
 import java.util.Optional;
-import java.util.Set;
 
-import io.mindmaps.concept.*;
-import io.mindmaps.graql.Graql;
-import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.graql.Reasoner;
-import io.mindmaps.graql.internal.reasoner.rule.InferenceRule;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.JUnitCore;
@@ -34,9 +27,13 @@ import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
 import org.semanticweb.owlapi.model.OWLOntology;
 
+import io.mindmaps.concept.Entity;
+import io.mindmaps.concept.EntityType;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.Resource;
+import io.mindmaps.concept.RoleType;
+import io.mindmaps.graql.Reasoner;
 import io.mindmaps.migration.owl.OwlModel;
-
-import static io.mindmaps.graql.internal.reasoner.Utility.printAnswers;
 
 /**
  * Load and verify the ontology from the test sample resources. 
