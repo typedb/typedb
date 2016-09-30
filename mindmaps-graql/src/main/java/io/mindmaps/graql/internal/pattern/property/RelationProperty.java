@@ -98,13 +98,13 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     }
 
     @Override
-    public Collection<VarAdmin> getInnerVars() {
+    public Stream<VarAdmin> getInnerVars() {
         return castings.stream().flatMap(casting -> {
             Stream.Builder<VarAdmin> builder = Stream.builder();
             builder.add(casting.getRolePlayer());
             casting.getRoleType().ifPresent(builder::add);
             return builder.build();
-        }).collect(toSet());
+        });
     }
 
     private Stream<MultiTraversal> multiTraversalsFromCasting(String start, String castingName, VarAdmin.Casting casting) {

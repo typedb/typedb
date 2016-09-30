@@ -18,7 +18,6 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
-import com.google.common.collect.Sets;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
@@ -28,6 +27,7 @@ import io.mindmaps.util.Schema;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.stream.Stream;
 
 public class HasResourceTypeProperty extends AbstractVarProperty implements NamedProperty {
 
@@ -82,7 +82,12 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     }
 
     @Override
-    public Collection<VarAdmin> getInnerVars() {
-        return Sets.newHashSet(relationType);
+    public Stream<VarAdmin> getInnerVars() {
+        return Stream.of(resourceType);
+    }
+
+    @Override
+    public Stream<VarAdmin> getImplicitInnerVars() {
+        return Stream.of(resourceType, ownerRole, valueRole, relationType);
     }
 }

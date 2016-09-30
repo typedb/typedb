@@ -440,11 +440,8 @@ class VarImpl implements VarInternal {
             VarAdmin var = newVars.pop();
             vars.add(var);
 
-            var.getType().ifPresent(newVars::add);
-            var.getAko().ifPresent(newVars::add);
-            var.getHasRoles().forEach(newVars::add);
-            var.getPlaysRoles().forEach(newVars::add);
-            var.getScopes().forEach(newVars::add);
+            var.getProperties().flatMap(VarProperty::getInnerVars).forEach(newVars::add);
+
             var.getHasResourceTypes().forEach(newVars::add);
             var.getResources().forEach(newVars::add);
 

@@ -28,6 +28,7 @@ import io.mindmaps.graql.internal.gremlin.ShortcutTraversal;
 
 import java.util.Collection;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNBOUNDED;
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNIQUE;
@@ -82,7 +83,7 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
     }
 
     @Override
-    public Collection<VarAdmin> getInnerVars() {
-        return Sets.newHashSet(type);
+    public Stream<VarAdmin> getInnerVars() {
+        return Stream.of(type);
     }
 }

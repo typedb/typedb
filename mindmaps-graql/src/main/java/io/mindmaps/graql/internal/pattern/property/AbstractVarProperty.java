@@ -20,10 +20,13 @@ package io.mindmaps.graql.internal.pattern.property;
 
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
+import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.admin.VarProperty;
 import io.mindmaps.util.ErrorMessage;
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
+
+import java.util.stream.Stream;
 
 abstract class AbstractVarProperty implements VarPropertyInternal {
 
@@ -40,6 +43,11 @@ abstract class AbstractVarProperty implements VarPropertyInternal {
     @Override
     public void deleteProperty(MindmapsGraph graph, Concept concept) {
         throw failDelete(this);
+    }
+
+    @Override
+    public Stream<VarAdmin> getImplicitInnerVars() {
+        return getInnerVars();
     }
 
     static IllegalStateException failDelete(VarProperty property) {

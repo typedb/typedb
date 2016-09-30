@@ -21,22 +21,49 @@ package io.mindmaps.graql.admin;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 
-import java.util.Collection;
+import java.util.stream.Stream;
 
+/**
+ * A property of a {@link VarAdmin}, such as "isa movie" or "has name 'Jim'"
+ */
 public interface VarProperty {
 
+    /**
+     * Build a Graql string representation of this property
+     * @param builder a string builder to append to
+     */
     void buildString(StringBuilder builder);
 
+    /**
+     * Get the Graql string representation of this property
+     */
     default String graqlString() {
         StringBuilder builder = new StringBuilder();
         buildString(builder);
         return builder.toString();
     }
 
-    Collection<VarAdmin> getInnerVars();
+    /**
+     * Get a stream of any inner {@link VarAdmin} within this `VarProperty`.
+     */
+    Stream<VarAdmin> getInnerVars();
 
-    void deleteProperty(MindmapsGraph graph, Concept concept);
+    /**
+     * Get a stream of any inner {@link VarAdmin} within this `VarProperty`, including any that may have been
+     * implicitly created (such as with "has-resource").
+     */
+    Stream<VarAdmin> getImplicitInnerVars();
 
+    /**
+     * Delete the given property from the graph, if possible.
+     * @param graph the graph to operate on
+     * @param concept the concept to delete properties of
+     */
+    void deleteProperty(MindmapsGraph graph, Concept concept) throws IllegalStateException;
+
+    /**
+     * True if there is at most one of these properties for each {@link VarAdmin}
+     */
     default boolean isUnique() {
         return false;
     }

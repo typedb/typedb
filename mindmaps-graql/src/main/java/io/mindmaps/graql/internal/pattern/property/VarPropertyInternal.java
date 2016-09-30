@@ -18,13 +18,13 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
-import com.google.common.collect.Sets;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.admin.VarProperty;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 import io.mindmaps.graql.internal.gremlin.ShortcutTraversal;
 
 import java.util.Collection;
+import java.util.stream.Stream;
 
 public interface VarPropertyInternal extends VarProperty {
 
@@ -35,7 +35,7 @@ public interface VarPropertyInternal extends VarProperty {
     Collection<MultiTraversal> getMultiTraversals(String start);
 
     @Override
-    default Collection<VarAdmin> getInnerVars() {
-        return Sets.newHashSet();
+    default Stream<VarAdmin> getInnerVars() {
+        return Stream.empty();
     }
 }

@@ -31,6 +31,7 @@ import io.mindmaps.graql.internal.gremlin.MultiTraversalImpl;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNBOUNDED;
 import static io.mindmaps.graql.internal.util.CommonUtil.tryAny;
@@ -86,8 +87,8 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     }
 
     @Override
-    public Collection<VarAdmin> getInnerVars() {
-        return Sets.newHashSet(resource);
+    public Stream<VarAdmin> getInnerVars() {
+        return Stream.of(resource);
     }
 
     @Override

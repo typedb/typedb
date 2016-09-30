@@ -27,6 +27,7 @@ import io.mindmaps.graql.internal.gremlin.MultiTraversalImpl;
 import io.mindmaps.graql.internal.gremlin.Traversals;
 
 import java.util.Collection;
+import java.util.stream.Stream;
 
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_BOUNDED;
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNIQUE;
@@ -62,7 +63,7 @@ public class AkoProperty extends AbstractVarProperty implements NamedProperty, U
     }
 
     @Override
-    public Collection<VarAdmin> getInnerVars() {
-        return Sets.newHashSet(superType);
+    public Stream<VarAdmin> getInnerVars() {
+        return Stream.of(superType);
     }
 }

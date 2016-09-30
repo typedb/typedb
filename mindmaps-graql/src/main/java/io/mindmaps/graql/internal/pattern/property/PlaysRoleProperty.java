@@ -27,6 +27,7 @@ import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 import io.mindmaps.graql.internal.gremlin.MultiTraversalImpl;
 
 import java.util.Collection;
+import java.util.stream.Stream;
 
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_BOUNDED;
 import static io.mindmaps.graql.internal.gremlin.Traversals.inAkos;
@@ -70,8 +71,8 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
     }
 
     @Override
-    public Collection<VarAdmin> getInnerVars() {
-        return Sets.newHashSet(role);
+    public Stream<VarAdmin> getInnerVars() {
+        return Stream.of(role);
     }
 
     @Override
