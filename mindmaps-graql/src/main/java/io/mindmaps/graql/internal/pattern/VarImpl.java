@@ -84,31 +84,7 @@ class VarImpl implements VarInternal {
                 this.name = var.getName();
             }
 
-            if (var.hasValue()) value();
-            if (var.getAbstract()) isAbstract();
-
-            var.getDatatype().ifPresent(this::datatype);
-            var.getRegex().ifPresent(this::regex);
-            var.getType().ifPresent(this::isa);
-            var.getAko().ifPresent(this::ako);
-
-            var.getId().ifPresent(this::id);
-            var.getLhs().ifPresent(this::lhs);
-            var.getRhs().ifPresent(this::rhs);
-            var.getValuePredicates().forEach(this::value);
-
-            var.getHasRoles().forEach(this::hasRole);
-            var.getPlaysRoles().forEach(this::playsRole);
-            var.getScopes().forEach(this::hasScope);
-
-            // Currently it is guaranteed that resource types are specified with an ID
-            //noinspection OptionalGetWithoutIsPresent
-            ((VarInternal) var).getProperties(HasResourceProperty.class).forEach(properties::add);
-
-            if (var.isRelation()) {
-                RelationProperty relationProperty = putRelationProperty();
-                var.getCastings().forEach(casting -> relationProperty.addCasting(casting, properties));
-            }
+            var.getProperties().forEach(this::addProperty);
         }
     }
 
