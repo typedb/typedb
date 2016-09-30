@@ -97,7 +97,7 @@ public class InferenceRule {
             // x -> fresh
             if (parentVars.contains(chVar)) {
                 String freshVar = createFreshVariable(body.getVarSet(), chVar);
-                body.changeVarName(chVar, freshVar);
+                body.unify(chVar, freshVar);
             }
         });
     }

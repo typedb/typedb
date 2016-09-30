@@ -105,8 +105,22 @@ public class RecursiveInferenceTest {
         String queryString = "match (person: $X, ancestor-friend: $Y) isa Ancestor-friend;$X id 'a'; select $Y;";
         MatchQuery query = qb.parseMatch(queryString);
 
-        String explicitQuery = "match $X id 'a';" +
-                            "{$Y id 'd';} or {$Y id 'g';}; select $Y;";
+        String explicitQuery = "match $X id 'a';{$Y id 'd';} or {$Y id 'g';}; select $Y;";
+
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
+    }
+
+    /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
+    @Test
+    public void testAncestorFriendPrime() {
+        MindmapsGraph graph = GenericGraph.getGraph("ancestor-friend-test.gql");
+        QueryBuilder qb = Graql.withGraph(graph);
+        Reasoner reasoner = new Reasoner(graph);
+
+        String queryString = "match ($X, $Y) isa Ancestor-friend;$X id 'a'; select $Y;";
+        MatchQuery query = qb.parseMatch(queryString);
+        String explicitQuery = "match $X id 'a';{$Y id 'd';} or {$Y id 'g';}; select $Y;";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
@@ -124,6 +138,23 @@ public class RecursiveInferenceTest {
 
         String explicitQuery = "match $Y id 'd';" +
                 "{$X id 'a';} or {$X id 'b';} or {$X id 'c';}; select $X;";
+
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
+    }
+
+    /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/
+    @Test
+    public void testAncestorFriend2Prime() {
+        MindmapsGraph graph = GenericGraph.getGraph("ancestor-friend-test.gql");
+        QueryBuilder qb = Graql.withGraph(graph);
+        Reasoner reasoner = new Reasoner(graph);
+
+        String queryString = "match ($X, $Y) isa Ancestor-friend;$Y id 'd'; select $X;";
+        MatchQuery query = qb.parseMatch(queryString);
+
+        String explicitQuery = "match $Y id 'd';" +
+                                "{$X id 'a';} or {$X id 'b';} or {$X id 'c';}; select $X;";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
@@ -212,14 +243,6 @@ public class RecursiveInferenceTest {
         String queryString = "match (P-from: $x, P-to: $y) isa P; $x id 'a0'; select $y;";
         MatchQuery query = qb.parseMatch(queryString);
         String explicitQuery = "match $y isa b-entity;";
-
-        /*
-        String explicitQuery = "match " +
-                "{$x id 'a';$y id 'b'} or {$x id 'a';$y id 'c'} or {$x id 'a';$y id 'd'} or" +
-                "{$x id 'm';$y id 'n'} or {$x id 'm';$y id 'o'} or {$x id 'p';$y id 'm'} or" +
-                "{$x id 'g';$y id 'f'} or {$x id 'h';$y id 'f'} or {$x id 'i';$y id 'f'} or" +
-                "{$x id 'j';$y id 'f'} or {$x id 'f';$y id 'k'}";
-           */
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));

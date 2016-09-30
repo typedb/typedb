@@ -144,7 +144,4 @@ public class AtomicQuery extends Query{
         super.unify(unifiers);
         atom = selectAtoms().iterator().next();
     }
-
-
-
 }
