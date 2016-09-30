@@ -33,7 +33,11 @@ public class GraqlSignalHandler implements SignalHandler {
     @Override
     public void handle(Signal signal) {
         if (signal.getName().equals("INT")) {
-            shell.interrupt();
+            try {
+                shell.interrupt();
+            } catch (Throwable e) {
+                System.err.println(e.getMessage());
+            }
         }
     }
 }
