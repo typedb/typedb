@@ -30,6 +30,7 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.util.GraqlType;
+import io.mindmaps.graql.internal.pattern.Patterns;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
 

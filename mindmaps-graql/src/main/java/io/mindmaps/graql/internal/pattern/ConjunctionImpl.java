@@ -14,26 +14,26 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
- *
  */
 
-package io.mindmaps.graql.internal.query;
+package io.mindmaps.graql.internal.pattern;
 
+import com.google.common.collect.Sets;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.Disjunction;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 
+import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Collectors.*;
 
-class DisjunctionImpl<T extends PatternAdmin> implements Disjunction<T> {
+class ConjunctionImpl<T extends PatternAdmin> implements Conjunction<T> {
 
     private final Set<T> patterns;
 
-    DisjunctionImpl(Set<T> patterns) {
+    ConjunctionImpl(Set<T> patterns) {
         this.patterns = patterns;
     }
 
@@ -44,27 +44,42 @@ class DisjunctionImpl<T extends PatternAdmin> implements Disjunction<T> {
 
     @Override
     public Disjunction<Conjunction<VarAdmin>> getDisjunctiveNormalForm() {
-        // Concatenate all disjunctions into one big disjunction
-        Set<Conjunction<VarAdmin>> dnf = patterns.stream()
-                .flatMap(p -> p.getDisjunctiveNormalForm().getPatterns().stream())
+        // Get all disjunctions in query
+        List<Set<Conjunction<VarAdmin>>> disjunctionsOfConjunctions = patterns.stream()
+                .map(p -> p.getDisjunctiveNormalForm().getPatterns())
+                .collect(toList());
+
+        // Get the cartesian product.
+        // in other words, this puts the 'ands' on the inside and the 'ors' on the outside
+        // e.g. (A or B) and (C or D)  <=>  (A and C) or (A and D) or (B and C) or (B and D)
+        Set<Conjunction<VarAdmin>> dnf = Sets.cartesianProduct(disjunctionsOfConjunctions).stream()
+                .map(ConjunctionImpl::fromConjunctions)
                 .collect(toSet());
 
         return Patterns.disjunction(dnf);
+
+        // Wasn't that a horrible function? Here it is in Haskell:
+        //     dnf = map fromConjunctions . sequence . map getDisjunctiveNormalForm . patterns
     }
 
     @Override
-    public boolean isDisjunction() {
+    public boolean isConjunction() {
         return true;
     }
 
     @Override
-    public Disjunction<?> asDisjunction() {
+    public Conjunction<?> asConjunction() {
         return this;
+    }
+
+    private static <U extends PatternAdmin> Conjunction<U> fromConjunctions(List<Conjunction<U>> conjunctions) {
+        Set<U> patterns = conjunctions.stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
+        return Patterns.conjunction(patterns);
     }
 
     @Override
     public boolean equals(Object obj) {
-        return (obj instanceof DisjunctionImpl) && patterns.equals(((DisjunctionImpl) obj).patterns);
+        return (obj instanceof ConjunctionImpl) && patterns.equals(((ConjunctionImpl) obj).patterns);
     }
 
     @Override
@@ -74,7 +89,7 @@ class DisjunctionImpl<T extends PatternAdmin> implements Disjunction<T> {
 
     @Override
     public String toString() {
-        return patterns.stream().map(Object::toString).collect(Collectors.joining(" or "));
+        return "{" + patterns.stream().map(s -> s + ";").collect(joining(" ")) + "}";
     }
 
     @Override

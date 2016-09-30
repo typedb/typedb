@@ -30,7 +30,7 @@ import io.mindmaps.graql.internal.query.match.MatchQueryInternal;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.query.Patterns;
+import io.mindmaps.graql.internal.pattern.Patterns;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
 
@@ -49,7 +49,6 @@ public class Query implements MatchQueryInternal {
     private final Set<String> selectVars;
 
     private final Map<Type, Set<Atomic>> typeAtomMap;
-    private Atomic parentAtom = null;
 
     public Query(String query, MindmapsGraph graph) {
         this.graph = graph;
@@ -72,14 +71,7 @@ public class Query implements MatchQueryInternal {
     }
 
     public Query(Query q) {
-        this.graph = q.graph;
-
-        MatchQuery matchQuery = q.getMatchQuery();
-        this.pattern = matchQuery.admin().getPattern();
-        this.selectVars = Sets.newHashSet(matchQuery.admin().getSelectedNames());
-        this.atomSet = getAtomSet(pattern);
-
-        this.typeAtomMap = getTypeAtomMap(atomSet);
+        this(q.toString(), q.graph);
     }
 
     protected Query(Atomic atom) {
@@ -163,13 +155,15 @@ public class Query implements MatchQueryInternal {
         throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
     }
 
-    public void setParentAtom(Atomic par){ parentAtom = par;}
     public Set<Atomic> getAtoms() { return new HashSet<>(atomSet);}
     public Set<Atomic> getAtomsWithType(Type type) {
         return typeAtomMap.get(type);
     }
     public Set<Atomic> getSubstitutions(){
         return getAtoms().stream().filter(Atomic::isSubstitution).collect(Collectors.toSet());
+    }
+    public Set<Atomic> getTypeConstraints(){
+        return getAtoms().stream().filter(atom -> atom.isUnary() && !atom.isResource()).collect(Collectors.toSet());
     }
 
     public Set<String> getVarSet() {
@@ -217,19 +211,25 @@ public class Query implements MatchQueryInternal {
     }
 
     private void exchangeRelVarNames(String from, String to){
-        changeVarName(to, "temp");
-        changeVarName(from, to);
-        changeVarName("temp", from);
+        unify(to, "temp");
+        unify(from, to);
+        unify("temp", from);
     }
 
-    public void changeVarName(String from, String to) {
+
+    /**
+     * change each variable occurrence in the query (apply unifier [from/to])
+     * @param from variable name to be changed
+     * @param to new variable name
+     */
+    public void unify(String from, String to) {
         Set<Atomic> toRemove = new HashSet<>();
         Set<Atomic> toAdd = new HashSet<>();
 
         atomSet.stream().filter(atom -> atom.getVarNames().contains(from)).forEach(toRemove::add);
         toRemove.forEach(atom -> toAdd.add(AtomicFactory.create(atom)));
         toRemove.forEach(this::removeAtom);
-        toAdd.forEach(atom -> atom.changeEachVarName(from, to));
+        toAdd.forEach(atom -> atom.unify(from, to));
         toAdd.forEach(this::addAtom);
 
         Map<String, String> mapping = new HashMap<>();
@@ -237,6 +237,10 @@ public class Query implements MatchQueryInternal {
         updateSelectedVars(mapping);
     }
 
+    /**
+     * change each variable occurrence according to provided mappings (apply unifiers {[from, to]_i})
+     * @param unifiers contain unifiers (variable mappings) to be applied
+     */
     public void unify(Map<String, String> unifiers) {
         if (unifiers.size() == 0) return;
         Map<String, String> mappings = new HashMap<>(unifiers);
@@ -272,7 +276,7 @@ public class Query implements MatchQueryInternal {
                 .forEach(toRemove::add);
         toRemove.forEach(atom -> toAdd.add(AtomicFactory.create(atom)));
         toRemove.forEach(this::removeAtom);
-        toAdd.forEach(atom -> atom.changeEachVarName(mappings));
+        toAdd.forEach(atom -> atom.unify(mappings));
         toAdd.forEach(this::addAtom);
 
         updateSelectedVars(mappings);
@@ -291,7 +295,7 @@ public class Query implements MatchQueryInternal {
 
         captures.forEach(cap -> {
             String fresh = createFreshVariable(getVarSet(), cap.replace("captured->", ""));
-            changeVarName(cap, fresh);
+            unify(cap, fresh);
         });
     }
 

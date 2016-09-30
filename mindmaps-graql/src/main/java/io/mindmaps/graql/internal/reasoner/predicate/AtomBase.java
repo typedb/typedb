@@ -29,7 +29,7 @@ import io.mindmaps.graql.*;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.query.Patterns;
+import io.mindmaps.graql.internal.pattern.Patterns;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import javafx.util.Pair;
 
@@ -112,7 +112,9 @@ public abstract class AtomBase implements Atomic{
     @Override
     public boolean isRuleResolvable(){
         Type type = getParentQuery().getGraph().orElse(null).getType(getTypeId());
-        return !type.getRulesOfConclusion().isEmpty();
+        if (type == null) return false;
+        else
+            return !type.getRulesOfConclusion().isEmpty();
     }
 
     @Override
@@ -174,7 +176,7 @@ public abstract class AtomBase implements Atomic{
     }
 
     @Override
-    public void changeEachVarName(String from, String to) {
+    public void unify(String from, String to) {
         String var = getVarName();
         if (var.equals(from)) {
             setVarName(to);
@@ -184,12 +186,12 @@ public abstract class AtomBase implements Atomic{
     }
 
     @Override
-    public void changeEachVarName(Map<String, String> mappings){
+    public void unify(Map<String, String> unifiers){
         String var = getVarName();
-        if (mappings.containsKey(var)) {
-            setVarName(mappings.get(var));
+        if (unifiers.containsKey(var)) {
+            setVarName(unifiers.get(var));
         }
-        else if (mappings.containsValue(var)) {
+        else if (unifiers.containsValue(var)) {
             setVarName("captured->" + var);
         }
     }

@@ -1,0 +1,533 @@
+<?xml version="1.0"?>
+
+
+<!DOCTYPE rdf:RDF [
+    <!ENTITY owl "http://www.w3.org/2002/07/owl#" >
+    <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#" >
+    <!ENTITY owl2xml "http://www.w3.org/2006/12/owl2-xml#" >
+    <!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#" >
+    <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#" >
+]>
+
+
+<rdf:RDF xmlns="http://www.co-ode.org/roberts/family-tree.owl#"
+     xml:base="http://www.co-ode.org/roberts/family-tree.owl"
+     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+     xmlns:owl2xml="http://www.w3.org/2006/12/owl2-xml#"
+     xmlns:owl="http://www.w3.org/2002/07/owl#"
+     xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+    <owl:Ontology rdf:about="http://www.co-ode.org/roberts/family-tree.owl">
+        <rdfs:comment rdf:datatype="&xsd;string">A simple family relationships ontology and associated instances. the description is of the family of Robert Stevens and the intention is to use the minimal of asserted relationships and the maximum of inference. To do this  I&apos;ve used role chains, nominals and properties hierarchies.</rdfs:comment>
+    </owl:Ontology>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Annotation properties
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#hasAncestor -->
+
+    <owl:AnnotationProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasAncestor">
+        <rdfs:domain rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:AnnotationProperty>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#hasBrother -->
+
+    <owl:AnnotationProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasBrother">
+        <rdfs:domain rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:AnnotationProperty>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#hasChild -->
+
+    <owl:AnnotationProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasChild">
+        <rdfs:domain rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:AnnotationProperty>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#hasDaughter -->
+
+    <owl:AnnotationProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasDaughter">
+        <rdfs:domain rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:AnnotationProperty>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#hasFather -->
+
+    <owl:AnnotationProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasFather">
+        <rdfs:domain rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:AnnotationProperty>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#hasGrandfather -->
+
+    <owl:AnnotationProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasGrandfather">
+        <rdfs:domain rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:AnnotationProperty>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#hasGrandmother -->
+
+    <owl:AnnotationProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasGrandmother">
+        <rdfs:domain rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:AnnotationProperty>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#hasMother -->
+
+    <owl:AnnotationProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasMother">
+        <rdfs:domain rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:AnnotationProperty>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isAuntOf -->
+
+    <owl:AnnotationProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isAuntOf">
+        <rdfs:domain rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Woman"/>
+    </owl:AnnotationProperty>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isBloodRelationOf -->
+
+    <owl:AnnotationProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isBloodRelationOf">
+        <rdfs:domain rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:AnnotationProperty>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isDirectSiblingOf -->
+
+    <owl:AnnotationProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isDirectSiblingOf">
+        <rdfs:domain rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:AnnotationProperty>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isSiblingOf -->
+
+    <owl:AnnotationProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isSiblingOf">
+        <rdfs:domain rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:AnnotationProperty>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isSisterOf -->
+
+    <owl:AnnotationProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isSisterOf">
+        <rdfs:domain rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Woman"/>
+    </owl:AnnotationProperty>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isUncleOf -->
+
+    <owl:AnnotationProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isUncleOf">
+        <rdfs:domain rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Man"/>
+    </owl:AnnotationProperty>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Object Properties
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#hasAncestor -->
+
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasAncestor">
+        <rdf:type rdf:resource="&owl;TransitiveProperty"/>
+        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+        <owl:inverseOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#isAncestorOf"/>
+        <rdfs:subPropertyOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#isBloodRelationOf"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#hasBrother -->
+
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasBrother">
+        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Man"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#hasChild -->
+
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasChild">
+        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+        <owl:inverseOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#isChildOf"/>
+        <owl:equivalentProperty rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#isParentOf"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#hasDaughter -->
+
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasDaughter">
+        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Woman"/>
+        <rdfs:subPropertyOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#hasChild"/>
+        <owl:inverseOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#isDaughterOf"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#hasFather -->
+
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasFather">
+        <rdf:type rdf:resource="&owl;FunctionalProperty"/>
+        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Man"/>
+        <rdfs:subPropertyOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#hasForeFather"/>
+        <rdfs:subPropertyOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#hasParent"/>
+        <owl:inverseOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#isFatherOf"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#hasForeFather -->
+
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasForeFather"/>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#hasForeMother -->
+
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasForeMother"/>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#hasGrandParent -->
+
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasGrandParent"/>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#hasGrandfather -->
+
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasGrandfather">
+        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Man"/>
+        <rdfs:subPropertyOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#hasGrandParent"/>
+        <owl:inverseOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#isGrandfatherOf"/>
+        <owl:propertyChainAxiom rdf:parseType="Collection">
+            <rdf:Description rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasParent"/>
+            <rdf:Description rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasFather"/>
+        </owl:propertyChainAxiom>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#hasGrandmother -->
+
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasGrandmother">
+        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Woman"/>
+        <rdfs:subPropertyOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#hasGrandParent"/>
+        <owl:inverseOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#isGrandmotherOf"/>
+        <owl:propertyChainAxiom rdf:parseType="Collection">
+            <rdf:Description rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasParent"/>
+            <rdf:Description rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasMother"/>
+        </owl:propertyChainAxiom>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#hasMother -->
+
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasMother">
+        <rdf:type rdf:resource="&owl;FunctionalProperty"/>
+        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Woman"/>
+        <rdfs:subPropertyOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#hasForeMother"/>
+        <rdfs:subPropertyOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#hasParent"/>
+        <owl:inverseOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#isMotherOf"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#hasParent -->
+
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasParent"/>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#hasSister -->
+
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasSister"/>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isAncestorOf -->
+
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isAncestorOf"/>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isAuntOf -->
+
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isAuntOf">
+        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+        <rdfs:subPropertyOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#isBloodRelationOf"/>
+        <owl:propertyChainAxiom rdf:parseType="Collection">
+            <rdf:Description rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isSisterOf"/>
+            <rdf:Description rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isParentOf"/>
+        </owl:propertyChainAxiom>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isBloodRelationOf -->
+
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isBloodRelationOf">
+        <rdf:type rdf:resource="&owl;SymmetricProperty"/>
+        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+        <rdfs:subPropertyOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#isRelationOf"/>
+        <owl:propertyChainAxiom rdf:parseType="Collection">
+            <rdf:Description rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasAncestor"/>
+            <rdf:Description rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isAncestorOf"/>
+        </owl:propertyChainAxiom>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isBrotherOf -->
+
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isBrotherOf"/>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isChildOf -->
+
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isChildOf"/>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isDaughterOf -->
+
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isDaughterOf"/>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isDirectSiblingOf -->
+
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isDirectSiblingOf">
+        <rdf:type rdf:resource="&owl;SymmetricProperty"/>
+        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+        <rdfs:subPropertyOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#isSiblingOf"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isFatherOf -->
+
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isFatherOf"/>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isGrandfatherOf -->
+
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isGrandfatherOf"/>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isGrandmotherOf -->
+
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isGrandmotherOf"/>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isMotherOf -->
+
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isMotherOf"/>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isParentOf -->
+
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isParentOf"/>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isRelationOf -->
+
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isRelationOf"/>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isSiblingOf -->
+
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isSiblingOf">
+        <rdf:type rdf:resource="&owl;SymmetricProperty"/>
+        <rdf:type rdf:resource="&owl;TransitiveProperty"/>
+        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+        <rdfs:subPropertyOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#isBloodRelationOf"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isSisterOf -->
+
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isSisterOf">
+        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+        <owl:inverseOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#hasSister"/>
+        <rdfs:subPropertyOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#isDirectSiblingOf"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#isUncleOf -->
+
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isUncleOf">
+        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+        <rdfs:subPropertyOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#isBloodRelationOf"/>
+        <owl:propertyChainAxiom rdf:parseType="Collection">
+            <rdf:Description rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isBrotherOf"/>
+            <rdf:Description rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isParentOf"/>
+        </owl:propertyChainAxiom>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Classes
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#Man -->
+
+    <owl:Class rdf:about="http://www.co-ode.org/roberts/family-tree.owl#Man">
+        <rdfs:subClassOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#Person -->
+
+    <owl:Class rdf:about="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#Woman -->
+
+    <owl:Class rdf:about="http://www.co-ode.org/roberts/family-tree.owl#Woman">
+        <rdfs:subClassOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:Class>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Individuals
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#Bill -->
+
+    <owl:NamedIndividual rdf:about="http://www.co-ode.org/roberts/family-tree.owl#Bill">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Man"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#Eliza -->
+
+    <owl:NamedIndividual rdf:about="http://www.co-ode.org/roberts/family-tree.owl#Eliza">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Woman"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#Eve -->
+
+    <owl:NamedIndividual rdf:about="http://www.co-ode.org/roberts/family-tree.owl#Eve">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Woman"/>
+        <isAncestorOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Kaylee"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#John -->
+
+    <owl:NamedIndividual rdf:about="http://www.co-ode.org/roberts/family-tree.owl#John">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Man"/>
+        <isAncestorOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Eve"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#Kaylee -->
+
+    <owl:NamedIndividual rdf:about="http://www.co-ode.org/roberts/family-tree.owl#Kaylee">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Woman"/>
+        <isAncestorOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Troy"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#Kurt -->
+
+    <owl:NamedIndividual rdf:about="http://www.co-ode.org/roberts/family-tree.owl#Kurt">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Man"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#Liu -->
+
+    <owl:NamedIndividual rdf:about="http://www.co-ode.org/roberts/family-tree.owl#Liu">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Woman"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#Mary -->
+
+    <owl:NamedIndividual rdf:about="http://www.co-ode.org/roberts/family-tree.owl#Mary">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Woman"/>
+    </owl:NamedIndividual>
+    
+
+
+    <!-- http://www.co-ode.org/roberts/family-tree.owl#Troy -->
+
+    <owl:NamedIndividual rdf:about="http://www.co-ode.org/roberts/family-tree.owl#Troy">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Man"/>
+    </owl:NamedIndividual>
+</rdf:RDF>
+
+
+
+<!-- Generated by the OWL API (version 3.4.2) http://owlapi.sourceforge.net -->
+

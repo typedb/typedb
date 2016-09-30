@@ -22,7 +22,7 @@ This product includes software developed by [Mindmaps Research Ltd](http://mindm
 
 Operating System: Unix based systems (Linux and Mac OS X)
 
-MindmapsDB requires Java 8 (Standard Edition) with the $JAVA_HOME set accordingly. Mindmaps also requires Maven 3.
+MindmapsDB requires Java 8 (Standard Edition) with the $JAVA_HOME set accordingly. Mindmaps also requires Maven 3, nodejs and npm to be installed and configured correctly (you should be able to install packages global for your user via npm without needing sudo).
 
   
 ## Disclaimer  

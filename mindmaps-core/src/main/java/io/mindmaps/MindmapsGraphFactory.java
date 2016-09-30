@@ -1,21 +1,24 @@
 package io.mindmaps;
 
+/**
+ * A factory instance which produces graphs bound to the same persistence layer and keyspace.
+ */
 public interface MindmapsGraphFactory {
     /**
      *
-     * @return A new or existing mindmaps graph with the defined keyspace
+     * @return A new or existing mindmaps graph
      */
     MindmapsGraph getGraph();
 
     /**
      *
-     * @return A new or existing mindmaps graph with the defined keyspace connecting to the specified remote uri with batch loading enabled
+     * @return A new or existing mindmaps graph with batch loading enabled
      */
     MindmapsGraph getGraphBatchLoading();
 
     /**
      *
-     * @return A new or existing mindmaps graph compute with the defined keyspace
+     * @return A new or existing mindmaps graph computer
      */
     MindmapsComputer getGraphComputer();
 }

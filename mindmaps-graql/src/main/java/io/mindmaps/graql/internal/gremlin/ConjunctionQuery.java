@@ -21,7 +21,7 @@ package io.mindmaps.graql.internal.gremlin;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.query.VarInternal;
+import io.mindmaps.graql.internal.pattern.VarInternal;
 import io.mindmaps.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;

@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql.internal.query;
+package io.mindmaps.graql.internal.pattern;
 
 import com.google.common.collect.Maps;
 import io.mindmaps.concept.ResourceType;
@@ -28,6 +28,7 @@ import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 import io.mindmaps.graql.internal.gremlin.VarTraversals;
+import io.mindmaps.graql.internal.pattern.property.*;
 import io.mindmaps.graql.internal.util.StringConverter;
 
 import java.util.*;
@@ -44,32 +45,10 @@ import static java.util.stream.Collectors.*;
  */
 class VarImpl implements VarInternal {
 
+    private Set<VarProperty> properties = new HashSet<>();
+
     private String name;
     private final boolean userDefinedName;
-
-    private boolean abstractFlag = false;
-    private Optional<ResourceType.DataType<?>> datatype = Optional.empty();
-    private Optional<String> regex = Optional.empty();
-
-    private Optional<String> id = Optional.empty();
-
-    private boolean valueFlag = false;
-    private final Set<ValuePredicateAdmin> values = new HashSet<>();
-
-    private Optional<String> lhs = Optional.empty();
-    private Optional<String> rhs = Optional.empty();
-
-    private Optional<VarAdmin> isa = Optional.empty();
-    private Optional<VarAdmin> ako = Optional.empty();
-
-    private final Set<VarAdmin> hasRole = new HashSet<>();
-    private final Set<VarAdmin> playsRole = new HashSet<>();
-    private final Set<VarAdmin> hasScope = new HashSet<>();
-    private final Set<VarAdmin> hasResourceTypes = new HashSet<>();
-
-    private final Set<VarAdmin> resources = new HashSet<>();
-
-    private final Set<VarAdmin.Casting> castings = new HashSet<>();
 
     private Optional<VarTraversals> varPattern = Optional.empty();
 
@@ -98,15 +77,13 @@ class VarImpl implements VarInternal {
         this.name = first.getName();
         this.userDefinedName = first.isUserDefinedName();
 
-        valueFlag = false;
-
         for (VarAdmin var : vars) {
             if (var.isUserDefinedName()) {
                 this.name = var.getName();
             }
 
-            valueFlag |= var.hasValue();
-            abstractFlag |= var.getAbstract();
+            if (var.hasValue()) value();
+            if (var.getAbstract()) isAbstract();
 
             var.getDatatype().ifPresent(this::datatype);
             var.getRegex().ifPresent(this::regex);
@@ -116,34 +93,37 @@ class VarImpl implements VarInternal {
             var.getId().ifPresent(this::id);
             var.getLhs().ifPresent(this::lhs);
             var.getRhs().ifPresent(this::rhs);
-            values.addAll(var.getValuePredicates());
+            var.getValuePredicates().forEach(this::value);
 
-            hasRole.addAll(var.getHasRoles());
-            playsRole.addAll(var.getPlaysRoles());
-            hasScope.addAll(var.getScopes());
+            var.getHasRoles().forEach(this::hasRole);
+            var.getPlaysRoles().forEach(this::playsRole);
+            var.getScopes().forEach(this::hasScope);
 
             // Currently it is guaranteed that resource types are specified with an ID
             //noinspection OptionalGetWithoutIsPresent
-            var.getResources().forEach(resources::add);
+            ((VarInternal) var).getProperties(HasResourceProperty.class).forEach(properties::add);
 
-            castings.addAll(var.getCastings());
+            if (var.isRelation()) {
+                RelationProperty relationProperty = putRelationProperty();
+                var.getCastings().forEach(relationProperty::addCasting);
+            }
         }
     }
 
     @Override
     public Var id(String id) {
-        this.id.ifPresent(
+        getId().ifPresent(
                 prevId -> {
                     if (!prevId.equals(id)) throw new IllegalStateException(MULTIPLE_IDS.getMessage(id, prevId));
                 }
         );
-        this.id = Optional.of(id);
+        properties.add(new IdProperty(id));
         return this;
     }
 
     @Override
     public Var value() {
-        valueFlag = true;
+        properties.add(new ValueFlagProperty());
         return this;
     }
 
@@ -154,7 +134,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var value(ValuePredicate predicate) {
-        values.add(predicate.admin());
+        properties.add(new ValueProperty(predicate.admin()));
         return this;
     }
 
@@ -175,7 +155,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var has(String type, Var var) {
-        resources.add(var.isa(type).admin());
+        properties.add(new HasResourceProperty(type, var.admin()));
         return this;
     }
 
@@ -188,7 +168,7 @@ class VarImpl implements VarInternal {
     public Var isa(Var type) {
         VarAdmin var = type.admin();
 
-        isa.ifPresent(
+        getType().ifPresent(
                 other -> {
                     if (!var.getName().equals(other.getName()) && !var.getIdOnly().equals(other.getIdOnly())) {
                         throw new IllegalStateException(
@@ -199,7 +179,7 @@ class VarImpl implements VarInternal {
                     }
                 }
         );
-        isa = Optional.of(var);
+        properties.add(new IsaProperty(var));
         return this;
     }
 
@@ -210,7 +190,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var ako(Var type) {
-        ako = Optional.of(type.admin());
+        properties.add(new AkoProperty(type.admin()));
         return this;
     }
 
@@ -221,7 +201,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var hasRole(Var type) {
-        hasRole.add(type.admin());
+        properties.add(new HasRoleProperty(type.admin()));
         return this;
     }
 
@@ -232,13 +212,13 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var playsRole(Var type) {
-        playsRole.add(type.admin());
+        properties.add(new PlaysRoleProperty(type.admin()));
         return this;
     }
 
     @Override
     public Var hasScope(Var type) {
-        hasScope.add(type.admin());
+        properties.add(new HasScopeProperty(type.admin()));
         return this;
     }
 
@@ -249,7 +229,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var hasResource(Var type) {
-        hasResourceTypes.add(type.admin());
+        properties.add(new HasResourceTypeProperty(type.admin()));
         return this;
     }
 
@@ -260,7 +240,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var rel(Var roleplayer) {
-        castings.add(new Casting(roleplayer.admin()));
+        putRelationProperty().addCasting(new Casting(roleplayer.admin()));
         return this;
     }
 
@@ -281,37 +261,37 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var rel(Var roletype, Var roleplayer) {
-        castings.add(new Casting(roletype.admin(), roleplayer.admin()));
+        putRelationProperty().addCasting(new Casting(roletype.admin(), roleplayer.admin()));
         return this;
     }
 
     @Override
     public Var isAbstract() {
-        abstractFlag = true;
+        properties.add(new IsAbstractProperty());
         return this;
     }
 
     @Override
     public Var datatype(ResourceType.DataType<?> datatype) {
-        this.datatype = Optional.of(datatype);
+        properties.add(new DataTypeProperty(datatype));
         return this;
     }
 
     @Override
     public Var regex(String regex) {
-        this.regex = Optional.of(regex);
+        properties.add(new RegexProperty(regex));
         return this;
     }
 
     @Override
     public Var lhs(String lhs) {
-        this.lhs = Optional.of(lhs);
+        properties.add(new LhsProperty(lhs));
         return this;
     }
 
     @Override
     public Var rhs(String rhs) {
-        this.rhs = Optional.of(rhs);
+        properties.add(new RhsProperty(rhs));
         return this;
     }
 
@@ -323,12 +303,12 @@ class VarImpl implements VarInternal {
 
     @Override
     public Optional<VarAdmin> getType() {
-        return isa;
+        return getProperties(IsaProperty.class).findAny().map(IsaProperty::getType);
     }
 
     @Override
     public boolean isRelation() {
-        return !castings.isEmpty();
+        return getProperties(RelationProperty.class).findAny().isPresent();
     }
 
     @Override
@@ -344,79 +324,75 @@ class VarImpl implements VarInternal {
 
     @Override
     public boolean getAbstract() {
-        return abstractFlag;
+        return getProperties(IsAbstractProperty.class).findAny().isPresent();
     }
 
     @Override
     public Optional<ResourceType.DataType<?>> getDatatype() {
-        return datatype;
+        return getProperties(DataTypeProperty.class).findAny().map(DataTypeProperty::getDatatype);
     }
 
     @Override
     public Optional<String> getRegex() {
-        return regex;
+        return getProperties(RegexProperty.class).findAny().map(RegexProperty::getRegex);
     }
 
     @Override
     public boolean hasValue() {
-        return valueFlag;
+        return getProperties(ValueFlagProperty.class).findAny().isPresent();
     }
 
     @Override
     public Optional<VarAdmin> getAko() {
-        return ako;
+        return getProperties(AkoProperty.class).findAny().map(AkoProperty::getSuperType);
     }
 
     @Override
     public Set<VarAdmin> getHasRoles() {
-        return hasRole;
+        return getProperties(HasRoleProperty.class).map(HasRoleProperty::getRole).collect(toSet());
     }
 
     @Override
     public Set<VarAdmin> getPlaysRoles() {
-        return playsRole;
+        return getProperties(PlaysRoleProperty.class).map(PlaysRoleProperty::getRole).collect(toSet());
     }
 
     @Override
     public Set<VarAdmin> getScopes() {
-        return hasScope;
+        return getProperties(HasScopeProperty.class).map(HasScopeProperty::getScope).collect(toSet());
     }
 
     @Override
     public Set<VarAdmin> getHasResourceTypes() {
-        return hasResourceTypes;
+        return getProperties(HasResourceTypeProperty.class)
+                .map(HasResourceTypeProperty::getResourceType).collect(toSet());
     }
 
     @Override
     public Set<String> getRoleTypes() {
-        return getIdNames(castings.stream().map(VarAdmin.Casting::getRoleType).flatMap(this::optionalToStream));
+        return getIdNames(getCastings().stream().map(VarAdmin.Casting::getRoleType).flatMap(this::optionalToStream));
     }
 
     @Override
     public Optional<String> getId() {
-        return id;
+        return getProperties(IdProperty.class).findAny().map(IdProperty::getId);
     }
 
     @Override
     public Set<String> getResourceTypes() {
-        // Currently it is guaranteed that resources have a type with an ID
-        //noinspection OptionalGetWithoutIsPresent
-        return resources.stream().map(resource -> resource.getType().get().getId().get()).collect(toSet());
+        return getProperties(HasResourceProperty.class).map(HasResourceProperty::getType).collect(toSet());
     }
 
     @Override
     public boolean hasNoProperties() {
         // return true if this variable has any properties set
-        return !id.isPresent() && !valueFlag && values.isEmpty() && !isa.isPresent() && !ako.isPresent() &&
-                hasRole.isEmpty() && playsRole.isEmpty() && hasScope.isEmpty() && resources.isEmpty() &&
-                castings.isEmpty();
+        return properties.isEmpty();
     }
 
     @Override
     public Optional<String> getIdOnly() {
-        if (id.isPresent() && !valueFlag && values.isEmpty() && !isa.isPresent() && !ako.isPresent() &&
-                hasRole.isEmpty() && playsRole.isEmpty() && hasScope.isEmpty() && resources.isEmpty() &&
-                castings.isEmpty() && !userDefinedName) {
+
+        if (getId().isPresent() && properties.size() == 1 && !userDefinedName) {
             return getId();
         } else {
             return Optional.empty();
@@ -445,7 +421,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Set<?> getValueEqualsPredicates() {
-        return values.stream()
+        return getValuePredicates().stream()
                 .map(ValuePredicateAdmin::equalsValue)
                 .flatMap(this::optionalToStream)
                 .collect(toSet());
@@ -453,40 +429,40 @@ class VarImpl implements VarInternal {
 
     @Override
     public Set<ValuePredicateAdmin> getValuePredicates() {
-        return values;
+        return getProperties(ValueProperty.class).map(ValueProperty::getPredicate).collect(toSet());
     }
 
     @Override
     public Optional<String> getLhs() {
-        return lhs;
+        return getProperties(LhsProperty.class).findAny().map(LhsProperty::getLhs);
     }
 
     @Override
     public Optional<String> getRhs() {
-        return rhs;
+        return getProperties(RhsProperty.class).findAny().map(RhsProperty::getRhs);
     }
 
     @Override
     public Set<VarAdmin> getResources() {
-        return resources;
+        return getProperties(HasResourceProperty.class).map(HasResourceProperty::getResource).collect(toSet());
     }
 
     @Override
     public Map<VarAdmin, Set<ValuePredicateAdmin>> getResourcePredicates() {
-        // The type of the resource is guaranteed to exist
+        // Type of the resource is guaranteed to exist
         //noinspection OptionalGetWithoutIsPresent
         Function<VarAdmin, VarAdmin> type = v -> v.getType().get();
 
-        Function<VarAdmin, Stream<ValuePredicateAdmin>> predicates =
-                resource -> resource.getValuePredicates().stream();
+        Function<VarAdmin, Stream<ValuePredicateAdmin>> predicates = resource -> resource.getValuePredicates().stream();
 
-        Map<VarAdmin, List<VarAdmin>> groupedByType = resources.stream().collect(groupingBy(type));
+        Map<VarAdmin, List<VarAdmin>> groupedByType =
+                getProperties(HasResourceProperty.class).map(HasResourceProperty::getResource).collect(groupingBy(type));
 
         return Maps.transformValues(groupedByType, vars -> vars.stream().flatMap(predicates).collect(toSet()));
     }
 
     public Set<VarAdmin.Casting> getCastings() {
-        return castings;
+        return getProperties(RelationProperty.class).flatMap(RelationProperty::getCastings).collect(toSet());
     }
 
     @Override
@@ -527,86 +503,37 @@ class VarImpl implements VarInternal {
         Set<String> results = new HashSet<>();
         getId().ifPresent(results::add);
         getResourceTypes().forEach(results::add);
-        id.ifPresent(results::add);
+        getId().ifPresent(results::add);
         return results;
     }
 
     @Override
     public String toString() {
-        Set<String> properties = new HashSet<>();
-
         Set<VarAdmin> innerVars = getInnerVars();
         innerVars.remove(this);
-        innerVars.removeAll(resources);
+        innerVars.removeAll(getResources());
 
         if (!innerVars.stream().allMatch(v -> v.getIdOnly().isPresent() || v.hasNoProperties())) {
             throw new UnsupportedOperationException("Graql strings cannot represent a query with inner variables");
         }
 
-        id.ifPresent(i -> properties.add("id " + StringConverter.valueToString(i)));
-
-        if (isRelation()) {
-            properties.add("(" + castings.stream().map(Object::toString).collect(joining(", ")) + ")");
-        }
-
-        isa.ifPresent(v -> properties.add("isa " + v.getPrintableName()));
-        ako.ifPresent(v -> properties.add("ako " + v.getPrintableName()));
-        playsRole.forEach(v -> properties.add("plays-role " + v.getPrintableName()));
-        hasRole.forEach(v -> properties.add("has-role " + v.getPrintableName()));
-        hasScope.forEach(v -> properties.add("has-scope " + v.getPrintableName()));
-        hasResourceTypes.forEach(v -> properties.add("has-resource " + v.getPrintableName()));
-
-        getDatatypeName().ifPresent(d -> properties.add("datatype " + d));
-
-        if (getAbstract()) properties.add("is-abstract");
-
-        values.forEach(v -> properties.add("value " + v));
-
-        resources.forEach(
-                resource -> {
-                    // Currently it is guaranteed that resources have a type specified
-                    //noinspection OptionalGetWithoutIsPresent
-                    String type = resource.getType().get().getId().get();
-
-                    String resourceRepr;
-                    if (resource.isUserDefinedName()) {
-                        resourceRepr = " " + resource.getPrintableName();
-                    } else if (resource.hasNoProperties()) {
-                        resourceRepr = "";
-                    } else {
-                        resourceRepr = " " + resource.getValuePredicates().iterator().next().toString();
-                    }
-                    properties.add("has " + type + resourceRepr);
-                }
-        );
-
-        lhs.ifPresent(s -> properties.add("lhs {" + s + "}"));
-        rhs.ifPresent(s -> properties.add("rhs {" + s + "}"));
+        StringBuilder builder = new StringBuilder();
 
         String name = isUserDefinedName() ? getPrintableName() + " " : "";
 
-        return name + properties.stream().collect(joining(", "));
-    }
+        builder.append(name);
 
-    /**
-     * @return the datatype's name (as referred to in native Graql), if one is specified
-     */
-    private Optional<String> getDatatypeName() {
-        return datatype.map(
-                d -> {
-                    if (d == ResourceType.DataType.BOOLEAN) {
-                        return "boolean";
-                    } else if (d == ResourceType.DataType.DOUBLE) {
-                        return "double";
-                    } else if (d == ResourceType.DataType.LONG) {
-                        return "long";
-                    } else if (d == ResourceType.DataType.STRING) {
-                        return "string";
-                    } else {
-                        throw new RuntimeException("Unknown data type: " + d.getName());
-                    }
-                }
-        );
+        boolean first = true;
+
+        for (VarProperty property : properties) {
+            if (!first) {
+                builder.append(" ");
+            }
+            first = false;
+            property.buildString(builder);
+        }
+
+        return builder.toString();
     }
 
     /**
@@ -633,6 +560,21 @@ class VarImpl implements VarInternal {
         VarTraversals varTraversals = this.varPattern.orElseGet(() -> new VarTraversals(this));
         this.varPattern = Optional.of(varTraversals);
         return varTraversals;
+    }
+
+    private RelationProperty putRelationProperty() {
+        Optional<RelationProperty> maybeProperty = getProperties(RelationProperty.class).findAny();
+
+        return maybeProperty.orElseGet(() -> {
+            RelationProperty property = new RelationProperty();
+            properties.add(property);
+            return property;
+        });
+    }
+
+    @Override
+    public <T extends VarProperty> Stream<T> getProperties(Class<T> type) {
+        return properties.stream().filter(type::isInstance).map(type::cast);
     }
 
     @Override
