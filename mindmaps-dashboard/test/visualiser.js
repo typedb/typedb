@@ -21,16 +21,24 @@ import _ from 'underscore';
 
 import Visualiser from '../src/js/visualiser/Visualiser';
 
+var defaultBP = {
+    label: "test node",
+    type: "test",
+    baseType: "test",
+    ontology: "/ontology/test"
+};
+
+
 test('Visualiser add node', t => {
     var v = new Visualiser();
 
-    v.addNode(1);
+    v.addNode(1, defaultBP, {});
     t.true(v.nodeExists(1));
 });
 
 test("Visualiser add edge", t => {
     var v = new Visualiser();
-    v.addNode(1).addNode(2);
+    v.addNode(1, defaultBP, {}).addNode(2, defaultBP, {});
     v.addEdge(1, 2, 'e');
 
     t.true(v.alreadyConnected(1, 2));
@@ -38,7 +46,10 @@ test("Visualiser add edge", t => {
 
 test("Visualiser alreadyConnected", t => {
     var v = new Visualiser();
-    v.addNode(1).addNode(2).addNode(3).addEdge(1,3);
+    v.addNode(1, defaultBP, {})
+     .addNode(2, defaultBP, {})
+     .addNode(3, defaultBP, {})
+     .addEdge(1,3);
 
     t.plan(2);
     t.true(v.alreadyConnected(1,3));
@@ -47,8 +58,11 @@ test("Visualiser alreadyConnected", t => {
 
 test("Visualiser multiple edges alreadyConnected", t => {
     var v = new Visualiser();
-    v.addNode(1).addNode(2).addNode(3)
-        .addEdge(1,2).addEdge(1,3);
+    v.addNode(1, defaultBP, {})
+     .addNode(2, defaultBP, {})
+     .addNode(3, defaultBP, {})
+     .addEdge(1,2)
+     .addEdge(1,3);
 
     t.true(v.alreadyConnected(1,3));
 });
