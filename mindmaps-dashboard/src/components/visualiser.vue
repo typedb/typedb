@@ -71,6 +71,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                 <ul class="nav nav-tabs">
                     <li class="active"><a data-toggle="tab" href="#tab-1" aria-expanded="true">Visualiser</a></li>
                     <li class=""><a data-toggle="tab" href="#tab-2" aria-expanded="false">Console</a></li>
+                    <li class=""><a data-toggle="tab" href="#tab-3" aria-expanded="false">Help</a></li>
                 </ul>
                 <div class="tab-content">
                     <div id="tab-1" class="tab-pane active">
@@ -82,6 +83,45 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                     <div id="tab-2" class="tab-pane">
                         <div class="panel-body">
                             <pre class="language-graql">{{{graqlResponse}}}</pre>
+                        </div>
+                    </div>
+                    <div id="tab-3" class="tab-pane">
+                        <div class="panel-body">
+                            <h4>Graql Entry</h4>
+                            <br />
+                            <div class="table-responsive">
+                                <table class="table table-hover table-striped">
+                                    <thead>
+                                        <tr><th>Key</th><th>What it does</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td>ENTER</td><td>Submit Graql query.</td></tr>
+                                        <tr><td>Shift + ENTER</td><td>New line.</td></tr>
+                                        <tr><td>Shift + Backspace</td><td>Clear graph & current query.</td></tr>
+                                        <tr><td>Shift + Delete</td><td>Clear graph & current query.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <br />
+                            <br />
+                            <h4>Visualiser Tab Interaction</h4>
+                            <br />
+                            <div class="table-responsive">
+                                <table class="table table-hover table-striped">
+                                    <thead>
+                                        <tr><th>Action</th><th>What it does</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td>Left Click</td><td>Selects a node or edge.</td></tr>
+                                        <tr><td>Left Click + ALT</td><td>Show related ontology of selected node(s).</td></tr>
+                                        <tr><td>Double Click</td><td>Shows instances and isa of selected node(s), whilst clearing the graph of all other non-related nodes.</td></tr>
+                                        <tr><td>Right Click</td><td>Show node label configuration menu. You can select what properties to display on the node label.</td></tr>
+                                        <tr><td>Right Click + Shift</td><td>Delete selected node(s).</td></tr>
+                                        <tr><td>Scroll wheel</td><td>Zoom in/out.</td></tr>
+                                        <tr><td>Click & Drag</td><td>Move graph.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
