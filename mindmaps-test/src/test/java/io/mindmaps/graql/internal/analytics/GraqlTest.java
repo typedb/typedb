@@ -282,6 +282,7 @@ public class GraqlTest {
         ((ComputeQuery) qb.parse("compute sum in thing;")).execute();
     }
 
+    @Ignore
     @Test
     public void testStatisticsMethods() throws MindmapsValidationException {
 
@@ -303,6 +304,7 @@ public class GraqlTest {
 
     }
 
+    @Ignore
     @Test(expected = IllegalArgumentException.class)
     public void testNonResourceTypeAsSubgraphForAnalytics() throws MindmapsValidationException {
         EntityType thing = graph.putEntityType("thing");
@@ -311,6 +313,7 @@ public class GraqlTest {
         ((ComputeQuery) qb.parse("compute sum in thing;")).execute();
     }
 
+    @Ignore
     @Test(expected = IllegalArgumentException.class)
     public void testErrorWhenNoSubgrapForAnalytics() throws MindmapsValidationException {
         ((ComputeQuery) qb.parse("compute sum;")).execute();

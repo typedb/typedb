@@ -14,7 +14,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-public class MeanMapReduce extends MindmapsMapReduce<Map<String, Number>> {
+public class MeanMapReduce extends MindmapsMapReduce<Map<String, Double>> {
 
     public static final String MEMORY_KEY = "mean";
     private static final String RESOURCE_TYPE_KEY = "RESOURCE_TYPE_KEY";
@@ -34,37 +34,40 @@ public class MeanMapReduce extends MindmapsMapReduce<Map<String, Number>> {
     }
 
     @Override
-    public void map(final Vertex vertex, final MapEmitter<Serializable, Map<String, Number>> emitter) {
-        if (selectedTypes.contains(getVertexType(vertex))) {
-            Map<String, Number> tuple = new HashMap<>(2);
-            tuple.put(SUM, vertex.value((String) persistentProperties.get(RESOURCE_DATA_TYPE_KEY)));
-            tuple.put(COUNT, 1L);
+    public void map(final Vertex vertex, final MapEmitter<Serializable, Map<String, Double>> emitter) {
+        if (selectedTypes.contains(getVertexType(vertex)) &&
+                ((Long) vertex.value(DegreeVertexProgram.MEMORY_KEY)) > 0) {
+            Map<String, Double> tuple = new HashMap<>(2);
+            Double degree = ((Long)vertex.value(DegreeVertexProgram.MEMORY_KEY)).doubleValue();
+            tuple.put(SUM, degree *
+                    ((Number) vertex.value((String) persistentProperties.get(RESOURCE_DATA_TYPE_KEY))).doubleValue());
+            tuple.put(COUNT, degree);
             emitter.emit(MEMORY_KEY, tuple);
             return;
         }
-        Map<String, Number> emptyTuple = new HashMap<>(2);
-        emptyTuple.put(SUM, 0);
-        emptyTuple.put(COUNT, 0);
+        Map<String, Double> emptyTuple = new HashMap<>(2);
+        emptyTuple.put(SUM, 0D);
+        emptyTuple.put(COUNT, 0D);
         emitter.emit(MEMORY_KEY, emptyTuple);
     }
 
     @Override
-    public void reduce(final Serializable key, final Iterator<Map<String, Number>> values,
-                       final ReduceEmitter<Serializable, Map<String, Number>> emitter) {
-        Map<String, Number> emptyTuple = new HashMap<>(2);
-        emptyTuple.put(SUM, 0);
-        emptyTuple.put(COUNT, 0);
+    public void reduce(final Serializable key, final Iterator<Map<String, Double>> values,
+                       final ReduceEmitter<Serializable, Map<String, Double>> emitter) {
+        Map<String, Double> emptyTuple = new HashMap<>(2);
+        emptyTuple.put(SUM, 0D);
+        emptyTuple.put(COUNT, 0D);
         emitter.emit(key, IteratorUtils.reduce(values, emptyTuple,
                 (a, b) -> {
-                    a.put(COUNT, a.get(COUNT).longValue() + b.get(COUNT).longValue());
-                    a.put(SUM, a.get(SUM).doubleValue() + b.get(SUM).doubleValue());
+                    a.put(COUNT, a.get(COUNT) + b.get(COUNT));
+                    a.put(SUM, a.get(SUM) + b.get(SUM));
                     return a;
                 }));
     }
 
     @Override
-    public void combine(final Serializable key, final Iterator<Map<String, Number>> values,
-                        final ReduceEmitter<Serializable, Map<String, Number>> emitter) {
+    public void combine(final Serializable key, final Iterator<Map<String, Double>> values,
+                        final ReduceEmitter<Serializable, Map<String, Double>> emitter) {
         this.reduce(key, values, emitter);
     }
 
@@ -74,9 +77,9 @@ public class MeanMapReduce extends MindmapsMapReduce<Map<String, Number>> {
     }
 
     @Override
-    public Map<Serializable, Map<String, Number>> generateFinalResult(
-            Iterator<KeyValue<Serializable, Map<String, Number>>> keyValues) {
-        final Map<Serializable, Map<String, Number>> mean = new HashMap<>();
+    public Map<Serializable, Map<String, Double>> generateFinalResult(
+            Iterator<KeyValue<Serializable, Map<String, Double>>> keyValues) {
+        final Map<Serializable, Map<String, Double>> mean = new HashMap<>();
         keyValues.forEachRemaining(pair -> mean.put(pair.getKey(), pair.getValue()));
         return mean;
     }
