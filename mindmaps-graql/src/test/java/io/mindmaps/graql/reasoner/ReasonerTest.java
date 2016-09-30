@@ -39,12 +39,12 @@ public class ReasonerTest {
     public void testSubPropertyRule() {
         MindmapsGraph graph = SNBGraph.getGraph();
 
-        Map<RoleType, RoleType> roleMap = new HashMap<>();
+        Map<String, String> roleMap = new HashMap<>();
         RelationType parent = graph.getRelationType("sublocate");
         RelationType child = graph.getRelationType("resides");
 
-        roleMap.put(graph.getRoleType("member-location"), graph.getRoleType("subject-location"));
-        roleMap.put(graph.getRoleType("container-location"), graph.getRoleType("located-subject"));
+        roleMap.put(graph.getRoleType("member-location").getId(), graph.getRoleType("subject-location").getId());
+        roleMap.put(graph.getRoleType("container-location").getId(), graph.getRoleType("located-subject").getId());
 
         String body = "match (subject-location: $x, located-subject: $x1) isa resides;";
         String head = "match (member-location: $x, container-location: $x1) isa sublocate;";
@@ -63,7 +63,8 @@ public class ReasonerTest {
         MindmapsGraph graph = SNBGraph.getGraph();
 
         Rule rule = createTransitiveRule("testRule", graph.getRelationType("sublocate"),
-                graph.getRoleType("member-location"), graph.getRoleType("container-location"), graph);
+                graph.getRoleType("member-location").getId(), graph.getRoleType("container-location").getId(), graph);
+
         InferenceRule R = new InferenceRule(rule, graph);
 
         String body = "match (member-location: $x, container-location: $z) isa sublocate;" +

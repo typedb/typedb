@@ -142,7 +142,6 @@ public class QueryTest {
     @Test
     public void testQueryResults(){
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(qb.parseMatch("match $x isa person;")));
-
         answers.forEach(ans -> System.out.println(ans.toString()));
     }
 
