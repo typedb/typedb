@@ -33,7 +33,7 @@ import static io.mindmaps.util.Schema.EdgeLabel.*;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
-public class RelationProperty implements VarProperty {
+public class RelationProperty implements VarPropertyInternal {
 
     private final Set<VarAdmin.Casting> castings = new HashSet<>();
 

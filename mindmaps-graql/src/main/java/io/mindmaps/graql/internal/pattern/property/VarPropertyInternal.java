@@ -18,16 +18,33 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import com.google.common.collect.Sets;
+import io.mindmaps.MindmapsGraph;
+import io.mindmaps.concept.Concept;
+import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.admin.VarProperty;
-import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.graql.internal.gremlin.MultiTraversal;
+import io.mindmaps.graql.internal.gremlin.ShortcutTraversal;
 
-class VarProperties {
+import java.util.Collection;
 
-    private VarProperties() {}
+import static io.mindmaps.graql.internal.pattern.property.VarProperties.failDelete;
 
-    static IllegalStateException failDelete(VarProperty property) {
-        StringBuilder builder = new StringBuilder();
-        property.buildString(builder);
-        return new IllegalStateException(ErrorMessage.DELETE_UNSUPPORTED_PROPERTY.getMessage(builder.toString()));
+public interface VarPropertyInternal extends VarProperty {
+
+    default void modifyShortcutTraversal(ShortcutTraversal shortcutTraversal) {
+        shortcutTraversal.setInvalid();
+    }
+
+    Collection<MultiTraversal> getMultiTraversals(String start);
+
+    @Override
+    default Collection<VarAdmin> getInnerVars() {
+        return Sets.newHashSet();
+    }
+
+    @Override
+    default void deleteProperty(MindmapsGraph graph, Concept concept) {
+        throw failDelete(this);
     }
 }

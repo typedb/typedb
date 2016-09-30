@@ -25,7 +25,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 
-interface SingleTraversalProperty extends VarProperty {
+interface SingleTraversalProperty extends VarPropertyInternal {
 
     GraphTraversal<Vertex, Vertex> applyTraversal(GraphTraversal<Vertex, Vertex> traversal);
 

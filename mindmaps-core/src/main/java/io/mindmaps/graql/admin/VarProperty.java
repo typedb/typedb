@@ -16,34 +16,18 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql.internal.pattern.property;
+package io.mindmaps.graql.admin;
 
-import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
-import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.gremlin.MultiTraversal;
-import io.mindmaps.graql.internal.gremlin.ShortcutTraversal;
 
 import java.util.Collection;
-
-import static io.mindmaps.graql.internal.pattern.property.VarProperties.failDelete;
 
 public interface VarProperty {
 
     void buildString(StringBuilder builder);
 
-    default void modifyShortcutTraversal(ShortcutTraversal shortcutTraversal) {
-        shortcutTraversal.setInvalid();
-    }
+    Collection<VarAdmin> getInnerVars();
 
-    Collection<MultiTraversal> getMultiTraversals(String start);
-
-    default Collection<VarAdmin> getInnerVars() {
-        return Sets.newHashSet();
-    }
-
-    default void deleteProperty(MindmapsGraph graph, Concept concept) {
-        throw failDelete(this);
-    }
+    void deleteProperty(MindmapsGraph graph, Concept concept);
 }

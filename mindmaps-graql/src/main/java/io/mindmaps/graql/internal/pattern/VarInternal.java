@@ -20,10 +20,8 @@ package io.mindmaps.graql.internal.pattern;
 
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
-import io.mindmaps.graql.internal.pattern.property.VarProperty;
 
 import java.util.Set;
-import java.util.stream.Stream;
 
 /**
  * Internal interface for Var
@@ -34,8 +32,4 @@ public interface VarInternal extends VarAdmin {
      * @return the gremlin traversals that describe this variable
      */
     Set<MultiTraversal> getMultiTraversals();
-
-    Stream<VarProperty> getProperties();
-
-    <T extends VarProperty> Stream<T> getProperties(Class<T> type);
 }

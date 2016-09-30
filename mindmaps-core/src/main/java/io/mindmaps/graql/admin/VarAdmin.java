@@ -24,6 +24,7 @@ import io.mindmaps.graql.Var;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Admin class for inspecting a Var
@@ -188,6 +189,10 @@ public interface VarAdmin extends PatternAdmin, Var {
      * @return all castings described on this relation (that is, pairs of role types and role players)
      */
     Set<Casting> getCastings();
+
+    Stream<VarProperty> getProperties();
+
+    <T extends VarProperty> Stream<T> getProperties(Class<T> type);
 
     /**
      * A casting, a pair of role type and role player (where the role type may not be present)

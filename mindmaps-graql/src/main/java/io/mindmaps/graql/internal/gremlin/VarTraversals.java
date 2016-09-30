@@ -19,7 +19,7 @@
 package io.mindmaps.graql.internal.gremlin;
 
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.pattern.VarInternal;
+import io.mindmaps.graql.internal.pattern.property.VarPropertyInternal;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -53,9 +53,10 @@ public class VarTraversals {
 
         String start = var.getName();
 
-        ((VarInternal) var).getProperties().forEach(property -> {
-            property.modifyShortcutTraversal(shortcutTraversal);
-            Collection<MultiTraversal> traversals = property.getMultiTraversals(start);
+        var.getProperties().forEach(property -> {
+            VarPropertyInternal propertyInternal = (VarPropertyInternal) property;
+            propertyInternal.modifyShortcutTraversal(shortcutTraversal);
+            Collection<MultiTraversal> traversals = propertyInternal.getMultiTraversals(start);
             this.traversals.addAll(traversals);
             property.getInnerVars().stream().map(VarTraversals::new).forEach(innerVarTraversals::add);
         });

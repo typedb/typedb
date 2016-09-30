@@ -18,7 +18,7 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
-interface NamedProperty extends VarProperty {
+interface NamedProperty extends VarPropertyInternal {
 
     String getName();
 
