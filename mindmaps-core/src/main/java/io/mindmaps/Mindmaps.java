@@ -56,6 +56,6 @@ public class Mindmaps {
         String finalKeyspace = keyspace.toLowerCase();
         String key = location + finalKeyspace;
         String factoryClassname = IN_MEMORY.equals(location) ?IN_MEMORY_IMPLEMENTATION : ENGINE_CONTROLLED_IMPLEMENTATION;
-        return clients.computeIfAbsent(key, (k) -> loadImplementation(factoryClassname, location, keyspace)); 
+        return clients.computeIfAbsent(key, (k) -> loadImplementation(factoryClassname, location, finalKeyspace));
     }
 }

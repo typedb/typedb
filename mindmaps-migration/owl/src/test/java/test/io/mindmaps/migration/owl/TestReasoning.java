@@ -1,11 +1,13 @@
 package test.io.mindmaps.migration.owl;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.semanticweb.HermiT.Reasoner;
 import org.semanticweb.HermiT.Configuration;
 import org.semanticweb.owlapi.model.OWLOntology;
 
+@Ignore
 public class TestReasoning extends TestOwlMindMapsBase {
 
 	private Reasoner reasoner = null;

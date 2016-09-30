@@ -16,37 +16,29 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql.internal.query;
+package io.mindmaps.graql.internal.pattern.property;
 
-import io.mindmaps.graql.admin.Conjunction;
-import io.mindmaps.graql.admin.Disjunction;
-import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 
-import java.util.Collection;
-import java.util.Set;
+public class HasScopeProperty extends AbstractNamedProperty {
 
-public class Patterns {
+    private final VarAdmin scope;
 
-    private Patterns() {}
-
-    public static <T extends PatternAdmin> Conjunction<T> conjunction(Set<T> patterns) {
-        return new ConjunctionImpl<>(patterns);
+    public HasScopeProperty(VarAdmin scope) {
+        this.scope = scope;
     }
 
-    public static <T extends PatternAdmin> Disjunction<T> disjunction(Set<T> patterns) {
-        return new DisjunctionImpl<>(patterns);
+    public VarAdmin getScope() {
+        return scope;
     }
 
-    public static VarAdmin var() {
-        return new VarImpl();
+    @Override
+    protected String getName() {
+        return "has-scope";
     }
 
-    public static VarAdmin var(String name) {
-        return new VarImpl(name);
-    }
-
-    public static VarAdmin mergeVars(Collection<VarAdmin> vars) {
-        return new VarImpl(vars);
+    @Override
+    protected String getProperty() {
+        return scope.getPrintableName();
     }
 }
