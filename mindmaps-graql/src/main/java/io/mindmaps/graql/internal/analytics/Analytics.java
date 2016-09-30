@@ -252,8 +252,14 @@ public class Analytics {
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypes);
         if (!selectedTypesHaveInstanceInSubgraph(statisticsResourceTypes, subtypes)) return Optional.empty();
 
+        Set<String> allSubtypes = statisticsResourceTypes.stream()
+                .map(GraqlType.HAS_RESOURCE::getId).collect(Collectors.toSet());
+        allSubtypes.addAll(subtypes);
+        allSubtypes.addAll(statisticsResourceTypes);
+
         MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
-        ComputerResult result = computer.compute(new SumMapReduce(subtypes, dataType));
+        ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
+                new SumMapReduce(statisticsResourceTypes, dataType));
         Map<String, Number> max = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
         return Optional.of(max.get(SumMapReduce.MEMORY_KEY));
     }
@@ -267,12 +273,17 @@ public class Analytics {
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypes);
         if (!selectedTypesHaveInstanceInSubgraph(statisticsResourceTypes, subtypes)) return Optional.empty();
 
+        Set<String> allSubtypes = statisticsResourceTypes.stream()
+                .map(GraqlType.HAS_RESOURCE::getId).collect(Collectors.toSet());
+        allSubtypes.addAll(subtypes);
+        allSubtypes.addAll(statisticsResourceTypes);
+
         MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
-        ComputerResult result = computer.compute(new MeanMapReduce(subtypes, dataType));
-        Map<String, Map<String, Number>> mean = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
-        Map<String, Number> meanPair = mean.get(MeanMapReduce.MEMORY_KEY);
-        return Optional.of(meanPair.get(MeanMapReduce.SUM).doubleValue() /
-                meanPair.get(MeanMapReduce.COUNT).longValue());
+        ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
+                new MeanMapReduce(statisticsResourceTypes, dataType));
+        Map<String, Map<String, Double>> mean = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
+        Map<String, Double> meanPair = mean.get(MeanMapReduce.MEMORY_KEY);
+        return Optional.of(meanPair.get(MeanMapReduce.SUM) / meanPair.get(MeanMapReduce.COUNT));
     }
 
     /**
@@ -284,13 +295,19 @@ public class Analytics {
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypes);
         if (!selectedTypesHaveInstanceInSubgraph(statisticsResourceTypes, subtypes)) return Optional.empty();
 
+        Set<String> allSubtypes = statisticsResourceTypes.stream()
+                .map(GraqlType.HAS_RESOURCE::getId).collect(Collectors.toSet());
+        allSubtypes.addAll(subtypes);
+        allSubtypes.addAll(statisticsResourceTypes);
+
         MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
-        ComputerResult result = computer.compute(new StdMapReduce(subtypes, dataType));
-        Map<String, Map<String, Number>> std = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
-        Map<String, Number> stdTuple = std.get(StdMapReduce.MEMORY_KEY);
-        double squareSum = stdTuple.get(StdMapReduce.SQUARE_SUM).doubleValue();
-        double sum = stdTuple.get(StdMapReduce.SUM).doubleValue();
-        long count = stdTuple.get(StdMapReduce.COUNT).longValue();
+        ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
+                new StdMapReduce(statisticsResourceTypes, dataType));
+        Map<String, Map<String, Double>> std = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
+        Map<String, Double> stdTuple = std.get(StdMapReduce.MEMORY_KEY);
+        double squareSum = stdTuple.get(StdMapReduce.SQUARE_SUM);
+        double sum = stdTuple.get(StdMapReduce.SUM);
+        double count = stdTuple.get(StdMapReduce.COUNT);
         return Optional.of(Math.sqrt(squareSum / count - (sum / count) * (sum / count)));
     }
 
@@ -363,14 +380,14 @@ public class Analytics {
 
     private String checkSelectedResourceTypesHaveCorrectDataType(Set<String> types) {
         if (types == null || types.isEmpty())
-            throw new IllegalArgumentException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
+            throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                     .getMessage(this.getClass().toString()));
 
         String dataType = null;
         for (String type : types) {
             // check if the selected type is a resource-type
             if (!resourceTypes.containsKey(type))
-                throw new IllegalArgumentException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
+                throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                         .getMessage(this.getClass().toString()));
 
             if (dataType == null) {

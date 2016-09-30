@@ -15,7 +15,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import spark.Spark;
 
@@ -39,6 +38,7 @@ public class StatisticsTest {
     private static final String resourceType4 = "resourceType4";
     private static final String resourceType5 = "resourceType5";
     private static final String resourceType6 = "resourceType6";
+    private static final String resourceType7 = "resourceType7";
 
 
     String keyspace;
@@ -62,147 +62,57 @@ public class StatisticsTest {
     public void cleanGraph() {
         graph.clear();
         graph.close();
-        System.out.println("After Done!!!");
     }
 
     @AfterClass
     public static void stop() {
         Spark.stop();
+        System.out.println();
         System.out.println("AfterClass Done!!!");
+        System.out.println("Congratulations!!!");
     }
 
-    @Ignore
     @Test
-    public void testStatistics() throws Exception {
+    public void testStatisticsExceptions() throws Exception {
         addOntologyAndEntities();
+        addResourceRelations();
 
-        // add resource instance
-        addResourcesInstances();
+        //TODO: add more detailed error messages
+        // resources-types set is null
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("thing")), null);
+        assertIllegalStateExceptionThrown(computer::max);
+        assertIllegalStateExceptionThrown(computer::min);
+        assertIllegalStateExceptionThrown(computer::mean);
+        assertIllegalStateExceptionThrown(computer::sum);
+        assertIllegalStateExceptionThrown(computer::std);
 
-        // resource-type has no instance
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType1)));
-        assertFalse(computer.max().isPresent());
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType2)));
-        assertFalse(computer.max().isPresent());
-
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType1)));
-        assertFalse(computer.min().isPresent());
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType2)));
-        assertFalse(computer.min().isPresent());
-
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType1)));
-        assertFalse(computer.sum().isPresent());
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType2)));
-        assertFalse(computer.sum().isPresent());
-
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType1)));
-        assertFalse(computer.mean().isPresent());
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType2)));
-        assertFalse(computer.mean().isPresent());
-
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType1)));
-        assertFalse(computer.std().isPresent());
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType2)));
-        assertFalse(computer.std().isPresent());
-
-        addResourcesInstances();
-
-        // resource has no owner
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType1)));
-        assertFalse(computer.max().isPresent());
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType2)));
-        assertFalse(computer.max().isPresent());
-
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType1)));
-        assertFalse(computer.min().isPresent());
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType2)));
-        assertFalse(computer.min().isPresent());
-
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType1)));
-        assertFalse(computer.sum().isPresent());
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType2)));
-        assertFalse(computer.sum().isPresent());
-
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType1)));
-        assertFalse(computer.mean().isPresent());
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType2)));
-        assertFalse(computer.mean().isPresent());
-
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType1)));
-        assertFalse(computer.std().isPresent());
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType2)));
-        assertFalse(computer.std().isPresent());
-
-        // test max
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType1)));
-        assertEquals(1.8, computer.max().get().doubleValue(), delta);
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType2)));
-        assertEquals(4L, computer.max().get());
-        computer = new Analytics(keyspace,
-                Sets.newHashSet(graph.getType(resourceType1), graph.getType(resourceType6)));
-        assertEquals(7.8, computer.max().get().doubleValue(), delta);
-        computer = new Analytics(keyspace,
-                Sets.newHashSet(graph.getType(resourceType2), graph.getType(resourceType5)));
-        assertEquals(8L, computer.max().get());
-
-        // test min
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType1)));
-        assertEquals(1.2, computer.min().get().doubleValue(), delta);
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType2)));
-        assertEquals(-1L, computer.min().get());
-        computer = new Analytics(keyspace,
-                Sets.newHashSet(graph.getType(resourceType1), graph.getType(resourceType6)));
-        assertEquals(1.2, computer.min().get().doubleValue(), delta);
-        computer = new Analytics(keyspace,
-                Sets.newHashSet(graph.getType(resourceType2), graph.getType(resourceType5)));
-        assertEquals(-1L, computer.min().get());
-
-        // test sum
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType1)));
-        assertEquals(4.5, computer.sum().get().doubleValue(), delta);
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType2)));
-        assertEquals(3L, computer.sum().get());
-        computer = new Analytics(keyspace,
-                Sets.newHashSet(graph.getType(resourceType1), graph.getType(resourceType6)));
-        assertEquals(27.0, computer.sum().get().doubleValue(), delta);
-        computer = new Analytics(keyspace,
-                Sets.newHashSet(graph.getType(resourceType2), graph.getType(resourceType5)));
-        assertEquals(24L, computer.sum().get());
-
-        // test mean
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType1)));
-        assertEquals(1.5, computer.mean().get(), delta);
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType2)));
-        assertEquals(1.0, computer.mean().get(), delta);
-        computer = new Analytics(keyspace,
-                Sets.newHashSet(graph.getType(resourceType1), graph.getType(resourceType6)));
-        assertEquals(4.5, computer.mean().get(), delta);
-        computer = new Analytics(keyspace,
-                Sets.newHashSet(graph.getType(resourceType2), graph.getType(resourceType5)));
-        assertEquals(4.0, computer.mean().get(), delta);
-
-        // test std
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType1)));
-        assertEquals(Math.sqrt(0.06), computer.std().get(), delta);
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType2)));
-        assertEquals(Math.sqrt(14.0 / 3.0), computer.std().get(), delta);
-        computer = new Analytics(keyspace,
-                Sets.newHashSet(graph.getType(resourceType1), graph.getType(resourceType6)));
-        assertEquals(Math.sqrt(9.06), computer.std().get(), delta);
-        computer = new Analytics(keyspace,
-                Sets.newHashSet(graph.getType(resourceType2), graph.getType(resourceType5)));
-        assertEquals(Math.sqrt(70.0 / 6.0), computer.std().get(), delta);
+        // resources-types set is empty
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("thing")), new HashSet<>());
+        assertIllegalStateExceptionThrown(computer::max);
+        assertIllegalStateExceptionThrown(computer::min);
+        assertIllegalStateExceptionThrown(computer::mean);
+        assertIllegalStateExceptionThrown(computer::sum);
+        assertIllegalStateExceptionThrown(computer::std);
 
         // if it's not a resource-type
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType("thing")));
-        assertExceptionThrown(computer::max);
-        assertExceptionThrown(computer::min);
-        assertExceptionThrown(computer::mean);
-        assertExceptionThrown(computer::sum);
-        assertExceptionThrown(computer::std);
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType("thing")),
+                Collections.singleton(graph.getType("thing")));
+        assertIllegalStateExceptionThrown(computer::max);
+        assertIllegalStateExceptionThrown(computer::min);
+        assertIllegalStateExceptionThrown(computer::mean);
+        assertIllegalStateExceptionThrown(computer::sum);
+        assertIllegalStateExceptionThrown(computer::std);
 
         // resource-type has no instance
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType3)));
+        computer = new Analytics(keyspace, null, Collections.singleton(graph.getType(resourceType7)));
+        assertFalse(computer.mean().isPresent());
+        assertFalse(computer.max().isPresent());
+        assertFalse(computer.min().isPresent());
+        assertFalse(computer.sum().isPresent());
+        assertFalse(computer.std().isPresent());
+
+        // resources are not connected to any entities
+        computer = new Analytics(keyspace, null, Collections.singleton(graph.getType(resourceType3)));
         assertFalse(computer.mean().isPresent());
         assertFalse(computer.max().isPresent());
         assertFalse(computer.min().isPresent());
@@ -210,24 +120,24 @@ public class StatisticsTest {
         assertFalse(computer.std().isPresent());
 
         // resource-type has incorrect data type
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType(resourceType4)));
-        assertExceptionThrown(computer::max);
-        assertExceptionThrown(computer::min);
-        assertExceptionThrown(computer::mean);
-        assertExceptionThrown(computer::sum);
-        assertExceptionThrown(computer::std);
+        computer = new Analytics(keyspace, null, Collections.singleton(graph.getType(resourceType4)));
+        assertIllegalStateExceptionThrown(computer::max);
+        assertIllegalStateExceptionThrown(computer::min);
+        assertIllegalStateExceptionThrown(computer::mean);
+        assertIllegalStateExceptionThrown(computer::sum);
+        assertIllegalStateExceptionThrown(computer::std);
 
         // resource-types have different data types
-        computer = new Analytics(keyspace,
+        computer = new Analytics(keyspace, null,
                 Sets.newHashSet(graph.getType(resourceType1), graph.getType(resourceType2)));
-        assertExceptionThrown(computer::max);
-        assertExceptionThrown(computer::min);
-        assertExceptionThrown(computer::mean);
-        assertExceptionThrown(computer::sum);
-        assertExceptionThrown(computer::std);
+        assertIllegalStateExceptionThrown(computer::max);
+        assertIllegalStateExceptionThrown(computer::min);
+        assertIllegalStateExceptionThrown(computer::mean);
+        assertIllegalStateExceptionThrown(computer::sum);
+        assertIllegalStateExceptionThrown(computer::std);
     }
 
-    private void assertExceptionThrown(Supplier<Optional> method) {
+    private void assertIllegalStateExceptionThrown(Supplier<Optional> method) {
         boolean exceptionThrown = false;
         try {
             method.get();
@@ -278,14 +188,98 @@ public class StatisticsTest {
         computer = new Analytics(keyspace, Collections.singleton(graph.getType(thing)),
                 Collections.singleton(graph.getType(resourceType2)));
         assertEquals(-1L, computer.min().get());
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType(thing)),
+                Sets.newHashSet(graph.getType(resourceType2), graph.getType(resourceType5)));
+        assertEquals(-7L, computer.min().get());
         computer = new Analytics(keyspace, new HashSet<>(),
                 Collections.singleton(graph.getType(resourceType1)));
         assertEquals(1.8, computer.max().get().doubleValue(), delta);
+        computer = new Analytics(keyspace, new HashSet<>(),
+                Sets.newHashSet(graph.getType(resourceType1), graph.getType(resourceType6)));
+        assertEquals(7.5, computer.max().get().doubleValue(), delta);
         // TODO: fix this test
         computer = new Analytics(keyspace, Collections.singleton(graph.getType(anotherThing)),
                 Collections.singleton(graph.getType(resourceType2)));
         assertEquals(4L, computer.max().get());
 
+    }
+
+    @Test
+    public void testSum() throws Exception {
+        // resource-type has no instance
+        addOntologyAndEntities();
+
+
+        // add resources, but resources are not connected to any entities
+        addResourcesInstances();
+
+
+        // connect entity and resources
+        addResourceRelations();
+        computer = new Analytics(keyspace, null,
+                Collections.singleton(graph.getType(resourceType1)));
+        assertEquals(4.5, computer.sum().get().doubleValue(), delta);
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType(thing)),
+                Collections.singleton(graph.getType(resourceType2)));
+        assertEquals(3L, computer.sum().get());
+        computer = new Analytics(keyspace, new HashSet<>(),
+                Sets.newHashSet(graph.getType(resourceType1), graph.getType(resourceType6)));
+        assertEquals(27.0, computer.sum().get().doubleValue(), delta);
+        computer = new Analytics(keyspace, Sets.newHashSet(graph.getType(thing), graph.getType(anotherThing)),
+                Sets.newHashSet(graph.getType(resourceType2), graph.getType(resourceType5)));
+        assertEquals(-18L, computer.sum().get());
+    }
+
+    @Test
+    public void testMean() throws Exception {
+        // resource-type has no instance
+        addOntologyAndEntities();
+
+
+        // add resources, but resources are not connected to any entities
+        addResourcesInstances();
+
+
+        // connect entity and resources
+        addResourceRelations();
+        computer = new Analytics(keyspace, null,
+                Collections.singleton(graph.getType(resourceType1)));
+        assertEquals(1.5, computer.mean().get(), delta);
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType(thing)),
+                Collections.singleton(graph.getType(resourceType2)));
+        assertEquals(1D, computer.mean().get(), delta);
+        computer = new Analytics(keyspace, new HashSet<>(),
+                Sets.newHashSet(graph.getType(resourceType1), graph.getType(resourceType6)));
+        assertEquals(4.5, computer.mean().get(), delta);
+        computer = new Analytics(keyspace, Sets.newHashSet(graph.getType(thing), graph.getType(anotherThing)),
+                Sets.newHashSet(graph.getType(resourceType2), graph.getType(resourceType5)));
+        assertEquals(-3D, computer.mean().get(), delta);
+    }
+
+    @Test
+    public void testStd() throws Exception {
+        // resource-type has no instance
+        addOntologyAndEntities();
+
+
+        // add resources, but resources are not connected to any entities
+        addResourcesInstances();
+
+
+        // connect entity and resources
+        addResourceRelations();
+        computer = new Analytics(keyspace, null,
+                Collections.singleton(graph.getType(resourceType1)));
+        assertEquals(Math.sqrt(0.18 / 3), computer.std().get(), delta);
+        computer = new Analytics(keyspace, Collections.singleton(graph.getType(thing)),
+                Collections.singleton(graph.getType(resourceType2)));
+        assertEquals(Math.sqrt(14.0 / 3), computer.std().get(), delta);
+        computer = new Analytics(keyspace, new HashSet<>(),
+                Sets.newHashSet(graph.getType(resourceType1), graph.getType(resourceType6)));
+        assertEquals(Math.sqrt(54.18 / 6), computer.std().get(), delta);
+        computer = new Analytics(keyspace, Sets.newHashSet(graph.getType(thing), graph.getType(anotherThing)),
+                Sets.newHashSet(graph.getType(resourceType2), graph.getType(resourceType5)));
+        assertEquals(Math.sqrt(110.0 / 6), computer.std().get(), delta);
     }
 
     private void addOntologyAndEntities() throws MindmapsValidationException {
@@ -320,6 +314,7 @@ public class StatisticsTest {
         resourceTypeList.add(graph.putResourceType(resourceType4, ResourceType.DataType.STRING));
         resourceTypeList.add(graph.putResourceType(resourceType5, ResourceType.DataType.LONG));
         resourceTypeList.add(graph.putResourceType(resourceType6, ResourceType.DataType.DOUBLE));
+        resourceTypeList.add(graph.putResourceType(resourceType7, ResourceType.DataType.DOUBLE));
 
         RoleType resourceOwner1 = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceType1));
         RoleType resourceOwner2 = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceType2));
@@ -327,6 +322,7 @@ public class StatisticsTest {
         RoleType resourceOwner4 = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceType4));
         RoleType resourceOwner5 = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceType5));
         RoleType resourceOwner6 = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceType6));
+        RoleType resourceOwner7 = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceType7));
 
         RoleType resourceValue1 = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceType1));
         RoleType resourceValue2 = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceType2));
@@ -334,6 +330,7 @@ public class StatisticsTest {
         RoleType resourceValue4 = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceType4));
         RoleType resourceValue5 = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceType5));
         RoleType resourceValue6 = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceType6));
+        RoleType resourceValue7 = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceType7));
 
         graph.putRelationType(GraqlType.HAS_RESOURCE.getId(resourceType1))
                 .hasRole(resourceOwner1).hasRole(resourceValue1);
@@ -347,19 +344,23 @@ public class StatisticsTest {
                 .hasRole(resourceOwner5).hasRole(resourceValue5);
         graph.putRelationType(GraqlType.HAS_RESOURCE.getId(resourceType6))
                 .hasRole(resourceOwner6).hasRole(resourceValue6);
+        graph.putRelationType(GraqlType.HAS_RESOURCE.getId(resourceType7))
+                .hasRole(resourceOwner7).hasRole(resourceValue7);
 
         entityType1.playsRole(resourceOwner1)
                 .playsRole(resourceOwner2)
                 .playsRole(resourceOwner3)
                 .playsRole(resourceOwner4)
                 .playsRole(resourceOwner5)
-                .playsRole(resourceOwner6);
+                .playsRole(resourceOwner6)
+                .playsRole(resourceOwner7);
         entityType2.playsRole(resourceOwner1)
                 .playsRole(resourceOwner2)
                 .playsRole(resourceOwner3)
                 .playsRole(resourceOwner4)
                 .playsRole(resourceOwner5)
-                .playsRole(resourceOwner6);
+                .playsRole(resourceOwner6)
+                .playsRole(resourceOwner7);
 
         resourceTypeList.forEach(resourceType -> resourceType
                 .playsRole(resourceValue1)
@@ -367,8 +368,8 @@ public class StatisticsTest {
                 .playsRole(resourceValue3)
                 .playsRole(resourceValue4)
                 .playsRole(resourceValue5)
-                .playsRole(resourceValue6));
-
+                .playsRole(resourceValue6)
+                .playsRole(resourceValue7));
 
         graph.commit();
         graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
@@ -431,7 +432,7 @@ public class StatisticsTest {
                 .putRolePlayer(resourceOwner1, entity1)
                 .putRolePlayer(resourceValue1, graph.putResource(1.5, graph.getResourceType(resourceType1)));
         graph.addRelation(relationType1)
-                .putRolePlayer(resourceOwner1, entity1)
+                .putRolePlayer(resourceOwner1, entity3)
                 .putRolePlayer(resourceValue1, graph.putResource(1.8, graph.getResourceType(resourceType1)));
 
         RelationType relationType2 = graph.getRelationType(GraqlType.HAS_RESOURCE.getId(resourceType2));
@@ -445,16 +446,18 @@ public class StatisticsTest {
                 .putRolePlayer(resourceOwner2, entity4)
                 .putRolePlayer(resourceValue2, graph.putResource(0L, graph.getResourceType(resourceType2)));
 
+        graph.putResource(100L, graph.getResourceType(resourceType3));
+
         RelationType relationType5 = graph.getRelationType(GraqlType.HAS_RESOURCE.getId(resourceType5));
         graph.addRelation(relationType5)
                 .putRolePlayer(resourceOwner5, entity1)
-                .putRolePlayer(resourceValue5, graph.putResource(7L, graph.getResourceType(resourceType5)));
+                .putRolePlayer(resourceValue5, graph.putResource(-7L, graph.getResourceType(resourceType5)));
         graph.addRelation(relationType5)
                 .putRolePlayer(resourceOwner5, entity2)
-                .putRolePlayer(resourceValue5, graph.putResource(7L, graph.getResourceType(resourceType5)));
+                .putRolePlayer(resourceValue5, graph.putResource(-7L, graph.getResourceType(resourceType5)));
         graph.addRelation(relationType5)
                 .putRolePlayer(resourceOwner5, entity4)
-                .putRolePlayer(resourceValue5, graph.putResource(7L, graph.getResourceType(resourceType5)));
+                .putRolePlayer(resourceValue5, graph.putResource(-7L, graph.getResourceType(resourceType5)));
 
         RelationType relationType6 = graph.getRelationType(GraqlType.HAS_RESOURCE.getId(resourceType6));
         graph.addRelation(relationType6)
