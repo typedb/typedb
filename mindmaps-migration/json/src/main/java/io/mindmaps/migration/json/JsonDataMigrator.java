@@ -150,6 +150,6 @@ public class JsonDataMigrator {
     }
 
     private Resource migrateJsonBoolean(ResourceType type,  Json data) {
-        return graph.putResource(Boolean.toString(data.asBoolean()), type);
+        return graph.putResource(data.asBoolean(), type);
     }
 }

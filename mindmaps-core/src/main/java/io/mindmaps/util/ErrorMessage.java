@@ -30,6 +30,7 @@ public enum ErrorMessage {
     TOO_MANY_CONCEPTS("Too many concepts found for key ['%s'] and value ['%s']"),
     TOO_MANY_CASTINGS("More than one casting found between Role ['%s'] and Instance ['%s']"),
     INVALID_DATATYPE("The value ['%s'] must be of datatype ['%s']"),
+    INVALID_RESOURCE_CAST("The value of [%s] cannot be cast to [%s]"),
     INVALID_OBJECT_TYPE("The concept ['%s'] is not of type ['%s']"),
     REGEX_INSTANCE_FAILURE("The regex ['%s'] cannot be applied because instance ['%s'] of the Resource Type does not " +
             "conform to the regular expressions"),

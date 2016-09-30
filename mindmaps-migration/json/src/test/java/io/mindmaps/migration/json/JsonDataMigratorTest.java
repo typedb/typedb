@@ -104,7 +104,7 @@ public class JsonDataMigratorTest {
         assertEquals(Sets.newHashSet(1L, 2L, 3L), integers);
 
         Resource aBoolean = getResource(root, "a-boolean");
-        assertEquals("true", aBoolean.getValue());
+        assertEquals(true, aBoolean.getValue());
 
         Resource aNumber = getResource(root, "a-number");
         assertEquals(42.1, aNumber.getValue());
