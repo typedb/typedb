@@ -147,7 +147,7 @@ public class Relation extends AtomBase {
     }
 
     @Override
-    public void changeEachVarName(String from, String to) {
+    public void unify(String from, String to) {
         castings.forEach(c -> {
             String var = c.getRolePlayer().getName();
             if (var.equals(from)) {
@@ -160,7 +160,7 @@ public class Relation extends AtomBase {
     }
 
     @Override
-    public void changeEachVarName(Map<String, String> mappings) {
+    public void unify (Map<String, String> mappings) {
         castings.forEach(c -> {
             String var = c.getRolePlayer().getName();
             if (mappings.containsKey(var) ) {
@@ -283,8 +283,8 @@ public class Relation extends AtomBase {
     }
 
     public Set<Atomic> getTypeConstraints(){
-        Set<Atomic> typeConstraints = getParentQuery().getAtoms();
-        return typeConstraints.stream().filter(atom -> atom.isType() && !atom.isResource() && containsVar(atom.getVarName()))
+        Set<Atomic> typeConstraints = getParentQuery().getTypeConstraints();
+        return typeConstraints.stream().filter(atom -> containsVar(atom.getVarName()))
                         .collect(Collectors.toSet());
     }
 

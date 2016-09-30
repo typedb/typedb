@@ -129,11 +129,6 @@ public class AtomicTest {
     }
 
     @Test
-    public void testRecursiveAtom(){
-
-    }
-
-    @Test
     public void testRoleInference(){
         MindmapsGraph graph = CWGraph.getGraph();
 
@@ -218,9 +213,4 @@ public class AtomicTest {
         Collection<Relation> rels = new LinkedList<>();
         roleMaps.forEach( map -> rels.add(new Relation(relTypeId, map, null)));
     }
-
-
-
-
-
 }
