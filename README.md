@@ -35,7 +35,7 @@ packages, but it is in plain English. Thanks for your understanding.
 
 ## Releases
 
-### Version 0.1.0 (9th September 2016)
+### Version 0.2.0 (1st October 2016)
 
 For release notes, please see our separate changelog file.   
 
