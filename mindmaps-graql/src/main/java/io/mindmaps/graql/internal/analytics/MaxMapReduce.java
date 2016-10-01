@@ -30,13 +30,15 @@ public class MaxMapReduce extends MindmapsMapReduce<Number> {
     @Override
     public void map(final Vertex vertex, final MapEmitter<Serializable, Number> emitter) {
         if (persistentProperties.get(RESOURCE_DATA_TYPE_KEY).equals(ResourceType.DataType.LONG.getName())) {
-            if (selectedTypes.contains(getVertexType(vertex))) {
+            if (selectedTypes.contains(getVertexType(vertex)) &&
+                    ((Long) vertex.value(DegreeVertexProgram.MEMORY_KEY)) > 0) {
                 emitter.emit(MEMORY_KEY, vertex.value(Schema.ConceptProperty.VALUE_LONG.name()));
                 return;
             }
             emitter.emit(MEMORY_KEY, Long.MIN_VALUE);
         } else {
-            if (selectedTypes.contains(getVertexType(vertex))) {
+            if (selectedTypes.contains(getVertexType(vertex)) &&
+                    ((Long) vertex.value(DegreeVertexProgram.MEMORY_KEY)) > 0) {
                 emitter.emit(MEMORY_KEY, vertex.value(Schema.ConceptProperty.VALUE_DOUBLE.name()));
                 return;
             }
