@@ -2,6 +2,13 @@
   
 Copyright (C) 2016  Mindmaps Research Ltd.  
 
+### Version 0.2.0 (1st October 2016)
+
+For release notes, please see our separate changelog file.   
+
+[![Build Status](https://travis-ci.org/mindmapsdb/mindmapsdb.svg?branch=internal)](https://travis-ci.org/mindmapsdb/mindmapsdb)
+[![Coverage Status](https://coveralls.io/repos/github/mindmapsdb/mindmapsdb/badge.svg?branch=master)](https://coveralls.io/github/mindmapsdb/mindmapsdb?branch=master)
+[![Slack Status](http://mindmaps-slackin.herokuapp.com/badge.svg)](http://mindmaps-slackin.herokuapp.com/)
 
 ## Licensing
 
@@ -31,15 +38,3 @@ do the absolute minimum provided by law, up to and including nothing.
 
 This is basically the same disclaimer that comes with all software
 packages, but it is in plain English. Thanks for your understanding.
-  
-
-## Releases
-
-### Version 0.2.0 (1st October 2016)
-
-For release notes, please see our separate changelog file.   
-
-
-[![Build Status](https://travis-ci.org/mindmapsdb/mindmapsdb.svg?branch=internal)](https://travis-ci.org/mindmapsdb/mindmapsdb)
-[![Coverage Status](https://coveralls.io/repos/github/mindmapsdb/mindmapsdb/badge.svg?branch=master)](https://coveralls.io/github/mindmapsdb/mindmapsdb?branch=master)
-[![Slack Status](http://mindmaps-slackin.herokuapp.com/badge.svg)](http://mindmaps-slackin.herokuapp.com/)
