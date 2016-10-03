@@ -31,19 +31,20 @@ import static java.util.stream.Collectors.joining;
 
 /**
  * Main program to migrate CSV files into a Mindmaps graph. For use from a command line.
- * Expected arguments are the CSV file and the Mindmaps graph name.
- * Additionally, name of CSV entity and url of Mindmaps engine can be provided.
+ * Expected arguments are the CSV file and the Graql template.
+ * Additionally, delimiter, batch size, location of engine and graph name can be provided.
  */
 public class Main {
 
     static void die(String errorMsg) {
         System.out.println(errorMsg);
-        System.out.println("\nSyntax: ./migration.sh csv -file <csv file> -template <template file> [-delimiter <delimiter>] [-graph <graph name>] [-engine <Mindmaps engine URL>])");
+        System.out.println("\nSyntax: ./migration.sh csv -file <csv file> -template <template file> [-delimiter <delimiter>] [-batch <number of rows>] [-graph <graph name>] [-engine <Mindmaps engine URL>])");
         System.exit(-1);
     }
 
     public static void main(String[] args){
 
+        String batchSize = null;
         String csvFileName = null;
         String csvTemplateName = null;
         String csvDelimiter = null;
@@ -57,6 +58,8 @@ public class Main {
                 csvTemplateName = args[++i];
             else if ("-delimiter".equals(args[i]))
                 csvDelimiter = args[++i];
+            else if ("-batch".equals(args[i]))
+                batchSize = args[++i];
             else if ("-graph".equals(args[i]))
                 graphName = args[++i];
             else if ("-engine".equals(args[i]))
@@ -94,8 +97,9 @@ public class Main {
             Loader loader = engineURL == null ? new BlockingLoader(graphName)
                                               : new DistributedLoader(graphName, Lists.newArrayList(engineURL));
 
-            CSVMigrator migrator = csvDelimiter == null ? new CSVMigrator(loader)
-                                                        : new CSVMigrator(loader, csvDelimiter.charAt(0));
+            CSVMigrator migrator = new CSVMigrator(loader)
+                                        .setDelimiter(csvDelimiter == null ? CSVMigrator.DELIMITER : csvDelimiter.charAt(0))
+                                        .setBatchSize(batchSize == null ? CSVMigrator.BATCH_SIZE : Integer.valueOf(batchSize));
 
             String template = Files.readLines(csvTemplate, StandardCharsets.UTF_8).stream().collect(joining("\n"));
 

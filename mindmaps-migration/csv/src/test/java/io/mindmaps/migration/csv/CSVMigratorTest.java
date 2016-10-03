@@ -22,8 +22,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.io.Files;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.Entity;
-import io.mindmaps.concept.ResourceType;
+import io.mindmaps.concept.*;
 import io.mindmaps.engine.controller.CommitLogController;
 import io.mindmaps.engine.controller.GraphFactoryController;
 import io.mindmaps.engine.controller.TransactionController;
@@ -110,30 +109,17 @@ public class CSVMigratorTest {
         migrate(pokemonTemplate, get("multi-file/data/pokemon.csv"));
         migrate(pokemonTypeTemplate, get("multi-file/data/types.csv"));
         migrate(edgeTemplate, get("multi-file/data/edges.csv"));
-    }
 
-    @Test
-    public void multiFileOutOfOrderTest(){
-        load(get("multi-file/schema.gql"));
+        Collection<Entity> pokemon = graph.getEntityType("pokemon").instances();
+        assertEquals(151, pokemon.size());
 
-        assertNotNull(graph.getEntityType("pokemon"));
+        Entity grass = graph.getEntity("12-type");
+        Entity poison = graph.getEntity("4-type");
+        Entity bulbasaur = graph.getEntity("1-pokemon");
+        RelationType relation = graph.getRelationType("has-type");
 
-        String pokemonTemplate = "" +
-                "$x isa pokemon id <id>-pokemon \n" +
-                "    has description <identifier>\n" +
-                "    has pokedex-no @noescp{<id>}\n" +
-                "    has height @noescp{<height>}\n" +
-                "    has weight @noescp{<weight>};";
-
-        String pokemonTypeTemplate = "$x isa pokemon-type id <id>-type has description <identifier>;";
-
-        String edgeTemplate = "(pokemon-with-type: <pokemon_id>-pokemon, type-of-pokemon: <type_id>-type) isa has-type;";
-
-
-        // migrating edges before types
-        migrate(pokemonTemplate, get("multi-file/data/pokemon.csv"));
-        migrate(edgeTemplate, get("multi-file/data/edges.csv"));
-        migrate(pokemonTypeTemplate, get("multi-file/data/types.csv"));
+        assertRelationExists(relation, bulbasaur, grass);
+        assertRelationExists(relation, bulbasaur, poison);
     }
 
     @Test
@@ -208,6 +194,11 @@ public class CSVMigratorTest {
     private void assertResourceRelationExists(String type, Entity owner){
         assertTrue(owner.resources().stream().anyMatch(resource ->
                 resource.type().getId().equals(type)));
+    }
+
+    private void assertRelationExists(RelationType rel, Entity entity1, Entity entity2){
+        assertTrue(rel.instances().stream().anyMatch(r ->
+                r.rolePlayers().values().contains(entity1) && r.rolePlayers().values().contains(entity2)));
     }
 
     private void migrate(String template, File file){

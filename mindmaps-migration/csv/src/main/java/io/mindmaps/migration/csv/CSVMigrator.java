@@ -18,48 +18,77 @@
 
 package io.mindmaps.migration.csv;
 
+import com.google.common.collect.Lists;
 import com.opencsv.CSVReader;
 import io.mindmaps.engine.loader.Loader;
 import io.mindmaps.graql.Graql;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
 /**
  * The CSV data migrator will migrate all of the data in a CSV file into Mindmaps Graql var patters, to be
  * imported into a graph as the user sees fit.
- *
- * This class implements Iterator.
  */
 public class CSVMigrator {
 
-    private static final char COMMA = ',';
+    private static Logger LOG = LoggerFactory.getLogger(CSVMigrator.class);
+
+    public static final int BATCH_SIZE = 5;
+    public static final char DELIMITER = ',';
     private static final String NEWLINE = "\n";
+
     private final Loader loader;
-    private final char delimiter;
+    private char delimiter = DELIMITER;
+    private int batchSize = BATCH_SIZE;
 
+    /**
+     * Construct a CSV migrator
+     * @param loader loader for the migrator to use
+     */
     public CSVMigrator(Loader loader){
-        this(loader, COMMA);
-    }
-
-    public CSVMigrator(Loader loader, char delimiter){
-        this.delimiter = delimiter;
         this.loader = loader;
-
         loader.setBatchSize(1);
-
-        System.out.println(loader.getBatchSize());
     }
 
+    /**
+     * Set number of rows to migrate in one batch
+     * @param batchSize number of rows to migrate at once
+     */
+    public CSVMigrator setBatchSize(int batchSize){
+        this.batchSize = batchSize;
+        return this;
+    }
+
+    /**
+     * Set delimiter the input file will be split on
+     * @param delimiter character separating columns in input
+     */
+    public CSVMigrator setDelimiter(char delimiter){
+        this.delimiter = delimiter;
+        return this;
+    }
+
+    /**
+     * Migrate all the data in the given file based on the given template.
+     * @param template parametrized graql insert query
+     * @param file file containing data to be migrated
+     */
     public void migrate(String template, File file){
+        checkBatchSize();
 
         try (CSVReader reader =  new CSVReader(new FileReader(file), delimiter, '"', 0)){
            resolve(template, reader).forEach(loader::addToQueue);
@@ -71,7 +100,14 @@ public class CSVMigrator {
         }
     }
 
+    /**
+     * Migrate all the data in the given file based on the given template.
+     * @param template parametrized graql insert query
+     * @param file file containing data to be migrated
+     * @return Graql insert statement representing the file
+     */
     public String graql(String template, File file){
+        checkBatchSize();
 
         try (CSVReader reader =  new CSVReader(new FileReader(file), delimiter, '"', 0)){
             return resolve(template, reader).collect(joining(NEWLINE));
@@ -83,15 +119,30 @@ public class CSVMigrator {
     private Stream<String> resolve(String template, CSVReader reader) throws IOException {
         String[] header = reader.readNext();
 
-        return StreamSupport.stream(reader.spliterator(), false)
-                .map(line -> parse(header, line))
-                .map(data -> resolve(template, data));
+        // bad because all data held in memory
+        List<List<Map<String, Object>>> partitioned = Lists.partition(
+                StreamSupport.stream(reader.spliterator(), false)
+                    .map(line -> parse(header, line))
+                    .collect(toList()), batchSize);
+
+        return  partitioned.stream()
+                    .map(data -> resolve(template, data));
     }
 
-    private String resolve(String template, Map<String, Object> data){
-        return "insert " + Graql.parseTemplate(template, data);
+    private String resolve(String template, List<Map<String, Object>> data){
+        Map<String, Object> forData = Collections.singletonMap("data", data);
+        template = "for{data} do { " + template + "}";
+
+        return "insert " + Graql.parseTemplate(template, forData);
     }
 
+    /**
+     * Convert data in arrays (from CSV reader) to Map<String, Object>, the current input format for
+     * graql templating.
+     * @param header first row of input file, representing keys in the template
+     * @param data all bu first row of input file
+     * @return given data in a map
+     */
     private Map<String, Object> parse(String[] header, String[] data){
         if(header.length != data.length){
             throw new RuntimeException("Invalid CSV");
@@ -104,5 +155,16 @@ public class CSVMigrator {
                         i -> header[i],
                         i -> data[i]
                 ));
+    }
+
+    /**
+     * Warn the user when the batch size of the loader is greater than 1.
+     * If the batch size is greater than 1, it is possible that multiple of the same variables will be committed in
+     * one batch and the resulting committed data will be corrupted.
+     */
+    private void checkBatchSize(){
+        if(loader.getBatchSize() > 1){
+            LOG.warn("Loading with batch size [" + loader.getBatchSize() + "]. This can cause conflicts on commit.");
+        }
     }
 }
