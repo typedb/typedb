@@ -46,10 +46,11 @@ public class ImportControllerTest {
 
     @Before
     public void setUp() throws Exception {
+        Spark.stop();
+        Thread.sleep(5000);
         graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
         Util.setRestAssuredBaseURI(ConfigProperties.getInstance().getProperties());
         MindmapsEngineServer.start();
-
     }
 
     @Test

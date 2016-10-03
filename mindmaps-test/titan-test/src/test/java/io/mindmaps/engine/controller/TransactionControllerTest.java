@@ -29,6 +29,7 @@ import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import spark.Spark;
 
 import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.given;
@@ -43,6 +44,9 @@ public class TransactionControllerTest {
 
     @Before
     public void setUp() throws Exception {
+        Spark.stop();
+        Thread.sleep(5000);
+
         System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
 
         new TransactionController();
