@@ -31,9 +31,15 @@ import static io.mindmaps.graql.internal.template.Value.concat;
 import static io.mindmaps.graql.internal.template.Value.format;
 import static io.mindmaps.graql.internal.template.Value.formatVar;
 
-public class NoescpMacro implements Macro<String> {
+public class DoubleMacro implements Macro<String> {
 
-    public static Function<Value, String> formatWithoutEscape = Value::asString;
+    public static Function<Value, String> formatAsDouble = (value) -> {
+        if(value.isString()){
+            return Double.valueOf(value.asString()).toString();
+        }
+
+        return Double.toString(value.asLong());
+    };
 
     @Override
     public String apply(TemplateVisitor visitor, GraqlTemplateParser.BlockContext context, Scope scope) {
@@ -41,7 +47,7 @@ public class NoescpMacro implements Macro<String> {
         for(ParseTree tree:context.children){
             if(tree instanceof GraqlTemplateParser.ReplaceContext){
                 GraqlTemplateParser.ReplaceContext replace = (GraqlTemplateParser.ReplaceContext) tree;
-                result = concat(result, visitor.ws(formatWithoutEscape.apply(visitor.resolveReplace(replace.REPLACE())), replace));
+                result = concat(result, visitor.ws(formatAsDouble.apply(visitor.resolveReplace(replace.REPLACE())), replace));
 
             } else {
                 result = concat(result, visitor.visit(tree));
@@ -53,6 +59,6 @@ public class NoescpMacro implements Macro<String> {
 
     @Override
     public String name(){
-        return "noescp";
+        return "int";
     }
 }

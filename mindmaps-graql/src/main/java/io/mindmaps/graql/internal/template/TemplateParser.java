@@ -18,6 +18,8 @@
 
 package io.mindmaps.graql.internal.template;
 
+import io.mindmaps.graql.internal.template.macro.DoubleMacro;
+import io.mindmaps.graql.internal.template.macro.IntMacro;
 import io.mindmaps.graql.internal.template.macro.Macro;
 import io.mindmaps.graql.internal.template.macro.NoescpMacro;
 import org.antlr.v4.runtime.ANTLRInputStream;
@@ -84,5 +86,7 @@ public class TemplateParser {
     private void registerDefaultMacros(){
         macros = new HashMap<>();
         macros.put("noescp", new NoescpMacro());
+        macros.put("int", new IntMacro());
+        macros.put("double", new DoubleMacro());
     }
 }

@@ -132,7 +132,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
     @Override
     public Object visitMacro(GraqlTemplateParser.MacroContext ctx){
         String macro = ctx.MACRO().getText().replace("@", "");
-        return macros.get(macro).apply(this, ctx.block(), scope);
+        return ws(macros.get(macro).apply(this, ctx.block(), scope), ctx);
     }
 
     // expression
@@ -216,11 +216,11 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
 
     // Methods to maintain whitespace in the template
 
-    private String ws(Object obj, ParserRuleContext ctx){
+    public String ws(Object obj, ParserRuleContext ctx){
         return whitespace(obj, ctx.getStart(), ctx.getStop());
     }
 
-    private String ws(Object obj, TerminalNode node){
+    public String ws(Object obj, TerminalNode node){
         Token tok = node.getSymbol();
         return whitespace(obj, tok, tok);
     }

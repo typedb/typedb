@@ -23,6 +23,7 @@ import ch.qos.logback.classic.Logger;
 import com.google.common.io.Files;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Entity;
+import io.mindmaps.concept.ResourceType;
 import io.mindmaps.engine.controller.CommitLogController;
 import io.mindmaps.engine.controller.GraphFactoryController;
 import io.mindmaps.engine.controller.TransactionController;
@@ -39,9 +40,11 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 
 import static io.mindmaps.graql.Graql.var;
 import static java.util.stream.Collectors.joining;
+import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -73,6 +76,7 @@ public class CSVMigratorTest {
 
         graph = GraphFactory.getInstance().getGraphBatchLoading(GRAPH_NAME);
         loader = new BlockingLoader(GRAPH_NAME);
+        loader.setExecutorSize(1);
 
         migrator = new CSVMigrator(loader);
     }
@@ -95,13 +99,13 @@ public class CSVMigratorTest {
         String pokemonTemplate = "" +
                 "$x isa pokemon id <id>-pokemon \n" +
                 "    has description <identifier>\n" +
-                "    has pokedex-no @noescp{<id>}\n" +
-                "    has height @noescp{<height>}\n" +
-                "    has weight @noescp{<weight>};";
+                "    has pokedex-no @int{<id>}\n" +
+                "    has height @int{<height>}\n" +
+                "    has weight @int{<weight>};";
 
         String pokemonTypeTemplate = "$x isa pokemon-type id <id>-type has description <identifier>;";
 
-        String edgeTemplate = "(pokemon-with-type: <pokemon_id>, type-of-pokemon: <type_id>) isa has-type;";
+        String edgeTemplate = "(pokemon-with-type: <pokemon_id>-pokemon, type-of-pokemon: <type_id>-type) isa has-type;";
 
         migrate(pokemonTemplate, get("multi-file/data/pokemon.csv"));
         migrate(pokemonTypeTemplate, get("multi-file/data/types.csv"));
@@ -115,15 +119,16 @@ public class CSVMigratorTest {
         assertNotNull(graph.getEntityType("pokemon"));
 
         String pokemonTemplate = "" +
-                "$x isa pokemon\n" +
-                "    has pokedex-no <id>\n" +
-                "    has name <identifier>\n" +
-                "    has height @noescp{ <height>}\n" +
-                "    has weight @noescp{ <weight>};";
+                "$x isa pokemon id <id>-pokemon \n" +
+                "    has description <identifier>\n" +
+                "    has pokedex-no @noescp{<id>}\n" +
+                "    has height @noescp{<height>}\n" +
+                "    has weight @noescp{<weight>};";
 
-        String pokemonTypeTemplate = "$x isa pokemon-type id <identifier>;";
+        String pokemonTypeTemplate = "$x isa pokemon-type id <id>-type has description <identifier>;";
 
-        String edgeTemplate = "(pokemon-with-type: <pokemon_id>, type-of-pokemon: <type_id>) isa has-type;";
+        String edgeTemplate = "(pokemon-with-type: <pokemon_id>-pokemon, type-of-pokemon: <type_id>-type) isa has-type;";
+
 
         // migrating edges before types
         migrate(pokemonTemplate, get("multi-file/data/pokemon.csv"));
@@ -133,7 +138,35 @@ public class CSVMigratorTest {
 
     @Test
     public void multipleEntitiesInOneFileTest(){
+        load(get("single-file/schema.gql"));
+        assertNotNull(graph.getEntityType("make"));
 
+        String template = "" +
+                "$x isa make id <Make>;\n" +
+                "$y isa model id <Model>\n" +
+                "    has year <Year>\n" +
+                "    if{ Description} do { has description <Description> }\n" +
+                "    has price @double{<Price>};\n" +
+                "(make-of-car: $x, model-of-car: $y) isa make-and-model;";
+
+        migrate(template, get("single-file/data/cars.csv"));
+
+        // test
+        Collection<Entity> makes = graph.getEntityType("make").instances();
+        System.out.println(makes);
+        assertEquals(3, makes.size());
+
+        Collection<Entity> models = graph.getEntityType("model").instances();
+        assertEquals(4, models.size());
+
+        // test empty value not created
+        ResourceType description = graph.getResourceType("description");
+
+        Entity venture = graph.getEntity("Venture");
+        assertEquals(1, venture.resources(description).size());
+
+        Entity ventureLarge = graph.getEntity("Venture Large");
+        assertEquals(0, ventureLarge.resources(description).size());
     }
 
     @Test

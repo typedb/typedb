@@ -104,6 +104,7 @@ public class CSVMigrator {
 
         return IntStream.range(0, header.length)
                 .mapToObj(Integer::valueOf)
+                .filter(i -> !data[i].isEmpty())
                 .collect(toMap(
                         i -> header[i],
                         i -> data[i]
