@@ -51,18 +51,18 @@ export default class Visualiser {
             autoResize: true,
             edges: {
                 arrows: { to: true },
-                smooth: { type: 'continuous' }
+                smooth: { forceDirection: 'none' }
             },
             physics: {
-                enabled: true,
-                solver: "forceAtlas2Based",
-                stabilization: {
-                    enabled: true,
-                    iterations: 10,
-                    fit: true
+                "repulsion": {
+                  "centralGravity": 0.6,
+                  "springLength": 360,
+                  "springConstant": 0.09,
+                  "nodeDistance": 350,
+                  "damping": 0.82
                 },
-                timestep: 0.3,
-                adaptiveTimestep: false
+                "minVelocity": 0.75,
+                "solver": "repulsion"
             },
             interaction: {
                 hover: true,
