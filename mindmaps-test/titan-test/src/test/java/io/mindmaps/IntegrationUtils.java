@@ -32,7 +32,7 @@ import static java.lang.Thread.sleep;
 
 public class IntegrationUtils {
 
-    private static AtomicBoolean ENGINE_ON = new AtomicBoolean(false);
+    private static AtomicBoolean EMBEDDED_CASS_ON = new AtomicBoolean(false);
 
     private static void hideLogs() {
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
@@ -40,14 +40,19 @@ public class IntegrationUtils {
     }
 
     public static void startTestEngine() throws Exception {
-        if (ENGINE_ON.compareAndSet(false, true)) {
-            System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY, ConfigProperties.EMBEDDED_CONFIG_FILE);
+        MindmapsEngineServer.stop();
+        Thread.sleep(5000);
+
+        if (EMBEDDED_CASS_ON.compareAndSet(false, true)) {
             hideLogs();
             EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra-embedded.yaml");
-            MindmapsEngineServer.start();
             hideLogs();
-            sleep(5000);
+            Thread.sleep(5000);
         }
+
+        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY, ConfigProperties.EMBEDDED_CONFIG_FILE);
+        MindmapsEngineServer.start();
+        sleep(5000);
     }
 
     public static Pair<MindmapsGraph, String> graphWithNewKeyspace() {
