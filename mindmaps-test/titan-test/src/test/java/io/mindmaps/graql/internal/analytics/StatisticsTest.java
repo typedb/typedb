@@ -1,5 +1,6 @@
-package mindmaps.graql.internal.analytics;
+package io.mindmaps.graql.internal.analytics;
 
+import io.mindmaps.IntegrationUtils;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
@@ -8,9 +9,7 @@ import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.Mindmaps;
-import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.graql.internal.util.GraqlType;
-import mindmaps.IntegrationUtils;
 import org.elasticsearch.common.collect.Sets;
 import org.javatuples.Pair;
 import org.junit.After;

@@ -16,8 +16,9 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package mindmaps.graql.internal.analytics;
+package io.mindmaps.graql.internal.analytics;
 
+import io.mindmaps.IntegrationUtils;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
@@ -27,8 +28,6 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.Mindmaps;
-import io.mindmaps.graql.internal.analytics.Analytics;
-import mindmaps.IntegrationUtils;
 import org.javatuples.Pair;
 import org.junit.After;
 import org.junit.Before;

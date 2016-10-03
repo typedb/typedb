@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package mindmaps.graql.internal.analytics;
+package io.mindmaps.graql.internal.analytics;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
@@ -31,7 +31,6 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.Mindmaps;
-import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.graql.internal.util.GraqlType;
 import org.apache.commons.collections.CollectionUtils;
 import org.javatuples.Pair;
@@ -52,8 +51,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
-import static mindmaps.IntegrationUtils.graphWithNewKeyspace;
-import static mindmaps.IntegrationUtils.startTestEngine;
+import static io.mindmaps.IntegrationUtils.graphWithNewKeyspace;
+import static io.mindmaps.IntegrationUtils.startTestEngine;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;

@@ -16,8 +16,9 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package mindmaps.core;
+package io.mindmaps.core;
 
+import io.mindmaps.IntegrationUtils;
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Entity;
@@ -26,7 +27,6 @@ import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
-import mindmaps.IntegrationUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
