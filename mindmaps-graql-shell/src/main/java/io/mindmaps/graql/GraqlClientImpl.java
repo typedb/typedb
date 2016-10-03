@@ -30,9 +30,9 @@ import java.util.concurrent.Future;
  */
 public class GraqlClientImpl implements GraqlClient {
 
-    private static final long TIMEOUT = 3_600_000;
-
     private WebSocketClient client;
+
+    private final static long TIMEOUT = 3_600_000;
 
     @Override
     public Future<Session> connect(Object websocket, URI uri) {
