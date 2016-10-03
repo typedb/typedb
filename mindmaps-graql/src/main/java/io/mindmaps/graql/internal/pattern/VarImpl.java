@@ -260,24 +260,8 @@ class VarImpl implements VarInternal {
     }
 
     @Override
-    public boolean usesNonEqualPredicate() {
-        Stream<ValuePredicateAdmin> predicates = getInnerVars().stream().flatMap(v -> v.getValuePredicates().stream());
-        return predicates.anyMatch(id -> !id.equalsValue().isPresent());
-    }
-
-    @Override
-    public Set<String> getRoleTypes() {
-        return getIdNames(getCastings().stream().map(VarAdmin.Casting::getRoleType).flatMap(CommonUtil::optionalToStream));
-    }
-
-    @Override
     public Optional<String> getId() {
         return getProperty(IdProperty.class).map(IdProperty::getId);
-    }
-
-    @Override
-    public Set<String> getResourceTypes() {
-        return getProperties(HasResourceProperty.class).map(HasResourceProperty::getType).collect(toSet());
     }
 
     @Override
@@ -327,11 +311,6 @@ class VarImpl implements VarInternal {
     @Override
     public Set<ValuePredicateAdmin> getValuePredicates() {
         return getProperties(ValueProperty.class).map(ValueProperty::getPredicate).collect(toSet());
-    }
-
-    @Override
-    public Set<VarAdmin> getResources() {
-        return getProperties(HasResourceProperty.class).map(HasResourceProperty::getResource).collect(toSet());
     }
 
     @Override
@@ -406,18 +385,17 @@ class VarImpl implements VarInternal {
 
     @Override
     public Set<String> getTypeIds() {
-        Set<String> results = new HashSet<>();
-        getId().ifPresent(results::add);
-        getResourceTypes().forEach(results::add);
-        getId().ifPresent(results::add);
-        return results;
+        return getProperties()
+                .flatMap(VarProperty::getTypes)
+                .map(VarAdmin::getId).flatMap(CommonUtil::optionalToStream)
+                .collect(toSet());
     }
 
     @Override
     public String toString() {
         Set<VarAdmin> innerVars = getInnerVars();
         innerVars.remove(this);
-        innerVars.removeAll(getResources());
+        getProperties(HasResourceProperty.class).map(HasResourceProperty::getResource).forEach(innerVars::remove);
 
         if (!innerVars.stream().allMatch(v -> v.getIdOnly().isPresent() || v.hasNoProperties())) {
             throw new UnsupportedOperationException("Graql strings cannot represent a query with inner variables");
@@ -440,14 +418,6 @@ class VarImpl implements VarInternal {
         }
 
         return builder.toString();
-    }
-
-    /**
-     * @param vars a stream of variables
-     * @return the IDs of all variables that refer to things by id in the graph
-     */
-    private Set<String> getIdNames(Stream<VarAdmin> vars) {
-        return vars.map(VarAdmin::getId).flatMap(CommonUtil::optionalToStream).collect(toSet());
     }
 
     /**

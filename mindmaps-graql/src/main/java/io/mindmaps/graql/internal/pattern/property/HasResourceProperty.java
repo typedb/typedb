@@ -34,6 +34,7 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import static io.mindmaps.graql.Graql.id;
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNBOUNDED;
 import static io.mindmaps.graql.internal.util.CommonUtil.tryAny;
 import static io.mindmaps.util.Schema.EdgeLabel.SHORTCUT;
@@ -125,6 +126,11 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
                 .filter(r -> r.type().getId().equals(resourceType))
                 .filter(r -> predicate.map(p -> p.getPredicate().test(r.getValue())).orElse(true))
                 .forEach(Concept::delete);
+    }
+
+    @Override
+    public Stream<VarAdmin> getTypes() {
+        return Stream.of(id(resourceType).admin());
     }
 
     /**

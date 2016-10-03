@@ -80,19 +80,9 @@ public interface VarAdmin extends PatternAdmin, Var {
     Set<String> getTypeIds();
 
     /**
-     * @return all role types that this variable refers to
-     */
-    Set<String> getRoleTypes();
-
-    /**
      * @return whether this variable represents a relation
      */
     boolean isRelation();
-
-    /**
-     * @return all resource types that this variable refers to
-     */
-    Set<String> getResourceTypes();
 
     /**
      * @return the name of this variable, as it would be referenced in a native Graql query (e.g. '$x', 'movie')
@@ -115,19 +105,9 @@ public interface VarAdmin extends PatternAdmin, Var {
     Set<?> getValueEqualsPredicates();
 
     /**
-     * @return all resources that this instance must have
-     */
-    Set<VarAdmin> getResources();
-
-    /**
      * @return all predicates on resources of this variable (where the key is the resource type)
      */
     Map<VarAdmin, Set<ValuePredicateAdmin>> getResourcePredicates();
-
-    /**
-     * @return whether this variable uses any predicate that is not equality
-     */
-    boolean usesNonEqualPredicate();
 
     /**
      * @return all castings described on this relation (that is, pairs of role types and role players)
