@@ -80,4 +80,23 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
         String scopeId = scope.getId().orElseThrow(() -> failDelete(this));
         concept.asRelation().deleteScope(graph.getInstance(scopeId));
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        HasScopeProperty that = (HasScopeProperty) o;
+
+        return scope.equals(that.scope);
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + scope.hashCode();
+        return result;
+    }
 }

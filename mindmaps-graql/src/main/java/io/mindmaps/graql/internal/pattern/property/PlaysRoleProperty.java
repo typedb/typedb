@@ -92,4 +92,23 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
         String roleId = role.getId().orElseThrow(() -> failDelete(this));
         concept.asType().deletePlaysRole(graph.getRoleType(roleId));
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        PlaysRoleProperty that = (PlaysRoleProperty) o;
+
+        return role.equals(that.role);
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + role.hashCode();
+        return result;
+    }
 }

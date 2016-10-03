@@ -27,6 +27,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static io.mindmaps.util.Schema.ConceptProperty.IS_ABSTRACT;
+import static org.apache.tinkerpop.gremlin.structure.T.id;
 
 public class IsAbstractProperty extends AbstractVarProperty implements UniqueVarProperty, SingleTraversalProperty {
 
@@ -48,5 +49,17 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
     @Override
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
         concept.asType().setAbstract(true);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        return super.equals(o);
+    }
+
+    @Override
+    public int hashCode() {
+        return 31; // lucky number
     }
 }

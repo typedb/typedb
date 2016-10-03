@@ -57,4 +57,23 @@ public class LhsProperty extends AbstractVarProperty implements UniqueVarPropert
     public FragmentPriority getPriority() {
         return FragmentPriority.VALUE_NONSPECIFIC;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        LhsProperty that = (LhsProperty) o;
+
+        return lhs.equals(that.lhs);
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + lhs.hashCode();
+        return result;
+    }
 }
