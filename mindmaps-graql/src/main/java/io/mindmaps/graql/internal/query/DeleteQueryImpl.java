@@ -27,7 +27,7 @@ import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.admin.DeleteQueryAdmin;
 import io.mindmaps.graql.admin.MatchQueryAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.pattern.VarInternal;
+import io.mindmaps.graql.internal.pattern.property.VarPropertyInternal;
 import io.mindmaps.util.ErrorMessage;
 
 import java.util.Collection;
@@ -100,7 +100,9 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
             // Delete whole concept if nothing specified to delete
             deleteConcept(id);
         } else {
-            ((VarInternal) deleter).getProperties().forEach(property -> property.deleteProperty(getGraph(), result));
+            deleter.getProperties().forEach(property ->
+                    ((VarPropertyInternal) property).deleteProperty(getGraph(), result)
+            );
         }
     }
 

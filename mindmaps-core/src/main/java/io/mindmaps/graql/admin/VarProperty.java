@@ -18,9 +18,6 @@
 
 package io.mindmaps.graql.admin;
 
-import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.Concept;
-
 import java.util.stream.Stream;
 
 /**
@@ -58,13 +55,6 @@ public interface VarProperty {
      * implicitly created (such as with "has-resource").
      */
     Stream<VarAdmin> getImplicitInnerVars();
-
-    /**
-     * Delete the given property from the graph, if possible.
-     * @param graph the graph to operate on
-     * @param concept the concept to delete properties of
-     */
-    void deleteProperty(MindmapsGraph graph, Concept concept) throws IllegalStateException;
 
     /**
      * True if there is at most one of these properties for each {@link VarAdmin}

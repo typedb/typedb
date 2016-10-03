@@ -18,6 +18,7 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.admin.VarProperty;
@@ -42,6 +43,13 @@ public interface VarPropertyInternal extends VarProperty {
      * @param concept the concept to insert a property on
      */
     void insertProperty(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException;
+
+    /**
+     * Delete the given property from the graph, if possible.
+     * @param graph the graph to operate on
+     * @param concept the concept to delete properties of
+     */
+    void deleteProperty(MindmapsGraph graph, Concept concept) throws IllegalStateException;
 
     @Override
     default Stream<VarAdmin> getInnerVars() {
