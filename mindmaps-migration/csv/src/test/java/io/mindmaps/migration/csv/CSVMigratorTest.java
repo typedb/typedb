@@ -144,9 +144,9 @@ public class CSVMigratorTest {
         String template = "" +
                 "$x isa make id <Make>;\n" +
                 "$y isa model id <Model>\n" +
-                "    has year <Year>\n" +
-                "    if{ Description} do { has description <Description> }\n" +
-                "    has price @double{<Price>};\n" +
+                "    if {Year} do {has year <Year> }\n " +
+                "    if {Description} do { has description <Description> }\n" +
+                "    if {Price} do { has price @double{<Price>} };\n" +
                 "(make-of-car: $x, model-of-car: $y) isa make-and-model;";
 
         migrate(template, get("single-file/data/cars.csv"));

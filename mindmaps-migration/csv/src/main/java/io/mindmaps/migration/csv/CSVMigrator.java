@@ -21,13 +21,10 @@ package io.mindmaps.migration.csv;
 import com.opencsv.CSVReader;
 import io.mindmaps.engine.loader.Loader;
 import io.mindmaps.graql.Graql;
-import scala.Char;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -45,7 +42,7 @@ import static java.util.stream.Collectors.toMap;
 public class CSVMigrator {
 
     private static final char COMMA = ',';
-    private static final char NEWLINE = '\n';
+    private static final String NEWLINE = "\n";
     private final Loader loader;
     private final char delimiter;
 
@@ -77,14 +74,13 @@ public class CSVMigrator {
     public String graql(String template, File file){
 
         try (CSVReader reader =  new CSVReader(new FileReader(file), delimiter, '"', 0)){
-            return resolve(template, reader).collect(joining(Character.toString(NEWLINE)));
+            return resolve(template, reader).collect(joining(NEWLINE));
         } catch (IOException e){
             throw new RuntimeException(e);
         }
     }
 
     private Stream<String> resolve(String template, CSVReader reader) throws IOException {
-
         String[] header = reader.readNext();
 
         return StreamSupport.stream(reader.spliterator(), false)
@@ -93,7 +89,6 @@ public class CSVMigrator {
     }
 
     private String resolve(String template, Map<String, Object> data){
-        System.out.println("insert " + Graql.parseTemplate(template, data));
         return "insert " + Graql.parseTemplate(template, data);
     }
 

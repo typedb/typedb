@@ -19,11 +19,15 @@
 package io.mindmaps.migration.csv;
 
 import com.google.common.collect.Lists;
+import com.google.common.io.Files;
 import io.mindmaps.engine.loader.BlockingLoader;
 import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.engine.loader.Loader;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
+
+import static java.util.stream.Collectors.joining;
 
 /**
  * Main program to migrate CSV files into a Mindmaps graph. For use from a command line.
@@ -34,61 +38,70 @@ public class Main {
 
     static void die(String errorMsg) {
         System.out.println(errorMsg);
-        System.out.println("\nSyntax: ./migration.sh csv -file <csv filename> -graph <graph name> [-engine <Mindmaps engine URL>] [-as <name of this entity type>]");
+        System.out.println("\nSyntax: ./migration.sh csv -file <csv file> -template <template file> [-delimiter <delimiter>] [-graph <graph name>] [-engine <Mindmaps engine URL>])");
         System.exit(-1);
     }
 
     public static void main(String[] args){
 
         String csvFileName = null;
-        String csvEntityType = null;
+        String csvTemplateName = null;
+        String csvDelimiter = null;
         String engineURL = null;
         String graphName = null;
 
         for (int i = 0; i < args.length; i++) {
             if ("-file".equals(args[i]))
                 csvFileName = args[++i];
+            else if ("-template".equals(args[i]))
+                csvTemplateName = args[++i];
+            else if ("-delimiter".equals(args[i]))
+                csvDelimiter = args[++i];
             else if ("-graph".equals(args[i]))
                 graphName = args[++i];
             else if ("-engine".equals(args[i]))
                 engineURL = args[++i];
-            else if ("-as".equals(args[i])){
-                csvEntityType = args[++i];
-            }
-            else if("csv".equals(args[0])) {
+            else if("csv".equals(args[0]))
                 continue;
-            }
             else
                 die("Unknown option " + args[i]);
         }
 
         if(csvFileName == null){
-            die("Please specify CSV file using the -csv option");
+            die("Please specify CSV file using the -file option");
         }
         File csvFile = new File(csvFileName);
-        if(!csvFile.exists()){
+
+        if(csvTemplateName == null){
+            die("Please specify the template using the -template option");
+        }
+        File csvTemplate = new File(csvFileName);
+
+        if(!csvTemplate.exists() || !csvFile.exists()){
             die("Cannot find file: " + csvFileName);
         }
+
+
         if(graphName == null){
-            die("Please provide the name of the graph using -graph");
-        }
-        if(csvEntityType == null){
-            csvEntityType = csvFile.getName().replaceAll("[^A-Za-z0-9]", "_");
+            graphName = csvFile.getName().replace(".", "_");
         }
 
         System.out.println("Migrating " + csvFileName + " using MM Engine " +
                 (engineURL == null ? "local" : engineURL ) + " into graph " + graphName);
-
 
         //
         try{
             Loader loader = engineURL == null ? new BlockingLoader(graphName)
                                               : new DistributedLoader(graphName, Lists.newArrayList(engineURL));
 
-//            CSVMigrator migrator = new CSVMigrator(loader, batchSize);
+            CSVMigrator migrator = csvDelimiter == null ? new CSVMigrator(loader)
+                                                        : new CSVMigrator(loader, csvDelimiter.charAt(0));
 
+            String template = Files.readLines(csvTemplate, StandardCharsets.UTF_8).stream().collect(joining("\n"));
 
+            migrator.migrate(template, csvFile);
 
+            System.out.println("Migration complete!");
         }
         catch (Throwable throwable){
             throwable.printStackTrace(System.err);
