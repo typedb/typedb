@@ -303,8 +303,7 @@ public class GraqlTest {
 
     }
 
-    @Ignore
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = IllegalStateException.class)
     public void testNonResourceTypeAsSubgraphForAnalytics() throws MindmapsValidationException {
         EntityType thing = graph.putEntityType("thing");
         graph.commit();
@@ -312,8 +311,7 @@ public class GraqlTest {
         ((ComputeQuery) qb.parse("compute sum in thing;")).execute();
     }
 
-    @Ignore
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = IllegalStateException.class)
     public void testErrorWhenNoSubgrapForAnalytics() throws MindmapsValidationException {
         ((ComputeQuery) qb.parse("compute sum;")).execute();
         ((ComputeQuery) qb.parse("compute min;")).execute();
