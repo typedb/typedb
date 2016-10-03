@@ -58,13 +58,25 @@ export function additionalProperties(resource) {
  Internal functions
  */
 function buildLabel(resource) {
-    var label = resource[API.KEY_ID];
+    var label = undefined;
+
+    switch(resource[API.KEY_BASE_TYPE]) {
+        case API.ENTITY_TYPE:
+            label = resource[API.KEY_TYPE] + ": " + resource[API.KEY_ID];
+            break;
+        case API.RELATION_TYPE:
+            label = resource[API.KEY_BASE_TYPE] + ": " + resource[API.KEY_TYPE];
+            break;
+        case API.RESOURCE_TYPE:
+            label = resource[API.KEY_VALUE];
+            break;
+
+        default:
+            label = resource[API.KEY_ID];
+    }
 
     if(API.KEY_VALUE in resource)
         label = resource[API.KEY_VALUE] || label;
-
-    if(resource[API.KEY_BASE_TYPE] === API.ENTITY_TYPE)
-        label = resource[API.KEY_TYPE] + ": " + label;
 
     return label;
 }
