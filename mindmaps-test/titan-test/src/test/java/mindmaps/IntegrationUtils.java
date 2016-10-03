@@ -16,10 +16,12 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps;
+package mindmaps;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import io.mindmaps.Mindmaps;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.engine.MindmapsEngineServer;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.javatuples.Pair;

@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.core;
+package mindmaps.core;
 
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
@@ -25,6 +25,7 @@ import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.MindmapsValidationException;
+import mindmaps.IntegrationUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -39,7 +40,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import static io.mindmaps.IntegrationUtils.startTestEngine;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
@@ -55,7 +55,7 @@ public class ConcurrencyTest {
 
     @BeforeClass
     public static void startController() throws Exception {
-        startTestEngine();
+        IntegrationUtils.startTestEngine();
     }
 
     @Before

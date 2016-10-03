@@ -18,7 +18,6 @@
 
 package io.mindmaps.engine.util;
 
-import io.mindmaps.engine.util.ConfigProperties;
 import org.junit.Before;
 import org.junit.Test;
 

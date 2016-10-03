@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql.internal.analytics;
+package mindmaps.graql.internal.analytics;
 
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Entity;
@@ -27,6 +27,8 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.Mindmaps;
+import io.mindmaps.graql.internal.analytics.Analytics;
+import mindmaps.IntegrationUtils;
 import org.javatuples.Pair;
 import org.junit.After;
 import org.junit.Before;
@@ -46,8 +48,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
-import static io.mindmaps.IntegrationUtils.graphWithNewKeyspace;
-import static io.mindmaps.IntegrationUtils.startTestEngine;
 import static io.mindmaps.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -72,12 +72,12 @@ public class ScalingTestIT {
 
     @BeforeClass
     public static void startController() throws Exception {
-        startTestEngine();
+        IntegrationUtils.startTestEngine();
     }
 
     @Before
     public void setUp() throws InterruptedException {
-        Pair<MindmapsGraph, String> result = graphWithNewKeyspace();
+        Pair<MindmapsGraph, String> result = IntegrationUtils.graphWithNewKeyspace();
         graph = result.getValue0();
         keyspace = result.getValue1();
 

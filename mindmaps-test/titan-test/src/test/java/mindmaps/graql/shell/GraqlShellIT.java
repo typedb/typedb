@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql.shell;
+package mindmaps.graql.shell;
 
 import com.google.common.base.Strings;
 import io.mindmaps.graql.GraqlClientImpl;
@@ -29,7 +29,7 @@ import java.io.*;
 import java.util.Arrays;
 import java.util.Random;
 
-import static io.mindmaps.IntegrationUtils.startTestEngine;
+import static mindmaps.IntegrationUtils.startTestEngine;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.*;
