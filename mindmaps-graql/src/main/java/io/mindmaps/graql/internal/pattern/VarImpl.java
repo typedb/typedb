@@ -38,7 +38,8 @@ import java.util.stream.Stream;
 
 import static io.mindmaps.graql.Graql.eq;
 import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.util.ErrorMessage.*;
+import static io.mindmaps.util.ErrorMessage.CONFLICTING_PROPERTIES;
+import static io.mindmaps.util.ErrorMessage.SET_GENERATED_VARIABLE_NAME;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toSet;
 
@@ -190,8 +191,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var rel(Var roleplayer) {
-        putRelationProperty().addCasting(new Casting(roleplayer.admin()), properties);
-        return this;
+        return addCasting(new Casting(roleplayer.admin()));
     }
 
     @Override
@@ -211,8 +211,7 @@ class VarImpl implements VarInternal {
 
     @Override
     public Var rel(Var roletype, Var roleplayer) {
-        putRelationProperty().addCasting(new Casting(roletype.admin(), roleplayer.admin()), properties);
-        return this;
+        return addCasting(new Casting(roletype.admin(), roleplayer.admin()));
     }
 
     @Override
@@ -460,14 +459,21 @@ class VarImpl implements VarInternal {
         return varTraversals;
     }
 
-    private RelationProperty putRelationProperty() {
-        Optional<RelationProperty> maybeProperty = getProperty(RelationProperty.class);
+    private Var addCasting(VarAdmin.Casting casting) {
+        Optional<RelationProperty> relationProperty = getProperty(RelationProperty.class);
 
-        return maybeProperty.orElseGet(() -> {
-            RelationProperty property = new RelationProperty();
-            addProperty(property);
-            return property;
-        });
+        Set<VarAdmin.Casting> castings = relationProperty
+                .map(RelationProperty::getCastings)
+                .orElse(Stream.empty())
+                .collect(toSet());
+
+        castings.add(casting);
+
+        relationProperty.ifPresent(properties::remove);
+
+        properties.add(new RelationProperty(castings));
+
+        return this;
     }
 
     /**

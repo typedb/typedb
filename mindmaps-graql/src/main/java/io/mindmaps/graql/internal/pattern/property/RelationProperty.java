@@ -18,14 +18,16 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import com.google.common.collect.ImmutableSet;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.Relation;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.graql.admin.UniqueVarProperty;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.admin.VarProperty;
-import io.mindmaps.graql.internal.gremlin.*;
+import io.mindmaps.graql.internal.gremlin.Fragment;
+import io.mindmaps.graql.internal.gremlin.MultiTraversal;
+import io.mindmaps.graql.internal.gremlin.ShortcutTraversal;
 import io.mindmaps.graql.internal.query.InsertQueryExecutor;
 import io.mindmaps.graql.internal.util.CommonUtil;
 import io.mindmaps.util.ErrorMessage;
@@ -46,16 +48,10 @@ import static java.util.stream.Collectors.toSet;
 
 public class RelationProperty extends AbstractVarProperty implements UniqueVarProperty, VarPropertyInternal {
 
-    private final Set<VarAdmin.Casting> castings = new HashSet<>();
+    private final Set<VarAdmin.Casting> castings;
 
-    public void addCasting(VarAdmin.Casting casting, Collection<VarProperty> properties) {
-        // Re-add ourselves to the given collection because our hashCode and equality has changed
-        // TODO: Make RelationProperty immutable so this is no longer necessary
-        properties.remove(this);
-
-        castings.add(casting);
-
-        properties.add(this);
+    public RelationProperty(Set<VarAdmin.Casting> castings) {
+        this.castings = ImmutableSet.copyOf(castings);
     }
 
     public Stream<VarAdmin.Casting> getCastings() {
