@@ -40,11 +40,6 @@ public class IntegrationUtils {
     }
 
     public static void startTestEngine() throws Exception {
-        if(ENGINE_ON.compareAndSet(true, false)){
-            MindmapsEngineServer.stop();
-            sleep(5000);
-        }
-
         if (ENGINE_ON.compareAndSet(false, true)) {
             System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY, ConfigProperties.EMBEDDED_CONFIG_FILE);
             hideLogs();
