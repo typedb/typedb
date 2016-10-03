@@ -49,7 +49,7 @@ public class VisualiserControllerTest {
 
         new VisualiserController();
 
-        graphName="special-test-graph";
+        graphName="specialtestgraph";
         MindmapsGraph graph = GraphFactory.getInstance().getGraph(graphName);
         EntityType man = graph.putEntityType("Man");
         graph.putEntity("actor-123", man);
