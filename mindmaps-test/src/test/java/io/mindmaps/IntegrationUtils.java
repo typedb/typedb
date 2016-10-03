@@ -23,6 +23,7 @@ import ch.qos.logback.classic.Logger;
 import io.mindmaps.engine.MindmapsEngineServer;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.javatuples.Pair;
+import spark.Spark;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -39,13 +40,18 @@ public class IntegrationUtils {
     }
 
     public static void startTestEngine() throws Exception {
+        Spark.stop();
+        Thread.sleep(5000);
+
         if (ENGINE_ON.compareAndSet(false, true)) {
             hideLogs();
             EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra-embedded.yaml");
-            MindmapsEngineServer.start();
             hideLogs();
-            sleep(5000);
+            Thread.sleep(5000);
         }
+
+        MindmapsEngineServer.start();
+        sleep(5000);
     }
 
     public static Pair<MindmapsGraph, String> graphWithNewKeyspace() {
