@@ -35,7 +35,18 @@ public interface VarPropertyInternal extends VarProperty {
         shortcutTraversal.setInvalid();
     }
 
+    /**
+     * Check if the given property can be used in a match query
+     */
+    void checkValid(MindmapsGraph graph, VarAdmin var) throws IllegalStateException;
+
     Collection<MultiTraversal> getMultiTraversals(String start);
+
+    /**
+     * Check if the given property can be inserted
+     */
+    default void checkInsertable(VarAdmin var) throws IllegalStateException {
+    }
 
     /**
      * Insert the given property into the graph, if possible.

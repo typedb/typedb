@@ -20,7 +20,9 @@ package io.mindmaps.graql.internal.pattern.property;
 
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
+import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.FragmentPriority;
+import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -69,5 +71,12 @@ public class ValueProperty extends AbstractVarProperty implements NamedProperty,
     private Schema.ConceptProperty getValuePropertyForPredicate(ValuePredicateAdmin predicate) {
         Object value = predicate.getInnerValues().iterator().next();
         return ResourceType.DataType.SUPPORTED_TYPES.get(value.getClass().getTypeName()).getConceptProperty();
+    }
+
+    @Override
+    public void checkInsertable(VarAdmin var) {
+        if (!predicate.equalsValue().isPresent()) {
+            throw new IllegalStateException(ErrorMessage.INSERT_PREDICATE.getMessage());
+        }
     }
 }

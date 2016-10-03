@@ -19,11 +19,14 @@
 package io.mindmaps.graql.internal.pattern.property;
 
 import com.google.common.collect.Sets;
+import io.mindmaps.MindmapsGraph;
+import io.mindmaps.concept.Type;
 import io.mindmaps.graql.admin.UniqueVarProperty;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.Fragment;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 import io.mindmaps.graql.internal.gremlin.ShortcutTraversal;
+import io.mindmaps.util.ErrorMessage;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -89,5 +92,12 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
     @Override
     public Stream<VarAdmin> getInnerVars() {
         return Stream.of(type);
+    }
+
+    @Override
+    public void checkValidProperty(MindmapsGraph graph, VarAdmin var) throws IllegalStateException {
+        type.getIdOnly().map(graph::getType).filter(Type::isRoleType).ifPresent(type -> {
+            throw new IllegalStateException(ErrorMessage.INSTANCE_OF_ROLE_TYPE.getMessage(type.getId()));
+        });
     }
 }

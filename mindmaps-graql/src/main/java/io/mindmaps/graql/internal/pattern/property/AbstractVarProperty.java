@@ -23,6 +23,7 @@ import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.admin.VarProperty;
 import io.mindmaps.graql.internal.query.InsertQueryExecutor;
+import io.mindmaps.graql.internal.util.CommonUtil;
 import io.mindmaps.util.ErrorMessage;
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.apache.commons.lang.builder.HashCodeBuilder;
@@ -39,6 +40,21 @@ abstract class AbstractVarProperty implements VarPropertyInternal {
     @Override
     public final boolean equals(Object obj) {
         return EqualsBuilder.reflectionEquals(this, obj);
+    }
+
+    @Override
+    public final void checkValid(MindmapsGraph graph, VarAdmin var) throws IllegalStateException {
+        checkValidProperty(graph, var);
+
+        getTypes().map(VarAdmin::getId).flatMap(CommonUtil::optionalToStream).forEach(typeId -> {
+            if (graph.getConcept(typeId) == null) {
+                throw new IllegalStateException(ErrorMessage.ID_NOT_FOUND.getMessage(typeId));
+            }
+        });
+    }
+
+    void checkValidProperty(MindmapsGraph graph, VarAdmin var) {
+
     }
 
     @Override

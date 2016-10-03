@@ -27,6 +27,7 @@ import io.mindmaps.graql.internal.gremlin.Fragment;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 import io.mindmaps.graql.internal.query.InsertQueryExecutor;
 import io.mindmaps.graql.internal.util.GraqlType;
+import io.mindmaps.util.ErrorMessage;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -89,6 +90,13 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     @Override
     public Stream<VarAdmin> getInnerVars() {
         return Stream.of(resource);
+    }
+
+    @Override
+    void checkValidProperty(MindmapsGraph graph, VarAdmin var) {
+        if (graph.getResourceType(resourceType) == null) {
+            throw new IllegalStateException(ErrorMessage.MUST_BE_RESOURCE_TYPE.getMessage(resourceType));
+        }
     }
 
     @Override

@@ -19,10 +19,8 @@
 package io.mindmaps.graql.internal.pattern.property;
 
 import com.google.common.collect.ImmutableSet;
-import io.mindmaps.concept.Concept;
-import io.mindmaps.concept.Instance;
-import io.mindmaps.concept.Relation;
-import io.mindmaps.concept.RoleType;
+import io.mindmaps.MindmapsGraph;
+import io.mindmaps.concept.*;
 import io.mindmaps.graql.admin.UniqueVarProperty;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.Fragment;
@@ -185,6 +183,54 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      */
     private MultiTraversal makeDistinctCastingPattern(String casting, String otherCastingId) {
         return MultiTraversal.create(Fragment.create(t -> t.where(P.neq(otherCastingId)), DISTINCT_CASTING, casting));
+    }
+
+    @Override
+    public void checkValidProperty(MindmapsGraph graph, VarAdmin var) throws IllegalStateException {
+
+        Set<String> roleTypes = castings.stream()
+                .map(VarAdmin.Casting::getRoleType).flatMap(CommonUtil::optionalToStream)
+                .map(VarAdmin::getIdOnly).flatMap(CommonUtil::optionalToStream)
+                .collect(toSet());
+
+        Optional<String> maybeId = var.getType().flatMap(VarAdmin::getIdOnly);
+
+        maybeId.ifPresent(typeId -> {
+            RelationType relationType = graph.getRelationType(typeId);
+
+            if (relationType == null) {
+                throw new IllegalStateException(ErrorMessage.NOT_A_RELATION_TYPE.getMessage(typeId));
+            }
+
+            Collection<RelationType> relationTypes = relationType.subTypes();
+
+            Set<String> validRoles = relationTypes.stream()
+                    .flatMap(r -> r.hasRoles().stream())
+                    .map(Concept::getId)
+                    .collect(toSet());
+
+            String errors = roleTypes.stream().filter(roleType -> !validRoles.contains(roleType)).map(roleType ->
+                    ErrorMessage.NOT_ROLE_IN_RELATION.getMessage(roleType, typeId, validRoles)
+            ).collect(joining("\n"));
+
+            if (!errors.equals("")) {
+                throw new IllegalStateException(errors);
+            }
+        });
+
+        // Check all role types exist
+        roleTypes.forEach(roleId -> {
+            if (graph.getRoleType(roleId) == null) {
+                throw new IllegalStateException(ErrorMessage.NOT_A_ROLE_TYPE.getMessage(roleId, roleId));
+            }
+        });
+    }
+
+    @Override
+    public void checkInsertable(VarAdmin var) throws IllegalStateException {
+        if (!var.getType().isPresent()) {
+            throw new IllegalStateException(ErrorMessage.INSERT_RELATION_WITHOUT_ISA.getMessage());
+        }
     }
 
     @Override

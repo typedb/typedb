@@ -26,7 +26,7 @@ import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.Query;
-import io.mindmaps.graql.internal.validation.MatchQueryValidator;
+import io.mindmaps.graql.internal.pattern.property.VarPropertyInternal;
 import io.mindmaps.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -65,7 +65,9 @@ public class MatchQueryBase implements MatchQueryInternal {
                 () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
         );
 
-        new MatchQueryValidator(admin()).validate(graph);
+        for (VarAdmin var : pattern.getVars()) {
+            var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkValid(graph, var));
+        }
 
         GraphTraversal<Vertex, Map<String, Vertex>> traversal = getQuery(graph, order).getTraversals();
         return traversal.toStream().map(vertices -> makeResults(graph, vertices)).sequential();
