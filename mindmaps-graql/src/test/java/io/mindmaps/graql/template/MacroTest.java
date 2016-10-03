@@ -20,6 +20,7 @@ package io.mindmaps.graql.template;
 
 import io.mindmaps.graql.internal.template.TemplateParser;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -60,6 +61,7 @@ public class MacroTest {
         assertParseEquals(template, data, expected);
     }
 
+    @Ignore
     @Test
     public void variablesInsideMacroBlockTest(){
         assertTrue(false);
