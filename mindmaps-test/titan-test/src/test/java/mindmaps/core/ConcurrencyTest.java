@@ -24,6 +24,7 @@ import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
+import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import mindmaps.IntegrationUtils;
 import org.junit.After;
@@ -55,6 +56,7 @@ public class ConcurrencyTest {
 
     @BeforeClass
     public static void startController() throws Exception {
+        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY, ConfigProperties.TEST_CONFIG_FILE);
         IntegrationUtils.startTestEngine();
     }
 
