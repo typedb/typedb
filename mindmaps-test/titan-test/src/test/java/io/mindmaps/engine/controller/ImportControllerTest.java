@@ -118,7 +118,7 @@ public class ImportControllerTest {
     public void testLoadOntologyAndDataOnCustomKeyspace() {
         String ontologyPath = getClass().getClassLoader().getResource("dblp-ontology.gql").getPath();
         String dataPath = getClass().getClassLoader().getResource("small_nametags.gql").getPath();
-        String customGraph = "import-graph";
+        String customGraph = "importgraph";
 
 
         Response ontologyResponse = given().contentType("application/json").
