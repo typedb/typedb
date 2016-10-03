@@ -55,6 +55,25 @@ public interface VarAdmin extends PatternAdmin, Var {
     boolean isUserDefinedName();
 
     /**
+     * Get a stream of all properties on this variable
+     */
+    Stream<VarProperty> getProperties();
+
+    /**
+     * Get a stream of all properties of a particular type on this variable
+     * @param type the class of {@link VarProperty} to return
+     * @param <T> the type of {@link VarProperty} to return
+     */
+    <T extends VarProperty> Stream<T> getProperties(Class<T> type);
+
+    /**
+     * Get a unique property of a particular type on this variable, if it exists
+     * @param type the class of {@link VarProperty} to return
+     * @param <T> the type of {@link VarProperty} to return
+     */
+    <T extends UniqueVarProperty> Optional<T> getProperty(Class<T> type);
+
+    /**
      * @return the type of this variable, if it has one specified
      */
     Optional<VarAdmin> getType();
@@ -113,12 +132,6 @@ public interface VarAdmin extends PatternAdmin, Var {
      * @return all castings described on this relation (that is, pairs of role types and role players)
      */
     Set<Casting> getCastings();
-
-    Stream<VarProperty> getProperties();
-
-    <T extends VarProperty> Stream<T> getProperties(Class<T> type);
-
-    <T extends UniqueVarProperty> Optional<T> getProperty(Class<T> type);
 
     /**
      * A casting, a pair of role type and role player (where the role type may not be present)
