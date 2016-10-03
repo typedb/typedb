@@ -29,6 +29,8 @@ import io.mindmaps.graql.internal.gremlin.VarTraversals;
 import io.mindmaps.graql.internal.pattern.property.*;
 import io.mindmaps.graql.internal.util.CommonUtil;
 import io.mindmaps.graql.internal.util.StringConverter;
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import java.util.*;
 import java.util.function.Function;
@@ -475,26 +477,13 @@ class VarImpl implements VarInternal {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        VarImpl var = (VarImpl) o;
-
-        if (userDefinedName != var.userDefinedName) return false;
-        if (!properties.equals(var.properties)) return false;
-        if (!userDefinedName && !name.equals(var.name)) return false;
-        return varPattern.equals(var.varPattern);
-
+    public int hashCode() {
+        return HashCodeBuilder.reflectionHashCode(this, excludeEqualityFields());
     }
 
     @Override
-    public int hashCode() {
-        int result = properties.hashCode();
-        if (!userDefinedName) result = 31 * result + name.hashCode();
-        result = 31 * result + (userDefinedName ? 1 : 0);
-        result = 31 * result + varPattern.hashCode();
-        return result;
+    public boolean equals(Object obj) {
+        return EqualsBuilder.reflectionEquals(this, obj, excludeEqualityFields());
     }
 
     /**
@@ -551,22 +540,13 @@ class VarImpl implements VarInternal {
         }
 
         @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            Casting casting = (Casting) o;
-
-            if (!roleType.equals(casting.roleType)) return false;
-            return rolePlayer.equals(casting.rolePlayer);
-
+        public int hashCode() {
+            return HashCodeBuilder.reflectionHashCode(this);
         }
 
         @Override
-        public int hashCode() {
-            int result = roleType.hashCode();
-            result = 31 * result + rolePlayer.hashCode();
-            return result;
+        public boolean equals(Object obj) {
+            return EqualsBuilder.reflectionEquals(this, obj);
         }
     }
 }

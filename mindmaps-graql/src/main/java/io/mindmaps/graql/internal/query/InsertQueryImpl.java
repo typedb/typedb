@@ -77,9 +77,9 @@ class InsertQueryImpl implements InsertQueryAdmin {
     @Override
     public InsertQuery withGraph(MindmapsGraph graph) {
         return matchQuery.map(
-                m -> Queries.insert(originalVars, m.withGraph(graph).admin())
+                m -> Queries.insert(vars, m.withGraph(graph).admin())
         ).orElseGet(
-                () -> Queries.insert(originalVars, Optional.of(graph))
+                () -> Queries.insert(vars, Optional.of(graph))
         );
     }
 

@@ -116,23 +116,4 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
         ownerPlaysRole.insert(insertQueryExecutor, concept);
         valuePlaysRole.insert(insertQueryExecutor, resourceConcept);
     }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-
-        HasResourceTypeProperty that = (HasResourceTypeProperty) o;
-
-        return resourceType.equals(that.resourceType);
-
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + resourceType.hashCode();
-        return result;
-    }
 }

@@ -36,25 +36,6 @@ import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNIQUE;
 
 public class AkoProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-
-        AkoProperty that = (AkoProperty) o;
-
-        return superType.equals(that.superType);
-
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + superType.hashCode();
-        return result;
-    }
-
     private final VarAdmin superType;
 
     public AkoProperty(VarAdmin superType) {
