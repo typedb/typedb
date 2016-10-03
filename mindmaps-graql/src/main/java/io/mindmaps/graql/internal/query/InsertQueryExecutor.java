@@ -27,7 +27,7 @@ import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.pattern.Patterns;
-import io.mindmaps.graql.internal.pattern.property.VarPropertyInternal;
+import io.mindmaps.graql.internal.pattern.property.*;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
 
@@ -126,7 +126,7 @@ public class InsertQueryExecutor {
         var = mergeVar(var);
 
         Optional<VarAdmin> type = var.getType();
-        Optional<VarAdmin> ako = var.getAko();
+        Optional<VarAdmin> ako = var.getProperty(AkoProperty.class).map(AkoProperty::getSuperType);
 
         if (type.isPresent() && ako.isPresent()) {
             String printableName = var.getPrintableName();
@@ -216,8 +216,8 @@ public class InsertQueryExecutor {
         } else if (type.isResourceType()) {
             return graph.putResource(getValue(var), type.asResourceType());
         } else if (type.isRuleType()) {
-            String lhs = var.getLhs().get();
-            String rhs = var.getRhs().get();
+            String lhs = var.getProperty(LhsProperty.class).get().getLhs();
+            String rhs = var.getProperty(RhsProperty.class).get().getRhs();
 
             return putInstance(
                     id, type.asRuleType(),
@@ -299,7 +299,7 @@ public class InsertQueryExecutor {
      * @return the datatype of the given var
      */
     private ResourceType.DataType<?> getDataType(VarAdmin var) {
-        return var.getDatatype().orElseThrow(
+        return var.getProperty(DataTypeProperty.class).map(DataTypeProperty::getDatatype).orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.INSERT_NO_DATATYPE.getMessage(var.getPrintableName()))
         );
     }

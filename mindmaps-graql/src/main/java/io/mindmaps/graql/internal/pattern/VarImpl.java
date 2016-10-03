@@ -267,47 +267,6 @@ class VarImpl implements VarInternal {
     }
 
     @Override
-    public boolean getAbstract() {
-        return getProperty(IsAbstractProperty.class).isPresent();
-    }
-
-    @Override
-    public Optional<ResourceType.DataType<?>> getDatatype() {
-        return getProperty(DataTypeProperty.class).map(DataTypeProperty::getDatatype);
-    }
-
-    @Override
-    public Optional<String> getRegex() {
-        return getProperty(RegexProperty.class).map(RegexProperty::getRegex);
-    }
-
-    @Override
-    public Optional<VarAdmin> getAko() {
-        return getProperty(AkoProperty.class).map(AkoProperty::getSuperType);
-    }
-
-    @Override
-    public Set<VarAdmin> getHasRoles() {
-        return getProperties(HasRoleProperty.class).map(HasRoleProperty::getRole).collect(toSet());
-    }
-
-    @Override
-    public Set<VarAdmin> getPlaysRoles() {
-        return getProperties(PlaysRoleProperty.class).map(PlaysRoleProperty::getRole).collect(toSet());
-    }
-
-    @Override
-    public Set<VarAdmin> getScopes() {
-        return getProperties(HasScopeProperty.class).map(HasScopeProperty::getScope).collect(toSet());
-    }
-
-    @Override
-    public Set<VarAdmin> getHasResourceTypes() {
-        return getProperties(HasResourceTypeProperty.class)
-                .map(HasResourceTypeProperty::getResourceType).collect(toSet());
-    }
-
-    @Override
     public Set<String> getRoleTypes() {
         return getIdNames(getCastings().stream().map(VarAdmin.Casting::getRoleType).flatMap(CommonUtil::optionalToStream));
     }
@@ -372,16 +331,6 @@ class VarImpl implements VarInternal {
     }
 
     @Override
-    public Optional<String> getLhs() {
-        return getProperty(LhsProperty.class).map(LhsProperty::getLhs);
-    }
-
-    @Override
-    public Optional<String> getRhs() {
-        return getProperty(RhsProperty.class).map(RhsProperty::getRhs);
-    }
-
-    @Override
     public Set<VarAdmin> getResources() {
         return getProperties(HasResourceProperty.class).map(HasResourceProperty::getResource).collect(toSet());
     }
@@ -434,16 +383,7 @@ class VarImpl implements VarInternal {
         while (!newVars.isEmpty()) {
             VarAdmin var = newVars.pop();
             vars.add(var);
-
             var.getProperties().flatMap(VarProperty::getInnerVars).forEach(newVars::add);
-
-            var.getHasResourceTypes().forEach(newVars::add);
-            var.getResources().forEach(newVars::add);
-
-            var.getCastings().forEach(casting -> {
-                casting.getRoleType().ifPresent(newVars::add);
-                newVars.add(casting.getRolePlayer());
-            });
         }
 
         return vars;
@@ -459,16 +399,7 @@ class VarImpl implements VarInternal {
         while (!newVars.isEmpty()) {
             VarAdmin var = newVars.pop();
             vars.add(var);
-
             var.getProperties().flatMap(VarProperty::getImplicitInnerVars).forEach(newVars::add);
-
-            var.getHasResourceTypes().forEach(newVars::add);
-            var.getResources().forEach(newVars::add);
-
-            var.getCastings().forEach(casting -> {
-                casting.getRoleType().ifPresent(newVars::add);
-                newVars.add(casting.getRolePlayer());
-            });
         }
 
         return vars;

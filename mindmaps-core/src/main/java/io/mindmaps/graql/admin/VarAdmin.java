@@ -18,7 +18,6 @@
 
 package io.mindmaps.graql.admin;
 
-import io.mindmaps.concept.ResourceType;
 import io.mindmaps.graql.Var;
 
 import java.util.Map;
@@ -59,46 +58,6 @@ public interface VarAdmin extends PatternAdmin, Var {
      * @return the type of this variable, if it has one specified
      */
     Optional<VarAdmin> getType();
-
-    /**
-     * @return the ako (supertype) of this type, if it has one specified
-     */
-    Optional<VarAdmin> getAko();
-
-    /**
-     * @return all roles this relation type has
-     */
-    Set<VarAdmin> getHasRoles();
-
-    /**
-     * @return all roles this type can play
-     */
-    Set<VarAdmin> getPlaysRoles();
-
-    /**
-     * @return all scopes this relation has
-     */
-    Set<VarAdmin> getScopes();
-
-    /**
-     * @return all resource types that this type's instances can have
-     */
-    Set<VarAdmin> getHasResourceTypes();
-
-    /**
-     * @return the datatype of this resource type, if one is set
-     */
-    Optional<ResourceType.DataType<?>> getDatatype();
-
-    /**
-     * @return the regular expression that instances of this resource type should match, if one is set
-     */
-    Optional<String> getRegex();
-
-    /**
-     * @return whether this variable is an abstract type
-     */
-    boolean getAbstract();
 
     /**
      * @return the ID this variable represents, if it represents something with a specific ID
@@ -154,16 +113,6 @@ public interface VarAdmin extends PatternAdmin, Var {
      * @return the values that this variable must have
      */
     Set<?> getValueEqualsPredicates();
-
-    /**
-     * @return the left-hand side that this rule must have
-     */
-    Optional<String> getLhs();
-
-    /**
-     * @return the right-hand side that this rule must have
-     */
-    Optional<String> getRhs();
 
     /**
      * @return all resources that this instance must have
