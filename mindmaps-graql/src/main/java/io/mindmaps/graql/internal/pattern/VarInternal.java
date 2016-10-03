@@ -33,5 +33,8 @@ public interface VarInternal extends VarAdmin {
      */
     Set<MultiTraversal> getMultiTraversals();
 
+    /**
+     * Get all inner variables, including implicit variables such as in a has-resource property
+     */
     Set<VarAdmin> getImplicitInnerVars();
 }
