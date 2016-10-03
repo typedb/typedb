@@ -23,6 +23,7 @@ import io.mindmaps.concept.Concept;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.engine.visualiser.HALConcept;
 import io.mindmaps.factory.GraphFactory;
+import io.mindmaps.graql.Var;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.REST;
 import io.swagger.annotations.Api;
@@ -40,6 +41,10 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 
+import java.util.Collection;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import static io.mindmaps.graql.Graql.withGraph;
 import static spark.Spark.get;
 
@@ -55,7 +60,7 @@ public class VisualiserController {
     private int separationDegree;
     private final int MATCH_QUERY_FIXED_DEGREE = 0;
     //TODO: implement a pagination system instead of liming the result with hard-coded limit.
-    private final int SAFETY_LIMIT=200;
+    private final int SAFETY_LIMIT = 500;
 
     public VisualiserController() {
 
@@ -64,6 +69,8 @@ public class VisualiserController {
 
 
         get(REST.WebPath.CONCEPT_BY_ID_URI + REST.Request.ID_PARAMETER, this::getConceptById);
+        get(REST.WebPath.CONCEPT_BY_ID_ONTOLOGY_URI + REST.Request.ID_PARAMETER, this::getConceptByIdOntology);
+
         get(REST.WebPath.GRAPH_MATCH_QUERY_URI, this::matchQuery);
     }
 
@@ -93,6 +100,37 @@ public class VisualiserController {
     }
 
     @GET
+    @Path("/concept/ontology/:uuid")
+    @ApiOperation(
+            value = "Return the HAL representation of a given concept.")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "id", value = "ID of the concept", required = true, dataType = "string", paramType = "path"),
+            @ApiImplicitParam(name = "graphName", value = "Name of graph to use", dataType = "string", paramType = "query")
+    })
+    private String getConceptByIdOntology(Request req, Response res) {
+
+        String graphNameParam = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
+        String currentGraphName = (graphNameParam == null) ? defaultGraphName : graphNameParam;
+
+        MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName);
+
+        Concept concept = graph.getConcept(req.params(REST.Request.ID_PARAMETER));
+        if (concept != null) {
+            try {
+                LOG.trace("Building HAL resource for concept with id {}", concept.getId());
+                return new HALConcept(concept).render();
+            }catch(Exception e){
+                LOG.error("Exception while building HAL representation.",e);
+                res.status(500);
+                return e.getMessage();
+            }
+        } else {
+            res.status(404);
+            return ErrorMessage.CONCEPT_ID_NOT_FOUND.getMessage(req.params(REST.Request.ID_PARAMETER));
+        }
+    }
+
+    @GET
     @Path("/match")
     @ApiOperation(
             value = "Executes match query on the server and build HAL representation for each concept in the query result.")
@@ -105,15 +143,17 @@ public class VisualiserController {
         String currentGraphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
         if (currentGraphName == null) currentGraphName = defaultGraphName;
 
-        LOG.debug("Received match query: \"" + req.queryParams(REST.Request.QUERY_FIELD) + "\"");
-
         try {
 
             MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName);
             final JSONArray halArray = new JSONArray();
 
-            withGraph(graph).parseMatch(req.queryParams(REST.Request.QUERY_FIELD))
-                    .stream().limit(SAFETY_LIMIT)
+            LOG.debug("Start querying for :[{}]",req.queryParams(REST.Request.QUERY_FIELD));
+            Collection<Map<String,Concept>> list = withGraph(graph).parseMatch(req.queryParams(REST.Request.QUERY_FIELD))
+                    .limit(SAFETY_LIMIT)
+                    .stream().collect(Collectors.toList());
+            LOG.debug("Done querying.");
+            list.parallelStream()
                     .forEach(x -> x.values()
                             .forEach(concept -> {
                                 LOG.trace("Building HAL resource for concept with id {}", concept.getId());
@@ -122,7 +162,7 @@ public class VisualiserController {
             LOG.debug("Done building resources.");
             return halArray.toString();
         } catch (Exception e) {
-            LOG.error("New Exception",e);
+            LOG.error("New Exception", e);
             res.status(500);
             return e.getMessage();
         }

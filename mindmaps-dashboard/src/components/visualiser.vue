@@ -66,23 +66,88 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
     </div>
 
     <div class="row tab-row">
-        <div class="col-xs-12">
+        <div class="tabs-col col-md-12">
             <div class="tabs-container">
                 <ul class="nav nav-tabs">
                     <li class="active"><a data-toggle="tab" href="#tab-1" aria-expanded="true">Visualiser</a></li>
                     <li class=""><a data-toggle="tab" href="#tab-2" aria-expanded="false">Console</a></li>
+                    <li class=""><a data-toggle="tab" href="#tab-3" aria-expanded="false">Help</a></li>
                 </ul>
                 <div class="tab-content">
                     <div id="tab-1" class="tab-pane active">
                         <div class="panel-body">
                             <div class="graph-div" v-el:graph @contextmenu="suppressEventDefault"></div>
                         </div>
+
                     </div>
                     <div id="tab-2" class="tab-pane">
                         <div class="panel-body">
                             <pre class="language-graql">{{{graqlResponse}}}</pre>
                         </div>
                     </div>
+                    <div id="tab-3" class="tab-pane">
+                        <div class="panel-body">
+                            <h4>Graql Entry</h4>
+                            <br />
+                            <div class="table-responsive">
+                                <table class="table table-hover table-striped">
+                                    <thead>
+                                        <tr><th>Key</th><th>What it does</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td>ENTER</td><td>Submit Graql query.</td></tr>
+                                        <tr><td>Shift + ENTER</td><td>New line.</td></tr>
+                                        <tr><td>Shift + Backspace</td><td>Clear graph & current query.</td></tr>
+                                        <tr><td>Shift + Delete</td><td>Clear graph & current query.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <br />
+                            <br />
+                            <h4>Visualiser Tab Interaction</h4>
+                            <br />
+                            <div class="table-responsive">
+                                <table class="table table-hover table-striped">
+                                    <thead>
+                                        <tr><th>Action</th><th>What it does</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td>Left Click</td><td>Selects a node or edge.</td></tr>
+                                        <tr><td>Left Click + ALT</td><td>Show related ontology of selected node(s).</td></tr>
+                                        <tr><td>Double Click</td><td>Shows instances and isa of selected node(s), whilst clearing the graph of all other non-related nodes.</td></tr>
+                                        <tr><td>Right Click</td><td>Show node label configuration menu. You can select what properties to display on the node label.</td></tr>
+                                        <tr><td>Right Click + Shift</td><td>Delete selected node(s).</td></tr>
+                                        <tr><td>Scroll wheel</td><td>Zoom in/out.</td></tr>
+                                        <tr><td>Click & Drag</td><td>Move graph.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-2" v-show="nodeType">
+            <div class="panel panel-filled panel-c-white">
+                <div class="panel-heading">
+                    <div class="panel-tools">
+                        <a class="panel-close" @click="closeConfigPanel"><i class="fa fa-times"></i></a>
+                    </div>
+                    Display Configuration
+                </div>
+                <div class="panel-body">
+                    <p v-show="allNodeProps.length">Select properties to be show on nodes of type "{{nodeType}}".</p>
+                    <p v-else>Sorry, theres nothing you can configure for nodes of type "{{nodeType}}".</p>
+                    <br/>
+                    <ul class="dd-list">
+                        <li class="dd-item" v-for="prop in allNodeProps" v-bind:class="{'li-active':selectedProps.includes(prop)}">
+                            <div class="dd-handle" @click="configureNode(prop)"">{{prop}}</div>
+                        </li>
+                    </ul>
+                </div>
+                <div class="panel-footer" style="text-align: right">
+                    <button type="button" class="btn btn-warning" @click="closeConfigPanel">Done</button>
                 </div>
             </div>
         </div>
@@ -118,6 +183,9 @@ h4 {
     margin-bottom: 0px;
     margin-left: -10px;
 }
+.li-active {
+     background-color: #337ab7;
+}
 </style>
 
 <script>
@@ -141,19 +209,24 @@ export default {
             halParser: {},
 
             typeInstances: false,
-            typeKeys: []
+            typeKeys: [],
+
+            allNodeProps: [],
+            selectedProps: [],
+            nodeType: undefined
         }
     },
 
     created() {
         visualiser = new Visualiser();
-        visualiser.setOnDoubleClick(this.leftClick)
-                  .setOnRightClick(this.rightClick);
+        visualiser.setOnDoubleClick(this.doubleClick)
+                  .setOnRightClick(this.rightClick)
+                  .setOnClick(this.leftClick);
 
         engineClient = new EngineClient();
 
         halParser = new HALParser();
-        halParser.setNewResource((id, p) => { visualiser.addNode(id, p.label, p.type, p.baseType) });
+        halParser.setNewResource((id, p, a) => { visualiser.addNode(id, p, a) });
         halParser.setNewRelationship((f, t, l) => { visualiser.addEdge(f, t, l) });
     },
 
@@ -179,11 +252,10 @@ export default {
         },
 
         typeQueryResponse(resp, err) {
-            if(resp != undefined) {
+            if(resp != undefined)
                 halParser.parseHalObject(resp);
-            } else {
+            else
                 this.showError(err);
-            }
         },
 
         showError(msg) {
@@ -204,42 +276,41 @@ export default {
                 .removeClass('btn-danger')
                 .removeClass('btn-warning')
                 .addClass('btn-default');
+            this.closeConfigPanel();
         },
 
         graphResponse(resp, err) {
             if(resp != null) {
-                if(!halParser.parseResponse(resp)) {
+                if(!halParser.parseResponse(resp))
                     this.showWarning("Sorry, no results found for your query.");
-                }
-            }
-            else {
+            } else {
                 this.showError(err);
             }
         },
 
         shellResponse(resp, err) {
-            if(resp != null) {
+            if(resp != null)
                 this.graqlResponse = Prism.highlight(resp, PLang.graql);
-            }
-            else {
+            else
                 this.showError(err);
-            }
         },
 
         notify(ev) {
-            // Shift + Enter just adds a new line
+            // Shift + Enter just adds a new line.
             if(ev instanceof KeyboardEvent && ev.shiftKey)
                 return;
 
             if(this.graqlQuery == undefined)
                 return;
 
-            // Enable graph animation
+            // Enable graph animation.
             visualiser.setSimulation(true);
 
             engineClient.graqlHAL(this.graqlQuery, this.graphResponse);
             engineClient.graqlShell(this.graqlQuery, this.shellResponse);
             this.resetMsg();
+
+            // Dont insert newline.
             ev.preventDefault();
         },
 
@@ -247,7 +318,7 @@ export default {
             if(ev instanceof KeyboardEvent && !ev.shiftKey)
                 return;
 
-            // Reset all interface elements to default
+            // Reset all interface elements to default.
             this.graqlQuery = undefined;
             this.graqlResponse = undefined;
             this.resetMsg();
@@ -257,6 +328,19 @@ export default {
         },
 
         leftClick(param) {
+            const eventKeys = param.event.srcEvent;
+            if(!eventKeys.altKey)
+                return;
+
+            _.map(param.nodes, x => { engineClient.request({
+                                        url: visualiser.nodes._data[x].ontology,
+                                        callback: this.typeQueryResponse
+                                    })
+            });
+
+        },
+
+        doubleClick(param) {
             const eventKeys = param.event.srcEvent;
             if(!eventKeys.shiftKey)
                 visualiser.clearGraph();
@@ -268,7 +352,19 @@ export default {
         },
 
         rightClick(param) {
-            param.nodes.map(x => { visualiser.deleteNode(x) });
+            if(param.nodes.length === 0)
+                return;
+
+            if(param.event.shiftKey) {
+                param.nodes.map(x => { visualiser.deleteNode(x) });
+
+            } else {
+                $('.tabs-col').removeClass('col-md-12').addClass('col-md-10');
+
+                var node = param.nodes[0];
+                this.allNodeProps = visualiser.getAllNodeProperties(node);
+                this.nodeType = visualiser.getNodeType(node);
+            }
         },
 
         suppressEventDefault(e) {
@@ -279,12 +375,27 @@ export default {
             if(this.typeInstances)
                 this.typeInstances = false;
             else
-                engineClient.getMetaTypes(x => {if(x != null) { this.typeInstances = x; this.typeKeys = _.keys(x)}});
+                engineClient.getMetaTypes(x => { if(x != null){ this.typeInstances = x; this.typeKeys = _.keys(x) } });
         },
 
         toggleElement(e) {
-            console.log(e);
             $('.'+e).toggle();
+        },
+
+        configureNode(p) {
+            if(this.selectedProps.includes(p))
+                this.selectedProps = this.selectedProps.filter(x => x != p);
+            else
+                this.selectedProps.push(p);
+
+            visualiser.setDisplayProperties(this.nodeType, this.selectedProps);
+        },
+
+        closeConfigPanel() {
+            $('.tabs-col').removeClass('col-md-10').addClass('col-md-12');
+            this.nodeType = undefined;
+            this.allNodeProps = [];
+            this.selectedProps = [];
         }
     }
 }
