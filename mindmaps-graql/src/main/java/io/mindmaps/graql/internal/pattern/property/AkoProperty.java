@@ -22,9 +22,8 @@ import com.google.common.collect.Sets;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.admin.UniqueVarProperty;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.gremlin.FragmentImpl;
+import io.mindmaps.graql.internal.gremlin.Fragment;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
-import io.mindmaps.graql.internal.gremlin.MultiTraversalImpl;
 import io.mindmaps.graql.internal.gremlin.Traversals;
 import io.mindmaps.graql.internal.query.InsertQueryExecutor;
 import io.mindmaps.util.ErrorMessage;
@@ -59,9 +58,9 @@ public class AkoProperty extends AbstractVarProperty implements NamedProperty, U
 
     @Override
     public Collection<MultiTraversal> getMultiTraversals(String start) {
-        return Sets.newHashSet(new MultiTraversalImpl(
-                new FragmentImpl(Traversals::outAkos, EDGE_UNIQUE, start, superType.getName()),
-                new FragmentImpl(Traversals::inAkos, EDGE_BOUNDED, superType.getName(), start)
+        return Sets.newHashSet(MultiTraversal.create(
+                Fragment.create(Traversals::outAkos, EDGE_UNIQUE, start, superType.getName()),
+                Fragment.create(Traversals::inAkos, EDGE_BOUNDED, superType.getName(), start)
         ));
     }
 

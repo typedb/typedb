@@ -80,7 +80,7 @@ public class ShortcutTraversal {
         Optional<String> roleB = roletypes.get(1);
         String playerB = roleplayers.get(1);
 
-        multiTraversal = new MultiTraversalImpl(
+        multiTraversal = MultiTraversal.create(
                 new FragmentImpl(t -> makeTraversal(t, roleA, roleB), FragmentPriority.EDGE_RELATION, playerA, playerB),
                 new FragmentImpl(t -> makeTraversal(t, roleB, roleA), FragmentPriority.EDGE_RELATION, playerB, playerA)
         );

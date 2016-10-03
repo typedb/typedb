@@ -25,10 +25,7 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.graql.admin.UniqueVarProperty;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.admin.VarProperty;
-import io.mindmaps.graql.internal.gremlin.FragmentImpl;
-import io.mindmaps.graql.internal.gremlin.MultiTraversal;
-import io.mindmaps.graql.internal.gremlin.MultiTraversalImpl;
-import io.mindmaps.graql.internal.gremlin.ShortcutTraversal;
+import io.mindmaps.graql.internal.gremlin.*;
 import io.mindmaps.graql.internal.query.InsertQueryExecutor;
 import io.mindmaps.graql.internal.util.CommonUtil;
 import io.mindmaps.util.ErrorMessage;
@@ -143,14 +140,14 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
 
         return Stream.of(
                 // Pattern between relation and casting
-                new MultiTraversalImpl(
-                        new FragmentImpl(t -> t.out(CASTING.getLabel()), EDGE_BOUNDED, start, casting),
-                        new FragmentImpl(t -> t.in(CASTING.getLabel()), EDGE_UNBOUNDED, casting, start)
+                MultiTraversal.create(
+                        Fragment.create(t -> t.out(CASTING.getLabel()), EDGE_BOUNDED, start, casting),
+                        Fragment.create(t -> t.in(CASTING.getLabel()), EDGE_UNBOUNDED, casting, start)
                 ),
                 // Pattern between casting and roleplayer
-                new MultiTraversalImpl(
-                        new FragmentImpl(t -> t.out(ROLE_PLAYER.getLabel()), EDGE_UNIQUE, casting, other),
-                        new FragmentImpl(t -> t.in(ROLE_PLAYER.getLabel()), EDGE_BOUNDED, other, casting)
+                MultiTraversal.create(
+                        Fragment.create(t -> t.out(ROLE_PLAYER.getLabel()), EDGE_UNIQUE, casting, other),
+                        Fragment.create(t -> t.in(ROLE_PLAYER.getLabel()), EDGE_BOUNDED, other, casting)
                 )
         );
     }
@@ -166,21 +163,21 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
 
         return Stream.of(
                 // Pattern between relation and casting
-                new MultiTraversalImpl(
-                        new FragmentImpl(t -> t.out(CASTING.getLabel()), EDGE_BOUNDED, start, casting),
-                        new FragmentImpl(t -> t.in(CASTING.getLabel()), EDGE_UNBOUNDED, casting, start)
+                MultiTraversal.create(
+                        Fragment.create(t -> t.out(CASTING.getLabel()), EDGE_BOUNDED, start, casting),
+                        Fragment.create(t -> t.in(CASTING.getLabel()), EDGE_UNBOUNDED, casting, start)
                 ),
 
                 // Pattern between casting and roleplayer
-                new MultiTraversalImpl(
-                        new FragmentImpl(t -> t.out(ROLE_PLAYER.getLabel()), EDGE_UNIQUE, casting, roleplayerName),
-                        new FragmentImpl(t -> t.in(ROLE_PLAYER.getLabel()), EDGE_BOUNDED, roleplayerName, casting)
+                MultiTraversal.create(
+                        Fragment.create(t -> t.out(ROLE_PLAYER.getLabel()), EDGE_UNIQUE, casting, roleplayerName),
+                        Fragment.create(t -> t.in(ROLE_PLAYER.getLabel()), EDGE_BOUNDED, roleplayerName, casting)
                 ),
 
                 // Pattern between casting and role type
-                new MultiTraversalImpl(
-                        new FragmentImpl(t -> t.out(ISA.getLabel()), EDGE_UNIQUE, casting, roletypeName),
-                        new FragmentImpl(t -> t.in(ISA.getLabel()), EDGE_UNBOUNDED, roletypeName, casting)
+                MultiTraversal.create(
+                        Fragment.create(t -> t.out(ISA.getLabel()), EDGE_UNIQUE, casting, roletypeName),
+                        Fragment.create(t -> t.in(ISA.getLabel()), EDGE_UNBOUNDED, roletypeName, casting)
                 )
         );
     }
@@ -191,7 +188,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      * @return a MultiTraversal that indicates two castings are unique
      */
     private MultiTraversal makeDistinctCastingPattern(String casting, String otherCastingId) {
-        return new MultiTraversalImpl(new FragmentImpl(t -> t.where(P.neq(otherCastingId)), DISTINCT_CASTING, casting));
+        return MultiTraversal.create(Fragment.create(t -> t.where(P.neq(otherCastingId)), DISTINCT_CASTING, casting));
     }
 
     @Override

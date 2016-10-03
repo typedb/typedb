@@ -33,8 +33,8 @@ interface SingleTraversalProperty extends VarPropertyInternal {
 
     @Override
     default Collection<MultiTraversal> getMultiTraversals(String start) {
-        Fragment fragment = new FragmentImpl(this::applyTraversal, getPriority(), start);
-        MultiTraversalImpl multiTraversal = new MultiTraversalImpl(fragment);
+        Fragment fragment = Fragment.create(this::applyTraversal, getPriority(), start);
+        MultiTraversal multiTraversal = MultiTraversal.create(fragment);
         return Sets.newHashSet(multiTraversal);
     }
 }

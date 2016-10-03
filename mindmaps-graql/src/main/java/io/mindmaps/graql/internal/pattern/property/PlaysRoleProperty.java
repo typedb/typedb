@@ -23,9 +23,8 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.gremlin.FragmentImpl;
+import io.mindmaps.graql.internal.gremlin.Fragment;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
-import io.mindmaps.graql.internal.gremlin.MultiTraversalImpl;
 import io.mindmaps.graql.internal.query.InsertQueryExecutor;
 
 import java.util.Collection;
@@ -60,12 +59,12 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
 
     @Override
     public Collection<MultiTraversal> getMultiTraversals(String start) {
-        return Sets.newHashSet(new MultiTraversalImpl(
-                new FragmentImpl(
+        return Sets.newHashSet(MultiTraversal.create(
+                Fragment.create(
                         t -> inAkos(outAkos(t).out(PLAYS_ROLE.getLabel())),
                         EDGE_BOUNDED, start, role.getName()
                 ),
-                new FragmentImpl(
+                Fragment.create(
                         t -> inAkos(outAkos(t).in(PLAYS_ROLE.getLabel())),
                         EDGE_BOUNDED, role.getName(), start
                 )
