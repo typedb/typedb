@@ -40,13 +40,16 @@ public interface VarPropertyInternal extends VarProperty {
      */
     void checkValid(MindmapsGraph graph, VarAdmin var) throws IllegalStateException;
 
-    Collection<MultiTraversal> getMultiTraversals(String start);
-
     /**
      * Check if the given property can be inserted
      */
     default void checkInsertable(VarAdmin var) throws IllegalStateException {
     }
+
+    /**
+     * Return a collection of {@link MultiTraversal} to match the given property in the graph
+     */
+    Collection<MultiTraversal> matchProperty(String start);
 
     /**
      * Insert the given property into the graph, if possible.

@@ -75,7 +75,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     }
 
     @Override
-    public Collection<MultiTraversal> getMultiTraversals(String start) {
+    public Collection<MultiTraversal> matchProperty(String start) {
         return Sets.newHashSet(MultiTraversal.create(
                 Fragment.create(t ->
                         t.outE(SHORTCUT.getLabel()).has(TO_TYPE.name(), resourceType).inV(),

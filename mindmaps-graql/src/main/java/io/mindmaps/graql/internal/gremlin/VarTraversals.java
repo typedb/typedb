@@ -56,7 +56,7 @@ public class VarTraversals {
         var.getProperties().forEach(property -> {
             VarPropertyInternal propertyInternal = (VarPropertyInternal) property;
             propertyInternal.modifyShortcutTraversal(shortcutTraversal);
-            Collection<MultiTraversal> traversals = propertyInternal.getMultiTraversals(start);
+            Collection<MultiTraversal> traversals = propertyInternal.matchProperty(start);
             this.traversals.addAll(traversals);
             property.getImplicitInnerVars().map(VarTraversals::new).forEach(innerVarTraversals::add);
         });

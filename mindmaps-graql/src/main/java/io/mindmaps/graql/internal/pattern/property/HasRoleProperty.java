@@ -57,7 +57,7 @@ public class HasRoleProperty extends AbstractVarProperty implements NamedPropert
     }
 
     @Override
-    public Collection<MultiTraversal> getMultiTraversals(String start) {
+    public Collection<MultiTraversal> matchProperty(String start) {
         return Sets.newHashSet(MultiTraversal.create(
                 Fragment.create(t -> t.out(HAS_ROLE.getLabel()), EDGE_BOUNDED, start, role.getName()),
                 Fragment.create(t -> t.in(HAS_ROLE.getLabel()), EDGE_UNIQUE, role.getName(), start)

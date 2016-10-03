@@ -58,7 +58,7 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
     }
 
     @Override
-    public Collection<MultiTraversal> getMultiTraversals(String start) {
+    public Collection<MultiTraversal> matchProperty(String start) {
         return Sets.newHashSet(MultiTraversal.create(
                 Fragment.create(
                         t -> inAkos(outAkos(t).out(PLAYS_ROLE.getLabel())),

@@ -82,7 +82,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     }
 
     @Override
-    public Collection<MultiTraversal> getMultiTraversals(String start) {
+    public Collection<MultiTraversal> matchProperty(String start) {
         Collection<String> castingNames = new HashSet<>();
 
         Stream<MultiTraversal> traversals = castings.stream().flatMap(casting -> {

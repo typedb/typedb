@@ -77,13 +77,13 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     }
 
     @Override
-    public Collection<MultiTraversal> getMultiTraversals(String start) {
+    public Collection<MultiTraversal> matchProperty(String start) {
         Collection<MultiTraversal> traversals = new HashSet<>();
 
-        traversals.addAll(ownerPlaysRole.getMultiTraversals(start));
+        traversals.addAll(ownerPlaysRole.matchProperty(start));
 
         PlaysRoleProperty valuePlaysRole = new PlaysRoleProperty(valueRole);
-        traversals.addAll(valuePlaysRole.getMultiTraversals(resourceType.getName()));
+        traversals.addAll(valuePlaysRole.matchProperty(resourceType.getName()));
 
         return traversals;
     }

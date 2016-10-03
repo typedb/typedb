@@ -71,7 +71,7 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
     }
 
     @Override
-    public Collection<MultiTraversal> getMultiTraversals(String start) {
+    public Collection<MultiTraversal> matchProperty(String start) {
         return Sets.newHashSet(MultiTraversal.create(
                 Fragment.create(
                         t -> outAkos(outAkos(t).out(ISA.getLabel())),

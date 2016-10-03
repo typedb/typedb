@@ -57,7 +57,7 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
     }
 
     @Override
-    public Collection<MultiTraversal> getMultiTraversals(String start) {
+    public Collection<MultiTraversal> matchProperty(String start) {
         return Sets.newHashSet(MultiTraversal.create(
                 Fragment.create(t -> t.out(HAS_SCOPE.getLabel()), EDGE_BOUNDED, start, scope.getName()),
                 Fragment.create(t -> t.in(HAS_SCOPE.getLabel()), EDGE_UNBOUNDED, scope.getName(), start)

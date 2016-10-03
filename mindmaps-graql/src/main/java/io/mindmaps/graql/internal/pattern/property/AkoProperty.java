@@ -57,7 +57,7 @@ public class AkoProperty extends AbstractVarProperty implements NamedProperty, U
     }
 
     @Override
-    public Collection<MultiTraversal> getMultiTraversals(String start) {
+    public Collection<MultiTraversal> matchProperty(String start) {
         return Sets.newHashSet(MultiTraversal.create(
                 Fragment.create(Traversals::outAkos, EDGE_UNIQUE, start, superType.getName()),
                 Fragment.create(Traversals::inAkos, EDGE_BOUNDED, superType.getName(), start)
