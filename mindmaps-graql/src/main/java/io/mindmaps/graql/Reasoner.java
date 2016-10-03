@@ -244,7 +244,7 @@ public class Reasoner {
                 dAns = atomicQuery.getAnswers().size();
                 answer(atomicQuery, subGoals, matAnswers);
                 propagateAnswers(matAnswers);
-                System.out.println("iter: " + iter++ + " answers: " + atomicQuery.getAnswers().size());
+                LOG.debug("iter: " + iter++ + " answers: " + atomicQuery.getAnswers().size());
                 dAns = atomicQuery.getAnswers().size() - dAns;
             } while (dAns != 0);
             return atomicQuery.getAnswers();

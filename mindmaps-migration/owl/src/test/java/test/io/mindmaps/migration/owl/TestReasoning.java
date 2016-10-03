@@ -4,7 +4,6 @@ import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
-import io.mindmaps.graql.internal.reasoner.rule.InferenceRule;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -44,7 +43,7 @@ public class TestReasoning extends TestOwlMindMapsBase {
             System.exit(-1);
         }
     }
-    
+
     public void testHasAncestor(String instanceId) {
         Reasoner reasoner = new Reasoner(new Configuration(), family);
         IRI person = baseIri.resolve("#Person");

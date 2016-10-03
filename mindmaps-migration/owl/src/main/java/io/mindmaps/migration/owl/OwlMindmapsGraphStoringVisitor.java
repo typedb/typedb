@@ -17,7 +17,6 @@
  */
 package io.mindmaps.migration.owl;
 
-import com.google.common.collect.Sets;
 import io.mindmaps.concept.*;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.exception.ConceptException;
