@@ -20,9 +20,8 @@ package io.mindmaps;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import io.mindmaps.Mindmaps;
-import io.mindmaps.MindmapsGraph;
 import io.mindmaps.engine.MindmapsEngineServer;
+import io.mindmaps.engine.util.ConfigProperties;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.javatuples.Pair;
 import spark.Spark;
@@ -46,6 +45,7 @@ public class IntegrationUtils {
         Thread.sleep(5000);
 
         if (ENGINE_ON.compareAndSet(false, true)) {
+            System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY, ConfigProperties.EMBEDDED_CONFIG_FILE);
             hideLogs();
             EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra-embedded.yaml");
             hideLogs();
