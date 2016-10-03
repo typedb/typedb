@@ -242,9 +242,9 @@ public class Reasoner {
             do {
                 Set<AtomicQuery> subGoals = new HashSet<>();
                 dAns = atomicQuery.getAnswers().size();
-                LOG.debug("iter: " + iter++ + " answers: " + dAns);
                 answer(atomicQuery, subGoals, matAnswers);
                 propagateAnswers(matAnswers);
+                System.out.println("iter: " + iter++ + " answers: " + atomicQuery.getAnswers().size());
                 dAns = atomicQuery.getAnswers().size() - dAns;
             } while (dAns != 0);
             return atomicQuery.getAnswers();

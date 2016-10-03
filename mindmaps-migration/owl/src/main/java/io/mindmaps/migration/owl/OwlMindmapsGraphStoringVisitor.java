@@ -17,14 +17,19 @@
  */
 package io.mindmaps.migration.owl;
 
+import com.google.common.collect.Sets;
 import io.mindmaps.concept.*;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.exception.ConceptException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import javafx.util.Pair;
+import org.semanticweb.owlapi.model.AsOWLObjectProperty;
 import org.semanticweb.owlapi.model.OWLAnnotationAssertionAxiom;
 import org.semanticweb.owlapi.model.OWLAnnotationProperty;
 import org.semanticweb.owlapi.model.OWLAxiomVisitorEx;
@@ -40,6 +45,7 @@ import org.semanticweb.owlapi.model.OWLNamedIndividual;
 import org.semanticweb.owlapi.model.OWLObjectProperty;
 import org.semanticweb.owlapi.model.OWLObjectPropertyAssertionAxiom;
 import org.semanticweb.owlapi.model.OWLObjectPropertyDomainAxiom;
+import org.semanticweb.owlapi.model.OWLObjectPropertyExpression;
 import org.semanticweb.owlapi.model.OWLObjectPropertyRangeAxiom;
 import org.semanticweb.owlapi.model.OWLSubClassOfAxiom;
 import org.semanticweb.owlapi.model.OWLSubDataPropertyOfAxiom;
@@ -47,6 +53,7 @@ import org.semanticweb.owlapi.model.OWLSubObjectPropertyOfAxiom;
 import org.semanticweb.owlapi.model.OWLSubPropertyChainOfAxiom;
 import org.semanticweb.owlapi.model.OWLTransitiveObjectPropertyAxiom;
 import org.semanticweb.owlapi.model.OWLInverseObjectPropertiesAxiom;
+import org.semanticweb.owlapi.model.OWLEquivalentObjectPropertiesAxiom;
 
 import java.util.Optional;
 
@@ -180,6 +187,11 @@ public class OwlMindmapsGraphStoringVisitor implements OWLAxiomVisitorEx<Concept
         RelationType subRelation = migrator.relation(axiom.getSubProperty().asOWLObjectProperty());
         RelationType superRelation = migrator.relation(axiom.getSuperProperty().asOWLObjectProperty());
 
+        Map<String, String> roleMap = new HashMap<>();
+        roleMap.put(migrator.namer().subjectRole(superRelation.getId()), migrator.namer().subjectRole(subRelation.getId()));
+        roleMap.put(migrator.namer().objectRole(superRelation.getId()), migrator.namer().objectRole(subRelation.getId()));
+        createSubPropertyRule("sub-" + superRelation.getId() + UUID.randomUUID().toString(),
+                                superRelation, subRelation, roleMap, migrator.graph());
         subRelation.superType(superRelation);
         return null;
     }
@@ -191,6 +203,31 @@ public class OwlMindmapsGraphStoringVisitor implements OWLAxiomVisitorEx<Concept
         RelationType subRelation = migrator.relation(axiom.getSubProperty().asOWLDataProperty());
         RelationType superRelation = migrator.relation(axiom.getSuperProperty().asOWLDataProperty());
         subRelation.superType(superRelation);
+        return null;
+    }
+
+    @Override
+    public Concept visit(OWLEquivalentObjectPropertiesAxiom axiom) {
+        Set<OWLObjectPropertyExpression> properties = axiom.getAxiomWithoutAnnotations()
+                            .properties().filter(AsOWLObjectProperty::isOWLObjectProperty).collect(Collectors.toSet());
+
+        if (properties.size() != axiom.getAxiomWithoutAnnotations().properties().count())
+            return null;
+
+        Iterator<OWLObjectPropertyExpression> it = properties.iterator();
+        while(it.hasNext()){
+            RelationType relation = migrator.relation(it.next().asOWLObjectProperty());
+            properties.forEach(prop -> {
+                RelationType eqRelation = migrator.relation(prop.asOWLObjectProperty());
+                if (!relation.equals(eqRelation)){
+                    Map<String, String> roleMap = new HashMap<>();
+                    roleMap.put(migrator.namer().subjectRole(relation.getId()), migrator.namer().subjectRole(eqRelation.getId()));
+                    roleMap.put(migrator.namer().objectRole(relation.getId()), migrator.namer().objectRole(eqRelation.getId()));
+                    createSubPropertyRule("eq-" + relation.getId() + "-" + eqRelation.getId() + "-" + UUID.randomUUID().toString(),
+                            relation, eqRelation, roleMap, migrator.graph());
+                }
+            });
+        }
         return null;
     }
 
