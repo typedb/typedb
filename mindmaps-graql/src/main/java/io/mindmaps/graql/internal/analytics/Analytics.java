@@ -187,6 +187,9 @@ public class Analytics {
                 t.subTypes().forEach(subtype -> this.statisticsResourceTypes.add(subtype.getId()));
             }
         }
+
+        // add analytics ontology - hard coded for now
+        mutateResourceOntology(degree, ResourceType.DataType.LONG);
     }
 
     /**
