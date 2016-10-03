@@ -24,12 +24,7 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Function;
+import java.util.*;
 import java.util.stream.IntStream;
 
 import static io.mindmaps.graql.internal.template.Value.concat;
@@ -87,13 +82,13 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
     }
 
     // forStatement
-    // : FOR LBRACKET resolve RBRACKET DO LBRACKET block RBRACKET
+    // : 'for' '{' expression '}' 'do' '{' block '}'
     // ;
     @Override
     public Value visitForStatement(GraqlTemplateParser.ForStatementContext ctx) {
 
         // resolved variable
-        Value resolved = this.visitResolve(ctx.resolve());
+        Value resolved = this.visitExpression(ctx.expression());
 
         if(!resolved.isList()) {
             return Value.NULL;
@@ -114,16 +109,16 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
     // ;
     //
     // ifPartial
-    // : IF LBRACKET resolve RBRACKET DO LBRACKET block RBRACKET
+    // : 'if' '{' expression '}' 'do' '{' block '}'
     // ;
     //
     // elsePartial
-    // : ELSE LBRACKET block RBRACKET
+    // : 'else' '{' block '}'
     // ;
     @Override
     public Object visitIfStatement(GraqlTemplateParser.IfStatementContext ctx){
 
-        if(this.visit(ctx.ifPartial().resolve()) != Value.NULL){
+        if(this.visit(ctx.ifPartial().expression()) != Value.NULL){
             return this.visit(ctx.ifPartial().block());
         }
 
@@ -137,16 +132,15 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
     @Override
     public Object visitMacro(GraqlTemplateParser.MacroContext ctx){
         String macro = ctx.MACRO().getText().replace("@", "");
-        return whitespace(macros.get(macro).apply(this, ctx.block(), scope), ctx);
+        return macros.get(macro).apply(this, ctx.block(), scope);
     }
 
-    // resolve
-    // : NOT_WS+
+    // expression
+    // : (WORD | '.')+
     // ;
     @Override
-    public Value visitResolve(GraqlTemplateParser.ResolveContext ctx) {
-        // resolve base value
-        return scope.resolve(ctx.getText());
+    public Value visitExpression(GraqlTemplateParser.ExpressionContext ctx) {
+        return evaluate(ctx.getText());
     }
 
     // replaceVal
@@ -154,23 +148,24 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
     // ;
     @Override
     public String visitReplace(GraqlTemplateParser.ReplaceContext ctx) {
-        return whitespace(replace(ctx.resolve(), format), ctx);
+        if(ctx.DOLLAR() != null){
+            return ws(ctx.DOLLAR().getText() + formatVar.apply(resolveReplace(ctx.REPLACE())), ctx);
+        } else {
+            return ws(format.apply(resolveReplace(ctx.REPLACE())), ctx);
+        }
     }
 
     // gvar
-    // : GVAR | '$' replace
+    // : GVAR
     // ;
     @Override
     public String visitGvar(GraqlTemplateParser.GvarContext ctx){
-        if(ctx.replace() != null) {
-            return whitespace("$" + replace(ctx.replace().resolve(), formatVar), ctx);
-        }
-        return whitespace(ctx.getText() + iteration.get(ctx.getText()), ctx);
+        return ws(ctx.getText() + iteration.get(ctx.getText()), ctx);
     }
 
     @Override
     public String visitTerminal(TerminalNode node){
-        return whitespace(node.getText(), node);
+        return ws(node.getText(), node);
     }
 
     @Override
@@ -186,20 +181,32 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
         return concat(aggregate, nextResult);
     }
 
-    public String replace(GraqlTemplateParser.ResolveContext ctx, Function<Value, String> format){
-        Value resolved = visitResolve(ctx);
+    public Value resolveReplace(TerminalNode replace){
+        String text = replace.getText();
+        String var = text.substring(text.indexOf("<") + 1, text.indexOf(">"));
 
-        if(resolved == Value.NULL){
-            throw new RuntimeException("Value " + ctx + " is not present in data");
+        String left  = text.substring(0, text.indexOf("<"));
+        String right = text.substring(text.indexOf(">") + 1, text.length());
+
+        Value eval = evaluate(var);
+
+        if(eval == Value.NULL){
+            throw new RuntimeException("Value " + var + " is not present in data");
         }
 
-        return format.apply(resolved);
+        if(left.isEmpty() && right.isEmpty()){
+            return eval;
+        }
+
+        return new Value(left + eval.toString() + right);
+    }
+
+    private Value evaluate(String expression){
+        return scope.resolve(expression);
     }
 
     private Set<String> variablesInContext(GraqlTemplateParser.BlockContext ctx){
-        return ctx.graql().stream()
-                .map(GraqlTemplateParser.GraqlContext::gvar)
-                .filter(v -> v != null)
+        return ctx.gvar().stream()
                 .map(GraqlTemplateParser.GvarContext::GVAR)
                 .filter(v -> v != null)
                 .map(TerminalNode::getSymbol)
@@ -209,11 +216,11 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
 
     // Methods to maintain whitespace in the template
 
-    public String whitespace(Object obj, ParserRuleContext ctx){
+    private String ws(Object obj, ParserRuleContext ctx){
         return whitespace(obj, ctx.getStart(), ctx.getStop());
     }
 
-    public String whitespace(Object obj, TerminalNode node){
+    private String ws(Object obj, TerminalNode node){
         Token tok = node.getSymbol();
         return whitespace(obj, tok, tok);
     }
@@ -223,7 +230,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
         String rws = rwhitespace(stopToken.getTokenIndex());
 
         if(obj == null){
-           obj = lws + rws;
+            obj = lws + rws;
         }
 
         return lws + obj.toString() + rws;

@@ -97,8 +97,8 @@ public class Value {
     }
 
     public static Value concat(Object... objects){
-        if (objects.length == 1){
-           throw new RuntimeException("Attempting to concatenate one object");
+        if(objects.length == 1){
+            return new Value(objects[0]);
         }
 
         StringBuilder builder = new StringBuilder();

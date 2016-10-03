@@ -23,14 +23,17 @@ import io.mindmaps.graql.internal.template.Scope;
 import io.mindmaps.graql.internal.template.TemplateVisitor;
 import io.mindmaps.graql.internal.template.Value;
 import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.function.Function;
 
 import static io.mindmaps.graql.internal.template.Value.concat;
+import static io.mindmaps.graql.internal.template.Value.format;
+import static io.mindmaps.graql.internal.template.Value.formatVar;
 
 public class NoescpMacro implements Macro<String> {
 
-    public static Function<Value, String> formatWithoutEscape = Value::toString;
+    public static Function<Value, String> formatWithoutEscape = Value::asString;
 
     @Override
     public String apply(TemplateVisitor visitor, GraqlTemplateParser.BlockContext context, Scope scope) {
@@ -38,10 +41,8 @@ public class NoescpMacro implements Macro<String> {
         for(ParseTree tree:context.children){
             if(tree instanceof GraqlTemplateParser.ReplaceContext){
                 GraqlTemplateParser.ReplaceContext replace = (GraqlTemplateParser.ReplaceContext) tree;
-                GraqlTemplateParser.ResolveContext resolve = replace.resolve();
-                String resolved = visitor.replace(resolve, formatWithoutEscape);
+                result = concat(result, formatWithoutEscape.apply(visitor.resolveReplace(replace.REPLACE())));
 
-                result = concat(result, visitor.whitespace(resolved, replace));
             } else {
                 result = concat(result, visitor.visit(tree));
             }
