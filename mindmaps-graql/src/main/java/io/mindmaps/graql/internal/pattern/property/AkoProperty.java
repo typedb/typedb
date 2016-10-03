@@ -57,7 +57,7 @@ public class AkoProperty extends AbstractVarProperty implements NamedProperty, U
     }
 
     @Override
-    public Collection<MultiTraversal> matchProperty(String start) {
+    public Collection<MultiTraversal> match(String start) {
         return Sets.newHashSet(MultiTraversal.create(
                 Fragment.create(Traversals::outAkos, EDGE_UNIQUE, start, superType.getName()),
                 Fragment.create(Traversals::inAkos, EDGE_BOUNDED, superType.getName(), start)
@@ -75,7 +75,7 @@ public class AkoProperty extends AbstractVarProperty implements NamedProperty, U
     }
 
     @Override
-    public void insertProperty(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
         Concept superConcept = insertQueryExecutor.getConcept(superType);
 
         if (concept.isEntityType()) {

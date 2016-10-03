@@ -62,7 +62,7 @@ public class RegexProperty extends AbstractVarProperty implements UniqueVarPrope
     }
 
     @Override
-    public void insertProperty(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
         concept.asResourceType().setRegex(regex);
     }
 }

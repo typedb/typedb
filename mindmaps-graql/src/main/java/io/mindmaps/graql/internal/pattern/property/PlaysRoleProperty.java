@@ -58,7 +58,7 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
     }
 
     @Override
-    public Collection<MultiTraversal> matchProperty(String start) {
+    public Collection<MultiTraversal> match(String start) {
         return Sets.newHashSet(MultiTraversal.create(
                 Fragment.create(
                         t -> inAkos(outAkos(t).out(PLAYS_ROLE.getLabel())),
@@ -82,13 +82,13 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
     }
 
     @Override
-    public void insertProperty(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
         RoleType roleType = insertQueryExecutor.getConcept(role).asRoleType();
         concept.asType().playsRole(roleType);
     }
 
     @Override
-    public void deleteProperty(MindmapsGraph graph, Concept concept) {
+    public void delete(MindmapsGraph graph, Concept concept) {
         String roleId = role.getId().orElseThrow(() -> failDelete(this));
         concept.asType().deletePlaysRole(graph.getRoleType(roleId));
     }

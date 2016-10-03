@@ -82,7 +82,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     }
 
     @Override
-    public Collection<MultiTraversal> matchProperty(String start) {
+    public Collection<MultiTraversal> match(String start) {
         Collection<String> castingNames = new HashSet<>();
 
         Stream<MultiTraversal> traversals = castings.stream().flatMap(casting -> {
@@ -234,7 +234,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     }
 
     @Override
-    public void insertProperty(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
         Relation relation = concept.asRelation();
         castings.forEach(casting -> addCasting(insertQueryExecutor, relation, casting));
     }

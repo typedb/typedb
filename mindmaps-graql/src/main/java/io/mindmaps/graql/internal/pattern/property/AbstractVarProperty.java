@@ -58,11 +58,11 @@ abstract class AbstractVarProperty implements VarPropertyInternal {
     }
 
     @Override
-    public void insertProperty(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
     }
 
     @Override
-    public void deleteProperty(MindmapsGraph graph, Concept concept) {
+    public void delete(MindmapsGraph graph, Concept concept) {
         throw failDelete(this);
     }
 

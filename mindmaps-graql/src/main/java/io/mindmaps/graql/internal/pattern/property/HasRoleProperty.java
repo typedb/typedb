@@ -57,7 +57,7 @@ public class HasRoleProperty extends AbstractVarProperty implements NamedPropert
     }
 
     @Override
-    public Collection<MultiTraversal> matchProperty(String start) {
+    public Collection<MultiTraversal> match(String start) {
         return Sets.newHashSet(MultiTraversal.create(
                 Fragment.create(t -> t.out(HAS_ROLE.getLabel()), EDGE_BOUNDED, start, role.getName()),
                 Fragment.create(t -> t.in(HAS_ROLE.getLabel()), EDGE_UNIQUE, role.getName(), start)
@@ -75,13 +75,13 @@ public class HasRoleProperty extends AbstractVarProperty implements NamedPropert
     }
 
     @Override
-    public void insertProperty(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
         RoleType roleType = insertQueryExecutor.getConcept(role).asRoleType();
         concept.asRelationType().hasRole(roleType);
     }
 
     @Override
-    public void deleteProperty(MindmapsGraph graph, Concept concept) {
+    public void delete(MindmapsGraph graph, Concept concept) {
         String roleId = role.getId().orElseThrow(() -> failDelete(this));
         concept.asRelationType().deleteHasRole(graph.getRoleType(roleId));
     }

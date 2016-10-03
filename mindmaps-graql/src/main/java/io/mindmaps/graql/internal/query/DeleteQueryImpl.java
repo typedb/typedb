@@ -101,7 +101,7 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
             deleteConcept(id);
         } else {
             deleter.getProperties().forEach(property ->
-                    ((VarPropertyInternal) property).deleteProperty(getGraph(), result)
+                    ((VarPropertyInternal) property).delete(getGraph(), result)
             );
         }
     }

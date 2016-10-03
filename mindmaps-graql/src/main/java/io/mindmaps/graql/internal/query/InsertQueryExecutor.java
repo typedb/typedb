@@ -94,7 +94,7 @@ public class InsertQueryExecutor {
      */
     private Concept insertVar(VarAdmin var) {
         Concept concept = getConcept(var);
-        var.getProperties().forEach(property -> ((VarPropertyInternal) property).insertProperty(this, concept));
+        var.getProperties().forEach(property -> ((VarPropertyInternal) property).insert(this, concept));
         return concept;
     }
 

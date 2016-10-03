@@ -77,13 +77,13 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     }
 
     @Override
-    public Collection<MultiTraversal> matchProperty(String start) {
+    public Collection<MultiTraversal> match(String start) {
         Collection<MultiTraversal> traversals = new HashSet<>();
 
-        traversals.addAll(ownerPlaysRole.matchProperty(start));
+        traversals.addAll(ownerPlaysRole.match(start));
 
         PlaysRoleProperty valuePlaysRole = new PlaysRoleProperty(valueRole);
-        traversals.addAll(valuePlaysRole.matchProperty(resourceType.getName()));
+        traversals.addAll(valuePlaysRole.match(resourceType.getName()));
 
         return traversals;
     }
@@ -104,16 +104,16 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     }
 
     @Override
-    public void insertProperty(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
         Concept relationConcept = insertQueryExecutor.getConcept(relationType);
 
         relationType.getProperties().forEach(property ->
-                ((VarPropertyInternal) property).insertProperty(insertQueryExecutor, relationConcept)
+                ((VarPropertyInternal) property).insert(insertQueryExecutor, relationConcept)
         );
 
         Concept resourceConcept = insertQueryExecutor.getConcept(resourceType);
 
-        ownerPlaysRole.insertProperty(insertQueryExecutor, concept);
-        valuePlaysRole.insertProperty(insertQueryExecutor, resourceConcept);
+        ownerPlaysRole.insert(insertQueryExecutor, concept);
+        valuePlaysRole.insert(insertQueryExecutor, resourceConcept);
     }
 }

@@ -57,7 +57,7 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
     }
 
     @Override
-    public Collection<MultiTraversal> matchProperty(String start) {
+    public Collection<MultiTraversal> match(String start) {
         return Sets.newHashSet(MultiTraversal.create(
                 Fragment.create(t -> t.out(HAS_SCOPE.getLabel()), EDGE_BOUNDED, start, scope.getName()),
                 Fragment.create(t -> t.in(HAS_SCOPE.getLabel()), EDGE_UNBOUNDED, scope.getName(), start)
@@ -70,13 +70,13 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
     }
 
     @Override
-    public void insertProperty(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
         Instance scopeInstance = insertQueryExecutor.getConcept(scope).asInstance();
         concept.asRelation().scope(scopeInstance);
     }
 
     @Override
-    public void deleteProperty(MindmapsGraph graph, Concept concept) {
+    public void delete(MindmapsGraph graph, Concept concept) {
         String scopeId = scope.getId().orElseThrow(() -> failDelete(this));
         concept.asRelation().deleteScope(graph.getInstance(scopeId));
     }

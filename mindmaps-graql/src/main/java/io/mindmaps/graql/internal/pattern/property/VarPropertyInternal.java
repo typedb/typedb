@@ -49,21 +49,21 @@ public interface VarPropertyInternal extends VarProperty {
     /**
      * Return a collection of {@link MultiTraversal} to match the given property in the graph
      */
-    Collection<MultiTraversal> matchProperty(String start);
+    Collection<MultiTraversal> match(String start);
 
     /**
      * Insert the given property into the graph, if possible.
      * @param insertQueryExecutor the instance handling the insert query
      * @param concept the concept to insert a property on
      */
-    void insertProperty(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException;
+    void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException;
 
     /**
      * Delete the given property from the graph, if possible.
      * @param graph the graph to operate on
      * @param concept the concept to delete properties of
      */
-    void deleteProperty(MindmapsGraph graph, Concept concept) throws IllegalStateException;
+    void delete(MindmapsGraph graph, Concept concept) throws IllegalStateException;
 
     @Override
     default Stream<VarAdmin> getInnerVars() {

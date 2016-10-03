@@ -75,7 +75,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     }
 
     @Override
-    public Collection<MultiTraversal> matchProperty(String start) {
+    public Collection<MultiTraversal> match(String start) {
         return Sets.newHashSet(MultiTraversal.create(
                 Fragment.create(t ->
                         t.outE(SHORTCUT.getLabel()).has(TO_TYPE.name(), resourceType).inV(),
@@ -101,7 +101,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     }
 
     @Override
-    public void insertProperty(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
         Resource resourceConcept = insertQueryExecutor.getConcept(resource).asResource();
         Instance instance = concept.asInstance();
 
@@ -119,7 +119,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     }
 
     @Override
-    public void deleteProperty(MindmapsGraph graph, Concept concept) {
+    public void delete(MindmapsGraph graph, Concept concept) {
         Optional<ValuePredicateAdmin> predicate = resource.getValuePredicates().stream().findAny();
 
         resources(concept).stream()
