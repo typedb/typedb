@@ -355,6 +355,10 @@ public class Analytics {
      * @param resourceType the type of the resource that will contain the degree
      */
     private void degreesAndPersist(String resourceType) {
+        if (!Sets.intersection(subtypes, CommonOLAP.analyticsElements).isEmpty()) {
+            throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
+                    .getMessage(this.getClass().toString()));
+        }
         MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
         computer.compute(new DegreeAndPersistVertexProgram(keySpace, subtypes));
     }
