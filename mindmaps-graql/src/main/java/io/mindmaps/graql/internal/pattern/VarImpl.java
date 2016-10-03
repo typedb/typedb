@@ -450,6 +450,31 @@ class VarImpl implements VarInternal {
     }
 
     @Override
+    public Set<VarAdmin> getImplicitInnerVars() {
+        Stack<VarAdmin> newVars = new Stack<>();
+        Set<VarAdmin> vars = new HashSet<>();
+
+        newVars.add(this);
+
+        while (!newVars.isEmpty()) {
+            VarAdmin var = newVars.pop();
+            vars.add(var);
+
+            var.getProperties().flatMap(VarProperty::getImplicitInnerVars).forEach(newVars::add);
+
+            var.getHasResourceTypes().forEach(newVars::add);
+            var.getResources().forEach(newVars::add);
+
+            var.getCastings().forEach(casting -> {
+                casting.getRoleType().ifPresent(newVars::add);
+                newVars.add(casting.getRolePlayer());
+            });
+        }
+
+        return vars;
+    }
+
+    @Override
     public Set<String> getTypeIds() {
         Set<String> results = new HashSet<>();
         getId().ifPresent(results::add);

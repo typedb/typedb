@@ -32,4 +32,6 @@ public interface VarInternal extends VarAdmin {
      * @return the gremlin traversals that describe this variable
      */
     Set<MultiTraversal> getMultiTraversals();
+
+    Set<VarAdmin> getImplicitInnerVars();
 }

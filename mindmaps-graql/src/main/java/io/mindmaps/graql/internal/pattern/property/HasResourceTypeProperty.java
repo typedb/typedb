@@ -18,9 +18,11 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
+import io.mindmaps.graql.internal.query.InsertQueryExecutor;
 import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
@@ -37,6 +39,9 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     private final VarAdmin valueRole;
     private final VarAdmin relationType;
 
+    private final PlaysRoleProperty ownerPlaysRole;
+    private final PlaysRoleProperty valuePlaysRole;
+
     public HasResourceTypeProperty(VarAdmin resourceType) {
         this.resourceType = resourceType;
 
@@ -52,6 +57,9 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
         relationType = Graql.id(GraqlType.HAS_RESOURCE.getId(resourceTypeId))
                 .isa(Schema.MetaType.RELATION_TYPE.getId())
                 .hasRole(ownerRole).hasRole(valueRole).admin();
+
+        ownerPlaysRole = new PlaysRoleProperty(ownerRole);
+        valuePlaysRole = new PlaysRoleProperty(valueRole);
     }
 
     public VarAdmin getResourceType() {
@@ -72,7 +80,6 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     public Collection<MultiTraversal> getMultiTraversals(String start) {
         Collection<MultiTraversal> traversals = new HashSet<>();
 
-        PlaysRoleProperty ownerPlaysRole = new PlaysRoleProperty(ownerRole);
         traversals.addAll(ownerPlaysRole.getMultiTraversals(start));
 
         PlaysRoleProperty valuePlaysRole = new PlaysRoleProperty(valueRole);
@@ -94,5 +101,19 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     @Override
     public Stream<VarAdmin> getImplicitInnerVars() {
         return Stream.of(resourceType, ownerRole, valueRole, relationType);
+    }
+
+    @Override
+    public void insertProperty(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+        Concept relationConcept = insertQueryExecutor.getConcept(relationType);
+
+        relationType.getProperties().forEach(property ->
+                ((VarPropertyInternal) property).insertProperty(insertQueryExecutor, relationConcept)
+        );
+
+        Concept resourceConcept = insertQueryExecutor.getConcept(resourceType);
+
+        ownerPlaysRole.insertProperty(insertQueryExecutor, concept);
+        valuePlaysRole.insertProperty(insertQueryExecutor, resourceConcept);
     }
 }

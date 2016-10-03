@@ -19,12 +19,15 @@
 package io.mindmaps.graql.internal.pattern.property;
 
 import com.google.common.collect.Sets;
+import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.admin.UniqueVarProperty;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.FragmentImpl;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 import io.mindmaps.graql.internal.gremlin.MultiTraversalImpl;
 import io.mindmaps.graql.internal.gremlin.Traversals;
+import io.mindmaps.graql.internal.query.InsertQueryExecutor;
+import io.mindmaps.util.ErrorMessage;
 
 import java.util.Collection;
 import java.util.stream.Stream;
@@ -70,5 +73,24 @@ public class AkoProperty extends AbstractVarProperty implements NamedProperty, U
     @Override
     public Stream<VarAdmin> getInnerVars() {
         return Stream.of(superType);
+    }
+
+    @Override
+    public void insertProperty(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+        Concept superConcept = insertQueryExecutor.getConcept(superType);
+
+        if (concept.isEntityType()) {
+            concept.asEntityType().superType(superConcept.asEntityType());
+        } else if (concept.isRelationType()) {
+            concept.asRelationType().superType(superConcept.asRelationType());
+        } else if (concept.isRoleType()) {
+            concept.asRoleType().superType(superConcept.asRoleType());
+        } else if (concept.isResourceType()) {
+            concept.asResourceType().superType(superConcept.asResourceType());
+        } else if (concept.isRuleType()) {
+            concept.asRuleType().superType(superConcept.asRuleType());
+        } else {
+            throw new IllegalStateException(ErrorMessage.INSERT_METATYPE.getMessage(concept.getId(), superType.getId()));
+        }
     }
 }

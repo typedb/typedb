@@ -18,10 +18,12 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.admin.VarProperty;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 import io.mindmaps.graql.internal.gremlin.ShortcutTraversal;
+import io.mindmaps.graql.internal.query.InsertQueryExecutor;
 
 import java.util.Collection;
 import java.util.stream.Stream;
@@ -33,6 +35,13 @@ public interface VarPropertyInternal extends VarProperty {
     }
 
     Collection<MultiTraversal> getMultiTraversals(String start);
+
+    /**
+     * Insert the given property into the graph, if possible.
+     * @param insertQueryExecutor the instance handling the insert query
+     * @param concept the concept to insert a property on
+     */
+    void insertProperty(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException;
 
     @Override
     default Stream<VarAdmin> getInnerVars() {

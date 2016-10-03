@@ -18,8 +18,10 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.admin.UniqueVarProperty;
 import io.mindmaps.graql.internal.gremlin.FragmentPriority;
+import io.mindmaps.graql.internal.query.InsertQueryExecutor;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -41,5 +43,10 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
     @Override
     public FragmentPriority getPriority() {
         return FragmentPriority.EDGE_UNBOUNDED;
+    }
+
+    @Override
+    public void insertProperty(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+        concept.asType().setAbstract(true);
     }
 }

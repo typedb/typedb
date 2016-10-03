@@ -18,6 +18,10 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.Instance;
+import io.mindmaps.concept.Relation;
+import io.mindmaps.concept.RoleType;
 import io.mindmaps.graql.admin.UniqueVarProperty;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.admin.VarProperty;
@@ -25,7 +29,9 @@ import io.mindmaps.graql.internal.gremlin.FragmentImpl;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 import io.mindmaps.graql.internal.gremlin.MultiTraversalImpl;
 import io.mindmaps.graql.internal.gremlin.ShortcutTraversal;
+import io.mindmaps.graql.internal.query.InsertQueryExecutor;
 import io.mindmaps.graql.internal.util.CommonUtil;
+import io.mindmaps.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.*;
@@ -186,5 +192,26 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      */
     private MultiTraversal makeDistinctCastingPattern(String casting, String otherCastingId) {
         return new MultiTraversalImpl(new FragmentImpl(t -> t.where(P.neq(otherCastingId)), DISTINCT_CASTING, casting));
+    }
+
+    @Override
+    public void insertProperty(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+        Relation relation = concept.asRelation();
+        castings.forEach(casting -> addCasting(insertQueryExecutor, relation, casting));
+    }
+
+    /**
+     * Add a roleplayer to the given relation
+     * @param relation the concept representing the relation
+     * @param casting a casting between a role type and role player
+     */
+    private void addCasting(InsertQueryExecutor insertQueryExecutor, Relation relation, VarAdmin.Casting casting) {
+        VarAdmin roleVar = casting.getRoleType().orElseThrow(
+                () -> new IllegalStateException(ErrorMessage.INSERT_RELATION_WITHOUT_ROLE_TYPE.getMessage())
+        );
+
+        RoleType roleType = insertQueryExecutor.getConcept(roleVar).asRoleType();
+        Instance roleplayer = insertQueryExecutor.getConcept(casting.getRolePlayer()).asInstance();
+        relation.putRolePlayer(roleType, roleplayer);
     }
 }

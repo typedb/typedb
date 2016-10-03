@@ -20,13 +20,14 @@ package io.mindmaps.graql.internal.pattern.property;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.Concept;
-import io.mindmaps.concept.Resource;
+import io.mindmaps.concept.*;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.FragmentImpl;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 import io.mindmaps.graql.internal.gremlin.MultiTraversalImpl;
+import io.mindmaps.graql.internal.query.InsertQueryExecutor;
+import io.mindmaps.graql.internal.util.GraqlType;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -89,6 +90,24 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     @Override
     public Stream<VarAdmin> getInnerVars() {
         return Stream.of(resource);
+    }
+
+    @Override
+    public void insertProperty(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+        Resource resourceConcept = insertQueryExecutor.getConcept(resource).asResource();
+        Instance instance = concept.asInstance();
+
+        ResourceType type = resourceConcept.type();
+
+        MindmapsGraph graph = insertQueryExecutor.getGraph();
+
+        RelationType hasResource = graph.putRelationType(GraqlType.HAS_RESOURCE.getId(type.getId()));
+        RoleType hasResourceTarget = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(type.getId()));
+        RoleType hasResourceValue = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(type.getId()));
+
+        Relation relation = graph.addRelation(hasResource);
+        relation.putRolePlayer(hasResourceTarget, instance);
+        relation.putRolePlayer(hasResourceValue, resourceConcept);
     }
 
     @Override

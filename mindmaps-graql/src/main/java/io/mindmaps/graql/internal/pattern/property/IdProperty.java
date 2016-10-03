@@ -18,8 +18,10 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.admin.UniqueVarProperty;
 import io.mindmaps.graql.internal.gremlin.FragmentPriority;
+import io.mindmaps.graql.internal.query.InsertQueryExecutor;
 import io.mindmaps.graql.internal.util.StringConverter;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;

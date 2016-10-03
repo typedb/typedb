@@ -21,10 +21,12 @@ package io.mindmaps.graql.internal.pattern.property;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.RoleType;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.FragmentImpl;
 import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 import io.mindmaps.graql.internal.gremlin.MultiTraversalImpl;
+import io.mindmaps.graql.internal.query.InsertQueryExecutor;
 
 import java.util.Collection;
 import java.util.stream.Stream;
@@ -78,6 +80,12 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
     @Override
     public Stream<VarAdmin> getInnerVars() {
         return Stream.of(role);
+    }
+
+    @Override
+    public void insertProperty(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+        RoleType roleType = insertQueryExecutor.getConcept(role).asRoleType();
+        concept.asType().playsRole(roleType);
     }
 
     @Override
