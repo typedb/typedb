@@ -18,24 +18,17 @@
 
 package io.mindmaps.migration.sql;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.engine.MindmapsEngineServer;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
-import io.mindmaps.engine.controller.CommitLogController;
-import io.mindmaps.engine.controller.GraphFactoryController;
-import io.mindmaps.engine.controller.TransactionController;
 import io.mindmaps.engine.loader.BlockingLoader;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -56,17 +49,17 @@ public class SQLSchemaMigratorTest {
 
     @BeforeClass
     public static void start(){
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.INFO);
-
         System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
         System.setProperty(ConfigProperties.CURRENT_DIR_SYSTEM_PROPERTY, System.getProperty("user.dir")+"/../");
 
-        new TransactionController();
-        new CommitLogController();
-        new GraphFactoryController();
+        MindmapsEngineServer.start();
 
         migrator = new SQLSchemaMigrator();
+    }
+
+    @AfterClass
+    public static void stop(){
+        MindmapsEngineServer.stop();
     }
 
     @Before

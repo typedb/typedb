@@ -81,10 +81,8 @@ public class CSVDataMigrator implements Iterable<Collection<Var>> {
     public Collection<Var> migrate(){
         Collection<Var> collection = new HashSet<>();
 
-        Iterator<Collection<Var>> iterator = iterator();
-
-        while(iterator.hasNext()){
-            collection.addAll(iterator.next());
+        for (Collection<Var> vars : this) {
+            collection.addAll(vars);
         }
         return collection;
     }
@@ -94,9 +92,8 @@ public class CSVDataMigrator implements Iterable<Collection<Var>> {
      * @param loader Loader to migrate into.
      */
     public void migrate(Loader loader){
-        Iterator<Collection<Var>> iterator = iterator();
-        while(iterator.hasNext()){
-            loader.addToQueue(iterator.next());
+        for (Collection<Var> vars : this) {
+            loader.addToQueue(vars);
         }
 
         loader.flush();

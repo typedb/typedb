@@ -18,24 +18,16 @@
 
 package io.mindmaps.migration.csv;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Entity;
-import io.mindmaps.engine.controller.CommitLogController;
-import io.mindmaps.engine.controller.GraphFactoryController;
-import io.mindmaps.engine.controller.TransactionController;
+import io.mindmaps.engine.MindmapsEngineServer;
 import io.mindmaps.engine.loader.BlockingLoader;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.Graql;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -57,18 +49,18 @@ public class CSVDataMigratorTest {
 
     @BeforeClass
     public static void start(){
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.INFO);
-
         System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
         System.setProperty(ConfigProperties.CURRENT_DIR_SYSTEM_PROPERTY, System.getProperty("user.dir")+"/../");
 
-        new TransactionController();
-        new CommitLogController();
-        new GraphFactoryController();
+        MindmapsEngineServer.start();
 
         schemaMigrator = new CSVSchemaMigrator();
         dataMigrator = new CSVDataMigrator();
+    }
+
+    @AfterClass
+    public static void stop(){
+        MindmapsEngineServer.stop();
     }
 
     @Before
@@ -109,8 +101,6 @@ public class CSVDataMigratorTest {
         assertResourceRelationExists("countries-resource", thing);
     }
 
-    //TODO: Figure out why this test fails periodically when using Tinkergraph
-    @Ignore
     @Test
     public void icijOfficerDataTest() throws IOException, InterruptedException {
         schemaMigrator.configure("officer", parser("icij/Officers.csv")).migrate(loader);
@@ -120,6 +110,9 @@ public class CSVDataMigratorTest {
         Entity thing = Graql.withGraph(graph).match(var("x").isa("officer")).iterator().next().get("x").asEntity();
         assertNotNull(thing);
         assertResourceRelationExists("valid_until-resource", thing);
+        assertResourceRelationExists("name-resource", thing);
+
+        thing = Graql.withGraph(graph).match(var("x").isa("officer").has("name-resource", "JOHN OLIVER")).iterator().next().get("x").asEntity();
         assertResourceRelationExists("country_codes-resource", thing);
     }
 
