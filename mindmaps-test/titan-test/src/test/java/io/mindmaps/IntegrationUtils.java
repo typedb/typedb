@@ -21,9 +21,9 @@ package io.mindmaps;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import io.mindmaps.engine.MindmapsEngineServer;
+import io.mindmaps.engine.util.ConfigProperties;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.javatuples.Pair;
-import spark.Spark;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -32,7 +32,7 @@ import static java.lang.Thread.sleep;
 
 public class IntegrationUtils {
 
-    private static AtomicBoolean ENGINE_ON = new AtomicBoolean(false);
+    private static AtomicBoolean EMBEDDED_CASS_ON = new AtomicBoolean(false);
 
     private static void hideLogs() {
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
@@ -40,16 +40,17 @@ public class IntegrationUtils {
     }
 
     public static void startTestEngine() throws Exception {
-        Spark.stop();
+        MindmapsEngineServer.stop();
         Thread.sleep(5000);
 
-        if (ENGINE_ON.compareAndSet(false, true)) {
+        if (EMBEDDED_CASS_ON.compareAndSet(false, true)) {
             hideLogs();
             EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra-embedded.yaml");
             hideLogs();
             Thread.sleep(5000);
         }
 
+        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY, ConfigProperties.EMBEDDED_CONFIG_FILE);
         MindmapsEngineServer.start();
         sleep(5000);
     }

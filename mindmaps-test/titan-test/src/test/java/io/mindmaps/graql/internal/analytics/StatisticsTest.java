@@ -1,5 +1,6 @@
 package io.mindmaps.graql.internal.analytics;
 
+import io.mindmaps.IntegrationUtils;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
@@ -21,8 +22,6 @@ import spark.Spark;
 import java.util.*;
 import java.util.function.Supplier;
 
-import static io.mindmaps.IntegrationUtils.graphWithNewKeyspace;
-import static io.mindmaps.IntegrationUtils.startTestEngine;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -48,12 +47,12 @@ public class StatisticsTest {
 
     @BeforeClass
     public static void startController() throws Exception {
-        startTestEngine();
+        IntegrationUtils.startTestEngine();
     }
 
     @Before
     public void setUp() throws InterruptedException, MindmapsValidationException {
-        Pair<MindmapsGraph, String> result = graphWithNewKeyspace();
+        Pair<MindmapsGraph, String> result = IntegrationUtils.graphWithNewKeyspace();
         graph = result.getValue0();
         keyspace = result.getValue1();
     }

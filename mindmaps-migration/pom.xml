@@ -32,4 +32,13 @@
       <module>sql</module>
       <module>json</module>
   </modules>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.mindmaps</groupId>
+            <artifactId>mindmaps-titan-factory</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 </project>
