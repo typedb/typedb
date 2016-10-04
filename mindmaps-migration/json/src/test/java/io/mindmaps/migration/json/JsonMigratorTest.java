@@ -36,15 +36,15 @@ import static junit.framework.Assert.assertNotNull;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class JsonDataMigratorTest {
+public class JsonMigratorTest {
 
     private MindmapsGraph graph;
-    private JsonDataMigrator migrator;
+    private JsonMigrator migrator;
 
     @Before
     public void setUp() {
         graph =  Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph("default");
-        migrator = new JsonDataMigrator().graph(graph);
+        migrator = new JsonMigrator().graph(graph);
     }
 
     @After

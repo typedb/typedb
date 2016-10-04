@@ -23,6 +23,7 @@ import ch.qos.logback.classic.Logger;
 import com.google.common.io.Files;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.*;
+import io.mindmaps.engine.MindmapsEngineServer;
 import io.mindmaps.engine.controller.CommitLogController;
 import io.mindmaps.engine.controller.GraphFactoryController;
 import io.mindmaps.engine.controller.TransactionController;
@@ -64,9 +65,7 @@ public class CSVMigratorTest {
         System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
         System.setProperty(ConfigProperties.CURRENT_DIR_SYSTEM_PROPERTY, System.getProperty("user.dir")+"/../");
 
-        new TransactionController();
-        new CommitLogController();
-        new GraphFactoryController();
+        MindmapsEngineServer.start();
     }
 
     @Before

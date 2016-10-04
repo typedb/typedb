@@ -96,7 +96,7 @@ public class Main {
         final String finalEntityType = entityType;
 
         JsonSchemaMigrator schemaMigrator = new JsonSchemaMigrator();
-        JsonDataMigrator dataMigrator = new JsonDataMigrator();
+        JsonMigrator dataMigrator = new JsonMigrator();
 
         try{
             MindmapsGraph graph = engineURL == null ? Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(graphName)
@@ -145,7 +145,7 @@ public class Main {
         }
     }
 
-    private static void migrateData(JsonDataMigrator migrator, MindmapsGraph graph, File file, String type) {
+    private static void migrateData(JsonMigrator migrator, MindmapsGraph graph, File file, String type) {
         try {
             migrator
                     .graph(graph)
