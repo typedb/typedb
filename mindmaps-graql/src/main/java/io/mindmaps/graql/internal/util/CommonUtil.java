@@ -55,6 +55,14 @@ public class CommonUtil {
         return tryNext(iterable.iterator());
     }
 
+    public static <T> Optional<T> optionalOr(Optional<T> first, Optional<T> second) {
+        if (first.isPresent()) {
+            return first;
+        } else {
+            return second;
+        }
+    }
+
     public static <T> Collector<T, ImmutableSet.Builder<T>, ImmutableSet<T>> toImmutableSet() {
         return new Collector<T, ImmutableSet.Builder<T>, ImmutableSet<T>>() {
             @Override

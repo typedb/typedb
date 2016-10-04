@@ -37,6 +37,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static io.mindmaps.graql.internal.util.CommonUtil.optionalOr;
 import static io.mindmaps.util.ErrorMessage.INSERT_NON_RESOURCE_WITH_VALUE;
 
 /**
@@ -119,38 +120,45 @@ public class InsertQueryExecutor {
     }
 
     /**
-     * @param var the Var that is to be added into the graph
+     * @param varToAdd the Var that is to be added into the graph
      * @return the concept representing the given Var, creating it if it doesn't exist
      */
-    private Concept addConcept(VarAdmin var) {
-        var = mergeVar(var);
+    private Concept addConcept(VarAdmin varToAdd) {
+        VarAdmin var = mergeVar(varToAdd);
 
-        Optional<VarAdmin> type = var.getType();
-        Optional<VarAdmin> ako = var.getProperty(AkoProperty.class).map(AkoProperty::getSuperType);
+        Optional<VarAdmin> typeVar = var.getType();
+        Optional<VarAdmin> akoVar = getAko(var);
 
-        if (type.isPresent() && ako.isPresent()) {
+        if (typeVar.isPresent() && akoVar.isPresent()) {
             String printableName = var.getPrintableName();
             throw new IllegalStateException(ErrorMessage.INSERT_ISA_AND_AKO.getMessage(printableName));
         }
 
-        Concept concept;
+        // Use either ako or isa to decide type
+        Optional<Type> typeConcept = optionalOr(
+                akoVar.map(this::getConcept).map(Concept::type),
+                typeVar.map(this::getConcept).map(Concept::asType)
+        );
 
-        // If 'ako' provided, use that, else use 'isa', else get existing concept by id
-        if (ako.isPresent()) {
-            String id = getTypeIdOrThrow(var.getId());
-            concept = putConceptBySuperType(id, getConcept(ako.get()).asType());
-        } else if (type.isPresent()) {
-            concept = putConceptByType(var.getId(), var, getConcept(type.get()).asType());
-        } else {
-            concept = var.getId().map(graph::getConcept).orElse(null);
-        }
+        // If type provided, then 'put' the concept, else 'get' it
+        Concept concept = typeConcept.map(type ->
+                putConceptByType(var.getId(), var, type)
+        ).orElseGet(() ->
+                var.getId().map(graph::getConcept).orElse(null)
+        );
 
         if (concept == null) {
-            System.out.println(varsById);
-            throw new IllegalStateException(
-                    var.getId().map(ErrorMessage.INSERT_GET_NON_EXISTENT_ID::getMessage)
-                            .orElse(ErrorMessage.INSERT_UNDEFINED_VARIABLE.getMessage(var.getName()))
-            );
+            String message;
+
+            if (akoVar.isPresent()) {
+                String akoId = akoVar.get().getId().orElse("<no-id>");
+                message = ErrorMessage.INSERT_METATYPE.getMessage(var.getPrintableName(), akoId);
+            } else {
+                message = var.getId().map(ErrorMessage.INSERT_GET_NON_EXISTENT_ID::getMessage)
+                                .orElse(ErrorMessage.INSERT_UNDEFINED_VARIABLE.getMessage(var.getName()));
+            }
+
+            throw new IllegalStateException(message);
         }
 
         return concept;
@@ -230,28 +238,6 @@ public class InsertQueryExecutor {
     }
 
     /**
-     * @param id the ID of the concept
-     * @param superType the supertype of the concept
-     * @return a concept with the given ID and the specified supertype
-     */
-    private <T> Concept putConceptBySuperType(String id, Type superType) {
-        if (superType.isEntityType()) {
-            return graph.putEntityType(id);
-        } else if (superType.isRelationType()) {
-            return graph.putRelationType(id);
-        } else if (superType.isRoleType()) {
-            return graph.putRoleType(id);
-        } else if (superType.isResourceType()) {
-            ResourceType<T> superResource = superType.asResourceType();
-            return graph.putResourceType(id, superResource.getDataType());
-        } else if (superType.isRuleType()) {
-            return graph.putRuleType(id);
-        } else {
-            throw new IllegalStateException(ErrorMessage.INSERT_METATYPE.getMessage(id, superType.getId()));
-        }
-    }
-
-    /**
      * Put an instance of a type which may or may not have an ID specified
      * @param id the ID of the instance to create, or empty to not specify an ID
      * @param type the type of the instance
@@ -299,8 +285,20 @@ public class InsertQueryExecutor {
      * @return the datatype of the given var
      */
     private ResourceType.DataType<?> getDataType(VarAdmin var) {
-        return var.getProperty(DataTypeProperty.class).map(DataTypeProperty::getDatatype).orElseThrow(
+        Optional<ResourceType.DataType<?>> directDataType =
+                var.getProperty(DataTypeProperty.class).map(DataTypeProperty::getDatatype);
+
+        Optional<ResourceType.DataType<?>> indirectDataType =
+                getAko(var).map(ako -> getConcept(ako).asResourceType().getDataType());
+
+        Optional<ResourceType.DataType<?>> dataType = optionalOr(directDataType, indirectDataType);
+
+        return dataType.orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.INSERT_NO_DATATYPE.getMessage(var.getPrintableName()))
         );
+    }
+
+    private Optional<VarAdmin> getAko(VarAdmin var) {
+        return var.getProperty(AkoProperty.class).map(AkoProperty::getSuperType);
     }
 }
