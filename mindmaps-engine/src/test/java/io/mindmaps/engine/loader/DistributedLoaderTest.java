@@ -19,8 +19,7 @@
 package io.mindmaps.engine.loader;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.engine.controller.CommitLogController;
-import io.mindmaps.engine.controller.TransactionController;
+import io.mindmaps.engine.MindmapsEngineTestBase;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
@@ -45,7 +44,7 @@ import static io.mindmaps.graql.Graql.parsePatterns;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class DistributedLoaderTest {
+public class DistributedLoaderTest extends MindmapsEngineTestBase{
 
     private final Logger LOG = LoggerFactory.getLogger(DistributedLoaderTest.class);
 
@@ -57,13 +56,7 @@ public class DistributedLoaderTest {
 
     @Before
     public void setUp() throws Exception {
-        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
-        // set up engine
-        new TransactionController();
-        new CommitLogController();
-
         graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
-
         loader = new DistributedLoader(graphName, Collections.singletonList("localhost"));
         graph = GraphFactory.getInstance().getGraphBatchLoading(graphName);
     }

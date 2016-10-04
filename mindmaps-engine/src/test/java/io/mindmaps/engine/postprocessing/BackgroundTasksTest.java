@@ -26,9 +26,7 @@ import io.mindmaps.concept.Relation;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
-import io.mindmaps.engine.controller.CommitLogController;
-import io.mindmaps.engine.controller.GraphFactoryController;
-import io.mindmaps.engine.util.ConfigProperties;
+import io.mindmaps.engine.MindmapsEngineTestBase;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import io.mindmaps.util.Schema;
@@ -37,7 +35,6 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import spark.Spark;
 
@@ -51,23 +48,14 @@ import java.util.concurrent.Future;
 
 import static org.junit.Assert.assertEquals;
 
-public class BackgroundTasksTest {
+public class BackgroundTasksTest extends MindmapsEngineTestBase{
     private BackgroundTasks backgroundTasks;
     private MindmapsGraph mindmapsGraph;
     private Cache cache;
     private String keyspace;
 
-    @BeforeClass
-    public static void startController() {
-        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY, ConfigProperties.TEST_CONFIG_FILE);
-    }
-
     @Before
     public void setUp() throws Exception {
-        new GraphFactoryController();
-        new CommitLogController();
-        Thread.sleep(5000);
-
         cache = Cache.getInstance();
         keyspace = UUID.randomUUID().toString().replaceAll("-", "a");
         backgroundTasks = BackgroundTasks.getInstance();

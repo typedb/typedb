@@ -19,14 +19,13 @@
 package io.mindmaps.engine.loader;
 
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.engine.MindmapsEngineTestBase;
 import io.mindmaps.engine.util.ConfigProperties;
-import io.mindmaps.engine.controller.CommitLogController;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
@@ -42,25 +41,17 @@ import java.util.List;
 import static io.mindmaps.graql.Graql.parseInsert;
 import static io.mindmaps.graql.Graql.parsePatterns;
 
-public class BlockingLoaderTest {
+public class BlockingLoaderTest extends MindmapsEngineTestBase {
 
-    String graphName;
-    BlockingLoader loader;
+    private String graphName;
+    private BlockingLoader loader;
     private final org.slf4j.Logger LOG = LoggerFactory.getLogger(BlockingLoaderTest.class);
-
-
-    @BeforeClass
-    public static void startController() {
-        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
-    }
 
     @Before
     public void setUp() throws Exception {
         graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
         loader = new BlockingLoader(graphName);
-        new CommitLogController();
     }
-
 
     @Test
     public void testLoadOntologyAndData() {

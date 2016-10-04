@@ -21,38 +21,29 @@ package io.mindmaps.engine.controller;
 import com.jayway.restassured.response.Response;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.EntityType;
+import io.mindmaps.engine.MindmapsEngineTestBase;
 import io.mindmaps.engine.util.ConfigProperties;
-import io.mindmaps.engine.Util;
 import io.mindmaps.factory.GraphFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import spark.Spark;
 
 import static com.jayway.restassured.RestAssured.get;
 import static org.junit.Assert.assertTrue;
 
-public class RemoteShellControllerTest {
+public class RemoteShellControllerTest extends MindmapsEngineTestBase {
 
-    String graphName;
-
+    private String graphName;
 
     @Before
     public void setUp() throws Exception {
-        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
-
-        Spark.stop();
-        new RemoteShellController();
-
         graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
         MindmapsGraph graph = GraphFactory.getInstance().getGraph(graphName);
 
         EntityType man = graph.putEntityType("Man");
         graph.putEntity("actor-123", man);
         graph.commit();
-
-        Util.setRestAssuredBaseURI(ConfigProperties.getInstance().getProperties());
     }
 
     // TODO: Fix this test (possibly related to Spark.stop() in setup)

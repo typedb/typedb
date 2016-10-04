@@ -21,8 +21,7 @@ package io.mindmaps.engine.controller;
 import com.jayway.restassured.response.Response;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.EntityType;
-import io.mindmaps.engine.util.ConfigProperties;
-import io.mindmaps.engine.Util;
+import io.mindmaps.engine.MindmapsEngineTestBase;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.util.REST;
 import org.json.JSONArray;
@@ -38,23 +37,17 @@ import static com.jayway.restassured.RestAssured.get;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class VisualiserControllerTest {
+public class VisualiserControllerTest extends MindmapsEngineTestBase{
 
-    static String graphName;
+    private static String graphName = "specialtestgraph";
 
 
     @Before
     public void setUp() throws Exception {
-        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
-
-        new VisualiserController();
-
-        graphName="specialtestgraph";
         MindmapsGraph graph = GraphFactory.getInstance().getGraph(graphName);
         EntityType man = graph.putEntityType("Man");
         graph.putEntity("actor-123", man);
         graph.commit();
-        Util.setRestAssuredBaseURI(ConfigProperties.getInstance().getProperties());
     }
 
     @Test

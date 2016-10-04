@@ -19,7 +19,7 @@
 package io.mindmaps.engine.controller;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.engine.Util;
+import io.mindmaps.engine.MindmapsEngineTestBase;
 import io.mindmaps.engine.loader.TransactionState;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
@@ -28,7 +28,6 @@ import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import spark.Spark;
 
 import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.given;
@@ -36,28 +35,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class TransactionControllerTest {
+public class TransactionControllerTest extends MindmapsEngineTestBase{
 
-    String graphName;
-
+    private String graphName;
 
     @Before
     public void setUp() throws Exception {
-        Spark.stop();
-        Thread.sleep(5000);
-
-        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
-
-        new TransactionController();
-        new CommitLogController();
-        new GraphFactoryController();
-
         graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
         MindmapsGraph graph = GraphFactory.getInstance().getGraphBatchLoading(graphName);
         graph.putEntityType("Man");
         graph.commit();
-        Util.setRestAssuredBaseURI(ConfigProperties.getInstance().getProperties());
-        Thread.sleep(1000);
     }
 
     @Test
