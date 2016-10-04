@@ -99,6 +99,7 @@ final class ElementFactory {
     public ConceptImpl buildUnknownConcept(Vertex v){
         Schema.BaseType type = Schema.BaseType.valueOf(v.value(Schema.ConceptProperty.BASE_TYPE.name()));
         ConceptImpl concept = null;
+        //All these types are null because at this stage the concept has been defined so we don't need to know the type.
         switch (type){
             case RELATION:
                 concept = buildRelation(v, null);
