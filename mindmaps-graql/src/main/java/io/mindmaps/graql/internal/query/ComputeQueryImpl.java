@@ -52,42 +52,41 @@ class ComputeQueryImpl implements ComputeQuery {
 
         String keyspace = theGraph.getKeyspace();
 
-        Analytics analytics = typeIds.map(ids -> {
-            Set<Type> types = ids.stream().map(id -> {
-                Type type = theGraph.getType(id);
-                if (type == null) throw new IllegalArgumentException(ErrorMessage.ID_NOT_FOUND.getMessage(id));
-                return type;
-            }).collect(toSet());
-            return new Analytics(keyspace, types);
-        }).orElseGet(() ->
-            new Analytics(keyspace)
-        );
+        Analytics analytics;
 
         try {
             switch (computeMethod) {
                 case "count": {
+                    analytics = getAnalytics(theGraph, keyspace, false);
                     return analytics.count();
                 }
                 case "degrees": {
+                    analytics = getAnalytics(theGraph, keyspace, false);
                     return analytics.degrees();
                 }
                 case "degreesAndPersist": {
+                    analytics = getAnalytics(theGraph, keyspace, false);
                     analytics.degreesAndPersist();
                     return "Degrees have been persisted.";
                 }
                 case "max": {
+                    analytics = getAnalytics(theGraph, keyspace, true);
                     return analytics.max();
                 }
                 case "mean": {
+                    analytics = getAnalytics(theGraph, keyspace, true);
                     return analytics.mean();
                 }
                 case "min": {
+                    analytics = getAnalytics(theGraph, keyspace, true);
                     return analytics.min();
                 }
                 case "std": {
+                    analytics = getAnalytics(theGraph, keyspace, true);
                     return analytics.std();
                 }
                 case "sum": {
+                    analytics = getAnalytics(theGraph, keyspace, true);
                     return analytics.sum();
                 }
                 default: {
@@ -98,6 +97,21 @@ class ComputeQueryImpl implements ComputeQuery {
             throw new IllegalArgumentException(ErrorMessage.MUST_BE_RESOURCE_TYPE.getMessage(typeIds),e);
         }
 
+    }
+
+    private Analytics getAnalytics(MindmapsGraph theGraph, String keyspace, boolean isStatistics) {
+        return typeIds.map(ids -> {
+                Set<Type> types = ids.stream().map(id -> {
+                    Type type = theGraph.getType(id);
+                    if (type == null) throw new IllegalArgumentException(ErrorMessage.ID_NOT_FOUND.getMessage(id));
+                    return type;
+                }).collect(toSet());
+            if (isStatistics)
+                return new Analytics(keyspace, null, types);
+            return new Analytics(keyspace, types, null);
+            }).orElseGet(() ->
+                new Analytics(keyspace, null, null)
+            );
     }
 
     @Override
