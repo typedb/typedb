@@ -208,7 +208,6 @@ public class BackgroundTasksTest {
             backgroundTasks.forcePostprocessing();
 
             //Check it's fixed
-            graph.rollback();
             assertEquals(1, graph.getResourceType(sample).instances().size());
         }
     }
