@@ -18,6 +18,7 @@
 
 package io.mindmaps.core;
 
+import io.mindmaps.IntegrationUtils;
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Entity;
@@ -39,7 +40,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import static io.mindmaps.IntegrationUtils.startTestEngine;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
@@ -55,7 +55,7 @@ public class ConcurrencyTest {
 
     @BeforeClass
     public static void startController() throws Exception {
-        startTestEngine();
+        IntegrationUtils.startTestEngine();
     }
 
     @Before

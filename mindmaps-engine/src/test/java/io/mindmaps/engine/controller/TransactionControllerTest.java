@@ -21,7 +21,6 @@ package io.mindmaps.engine.controller;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.engine.Util;
 import io.mindmaps.engine.loader.TransactionState;
-import io.mindmaps.engine.postprocessing.BackgroundTasks;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.util.REST;
@@ -29,6 +28,7 @@ import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import spark.Spark;
 
 import static com.jayway.restassured.RestAssured.get;
 import static com.jayway.restassured.RestAssured.given;
@@ -43,6 +43,9 @@ public class TransactionControllerTest {
 
     @Before
     public void setUp() throws Exception {
+        Spark.stop();
+        Thread.sleep(5000);
+
         System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
 
         new TransactionController();
@@ -54,6 +57,7 @@ public class TransactionControllerTest {
         graph.putEntityType("Man");
         graph.commit();
         Util.setRestAssuredBaseURI(ConfigProperties.getInstance().getProperties());
+        Thread.sleep(1000);
     }
 
     @Test
@@ -72,8 +76,6 @@ public class TransactionControllerTest {
                 e.printStackTrace();
             }
         }
-        //check that post processing starts periodically, in this case at least once.
-        while(!BackgroundTasks.getInstance().isPostProcessingRunning())
 
         assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getConcept("actor-123"));
     }

@@ -21,8 +21,8 @@ package io.mindmaps.engine.controller;
 import com.jayway.restassured.response.Response;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.EntityType;
-import io.mindmaps.engine.Util;
 import io.mindmaps.engine.util.ConfigProperties;
+import io.mindmaps.engine.Util;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.util.REST;
 import org.json.JSONArray;
@@ -49,7 +49,7 @@ public class VisualiserControllerTest {
 
         new VisualiserController();
 
-        graphName="special-test-graph";
+        graphName="specialtestgraph";
         MindmapsGraph graph = GraphFactory.getInstance().getGraph(graphName);
         EntityType man = graph.putEntityType("Man");
         graph.putEntity("actor-123", man);

@@ -18,6 +18,7 @@
 
 package io.mindmaps.engine.postprocessing;
 
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
@@ -26,12 +27,11 @@ import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
+import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.engine.controller.CommitLogController;
 import io.mindmaps.engine.controller.GraphFactoryController;
-import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
-import io.mindmaps.Mindmaps;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -39,6 +39,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import spark.Spark;
 
@@ -84,6 +85,7 @@ public class BackgroundTasksTest {
         Thread.sleep(5000);
     }
 
+    @Ignore
     @Test
     public void testMergingCastings() throws Exception {
         //Create Scenario
@@ -162,6 +164,7 @@ public class BackgroundTasksTest {
         rawGraph.tx().commit();
     }
 
+    @Ignore
     @Test
     public void testMergeDuplicateResources() throws MindmapsValidationException, InterruptedException {
         String keyspace = "TestBatchGraph";
@@ -206,7 +209,6 @@ public class BackgroundTasksTest {
             backgroundTasks.forcePostprocessing();
 
             //Check it's fixed
-            graph.rollback();
             assertEquals(1, graph.getResourceType(sample).instances().size());
         }
     }
