@@ -31,6 +31,7 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.internal.util.GraqlType;
 import org.javatuples.Pair;
 import org.junit.After;
 import org.junit.Before;
@@ -275,24 +276,41 @@ public class GraqlTest {
         ((ComputeQuery) qb.parse("compute sum in thing;")).execute();
     }
 
-    @Ignore
     @Test
     public void testStatisticsMethods() throws MindmapsValidationException {
+        String resourceTypeId = "resource";
 
-        ResourceType<Long> thing = graph.putResourceType("thing", ResourceType.DataType.LONG);
-        graph.putResource(1L,thing);
-        graph.putResource(2L,thing);
-        graph.putResource(3L,thing);
+        RoleType resourceOwner = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
+        RoleType resourceValue = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
+        RelationType relationType = graph.putRelationType(GraqlType.HAS_RESOURCE.getId(resourceTypeId))
+                .hasRole(resourceOwner)
+                .hasRole(resourceValue);
+
+        ResourceType<Long> resource = graph.putResourceType(resourceTypeId, ResourceType.DataType.LONG)
+                .playsRole(resourceValue);
+        EntityType thing = graph.putEntityType("thing").playsRole(resourceOwner);
+        Entity theResourceOwner = graph.addEntity(thing);
+
+        graph.addRelation(relationType)
+                .putRolePlayer(resourceOwner,theResourceOwner)
+                .putRolePlayer(resourceValue,graph.putResource(1L,resource));
+        graph.addRelation(relationType)
+                .putRolePlayer(resourceOwner,theResourceOwner)
+                .putRolePlayer(resourceValue,graph.putResource(2L,resource));
+        graph.addRelation(relationType)
+                .putRolePlayer(resourceOwner,theResourceOwner)
+                .putRolePlayer(resourceValue,graph.putResource(3L,resource));
+
         graph.commit();
 
         // use graql to compute various statistics
-        Optional<Number> result = (Optional<Number>) ((ComputeQuery) qb.parse("compute sum in thing;")).execute();
+        Optional<Number> result = (Optional<Number>) ((ComputeQuery) qb.parse("compute sum in resource;")).execute();
         assertEquals(6L,(long) result.orElse(0L));
-        result = (Optional<Number>) ((ComputeQuery) qb.parse("compute min in thing;")).execute();
+        result = (Optional<Number>) ((ComputeQuery) qb.parse("compute min in resource;")).execute();
         assertEquals(1L,(long) result.orElse(0L));
-        result = (Optional<Number>) ((ComputeQuery) qb.parse("compute max in thing;")).execute();
+        result = (Optional<Number>) ((ComputeQuery) qb.parse("compute max in resource;")).execute();
         assertEquals(3L,(long) result.orElse(0L));
-        result = (Optional<Number>) ((ComputeQuery) qb.parse("compute mean in thing;")).execute();
+        result = (Optional<Number>) ((ComputeQuery) qb.parse("compute mean in resource;")).execute();
         assertEquals(2.0, (double) result.orElse(0L), 0.1);
 
     }
