@@ -106,10 +106,6 @@ public class ValidateGlobalRulesTest {
         ((Edge) mindmapsGraph.getTinkerPopGraph().traversal().V(wolf.getBaseIdentifier()).outE(Schema.EdgeLabel.AKO.getLabel()).as("edge").otherV().hasId(creature.getBaseIdentifier()).select("edge").next()).remove();
         ((Edge) mindmapsGraph.getTinkerPopGraph().traversal().V(creature.getBaseIdentifier()).outE(Schema.EdgeLabel.PLAYS_ROLE.getLabel()).as("edge").otherV().hasId(monster.getBaseIdentifier()).select("edge").next()).remove();
 
-        werewolf.type(wolf);
-        wolf.type(creature);
-        creature.type(wolf);
-
         flags = new boolean[]{false, false};
         count = 0;
         for (CastingImpl casting : assertion.getMappingCasting()) {
@@ -119,17 +115,6 @@ public class ValidateGlobalRulesTest {
         assertFalse(flags[0] && flags[1]);
         assertTrue(flags[0] || flags[1]);
 
-        ((Edge) mindmapsGraph.getTinkerTraversal().
-                has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), werewolf.getId()).
-                outE(Schema.EdgeLabel.ISA.getLabel()).next()).remove();
-        ((Edge) mindmapsGraph.getTinkerTraversal().
-                has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), wolf.getId()).
-                outE(Schema.EdgeLabel.ISA.getLabel()).next()).remove();
-        ((Edge) mindmapsGraph.getTinkerTraversal().
-                has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), creature.getId()).
-                outE(Schema.EdgeLabel.ISA.getLabel()).next()).remove();
-
-        werewolf.type(wolf);
         wolf.playsRole(animal);
         creature.playsRole(monster);
 
@@ -255,9 +240,5 @@ public class ValidateGlobalRulesTest {
         x2.superType(x1);
 
         assertTrue(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x1));
-
-        x3.type(x1);
-
-        assertFalse(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x1));
     }
 }

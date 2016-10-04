@@ -178,9 +178,6 @@ public class MindmapsGraphHighLevelTest {
 
     @Test
     public void testAddComplexRelationshipMissingRolePlayer(){
-        rolePlayer1.type(type);
-        rolePlayer2.type(type);
-
         HashSet<Object> validVertices = new HashSet<>();
         validVertices.add(role1.getBaseIdentifier());
         validVertices.add(role2.getBaseIdentifier());
@@ -257,9 +254,6 @@ public class MindmapsGraphHighLevelTest {
 
     @Test
     public void getRelationTest(){
-        rolePlayer1.type(type);
-        rolePlayer2.type(type);
-
         Map<RoleType, Instance> roleMap = new HashMap<>();
         roleMap.put(role1, rolePlayer1);
         roleMap.put(role2, rolePlayer2);
@@ -423,10 +417,6 @@ public class MindmapsGraphHighLevelTest {
         RoleTypeImpl movieGenre = (RoleTypeImpl) graph.putRoleType("Movie Genre");
         InstanceImpl crime = (InstanceImpl) graph.putEntity("Crime", genre);
         RelationTypeImpl movieHasGenre = (RelationTypeImpl) graph.putRelationType("Movie Has Genre");
-
-        pacino.type(type);
-        godfather.type(type);
-        crime.type(type);
 
         graph.addRelation(cast).putRolePlayer(feature, godfather).putRolePlayer(actor, pacino);
         graph.addRelation(movieHasGenre).putRolePlayer(movieOfGenre, godfather).putRolePlayer(movieGenre, crime);

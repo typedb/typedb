@@ -133,12 +133,6 @@ public class TypeTest {
         assertTrue(c1.getAkoHierarchySuperSet().contains(c3));
         assertFalse(c1.getAkoHierarchySuperSet().contains(c4));
 
-        c3.type(c4);
-        assertTrue(c1.getAkoHierarchySuperSet().contains(c1));
-        assertTrue(c1.getAkoHierarchySuperSet().contains(c2));
-        assertTrue(c1.getAkoHierarchySuperSet().contains(c3));
-        assertFalse(c1.getAkoHierarchySuperSet().contains(c4));
-
         mindmapsGraph.getTinkerPopGraph().traversal().V().
                 has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), c3.getId()).
                 outE(Schema.EdgeLabel.ISA.getLabel()).next().remove();

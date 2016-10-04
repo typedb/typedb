@@ -20,6 +20,7 @@ package io.mindmaps.graph.internal;
 
 import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.RuleType;
+import io.mindmaps.concept.Type;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 /**
@@ -27,7 +28,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
  * Currently supported rules include Constraint Rules and Inference Rules.
  */
 class RuleTypeImpl extends TypeImpl<RuleType, Rule> implements RuleType {
-    RuleTypeImpl(Vertex v, AbstractMindmapsGraph mindmapsGraph) {
-        super(v, mindmapsGraph);
+    RuleTypeImpl(Vertex v, Type type, AbstractMindmapsGraph mindmapsGraph) {
+        super(v, type, mindmapsGraph);
     }
 }

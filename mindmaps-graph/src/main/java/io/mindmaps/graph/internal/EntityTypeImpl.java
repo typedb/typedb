@@ -20,13 +20,14 @@ package io.mindmaps.graph.internal;
 
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
+import io.mindmaps.concept.Type;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 /**
  * An ontological element which represents the categories instances can fall within.
  */
 class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements EntityType{
-    EntityTypeImpl(Vertex v, AbstractMindmapsGraph mindmapsGraph) {
-        super(v, mindmapsGraph);
+    EntityTypeImpl(Vertex v, Type type, AbstractMindmapsGraph mindmapsGraph) {
+        super(v, type, mindmapsGraph);
     }
 }
