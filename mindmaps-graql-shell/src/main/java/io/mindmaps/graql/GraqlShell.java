@@ -35,11 +35,8 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import sun.misc.Signal;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintWriter;
-import java.net.URI;
+import java.io.*;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -51,8 +48,22 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import static io.mindmaps.util.REST.RemoteShell.*;
+import static io.mindmaps.util.REST.RemoteShell.ACTION;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_AUTOCOMPLETE;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_COMMIT;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_NAMESPACE;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY_ABORT;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY_END;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_ROLLBACK;
+import static io.mindmaps.util.REST.RemoteShell.AUTOCOMPLETE_CURSOR;
+import static io.mindmaps.util.REST.RemoteShell.ERROR;
+import static io.mindmaps.util.REST.RemoteShell.NAMESPACE;
+import static io.mindmaps.util.REST.RemoteShell.QUERY;
+import static io.mindmaps.util.REST.RemoteShell.QUERY_RESULT;
+import static io.mindmaps.util.REST.WebPath.IMPORT_DATA_URI;
 import static io.mindmaps.util.REST.WebPath.REMOTE_SHELL_URI;
+import static org.apache.commons.lang.StringEscapeUtils.escapeJavaScript;
 
 /**
  * A Graql REPL shell that can be run from the command line
@@ -119,6 +130,7 @@ public class GraqlShell {
         options.addOption("e", "execute", true, "query to execute");
         options.addOption("f", "file", true, "graql file path to execute");
         options.addOption("u", "uri", true, "uri to factory to engine");
+        options.addOption("b", "batch", true, "graql file path to batch load");
         options.addOption("h", "help", false, "print usage message");
         options.addOption("v", "version", false, "print version");
 
@@ -155,6 +167,15 @@ public class GraqlShell {
         String namespace = cmd.getOptionValue("n", DEFAULT_NAMESPACE);
         String uriString = cmd.getOptionValue("u", DEFAULT_URI);
 
+        if (cmd.hasOption("b")) {
+            try {
+                sendBatchRequest(uriString, cmd.getOptionValue("b"));
+            } catch (IOException e) {
+                System.err.println(e.toString());
+            }
+            return;
+        }
+
 
         try {
             if (filePath != null) {
@@ -175,6 +196,24 @@ public class GraqlShell {
     private static String loadQuery(String filePath) throws IOException {
         List<String> lines = Files.readAllLines(Paths.get(filePath), StandardCharsets.UTF_8);
         return lines.stream().collect(Collectors.joining("\n"));
+    }
+
+    private static void sendBatchRequest(String uriString, String graqlPath) throws IOException {
+        byte[] out = ("{\"path\": \"" + escapeJavaScript(graqlPath) + "\"}").getBytes(StandardCharsets.UTF_8);
+
+        URL url = new URL("http://" + uriString + IMPORT_DATA_URI);
+        URLConnection con = url.openConnection();
+        HttpURLConnection http = (HttpURLConnection) con;
+        http.setRequestMethod("POST");
+        http.setDoOutput(true);
+        http.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+        http.setFixedLengthStreamingMode(out.length);
+
+        http.connect();
+
+        try (OutputStream os = http.getOutputStream()) {
+            os.write(out);
+        }
     }
 
     /**
