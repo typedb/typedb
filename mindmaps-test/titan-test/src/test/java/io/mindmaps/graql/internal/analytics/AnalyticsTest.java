@@ -296,6 +296,7 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
                 .putRolePlayer(relation2, entity4);
 
         graph.commit();
+        graph.close();
 
         Map<Instance, Long> correctDegrees = new HashMap<>();
 
