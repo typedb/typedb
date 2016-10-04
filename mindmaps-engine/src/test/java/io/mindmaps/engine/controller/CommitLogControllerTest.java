@@ -36,7 +36,6 @@ import io.mindmaps.util.REST;
 import io.mindmaps.util.Schema;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.UUID;
@@ -135,15 +134,28 @@ public class CommitLogControllerTest extends MindmapsEngineTestBase {
         graph.commit();
     }
 
-    @Ignore
+    @Test
     public void testDeleteController() throws InterruptedException {
         assertEquals(4, cache.getCastingJobs(KEYSPACE).size());
+        assertEquals(2, cache.getResourceJobs(KEYSPACE).size());
 
         delete(REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.GRAPH_NAME_PARAM + "=" + KEYSPACE).
                 then().statusCode(200).extract().response().andReturn();
 
-        Thread.sleep(2000);
+        waitForCache(KEYSPACE, 0);
 
         assertEquals(0, cache.getCastingJobs(KEYSPACE).size());
+        assertEquals(0, cache.getResourceJobs(KEYSPACE).size());
+    }
+
+    private void waitForCache(String keyspace, int value) throws InterruptedException {
+        boolean flag = true;
+        while(flag){
+            if(cache.getCastingJobs(keyspace).size() != value){
+                Thread.sleep(1000);
+            } else{
+                flag = false;
+            }
+        }
     }
 }
