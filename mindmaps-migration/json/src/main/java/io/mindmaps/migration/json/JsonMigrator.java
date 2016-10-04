@@ -39,9 +39,8 @@ import static java.util.stream.Collectors.toList;
  */
 public class JsonMigrator {
 
+    public static final int BATCH_SIZE = 5;
     private static Logger LOG = LoggerFactory.getLogger(JsonMigrator.class);
-
-    private static final int BATCH_SIZE = 5;
 
     private final Loader loader;
     private int batchSize = BATCH_SIZE;
