@@ -57,6 +57,7 @@ public class TransactionControllerTest {
         graph.putEntityType("Man");
         graph.commit();
         Util.setRestAssuredBaseURI(ConfigProperties.getInstance().getProperties());
+        Thread.sleep(1000);
     }
 
     @Test
