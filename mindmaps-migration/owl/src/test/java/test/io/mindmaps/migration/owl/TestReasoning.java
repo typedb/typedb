@@ -44,7 +44,7 @@ public class TestReasoning extends TestOwlMindMapsBase {
         }
     }
 
-    public void testHasAncestor(String instanceId) {
+    private QueryAnswers inferHasAncestorHermit(String instanceId) {
         Reasoner reasoner = new Reasoner(new Configuration(), family);
         IRI person = baseIri.resolve("#Person");
         IRI instance = baseIri.resolve("#" + instanceId);
@@ -66,7 +66,10 @@ public class TestReasoning extends TestOwlMindMapsBase {
         });
 
         System.out.println("Hermit answers: " + OWLanswers.size() + " in " + owlTime + " ms");
+        return new QueryAnswers(OWLanswers);
+    }
 
+    private QueryAnswers inferHasAncestorMM(String instanceId) {
         QueryBuilder qb = Graql.withGraph(migrator.graph());
         io.mindmaps.graql.Reasoner mmReasoner = new io.mindmaps.graql.Reasoner(migrator.graph());
 
@@ -76,16 +79,17 @@ public class TestReasoning extends TestOwlMindMapsBase {
         MatchQuery query = qb.parseMatch(queryString);
         QueryAnswers mmAnswers = mmReasoner.resolve(query);
         long mmTime = System.currentTimeMillis() - mmStartTime;
-
         System.out.println("MMReasoner answers: " + mmAnswers.size() + " in " + mmTime + " ms");
-        assertEquals(mmAnswers, OWLanswers);
+        return mmAnswers;
     }
 
 	@Test
 	public void testFullInference() {
-        testHasAncestor("eleanor_pringle_1741");
-        testHasAncestor("elizabeth_clamper_1760");
-        testHasAncestor("ann_lodge_1763");
+        String eleanorId = "eleanor_pringle_1741";
+        String elisabethId = "elizabeth_clamper_1760";
+        String annId = "ann_lodge_1763";
+        assertEquals(inferHasAncestorHermit(eleanorId), inferHasAncestorMM(eleanorId));
+        assertEquals(inferHasAncestorHermit(elisabethId), inferHasAncestorMM(elisabethId));
+        assertEquals(inferHasAncestorHermit(annId), inferHasAncestorMM(annId));
     }
-
 }
