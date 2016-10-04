@@ -199,7 +199,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
         try {
             return type.cast(this);
         } catch(ClassCastException e){
-            throw new InvalidConceptTypeException(this, type);
+            throw new InvalidConceptTypeException(ErrorMessage.INVALID_OBJECT_TYPE.getMessage(this, type));
         }
     }
 
@@ -423,36 +423,19 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @param type The type of this concept
      * @return The concept itself casted to the correct interface
      */
-    public T type(Type type) {
-        deleteEdges(Direction.OUT, Schema.EdgeLabel.ISA);
-        putEdge(type, Schema.EdgeLabel.ISA);
-        setType(String.valueOf(type.getId()));
+    public T type(V type) {
+        if(type != null){
+            TypeImpl currentIsa = getParentIsa();
+            if(currentIsa == null){
+                setType(String.valueOf(type.getId()));
+                putEdge(type, Schema.EdgeLabel.ISA);
+            } else if(!currentIsa.equals(type)){
+                throw new InvalidConceptTypeException(ErrorMessage.IMMUTABLE_TYPE.getMessage(this, type, currentIsa));
+            }
 
-        //Put any castings back into tracking to make sure the type is still valid
-        getIncomingNeighbours(Schema.EdgeLabel.ROLE_PLAYER).forEach(casting -> mindmapsGraph.getConceptLog().putConcept(casting));
+        }
 
         return getThis();
-    }
-
-
-    /**
-     *
-     * @return All of this concept's types going upwards. I.e. the result of calling {@link ConceptImpl#type()}
-     */
-    public Set<Type> getConceptTypeHierarchy() {
-        HashSet<Type> types = new HashSet<>();
-        Concept currentConcept = this;
-        boolean hasMoreParents = true;
-        while(hasMoreParents){
-            Type type = currentConcept.type();
-            if(type == null || types.contains(type)){
-                hasMoreParents = false;
-            } else {
-                types.add(type);
-                currentConcept = type;
-            }
-        }
-        return types;
     }
 
     /**

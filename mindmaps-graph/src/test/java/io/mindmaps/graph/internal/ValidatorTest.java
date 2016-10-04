@@ -25,6 +25,7 @@ import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.Relation;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
+import io.mindmaps.exception.InvalidConceptTypeException;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.util.ErrorMessage;
 import org.junit.After;
@@ -290,13 +291,12 @@ public class ValidatorTest {
         mindmapsGraph.addRelation(rel).putRolePlayer(role1, ent1).putRolePlayer(role2, ent2);
         mindmapsGraph.commit();
 
-        expectedException.expect(MindmapsValidationException.class);
+        expectedException.expect(InvalidConceptTypeException.class);
         expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.VALIDATION.getMessage(1))
+                containsString(ErrorMessage.IMMUTABLE_TYPE.getMessage(ent1, ent_t, ent))
         ));
 
         mindmapsGraph.putEntity("ent1", ent_t);
-        mindmapsGraph.commit();
     }
 
     @Test

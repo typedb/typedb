@@ -108,7 +108,6 @@ public class ValidateGlobalRulesTest {
 
         werewolf.type(wolf);
         wolf.type(creature);
-        creature.type(wolf);
 
         flags = new boolean[]{false, false};
         count = 0;
@@ -255,9 +254,5 @@ public class ValidateGlobalRulesTest {
         x2.superType(x1);
 
         assertTrue(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x1));
-
-        x3.type(x1);
-
-        assertFalse(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges(x1));
     }
 }

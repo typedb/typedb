@@ -424,10 +424,6 @@ public class MindmapsGraphHighLevelTest {
         InstanceImpl crime = (InstanceImpl) graph.putEntity("Crime", genre);
         RelationTypeImpl movieHasGenre = (RelationTypeImpl) graph.putRelationType("Movie Has Genre");
 
-        pacino.type(type);
-        godfather.type(type);
-        crime.type(type);
-
         graph.addRelation(cast).putRolePlayer(feature, godfather).putRolePlayer(actor, pacino);
         graph.addRelation(movieHasGenre).putRolePlayer(movieOfGenre, godfather).putRolePlayer(movieGenre, crime);
 
