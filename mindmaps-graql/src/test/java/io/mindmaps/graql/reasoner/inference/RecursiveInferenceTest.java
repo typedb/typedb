@@ -74,7 +74,7 @@ public class RecursiveInferenceTest {
         String explicitQuery = "match $Y isa Person;" +
                 "{$Y id 'aaa';} or {$Y id 'aab';} or {$Y id 'aaaa';};";
 
-        //assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
     }
 
