@@ -121,7 +121,6 @@ public class JsonMigrator {
     private String template(String template, Collection<Map<String, Object>> data){
         Map<String, Object> forData = Collections.singletonMap("data", data);
         template = "for{data} do { " + template + "}";
-
         return  "insert " + Graql.parseTemplate(template, forData);
     }
 

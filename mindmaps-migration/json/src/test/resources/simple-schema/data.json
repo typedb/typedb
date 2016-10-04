@@ -2,10 +2,9 @@
   "address": {
     "streetAddress": {
       "number": 21,
-      "street":"collins"
+      "street":"2nd Street"
     },
-    "streetAddress":"21 2nd Street",
-    "city": "New York"
+    "city":"New York"
   },
   "phoneNumber": [
     {

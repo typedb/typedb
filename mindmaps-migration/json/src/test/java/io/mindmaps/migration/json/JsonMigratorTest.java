@@ -20,7 +20,6 @@ package io.mindmaps.migration.json;
 
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
-import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.*;
 import io.mindmaps.engine.MindmapsEngineServer;
@@ -30,20 +29,19 @@ import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.internal.util.GraqlType;
-import mjson.Json;
 import org.junit.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
-import static junit.framework.Assert.assertNotNull;
 import static junit.framework.TestCase.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class JsonMigratorTest {
@@ -79,39 +77,65 @@ public class JsonMigratorTest {
     public void shutdown(){
         graph.clear();
     }
-//
-//    @Test
-//    public void testMigrateSimpleSchemaData() {
-//        migrateSchema("simple-schema");
-//        Json data = readData("simple-schema");
-//        Instance root = migrator.migrateData("simple-schema", data);
-//
-//        Type rootType = graph.getType("simple-schema");
-//        Collection<? extends Concept> instances = rootType.instances();
-//        assertEquals(1, instances.size());
-//
-//        assertEquals(root, instances.iterator().next());
-//
-//        Instance address = getProperty(root, "address");
-//
-//        Resource streetAddress = getResource(address, "streetAddress").asResource();
-//        assertEquals("21 2nd Street", streetAddress.getValue());
-//
-//        Resource city = getResource(address, "city").asResource();
-//        assertEquals("New York", city.getValue());
-//
-//        Instance phoneNumberArray = getProperty(root, "phoneNumber");
-//
-//        Collection<Instance> phoneNumbers = getProperties(phoneNumberArray, "phoneNumber-item").collect(toSet());
-//
-//        boolean phoneNumbersCorrect = phoneNumbers.stream().allMatch(phoneNumber -> {
-//            Object location = getResource(phoneNumber, "location").getValue();
-//            Object code = getResource(phoneNumber, "code").getValue();
-//            return ((location.equals("home") && code.equals(44L)) || (location.equals("work") && code.equals(45L)));
-//        });
-//
-//        assertTrue(phoneNumbersCorrect);
-//    }
+
+    @Test
+    public void testMigrateSimpleSchemaData() {
+        load(get("simple-schema/schema.gql"));
+
+        String template = "  \n" +
+                "$person isa person;\n" +
+                " \n" +
+                "$address isa address\n" +
+                "  has city <address.city>;\n" +
+                "\n" +
+                "$street isa street-address\n" +
+                "   has street <address.streetAddress.street>\n" +
+                "   has number <address.streetAddress.number>;\n" +
+                "\n" +
+                "(address-with-street: $address, street-of-address: $street) isa address-has-street;\n" +
+                "\n" +
+                "(person-with-address: $person, address-of-person: $address) isa has-address;\n" +
+                "\n" +
+                "for { phoneNumber } do {\n" +
+                "  $phone isa phone-number\n" +
+                "    has location <location>\n" +
+                "    has code <code>;\n" +
+                "  \n" +
+                "  (person-with-phone: $person, phone-of-person: $phone) isa has-phone;\n" +
+                "  \n" +
+                "} ";
+
+        migrate(template, get("simple-schema/data.json"));
+
+        EntityType personType = graph.getEntityType("person");
+        assertEquals(1, personType.instances().size());
+
+        Entity person = personType.instances().iterator().next();
+
+        Entity address = getProperty(person, "has-address").asEntity();
+
+        Entity streetAddress = getProperty(address, "address-has-street").asEntity();
+
+        Resource number = getResource(streetAddress, "number").asResource();
+        assertEquals(21L, number.getValue());
+
+        Resource street = getResource(streetAddress, "street").asResource();
+        assertEquals("2nd Street", street.getValue());
+
+        Resource city = getResource(address, "city").asResource();
+        assertEquals("New York", city.getValue());
+
+        Collection<Instance> phoneNumbers = getProperties(person, "has-phone");
+        assertEquals(2, phoneNumbers.size());
+
+        boolean phoneNumbersCorrect = phoneNumbers.stream().allMatch(phoneNumber -> {
+            Object location = getResource(phoneNumber, "location").getValue();
+            Object code = getResource(phoneNumber, "code").getValue();
+            return ((location.equals("home") && code.equals(44L)) || (location.equals("work") && code.equals(45L)));
+        });
+
+        assertTrue(phoneNumbersCorrect);
+    }
 
     @Test
     public void testMigrateAllTypesData() {
@@ -152,61 +176,60 @@ public class JsonMigratorTest {
 
     @Test
     public void testMigrateDirectory(){
+        load(get("string-or-object/schema.gql"));
 
+        String template = "\n" +
+                "$thing isa the-thing\n" +
+                "        has a-string if {the-thing.a-string} do {<the-thing.a-string>}\n" +
+                "        else {<the-thing>} ;";
+
+        migrate(template, get("string-or-object/data"));
+
+        EntityType theThing = graph.getEntityType("the-thing");
+        assertEquals(2, theThing.instances().size());
+
+        Collection<Entity> things = theThing.instances();
+        boolean thingsCorrect = things.stream().allMatch(thing -> {
+            Object string = getResource(thing, "a-string").getValue();
+            return string.equals("hello") || string.equals("goodbye");
+        });
+
+        assertTrue(thingsCorrect);
     }
 
-//
-//    @Test
-//    public void testMigrateStringOrObjectData1() {
-//        migrateSchema("string-or-object");
-//        Json data = readData("string-or-object", "1");
-//        migrator.migrateData("string-or-object", data);
-//
-//        Type rootType = graph.getType("string-or-object");
-//        Collection<? extends Concept> instances = rootType.instances();
-//        assertEquals(1, instances.size());
-//
-//        Instance root = instances.iterator().next().asInstance();
-//
-//        Type thingStringType = graph.getResourceType("the-thing-string");
-//        Resource thingString = getResource(root, "the-thing");
-//        assertEquals(thingStringType, thingString.type());
-//        assertEquals("hello", thingString.getValue());
-//    }
-//
-//    @Test
-//    public void testMigrateStringOrObjectData2() {
-//        migrateSchema("string-or-object");
-//        Json data = readData("string-or-object", "2");
-//        migrator.migrateData("string-or-object", data);
-//
-//        Type rootType = graph.getType("string-or-object");
-//        Collection<? extends Concept> instances = rootType.instances();
-//        assertEquals(1, instances.size());
-//
-//        Instance root = instances.iterator().next().asInstance();
-//
-//        Type thingObjType = graph.getResourceType("the-thing-object");
-//        Instance thingObj = getResource(root, "the-thing");
-//        assertEquals(thingObjType, thingObj.type());
-//
-//        Type aNumberType = graph.getResourceType("a-number");
-//        Resource aNumber = getResource(thingObj, "a-number");
-//        assertEquals(aNumberType, aNumber.type());
-//        assertEquals(4.0, aNumber.getValue());
-//    }
+    @Test
+    public void testStringOrObject(){
+        load(get("string-or-object/schema.gql"));
+
+        String template = "\n" +
+                "$thing isa the-thing\n" +
+                "        has a-string if {the-thing.a-string} do {<the-thing.a-string>}\n" +
+                "        else {<the-thing>} ;";
+
+        migrate(template, get("string-or-object/data"));
+
+        EntityType theThing = graph.getEntityType("the-thing");
+        assertEquals(2, theThing.instances().size());
+
+
+    }
 
     private Instance getProperty(Instance instance, String name) {
-        assertEquals(1, getProperties(instance, name).count());
-        return getProperties(instance, name).findAny().get();
+        assertEquals(1, getProperties(instance, name).size());
+        return getProperties(instance, name).iterator().next();
     }
 
-    private Stream<Instance> getProperties(Instance instance, String name) {
-        RoleType roleOwner = graph.getRoleType(name + "-owner");
-        RoleType roleOther = graph.getRoleType(name + "-role");
+    private Collection<Instance> getProperties(Instance instance, String name) {
+        RelationType relation = graph.getRelationType(name);
 
-        Collection<Relation> relations = instance.relations(roleOwner);
-        return relations.stream().map(r -> r.rolePlayers().get(roleOther));
+        Set<Instance> instances = new HashSet<>();
+
+        relation.instances().stream()
+                .filter(i -> i.rolePlayers().values().contains(instance))
+                .forEach(i -> instances.addAll(i.rolePlayers().values()));
+
+        instances.remove(instance);
+        return instances;
     }
 
     private Resource getResource(Instance instance, String name) {

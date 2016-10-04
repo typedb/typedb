@@ -127,7 +127,6 @@ public class CSVMigratorTest {
 
         // test
         Collection<Entity> makes = graph.getEntityType("make").instances();
-        System.out.println(makes);
         assertEquals(3, makes.size());
 
         Collection<Entity> models = graph.getEntityType("model").instances();
@@ -137,7 +136,6 @@ public class CSVMigratorTest {
         ResourceType description = graph.getResourceType("description");
 
         Entity venture = graph.getEntity("Venture");
-        System.out.println(venture.resources(description));
         assertEquals(1, venture.resources(description).size());
 
         Entity ventureLarge = graph.getEntity("Venture Large");
