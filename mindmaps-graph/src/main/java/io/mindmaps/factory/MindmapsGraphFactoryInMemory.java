@@ -31,8 +31,8 @@ import io.mindmaps.util.ErrorMessage;
 public class MindmapsGraphFactoryInMemory implements MindmapsGraphFactory {
     private final MindmapsTinkerInternalFactory factory;
 
-    public MindmapsGraphFactoryInMemory(String keyspace, String engine){
-        factory = new MindmapsTinkerInternalFactory(keyspace, engine, null);
+    public MindmapsGraphFactoryInMemory(String keyspace, String ignored){
+        factory = new MindmapsTinkerInternalFactory(keyspace, null, null);
     }
 
     @Override
