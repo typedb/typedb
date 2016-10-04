@@ -19,6 +19,7 @@
 package io.mindmaps.graql.internal.query;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.exception.ConceptException;
@@ -31,9 +32,6 @@ import io.mindmaps.graql.internal.pattern.property.VarPropertyInternal;
 import io.mindmaps.util.ErrorMessage;
 
 import java.util.Collection;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -48,10 +46,7 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
      * @param matchQuery a pattern to match and delete for each result
      */
     DeleteQueryImpl(Collection<VarAdmin> deleters, MatchQuery matchQuery) {
-        Map<String, VarAdmin> deletersMap =
-                deleters.stream().collect(Collectors.toMap(VarAdmin::getName, Function.identity()));
-        this.deleters = ImmutableMap.copyOf(deletersMap);
-
+        this.deleters = Maps.uniqueIndex(deleters, VarAdmin::getName);
         this.matchQuery = matchQuery.admin();
     }
 

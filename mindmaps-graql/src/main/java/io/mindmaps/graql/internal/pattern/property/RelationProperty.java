@@ -46,10 +46,10 @@ import static java.util.stream.Collectors.toSet;
 
 public class RelationProperty extends AbstractVarProperty implements UniqueVarProperty, VarPropertyInternal {
 
-    private final Set<VarAdmin.Casting> castings;
+    private final ImmutableSet<VarAdmin.Casting> castings;
 
-    public RelationProperty(Set<VarAdmin.Casting> castings) {
-        this.castings = ImmutableSet.copyOf(castings);
+    public RelationProperty(ImmutableSet<VarAdmin.Casting> castings) {
+        this.castings = castings;
     }
 
     public Stream<VarAdmin.Casting> getCastings() {

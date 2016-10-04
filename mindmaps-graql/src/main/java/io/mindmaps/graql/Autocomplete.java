@@ -19,7 +19,6 @@
 package io.mindmaps.graql;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.internal.parser.GraqlLexer;
@@ -33,8 +32,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static io.mindmaps.graql.internal.util.CommonUtil.toImmutableSet;
 
 /**
  * An autocomplete result suggesting keywords, types and variables that the user may wish to type
@@ -75,7 +75,7 @@ public class Autocomplete {
      */
     private Autocomplete(MindmapsGraph graph, String query, int cursorPosition) {
         Optional<? extends Token> optToken = getCursorToken(query, cursorPosition);
-        candidates = ImmutableSet.copyOf(findCandidates(graph, query, optToken));
+        candidates = findCandidates(graph, query, optToken);
         this.cursorPosition = findCursorPosition(cursorPosition, optToken);
     }
 
@@ -85,18 +85,18 @@ public class Autocomplete {
      * @param optToken the token the cursor is on in the query
      * @return a set of potential autocomplete words
      */
-    private static Set<String> findCandidates(MindmapsGraph graph, String query, Optional<? extends Token> optToken) {
-        Set<String> allCandidates = Stream.of(getKeywords(), getTypes(graph), getVariables(query))
-                .flatMap(Function.identity()).collect(Collectors.toSet());
+    private static ImmutableSet<String> findCandidates(MindmapsGraph graph, String query, Optional<? extends Token> optToken) {
+        ImmutableSet<String> allCandidates = Stream.of(getKeywords(), getTypes(graph), getVariables(query))
+                .flatMap(Function.identity()).collect(toImmutableSet());
 
         return optToken.map(
                 token -> {
-                    Set<String> candidates = allCandidates.stream()
+                    ImmutableSet<String> candidates = allCandidates.stream()
                             .filter(candidate -> candidate.startsWith(token.getText()))
-                            .collect(Collectors.toSet());
+                            .collect(toImmutableSet());
 
                     if (candidates.size() == 1 && candidates.iterator().next().equals(token.getText())) {
-                        return Sets.newHashSet(" ");
+                        return ImmutableSet.of(" ");
                     } else {
                         return candidates;
                     }

@@ -18,6 +18,7 @@
 
 package io.mindmaps.graql.internal.pattern;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.graql.ValuePredicate;
@@ -35,6 +36,7 @@ import java.util.stream.Stream;
 
 import static io.mindmaps.graql.Graql.eq;
 import static io.mindmaps.graql.Graql.var;
+import static io.mindmaps.graql.internal.util.CommonUtil.toImmutableSet;
 import static io.mindmaps.util.ErrorMessage.CONFLICTING_PROPERTIES;
 import static io.mindmaps.util.ErrorMessage.SET_GENERATED_VARIABLE_NAME;
 import static java.util.stream.Collectors.groupingBy;
@@ -429,12 +431,12 @@ class VarImpl implements VarInternal {
     private Var addCasting(VarAdmin.Casting casting) {
         Optional<RelationProperty> relationProperty = getProperty(RelationProperty.class);
 
-        Set<VarAdmin.Casting> castings = relationProperty
+        Stream<VarAdmin.Casting> oldCastings = relationProperty
                 .map(RelationProperty::getCastings)
-                .orElse(Stream.empty())
-                .collect(toSet());
+                .orElse(Stream.empty());
 
-        castings.add(casting);
+        ImmutableSet<VarAdmin.Casting> castings =
+                Stream.concat(oldCastings, Stream.of(casting)).collect(toImmutableSet());
 
         relationProperty.ifPresent(properties::remove);
 

@@ -18,6 +18,7 @@
 
 package io.mindmaps.graql.internal.query.match;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
@@ -85,7 +86,7 @@ public class MatchQueryBase implements MatchQueryInternal {
     }
 
     @Override
-    public Set<String> getSelectedNames() {
+    public ImmutableSet<String> getSelectedNames() {
         // Default selected names are all user defined variable names shared between disjunctions.
         // For example, in a query of the form
         // {..$x..$y..} or {..$x..}
@@ -99,9 +100,11 @@ public class MatchQueryBase implements MatchQueryInternal {
 
         // Get the intersection of all conjunctions to find any variables shared between them
         // This will fail if there are no conjunctions (so the query is empty)
-        return vars.reduce(Sets::intersection).orElseThrow(
+        Set<String> names = vars.reduce(Sets::intersection).orElseThrow(
                 () -> new RuntimeException(ErrorMessage.MATCH_NO_PATTERNS.getMessage())
         );
+        
+        return ImmutableSet.copyOf(names);
     }
 
     @Override

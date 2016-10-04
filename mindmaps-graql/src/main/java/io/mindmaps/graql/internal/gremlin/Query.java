@@ -20,11 +20,11 @@ package io.mindmaps.graql.internal.gremlin;
 
 import com.google.common.collect.ImmutableSet;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.internal.query.match.MatchOrder;
+import io.mindmaps.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -32,7 +32,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -60,7 +59,7 @@ public class Query {
      * @param names the variable names to select
      * @param order an optional ordering
      */
-    public Query(MindmapsGraph graph, PatternAdmin pattern, Set<String> names, Optional<MatchOrder> order) {
+    public Query(MindmapsGraph graph, PatternAdmin pattern, ImmutableSet<String> names, Optional<MatchOrder> order) {
         Collection<Conjunction<VarAdmin>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
         if (graph == null) {
@@ -68,7 +67,7 @@ public class Query {
         }
 
         this.graph = graph;
-        this.names = ImmutableSet.copyOf(names);
+        this.names = names;
         this.order = order;
 
         innerQueries = patterns.stream().map(p -> new ConjunctionQuery(graph, p)).collect(toList());
