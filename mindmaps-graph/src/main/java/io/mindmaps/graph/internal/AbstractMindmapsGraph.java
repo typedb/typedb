@@ -648,9 +648,9 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         if(resources.size() > 0)
             modifiedConcepts.put(Schema.BaseType.RESOURCE, resources);
 
-        LOG.info("Graph is valid. Committing graph . . . ");
+        LOG.debug("Graph is valid. Committing graph . . . ");
         commitTx();
-        LOG.info("Graph committed.");
+        LOG.debug("Graph committed.");
         getConceptLog().clearTransaction();
 
         if(modifiedConcepts.size() > 0)
@@ -695,7 +695,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         postObject.put("concepts", jsonArray);
 
         String result = EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.POST_METHOD, postObject.toString());
-        LOG.info("Response from engine [" + result + "]");
+        LOG.debug("Response from engine [" + result + "]");
     }
     protected String getCommitLogEndPoint(){
         if(engine == null)

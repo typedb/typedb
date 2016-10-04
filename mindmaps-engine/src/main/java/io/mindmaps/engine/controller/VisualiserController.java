@@ -119,7 +119,7 @@ public class VisualiserController {
                 LOG.trace("Building HAL resource for concept with id {}", concept.getId());
                 return new HALConcept(concept).render();
             }catch(Exception e){
-                LOG.error("Exception while building HAL representation.",e);
+                LOG.error("Exception while building HAL representation - by ID",e);
                 res.status(500);
                 return e.getMessage();
             }
@@ -161,7 +161,7 @@ public class VisualiserController {
             LOG.debug("Done building resources.");
             return halArray.toString();
         } catch (Exception e) {
-            LOG.error("New Exception", e);
+            LOG.error("Exception while building HAL representation - Match", e);
             res.status(500);
             return e.getMessage();
         }
