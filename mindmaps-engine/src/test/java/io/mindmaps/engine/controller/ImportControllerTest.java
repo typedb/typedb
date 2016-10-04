@@ -19,9 +19,9 @@
 package io.mindmaps.engine.controller;
 
 import com.jayway.restassured.response.Response;
+import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.engine.MindmapsEngineServer;
 import io.mindmaps.engine.Util;
-import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.util.REST;
 import mjson.Json;

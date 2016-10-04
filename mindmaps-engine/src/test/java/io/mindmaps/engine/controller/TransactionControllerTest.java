@@ -21,7 +21,6 @@ package io.mindmaps.engine.controller;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.engine.Util;
 import io.mindmaps.engine.loader.TransactionState;
-import io.mindmaps.engine.postprocessing.BackgroundTasks;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.util.REST;
@@ -76,8 +75,6 @@ public class TransactionControllerTest {
                 e.printStackTrace();
             }
         }
-        //check that post processing starts periodically, in this case at least once.
-        while(!BackgroundTasks.getInstance().isPostProcessingRunning())
 
         assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getConcept("actor-123"));
     }

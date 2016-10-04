@@ -616,6 +616,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     @Override
     public void clear() {
         getTinkerPopGraph().traversal().V().drop().iterate();
+        EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.DELETE_METHOD);
     }
 
     /**

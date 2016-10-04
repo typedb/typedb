@@ -22,10 +22,8 @@ import com.jayway.restassured.response.Response;
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.engine.Util;
-import io.mindmaps.engine.controller.GraphFactoryController;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
-import io.mindmaps.graph.internal.MindmapsComputerImpl;
 import io.mindmaps.util.REST.GraphConfig;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -34,8 +32,6 @@ import spark.Spark;
 import static com.jayway.restassured.RestAssured.get;
 import static io.mindmaps.util.REST.Request.GRAPH_CONFIG_PARAM;
 import static io.mindmaps.util.REST.WebPath.GRAPH_FACTORY_URI;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -94,8 +90,6 @@ public class GraphFactoryControllerTest {
         assertNotEquals(graph, graph2);
         assertEquals(graph, graphCopy);
         graph.close();
-
-        assertThat(Mindmaps.factory(Mindmaps.DEFAULT_URI, "Keyspace").getGraphComputer(), instanceOf(MindmapsComputerImpl.class));
 
         AbstractMindmapsGraph batch = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.DEFAULT_URI, "mindmapstest").getGraphBatchLoading();
         assertTrue(batch.isBatchLoadingEnabled());

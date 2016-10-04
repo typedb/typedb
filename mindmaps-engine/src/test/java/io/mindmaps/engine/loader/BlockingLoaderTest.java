@@ -19,8 +19,8 @@
 package io.mindmaps.engine.loader;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.engine.controller.CommitLogController;
 import io.mindmaps.engine.util.ConfigProperties;
+import io.mindmaps.engine.controller.CommitLogController;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import org.junit.After;
