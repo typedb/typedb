@@ -217,6 +217,9 @@ public class AnalyticsTest {
         correctDegrees.put(graph.getRelation(id2), 2l);
         correctDegrees.put(graph.getRelation(id3), 2l);
 
+        graph.commit();
+        graph.close();
+
         // compute degrees
         Analytics computer = new Analytics(keyspace);
         Map<Instance, Long> degrees = computer.degrees();
