@@ -99,6 +99,8 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
             scope.assign(object);
 
             returnValue = concat(returnValue, this.visit(ctx.block()));
+
+            scope.unassign(object);
         }
 
         return returnValue;

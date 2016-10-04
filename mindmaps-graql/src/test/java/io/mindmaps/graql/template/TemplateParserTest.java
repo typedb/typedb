@@ -20,6 +20,7 @@ package io.mindmaps.graql.template;
 
 import io.mindmaps.graql.internal.template.TemplateParser;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.*;
@@ -319,6 +320,12 @@ public class TemplateParserTest {
         data.put("type_id", 124);
 
         assertParseEquals(template, data, expected);
+    }
+
+    @Test
+    @Ignore
+    public void testUnassign(){
+
     }
 
     private void assertParseEquals(String template, Map<String, Object> data, String expected){

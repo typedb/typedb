@@ -18,7 +18,7 @@
 
 package io.mindmaps.migration.csv;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.Iterators;
 import com.opencsv.CSVReader;
 import io.mindmaps.engine.loader.Loader;
 import io.mindmaps.graql.Graql;
@@ -28,9 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -116,24 +114,23 @@ public class CSVMigrator {
         }
     }
 
+    /**
+     * Conevrt native data format (CSVReader) to stream of templates
+     * @param template
+     * @param reader
+     * @return
+     * @throws IOException
+     */
     private Stream<String> resolve(String template, CSVReader reader) throws IOException {
         String[] header = reader.readNext();
 
-        // bad because all data held in memory
-        List<List<Map<String, Object>>> partitioned = Lists.partition(
-                StreamSupport.stream(reader.spliterator(), false)
-                    .map(line -> parse(header, line))
-                    .collect(toList()), batchSize);
-
-        return  partitioned.stream()
-                    .map(data -> resolve(template, data));
+        return partitionedStream(reader.iterator())
+                .map(batch -> batchParse(header, batch))
+                .map(data -> resolve(template, data));
     }
 
-    private String resolve(String template, List<Map<String, Object>> data){
-        Map<String, Object> forData = Collections.singletonMap("data", data);
-        template = "for{data} do { " + template + "}";
-
-        return "insert " + Graql.parseTemplate(template, forData);
+    private Collection<Map<String, Object>> batchParse(String[] header, Collection<String[]> batch){
+        return batch.stream().map(line -> parse(header, line)).collect(toList());
     }
 
     /**
@@ -157,6 +154,14 @@ public class CSVMigrator {
                 ));
     }
 
+    private String resolve(String template, Collection<Map<String, Object>> data){
+        Map<String, Object> forData = Collections.singletonMap("data", data);
+        System.out.println(forData);
+        template = "for{data} do { " + template + "}";
+        System.out.println(Graql.parseTemplate(template, forData));
+        return "insert " + Graql.parseTemplate(template, forData);
+    }
+
     /**
      * Warn the user when the batch size of the loader is greater than 1.
      * If the batch size is greater than 1, it is possible that multiple of the same variables will be committed in
@@ -166,5 +171,16 @@ public class CSVMigrator {
         if(loader.getBatchSize() > 1){
             LOG.warn("Loading with batch size [" + loader.getBatchSize() + "]. This can cause conflicts on commit.");
         }
+    }
+
+    /**
+     * Partition a stream into a stream of collections, each with batchSize elements.
+     * @param iterator Iterator to partition
+     * @param <T> Type of values of iterator
+     * @return Stream over a collection that are each of batchSize
+     */
+    private <T> Stream<Collection<T>> partitionedStream(Iterator<T> iterator){
+        return StreamSupport.stream( Spliterators.spliteratorUnknownSize(
+                Iterators.partition(iterator, batchSize), Spliterator.ORDERED), false);
     }
 }

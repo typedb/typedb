@@ -54,6 +54,15 @@ public class Scope {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    public void unassign(Object value) {
+        if (value instanceof Map) {
+            unassign("", value);
+        } else {
+            unassign(".", value);
+        }
+    }
+
     public Value resolve(String var) {
         Value value = values.get(var);
 
@@ -103,6 +112,24 @@ public class Scope {
         }
         else {
             values.put(prefix, new Value(value));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void unassign(String prefix, Object value){
+        if(value instanceof Map){
+            Map<String, Object> map = (Map) value;
+
+            if(!prefix.isEmpty()){
+                prefix = prefix + ".";
+            }
+
+            for(String key: map.keySet()) {
+                unassign(prefix  + key, map.get(key));
+            }
+        }
+        else {
+            values.remove(prefix);
         }
     }
 }
