@@ -310,12 +310,11 @@ public class AnalyticsTest {
                 .putRolePlayer(relation2, entity4);
 
         graph.commit();
-        graph.close();
 
         Map<Instance, Long> correctDegrees = new HashMap<>();
 
         // compute degrees on subgraph
-        Analytics computer = new Analytics(keyspace, Sets.newHashSet(thing, related));
+        Analytics computer = new Analytics(keyspace, Sets.newHashSet(graph.getType("thing"), graph.getType("related")));
         computer.degreesAndPersist();
 
         // fetch instances
