@@ -28,6 +28,8 @@ import org.javatuples.Pair;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static java.lang.Thread.sleep;
+
 public class IntegrationUtils {
 
     private static AtomicBoolean EMBEDDED_CASS_ON = new AtomicBoolean(false);
@@ -38,14 +40,19 @@ public class IntegrationUtils {
     }
 
     public static void startTestEngine() throws Exception {
+        MindmapsEngineServer.stop();
+        sleep(5000);
+
         if (EMBEDDED_CASS_ON.compareAndSet(false, true)) {
             hideLogs();
             EmbeddedCassandraServerHelper.startEmbeddedCassandra("cassandra-embedded.yaml");
             hideLogs();
-            System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY, ConfigProperties.EMBEDDED_CONFIG_FILE);
-            MindmapsEngineServer.start();
-            Thread.sleep(5000);
+            sleep(5000);
         }
+
+        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY, ConfigProperties.EMBEDDED_CONFIG_FILE);
+        MindmapsEngineServer.start();
+        sleep(5000);
     }
 
     public static Pair<MindmapsGraph, String> graphWithNewKeyspace() {
