@@ -164,6 +164,7 @@ public class BackgroundTasksTest {
         rawGraph.tx().commit();
     }
 
+    @Ignore
     @Test
     public void testMergeDuplicateResources() throws MindmapsValidationException, InterruptedException {
         String keyspace = "TestBatchGraph";
