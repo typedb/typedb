@@ -25,22 +25,10 @@ import io.mindmaps.graql.admin.VarProperty;
 import io.mindmaps.graql.internal.query.InsertQueryExecutor;
 import io.mindmaps.graql.internal.util.CommonUtil;
 import io.mindmaps.util.ErrorMessage;
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
 
 import java.util.stream.Stream;
 
 abstract class AbstractVarProperty implements VarPropertyInternal {
-
-    @Override
-    public final int hashCode() {
-        return HashCodeBuilder.reflectionHashCode(this);
-    }
-
-    @Override
-    public final boolean equals(Object obj) {
-        return EqualsBuilder.reflectionEquals(this, obj);
-    }
 
     @Override
     public final void checkValid(MindmapsGraph graph, VarAdmin var) throws IllegalStateException {

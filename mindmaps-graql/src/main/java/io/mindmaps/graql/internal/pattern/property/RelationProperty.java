@@ -253,4 +253,20 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         Instance roleplayer = insertQueryExecutor.getConcept(casting.getRolePlayer()).asInstance();
         relation.putRolePlayer(roleType, roleplayer);
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        RelationProperty that = (RelationProperty) o;
+
+        return castings.equals(that.castings);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return castings.hashCode();
+    }
 }

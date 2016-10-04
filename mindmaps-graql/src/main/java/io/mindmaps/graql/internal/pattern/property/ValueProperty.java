@@ -79,4 +79,20 @@ public class ValueProperty extends AbstractVarProperty implements NamedProperty,
             throw new IllegalStateException(ErrorMessage.INSERT_PREDICATE.getMessage());
         }
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ValueProperty that = (ValueProperty) o;
+
+        return predicate.equals(that.predicate);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return predicate.hashCode();
+    }
 }

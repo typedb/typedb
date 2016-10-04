@@ -57,4 +57,20 @@ public class RhsProperty extends AbstractVarProperty implements UniqueVarPropert
     public FragmentPriority getPriority() {
         return FragmentPriority.VALUE_NONSPECIFIC;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        RhsProperty that = (RhsProperty) o;
+
+        return rhs.equals(that.rhs);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return rhs.hashCode();
+    }
 }

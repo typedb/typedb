@@ -65,4 +65,20 @@ public class RegexProperty extends AbstractVarProperty implements UniqueVarPrope
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
         concept.asResourceType().setRegex(regex);
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        RegexProperty that = (RegexProperty) o;
+
+        return regex.equals(that.regex);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return regex.hashCode();
+    }
 }

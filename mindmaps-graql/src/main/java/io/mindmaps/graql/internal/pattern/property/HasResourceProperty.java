@@ -149,4 +149,23 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
             return new HashSet<>();
         }
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        HasResourceProperty that = (HasResourceProperty) o;
+
+        if (!resourceType.equals(that.resourceType)) return false;
+        return resource.equals(that.resource);
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = resourceType.hashCode();
+        result = 31 * result + resource.hashCode();
+        return result;
+    }
 }

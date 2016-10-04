@@ -85,4 +85,20 @@ public class HasRoleProperty extends AbstractVarProperty implements NamedPropert
         String roleId = role.getId().orElseThrow(() -> failDelete(this));
         concept.asRelationType().deleteHasRole(graph.getRoleType(roleId));
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        HasRoleProperty that = (HasRoleProperty) o;
+
+        return role.equals(that.role);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return role.hashCode();
+    }
 }

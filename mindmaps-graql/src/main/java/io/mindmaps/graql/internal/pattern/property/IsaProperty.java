@@ -100,4 +100,20 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
             throw new IllegalStateException(ErrorMessage.INSTANCE_OF_ROLE_TYPE.getMessage(type.getId()));
         });
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        IsaProperty that = (IsaProperty) o;
+
+        return type.equals(that.type);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return type.hashCode();
+    }
 }

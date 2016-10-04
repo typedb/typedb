@@ -47,4 +47,16 @@ public class ValueFlagProperty extends AbstractVarProperty implements UniqueVarP
     public FragmentPriority getPriority() {
         return FragmentPriority.VALUE_NONSPECIFIC;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        return !(o == null || getClass() != o.getClass());
+
+    }
+
+    @Override
+    public int hashCode() {
+        return 17;
+    }
 }

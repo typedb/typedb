@@ -49,4 +49,16 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
         concept.asType().setAbstract(true);
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        return !(o == null || getClass() != o.getClass());
+
+    }
+
+    @Override
+    public int hashCode() {
+        return 31;
+    }
 }

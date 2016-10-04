@@ -92,4 +92,20 @@ public class AkoProperty extends AbstractVarProperty implements NamedProperty, U
             throw new IllegalStateException(ErrorMessage.INSERT_METATYPE.getMessage(concept.getId(), superType.getId()));
         }
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        AkoProperty that = (AkoProperty) o;
+
+        return superType.equals(that.superType);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return superType.hashCode();
+    }
 }

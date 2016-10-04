@@ -68,4 +68,20 @@ public class DataTypeProperty extends AbstractVarProperty implements NamedProper
     public FragmentPriority getPriority() {
         return FragmentPriority.VALUE_NONSPECIFIC;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        DataTypeProperty that = (DataTypeProperty) o;
+
+        return datatype.equals(that.datatype);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return datatype.hashCode();
+    }
 }
