@@ -45,9 +45,12 @@ class CountMapReduce extends MindmapsMapReduce<Long> {
     @Override
     public void map(final Vertex vertex, final MapEmitter<Serializable, Long> emitter) {
         if (!selectedTypes.isEmpty()) {
-            if (selectedTypes.contains(getVertexType(vertex))) {
-                emitter.emit(MEMORY_KEY, 1l);
-                return;
+            // use the ghost node detector here again
+            if (isAlive(vertex)) {
+                if (selectedTypes.contains(getVertexType(vertex))) {
+                    emitter.emit(MEMORY_KEY, 1l);
+                    return;
+                }
             }
         } else if (baseTypes.contains(vertex.value(Schema.ConceptProperty.BASE_TYPE.name()).toString())) {
             emitter.emit(MEMORY_KEY, 1l);
