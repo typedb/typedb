@@ -36,6 +36,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.UUID;
@@ -64,6 +65,7 @@ public class BackgroundTasksTest extends MindmapsEngineTestBase{
         cache.getResourceJobs(keyspace).clear();
     }
 
+    @Ignore
     @Test
     public void testMergingCastings() throws Exception {
         //Create Scenario
@@ -141,6 +143,7 @@ public class BackgroundTasksTest extends MindmapsEngineTestBase{
         edge.property(Schema.EdgeProperty.ROLE_TYPE.name(), mainRoleTypeId);
     }
 
+    @Ignore
     @Test
     public void testMergeDuplicateResources() throws MindmapsValidationException, InterruptedException {
         String keyspace = "testbatchgraph";
