@@ -170,7 +170,6 @@ public class GraqlTest extends MindmapsTitanTestBase {
         });
     }
 
-    @Ignore
     @Test
     public void testDegreesAndPersist() throws Exception {
 
