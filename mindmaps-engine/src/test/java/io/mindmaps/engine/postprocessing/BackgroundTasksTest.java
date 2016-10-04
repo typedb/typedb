@@ -27,9 +27,7 @@ import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
-import io.mindmaps.engine.util.ConfigProperties;
-import io.mindmaps.engine.controller.CommitLogController;
-import io.mindmaps.engine.controller.GraphFactoryController;
+import io.mindmaps.engine.MindmapsEngineTestBase;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import io.mindmaps.util.Schema;
@@ -38,39 +36,22 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
-import spark.Spark;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 import static org.junit.Assert.assertEquals;
 
-public class BackgroundTasksTest {
+public class BackgroundTasksTest extends MindmapsEngineTestBase{
     private BackgroundTasks backgroundTasks;
     private MindmapsGraph mindmapsGraph;
     private Cache cache;
     private String keyspace;
 
-    @BeforeClass
-    public static void startController() {
-        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY, ConfigProperties.TEST_CONFIG_FILE);
-    }
-
     @Before
     public void setUp() throws Exception {
-        new GraphFactoryController();
-        new CommitLogController();
-        Thread.sleep(5000);
-
         cache = Cache.getInstance();
         keyspace = UUID.randomUUID().toString().replaceAll("-", "a");
         backgroundTasks = BackgroundTasks.getInstance();
@@ -81,11 +62,8 @@ public class BackgroundTasksTest {
     public void takeDown() throws InterruptedException {
         cache.getCastingJobs(keyspace).clear();
         cache.getResourceJobs(keyspace).clear();
-        Spark.stop();
-        Thread.sleep(5000);
     }
 
-    @Ignore
     @Test
     public void testMergingCastings() throws Exception {
         //Create Scenario
@@ -160,57 +138,52 @@ public class BackgroundTasksTest {
 
         edge = relationVertex.addEdge(Schema.EdgeLabel.CASTING.getLabel(), castingVertex);
         edge.property(Schema.EdgeProperty.ROLE_TYPE.name(), mainRoleTypeId);
-
-        rawGraph.tx().commit();
     }
 
-    @Ignore
     @Test
     public void testMergeDuplicateResources() throws MindmapsValidationException, InterruptedException {
-        String keyspace = "TestBatchGraph";
+        String keyspace = "testbatchgraph";
         String value = "1";
         String sample = "Sample";
         ExecutorService pool = Executors.newFixedThreadPool(10);
-        Set<Future> futures = new HashSet<>();
 
         //Create Graph With Duplicate Resources
         MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraphBatchLoading();
-        graph.putResourceType(sample, ResourceType.DataType.STRING);
+        ResourceType<String> resourceType = graph.putResourceType(sample, ResourceType.DataType.STRING);
+        Resource<String> resource = graph.putResource(value, resourceType);
         graph.commit();
-
-        for(int i = 0; i < 10; i ++) {
-            futures.add(pool.submit(() -> {
-                try {
-                    MindmapsGraph innerGraph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraphBatchLoading();
-                    innerGraph.putResource(value, innerGraph.getResourceType(sample));
-                    innerGraph.commit();
-                } catch (MindmapsValidationException e) {
-                    e.printStackTrace();
-                } catch (IllegalArgumentException ignored) {
-                }
-            }));
-        }
-
-        futures.forEach(f -> {
-            try {
-                f.get();
-            } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
-            }
-        });
+        assertEquals(1, resourceType.instances().size());
+        waitForCache(false, keyspace, 1);
 
         //Check duplicates have been created
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraphBatchLoading();
-        Collection<Resource<Object>> resources = graph.getResourceType(sample).instances();
+        createDuplicateResource(graph, resourceType, resource);
+        createDuplicateResource(graph, resourceType, resource);
+        createDuplicateResource(graph, resourceType, resource);
+        createDuplicateResource(graph, resourceType, resource);
+        assertEquals(5, resourceType.instances().size());
+        waitForCache(false, keyspace, 5);
 
-        if(resources.size() > 1) {
-            waitForCache(false, keyspace, 2);
-            //Now fix everything
-            backgroundTasks.forcePostprocessing();
+        //Now fix everything
+        backgroundTasks.forcePostprocessing();
 
-            //Check it's fixed
-            assertEquals(1, graph.getResourceType(sample).instances().size());
-        }
+        //Check it's fixed
+        assertEquals(1, graph.getResourceType(sample).instances().size());
+    }
+    private void createDuplicateResource(MindmapsGraph mindmapsGraph, ResourceType resourceType, Resource resource){
+        AbstractMindmapsGraph graph = (AbstractMindmapsGraph) mindmapsGraph;
+        Vertex originalResource = (Vertex) graph.getTinkerTraversal()
+                .has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), resource.getId()).next();
+        Vertex vertexResourceType = (Vertex) graph.getTinkerTraversal()
+                .has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), resourceType.getId()).next();
+
+        Vertex resourceVertex = graph.getTinkerPopGraph().addVertex();
+        resourceVertex.property(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.RESOURCE.name());
+        resourceVertex.property(Schema.ConceptProperty.INDEX.name(),originalResource.value(Schema.ConceptProperty.INDEX.name()));
+        resourceVertex.property(Schema.ConceptProperty.VALUE_STRING.name(), originalResource.value(Schema.ConceptProperty.VALUE_STRING.name()));
+
+        resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), vertexResourceType);
+
+        cache.getResourceJobs(mindmapsGraph.getKeyspace()).add(resourceVertex.id().toString());
     }
 
     private void waitForCache(boolean isCasting, String keyspace, int value) throws InterruptedException {

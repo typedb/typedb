@@ -28,19 +28,15 @@ import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
-import io.mindmaps.engine.Util;
+import io.mindmaps.engine.MindmapsEngineTestBase;
 import io.mindmaps.engine.postprocessing.Cache;
-import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import io.mindmaps.util.REST;
 import io.mindmaps.util.Schema;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
-import spark.Spark;
 
 import java.util.UUID;
 
@@ -49,20 +45,9 @@ import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class CommitLogControllerTest {
+public class CommitLogControllerTest extends MindmapsEngineTestBase {
     public final String KEYSPACE = "test";
     private Cache cache;
-
-    @BeforeClass
-    public static void setUpController() throws InterruptedException {
-        Spark.stop();
-        Thread.sleep(5000);
-        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY, ConfigProperties.TEST_CONFIG_FILE);
-        Util.setRestAssuredBaseURI(ConfigProperties.getInstance().getProperties());
-        new CommitLogController();
-        new GraphFactoryController();
-        Thread.sleep(5000);
-    }
 
     @Before
     public void setUp() throws Exception {
@@ -149,15 +134,28 @@ public class CommitLogControllerTest {
         graph.commit();
     }
 
-    @Ignore
+    @Test
     public void testDeleteController() throws InterruptedException {
         assertEquals(4, cache.getCastingJobs(KEYSPACE).size());
+        assertEquals(2, cache.getResourceJobs(KEYSPACE).size());
 
         delete(REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.GRAPH_NAME_PARAM + "=" + KEYSPACE).
                 then().statusCode(200).extract().response().andReturn();
 
-        Thread.sleep(2000);
+        waitForCache(KEYSPACE, 0);
 
         assertEquals(0, cache.getCastingJobs(KEYSPACE).size());
+        assertEquals(0, cache.getResourceJobs(KEYSPACE).size());
+    }
+
+    private void waitForCache(String keyspace, int value) throws InterruptedException {
+        boolean flag = true;
+        while(flag){
+            if(cache.getCastingJobs(keyspace).size() != value){
+                Thread.sleep(1000);
+            } else{
+                flag = false;
+            }
+        }
     }
 }

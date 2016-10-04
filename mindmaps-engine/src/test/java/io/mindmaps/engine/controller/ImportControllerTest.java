@@ -19,38 +19,24 @@
 package io.mindmaps.engine.controller;
 
 import com.jayway.restassured.response.Response;
+import io.mindmaps.engine.MindmapsEngineTestBase;
 import io.mindmaps.engine.util.ConfigProperties;
-import io.mindmaps.engine.MindmapsEngineServer;
-import io.mindmaps.engine.Util;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.util.REST;
 import mjson.Json;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import spark.Spark;
 
 import static com.jayway.restassured.RestAssured.given;
 
-public class ImportControllerTest {
+public class ImportControllerTest extends MindmapsEngineTestBase {
 
-    String graphName;
-
-    @BeforeClass
-    public static void startController() {
-        Spark.stop();
-        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY, ConfigProperties.TEST_CONFIG_FILE);
-
-    }
+    private String graphName;
 
     @Before
     public void setUp() throws Exception {
-        Spark.stop();
-        Thread.sleep(5000);
         graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
-        Util.setRestAssuredBaseURI(ConfigProperties.getInstance().getProperties());
-        MindmapsEngineServer.start();
     }
 
     @Test
@@ -80,8 +66,6 @@ public class ImportControllerTest {
 
         Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getConcept("X506965727265204162656c").getId());
         GraphFactory.getInstance().getGraphBatchLoading(graphName).clear();
-        Spark.stop();
-
     }
 
     @Test
@@ -111,7 +95,6 @@ public class ImportControllerTest {
 
         Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getConcept("X506965727265204162656c").getId());
         GraphFactory.getInstance().getGraphBatchLoading(graphName).clear();
-        Spark.stop();
     }
 
     @Test
@@ -142,8 +125,6 @@ public class ImportControllerTest {
 
         Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(customGraph).getConcept("X506965727265204162656c").getId());
         GraphFactory.getInstance().getGraphBatchLoading(customGraph).clear();
-        Spark.stop();
-
     }
 
 
