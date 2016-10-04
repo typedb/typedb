@@ -30,7 +30,11 @@ import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
-import org.junit.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;

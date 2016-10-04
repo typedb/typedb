@@ -28,7 +28,11 @@ import io.mindmaps.concept.Type;
 import io.mindmaps.engine.loader.BlockingLoader;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
-import org.junit.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.sql.Connection;
 import java.sql.SQLException;
