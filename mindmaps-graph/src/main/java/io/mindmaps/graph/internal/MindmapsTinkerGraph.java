@@ -18,6 +18,7 @@
 
 package io.mindmaps.graph.internal;
 
+import io.mindmaps.util.REST;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
 /**
@@ -27,5 +28,11 @@ import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 public class MindmapsTinkerGraph extends AbstractMindmapsGraph<TinkerGraph> {
     public MindmapsTinkerGraph(TinkerGraph tinkerGraph, String name, String engineUrl, boolean batchLoading){
         super(tinkerGraph, name, engineUrl, batchLoading);
+    }
+
+    @Override
+    public void clear(){
+        super.clear();
+        EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.DELETE_METHOD);
     }
 }
