@@ -126,9 +126,12 @@ public class CSVMigrator {
 
         return partitionedStream(reader.iterator())
                 .map(batch -> batchParse(header, batch))
-                .map(data -> resolve(template, data));
+                .map(data -> template(template, data));
     }
 
+    /**
+     * Call parse of a collection of input data
+     */
     private Collection<Map<String, Object>> batchParse(String[] header, Collection<String[]> batch){
         return batch.stream().map(line -> parse(header, line)).collect(toList());
     }
@@ -147,18 +150,16 @@ public class CSVMigrator {
 
         return IntStream.range(0, header.length)
                 .mapToObj(Integer::valueOf)
-                .filter(i -> !data[i].isEmpty())
+                .filter(i -> validValue(data[i]))
                 .collect(toMap(
                         i -> header[i],
                         i -> data[i]
                 ));
     }
 
-    private String resolve(String template, Collection<Map<String, Object>> data){
+    private String template(String template, Collection<Map<String, Object>> data){
         Map<String, Object> forData = Collections.singletonMap("data", data);
-        System.out.println(forData);
         template = "for{data} do { " + template + "}";
-        System.out.println(Graql.parseTemplate(template, forData));
         return "insert " + Graql.parseTemplate(template, forData);
     }
 
@@ -182,5 +183,14 @@ public class CSVMigrator {
     private <T> Stream<Collection<T>> partitionedStream(Iterator<T> iterator){
         return StreamSupport.stream( Spliterators.spliteratorUnknownSize(
                 Iterators.partition(iterator, batchSize), Spliterator.ORDERED), false);
+    }
+
+    /**
+     * Test if an object is a valid Mindmaps value
+     * @param value object to check
+     * @return if the value is valid
+     */
+    private boolean validValue(Object value){
+        return value != null;
     }
 }

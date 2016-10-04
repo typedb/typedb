@@ -27,10 +27,7 @@ import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.Graql;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,12 +41,8 @@ import static org.junit.Assert.assertTrue;
 
 public class CSVMigratorTest {
 
-    private String GRAPH_NAME;
-
     private MindmapsGraph graph;
-    private BlockingLoader loader;
-
-    private static CSVMigrator migrator;
+    private CSVMigrator migrator;
 
     @BeforeClass
     public static void start(){
@@ -59,12 +52,17 @@ public class CSVMigratorTest {
         MindmapsEngineServer.start();
     }
 
+    @AfterClass
+    public static void stop(){
+//        MindmapsEngineServer.stop();
+    }
+
     @Before
     public void setup(){
-        GRAPH_NAME = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+        String GRAPH_NAME = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
 
         graph = GraphFactory.getInstance().getGraphBatchLoading(GRAPH_NAME);
-        loader = new BlockingLoader(GRAPH_NAME);
+        BlockingLoader loader = new BlockingLoader(GRAPH_NAME);
         loader.setExecutorSize(1);
 
         migrator = new CSVMigrator(loader);
@@ -192,12 +190,13 @@ public class CSVMigratorTest {
                 r.rolePlayers().values().contains(entity1) && r.rolePlayers().values().contains(entity2)));
     }
 
-    private void migrate(String template, File file){
-        migrator.migrate(template, file);
-    }
-
     private File get(String fileName){
         return new File(CSVMigratorTest.class.getClassLoader().getResource(fileName).getPath());
+    }
+
+    // common class
+    private void migrate(String template, File file){
+        migrator.migrate(template, file);
     }
 
     private void load(File ontology) {

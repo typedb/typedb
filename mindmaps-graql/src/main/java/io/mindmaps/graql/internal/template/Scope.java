@@ -111,7 +111,7 @@ public class Scope {
             }
         }
         else {
-            values.put(prefix, new Value(value));
+            values.put(prefix, value == null ? Value.NULL : new Value(value));
         }
     }
 

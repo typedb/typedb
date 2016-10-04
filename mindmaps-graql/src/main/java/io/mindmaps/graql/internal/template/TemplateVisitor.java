@@ -120,7 +120,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
     @Override
     public Object visitIfStatement(GraqlTemplateParser.IfStatementContext ctx){
 
-        if(this.visit(ctx.ifPartial().expression()) != Value.NULL){
+        if(this.visitExpression(ctx.ifPartial().expression()) != Value.NULL){
             return this.visit(ctx.ifPartial().block());
         }
 
