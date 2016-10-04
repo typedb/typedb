@@ -18,19 +18,26 @@
 
 package io.mindmaps.engine.loader;
 
-import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.util.REST;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.graql.Var;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.util.REST;
 import mjson.Json;
-import org.apache.commons.io.IOUtils;
+import spark.utils.IOUtils;
 
 import javax.xml.ws.http.HTTPException;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.Semaphore;
 import java.util.stream.Collectors;
 
 import static io.mindmaps.engine.loader.TransactionState.State;

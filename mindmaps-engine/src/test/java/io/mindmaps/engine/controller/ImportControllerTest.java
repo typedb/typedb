@@ -19,9 +19,9 @@
 package io.mindmaps.engine.controller;
 
 import com.jayway.restassured.response.Response;
+import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.engine.MindmapsEngineServer;
 import io.mindmaps.engine.Util;
-import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.util.REST;
 import mjson.Json;
@@ -46,10 +46,11 @@ public class ImportControllerTest {
 
     @Before
     public void setUp() throws Exception {
+        Spark.stop();
+        Thread.sleep(5000);
         graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
         Util.setRestAssuredBaseURI(ConfigProperties.getInstance().getProperties());
         MindmapsEngineServer.start();
-
     }
 
     @Test
@@ -117,7 +118,7 @@ public class ImportControllerTest {
     public void testLoadOntologyAndDataOnCustomKeyspace() {
         String ontologyPath = getClass().getClassLoader().getResource("dblp-ontology.gql").getPath();
         String dataPath = getClass().getClassLoader().getResource("small_nametags.gql").getPath();
-        String customGraph = "import-graph";
+        String customGraph = "importgraph";
 
 
         Response ontologyResponse = given().contentType("application/json").

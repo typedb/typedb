@@ -18,6 +18,7 @@
 
 package io.mindmaps.graql.internal.analytics;
 
+import io.mindmaps.IntegrationUtils;
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Entity;
@@ -44,8 +45,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
-import static io.mindmaps.IntegrationUtils.graphWithNewKeyspace;
-import static io.mindmaps.IntegrationUtils.startTestEngine;
 import static io.mindmaps.graql.Graql.or;
 import static io.mindmaps.graql.Graql.var;
 import static io.mindmaps.graql.Graql.withGraph;
@@ -61,12 +60,12 @@ public class GraqlTest {
 
     @BeforeClass
     public static void startController() throws Exception {
-        startTestEngine();
+        IntegrationUtils.startTestEngine();
     }
 
     @Before
     public void setUp() throws InterruptedException {
-        Pair<MindmapsGraph, String> result = graphWithNewKeyspace();
+        Pair<MindmapsGraph, String> result = IntegrationUtils.graphWithNewKeyspace();
         graph = result.getValue0();
         keyspace = result.getValue1();
         qb = withGraph(graph);

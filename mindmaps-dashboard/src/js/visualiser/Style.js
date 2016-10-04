@@ -32,10 +32,10 @@ export default class Style {
         this.node = {
             colour: {
                 background: "#383838",
-                border: "#a1d884",
+                border: "#bfc681",
                 highlight: {
                     background: "#383838",
-                    border: "#a1d884"
+                    border: "#bfc681"
                 }
             },
             shape: "box"

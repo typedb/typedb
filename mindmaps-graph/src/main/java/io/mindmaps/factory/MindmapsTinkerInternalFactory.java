@@ -42,7 +42,7 @@ class MindmapsTinkerInternalFactory extends AbstractMindmapsInternalFactory<Mind
 
     @Override
     MindmapsTinkerGraph buildMindmapsGraphFromTinker(TinkerGraph graph, boolean batchLoading) {
-        return new MindmapsTinkerGraph(graph, super.keyspace, batchLoading);
+        return new MindmapsTinkerGraph(graph, super.keyspace, super.engineUrl, batchLoading);
     }
 
     @Override

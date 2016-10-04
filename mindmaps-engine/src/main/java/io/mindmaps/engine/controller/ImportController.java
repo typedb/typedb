@@ -56,7 +56,6 @@ import java.util.concurrent.Executors;
 
 import static io.mindmaps.graql.Graql.parseInsert;
 import static io.mindmaps.graql.Graql.parsePatterns;
-import static spark.Spark.ipAddress;
 import static spark.Spark.post;
 
 
