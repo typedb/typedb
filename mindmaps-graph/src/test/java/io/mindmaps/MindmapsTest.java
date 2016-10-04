@@ -34,4 +34,9 @@ public class MindmapsTest {
         graph.putEntityType("A thing");
         assertNotNull(graph.getEntityType("A thing"));
     }
+
+    @Test
+    public void testComputer(){
+        assertThat(Mindmaps.factory(Mindmaps.IN_MEMORY, "bob").getGraphComputer(), instanceOf(MindmapsComputer.class));
+    }
 }
