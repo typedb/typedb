@@ -46,6 +46,7 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * A concept which can represent anything in the graph
@@ -61,10 +62,22 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
     final AbstractMindmapsGraph mindmapsGraph;
     private Vertex vertex;
 
-    ConceptImpl(Vertex v, AbstractMindmapsGraph mindmapsGraph){
+    ConceptImpl(Vertex v, V type, AbstractMindmapsGraph mindmapsGraph){
         this.vertex = v;
         this.mindmapsGraph = mindmapsGraph;
+        type(type);
         mindmapsGraph.getConceptLog().putConcept(this);
+    }
+
+    /**
+     * Generates and saves a readable entity id
+     * @param type the type of this concept
+     */
+    protected void generateInstanceId(V type){
+        if(getId() == null){
+            String id = getBaseType() + "-" + type.getId() + "-" + UUID.randomUUID().toString();
+            setImmutableProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, id);
+        }
     }
 
     /**
@@ -423,7 +436,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @param type The type of this concept
      * @return The concept itself casted to the correct interface
      */
-    public T type(V type) {
+    private T type(V type) {
         if(type != null){
             TypeImpl currentIsa = getParentIsa();
             if(currentIsa == null){

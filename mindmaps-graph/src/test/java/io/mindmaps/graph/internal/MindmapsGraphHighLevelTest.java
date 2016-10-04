@@ -178,9 +178,6 @@ public class MindmapsGraphHighLevelTest {
 
     @Test
     public void testAddComplexRelationshipMissingRolePlayer(){
-        rolePlayer1.type(type);
-        rolePlayer2.type(type);
-
         HashSet<Object> validVertices = new HashSet<>();
         validVertices.add(role1.getBaseIdentifier());
         validVertices.add(role2.getBaseIdentifier());
@@ -257,9 +254,6 @@ public class MindmapsGraphHighLevelTest {
 
     @Test
     public void getRelationTest(){
-        rolePlayer1.type(type);
-        rolePlayer2.type(type);
-
         Map<RoleType, Instance> roleMap = new HashMap<>();
         roleMap.put(role1, rolePlayer1);
         roleMap.put(role2, rolePlayer2);
