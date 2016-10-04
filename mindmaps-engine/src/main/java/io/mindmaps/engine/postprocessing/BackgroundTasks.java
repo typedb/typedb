@@ -88,7 +88,7 @@ public class BackgroundTasks {
             LOG.info("Starting maintenance.");
             isRunning.set(true);
             statDump.submit(this::dumpStats);
-            performTasks();
+//            performTasks();
             isRunning.set(false);
             LOG.info("Maintenance completed.");
         }
