@@ -209,7 +209,6 @@ public class OwlMindmapsGraphStoringVisitor implements OWLAxiomVisitorEx<Concept
     public Concept visit(OWLEquivalentObjectPropertiesAxiom axiom) {
         Set<OWLObjectPropertyExpression> properties = axiom.getAxiomWithoutAnnotations()
                             .properties().filter(AsOWLObjectProperty::isOWLObjectProperty).collect(Collectors.toSet());
-
         if (properties.size() != axiom.getAxiomWithoutAnnotations().properties().count())
             return null;
 
@@ -220,10 +219,12 @@ public class OwlMindmapsGraphStoringVisitor implements OWLAxiomVisitorEx<Concept
                 RelationType eqRelation = migrator.relation(prop.asOWLObjectProperty());
                 if (!relation.equals(eqRelation)){
                     Map<String, String> roleMap = new HashMap<>();
-                    roleMap.put(migrator.namer().subjectRole(relation.getId()), migrator.namer().subjectRole(eqRelation.getId()));
-                    roleMap.put(migrator.namer().objectRole(relation.getId()), migrator.namer().objectRole(eqRelation.getId()));
-                    createSubPropertyRule("eq-" + relation.getId() + "-" + eqRelation.getId() + "-" + UUID.randomUUID().toString(),
-                            relation, eqRelation, roleMap, migrator.graph());
+                    roleMap.put(migrator.namer().subjectRole(relation.getId()),
+                            migrator.namer().subjectRole(eqRelation.getId()));
+                    roleMap.put(migrator.namer().objectRole(relation.getId()),
+                            migrator.namer().objectRole(eqRelation.getId()));
+                    createSubPropertyRule("eq-" + relation.getId() + "-" + eqRelation.getId()
+                                        + "-" + UUID.randomUUID().toString(), relation, eqRelation, roleMap, migrator.graph());
                 }
             });
         }
