@@ -35,4 +35,9 @@ public class MindmapsTinkerGraph extends AbstractMindmapsGraph<TinkerGraph> {
         super.clear();
         EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.DELETE_METHOD);
     }
+
+    @Override
+    public ConceptImpl getConceptByBaseIdentifier(Object baseIdentifier) {
+        return super.getConceptByBaseIdentifier(Long.valueOf(baseIdentifier.toString()));
+    }
 }

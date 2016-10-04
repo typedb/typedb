@@ -24,12 +24,11 @@ import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.Relation;
 import io.mindmaps.concept.RelationType;
-import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
-import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.engine.controller.CommitLogController;
 import io.mindmaps.engine.controller.GraphFactoryController;
+import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import io.mindmaps.util.Schema;
@@ -39,11 +38,9 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import spark.Spark;
 
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -85,7 +82,6 @@ public class BackgroundTasksTest {
         Thread.sleep(5000);
     }
 
-    @Ignore
     @Test
     public void testMergingCastings() throws Exception {
         //Create Scenario
@@ -160,11 +156,8 @@ public class BackgroundTasksTest {
 
         edge = relationVertex.addEdge(Schema.EdgeLabel.CASTING.getLabel(), castingVertex);
         edge.property(Schema.EdgeProperty.ROLE_TYPE.name(), mainRoleTypeId);
-
-        rawGraph.tx().commit();
     }
 
-    @Ignore
     @Test
     public void testMergeDuplicateResources() throws MindmapsValidationException, InterruptedException {
         String keyspace = "TestBatchGraph";
@@ -201,16 +194,13 @@ public class BackgroundTasksTest {
 
         //Check duplicates have been created
         graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraphBatchLoading();
-        Collection<Resource<Object>> resources = graph.getResourceType(sample).instances();
 
-        if(resources.size() > 1) {
-            waitForCache(false, keyspace, 2);
-            //Now fix everything
-            backgroundTasks.forcePostprocessing();
+        waitForCache(false, keyspace, 2);
+        //Now fix everything
+        backgroundTasks.forcePostprocessing();
 
-            //Check it's fixed
-            assertEquals(1, graph.getResourceType(sample).instances().size());
-        }
+        //Check it's fixed
+        assertEquals(1, graph.getResourceType(sample).instances().size());
     }
 
     private void waitForCache(boolean isCasting, String keyspace, int value) throws InterruptedException {
