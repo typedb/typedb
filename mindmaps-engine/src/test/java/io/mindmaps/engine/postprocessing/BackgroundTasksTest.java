@@ -131,6 +131,7 @@ public class BackgroundTasksTest extends MindmapsEngineTestBase{
         //Create Fake Casting
         Vertex castingVertex = rawGraph.addVertex();
         castingVertex.property(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.CASTING.name());
+        castingVertex.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), UUID.randomUUID().toString());
         castingVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), mainRoleTypeVertex);
 
         Edge edge = castingVertex.addEdge(Schema.EdgeLabel.ROLE_PLAYER.getLabel(), mainInstanceVertex);
@@ -180,6 +181,7 @@ public class BackgroundTasksTest extends MindmapsEngineTestBase{
         resourceVertex.property(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.RESOURCE.name());
         resourceVertex.property(Schema.ConceptProperty.INDEX.name(),originalResource.value(Schema.ConceptProperty.INDEX.name()));
         resourceVertex.property(Schema.ConceptProperty.VALUE_STRING.name(), originalResource.value(Schema.ConceptProperty.VALUE_STRING.name()));
+        resourceVertex.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), UUID.randomUUID().toString());
 
         resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), vertexResourceType);
 
