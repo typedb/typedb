@@ -37,6 +37,7 @@ public class GraqlSignalHandler implements SignalHandler {
                 shell.interrupt();
             } catch (Throwable e) {
                 System.err.println(e.getMessage());
+                System.exit(0);
             }
         }
     }
