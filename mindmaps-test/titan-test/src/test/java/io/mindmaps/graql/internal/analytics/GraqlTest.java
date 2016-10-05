@@ -38,11 +38,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 import static io.mindmaps.graql.Graql.or;
@@ -318,13 +314,23 @@ public class GraqlTest {
     }
 
     @Test
-    public void testAnalyticsDoesNotCommitByMistake() {
-        // insert a node but do not commit it
-        qb.parse("insert thing isa entity-type;").execute();
-        // use analytics
-        qb.parse("compute count;").execute();
-        // see if the node was commited
-        graph.rollback();
-        assertNull(graph.getEntityType("thing"));
+    public void testAnalyticsDoesNotCommitByMistake() throws MindmapsValidationException {
+        graph.putResourceType("number", ResourceType.DataType.LONG);
+        graph.commit();
+
+        Set<String> analyticsCommands = new HashSet<String>(Arrays.asList(
+                "compute count;",
+                "compute degrees;",
+                "compute mean in number;"));
+
+        analyticsCommands.forEach(command -> {
+            // insert a node but do not commit it
+            qb.parse("insert thing isa entity-type;").execute();
+            // use analytics
+            qb.parse(command).execute();
+            // see if the node was commited
+            graph.rollback();
+            assertNull(graph.getEntityType("thing"));
+        });
     }
 }

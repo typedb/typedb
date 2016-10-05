@@ -137,20 +137,33 @@ public class Analytics {
      * the <code>subtypes</code> argument. All subtypes of the given types are included when deciding whether to
      * include an instance.
      *
-     * @param subtypes                the set of types the computer will use to filter instances
-     * @param statisticsResourceTypes the set of resource types statistics will be working on
+     * @param subTypeIds                the set of type ids the computer will use to filter instances
+     * @param statisticsResourceTypeIds the set of resource type ids statistics will be working on
      */
-    public Analytics(String keySpace, Set<Type> subtypes, Set<Type> statisticsResourceTypes) {
+    public Analytics(String keySpace, Set<String> subTypeIds, Set<String> statisticsResourceTypeIds) {
         this.keySpace = keySpace;
         MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, this.keySpace).getGraph();
 
-        safeRollback(graph,subtypes, statisticsResourceTypes);
+        // make sure we don't accidentally commit anything
+        graph.rollback();
+
+        // fetch all the types
+        Set<Type> subtypes = subTypeIds.stream().map((id) -> {
+            Type type = graph.getType(id);
+            if (type == null) throw new IllegalArgumentException(ErrorMessage.ID_NOT_FOUND.getMessage(id));
+            return type;
+        }).collect(Collectors.toSet());
+        Set<Type> statisticsResourceTypes = statisticsResourceTypeIds.stream().map((id) -> {
+            Type type = graph.getType(id);
+            if (type == null) throw new IllegalArgumentException(ErrorMessage.ID_NOT_FOUND.getMessage(id));
+            return type;
+        }).collect(Collectors.toSet());
 
         // collect resource-types for statistics
         graph.getMetaResourceType().instances()
                 .forEach(type -> resourceTypes.put(type.getId(), type.asResourceType().getDataType().getName()));
 
-        if (subtypes == null || subtypes.isEmpty()) {
+        if (subtypes.isEmpty()) {
 
             // collect meta-types to exclude them as they do not have instances
             Set<Concept> excludedTypes = new HashSet<>();
@@ -184,7 +197,7 @@ public class Analytics {
             }
         }
 
-        if (statisticsResourceTypes != null && !statisticsResourceTypes.isEmpty()) {
+        if (!statisticsResourceTypes.isEmpty()) {
             for (Type t : statisticsResourceTypes) {
                 t.subTypes().forEach(subtype -> this.statisticsResourceTypes.add(subtype.getId()));
             }
@@ -192,33 +205,6 @@ public class Analytics {
 
         // add analytics ontology - hard coded for now
         mutateResourceOntology(degree, ResourceType.DataType.LONG);
-    }
-
-    /**
-     * Performs a safe rollback of the graph for analytics. If there is an uncommitted transaction when analytics is
-     * instatiated the types can accidentally be included in the subgraph. To stop this a safe rollback must be used
-     * before constructing the subgraph. This entails collecting the ids of the provided arguments, rolling back the
-     * graph, and then re-instatiating the types with a clean transaction.
-     *
-     * @param setsOfType    the sets of types that should be valid after the rollback
-     */
-    private void safeRollback(MindmapsGraph graph, Set<Type>... setsOfType) {
-        Map<Set<Type>,Set<String>> temporaryStore = new HashMap<>();
-
-        // store all types via their ids
-        for (Set<Type> types : setsOfType) {
-            if (types!=null) {
-                temporaryStore.put(types, types.stream().map(Type::getId).collect(Collectors.toSet()));
-            }
-        }
-
-        // rollback graph to remove temporary things
-        graph.rollback();
-
-        // retrieve all types
-        temporaryStore.forEach((types, ids) -> {
-            types = ids.stream().map(graph::getType).collect(Collectors.toSet());
-        });
     }
 
     /**
