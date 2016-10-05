@@ -29,7 +29,6 @@ import io.mindmaps.graql.internal.query.match.MatchOrder;
 import io.mindmaps.graql.internal.query.match.MatchQueryInternal;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.graql.admin.PatternAdmin;
-import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.pattern.Patterns;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
@@ -56,7 +55,7 @@ public class Query implements MatchQueryInternal {
         this.pattern = matchQuery.admin().getPattern();
         this.selectVars = Sets.newHashSet(matchQuery.admin().getSelectedNames());
 
-        this.atomSet = getAtomSet(pattern);
+        this.atomSet = AtomicFactory.createAtomSet(pattern, this);
         this.typeAtomMap = getTypeAtomMap(atomSet);
     }
 
@@ -66,7 +65,7 @@ public class Query implements MatchQueryInternal {
         this.pattern = query.admin().getPattern();
         this.selectVars = Sets.newHashSet(query.admin().getSelectedNames());
 
-        this.atomSet = getAtomSet(pattern);
+        this.atomSet = AtomicFactory.createAtomSet(pattern, this);
         this.typeAtomMap = getTypeAtomMap(atomSet);
     }
 
@@ -304,33 +303,6 @@ public class Query implements MatchQueryInternal {
             return Graql.match(pattern.getPatterns()).withGraph(graph);
         else
             return Graql.match(pattern.getPatterns()).select(selectVars).withGraph(graph);
-    }
-
-    private Set<Atomic> getAtomSet(Conjunction<PatternAdmin> pat) {
-        Set<Atomic> atoms = new HashSet<>();
-
-        Set<VarAdmin> vars = pat.getVars();
-        vars.forEach(var -> {
-            if(var.getType().isPresent() && (var.getId().isPresent() || !var.getValueEqualsPredicates().isEmpty())) {
-                VarAdmin typeVar = Graql.var(var.getName()).isa(var.getType().orElse(null)).admin();
-                atoms.add(AtomicFactory.create(typeVar, this));
-
-                if (var.getId().isPresent()) {
-                    VarAdmin sub = Graql.var(var.getName()).id(var.getId().orElse(null)).admin();
-                    atoms.add(AtomicFactory.create(sub, this));
-                }
-                else if (!var.getValueEqualsPredicates().isEmpty()){
-                    if(var.getValueEqualsPredicates().size() > 1)
-                        throw new IllegalArgumentException(ErrorMessage.MULTI_VALUE_VAR.getMessage(var.toString()));
-                    VarAdmin sub = Graql.var(var.getName()).value(var.getValueEqualsPredicates().iterator().next()).admin();
-                    atoms.add(AtomicFactory.create(sub, this));
-                }
-            }
-            else
-                atoms.add(AtomicFactory.create(var, this));
-        });
-
-        return atoms;
     }
 
     private Map<Type, Set<Atomic>> getTypeAtomMap(Set<Atomic> atoms) {

@@ -98,8 +98,8 @@ public class AbstractGraph {
         RuleType inferenceRule = mindmaps.getMetaRuleInference();
 
         String R1_LHS = "match " +
-                        "$x isa p;\n" +
-                        "$y isa q;\n" +
+                        "$x isa p;" +
+                        "$y isa q;" +
                         "($x, $y) isa rel; select $x;";
         String R1_RHS = "match $x isa Q;";
         mindmaps.putRule("R1", R1_LHS, R1_RHS, inferenceRule);
