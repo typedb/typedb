@@ -62,7 +62,25 @@ public class AtomicFactory {
     public static Set<Atomic> createAtomSet(Conjunction<PatternAdmin> pat, Query parent) {
         Set<Atomic> atoms = new HashSet<>();
         Set<VarAdmin> vars = pat.getVars();
-        vars.forEach(var -> atoms.add(AtomicFactory.create(var, parent)));
+        vars.forEach(var -> {
+            if(var.getType().isPresent() && (var.getId().isPresent() || !var.getValueEqualsPredicates().isEmpty())) {
+                VarAdmin typeVar = Graql.var(var.getName()).isa(var.getType().orElse(null)).admin();
+                atoms.add(AtomicFactory.create(typeVar, parent));
+
+                if (var.getId().isPresent()) {
+                    VarAdmin sub = Graql.var(var.getName()).id(var.getId().orElse(null)).admin();
+                    atoms.add(AtomicFactory.create(sub, parent));
+                }
+                else if (!var.getValueEqualsPredicates().isEmpty()){
+                    if(var.getValueEqualsPredicates().size() > 1)
+                        throw new IllegalArgumentException(ErrorMessage.MULTI_VALUE_VAR.getMessage(var.toString()));
+                    VarAdmin sub = Graql.var(var.getName()).value(var.getValueEqualsPredicates().iterator().next()).admin();
+                    atoms.add(AtomicFactory.create(sub, parent));
+                }
+            }
+            else
+                atoms.add(AtomicFactory.create(var, parent));
+        });
 
         return atoms;
     }
