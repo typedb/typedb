@@ -18,14 +18,13 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
-abstract class AbstractNamedProperty implements VarProperty {
+interface NamedProperty extends VarPropertyInternal {
 
-    protected abstract String getName();
+    String getName();
 
-    protected abstract String getProperty();
+    String getProperty();
 
-    @Override
-    public final void buildString(StringBuilder builder) {
+    default void buildString(StringBuilder builder) {
         builder.append(getName()).append(" ").append(getProperty());
     }
 }

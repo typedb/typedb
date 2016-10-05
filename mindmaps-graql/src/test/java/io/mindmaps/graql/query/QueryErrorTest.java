@@ -22,6 +22,7 @@ import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.example.MovieGraphFactory;
+import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.QueryBuilder;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -109,8 +110,7 @@ public class QueryErrorTest {
     public void testErrorMultipleIsa() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(
-                containsString("abc"), containsString("type"), containsString("person"), containsString("has-cast"),
-                containsString("separate"), containsString(";")
+                containsString("abc"), containsString("isa"), containsString("person"), containsString("has-cast")
         ));
         qb.match(var("abc").isa("person").isa("has-cast"));
     }
@@ -144,7 +144,7 @@ public class QueryErrorTest {
     }
 
     @Test
-    public void testExceptionWhenNoHasResourceRelation() {
+    public void testExceptionWhenNoHasResourceRelation() throws MindmapsValidationException {
         // Create a fresh graph, with no has-resource between person and name
         MindmapsGraph empty = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
 
@@ -154,12 +154,14 @@ public class QueryErrorTest {
                 id("name").isa("resource-type").datatype(ResourceType.DataType.STRING)
         ).execute();
 
-        exception.expect(IllegalStateException.class);
+        exception.expect(MindmapsValidationException.class);
         exception.expectMessage(allOf(
                 containsString("person"),
                 containsString("name")
         ));
         emptyQb.insert(var().isa("person").has("name", "Bob")).execute();
+
+        empty.commit();
     }
 
     @Test

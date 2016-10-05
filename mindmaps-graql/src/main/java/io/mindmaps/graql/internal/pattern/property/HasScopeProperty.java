@@ -18,9 +18,23 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import com.google.common.collect.Sets;
+import io.mindmaps.MindmapsGraph;
+import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.Instance;
 import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.gremlin.Fragment;
+import io.mindmaps.graql.internal.gremlin.MultiTraversal;
+import io.mindmaps.graql.internal.query.InsertQueryExecutor;
 
-public class HasScopeProperty extends AbstractNamedProperty {
+import java.util.Collection;
+import java.util.stream.Stream;
+
+import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_BOUNDED;
+import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNBOUNDED;
+import static io.mindmaps.util.Schema.EdgeLabel.HAS_SCOPE;
+
+public class HasScopeProperty extends AbstractVarProperty implements NamedProperty {
 
     private final VarAdmin scope;
 
@@ -33,12 +47,53 @@ public class HasScopeProperty extends AbstractNamedProperty {
     }
 
     @Override
-    protected String getName() {
+    public String getName() {
         return "has-scope";
     }
 
     @Override
-    protected String getProperty() {
+    public String getProperty() {
         return scope.getPrintableName();
+    }
+
+    @Override
+    public Collection<MultiTraversal> match(String start) {
+        return Sets.newHashSet(MultiTraversal.create(
+                Fragment.create(t -> t.out(HAS_SCOPE.getLabel()), EDGE_BOUNDED, start, scope.getName()),
+                Fragment.create(t -> t.in(HAS_SCOPE.getLabel()), EDGE_UNBOUNDED, scope.getName(), start)
+        ));
+    }
+
+    @Override
+    public Stream<VarAdmin> getInnerVars() {
+        return Stream.of(scope);
+    }
+
+    @Override
+    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+        Instance scopeInstance = insertQueryExecutor.getConcept(scope).asInstance();
+        concept.asRelation().scope(scopeInstance);
+    }
+
+    @Override
+    public void delete(MindmapsGraph graph, Concept concept) {
+        String scopeId = scope.getId().orElseThrow(() -> failDelete(this));
+        concept.asRelation().deleteScope(graph.getInstance(scopeId));
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        HasScopeProperty that = (HasScopeProperty) o;
+
+        return scope.equals(that.scope);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return scope.hashCode();
     }
 }

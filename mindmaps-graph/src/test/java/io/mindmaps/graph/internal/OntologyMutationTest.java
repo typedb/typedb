@@ -84,18 +84,6 @@ public class OntologyMutationTest {
     }
 
     @Test
-    public void testChangingInstanceType() throws MindmapsValidationException {
-        mindmapsGraph.putEntity("Bob", car);
-
-        expectedException.expect(MindmapsValidationException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.VALIDATION_CASTING.getMessage(car.getId(), bob.getId(), husband.getId()))
-        ));
-
-        mindmapsGraph.commit();
-    }
-
-    @Test
     public void testDeletePlaysRole() throws MindmapsValidationException {
         person.deletePlaysRole(wife);
 

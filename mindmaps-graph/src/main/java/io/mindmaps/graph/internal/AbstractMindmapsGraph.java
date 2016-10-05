@@ -58,7 +58,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
@@ -101,28 +100,28 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     @SuppressWarnings("unchecked")
     public boolean initialiseMetaConcepts(){
         if(isMetaOntologyNotInitialised()){
-            TypeImpl type = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE));
+            TypeImpl type = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE), null);
             type.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.TYPE.getId());
 
-            TypeImpl entityType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE));
+            TypeImpl entityType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE), null);
             entityType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.ENTITY_TYPE.getId());
 
-            TypeImpl relationType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE));
+            TypeImpl relationType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE), null);
             relationType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.RELATION_TYPE.getId());
 
-            TypeImpl resourceType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE));
+            TypeImpl resourceType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE), null);
             resourceType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.RESOURCE_TYPE.getId());
 
-            TypeImpl roleType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE));
+            TypeImpl roleType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE), null);
             roleType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.ROLE_TYPE.getId());
 
-            TypeImpl ruleType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE));
+            TypeImpl ruleType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE), null);
             ruleType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.RULE_TYPE.getId());
 
-            RuleTypeImpl inferenceRuleType = elementFactory.buildRuleType(addVertex(Schema.BaseType.RULE_TYPE));
+            RuleTypeImpl inferenceRuleType = elementFactory.buildRuleType(addVertex(Schema.BaseType.RULE_TYPE), ruleType);
             inferenceRuleType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.INFERENCE_RULE.getId());
 
-            RuleTypeImpl constraintRuleType = elementFactory.buildRuleType(addVertex(Schema.BaseType.RULE_TYPE));
+            RuleTypeImpl constraintRuleType = elementFactory.buildRuleType(addVertex(Schema.BaseType.RULE_TYPE), ruleType);
             constraintRuleType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.CONSTRAINT_RULE.getId());
 
             type.setType(type.getId());
@@ -137,9 +136,6 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
             resourceType.superType(type);
             ruleType.superType(type);
             entityType.superType(type);
-
-            inferenceRuleType.type(ruleType);
-            constraintRuleType.type(ruleType);
 
             return true;
         }
@@ -223,16 +219,6 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         v.property(Schema.ConceptProperty.BASE_TYPE.name(), baseType.name());
         return v;
     }
-    private Vertex addInstanceVertex(Schema.BaseType baseType, Type type){
-        Vertex v = addVertex(baseType);
-        v.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), generateInstanceId(baseType, type));
-        v.property(Schema.ConceptProperty.TYPE.name(), type.getId());
-        v.addEdge(Schema.EdgeLabel.ISA.getLabel(), ((TypeImpl) type).getVertex());
-        return v;
-    }
-    private String generateInstanceId(Schema.BaseType baseType, Type type){
-        return baseType.name() + "-" + type.getId() + "-" + UUID.randomUUID().toString();
-    }
 
     private Vertex putVertex(String itemIdentifier, Schema.BaseType baseType){
         if(Schema.MetaType.isMetaId(itemIdentifier)){
@@ -254,14 +240,12 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
 
     @Override
     public Entity putEntity(String itemIdentifier, EntityType type) {
-        EntityImpl thing = elementFactory.buildEntity(putVertex(itemIdentifier, Schema.BaseType.ENTITY));
-        thing.type(type);
-        return thing;
+        return elementFactory.buildEntity(putVertex(itemIdentifier, Schema.BaseType.ENTITY), type);
     }
 
     @Override
     public Entity addEntity(EntityType type) {
-        return elementFactory.buildEntity(addInstanceVertex(Schema.BaseType.ENTITY, type));
+        return elementFactory.buildEntity(addVertex(Schema.BaseType.ENTITY), type);
     }
 
     @Override
@@ -269,9 +253,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         return putConceptType(itemIdentifier, Schema.BaseType.ENTITY_TYPE, getMetaEntityType()).asEntityType();
     }
     private TypeImpl putConceptType(String itemIdentifier, Schema.BaseType baseType, Type metaType) {
-        TypeImpl conceptType = elementFactory.buildSpecificConceptType(putVertex(itemIdentifier, baseType));
-        conceptType.type(metaType);
-        return conceptType;
+        return elementFactory.buildSpecificConceptType(putVertex(itemIdentifier, baseType), metaType);
     }
 
     @Override
@@ -285,8 +267,11 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     }
 
     @Override
-    public <V> ResourceType <V> putResourceType(String id, ResourceType.DataType<V> type) {
-        return elementFactory.buildResourceType(putConceptType(id, Schema.BaseType.RESOURCE_TYPE, getMetaResourceType()).getVertex(), type);
+    public <V> ResourceType <V> putResourceType(String id, ResourceType.DataType<V> dataType) {
+        return elementFactory.buildResourceType(
+                putConceptType(id, Schema.BaseType.RESOURCE_TYPE, getMetaResourceType()).getVertex(),
+                getMetaResourceType(),
+                dataType);
     }
 
     @Override
@@ -296,7 +281,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         ConceptImpl concept = getConcept(Schema.ConceptProperty.INDEX, index);
 
         if(concept == null){
-            resource = elementFactory.buildResource(addInstanceVertex(Schema.BaseType.RESOURCE, type), value);
+            resource = elementFactory.buildResource(addVertex(Schema.BaseType.RESOURCE), type, value);
         } else {
             if(concept.isResource()) {
                 resource = (ResourceImpl<V>) concept.asResource();
@@ -315,25 +300,24 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
 
     @Override
     public Rule putRule(String itemIdentifier, String lhs, String rhs, RuleType type) {
-        return elementFactory.buildRule(putVertex(itemIdentifier, Schema.BaseType.RULE), lhs, rhs).type(type);
+        return elementFactory.buildRule(putVertex(itemIdentifier, Schema.BaseType.RULE), type, lhs, rhs);
     }
 
     @Override
     public Rule addRule(String lhs, String rhs, RuleType type) {
-        return elementFactory.buildRule(addInstanceVertex(Schema.BaseType.RULE, type), lhs, rhs);
+        return elementFactory.buildRule(addVertex(Schema.BaseType.RULE), type, lhs, rhs);
     }
 
     @Override
     public Relation putRelation(String itemIdentifier, RelationType type) {
-        RelationImpl relation = elementFactory.buildRelation(putVertex(itemIdentifier, Schema.BaseType.RELATION));
+        RelationImpl relation = elementFactory.buildRelation(putVertex(itemIdentifier, Schema.BaseType.RELATION), type);
         relation.setHash(null);
-        relation.type(type);
         return relation;
     }
 
     @Override
     public Relation addRelation(RelationType type) {
-        RelationImpl relation = elementFactory.buildRelation(addInstanceVertex(Schema.BaseType.RELATION, type));
+        RelationImpl relation = elementFactory.buildRelation(addVertex(Schema.BaseType.RELATION), type);
         relation.setHash(null);
         return relation;
     }
@@ -471,7 +455,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     //-----------------------------------------------Casting Functionality----------------------------------------------
     //------------------------------------ Construction
     private CastingImpl addCasting(RoleTypeImpl role, InstanceImpl rolePlayer){
-        CastingImpl casting = elementFactory.buildCasting(addInstanceVertex(Schema.BaseType.CASTING, role)).setHash(role, rolePlayer);
+        CastingImpl casting = elementFactory.buildCasting(addVertex(Schema.BaseType.CASTING), role).setHash(role, rolePlayer);
         if(rolePlayer != null) {
             EdgeImpl castingToRolePlayer = addEdge(casting, rolePlayer, Schema.EdgeLabel.ROLE_PLAYER); // Casting to RolePlayer
             castingToRolePlayer.setProperty(Schema.EdgeProperty.ROLE_TYPE, role.getId());
@@ -725,7 +709,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
                 inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 has(Schema.EdgeProperty.ROLE_TYPE.name(), role.getId()).otherV().toList();
 
-        Set<CastingImpl> castings = castingVertices.stream().map(elementFactory::buildCasting).collect(Collectors.toSet());
+        Set<CastingImpl> castings = castingVertices.stream().map( vertex -> elementFactory.buildCasting(vertex, null)).collect(Collectors.toSet());
 
         if(castings.size() < 2){
             return false;

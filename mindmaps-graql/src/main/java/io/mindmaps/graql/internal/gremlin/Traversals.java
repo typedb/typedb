@@ -16,18 +16,25 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graph.internal;
+package io.mindmaps.graql.internal.gremlin;
 
-import io.mindmaps.concept.Entity;
-import io.mindmaps.concept.EntityType;
-import io.mindmaps.concept.Type;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-/**
- * An ontological element which represents the categories instances can fall within.
- */
-class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements EntityType{
-    EntityTypeImpl(Vertex v, Type type, AbstractMindmapsGraph mindmapsGraph) {
-        super(v, type, mindmapsGraph);
+import static io.mindmaps.util.Schema.EdgeLabel.AKO;
+
+public class Traversals {
+
+    private Traversals() {}
+
+    @SuppressWarnings("unchecked")
+    public static GraphTraversal<Vertex, Vertex> outAkos(GraphTraversal<Vertex, Vertex> traversal) {
+        return traversal.union(__.identity(), __.repeat(__.out(AKO.getLabel())).emit()).unfold();
+    }
+
+    @SuppressWarnings("unchecked")
+    public static GraphTraversal<Vertex, Vertex> inAkos(GraphTraversal<Vertex, Vertex> traversal) {
+        return traversal.union(__.identity(), __.repeat(__.in(AKO.getLabel())).emit()).unfold();
     }
 }

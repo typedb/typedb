@@ -55,7 +55,7 @@ public class DeleteQueryTest {
     @Test
     public void testDeleteMultiple() {
         qb.insert(var().id("fake-type").isa(ENTITY_TYPE.getId())).execute();
-        qb.insert(var().id("1").isa("fake-type"), var().id("2").isa("fake-type")).execute();
+        qb.insert(var().id("fake-type-1").isa("fake-type"), var().id("fake-type-2").isa("fake-type")).execute();
 
         assertEquals(2, qb.match(var("x").isa("fake-type")).stream().count());
 
@@ -133,6 +133,6 @@ public class DeleteQueryTest {
     public void testErrorWhenDeleteValue() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(containsString("delet"), containsString("value")));
-        qb.match(var("x").isa("movie")).delete(var("x").value());
+        qb.match(var("x").isa("movie")).delete(var("x").value()).execute();
     }
 }

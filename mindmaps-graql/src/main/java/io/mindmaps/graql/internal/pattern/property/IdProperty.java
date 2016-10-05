@@ -18,9 +18,16 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import io.mindmaps.graql.admin.UniqueVarProperty;
+import io.mindmaps.graql.internal.gremlin.FragmentPriority;
 import io.mindmaps.graql.internal.util.StringConverter;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-public class IdProperty extends AbstractNamedProperty {
+import static io.mindmaps.util.Schema.ConceptProperty.ITEM_IDENTIFIER;
+
+public class IdProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty, SingleTraversalProperty {
 
     private final String id;
 
@@ -33,12 +40,38 @@ public class IdProperty extends AbstractNamedProperty {
     }
 
     @Override
-    protected String getName() {
+    public String getName() {
         return "id";
     }
 
     @Override
-    protected String getProperty() {
+    public String getProperty() {
         return StringConverter.valueToString(id);
+    }
+
+    @Override
+    public GraphTraversal<Vertex, Vertex> applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
+        return traversal.has(ITEM_IDENTIFIER.name(), P.eq(id));
+    }
+
+    @Override
+    public FragmentPriority getPriority() {
+        return FragmentPriority.ID;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        IdProperty that = (IdProperty) o;
+
+        return id.equals(that.id);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return id.hashCode();
     }
 }

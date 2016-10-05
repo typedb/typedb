@@ -19,35 +19,25 @@
 package io.mindmaps.graql.internal.query;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Instance;
-import io.mindmaps.concept.Relation;
-import io.mindmaps.concept.RelationType;
-import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
-import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.graql.internal.pattern.Patterns;
+import io.mindmaps.graql.internal.pattern.property.*;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.Stack;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static io.mindmaps.graql.internal.util.CommonUtil.optionalOr;
 import static io.mindmaps.util.ErrorMessage.INSERT_NON_RESOURCE_WITH_VALUE;
 
 /**
@@ -55,7 +45,7 @@ import static io.mindmaps.util.ErrorMessage.INSERT_NON_RESOURCE_WITH_VALUE;
  *
  * This behaviour is moved to its own class to allow InsertQueryImpl to have fewer mutable fields.
  */
-class InsertQueryExecutor {
+public class InsertQueryExecutor {
 
     private final MindmapsGraph graph;
     private final Collection<VarAdmin> vars;
@@ -97,15 +87,7 @@ class InsertQueryExecutor {
     Stream<Concept> insertAll(Map<String, Concept> results) {
         concepts.clear();
         concepts.putAll(new HashMap<>(results));
-
-        // First insert each var
-        vars.forEach(this::insertVar);
-
-        // Then add resources to each var, streaming out the results.
-        // It is necessary to add resources last to be sure that any 'has-resource' information in the query has
-        // already been added.
-        // TODO: Fix this so this step is no longer necessary (can be done by correctly expanding 'has-resource')
-        return vars.stream().map(this::insertVarResources);
+        return vars.stream().map(this::insertVar);
     }
 
     /**
@@ -113,42 +95,19 @@ class InsertQueryExecutor {
      */
     private Concept insertVar(VarAdmin var) {
         Concept concept = getConcept(var);
-
-        if (var.getAbstract()) concept.asType().setAbstract(true);
-
-        var.getHasRoles().forEach(role -> concept.asRelationType().hasRole(getConcept(role).asRoleType()));
-        var.getPlaysRoles().forEach(role -> concept.asType().playsRole(getConcept(role).asRoleType()));
-        var.getScopes().forEach(scope -> concept.asRelation().scope(getConcept(scope).asInstance()));
-
-        var.getHasResourceTypes().forEach(resourceType -> addResourceType(var, resourceType));
-
-        var.getCastings().forEach(casting -> addCasting(var, casting));
-
-        var.getRegex().ifPresent(regex -> concept.asResourceType().setRegex(regex));
-
+        var.getProperties().forEach(property -> ((VarPropertyInternal) property).insert(this, concept));
         return concept;
     }
 
-    /**
-     * Add all the resources of the given var
-     * @param var the var to add resources to
-     */
-    private Concept insertVarResources(VarAdmin var) {
-        Concept concept = getConcept(var);
-
-        if (!var.getResources().isEmpty()) {
-            Instance instance = concept.asInstance();
-            var.getResources().forEach(resource -> attachResource(instance, getConcept(resource).asResource()));
-        }
-
-        return concept;
+    public MindmapsGraph getGraph() {
+        return graph;
     }
 
     /**
      * @param var the Var that is represented by a concept in the graph
      * @return the same as addConcept, but using an internal map to remember previous calls
      */
-    private Concept getConcept(VarAdmin var) {
+    public Concept getConcept(VarAdmin var) {
         String name = var.getName();
         if (visitedVars.contains(name)) {
             throw new IllegalStateException(ErrorMessage.INSERT_RECURSIVE.getMessage(var.getPrintableName()));
@@ -161,38 +120,45 @@ class InsertQueryExecutor {
     }
 
     /**
-     * @param var the Var that is to be added into the graph
+     * @param varToAdd the Var that is to be added into the graph
      * @return the concept representing the given Var, creating it if it doesn't exist
      */
-    private Concept addConcept(VarAdmin var) {
-        var = mergeVar(var);
+    private Concept addConcept(VarAdmin varToAdd) {
+        VarAdmin var = mergeVar(varToAdd);
 
-        Optional<VarAdmin> type = var.getType();
-        Optional<VarAdmin> ako = var.getAko();
+        Optional<VarAdmin> typeVar = var.getType();
+        Optional<VarAdmin> akoVar = getAko(var);
 
-        if (type.isPresent() && ako.isPresent()) {
+        if (typeVar.isPresent() && akoVar.isPresent()) {
             String printableName = var.getPrintableName();
             throw new IllegalStateException(ErrorMessage.INSERT_ISA_AND_AKO.getMessage(printableName));
         }
 
-        Concept concept;
+        // Use either ako or isa to decide type
+        Optional<Type> typeConcept = optionalOr(
+                akoVar.map(this::getConcept).map(Concept::type),
+                typeVar.map(this::getConcept).map(Concept::asType)
+        );
 
-        // If 'ako' provided, use that, else use 'isa', else get existing concept by id
-        if (ako.isPresent()) {
-            String id = getTypeIdOrThrow(var.getId());
-            concept = putConceptBySuperType(id, getConcept(ako.get()).asType());
-        } else if (type.isPresent()) {
-            concept = putConceptByType(var.getId(), var, getConcept(type.get()).asType());
-        } else {
-            concept = var.getId().map(graph::getConcept).orElse(null);
-        }
+        // If type provided, then 'put' the concept, else 'get' it
+        Concept concept = typeConcept.map(type ->
+                putConceptByType(var.getId(), var, type)
+        ).orElseGet(() ->
+                var.getId().map(graph::getConcept).orElse(null)
+        );
 
         if (concept == null) {
-            System.out.println(varsById);
-            throw new IllegalStateException(
-                    var.getId().map(ErrorMessage.INSERT_GET_NON_EXISTENT_ID::getMessage)
-                            .orElse(ErrorMessage.INSERT_UNDEFINED_VARIABLE.getMessage(var.getName()))
-            );
+            String message;
+
+            if (akoVar.isPresent()) {
+                String akoId = akoVar.get().getId().orElse("<no-id>");
+                message = ErrorMessage.INSERT_METATYPE.getMessage(var.getPrintableName(), akoId);
+            } else {
+                message = var.getId().map(ErrorMessage.INSERT_GET_NON_EXISTENT_ID::getMessage)
+                                .orElse(ErrorMessage.INSERT_UNDEFINED_VARIABLE.getMessage(var.getName()));
+            }
+
+            throw new IllegalStateException(message);
         }
 
         return concept;
@@ -213,7 +179,9 @@ class InsertQueryExecutor {
         // "123" isa movie; $x id "123"; $y id "123"; ($y, $z)
         while (changed) {
             // Merge variable referred to by name...
-            boolean byNameChange = varsToMerge.addAll(varsByName.get(var.getName()));
+            List<VarAdmin> vars = varsByName.getOrDefault(var.getName(), Lists.newArrayList());
+            vars.add(var);
+            boolean byNameChange = varsToMerge.addAll(vars);
             var = Patterns.mergeVars(varsToMerge);
 
             // Then merge variables referred to by id...
@@ -256,8 +224,8 @@ class InsertQueryExecutor {
         } else if (type.isResourceType()) {
             return graph.putResource(getValue(var), type.asResourceType());
         } else if (type.isRuleType()) {
-            String lhs = var.getLhs().get();
-            String rhs = var.getRhs().get();
+            String lhs = var.getProperty(LhsProperty.class).get().getLhs();
+            String rhs = var.getProperty(RhsProperty.class).get().getRhs();
 
             return putInstance(
                     id, type.asRuleType(),
@@ -266,28 +234,6 @@ class InsertQueryExecutor {
             );
         } else {
             throw new RuntimeException("Unrecognized type " + type.getId());
-        }
-    }
-
-    /**
-     * @param id the ID of the concept
-     * @param superType the supertype of the concept
-     * @return a concept with the given ID and the specified supertype
-     */
-    private <T> Concept putConceptBySuperType(String id, Type superType) {
-        if (superType.isEntityType()) {
-            return graph.putEntityType(id).superType(superType.asEntityType());
-        } else if (superType.isRelationType()) {
-            return graph.putRelationType(id).superType(superType.asRelationType());
-        } else if (superType.isRoleType()) {
-            return graph.putRoleType(id).superType(superType.asRoleType());
-        } else if (superType.isResourceType()) {
-            ResourceType<T> superResource = superType.asResourceType();
-            return graph.putResourceType(id, superResource.getDataType()).superType(superResource);
-        } else if (superType.isRuleType()) {
-            return graph.putRuleType(id).superType(superType.asRuleType());
-        } else {
-            throw new IllegalStateException(ErrorMessage.INSERT_METATYPE.getMessage(id, superType.getId()));
         }
     }
 
@@ -318,23 +264,6 @@ class InsertQueryExecutor {
         return id.orElseThrow(() -> new IllegalStateException(ErrorMessage.INSERT_TYPE_WITHOUT_ID.getMessage()));
     }
 
-    /**
-     * Add a roleplayer to the given relation
-     * @param var the variable representing the relation
-     * @param casting a casting between a role type and role player
-     */
-    private void addCasting(VarAdmin var, VarAdmin.Casting casting) {
-        Relation relation = getConcept(var).asRelation();
-
-        VarAdmin roleVar = casting.getRoleType().orElseThrow(
-                () -> new IllegalStateException(ErrorMessage.INSERT_RELATION_WITHOUT_ROLE_TYPE.getMessage())
-        );
-
-        RoleType roleType = getConcept(roleVar).asRoleType();
-        Instance roleplayer = getConcept(casting.getRolePlayer()).asInstance();
-        relation.putRolePlayer(roleType, roleplayer);
-    }
-
     private Object getValue(VarAdmin var) {
         Iterator<?> values = var.getValueEqualsPredicates().iterator();
 
@@ -356,48 +285,20 @@ class InsertQueryExecutor {
      * @return the datatype of the given var
      */
     private ResourceType.DataType<?> getDataType(VarAdmin var) {
-        return var.getDatatype().orElseThrow(
+        Optional<ResourceType.DataType<?>> directDataType =
+                var.getProperty(DataTypeProperty.class).map(DataTypeProperty::getDatatype);
+
+        Optional<ResourceType.DataType<?>> indirectDataType =
+                getAko(var).map(ako -> getConcept(ako).asResourceType().getDataType());
+
+        Optional<ResourceType.DataType<?>> dataType = optionalOr(directDataType, indirectDataType);
+
+        return dataType.orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.INSERT_NO_DATATYPE.getMessage(var.getPrintableName()))
         );
     }
 
-    /**
-     * @param var the var representing a type that can own the given resource type
-     * @param resourceVar the var representing the resource type
-     */
-    private void addResourceType(VarAdmin var, VarAdmin resourceVar) {
-        Type type = getConcept(var).asType();
-        ResourceType resourceType = getConcept(resourceVar).asResourceType();
-
-        RoleType owner = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceType.getId()));
-        RoleType value = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceType.getId()));
-        graph.putRelationType(GraqlType.HAS_RESOURCE.getId(resourceType.getId()))
-                .hasRole(owner).hasRole(value);
-
-        type.playsRole(owner);
-        resourceType.playsRole(value);
-    }
-
-    /**
-     * Add a resource to the given instance, using the has-resource relation
-     * @param instance the instance to add a resource to
-     * @param resource the resource instance
-     */
-    private void attachResource(Instance instance, Resource resource) {
-        ResourceType type = resource.type();
-
-        RelationType hasResource = graph.getRelationType(GraqlType.HAS_RESOURCE.getId(type.getId()));
-        RoleType hasResourceTarget = graph.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(type.getId()));
-        RoleType hasResourceValue = graph.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(type.getId()));
-
-        if (hasResource == null || hasResourceTarget == null || hasResourceValue == null) {
-            throw new IllegalStateException(
-                    ErrorMessage.INSERT_NO_RESOURCE_RELATION.getMessage(instance.type().getId(), type.getId())
-            );
-        }
-
-        Relation relation = graph.addRelation(hasResource);
-        relation.putRolePlayer(hasResourceTarget, instance);
-        relation.putRolePlayer(hasResourceValue, resource);
+    private Optional<VarAdmin> getAko(VarAdmin var) {
+        return var.getProperty(AkoProperty.class).map(AkoProperty::getSuperType);
     }
 }

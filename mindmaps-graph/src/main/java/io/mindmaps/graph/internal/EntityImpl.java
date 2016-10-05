@@ -26,7 +26,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
  * An instance of Entity Type which represents some data in the graph.
  */
 class EntityImpl extends InstanceImpl<Entity, EntityType> implements Entity {
-    EntityImpl(Vertex v, AbstractMindmapsGraph mindmapsGraph) {
-        super(v, mindmapsGraph);
+    EntityImpl(Vertex v, EntityType type, AbstractMindmapsGraph mindmapsGraph) {
+        super(v, type, mindmapsGraph);
     }
 }

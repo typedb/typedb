@@ -18,9 +18,23 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import com.google.common.collect.Sets;
+import io.mindmaps.MindmapsGraph;
+import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.RoleType;
 import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.gremlin.Fragment;
+import io.mindmaps.graql.internal.gremlin.MultiTraversal;
+import io.mindmaps.graql.internal.query.InsertQueryExecutor;
 
-public class HasRoleProperty extends AbstractNamedProperty {
+import java.util.Collection;
+import java.util.stream.Stream;
+
+import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_BOUNDED;
+import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNIQUE;
+import static io.mindmaps.util.Schema.EdgeLabel.HAS_ROLE;
+
+public class HasRoleProperty extends AbstractVarProperty implements NamedProperty {
 
     private final VarAdmin role;
 
@@ -33,12 +47,58 @@ public class HasRoleProperty extends AbstractNamedProperty {
     }
 
     @Override
-    protected String getName() {
+    public String getName() {
         return "has-role";
     }
 
     @Override
-    protected String getProperty() {
+    public String getProperty() {
         return role.getPrintableName();
+    }
+
+    @Override
+    public Collection<MultiTraversal> match(String start) {
+        return Sets.newHashSet(MultiTraversal.create(
+                Fragment.create(t -> t.out(HAS_ROLE.getLabel()), EDGE_BOUNDED, start, role.getName()),
+                Fragment.create(t -> t.in(HAS_ROLE.getLabel()), EDGE_UNIQUE, role.getName(), start)
+        ));
+    }
+
+    @Override
+    public Stream<VarAdmin> getTypes() {
+        return Stream.of(role);
+    }
+
+    @Override
+    public Stream<VarAdmin> getInnerVars() {
+        return Stream.of(role);
+    }
+
+    @Override
+    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+        RoleType roleType = insertQueryExecutor.getConcept(role).asRoleType();
+        concept.asRelationType().hasRole(roleType);
+    }
+
+    @Override
+    public void delete(MindmapsGraph graph, Concept concept) {
+        String roleId = role.getId().orElseThrow(() -> failDelete(this));
+        concept.asRelationType().deleteHasRole(graph.getRoleType(roleId));
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        HasRoleProperty that = (HasRoleProperty) o;
+
+        return role.equals(that.role);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return role.hashCode();
     }
 }
