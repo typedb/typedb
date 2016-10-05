@@ -297,9 +297,14 @@ export default {
         },
 
         notify(ev) {
-            // Shift + Enter just adds a new line.
-            if(ev instanceof KeyboardEvent && ev.shiftKey)
-                return;
+            // Dont insert newline.
+            if(ev instanceof KeyboardEvent) {
+                ev.preventDefault();
+
+                // Shift + Enter just adds a new line.
+                if(ev.shiftKey)
+                    return;
+            }
 
             if(this.graqlQuery == undefined)
                 return;
@@ -310,9 +315,6 @@ export default {
             engineClient.graqlHAL(this.graqlQuery, this.graphResponse);
             engineClient.graqlShell(this.graqlQuery, this.shellResponse);
             this.resetMsg();
-
-            // Dont insert newline.
-            ev.preventDefault();
         },
 
         clearGraph(ev) {
