@@ -41,14 +41,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertEquals;
@@ -900,7 +893,6 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         RoleType owner = graph.putRoleType("owner");
         RelationType mansBestFriend = graph.putRelationType("mans-best-friend").hasRole(pet).hasRole(owner);
         EntityType person = graph.putEntityType("person").playsRole(owner);
-        EntityType dog = graph.putEntityType("dog").playsRole(pet);
         EntityType cat = graph.putEntityType("cat").playsRole(pet);
 
         // make one person breeder and owner of a dog and a cat
@@ -924,5 +916,35 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         analytics = new Analytics(keyspace);
         assertEquals(3L, analytics.count());
         analytics.degreesAndPersist();
+    }
+
+    @Test
+    public void testComputingUsingDegreeResource() throws MindmapsValidationException {
+        // create something with degrees
+        RoleType pet = graph.putRoleType("pet");
+        RoleType owner = graph.putRoleType("owner");
+        RelationType mansBestFriend = graph.putRelationType("mans-best-friend").hasRole(pet).hasRole(owner);
+        EntityType person = graph.putEntityType("person").playsRole(owner);
+        EntityType cat = graph.putEntityType("cat").playsRole(pet);
+
+        // make one person breeder and owner of a dog and a cat
+        Entity coco = graph.putEntity("coco", cat);
+        Entity dave = graph.putEntity("dave", person);
+        graph.addRelation(mansBestFriend)
+                .putRolePlayer(owner, dave).putRolePlayer(pet, coco);
+
+        // validate
+        graph.commit();
+
+        // create degrees
+        new Analytics(keyspace, new HashSet<String>(), new HashSet<String>()).degreesAndPersist();
+
+        // compute sum
+        Analytics analytics = new Analytics(keyspace, new HashSet<>(), new HashSet<String>(Arrays.asList("degree")));
+        assertEquals(4L,analytics.sum().get());
+
+        // compute count
+        analytics = new Analytics(keyspace, new HashSet<String>(Arrays.asList("degree")), new HashSet<>());
+        assertEquals(graph.getResourceType("degree").instances().size(), analytics.count());
     }
 }
