@@ -72,6 +72,8 @@ export default class Visualiser {
 
         // Additional properties to show in node label by type.
         this.displayProperties = {};
+
+        this.clusters = [];
     }
 
     /**
@@ -129,12 +131,13 @@ export default class Visualiser {
      * Add a node to the graph. This can be called at any time *after* render().
      */
     addNode(id, bp, ap) {
-        if(!this.nodeExists(id))
+        if(!this.nodeExists(id)) {
             this.nodes.add({
                 id: id,
                 label: this.generateLabel(bp.type, ap, bp.label),
                 baseLabel: bp.label,
                 type: bp.type,
+                baseType: bp.baseType,
                 color: this.style.getNodeColour(bp.type, bp.baseType),
                 font: this.style.getNodeFont(bp.type, bp.baseType),
                 shape: this.style.getNodeShape(bp.baseType),
@@ -142,6 +145,9 @@ export default class Visualiser {
                 ontology: bp.ontology,
                 properties: ap
             });
+
+            this.addCluster(bp.type);
+        }
 
         return this;
     }
@@ -158,7 +164,6 @@ export default class Visualiser {
                 color: this.style.getEdgeColour(),
                 font: this.style.getEdgeFont()
             });
-
         return this;
     }
 
@@ -170,6 +175,7 @@ export default class Visualiser {
             this.deleteEdges(id);
             this.nodes.remove(id);
         }
+        return this;
     }
 
     /**
@@ -178,6 +184,8 @@ export default class Visualiser {
     clearGraph() {
         this.nodes.clear();
         this.edges.clear();
+        this.network.setData({nodes: this.nodes, edges: this.edges});
+        return this;
     }
 
     /**
@@ -206,6 +214,33 @@ export default class Visualiser {
     setDisplayProperties(type, properties) {
         this.displayProperties[type] = properties;
         this.updateNodeLabels(type);
+        return this;
+    }
+
+    cluster() {
+        this.clusters.map(c => {
+            this.network.cluster({
+                joinCondition: x => { return ((x.baseType != 'resource-type') && (x.type != 'resource-type') && (x.type === c)) },
+                clusterNodeProperties: {
+                    id: 'cluster-'+c,
+                    label: 'cluster of: '+c,
+                    color: this.style.clusterColour(),
+                    font: this.style.clusterFont()
+                },
+                processProperties: (o, n, e) => { if(!this.nodeExists(o.id)) this.nodes.add(o); return o; }
+            })
+        });
+
+        this.predefinedClusters();
+        return this;
+    }
+
+    expandCluster(id) {
+        if(this.network.isCluster(id)) {
+            this.network.openCluster(id);
+            return true;
+        }
+        return false;
     }
 
     /*
@@ -239,10 +274,10 @@ export default class Visualiser {
     }
 
     /**
-     * Delete all edges connected to node nid
+     * Delete all edges connected to node id
      */
-    deleteEdges(nid) {
-        this.edges.map(x => { if(x.to === nid || x.from === nid) this.edges.remove(x.id) });
+    deleteEdges(id) {
+        this.edges.map(x => { if(x.to === id || x.from === id) this.edges.remove(x.id) });
     }
 
     generateLabel(type, properties, label) {
@@ -257,5 +292,22 @@ export default class Visualiser {
             (v, k) => { if(v.type === type) v.label = this.generateLabel(type, v.properties, v.baseLabel); return v; });
 
         this.network.setData({nodes: this.nodes, edges: this.edges});
+    }
+
+    addCluster(clusterBy) {
+        if(!_.contains(this.clusters, clusterBy))
+            this.clusters.push(clusterBy);
+    }
+
+    predefinedClusters() {
+        this.network.cluster({
+            joinCondition: x => { return (x.baseType === 'resource-type') },
+            clusterNodeProperties: {
+                id: 'cluster-resource-type',
+                label: 'cluster of: resource-type',
+                color: this.style.clusterColour(),
+                font: this.style.clusterFont()
+            }
+        });
     }
 }
