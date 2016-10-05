@@ -191,6 +191,6 @@ public class CSVMigrator {
      * @return if the value is valid
      */
     private boolean validValue(Object value){
-        return value != null;
+        return value != null && !value.toString().isEmpty();
     }
 }
