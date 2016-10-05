@@ -327,10 +327,6 @@ export default {
         /*
          * User interaction: visual elements control
          */
-        suppressEventDefault(e) {
-            e.preventDefault();
-        },
-
         toggleElement(e) {
             $('.'+e).toggle();
         },
@@ -384,6 +380,10 @@ export default {
         /*
          * UX
          */
+        suppressEventDefault(e) {
+            e.preventDefault();
+        },
+
         showError(msg) {
             this.errorPanelClass = 'panel-c-danger';
             this.errorMessage = msg;

@@ -212,7 +212,11 @@ export default class Visualiser {
     }
 
     setDisplayProperties(type, properties) {
-        this.displayProperties[type] = properties;
+        if(type in this.displayProperties && properties.length === 0)
+            delete this.displayProperties[type];
+        else
+            this.displayProperties[type] = properties;
+
         this.updateNodeLabels(type);
         return this;
     }
@@ -288,8 +292,11 @@ export default class Visualiser {
     }
 
     updateNodeLabels(type) {
-        this.nodes._data = _.mapObject(this.nodes._data,
-            (v, k) => { if(v.type === type) v.label = this.generateLabel(type, v.properties, v.baseLabel); return v; });
+        this.nodes._data = _.mapObject(this.nodes._data, (v, k) => {
+                if(v.type === type)
+                    v.label = this.generateLabel(type, v.properties, v.baseLabel);
+                return v;
+            });
 
         this.network.setData({nodes: this.nodes, edges: this.edges});
     }
