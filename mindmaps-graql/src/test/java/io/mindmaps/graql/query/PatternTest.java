@@ -18,11 +18,16 @@
 
 package io.mindmaps.graql.query;
 
+import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.Pattern;
 import org.junit.Test;
 
-import static io.mindmaps.graql.Graql.*;
-import static org.junit.Assert.*;
+import static io.mindmaps.graql.Graql.and;
+import static io.mindmaps.graql.Graql.or;
+import static io.mindmaps.graql.Graql.var;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class PatternTest {
 
@@ -59,5 +64,20 @@ public class PatternTest {
 
         //noinspection AssertEqualsBetweenInconvertibleTypes
         assertEquals(conjunction.admin(), conjunction.admin().asConjunction());
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void testConjunctionAsVar() {
+        Graql.and(var("x").isa("movie"), var("x").isa("person")).admin().asVar();
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void testDisjunctionAsConjunction() {
+        Graql.or(var("x").isa("movie"), var("x").isa("person")).admin().asConjunction();
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void testVarAsDisjunction() {
+        var("x").isa("movie").admin().asDisjunction();
     }
 }
