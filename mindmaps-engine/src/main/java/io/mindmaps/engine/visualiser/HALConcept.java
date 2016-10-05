@@ -23,12 +23,12 @@ import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
 import io.mindmaps.concept.*;
 import io.mindmaps.util.REST;
+import org.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 
 /**
@@ -71,11 +71,8 @@ public class HALConcept {
         factory = new StandardRepresentationFactory();
         halResource = factory.newRepresentation(resourceLinkPrefix + concept.getId());
 
-        try {
-            handleConcept(halResource, concept, separationDegree);
-        } catch (Exception e) {
-            LOG.error("Exception while building HAL representation", e);
-        }
+        handleConcept(halResource, concept, separationDegree);
+
     }
 
 
@@ -165,13 +162,13 @@ public class HALConcept {
     // ================================ resources as HAL state properties ========================= //
 
     private void generateResources(Representation resource, Collection<Resource<?>> resourcesCollection) {
-        final Map<String, Collection<String>> resources = new HashMap<>();
+        final Map<String, JSONArray> resources = new HashMap<>();
         resourcesCollection.forEach(currentResource -> {
-            resources.putIfAbsent(currentResource.type().getId(), new HashSet<>());
-            resources.get(currentResource.type().getId()).add(currentResource.getValue().toString());
+            resources.putIfAbsent(currentResource.type().getId(), new JSONArray());
+            resources.get(currentResource.type().getId()).put(currentResource.getValue());
         });
 
-        resources.keySet().forEach(current -> resource.withProperty(current, resources.get(current).toString()));
+        resources.keySet().forEach(current -> resource.withProperty(current, resources.get(current)));
     }
 
     // ======================================= _embedded ================================================//
@@ -255,7 +252,6 @@ public class HALConcept {
     }
 
 
-
     // ------ Functions to navigate the ontology ------
 
 
@@ -289,15 +285,16 @@ public class HALConcept {
             attachRolesPlayed(halResource, concept.asType().playsRoles());
         }
 
-        concept.asType().subTypes().forEach(instance -> {
-            // let's not put the current type in its own embedded
-            if (!instance.getId().equals(concept.getId())) {
-                Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId())
-                        .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
-                generateStateAndLinks(instanceResource, instance);
-                halResource.withRepresentation(AKO_EDGE, instanceResource);
-            }
-        });
+        if (concept.isType())
+            concept.asType().subTypes().forEach(instance -> {
+                // let's not put the current type in its own embedded
+                if (!instance.getId().equals(concept.getId())) {
+                    Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId())
+                            .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
+                    generateStateAndLinks(instanceResource, instance);
+                    halResource.withRepresentation(AKO_EDGE, instanceResource);
+                }
+            });
     }
 
     private void roleTypeOntology(Representation halResource, RoleType roleType) {

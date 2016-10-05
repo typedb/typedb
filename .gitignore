@@ -35,3 +35,4 @@ logs/
 mindmaps-test/titan-test/db/
 mindmaps-test/titan-test/output/
 mindmaps-test/titan-test/*.txt
+mindmaps-test/output/

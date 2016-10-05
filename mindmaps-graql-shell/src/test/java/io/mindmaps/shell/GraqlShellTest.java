@@ -37,7 +37,6 @@ import static org.junit.Assert.*;
 
 // TODO: Fix randomly failing tests
 // GraqlShellTest sometimes stalls with no output. This is probably related to the mock websocket
-@Ignore
 public class GraqlShellTest {
 
     private InputStream trueIn;
