@@ -34,6 +34,7 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
+import static io.mindmaps.graql.Graql.id;
 import static io.mindmaps.graql.Graql.var;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -102,7 +103,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Object visitMatchOrderBy(GraqlParser.MatchOrderByContext ctx) {
+    public MatchQuery visitMatchOrderBy(GraqlParser.MatchOrderByContext ctx) {
         MatchQuery matchQuery = visitMatchQuery(ctx.matchQuery());
 
         // decide which ordering method to use
@@ -120,7 +121,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Object visitMatchDistinct(GraqlParser.MatchDistinctContext ctx) {
+    public MatchQuery visitMatchDistinct(GraqlParser.MatchDistinctContext ctx) {
         return visitMatchQuery(ctx.matchQuery()).distinct();
     }
 
@@ -348,9 +349,9 @@ class QueryVisitor extends GraqlBaseVisitor {
         if (ctx == null) {
             return var();
         } else if (ctx.id() != null) {
-            return Graql.id(visitId(ctx.id()));
+            return id(visitId(ctx.id()));
         } else {
-            return buildVar(ctx.VARIABLE());
+            return var(getVariable(ctx.VARIABLE()));
         }
     }
 
@@ -425,7 +426,7 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public Object visitValueBoolean(GraqlParser.ValueBooleanContext ctx) {
+    public Boolean visitValueBoolean(GraqlParser.ValueBooleanContext ctx) {
         return Boolean.valueOf(ctx.BOOLEAN().getText());
     }
 
@@ -509,16 +510,6 @@ class QueryVisitor extends GraqlBaseVisitor {
             default:
                 throw new RuntimeException("Unrecognized datatype " + datatype.getText());
         }
-    }
-
-    private Var buildVar(TerminalNode variable) {
-        Var var;
-        if (variable != null) {
-            var = var(getVariable(variable));
-        } else {
-            var = var();
-        }
-        return var;
     }
 
     private String getOriginalText(ParserRuleContext ctx) {
