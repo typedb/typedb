@@ -20,7 +20,6 @@ package io.mindmaps.graql.template;
 
 import io.mindmaps.graql.internal.template.TemplateParser;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -41,7 +40,7 @@ public class MacroTest {
 
     @Test
     public void noescpOneVarTest(){
-        String template = "this is a @noescp{<value>}";
+        String template = "this is a @noescp{value}";
         String expected = "this is a whale";
 
         Map<String, Object> data = Collections.singletonMap("value", "whale");
@@ -51,7 +50,7 @@ public class MacroTest {
 
     @Test
     public void noescpMultiVarTest(){
-        String template = "My first name is @noescp{<firstname> and my last name is <lastname>} ";
+        String template = "My first name is @noescp{firstname} and my last name is @noescp{lastname} ";
         String expected = "My first name is Phil and my last name is Collins ";
 
         Map<String, Object> data = new HashMap<>();
@@ -61,9 +60,37 @@ public class MacroTest {
         assertParseEquals(template, data, expected);
     }
 
-    @Ignore
+    @Test
+    public void intMacroTest(){
+        String template = "this is an int @int{value}";
+        String expected = "this is an int 4";
+
+        assertParseEquals(template, Collections.singletonMap("value", "4"), expected);
+        assertParseEquals(template, Collections.singletonMap("value", 4), expected);
+    }
+
+    @Test
+    public void doubleMacroTest(){
+        String template = "this is a double @double{value}";
+        String expected = "this is a double 4.0";
+
+        assertParseEquals(template, Collections.singletonMap("value", "4.0"), expected);
+        assertParseEquals(template, Collections.singletonMap("value", 4.0), expected);
+    }
+
     @Test
     public void variablesInsideMacroBlockTest(){
+        assertTrue(false);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void wrongNumberOfArgumentsTest(){
+        String template = "@noescp{value, otherValue}";
+        parser.parseTemplate(template, new HashMap<>());
+    }
+
+    @Test
+    public void macroInArgumentTest(){
         assertTrue(false);
     }
 

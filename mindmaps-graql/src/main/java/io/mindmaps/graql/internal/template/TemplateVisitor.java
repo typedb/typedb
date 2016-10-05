@@ -31,6 +31,7 @@ import static io.mindmaps.graql.internal.template.Value.concat;
 import static io.mindmaps.graql.internal.template.Value.format;
 import static io.mindmaps.graql.internal.template.Value.formatVar;
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -40,12 +41,12 @@ import static java.util.stream.Collectors.toSet;
 public class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
 
     private final CommonTokenStream tokens;
-    private final Map<String, Macro<String>> macros;
+    private final Map<String, Macro<Object>> macros;
 
     private Map<String, Integer> iteration = new HashMap<>();
     private Scope scope;
 
-    TemplateVisitor(CommonTokenStream tokens, Map<String, Object> context, Map<String, Macro<String>> macros){
+    TemplateVisitor(CommonTokenStream tokens, Map<String, Object> context, Map<String, Macro<Object>> macros){
         this.tokens = tokens;
         this.macros = macros;
         this.scope = new Scope(context);
@@ -131,10 +132,16 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
         return Value.VOID;
     }
 
+    // macro
+    // : MACRO '{' block '}'
+    // ;
     @Override
     public Object visitMacro(GraqlTemplateParser.MacroContext ctx){
         String macro = ctx.MACRO().getText().replace("@", "");
-        return ws(macros.get(macro).apply(this, ctx.block(), scope), ctx);
+
+        List<Value> values = ctx.expression().stream().map(this::visitExpression).collect(toList());
+
+        return ws(macros.get(macro).apply(values), ctx);
     }
 
     // expression
@@ -218,11 +225,11 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
 
     // Methods to maintain whitespace in the template
 
-    public String ws(Object obj, ParserRuleContext ctx){
+    private String ws(Object obj, ParserRuleContext ctx){
         return whitespace(obj, ctx.getStart(), ctx.getStop());
     }
 
-    public String ws(Object obj, TerminalNode node){
+    private String ws(Object obj, TerminalNode node){
         Token tok = node.getSymbol();
         return whitespace(obj, tok, tok);
     }

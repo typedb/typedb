@@ -31,7 +31,7 @@ import java.util.Map;
 
 public class TemplateParser {
 
-    private static Map<String, Macro<String>> macros;
+    private static Map<String, Macro<Object>> macros;
 
     /**
      * Create a template parser
@@ -48,7 +48,7 @@ public class TemplateParser {
         return new TemplateParser();
     }
 
-    public void registerMacro(String name, Macro<String> macro){
+    public void registerMacro(String name, Macro macro){
         macros.put(name, macro);
     }
 
@@ -85,8 +85,8 @@ public class TemplateParser {
      */
     private void registerDefaultMacros(){
         macros = new HashMap<>();
-        macros.put("noescp", new NoescpMacro());
-        macros.put("int", new IntMacro());
-        macros.put("double", new DoubleMacro());
+        registerMacro("noescp", new NoescpMacro());
+        registerMacro("int", new IntMacro());
+        registerMacro("double", new DoubleMacro());
     }
 }

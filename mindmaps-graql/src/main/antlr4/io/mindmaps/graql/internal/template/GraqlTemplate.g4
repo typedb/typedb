@@ -36,7 +36,7 @@ elsePartial
  ;
 
 macro
- : MACRO '{' block '}'
+ : MACRO '{' expression (',' expression)* '}'
  ;
 
 expression

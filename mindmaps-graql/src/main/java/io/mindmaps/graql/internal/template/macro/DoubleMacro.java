@@ -18,43 +18,20 @@
 
 package io.mindmaps.graql.internal.template.macro;
 
-import io.mindmaps.graql.internal.template.GraqlTemplateParser;
-import io.mindmaps.graql.internal.template.Scope;
-import io.mindmaps.graql.internal.template.TemplateVisitor;
 import io.mindmaps.graql.internal.template.Value;
-import org.antlr.v4.runtime.tree.ParseTree;
-import org.antlr.v4.runtime.tree.TerminalNode;
 
-import java.util.function.Function;
+import java.util.List;
 
-import static io.mindmaps.graql.internal.template.Value.concat;
-import static io.mindmaps.graql.internal.template.Value.format;
-import static io.mindmaps.graql.internal.template.Value.formatVar;
+public class DoubleMacro implements Macro<Double> {
 
-public class DoubleMacro implements Macro<String> {
-
-    public static Function<Value, String> formatAsDouble = (value) -> {
-        if(value.isString()){
-            return Double.valueOf(value.asString()).toString();
-        }
-
-        return Double.toString(value.asLong());
-    };
+    private static final int numberArguments = 1;
 
     @Override
-    public String apply(TemplateVisitor visitor, GraqlTemplateParser.BlockContext context, Scope scope) {
-        Value result = Value.VOID;
-        for(ParseTree tree:context.children){
-            if(tree instanceof GraqlTemplateParser.ReplaceContext){
-                GraqlTemplateParser.ReplaceContext replace = (GraqlTemplateParser.ReplaceContext) tree;
-                result = concat(result, visitor.ws(formatAsDouble.apply(visitor.resolveReplace(replace.REPLACE())), replace));
-
-            } else {
-                result = concat(result, visitor.visit(tree));
-            }
+    public Double apply(List<Value> values) {
+        if(values.size() != numberArguments){
+            throw new IllegalArgumentException("Wrong number of arguments [" + values.size() + "] to macro " + name());
         }
-
-        return result.toString();
+        return Double.parseDouble(values.get(0).toString());
     }
 
     @Override
