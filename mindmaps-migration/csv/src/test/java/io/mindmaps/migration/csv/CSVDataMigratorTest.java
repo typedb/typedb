@@ -102,6 +102,8 @@ public class CSVDataMigratorTest {
         Entity thing = Graql.withGraph(graph).match(var("x").isa("address")).iterator().next().get("x").asEntity();
         assertNotNull(thing);
         assertResourceRelationExists("valid_until-resource", thing);
+        
+        thing = Graql.withGraph(graph).match(var("x").isa("address").has("icij_id-resource", "C65A269424AA1A8BBAC416FA30150938")).iterator().next().get("x").asEntity();
         assertResourceRelationExists("countries-resource", thing);
     }
 
