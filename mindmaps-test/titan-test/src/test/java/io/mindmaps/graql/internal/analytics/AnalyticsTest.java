@@ -21,6 +21,7 @@ package io.mindmaps.graql.internal.analytics;
 import com.google.common.collect.Sets;
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.MindmapsTitanTestBase;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
@@ -37,7 +38,6 @@ import org.javatuples.Pair;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -51,23 +51,16 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
-import static io.mindmaps.IntegrationUtils.graphWithNewKeyspace;
-import static io.mindmaps.IntegrationUtils.startTestEngine;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class AnalyticsTest {
+public class AnalyticsTest extends MindmapsTitanTestBase {
 
     String keyspace;
     MindmapsGraph graph;
 
     long startTime;
-
-    @BeforeClass
-    public static void startController() throws Exception {
-        startTestEngine();
-    }
 
     @Before
     public void setUp() throws InterruptedException {

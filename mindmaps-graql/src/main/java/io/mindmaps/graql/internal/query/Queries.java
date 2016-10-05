@@ -28,10 +28,7 @@ import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.admin.*;
 import io.mindmaps.graql.internal.query.match.MatchQueryBase;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Internal query factory
@@ -75,11 +72,11 @@ public class Queries {
     }
 
     public static ComputeQuery compute(Optional<MindmapsGraph> graph, String computeMethod) {
-        return new ComputeQueryImpl(graph, computeMethod, Optional.empty());
+        return new ComputeQueryImpl(graph, computeMethod, new HashSet<>());
     }
 
     public static ComputeQuery compute(Optional<MindmapsGraph> graph, String computeMethod, Set<String> typeIds) {
-        return new ComputeQueryImpl(graph, computeMethod, Optional.of(typeIds));
+        return new ComputeQueryImpl(graph, computeMethod, typeIds);
     }
 
     public static <T> AggregateQuery<T> aggregate(MatchQueryAdmin matchQuery, Aggregate<? super Map<String, Concept>, T> aggregate) {

@@ -135,8 +135,8 @@ export default class Visualiser {
                 label: this.generateLabel(bp.type, ap, bp.label),
                 baseLabel: bp.label,
                 type: bp.type,
-                color: this.style.getNodeColour(bp.baseType),
-                font: this.style.getNodeFont(bp.baseType),
+                color: this.style.getNodeColour(bp.type, bp.baseType),
+                font: this.style.getNodeFont(bp.type, bp.baseType),
                 shape: this.style.getNodeShape(bp.baseType),
                 selected: false,
                 ontology: bp.ontology,
@@ -199,9 +199,8 @@ export default class Visualiser {
 
     getAllNodeProperties(id) {
         if(id in this.nodes._data)
-            return Object.keys(this.nodes._data[id].properties);
-
-        return []
+            return Object.keys(this.nodes._data[id].properties).sort();
+        return [];
     }
 
     setDisplayProperties(type, properties) {

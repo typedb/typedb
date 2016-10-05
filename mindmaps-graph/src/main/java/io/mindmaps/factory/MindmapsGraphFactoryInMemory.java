@@ -21,7 +21,7 @@ package io.mindmaps.factory;
 import io.mindmaps.MindmapsComputer;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.MindmapsGraphFactory;
-import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.graph.internal.MindmapsComputerImpl;
 
 /**
  * A client for creating a mindmaps graph from a running engine.
@@ -29,6 +29,7 @@ import io.mindmaps.util.ErrorMessage;
  * The deployer of engine decides on the backend and this class will handle producing the correct graphs.
  */
 public class MindmapsGraphFactoryInMemory implements MindmapsGraphFactory {
+    private static final String TINKER_GRAPH_COMPUTER = "org.apache.tinkerpop.gremlin.tinkergraph.process.computer.TinkerGraphComputer";
     private final MindmapsTinkerInternalFactory factory;
 
     public MindmapsGraphFactoryInMemory(String keyspace, String ignored){
@@ -47,6 +48,6 @@ public class MindmapsGraphFactoryInMemory implements MindmapsGraphFactory {
 
     @Override
     public MindmapsComputer getGraphComputer() {
-        throw new UnsupportedOperationException(ErrorMessage.UNSUPPORTED_GRAPH.getMessage("in-memory", "graph computer"));
+        return new MindmapsComputerImpl(factory.getTinkerPopGraph(false), TINKER_GRAPH_COMPUTER);
     }
 }

@@ -137,18 +137,33 @@ public class Analytics {
      * the <code>subtypes</code> argument. All subtypes of the given types are included when deciding whether to
      * include an instance.
      *
-     * @param subtypes                the set of types the computer will use to filter instances
-     * @param statisticsResourceTypes the set of resource types statistics will be working on
+     * @param subTypeIds                the set of type ids the computer will use to filter instances
+     * @param statisticsResourceTypeIds the set of resource type ids statistics will be working on
      */
-    public Analytics(String keySpace, Set<Type> subtypes, Set<Type> statisticsResourceTypes) {
+    public Analytics(String keySpace, Set<String> subTypeIds, Set<String> statisticsResourceTypeIds) {
         this.keySpace = keySpace;
         MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, this.keySpace).getGraph();
+
+        // make sure we don't accidentally commit anything
+        graph.rollback();
+
+        // fetch all the types
+        Set<Type> subtypes = subTypeIds.stream().map((id) -> {
+            Type type = graph.getType(id);
+            if (type == null) throw new IllegalArgumentException(ErrorMessage.ID_NOT_FOUND.getMessage(id));
+            return type;
+        }).collect(Collectors.toSet());
+        Set<Type> statisticsResourceTypes = statisticsResourceTypeIds.stream().map((id) -> {
+            Type type = graph.getType(id);
+            if (type == null) throw new IllegalArgumentException(ErrorMessage.ID_NOT_FOUND.getMessage(id));
+            return type;
+        }).collect(Collectors.toSet());
 
         // collect resource-types for statistics
         graph.getMetaResourceType().instances()
                 .forEach(type -> resourceTypes.put(type.getId(), type.asResourceType().getDataType().getName()));
 
-        if (subtypes == null || subtypes.isEmpty()) {
+        if (subtypes.isEmpty()) {
 
             // collect meta-types to exclude them as they do not have instances
             Set<Concept> excludedTypes = new HashSet<>();
@@ -182,7 +197,7 @@ public class Analytics {
             }
         }
 
-        if (statisticsResourceTypes != null && !statisticsResourceTypes.isEmpty()) {
+        if (!statisticsResourceTypes.isEmpty()) {
             for (Type t : statisticsResourceTypes) {
                 t.subTypes().forEach(subtype -> this.statisticsResourceTypes.add(subtype.getId()));
             }
@@ -361,6 +376,10 @@ public class Analytics {
      */
     private void mutateResourceOntology(String resourceTypeId, ResourceType.DataType resourceDataType) {
         MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraph();
+
+        // stop accidental commits when instantiating analytics
+        graph.rollback();
+
         ResourceType resource = graph.putResourceType(resourceTypeId, resourceDataType);
         RoleType degreeOwner = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
         RoleType degreeValue = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
