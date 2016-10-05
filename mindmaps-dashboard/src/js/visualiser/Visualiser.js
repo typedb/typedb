@@ -199,9 +199,8 @@ export default class Visualiser {
 
     getAllNodeProperties(id) {
         if(id in this.nodes._data)
-            return Object.keys(this.nodes._data[id].properties);
-
-        return []
+            return Object.keys(this.nodes._data[id].properties).sort();
+        return [];
     }
 
     setDisplayProperties(type, properties) {
