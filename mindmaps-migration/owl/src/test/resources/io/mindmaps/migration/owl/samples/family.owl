@@ -269,7 +269,9 @@
         <isBrotherOf rdf:resource="#iris_ellen_archer_1906"/>
     </owl:NamedIndividual>
 
-    <owl:NamedIndividual rdf:about="#alfred_hostler"/>
+    <owl:NamedIndividual rdf:about="#alfred_hostler">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#alfred_steward_1846">
         <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
@@ -361,7 +363,9 @@
         <hasBirthYear rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1829</hasBirthYear>
     </owl:NamedIndividual>
 
-    <owl:NamedIndividual rdf:about="#annie_whitfield"/>
+    <owl:NamedIndividual rdf:about="#annie_whitfield">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#arthur_steward_1861">
         <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
@@ -542,7 +546,9 @@
         <hasBirthYear rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1896</hasBirthYear>
     </owl:NamedIndividual>
 
-    <owl:NamedIndividual rdf:about="#crispin_hutchinson"/>
+    <owl:NamedIndividual rdf:about="#crispin_hutchinson">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#daisy_harriet_heath_1889">
         <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
@@ -557,6 +563,7 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#david_bright_1934">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <hasMother rdf:resource="#iris_ellen_archer_1906"/>
         <isBrotherOf rdf:resource="#john_bright_1930"/>
         <isBrotherOf rdf:resource="#peter_william_bright_1941"/>
@@ -564,6 +571,7 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#david_brown">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <isFatherOf rdf:resource="#rhiannon_brown_1969"/>
     </owl:NamedIndividual>
 
@@ -574,6 +582,7 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#diana_pool">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <isMotherOf rdf:resource="#clare_bright_1966"/>
         <isMotherOf rdf:resource="#james_bright_1964"/>
         <isMotherOf rdf:resource="#julie_bright_1966"/>
@@ -618,6 +627,7 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#edna_hostler">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <hasFather rdf:resource="#alfred_hostler"/>
         <hasMother rdf:resource="#charlotte_caroline_jane_bright_1894"/>
         <hasBrother rdf:resource="#robert_jerome_hostler"/>
@@ -858,7 +868,9 @@
         <isSisterOf rdf:resource="#james_archer_1887"/>
     </owl:NamedIndividual>
 
-    <owl:NamedIndividual rdf:about="#ellen_harsley"/>
+    <owl:NamedIndividual rdf:about="#ellen_harsley">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#ellen_jessop_1844">
         <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
@@ -1190,6 +1202,7 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#harry_bright_hostler">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <knownAs rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Steven</knownAs>
         <hasFather rdf:resource="#alfred_hostler"/>
         <hasMother rdf:resource="#charlotte_caroline_jane_bright_1894"/>
@@ -1357,6 +1370,7 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#ian_bright_1959">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <isFatherOf rdf:resource="#thomas_john_bright_1988"/>
     </owl:NamedIndividual>
 
@@ -1744,6 +1758,7 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#john_bright_1930">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <isBrotherOf rdf:resource="#david_bright_1934"/>
         <isFatherOf rdf:resource="#ian_bright_1959"/>
         <hasMother rdf:resource="#iris_ellen_archer_1906"/>
@@ -1792,12 +1807,15 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#john_heath">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <isFatherOf rdf:resource="#ada_rachel_heath_1868"/>
         <isFatherOf rdf:resource="#gwendoline_heath_1878"/>
         <isFatherOf rdf:resource="#lemuel_frederick_heath_1871"/>
     </owl:NamedIndividual>
 
-    <owl:NamedIndividual rdf:about="#john_henry_harvey"/>
+    <owl:NamedIndividual rdf:about="#john_henry_harvey">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#john_hewson_stafford_1811">
         <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
@@ -1952,6 +1970,7 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#joyce_scutchings">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <isMotherOf rdf:resource="#ian_bright_1959"/>
         <isMotherOf rdf:resource="#janet_bright_1964"/>
         <isFemalePartnerIn rdf:resource="#m133"/>
@@ -2052,6 +2071,7 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#luke_bateman_story">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <isFatherOf rdf:resource="#elma_ellen_story_1893"/>
     </owl:NamedIndividual>
 
@@ -2136,6 +2156,7 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#martha_wife_of_john_cotton">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <isMotherOf rdf:resource="#martha_cotton_1806"/>
         <isMotherOf rdf:resource="#rebecca_cotton_1818"/>
         <isMotherOf rdf:resource="#susannah_cotton_1813"/>
@@ -2271,6 +2292,7 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#mary_frankish">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <isMotherOf rdf:resource="#ann_green_1806"/>
         <isMotherOf rdf:resource="#john_green_1802"/>
         <isMotherOf rdf:resource="#mary_green_1803"/>
@@ -2281,6 +2303,7 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#mary_glover">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <isMotherOf rdf:resource="#ann_hollinsworth_1808"/>
         <isMotherOf rdf:resource="#james_hollinsworth_1804"/>
         <isMotherOf rdf:resource="#mary_hollingsworth_1801"/>
@@ -2292,6 +2315,7 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#mary_gulliver">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <isMotherOf rdf:resource="#james_bright_1787"/>
     </owl:NamedIndividual>
 
@@ -2318,6 +2342,7 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#mary_houghton">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <isMotherOf rdf:resource="#ellen_steward_1797"/>
         <isMotherOf rdf:resource="#hannah_steward_1801"/>
         <isMotherOf rdf:resource="#james_steward_1798"/>
@@ -2351,6 +2376,7 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#mary_paddison">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <isMotherOf rdf:resource="#hannah_hutchinson_1804"/>
     </owl:NamedIndividual>
 
@@ -2382,13 +2408,18 @@
         <hasBirthYear rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1814</hasBirthYear>
     </owl:NamedIndividual>
 
-    <owl:NamedIndividual rdf:about="#mary_wife_of_john_jessop"/>
+    <owl:NamedIndividual rdf:about="#mary_wife_of_john_jessop">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#mary_wife_of_thomas_tisy">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <isMotherOf rdf:resource="#william_tacey_1783"/>
     </owl:NamedIndividual>
 
-    <owl:NamedIndividual rdf:about="#mary_wife_of_william_hewett"/>
+    <owl:NamedIndividual rdf:about="#mary_wife_of_william_hewett">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#matthew_tacey_1837">
         <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
@@ -2471,6 +2502,7 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#peter_william_bright_1941">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <isFatherOf rdf:resource="#clare_bright_1966"/>
         <isBrotherOf rdf:resource="#david_bright_1934"/>
         <hasMother rdf:resource="#iris_ellen_archer_1906"/>
@@ -2586,6 +2618,7 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#richard_john_bright_1962">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <hasFather rdf:resource="#david_bright_1934"/>
         <hasMother rdf:resource="#margaret_grace_rever_1934"/>
         <isBrotherOf rdf:resource="#robert_david_bright_1965"/>
@@ -2627,7 +2660,9 @@
         <isFatherOf rdf:resource="#rebecca_harsley_1793"/>
     </owl:NamedIndividual>
 
-    <owl:NamedIndividual rdf:about="#robert_harvey"/>
+    <owl:NamedIndividual rdf:about="#robert_harvey">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#robert_harvey_1906">
         <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
@@ -2644,6 +2679,7 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#robert_jerome_hostler">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <hasFather rdf:resource="#alfred_hostler"/>
         <hasMother rdf:resource="#charlotte_caroline_jane_bright_1894"/>
         <hasSister rdf:resource="#edna_hostler"/>
@@ -2682,6 +2718,7 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#ruth_hostler">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <hasFather rdf:resource="#alfred_hostler"/>
         <hasMother rdf:resource="#charlotte_caroline_jane_bright_1894"/>
         <hasSister rdf:resource="#edna_hostler"/>
@@ -2851,6 +2888,7 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#sarah_rever_1850">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <hasDeathYear rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1806</hasDeathYear>
         <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <hasBirthYear rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1850</hasBirthYear>
@@ -2875,6 +2913,7 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#sarah_webb">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <isMotherOf rdf:resource="#caroline_bright_1822"/>
         <isMotherOf rdf:resource="#edmund_bright_1813"/>
         <isMotherOf rdf:resource="#eliza_bright_1825"/>
@@ -2930,6 +2969,7 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#susanna_wife_of_william_cotton">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <isMotherOf rdf:resource="#john_cotton_1778"/>
     </owl:NamedIndividual>
 
@@ -3003,7 +3043,9 @@
         <isBrotherOf rdf:resource="#bethia_burton_1821"/>
     </owl:NamedIndividual>
 
-    <owl:NamedIndividual rdf:about="#thomas_hayden_terliven_1838"/>
+    <owl:NamedIndividual rdf:about="#thomas_hayden_terliven_1838">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#thomas_henry_steward_1874">
         <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
@@ -3027,6 +3069,7 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#thomas_taisy">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <isFatherOf rdf:resource="#william_tacey_1783"/>
     </owl:NamedIndividual>
 
@@ -3041,6 +3084,7 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#tom_pinchbeck">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <isFatherOf rdf:resource="#celia_pinchbeck_1949"/>
     </owl:NamedIndividual>
 
@@ -3141,6 +3185,7 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#william_cotton">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <isFatherOf rdf:resource="#john_cotton_1778"/>
     </owl:NamedIndividual>
 
@@ -3152,6 +3197,7 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#william_green">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <isFatherOf rdf:resource="#ann_green_1806"/>
         <isFatherOf rdf:resource="#john_green_1802"/>
         <isFatherOf rdf:resource="#mary_green_1803"/>
@@ -3184,9 +3230,12 @@
         <hasBirthYear rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1875</hasBirthYear>
     </owl:NamedIndividual>
 
-    <owl:NamedIndividual rdf:about="#william_hewett"/>
+    <owl:NamedIndividual rdf:about="#william_hewett">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#william_hutchinson">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <isFatherOf rdf:resource="#hannah_hutchinson_1804"/>
     </owl:NamedIndividual>
 
@@ -3210,6 +3259,7 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#william_lock">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <isFatherOf rdf:resource="#william_lock_jacobs_1861"/>
     </owl:NamedIndividual>
 
@@ -3273,6 +3323,7 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#william_steward_1766">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <isFatherOf rdf:resource="#ellen_steward_1797"/>
         <isFatherOf rdf:resource="#hannah_steward_1801"/>
         <isFatherOf rdf:resource="#james_steward_1798"/>
@@ -3359,6 +3410,7 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#zilpah_green_1810">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <hasDeathYear rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1810</hasDeathYear>
         <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <hasBirthYear rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1810</hasBirthYear>
