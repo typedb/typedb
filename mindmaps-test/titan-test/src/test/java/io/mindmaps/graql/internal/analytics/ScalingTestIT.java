@@ -18,8 +18,9 @@
 
 package io.mindmaps.graql.internal.analytics;
 
-import io.mindmaps.IntegrationUtils;
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.MindmapsTitanTestBase;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Relation;
@@ -27,11 +28,9 @@ import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.Mindmaps;
 import org.javatuples.Pair;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.FileNotFoundException;
@@ -51,7 +50,7 @@ import static io.mindmaps.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-public class ScalingTestIT {
+public class ScalingTestIT extends MindmapsTitanTestBase {
 
     private static final String[] HOST_NAME =
             {"localhost"};
@@ -69,14 +68,9 @@ public class ScalingTestIT {
     int STEP_SIZE;
     List<Integer> graphSizes;
 
-    @BeforeClass
-    public static void startController() throws Exception {
-        IntegrationUtils.startTestEngine();
-    }
-
     @Before
     public void setUp() throws InterruptedException {
-        Pair<MindmapsGraph, String> result = IntegrationUtils.graphWithNewKeyspace();
+        Pair<MindmapsGraph, String> result = graphWithNewKeyspace();
         graph = result.getValue0();
         keyspace = result.getValue1();
 

@@ -19,6 +19,7 @@
 package io.mindmaps.graql.shell;
 
 import com.google.common.base.Strings;
+import io.mindmaps.MindmapsTitanTestBase;
 import io.mindmaps.graql.GraqlClientImpl;
 import io.mindmaps.graql.GraqlShell;
 import org.junit.After;
@@ -33,7 +34,6 @@ import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Random;
 
-import static io.mindmaps.IntegrationUtils.startTestEngine;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
@@ -43,7 +43,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class GraqlShellIT {
+public class GraqlShellIT extends MindmapsTitanTestBase {
 
     private static InputStream trueIn;
     private static PrintStream trueOut;
@@ -58,8 +58,6 @@ public class GraqlShellIT {
         trueIn = System.in;
         trueOut = System.out;
         trueErr = System.err;
-
-        startTestEngine();
     }
 
     @After

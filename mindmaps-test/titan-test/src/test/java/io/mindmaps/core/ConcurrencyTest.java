@@ -18,9 +18,9 @@
 
 package io.mindmaps.core;
 
-import io.mindmaps.IntegrationUtils;
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.MindmapsTitanTestBase;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.RelationType;
@@ -28,7 +28,6 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.MindmapsValidationException;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -46,17 +45,12 @@ import static org.junit.Assert.assertFalse;
 /**
  *
  */
-public class ConcurrencyTest {
+public class ConcurrencyTest extends MindmapsTitanTestBase{
     private final String ROLE_1 = "role1";
     private final String ROLE_2 = "role2";
     private final String ENTITY_TYPE = "Entity Type";
     private final String RELATION_TYPE = "Relation Type";
     private MindmapsGraph graph;
-
-    @BeforeClass
-    public static void startController() throws Exception {
-        IntegrationUtils.startTestEngine();
-    }
 
     @Before
     public void setUp() throws InterruptedException, MindmapsValidationException {
