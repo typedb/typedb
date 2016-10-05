@@ -70,7 +70,7 @@ public class MatchQueryBase implements MatchQueryInternal {
             var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkValid(graph, var));
         }
 
-        GraphTraversal<Vertex, Map<String, Vertex>> traversal = getQuery(graph, order).getTraversals();
+        GraphTraversal<Vertex, Map<String, Vertex>> traversal = getQuery(graph, order).getTraversal();
         return traversal.toStream().map(vertices -> makeResults(graph, vertices)).sequential();
     }
 

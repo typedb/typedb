@@ -76,7 +76,7 @@ public class GremlinQuery {
     /**
      * @return a gremlin traversal to execute to find results
      */
-    public GraphTraversal<Vertex, Map<String, Vertex>> getTraversals() {
+    public GraphTraversal<Vertex, Map<String, Vertex>> getTraversal() {
         Traversal[] collect =
                 innerQueries.stream().map(ConjunctionQuery::getTraversal).toArray(Traversal[]::new);
 
