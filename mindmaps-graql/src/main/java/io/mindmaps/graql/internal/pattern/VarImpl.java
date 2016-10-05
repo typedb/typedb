@@ -24,8 +24,6 @@ import io.mindmaps.concept.ResourceType;
 import io.mindmaps.graql.ValuePredicate;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.admin.*;
-import io.mindmaps.graql.internal.gremlin.MultiTraversal;
-import io.mindmaps.graql.internal.gremlin.VarTraversals;
 import io.mindmaps.graql.internal.pattern.property.*;
 import io.mindmaps.graql.internal.util.CommonUtil;
 import io.mindmaps.graql.internal.util.StringConverter;
@@ -45,14 +43,12 @@ import static java.util.stream.Collectors.toSet;
 /**
  * Implementation of Var interface
  */
-class VarImpl implements VarInternal {
+class VarImpl implements VarAdmin {
 
     private Set<VarProperty> properties = new HashSet<>();
 
     private String name;
     private final boolean userDefinedName;
-
-    private Optional<VarTraversals> varPattern = Optional.empty();
 
     /**
      * Create a variable with a random variable name
@@ -239,7 +235,7 @@ class VarImpl implements VarInternal {
     }
 
     @Override
-    public VarInternal admin() {
+    public VarAdmin admin() {
         return this;
     }
 
@@ -331,11 +327,6 @@ class VarImpl implements VarInternal {
     }
 
     @Override
-    public Set<MultiTraversal> getMultiTraversals() {
-        return getVarTraversals().getTraversals().collect(toSet());
-    }
-
-    @Override
     public Stream<VarProperty> getProperties() {
         return properties.stream();
     }
@@ -417,15 +408,6 @@ class VarImpl implements VarInternal {
         }
 
         return builder.toString();
-    }
-
-    /**
-     * @return the VarTraversals object representing this Var as gremlin traversals
-     */
-    private VarTraversals getVarTraversals() {
-        VarTraversals varTraversals = this.varPattern.orElseGet(() -> new VarTraversals(this));
-        this.varPattern = Optional.of(varTraversals);
-        return varTraversals;
     }
 
     private Var addCasting(VarAdmin.Casting casting) {
