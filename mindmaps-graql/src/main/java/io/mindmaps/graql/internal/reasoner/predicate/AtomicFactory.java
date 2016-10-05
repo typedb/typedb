@@ -18,10 +18,14 @@
 
 package io.mindmaps.graql.internal.reasoner.predicate;
 
+import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.util.ErrorMessage;
+import java.util.HashSet;
+import java.util.Set;
 
 public class AtomicFactory {
 
@@ -53,5 +57,13 @@ public class AtomicFactory {
 
     public static Atomic create(Atomic atom) {
         return atom.clone();
+    }
+
+    public static Set<Atomic> createAtomSet(Conjunction<PatternAdmin> pat, Query parent) {
+        Set<Atomic> atoms = new HashSet<>();
+        Set<VarAdmin> vars = pat.getVars();
+        vars.forEach(var -> atoms.add(AtomicFactory.create(var, parent)));
+
+        return atoms;
     }
 }
