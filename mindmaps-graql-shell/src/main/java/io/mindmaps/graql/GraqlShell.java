@@ -18,7 +18,9 @@
 
 package io.mindmaps.graql;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
+import com.google.common.io.CharStreams;
 import io.mindmaps.graql.internal.shell.ErrorMessage;
 import io.mindmaps.graql.internal.shell.GraQLCompleter;
 import io.mindmaps.graql.internal.shell.GraqlSignalHandler;
@@ -36,7 +38,10 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import sun.misc.Signal;
 
 import java.io.*;
-import java.net.*;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URL;
+import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -215,6 +220,11 @@ public class GraqlShell {
 
         try (OutputStream os = http.getOutputStream()) {
             os.write(out);
+        }
+
+        try (InputStream is = http.getInputStream()) {
+            String response = CharStreams.toString(new InputStreamReader(is, Charsets.UTF_8));
+            System.out.println(response);
         }
     }
 
