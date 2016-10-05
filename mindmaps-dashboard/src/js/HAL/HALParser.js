@@ -49,7 +49,6 @@ export default class HALParser {
      */
     parseResponse(data) {
         _.map(data, x => { this.parseHalObject(x) });
-
         return data.length;
     }
 
