@@ -144,6 +144,8 @@ public class Analytics {
         this.keySpace = keySpace;
         MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, this.keySpace).getGraph();
 
+        safeRollback(graph,subtypes, statisticsResourceTypes);
+
         // collect resource-types for statistics
         graph.getMetaResourceType().instances()
                 .forEach(type -> resourceTypes.put(type.getId(), type.asResourceType().getDataType().getName()));
@@ -190,6 +192,33 @@ public class Analytics {
 
         // add analytics ontology - hard coded for now
         mutateResourceOntology(degree, ResourceType.DataType.LONG);
+    }
+
+    /**
+     * Performs a safe rollback of the graph for analytics. If there is an uncommitted transaction when analytics is
+     * instatiated the types can accidentally be included in the subgraph. To stop this a safe rollback must be used
+     * before constructing the subgraph. This entails collecting the ids of the provided arguments, rolling back the
+     * graph, and then re-instatiating the types with a clean transaction.
+     *
+     * @param setsOfType    the sets of types that should be valid after the rollback
+     */
+    private void safeRollback(MindmapsGraph graph, Set<Type>... setsOfType) {
+        Map<Set<Type>,Set<String>> temporaryStore = new HashMap<>();
+
+        // store all types via their ids
+        for (Set<Type> types : setsOfType) {
+            if (types!=null) {
+                temporaryStore.put(types, types.stream().map(Type::getId).collect(Collectors.toSet()));
+            }
+        }
+
+        // rollback graph to remove temporary things
+        graph.rollback();
+
+        // retrieve all types
+        temporaryStore.forEach((types, ids) -> {
+            types = ids.stream().map(graph::getType).collect(Collectors.toSet());
+        });
     }
 
     /**
@@ -361,6 +390,10 @@ public class Analytics {
      */
     private void mutateResourceOntology(String resourceTypeId, ResourceType.DataType resourceDataType) {
         MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraph();
+
+        // stop accidental commits when instantiating analytics
+        graph.rollback();
+
         ResourceType resource = graph.putResourceType(resourceTypeId, resourceDataType);
         RoleType degreeOwner = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
         RoleType degreeValue = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));

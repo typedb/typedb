@@ -48,9 +48,7 @@ import java.util.concurrent.ExecutionException;
 import static io.mindmaps.graql.Graql.or;
 import static io.mindmaps.graql.Graql.var;
 import static io.mindmaps.graql.Graql.withGraph;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class GraqlTest {
 
@@ -317,5 +315,16 @@ public class GraqlTest {
         ((ComputeQuery) qb.parse("compute min;")).execute();
         ((ComputeQuery) qb.parse("compute max;")).execute();
         ((ComputeQuery) qb.parse("compute mean;")).execute();
+    }
+
+    @Test
+    public void testAnalyticsDoesNotCommitByMistake() {
+        // insert a node but do not commit it
+        qb.parse("insert thing isa entity-type;").execute();
+        // use analytics
+        qb.parse("compute count;").execute();
+        // see if the node was commited
+        graph.rollback();
+        assertNull(graph.getEntityType("thing"));
     }
 }
