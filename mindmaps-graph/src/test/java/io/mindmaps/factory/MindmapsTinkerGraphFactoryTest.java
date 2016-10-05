@@ -88,4 +88,5 @@ public class MindmapsTinkerGraphFactoryTest {
         Graph mg1 = tinkerGraphFactory.getTinkerPopGraph(false);
         assertThat(mg1, instanceOf(TinkerGraph.class));
     }
+
 }

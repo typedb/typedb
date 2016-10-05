@@ -21,8 +21,6 @@ package io.mindmaps.factory;
 import io.mindmaps.MindmapsGraph;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
-import java.util.Set;
-
 /**
  * The interface used to build new graphs from different vendors.
  * Adding new vendor support means implementing this interface.
@@ -30,9 +28,6 @@ import java.util.Set;
 interface MindmapsInternalFactory<M extends MindmapsGraph, T extends Graph> {
     /**
      *
-     * @param name The name of the graph we should be initialising
-     * @param address The address of where the backend is. Defaults to localhost if null
-     * @param pathToConfig Path to file storing optional configuration parameters. Uses defaults if left null
      * @param batchLoading A flag which indicates if the graph has batch loading enabled or not.
      * @return An instance of Mindmaps graph
      */
@@ -40,9 +35,6 @@ interface MindmapsInternalFactory<M extends MindmapsGraph, T extends Graph> {
 
     /**
      *
-     * @param name The name of the graph we should be initialising
-     * @param address The address of where the backend is. Defaults to localhost if null
-     * @param pathToConfig Path to file storing optional configuration parameters. Uses defaults if left null
      * @param batchLoading A flag which indicates if the graph has batch loading enabled or not.
      * @return An instance of a tinker graph
      */
