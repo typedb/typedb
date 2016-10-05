@@ -36,6 +36,7 @@ import java.util.stream.Stream;
 
 public class Graql {
 
+    private Graql() {}
 
     // QUERY BUILDING
 
