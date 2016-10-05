@@ -21,6 +21,7 @@ public class MindmapsOrientDBInternalFactory extends AbstractMindmapsInternalFac
     private final Map<String, OrientGraphFactory> openFactories;
     private static final String KEY_TYPE = "keytype";
     private static final String UNIQUE = "type";
+    private static final String SPECIAL_IN_MEMORY = "memory";
 
     public MindmapsOrientDBInternalFactory(String keyspace, String engineUrl, String config) {
         super(keyspace, engineUrl, config);
@@ -116,6 +117,10 @@ public class MindmapsOrientDBInternalFactory extends AbstractMindmapsInternalFac
     }
 
     private OrientGraphFactory getFactory(String name, String address){
+        if(SPECIAL_IN_MEMORY.equals(name)){
+            address = SPECIAL_IN_MEMORY; //Secret way of creating in-memory graphs.
+        }
+
         String key = name + address;
         if(!openFactories.containsKey(key)){
             openFactories.put(key, new OrientGraphFactory(address + ":" + name));

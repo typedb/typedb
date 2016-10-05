@@ -100,24 +100,24 @@ public class AbstractGraph {
         String R1_LHS = "match " +
                         "$x isa p;\n" +
                         "$y isa q;\n" +
-                        "($x, $y) isa rel select $x";
-        String R1_RHS = "match $x isa Q";
+                        "($x, $y) isa rel; select $x;";
+        String R1_RHS = "match $x isa Q;";
         mindmaps.putRule("R1", R1_LHS, R1_RHS, inferenceRule);
 
         String R2_LHS = "match $x isa r;";
-        String R2_RHS = "match $x isa p";
+        String R2_RHS = "match $x isa p;";
         mindmaps.putRule("R2", R2_LHS, R2_RHS, inferenceRule);
 
         String R3_LHS = "match $x isa s;";
-        String R3_RHS = "match $x isa p";
+        String R3_RHS = "match $x isa p;";
         mindmaps.putRule("R3", R3_LHS, R3_RHS, inferenceRule);
 
         String R4_LHS = "match $x isa t;";
-        String R4_RHS = "match $x isa q";
+        String R4_RHS = "match $x isa q;";
         mindmaps.putRule("R4", R4_LHS, R4_RHS, inferenceRule);
 
         String R5_LHS = "match $x isa u;";
-        String R5_RHS = "match $x isa r";
+        String R5_RHS = "match $x isa r;";
         Rule r5 = mindmaps.putRule("R5", R5_LHS, R5_RHS, inferenceRule);
     }
 
