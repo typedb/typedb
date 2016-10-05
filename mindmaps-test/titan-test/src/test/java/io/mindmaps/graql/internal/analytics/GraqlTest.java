@@ -38,19 +38,13 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 import static io.mindmaps.graql.Graql.or;
 import static io.mindmaps.graql.Graql.var;
 import static io.mindmaps.graql.Graql.withGraph;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class GraqlTest {
 
@@ -317,5 +311,26 @@ public class GraqlTest {
         ((ComputeQuery) qb.parse("compute min;")).execute();
         ((ComputeQuery) qb.parse("compute max;")).execute();
         ((ComputeQuery) qb.parse("compute mean;")).execute();
+    }
+
+    @Test
+    public void testAnalyticsDoesNotCommitByMistake() throws MindmapsValidationException {
+        graph.putResourceType("number", ResourceType.DataType.LONG);
+        graph.commit();
+
+        Set<String> analyticsCommands = new HashSet<String>(Arrays.asList(
+                "compute count;",
+                "compute degrees;",
+                "compute mean in number;"));
+
+        analyticsCommands.forEach(command -> {
+            // insert a node but do not commit it
+            qb.parse("insert thing isa entity-type;").execute();
+            // use analytics
+            qb.parse(command).execute();
+            // see if the node was commited
+            graph.rollback();
+            assertNull(graph.getEntityType("thing"));
+        });
     }
 }
