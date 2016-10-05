@@ -95,7 +95,9 @@ public class GraqlShell {
     /**
      * Array of available commands in shell
      */
-    public static final String[] COMMANDS = {EDIT_COMMAND, COMMIT_COMMAND, LOAD_COMMAND, CLEAR_COMMAND, EXIT_COMMAND};
+    public static final String[] COMMANDS = {
+        EDIT_COMMAND, ROLLBACK_COMMAND, COMMIT_COMMAND, LOAD_COMMAND, CLEAR_COMMAND, EXIT_COMMAND
+    };
 
     private static final String TEMP_FILENAME = "/graql-tmp.gql";
     private static final String HISTORY_FILENAME = "/graql-history";
