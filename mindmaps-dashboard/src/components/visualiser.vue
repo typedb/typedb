@@ -96,7 +96,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                                     </thead>
                                     <tbody>
                                         <tr><td>ENTER</td><td>Submit Graql query.</td></tr>
-                                        <tr><td>Shift + ENTER</td><td>New line.</td></tr>
+                                        <tr><td>Shift + Enter</td><td>New line.</td></tr>
                                         <tr><td>Shift + Backspace</td><td>Clear graph & current query.</td></tr>
                                         <tr><td>Shift + Delete</td><td>Clear graph & current query.</td></tr>
                                     </tbody>
@@ -113,7 +113,8 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                                     </thead>
                                     <tbody>
                                         <tr><td>Left Click</td><td>Selects a node or edge.</td></tr>
-                                        <tr><td>Left Click + ALT</td><td>Show related ontology of selected node(s).</td></tr>
+                                        <tr><td>Left Click + Alt</td><td>Show related ontology of selected node(s).</td></tr>
+                                        <tr><td>Left Click + Shift</td><td>Shows instances and isa of selected node(s), <b>WITHOUT</b> clearing the graph of all other non-related nodes.</td></tr>
                                         <tr><td>Double Click</td><td>Shows instances and isa of selected node(s), whilst clearing the graph of all other non-related nodes.</td></tr>
                                         <tr><td>Right Click</td><td>Show node label configuration menu. You can select what properties to display on the node label.</td></tr>
                                         <tr><td>Right Click + Shift</td><td>Delete selected node(s).</td></tr>
