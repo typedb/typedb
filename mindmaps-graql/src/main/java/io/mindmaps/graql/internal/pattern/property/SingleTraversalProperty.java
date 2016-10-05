@@ -16,30 +16,25 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql.internal.validation;
+package io.mindmaps.graql.internal.pattern.property;
 
-import io.mindmaps.MindmapsGraph;
-import io.mindmaps.graql.admin.DeleteQueryAdmin;
+import com.google.common.collect.Sets;
+import io.mindmaps.graql.internal.gremlin.*;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.stream.Stream;
+import java.util.Collection;
 
-/**
- * A validator for a delete query that validates all deleters in the query
- */
-public class DeleteQueryValidator implements Validator {
+interface SingleTraversalProperty extends VarPropertyInternal {
 
-    private final DeleteQueryAdmin deleteQuery;
+    GraphTraversal<Vertex, Vertex> applyTraversal(GraphTraversal<Vertex, Vertex> traversal);
 
-    /**
-     * @param deleteQuery the delete query to validate
-     */
-    public DeleteQueryValidator(DeleteQueryAdmin deleteQuery) {
-        this.deleteQuery = deleteQuery;
-    }
+    FragmentPriority getPriority();
 
     @Override
-    public Stream<String> getErrors(MindmapsGraph graph) {
-        Stream<Validator> validators = deleteQuery.getDeleters().stream().map(DeleteVarValidator::new);
-        return Validator.getAggregateValidator(validators).getErrors(graph);
+    default Collection<MultiTraversal> match(String start) {
+        Fragment fragment = Fragment.create(this::applyTraversal, getPriority(), start);
+        MultiTraversal multiTraversal = MultiTraversal.create(fragment);
+        return Sets.newHashSet(multiTraversal);
     }
 }

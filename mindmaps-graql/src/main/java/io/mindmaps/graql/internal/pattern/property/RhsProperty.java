@@ -18,7 +18,15 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
-public class RhsProperty extends AbstractNamedProperty {
+import io.mindmaps.graql.admin.UniqueVarProperty;
+import io.mindmaps.graql.internal.gremlin.FragmentPriority;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+
+import static io.mindmaps.util.Schema.ConceptProperty.RULE_RHS;
+
+public class RhsProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty, SingleTraversalProperty {
 
     private final String rhs;
 
@@ -31,12 +39,38 @@ public class RhsProperty extends AbstractNamedProperty {
     }
 
     @Override
-    protected String getName() {
+    public String getName() {
         return "rhs";
     }
 
     @Override
-    protected String getProperty() {
+    public String getProperty() {
         return "{" + rhs + "}";
+    }
+
+    @Override
+    public GraphTraversal<Vertex, Vertex> applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
+        return traversal.has(RULE_RHS.name(), P.eq(rhs));
+    }
+
+    @Override
+    public FragmentPriority getPriority() {
+        return FragmentPriority.VALUE_NONSPECIFIC;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        RhsProperty that = (RhsProperty) o;
+
+        return rhs.equals(that.rhs);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return rhs.hashCode();
     }
 }

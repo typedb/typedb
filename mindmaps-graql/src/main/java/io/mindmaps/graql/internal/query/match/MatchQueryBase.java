@@ -18,6 +18,7 @@
 
 package io.mindmaps.graql.internal.query.match;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
@@ -26,7 +27,7 @@ import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.Query;
-import io.mindmaps.graql.internal.validation.MatchQueryValidator;
+import io.mindmaps.graql.internal.pattern.property.VarPropertyInternal;
 import io.mindmaps.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -65,7 +66,9 @@ public class MatchQueryBase implements MatchQueryInternal {
                 () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
         );
 
-        new MatchQueryValidator(admin()).validate(graph);
+        for (VarAdmin var : pattern.getVars()) {
+            var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkValid(graph, var));
+        }
 
         GraphTraversal<Vertex, Map<String, Vertex>> traversal = getQuery(graph, order).getTraversals();
         return traversal.toStream().map(vertices -> makeResults(graph, vertices)).sequential();
@@ -83,7 +86,7 @@ public class MatchQueryBase implements MatchQueryInternal {
     }
 
     @Override
-    public Set<String> getSelectedNames() {
+    public ImmutableSet<String> getSelectedNames() {
         // Default selected names are all user defined variable names shared between disjunctions.
         // For example, in a query of the form
         // {..$x..$y..} or {..$x..}
@@ -97,9 +100,11 @@ public class MatchQueryBase implements MatchQueryInternal {
 
         // Get the intersection of all conjunctions to find any variables shared between them
         // This will fail if there are no conjunctions (so the query is empty)
-        return vars.reduce(Sets::intersection).orElseThrow(
+        Set<String> names = vars.reduce(Sets::intersection).orElseThrow(
                 () -> new RuntimeException(ErrorMessage.MATCH_NO_PATTERNS.getMessage())
         );
+        
+        return ImmutableSet.copyOf(names);
     }
 
     @Override

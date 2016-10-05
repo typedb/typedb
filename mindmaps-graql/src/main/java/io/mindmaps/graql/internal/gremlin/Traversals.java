@@ -18,23 +18,23 @@
 
 package io.mindmaps.graql.internal.gremlin;
 
-import java.util.stream.Stream;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-/**
- * a pattern to match in the graph. comprised of {@code Fragments}, each describing one way to represent the traversal,
- * starting from different variables.
- * <p>
- * A {@code MultiTraversal} may contain only one {@code Fragment} (e.g. checking the 'id' property), while others may
- * be comprised of two fragments (e.g. $x isa $y, which may start from $x or $y).
- */
-public interface MultiTraversal {
+import static io.mindmaps.util.Schema.EdgeLabel.AKO;
 
-    static MultiTraversal create(Fragment... fragments) {
-        return new MultiTraversalImpl(fragments);
+public class Traversals {
+
+    private Traversals() {}
+
+    @SuppressWarnings("unchecked")
+    public static GraphTraversal<Vertex, Vertex> outAkos(GraphTraversal<Vertex, Vertex> traversal) {
+        return traversal.union(__.identity(), __.repeat(__.out(AKO.getLabel())).emit()).unfold();
     }
 
-    /**
-     * @return a stream of fragments that this MultiTraversal contains
-     */
-    Stream<Fragment> getFragments();
+    @SuppressWarnings("unchecked")
+    public static GraphTraversal<Vertex, Vertex> inAkos(GraphTraversal<Vertex, Vertex> traversal) {
+        return traversal.union(__.identity(), __.repeat(__.in(AKO.getLabel())).emit()).unfold();
+    }
 }

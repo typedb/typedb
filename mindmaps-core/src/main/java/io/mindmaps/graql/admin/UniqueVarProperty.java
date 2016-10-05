@@ -16,32 +16,11 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql.internal.validation;
+package io.mindmaps.graql.admin;
 
-import io.mindmaps.MindmapsGraph;
-import io.mindmaps.graql.admin.PatternAdmin;
-import io.mindmaps.graql.admin.VarAdmin;
+public interface UniqueVarProperty extends VarProperty {
 
-import java.util.Collection;
-import java.util.stream.Stream;
-
-/**
- * A validator for a collection of vars
- */
-class PatternValidator implements Validator {
-
-    private final Collection<VarAdmin> vars;
-
-    /**
-     * @param pattern A collection of vars
-     */
-    PatternValidator(PatternAdmin pattern) {
-        this.vars = pattern.getVars();
-    }
-
-    @Override
-    public Stream<String> getErrors(MindmapsGraph graph) {
-        Stream<Validator> validators = vars.stream().map(MatchVarValidator::new);
-        return Validator.getAggregateValidator(validators).getErrors(graph);
+    default boolean isUnique() {
+        return true;
     }
 }

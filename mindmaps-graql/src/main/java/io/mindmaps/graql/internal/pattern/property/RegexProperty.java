@@ -18,9 +18,18 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import io.mindmaps.concept.Concept;
+import io.mindmaps.graql.admin.UniqueVarProperty;
+import io.mindmaps.graql.internal.gremlin.FragmentPriority;
+import io.mindmaps.graql.internal.query.InsertQueryExecutor;
 import io.mindmaps.graql.internal.util.StringConverter;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-public class RegexProperty extends AbstractNamedProperty {
+import static io.mindmaps.util.Schema.ConceptProperty.REGEX;
+
+public class RegexProperty extends AbstractVarProperty implements UniqueVarProperty, SingleTraversalProperty, NamedProperty {
 
     private final String regex;
 
@@ -33,12 +42,43 @@ public class RegexProperty extends AbstractNamedProperty {
     }
 
     @Override
-    protected String getName() {
+    public String getName() {
         return "regex";
     }
 
     @Override
-    protected String getProperty() {
+    public String getProperty() {
         return StringConverter.valueToString(regex);
+    }
+
+    @Override
+    public GraphTraversal<Vertex, Vertex> applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
+        return traversal.has(REGEX.name(), P.eq(regex));
+    }
+
+    @Override
+    public FragmentPriority getPriority() {
+        return FragmentPriority.VALUE_NONSPECIFIC;
+    }
+
+    @Override
+    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+        concept.asResourceType().setRegex(regex);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        RegexProperty that = (RegexProperty) o;
+
+        return regex.equals(that.regex);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return regex.hashCode();
     }
 }

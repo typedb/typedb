@@ -18,9 +18,27 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import com.google.common.collect.Sets;
+import io.mindmaps.MindmapsGraph;
+import io.mindmaps.concept.Type;
+import io.mindmaps.graql.admin.UniqueVarProperty;
 import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.gremlin.Fragment;
+import io.mindmaps.graql.internal.gremlin.MultiTraversal;
+import io.mindmaps.graql.internal.gremlin.ShortcutTraversal;
+import io.mindmaps.util.ErrorMessage;
 
-public class IsaProperty extends AbstractNamedProperty {
+import java.util.Collection;
+import java.util.Optional;
+import java.util.stream.Stream;
+
+import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNBOUNDED;
+import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNIQUE;
+import static io.mindmaps.graql.internal.gremlin.Traversals.inAkos;
+import static io.mindmaps.graql.internal.gremlin.Traversals.outAkos;
+import static io.mindmaps.util.Schema.EdgeLabel.ISA;
+
+public class IsaProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
 
     private final VarAdmin type;
 
@@ -33,12 +51,69 @@ public class IsaProperty extends AbstractNamedProperty {
     }
 
     @Override
-    protected String getName() {
+    public String getName() {
         return "isa";
     }
 
     @Override
-    protected String getProperty() {
+    public String getProperty() {
         return type.getPrintableName();
+    }
+
+    @Override
+    public void modifyShortcutTraversal(ShortcutTraversal shortcutTraversal) {
+        Optional<String> id = type.getId();
+        if (id.isPresent()){
+            shortcutTraversal.setType(id.get());
+        } else {
+            shortcutTraversal.setInvalid();
+        }
+    }
+
+    @Override
+    public Collection<MultiTraversal> match(String start) {
+        return Sets.newHashSet(MultiTraversal.create(
+                Fragment.create(
+                        t -> outAkos(outAkos(t).out(ISA.getLabel())),
+                        EDGE_UNIQUE, start, type.getName()
+                ),
+                Fragment.create(
+                        t -> inAkos(inAkos(t).in(ISA.getLabel())),
+                        EDGE_UNBOUNDED, type.getName(), start
+                )
+        ));
+    }
+
+    @Override
+    public Stream<VarAdmin> getTypes() {
+        return Stream.of(type);
+    }
+
+    @Override
+    public Stream<VarAdmin> getInnerVars() {
+        return Stream.of(type);
+    }
+
+    @Override
+    public void checkValidProperty(MindmapsGraph graph, VarAdmin var) throws IllegalStateException {
+        type.getIdOnly().map(graph::getType).filter(Type::isRoleType).ifPresent(type -> {
+            throw new IllegalStateException(ErrorMessage.INSTANCE_OF_ROLE_TYPE.getMessage(type.getId()));
+        });
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        IsaProperty that = (IsaProperty) o;
+
+        return type.equals(that.type);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return type.hashCode();
     }
 }

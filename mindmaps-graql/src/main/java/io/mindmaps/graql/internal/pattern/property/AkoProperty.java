@@ -18,9 +18,23 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import com.google.common.collect.Sets;
+import io.mindmaps.concept.Concept;
+import io.mindmaps.graql.admin.UniqueVarProperty;
 import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.gremlin.Fragment;
+import io.mindmaps.graql.internal.gremlin.MultiTraversal;
+import io.mindmaps.graql.internal.gremlin.Traversals;
+import io.mindmaps.graql.internal.query.InsertQueryExecutor;
+import io.mindmaps.util.ErrorMessage;
 
-public class AkoProperty extends AbstractNamedProperty {
+import java.util.Collection;
+import java.util.stream.Stream;
+
+import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_BOUNDED;
+import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNIQUE;
+
+public class AkoProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
     private final VarAdmin superType;
 
@@ -33,12 +47,65 @@ public class AkoProperty extends AbstractNamedProperty {
     }
 
     @Override
-    protected String getName() {
+    public String getName() {
         return "ako";
     }
 
     @Override
-    protected String getProperty() {
+    public String getProperty() {
         return superType.getPrintableName();
+    }
+
+    @Override
+    public Collection<MultiTraversal> match(String start) {
+        return Sets.newHashSet(MultiTraversal.create(
+                Fragment.create(Traversals::outAkos, EDGE_UNIQUE, start, superType.getName()),
+                Fragment.create(Traversals::inAkos, EDGE_BOUNDED, superType.getName(), start)
+        ));
+    }
+
+    @Override
+    public Stream<VarAdmin> getTypes() {
+        return Stream.of(superType);
+    }
+
+    @Override
+    public Stream<VarAdmin> getInnerVars() {
+        return Stream.of(superType);
+    }
+
+    @Override
+    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
+        Concept superConcept = insertQueryExecutor.getConcept(superType);
+
+        if (concept.isEntityType()) {
+            concept.asEntityType().superType(superConcept.asEntityType());
+        } else if (concept.isRelationType()) {
+            concept.asRelationType().superType(superConcept.asRelationType());
+        } else if (concept.isRoleType()) {
+            concept.asRoleType().superType(superConcept.asRoleType());
+        } else if (concept.isResourceType()) {
+            concept.asResourceType().superType(superConcept.asResourceType());
+        } else if (concept.isRuleType()) {
+            concept.asRuleType().superType(superConcept.asRuleType());
+        } else {
+            throw new IllegalStateException(ErrorMessage.INSERT_METATYPE.getMessage(concept.getId(), superType.getId()));
+        }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        AkoProperty that = (AkoProperty) o;
+
+        return superType.equals(that.superType);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return superType.hashCode();
     }
 }
