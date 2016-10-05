@@ -26,7 +26,7 @@ import io.mindmaps.concept.Type;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.gremlin.Query;
+import io.mindmaps.graql.internal.gremlin.GremlinQuery;
 import io.mindmaps.graql.internal.pattern.property.VarPropertyInternal;
 import io.mindmaps.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -76,8 +76,8 @@ public class MatchQueryBase implements MatchQueryInternal {
 
     @Override
     public Set<Type> getTypes(MindmapsGraph graph) {
-        Query query = getQuery(graph, Optional.empty());
-        return query.getConcepts().map(graph::getType).filter(t -> t != null).collect(toSet());
+        GremlinQuery gremlinQuery = getQuery(graph, Optional.empty());
+        return gremlinQuery.getConcepts().map(graph::getType).filter(t -> t != null).collect(toSet());
     }
 
     @Override
@@ -139,8 +139,8 @@ public class MatchQueryBase implements MatchQueryInternal {
      * @param order an optional ordering of the query
      * @return the query that will match the specified patterns
      */
-    private Query getQuery(MindmapsGraph graph, Optional<MatchOrder> order) {
-        return new Query(graph, this.pattern, getSelectedNames(), order);
+    private GremlinQuery getQuery(MindmapsGraph graph, Optional<MatchOrder> order) {
+        return new GremlinQuery(graph, this.pattern, getSelectedNames(), order);
     }
 
     /**

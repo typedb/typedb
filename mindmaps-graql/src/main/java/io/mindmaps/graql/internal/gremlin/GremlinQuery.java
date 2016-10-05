@@ -46,7 +46,7 @@ import static java.util.stream.Collectors.toList;
  * The {@code Query} returns a list of gremlin traversals, whose results are combined by {@code MatchQueryImpl} to
  * maintain any requested ordering.
  */
-public class Query {
+public class GremlinQuery {
 
     private final MindmapsGraph graph;
     private final Collection<ConjunctionQuery> innerQueries;
@@ -59,7 +59,7 @@ public class Query {
      * @param names the variable names to select
      * @param order an optional ordering
      */
-    public Query(MindmapsGraph graph, PatternAdmin pattern, ImmutableSet<String> names, Optional<MatchOrder> order) {
+    public GremlinQuery(MindmapsGraph graph, PatternAdmin pattern, ImmutableSet<String> names, Optional<MatchOrder> order) {
         Collection<Conjunction<VarAdmin>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
         if (graph == null) {
