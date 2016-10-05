@@ -29,6 +29,7 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.Map;
 
+import static io.mindmaps.graql.internal.reasoner.Utility.createReflexiveRule;
 import static io.mindmaps.graql.internal.reasoner.Utility.createSubPropertyRule;
 import static io.mindmaps.graql.internal.reasoner.Utility.createTransitiveRule;
 import static org.junit.Assert.assertTrue;
@@ -71,6 +72,20 @@ public class ReasonerTest {
                       "(member-location: $z, container-location: $y) isa sublocate;" +
                       "select $x, $y;";
         String head = "match (member-location: $x, container-location: $y) isa sublocate;";
+
+        InferenceRule R2 = new InferenceRule(graph.putRule("test", body, head, graph.getMetaRuleInference()), graph);
+        assertTrue(R.getHead().equals(R2.getHead()));
+        assertTrue(R.getBody().equals(R2.getBody()));
+    }
+
+    @Test
+    public void testReflexiveRule() {
+        MindmapsGraph graph = SNBGraph.getGraph();
+        Rule rule = createReflexiveRule("testRule", graph.getRelationType("knows"), graph);
+        InferenceRule R = new InferenceRule(rule, graph);
+
+        String body = "match ($x, $y) isa knows;select $x;";
+        String head = "match ($x, $x) isa knows;";
 
         InferenceRule R2 = new InferenceRule(graph.putRule("test", body, head, graph.getMetaRuleInference()), graph);
         assertTrue(R.getHead().equals(R2.getHead()));

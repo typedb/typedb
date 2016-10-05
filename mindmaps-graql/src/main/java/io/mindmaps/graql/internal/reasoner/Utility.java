@@ -172,6 +172,26 @@ public class Utility {
     }
 
     /**
+     * create reflexive rule R(from: X, to: X) :- R(from: X,to: Y)
+     * @param ruleId rule identifier
+     * @param relType reflexive relation type
+     * @param graph graph
+     * @return rule instance
+     */
+    public static Rule createReflexiveRule(String ruleId, RelationType relType, MindmapsGraph graph){
+        final int arity = relType.hasRoles().size();
+        if (arity != 2)
+            throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
+
+        Var bodyVar = Graql.var().isa(relType.getId()).rel("x").rel("y");
+        Var headVar = Graql.var().isa(relType.getId()).rel("x").rel("x");
+
+        String body = Graql.match(bodyVar).select("x").toString();
+        String head = Graql.match(headVar).select("x").toString();
+        return graph.putRule(ruleId, body, head, graph.getMetaRuleInference());
+    }
+
+    /**
      * creates rule parent :- child
      * @param ruleId rule identifier
      * @param parent relation type of parent
