@@ -181,6 +181,7 @@ public class GraqlTest {
         });
     }
 
+    @Ignore
     @Test
     public void testDegreesAndPersist() throws Exception {
 

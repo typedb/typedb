@@ -104,12 +104,6 @@ public class Analytics {
 
         // add analytics ontology - hard coded for now
         mutateResourceOntology(degree, ResourceType.DataType.LONG);
-
-        try {
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
     }
 
     /**
