@@ -59,46 +59,43 @@ class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
     }
 
     @Override
-    public void execute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
-        // try to deal with ghost vertex issues by ignoring them
-        if (isAlive(vertex)) {
-            switch (memory.getIteration()) {
-                case 0:
-                    if (selectedTypes.contains(getVertexType(vertex)) && !isAnalyticsElement(vertex)) {
-                        String type = vertex.value(Schema.ConceptProperty.BASE_TYPE.name());
-                        if (type.equals(Schema.BaseType.ENTITY.name()) || type.equals(Schema.BaseType.RESOURCE.name())) {
-                            messenger.sendMessage(countMessageScopeIn, 1L);
-                        } else if (type.equals(Schema.BaseType.RELATION.name())) {
-                            messenger.sendMessage(countMessageScopeOut, -1L);
-                            messenger.sendMessage(countMessageScopeIn, 1L);
-                        }
+    public void safeExecute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
+        switch (memory.getIteration()) {
+            case 0:
+                if (selectedTypes.contains(getVertexType(vertex)) && !isAnalyticsElement(vertex)) {
+                    String type = vertex.value(Schema.ConceptProperty.BASE_TYPE.name());
+                    if (type.equals(Schema.BaseType.ENTITY.name()) || type.equals(Schema.BaseType.RESOURCE.name())) {
+                        messenger.sendMessage(countMessageScopeIn, 1L);
+                    } else if (type.equals(Schema.BaseType.RELATION.name())) {
+                        messenger.sendMessage(countMessageScopeOut, -1L);
+                        messenger.sendMessage(countMessageScopeIn, 1L);
                     }
-                    break;
-                case 1:
-                    if (vertex.value(Schema.ConceptProperty.BASE_TYPE.name()).equals(Schema.BaseType.CASTING.name())) {
-                        boolean hasRolePlayer = false;
-                        long assertionCount = 0;
-                        Iterator<Long> iterator = messenger.receiveMessages();
-                        while (iterator.hasNext()) {
-                            long message = iterator.next();
-                            if (message < 0) assertionCount++;
-                            else hasRolePlayer = true;
-                        }
-                        if (hasRolePlayer) {
-                            messenger.sendMessage(countMessageScopeIn, 1L);
-                            messenger.sendMessage(countMessageScopeOut, assertionCount);
-                        }
+                }
+                break;
+            case 1:
+                if (vertex.value(Schema.ConceptProperty.BASE_TYPE.name()).equals(Schema.BaseType.CASTING.name())) {
+                    boolean hasRolePlayer = false;
+                    long assertionCount = 0;
+                    Iterator<Long> iterator = messenger.receiveMessages();
+                    while (iterator.hasNext()) {
+                        long message = iterator.next();
+                        if (message < 0) assertionCount++;
+                        else hasRolePlayer = true;
                     }
-                    break;
-                case 2:
-                    if (!isAnalyticsElement(vertex) && selectedTypes.contains(getVertexType(vertex))) {
-                        if (baseTypes.contains(vertex.value(Schema.ConceptProperty.BASE_TYPE.name()).toString())) {
-                            long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
-                            bulkResourceMutate.putValue(vertex, edgeCount, MEMORY_KEY);
-                        }
+                    if (hasRolePlayer) {
+                        messenger.sendMessage(countMessageScopeIn, 1L);
+                        messenger.sendMessage(countMessageScopeOut, assertionCount);
                     }
-                    break;
-            }
+                }
+                break;
+            case 2:
+                if (!isAnalyticsElement(vertex) && selectedTypes.contains(getVertexType(vertex))) {
+                    if (baseTypes.contains(vertex.value(Schema.ConceptProperty.BASE_TYPE.name()).toString())) {
+                        long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
+                        bulkResourceMutate.putValue(vertex, edgeCount, MEMORY_KEY);
+                    }
+                }
+                break;
         }
     }
 
