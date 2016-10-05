@@ -58,6 +58,8 @@ class BulkResourceMutate <T>{
     private RoleType resourceValue;
     private RelationType relationType;
 
+    private boolean verboseOutput = true;
+
     public BulkResourceMutate(String keyspace) {
         this.keyspace = keyspace;
     }
@@ -114,6 +116,12 @@ class BulkResourceMutate <T>{
      * @return          the ID of the old relation to be removed
      */
     private void persistResource(Vertex vertex, T value) {
+
+        if (verboseOutput) {
+            System.out.println("considering vertex: "+vertex);
+            vertex.properties().forEachRemaining(System.out::println);
+        }
+
         Instance instance =
                 graph.getInstance(vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name()));
 
@@ -122,6 +130,11 @@ class BulkResourceMutate <T>{
                 .filter(relation -> relation.rolePlayers().containsKey(resourceValue) &&
                         relation.rolePlayers().get(resourceValue).type().getId().equals(resourceTypeId))
                 .collect(Collectors.toList());
+
+        if (verboseOutput) {
+            System.out.println("assertions currently attached");
+            relations.forEach(System.out::println);
+        }
 
         if (relations.isEmpty()) {
             Resource<T> resource = graph.putResource(value, resourceType);
