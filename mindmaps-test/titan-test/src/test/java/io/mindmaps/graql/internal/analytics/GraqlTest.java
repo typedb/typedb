@@ -18,9 +18,9 @@
 
 package io.mindmaps.graql.internal.analytics;
 
-import io.mindmaps.IntegrationUtils;
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.MindmapsTitanTestBase;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
@@ -34,7 +34,6 @@ import io.mindmaps.graql.QueryBuilder;
 import org.javatuples.Pair;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -52,20 +51,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class GraqlTest {
+public class GraqlTest extends MindmapsTitanTestBase {
 
     String keyspace;
     MindmapsGraph graph;
     private QueryBuilder qb;
 
-    @BeforeClass
-    public static void startController() throws Exception {
-        IntegrationUtils.startTestEngine();
-    }
-
     @Before
     public void setUp() throws InterruptedException {
-        Pair<MindmapsGraph, String> result = IntegrationUtils.graphWithNewKeyspace();
+        Pair<MindmapsGraph, String> result = graphWithNewKeyspace();
         graph = result.getValue0();
         keyspace = result.getValue1();
         qb = withGraph(graph);

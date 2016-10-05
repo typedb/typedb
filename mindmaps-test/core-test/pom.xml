@@ -9,19 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>orientdb-test</artifactId>
-
-    <dependencies>
-        <dependency>
-            <groupId>io.mindmaps</groupId>
-            <artifactId>core-test</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.mindmaps</groupId>
-            <artifactId>mindmaps-orientdb-factory</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-    </dependencies>
+    <artifactId>core-test</artifactId>
+    <packaging>jar</packaging>
 
 </project>

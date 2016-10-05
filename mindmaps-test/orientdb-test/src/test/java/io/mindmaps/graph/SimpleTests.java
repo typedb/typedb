@@ -2,31 +2,19 @@ package io.mindmaps.graph;
 
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.MindmapsOrientDBTestBase;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
-import io.mindmaps.engine.MindmapsEngineServer;
 import io.mindmaps.engine.postprocessing.Cache;
-import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static java.lang.Thread.sleep;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotNull;
 
-public class SimpleTests {
-    @BeforeClass
-    public static void startTestEngine() throws Exception {
-        MindmapsEngineServer.stop();
-        sleep(5000);
-
-        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY, ConfigProperties.EXPERIMENTAL_CONFIG_FILE);
-        MindmapsEngineServer.start();
-        sleep(5000);
-    }
+public class SimpleTests extends MindmapsOrientDBTestBase {
 
     @Test
     public void testOrientDBConstructionThroughEngine() throws MindmapsValidationException {

@@ -1,32 +1,35 @@
 package io.mindmaps.graql.internal.analytics;
 
-import io.mindmaps.IntegrationUtils;
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.MindmapsTitanTestBase;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.Mindmaps;
 import io.mindmaps.graql.internal.util.GraqlType;
 import org.elasticsearch.common.collect.Sets;
 import org.javatuples.Pair;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import spark.Spark;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class StatisticsTest {
+public class StatisticsTest extends MindmapsTitanTestBase {
 
     private static final String thing = "thing";
     private static final String anotherThing = "anotherThing";
@@ -45,14 +48,9 @@ public class StatisticsTest {
     Analytics computer;
     double delta = 0.000001;
 
-    @BeforeClass
-    public static void startController() throws Exception {
-        IntegrationUtils.startTestEngine();
-    }
-
     @Before
     public void setUp() throws InterruptedException, MindmapsValidationException {
-        Pair<MindmapsGraph, String> result = IntegrationUtils.graphWithNewKeyspace();
+        Pair<MindmapsGraph, String> result = graphWithNewKeyspace();
         graph = result.getValue0();
         keyspace = result.getValue1();
     }

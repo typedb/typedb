@@ -14,6 +14,11 @@
     <dependencies>
         <dependency>
             <groupId>io.mindmaps</groupId>
+            <artifactId>core-test</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.mindmaps</groupId>
             <artifactId>mindmaps-titan-factory</artifactId>
             <version>${project.version}</version>
             <exclusions>
@@ -29,9 +34,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.jayway.restassured</groupId>
-            <artifactId>rest-assured</artifactId>
-            <version>${rest-assured.version}</version>
+            <groupId>org.cassandraunit</groupId>
+            <artifactId>cassandra-unit</artifactId>
+            <version>2.1.9.2</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

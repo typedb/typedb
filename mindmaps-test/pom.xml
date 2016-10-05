@@ -32,6 +32,7 @@
     <modules>
         <module>titan-test</module>
         <module>orientdb-test</module>
+        <module>core-test</module>
     </modules>
 
     <dependencies>
@@ -52,10 +53,14 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.cassandraunit</groupId>
-            <artifactId>cassandra-unit</artifactId>
-            <version>2.1.9.2</version>
-            <scope>test</scope>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>${junit.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.jayway.restassured</groupId>
+            <artifactId>rest-assured</artifactId>
+            <version>${rest-assured.version}</version>
         </dependency>
     </dependencies>
 </project>
