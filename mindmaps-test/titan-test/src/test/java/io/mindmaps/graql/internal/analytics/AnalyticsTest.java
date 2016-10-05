@@ -944,7 +944,7 @@ public class AnalyticsTest {
         graph.commit();
 
         // create degrees
-        new Analytics(keyspace).degreesAndPersist();
+        new Analytics(keyspace, new HashSet<String>(), new HashSet<String>()).degreesAndPersist();
 
         // compute sum
         Analytics analytics = new Analytics(keyspace, new HashSet<>(), new HashSet<String>(Arrays.asList("degree")));
@@ -952,6 +952,6 @@ public class AnalyticsTest {
 
         // compute count
         analytics = new Analytics(keyspace, new HashSet<String>(Arrays.asList("degree")), new HashSet<>());
-        assertEquals(3L,analytics.count());
+        assertEquals(graph.getResourceType("degree").instances().size(), analytics.count());
     }
 }

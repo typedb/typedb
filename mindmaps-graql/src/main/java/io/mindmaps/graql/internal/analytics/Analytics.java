@@ -381,9 +381,6 @@ public class Analytics {
     private void mutateResourceOntology(String resourceTypeId, ResourceType.DataType resourceDataType) {
         MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraph();
 
-        // stop accidental commits when instantiating analytics
-        graph.rollback();
-
         ResourceType resource = graph.putResourceType(resourceTypeId, resourceDataType);
         RoleType degreeOwner = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
         RoleType degreeValue = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
