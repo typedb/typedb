@@ -51,12 +51,14 @@ import org.semanticweb.owlapi.model.OWLSubDataPropertyOfAxiom;
 import org.semanticweb.owlapi.model.OWLSubObjectPropertyOfAxiom;
 import org.semanticweb.owlapi.model.OWLSubPropertyChainOfAxiom;
 import org.semanticweb.owlapi.model.OWLTransitiveObjectPropertyAxiom;
+import org.semanticweb.owlapi.model.OWLReflexiveObjectPropertyAxiom;
 import org.semanticweb.owlapi.model.OWLInverseObjectPropertiesAxiom;
 import org.semanticweb.owlapi.model.OWLEquivalentObjectPropertiesAxiom;
 
 import java.util.Optional;
 
 import static io.mindmaps.graql.internal.reasoner.Utility.createPropertyChainRule;
+import static io.mindmaps.graql.internal.reasoner.Utility.createReflexiveRule;
 import static io.mindmaps.graql.internal.reasoner.Utility.createSubPropertyRule;
 import static io.mindmaps.graql.internal.reasoner.Utility.createTransitiveRule;
 
@@ -257,6 +259,15 @@ public class OwlMindmapsGraphStoringVisitor implements OWLAxiomVisitorEx<Concept
         RelationType relation = migrator.relation(axiom.getProperty().asOWLObjectProperty());
         createTransitiveRule("trst-" + relation.getId() + "-" + UUID.randomUUID().toString(), relation, migrator.namer().subjectRole(relation.getId()),
                 migrator.namer().objectRole(relation.getId()), migrator.graph());
+        return null;
+    }
+
+    @Override
+    public Concept visit(OWLReflexiveObjectPropertyAxiom axiom) {
+        if (!axiom.getProperty().isOWLObjectProperty())
+            return null;
+        RelationType relation = migrator.relation(axiom.getProperty().asOWLObjectProperty());
+        createReflexiveRule("rflx-" + relation.getId() + "-" + UUID.randomUUID().toString(), relation, migrator.graph());
         return null;
     }
 
