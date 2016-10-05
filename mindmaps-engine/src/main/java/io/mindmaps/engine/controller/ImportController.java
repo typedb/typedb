@@ -88,10 +88,15 @@ public class ImportController {
 
     public ImportController() {
 
-        before((req,res)->{
+        before(REST.WebPath.IMPORT_DATA_URI,(req,res)->{
             if(loadingInProgress.get())
                 halt(423, "Another loading process is still running.\n");
         });
+        before(REST.WebPath.IMPORT_DISTRIBUTED_URI,(req,res)->{
+            if(loadingInProgress.get())
+                halt(423, "Another loading process is still running.\n");
+        });
+
         post(REST.WebPath.IMPORT_DATA_URI, this::importDataREST);
         post(REST.WebPath.IMPORT_ONTOLOGY_URI, this::importOntologyREST);
         post(REST.WebPath.IMPORT_DISTRIBUTED_URI, this::importDataRESTDistributed);
