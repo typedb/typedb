@@ -47,6 +47,7 @@ public class Analytics {
     private final String keySpace;
     // TODO: allow user specified resources
     public static final String degree = "degree";
+    private final int numberOfOntologyChecks = 10;
 
     /**
      * The concept type ids that define which instances appear in the subgraph.
@@ -408,10 +409,10 @@ public class Analytics {
      * @param resourceTypeId    the resource the plays role edges must point to
      */
     private void waitOnMutateResourceOntology(String resourceTypeId) {
-        boolean isOntologyComplete = true;
         MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraph();
 
-        for (int i=0; i<10; i++) {
+        for (int i=0; i<numberOfOntologyChecks; i++) {
+            boolean isOntologyComplete = true;
             graph.rollback();
 
             ResourceType resource = graph.getResourceType(resourceTypeId);
@@ -428,12 +429,11 @@ public class Analytics {
                 if (!roles.contains(degreeOwner)) isOntologyComplete = false;
             }
 
-            if (isOntologyComplete) break;
-            if (i==9 && isOntologyComplete==false)
-                throw new RuntimeException(
-                        ErrorMessage.ONTOLOGY_MUTATION
-                                .getMessage("Failed to confirm ontology is present after mutation."));
+            if (isOntologyComplete) return;
         }
+        throw new RuntimeException(
+                ErrorMessage.ONTOLOGY_MUTATION
+                        .getMessage("Failed to confirm ontology is present after mutation."));
     }
 
     private String checkSelectedResourceTypesHaveCorrectDataType(Set<String> types) {
