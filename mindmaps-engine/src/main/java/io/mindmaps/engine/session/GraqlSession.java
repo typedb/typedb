@@ -214,10 +214,17 @@ class GraqlSession {
      * Tell the client about an error in their query
      */
     private void sendQueryError(String errorMessage) {
-        sendJson(Json.object(
-                ACTION, ACTION_QUERY_END,
-                ERROR, errorMessage
-        ));
+        // Split error into chunks
+        Iterable<String> splitError = Splitter.fixedLength(QUERY_CHUNK_SIZE).split(errorMessage + "\n");
+
+        for (String errorChunk : splitError) {
+            sendJson(Json.object(
+                    ACTION, ACTION_ERROR,
+                    ERROR, errorChunk
+            ));
+        }
+
+        sendJson(Json.object(ACTION, ACTION_QUERY_END));
     }
 
     /**

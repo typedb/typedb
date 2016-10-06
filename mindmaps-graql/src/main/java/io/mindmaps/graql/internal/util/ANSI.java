@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql.internal.parser;
+package io.mindmaps.graql.internal.util;
 
 /**
  * Includes ANSI unicode commands for different colours

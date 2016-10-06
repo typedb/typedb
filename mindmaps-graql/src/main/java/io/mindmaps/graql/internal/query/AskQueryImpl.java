@@ -22,7 +22,7 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.AskQuery;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.admin.AskQueryAdmin;
-import io.mindmaps.graql.internal.parser.ANSI;
+import io.mindmaps.graql.internal.util.ANSI;
 
 import java.util.stream.Stream;
 
