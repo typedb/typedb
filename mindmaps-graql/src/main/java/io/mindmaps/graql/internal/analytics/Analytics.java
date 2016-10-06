@@ -429,7 +429,10 @@ public class Analytics {
             }
 
             if (isOntologyComplete) break;
-            if (i==9 && isOntologyComplete==false) throw new RuntimeException("Failed to confirm ontology is present.");
+            if (i==9 && isOntologyComplete==false)
+                throw new RuntimeException(
+                        ErrorMessage.ONTOLOGY_MUTATION
+                                .getMessage("Failed to confirm ontology is present after mutation."));
         }
     }
 
