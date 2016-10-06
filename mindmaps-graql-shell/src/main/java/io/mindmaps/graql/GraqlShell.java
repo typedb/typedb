@@ -56,6 +56,7 @@ import java.util.stream.Collectors;
 import static io.mindmaps.util.REST.RemoteShell.ACTION;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_AUTOCOMPLETE;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_COMMIT;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_ERROR;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_NAMESPACE;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY_ABORT;
@@ -367,10 +368,6 @@ public class GraqlShell {
     public void onMessage(String msg) {
         Json json = Json.read(msg);
 
-        if (json.has(ERROR)) {
-            System.err.println(json.at(ERROR).asString());
-        }
-
         switch (json.at(ACTION).asString()) {
             case ACTION_QUERY:
                 String result = json.at(QUERY_RESULT).asString();
@@ -384,6 +381,9 @@ public class GraqlShell {
                 break;
             case ACTION_AUTOCOMPLETE:
                 autocompleteResponse.complete(json);
+                break;
+            case ACTION_ERROR:
+                System.err.print(json.at(ERROR).asString());
                 break;
         }
     }

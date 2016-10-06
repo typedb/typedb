@@ -142,4 +142,18 @@ export default class Style {
     getEdgeFont() {
         return this.edge.font;
     }
+
+    clusterColour() {
+        return {
+            background: this.node.colour.background,
+            border: "#fc1dbb",
+            highlight: { border: "#fc1dbb" }
+        };
+    }
+
+    clusterFont() {
+        return {
+            color: this.clusterColour().border
+        };
+    }
 };

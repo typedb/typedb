@@ -71,6 +71,7 @@ public class REST {
         public static final String ACTION_NAMESPACE = "namespace";
         public static final String ACTION_QUERY = "query";
         public static final String ACTION_QUERY_END = "queryEnd";
+        public static final String ACTION_ERROR = "error";
         public static final String ACTION_QUERY_ABORT = "queryAbort";
         public static final String ACTION_COMMIT = "commit";
         public static final String ACTION_ROLLBACK = "rollback";

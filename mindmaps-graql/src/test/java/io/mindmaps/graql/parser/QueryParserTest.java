@@ -30,6 +30,8 @@ import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Var;
+import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.pattern.property.DataTypeProperty;
 import io.mindmaps.graql.internal.query.aggregate.AbstractAggregate;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -56,6 +58,7 @@ import static io.mindmaps.graql.Graql.lt;
 import static io.mindmaps.graql.Graql.lte;
 import static io.mindmaps.graql.Graql.neq;
 import static io.mindmaps.graql.Graql.or;
+import static io.mindmaps.graql.Graql.parse;
 import static io.mindmaps.graql.Graql.parseAggregate;
 import static io.mindmaps.graql.Graql.parseAsk;
 import static io.mindmaps.graql.Graql.parseCompute;
@@ -468,6 +471,14 @@ public class QueryParserTest {
     }
 
     @Test
+    public void testParseComputeWithSubgraph() {
+        assertEquals(
+                "compute count in movie, person;",
+                parseCompute("compute count in movie, person;").toString()
+        );
+    }
+
+    @Test
     public void testBadSyntaxThrowsIllegalArgumentException() {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(allOf(
@@ -501,6 +512,28 @@ public class QueryParserTest {
         MatchQuery query = qb.parseMatch("match $x regex /(fe)?male/;");
         assertEquals(1, query.stream().count());
         assertEquals("gender", query.get("x").findFirst().get().getId());
+    }
+
+    @Test
+    public void testGraqlParseQuery() {
+        assertTrue(parse("match $x isa movie;") instanceof MatchQuery);
+    }
+
+    @Test
+    public void testParseBooleanType() {
+        MatchQuery query = parseMatch("match $x datatype boolean;");
+
+        VarAdmin var = query.admin().getPattern().getVars().iterator().next();
+
+        //noinspection OptionalGetWithoutIsPresent
+        DataTypeProperty property = var.getProperty(DataTypeProperty.class).get();
+
+        assertEquals(ResourceType.DataType.BOOLEAN, property.getDatatype());
+    }
+
+    @Test
+    public void testParseHasScope() {
+        assertEquals("match $x has-scope $y;", parse("match $x has-scope $y;").toString());
     }
 
     @Test(expected = IllegalArgumentException.class)

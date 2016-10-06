@@ -24,7 +24,6 @@ import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.admin.VarProperty;
-import io.mindmaps.graql.internal.pattern.VarInternal;
 import io.mindmaps.graql.internal.pattern.property.HasResourceProperty;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.util.ErrorMessage;
@@ -57,6 +56,10 @@ public class AtomicFactory {
             return new Substitution(var, parent);
         else
             return new Atom(var, parent);
+    }
+
+    public static Atomic create(Atomic atom) {
+        return atom.clone();
     }
 
     public static Set<Atomic> createAtomSet(Conjunction<PatternAdmin> pat, Query parent) {
@@ -105,9 +108,5 @@ public class AtomicFactory {
         });
 
         return atoms;
-    }
-
-    public static Atomic create(Atomic atom) {
-        return atom.clone();
     }
 }

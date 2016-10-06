@@ -355,6 +355,10 @@ public class Analytics {
      * @param resourceType the type of the resource that will contain the degree
      */
     private void degreesAndPersist(String resourceType) {
+        if (!Sets.intersection(subtypes, CommonOLAP.analyticsElements).isEmpty()) {
+            throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
+                    .getMessage(this.getClass().toString()));
+        }
         MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
         computer.compute(new DegreeAndPersistVertexProgram(keySpace, subtypes));
     }
@@ -376,9 +380,6 @@ public class Analytics {
      */
     private void mutateResourceOntology(String resourceTypeId, ResourceType.DataType resourceDataType) {
         MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraph();
-
-        // stop accidental commits when instantiating analytics
-        graph.rollback();
 
         ResourceType resource = graph.putResourceType(resourceTypeId, resourceDataType);
         RoleType degreeOwner = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));

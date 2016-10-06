@@ -27,7 +27,6 @@ import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.admin.InsertQueryAdmin;
 import io.mindmaps.graql.admin.MatchQueryAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.pattern.VarInternal;
 import io.mindmaps.graql.internal.pattern.property.VarPropertyInternal;
 import io.mindmaps.util.ErrorMessage;
 
@@ -66,7 +65,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
         this.originalVars = vars;
 
         // Get all variables, including ones nested in other variables
-        this.vars = vars.stream().flatMap(v -> ((VarInternal) v).getImplicitInnerVars().stream()).collect(toImmutableSet());
+        this.vars = vars.stream().flatMap(v -> v.getImplicitInnerVars().stream()).collect(toImmutableSet());
 
         for (VarAdmin var : this.vars) {
             var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkInsertable(var));

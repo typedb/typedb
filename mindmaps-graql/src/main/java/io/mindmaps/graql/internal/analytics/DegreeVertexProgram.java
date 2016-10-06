@@ -64,7 +64,7 @@ public class DegreeVertexProgram extends MindmapsVertexProgram<Long> {
     public void execute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
         switch (memory.getIteration()) {
             case 0:
-                if (selectedTypes.contains(getVertexType(vertex)) && !isAnalyticsElement(vertex)) {
+                if (selectedTypes.contains(getVertexType(vertex))) {
                     String type = vertex.value(Schema.ConceptProperty.BASE_TYPE.name());
                     if (type.equals(Schema.BaseType.ENTITY.name()) || type.equals(Schema.BaseType.RESOURCE.name())) {
                         messenger.sendMessage(this.countMessageScopeIn, 1L);
@@ -92,7 +92,7 @@ public class DegreeVertexProgram extends MindmapsVertexProgram<Long> {
                 }
                 break;
             case 2:
-                if (!isAnalyticsElement(vertex) && selectedTypes.contains(getVertexType(vertex))) {
+                if (selectedTypes.contains(getVertexType(vertex))) {
                     if (baseTypes.contains(vertex.value(Schema.ConceptProperty.BASE_TYPE.name()).toString())) {
                         long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
                         vertex.property(MEMORY_KEY, edgeCount);

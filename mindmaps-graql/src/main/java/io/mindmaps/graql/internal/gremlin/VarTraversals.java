@@ -33,7 +33,7 @@ import java.util.stream.Stream;
  * <p>
  * If possible, the {@code VarTraversals} will be represented using a {@code ShortcutTraversal}.
  */
-public class VarTraversals {
+class VarTraversals {
 
     private final ShortcutTraversal shortcutTraversal = new ShortcutTraversal();
     private final Collection<MultiTraversal> traversals = new HashSet<>();
@@ -43,7 +43,7 @@ public class VarTraversals {
      * Create VarTraversals to represent a Var
      * @param var the variable that this VarTraversal will represent
      */
-    public VarTraversals(VarAdmin var) {
+    VarTraversals(VarAdmin var) {
 
         // If the user has provided a variable name, it can't be represented with a shortcut edge because it may be
         // referred to later.

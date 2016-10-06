@@ -477,4 +477,16 @@ public class MatchQueryTest {
         assertFalse(qb.match(id("b").playsRole("d")).ask().execute());
         assertFalse(qb.match(id("c").playsRole("d")).ask().execute());
     }
+
+    @Test
+    public void testMatchQueryExecuteAndParallelStream() {
+        MatchQuery query = qb.match(var("x").isa("movie"));
+        List<Map<String, Concept>> list = query.execute();
+        assertEquals(list, query.parallelStream().collect(toList()));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testMatchEmpty() {
+        qb.match().execute();
+    }
 }
