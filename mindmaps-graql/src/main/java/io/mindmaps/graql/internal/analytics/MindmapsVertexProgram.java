@@ -63,7 +63,7 @@ public abstract class MindmapsVertexProgram<T> extends CommonOLAP implements Ver
     }
 
     /**
-     * An alternative to the execute method when ghost vertices are an issue.
+     * An alternative to the execute method when ghost vertices are an issue. Our "Ghostbuster".
      *
      * @param vertex        a vertex that may be a ghost
      * @param messenger     Tinker message passing object

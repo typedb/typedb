@@ -26,7 +26,7 @@ class MinMapReduce extends MindmapsMapReduce<Number> {
     }
 
     @Override
-    public void map(final Vertex vertex, final MapEmitter<Serializable, Number> emitter) {
+    public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Number> emitter) {
         if (persistentProperties.get(RESOURCE_DATA_TYPE_KEY).equals(ResourceType.DataType.LONG.getName())) {
             if (selectedTypes.contains(getVertexType(vertex)) &&
                     ((Number)vertex.value(DegreeVertexProgram.MEMORY_KEY)).longValue() > 0) {
