@@ -29,10 +29,10 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                 </div>
                 <div class="panel-body">
                     <div class="form-group">
-                        <textarea class="form-control" rows="3" placeholder=">>" v-model="graqlQuery" @keydown.enter="notify($event)" @keydown.delete="clearGraph($event)"></textarea>
+                        <textarea class="form-control" rows="3" placeholder=">>" v-model="graqlQuery" @keydown.enter="runQuery($event)" @keydown.delete="clearGraph($event)"></textarea>
                     </div>
                     <div class="from-buttons">
-                        <button @click="notify" class="btn btn-default search-button">Submit<i class="pe-7s-angle-right-circle"></i></button>
+                        <button @click="runQuery" class="btn btn-default search-button">Submit<i class="pe-7s-angle-right-circle"></i></button>
                         <button @click="clearGraph" class="btn btn-default">Clear<i class="pe-7s-refresh"></i></button>
                         <button @click="getMetaTypes" class="btn btn-info">Show Types<i class="types-button" v-bind:class="[typeInstances ? 'pe-7s-angle-up-circle' : 'pe-7s-angle-down-circle']"></i></button>
                     </div>
@@ -246,19 +246,144 @@ export default {
     },
 
     methods: {
+        /*
+         * User interaction: queries.
+         */
+        runQuery(ev) {
+            if(ev instanceof KeyboardEvent) {
+                // Only Shift + Enter just adds a new line.
+                if(ev.shiftKey)
+                    return;
+
+                ev.preventDefault();
+            }
+
+            // Empty query.
+            if(this.graqlQuery == undefined)
+                return;
+
+            engineClient.graqlHAL(this.graqlQuery, this.graphResponse);
+            engineClient.graqlShell(this.graqlQuery, this.shellResponse);
+            this.resetMsg();
+        },
+
         typeQuery(t, ti) {
             this.graqlQuery = "match $x "+(t === 'roles' ? 'plays-role':'isa')+" "+ti+";";
             this.typeInstances = false;
-            this.notify();
+            this.runQuery();
         },
 
-        typeQueryResponse(resp, err) {
-            if(resp != undefined)
-                halParser.parseHalObject(resp);
+        getMetaTypes() {
+            if(this.typeInstances)
+                this.typeInstances = false;
+            else
+                engineClient.getMetaTypes(x => { if(x != null){ this.typeInstances = x; this.typeKeys = _.keys(x) } });
+        },
+
+        /*
+         * User interaction: visualiser
+         */
+        leftClick(param) {
+            // As multiselect is disabled, there will only ever be one node.
+            const node = param.nodes[0];
+            const eventKeys = param.event.srcEvent;
+
+            if(!eventKeys.altKey || node == undefined)
+                return;
+
+            if(!visualiser.expandCluster(node))
+                engineClient.request({ url: visualiser.nodes._data[x].ontology,
+                                       callback: this.typeQueryResponse });
+        },
+
+        doubleClick(param) {
+            const node = param.nodes[0];
+            if(node == undefined || visualiser.expandCluster(node))
+                return;
+
+            const eventKeys = param.event.srcEvent;
+            if(!eventKeys.shiftKey)
+                visualiser.clearGraph();
+
+            engineClient.request({url: node, callback: this.typeQueryResponse});
+        },
+
+        rightClick(param) {
+            const node = param.nodes[0];
+            if(node == undefined)
+                return;
+
+            if(param.event.shiftKey) {
+                param.nodes.map(x => { visualiser.deleteNode(x) });
+
+            } else if(!visualiser.expandCluster(node)) {
+                $('.tabs-col').removeClass('col-md-12').addClass('col-md-10');
+
+                this.allNodeProps = visualiser.getAllNodeProperties(node);
+                this.nodeType = visualiser.getNodeType(node);
+            }
+        },
+
+        /*
+         * User interaction: visual elements control
+         */
+        suppressEventDefault(e) {
+            e.preventDefault();
+        },
+
+        toggleElement(e) {
+            $('.'+e).toggle();
+        },
+
+        configureNode(p) {
+            if(this.selectedProps.includes(p))
+                this.selectedProps = this.selectedProps.filter(x => x != p);
+            else
+                this.selectedProps.push(p);
+
+            visualiser.setDisplayProperties(this.nodeType, this.selectedProps);
+        },
+
+        closeConfigPanel() {
+            $('.tabs-col').removeClass('col-md-10').addClass('col-md-12');
+            this.nodeType = undefined;
+            this.allNodeProps = [];
+            this.selectedProps = [];
+        },
+
+        /*
+         * EngineClient callbacks
+         */
+        graphResponse(resp, err) {
+            if(resp != null) {
+                if(!halParser.parseResponse(resp))
+                    this.showWarning("Sorry, no results found for your query.");
+                else
+                    visualiser.cluster();
+            } else {
+                this.showError(err);
+            }
+        },
+
+        shellResponse(resp, err) {
+            if(resp != null)
+                this.graqlResponse = Prism.highlight(resp, PLang.graql);
             else
                 this.showError(err);
         },
 
+        typeQueryResponse(resp, err) {
+            if(resp != undefined) {
+                halParser.parseHalObject(resp);
+                visualiser.cluster();
+            } else {
+                this.showError(err);
+            }
+        },
+
+        /*
+         * UX
+         */
         showError(msg) {
             this.errorPanelClass = 'panel-c-danger';
             this.errorMessage = msg;
@@ -280,43 +405,6 @@ export default {
             this.closeConfigPanel();
         },
 
-        graphResponse(resp, err) {
-            if(resp != null) {
-                if(!halParser.parseResponse(resp))
-                    this.showWarning("Sorry, no results found for your query.");
-            } else {
-                this.showError(err);
-            }
-        },
-
-        shellResponse(resp, err) {
-            if(resp != null)
-                this.graqlResponse = Prism.highlight(resp, PLang.graql);
-            else
-                this.showError(err);
-        },
-
-        notify(ev) {
-            // Dont insert newline.
-            if(ev instanceof KeyboardEvent) {
-                ev.preventDefault();
-
-                // Shift + Enter just adds a new line.
-                if(ev.shiftKey)
-                    return;
-            }
-
-            if(this.graqlQuery == undefined)
-                return;
-
-            // Enable graph animation.
-            visualiser.setSimulation(true);
-
-            engineClient.graqlHAL(this.graqlQuery, this.graphResponse);
-            engineClient.graqlShell(this.graqlQuery, this.shellResponse);
-            this.resetMsg();
-        },
-
         clearGraph(ev) {
             if(ev instanceof KeyboardEvent && !ev.shiftKey)
                 return;
@@ -328,77 +416,6 @@ export default {
 
             // And clear the graph
             visualiser.clearGraph();
-        },
-
-        leftClick(param) {
-            const eventKeys = param.event.srcEvent;
-            if(!eventKeys.altKey)
-                return;
-
-            _.map(param.nodes, x => { engineClient.request({
-                                        url: visualiser.nodes._data[x].ontology,
-                                        callback: this.typeQueryResponse
-                                    })
-            });
-
-        },
-
-        doubleClick(param) {
-            const eventKeys = param.event.srcEvent;
-            if(!eventKeys.shiftKey)
-                visualiser.clearGraph();
-
-            // Enable graph animation
-            visualiser.setSimulation(true);
-
-            _.map(param.nodes, x => { engineClient.request({url: x, callback: this.typeQueryResponse}) });
-        },
-
-        rightClick(param) {
-            if(param.nodes.length === 0)
-                return;
-
-            if(param.event.shiftKey) {
-                param.nodes.map(x => { visualiser.deleteNode(x) });
-
-            } else {
-                $('.tabs-col').removeClass('col-md-12').addClass('col-md-10');
-
-                var node = param.nodes[0];
-                this.allNodeProps = visualiser.getAllNodeProperties(node);
-                this.nodeType = visualiser.getNodeType(node);
-            }
-        },
-
-        suppressEventDefault(e) {
-            e.preventDefault();
-        },
-
-        getMetaTypes() {
-            if(this.typeInstances)
-                this.typeInstances = false;
-            else
-                engineClient.getMetaTypes(x => { if(x != null){ this.typeInstances = x; this.typeKeys = _.keys(x) } });
-        },
-
-        toggleElement(e) {
-            $('.'+e).toggle();
-        },
-
-        configureNode(p) {
-            if(this.selectedProps.includes(p))
-                this.selectedProps = this.selectedProps.filter(x => x != p);
-            else
-                this.selectedProps.push(p);
-
-            visualiser.setDisplayProperties(this.nodeType, this.selectedProps);
-        },
-
-        closeConfigPanel() {
-            $('.tabs-col').removeClass('col-md-10').addClass('col-md-12');
-            this.nodeType = undefined;
-            this.allNodeProps = [];
-            this.selectedProps = [];
         }
     }
 }
