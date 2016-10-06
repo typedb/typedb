@@ -29,4 +29,13 @@ public abstract class MindmapsTitanTestBase extends AbstractMindmapsEngineTest {
             sleep(5000);
         }
     }
+
+    @Override
+    public void buildGraph(){
+        graph = graphWithNewKeyspace();
+    }
+    @Override
+    public void clearGraph(){
+        graph.clear();
+    }
 }
