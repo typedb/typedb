@@ -39,10 +39,12 @@ public class AtomicFactory {
         VarAdmin var = pattern.asVar();
         if(var.isRelation())
             return new Relation(var);
+        else if(!var.getResourcePredicates().isEmpty())
+            return new Resource(var);
         else if (!var.getValueEqualsPredicates().isEmpty() || var.getId().isPresent())
             return new Substitution(var);
         else
-            return new Atom(var);
+            return new Type(var);
     }
 
     public static Atomic create(PatternAdmin pattern, Query parent) {
@@ -52,10 +54,12 @@ public class AtomicFactory {
         VarAdmin var = pattern.asVar();
         if(var.isRelation())
             return new Relation(var, parent);
+        else if(!var.getResourcePredicates().isEmpty())
+            return new Resource(var, parent);
         else if (!var.getValueEqualsPredicates().isEmpty() || var.getId().isPresent())
             return new Substitution(var, parent);
         else
-            return new Atom(var, parent);
+            return new Type(var, parent);
     }
 
     public static Atomic create(Atomic atom) {

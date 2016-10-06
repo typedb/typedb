@@ -99,13 +99,6 @@ public abstract class AtomBase implements Atomic{
     public String toString(){ return atomPattern.toString(); }
 
     @Override
-    public void print() {
-        System.out.println("atom: \npattern: " + toString());
-        System.out.println("varName: " + varName + " typeId: " + typeId);
-        System.out.println();
-    }
-
-    @Override
     public boolean isResource(){ return !atomPattern.asVar().getResourcePredicates().isEmpty();}
     @Override
     public boolean isType(){ return !typeId.isEmpty();}

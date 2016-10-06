@@ -27,6 +27,7 @@ import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.internal.query.match.MatchOrder;
 import io.mindmaps.graql.internal.query.match.MatchQueryInternal;
+import io.mindmaps.graql.internal.reasoner.predicate.Substitution;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.internal.pattern.Patterns;
@@ -343,13 +344,11 @@ public class Query implements MatchQueryInternal {
         return map;
     }
 
-    public String getValue(String var) {
-        String val ="";
-        for(Atomic atom : atomSet) {
-            if(atom.getVarName().equals(var))
-                if(!atom.getVal().isEmpty() ) val = atom.getVal();
-        }
-        return val;
+    public String getSubstitution(String var) {
+        Set<Atomic> relevantSubs = getSubstitutions().stream()
+                .filter(sub -> sub.getVarName().equals(var))
+                .collect(Collectors.toSet());
+        return relevantSubs.isEmpty()? "" : relevantSubs.iterator().next().getVal();
     }
 
     protected void addAtom(Atomic atom) {

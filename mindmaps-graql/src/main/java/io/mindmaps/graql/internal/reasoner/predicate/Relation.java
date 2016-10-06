@@ -116,15 +116,6 @@ public class Relation extends AtomBase {
     }
 
     @Override
-    public void print() {
-        System.out.println("atom: \npattern: " + toString());
-        System.out.println("varName: " + varName + " typeId: " + typeId);
-        System.out.print("Castings: ");
-        castings.forEach(c -> System.out.print(c.getRolePlayer().getPrintableName() + " "));
-        System.out.println();
-    }
-
-    @Override
     public boolean isRelation(){ return true;}
     @Override
     public boolean isResource(){ return false;}

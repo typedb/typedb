@@ -32,7 +32,6 @@ import java.util.Set;
 
 public interface Atomic extends Cloneable{
 
-    void print();
     Atomic clone();
 
     /**

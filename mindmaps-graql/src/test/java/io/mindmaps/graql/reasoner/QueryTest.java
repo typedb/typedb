@@ -60,7 +60,7 @@ public class QueryTest {
         for(Atomic atom : query.getAtoms())
             if (atom.toString().equals("$x value \"Bob\"")) containsAtom = true;
         assertTrue(containsAtom);
-        assertEquals(query.getValue("x"), "Bob");
+        assertEquals(query.getSubstitution("x"), "Bob");
     }
 
     @Test

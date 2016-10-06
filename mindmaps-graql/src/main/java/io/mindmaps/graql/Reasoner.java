@@ -51,6 +51,9 @@ public class Reasoner {
         boolean relRelevant = true;
         Query parent = parentAtom.getParentQuery();
         Atomic childAtom = child.getRuleConclusionAtom();
+        //System.out.println("checking applicability:");
+        //System.out.println("parent: "+ parentAtom.toString());
+        //System.out.println("child: " + childAtom.toString());
 
         if (parentAtom.isRelation()) {
             Map<RoleType, Pair<String, Type>> childRoleVarTypeMap = childAtom.getRoleVarTypeMap();
@@ -70,17 +73,19 @@ public class Reasoner {
                             //Check for any constraints on the variables
                             String chVar = childRoleVarTypeMap.get(role).getKey();
                             String pVar = entry.getValue().getKey();
-                            String chVal = child.getBody().getValue(chVar);
-                            String pVal = parent.getValue(pVar);
-                            if (!chVal.isEmpty() && !pVal.isEmpty())
-                                relRelevant &= chVal.equals(pVal);
+                            String chId = child.getBody().getSubstitution(chVar);
+                            String pId = parent.getSubstitution(pVar);
+                            if (!chId.isEmpty() && !pId.isEmpty())
+                                relRelevant &= chId.equals(pId);
                         }
                     }
                 }
             }
         }
-        else if (parentAtom.isResource())
-            relRelevant = parentAtom.getVal().equals(childAtom.getVal());
+        else if (parentAtom.isResource()) {
+            String parentVal = parentAtom.getVal();
+            relRelevant = parentVal.equals(childAtom.getVal());
+        }
 
         return relRelevant;
     }
