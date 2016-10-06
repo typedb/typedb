@@ -59,7 +59,7 @@ public class QueryParserFragmentsTest {
 
     @Test
     public void testParseInfinitePatternsStream() throws IOException {
-        InputStream stream = new InfiniteStream("$x isa person; ($x, $y) isa has-cast;\n");
+        InputStream stream = new InfiniteStream("#TRAP COMMENT\ninsert", "$x isa person; ($x, $y) isa has-cast;\n");
 
         Iterator<Pattern> patterns = parsePatterns(stream).iterator();
 
@@ -78,7 +78,7 @@ public class QueryParserFragmentsTest {
 
     @Test
     public void testParseFinitePatternsStream() throws IOException {
-        String query = "$x isa person; ($x, $y) isa has-cast;";
+        String query = "#TRAP COMMENT\ninsert $x isa person; ($x, $y) isa has-cast;";
         InputStream stream = new ByteArrayInputStream(query.getBytes(StandardCharsets.UTF_8));
 
         Iterator<Pattern> patterns = qb.parsePatterns(stream).iterator();
@@ -96,16 +96,12 @@ public class QueryParserFragmentsTest {
 
     class InfiniteStream extends InputStream {
 
-        final String string;
+        private final String string;
         InputStream stream;
 
-        public InfiniteStream(String string) {
+        public InfiniteStream(String prefix, String string) {
             this.string = string;
-            resetStream();
-        }
-
-        private void resetStream() {
-            stream = new ByteArrayInputStream(string.getBytes(StandardCharsets.UTF_8));
+            stream = new ByteArrayInputStream((prefix + string).getBytes(StandardCharsets.UTF_8));
         }
 
         @Override
