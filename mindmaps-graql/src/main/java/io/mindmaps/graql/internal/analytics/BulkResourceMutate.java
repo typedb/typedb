@@ -120,6 +120,7 @@ class BulkResourceMutate <T>{
             Instance instance =
                     graph.getInstance(id);
 
+            // fetch all current resource assertions on the instance
             List<Relation> relations = instance.relations(resourceOwner).stream()
                     .filter(relation -> relation.rolePlayers().size() == 2)
                     .filter(relation -> {
@@ -138,6 +139,7 @@ class BulkResourceMutate <T>{
                 relations.forEach(System.out::println);
             }
 
+            // if there are no resources at all make a new one
             if (relations.isEmpty()) {
                 Resource<T> resource = graph.putResource(value, resourceType);
 
@@ -148,6 +150,7 @@ class BulkResourceMutate <T>{
                 return;
             }
 
+            // check the exact resource type and value doesn't exist already
             relations = relations.stream().filter(relation -> {
                     Instance roleplayer = relation.rolePlayers().get(resourceValue);
                     if (roleplayer != null) {
@@ -157,6 +160,8 @@ class BulkResourceMutate <T>{
                     }
                 }).collect(Collectors.toList());
 
+            // if it doesn't exist already delete the old one and add the new one
+            // TODO: we need to figure out what to do when we have multiple resources of the same type already in graph
             if (!relations.isEmpty()) {
                 graph.getRelation(relations.get(0).getId()).delete();
 
