@@ -18,10 +18,14 @@
 
 package io.mindmaps.graql.internal.reasoner.predicate;
 
+import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.util.ErrorMessage;
+import java.util.HashSet;
+import java.util.Set;
 
 public class AtomicFactory {
 
@@ -53,5 +57,31 @@ public class AtomicFactory {
 
     public static Atomic create(Atomic atom) {
         return atom.clone();
+    }
+
+    public static Set<Atomic> createAtomSet(Conjunction<PatternAdmin> pat, Query parent) {
+        Set<Atomic> atoms = new HashSet<>();
+        Set<VarAdmin> vars = pat.getVars();
+        vars.forEach(var -> {
+            if(var.getType().isPresent() && (var.getId().isPresent() || !var.getValueEqualsPredicates().isEmpty())) {
+                VarAdmin typeVar = Graql.var(var.getName()).isa(var.getType().orElse(null)).admin();
+                atoms.add(AtomicFactory.create(typeVar, parent));
+
+                if (var.getId().isPresent()) {
+                    VarAdmin sub = Graql.var(var.getName()).id(var.getId().orElse(null)).admin();
+                    atoms.add(AtomicFactory.create(sub, parent));
+                }
+                else if (!var.getValueEqualsPredicates().isEmpty()){
+                    if(var.getValueEqualsPredicates().size() > 1)
+                        throw new IllegalArgumentException(ErrorMessage.MULTI_VALUE_VAR.getMessage(var.toString()));
+                    VarAdmin sub = Graql.var(var.getName()).value(var.getValueEqualsPredicates().iterator().next()).admin();
+                    atoms.add(AtomicFactory.create(sub, parent));
+                }
+            }
+            else
+                atoms.add(AtomicFactory.create(var, parent));
+        });
+
+        return atoms;
     }
 }
