@@ -22,6 +22,7 @@ import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
@@ -372,7 +373,7 @@ public class SNBInferenceTest {
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match $x isa person;$pr isa product, id 'Nocturnes';($x, $pr) isa recommendation; select $x;";
-        MatchQuery query = qb.parseMatch(queryString);
+        Query query = new Query(queryString, graph);
 
         String explicitQuery = "match {$x id 'Frank';} or {$x id 'Karl Fischer';};";
 

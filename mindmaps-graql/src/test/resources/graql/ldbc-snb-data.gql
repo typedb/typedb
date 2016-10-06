@@ -17,6 +17,7 @@ insert
 "Karl Fischer" isa person;
 "forum1" isa forum;
 
+(acquaintance1: Bob, acquaintance2: Charlie) isa knows;
 (located-subject: 'University of Cambridge', subject-location: Cambridge) isa resides;
 (located-subject: 'Mindmaps', subject-location: London) isa resides;
 (member-location: Cambridge, container-location: UK) isa sublocate;
