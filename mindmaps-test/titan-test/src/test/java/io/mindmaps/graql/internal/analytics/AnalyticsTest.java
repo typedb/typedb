@@ -34,14 +34,21 @@ import io.mindmaps.concept.Type;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.internal.util.GraqlType;
 import org.apache.commons.collections.CollectionUtils;
-import org.javatuples.Pair;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertEquals;
@@ -57,9 +64,8 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
 
     @Before
     public void setUp() throws InterruptedException {
-        Pair<MindmapsGraph, String> result = graphWithNewKeyspace();
-        graph = result.getValue0();
-        keyspace = result.getValue1();
+        graph = graphWithNewKeyspace();
+        keyspace = graph.getKeyspace();
     }
 
     @After
