@@ -61,7 +61,7 @@ public class DegreeVertexProgram extends MindmapsVertexProgram<Long> {
     }
 
     @Override
-    public void execute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
+    public void safeExecute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
         switch (memory.getIteration()) {
             case 0:
                 if (selectedTypes.contains(getVertexType(vertex))) {

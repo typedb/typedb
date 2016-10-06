@@ -20,11 +20,9 @@ package io.mindmaps.graql.internal.analytics;
 
 import io.mindmaps.util.ErrorMessage;
 import org.apache.commons.configuration.Configuration;
-import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
-import org.apache.tinkerpop.gremlin.process.computer.Memory;
-import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
-import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
+import org.apache.tinkerpop.gremlin.process.computer.*;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -57,6 +55,23 @@ public abstract class MindmapsVertexProgram<T> extends CommonOLAP implements Ver
     public void setup(final Memory memory) {}
 
     @Override
+    public void execute(Vertex vertex, Messenger<T> messenger, Memory memory) {
+        // try to deal with ghost vertex issues by ignoring them
+        if (isAlive(vertex)) {
+            safeExecute(vertex, messenger, memory);
+        }
+    }
+
+    /**
+     * An alternative to the execute method when ghost vertices are an issue. Our "Ghostbuster".
+     *
+     * @param vertex        a vertex that may be a ghost
+     * @param messenger     Tinker message passing object
+     * @param memory        Tinker memory object
+     */
+    abstract void safeExecute(Vertex vertex, Messenger<T> messenger, Memory memory);
+
+    @Override
     public GraphComputer.ResultGraph getPreferredResultGraph() {
         return GraphComputer.ResultGraph.NEW;
     }
@@ -64,10 +79,10 @@ public abstract class MindmapsVertexProgram<T> extends CommonOLAP implements Ver
     @Override
     public MindmapsVertexProgram clone() {
         try {
-            final MindmapsVertexProgram clone = (MindmapsVertexProgram) super.clone();
-            return clone;
+            return (MindmapsVertexProgram) super.clone();
         } catch (final CloneNotSupportedException e) {
             throw new IllegalStateException(ErrorMessage.CLONE_FAILED.getMessage(this.getClass().toString(),e.getMessage()),e);
         }
     }
+
 }

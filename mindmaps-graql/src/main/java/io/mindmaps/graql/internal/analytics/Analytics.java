@@ -21,11 +21,7 @@ package io.mindmaps.graql.internal.analytics;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsComputer;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.Concept;
-import io.mindmaps.concept.Instance;
-import io.mindmaps.concept.ResourceType;
-import io.mindmaps.concept.RoleType;
-import io.mindmaps.concept.Type;
+import io.mindmaps.concept.*;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.Mindmaps;
 import io.mindmaps.graql.Pattern;
@@ -51,6 +47,7 @@ public class Analytics {
     private final String keySpace;
     // TODO: allow user specified resources
     public static final String degree = "degree";
+    private final int numberOfOntologyChecks = 10;
 
     /**
      * The concept type ids that define which instances appear in the subgraph.
@@ -104,6 +101,7 @@ public class Analytics {
 
         // add analytics ontology - hard coded for now
         mutateResourceOntology(degree, ResourceType.DataType.LONG);
+        waitOnMutateResourceOntology(degree);
     }
 
     /**
@@ -130,6 +128,7 @@ public class Analytics {
 
         // add analytics ontology - hard coded for now
         mutateResourceOntology(degree, ResourceType.DataType.LONG);
+        waitOnMutateResourceOntology(degree);
     }
 
     /**
@@ -205,6 +204,7 @@ public class Analytics {
 
         // add analytics ontology - hard coded for now
         mutateResourceOntology(degree, ResourceType.DataType.LONG);
+        waitOnMutateResourceOntology(degree);
     }
 
     /**
@@ -399,6 +399,41 @@ public class Analytics {
             throw new RuntimeException(ErrorMessage.ONTOLOGY_MUTATION.getMessage(e.getMessage()), e);
         }
 
+    }
+
+    /**
+     * Ensures that the ontology mutation performed by analytics is persisted before proceeding. In rare cases, such as
+     * underpowered machines, or ones with high lag to engine, the ontology mutation is not persisted in time for the
+     * OLAP task to proceed. This method forces analytics to wait and ensure the ontology is persisted before
+     * proceeding.
+     * @param resourceTypeId    the resource the plays role edges must point to
+     */
+    private void waitOnMutateResourceOntology(String resourceTypeId) {
+        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraph();
+
+        for (int i=0; i<numberOfOntologyChecks; i++) {
+            boolean isOntologyComplete = true;
+            graph.rollback();
+
+            ResourceType resource = graph.getResourceType(resourceTypeId);
+            if (resource==null) isOntologyComplete = false;
+            RoleType degreeOwner = graph.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
+            if (degreeOwner==null) isOntologyComplete = false;
+            RoleType degreeValue = graph.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
+            if (degreeValue==null) isOntologyComplete = false;
+            RelationType relationType = graph.getRelationType(GraqlType.HAS_RESOURCE.getId(resourceTypeId));
+            if (relationType==null) isOntologyComplete = false;
+
+            for (String type : subtypes) {
+                Collection<RoleType> roles = graph.getType(type).playsRoles();
+                if (!roles.contains(degreeOwner)) isOntologyComplete = false;
+            }
+
+            if (isOntologyComplete) return;
+        }
+        throw new RuntimeException(
+                ErrorMessage.ONTOLOGY_MUTATION
+                        .getMessage("Failed to confirm ontology is present after mutation."));
     }
 
     private String checkSelectedResourceTypesHaveCorrectDataType(Set<String> types) {

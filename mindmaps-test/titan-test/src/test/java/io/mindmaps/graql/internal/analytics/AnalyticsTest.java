@@ -149,7 +149,6 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
     }
 
     //Ignoring for now as this is failing on multiple PRs and is failing locally sometimes
-    @Ignore
     @Test
     public void testDegrees() throws Exception {
         // create instances
@@ -210,6 +209,9 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         correctDegrees.put(graph.getRelation(id2), 2l);
         correctDegrees.put(graph.getRelation(id3), 2l);
 
+        graph.commit();
+        graph.close();
+
         // compute degrees
         Analytics computer = new Analytics(keyspace);
         Map<Instance, Long> degrees = computer.degrees();
@@ -266,7 +268,6 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         });
     }
 
-    @Ignore
     @Test
     public void testDegreesAndPersist() throws Exception {
         // create instances
@@ -305,7 +306,7 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         Map<Instance, Long> correctDegrees = new HashMap<>();
 
         // compute degrees on subgraph
-        Analytics computer = new Analytics(keyspace, Sets.newHashSet(thing, related));
+        Analytics computer = new Analytics(keyspace, Sets.newHashSet(graph.getType("thing"), graph.getType("related")));
         computer.degreesAndPersist();
 
         // fetch instances
@@ -489,7 +490,6 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         });
     }
 
-    @Ignore
     @Test
     public void testDegreeIsPersisted() throws Exception {
         // create a simple graph
@@ -772,7 +772,6 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         assertTrue(degrees.get(graph.getEntity(marlonId)).equals(1L));
     }
 
-    @Ignore
     @Test
     public void testDegreeIsCorrectOneRoleplayerMultipleRoles() throws MindmapsValidationException, ExecutionException, InterruptedException {
         // create a simple graph
