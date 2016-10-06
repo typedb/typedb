@@ -130,5 +130,4 @@ public interface Atomic extends Cloneable{
     Map<String, Pair<Type, RoleType>> getVarTypeRoleMap();
     Map<RoleType, Pair<String, Type>> getRoleVarTypeMap();
     Map<RoleType, String> getRoleConceptIdMap();
-
 }

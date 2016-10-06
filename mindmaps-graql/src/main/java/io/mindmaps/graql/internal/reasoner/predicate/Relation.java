@@ -272,12 +272,4 @@ public class Relation extends AtomBase {
 
         return roleVarTypeMap;
     }
-
-    public Set<Atomic> getTypeConstraints(){
-        Set<Atomic> typeConstraints = getParentQuery().getTypeConstraints();
-        return typeConstraints.stream().filter(atom -> containsVar(atom.getVarName()))
-                        .collect(Collectors.toSet());
-    }
-
-
 }

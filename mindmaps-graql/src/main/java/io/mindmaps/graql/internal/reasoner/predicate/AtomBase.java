@@ -31,6 +31,7 @@ import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.pattern.Patterns;
 import io.mindmaps.graql.internal.reasoner.query.Query;
+import java.util.stream.Collectors;
 import javafx.util.Pair;
 
 import java.util.*;
@@ -237,7 +238,9 @@ public abstract class AtomBase implements Atomic{
 
     @Override
     public Set<Atomic> getTypeConstraints(){
-        throw new IllegalArgumentException(ErrorMessage.NO_TYPE_CONSTRAINTS.getMessage());
+        Set<Atomic> typeConstraints = getParentQuery().getTypeConstraints();
+        return typeConstraints.stream().filter(atom -> containsVar(atom.getVarName()))
+                .collect(Collectors.toSet());
     }
 
     @Override

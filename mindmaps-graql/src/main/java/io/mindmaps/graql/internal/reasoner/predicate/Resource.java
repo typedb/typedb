@@ -1,13 +1,11 @@
 package io.mindmaps.graql.internal.reasoner.predicate;
 
-
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.util.ErrorMessage;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class Resource extends AtomBase{
 
@@ -70,13 +68,6 @@ public class Resource extends AtomBase{
 
     @Override
     public String getVal(){ return val;}
-
-    @Override
-    public Set<Atomic> getTypeConstraints(){
-            Set<Atomic> typeConstraints = getParentQuery().getAtoms();
-            return typeConstraints.stream().filter(atom -> atom.isType() && !atom.isResource() && containsVar(atom.getVarName()))
-                    .collect(Collectors.toSet());
-    }
 
     private String extractValue(VarAdmin var) {
         String value = "";

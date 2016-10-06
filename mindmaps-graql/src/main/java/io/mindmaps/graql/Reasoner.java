@@ -51,9 +51,6 @@ public class Reasoner {
         boolean relRelevant = true;
         Query parent = parentAtom.getParentQuery();
         Atomic childAtom = child.getRuleConclusionAtom();
-        //System.out.println("checking applicability:");
-        //System.out.println("parent: "+ parentAtom.toString());
-        //System.out.println("child: " + childAtom.toString());
 
         if (parentAtom.isRelation()) {
             Map<RoleType, Pair<String, Type>> childRoleVarTypeMap = childAtom.getRoleVarTypeMap();
