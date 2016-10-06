@@ -22,6 +22,7 @@ var VueRouter = require('vue-router')
 // Components
 var app = require('./components/main.vue');
 var visualiser = require('./components/visualiser.vue')
+var console = require('./components/console.vue')
 var status =  require('./components/status.vue')
 
 Vue.use(VueRouter)
@@ -34,8 +35,11 @@ router.map({
     '/status': {
         component: status
     },
-    '/shell': {
+    '/graph': {
         component: visualiser
+    },
+    '/console': {
+        component: console
     }
 })
 router.redirect({

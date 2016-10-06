@@ -67,7 +67,8 @@ export default class Visualiser {
             interaction: {
                 hover: true,
                 multiselect: false
-            }
+            },
+            layout: { improvedLayout: false }
         };
 
         // Additional properties to show in node label by type.
@@ -238,8 +239,10 @@ export default class Visualiser {
     expandCluster(id) {
         if(this.network.isCluster(id)) {
             this.network.openCluster(id);
+            this.deleteNode(id);
             return true;
         }
+
         return false;
     }
 
