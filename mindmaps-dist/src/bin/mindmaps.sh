@@ -80,7 +80,6 @@ start)
         # cassandra has not already started
         echo -n "Starting cassandra "
         echo ""
-        # we hide errors because of a java bug that prints "Cass JavaLaunchHelper is implemented in both..."
         `dirname $path`/cassandra -p $CASSANDRA_PS
 
         if ! wait_for_cassandra ; then exit 1 ; fi
@@ -113,6 +112,30 @@ stop)
     fi
     ;;
 
+clean)
+
+    echo -n "Are you sure you want to delete all stored data and logs? [y/N] " >&2
+    read response
+    if [ "$response" != "y" -a "$response" != "Y" ]; then
+        echo "Response \"$response\" did not equal \"y\" or \"Y\".  Canceling clean operation." >&2
+        return 0
+    fi
+
+    if cd "`dirname $path`/../db"; then
+        rm -rf cassandra es
+        echo "Deleted data in `pwd`" >&2
+        cd - >/dev/null
+    else
+        echo 'Data directory does not exist.' >&2
+    fi
+
+    if cd "`dirname $path`/../logs"; then
+        rm -f *.log
+        echo "Deleted logs in `pwd`" >&2
+        cd - >/dev/null
+    fi
+    ;;
+
 status)
 
     if [ -e $CASSANDRA_PS ] && ps -p `cat $CASSANDRA_PS` > /dev/null ; then
@@ -129,7 +152,7 @@ status)
     ;;
 
 *)
-    echo "Usage: $0 {start|stop|status}"
+    echo "Usage: $0 {start|stop|clean|status}"
     ;;
 
 esac
