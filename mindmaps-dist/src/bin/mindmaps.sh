@@ -80,7 +80,6 @@ start)
         # cassandra has not already started
         echo -n "Starting cassandra "
         echo ""
-        # we hide errors because of a java bug that prints "Cass JavaLaunchHelper is implemented in both..."
         `dirname $path`/cassandra -p $CASSANDRA_PS
 
         if ! wait_for_cassandra ; then exit 1 ; fi
