@@ -23,16 +23,13 @@ import io.mindmaps.graql.internal.reasoner.query.Query;
 import java.util.*;
 
 public class Type extends AtomBase{
-
-
+    
     public Type(VarAdmin pattern) {
         super(pattern);
     }
-
     public Type(VarAdmin pattern, Query par) {
         super(pattern, par);
     }
-
     public Type(Type a) {
         super(a);
     }
@@ -73,8 +70,5 @@ public class Type extends AtomBase{
         hashCode = hashCode * 37 + this.typeId.hashCode();
         return hashCode;
     }
-
-    @Override
-    public Set<Atomic> getTypeConstraints(){ return new HashSet<>();}
 }
 
