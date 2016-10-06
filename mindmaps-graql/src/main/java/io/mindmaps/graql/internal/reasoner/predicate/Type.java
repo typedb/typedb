@@ -23,7 +23,7 @@ import io.mindmaps.graql.internal.reasoner.query.Query;
 import java.util.*;
 
 public class Type extends AtomBase{
-    
+
     public Type(VarAdmin pattern) {
         super(pattern);
     }
