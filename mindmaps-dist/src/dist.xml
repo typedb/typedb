@@ -40,6 +40,13 @@
             </includes>
         </fileSet>
         <fileSet>
+            <outputDirectory>examples</outputDirectory>
+            <directory>${basedir}/src/examples/</directory>
+            <includes>
+                <include>*</include>
+            </includes>
+        </fileSet>
+        <fileSet>
             <outputDirectory>conf</outputDirectory>
             <directory>${project.parent.basedir}/conf/</directory>
             <includes>
