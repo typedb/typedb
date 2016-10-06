@@ -1,6 +1,7 @@
 package io.mindmaps.test.tinker;
 
 import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.test.graql.analytics.AnalyticsTest;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -90,5 +91,11 @@ public class TinkerAnalyitcsTests extends MindmapsTinkerTestBase {
     @Test
     public void AnalyticsTest_testComputingUsingDegreeResource() throws MindmapsValidationException {
         AnalyticsTest.testComputingUsingDegreeResource(graph);
+    }
+
+    @Ignore //TODO: Fix on TinkerGraphComputer
+    @Test
+    public void testNullResourceDoesntBreakAnalytics() throws MindmapsValidationException {
+        AnalyticsTest.testNullResourceDoesntBreakAnalytics(graph);
     }
 }

@@ -85,7 +85,7 @@ class BulkResourceMutate <T>{
         }
 
         String id = vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name());
-        resourcesToPersist.put(id,value);
+        resourcesToPersist.put(id, value);
 
         if (currentNumberOfVertices >= batchSize) flush();
     }
@@ -122,8 +122,15 @@ class BulkResourceMutate <T>{
 
             List<Relation> relations = instance.relations(resourceOwner).stream()
                     .filter(relation -> relation.rolePlayers().size() == 2)
-                    .filter(relation -> relation.rolePlayers().containsKey(resourceValue) &&
-                            relation.rolePlayers().get(resourceValue).type().getId().equals(resourceTypeId))
+                    .filter(relation -> {
+                        boolean currentLogicalState = relation.rolePlayers().containsKey(resourceValue);
+                        Instance roleplayer = relation.rolePlayers().get(resourceValue);
+                        if (roleplayer != null) {
+                            return roleplayer.type().getId().equals(resourceTypeId) && currentLogicalState;
+                        } else {
+                            return currentLogicalState && true;
+                        }
+                    })
                     .collect(Collectors.toList());
 
             if (verboseOutput) {
@@ -141,10 +148,14 @@ class BulkResourceMutate <T>{
                 return;
             }
 
-            relations = relations.stream()
-                    .filter(relation ->
-                            relation.rolePlayers().get(resourceValue).asResource().getValue() != value)
-                    .collect(Collectors.toList());
+            relations = relations.stream().filter(relation -> {
+                    Instance roleplayer = relation.rolePlayers().get(resourceValue);
+                    if (roleplayer != null) {
+                        return roleplayer.asResource().getValue() != value;
+                    } else {
+                        return true;
+                    }
+                }).collect(Collectors.toList());
 
             if (!relations.isEmpty()) {
                 graph.getRelation(relations.get(0).getId()).delete();
