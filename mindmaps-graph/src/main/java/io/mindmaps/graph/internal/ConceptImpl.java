@@ -501,7 +501,12 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
     protected Set<ConceptImpl> getOutgoingNeighbours(Schema.EdgeLabel edgeType){
         Set<ConceptImpl> outgoingNeighbours = new HashSet<>();
 
-        getEdgesOfType(Direction.OUT, edgeType).forEach(edge -> outgoingNeighbours.add(edge.getTarget()));
+        getEdgesOfType(Direction.OUT, edgeType).forEach(edge -> {
+            ConceptImpl found = edge.getTarget();
+            if(found != null){
+                outgoingNeighbours.add(found);
+            }
+        });
         return outgoingNeighbours;
     }
 
@@ -527,7 +532,12 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      */
     protected Set<ConceptImpl> getIncomingNeighbours(Schema.EdgeLabel edgeType){
         Set<ConceptImpl> incomingNeighbours = new HashSet<>();
-        getEdgesOfType(Direction.IN, edgeType).forEach(edge -> incomingNeighbours.add(edge.getSource()));
+        getEdgesOfType(Direction.IN, edgeType).forEach(edge -> {
+            ConceptImpl found = edge.getSource();
+            if(found != null){
+                incomingNeighbours.add(found);
+            }
+        });
         return incomingNeighbours;
     }
 
