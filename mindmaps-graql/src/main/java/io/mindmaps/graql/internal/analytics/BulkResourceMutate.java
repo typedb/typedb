@@ -26,12 +26,16 @@ import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.Mindmaps;
+import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.naming.directory.SchemaViolationException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -48,17 +52,20 @@ import java.util.stream.Collectors;
 class BulkResourceMutate <T>{
 
     private int batchSize = 100;
+    private int numberOfRetries = 10;
     private MindmapsGraph graph;
     private int currentNumberOfVertices = 0;
     private final String resourceTypeId = Analytics.degree;
     private final String keyspace;
+    private Map<String,T> resourcesToPersist = new HashMap<>();
 
     private ResourceType<T> resourceType;
     private RoleType resourceOwner;
     private RoleType resourceValue;
     private RelationType relationType;
 
-    private boolean verboseOutput = true;
+    // This has been added for debugging purposes - set to true for debugging
+    private boolean verboseOutput = false;
 
     public BulkResourceMutate(String keyspace) {
         this.keyspace = keyspace;
@@ -73,7 +80,13 @@ class BulkResourceMutate <T>{
         currentNumberOfVertices++;
         initialiseGraph();
 
-        persistResource(vertex, value);
+        if (verboseOutput) {
+            System.out.println("considering vertex: "+vertex);
+            vertex.properties().forEachRemaining(System.out::println);
+        }
+
+        String id = vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name());
+        resourcesToPersist.put(id,value);
 
         if (currentNumberOfVertices >= batchSize) flush();
     }
@@ -82,14 +95,72 @@ class BulkResourceMutate <T>{
      * Force all pending operations in the batch to be committed.
      */
     void flush() {
-        initialiseGraph();
-        try {
-            graph.commit();
-        } catch (Exception e) {
-            throw new RuntimeException(ErrorMessage.BULK_PERSIST.getMessage(resourceTypeId,e.getMessage()),e);
+        boolean hasFailed = true;
+        int numberOfFailures = 0;
+
+        while (hasFailed) {
+            hasFailed = false;
+            try {
+                persistResources();
+            } catch (Exception e) {
+                hasFailed = true;
+                numberOfFailures++;
+                if (!(numberOfFailures<numberOfRetries))
+                    throw new RuntimeException(ErrorMessage.BULK_PERSIST.getMessage(resourceTypeId,e.getMessage()),e);
+            }
         }
+
+        resourcesToPersist.clear();
         currentNumberOfVertices = 0;
-        refreshOntologyElements();
+    }
+
+    private void persistResources() throws MindmapsValidationException {
+        initialiseGraph();
+
+        resourcesToPersist.forEach((id, value) -> {
+            Instance instance =
+                    graph.getInstance(id);
+
+            List<Relation> relations = instance.relations(resourceOwner).stream()
+                    .filter(relation -> relation.rolePlayers().size() == 2)
+                    .filter(relation -> relation.rolePlayers().containsKey(resourceValue) &&
+                            relation.rolePlayers().get(resourceValue).type().getId().equals(resourceTypeId))
+                    .collect(Collectors.toList());
+
+            if (verboseOutput) {
+                System.out.println("assertions currently attached");
+                relations.forEach(System.out::println);
+            }
+
+            if (relations.isEmpty()) {
+                Resource<T> resource = graph.putResource(value, resourceType);
+
+                graph.addRelation(relationType)
+                        .putRolePlayer(resourceOwner, instance)
+                        .putRolePlayer(resourceValue, resource);
+
+                return;
+            }
+
+            relations = relations.stream()
+                    .filter(relation ->
+                            (T) relation.rolePlayers().get(resourceValue).asResource().getValue() != value)
+                    .collect(Collectors.toList());
+
+            if (!relations.isEmpty()) {
+                graph.getRelation(relations.get(0).getId()).delete();
+
+                Resource<T> resource = graph.putResource(value, resourceType);
+
+                graph.addRelation(relationType)
+                        .putRolePlayer(resourceOwner, instance)
+                        .putRolePlayer(resourceValue, resource);
+
+                return;
+            }
+        });
+
+        graph.commit();
     }
 
     private void refreshOntologyElements() {
@@ -102,65 +173,8 @@ class BulkResourceMutate <T>{
     private void initialiseGraph() {
         if (graph == null) {
             graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraphBatchLoading();
+            graph.rollback();
             refreshOntologyElements();
-        }
-    }
-
-    /**
-     * Adds an instruction to the current batch to relate a resource of <code>value</code> to the concept represented by
-     * the <code>vertex</code>. If there is an existing relation to a resource of the same type but with a different
-     * value its ID is returned for removal at a later stage.
-     *
-     * @param vertex    the vertex to which the value should be attached
-     * @param value     the value to attach to the vertex
-     * @return          the ID of the old relation to be removed
-     */
-    private void persistResource(Vertex vertex, T value) {
-
-        if (verboseOutput) {
-            System.out.println("considering vertex: "+vertex);
-            vertex.properties().forEachRemaining(System.out::println);
-        }
-
-        Instance instance =
-                graph.getInstance(vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name()));
-
-        List<Relation> relations = instance.relations(resourceOwner).stream()
-                .filter(relation -> relation.rolePlayers().size() == 2)
-                .filter(relation -> relation.rolePlayers().containsKey(resourceValue) &&
-                        relation.rolePlayers().get(resourceValue).type().getId().equals(resourceTypeId))
-                .collect(Collectors.toList());
-
-        if (verboseOutput) {
-            System.out.println("assertions currently attached");
-            relations.forEach(System.out::println);
-        }
-
-        if (relations.isEmpty()) {
-            Resource<T> resource = graph.putResource(value, resourceType);
-
-            graph.addRelation(relationType)
-                    .putRolePlayer(resourceOwner, instance)
-                    .putRolePlayer(resourceValue, resource);
-
-            return;
-        }
-
-        relations = relations.stream()
-                .filter(relation ->
-                        (T) relation.rolePlayers().get(resourceValue).asResource().getValue() != value)
-                .collect(Collectors.toList());
-
-        if (!relations.isEmpty()) {
-            graph.getRelation(relations.get(0).getId()).delete();
-
-            Resource<T> resource = graph.putResource(value, resourceType);
-
-            graph.addRelation(relationType)
-                    .putRolePlayer(resourceOwner, instance)
-                    .putRolePlayer(resourceValue, resource);
-
-            return;
         }
     }
 }
