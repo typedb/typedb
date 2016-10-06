@@ -26,10 +26,10 @@ abstract class AbstractMindmapsInternalFactory<M extends AbstractMindmapsGraph<G
     protected final String engineUrl;
     protected final String config;
 
-    private M mindmapsGraph = null;
+    protected M mindmapsGraph = null;
     private M batchLoadingMindmapsGraph = null;
 
-    private G graph = null;
+    protected G graph = null;
     private G batchLoadingGraph = null;
 
     AbstractMindmapsInternalFactory(String keyspace, String engineUrl, String config){
@@ -54,7 +54,7 @@ abstract class AbstractMindmapsInternalFactory<M extends AbstractMindmapsGraph<G
             return mindmapsGraph;
         }
     }
-    private M getGraph(M mindmapsGraph, G graph, boolean batchLoading){
+    protected M getGraph(M mindmapsGraph, G graph, boolean batchLoading){
         if(mindmapsGraph == null || isClosed(mindmapsGraph)){
             mindmapsGraph = buildMindmapsGraphFromTinker(getTinkerPopGraph(graph), batchLoading);
         }
