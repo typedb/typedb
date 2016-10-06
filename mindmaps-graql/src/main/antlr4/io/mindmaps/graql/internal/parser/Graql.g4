@@ -19,7 +19,7 @@ matchQuery     : 'match' patterns                                 # matchBase
                ;
 
 askQuery       : matchQuery 'ask' ';' ;
-insertQuery    : matchQuery? 'insert' varPatterns ;
+insertQuery    : matchQuery? insert varPatterns ;
 deleteQuery    : matchQuery 'delete' varPatterns ;
 aggregateQuery : matchQuery 'aggregate' aggregate ';' ;
 computeQuery   : 'compute' id ('in' subgraph)? ';' ;
@@ -82,7 +82,8 @@ value          : STRING  # valueString
                | BOOLEAN # valueBoolean
                ;
 
-// This rule is used for parsing streams of patterns separated by semicolons
+// These rules are used for parsing streams of patterns separated by semicolons
+insert         : 'insert' ;
 patternSep     : pattern ';' ;
 
 id             : ID | STRING ;
