@@ -32,7 +32,6 @@ import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import javax.naming.directory.SchemaViolationException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -76,7 +75,7 @@ class BulkResourceMutate <T>{
         this.batchSize = batchSize;
     }
 
-    void putValue(Vertex vertex,T value, String deleteKey) {
+    void putValue(Vertex vertex, T value) {
         currentNumberOfVertices++;
         initialiseGraph();
 
@@ -144,7 +143,7 @@ class BulkResourceMutate <T>{
 
             relations = relations.stream()
                     .filter(relation ->
-                            (T) relation.rolePlayers().get(resourceValue).asResource().getValue() != value)
+                            relation.rolePlayers().get(resourceValue).asResource().getValue() != value)
                     .collect(Collectors.toList());
 
             if (!relations.isEmpty()) {
@@ -155,8 +154,6 @@ class BulkResourceMutate <T>{
                 graph.addRelation(relationType)
                         .putRolePlayer(resourceOwner, instance)
                         .putRolePlayer(resourceValue, resource);
-
-                return;
             }
         });
 

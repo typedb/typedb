@@ -66,8 +66,7 @@ public abstract class MindmapsMapReduce<T> extends CommonOLAP
     @Override
     public MapReduce<Serializable, T, Serializable, T, Map<Serializable, T>> clone() {
         try {
-            final MindmapsMapReduce clone = (MindmapsMapReduce) super.clone();
-            return clone;
+            return (MindmapsMapReduce) super.clone();
         } catch (final CloneNotSupportedException e) {
             throw new IllegalStateException(ErrorMessage.CLONE_FAILED.getMessage(this.getClass().toString(),
                     e.getMessage()), e);

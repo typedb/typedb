@@ -79,8 +79,7 @@ public abstract class MindmapsVertexProgram<T> extends CommonOLAP implements Ver
     @Override
     public MindmapsVertexProgram clone() {
         try {
-            final MindmapsVertexProgram clone = (MindmapsVertexProgram) super.clone();
-            return clone;
+            return (MindmapsVertexProgram) super.clone();
         } catch (final CloneNotSupportedException e) {
             throw new IllegalStateException(ErrorMessage.CLONE_FAILED.getMessage(this.getClass().toString(),e.getMessage()),e);
         }

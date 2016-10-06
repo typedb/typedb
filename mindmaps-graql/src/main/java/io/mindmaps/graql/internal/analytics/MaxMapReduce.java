@@ -2,9 +2,7 @@ package io.mindmaps.graql.internal.analytics;
 
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.util.Schema;
-import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
