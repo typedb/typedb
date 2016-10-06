@@ -24,7 +24,6 @@ import io.mindmaps.graql.GraqlShell;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
@@ -57,12 +56,12 @@ public class GraqlShellIT {
         System.setErr(trueErr);
     }
 
-    public static void testStartAndExitShell(String keyspace) throws IOException {
+    public static void testStartAndExitShell(String keyspace) throws Exception {
         // Assert simply that the shell starts and terminates without errors
         assertTrue(testShell(keyspace, "exit\n").matches("[\\s\\S]*>>> exit(\r\n?|\n)"));
     }
 
-    public static void testHelpOption(String keyspace) throws IOException {
+    public static void testHelpOption(String keyspace) throws Exception {
         String result = testShell(keyspace, "", "--help");
 
         // Check for a few expected usage messages
@@ -75,25 +74,25 @@ public class GraqlShellIT {
         );
     }
 
-    public static void testVersionOption(String keyspace) throws IOException {
+    public static void testVersionOption(String keyspace) throws Exception {
         String result = testShell(keyspace, "", "--version");
         assertThat(result, containsString(expectedVersion));
     }
 
-    public static void testExecuteOption(String keyspace) throws IOException {
+    public static void testExecuteOption(String keyspace) throws Exception {
         String result = testShell(keyspace, "", "-e", "match $x isa role-type; ask;");
 
         // When using '-e', only results should be printed, no prompt or query
         assertThat(result, allOf(containsString("False"), not(containsString(">>>")), not(containsString("match"))));
     }
 
-    public static void testFileOption(String keyspace) throws IOException {
+    public static void testFileOption(String keyspace) throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         testShell(keyspace, "", err, "-f", "src/test/graql/shell-test.gql");
         assertEquals(err.toString(), "");
     }
 
-    public static void testMatchQuery(String keyspace) throws IOException {
+    public static void testMatchQuery(String keyspace) throws Exception {
         String[] result = testShell(keyspace, "match $x isa type\nexit").split("\r\n?|\n");
 
         // Make sure we find a few results (don't be too fussy about the output here)
@@ -101,19 +100,19 @@ public class GraqlShellIT {
         assertTrue(result.length > 5);
     }
 
-    public static void testAskQuery(String keyspace) throws IOException {
+    public static void testAskQuery(String keyspace) throws Exception {
         String result = testShell(keyspace, "match $x isa relation-type; ask;\n");
         assertThat(result, containsString("False"));
     }
 
-    public static void testInsertQuery(String keyspace) throws IOException {
+    public static void testInsertQuery(String keyspace) throws Exception {
         String result = testShell(keyspace,
                 "match $x isa entity-type; ask;\ninsert my-type isa entity-type;\nmatch $x isa entity-type; ask;\n"
         );
         assertThat(result, allOf(containsString("False"), containsString("True")));
     }
 
-    public static void testInsertOutput(String keyspace) throws IOException {
+    public static void testInsertOutput(String keyspace) throws Exception {
         String[] result = testShell(keyspace, "insert a-type isa entity-type; thingy isa a-type\n").split("\r\n?|\n");
 
         // Expect six lines output - four for the license, one for the query, no results and a new prompt
@@ -122,7 +121,7 @@ public class GraqlShellIT {
         assertEquals(">>> ", result[5]);
     }
 
-    public static void testAutocomplete(String keyspace) throws IOException {
+    public static void testAutocomplete(String keyspace) throws Exception {
         String result = testShell(keyspace, "match $x isa \t");
 
         // Make sure all the autocompleters are working (except shell commands because we are writing a query)
@@ -135,19 +134,19 @@ public class GraqlShellIT {
         );
     }
 
-    public static void testAutocompleteShellCommand(String keyspace) throws IOException {
+    public static void testAutocompleteShellCommand(String keyspace) throws Exception {
         String result = testShell(keyspace, "\t");
 
         // Make sure all the autocompleters are working (including shell commands because we are not writing a query)
         assertThat(result, allOf(containsString("type"), containsString("match"), containsString("exit")));
     }
 
-    public static void testAutocompleteFill(String keyspace) throws IOException {
+    public static void testAutocompleteFill(String keyspace) throws Exception {
         String result = testShell(keyspace, "match $x ako typ\t;\n");
         assertThat(result, containsString("\"relation-type\""));
     }
 
-    public static void testReasoner(String keyspace) throws IOException {
+    public static void testReasoner(String keyspace) throws Exception {
         String result = testShell(keyspace,
                 "insert man isa entity-type; person isa entity-type;\n" +
                 "insert 'felix' isa man;\n" +
@@ -177,19 +176,19 @@ public class GraqlShellIT {
         assertEquals(2, matchCount);
     }
 
-    public static void testInvalidQuery(String keyspace) throws IOException {
+    public static void testInvalidQuery(String keyspace) throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         testShell(keyspace, "insert movie isa entity-type; moon isa movie; europa isa moon;\n", err);
 
         assertThat(err.toString(), allOf(containsString("moon"), containsString("not"), containsString("type")));
     }
 
-    public static void testComputeCount(String keyspace) throws IOException {
+    public static void testComputeCount(String keyspace) throws Exception {
         String result = testShell(keyspace, "insert X isa entity-type; a isa X; b isa X; c isa X;\ncommit\ncompute count;\n");
         assertThat(result, containsString("\n3\n"));
     }
 
-    public static void testRollback(String keyspace) throws IOException {
+    public static void testRollback(String keyspace) throws Exception {
         String[] result = testShell(keyspace, "insert E isa entity-type;\nrollback\nmatch $x isa entity-type\n").split("\n");
 
         // Make sure there are no results for match query
@@ -197,14 +196,14 @@ public class GraqlShellIT {
         assertEquals(">>> ", result[result.length-1]);
     }
 
-    public static void testErrorWhenEngineNotRunning(String keyspace) throws IOException {
+    public static void testErrorWhenEngineNotRunning(String keyspace) throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         testShell(keyspace, "", err, "-u", "localhost:7654");
 
         assertFalse(err.toString().isEmpty());
     }
 
-    public static void fuzzTest(String keyspace) throws IOException {
+    public static void fuzzTest(String keyspace) throws Exception {
         int repeats = 100;
         for (int i = 0; i < repeats; i ++) {
             System.out.println(i);
@@ -212,7 +211,7 @@ public class GraqlShellIT {
         }
     }
 
-    public static void testLargeQuery(String keyspace) throws IOException {
+    public static void testLargeQuery(String keyspace) throws Exception {
         String id = Strings.repeat("really-", 100000) + "long-id";
         String[] result = testShell(keyspace, "insert X isa entity-type; '" + id + "' isa X;\nmatch $x isa X;\n").split("\n");
         assertThat(result[result.length-2], allOf(containsString("$x"), containsString(id)));
@@ -227,17 +226,13 @@ public class GraqlShellIT {
         return sb.toString();
     }
 
-    private static String testShell(String keyspace, String input, String... args) throws IOException {
+    private static String testShell(String keyspace, String input, String... args) throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         return testShell(keyspace, input, err, args);
     }
 
-    private static String testShell(String keyspace, String input, ByteArrayOutputStream berr, String... args) throws IOException {
-        try {
-            setUp();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    private static String testShell(String keyspace, String input, ByteArrayOutputStream berr, String... args) throws Exception {
+        setUp();
 
         String[] newArgs = Arrays.copyOf(args, args.length + 2);
         newArgs[newArgs.length-2] = "-n";
@@ -266,6 +261,7 @@ public class GraqlShellIT {
 
         out.flush();
         err.flush();
+
 
         return bout.toString();
     }
