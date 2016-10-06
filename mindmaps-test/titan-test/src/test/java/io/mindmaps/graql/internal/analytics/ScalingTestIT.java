@@ -28,7 +28,6 @@ import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.exception.MindmapsValidationException;
-import org.javatuples.Pair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -70,9 +69,8 @@ public class ScalingTestIT extends MindmapsTitanTestBase {
 
     @Before
     public void setUp() throws InterruptedException {
-        Pair<MindmapsGraph, String> result = graphWithNewKeyspace();
-        graph = result.getValue0();
-        keyspace = result.getValue1();
+        graph = graphWithNewKeyspace();
+        keyspace = graph.getKeyspace();
 
         // compute the sample of graph sizes
         STEP_SIZE = MAX_SIZE/NUM_DIVS;

@@ -11,7 +11,6 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.internal.util.GraqlType;
 import org.elasticsearch.common.collect.Sets;
-import org.javatuples.Pair;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -50,9 +49,8 @@ public class StatisticsTest extends MindmapsTitanTestBase {
 
     @Before
     public void setUp() throws InterruptedException, MindmapsValidationException {
-        Pair<MindmapsGraph, String> result = graphWithNewKeyspace();
-        graph = result.getValue0();
-        keyspace = result.getValue1();
+        graph = graphWithNewKeyspace();
+        keyspace = graph.getKeyspace();
     }
 
     @After

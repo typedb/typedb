@@ -16,24 +16,17 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.core;
+package io.mindmaps.graph;
 
-import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.MindmapsTitanTestBase;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.MindmapsValidationException;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -45,19 +38,13 @@ import static org.junit.Assert.assertFalse;
 /**
  *
  */
-public class ConcurrencyTest extends MindmapsTitanTestBase{
-    private final String ROLE_1 = "role1";
-    private final String ROLE_2 = "role2";
-    private final String ENTITY_TYPE = "Entity Type";
-    private final String RELATION_TYPE = "Relation Type";
-    private MindmapsGraph graph;
+public class ConcurrencyTest {
+    private final static String ROLE_1 = "role1";
+    private final static String ROLE_2 = "role2";
+    private final static String ENTITY_TYPE = "Entity Type";
+    private final static String RELATION_TYPE = "Relation Type";
 
-    @Before
-    public void setUp() throws InterruptedException, MindmapsValidationException {
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, UUID.randomUUID().toString().replaceAll("-", "")).getGraph();
-        createOntology(graph);
-    }
-    private void createOntology(MindmapsGraph graph) throws MindmapsValidationException {
+    private static void createOntology(MindmapsGraph graph) throws MindmapsValidationException {
         RoleType role1 = graph.putRoleType(ROLE_1);
         RoleType role2 = graph.putRoleType(ROLE_2);
         graph.putEntityType(ENTITY_TYPE).playsRole(role1).playsRole(role2);
@@ -65,31 +52,29 @@ public class ConcurrencyTest extends MindmapsTitanTestBase{
         graph.commit();
     }
 
-    @After
-    public void cleanGraph() {
-        graph.rollback();
+    private static void assertResults(MindmapsGraph graph) {
         assertEquals(2, graph.getEntityType(ENTITY_TYPE).instances().size());
         assertEquals(1, graph.getRelationType(RELATION_TYPE).instances().size());
-        graph.clear();
     }
 
-    @Test
-    public void testWritingTheSameDataSequentially() throws MindmapsValidationException {
-        writeData();
+    public static void testWritingTheSameDataSequentially(MindmapsGraph graph) throws MindmapsValidationException, InterruptedException {
+        createOntology(graph);
+        writeData(graph);
         assertEquals(2, graph.getEntityType(ENTITY_TYPE).instances().size());
         assertEquals(1, graph.getRelationType(RELATION_TYPE).instances().size());
 
         for(int i = 0; i < 10; i ++){
             boolean exceptionThrown = false;
             try {
-                writeData();
+                writeData(graph);
             } catch (Exception e){
                 exceptionThrown = true;
             }
             assertFalse(exceptionThrown);
         }
+        assertResults(graph);
     }
-    private void writeData() throws MindmapsValidationException {
+    private static void writeData(MindmapsGraph graph) throws MindmapsValidationException {
         EntityType entityType = graph.getEntityType(ENTITY_TYPE);
         RelationType relationType = graph.getRelationType(RELATION_TYPE);
         RoleType role1 = graph.getRoleType(ROLE_1);
@@ -102,23 +87,24 @@ public class ConcurrencyTest extends MindmapsTitanTestBase{
         graph.commit();
     }
 
-    @Test
-    public void testWritingTheSameDataConcurrentlyWithRetriesOnFailureAndInitialDataWrite() throws ExecutionException, InterruptedException, MindmapsValidationException {
-        writeData();
-        concurrentWriteSuper();
+    public static void testWritingTheSameDataConcurrentlyWithRetriesOnFailureAndInitialDataWrite(MindmapsGraph graph)  throws ExecutionException, InterruptedException, MindmapsValidationException {
+        createOntology(graph);
+        writeData(graph);
+        concurrentWriteSuper(graph);
+        assertResults(graph);
     }
 
-    @Ignore //This is ignored because we end up with duplicates. These duplicates will be resolved by removing IDs or a merging process
-    @Test
-    public void testWritingTheSameDataConcurrentlyWithRetriesOnFailure() throws ExecutionException, InterruptedException {
-        concurrentWriteSuper();
+    public static void testWritingTheSameDataConcurrentlyWithRetriesOnFailure(MindmapsGraph graph) throws ExecutionException, InterruptedException, MindmapsValidationException {
+        createOntology(graph);
+        concurrentWriteSuper(graph);
+        assertResults(graph);
     }
-    private void concurrentWriteSuper() throws ExecutionException, InterruptedException {
+    private static void concurrentWriteSuper(MindmapsGraph graph) throws ExecutionException, InterruptedException {
         Set<Future> futures = new HashSet<>();
         ExecutorService pool = Executors.newFixedThreadPool(10);
 
         for(int i = 0; i < 20; i ++){
-            futures.add(pool.submit(this::concurrentWrite));
+            futures.add(pool.submit(() -> concurrentWrite(graph)));
         }
 
         int numFinished = 0;
@@ -130,13 +116,13 @@ public class ConcurrencyTest extends MindmapsTitanTestBase{
         assertEquals(20, numFinished);
     }
 
-    private void concurrentWrite(){
+    private static void concurrentWrite(MindmapsGraph graph){
         final int MAX_FAILURE_COUNT = 10;
         boolean doneWriting = false;
         int failureCount = 0;
         while(!doneWriting){
             try{
-                writeData();
+                writeData(graph);
                 doneWriting = true;
             } catch (Exception e){
                 try {
@@ -144,8 +130,6 @@ public class ConcurrencyTest extends MindmapsTitanTestBase{
                 } catch (InterruptedException e1) {
                     e1.printStackTrace();
                 }
-
-                graph.rollback(); //It's interesting that we need this after a validation failure. Maybe we should auto rollback after validation failure
 
                 failureCount++;
                 if(failureCount >= MAX_FAILURE_COUNT){
