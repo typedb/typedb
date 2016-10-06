@@ -39,10 +39,12 @@ public class AtomicFactory {
         VarAdmin var = pattern.asVar();
         if(var.isRelation())
             return new Relation(var);
+        else if(!var.getResourcePredicates().isEmpty())
+            return new Resource(var);
         else if (!var.getValueEqualsPredicates().isEmpty() || var.getId().isPresent())
             return new Substitution(var);
         else
-            return new Atom(var);
+            return new Type(var);
     }
 
     public static Atomic create(PatternAdmin pattern, Query parent) {
@@ -52,10 +54,12 @@ public class AtomicFactory {
         VarAdmin var = pattern.asVar();
         if(var.isRelation())
             return new Relation(var, parent);
+        else if(!var.getResourcePredicates().isEmpty())
+            return new Resource(var, parent);
         else if (!var.getValueEqualsPredicates().isEmpty() || var.getId().isPresent())
             return new Substitution(var, parent);
         else
-            return new Atom(var, parent);
+            return new Type(var, parent);
     }
 
     public static Atomic create(Atomic atom) {
@@ -90,16 +94,17 @@ public class AtomicFactory {
                 //resources
                 var.getProperties(HasResourceProperty.class).forEach(res -> {
                     String resType = res.getType();
-                    res.getResource().getValuePredicates().forEach( pred -> {
-                        VarAdmin resVar = Graql.var(name).admin();
-                        resVar.has(resType, pred);
-                        atoms.add(AtomicFactory.create(resVar, parent));
+                    VarAdmin resVar = res.getResource();
+                    resVar.getValuePredicates().forEach( pred -> {
+                        VarAdmin newVar = Graql.var(name).admin();
+                        newVar.has(resType, pred);
+                        atoms.add(AtomicFactory.create(newVar, parent));
                     });
 
                     //res val as a variable
-                    if(res.getResource().getValuePredicates().isEmpty()){
-                        VarAdmin resVar = Graql.var(name).has(resType, Graql.var(res.getName())).admin();
-                        atoms.add(AtomicFactory.create(resVar, parent));
+                    if(resVar.getValuePredicates().isEmpty()){
+                        VarAdmin newVar = Graql.var(name).has(resType, Graql.var(resVar.getName())).admin();
+                        atoms.add(AtomicFactory.create(newVar, parent));
                     }
                 });
             }

@@ -22,12 +22,15 @@ import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
+import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
 import io.mindmaps.graql.reasoner.graphs.AdmissionsGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static io.mindmaps.graql.internal.reasoner.Utility.printAnswers;
 import static org.junit.Assert.assertEquals;
 
 
@@ -47,7 +50,7 @@ public class AdmissionsInferenceTest {
     @Test
     public void testConditionalAdmission() {
         String queryString = "match $x isa applicant; $x has admissionStatus 'conditional';";
-        MatchQuery query = qb.parseMatch(queryString);
+        Query query = new Query(queryString, graph);
         String explicitQuery = "match $x isa applicant, id 'Bob';";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
@@ -91,6 +94,23 @@ public class AdmissionsInferenceTest {
         String explicitQuery = "match $x isa applicant; $x id 'Eva' or $x id 'Charlie';";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
+    }
+
+    @Test
+    public void testAdmissions() {
+        String queryString = "match $x isa applicant;$x has admissionStatus $y;";
+        MatchQuery query = qb.parseMatch(queryString);
+        String explicitQuery = "match " +
+        "{$x id 'Bob';$y isa admissionStatus value 'conditional';} or" +
+        "{$x id 'Alice';$y isa admissionStatus value 'denied';} or" +
+        "{$x id 'Denis';$y isa admissionStatus value 'provisional';} or" +
+        "{$x id 'Frank';$y isa admissionStatus value 'wait for transcript';} or" +
+        "{$x id 'Frank';$y isa admissionStatus value 'wait for transcript';};";
+
+        QueryAnswers answers = reasoner.resolve(query);
+        printAnswers(answers);
+        assertEquals(answers, Sets.newHashSet(qb.parseMatch(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
     }
 
