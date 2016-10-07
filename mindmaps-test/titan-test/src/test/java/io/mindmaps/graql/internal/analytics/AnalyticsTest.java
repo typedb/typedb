@@ -54,6 +54,7 @@ import java.util.concurrent.ExecutionException;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class AnalyticsTest extends MindmapsTitanTestBase {
 
@@ -268,6 +269,7 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         });
     }
 
+    @Ignore
     @Test
     public void testDegreesAndPersist() throws Exception {
         // create instances
@@ -490,6 +492,7 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         });
     }
 
+    @Ignore
     @Test
     public void testDegreeIsPersisted() throws Exception {
         // create a simple graph
@@ -578,6 +581,7 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         assertTrue(CollectionUtils.isEqualCollection(currentDegrees.values(), referenceDegrees.values()));
     }
 
+    @Ignore
     @Test
     public void testDegreeIsPersistedInPresenceOfOtherResource() throws MindmapsValidationException, ExecutionException, InterruptedException {
         // create a simple graph
@@ -891,6 +895,7 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         });
     }
 
+    @Ignore
     @Test
     public void testMultipleExecutionOfDegreeAndPersistWhileAddingNodes() throws MindmapsValidationException, ExecutionException, InterruptedException {
         // create a simple graph
@@ -951,5 +956,33 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         // compute count
         analytics = new Analytics(keyspace, new HashSet<String>(Arrays.asList("degree")), new HashSet<>());
         assertEquals(graph.getResourceType("degree").instances().size(), analytics.count());
+    }
+
+    @Test
+    public void testNullResourceDoesntBreakAnalytics() throws MindmapsValidationException {
+        // make slightly odd graph
+        String resourceTypeId = "degree";
+        EntityType thing = graph.putEntityType("thing");
+        ResourceType resource = graph.putResourceType(resourceTypeId, ResourceType.DataType.LONG);
+        RoleType degreeOwner = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
+        RoleType degreeValue = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
+        RelationType relationType = graph.putRelationType(GraqlType.HAS_RESOURCE.getId(resourceTypeId))
+                .hasRole(degreeOwner)
+                .hasRole(degreeValue);
+        thing.playsRole(degreeOwner);
+
+        Entity thisThing = graph.addEntity(thing);
+        graph.addRelation(relationType).putRolePlayer(degreeOwner,thisThing);
+        graph.commit();
+
+        Analytics analytics = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
+
+        // the null roleplayer caused analytics to fail at some stage
+        try {
+            analytics.degreesAndPersist();
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            fail();
+        }
     }
 }

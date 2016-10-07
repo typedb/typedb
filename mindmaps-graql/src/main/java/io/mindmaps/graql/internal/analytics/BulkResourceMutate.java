@@ -85,7 +85,7 @@ class BulkResourceMutate <T>{
         }
 
         String id = vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name());
-        resourcesToPersist.put(id,value);
+        resourcesToPersist.put(id, value);
 
         if (currentNumberOfVertices >= batchSize) flush();
     }
@@ -120,10 +120,18 @@ class BulkResourceMutate <T>{
             Instance instance =
                     graph.getInstance(id);
 
+            // fetch all current resource assertions on the instance
             List<Relation> relations = instance.relations(resourceOwner).stream()
                     .filter(relation -> relation.rolePlayers().size() == 2)
-                    .filter(relation -> relation.rolePlayers().containsKey(resourceValue) &&
-                            relation.rolePlayers().get(resourceValue).type().getId().equals(resourceTypeId))
+                    .filter(relation -> {
+                        boolean currentLogicalState = relation.rolePlayers().containsKey(resourceValue);
+                        Instance roleplayer = relation.rolePlayers().get(resourceValue);
+                        if (roleplayer != null) {
+                            return roleplayer.type().getId().equals(resourceTypeId) && currentLogicalState;
+                        } else {
+                            return currentLogicalState && true;
+                        }
+                    })
                     .collect(Collectors.toList());
 
             if (verboseOutput) {
@@ -131,6 +139,7 @@ class BulkResourceMutate <T>{
                 relations.forEach(System.out::println);
             }
 
+            // if there are no resources at all make a new one
             if (relations.isEmpty()) {
                 Resource<T> resource = graph.putResource(value, resourceType);
 
@@ -141,11 +150,18 @@ class BulkResourceMutate <T>{
                 return;
             }
 
-            relations = relations.stream()
-                    .filter(relation ->
-                            relation.rolePlayers().get(resourceValue).asResource().getValue() != value)
-                    .collect(Collectors.toList());
+            // check the exact resource type and value doesn't exist already
+            relations = relations.stream().filter(relation -> {
+                    Instance roleplayer = relation.rolePlayers().get(resourceValue);
+                    if (roleplayer != null) {
+                        return roleplayer.asResource().getValue() != value;
+                    } else {
+                        return true;
+                    }
+                }).collect(Collectors.toList());
 
+            // if it doesn't exist already delete the old one and add the new one
+            // TODO: we need to figure out what to do when we have multiple resources of the same type already in graph
             if (!relations.isEmpty()) {
                 graph.getRelation(relations.get(0).getId()).delete();
 
