@@ -35,6 +35,7 @@ import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.test.titan.MindmapsTitanTestBase;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -178,6 +179,7 @@ public class GraqlTest extends MindmapsTitanTestBase {
         });
     }
 
+    @Ignore //Ignored due to being expensive
     @Test
     public void testDegreesAndPersist() throws Exception {
 

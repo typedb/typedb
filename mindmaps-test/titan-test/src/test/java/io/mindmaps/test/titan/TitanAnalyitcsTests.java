@@ -2,6 +2,7 @@ package io.mindmaps.test.titan;
 
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.test.graql.analytics.AnalyticsTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
@@ -23,6 +24,7 @@ public class TitanAnalyitcsTests extends MindmapsTitanTestBase {
         AnalyticsTest.testDegrees(graph, factory);
     }
 
+    @Ignore //Ignored due to being expensive
     @Test
     public void AnalyticsTest_testDegreesAndPersist() throws Exception {
         AnalyticsTest.testDegreesAndPersist(graph, factory);
@@ -33,13 +35,15 @@ public class TitanAnalyitcsTests extends MindmapsTitanTestBase {
         AnalyticsTest.testDegreeIsCorrect(graph);
     }
 
+    @Ignore //Ignored due to being expensive
     @Test
     public void AnalyticsTest_testDegreeIsPersisted() throws Exception {
         AnalyticsTest.testDegreeIsPersisted(graph, factory);
     }
 
+    @Ignore //Ignored due to being expensive
     @Test
-    public void AnalyticsTest_testDegreeIsPersistedInPresenceOfOtherResourc() throws InterruptedException, ExecutionException, MindmapsValidationException {
+    public void AnalyticsTest_testDegreeIsPersistedInPresenceOfOtherResource() throws InterruptedException, ExecutionException, MindmapsValidationException {
         AnalyticsTest.testDegreeIsPersistedInPresenceOfOtherResource(graph, factory);
     }
 
