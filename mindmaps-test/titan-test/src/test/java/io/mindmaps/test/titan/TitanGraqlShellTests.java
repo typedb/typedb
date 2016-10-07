@@ -1,4 +1,4 @@
-package io.mindmaps;
+package io.mindmaps.test.titan;
 
 import io.mindmaps.graql.shell.GraqlShellIT;
 import org.junit.Test;

@@ -1,14 +1,14 @@
-package io.mindmaps.graph;
+package io.mindmaps.test.orientdb.graph;
 
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.MindmapsOrientDBTestBase;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.engine.postprocessing.Cache;
 import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.test.orientdb.MindmapsOrientDBTestBase;
 import org.junit.Ignore;
 import org.junit.Test;
 

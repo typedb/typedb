@@ -1,7 +1,9 @@
-package io.mindmaps;
+package io.mindmaps.test.titan;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import io.mindmaps.AbstractMindmapsEngineTest;
+import io.mindmaps.Mindmaps;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.junit.BeforeClass;
 

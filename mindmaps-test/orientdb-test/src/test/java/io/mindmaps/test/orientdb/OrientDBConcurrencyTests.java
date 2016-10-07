@@ -1,4 +1,4 @@
-package io.mindmaps;
+package io.mindmaps.test.orientdb;
 
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graph.ConcurrencyTest;

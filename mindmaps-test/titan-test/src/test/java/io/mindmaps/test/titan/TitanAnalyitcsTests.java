@@ -1,4 +1,4 @@
-package io.mindmaps;
+package io.mindmaps.test.titan;
 
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.analytics.AnalyticsTest;
