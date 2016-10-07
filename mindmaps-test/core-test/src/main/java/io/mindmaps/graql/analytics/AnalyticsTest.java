@@ -55,12 +55,6 @@ import static org.junit.Assert.assertTrue;
 public class AnalyticsTest {
     private static long startTime;
 
-    //public void setUp() throws InterruptedException {
-    //    graph = graphWithNewKeyspace();
-    //    keyspace = graph.getKeyspace();
-    //}
-
-
     public static void testAkoIsAccountedForInSubgraph(MindmapsGraph graph) throws Exception {
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");

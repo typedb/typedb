@@ -18,6 +18,7 @@
 
 package io.mindmaps.graph.internal;
 
+import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.REST;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
@@ -39,5 +40,10 @@ public class MindmapsTinkerGraph extends AbstractMindmapsGraph<TinkerGraph> {
     @Override
     public ConceptImpl getConceptByBaseIdentifier(Object baseIdentifier) {
         return super.getConceptByBaseIdentifier(Long.valueOf(baseIdentifier.toString()));
+    }
+
+    @Override
+    public void rollback(){
+        LOG.warn(ErrorMessage.UNSUPPORTED_GRAPH.getMessage(getTinkerPopGraph().getClass().getName(), "rollback"));
     }
 }
