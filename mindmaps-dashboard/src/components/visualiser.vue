@@ -23,7 +23,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
             <div class="panel panel-filled" style="margin-bottom: 0px;">
                 <div class="panel-body">
                     <div class="form-group">
-                        <textarea class="form-control" rows="3" placeholder=">>" v-model="graqlQuery" @keydown.enter="runQuery($event)" @keydown.delete="clearGraph($event)"></textarea>
+                        <textarea v-el:graql-editor class="form-control" rows="3" placeholder=">>"></textarea>
                     </div>
                     <div class="from-buttons">
                         <button @click="runQuery" class="btn btn-default search-button">Submit<i class="pe-7s-angle-right-circle"></i></button>
@@ -178,16 +178,19 @@ h4 {
 <script>
 import _ from 'underscore';
 import Prism from 'prismjs';
+import CodeMirror from 'codemirror';
+import placeholder from 'codemirror/addon/display/placeholder.js';
+import simpleMode from 'codemirror/addon/mode/simple.js';
 
 import Visualiser from '../js/visualiser/Visualiser.js';
 import HALParser from '../js/HAL/HALParser.js';
 import EngineClient from '../js/EngineClient.js';
 import * as PLang from '../js/prismGraql.js';
+import simpleGraql from '../js/codemirrorGraql.js';
 
 export default {
     data() {
         return {
-            graqlQuery: undefined,
             errorMessage: undefined,
             errorPanelClass: undefined,
             visualiser: {},
@@ -199,7 +202,9 @@ export default {
 
             allNodeProps: [],
             selectedProps: [],
-            nodeType: undefined
+            nodeType: undefined,
+
+            codeMirror: {}
         }
     },
 
@@ -228,31 +233,37 @@ export default {
             var x = Math.abs(window.innerHeight - graph.offsetTop - $('.graph-div').offset().top);
             $('.graph-div').height(x+"px");
         };
+
+        codeMirror = CodeMirror.fromTextArea(this.$els.graqlEditor, {
+                lineNumbers: true,
+                theme: "dracula",
+                mode: "graql",
+                extraKeys: {
+                    Enter: this.runQuery,
+                    "Shift-Delete": this.clearGraph,
+                    "Shift-Backspace": this.clearGraph
+                }
+            });
+        codeMirror.setSize(null, 100);
     },
 
     methods: {
         /*
          * User interaction: queries.
          */
-        runQuery(ev) {
-            if(ev instanceof KeyboardEvent) {
-                // Only Shift + Enter just adds a new line.
-                if(ev.shiftKey)
-                    return;
-
-                ev.preventDefault();
-            }
+        runQuery() {
+            const query = codeMirror.getValue();
 
             // Empty query.
-            if(this.graqlQuery == undefined)
+            if(query == undefined || query.length === 0)
                 return;
 
-            engineClient.graqlHAL(this.graqlQuery, this.graphResponse);
+            engineClient.graqlHAL(query, this.graphResponse);
             this.resetMsg();
         },
 
         typeQuery(t, ti) {
-            this.graqlQuery = "match $x "+(t === 'roles' ? 'plays-role':'isa')+" "+ti+";";
+            codeMirror.setValue("match $x "+(t === 'roles' ? 'plays-role':'isa')+" "+ti+";");
             this.typeInstances = false;
             this.runQuery();
         },
@@ -382,12 +393,9 @@ export default {
             this.closeConfigPanel();
         },
 
-        clearGraph(ev) {
-            if(ev instanceof KeyboardEvent && !ev.shiftKey)
-                return;
-
+        clearGraph() {
             // Reset all interface elements to default.
-            this.graqlQuery = undefined;
+            codeMirror.setValue("");
             this.resetMsg();
 
             // And clear the graph

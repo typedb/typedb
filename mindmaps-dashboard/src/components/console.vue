@@ -23,7 +23,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
             <div class="panel panel-filled" style="margin-bottom: 0px;">
                 <div class="panel-body">
                     <div class="form-group">
-                        <textarea class="form-control" rows="3" placeholder=">>" v-model="graqlQuery" @keydown.enter="runQuery($event)" @keydown.delete="clearQuery($event)"></textarea>
+                        <textarea v-el:graql-editor class="form-control" rows="3" placeholder=">>"></textarea>
                     </div>
                     <div class="from-buttons">
                         <button @click="runQuery" class="btn btn-default search-button">Submit<i class="pe-7s-angle-right-circle"></i></button>
@@ -34,7 +34,6 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
             </div>
             <div class="panel panel-c-info panel-collapse" v-show="typeInstances">
                 <div class="panel-body">
-
                     <div v-for="k in typeKeys">
                         <h4>
                             <button @click="toggleElement(k+'-group')" class="btn btn-link">{{k | capitalize }}</button>
@@ -43,7 +42,6 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                             <button v-for="i in typeInstances[k]" @click="typeQuery(k, i)" class="btn btn-default">{{i}}</button>
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
@@ -135,15 +133,18 @@ h4 {
 <script>
 import _ from 'underscore';
 import Prism from 'prismjs';
+import CodeMirror from 'codemirror';
+import placeholder from 'codemirror/addon/display/placeholder.js';
+import simpleMode from 'codemirror/addon/mode/simple.js';
 
 import HALParser from '../js/HAL/HALParser.js';
 import EngineClient from '../js/EngineClient.js';
 import * as PLang from '../js/prismGraql.js';
+import simpleGraql from '../js/codemirrorGraql.js';
 
 export default {
     data() {
         return {
-            graqlQuery: undefined,
             errorMessage: undefined,
             errorPanelClass: undefined,
             graqlResponse: undefined,
@@ -151,7 +152,9 @@ export default {
             halParser: {},
 
             typeInstances: false,
-            typeKeys: []
+            typeKeys: [],
+
+            codeMirror: {}
         }
     },
 
@@ -163,29 +166,37 @@ export default {
         halParser.setNewRelationship((f, t, l) => { visualiser.addEdge(f, t, l) });
     },
 
+    attached() {
+        codeMirror = CodeMirror.fromTextArea(this.$els.graqlEditor, {
+                lineNumbers: true,
+                theme: "dracula",
+                mode: "graql",
+                extraKeys: {
+                    Enter: this.runQuery,
+                    "Shift-Delete": this.clearGraph,
+                    "Shift-Backspace": this.clearGraph
+                }
+            });
+        codeMirror.setSize(null, 100);
+    },
+
     methods: {
         /*
          * User interaction: queries.
          */
         runQuery(ev) {
-            if(ev instanceof KeyboardEvent) {
-                // Only Shift + Enter just adds a new line.
-                if(ev.shiftKey)
-                    return;
-
-                ev.preventDefault();
-            }
+            const query = codeMirror.getValue();
 
             // Empty query.
-            if(this.graqlQuery == undefined)
+            if(query == undefined || query.length === 0)
                 return;
 
-            engineClient.graqlShell(this.graqlQuery, this.shellResponse);
+            engineClient.graqlShell(query, this.shellResponse);
             this.resetMsg();
         },
 
         typeQuery(t, ti) {
-            this.graqlQuery = "match $x "+(t === 'roles' ? 'plays-role':'isa')+" "+ti+";";
+            codeMirror.setValue("match $x "+(t === 'roles' ? 'plays-role':'isa')+" "+ti+";");
             this.typeInstances = false;
             this.runQuery();
         },
@@ -247,11 +258,9 @@ export default {
         },
 
         clearGraph(ev) {
-            if(ev instanceof KeyboardEvent && !ev.shiftKey)
-                return;
+            codeMirror.setValue("");
 
             // Reset all interface elements to default.
-            this.graqlQuery = undefined;
             this.graqlResponse = undefined;
             this.resetMsg();
         }
