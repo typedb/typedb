@@ -6,56 +6,109 @@ grammar GraqlTemplate;
 }
 
 template
- : block EOF
+ : blockContents EOF
  ;
 
 block
- : (statement | replace | gvar | WORD | ALLOWABLE)*
+ : '{' blockContents '}'
+ ;
+
+blockContents
+ : (statement | graqlVariable | keyword | ID)*
  ;
 
 statement
  : forStatement
  | ifStatement
- | macro
+ | replaceStatement
  ;
 
 forStatement
- : 'for' '{' expression '}' 'do' '{' block '}'
+ : FOR LPAREN (ID IN expr | expr) RPAREN DO block
  ;
 
 ifStatement
- : ifPartial elsePartial?
+ : ifPartial elseIfPartial* elsePartial?
  ;
 
 ifPartial
- : 'if' '{' expression '}' 'do' '{' block '}'
+ : IF LPAREN expr RPAREN DO block
+ ;
+
+elseIfPartial
+ : ELSEIF LPAREN expr RPAREN DO block
  ;
 
 elsePartial
- : 'else' '{' block '}'
+ : ELSE block
  ;
 
 macro
- : MACRO '{' expression (',' expression)* '}'
+ : ID_MACRO LPAREN expr* RPAREN
  ;
 
-expression
- : (WORD | '.')+
+// evaluate and return value
+expr
+ : ID
+ | NOT expr          // not expression
+ | expr OR expr      // or expression
+ | expr AND expr     // and expression
+ | BOOLEAN           // boolean expression
+ | macro
  ;
 
-replace
- : DOLLAR? REPLACE
+replaceStatement
+ : REPLACE | macro
  ;
 
-gvar
- : GVAR
+graqlVariable
+ : ID_GRAQL
  ;
 
-WORD        : [a-zA-Z0-9_-]+;
-DOLLAR      : '$';
-MACRO       : '@' WORD;
-GVAR        : '$' WORD;
-REPLACE     : WORD? '<' (WORD | '.')+ '>' WORD? ;
-ALLOWABLE   : ';' | ')' | '(' | ',' | ':';
+keyword
+: ','
+| ';'
+| RPAREN
+| LPAREN
+| ':'
+| FOR
+| IF
+| ELSEIF
+| ELSE
+| TRUE
+| FALSE
+| DO
+| IN
+| BOOLEAN
+| AND
+| OR
+| NOT
+;
 
-WS : [ \t\r\n] -> channel(1) ;
+FOR         : 'for';
+IF          : 'if';
+ELSEIF      : 'elseif';
+ELSE        : 'else';
+DO          : 'do';
+IN          : 'in';
+
+BOOLEAN     : TRUE | FALSE;
+TRUE        : 'true';
+FALSE       : 'false';
+
+AND         : 'and';
+OR          : 'or';
+NOT         : 'not';
+
+LPAREN      : '(';
+RPAREN      : ')';
+
+ID          : [a-zA-Z0-9_-]+ ('.' [a-zA-Z0-9_-]+ )*;
+ID_GRAQL    : '$' ID;
+ID_MACRO    : '@' ID;
+
+REPLACE     : ID? '<' ID '>' ID? ;
+
+// hidden channels
+WHITESPACE  : [ \t\r\n]                  -> channel(1);
+COMMENT     : '#' .*? '\r'? ('\n' | EOF) -> channel(2);
