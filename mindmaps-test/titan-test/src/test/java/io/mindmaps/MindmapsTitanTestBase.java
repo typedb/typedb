@@ -6,6 +6,7 @@ import io.mindmaps.engine.util.ConfigProperties;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.junit.BeforeClass;
 
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.lang.Thread.sleep;
@@ -32,7 +33,8 @@ public abstract class MindmapsTitanTestBase extends AbstractMindmapsEngineTest {
 
     @Override
     public void buildGraph(){
-        graph = graphWithNewKeyspace();
+        factory = Mindmaps.factory(Mindmaps.DEFAULT_URI, UUID.randomUUID().toString().replaceAll("-", ""));
+        graph = factory.getGraph();
     }
     @Override
     public void clearGraph(){

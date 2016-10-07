@@ -1,6 +1,6 @@
 package io.mindmaps;
 
-import io.mindmaps.shell.graql.GraqlShellIT;
+import io.mindmaps.graql.shell.GraqlShellIT;
 import org.junit.Ignore;
 import org.junit.Test;
 

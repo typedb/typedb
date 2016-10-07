@@ -11,7 +11,8 @@ public abstract class MindmapsOrientDBTestBase extends AbstractMindmapsEngineTes
 
     @Override
     public void buildGraph(){
-        graph = graphWithNewKeyspace("memory");
+        factory = Mindmaps.factory(Mindmaps.DEFAULT_URI, "memory");
+        graph = factory.getGraph();
     }
     @Override
     public void clearGraph(){
