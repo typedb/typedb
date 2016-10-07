@@ -17,30 +17,34 @@
  */
 package io.mindmaps.graql.internal.reasoner.predicate;
 
+import com.google.common.collect.Sets;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.pattern.property.HasResourceProperty;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.util.ErrorMessage;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class Resource extends AtomBase{
 
-    private final String val;
+    //TODO change to ValuePredicate
+    private final String value;
 
     public Resource(VarAdmin pattern) {
         super(pattern);
-        this.val = extractValue(pattern);
+        this.value = extractValue(pattern);
     }
 
     public Resource(VarAdmin pattern, Query par) {
         super(pattern, par);
-        this.val = extractValue(pattern);
+        this.value = extractValue(pattern);
     }
 
     public Resource(Resource a) {
         super(a);
-        this.val = extractValue(a.getPattern().asVar());
+        this.value = extractValue(a.getPattern().asVar());
     }
 
     @Override
@@ -56,14 +60,14 @@ public class Resource extends AtomBase{
         if (!(obj instanceof Resource)) return false;
         Resource a2 = (Resource) obj;
         return this.typeId.equals(a2.getTypeId()) && this.varName.equals(a2.getVarName())
-                && this.val.equals(a2.getVal());
+                && this.value.equals(a2.getVal());
     }
 
     @Override
     public int hashCode() {
         int hashCode = 1;
         hashCode = hashCode * 37 + this.typeId.hashCode();
-        hashCode = hashCode * 37 + this.val.hashCode();
+        hashCode = hashCode * 37 + this.value.hashCode();
         hashCode = hashCode * 37 + this.varName.hashCode();
         return hashCode;
     }
@@ -72,30 +76,51 @@ public class Resource extends AtomBase{
     public boolean isEquivalent(Object obj) {
         if (!(obj instanceof Resource)) return false;
         Resource a2 = (Resource) obj;
-        return this.typeId.equals(a2.getTypeId()) && this.val.equals(a2.getVal());
+        return this.typeId.equals(a2.getTypeId()) && this.value.equals(a2.getVal());
     }
 
     @Override
     public int equivalenceHashCode(){
         int hashCode = 1;
         hashCode = hashCode * 37 + this.typeId.hashCode();
-        hashCode = hashCode * 37 + this.val.hashCode();
+        hashCode = hashCode * 37 + this.value.hashCode();
         return hashCode;
     }
 
+    //TODO extract from ValuePredicate
     @Override
-    public String getVal(){ return val;}
+    public String getVal(){ return value;}
+
+    @Override
+    public Set<String> getVarNames() {
+        Set<String> varNames = Sets.newHashSet(getVarName());
+        String valueVariable = extractName(getPattern().asVar());
+        if (!valueVariable.isEmpty()) varNames.add(valueVariable);
+        return varNames;
+    }
+
+    private String extractName(VarAdmin var){
+        String name = "";
+        Set<HasResourceProperty> props = var.getProperties(HasResourceProperty.class).collect(Collectors.toSet());
+        if(props.size() == 1){
+            VarAdmin resVar = props.iterator().next().getResource();
+            if (resVar.getValuePredicates().isEmpty() && resVar.isUserDefinedName())
+                name = resVar.getName();
+        }
+        return name;
+    }
 
     private String extractValue(VarAdmin var) {
         String value = "";
         Map<VarAdmin, Set<ValuePredicateAdmin>> resourceMap = var.getResourcePredicates();
         if (resourceMap.size() != 0) {
-            if (resourceMap.size() != 1)
+            if (resourceMap.size() > 1)
                 throw new IllegalArgumentException(ErrorMessage.PATTERN_NOT_VAR.getMessage(this.toString()));
-
             Map.Entry<VarAdmin, Set<ValuePredicateAdmin>> entry = resourceMap.entrySet().iterator().next();
             value = entry.getValue().iterator().hasNext()? entry.getValue().iterator().next().getPredicate().getValue().toString() : "";
         }
+        String valueVariable = extractName(getPattern().asVar());
+        if (!valueVariable.isEmpty()) value = "$" + valueVariable;
         return value;
     }
 }

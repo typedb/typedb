@@ -128,12 +128,13 @@ public abstract class AtomBase implements Atomic{
         return atomRecursive;
     }
     @Override
-    public boolean containsVar(String name){ return varName.equals(name);}
+    public boolean containsVar(String name){ return getVarNames().contains(name);}
 
     @Override
     public PatternAdmin getPattern(){ return atomPattern;}
-
-    private MatchQuery getBaseMatchQuery(MindmapsGraph graph) {
+    
+    @Override
+    public MatchQuery getMatchQuery(MindmapsGraph graph) {
         QueryBuilder qb = Graql.withGraph(graph);
         MatchQuery matchQuery = qb.match(getPattern());
 
@@ -147,11 +148,6 @@ public abstract class AtomBase implements Atomic{
             matchQuery.admin().getPattern().getPatterns().add(Patterns.conjunction(patterns));
         });
         return matchQuery.admin().select(selectVars);
-    }
-
-    @Override
-    public MatchQuery getMatchQuery(MindmapsGraph graph) {
-        return getBaseMatchQuery(graph);
     }
 
     @Override
