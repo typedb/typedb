@@ -7,22 +7,23 @@ import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
 
-public class CommonTests extends MindmapsOrientDBTestBase {
+public class OrientDBConcurrencyTests extends MindmapsOrientDBTestBase {
 
+    //Concurrency Tests
     @Test
-    public void ConcurrencyTest1() throws ExecutionException, InterruptedException, MindmapsValidationException {
+    public void ConcurrencyTest_testWritingTheSameDataSequentially() throws ExecutionException, InterruptedException, MindmapsValidationException {
         ConcurrencyTest.testWritingTheSameDataSequentially(graph);
     }
 
     @Ignore //TODO: Fix this test
     @Test
-    public void ConcurrencyTest2() throws InterruptedException, ExecutionException, MindmapsValidationException {
+    public void ConcurrencyTest_testWritingTheSameDataConcurrentlyWithRetriesOnFailure() throws InterruptedException, ExecutionException, MindmapsValidationException {
         ConcurrencyTest.testWritingTheSameDataConcurrentlyWithRetriesOnFailure(graph);
     }
 
     @Ignore //TODO: Fix this test
     @Test
-    public void ConcurrencyTest3() throws InterruptedException, ExecutionException, MindmapsValidationException {
+    public void ConcurrencyTest_testWritingTheSameDataConcurrentlyWithRetriesOnFailureAndInitialDataWrite() throws InterruptedException, ExecutionException, MindmapsValidationException {
         ConcurrencyTest.testWritingTheSameDataConcurrentlyWithRetriesOnFailureAndInitialDataWrite(graph);
     }
 }
