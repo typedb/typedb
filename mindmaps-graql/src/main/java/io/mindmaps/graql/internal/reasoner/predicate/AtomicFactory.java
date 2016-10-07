@@ -22,6 +22,7 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.PatternAdmin;
+import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.admin.VarProperty;
 import io.mindmaps.graql.internal.pattern.property.HasResourceProperty;
@@ -29,6 +30,9 @@ import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.util.ErrorMessage;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import static io.mindmaps.graql.internal.reasoner.Utility.createFreshVariable;
 
 public class AtomicFactory {
 
@@ -50,7 +54,7 @@ public class AtomicFactory {
     public static Atomic create(PatternAdmin pattern, Query parent) {
         if (!pattern.isVar() )
         throw new IllegalArgumentException(ErrorMessage.PATTERN_NOT_VAR.getMessage(pattern.toString()));
-
+        
         VarAdmin var = pattern.asVar();
         if(var.isRelation())
             return new Relation(var, parent);
@@ -69,10 +73,9 @@ public class AtomicFactory {
     public static Set<Atomic> createAtomSet(Conjunction<PatternAdmin> pat, Query parent) {
         Set<Atomic> atoms = new HashSet<>();
         MindmapsGraph graph = parent.getGraph().orElse(null);
-
         Set<VarAdmin> vars = pat.getVars();
         vars.forEach(var -> {
-            if (var.getProperties(VarProperty.class).count() > 1 && !var.isRelation()) {
+            if (var.getProperties(VarProperty.class).count() > 1 && !var.isRelation() ) {
                 String name = var.getName();
                 String id = var.getId().orElse("");
                 VarAdmin typeVar = var.getType().orElse(null);
@@ -95,6 +98,7 @@ public class AtomicFactory {
                 var.getProperties(HasResourceProperty.class).forEach(res -> {
                     String resType = res.getType();
                     VarAdmin resVar = res.getResource();
+
                     resVar.getValuePredicates().forEach( pred -> {
                         VarAdmin newVar = Graql.var(name).admin();
                         newVar.has(resType, pred);

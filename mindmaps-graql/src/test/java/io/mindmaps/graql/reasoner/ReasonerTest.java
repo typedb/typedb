@@ -28,6 +28,7 @@ import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.query.Query;
+import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
 import io.mindmaps.graql.internal.reasoner.rule.InferenceRule;
 import io.mindmaps.graql.reasoner.graphs.SNBGraph;
 import org.junit.Ignore;
@@ -39,6 +40,7 @@ import java.util.Map;
 import static io.mindmaps.graql.internal.reasoner.Utility.createReflexiveRule;
 import static io.mindmaps.graql.internal.reasoner.Utility.createSubPropertyRule;
 import static io.mindmaps.graql.internal.reasoner.Utility.createTransitiveRule;
+import static io.mindmaps.graql.internal.reasoner.Utility.printAnswers;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -100,7 +102,6 @@ public class ReasonerTest {
         assertTrue(R.getBody().equals(R2.getBody()));
     }
 
-    @Test
     public void testIdComma(){
         MindmapsGraph graph = SNBGraph.getGraph();
         String queryString = "match $x isa Person, id 'Bob';";
@@ -141,11 +142,37 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testResourceAsVar2() {
+    public void testResourceAsVar2(){
         MindmapsGraph graph = SNBGraph.getGraph();
         String queryString = "match $x has firstname $y;";
-        AtomicQuery query = new AtomicQuery(queryString, graph);
-        assertTrue(query.getSelectedNames().size() == 2);
+        Query query = new Query(queryString, graph);
+        String body = "match $x isa person;$x id 'Bob';";
+        String head = "match $x has firstname 'Bob';";
+        graph.putRule("test", body, head, graph.getMetaRuleInference());
+
+        String explicitQuery = "match $x id 'Bob';";
+        Reasoner reasoner = new Reasoner(graph);
+        QueryBuilder qb = Graql.withGraph(graph);
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
+    }
+
+    @Test
+    public void testResourceAsVar3(){
+        MindmapsGraph graph = SNBGraph.getGraph();
+        String queryString = "match $x has firstname;";
+        Query query = new AtomicQuery(queryString, graph);
+        System.out.println();
+    }
+
+    @Test
+    @Ignore
+    public void testResourceAsVar4(){
+        MindmapsGraph graph = SNBGraph.getGraph();
+        String queryString = "match $x has firstname 'Bob';";
+        String queryString2 = "match $x has firstname $y;$y value 'Bob';select $x;";
+        Query query = new AtomicQuery(queryString, graph);
+        Query query2 = new AtomicQuery(queryString2, graph);
+        assertTrue(query.equals(query2));
     }
 
     @Test

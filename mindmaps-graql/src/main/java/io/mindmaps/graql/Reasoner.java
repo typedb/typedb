@@ -81,7 +81,9 @@ public class Reasoner {
         }
         else if (parentAtom.isResource()) {
             String parentVal = parentAtom.getVal();
-            relRelevant = parentVal.equals(childAtom.getVal());
+            if (parentVal.contains("$")) relRelevant = true;
+            else
+                relRelevant = parentVal.equals(childAtom.getVal());
         }
 
         return relRelevant;

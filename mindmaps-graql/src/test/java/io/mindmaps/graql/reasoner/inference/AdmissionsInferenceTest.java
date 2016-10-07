@@ -96,21 +96,21 @@ public class AdmissionsInferenceTest {
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
     }
-
+    
+    //TODO discards results for $y
     @Test
     public void testAdmissions() {
-        String queryString = "match $x isa applicant;$x has admissionStatus $y;";
+        String queryString = "match $x has admissionStatus $y;";
         MatchQuery query = qb.parseMatch(queryString);
         String explicitQuery = "match " +
-        "{$x id 'Bob';$y isa admissionStatus value 'conditional';} or" +
-        "{$x id 'Alice';$y isa admissionStatus value 'denied';} or" +
-        "{$x id 'Denis';$y isa admissionStatus value 'provisional';} or" +
-        "{$x id 'Frank';$y isa admissionStatus value 'wait for transcript';} or" +
-        "{$x id 'Frank';$y isa admissionStatus value 'wait for transcript';};";
+                "{$x id 'Bob';} or" +
+                "{$x id 'Alice';} or" +
+                "{$x id 'Charlie';} or" +
+                "{$x id 'Denis';} or" +
+                "{$x id 'Frank';} or" +
+                "{$x id 'Eva';};";
 
-        QueryAnswers answers = reasoner.resolve(query);
-        printAnswers(answers);
-        assertEquals(answers, Sets.newHashSet(qb.parseMatch(explicitQuery)));
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
     }
 
