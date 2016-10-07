@@ -1,4 +1,4 @@
-package io.mindmaps.test.orientdb;
+package io.mindmaps.test.tinker;
 
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.test.graph.ConcurrencyTest;
@@ -7,7 +7,7 @@ import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
 
-public class OrientDBConcurrencyTests extends MindmapsOrientDBTestBase {
+public class TinkerConcurrencyTests extends MindmapsTinkerTestBase {
     @Test
     public void ConcurrencyTest_testWritingTheSameDataSequentially() throws ExecutionException, InterruptedException, MindmapsValidationException {
         ConcurrencyTest.testWritingTheSameDataSequentially(graph);

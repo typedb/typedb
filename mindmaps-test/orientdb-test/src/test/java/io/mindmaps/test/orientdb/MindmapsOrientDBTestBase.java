@@ -5,11 +5,11 @@ import io.mindmaps.test.AbstractMindmapsEngineTest;
 import org.junit.BeforeClass;
 
 public abstract class MindmapsOrientDBTestBase extends AbstractMindmapsEngineTest {
-    public static final String EXPERIMENTAL_CONFIG_FILE = "../../conf/experimental/mindmaps-engine-test.properties";
+    private static final String CONFIG_FILE = "../../conf/test/orientdb/mindmaps-engine.properties";
 
     @BeforeClass
     public static void startEngine() throws Exception {
-        startTestEngine(EXPERIMENTAL_CONFIG_FILE);
+        startTestEngine(CONFIG_FILE);
     }
 
     @Override

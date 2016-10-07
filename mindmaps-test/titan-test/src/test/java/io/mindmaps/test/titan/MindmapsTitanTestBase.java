@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.lang.Thread.sleep;
 
 public abstract class MindmapsTitanTestBase extends AbstractMindmapsEngineTest {
-    public static final String EMBEDDED_CONFIG_FILE = "../../conf/test/mindmaps-engine-embedded.properties";
+    private static final String CONFIG_FILE =  "../../conf/test/titan/mindmaps-engine.properties";
     private static AtomicBoolean EMBEDDED_CASS_ON = new AtomicBoolean(false);
 
     private static void hideLogs() {
@@ -23,7 +23,7 @@ public abstract class MindmapsTitanTestBase extends AbstractMindmapsEngineTest {
 
     @BeforeClass
     public static void startEmbeddedCassandra() throws Exception {
-        startTestEngine(EMBEDDED_CONFIG_FILE);
+        startTestEngine(CONFIG_FILE);
 
         if (EMBEDDED_CASS_ON.compareAndSet(false, true)) {
             hideLogs();
