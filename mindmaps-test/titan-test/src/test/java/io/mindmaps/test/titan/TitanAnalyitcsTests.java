@@ -82,4 +82,9 @@ public class TitanAnalyitcsTests extends MindmapsTitanTestBase {
         AnalyticsTest.testComputingUsingDegreeResource(graph);
     }
 
+    @Test
+    public void testNullResourceDoesntBreakAnalytics() throws MindmapsValidationException {
+        AnalyticsTest.testNullResourceDoesntBreakAnalytics(graph);
+    }
+
 }
