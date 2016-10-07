@@ -1,7 +1,7 @@
 package io.mindmaps.test.orientdb;
 
-import io.mindmaps.AbstractMindmapsEngineTest;
 import io.mindmaps.Mindmaps;
+import io.mindmaps.test.AbstractMindmapsEngineTest;
 import org.junit.BeforeClass;
 
 public abstract class MindmapsOrientDBTestBase extends AbstractMindmapsEngineTest {

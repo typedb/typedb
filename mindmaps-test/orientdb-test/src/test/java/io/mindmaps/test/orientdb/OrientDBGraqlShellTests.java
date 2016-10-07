@@ -1,6 +1,6 @@
 package io.mindmaps.test.orientdb;
 
-import io.mindmaps.graql.shell.GraqlShellIT;
+import io.mindmaps.test.graql.shell.GraqlShellIT;
 import org.junit.Ignore;
 import org.junit.Test;
 

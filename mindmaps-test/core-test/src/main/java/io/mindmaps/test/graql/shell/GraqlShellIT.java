@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql.shell;
+package io.mindmaps.test.graql.shell;
 
 import com.google.common.base.Strings;
 import io.mindmaps.graql.GraqlClientImpl;

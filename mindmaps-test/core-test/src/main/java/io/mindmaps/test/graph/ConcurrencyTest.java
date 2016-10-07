@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graph;
+package io.mindmaps.test.graph;
 
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Entity;

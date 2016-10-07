@@ -1,6 +1,6 @@
 package io.mindmaps.test.titan;
 
-import io.mindmaps.graql.shell.GraqlShellIT;
+import io.mindmaps.test.graql.shell.GraqlShellIT;
 import org.junit.Test;
 
 public class TitanGraqlShellTests extends MindmapsTitanTestBase{

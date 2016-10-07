@@ -1,7 +1,7 @@
 package io.mindmaps.test.titan;
 
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.graph.ConcurrencyTest;
+import io.mindmaps.test.graph.ConcurrencyTest;
 import org.junit.Ignore;
 import org.junit.Test;
 

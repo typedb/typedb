@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql.analytics;
+package io.mindmaps.test.graql.analytics;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.Mindmaps;

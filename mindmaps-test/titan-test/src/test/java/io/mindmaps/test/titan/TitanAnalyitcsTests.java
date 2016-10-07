@@ -1,7 +1,7 @@
 package io.mindmaps.test.titan;
 
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.graql.analytics.AnalyticsTest;
+import io.mindmaps.test.graql.analytics.AnalyticsTest;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;

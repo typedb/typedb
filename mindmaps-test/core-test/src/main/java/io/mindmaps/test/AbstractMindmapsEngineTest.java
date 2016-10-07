@@ -1,5 +1,8 @@
-package io.mindmaps;
+package io.mindmaps.test;
 
+import io.mindmaps.Mindmaps;
+import io.mindmaps.MindmapsGraph;
+import io.mindmaps.MindmapsGraphFactory;
 import io.mindmaps.engine.MindmapsEngineServer;
 import io.mindmaps.engine.util.ConfigProperties;
 import org.junit.After;
