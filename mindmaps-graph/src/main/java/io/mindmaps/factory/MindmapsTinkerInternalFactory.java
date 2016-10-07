@@ -51,4 +51,12 @@ class MindmapsTinkerInternalFactory extends AbstractMindmapsInternalFactory<Mind
                  "the config path [" + super.config + "]");
         return TinkerGraph.open();
     }
+
+    @Override
+    protected TinkerGraph getTinkerPopGraph(TinkerGraph graph){
+        if(super.graph == null || isClosed(super.graph)){
+            super.graph = buildTinkerPopGraph();
+        }
+        return super.graph;
+    }
 }
