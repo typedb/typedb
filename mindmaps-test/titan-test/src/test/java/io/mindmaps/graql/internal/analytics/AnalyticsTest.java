@@ -269,6 +269,7 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         });
     }
 
+    @Ignore
     @Test
     public void testDegreesAndPersist() throws Exception {
         // create instances
@@ -491,6 +492,7 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         });
     }
 
+    @Ignore
     @Test
     public void testDegreeIsPersisted() throws Exception {
         // create a simple graph
@@ -579,6 +581,7 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         assertTrue(CollectionUtils.isEqualCollection(currentDegrees.values(), referenceDegrees.values()));
     }
 
+    @Ignore
     @Test
     public void testDegreeIsPersistedInPresenceOfOtherResource() throws MindmapsValidationException, ExecutionException, InterruptedException {
         // create a simple graph
@@ -892,6 +895,7 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         });
     }
 
+    @Ignore
     @Test
     public void testMultipleExecutionOfDegreeAndPersistWhileAddingNodes() throws MindmapsValidationException, ExecutionException, InterruptedException {
         // create a simple graph
