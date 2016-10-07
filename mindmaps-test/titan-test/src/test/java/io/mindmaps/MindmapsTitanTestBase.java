@@ -2,7 +2,6 @@ package io.mindmaps;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import io.mindmaps.engine.util.ConfigProperties;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.junit.BeforeClass;
 
@@ -12,6 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.lang.Thread.sleep;
 
 public abstract class MindmapsTitanTestBase extends AbstractMindmapsEngineTest {
+    public static final String EMBEDDED_CONFIG_FILE = "../../conf/test/mindmaps-engine-embedded.properties";
     private static AtomicBoolean EMBEDDED_CASS_ON = new AtomicBoolean(false);
 
     private static void hideLogs() {
@@ -21,7 +21,7 @@ public abstract class MindmapsTitanTestBase extends AbstractMindmapsEngineTest {
 
     @BeforeClass
     public static void startEmbeddedCassandra() throws Exception {
-        startTestEngine(ConfigProperties.EMBEDDED_CONFIG_FILE);
+        startTestEngine(EMBEDDED_CONFIG_FILE);
 
         if (EMBEDDED_CASS_ON.compareAndSet(false, true)) {
             hideLogs();

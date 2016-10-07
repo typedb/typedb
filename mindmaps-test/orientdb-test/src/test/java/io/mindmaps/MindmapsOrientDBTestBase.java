@@ -1,12 +1,13 @@
 package io.mindmaps;
 
-import io.mindmaps.engine.util.ConfigProperties;
 import org.junit.BeforeClass;
 
 public abstract class MindmapsOrientDBTestBase extends AbstractMindmapsEngineTest {
+    public static final String EXPERIMENTAL_CONFIG_FILE = "../../conf/experimental/mindmaps-engine-test.properties";
+
     @BeforeClass
     public static void startEngine() throws Exception {
-        startTestEngine(ConfigProperties.EXPERIMENTAL_CONFIG_FILE);
+        startTestEngine(EXPERIMENTAL_CONFIG_FILE);
     }
 
     @Override
