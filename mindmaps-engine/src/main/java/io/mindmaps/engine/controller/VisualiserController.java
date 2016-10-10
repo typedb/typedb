@@ -91,7 +91,7 @@ public class VisualiserController {
         Concept concept = graph.getConcept(req.params(REST.Request.ID_PARAMETER));
         if (concept != null) {
             LOG.trace("Building HAL resource for concept with id {}", concept.getId());
-            return new HALConcept(concept, separationDegree).render();
+            return new HALConcept(concept, separationDegree,false).render();
         } else {
             res.status(404);
             return ErrorMessage.CONCEPT_ID_NOT_FOUND.getMessage(req.params(REST.Request.ID_PARAMETER));
@@ -156,7 +156,7 @@ public class VisualiserController {
                     .forEach(x -> x.values()
                             .forEach(concept -> {
                                 LOG.trace("Building HAL resource for concept with id {}", concept.getId());
-                                halArray.put(new JSONObject(new HALConcept(concept, MATCH_QUERY_FIXED_DEGREE).render()));
+                                halArray.put(new JSONObject(new HALConcept(concept, MATCH_QUERY_FIXED_DEGREE,true).render()));
                             }));
             LOG.debug("Done building resources.");
             return halArray.toString();

@@ -61,8 +61,11 @@ public class HALConcept {
     private final String BASETYPE_PROPERTY = "_baseType";
     private final String DIRECTION_PROPERTY = "_direction";
 
+    private boolean embedType;
 
-    public HALConcept(Concept concept, int separationDegree) {
+    public HALConcept(Concept concept, int separationDegree, boolean embedTypeParam) {
+
+        embedType=embedTypeParam;
 
         //building HAL concepts using: https://github.com/HalBuilder/halbuilder-core
         resourceLinkPrefix = REST.WebPath.CONCEPT_BY_ID_URI;
@@ -80,7 +83,7 @@ public class HALConcept {
 
         generateStateAndLinks(halResource, concept);
 
-        embedType(halResource, concept);
+        if(embedType) embedType(halResource, concept);
 
         if (separationDegree == 0) return;
 
@@ -263,6 +266,7 @@ public class HALConcept {
 
         factory = new StandardRepresentationFactory();
         halResource = factory.newRepresentation(resourceLinkPrefix + concept.getId());
+        embedType=true;
 
         try {
             handleConceptOntology(halResource, concept);
