@@ -22,6 +22,7 @@ import io.mindmaps.graql.internal.template.macro.DoubleMacro;
 import io.mindmaps.graql.internal.template.macro.IntMacro;
 import io.mindmaps.graql.internal.template.macro.Macro;
 import io.mindmaps.graql.internal.template.macro.NoescpMacro;
+import io.mindmaps.graql.internal.template.macro.EqualsMacro;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -88,5 +89,6 @@ public class TemplateParser {
         registerMacro("noescp", new NoescpMacro());
         registerMacro("int", new IntMacro());
         registerMacro("double", new DoubleMacro());
+        registerMacro("equals", new EqualsMacro());
     }
 }

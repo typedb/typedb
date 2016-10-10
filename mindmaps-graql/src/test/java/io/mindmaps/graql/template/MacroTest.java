@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertEquals;
 
 public class MacroTest {
@@ -40,7 +39,7 @@ public class MacroTest {
 
     @Test
     public void noescpOneVarTest(){
-        String template = "this is a @noescp{value}";
+        String template = "this is a @noescp(value)";
         String expected = "this is a whale";
 
         Map<String, Object> data = Collections.singletonMap("value", "whale");
@@ -50,8 +49,8 @@ public class MacroTest {
 
     @Test
     public void noescpMultiVarTest(){
-        String template = "My first name is @noescp{firstname} and my last name is @noescp{lastname} ";
-        String expected = "My first name is Phil and my last name is Collins ";
+        String template = "My first name is @noescp(firstname) and my last name is @noescp(lastname)";
+        String expected = "My first name is Phil and my last name is Collins";
 
         Map<String, Object> data = new HashMap<>();
         data.put("firstname", "Phil");
@@ -62,7 +61,7 @@ public class MacroTest {
 
     @Test
     public void intMacroTest(){
-        String template = "this is an int @int{value}";
+        String template = "this is an int @int(value)";
         String expected = "this is an int 4";
 
         assertParseEquals(template, Collections.singletonMap("value", "4"), expected);
@@ -71,7 +70,7 @@ public class MacroTest {
 
     @Test
     public void doubleMacroTest(){
-        String template = "this is a double @double{value}";
+        String template = "this is a double @double(value)";
         String expected = "this is a double 4.0";
 
         assertParseEquals(template, Collections.singletonMap("value", "4.0"), expected);
@@ -79,19 +78,78 @@ public class MacroTest {
     }
 
     @Test
-    public void variablesInsideMacroBlockTest(){
-        assertTrue(false);
+    public void equalsMacroTest(){
+        String template = "@equals(this that)";
+        String expected = "true";
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("this", "50");
+        data.put("that", "50");
+
+        assertParseEquals(template, data, expected);
+
+        template = "@equals(this notThat)";
+        expected = "false";
+
+        data = new HashMap<>();
+        data.put("this", "50");
+        data.put("notThat", "500");
+
+        assertParseEquals(template, data, expected);
+
+        template = "@equals(this notThat)";
+        expected = "false";
+
+        data = new HashMap<>();
+        data.put("this", "50");
+        data.put("notThat", 50);
+
+        assertParseEquals(template, data, expected);
+
+        template = "@equals(this that those)";
+        expected = "true";
+
+        data = new HashMap<>();
+        data.put("this", 50);
+        data.put("that", 50);
+        data.put("those", 50);
+
+        assertParseEquals(template, data, expected);
+
+        template = "@equals(this that notThat)";
+        expected = "false";
+
+        data = new HashMap<>();
+        data.put("this", 50);
+        data.put("that", 50);
+        data.put("notThat", 50.0);
+
+        assertParseEquals(template, data, expected);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void wrongNumberOfArgumentsTest(){
-        String template = "@noescp{value, otherValue}";
+        String template = "@noescp(value otherValue)";
         parser.parseTemplate(template, new HashMap<>());
     }
 
     @Test
     public void macroInArgumentTest(){
-        assertTrue(false);
+
+        String template = "if (@equals (this that)) do { equals } else { not }";
+        String expected = " equals";
+        Map<String, Object> data = new HashMap<>();
+        data.put("this", "50");
+        data.put("that", "50");
+
+        assertParseEquals(template, data, expected);
+
+        expected = " not";
+        data = new HashMap<>();
+        data.put("this", "50");
+        data.put("that", "500");
+
+        assertParseEquals(template, data, expected);
     }
 
     private void assertParseEquals(String template, Map<String, Object> data, String expected){

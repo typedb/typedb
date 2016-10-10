@@ -18,27 +18,31 @@
 
 package io.mindmaps.graql.internal.template;
 
+import com.google.common.collect.Sets;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import static java.util.stream.Collectors.toSet;
+
 public class Scope {
 
     private Scope parent;
     private Map<String, Value> values;
-    private Set<String> variables;
+    private Set<String> variablesEncountered;
 
     public Scope(Map<String, Object> data){
         this.values = new HashMap<>();
-        this.variables = new HashSet<>();
+        this.variablesEncountered = new HashSet<>();
         assign("", data);
     }
 
-    public Scope(Scope parent, Set<String> variables){
+    public Scope(Scope parent){
         this.parent = parent;
         this.values = new HashMap<>();
-        this.variables = localVariables(this.parent, variables);
+        this.variablesEncountered = Sets.newHashSet(parent.variablesEncountered());
     }
 
     public Scope up() {
@@ -46,21 +50,29 @@ public class Scope {
     }
 
     @SuppressWarnings("unchecked")
-    public void assign(Object value) {
-        if (value instanceof Map) {
-            assign("", value);
-        } else {
-            assign(".", value);
+    public void assign(String prefix, Object value){
+        if(value instanceof Map){
+            Map<String, Object> map = (Map) value;
+
+            if(!prefix.isEmpty()){
+                prefix = prefix + ".";
+            }
+
+            for(String key: map.keySet()) {
+                assign(prefix  + key, map.get(key));
+            }
+        }
+        else {
+            values.put(prefix, value == null ? Value.NULL : new Value(value));
         }
     }
 
-    @SuppressWarnings("unchecked")
-    public void unassign(Object value) {
-        if (value instanceof Map) {
-            unassign("", value);
-        } else {
-            unassign(".", value);
-        }
+    public void unassign(String prefix){
+        Set<String> removed = values.keySet().stream()
+                .filter(s -> s.startsWith(prefix))
+                .collect(toSet());
+
+        removed.forEach(values::remove);
     }
 
     public Value resolve(String var) {
@@ -84,52 +96,11 @@ public class Scope {
         return parent == null;
     }
 
-    public Set<String> variables(){
-        return variables;
+    public boolean hasSeen(String variable){
+        return variablesEncountered.contains(variable);
     }
 
-    private Set<String> localVariables(Scope scope, Set<String> currentVariables){
-        if(scope == null){
-           return currentVariables;
-        }
-
-        currentVariables.removeAll(scope.variables());
-        return localVariables(scope.parent, currentVariables);
-    }
-
-    @SuppressWarnings("unchecked")
-    private void assign(String prefix, Object value){
-        if(value instanceof Map){
-            Map<String, Object> map = (Map) value;
-
-            if(!prefix.isEmpty()){
-                prefix = prefix + ".";
-            }
-
-            for(String key: map.keySet()) {
-                assign(prefix  + key, map.get(key));
-            }
-        }
-        else {
-            values.put(prefix, value == null ? Value.NULL : new Value(value));
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private void unassign(String prefix, Object value){
-        if(value instanceof Map){
-            Map<String, Object> map = (Map) value;
-
-            if(!prefix.isEmpty()){
-                prefix = prefix + ".";
-            }
-
-            for(String key: map.keySet()) {
-                unassign(prefix  + key, map.get(key));
-            }
-        }
-        else {
-            values.remove(prefix);
-        }
+    public void markAsSeen(String variable){
+        variablesEncountered.add(variable);
     }
 }

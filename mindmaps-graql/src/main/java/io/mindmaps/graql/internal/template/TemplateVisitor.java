@@ -32,13 +32,11 @@ import static io.mindmaps.graql.internal.template.Value.format;
 import static io.mindmaps.graql.internal.template.Value.formatVar;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 
 /**
  * ANTLR visitor class for parsing a template
  */
-@SuppressWarnings("unchecked")
-public class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
+public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
 
     private final CommonTokenStream tokens;
     private final Map<String, Macro<Object>> macros;
@@ -56,25 +54,26 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
     // : block EOF
     // ;
     @Override
-    public Object visitTemplate(GraqlTemplateParser.TemplateContext ctx) {
-        return visitBlock(ctx.block());
+    public Value visitTemplate(GraqlTemplateParser.TemplateContext ctx) {
+        return visitBlockContents(ctx.blockContents());
     }
 
-    // block
-    // : (statement | graql)+
+    @Override
+    public Value visitBlock(GraqlTemplateParser.BlockContext ctx) {
+        return visitBlockContents(ctx.blockContents());
+    }
+
+    // blockContents
+    // : (statement | graqlVariable | keyword | ID)*
     // ;
     @Override
-    public Object visitBlock(GraqlTemplateParser.BlockContext ctx) {
+    public Value visitBlockContents(GraqlTemplateParser.BlockContentsContext ctx) {
 
         // create the scope of this block
-        scope = new Scope(scope, variablesInContext(ctx));
-
-        // increase the iteration of vars local to this block
-        scope.variables().stream()
-                .forEach(var -> iteration.compute(var, (k, v) -> v == null ? 0 : v + 1));
+        scope = new Scope(scope);
 
         // traverse the parse tree
-        Object returnValue = visitChildren(ctx);
+        Value returnValue = visitChildren(ctx);
 
         // exit the scope of this block
         scope = scope.up();
@@ -83,46 +82,58 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
     }
 
     // forStatement
-    // : 'for' '{' expression '}' 'do' '{' block '}'
+    // : FOR LPAREN (ID IN expr | expr) RPAREN DO block
     // ;
     @Override
     public Value visitForStatement(GraqlTemplateParser.ForStatementContext ctx) {
 
         // resolved variable
-        Value resolved = this.visitExpression(ctx.expression());
+        Value item = ctx.ID() != null ? this.visit(ctx.ID()) : Value.VOID;
+        Value collection = this.visit(ctx.expr());
 
-        if(!resolved.isList()) {
+        if(!collection.isList()) {
             return Value.NULL;
         }
 
         Value returnValue = Value.VOID;
-        for (Object object : resolved.asList()) {
-            scope.assign(object);
+        for (Object object : collection.asList()) {
+            scope.assign(item.toString(), object);
 
             returnValue = concat(returnValue, this.visit(ctx.block()));
 
-            scope.unassign(object);
+            scope.unassign(item.toString());
         }
 
         return returnValue;
     }
 
+
     // ifStatement
-    // : ifPartial elsePartial?
-    // ;
+    //  : ifPartial elseIfPartial* elsePartial?
+    //   ;
     //
     // ifPartial
-    // : 'if' '{' expression '}' 'do' '{' block '}'
-    // ;
+    //  : IF LPAREN expr RPAREN DO block
+    //   ;
+    //
+    // elseIfPartial
+    //  : ELSEIF LPAREN expr RPAREN DO block
+    //   ;
     //
     // elsePartial
-    // : 'else' '{' block '}'
-    // ;
+    //  : ELSE block
+    //   ;
     @Override
-    public Object visitIfStatement(GraqlTemplateParser.IfStatementContext ctx){
+    public Value visitIfStatement(GraqlTemplateParser.IfStatementContext ctx){
 
-        if(this.visitExpression(ctx.ifPartial().expression()) != Value.NULL){
+        if(this.visit(ctx.ifPartial().expr()).asBoolean()){
             return this.visit(ctx.ifPartial().block());
+        }
+
+        for(GraqlTemplateParser.ElseIfPartialContext elseIf:ctx.elseIfPartial()){
+            if(this.visit(elseIf.expr()).asBoolean()){
+                return this.visit(elseIf.block());
+            }
         }
 
         if(ctx.elsePartial() != null){
@@ -133,52 +144,135 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
     }
 
     // macro
-    // : MACRO '{' block '}'
+    // : ID_MACRO LPAREN expr* RPAREN
     // ;
     @Override
-    public Object visitMacro(GraqlTemplateParser.MacroContext ctx){
-        String macro = ctx.MACRO().getText().replace("@", "");
+    public Value visitMacro(GraqlTemplateParser.MacroContext ctx){
+        String macro = ctx.ID_MACRO().getText().replace("@", "");
 
-        List<Value> values = ctx.expression().stream().map(this::visitExpression).collect(toList());
-
-        return ws(macros.get(macro).apply(values), ctx);
+        List<Value> values = ctx.expr().stream().map(this::visit).collect(toList());
+        return new Value(macros.get(macro).apply(values));
     }
 
-    // expression
-    // : (WORD | '.')+
-    // ;
+    // | expr OR expr      #orExpression
     @Override
-    public Value visitExpression(GraqlTemplateParser.ExpressionContext ctx) {
-        return evaluate(ctx.getText());
-    }
+    public Value visitOrExpression(GraqlTemplateParser.OrExpressionContext ctx) {
+        Value lValue = this.visit(ctx.expr(0));
+        Value rValue = this.visit(ctx.expr(1));
 
-    // replaceVal
-    // : LTRIANGLE variable RTRIANGLE
-    // ;
-    @Override
-    public String visitReplace(GraqlTemplateParser.ReplaceContext ctx) {
-        if(ctx.DOLLAR() != null){
-            return ws(ctx.DOLLAR().getText() + formatVar.apply(resolveReplace(ctx.REPLACE())), ctx);
-        } else {
-            return ws(format.apply(resolveReplace(ctx.REPLACE())), ctx);
+        if(!lValue.isBoolean() || !rValue.isBoolean()){
+            throw new RuntimeException("Invalid OR statement: " + ctx.getText());
         }
+
+        return new Value(lValue.asBoolean() || rValue.asBoolean());
     }
 
-    // gvar
-    // : GVAR
+    // | expr AND expr     #andExpression
+    @Override
+    public Value visitAndExpression(GraqlTemplateParser.AndExpressionContext ctx) {
+        Value lValue = this.visit(ctx.expr(0));
+        Value rValue = this.visit(ctx.expr(1));
+
+        if(!lValue.isBoolean() || !rValue.isBoolean()){
+            throw new RuntimeException("Invalid AND statement: " + ctx.getText());
+        }
+
+        return new Value(lValue.asBoolean() && rValue.asBoolean());
+    }
+
+    // : ID                #idExpression
+    @Override
+    public Value visitIdExpression(GraqlTemplateParser.IdExpressionContext ctx) {
+        return this.evaluate(ctx.ID().getText());
+    }
+
+    //  | macro             #macroExpression
+    @Override
+    public Value visitMacroExpression(GraqlTemplateParser.MacroExpressionContext ctx) {
+        return this.visit(ctx.macro());
+    }
+
+    // | NOT expr          #notExpression
+    @Override
+    public Value visitNotExpression(GraqlTemplateParser.NotExpressionContext ctx) {
+        Value value = this.visit(ctx.expr());
+
+        if(!value.isBoolean()){
+            throw new RuntimeException("Invalid NOT statement: " + ctx.getText());
+        }
+
+        return new Value(!value.asBoolean());
+    }
+
+    // | BOOLEAN           #booleanExpression
+    @Override
+    public Value visitBooleanExpression(GraqlTemplateParser.BooleanExpressionContext ctx) {
+        return new Value(Boolean.valueOf(ctx.getText()));
+    }
+
+    @Override
+    public Value visitEqExpression(GraqlTemplateParser.EqExpressionContext ctx) {
+        Value lValue = this.visit(ctx.expr(0));
+        Value rValue = this.visit(ctx.expr(1));
+
+        return new Value(lValue.equals(rValue));
+    }
+
+    @Override
+    public Value visitNotEqExpression(GraqlTemplateParser.NotEqExpressionContext ctx) {
+        Value lValue = this.visit(ctx.expr(0));
+        Value rValue = this.visit(ctx.expr(1));
+
+        return new Value(!lValue.equals(rValue));
+    }
+
+    @Override
+    public Value visitNullExpression(GraqlTemplateParser.NullExpressionContext ctx) {
+        return Value.NULL;
+    }
+
+    // replaceStatement
+    // : REPLACE | macro
     // ;
     @Override
-    public String visitGvar(GraqlTemplateParser.GvarContext ctx){
-        return ws(ctx.getText() + iteration.get(ctx.getText()), ctx);
+    public Value visitReplaceStatement(GraqlTemplateParser.ReplaceStatementContext ctx) {
+
+        Value replaced;
+        if (ctx.macro() != null) {
+            replaced = this.visitMacro(ctx.macro());
+        } else {
+            replaced = resolveReplace(ctx.REPLACE());
+        }
+
+        if(ctx.DOLLAR() != null){
+            return ws("$" + formatVar.apply(replaced), ctx);
+        }
+
+        return ws(format.apply(replaced), ctx);
+    }
+
+    // graqlVariable
+    // : ID_GRAQL
+    // ;
+    @Override
+    public Value visitGraqlVariable(GraqlTemplateParser.GraqlVariableContext ctx){
+        String var = ctx.getText();
+
+        if(!scope.hasSeen(var)){
+            scope.markAsSeen(var);
+            iteration.compute(var, (k, v) -> v == null ? 0 : v + 1);
+        }
+
+        return ws(ctx.getText() + iteration.get(var), ctx);
     }
 
     @Override
-    public String visitTerminal(TerminalNode node){
+    public Value visitTerminal(TerminalNode node){
         return ws(node.getText(), node);
     }
 
     @Override
-    protected Object aggregateResult(Object aggregate, Object nextResult) {
+    protected Value aggregateResult(Value aggregate, Value nextResult) {
         if (aggregate == null) {
             return nextResult;
         }
@@ -214,27 +308,18 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
         return scope.resolve(expression);
     }
 
-    private Set<String> variablesInContext(GraqlTemplateParser.BlockContext ctx){
-        return ctx.gvar().stream()
-                .map(GraqlTemplateParser.GvarContext::GVAR)
-                .filter(v -> v != null)
-                .map(TerminalNode::getSymbol)
-                .map(Token::getText)
-                .collect(toSet());
-    }
-
     // Methods to maintain whitespace in the template
 
-    private String ws(Object obj, ParserRuleContext ctx){
+    private Value ws(Object obj, ParserRuleContext ctx){
         return whitespace(obj, ctx.getStart(), ctx.getStop());
     }
 
-    private String ws(Object obj, TerminalNode node){
+    private Value ws(Object obj, TerminalNode node){
         Token tok = node.getSymbol();
         return whitespace(obj, tok, tok);
     }
 
-    private String whitespace(Object obj, Token startToken, Token stopToken){
+    private Value whitespace(Object obj, Token startToken, Token stopToken){
         String lws = lwhitespace(startToken.getTokenIndex());
         String rws = rwhitespace(stopToken.getTokenIndex());
 
@@ -242,7 +327,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Object> {
             obj = lws + rws;
         }
 
-        return lws + obj.toString() + rws;
+        return new Value(lws + obj.toString() + rws);
     }
 
     private String rwhitespace(int tokenIndex){

@@ -96,13 +96,13 @@ public class Value {
         return (Boolean) value;
     }
 
-    public static Value concat(Object... objects){
-        if(objects.length == 1){
-            return new Value(objects[0]);
+    public static Value concat(Value... values){
+        if(values.length == 1){
+            return values[0];
         }
 
         StringBuilder builder = new StringBuilder();
-        for(Object value:objects){
+        for(Value value:values){
             builder.append(value.toString());
         }
 
@@ -131,5 +131,21 @@ public class Value {
     @Override
     public String toString() {
         return isNull() ? "null" : isVoid() ? "" : value.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Value value1 = (Value) o;
+
+        return value.equals(value1.value);
+
+    }
+
+    @Override
+    public int hashCode() {
+        return value.hashCode();
     }
 }
