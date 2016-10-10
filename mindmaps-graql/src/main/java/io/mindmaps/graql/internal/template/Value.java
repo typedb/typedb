@@ -128,6 +128,8 @@ public class Value {
         return variable;
     };
 
+    public static Function<Value, String> identity = Value::toString;
+
     @Override
     public String toString() {
         return isNull() ? "null" : isVoid() ? "" : value.toString();

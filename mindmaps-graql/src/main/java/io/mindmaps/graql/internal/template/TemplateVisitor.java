@@ -25,9 +25,11 @@ import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 
 import static io.mindmaps.graql.internal.template.Value.concat;
+import static io.mindmaps.graql.internal.template.Value.identity;
 import static io.mindmaps.graql.internal.template.Value.format;
 import static io.mindmaps.graql.internal.template.Value.formatVar;
 import static java.util.stream.Collectors.joining;
@@ -237,18 +239,13 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
     @Override
     public Value visitReplaceStatement(GraqlTemplateParser.ReplaceStatementContext ctx) {
 
-        Value replaced;
-        if (ctx.macro() != null) {
-            replaced = this.visitMacro(ctx.macro());
-        } else {
-            replaced = resolveReplace(ctx.REPLACE());
-        }
+        Function<Value, String> formatToApply = ctx.DOLLAR() != null ? formatVar :
+                                                ctx.macro() != null ? identity : format;
 
-        if(ctx.DOLLAR() != null){
-            return ws(ctx.DOLLAR().getText() + formatVar.apply(replaced), ctx);
-        }
+        Value replaced = ctx.macro() != null ? this.visit(ctx.macro()) : resolveReplace(ctx.REPLACE());
+        String prepend = ctx.DOLLAR() != null ? ctx.DOLLAR().getText() : "";
 
-        return ws(format.apply(replaced), ctx);
+        return ws(prepend + formatToApply.apply(replaced), ctx);
     }
 
     // graqlVariable
