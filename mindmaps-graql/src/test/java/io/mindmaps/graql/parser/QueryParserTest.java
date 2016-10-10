@@ -541,6 +541,20 @@ public class QueryParserTest {
         qb.parseInsert("insert $x isa movie; insert $y isa movie").execute();
     }
 
+    @Test
+    public void testMissingColon() {
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(containsString("':'"));
+        qb.parseMatch("match (actor $x, $y) isa has-cast;");
+    }
+
+    @Test
+    public void testMissingComma() {
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(containsString("','"));
+        qb.parseMatch("match ($x $y) isa has-cast;");
+    }
+
     private void assertOrderedQueriesEqual(MatchQuery query, MatchQuery parsedQuery) {
         assertEquals(
                 Lists.newArrayList(query).toString(),
