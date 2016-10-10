@@ -44,10 +44,11 @@ import static io.mindmaps.util.Schema.ConceptProperty.ITEM_IDENTIFIER;
 
 public class Analytics {
 
-    private final String keySpace;
     // TODO: allow user specified resources
     public static final String degree = "degree";
-    private final int numberOfOntologyChecks = 10;
+    private static final int numberOfOntologyChecks = 10;
+
+    private final String keySpace;
 
     /**
      * The concept type ids that define which instances appear in the subgraph.
@@ -331,27 +332,31 @@ public class Analytics {
      * underpowered machines, or ones with high lag to engine, the ontology mutation is not persisted in time for the
      * OLAP task to proceed. This method forces analytics to wait and ensure the ontology is persisted before
      * proceeding.
-     * @param resourceTypeId    the resource the plays role edges must point to
+     *
+     * @param resourceTypeId the resource the plays role edges must point to
      */
     private void waitOnMutateResourceOntology(String resourceTypeId) {
         MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraph();
 
-        for (int i=0; i<numberOfOntologyChecks; i++) {
+        for (int i = 0; i < numberOfOntologyChecks; i++) {
             boolean isOntologyComplete = true;
             graph.rollback();
 
             ResourceType resource = graph.getResourceType(resourceTypeId);
-            if (resource==null) isOntologyComplete = false;
+            if (resource == null) continue;
             RoleType degreeOwner = graph.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
-            if (degreeOwner==null) isOntologyComplete = false;
+            if (degreeOwner == null) continue;
             RoleType degreeValue = graph.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
-            if (degreeValue==null) isOntologyComplete = false;
+            if (degreeValue == null) continue;
             RelationType relationType = graph.getRelationType(GraqlType.HAS_RESOURCE.getId(resourceTypeId));
-            if (relationType==null) isOntologyComplete = false;
+            if (relationType == null) continue;
 
             for (String type : subtypes) {
                 Collection<RoleType> roles = graph.getType(type).playsRoles();
-                if (!roles.contains(degreeOwner)) isOntologyComplete = false;
+                if (!roles.contains(degreeOwner)) {
+                    isOntologyComplete = false;
+                    break;
+                }
             }
 
             if (isOntologyComplete) return;

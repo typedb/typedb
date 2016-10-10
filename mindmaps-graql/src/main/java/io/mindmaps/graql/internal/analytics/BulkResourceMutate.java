@@ -42,21 +42,22 @@ import java.util.stream.Collectors;
  * bound and responsible for a subset of the vertices in the graph. Therefore, an instance of the graph can be held in
  * each executor and the mutations from multiple vertices committed as batches. The need to delete relations in a
  * separate iterations from when new relations are added can also be facilitated.
- *
+ * <p/>
  * Each vertex program should instatiate the <code>BulkResourceMutate</code> class at the start of an iteration and call
  * the <code>close</code> method at the end of each iteration. Additionally <code>cleanup</code> must be called in a
  * separate iteration from <code>putValue</code> to ensure that the graph remains sound.
  */
 
-class BulkResourceMutate <T>{
+class BulkResourceMutate<T> {
+
+    private static final int numberOfRetries = 10;
 
     private int batchSize = 100;
-    private int numberOfRetries = 10;
     private MindmapsGraph graph;
     private int currentNumberOfVertices = 0;
     private final String resourceTypeId = Analytics.degree;
     private final String keyspace;
-    private Map<String,T> resourcesToPersist = new HashMap<>();
+    private Map<String, T> resourcesToPersist = new HashMap<>();
 
     private ResourceType<T> resourceType;
     private RoleType resourceOwner;
@@ -80,7 +81,7 @@ class BulkResourceMutate <T>{
         initialiseGraph();
 
         if (verboseOutput) {
-            System.out.println("considering vertex: "+vertex);
+            System.out.println("considering vertex: " + vertex);
             vertex.properties().forEachRemaining(System.out::println);
         }
 
@@ -94,20 +95,19 @@ class BulkResourceMutate <T>{
      * Force all pending operations in the batch to be committed.
      */
     void flush() {
-        boolean hasFailed = true;
+        boolean hasFailed = false;
         int numberOfFailures = 0;
 
-        while (hasFailed) {
-            hasFailed = false;
+        do {
             try {
                 persistResources();
             } catch (Exception e) {
                 hasFailed = true;
                 numberOfFailures++;
-                if (!(numberOfFailures<numberOfRetries))
-                    throw new RuntimeException(ErrorMessage.BULK_PERSIST.getMessage(resourceTypeId,e.getMessage()),e);
+                if (!(numberOfFailures < numberOfRetries))
+                    throw new RuntimeException(ErrorMessage.BULK_PERSIST.getMessage(resourceTypeId, e.getMessage()), e);
             }
-        }
+        } while (hasFailed);
 
         resourcesToPersist.clear();
         currentNumberOfVertices = 0;
@@ -129,10 +129,9 @@ class BulkResourceMutate <T>{
                         if (roleplayer != null) {
                             return roleplayer.type().getId().equals(resourceTypeId) && currentLogicalState;
                         } else {
-                            return currentLogicalState && true;
+                            return currentLogicalState;
                         }
-                    })
-                    .collect(Collectors.toList());
+                    }).collect(Collectors.toList());
 
             if (verboseOutput) {
                 System.out.println("assertions currently attached");
@@ -152,13 +151,9 @@ class BulkResourceMutate <T>{
 
             // check the exact resource type and value doesn't exist already
             relations = relations.stream().filter(relation -> {
-                    Instance roleplayer = relation.rolePlayers().get(resourceValue);
-                    if (roleplayer != null) {
-                        return roleplayer.asResource().getValue() != value;
-                    } else {
-                        return true;
-                    }
-                }).collect(Collectors.toList());
+                Instance roleplayer = relation.rolePlayers().get(resourceValue);
+                return roleplayer == null || roleplayer.asResource().getValue() != value;
+            }).collect(Collectors.toList());
 
             // if it doesn't exist already delete the old one and add the new one
             // TODO: we need to figure out what to do when we have multiple resources of the same type already in graph
