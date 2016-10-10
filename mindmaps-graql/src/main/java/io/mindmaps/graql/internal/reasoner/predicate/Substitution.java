@@ -27,39 +27,47 @@ import io.mindmaps.graql.internal.reasoner.query.Query;
 
 import java.util.Set;
 
+
 //TODO create ValuePredicate instead being a part of Substitution
 public class Substitution extends AtomBase{
 
+    //public enum SubstitutionType{ID_SUB, VALUE_SUB};
+
     private final String val;
-    private final String subType;
+   // private final SubstitutionType subType;
+
 
     public Substitution(VarAdmin pattern) {
         super(pattern);
         this.val = extractValue(pattern);
-        this.subType = pattern.getId().isPresent()? "id" : "type";
+        //this.subType = pattern.getId().isPresent()? ID_SUB : VALUE_SUB;
     }
 
     public Substitution(VarAdmin pattern, Query par) {
         super(pattern, par);
         this.val = extractValue(pattern);
-        this.subType = pattern.getId().isPresent()? "id" : "type";
+        //this.subType = pattern.getId().isPresent()? ID_SUB : VALUE_SUB;
     }
 
     public Substitution(Substitution a) {
         super(a);
         this.val = extractValue(a.getPattern().asVar());
-        this.subType = a.getPattern().asVar().getId().isPresent()? "id" : "type";
+        //this.subType = a.getPattern().asVar().getId().isPresent()? ID_SUB : VALUE_SUB;
     }
 
-    public Substitution(String name, Concept con) {
-        super(Graql.var(name).id(con.getId()).admin().asVar());
+    public Substitution(String varName, Concept con) {
+        super(createSubstitution(varName, con));
         this.val = con.getId();
-        this.subType = this.getPattern().asVar().getId().isPresent()? "id" : "type";
+        //this.subType = this.getPattern().asVar().getId().isPresent()? ID_SUB : VALUE_SUB;
     }
 
-    public Substitution(String name, Concept con, Query parent) {
-        this(name, con);
+    public Substitution(String varName, Concept con, Query parent) {
+        this(varName, con);
         setParentQuery(parent);
+    }
+
+    public static VarAdmin createSubstitution(String varName, Concept con){
+        return Graql.var(varName).id(con.getId()).admin();
     }
 
     @Override
@@ -77,7 +85,7 @@ public class Substitution extends AtomBase{
         if (!(obj instanceof Substitution)) return false;
         Substitution a2 = (Substitution) obj;
         return this.getVarName().equals(a2.getVarName())
-                && this.getVal().equals(a2.getVal()) && this.subType.equals(a2.subType);
+                && this.getVal().equals(a2.getVal());// && this.subType.equals(a2.subType);
     }
 
     @Override
@@ -85,7 +93,7 @@ public class Substitution extends AtomBase{
         int hashCode = 1;
         hashCode = hashCode * 37 + this.val.hashCode();
         hashCode = hashCode * 37 + this.varName.hashCode();
-        hashCode = hashCode * 37 + this.subType.hashCode();
+        //hashCode = hashCode * 37 + this.subType.hashCode();
         return hashCode;
     }
 

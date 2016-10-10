@@ -49,7 +49,7 @@ public class Relation extends AtomBase {
     }
 
     public Relation(String id, Map<String, String> roleMap, Query par){
-        super(constructRelPattern(id, roleMap), par);
+        super(constructRelation(id, roleMap), par);
         castings.addAll(getPattern().asVar().getCastings());
     }
 
@@ -64,7 +64,7 @@ public class Relation extends AtomBase {
     }
 
     //rolePlayer-roleType
-    static private VarAdmin constructRelPattern(String id, Map<String, String> roleMap) {
+    public static VarAdmin constructRelation(String id, Map<String, String> roleMap) {
         Var var = Graql.var().isa(id);
         roleMap.forEach( (player, role) -> var.rel(role, player));
         return var.admin().asVar();

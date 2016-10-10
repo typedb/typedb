@@ -102,6 +102,7 @@ public class ReasonerTest {
         assertTrue(R.getBody().equals(R2.getBody()));
     }
 
+    @Test
     public void testIdComma(){
         MindmapsGraph graph = SNBGraph.getGraph();
         String queryString = "match $x isa Person, id 'Bob';";
@@ -120,8 +121,6 @@ public class ReasonerTest {
     }
 
     @Test
-    //TODO create ValuePredicate instead being a part of Substitution
-    @Ignore
     public void testComma2(){
         MindmapsGraph graph = SNBGraph.getGraph();
         String queryString = "match $x isa person, value <21 value >18;";
@@ -150,22 +149,22 @@ public class ReasonerTest {
         String head = "match $x has firstname 'Bob';";
         graph.putRule("test", body, head, graph.getMetaRuleInference());
 
-        String explicitQuery = "match $x id 'Bob';";
         Reasoner reasoner = new Reasoner(graph);
         QueryBuilder qb = Graql.withGraph(graph);
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
+        QueryAnswers answers = reasoner.resolve(query);
     }
 
     @Test
     public void testResourceAsVar3(){
         MindmapsGraph graph = SNBGraph.getGraph();
-        String queryString = "match $x has firstname;";
+        String queryString = "match $x isa person;$x has age <10;";
+        String queryString2 = "match $x isa person;$x has age $y;$y value <10;select $x;";
         Query query = new AtomicQuery(queryString, graph);
-        System.out.println();
+        Query query2 = new AtomicQuery(queryString2, graph);
+        assertTrue(query.equals(query2));
     }
 
     @Test
-    @Ignore
     public void testResourceAsVar4(){
         MindmapsGraph graph = SNBGraph.getGraph();
         String queryString = "match $x has firstname 'Bob';";
@@ -173,6 +172,24 @@ public class ReasonerTest {
         Query query = new AtomicQuery(queryString, graph);
         Query query2 = new AtomicQuery(queryString2, graph);
         assertTrue(query.equals(query2));
+    }
+
+    @Test
+    public void testResourceAsVar5(){
+        MindmapsGraph graph = SNBGraph.getGraph();
+        String queryString = "match $x has firstname 'Bob', has lastname 'Geldof';";
+        String queryString2 = "match $x has firstname 'Bob';$x has lastname 'Geldof';";
+        String queryString3 = "match $x has firstname $x1;$x has lastname $x2;$x1 value 'Bob';$x2 value 'Geldof';";
+        String queryString4 = "match $x has firstname $x2;$x has lastname $x1;$x2 value 'Bob';$x1 value 'Geldof';";
+        Query query = new Query(queryString, graph);
+        Query query2 = new Query(queryString2, graph);
+        Query query3 = new Query(queryString3, graph);
+        Query query4 = new Query(queryString4, graph);
+
+        assertTrue(query.equals(query3));
+        assertTrue(query.equals(query4));
+        assertTrue(query2.equals(query3));
+        assertTrue(query2.equals(query4));
     }
 
     @Test

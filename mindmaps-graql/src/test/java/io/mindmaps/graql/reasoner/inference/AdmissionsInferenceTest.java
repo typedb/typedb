@@ -101,7 +101,7 @@ public class AdmissionsInferenceTest {
     @Test
     public void testAdmissions() {
         String queryString = "match $x has admissionStatus $y;";
-        MatchQuery query = qb.parseMatch(queryString);
+        Query query = new Query(queryString, graph);
         String explicitQuery = "match " +
                 "{$x id 'Bob';} or" +
                 "{$x id 'Alice';} or" +
@@ -110,7 +110,10 @@ public class AdmissionsInferenceTest {
                 "{$x id 'Frank';} or" +
                 "{$x id 'Eva';};";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
+        QueryAnswers answers = reasoner.resolve(query);
+        printAnswers(answers);
+
+        assertEquals(answers, Sets.newHashSet(qb.parseMatch(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
     }
 
