@@ -1,3 +1,21 @@
+/*
+ * MindmapsDB - A Distributed Semantic Database
+ * Copyright (C) 2016  Mindmaps Research Ltd
+ *
+ * MindmapsDB is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * MindmapsDB is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
+
 package io.mindmaps.test.orientdb.graph;
 
 import io.mindmaps.Mindmaps;
@@ -8,14 +26,13 @@ import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.engine.postprocessing.Cache;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.test.orientdb.MindmapsOrientDBTestBase;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotNull;
 
-public class SimpleTests extends MindmapsOrientDBTestBase {
+public class SimpleTests {
 
     @Ignore //Failing due to inconsistent clears.
     @Test

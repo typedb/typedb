@@ -18,15 +18,23 @@
 
 package io.mindmaps.test.graph;
 
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.MindmapsGraphFactory;
+import io.mindmaps.MindmapsTest;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.test.AbstractMindmapsEngineTest;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -34,6 +42,7 @@ import java.util.concurrent.Future;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assume.assumeFalse;
 
 /**
  *
@@ -43,8 +52,26 @@ public class ConcurrencyTest {
     private final static String ROLE_2 = "role2";
     private final static String ENTITY_TYPE = "Entity Type";
     private final static String RELATION_TYPE = "Relation Type";
+    private MindmapsGraph graph;
 
-    private static void createOntology(MindmapsGraph graph) throws MindmapsValidationException {
+    @BeforeClass
+    public static void setUpClass() throws Exception {
+        AbstractMindmapsEngineTest.startTestEngine();
+    }
+
+    @Before
+    public void setUp() {
+        String keyspace;
+        if (MindmapsTest.usingOrientDB()) {
+            keyspace = "memory";
+        } else {
+            keyspace = UUID.randomUUID().toString().replaceAll("-", "");
+        }
+        MindmapsGraphFactory factory = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace);
+        graph = factory.getGraph();
+    }
+
+    static void createOntology(MindmapsGraph graph) throws MindmapsValidationException {
         RoleType role1 = graph.putRoleType(ROLE_1);
         RoleType role2 = graph.putRoleType(ROLE_2);
         graph.putEntityType(ENTITY_TYPE).playsRole(role1).playsRole(role2);
@@ -57,7 +84,8 @@ public class ConcurrencyTest {
         assertEquals(1, graph.getRelationType(RELATION_TYPE).instances().size());
     }
 
-    public static void testWritingTheSameDataSequentially(MindmapsGraph graph) throws MindmapsValidationException, InterruptedException {
+    @Test
+    public void testWritingTheSameDataSequentially() throws MindmapsValidationException, InterruptedException {
         createOntology(graph);
         writeData(graph);
         assertEquals(2, graph.getEntityType(ENTITY_TYPE).instances().size());
@@ -87,14 +115,31 @@ public class ConcurrencyTest {
         graph.commit();
     }
 
-    public static void testWritingTheSameDataConcurrentlyWithRetriesOnFailureAndInitialDataWrite(MindmapsGraph graph)  throws ExecutionException, InterruptedException, MindmapsValidationException {
+    @Test
+    public void testWritingTheSameDataConcurrentlyWithRetriesOnFailureAndInitialDataWrite()  throws ExecutionException, InterruptedException, MindmapsValidationException {
+        // TODO: Fix this test in tinkergraph
+        assumeFalse(MindmapsTest.usingTinker());
+
+        // TODO: Fix this test in orientdb
+        assumeFalse(MindmapsTest.usingOrientDB());
+
         createOntology(graph);
         writeData(graph);
         concurrentWriteSuper(graph);
         assertResults(graph);
     }
 
-    public static void testWritingTheSameDataConcurrentlyWithRetriesOnFailure(MindmapsGraph graph) throws ExecutionException, InterruptedException, MindmapsValidationException {
+    @Test
+    public void testWritingTheSameDataConcurrentlyWithRetriesOnFailure() throws ExecutionException, InterruptedException, MindmapsValidationException {
+        // TODO: Fix this test in tinkergraph
+        assumeFalse(MindmapsTest.usingTinker());
+
+        // TODO: Fix this test in titan
+        assumeFalse(MindmapsTest.usingTitan());
+
+        // TODO: Fix this test in orientdb
+        assumeFalse(MindmapsTest.usingOrientDB());
+
         createOntology(graph);
         concurrentWriteSuper(graph);
         assertResults(graph);

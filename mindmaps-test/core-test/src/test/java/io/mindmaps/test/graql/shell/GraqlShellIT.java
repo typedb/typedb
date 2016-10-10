@@ -22,7 +22,6 @@ import com.google.common.base.Strings;
 import io.mindmaps.graql.GraqlClientImpl;
 import io.mindmaps.graql.GraqlShell;
 import io.mindmaps.test.AbstractMindmapsEngineTest;
-import io.mindmaps.test.MindmapsTest;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -52,12 +51,9 @@ public class GraqlShellIT {
     private static String expectedVersion = "graql-9.9.9";
     private static String keyspace;
 
-    private static final String CONFIG_FILE =  "../../conf/test/tinker/mindmaps-engine.properties";
-
     @BeforeClass
     public static void setUpClass() throws Exception {
-        AbstractMindmapsEngineTest.startTestEngine(CONFIG_FILE);
-        MindmapsTest.get().buildGraph();
+        AbstractMindmapsEngineTest.startTestEngine();
 
         trueIn = System.in;
         trueOut = System.out;

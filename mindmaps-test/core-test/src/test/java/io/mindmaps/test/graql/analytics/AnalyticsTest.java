@@ -22,41 +22,52 @@ import com.google.common.collect.Sets;
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.MindmapsGraphFactory;
-import io.mindmaps.concept.Entity;
-import io.mindmaps.concept.EntityType;
-import io.mindmaps.concept.Instance;
-import io.mindmaps.concept.Relation;
-import io.mindmaps.concept.RelationType;
-import io.mindmaps.concept.Resource;
-import io.mindmaps.concept.ResourceType;
-import io.mindmaps.concept.RoleType;
-import io.mindmaps.concept.Type;
+import io.mindmaps.MindmapsTest;
+import io.mindmaps.concept.*;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.graql.internal.util.GraqlType;
+import io.mindmaps.test.AbstractMindmapsEngineTest;
 import org.apache.commons.collections.CollectionUtils;
-import org.junit.Assert;
+import org.junit.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
+import static io.mindmaps.MindmapsTest.usingTinker;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 public class AnalyticsTest {
     private static long startTime;
+    private MindmapsGraph graph;
+    private MindmapsGraphFactory factory;
 
-    public static void testAkoIsAccountedForInSubgraph(MindmapsGraph graph) throws Exception {
+    @BeforeClass
+    public static void setUpClass() throws Exception {
+        AbstractMindmapsEngineTest.startTestEngine();
+    }
+
+    @Before
+    public void setUp() {
+        String keyspace;
+        if (MindmapsTest.usingOrientDB()) {
+            keyspace = "memory";
+        } else {
+            keyspace = UUID.randomUUID().toString().replaceAll("-", "");
+        }
+        factory = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace);
+        graph = factory.getGraph();
+    }
+
+    @Test
+    public void testAkoIsAccountedForInSubgraph() throws Exception {
+        // TODO: Fix on TinkerGraphComputer
+        assumeFalse(usingTinker());
+
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
         RoleType owner = graph.putRoleType("owner");
@@ -87,8 +98,8 @@ public class AnalyticsTest {
         assertTrue(degrees.iterator().next().getValue().equals(0L));
     }
 
-
-    public static void testCount(MindmapsGraph graph, MindmapsGraphFactory factory) throws Exception {
+    @Test
+    public void testCount() throws Exception {
         // assert the graph is empty
         System.out.println();
         System.out.println("Counting");
@@ -129,8 +140,11 @@ public class AnalyticsTest {
         System.out.println(System.currentTimeMillis() - startTime + " ms");
     }
 
+    @Test
+    public void testDegrees() throws Exception {
+        // TODO: Fix on TinkerGraphComputer
+        assumeFalse(usingTinker());
 
-    public static void testDegrees(MindmapsGraph graph, MindmapsGraphFactory factory) throws Exception {
         // create instances
         EntityType thing = graph.putEntityType("thing");
         EntityType anotherThing = graph.putEntityType("another");
@@ -248,8 +262,11 @@ public class AnalyticsTest {
         });
     }
 
+    @Test
+    public void testDegreesAndPersist() throws Exception {
+        // TODO: Ignored due to being expensive
+        assumeFalse(usingTinker());
 
-    public static void testDegreesAndPersist(MindmapsGraph graph, MindmapsGraphFactory factory) throws Exception {
         // create instances
         EntityType thing = graph.putEntityType("thing");
         EntityType anotherThing = graph.putEntityType("another");
@@ -376,8 +393,11 @@ public class AnalyticsTest {
         }
     }
 
+    @Test
+    public void testDegreeIsCorrect() throws MindmapsValidationException, ExecutionException, InterruptedException {
+        // TODO: Fix on TinkerGraphComputer
+        assumeFalse(usingTinker());
 
-    public static void testDegreeIsCorrect(MindmapsGraph graph) throws MindmapsValidationException, ExecutionException, InterruptedException {
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
         RoleType owner = graph.putRoleType("owner");
@@ -469,8 +489,11 @@ public class AnalyticsTest {
         });
     }
 
+    @Test
+    public void testDegreeIsPersisted() throws Exception {
+        // TODO: Ignored due to being expensive
+        assumeFalse(usingTinker());
 
-    public static void testDegreeIsPersisted(MindmapsGraph graph, MindmapsGraphFactory factory) throws Exception {
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
         RoleType owner = graph.putRoleType("owner");
@@ -559,8 +582,11 @@ public class AnalyticsTest {
         assertTrue(CollectionUtils.isEqualCollection(currentDegrees.values(), referenceDegrees.values()));
     }
 
+    @Test
+    public void testDegreeIsPersistedInPresenceOfOtherResource() throws MindmapsValidationException, ExecutionException, InterruptedException {
+        // TODO: Ignored due to being expensive
+        assumeFalse(usingTinker());
 
-    public static void testDegreeIsPersistedInPresenceOfOtherResource(MindmapsGraph graph, MindmapsGraphFactory factory) throws MindmapsValidationException, ExecutionException, InterruptedException {
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
         RoleType owner = graph.putRoleType("owner");
@@ -638,8 +664,11 @@ public class AnalyticsTest {
         }
     }
 
+    @Test
+    public void testDegreeIsCorrectAssertionAboutAssertion() throws MindmapsValidationException, ExecutionException, InterruptedException {
+        // TODO: Fix on TinkerGraphComputer
+        assumeFalse(usingTinker());
 
-    public static void testDegreeIsCorrectAssertionAboutAssertion(MindmapsGraph graph) throws MindmapsValidationException, ExecutionException, InterruptedException {
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
         RoleType owner = graph.putRoleType("owner");
@@ -717,8 +746,10 @@ public class AnalyticsTest {
         });
     }
 
-
-    public static void testDegreeIsCorrectTernaryRelationships(MindmapsGraph graph, MindmapsGraphFactory factory) throws MindmapsValidationException, ExecutionException, InterruptedException {
+    @Test
+    public void testDegreeIsCorrectTernaryRelationships() throws MindmapsValidationException, ExecutionException, InterruptedException {
+        // TODO: Fix on TinkerGraphComputer
+        assumeFalse(usingTinker());
 
         // make relation
         RoleType productionWithCast = graph.putRoleType("production-with-cast");
@@ -753,8 +784,11 @@ public class AnalyticsTest {
         assertTrue(degrees.get(graph.getEntity(marlonId)).equals(1L));
     }
 
+    @Test
+    public void testDegreeIsCorrectOneRoleplayerMultipleRoles() throws MindmapsValidationException, ExecutionException, InterruptedException {
+        // TODO: Fix on TinkerGraphComputer
+        assumeFalse(usingTinker());
 
-    public static void testDegreeIsCorrectOneRoleplayerMultipleRoles(MindmapsGraph graph) throws MindmapsValidationException, ExecutionException, InterruptedException {
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
         RoleType owner = graph.putRoleType("owner");
@@ -789,8 +823,10 @@ public class AnalyticsTest {
         });
     }
 
-
-    public static void testDegreeIsCorrectMissingRoleplayer(MindmapsGraph graph, MindmapsGraphFactory factory) throws MindmapsValidationException, ExecutionException, InterruptedException {
+    @Test
+    public void testDegreeIsCorrectMissingRoleplayer() throws MindmapsValidationException, ExecutionException, InterruptedException {
+        // TODO: Fix on TinkerGraphComputer
+        assumeFalse(usingTinker());
 
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
@@ -823,8 +859,10 @@ public class AnalyticsTest {
         });
     }
 
-
-    public static void testDegreeIsCorrectRoleplayerWrongType(MindmapsGraph graph) throws MindmapsValidationException, ExecutionException, InterruptedException {
+    @Test
+    public void testDegreeIsCorrectRoleplayerWrongType() throws MindmapsValidationException, ExecutionException, InterruptedException {
+        // TODO: Fix on TinkerGraphComputer
+        assumeFalse(usingTinker());
 
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
@@ -872,8 +910,11 @@ public class AnalyticsTest {
         });
     }
 
+    @Test
+    public void testMultipleExecutionOfDegreeAndPersistWhileAddingNodes() throws MindmapsValidationException, ExecutionException, InterruptedException {
+        // TODO: Fix on TinkerGraphComputer
+        assumeFalse(usingTinker());
 
-    public static void testMultipleExecutionOfDegreeAndPersistWhileAddingNodes(MindmapsGraph graph) throws MindmapsValidationException, ExecutionException, InterruptedException {
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
         RoleType owner = graph.putRoleType("owner");
@@ -904,8 +945,11 @@ public class AnalyticsTest {
         analytics.degreesAndPersist();
     }
 
+    @Test
+    public void testComputingUsingDegreeResource() throws MindmapsValidationException {
+        // TODO: Fix on TinkerGraphComputer
+        assumeFalse(usingTinker());
 
-    public static void testComputingUsingDegreeResource(MindmapsGraph graph) throws MindmapsValidationException {
         // create something with degrees
         RoleType pet = graph.putRoleType("pet");
         RoleType owner = graph.putRoleType("owner");
@@ -934,7 +978,11 @@ public class AnalyticsTest {
         assertEquals(graph.getResourceType("degree").instances().size(), analytics.count());
     }
 
-    public static void testNullResourceDoesntBreakAnalytics(MindmapsGraph graph) throws MindmapsValidationException {
+    @Test
+    public void testNullResourceDoesntBreakAnalytics() throws MindmapsValidationException {
+        // TODO: Fix on TinkerGraphComputer
+        assumeFalse(usingTinker());
+
         // make slightly odd graph
         String resourceTypeId = "degree";
         EntityType thing = graph.putEntityType("thing");

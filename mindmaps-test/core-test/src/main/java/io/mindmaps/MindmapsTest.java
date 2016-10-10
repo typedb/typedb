@@ -16,26 +16,23 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.test;
+package io.mindmaps;
 
 public class MindmapsTest {
 
-    private MindmapsTest() {}
-
-    public static final String TEST_IMPLEMENTATION = "io.mindmaps.test.MindmapsEngineTest";
-
-    private static <F extends AbstractMindmapsEngineTest> F loadImplementation(String className) {
-        try {
-            @SuppressWarnings("unchecked")
-            Class<F> cl = (Class<F>)Class.forName(className);
-            return cl.getConstructor().newInstance();
-        }
-        catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
+    public static String getConfig() {
+        return System.getProperty("mindmaps.test-profile");
     }
 
-    public static AbstractMindmapsEngineTest get() {
-        return loadImplementation(TEST_IMPLEMENTATION);
+    public static boolean usingTinker() {
+        return "tinker".equals(getConfig());
+    }
+
+    public static boolean usingTitan() {
+        return "titan".equals(getConfig());
+    }
+
+    public static boolean usingOrientDB() {
+        return "orientdb".equals(getConfig());
     }
 }
