@@ -59,7 +59,7 @@ public class JsonMigratorTest {
 
     @AfterClass
     public static void stop(){
-//        MindmapsEngineServer.stop();
+        MindmapsEngineServer.stop();
     }
 
     @Before
@@ -96,7 +96,7 @@ public class JsonMigratorTest {
                 "\n" +
                 "(person-with-address: $person, address-of-person: $address) isa has-address;\n" +
                 "\n" +
-                "for { phoneNumber } do {\n" +
+                "for ( phoneNumber ) do {\n" +
                 "  $phone isa phone-number\n" +
                 "    has location <location>\n" +
                 "    has code <code>;\n" +
@@ -145,11 +145,11 @@ public class JsonMigratorTest {
                 "$x isa thing\n" +
                 "  has a-boolean <a-boolean>\n" +
                 "  has a-number  <a-number>\n" +
-                "  for { array-of-ints } do {\n" +
-                "  has a-int <.>\n" +
+                "  for ( int in array-of-ints ) do {\n" +
+                "  has a-int <int>\n" +
                 "  }\n" +
                 "  has a-string <a-string>\n" +
-                "  if {a-null} do {has a-null <a-null>};";
+                "  if (a-null != null) do {has a-null <a-null>};";
 
         migrate(template, get("all-types/data.json"));
 
@@ -180,7 +180,7 @@ public class JsonMigratorTest {
 
         String template = "\n" +
                 "$thing isa the-thing\n" +
-                "        has a-string if {the-thing.a-string} do {<the-thing.a-string>}\n" +
+                "        has a-string if (the-thing.a-string != null) do {<the-thing.a-string>}\n" +
                 "        else {<the-thing>} ;";
 
         migrate(template, get("string-or-object/data"));
@@ -203,7 +203,7 @@ public class JsonMigratorTest {
 
         String template = "\n" +
                 "$thing isa the-thing\n" +
-                "        has a-string if {the-thing.a-string} do {<the-thing.a-string>}\n" +
+                "        has a-string if (the-thing.a-string != null) do {<the-thing.a-string>}\n" +
                 "        else {<the-thing>} ;";
 
         migrate(template, get("string-or-object/data"));

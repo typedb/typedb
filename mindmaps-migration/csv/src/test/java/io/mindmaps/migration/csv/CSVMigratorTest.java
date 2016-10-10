@@ -54,7 +54,7 @@ public class CSVMigratorTest {
 
     @AfterClass
     public static void stop(){
-//        MindmapsEngineServer.stop();
+        MindmapsEngineServer.stop();
     }
 
     @Before
@@ -86,9 +86,9 @@ public class CSVMigratorTest {
         String pokemonTemplate = "" +
                 "$x isa pokemon id <id>-pokemon \n" +
                 "    has description <identifier>\n" +
-                "    has pokedex-no @int{<id>}\n" +
-                "    has height @int{<height>}\n" +
-                "    has weight @int{<weight>};";
+                "    has pokedex-no @int(id)\n" +
+                "    has height @int(height)\n" +
+                "    has weight @int(weight);";
 
         String pokemonTypeTemplate = "$x isa pokemon-type id <id>-type has description <identifier>;";
 
@@ -118,9 +118,9 @@ public class CSVMigratorTest {
         String template = "" +
                 "$x isa make id <Make>;\n" +
                 "$y isa model id <Model>\n" +
-                "    if {Year} do {has year <Year> }\n " +
-                "    if {Description} do { has description <Description> }\n" +
-                "    if {Price} do { has price @double{<Price>} };\n" +
+                "    if (Year != null) do {has year <Year> }\n " +
+                "    if (Description != null) do { has description <Description> }\n" +
+                "    if (Price != null) do { has price @double(Price) ;\n" +
                 "(make-of-car: $x, model-of-car: $y) isa make-and-model;";
 
         migrate(template, get("single-file/data/cars.csv"));
