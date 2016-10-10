@@ -19,12 +19,34 @@
 package io.mindmaps.graql.internal.parser;
 
 import com.google.common.collect.ImmutableMap;
-import io.mindmaps.graql.*;
-import org.antlr.v4.runtime.*;
+import io.mindmaps.graql.Aggregate;
+import io.mindmaps.graql.AggregateQuery;
+import io.mindmaps.graql.AskQuery;
+import io.mindmaps.graql.ComputeQuery;
+import io.mindmaps.graql.DeleteQuery;
+import io.mindmaps.graql.InsertQuery;
+import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.Pattern;
+import io.mindmaps.graql.Query;
+import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.internal.antlr.GraqlLexer;
+import io.mindmaps.graql.internal.antlr.GraqlParser;
+import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CommonTokenFactory;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.TokenStream;
+import org.antlr.v4.runtime.UnbufferedCharStream;
+import org.antlr.v4.runtime.UnbufferedTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.io.InputStream;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
