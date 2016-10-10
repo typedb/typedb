@@ -22,12 +22,14 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.concept.*;
+import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.Var;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
-import io.mindmaps.concept.Concept;
-import io.mindmaps.concept.RoleType;
-import io.mindmaps.concept.Type;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
+import io.mindmaps.util.ErrorMessage;
+import javafx.util.Pair;
 
 import java.util.*;
 
@@ -117,6 +119,19 @@ public class Utility {
         });
     }
 
+    public static Var createRelationVar(RelationType relType){
+        Var var = Graql.var();
+        Collection<RoleType> roles = relType.hasRoles();
+        Set<String> vars = new HashSet<>();
+
+        roles.forEach(role -> {
+            String varName = createFreshVariable(vars, "x");
+            var.rel(role.getId(), varName);
+            vars.add(varName);
+        });
+        return var;
+    }
+
     /**
      * generate a fresh variable avoiding global variables and variables from the same query
      * @param vars  vars to be avoided
@@ -133,7 +148,100 @@ public class Utility {
         return fresh;
     }
 
+    /**
+     * create transitive rule R(from: X, to: Y) :- R(from: X,to: Z), R(from: Z, to: Y)
+     * @param ruleId rule identifier
+     * @param relType transitive relation type
+     * @param fromRoleId  from directional role type id
+     * @param toRoleId to directional role type id
+     * @param graph graph
+     * @return rule instance
+     */
+    public static Rule createTransitiveRule(String ruleId, RelationType relType, String fromRoleId, String toRoleId, MindmapsGraph graph){
+        final int arity = relType.hasRoles().size();
+        if (arity != 2)
+            throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
 
+        Var startVar = Graql.var().isa(relType.getId()).rel(fromRoleId, "x").rel(toRoleId, "z");
+        Var endVar = Graql.var().isa(relType.getId()).rel(fromRoleId, "z").rel(toRoleId, "y");
+        Var headVar = Graql.var().isa(relType.getId()).rel(fromRoleId, "x").rel(toRoleId, "y");
+
+        String body = Graql.match(startVar, endVar).select("x", "y").toString();
+        String head = Graql.match(headVar).select("x", "y").toString();
+        return graph.putRule(ruleId, body, head, graph.getMetaRuleInference());
+    }
+
+    /**
+     * create reflexive rule R(from: X, to: X) :- R(from: X,to: Y)
+     * @param ruleId rule identifier
+     * @param relType reflexive relation type
+     * @param graph graph
+     * @return rule instance
+     */
+    public static Rule createReflexiveRule(String ruleId, RelationType relType, MindmapsGraph graph){
+        final int arity = relType.hasRoles().size();
+        if (arity != 2)
+            throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
+
+        Var bodyVar = Graql.var().isa(relType.getId()).rel("x").rel("y");
+        Var headVar = Graql.var().isa(relType.getId()).rel("x").rel("x");
+
+        String body = Graql.match(bodyVar).select("x").toString();
+        String head = Graql.match(headVar).select("x").toString();
+        return graph.putRule(ruleId, body, head, graph.getMetaRuleInference());
+    }
+
+    /**
+     * creates rule parent :- child
+     * @param ruleId rule identifier
+     * @param parent relation type of parent
+     * @param child relation type of child
+     * @param roleMappings map of corresponding role type ids
+     * @param graph graph
+     * @return rule instance
+     */
+    public static Rule createSubPropertyRule(String ruleId, RelationType parent, RelationType child, Map<String, String> roleMappings,
+                                             MindmapsGraph graph){
+        final int parentArity = parent.hasRoles().size();
+        final int childArity = child.hasRoles().size();
+        if (parentArity != childArity || parentArity != roleMappings.size())
+            throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
+
+        Var parentVar = Graql.var().isa(parent.getId());
+        Var childVar = Graql.var().isa(child.getId());
+        Set<String> vars = new HashSet<>();
+
+        roleMappings.forEach( (parentRoleId, childRoleId) -> {
+            String varName = createFreshVariable(vars, "x");
+            parentVar.rel(parentRoleId, varName);
+            childVar.rel(childRoleId, varName);
+            vars.add(varName);
+        });
+
+        String body = Graql.match(childVar).toString();
+        String head = Graql.match(parentVar).toString();
+        return graph.putRule(ruleId, body, head, graph.getMetaRuleInference());
+    }
+
+    public static Rule createPropertyChainRule(String ruleId, RelationType relation, String fromRoleId, String toRoleId,
+                                             LinkedHashMap<RelationType, Pair<String, String>> chain, MindmapsGraph graph){
+        Stack<String> varNames = new Stack<>();
+        varNames.push("x");
+        Set<Var> bodyVars = new HashSet<>();
+        chain.forEach( (relType, rolePair) ->{
+            String varName = createFreshVariable(Sets.newHashSet(varNames), "x");
+            Var var = Graql.var().isa(relType.getId())
+                    .rel(rolePair.getKey(), varNames.peek())
+                    .rel(rolePair.getValue(), varName);
+            varNames.push(varName);
+            bodyVars.add(var);
+        });
+
+        Var headVar = Graql.var().isa(relation.getId()).rel(fromRoleId, "x").rel(toRoleId, varNames.peek());
+        String body = Graql.match(bodyVars).select("x", varNames.peek()).toString();
+        String head = Graql.match(headVar).toString();
+        return graph.putRule(ruleId, body, head, graph.getMetaRuleInference());
+    }
 
     public static boolean checkTypesCompatible(Type aType, Type bType) {
         return aType.equals(bType) || aType.subTypes().contains(bType) || bType.subTypes().contains(aType);

@@ -37,11 +37,4 @@ $(document).ready(function () {
             hpanel.find('[id^=map-]').resize();
         }, 50);
     });
-
-    // Handle panel close
-    $('.panel-close').on('click', function(event){
-        event.preventDefault();
-        var hpanel = $(event.target).closest('div.panel');
-        hpanel.remove();
-    });
 });

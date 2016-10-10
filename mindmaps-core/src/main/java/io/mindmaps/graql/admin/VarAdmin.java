@@ -18,12 +18,12 @@
 
 package io.mindmaps.graql.admin;
 
-import io.mindmaps.concept.ResourceType;
 import io.mindmaps.graql.Var;
 
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Admin class for inspecting a Var
@@ -55,49 +55,28 @@ public interface VarAdmin extends PatternAdmin, Var {
     boolean isUserDefinedName();
 
     /**
+     * Get a stream of all properties on this variable
+     */
+    Stream<VarProperty> getProperties();
+
+    /**
+     * Get a stream of all properties of a particular type on this variable
+     * @param type the class of {@link VarProperty} to return
+     * @param <T> the type of {@link VarProperty} to return
+     */
+    <T extends VarProperty> Stream<T> getProperties(Class<T> type);
+
+    /**
+     * Get a unique property of a particular type on this variable, if it exists
+     * @param type the class of {@link VarProperty} to return
+     * @param <T> the type of {@link VarProperty} to return
+     */
+    <T extends UniqueVarProperty> Optional<T> getProperty(Class<T> type);
+
+    /**
      * @return the type of this variable, if it has one specified
      */
     Optional<VarAdmin> getType();
-
-    /**
-     * @return the ako (supertype) of this type, if it has one specified
-     */
-    Optional<VarAdmin> getAko();
-
-    /**
-     * @return all roles this relation type has
-     */
-    Set<VarAdmin> getHasRoles();
-
-    /**
-     * @return all roles this type can play
-     */
-    Set<VarAdmin> getPlaysRoles();
-
-    /**
-     * @return all scopes this relation has
-     */
-    Set<VarAdmin> getScopes();
-
-    /**
-     * @return all resource types that this type's instances can have
-     */
-    Set<VarAdmin> getHasResourceTypes();
-
-    /**
-     * @return the datatype of this resource type, if one is set
-     */
-    Optional<ResourceType.DataType<?>> getDatatype();
-
-    /**
-     * @return the regular expression that instances of this resource type should match, if one is set
-     */
-    Optional<String> getRegex();
-
-    /**
-     * @return whether this variable is an abstract type
-     */
-    boolean getAbstract();
 
     /**
      * @return the ID this variable represents, if it represents something with a specific ID
@@ -115,24 +94,19 @@ public interface VarAdmin extends PatternAdmin, Var {
     Set<VarAdmin> getInnerVars();
 
     /**
+     * Get all inner variables, including implicit variables such as in a has-resource property
+     */
+    Set<VarAdmin> getImplicitInnerVars();
+
+    /**
      * @return all type IDs that this variable refers to
      */
     Set<String> getTypeIds();
 
     /**
-     * @return all role types that this variable refers to
-     */
-    Set<String> getRoleTypes();
-
-    /**
      * @return whether this variable represents a relation
      */
     boolean isRelation();
-
-    /**
-     * @return all resource types that this variable refers to
-     */
-    Set<String> getResourceTypes();
 
     /**
      * @return the name of this variable, as it would be referenced in a native Graql query (e.g. '$x', 'movie')
@@ -145,11 +119,6 @@ public interface VarAdmin extends PatternAdmin, Var {
     boolean hasNoProperties();
 
     /**
-     * @return whether this variable is specified to have a value
-     */
-    boolean hasValue();
-
-    /**
      * @return all predicates on the value of this variable
      */
     Set<ValuePredicateAdmin> getValuePredicates();
@@ -160,29 +129,9 @@ public interface VarAdmin extends PatternAdmin, Var {
     Set<?> getValueEqualsPredicates();
 
     /**
-     * @return the left-hand side that this rule must have
-     */
-    Optional<String> getLhs();
-
-    /**
-     * @return the right-hand side that this rule must have
-     */
-    Optional<String> getRhs();
-
-    /**
-     * @return all resources that this instance must have
-     */
-    Set<VarAdmin> getResources();
-
-    /**
      * @return all predicates on resources of this variable (where the key is the resource type)
      */
     Map<VarAdmin, Set<ValuePredicateAdmin>> getResourcePredicates();
-
-    /**
-     * @return whether this variable uses any predicate that is not equality
-     */
-    boolean usesNonEqualPredicate();
 
     /**
      * @return all castings described on this relation (that is, pairs of role types and role players)

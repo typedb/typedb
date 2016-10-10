@@ -2,6 +2,13 @@
   
 Copyright (C) 2016  Mindmaps Research Ltd.  
 
+### Version 0.2.0 (1st October 2016)
+
+For release notes, please see our separate changelog file.   
+
+[![Build Status](https://travis-ci.org/mindmapsdb/mindmapsdb.svg?branch=internal)](https://travis-ci.org/mindmapsdb/mindmapsdb)
+[![Coverage Status](https://coveralls.io/repos/github/mindmapsdb/mindmapsdb/badge.svg?branch=master)](https://coveralls.io/github/mindmapsdb/mindmapsdb?branch=master)
+[![Slack Status](http://mindmaps-slackin.herokuapp.com/badge.svg)](http://mindmaps-slackin.herokuapp.com/)
 
 ## Licensing
 
@@ -22,7 +29,7 @@ This product includes software developed by [Mindmaps Research Ltd](http://mindm
 
 Operating System: Unix based systems (Linux and Mac OS X)
 
-MindmapsDB requires Java 8 (Standard Edition) with the $JAVA_HOME set accordingly. Mindmaps also requires Maven 3.
+MindmapsDB requires Java 8 (Standard Edition) with the $JAVA_HOME set accordingly. Mindmaps also requires Maven 3, nodejs and npm to be installed and configured correctly (you should be able to install packages global for your user via npm without needing sudo).
 
   
 ## Disclaimer  
@@ -31,15 +38,3 @@ do the absolute minimum provided by law, up to and including nothing.
 
 This is basically the same disclaimer that comes with all software
 packages, but it is in plain English. Thanks for your understanding.
-  
-
-## Releases
-
-### Version 0.1.0 (9th September 2016)
-
-For release notes, please see our separate changelog file.   
-
-
-[![Build Status](https://travis-ci.org/mindmapsdb/mindmapsdb.svg?branch=internal)](https://travis-ci.org/mindmapsdb/mindmapsdb)
-[![Coverage Status](https://coveralls.io/repos/github/mindmapsdb/mindmapsdb/badge.svg?branch=master)](https://coveralls.io/github/mindmapsdb/mindmapsdb?branch=master)
-[![Slack Status](http://mindmaps-slackin.herokuapp.com/badge.svg)](http://mindmaps-slackin.herokuapp.com/)

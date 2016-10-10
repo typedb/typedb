@@ -84,8 +84,8 @@ public class Main {
 
         try{
 
-            MindmapsGraph graph = engineURL == null ? Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(graphName)
-                                                    : Mindmaps.factory(engineURL).getGraph(graphName);
+            MindmapsGraph graph = engineURL == null ? Mindmaps.factory(Mindmaps.DEFAULT_URI, graphName).getGraph()
+                                                    : Mindmaps.factory(engineURL, graphName).getGraph();
 
             Loader loader = engineURL == null ? new BlockingLoader(graphName)
                                               : new DistributedLoader(graphName, Lists.newArrayList(engineURL));

@@ -22,6 +22,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Optional;
+import java.util.function.UnaryOperator;
 
 /**
  * represents a graph traversal, with one start point and optionally an end point
@@ -43,7 +44,18 @@ import java.util.Optional;
  * A gremlin traversal is created from a {@code Query} by appending together fragments in order of priority, one from
  * each {@code MultiTraversal} describing the {@code Query}.
  */
-interface Fragment extends Comparable<Fragment> {
+public interface Fragment extends Comparable<Fragment> {
+
+    static Fragment create(UnaryOperator<GraphTraversal<Vertex, Vertex>> traversal, FragmentPriority priority, String start) {
+        return new FragmentImpl(traversal, priority, start);
+    }
+
+    static Fragment create(
+                UnaryOperator<GraphTraversal<Vertex, Vertex>> traversal,
+                FragmentPriority priority, String start, String end
+        ) {
+        return new FragmentImpl(traversal, priority, start, end);
+    }
 
     /**
      * @return the MultiTraversal that contains this Fragment

@@ -20,27 +20,26 @@ package io.mindmaps.graql.internal.query;
 
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Instance;
-import io.mindmaps.concept.Type;
 import io.mindmaps.exception.InvalidConceptTypeException;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.util.ErrorMessage;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toSet;
 
 class ComputeQueryImpl implements ComputeQuery {
 
     private final Optional<MindmapsGraph> graph;
-    private Optional<Set<String>> typeIds;
+    private Set<String> typeIds;
     private final String computeMethod;
 
-    ComputeQueryImpl(Optional<MindmapsGraph> graph, String computeMethod, Optional<Set<String>> typeIds) {
+    ComputeQueryImpl(Optional<MindmapsGraph> graph, String computeMethod, Set<String> typeIds) {
         this.graph = graph;
         this.computeMethod = computeMethod;
         this.typeIds = typeIds;
@@ -52,42 +51,41 @@ class ComputeQueryImpl implements ComputeQuery {
 
         String keyspace = theGraph.getKeyspace();
 
-        Analytics analytics = typeIds.map(ids -> {
-            Set<Type> types = ids.stream().map(id -> {
-                Type type = theGraph.getType(id);
-                if (type == null) throw new IllegalArgumentException(ErrorMessage.ID_NOT_FOUND.getMessage(id));
-                return type;
-            }).collect(toSet());
-            return new Analytics(keyspace, types);
-        }).orElseGet(() ->
-            new Analytics(keyspace)
-        );
+        Analytics analytics;
 
         try {
             switch (computeMethod) {
                 case "count": {
+                    analytics = getAnalytics(keyspace, false);
                     return analytics.count();
                 }
                 case "degrees": {
+                    analytics = getAnalytics(keyspace, false);
                     return analytics.degrees();
                 }
                 case "degreesAndPersist": {
+                    analytics = getAnalytics(keyspace, false);
                     analytics.degreesAndPersist();
                     return "Degrees have been persisted.";
                 }
                 case "max": {
+                    analytics = getAnalytics(keyspace, true);
                     return analytics.max();
                 }
                 case "mean": {
+                    analytics = getAnalytics(keyspace, true);
                     return analytics.mean();
                 }
                 case "min": {
+                    analytics = getAnalytics(keyspace, true);
                     return analytics.min();
                 }
                 case "std": {
+                    analytics = getAnalytics(keyspace, true);
                     return analytics.std();
                 }
                 case "sum": {
+                    analytics = getAnalytics(keyspace, true);
                     return analytics.sum();
                 }
                 default: {
@@ -98,6 +96,14 @@ class ComputeQueryImpl implements ComputeQuery {
             throw new IllegalArgumentException(ErrorMessage.MUST_BE_RESOURCE_TYPE.getMessage(typeIds),e);
         }
 
+    }
+
+    private Analytics getAnalytics(String keyspace, boolean isStatistics) {
+        if (isStatistics) {
+            return new Analytics(keyspace, new HashSet<>(), typeIds);
+        } else {
+            return new Analytics(keyspace, typeIds, new HashSet<>());
+        }
     }
 
     @Override
@@ -121,7 +127,12 @@ class ComputeQueryImpl implements ComputeQuery {
 
     @Override
     public String toString() {
-        String subtypes = typeIds.map(types -> " in " + types.stream().collect(joining(", "))).orElse("");
+        String subtypes;
+        if (typeIds.isEmpty()) {
+            subtypes = "";
+        } else {
+            subtypes = " in " + typeIds.stream().collect(joining(", "));
+        }
         return "compute " + computeMethod + subtypes + ";";
     }
 

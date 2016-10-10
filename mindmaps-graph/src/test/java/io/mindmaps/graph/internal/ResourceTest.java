@@ -48,7 +48,7 @@ public class ResourceTest {
 
     @Before
     public void buildGraph() {
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         mindmapsGraph.initialiseMetaConcepts();
     }
 
@@ -146,5 +146,15 @@ public class ResourceTest {
         ResourceType<String> concept = mindmapsGraph.putResourceType("a", ResourceType.DataType.STRING);
         Resource<String> concept2 = mindmapsGraph.putResource("concept2", concept);
         assertTrue(concept2.toString().contains("Value"));
+    }
+
+    @Test
+    public void testInvalidDataType(){
+        ResourceType stringResourceType = mindmapsGraph.putResourceType("Strung", ResourceType.DataType.STRING);
+        expectedException.expect(RuntimeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.INVALID_DATATYPE.getMessage("1", String.class.getName()))
+        ));
+        mindmapsGraph.putResource(1L, stringResourceType);
     }
 }

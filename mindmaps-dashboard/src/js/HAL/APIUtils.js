@@ -23,43 +23,60 @@ import * as API from './APITerms';
  */
 
 /**
- * Used to infer directionality of a relationship between two hal resources: @l and @r.
- * The hal resources that is deemed more `significant` will have the relationship directed at it.
+ * Used to decide the directionality of a relationship between two resources, based on the API.KEY_DIRECTION property.
  */
-export function leftSignificant(l, r) {
-    var baseTypeL = l[API.KEY_BASE_TYPE];
-    var typeL = l[API.KEY_TYPE];
-    var idR = r[API.KEY_ID];
-
-    if(idR === typeL || idR  === baseTypeL)
-        return true;
+export function edgeLeftToRight(a, b) {
+    if(API.KEY_DIRECTION in b)
+        if(b[API.KEY_DIRECTION] === "OUT")
+            return false;
     else
-        return false;
+        console.log("API ERROR: ["+API.KEY_DIRECTION+"] not found in "+b[API.KEY_ID]);
+
+    return true;
 }
 
 /**
  * Build a properties object for HalAPI.newResource() callback.
  */
-export function resourceProperties(resource) {
+export function defaultProperties(resource) {
     return {
         id: resource[API.KEY_ID],
         type: resource[API.KEY_TYPE],
         baseType: resource[API.KEY_BASE_TYPE],
-        label: buildLabel(resource)
+        label: buildLabel(resource),
+        ontology: resource[API.KEY_LINKS][API.KEY_ONTOLOGY][0][API.KEY_HREF]
     };
+}
+
+export function additionalProperties(resource) {
+    return Object.keys(resource)
+        .filter(x => !x.startsWith('_'))
+        .reduce((p, c) => {p[c] = resource[c]; return p}, {});
 }
 
 /*
  Internal functions
  */
 function buildLabel(resource) {
-    var label = resource[API.KEY_ID];
+    var label = undefined;
+
+    switch(resource[API.KEY_BASE_TYPE]) {
+        case API.ENTITY_TYPE:
+            label = resource[API.KEY_TYPE] + ": " + resource[API.KEY_ID];
+            break;
+        case API.RELATION_TYPE:
+            label = resource[API.KEY_BASE_TYPE] + ": " + resource[API.KEY_TYPE];
+            break;
+        case API.RESOURCE_TYPE:
+            label = resource[API.KEY_VALUE];
+            break;
+
+        default:
+            label = resource[API.KEY_ID];
+    }
 
     if(API.KEY_VALUE in resource)
         label = resource[API.KEY_VALUE] || label;
-
-    if(resource[API.KEY_BASE_TYPE] === API.ENTITY_TYPE)
-        label = resource[API.KEY_TYPE] + ": " + label;
 
     return label;
 }

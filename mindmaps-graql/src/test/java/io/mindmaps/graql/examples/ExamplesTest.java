@@ -38,7 +38,7 @@ public class ExamplesTest {
 
     @Before
     public void setUp() {
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        MindmapsGraph graph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         qb = Graql.withGraph(graph);
     }
 

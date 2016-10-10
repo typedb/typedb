@@ -25,7 +25,7 @@ package io.mindmaps.graql.internal.shell;
 public enum ErrorMessage {
 
     COULD_NOT_CREATE_TEMP_FILE("WARNING: could not create temporary file for editing queries"),
-    SESSION_CLOSED("The session has been closed");
+    COULD_NOT_CONNECT("Could not connect to Mindmaps Engine. Have you run 'mindmaps.sh start'?");
 
     private final String message;
 

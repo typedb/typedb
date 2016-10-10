@@ -19,9 +19,7 @@
 package io.mindmaps.graql.internal.query;
 
 import com.google.common.collect.ImmutableCollection;
-import com.google.common.collect.ImmutableSet;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.InsertQuery;
@@ -29,7 +27,8 @@ import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.admin.InsertQueryAdmin;
 import io.mindmaps.graql.admin.MatchQueryAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.validation.InsertQueryValidator;
+import io.mindmaps.graql.internal.pattern.property.VarPropertyInternal;
+import io.mindmaps.util.ErrorMessage;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -37,7 +36,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toSet;
+import static io.mindmaps.graql.internal.util.CommonUtil.toImmutableSet;
 
 /**
  * A query that will insert a collection of variables into a graph
@@ -66,9 +65,11 @@ class InsertQueryImpl implements InsertQueryAdmin {
         this.originalVars = vars;
 
         // Get all variables, including ones nested in other variables
-        this.vars = ImmutableSet.copyOf(vars.stream().flatMap(v -> v.getInnerVars().stream()).collect(toSet()));
+        this.vars = vars.stream().flatMap(v -> v.getImplicitInnerVars().stream()).collect(toImmutableSet());
 
-        getGraph().ifPresent(t -> new InsertQueryValidator(vars).validate(t));
+        for (VarAdmin var : this.vars) {
+            var.getProperties().forEach(property -> ((VarPropertyInternal) property).checkInsertable(var));
+        }
     }
 
     @Override

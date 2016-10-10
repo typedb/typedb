@@ -91,12 +91,13 @@ class GraqlSession {
         queryExecutor.submit(() -> {
 
             String errorMessage = null;
+            Query<?> query = null;
 
             try {
                 String queryString = queryStringBuilder.toString();
                 queryStringBuilder = new StringBuilder();
 
-                Query<?> query = withGraph(graph).parse(queryString);
+                query = withGraph(graph).parse(queryString);
 
                 if (query instanceof MatchQuery) {
                     query = reasonMatchQuery((MatchQuery) query);
@@ -120,6 +121,9 @@ class GraqlSession {
                 LOG.error(errorMessage,e);
             } finally {
                 if (errorMessage != null) {
+                    if (query != null && !query.isReadOnly()) {
+                        attemptRollback();
+                    }
                     sendQueryError(errorMessage);
                 } else {
                     sendQueryEnd();
@@ -164,6 +168,13 @@ class GraqlSession {
         });
     }
 
+    private void attemptRollback() {
+        try {
+            graph.rollback();
+        } catch (UnsupportedOperationException ignored) {
+        }
+    }
+
     /**
      * Apply reasoner to match query
      */
@@ -203,10 +214,17 @@ class GraqlSession {
      * Tell the client about an error in their query
      */
     private void sendQueryError(String errorMessage) {
-        sendJson(Json.object(
-                ACTION, ACTION_QUERY_END,
-                ERROR, errorMessage
-        ));
+        // Split error into chunks
+        Iterable<String> splitError = Splitter.fixedLength(QUERY_CHUNK_SIZE).split(errorMessage + "\n");
+
+        for (String errorChunk : splitError) {
+            sendJson(Json.object(
+                    ACTION, ACTION_ERROR,
+                    ERROR, errorChunk
+            ));
+        }
+
+        sendJson(Json.object(ACTION, ACTION_QUERY_END));
     }
 
     /**

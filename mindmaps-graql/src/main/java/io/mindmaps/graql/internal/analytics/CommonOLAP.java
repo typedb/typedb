@@ -38,7 +38,7 @@ abstract class CommonOLAP {
     /**
      * The types that are reserved by analytics and are not "seen" by analytics.
      */
-    private static final Set<String> analyticsElements =
+    public static final Set<String> analyticsElements =
             Sets.newHashSet(Analytics.degree, GraqlType.HAS_RESOURCE.getId(Analytics.degree));
 
     /**
@@ -57,7 +57,7 @@ abstract class CommonOLAP {
     /**
      * Properties that will be reloaded whenever the class is instantiated in a spark executor.
      */
-    final Map<String,Object> persistentProperties = new HashMap<>();
+    final Map<String, Object> persistentProperties = new HashMap<>();
 
 
     /**
@@ -67,8 +67,14 @@ abstract class CommonOLAP {
      * @param configuration the apache config object that will be propagated
      */
     public void storeState(final Configuration configuration) {
+        // clear properties from vertex program
+        Set<String> oldKeys = new HashSet<>();
+        configuration.subset(PREFIX_SELECTED_TYPE_KEY).getKeys()
+                .forEachRemaining(key -> oldKeys.add(PREFIX_SELECTED_TYPE_KEY + "." + key));
+        oldKeys.forEach(configuration::clearProperty);
+
         // store selectedTypes
-        selectedTypes.forEach(typeId -> configuration.addProperty(PREFIX_SELECTED_TYPE_KEY+"."+typeId,typeId));
+        selectedTypes.forEach(typeId -> configuration.addProperty(PREFIX_SELECTED_TYPE_KEY + "." + typeId, typeId));
 
         // store fields
 
@@ -87,13 +93,13 @@ abstract class CommonOLAP {
     public void loadState(final Graph graph, final Configuration configuration) {
         // load selected types
         configuration.subset(PREFIX_SELECTED_TYPE_KEY).getKeys().forEachRemaining(key ->
-                selectedTypes.add(configuration.getString(PREFIX_SELECTED_TYPE_KEY+"."+key)));
+                selectedTypes.add(configuration.getString(PREFIX_SELECTED_TYPE_KEY + "." + key)));
 
         // load fields
 
         // load user specified properties
         configuration.subset(PREFIX_PERSISTENT_PROPERTIES).getKeys().forEachRemaining(key ->
-                persistentProperties.put(key,configuration.getProperty(PREFIX_PERSISTENT_PROPERTIES + "." + key)));
+                persistentProperties.put(key, configuration.getProperty(PREFIX_PERSISTENT_PROPERTIES + "." + key)));
     }
 
     public String toString() {
@@ -103,8 +109,8 @@ abstract class CommonOLAP {
     /**
      * The Mindmaps type property on a given Tinkerpop vertex.
      *
-     * @param vertex    the Tinkerpop vertex
-     * @return          the type
+     * @param vertex the Tinkerpop vertex
+     * @return the type
      */
     static String getVertexType(Vertex vertex) {
         return vertex.value(Schema.ConceptProperty.TYPE.name());
@@ -113,10 +119,27 @@ abstract class CommonOLAP {
     /**
      * Whether the Tinkerpop vertex has a Mindmaps type property reserved for analytics.
      *
-     * @param vertex    the Tinkerpop vertex
-     * @return          if the type is reserved or not
+     * @param vertex the Tinkerpop vertex
+     * @return if the type is reserved or not
      */
     static boolean isAnalyticsElement(Vertex vertex) {
         return analyticsElements.contains(getVertexType(vertex));
+    }
+
+    /**
+     * The state of the vertex in the database. This may detect ghost nodes and allow them to be excluded from
+     * computations. If the vertex is alive it is likely to be a valid Mindmaps concept.
+     *
+     * @return if the vertex is alive
+     */
+    boolean isAlive(Vertex vertex) {
+        if(vertex == null)
+            return false;
+
+        try {
+            return vertex.property(Schema.BaseType.TYPE.name()).isPresent();
+        } catch (IllegalStateException e){
+            return false;
+        }
     }
 }

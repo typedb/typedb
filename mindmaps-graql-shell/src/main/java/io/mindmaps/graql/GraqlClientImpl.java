@@ -18,10 +18,12 @@
 
 package io.mindmaps.graql;
 
+import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.concurrent.Future;
 
 /**
  * Default implementation of GraqlClient that connects to a websocket
@@ -30,9 +32,13 @@ public class GraqlClientImpl implements GraqlClient {
 
     private WebSocketClient client;
 
+    private final static long TIMEOUT = 3_600_000;
+
     @Override
-    public void connect(Object websocket, URI uri) {
+    public Future<Session> connect(Object websocket, URI uri) {
         client = new WebSocketClient();
+
+        client.getPolicy().setIdleTimeout(TIMEOUT);
 
         try {
             client.start();
@@ -40,9 +46,9 @@ public class GraqlClientImpl implements GraqlClient {
             e.printStackTrace();
         }
         try {
-            client.connect(websocket, uri);
+            return client.connect(websocket, uri);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 
@@ -51,7 +57,7 @@ public class GraqlClientImpl implements GraqlClient {
         try {
             client.stop();
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 }

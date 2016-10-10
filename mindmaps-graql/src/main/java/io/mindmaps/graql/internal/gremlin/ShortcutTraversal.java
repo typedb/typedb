@@ -41,7 +41,7 @@ import static io.mindmaps.util.Schema.EdgeProperty.*;
  *     <li>the relation has not been given a variable name</li>
  * </ul>
  */
-class ShortcutTraversal {
+public class ShortcutTraversal {
 
     private final List<Optional<String>> roletypes = new ArrayList<>();
     private final List<String> roleplayers = new ArrayList<>();
@@ -59,7 +59,7 @@ class ShortcutTraversal {
     /**
      * Make this ShortcutTraversal invalid, so it will not be used in the traversal
      */
-    void setInvalid() {
+    public void setInvalid() {
         valid = false;
     }
 
@@ -80,7 +80,7 @@ class ShortcutTraversal {
         Optional<String> roleB = roletypes.get(1);
         String playerB = roleplayers.get(1);
 
-        multiTraversal = new MultiTraversalImpl(
+        multiTraversal = MultiTraversal.create(
                 new FragmentImpl(t -> makeTraversal(t, roleA, roleB), FragmentPriority.EDGE_RELATION, playerA, playerB),
                 new FragmentImpl(t -> makeTraversal(t, roleB, roleA), FragmentPriority.EDGE_RELATION, playerB, playerA)
         );
@@ -116,7 +116,7 @@ class ShortcutTraversal {
     /**
      * @param roleplayer a roleplayer of the relation that this ShortcutTraversal represents
      */
-    void addRel(String roleplayer) {
+    public void addRel(String roleplayer) {
         roletypes.add(Optional.empty());
         roleplayers.add(roleplayer);
     }
@@ -125,7 +125,7 @@ class ShortcutTraversal {
      * @param roletype the role type of the given roleplayer
      * @param roleplayer a roleplayer of the relation that this ShortcutTraversal represents
      */
-    void addRel(String roletype, String roleplayer) {
+    public void addRel(String roletype, String roleplayer) {
         roletypes.add(Optional.of(roletype));
         roleplayers.add(roleplayer);
     }

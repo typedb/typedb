@@ -23,7 +23,7 @@
     <parent>
         <artifactId>mindmaps</artifactId>
         <groupId>io.mindmaps</groupId>
-        <version>0.2.0-SNAPSHOT</version>
+        <version>0.3.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -56,6 +56,7 @@
             <groupId>io.mindmaps</groupId>
             <artifactId>mindmaps-graph</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
 
     </dependencies>

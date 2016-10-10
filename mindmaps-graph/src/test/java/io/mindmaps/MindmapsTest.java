@@ -13,14 +13,14 @@ public class MindmapsTest {
 
     @Test
     public void testInMemory(){
-        assertThat(Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph("test"), instanceOf(MindmapsTinkerGraph.class));
+        assertThat(Mindmaps.factory(Mindmaps.IN_MEMORY, "test").getGraph(), instanceOf(MindmapsTinkerGraph.class));
     }
 
     @Test
     public void testInMemorySingleton(){
-        MindmapsGraph test1 = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph("test1");
-        MindmapsGraph test11 = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph("test1");
-        MindmapsGraph test2 = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph("test2");
+        MindmapsGraph test1 = Mindmaps.factory(Mindmaps.IN_MEMORY, "test1").getGraph();
+        MindmapsGraph test11 = Mindmaps.factory(Mindmaps.IN_MEMORY, "test1").getGraph();
+        MindmapsGraph test2 = Mindmaps.factory(Mindmaps.IN_MEMORY, "test2").getGraph();
 
         assertEquals(test1, test11);
         assertNotEquals(test1, test2);
@@ -28,10 +28,15 @@ public class MindmapsTest {
 
     @Test
     public void testInMemoryClear(){
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph("default");
+        MindmapsGraph graph = Mindmaps.factory(Mindmaps.IN_MEMORY, "default").getGraph();
         graph.clear();
-        graph =  Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph("default");
+        graph =  Mindmaps.factory(Mindmaps.IN_MEMORY, "default").getGraph();
         graph.putEntityType("A thing");
         assertNotNull(graph.getEntityType("A thing"));
+    }
+
+    @Test
+    public void testComputer(){
+        assertThat(Mindmaps.factory(Mindmaps.IN_MEMORY, "bob").getGraphComputer(), instanceOf(MindmapsComputer.class));
     }
 }

@@ -23,10 +23,15 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
+import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
+import io.mindmaps.graql.reasoner.graphs.GenericGraph;
+import io.mindmaps.graql.reasoner.graphs.GeoGraph;
 import io.mindmaps.graql.reasoner.graphs.SNBGraph;
+import java.util.Map;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -55,7 +60,7 @@ public class QueryTest {
         for(Atomic atom : query.getAtoms())
             if (atom.toString().equals("$x value \"Bob\"")) containsAtom = true;
         assertTrue(containsAtom);
-        assertEquals(query.getValue("x"), "Bob");
+        assertEquals(query.getSubstitution("x"), "Bob");
     }
 
     @Test
@@ -63,14 +68,14 @@ public class QueryTest {
         String queryString = "match $x isa person;$y isa product;($x, $y) isa recommendation;";
         Query query = new Query(queryString, graph);
         Query copy = new Query(query);
-        
+
         assertQueriesEqual(query.getMatchQuery(), copy.getMatchQuery());
     }
 
     @Test
     public void testTwinPattern() {
-        String queryString = "match $x isa person;$x id 'Bob';";
         String queryString2 = "match $x isa person, id 'Bob';";
+        String queryString = "match $x isa person;$x id 'Bob';";
         String queryString3 = "match $x isa person, value 'Bob';";
         String queryString4 = "match $x isa person;$x value 'Bob';";
 
@@ -100,9 +105,79 @@ public class QueryTest {
     }
 
     @Test
+    public void testAlphaEquivalence2() {
+        MindmapsGraph lgraph = GenericGraph.getGraph("ancestor-friend-test.gql");
+
+        String queryString = "match $X id 'a'; (ancestor-friend: $X, person: $Y), isa Ancestor-friend; select $Y;";
+        String queryString2 = "match $X id 'a'; (person: $X, ancestor-friend: $Y), isa Ancestor-friend; select $Y;";
+
+        Query query = new Query(queryString, lgraph);
+        Query query2 = new Query(queryString2, lgraph);
+
+        assertTrue(!query.isEquivalent(query2));
+    }
+
+    @Test
+    public void testAlphaEquivalence3() {
+        MindmapsGraph lgraph = GeoGraph.getGraph();
+
+        String queryString = "match $y id 'Poland'; $y isa country; (geo-entity: $y1, entity-location: $y), isa is-located-in; select $y1;";
+        String queryString2 = "match $y id 'Poland'; $x isa city; (geo-entity: $x, entity-location: $y), isa is-located-in; $y isa country; select $x;";
+        String queryString3 = "match $x isa city; (entity-location: $y1, geo-entity: $x), isa is-located-in; select $y1, $x;";
+        String queryString4 = "match (geo-entity: $y1, entity-location: $y2), isa is-located-in; select $y1, $y2;";
+
+        Query query = new Query(queryString, lgraph);
+        Query query2 = new Query(queryString2, lgraph);
+        Query query3 = new Query(queryString3, lgraph);
+        Query query4 = new Query(queryString4, lgraph);
+
+        assertTrue(!query.isEquivalent(query2));
+        assertTrue(!query.isEquivalent(query3));
+        assertTrue(!query.isEquivalent(query4));
+
+        assertTrue(!query2.isEquivalent(query3));
+        assertTrue(!query2.isEquivalent(query4));
+
+        assertTrue(!query3.isEquivalent(query4));
+
+        String queryString5 = "match (entity-location: $y, geo-entity: $y1), isa is-located-in; select $y1, $y2;";
+        String queryString6 = "match (geo-entity: $y1, entity-location: $y2), isa is-located-in; select $y1, $y2;";
+        String queryString7 = "match (entity-location: $y, geo-entity: $x), isa is-located-in; $x isa city; select $y1, $x;";
+        String queryString8 = "match $x isa city; (entity-location: $y1, geo-entity: $x), isa is-located-in; select $y1, $x;";
+
+        Query query5 = new Query(queryString5, lgraph);
+        Query query6 = new Query(queryString6, lgraph);
+        Query query7 = new Query(queryString7, lgraph);
+        Query query8 = new Query(queryString8, lgraph);
+
+        assertTrue(query5.isEquivalent(query6));
+        assertTrue(query7.isEquivalent(query8));
+    }
+
+    @Test
+    public void testUnification(){
+        MindmapsGraph lgraph = GeoGraph.getGraph();
+        String parentQueryString = "match (entity-location: $y, geo-entity: $y1), isa is-located-in; select $y1, $y;";
+        String childQueryString = "match (geo-entity: $y1, entity-location: $y2), isa is-located-in; select $y1, $y2;";
+
+        AtomicQuery parentQuery = new AtomicQuery(parentQueryString, lgraph);
+        AtomicQuery childQuery = new AtomicQuery(childQueryString, lgraph);
+
+        Atomic childAtom = childQuery.getAtom();
+        Atomic parentAtom = parentQuery.getAtom();
+
+        Map<String, String> unifiers = childAtom.getUnifiers(parentAtom);
+
+        AtomicQuery childCopy = new AtomicQuery(childQuery.toString(), graph);
+        childCopy.unify(unifiers);
+        Atomic childAtomCopy = childCopy.getAtom();
+
+        assertTrue(!childAtomCopy.equals(childAtom));
+    }
+
+    @Test
     public void testQueryResults(){
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(qb.parseMatch("match $x isa person;")));
-
         answers.forEach(ans -> System.out.println(ans.toString()));
     }
 

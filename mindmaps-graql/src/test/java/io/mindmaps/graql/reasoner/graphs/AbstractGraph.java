@@ -24,7 +24,6 @@ import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
-import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.RuleType;
 import io.mindmaps.exception.MindmapsValidationException;
 
@@ -41,7 +40,7 @@ public class AbstractGraph {
     private static Instance instanceU, instanceT, instanceP;
 
     public static MindmapsGraph getGraph() {
-        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         buildGraph();
 
         try {
@@ -97,28 +96,26 @@ public class AbstractGraph {
     private static void buildRules() {
         RuleType inferenceRule = mindmaps.getMetaRuleInference();
 
-        String R1_LHS = "match " +
-                        "$x isa p;\n" +
-                        "$y isa q;\n" +
-                        "($x, $y) isa rel select $x";
-        String R1_RHS = "match $x isa Q";
+
+        String R1_LHS = "match $x isa p;$y isa q;($x, $y) isa rel; select $x;";
+        String R1_RHS = "match $x isa Q;";
         mindmaps.putRule("R1", R1_LHS, R1_RHS, inferenceRule);
 
         String R2_LHS = "match $x isa r;";
-        String R2_RHS = "match $x isa p";
+        String R2_RHS = "match $x isa p;";
         mindmaps.putRule("R2", R2_LHS, R2_RHS, inferenceRule);
 
         String R3_LHS = "match $x isa s;";
-        String R3_RHS = "match $x isa p";
+        String R3_RHS = "match $x isa p;";
         mindmaps.putRule("R3", R3_LHS, R3_RHS, inferenceRule);
 
         String R4_LHS = "match $x isa t;";
-        String R4_RHS = "match $x isa q";
+        String R4_RHS = "match $x isa q;";
         mindmaps.putRule("R4", R4_LHS, R4_RHS, inferenceRule);
 
         String R5_LHS = "match $x isa u;";
-        String R5_RHS = "match $x isa r";
-        Rule r5 = mindmaps.putRule("R5", R5_LHS, R5_RHS, inferenceRule);
+        String R5_RHS = "match $x isa r;";
+        mindmaps.putRule("R5", R5_LHS, R5_RHS, inferenceRule);
     }
 
 }

@@ -53,7 +53,7 @@ public class PostprocessingTest {
 
     @Before
     public void buildGraphAccessManager(){
-        graph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        graph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         graph.initialiseMetaConcepts();
 
         roleType1 = graph.putRoleType("role 1");
@@ -92,6 +92,7 @@ public class PostprocessingTest {
         //Create Fake Casting
         Vertex castingVertex = graph.getTinkerPopGraph().addVertex();
         castingVertex.property(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.CASTING.name());
+        castingVertex.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), UUID.randomUUID().toString());
         castingVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), mainRoleType.getVertex());
 
         Edge edge = castingVertex.addEdge(Schema.EdgeLabel.ROLE_PLAYER.getLabel(), mainInstance.getVertex());
@@ -245,6 +246,6 @@ public class PostprocessingTest {
         resourceVertex.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), UUID.randomUUID().toString());
         resourceVertex.property(Schema.ConceptProperty.VALUE_STRING.name(), value);
 
-        return new ResourceImpl(resourceVertex, graph);
+        return new ResourceImpl(resourceVertex, type, graph);
     }
 }

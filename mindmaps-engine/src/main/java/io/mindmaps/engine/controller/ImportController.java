@@ -36,6 +36,7 @@ import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
 import spark.Response;
@@ -51,12 +52,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static io.mindmaps.graql.Graql.parseInsert;
 import static io.mindmaps.graql.Graql.parsePatterns;
-import static spark.Spark.ipAddress;
+import static spark.Spark.before;
+import static spark.Spark.halt;
 import static spark.Spark.post;
 
 
@@ -66,18 +69,33 @@ import static spark.Spark.post;
 
 public class ImportController {
 
-    private final org.slf4j.Logger LOG = LoggerFactory.getLogger(ImportController.class);
-
+    private final Logger LOG = LoggerFactory.getLogger(ImportController.class);
+    private ScheduledExecutorService checkLoadingExecutor = Executors.newSingleThreadScheduledExecutor();
+    private ScheduledFuture printingState;
 
     //TODO: Use redis for caching LRU
     private Map<String, String> entitiesMap;
     //TODO: add relations to relationsList when they are referring to relations that have not been inserted yet
     private ArrayList<Var> relationsList;
 
+    private AtomicLong processedEntities = new AtomicLong();
+    private AtomicLong processedRelations = new AtomicLong();
+    private AtomicBoolean loadingInProgress = new AtomicBoolean(false);
+    private long totalPatterns;
+    private long independentPatterns;
 
     private String defaultGraphName;
 
     public ImportController() {
+
+        before(REST.WebPath.IMPORT_DATA_URI,(req,res)->{
+            if(loadingInProgress.get())
+                halt(423, "Another loading process is still running.\n");
+        });
+        before(REST.WebPath.IMPORT_DISTRIBUTED_URI,(req,res)->{
+            if(loadingInProgress.get())
+                halt(423, "Another loading process is still running.\n");
+        });
 
         post(REST.WebPath.IMPORT_DATA_URI, this::importDataREST);
         post(REST.WebPath.IMPORT_ONTOLOGY_URI, this::importOntologyREST);
@@ -99,30 +117,32 @@ public class ImportController {
     })
 
     private String importDataRESTDistributed(Request req, Response res) {
+        loadingInProgress.set(true);
         try {
             JSONObject bodyObject = new JSONObject(req.body());
             final String pathToFile = bodyObject.get(REST.Request.PATH_FIELD).toString();
-            final String graphName;
+            final String graphName = (bodyObject.has(REST.Request.GRAPH_NAME_PARAM)) ? bodyObject.get(REST.Request.GRAPH_NAME_PARAM).toString() : defaultGraphName;
             final Collection<String> hosts = new HashSet<>();
-            bodyObject.getJSONArray("hosts").forEach(x->hosts.add(((String) x)));
+            bodyObject.getJSONArray("hosts").forEach(x -> hosts.add(((String) x)));
 
-            if (bodyObject.has(REST.Request.GRAPH_NAME_PARAM))
-                graphName = bodyObject.get(REST.Request.GRAPH_NAME_PARAM).toString();
-            else
-                graphName = defaultGraphName;
+            if (!(new File(pathToFile)).exists())
+                throw new FileNotFoundException(ErrorMessage.NO_GRAQL_FILE.getMessage(pathToFile));
 
-            File f = new File(pathToFile);
-            if (!f.exists()) throw new FileNotFoundException(ErrorMessage.NO_GRAQL_FILE.getMessage(pathToFile));
+            Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(pathToFile, new DistributedLoader(graphName, hosts)));
 
-            Loader loader = new DistributedLoader(graphName,hosts);
-            Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(pathToFile, loader));
         } catch (JSONException j) {
-            LOG.error("Malformed request.",j);
+            LOG.error("Malformed request.", j);
             res.status(400);
+            loadingInProgress.set(false);
             return j.getMessage();
         } catch (FileNotFoundException e) {
             LOG.error(e.getMessage());
+            loadingInProgress.set(false);
             res.status(400);
+            return e.getMessage();
+        } catch (Exception e) {
+            LOG.error("Exception", e);
+            res.status(500);
             return e.getMessage();
         }
 
@@ -138,32 +158,39 @@ public class ImportController {
     @ApiImplicitParam(name = "path", value = "File path on the server.", required = true, dataType = "string", paramType = "body")
 
     private String importDataREST(Request req, Response res) {
+        loadingInProgress.set(true);
         try {
             JSONObject bodyObject = new JSONObject(req.body());
             final String pathToFile = bodyObject.get(REST.Request.PATH_FIELD).toString();
-            final String graphName;
+            final String graphName = (bodyObject.has(REST.Request.GRAPH_NAME_PARAM)) ? bodyObject.get(REST.Request.GRAPH_NAME_PARAM).toString() : defaultGraphName;
 
-            if (bodyObject.has(REST.Request.GRAPH_NAME_PARAM))
-                graphName = bodyObject.get(REST.Request.GRAPH_NAME_PARAM).toString();
-            else
-                graphName = defaultGraphName;
+            if (!(new File(pathToFile)).exists())
+                throw new FileNotFoundException(ErrorMessage.NO_GRAQL_FILE.getMessage(pathToFile));
 
-            File f = new File(pathToFile);
-            if (!f.exists()) throw new FileNotFoundException(ErrorMessage.NO_GRAQL_FILE.getMessage(pathToFile));
+            initialiseLoading(pathToFile);
 
-            final Loader loader = new BlockingLoader(graphName);
-            Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(pathToFile, loader));
+            Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(pathToFile, new BlockingLoader(graphName)));
+
         } catch (JSONException j) {
-            LOG.error("Malformed request.",j);
+            LOG.error("Malformed request.", j);
+            loadingInProgress.set(false);
             res.status(400);
             return j.getMessage();
         } catch (FileNotFoundException e) {
             LOG.error(e.getMessage());
+            loadingInProgress.set(false);
             res.status(400);
+            return e.getMessage();
+        } catch (Exception e) {
+            LOG.error("Exception", e);
+            res.status(500);
             return e.getMessage();
         }
 
-        return "Loading successfully STARTED. \n";
+        return "Total patterns found [" + totalPatterns + "]. \n" +
+                " -[" + independentPatterns + "] entities \n" +
+                " -[" + (totalPatterns - independentPatterns) + "] relations/resources \n" +
+                "Loading successfully STARTED. \n";
     }
 
 
@@ -185,31 +212,62 @@ public class ImportController {
                 graphName = defaultGraphName;
             importOntologyFromFile(pathToFile, graphName);
         } catch (JSONException j) {
-            LOG.error("Malformed request.",j);
+            LOG.error("Malformed request.", j);
             res.status(400);
             return j.getMessage();
         } catch (Exception e) {
-            LOG.error("Exception while loading ontology.",e);
+            LOG.error("Exception while loading ontology.", e);
             res.status(500);
             return e.getMessage();
         }
         return "Ontology successfully loaded. \n";
     }
 
+    private void initialiseLoading(String pathToFile) throws FileNotFoundException {
+        totalPatterns = parsePatterns(new FileInputStream(pathToFile))
+                .count();
+
+        independentPatterns = parsePatterns(new FileInputStream(pathToFile))
+                .filter(pattern -> isIndependentEntity(pattern.admin().asVar()))
+                .count();
+
+        printingState=checkLoadingExecutor.scheduleAtFixedRate(this::checkLoadingStatus, 10, 10, TimeUnit.SECONDS);
+
+        processedEntities.set(0);
+        processedRelations.set(0);
+    }
+
+    private void checkLoadingStatus() {
+        LOG.info("===== Import from file in progress ====");
+        LOG.info("Processed Entities: " + processedEntities + "/" + independentPatterns);
+        LOG.info("Processed Relations: " + processedRelations + "/" + (totalPatterns - independentPatterns));
+        LOG.info("=======================================");
+    }
+
+    private boolean isIndependentEntity(Var var) {
+        return (!var.admin().isRelation() && var.admin().getType().isPresent());
+    }
+
     private void importDataFromFile(String dataFile, Loader loaderParam) {
+        LOG.info("Data loading started.");
         try {
             parsePatterns(new FileInputStream(dataFile)).forEach(pattern -> consumeEntity(pattern.admin().asVar(), loaderParam));
             loaderParam.waitToFinish();
             parsePatterns(new FileInputStream(dataFile)).forEach(pattern -> consumeRelationAndResource(pattern.admin().asVar(), loaderParam));
             loaderParam.waitToFinish();
+            printingState.cancel(true);
+            processedEntities.set(0);
+            processedRelations.set(0);
+            loadingInProgress.set(false);
             BackgroundTasks.getInstance().forcePostprocessing();
         } catch (Exception e) {
-            LOG.error("Exception while batch loading data.",e);
+            LOG.error("Exception while batch loading data.", e);
+            loadingInProgress.set(false);
         }
     }
 
     private void consumeEntity(Var var, Loader loader) {
-        if (!entitiesMap.containsKey(var.admin().getName()) && !var.admin().isRelation() && var.admin().getType().isPresent()) {
+        if (!entitiesMap.containsKey(var.admin().getName()) && isIndependentEntity(var)) {
             if (var.admin().isUserDefinedName()) {
                 // Some variable might not have an explicit ID defined, in that case we generate explicitly one and we save it into our cache
                 // so that we can refer to it.
@@ -220,6 +278,7 @@ public class ImportController {
             } else {
                 loader.addToQueue(var);
             }
+            processedEntities.incrementAndGet();
         }
     }
 
@@ -245,8 +304,10 @@ public class ImportController {
         }
 
 
-        if (ready) loader.addToQueue(var);
-
+        if (ready) {
+            processedRelations.incrementAndGet();
+            loader.addToQueue(var);
+        }
 
     }
 

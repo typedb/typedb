@@ -21,7 +21,7 @@ package io.mindmaps.factory;
 import io.mindmaps.MindmapsComputer;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.MindmapsGraphFactory;
-import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.graph.internal.MindmapsComputerImpl;
 
 /**
  * A client for creating a mindmaps graph from a running engine.
@@ -29,30 +29,25 @@ import io.mindmaps.util.ErrorMessage;
  * The deployer of engine decides on the backend and this class will handle producing the correct graphs.
  */
 public class MindmapsGraphFactoryInMemory implements MindmapsGraphFactory {
-    private static final MindmapsInternalFactory IN_MEMORY_FACTORY = new MindmapsTinkerInternalFactory();
-    private static MindmapsGraphFactoryInMemory instance;
+    private static final String TINKER_GRAPH_COMPUTER = "org.apache.tinkerpop.gremlin.tinkergraph.process.computer.TinkerGraphComputer";
+    private final MindmapsTinkerInternalFactory factory;
 
-    private MindmapsGraphFactoryInMemory(){}
-
-    public static MindmapsGraphFactoryInMemory getInstance(){
-        if(instance == null){
-            instance = new MindmapsGraphFactoryInMemory();
-        }
-        return instance;
+    public MindmapsGraphFactoryInMemory(String keyspace, String ignored){
+        factory = new MindmapsTinkerInternalFactory(keyspace, null, null);
     }
 
     @Override
-    public MindmapsGraph getGraph(String name) {
-        return IN_MEMORY_FACTORY.getGraph(name, null, null, false);
+    public MindmapsGraph getGraph() {
+        return factory.getGraph(false);
     }
 
     @Override
-    public MindmapsGraph getGraphBatchLoading(String name) {
-        return IN_MEMORY_FACTORY.getGraph(name, null, null, true);
+    public MindmapsGraph getGraphBatchLoading() {
+        return factory.getGraph(true);
     }
 
     @Override
-    public MindmapsComputer getGraphComputer(String name) {
-        throw new UnsupportedOperationException(ErrorMessage.UNSUPPORTED_GRAPH.getMessage("in-memory", "graph computer"));
+    public MindmapsComputer getGraphComputer() {
+        return new MindmapsComputerImpl(factory.getTinkerPopGraph(false), TINKER_GRAPH_COMPUTER);
     }
 }

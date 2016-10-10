@@ -18,7 +18,9 @@
 
 package io.mindmaps.graql;
 
+import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
+import com.google.common.io.CharStreams;
 import io.mindmaps.graql.internal.shell.ErrorMessage;
 import io.mindmaps.graql.internal.shell.GraQLCompleter;
 import io.mindmaps.graql.internal.shell.GraqlSignalHandler;
@@ -30,18 +32,16 @@ import jline.console.history.FileHistory;
 import mjson.Json;
 import org.apache.commons.cli.*;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketException;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import sun.misc.Signal;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintWriter;
+import java.io.*;
+import java.net.HttpURLConnection;
 import java.net.URI;
-import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -53,15 +53,29 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import static io.mindmaps.graql.internal.shell.ErrorMessage.SESSION_CLOSED;
-import static io.mindmaps.util.REST.RemoteShell.*;
+import static io.mindmaps.util.REST.RemoteShell.ACTION;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_AUTOCOMPLETE;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_COMMIT;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_ERROR;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_NAMESPACE;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY_ABORT;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY_END;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_ROLLBACK;
+import static io.mindmaps.util.REST.RemoteShell.AUTOCOMPLETE_CURSOR;
+import static io.mindmaps.util.REST.RemoteShell.ERROR;
+import static io.mindmaps.util.REST.RemoteShell.NAMESPACE;
+import static io.mindmaps.util.REST.RemoteShell.QUERY;
+import static io.mindmaps.util.REST.RemoteShell.QUERY_RESULT;
+import static io.mindmaps.util.REST.WebPath.IMPORT_DATA_URI;
 import static io.mindmaps.util.REST.WebPath.REMOTE_SHELL_URI;
+import static org.apache.commons.lang.StringEscapeUtils.escapeJavaScript;
 
 /**
  * A Graql REPL shell that can be run from the command line
  */
 @WebSocket
-public class GraqlShell implements AutoCloseable {
+public class GraqlShell {
     private static final String LICENSE_PROMPT = "\n" +
             "MindmapsDB  Copyright (C) 2016  Mindmaps Research Ltd \n" +
             "This is free software, and you are welcome to redistribute it \n" +
@@ -87,7 +101,9 @@ public class GraqlShell implements AutoCloseable {
     /**
      * Array of available commands in shell
      */
-    public static final String[] COMMANDS = {EDIT_COMMAND, COMMIT_COMMAND, LOAD_COMMAND, CLEAR_COMMAND, EXIT_COMMAND};
+    public static final String[] COMMANDS = {
+        EDIT_COMMAND, ROLLBACK_COMMAND, COMMIT_COMMAND, LOAD_COMMAND, CLEAR_COMMAND, EXIT_COMMAND
+    };
 
     private static final String TEMP_FILENAME = "/graql-tmp.gql";
     private static final String HISTORY_FILENAME = "/graql-history";
@@ -95,16 +111,17 @@ public class GraqlShell implements AutoCloseable {
     private static final String DEFAULT_EDITOR = "vim";
 
     private final File tempFile = new File(System.getProperty("java.io.tmpdir") + TEMP_FILENAME);
-    private final String namespace;
     private ConsoleReader console;
 
-    // A future containing the session, once the client has connected
-    private CompletableFuture<Session> session = new CompletableFuture<>();
+    private Session session;
 
     // A future containing an autocomplete result, once it has been received
     private CompletableFuture<Json> autocompleteResponse = new CompletableFuture<>();
 
     private boolean waitingQuery = false;
+
+    // The query string to execute
+    private Optional<String> queryString;
 
     /**
      * Run a Graql REPL
@@ -121,6 +138,7 @@ public class GraqlShell implements AutoCloseable {
         options.addOption("e", "execute", true, "query to execute");
         options.addOption("f", "file", true, "graql file path to execute");
         options.addOption("u", "uri", true, "uri to factory to engine");
+        options.addOption("b", "batch", true, "graql file path to batch load");
         options.addOption("h", "help", false, "print usage message");
         options.addOption("v", "version", false, "print version");
 
@@ -134,7 +152,7 @@ public class GraqlShell implements AutoCloseable {
             return;
         }
 
-        String query = cmd.getOptionValue("e");
+        Optional<String> query = Optional.ofNullable(cmd.getOptionValue("e"));
         String filePath = cmd.getOptionValue("f");
 
         // Print usage message if requested or if invalid arguments provided
@@ -157,25 +175,29 @@ public class GraqlShell implements AutoCloseable {
         String namespace = cmd.getOptionValue("n", DEFAULT_NAMESPACE);
         String uriString = cmd.getOptionValue("u", DEFAULT_URI);
 
-        try(GraqlShell shell = new GraqlShell(namespace)) {
-            client.connect(shell, new URI("ws://" + uriString + REMOTE_SHELL_URI));
+        if (cmd.hasOption("b")) {
+            try {
+                sendBatchRequest(uriString, cmd.getOptionValue("b"));
+            } catch (IOException e) {
+                System.err.println(e.toString());
+            }
+            return;
+        }
 
+
+        try {
             if (filePath != null) {
-                query = loadQuery(filePath);
+                query = Optional.of(loadQuery(filePath));
             }
 
-            if (query != null) {
-                shell.executeQuery(query);
-                shell.commit();
-            } else {
-                shell.executeRepl();
-            }
-        } catch (IOException | InterruptedException | ExecutionException | URISyntaxException e) {
+            URI uri = new URI("ws://" + uriString + REMOTE_SHELL_URI);
+
+            new GraqlShell(namespace, client, uri, query);
+
+        } catch (java.net.ConnectException e) {
+            System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
+        } catch (Throwable e) {
             System.err.println(e.toString());
-        } catch (WebSocketException e) {
-            System.err.println(SESSION_CLOSED.getMessage());
-        } finally {
-            client.close();
         }
     }
 
@@ -184,23 +206,68 @@ public class GraqlShell implements AutoCloseable {
         return lines.stream().collect(Collectors.joining("\n"));
     }
 
+    private static void sendBatchRequest(String uriString, String graqlPath) throws IOException {
+        byte[] out = ("{\"path\": \"" + escapeJavaScript(graqlPath) + "\"}").getBytes(StandardCharsets.UTF_8);
+
+        URL url = new URL("http://" + uriString + IMPORT_DATA_URI);
+        URLConnection con = url.openConnection();
+        HttpURLConnection http = (HttpURLConnection) con;
+        http.setRequestMethod("POST");
+        http.setDoOutput(true);
+        http.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+        http.setFixedLengthStreamingMode(out.length);
+
+        http.connect();
+
+        try (OutputStream os = http.getOutputStream()) {
+            os.write(out);
+        }
+
+        try (InputStream is = http.getInputStream()) {
+            String response = CharStreams.toString(new InputStreamReader(is, Charsets.UTF_8));
+            System.out.println(response);
+        }
+    }
+
     /**
      * Create a new Graql shell
      */
-    GraqlShell(String namespace) throws IOException {
-        this.namespace = namespace;
-        console = new ConsoleReader(System.in, System.out);
+    GraqlShell(String namespace, GraqlClient client, URI uri, Optional<String> queryString) throws Throwable {
+        try {
+            this.queryString = queryString;
 
-        // Create handler to handle SIGINT (Ctrl-C) interrupts
-        Signal signal = new Signal("INT");
-        GraqlSignalHandler signalHandler = new GraqlSignalHandler(this);
-        Signal.handle(signal, signalHandler);
+            console = new ConsoleReader(System.in, System.out);
+
+            // Create handler to handle SIGINT (Ctrl-C) interrupts
+            Signal signal = new Signal("INT");
+            GraqlSignalHandler signalHandler = new GraqlSignalHandler(this);
+            Signal.handle(signal, signalHandler);
+
+            try {
+                session = client.connect(this, uri).get();
+            } catch (ExecutionException e) {
+                throw e.getCause();
+            }
+
+            // Send the requested keyspace to the server once connected
+            sendJson(Json.object(ACTION, ACTION_NAMESPACE, NAMESPACE, namespace));
+
+            // Start shell
+            start();
+
+        } finally {
+            client.close();
+            console.flush();
+        }
     }
 
-    @Override
-    public void close() throws IOException, ExecutionException, InterruptedException {
-        console.flush();
-        session.get().close();
+    private void start() throws IOException {
+        if (queryString.isPresent()) {
+            executeQuery(queryString.get());
+            commit();
+        } else {
+            executeRepl();
+        }
     }
 
     /**
@@ -293,20 +360,13 @@ public class GraqlShell implements AutoCloseable {
         this.print(result.toString());
     }
 
-    @OnWebSocketConnect
-    public void onConnect(Session session) throws IOException, ExecutionException, InterruptedException {
-        // Send the requested keyspace to the server once connected
-        sendJson(Json.object(ACTION, ACTION_NAMESPACE, NAMESPACE, namespace), session);
-        this.session.complete(session);
+    @OnWebSocketClose
+    public void onClose(int statusCode, String reason) throws IOException, ExecutionException, InterruptedException {
     }
 
     @OnWebSocketMessage
     public void onMessage(String msg) {
         Json json = Json.read(msg);
-
-        if (json.has(ERROR)) {
-            System.err.println(json.at(ERROR).asString());
-        }
 
         switch (json.at(ACTION).asString()) {
             case ACTION_QUERY:
@@ -321,6 +381,9 @@ public class GraqlShell implements AutoCloseable {
                 break;
             case ACTION_AUTOCOMPLETE:
                 autocompleteResponse.complete(json);
+                break;
+            case ACTION_ERROR:
+                System.err.print(json.at(ERROR).asString());
                 break;
         }
     }
@@ -416,14 +479,6 @@ public class GraqlShell implements AutoCloseable {
 
     private void sendJson(Json json) {
         try {
-            sendJson(json, session.get());
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void sendJson(Json json, Session session) {
-        try {
             session.getRemote().sendString(json.toString());
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -436,9 +491,5 @@ public class GraqlShell implements AutoCloseable {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private void println(String string) {
-        print(string + "\n");
     }
 }

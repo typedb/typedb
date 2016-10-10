@@ -32,10 +32,10 @@ export default class Style {
         this.node = {
             colour: {
                 background: "#383838",
-                border: "#a1d884",
+                border: "#bfc681",
                 highlight: {
                     background: "#383838",
-                    border: "#a1d884"
+                    border: "#bfc681"
                 }
             },
             shape: "box"
@@ -59,7 +59,18 @@ export default class Style {
      * @param baseType
      * @returns {*}
      */
-    getNodeColour(baseType) {
+    getNodeColour(type, baseType) {
+        // Meta-ontology
+        if(type === baseType)
+            return {
+                background: this.node.colour.background,
+                border: "#FF84C9",
+                highlight: {
+                    border: "#FF84C9"
+                }
+            };
+
+        // User defined ontology & instances
         switch(baseType) {
             case API.RELATION_TYPE:
                 return {
@@ -110,9 +121,9 @@ export default class Style {
      * @param baseType
      * @returns {{color: (string|string|string)}}
      */
-    getNodeFont(baseType) {
+    getNodeFont(type, baseType) {
         return {
-            color: this.getNodeColour(baseType).border
+            color: this.getNodeColour(type, baseType).border
         };
     }
 
@@ -130,5 +141,19 @@ export default class Style {
      */
     getEdgeFont() {
         return this.edge.font;
+    }
+
+    clusterColour() {
+        return {
+            background: this.node.colour.background,
+            border: "#fc1dbb",
+            highlight: { border: "#fc1dbb" }
+        };
+    }
+
+    clusterFont() {
+        return {
+            color: this.clusterColour().border
+        };
     }
 };

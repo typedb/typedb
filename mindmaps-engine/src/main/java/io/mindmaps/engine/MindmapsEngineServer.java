@@ -22,6 +22,7 @@ import io.mindmaps.engine.controller.*;
 import io.mindmaps.engine.util.ConfigProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import spark.Spark;
 
 import static spark.Spark.*;
 
@@ -66,6 +67,10 @@ public class MindmapsEngineServer {
         awaitInitialization();
 
         printStartMessage(prop.getProperty(ConfigProperties.SERVER_HOST_NAME), prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER),prop.getLogFilePath());
+    }
+
+    public static void stop(){
+        Spark.stop();
     }
 
 

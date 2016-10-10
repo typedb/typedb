@@ -72,7 +72,7 @@ public class MatchQueryTest {
 
     @BeforeClass
     public static void setUpClass() {
-        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
     }
 
@@ -418,7 +418,7 @@ public class MatchQueryTest {
 
     @Test
     public void testAkoRelationType() {
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        MindmapsGraph graph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         QueryBuilder qb = withGraph(graph);
 
         qb.insert(
@@ -476,5 +476,17 @@ public class MatchQueryTest {
         assertFalse(qb.match(id("a").playsRole("f")).ask().execute());
         assertFalse(qb.match(id("b").playsRole("d")).ask().execute());
         assertFalse(qb.match(id("c").playsRole("d")).ask().execute());
+    }
+
+    @Test
+    public void testMatchQueryExecuteAndParallelStream() {
+        MatchQuery query = qb.match(var("x").isa("movie"));
+        List<Map<String, Concept>> list = query.execute();
+        assertEquals(list, query.parallelStream().collect(toList()));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testMatchEmpty() {
+        qb.match().execute();
     }
 }

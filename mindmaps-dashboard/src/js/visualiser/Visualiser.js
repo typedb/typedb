@@ -49,27 +49,35 @@ export default class Visualiser {
         // vis.js default config
         this.networkConfig = {
             autoResize: true,
-            edges: { arrows: { to: true } },
+            edges: {
+                arrows: { to: true },
+                smooth: { forceDirection: 'none' }
+            },
             physics: {
-                enabled: true,
-                solver: "forceAtlas2Based",
-                stabilization: {
-                    enabled: true,
-                    iterations: 10,
-                    fit: true
+                "repulsion": {
+                  "centralGravity": 0.6,
+                  "springLength": 360,
+                  "springConstant": 0.09,
+                  "nodeDistance": 350,
+                  "damping": 0.82
                 },
-                timestep: 0.3,
-                adaptiveTimestep: false
+                "minVelocity": 0.75,
+                "solver": "repulsion"
             },
             interaction: {
                 hover: true,
                 multiselect: false
             }
         };
+
+        // Additional properties to show in node label by type.
+        this.displayProperties = {};
+
+        this.clusters = [];
     }
 
     /**
-     * Register callback for mouse click on nodes or edges
+     * Register callback for mouse click on nodes or edges.
      */
     setOnClick(fn) {
         this.callbacks.click = fn;
@@ -122,17 +130,24 @@ export default class Visualiser {
     /**
      * Add a node to the graph. This can be called at any time *after* render().
      */
-    addNode(id, label, type, baseType) {
-        if(!this.nodeExists(id))
+    addNode(id, bp, ap) {
+        if(!this.nodeExists(id)) {
             this.nodes.add({
                 id: id,
-                label: label,
-                type: type,
-                color: this.style.getNodeColour(baseType),
-                font: this.style.getNodeFont(baseType),
-                shape: this.style.getNodeShape(baseType),
-                selected: false
+                label: this.generateLabel(bp.type, ap, bp.label),
+                baseLabel: bp.label,
+                type: bp.type,
+                baseType: bp.baseType,
+                color: this.style.getNodeColour(bp.type, bp.baseType),
+                font: this.style.getNodeFont(bp.type, bp.baseType),
+                shape: this.style.getNodeShape(bp.baseType),
+                selected: false,
+                ontology: bp.ontology,
+                properties: ap
             });
+
+            this.addCluster(bp.type);
+        }
 
         return this;
     }
@@ -149,7 +164,6 @@ export default class Visualiser {
                 color: this.style.getEdgeColour(),
                 font: this.style.getEdgeFont()
             });
-
         return this;
     }
 
@@ -161,6 +175,7 @@ export default class Visualiser {
             this.deleteEdges(id);
             this.nodes.remove(id);
         }
+        return this;
     }
 
     /**
@@ -169,6 +184,8 @@ export default class Visualiser {
     clearGraph() {
         this.nodes.clear();
         this.edges.clear();
+        this.network.setData({nodes: this.nodes, edges: this.edges});
+        return this;
     }
 
     /**
@@ -180,6 +197,54 @@ export default class Visualiser {
         else
             this.network.stopSimulation();
         return this;
+    }
+
+    getNodeType(id) {
+        if(id in this.nodes._data)
+            return this.nodes._data[id].type;
+        return undefined;
+    }
+
+    getAllNodeProperties(id) {
+        if(id in this.nodes._data)
+            return Object.keys(this.nodes._data[id].properties).sort();
+        return [];
+    }
+
+    setDisplayProperties(type, properties) {
+        if(type in this.displayProperties && properties.length === 0)
+            delete this.displayProperties[type];
+        else
+            this.displayProperties[type] = properties;
+
+        this.updateNodeLabels(type);
+        return this;
+    }
+
+    cluster() {
+        this.clusters.map(c => {
+            this.network.cluster({
+                joinCondition: x => { return ((x.baseType != 'resource-type') && (x.type != 'resource-type') && (x.type === c)) },
+                clusterNodeProperties: {
+                    id: 'cluster-'+c,
+                    label: 'cluster of: '+c,
+                    color: this.style.clusterColour(),
+                    font: this.style.clusterFont()
+                },
+                processProperties: (o, n, e) => { if(!this.nodeExists(o.id)) this.nodes.add(o); return o; }
+            })
+        });
+
+        this.predefinedClusters();
+        return this;
+    }
+
+    expandCluster(id) {
+        if(this.network.isCluster(id)) {
+            this.network.openCluster(id);
+            return true;
+        }
+        return false;
     }
 
     /*
@@ -213,9 +278,43 @@ export default class Visualiser {
     }
 
     /**
-     * Delete all edges connected to node nid
+     * Delete all edges connected to node id
      */
-    deleteEdges(nid) {
-        this.edges.map(x => { if(x.to === nid || x.from === nid) this.edges.remove(x.id) });
+    deleteEdges(id) {
+        this.edges.map(x => { if(x.to === id || x.from === id) this.edges.remove(x.id) });
+    }
+
+    generateLabel(type, properties, label) {
+        if(type in this.displayProperties)
+            return this.displayProperties[type].reduce((l, x) => { return (l.length?l+"\n":l)+x+": "+properties[x] }, "");
+        else
+            return label;
+    }
+
+    updateNodeLabels(type) {
+        this.nodes._data = _.mapObject(this.nodes._data, (v, k) => {
+                if(v.type === type)
+                    v.label = this.generateLabel(type, v.properties, v.baseLabel);
+                return v;
+            });
+
+        this.network.setData({nodes: this.nodes, edges: this.edges});
+    }
+
+    addCluster(clusterBy) {
+        if(!_.contains(this.clusters, clusterBy))
+            this.clusters.push(clusterBy);
+    }
+
+    predefinedClusters() {
+        this.network.cluster({
+            joinCondition: x => { return (x.baseType === 'resource-type') },
+            clusterNodeProperties: {
+                id: 'cluster-resource-type',
+                label: 'cluster of: resource-type',
+                color: this.style.clusterColour(),
+                font: this.style.clusterFont()
+            }
+        });
     }
 }

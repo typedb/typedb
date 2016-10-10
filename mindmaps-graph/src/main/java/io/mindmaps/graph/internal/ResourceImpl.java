@@ -36,12 +36,12 @@ import java.util.regex.Pattern;
  * @param <D> The data type of this resource. Supported Types include: String, Long, Double, and Boolean
  */
 class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> implements Resource<D> {
-    ResourceImpl(Vertex v, AbstractMindmapsGraph mindmapsGraph, D value) {
-        super(v, mindmapsGraph);
+    ResourceImpl(Vertex v, ResourceType type, AbstractMindmapsGraph mindmapsGraph, D value) {
+        super(v, type, mindmapsGraph);
         setValue(value);
     }
-    ResourceImpl(Vertex v, AbstractMindmapsGraph mindmapsGraph) {
-        super(v, mindmapsGraph);
+    ResourceImpl(Vertex v, ResourceType type, AbstractMindmapsGraph mindmapsGraph) {
+        super(v, type, mindmapsGraph);
     }
 
     /**
@@ -87,7 +87,7 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
 
             return setUniqueProperty(Schema.ConceptProperty.INDEX, generateResourceIndex(type().getId(), value.toString()));
         } catch (ClassCastException e) {
-            throw new RuntimeException(ErrorMessage.INVALID_DATATYPE.getMessage(value, dataType().getName()));
+            throw new InvalidConceptValueException(ErrorMessage.INVALID_DATATYPE.getMessage(value, dataType().getName()));
         }
     }
 
@@ -114,8 +114,13 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
                 throw new ClassCastException();
             }
             return ((Number) value).longValue();
+        } else {
+            try {
+                return Class.forName(parentDataType.getName()).cast(value);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(ErrorMessage.INVALID_RESOURCE_CAST.getMessage(value, parentDataType.getName()));
+            }
         }
-        return value;
     }
 
     /**

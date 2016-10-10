@@ -18,14 +18,13 @@
 
 package io.mindmaps.engine.util;
 
+import io.mindmaps.util.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.nio.file.Paths;
 import java.util.Properties;
-
-import io.mindmaps.util.Version;
 
 
 /**
@@ -34,8 +33,10 @@ import io.mindmaps.util.Version;
 
 public class ConfigProperties {
 
-    public static final String DEFAULT_CONFIG_FILE = "../conf/main/mindmaps-engine.properties";
+    //Test Configs
     public static final String TEST_CONFIG_FILE = "../conf/test/mindmaps-engine-test.properties";
+
+    public static final String DEFAULT_CONFIG_FILE = "../conf/main/mindmaps-engine.properties";
     public static final String DEFAULT_LOG_CONFIG_FILE = "../conf/main/logback.xml";
 
     public static final String GRAPH_CONFIG_PROPERTY = "graphdatabase.config";
@@ -232,7 +233,7 @@ public class ConfigProperties {
     }
 
     public static final String MINDMAPS_ASCII =
-            "  __  __ _           _                           ____  ____  \n" +
+            "\n  __  __ _           _                           ____  ____  \n" +
                     " |  \\/  (_)_ __   __| |_ __ ___   __ _ _ __  ___|  _ \\| __ ) \n" +
                     " | |\\/| | | '_ \\ / _` | '_ ` _ \\ / _` | '_ \\/ __| | | |  _ \\ \n" +
                     " | |  | | | | | | (_| | | | | | | (_| | |_) \\__ \\ |_| | |_) |\n" +

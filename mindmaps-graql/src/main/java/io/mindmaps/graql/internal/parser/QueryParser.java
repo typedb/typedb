@@ -128,6 +128,9 @@ public class QueryParser {
         lexer.setTokenFactory(new CommonTokenFactory(true));
         UnbufferedTokenStream tokens = new UnbufferedTokenStream(lexer);
 
+        // First parse initial 'insert'
+        parseQueryFragment(GraqlParser::insert, QueryVisitor::visitInsert, tokens);
+
         // Create an iterable that will keep parsing until EOF
         Iterable<Pattern> iterable = () -> new Iterator<Pattern>() {
 

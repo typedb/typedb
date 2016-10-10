@@ -23,12 +23,12 @@ import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import com.theoryinpractise.halbuilder.standard.StandardRepresentationFactory;
 import io.mindmaps.concept.*;
 import io.mindmaps.util.REST;
+import org.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 
 /**
@@ -42,26 +42,39 @@ public class HALConcept {
     private Representation halResource;
 
     private final String resourceLinkPrefix;
+    private final String resourceLinkOntologyPrefix;
     private final Logger LOG = LoggerFactory.getLogger(HALConcept.class);
     private final String ROOT_CONCEPT = "type";
     private final String ISA_EDGE = "isa";
     private final String AKO_EDGE = "ako";
+    private final String ONTOLOGY_LINK = "ontology";
+    private final String OUTBOUND_EDGE = "OUT";
+    private final String INBOUND_EDGE = "IN";
+    private final String HAS_ROLE_EDGE = "has-role";
+    private final String PLAYED_BY_EDGE = "played-by";
+    private final String PLAYS_ROLE_EDGE = "plays-role";
+
+    // - State properties
+
+    private final String ID_PROPERTY = "_id";
+    private final String TYPE_PROPERTY = "_type";
+    private final String BASETYPE_PROPERTY = "_baseType";
+    private final String DIRECTION_PROPERTY = "_direction";
 
 
     public HALConcept(Concept concept, int separationDegree) {
 
         //building HAL concepts using: https://github.com/HalBuilder/halbuilder-core
         resourceLinkPrefix = REST.WebPath.CONCEPT_BY_ID_URI;
+        resourceLinkOntologyPrefix = REST.WebPath.CONCEPT_BY_ID_ONTOLOGY_URI;
 
         factory = new StandardRepresentationFactory();
         halResource = factory.newRepresentation(resourceLinkPrefix + concept.getId());
 
-        try {
-            handleConcept(halResource, concept, separationDegree);
-        } catch (Exception e) {
-            LOG.error("Exception while building HAL representation", e);
-        }
+        handleConcept(halResource, concept, separationDegree);
+
     }
+
 
     private void handleConcept(Representation halResource, Concept concept, int separationDegree) {
 
@@ -71,18 +84,30 @@ public class HALConcept {
 
         if (separationDegree == 0) return;
 
-
         if (concept.isEntity()) {
             generateEntityEmbedded(halResource, concept.asEntity(), separationDegree);
         }
         if (concept.isRelation()) {
             generateRelationEmbedded(halResource, concept.asRelation(), separationDegree);
         }
-
+        if (concept.isResource()) {
+            generateOwnerInstances(halResource, concept.asResource(), separationDegree);
+        }
         if (concept.isType()) {
             generateTypeEmbedded(halResource, concept.asType(), separationDegree);
         }
 
+    }
+
+    private void generateOwnerInstances(Representation halResource, Resource conceptResource, int separationDegree) {
+        final RoleType roleType = conceptResource.type().playsRoles().iterator().next();
+        conceptResource.ownerInstances().forEach(object -> {
+            Instance currentInstance = (Instance) object;
+            Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + currentInstance.getId())
+                    .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
+            handleConcept(instanceResource, currentInstance, separationDegree - 1);
+            halResource.withRepresentation(roleType.getId(), instanceResource);
+        });
     }
 
     private void embedType(Representation halResource, Concept concept) {
@@ -90,12 +115,17 @@ public class HALConcept {
         // temp fix until a new behaviour is defined
         Representation HALType;
         if (concept.type() != null) {
-            HALType = factory.newRepresentation(resourceLinkPrefix + concept.type().getId());
+            HALType = factory.newRepresentation(resourceLinkPrefix + concept.type().getId())
+                    .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
             generateStateAndLinks(HALType, concept.type());
             halResource.withRepresentation(ISA_EDGE, HALType);
         } else {
             HALType = factory.newRepresentation(resourceLinkPrefix + ROOT_CONCEPT);
-            HALType.withProperty("_id", ROOT_CONCEPT).withProperty("_type", ROOT_CONCEPT).withProperty("_baseType", ROOT_CONCEPT);
+            HALType.withProperty(ID_PROPERTY, ROOT_CONCEPT)
+                    .withProperty(TYPE_PROPERTY, ROOT_CONCEPT)
+                    .withProperty(BASETYPE_PROPERTY, ROOT_CONCEPT)
+                    .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE)
+                    .withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix + concept.getId());
             halResource.withRepresentation(AKO_EDGE, HALType);
         }
 
@@ -103,15 +133,17 @@ public class HALConcept {
 
     private void generateStateAndLinks(Representation resource, Concept concept) {
 
+        resource.withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix + concept.getId());
+
         //State
         if (concept.isInstance())
-            resource.withProperty("_id", concept.getId())
-                    .withProperty("_type", concept.type().getId())
-                    .withProperty("_baseType", concept.type().type().getId());
+            resource.withProperty(ID_PROPERTY, concept.getId())
+                    .withProperty(TYPE_PROPERTY, concept.type().getId())
+                    .withProperty(BASETYPE_PROPERTY, concept.type().type().getId());
         else // temp fix until a new behaviour is defined
-            resource.withProperty("_id", concept.getId())
-                    .withProperty("_type", (concept.type() == null) ? ROOT_CONCEPT : concept.type().getId())
-                    .withProperty("_baseType", ROOT_CONCEPT);
+            resource.withProperty(ID_PROPERTY, concept.getId())
+                    .withProperty(TYPE_PROPERTY, (concept.type() == null) ? ROOT_CONCEPT : concept.type().getId())
+                    .withProperty(BASETYPE_PROPERTY, ROOT_CONCEPT);
 
         if (concept.isResource()) {
             resource.withProperty("value", concept.asResource().getValue());
@@ -130,13 +162,13 @@ public class HALConcept {
     // ================================ resources as HAL state properties ========================= //
 
     private void generateResources(Representation resource, Collection<Resource<?>> resourcesCollection) {
-        final Map<String, Collection<String>> resources = new HashMap<>();
+        final Map<String, JSONArray> resources = new HashMap<>();
         resourcesCollection.forEach(currentResource -> {
-            resources.putIfAbsent(currentResource.type().getId(), new HashSet<>());
-            resources.get(currentResource.type().getId()).add(currentResource.getValue().toString());
+            resources.putIfAbsent(currentResource.type().getId(), new JSONArray());
+            resources.get(currentResource.type().getId()).put(currentResource.getValue());
         });
 
-        resources.keySet().forEach(current -> resource.withProperty(current, resources.get(current).toString()));
+        resources.keySet().forEach(current -> resource.withProperty(current, resources.get(current)));
     }
 
     // ======================================= _embedded ================================================//
@@ -174,13 +206,15 @@ public class HALConcept {
     }
 
     private void attachRelation(Representation halResource, Concept rel, String role, int separationDegree) {
-        Representation relationResource = factory.newRepresentation(resourceLinkPrefix + rel.getId());
+        Representation relationResource = factory.newRepresentation(resourceLinkPrefix + rel.getId())
+                .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
         handleConcept(relationResource, rel, separationDegree - 1);
         halResource.withRepresentation(role, relationResource);
     }
 
     private void attachResource(Representation halResource, Concept resourceToUse, String role) {
-        Representation resourceResource = factory.newRepresentation(resourceLinkPrefix + resourceToUse.getId());
+        Representation resourceResource = factory.newRepresentation(resourceLinkPrefix + resourceToUse.getId())
+                .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
         handleConcept(resourceResource, resourceToUse.asResource(), 0);
         halResource.withRepresentation(role, resourceResource);
     }
@@ -189,7 +223,8 @@ public class HALConcept {
     private void generateRelationEmbedded(Representation halResource, Relation rel, int separationDegree) {
 
         rel.rolePlayers().forEach((roleType, instance) -> {
-            Representation roleResource = factory.newRepresentation(resourceLinkPrefix + instance.getId());
+            Representation roleResource = factory.newRepresentation(resourceLinkPrefix + instance.getId())
+                    .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
             handleConcept(roleResource, instance, separationDegree - 1);
             halResource.withRepresentation(roleType.getId(), roleResource);
         });
@@ -198,8 +233,9 @@ public class HALConcept {
 
     private void generateTypeEmbedded(Representation halResource, Type type, int separationDegree) {
         if (!type.getId().equals(ROOT_CONCEPT)) {
-            type.instances().forEach(instance -> {
-                Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId());
+            type.instances().parallelStream().forEach(instance -> {
+                Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId())
+                        .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
                 handleConcept(instanceResource, instance, separationDegree - 1);
                 halResource.withRepresentation(ISA_EDGE, instanceResource);
             });
@@ -207,13 +243,97 @@ public class HALConcept {
         type.subTypes().forEach(instance -> {
             // let's not put the current type in its own embedded
             if (!instance.getId().equals(type.getId())) {
-                Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId());
+                Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId())
+                        .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
                 handleConcept(instanceResource, instance, separationDegree - 1);
-                // TODO: fix directionality of the AKO edge
                 halResource.withRepresentation(AKO_EDGE, instanceResource);
             }
         });
     }
+
+
+    // ------ Functions to navigate the ontology ------
+
+
+    public HALConcept(Concept concept) {
+
+        //building HAL concepts using: https://github.com/HalBuilder/halbuilder-core
+        resourceLinkPrefix = REST.WebPath.CONCEPT_BY_ID_URI;
+        resourceLinkOntologyPrefix = REST.WebPath.CONCEPT_BY_ID_ONTOLOGY_URI;
+
+        factory = new StandardRepresentationFactory();
+        halResource = factory.newRepresentation(resourceLinkPrefix + concept.getId());
+
+        try {
+            handleConceptOntology(halResource, concept);
+        } catch (Exception e) {
+            LOG.error("Exception while building HAL representation", e);
+        }
+    }
+
+    private void handleConceptOntology(Representation halResource, Concept concept) {
+
+        generateStateAndLinks(halResource, concept);
+
+        embedType(halResource, concept);
+
+        if (concept.isRelationType()) {
+            relationTypeOntology(halResource, concept.asRelationType());
+        } else if (concept.isRoleType()) {
+            roleTypeOntology(halResource, concept.asRoleType());
+        } else if (concept.isType()) {
+            attachRolesPlayed(halResource, concept.asType().playsRoles());
+        }
+
+        if (concept.isType())
+            concept.asType().subTypes().forEach(instance -> {
+                // let's not put the current type in its own embedded
+                if (!instance.getId().equals(concept.getId())) {
+                    Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId())
+                            .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
+                    generateStateAndLinks(instanceResource, instance);
+                    halResource.withRepresentation(AKO_EDGE, instanceResource);
+                }
+            });
+    }
+
+    private void roleTypeOntology(Representation halResource, RoleType roleType) {
+        roleType.playedByTypes().forEach(type -> {
+            Representation roleRepresentation = factory.newRepresentation(resourceLinkPrefix + type.getId())
+                    .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
+            generateStateAndLinks(roleRepresentation, type);
+            halResource.withRepresentation(PLAYED_BY_EDGE, roleRepresentation);
+        });
+
+        RelationType relType = roleType.relationType();
+        Representation roleRepresentation = factory.newRepresentation(resourceLinkPrefix + relType.getId())
+                .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
+        generateStateAndLinks(roleRepresentation, relType);
+        halResource.withRepresentation(HAS_ROLE_EDGE, roleRepresentation);
+
+        attachRolesPlayed(halResource, roleType.playsRoles());
+    }
+
+    private void relationTypeOntology(Representation halResource, RelationType relationType) {
+        relationType.hasRoles().forEach(role -> {
+            Representation roleRepresentation = factory.newRepresentation(resourceLinkPrefix + role.getId())
+                    .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
+            generateStateAndLinks(roleRepresentation, role);
+            halResource.withRepresentation(HAS_ROLE_EDGE, roleRepresentation);
+        });
+        attachRolesPlayed(halResource, relationType.playsRoles());
+    }
+
+    private void attachRolesPlayed(Representation halResource, Collection<RoleType> roles) {
+        roles.forEach(role -> {
+            Representation roleRepresentation = factory.newRepresentation(resourceLinkPrefix + role.getId())
+                    .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
+            generateStateAndLinks(roleRepresentation, role);
+            halResource.withRepresentation(PLAYS_ROLE_EDGE, roleRepresentation);
+        });
+    }
+
+    //-------------------------------
 
     public String render() {
         return halResource.toString(RepresentationFactory.HAL_JSON);

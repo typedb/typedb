@@ -21,23 +21,18 @@ package io.mindmaps.graql.internal.analytics;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsComputer;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.Concept;
-import io.mindmaps.concept.Instance;
-import io.mindmaps.concept.ResourceType;
-import io.mindmaps.concept.RoleType;
-import io.mindmaps.concept.Type;
+import io.mindmaps.concept.*;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.Mindmaps;
+import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
+import static io.mindmaps.graql.Graql.or;
 import static io.mindmaps.graql.Graql.var;
 import static io.mindmaps.graql.Graql.withGraph;
 import static io.mindmaps.util.Schema.ConceptProperty.ITEM_IDENTIFIER;
@@ -52,20 +47,23 @@ public class Analytics {
     private final String keySpace;
     // TODO: allow user specified resources
     public static final String degree = "degree";
+    private final int numberOfOntologyChecks = 10;
 
     /**
      * The concept type ids that define which instances appear in the subgraph.
      */
-    private final Set<String> allTypes = new HashSet<>();
+    private final Set<String> subtypes = new HashSet<>();
     private final Map<String, String> resourceTypes = new HashMap<>();
+    private final Set<String> statisticsResourceTypes = new HashSet<>();
 
     /**
      * Create a graph computer from a Mindmaps Graph. The computer operates on all instances in the graph.
      */
+    @Deprecated
     public Analytics(String keySpace) {
         this.keySpace = keySpace;
 
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(this.keySpace);
+        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, this.keySpace).getGraph();
 
         // collect resource-types for statistics
         graph.getMetaResourceType().instances()
@@ -86,7 +84,8 @@ public class Analytics {
         excludedTypes.addAll(graph.getMetaRuleType().instances());
 
         // collect analytics resource types to exclude
-        HashSet<String> analyticsElements = Sets.newHashSet(Analytics.degree, GraqlType.HAS_RESOURCE.getId(Analytics.degree));
+        HashSet<String> analyticsElements =
+                Sets.newHashSet(Analytics.degree, GraqlType.HAS_RESOURCE.getId(Analytics.degree));
         analyticsElements.stream()
                 .filter(element -> graph.getType(element) != null)
                 .map(graph::getType)
@@ -96,25 +95,26 @@ public class Analytics {
         graph.getMetaType().instances().stream()
                 .filter(concept -> !excludedTypes.contains(concept))
                 .map(Concept::asType)
-//                .collect(Collectors.toList())
-                .forEach(type -> allTypes.add(type.getId()));
+                .forEach(type -> subtypes.add(type.getId()));
 
         graph.rollback();
 
         // add analytics ontology - hard coded for now
         mutateResourceOntology(degree, ResourceType.DataType.LONG);
+        waitOnMutateResourceOntology(degree);
     }
 
     /**
      * Create a graph computer from a Mindmaps Graph. The computer operates on the instances of the types provided in
-     * the <code>types</code> argument. All subtypes of the given types are included when deciding whether to include an
-     * instance.
+     * the <code>subtypes</code> argument. All subtypes of the given types are included when deciding whether to
+     * include an instance.
      *
-     * @param types the set of types the computer will use to filter instances
+     * @param subtypes the set of types the computer will use to filter instances
      */
-    public Analytics(String keySpace, Set<Type> types) {
+    @Deprecated
+    public Analytics(String keySpace, Set<Type> subtypes) {
         this.keySpace = keySpace;
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(this.keySpace);
+        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, this.keySpace).getGraph();
 
         // collect resource-types for statistics
         graph.getMetaResourceType().instances()
@@ -122,12 +122,89 @@ public class Analytics {
                         resourceTypes.put(type.getId(), type.asResourceType().getDataType().getName()));
 
         // use ako relations to add subtypes of the provided types
-        for (Type t : types) {
-            t.subTypes().forEach(subtype -> allTypes.add(subtype.getId()));
+        for (Type t : subtypes) {
+            t.subTypes().forEach(subtype -> this.subtypes.add(subtype.getId()));
         }
 
         // add analytics ontology - hard coded for now
         mutateResourceOntology(degree, ResourceType.DataType.LONG);
+        waitOnMutateResourceOntology(degree);
+    }
+
+    /**
+     * Create a graph computer from a Mindmaps Graph. The computer operates on the instances of the types provided in
+     * the <code>subtypes</code> argument. All subtypes of the given types are included when deciding whether to
+     * include an instance.
+     *
+     * @param subTypeIds                the set of type ids the computer will use to filter instances
+     * @param statisticsResourceTypeIds the set of resource type ids statistics will be working on
+     */
+    public Analytics(String keySpace, Set<String> subTypeIds, Set<String> statisticsResourceTypeIds) {
+        this.keySpace = keySpace;
+        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, this.keySpace).getGraph();
+
+        // make sure we don't accidentally commit anything
+        graph.rollback();
+
+        // fetch all the types
+        Set<Type> subtypes = subTypeIds.stream().map((id) -> {
+            Type type = graph.getType(id);
+            if (type == null) throw new IllegalArgumentException(ErrorMessage.ID_NOT_FOUND.getMessage(id));
+            return type;
+        }).collect(Collectors.toSet());
+        Set<Type> statisticsResourceTypes = statisticsResourceTypeIds.stream().map((id) -> {
+            Type type = graph.getType(id);
+            if (type == null) throw new IllegalArgumentException(ErrorMessage.ID_NOT_FOUND.getMessage(id));
+            return type;
+        }).collect(Collectors.toSet());
+
+        // collect resource-types for statistics
+        graph.getMetaResourceType().instances()
+                .forEach(type -> resourceTypes.put(type.getId(), type.asResourceType().getDataType().getName()));
+
+        if (subtypes.isEmpty()) {
+
+            // collect meta-types to exclude them as they do not have instances
+            Set<Concept> excludedTypes = new HashSet<>();
+            excludedTypes.add(graph.getMetaType());
+            excludedTypes.add(graph.getMetaEntityType());
+            excludedTypes.add(graph.getMetaRelationType());
+            excludedTypes.add(graph.getMetaResourceType());
+            excludedTypes.add(graph.getMetaRoleType());
+            excludedTypes.add(graph.getMetaRuleType());
+
+            // collect role-types to exclude them because the user does not see castings
+            excludedTypes.addAll(graph.getMetaRoleType().instances());
+            excludedTypes.addAll(graph.getMetaRuleType().instances());
+
+            // collect analytics resource types to exclude
+            HashSet<String> analyticsElements =
+                    Sets.newHashSet(Analytics.degree, GraqlType.HAS_RESOURCE.getId(Analytics.degree));
+            analyticsElements.stream()
+                    .filter(element -> graph.getType(element) != null)
+                    .map(graph::getType)
+                    .forEach(excludedTypes::add);
+
+            // fetch all types
+            graph.getMetaType().instances().stream()
+                    .filter(concept -> !excludedTypes.contains(concept))
+                    .map(Concept::asType)
+                    .forEach(type -> this.subtypes.add(type.getId()));
+        } else {
+            for (Type t : subtypes) {
+                t.subTypes().forEach(subtype -> this.subtypes.add(subtype.getId()));
+            }
+        }
+
+        if (!statisticsResourceTypes.isEmpty()) {
+            for (Type t : statisticsResourceTypes) {
+                t.subTypes().forEach(subtype -> this.statisticsResourceTypes.add(subtype.getId()));
+            }
+        }
+
+        // add analytics ontology - hard coded for now
+        mutateResourceOntology(degree, ResourceType.DataType.LONG);
+        waitOnMutateResourceOntology(degree);
     }
 
     /**
@@ -136,8 +213,8 @@ public class Analytics {
      * @return the number of instances
      */
     public long count() {
-        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraphComputer(keySpace);
-        ComputerResult result = computer.compute(new CountMapReduce(allTypes));
+        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
+        ComputerResult result = computer.compute(new CountMapReduce(subtypes));
         Map<String, Long> count = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
         return count.getOrDefault(CountMapReduce.MEMORY_KEY, 0L);
     }
@@ -148,11 +225,17 @@ public class Analytics {
      * @return min
      */
     public Optional<Number> min() {
-        String dataType = checkSelectedTypesHaveCorrectDataType(allTypes);
-        if (!selectedTypesHaveInstance(allTypes)) return Optional.empty();
+        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypes);
+        if (!selectedTypesHaveInstanceInSubgraph(statisticsResourceTypes, subtypes)) return Optional.empty();
 
-        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraphComputer(keySpace);
-        ComputerResult result = computer.compute(new MinMapReduce(allTypes, dataType));
+        Set<String> allSubtypes = statisticsResourceTypes.stream()
+                .map(GraqlType.HAS_RESOURCE::getId).collect(Collectors.toSet());
+        allSubtypes.addAll(subtypes);
+        allSubtypes.addAll(statisticsResourceTypes);
+
+        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
+        ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
+                new MinMapReduce(statisticsResourceTypes, dataType));
         Map<String, Number> min = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
         return Optional.of(min.get(MinMapReduce.MEMORY_KEY));
     }
@@ -163,11 +246,17 @@ public class Analytics {
      * @return max
      */
     public Optional<Number> max() {
-        String dataType = checkSelectedTypesHaveCorrectDataType(allTypes);
-        if (!selectedTypesHaveInstance(allTypes)) return Optional.empty();
+        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypes);
+        if (!selectedTypesHaveInstanceInSubgraph(statisticsResourceTypes, subtypes)) return Optional.empty();
 
-        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraphComputer(keySpace);
-        ComputerResult result = computer.compute(new MaxMapReduce(allTypes, dataType));
+        Set<String> allSubtypes = statisticsResourceTypes.stream()
+                .map(GraqlType.HAS_RESOURCE::getId).collect(Collectors.toSet());
+        allSubtypes.addAll(subtypes);
+        allSubtypes.addAll(statisticsResourceTypes);
+
+        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
+        ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
+                new MaxMapReduce(statisticsResourceTypes, dataType));
         Map<String, Number> max = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
         return Optional.of(max.get(MaxMapReduce.MEMORY_KEY));
     }
@@ -178,11 +267,17 @@ public class Analytics {
      * @return sum
      */
     public Optional<Number> sum() {
-        String dataType = checkSelectedTypesHaveCorrectDataType(allTypes);
-        if (!selectedTypesHaveInstance(allTypes)) return Optional.empty();
+        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypes);
+        if (!selectedTypesHaveInstanceInSubgraph(statisticsResourceTypes, subtypes)) return Optional.empty();
 
-        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraphComputer(keySpace);
-        ComputerResult result = computer.compute(new SumMapReduce(allTypes, dataType));
+        Set<String> allSubtypes = statisticsResourceTypes.stream()
+                .map(GraqlType.HAS_RESOURCE::getId).collect(Collectors.toSet());
+        allSubtypes.addAll(subtypes);
+        allSubtypes.addAll(statisticsResourceTypes);
+
+        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
+        ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
+                new SumMapReduce(statisticsResourceTypes, dataType));
         Map<String, Number> max = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
         return Optional.of(max.get(SumMapReduce.MEMORY_KEY));
     }
@@ -193,15 +288,20 @@ public class Analytics {
      * @return mean
      */
     public Optional<Double> mean() {
-        String dataType = checkSelectedTypesHaveCorrectDataType(allTypes);
-        if (!selectedTypesHaveInstance(allTypes)) return Optional.empty();
+        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypes);
+        if (!selectedTypesHaveInstanceInSubgraph(statisticsResourceTypes, subtypes)) return Optional.empty();
 
-        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraphComputer(keySpace);
-        ComputerResult result = computer.compute(new MeanMapReduce(allTypes, dataType));
-        Map<String, Map<String, Number>> mean = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
-        Map<String, Number> meanPair = mean.get(MeanMapReduce.MEMORY_KEY);
-        return Optional.of(meanPair.get(MeanMapReduce.SUM).doubleValue() /
-                meanPair.get(MeanMapReduce.COUNT).longValue());
+        Set<String> allSubtypes = statisticsResourceTypes.stream()
+                .map(GraqlType.HAS_RESOURCE::getId).collect(Collectors.toSet());
+        allSubtypes.addAll(subtypes);
+        allSubtypes.addAll(statisticsResourceTypes);
+
+        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
+        ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
+                new MeanMapReduce(statisticsResourceTypes, dataType));
+        Map<String, Map<String, Double>> mean = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
+        Map<String, Double> meanPair = mean.get(MeanMapReduce.MEMORY_KEY);
+        return Optional.of(meanPair.get(MeanMapReduce.SUM) / meanPair.get(MeanMapReduce.COUNT));
     }
 
     /**
@@ -210,16 +310,22 @@ public class Analytics {
      * @return standard deviation
      */
     public Optional<Double> std() {
-        String dataType = checkSelectedTypesHaveCorrectDataType(allTypes);
-        if (!selectedTypesHaveInstance(allTypes)) return Optional.empty();
+        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypes);
+        if (!selectedTypesHaveInstanceInSubgraph(statisticsResourceTypes, subtypes)) return Optional.empty();
 
-        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraphComputer(keySpace);
-        ComputerResult result = computer.compute(new StdMapReduce(allTypes, dataType));
-        Map<String, Map<String, Number>> std = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
-        Map<String, Number> stdTuple = std.get(StdMapReduce.MEMORY_KEY);
-        double squareSum = stdTuple.get(StdMapReduce.SQUARE_SUM).doubleValue();
-        double sum = stdTuple.get(StdMapReduce.SUM).doubleValue();
-        long count = stdTuple.get(StdMapReduce.COUNT).longValue();
+        Set<String> allSubtypes = statisticsResourceTypes.stream()
+                .map(GraqlType.HAS_RESOURCE::getId).collect(Collectors.toSet());
+        allSubtypes.addAll(subtypes);
+        allSubtypes.addAll(statisticsResourceTypes);
+
+        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
+        ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
+                new StdMapReduce(statisticsResourceTypes, dataType));
+        Map<String, Map<String, Double>> std = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
+        Map<String, Double> stdTuple = std.get(StdMapReduce.MEMORY_KEY);
+        double squareSum = stdTuple.get(StdMapReduce.SQUARE_SUM);
+        double sum = stdTuple.get(StdMapReduce.SUM);
+        double count = stdTuple.get(StdMapReduce.COUNT);
         return Optional.of(Math.sqrt(squareSum / count - (sum / count) * (sum / count)));
     }
 
@@ -230,9 +336,9 @@ public class Analytics {
      */
     public Map<Instance, Long> degrees() {
         Map<Instance, Long> allDegrees = new HashMap<>();
-        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraphComputer(keySpace);
-        ComputerResult result = computer.compute(new DegreeVertexProgram(allTypes));
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(keySpace);
+        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
+        ComputerResult result = computer.compute(new DegreeVertexProgram(subtypes));
+        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraph();
         result.graph().traversal().V().forEachRemaining(v -> {
             if (v.keys().contains(DegreeVertexProgram.MEMORY_KEY)) {
                 Instance instance = graph.getInstance(v.value(ITEM_IDENTIFIER.name()));
@@ -249,8 +355,12 @@ public class Analytics {
      * @param resourceType the type of the resource that will contain the degree
      */
     private void degreesAndPersist(String resourceType) {
-        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraphComputer(keySpace);
-        computer.compute(new DegreeAndPersistVertexProgram(keySpace, allTypes));
+        if (!Sets.intersection(subtypes, CommonOLAP.analyticsElements).isEmpty()) {
+            throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
+                    .getMessage(this.getClass().toString()));
+        }
+        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
+        computer.compute(new DegreeAndPersistVertexProgram(keySpace, subtypes));
     }
 
     /**
@@ -269,7 +379,8 @@ public class Analytics {
      * @param resourceDataType the datatype of the resource type
      */
     private void mutateResourceOntology(String resourceTypeId, ResourceType.DataType resourceDataType) {
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(keySpace);
+        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraph();
+
         ResourceType resource = graph.putResourceType(resourceTypeId, resourceDataType);
         RoleType degreeOwner = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
         RoleType degreeValue = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
@@ -277,7 +388,7 @@ public class Analytics {
                 .hasRole(degreeOwner)
                 .hasRole(degreeValue);
 
-        for (String type : allTypes) {
+        for (String type : subtypes) {
             graph.getType(type).playsRole(degreeOwner);
         }
         resource.playsRole(degreeValue);
@@ -290,16 +401,51 @@ public class Analytics {
 
     }
 
-    private String checkSelectedTypesHaveCorrectDataType(Set<String> types) {
+    /**
+     * Ensures that the ontology mutation performed by analytics is persisted before proceeding. In rare cases, such as
+     * underpowered machines, or ones with high lag to engine, the ontology mutation is not persisted in time for the
+     * OLAP task to proceed. This method forces analytics to wait and ensure the ontology is persisted before
+     * proceeding.
+     * @param resourceTypeId    the resource the plays role edges must point to
+     */
+    private void waitOnMutateResourceOntology(String resourceTypeId) {
+        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraph();
+
+        for (int i=0; i<numberOfOntologyChecks; i++) {
+            boolean isOntologyComplete = true;
+            graph.rollback();
+
+            ResourceType resource = graph.getResourceType(resourceTypeId);
+            if (resource==null) isOntologyComplete = false;
+            RoleType degreeOwner = graph.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
+            if (degreeOwner==null) isOntologyComplete = false;
+            RoleType degreeValue = graph.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
+            if (degreeValue==null) isOntologyComplete = false;
+            RelationType relationType = graph.getRelationType(GraqlType.HAS_RESOURCE.getId(resourceTypeId));
+            if (relationType==null) isOntologyComplete = false;
+
+            for (String type : subtypes) {
+                Collection<RoleType> roles = graph.getType(type).playsRoles();
+                if (!roles.contains(degreeOwner)) isOntologyComplete = false;
+            }
+
+            if (isOntologyComplete) return;
+        }
+        throw new RuntimeException(
+                ErrorMessage.ONTOLOGY_MUTATION
+                        .getMessage("Failed to confirm ontology is present after mutation."));
+    }
+
+    private String checkSelectedResourceTypesHaveCorrectDataType(Set<String> types) {
         if (types == null || types.isEmpty())
-            throw new IllegalArgumentException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
+            throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                     .getMessage(this.getClass().toString()));
 
         String dataType = null;
         for (String type : types) {
             // check if the selected type is a resource-type
             if (!resourceTypes.containsKey(type))
-                throw new IllegalArgumentException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
+                throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                         .getMessage(this.getClass().toString()));
 
             if (dataType == null) {
@@ -321,12 +467,16 @@ public class Analytics {
         return dataType;
     }
 
-    private boolean selectedTypesHaveInstance(Set<String> types) {
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI).getGraph(this.keySpace);
-        for (String type : types) {
-            if (withGraph(graph).match(var().isa(type)).ask().execute())
-                return true;
-        }
-        return false;
+    private boolean selectedTypesHaveInstanceInSubgraph(Set<String> statisticsResourceTypes,
+                                                        Set<String> subtypes) {
+
+        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, this.keySpace).getGraph();
+
+        List<Pattern> checkResourceTypes = statisticsResourceTypes.stream()
+                .map(type -> var("x").has(type)).collect(Collectors.toList());
+        List<Pattern> checkSubtypes = subtypes.stream()
+                .map(type -> var("x").isa(type)).collect(Collectors.toList());
+
+        return withGraph(graph).match(or(checkResourceTypes), or(checkSubtypes)).ask().execute();
     }
 }

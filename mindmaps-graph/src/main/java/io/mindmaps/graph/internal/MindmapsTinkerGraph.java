@@ -18,6 +18,8 @@
 
 package io.mindmaps.graph.internal;
 
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.util.REST;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
 /**
@@ -25,7 +27,23 @@ import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
  * Primarily used for testing
  */
 public class MindmapsTinkerGraph extends AbstractMindmapsGraph<TinkerGraph> {
-    public MindmapsTinkerGraph(TinkerGraph tinkerGraph, String name, boolean batchLoading){
-        super(tinkerGraph, name, null, batchLoading);
+    public MindmapsTinkerGraph(TinkerGraph tinkerGraph, String name, String engineUrl, boolean batchLoading){
+        super(tinkerGraph, name, engineUrl, batchLoading);
+    }
+
+    @Override
+    public void clear(){
+        super.clear();
+        EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.DELETE_METHOD);
+    }
+
+    @Override
+    public ConceptImpl getConceptByBaseIdentifier(Object baseIdentifier) {
+        return super.getConceptByBaseIdentifier(Long.valueOf(baseIdentifier.toString()));
+    }
+
+    @Override
+    public void rollback(){
+        LOG.warn(ErrorMessage.UNSUPPORTED_GRAPH.getMessage(getTinkerPopGraph().getClass().getName(), "rollback"));
     }
 }

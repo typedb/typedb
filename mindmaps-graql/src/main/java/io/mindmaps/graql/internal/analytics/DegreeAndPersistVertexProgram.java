@@ -59,7 +59,7 @@ class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
     }
 
     @Override
-    public void execute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
+    public void safeExecute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
         switch (memory.getIteration()) {
             case 0:
                 if (selectedTypes.contains(getVertexType(vertex)) && !isAnalyticsElement(vertex)) {
@@ -92,7 +92,7 @@ class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
                 if (!isAnalyticsElement(vertex) && selectedTypes.contains(getVertexType(vertex))) {
                     if (baseTypes.contains(vertex.value(Schema.ConceptProperty.BASE_TYPE.name()).toString())) {
                         long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
-                        bulkResourceMutate.putValue(vertex,edgeCount,MEMORY_KEY);
+                        bulkResourceMutate.putValue(vertex, edgeCount);
                     }
                 }
                 break;

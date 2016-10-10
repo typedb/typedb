@@ -15,6 +15,8 @@ public class REST {
         public static final String GRAPH_MATCH_QUERY_URI = "/graph/match";
 
         public static final String CONCEPT_BY_ID_URI = "/graph/concept/" ;
+        public static final String CONCEPT_BY_ID_ONTOLOGY_URI = "/graph/concept/ontology/" ;
+
 
         public static final String COMMIT_LOG_URI = "/commit_log";
 
@@ -69,6 +71,7 @@ public class REST {
         public static final String ACTION_NAMESPACE = "namespace";
         public static final String ACTION_QUERY = "query";
         public static final String ACTION_QUERY_END = "queryEnd";
+        public static final String ACTION_ERROR = "error";
         public static final String ACTION_QUERY_ABORT = "queryAbort";
         public static final String ACTION_COMMIT = "commit";
         public static final String ACTION_ROLLBACK = "rollback";

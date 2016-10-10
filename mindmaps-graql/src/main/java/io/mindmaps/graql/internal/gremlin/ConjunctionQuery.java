@@ -18,10 +18,11 @@
 
 package io.mindmaps.graql.internal.gremlin;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.query.VarInternal;
 import io.mindmaps.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -30,6 +31,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.*;
 import java.util.stream.Stream;
 
+import static io.mindmaps.graql.internal.util.CommonUtil.toImmutableSet;
 import static java.util.Comparator.naturalOrder;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toSet;
@@ -50,6 +52,7 @@ import static java.util.stream.Collectors.toSet;
 class ConjunctionQuery {
 
     private final Set<VarAdmin> vars;
+    private final ImmutableSet<MultiTraversal> multiTraversals;
     private final Set<List<Fragment>> fragments;
     private final MindmapsGraph graph;
 
@@ -63,6 +66,11 @@ class ConjunctionQuery {
         if (vars.size() == 0) {
             throw new IllegalArgumentException(ErrorMessage.MATCH_NO_PATTERNS.getMessage());
         }
+
+        this.multiTraversals = vars.stream()
+                .map(VarTraversals::new)
+                .flatMap(VarTraversals::getTraversals)
+                .collect(toImmutableSet());
 
         this.fragments = sortedFragments();
 
@@ -162,7 +170,7 @@ class ConjunctionQuery {
 
         // Track properties and fragments that have been used
         Set<Fragment> remainingFragments = getFragments().collect(toSet());
-        Set<MultiTraversal> remainingTraversals = getMultiTraversals().collect(toSet());
+        Set<MultiTraversal> remainingTraversals = Sets.newHashSet(multiTraversals);
         Set<MultiTraversal> matchedTraversals = new HashSet<>();
 
         // Result set of fragments (one entry in the set for each connected part of the query)
@@ -210,16 +218,9 @@ class ConjunctionQuery {
     }
 
     /**
-     * @return a stream of MultiTraversals in this query
-     */
-    private Stream<MultiTraversal> getMultiTraversals() {
-        return vars.stream().flatMap(var -> ((VarInternal) var).getMultiTraversals().stream());
-    }
-
-    /**
      * @return a stream of Fragments in this query
      */
     private Stream<Fragment> getFragments() {
-        return getMultiTraversals().flatMap(MultiTraversal::getFragments);
+        return multiTraversals.stream().flatMap(MultiTraversal::getFragments);
     }
 }

@@ -48,7 +48,7 @@ public class ResourceTypeTest {
 
     @Before
     public void buildGraph() {
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         mindmapsGraph.initialiseMetaConcepts();
         resourceType = mindmapsGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
     }

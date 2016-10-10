@@ -19,6 +19,7 @@
 package io.mindmaps.graql.internal.reasoner.predicate;
 
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.Graql;
@@ -90,27 +91,28 @@ public class Relation extends AtomBase {
     public boolean isEquivalent(Object obj) {
         if (!(obj instanceof Relation)) return false;
         Relation a2 = (Relation) obj;
-        return this.getTypeId().equals(a2.getTypeId())
-                && getVarNames().size() == a2.getVarNames().size()
-                && a2.getRoleVarTypeMap().size() == this.getRoleVarTypeMap().size();
+        boolean isEquivalent = this.getTypeId().equals(a2.getTypeId());
+
+        //check whether subs correspond to same role players
+        Map<RoleType, String> roleConceptMap = getRoleConceptIdMap();
+        Map<RoleType, String> childRoleConceptMap = a2.getRoleConceptIdMap();
+        Iterator<RoleType> it = roleConceptMap.keySet().iterator();
+        while(it.hasNext() && isEquivalent){
+            RoleType role = it.next();
+            isEquivalent = childRoleConceptMap.containsKey(role) &&
+                    childRoleConceptMap.get(role).equals(roleConceptMap.get(role));
+        }
+
+        return isEquivalent;
+
     }
 
     @Override
     public int equivalenceHashCode(){
         int hashCode = 1;
         hashCode = hashCode * 37 + this.typeId.hashCode();
-        hashCode = hashCode * 37 + this.getVarNames().size();
-        hashCode = hashCode * 37 + this.getRoleVarTypeMap().size();
+        hashCode = hashCode * 37 + this.getRoleConceptIdMap().hashCode();
         return hashCode;
-    }
-
-    @Override
-    public void print() {
-        System.out.println("atom: \npattern: " + toString());
-        System.out.println("varName: " + varName + " typeId: " + typeId);
-        System.out.print("Castings: ");
-        castings.forEach(c -> System.out.print(c.getRolePlayer().getPrintableName() + " "));
-        System.out.println();
     }
 
     @Override
@@ -136,7 +138,7 @@ public class Relation extends AtomBase {
     }
 
     @Override
-    public void changeEachVarName(String from, String to) {
+    public void unify(String from, String to) {
         castings.forEach(c -> {
             String var = c.getRolePlayer().getName();
             if (var.equals(from)) {
@@ -149,7 +151,7 @@ public class Relation extends AtomBase {
     }
 
     @Override
-    public void changeEachVarName(Map<String, String> mappings) {
+    public void unify (Map<String, String> mappings) {
         castings.forEach(c -> {
             String var = c.getRolePlayer().getName();
             if (mappings.containsKey(var) ) {
@@ -270,12 +272,4 @@ public class Relation extends AtomBase {
 
         return roleVarTypeMap;
     }
-
-    public Set<Atomic> getTypeConstraints(){
-        Set<Atomic> typeConstraints = getParentQuery().getAtoms();
-        return typeConstraints.stream().filter(atom -> atom.isType() && !atom.isResource() && containsVar(atom.getVarName()))
-                        .collect(Collectors.toSet());
-    }
-
-
 }

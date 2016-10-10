@@ -18,21 +18,18 @@
 
 package io.mindmaps.migration.sql;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.engine.MindmapsEngineServer;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
-import io.mindmaps.engine.controller.CommitLogController;
-import io.mindmaps.engine.controller.GraphFactoryController;
-import io.mindmaps.engine.controller.TransactionController;
 import io.mindmaps.engine.loader.BlockingLoader;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -56,17 +53,17 @@ public class SQLSchemaMigratorTest {
 
     @BeforeClass
     public static void start(){
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.INFO);
-
         System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
         System.setProperty(ConfigProperties.CURRENT_DIR_SYSTEM_PROPERTY, System.getProperty("user.dir")+"/../");
 
-        new TransactionController();
-        new CommitLogController();
-        new GraphFactoryController();
+        MindmapsEngineServer.start();
 
         migrator = new SQLSchemaMigrator();
+    }
+
+    @AfterClass
+    public static void stop(){
+        MindmapsEngineServer.stop();
     }
 
     @Before
@@ -98,7 +95,6 @@ public class SQLSchemaMigratorTest {
     public void alterTableTest() throws SQLException {
         Connection connection = Util.setupExample("alter-table");
         migrator.configure(connection).migrate(loader);
-        graph.rollback();
 
         Type cart = graph.getEntityType("CART");
         assertNotNull(cart);
@@ -135,7 +131,6 @@ public class SQLSchemaMigratorTest {
     public void emptyTest() throws SQLException {
         Connection connection = Util.setupExample("empty");
         migrator.configure(connection).migrate(loader);
-        graph.rollback();
 
         System.out.println(graph.getMetaType().instances());
         assertEquals(2, graph.getMetaType().instances().size());
@@ -150,7 +145,6 @@ public class SQLSchemaMigratorTest {
     public void datavaultSchemaTest() throws SQLException {
         Connection connection = Util.setupExample("datavault");
         migrator.configure(connection).migrate(loader);
-        graph.rollback();
 
         Type entity = graph.getEntityType("AZ_BAKUAPPEALCOURT_CASES");
         assertNotNull(entity);
@@ -165,7 +159,6 @@ public class SQLSchemaMigratorTest {
     public void postgresSchemaTest() throws SQLException, ClassNotFoundException {
         Connection connection = Util.setupExample("postgresql-example");
         migrator.configure(connection).migrate(loader);
-        graph.rollback();
 
         Type city = graph.getEntityType("CITY");
         assertNotNull(city);
@@ -193,7 +186,6 @@ public class SQLSchemaMigratorTest {
     public void mysqlSchemaTest() throws SQLException {
         Connection connection = Util.setupExample("mysql-example");
         migrator.configure(connection).migrate(loader);
-        graph.rollback();
 
         System.out.println(graph.getMetaEntityType().instances());
         Type pet = graph.getEntityType("PET");
@@ -218,7 +210,6 @@ public class SQLSchemaMigratorTest {
     public void combinedKeyTest() throws SQLException {
         Connection connection = Util.setupExample("combined-key");
         migrator.configure(connection).migrate(loader);
-        graph.rollback();
 
         Type type = graph.getEntityType("USERS");
         assertNotNull(type);

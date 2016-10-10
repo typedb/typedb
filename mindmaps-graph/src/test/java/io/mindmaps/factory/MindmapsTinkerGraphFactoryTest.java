@@ -41,13 +41,13 @@ public class MindmapsTinkerGraphFactoryTest {
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
-    public void setup() {
-        tinkerGraphFactory = new MindmapsTinkerInternalFactory();
+    public void setTinkerGraphFactory(){
+        tinkerGraphFactory = new MindmapsTinkerInternalFactory("test", null, null);
     }
 
     @Test
     public void testBuildTinkerGraph() throws Exception {
-        MindmapsGraph graph = tinkerGraphFactory.getGraph("test", null, null, false);
+        MindmapsGraph graph = tinkerGraphFactory.getGraph(false);
         assertThat(graph, instanceOf(MindmapsTinkerGraph.class));
         assertThat(graph, instanceOf(AbstractMindmapsGraph.class));
 
@@ -59,41 +59,39 @@ public class MindmapsTinkerGraphFactoryTest {
     }
 
     @Test
-    public void testFactoryMap(){
-        MindmapsGraph graph1 = tinkerGraphFactory.getGraph("graph1", null, null, false);
-        MindmapsGraph graph2 = tinkerGraphFactory.getGraph("graph2", null, null, false);
-        MindmapsGraph graph1_copy = tinkerGraphFactory.getGraph("graph1", null, null, false);
+    public void testFactorySingleton(){
+        MindmapsGraph graph1 = tinkerGraphFactory.getGraph(false);
+        MindmapsGraph graph1_copy = tinkerGraphFactory.getGraph(false);
+
+        MindmapsGraph graph2 = tinkerGraphFactory.getGraph(true);
+        MindmapsGraph graph2_copy = tinkerGraphFactory.getGraph(true);
+
+        assertEquals(graph1, graph1_copy);
+        assertEquals(graph2, graph2_copy);
 
         assertNotEquals(graph1, graph2);
-        assertEquals(graph1, graph1_copy);
+
+        TinkerGraph tinkerGraph1 = ((MindmapsTinkerGraph) graph1).getTinkerPopGraph();
+        TinkerGraph tinkerGraph2 = ((MindmapsTinkerGraph) graph2).getTinkerPopGraph();
+
+        assertEquals(tinkerGraph1, tinkerGraph2);
     }
 
     @Test
     public void testSimpleBuild(){
-        MindmapsTinkerGraph mg1 = (MindmapsTinkerGraph) tinkerGraphFactory.getGraph("test", null, null, true);
-        MindmapsTinkerGraph mg2 = (MindmapsTinkerGraph) tinkerGraphFactory.getGraph("test", null, null, false);
+        MindmapsTinkerGraph mg1 = (MindmapsTinkerGraph) tinkerGraphFactory.getGraph(true);
+        MindmapsTinkerGraph mg2 = (MindmapsTinkerGraph) tinkerGraphFactory.getGraph(false);
 
         assertTrue(mg1.isBatchLoadingEnabled());
         assertFalse(mg2.isBatchLoadingEnabled());
         assertNotEquals(mg1, mg2);
-        assertNotEquals(mg1.getTinkerPopGraph(), mg2.getTinkerPopGraph());
+        assertEquals(mg1.getTinkerPopGraph(), mg2.getTinkerPopGraph());
     }
 
     @Test
     public void testGetTinkerPopGraph(){
-        Graph mg1 = tinkerGraphFactory.getTinkerPopGraph("name", null, null, false);
+        Graph mg1 = tinkerGraphFactory.getTinkerPopGraph(false);
         assertThat(mg1, instanceOf(TinkerGraph.class));
     }
 
-    @Test
-    public void testOpenGraphNames(){
-        tinkerGraphFactory.getTinkerPopGraph("name1", null, null, false);
-        tinkerGraphFactory.getTinkerPopGraph("name2", null, null, false);
-        tinkerGraphFactory.getTinkerPopGraph("name3", null, null, false);
-
-        assertEquals(3, tinkerGraphFactory.openGraphs().size());
-        assertTrue(tinkerGraphFactory.openGraphs().contains("name1"));
-        assertTrue(tinkerGraphFactory.openGraphs().contains("name2"));
-        assertTrue(tinkerGraphFactory.openGraphs().contains("name3"));
-    }
 }

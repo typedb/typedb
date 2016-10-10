@@ -26,7 +26,7 @@ import io.mindmaps.concept.Type;
 import io.mindmaps.graql.*;
 import io.mindmaps.graql.admin.MatchQueryAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.parser.ANSI;
+import io.mindmaps.graql.internal.util.ANSI;
 import io.mindmaps.graql.internal.query.Queries;
 import io.mindmaps.graql.internal.util.AdminConverter;
 import io.mindmaps.graql.internal.util.StringConverter;

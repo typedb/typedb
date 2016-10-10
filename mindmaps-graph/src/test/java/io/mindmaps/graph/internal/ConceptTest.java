@@ -65,7 +65,7 @@ public class ConceptTest {
 
     @Before
     public void setUp(){
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         mindmapsGraph.initialiseMetaConcepts();
         concept = (ConceptImpl) mindmapsGraph.putEntityType("main_concept");
     }
@@ -85,7 +85,6 @@ public class ConceptTest {
 
         assertNotNull(type1.getEdgeOutgoingOfType(Schema.EdgeLabel.ISA));
 
-        type1.type(type2);
         Vertex vertexType1 = mindmapsGraph.getTinkerPopGraph().traversal().V(type1.getBaseIdentifier()).next();
         Vertex vertexType3 = mindmapsGraph.getTinkerPopGraph().traversal().V(type3.getBaseIdentifier()).next();
         vertexType1.addEdge(Schema.EdgeLabel.ISA.getLabel(), vertexType3);
@@ -116,13 +115,6 @@ public class ConceptTest {
         assertEquals(concept.getType(), conceptVertex.property(Schema.ConceptProperty.TYPE.name()).value());
     }
 
-    @Test(expected=RuntimeException.class)
-    public void updateConceptFailTooManyConcepts()  {
-        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex();
-        vertex.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), "VALUE");
-        mindmapsGraph.putEntityType("VALUE");
-    }
-
     @Test
     public void testEquality() {
         ConceptImpl c1= (ConceptImpl) mindmapsGraph.putEntityType("Value_1");
@@ -150,11 +142,9 @@ public class ConceptTest {
 
     @Test
     public void testGetParentIsa(){
-        TypeImpl conceptParent = (TypeImpl) mindmapsGraph.putEntityType("conceptParent");
-        concept.type(conceptParent);
-        ConceptImpl foundConcept = concept.getParentIsa();
-        assertEquals(conceptParent, foundConcept);
-        assertNull(concept.getParentAko());
+        EntityType entityType = mindmapsGraph.putEntityType("Entiy Type");
+        Entity entity = mindmapsGraph.addEntity(entityType);
+        assertEquals(entityType, entity.type());
     }
 
     @Test
@@ -210,21 +200,8 @@ public class ConceptTest {
     @Test
     public void testGetConceptType(){
         EntityType c1 = mindmapsGraph.putEntityType("c1");
-        EntityType c2 = mindmapsGraph.putEntityType("c2");
-        EntityTypeImpl c3 = (EntityTypeImpl) mindmapsGraph.putEntityType("c3");
-        TypeImpl c4 = (TypeImpl) mindmapsGraph.putEntityType("c4");
-
-        c1.superType(c2);
-        c2.superType(c3);
-        c3.type(c4);
-        assertEquals(c4, c1.type());
-    }
-
-    @Test
-    public void testGetConceptTypeFakeConceptType() {
-        TypeImpl c1 = (TypeImpl) mindmapsGraph.putEntityType("c1");
-        c1.type(c1);
-        assertEquals(c1, c1.type());
+        Entity c2 = mindmapsGraph.addEntity(c1);
+        assertEquals(c1, c2.type());
     }
 
     @Test
@@ -251,54 +228,6 @@ public class ConceptTest {
         c3_Vertex.addEdge(Schema.EdgeLabel.AKO.getLabel(), c1_Vertex);
         c1.type();
     }
-
-    @Test
-    public void testGetConceptTypeFailCycleFoundExtended(){
-        //Checks the following case c1 -ako-> c2 -ako-> c3 -isa-> c1 is invalid
-        TypeImpl c1 = (TypeImpl) mindmapsGraph.putEntityType("c1");
-        TypeImpl c2 = (TypeImpl) mindmapsGraph.putEntityType("c2");
-        TypeImpl c3 = (TypeImpl) mindmapsGraph.putEntityType("c3");
-
-        c1.superType(c2);
-        c2.superType(c3);
-        c3.type(c1);
-
-        expectedException.expect(ConceptException.class);
-        expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.LOOP_DETECTED.getMessage(c1.toString(), Schema.EdgeLabel.AKO.getLabel() + " " + Schema.EdgeLabel.ISA.getLabel()))
-        ));
-
-        c1.type();
-    }
-
-    @Test
-    public void testGetConceptTypeSet(){
-        TypeImpl c1 = (TypeImpl) mindmapsGraph.putEntityType("c1");
-        TypeImpl c2 = (TypeImpl) mindmapsGraph.putEntityType("c2");
-        TypeImpl c3 = (TypeImpl) mindmapsGraph.putEntityType("c3");
-        TypeImpl c4 = (TypeImpl) mindmapsGraph.putEntityType("c4");
-        TypeImpl c5 = (TypeImpl) mindmapsGraph.putEntityType("c5");
-        TypeImpl c6 = (TypeImpl) mindmapsGraph.putEntityType("c6");
-        TypeImpl c7 = (TypeImpl) mindmapsGraph.putEntityType("c7");
-        TypeImpl c8 = (TypeImpl) mindmapsGraph.putEntityType("c8");
-
-        c1.superType(c2);
-        c2.superType(c3);
-        c3.type(c4);
-        c4.type(c5);
-        c5.superType(c6);
-        c6.superType(c7);
-        c7.superType(c8);
-        c8.type(c8);
-
-        Set<Type> types = c1.getConceptTypeHierarchy();
-
-        assertEquals(3, types.size());
-        assertTrue(types.contains(c4));
-        assertTrue(types.contains(c5));
-        assertTrue(types.contains(c8));
-    }
-
 
     @Test
     public void testGetEdgesIncomingOfType(){
@@ -427,7 +356,7 @@ public class ConceptTest {
 
         expectedException.expect(RuntimeException.class);
         expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.INVALID_OBJECT_TYPE.getMessage(thing.toString(), Type.class.getName()))
+                containsString(ErrorMessage.INVALID_OBJECT_TYPE.getMessage(thing, Type.class))
         ));
 
         thing.asType();

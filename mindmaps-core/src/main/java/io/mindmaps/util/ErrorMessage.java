@@ -30,6 +30,7 @@ public enum ErrorMessage {
     TOO_MANY_CONCEPTS("Too many concepts found for key ['%s'] and value ['%s']"),
     TOO_MANY_CASTINGS("More than one casting found between Role ['%s'] and Instance ['%s']"),
     INVALID_DATATYPE("The value ['%s'] must be of datatype ['%s']"),
+    INVALID_RESOURCE_CAST("The value of [%s] cannot be cast to [%s]"),
     INVALID_OBJECT_TYPE("The concept ['%s'] is not of type ['%s']"),
     REGEX_INSTANCE_FAILURE("The regex ['%s'] cannot be applied because instance ['%s'] of the Resource Type does not " +
             "conform to the regular expressions"),
@@ -45,6 +46,7 @@ public enum ErrorMessage {
     TRANSACTIONS_NOT_SUPPORTED("The graph backend [%s] does not actually support transactions. The graph was not committed or refreshed."),
     RESOURCE_INDEX_ALREADY_TAKEN("The resource index [%s] is already taken by concept [%s]"),
     IMMUTABLE_VALUE("The value [%s] of concept [%s] cannot be changed to [%s] due to the property [%s] being immutable"),
+    IMMUTABLE_TYPE("The type of concept [%s] cannot be set to [%s] as it is already set to [%s]"),
     NULL_VALUE("The value of [%s] cannot be set to [null]"),
     CANNOT_LOAD_EXAMPLE("Cannot load example to this graph. Please try a new empty graph."),
     META_TYPE_IMMUTABLE("The meta type [%s] is immutable"),
@@ -87,11 +89,9 @@ public enum ErrorMessage {
     NOT_A_ROLE_TYPE("'%s' is not a role type. perhaps you meant 'isa %s'?"),
     NOT_A_RELATION_TYPE("'%s' is not a relation type. perhaps you forgot to separate your statements with a ';'?"),
     NOT_ROLE_IN_RELATION("'%s' is not a valid role type for relation type '%s'. valid role types are: '%s'"),
-    MULTIPLE_TYPES("%s have been given multiple types: %s and %s. " +
-            "perhaps you forgot to separate your statements with a ';'?"),
-    MULTIPLE_IDS("a concept cannot have multiple ids: %s and %s"),
     SET_GENERATED_VARIABLE_NAME("cannot set variable name '%s' on a variable without a user-defined name"),
     INSTANCE_OF_ROLE_TYPE("cannot get instances of role type %s"),
+    CONFLICTING_PROPERTIES("the following unique properties in '%s' conflict: '%s' and '%s'"),
 
     SELECT_NONE_SELECTED("no variables have been selected. at least one variable must be selected"),
     MATCH_NO_PATTERNS("no patterns have been provided in match query. at least one pattern must be provided"),
@@ -118,6 +118,7 @@ public enum ErrorMessage {
 
     DELETE_VALUE("deleting values is not supported"),
     DELETE_RESOURCE_TYPE_NO_ID("resource type to delete from concept %s has no id specified"),
+    DELETE_UNSUPPORTED_PROPERTY("deleting property '%s' is not supported"),
 
     FAILED_TO_BUILD_TRAVERSAL("failed to build a traversal from the graql query"),
 
@@ -156,6 +157,7 @@ public enum ErrorMessage {
     NO_ATOMS_SELECTED("No atoms were selected from query [$s]"),
     MATERIALIZATION_ERROR("Not enough information available to materialize [$s]"),
     ANSWER_ERROR("Answer method called on an instance with no answers"),
+    RULE_CREATION_ARITY_ERROR("Arity mismatch when creating rule"),
 
     //--------------------------------------------- Analytics Errors -----------------------------------------------
     ONTOLOGY_MUTATION("The mutations to the ontology have not been successfully committed. Validation Errors: [%s]"),

@@ -35,20 +35,24 @@ public class MindmapsTitanHadoopInternalFactory extends AbstractMindmapsInternal
     private static final String INPUT_KEYSPACE = "cassandra.input.keyspace";
     private final Logger LOG = LoggerFactory.getLogger(MindmapsTitanHadoopInternalFactory.class);
 
+    MindmapsTitanHadoopInternalFactory(String keyspace, String engineUrl, String config) {
+        super(keyspace, engineUrl, config);
+    }
+
     @Override
     boolean isClosed(HadoopGraph innerGraph) {
         return false;
     }
 
     @Override
-    AbstractMindmapsGraph<HadoopGraph> buildMindmapsGraphFromTinker(HadoopGraph graph, String name, String engineUrl, boolean batchLoading) {
-        throw new UnsupportedOperationException(ErrorMessage.CANNOT_PRODUCE_MINDMAPS_GRAPH.getMessage(graph.getClass().getName()));
+    AbstractMindmapsGraph<HadoopGraph> buildMindmapsGraphFromTinker(HadoopGraph graph, boolean batchLoading) {
+        throw new UnsupportedOperationException(ErrorMessage.CANNOT_PRODUCE_MINDMAPS_GRAPH.getMessage(HadoopGraph.class.getName()));
     }
 
     @Override
-    HadoopGraph buildTinkerPopGraph(String name, String address, String pathToConfig) {
-        LOG.warn("Hadoop graph ignores parameter address [" + address + "]");
-        return (HadoopGraph) GraphFactory.open(buildConfig(name, pathToConfig));
+    HadoopGraph buildTinkerPopGraph() {
+        LOG.warn("Hadoop graph ignores parameter address [" + super.engineUrl + "]");
+        return (HadoopGraph) GraphFactory.open(buildConfig(super.keyspace, super.config));
     }
 
     private static Configuration buildConfig(String name, String pathToConfig){

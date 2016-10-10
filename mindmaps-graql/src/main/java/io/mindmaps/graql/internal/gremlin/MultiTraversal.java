@@ -28,6 +28,11 @@ import java.util.stream.Stream;
  * be comprised of two fragments (e.g. $x isa $y, which may start from $x or $y).
  */
 public interface MultiTraversal {
+
+    static MultiTraversal create(Fragment... fragments) {
+        return new MultiTraversalImpl(fragments);
+    }
+
     /**
      * @return a stream of fragments that this MultiTraversal contains
      */

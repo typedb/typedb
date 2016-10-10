@@ -20,10 +20,7 @@ package io.mindmaps.graql;
 
 import com.google.common.collect.Lists;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.Concept;
-import io.mindmaps.concept.RoleType;
-import io.mindmaps.concept.Rule;
-import io.mindmaps.concept.Type;
+import io.mindmaps.concept.*;
 import io.mindmaps.graql.internal.reasoner.rule.InferenceRule;
 import io.mindmaps.graql.internal.reasoner.query.*;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
@@ -73,17 +70,21 @@ public class Reasoner {
                             //Check for any constraints on the variables
                             String chVar = childRoleVarTypeMap.get(role).getKey();
                             String pVar = entry.getValue().getKey();
-                            String chVal = child.getBody().getValue(chVar);
-                            String pVal = parent.getValue(pVar);
-                            if (!chVal.isEmpty() && !pVal.isEmpty())
-                                relRelevant &= chVal.equals(pVal);
+                            String chId = child.getBody().getSubstitution(chVar);
+                            String pId = parent.getSubstitution(pVar);
+                            if (!chId.isEmpty() && !pId.isEmpty())
+                                relRelevant &= chId.equals(pId);
                         }
                     }
                 }
             }
         }
-        else if (parentAtom.isResource())
-            relRelevant = parentAtom.getVal().equals(childAtom.getVal());
+        else if (parentAtom.isResource()) {
+            String parentVal = parentAtom.getVal();
+            if (parentVal.contains("$")) relRelevant = true;
+            else
+                relRelevant = parentVal.equals(childAtom.getVal());
+        }
 
         return relRelevant;
     }
@@ -245,9 +246,9 @@ public class Reasoner {
             do {
                 Set<AtomicQuery> subGoals = new HashSet<>();
                 dAns = atomicQuery.getAnswers().size();
-                LOG.debug("iter: " + iter++ + " answers: " + dAns);
                 answer(atomicQuery, subGoals, matAnswers);
                 propagateAnswers(matAnswers);
+                LOG.debug("iter: " + iter++ + " answers: " + atomicQuery.getAnswers().size());
                 dAns = atomicQuery.getAnswers().size() - dAns;
             } while (dAns != 0);
             return atomicQuery.getAnswers();

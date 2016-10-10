@@ -19,9 +19,8 @@
 package io.mindmaps.engine.controller;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.engine.Util;
+import io.mindmaps.engine.MindmapsEngineTestBase;
 import io.mindmaps.engine.loader.TransactionState;
-import io.mindmaps.engine.postprocessing.BackgroundTasks;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.util.REST;
@@ -36,24 +35,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class TransactionControllerTest {
+public class TransactionControllerTest extends MindmapsEngineTestBase{
 
-    String graphName;
-
+    private String graphName;
 
     @Before
     public void setUp() throws Exception {
-        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
-
-        new TransactionController();
-        new CommitLogController();
-        new GraphFactoryController();
-
         graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
         MindmapsGraph graph = GraphFactory.getInstance().getGraphBatchLoading(graphName);
         graph.putEntityType("Man");
         graph.commit();
-        Util.setRestAssuredBaseURI(ConfigProperties.getInstance().getProperties());
     }
 
     @Test
@@ -72,8 +63,6 @@ public class TransactionControllerTest {
                 e.printStackTrace();
             }
         }
-        //check that post processing starts periodically, in this case at least once.
-        while(!BackgroundTasks.getInstance().isPostProcessingRunning())
 
         assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getConcept("actor-123"));
     }

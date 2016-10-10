@@ -20,6 +20,7 @@ package io.mindmaps.graph.internal;
 
 import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
+import io.mindmaps.concept.Type;
 import io.mindmaps.exception.InvalidConceptValueException;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
@@ -34,13 +35,13 @@ import java.util.regex.Pattern;
  */
 class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> implements ResourceType<D> {
 
-    ResourceTypeImpl(Vertex v, AbstractMindmapsGraph mindmapsGraph) {
-        super(v, mindmapsGraph);
+    ResourceTypeImpl(Vertex v, Type type, AbstractMindmapsGraph mindmapsGraph) {
+        super(v, type, mindmapsGraph);
     }
 
-    ResourceTypeImpl(Vertex v, AbstractMindmapsGraph mindmapsGraph, DataType<D> type) {
-        super(v, mindmapsGraph);
-        setImmutableProperty(Schema.ConceptProperty.DATA_TYPE, type.getName());
+    ResourceTypeImpl(Vertex v, Type type, AbstractMindmapsGraph mindmapsGraph, DataType<D> dataType) {
+        super(v, type, mindmapsGraph);
+        setImmutableProperty(Schema.ConceptProperty.DATA_TYPE, dataType.getName());
     }
 
     /**

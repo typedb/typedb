@@ -38,7 +38,7 @@ public class AutocompleteTest {
 
     @BeforeClass
     public static void setUpClass() {
-        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         MovieGraphFactory.loadGraph(mindmapsGraph);
     }
 

@@ -1,0 +1,87 @@
+insert
+
+
+# Concept types
+
+person isa entity-type
+    plays-role philosopher
+    plays-role teacher
+    plays-role student
+    plays-role thinker
+    has-resource title
+    has-resource epithet;
+
+school isa entity-type
+    plays-role philosophy;
+
+fact isa entity-type
+    plays-role thought
+    has-resource description;
+
+title isa resource-type datatype string;
+epithet isa resource-type datatype string;
+description isa resource-type datatype string;
+
+
+# Relation types
+
+practice isa relation-type
+    has-role philosopher
+    has-role philosophy;
+philosopher isa role-type;
+philosophy isa role-type;
+
+education isa relation-type
+    has-role teacher
+    has-role student;
+teacher isa role-type;
+student isa role-type;
+
+knowledge isa relation-type
+    has-role thinker
+    has-role thought
+    plays-role thought;
+thinker isa role-type;
+thought isa role-type;
+
+
+# Instances
+
+"Socrates" isa person;
+"Plato" isa person;
+"Aristotle" isa person;
+
+"Alexander" isa person
+    has epithet "The Great"
+    has title "Hegeon"
+    has title "King of Macedon"
+    has title "Shah of Persia"
+    has title "Pharaoh of Egypt"
+    has title "Lord of Asia";
+
+"Peripateticism" isa school;
+"Platonism" isa school;
+"Idealism" isa school;
+"Cynicism" isa school;
+
+"sun-fact" isa fact, has description "The Sun is bigger than the Earth";
+"cave-fact" isa fact, has description "Caves are mostly pretty dark";
+"nothing" isa fact;
+
+
+# Relations
+
+(philosopher: Socrates, philosophy: Platonism) isa practice;
+(philosopher: Plato, philosophy: Idealism) isa practice;
+(philosopher: Plato, philosophy: Platonism) isa practice;
+(philosopher: Aristotle, philosophy: Peripateticism) isa practice;
+
+(teacher: Socrates, student: Plato) isa education;
+(teacher: Plato, student: Aristotle) isa education;
+(teacher: Aristotle, student: Alexander) isa education;
+
+(thinker: Aristotle, thought: sun-fact) isa knowledge;
+(thinker: Plato, thought: cave-fact) isa knowledge;
+
+$socratesKnowsNothing (thinker: Socrates, thought: nothing) isa knowledge;
+(thinker: Socrates, thought: $socratesKnowsNothing) isa knowledge;

@@ -42,8 +42,8 @@ import java.util.Set;
  * @param <V> The type of the instances of this concept type.
  */
 class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> implements Type {
-    TypeImpl(Vertex v, AbstractMindmapsGraph mindmapsGraph) {
-        super(v, mindmapsGraph);
+    TypeImpl(Vertex v, Type type, AbstractMindmapsGraph mindmapsGraph) {
+        super(v, type, mindmapsGraph);
     }
 
     /**
@@ -56,7 +56,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
         Iterator<Edge> edges = getVertex().edges(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE.getLabel());
 
         edges.forEachRemaining(edge -> {
-            RoleTypeImpl roleType = getMindmapsGraph().getElementFactory().buildRoleType(edge.inVertex());
+            RoleTypeImpl roleType = getMindmapsGraph().getElementFactory().buildRoleType(edge.inVertex(), null);
             roleType.subTypes().forEach(role -> rolesPlayed.add(role.asRoleType()));
         });
 

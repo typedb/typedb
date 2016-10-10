@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.parser.QueryParser;
-import io.mindmaps.graql.internal.query.Patterns;
+import io.mindmaps.graql.internal.pattern.Patterns;
 import io.mindmaps.graql.internal.query.Queries;
 import io.mindmaps.graql.internal.template.TemplateParser;
 import io.mindmaps.graql.internal.util.AdminConverter;

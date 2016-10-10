@@ -48,7 +48,7 @@ public class GeoGraph {
     private static Instance UW, PW, Imperial, UniversityOfMunich, UCL;
 
     public static MindmapsGraph getGraph() {
-        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         buildGraph();
         try {
             mindmaps.commit();

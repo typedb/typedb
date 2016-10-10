@@ -21,9 +21,10 @@ public class MindmapsOrientDBInternalFactory extends AbstractMindmapsInternalFac
     private final Map<String, OrientGraphFactory> openFactories;
     private static final String KEY_TYPE = "keytype";
     private static final String UNIQUE = "type";
+    private static final String SPECIAL_IN_MEMORY = "memory";
 
-    public MindmapsOrientDBInternalFactory(){
-        super();
+    public MindmapsOrientDBInternalFactory(String keyspace, String engineUrl, String config) {
+        super(keyspace, engineUrl, config);
         openFactories = new HashMap<>();
     }
 
@@ -33,14 +34,14 @@ public class MindmapsOrientDBInternalFactory extends AbstractMindmapsInternalFac
     }
 
     @Override
-    MindmapsOrientDBGraph buildMindmapsGraphFromTinker(OrientGraph graph, String name, String engineUrl, boolean batchLoading) {
-        return new MindmapsOrientDBGraph(graph, name, engineUrl, batchLoading);
+    MindmapsOrientDBGraph buildMindmapsGraphFromTinker(OrientGraph graph, boolean batchLoading) {
+        return new MindmapsOrientDBGraph(graph, super.keyspace, super.engineUrl, batchLoading);
     }
 
     @Override
-    OrientGraph buildTinkerPopGraph(String name, String address, String pathToConfig) {
-        LOG.warn(ErrorMessage.CONFIG_IGNORED.getMessage("pathToConfig", pathToConfig));
-        return configureGraph(name, address);
+    OrientGraph buildTinkerPopGraph() {
+        LOG.warn(ErrorMessage.CONFIG_IGNORED.getMessage("pathToConfig", super.config));
+        return configureGraph(super.keyspace, super.engineUrl);
     }
 
     private OrientGraph configureGraph(String name, String address){
@@ -116,6 +117,10 @@ public class MindmapsOrientDBInternalFactory extends AbstractMindmapsInternalFac
     }
 
     private OrientGraphFactory getFactory(String name, String address){
+        if(SPECIAL_IN_MEMORY.equals(name)){
+            address = SPECIAL_IN_MEMORY; //Secret way of creating in-memory graphs.
+        }
+
         String key = name + address;
         if(!openFactories.containsKey(key)){
             openFactories.put(key, new OrientGraphFactory(address + ":" + name));

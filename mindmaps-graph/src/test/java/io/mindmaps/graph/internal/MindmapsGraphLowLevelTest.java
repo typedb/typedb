@@ -19,7 +19,6 @@
 package io.mindmaps.graph.internal;
 
 import io.mindmaps.Mindmaps;
-import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
@@ -66,7 +65,7 @@ public class MindmapsGraphLowLevelTest {
 
     @Before
     public void buildGraphAccessManager(){
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
+        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         mindmapsGraph.initialiseMetaConcepts();
     }
     @After
@@ -448,15 +447,5 @@ public class MindmapsGraphLowLevelTest {
         assertTrue(instances.contains(sampleEntityType));
         assertTrue(instances.contains(sampleRelationType));
         assertTrue(instances.contains(sampleRoleType));
-    }
-
-    @Test(expected=RuntimeException.class)
-    public void testRollback() {
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.IN_MEMORY).getGraph(UUID.randomUUID().toString().replaceAll("-", "a"));
-        assertNull(graph.getEntityType("X"));
-        graph.putEntityType("X");
-        assertNotNull(graph.getEntityType("X"));
-        graph.rollback();
-        assertNull(graph.getEntityType("X"));
     }
 }

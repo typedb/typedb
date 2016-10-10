@@ -27,10 +27,10 @@ import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.internal.query.match.MatchOrder;
 import io.mindmaps.graql.internal.query.match.MatchQueryInternal;
+import io.mindmaps.graql.internal.reasoner.predicate.Substitution;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.graql.admin.PatternAdmin;
-import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.query.Patterns;
+import io.mindmaps.graql.internal.pattern.Patterns;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
 
@@ -49,7 +49,6 @@ public class Query implements MatchQueryInternal {
     private final Set<String> selectVars;
 
     private final Map<Type, Set<Atomic>> typeAtomMap;
-    private Atomic parentAtom = null;
 
     public Query(String query, MindmapsGraph graph) {
         this.graph = graph;
@@ -57,7 +56,7 @@ public class Query implements MatchQueryInternal {
         this.pattern = matchQuery.admin().getPattern();
         this.selectVars = Sets.newHashSet(matchQuery.admin().getSelectedNames());
 
-        this.atomSet = getAtomSet(pattern);
+        this.atomSet = AtomicFactory.createAtomSet(pattern, this);
         this.typeAtomMap = getTypeAtomMap(atomSet);
     }
 
@@ -67,19 +66,12 @@ public class Query implements MatchQueryInternal {
         this.pattern = query.admin().getPattern();
         this.selectVars = Sets.newHashSet(query.admin().getSelectedNames());
 
-        this.atomSet = getAtomSet(pattern);
+        this.atomSet = AtomicFactory.createAtomSet(pattern, this);
         this.typeAtomMap = getTypeAtomMap(atomSet);
     }
 
     public Query(Query q) {
-        this.graph = q.graph;
-
-        MatchQuery matchQuery = q.getMatchQuery();
-        this.pattern = matchQuery.admin().getPattern();
-        this.selectVars = Sets.newHashSet(matchQuery.admin().getSelectedNames());
-        this.atomSet = getAtomSet(pattern);
-
-        this.typeAtomMap = getTypeAtomMap(atomSet);
+        this(q.toString(), q.graph);
     }
 
     protected Query(Atomic atom) {
@@ -98,6 +90,28 @@ public class Query implements MatchQueryInternal {
                                     .collect(Collectors.toSet()));
 
         this.typeAtomMap = getTypeAtomMap(atomSet);
+    }
+
+    //alpha-equivalence equality
+    @Override
+    public boolean equals(Object obj){
+        if (!(obj instanceof Query)) return false;
+        Query a2 = (Query) obj;
+        return this.isEquivalent(a2);
+    }
+
+    @Override
+    public int hashCode(){
+        int hashCode = 1;
+        SortedSet<Integer> hashes = new TreeSet<>();
+        atomSet.forEach(atom -> hashes.add(atom.equivalenceHashCode()));
+
+        Iterator<Integer> it = hashes.iterator();
+        while(it.hasNext()){
+            Integer hash = it.next();
+            hashCode = hashCode * 37 + hash;
+        }
+        return hashCode;
     }
 
     @Override
@@ -141,13 +155,15 @@ public class Query implements MatchQueryInternal {
         throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
     }
 
-    public void setParentAtom(Atomic par){ parentAtom = par;}
     public Set<Atomic> getAtoms() { return new HashSet<>(atomSet);}
     public Set<Atomic> getAtomsWithType(Type type) {
         return typeAtomMap.get(type);
     }
     public Set<Atomic> getSubstitutions(){
         return getAtoms().stream().filter(Atomic::isSubstitution).collect(Collectors.toSet());
+    }
+    public Set<Atomic> getTypeConstraints(){
+        return getAtoms().stream().filter(atom -> atom.isUnary() && !atom.isResource()).collect(Collectors.toSet());
     }
 
     public Set<String> getVarSet() {
@@ -195,19 +211,25 @@ public class Query implements MatchQueryInternal {
     }
 
     private void exchangeRelVarNames(String from, String to){
-        changeVarName(to, "temp");
-        changeVarName(from, to);
-        changeVarName("temp", from);
+        unify(to, "temp");
+        unify(from, to);
+        unify("temp", from);
     }
 
-    public void changeVarName(String from, String to) {
+
+    /**
+     * change each variable occurrence in the query (apply unifier [from/to])
+     * @param from variable name to be changed
+     * @param to new variable name
+     */
+    public void unify(String from, String to) {
         Set<Atomic> toRemove = new HashSet<>();
         Set<Atomic> toAdd = new HashSet<>();
 
         atomSet.stream().filter(atom -> atom.getVarNames().contains(from)).forEach(toRemove::add);
         toRemove.forEach(atom -> toAdd.add(AtomicFactory.create(atom)));
         toRemove.forEach(this::removeAtom);
-        toAdd.forEach(atom -> atom.changeEachVarName(from, to));
+        toAdd.forEach(atom -> atom.unify(from, to));
         toAdd.forEach(this::addAtom);
 
         Map<String, String> mapping = new HashMap<>();
@@ -215,6 +237,10 @@ public class Query implements MatchQueryInternal {
         updateSelectedVars(mapping);
     }
 
+    /**
+     * change each variable occurrence according to provided mappings (apply unifiers {[from, to]_i})
+     * @param unifiers contain unifiers (variable mappings) to be applied
+     */
     public void unify(Map<String, String> unifiers) {
         if (unifiers.size() == 0) return;
         Map<String, String> mappings = new HashMap<>(unifiers);
@@ -241,17 +267,20 @@ public class Query implements MatchQueryInternal {
 
         atomSet.stream()
                 .filter(atom -> {
-                    Set<String> intersection = atom.getVarNames();
-                    atom.getVarNames().retainAll(mappings.keySet());
-                    return !intersection.isEmpty();
+                    Set<String> keyIntersection = atom.getVarNames();
+                    Set<String> valIntersection = atom.getVarNames();
+                    keyIntersection.retainAll(mappings.keySet());
+                    valIntersection.retainAll(mappings.values());
+                    return (!keyIntersection.isEmpty() || !valIntersection.isEmpty());
                 })
                 .forEach(toRemove::add);
         toRemove.forEach(atom -> toAdd.add(AtomicFactory.create(atom)));
         toRemove.forEach(this::removeAtom);
-        toAdd.forEach(atom -> atom.changeEachVarName(mappings));
+        toAdd.forEach(atom -> atom.unify(mappings));
         toAdd.forEach(this::addAtom);
 
         updateSelectedVars(mappings);
+        resolveCaptures();
     }
 
     /**
@@ -266,7 +295,7 @@ public class Query implements MatchQueryInternal {
 
         captures.forEach(cap -> {
             String fresh = createFreshVariable(getVarSet(), cap.replace("captured->", ""));
-            changeVarName(cap, fresh);
+            unify(cap, fresh);
         });
     }
 
@@ -275,33 +304,6 @@ public class Query implements MatchQueryInternal {
             return Graql.match(pattern.getPatterns()).withGraph(graph);
         else
             return Graql.match(pattern.getPatterns()).select(selectVars).withGraph(graph);
-    }
-
-    private Set<Atomic> getAtomSet(Conjunction<PatternAdmin> pat) {
-        Set<Atomic> atoms = new HashSet<>();
-
-        Set<VarAdmin> vars = pat.getVars();
-        vars.forEach(var -> {
-            if(var.getType().isPresent() && (var.getId().isPresent() || !var.getValueEqualsPredicates().isEmpty())) {
-                VarAdmin typeVar = Graql.var(var.getName()).isa(var.getType().orElse(null)).admin();
-                atoms.add(AtomicFactory.create(typeVar, this));
-
-                if (var.getId().isPresent()) {
-                    VarAdmin sub = Graql.var(var.getName()).id(var.getId().orElse(null)).admin();
-                    atoms.add(AtomicFactory.create(sub, this));
-                }
-                else if (!var.getValueEqualsPredicates().isEmpty()){
-                    if(var.getValueEqualsPredicates().size() > 1)
-                        throw new IllegalArgumentException(ErrorMessage.MULTI_VALUE_VAR.getMessage(var.toString()));
-                    VarAdmin sub = Graql.var(var.getName()).value(var.getValueEqualsPredicates().iterator().next()).admin();
-                    atoms.add(AtomicFactory.create(sub, this));
-                }
-            }
-            else
-                atoms.add(AtomicFactory.create(var, this));
-        });
-
-        return atoms;
     }
 
     private Map<Type, Set<Atomic>> getTypeAtomMap(Set<Atomic> atoms) {
@@ -342,13 +344,11 @@ public class Query implements MatchQueryInternal {
         return map;
     }
 
-    public String getValue(String var) {
-        String val ="";
-        for(Atomic atom : atomSet) {
-            if(atom.getVarName().equals(var))
-                if(!atom.getVal().isEmpty() ) val = atom.getVal();
-        }
-        return val;
+    public String getSubstitution(String var) {
+        Set<Atomic> relevantSubs = getSubstitutions().stream()
+                .filter(sub -> sub.getVarName().equals(var))
+                .collect(Collectors.toSet());
+        return relevantSubs.isEmpty()? "" : relevantSubs.iterator().next().getVal();
     }
 
     protected void addAtom(Atomic atom) {

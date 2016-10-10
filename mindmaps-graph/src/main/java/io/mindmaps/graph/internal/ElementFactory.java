@@ -18,7 +18,12 @@
 
 package io.mindmaps.graph.internal;
 
+import io.mindmaps.concept.EntityType;
+import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.ResourceType;
+import io.mindmaps.concept.RoleType;
+import io.mindmaps.concept.RuleType;
+import io.mindmaps.concept.Type;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -32,57 +37,58 @@ final class ElementFactory {
         this.mindmapsGraph = mindmapsGraph;
     }
 
-    public RelationImpl buildRelation(Vertex v){
-        return new RelationImpl(v, mindmapsGraph);
+    public RelationImpl buildRelation(Vertex v, RelationType type){
+        return new RelationImpl(v, type, mindmapsGraph);
     }
 
-    public CastingImpl buildCasting(Vertex v){
-        return new CastingImpl(v, mindmapsGraph);
+    public CastingImpl buildCasting(Vertex v, RoleType type){
+        return new CastingImpl(v, type, mindmapsGraph);
     }
 
-    public TypeImpl buildConceptType(Vertex v){
-        return  new TypeImpl(v, mindmapsGraph);
+    public TypeImpl buildConceptType(Vertex v, Type type){
+        return  new TypeImpl(v, type, mindmapsGraph);
     }
 
-    public RuleTypeImpl buildRuleType(Vertex v){
-        return  new RuleTypeImpl(v, mindmapsGraph);
+    public RuleTypeImpl buildRuleType(Vertex v, Type type){
+        return  new RuleTypeImpl(v, type, mindmapsGraph);
     }
 
-    public RoleTypeImpl buildRoleType(Vertex v){
-        return new RoleTypeImpl(v, mindmapsGraph);
+    public RoleTypeImpl buildRoleType(Vertex v, Type type){
+        return new RoleTypeImpl(v, type, mindmapsGraph);
     }
 
-    public <V> ResourceTypeImpl<V> buildResourceType(Vertex v){
-        return new ResourceTypeImpl<>(v, mindmapsGraph);
+    public <V> ResourceTypeImpl<V> buildResourceType(Vertex v, Type type){
+        return new ResourceTypeImpl<>(v, type, mindmapsGraph);
     }
-    public <V> ResourceTypeImpl<V> buildResourceType(Vertex v, ResourceType.DataType<V> type){
-        return new ResourceTypeImpl<>(v, mindmapsGraph, type);
-    }
-
-    public RelationTypeImpl buildRelationType(Vertex v){
-        return  new RelationTypeImpl(v, mindmapsGraph);
+    public <V> ResourceTypeImpl<V> buildResourceType(Vertex v, Type type, ResourceType.DataType<V> dataType){
+        return new ResourceTypeImpl<>(v, type, mindmapsGraph, dataType);
     }
 
-    public EntityTypeImpl buildEntityType(Vertex v){
-        return  new EntityTypeImpl(v, mindmapsGraph);
+    public RelationTypeImpl buildRelationType(Vertex v, Type type){
+        return  new RelationTypeImpl(v, type, mindmapsGraph);
     }
 
-    public EntityImpl buildEntity(Vertex v){
-        return  new EntityImpl(v, mindmapsGraph);
+    public EntityTypeImpl buildEntityType(Vertex v, Type type){
+        return  new EntityTypeImpl(v, type, mindmapsGraph);
     }
 
-    public <V> ResourceImpl <V> buildResource(Vertex v, V value){
-        if(value == null){
-            return new ResourceImpl<>(v, mindmapsGraph);
-        }
-        return new ResourceImpl<>(v, mindmapsGraph, value);
+    public EntityImpl buildEntity(Vertex v, EntityType type){
+        return  new EntityImpl(v, type, mindmapsGraph);
     }
 
-    public RuleImpl buildRule(Vertex v){
-        return buildRule(v, v.value(Schema.ConceptProperty.RULE_LHS.name()), v.value(Schema.ConceptProperty.RULE_RHS.name()));
+    public <V> ResourceImpl <V> buildResource(Vertex v, ResourceType<V> type){
+        return new ResourceImpl<>(v, type, mindmapsGraph);
     }
-    public RuleImpl buildRule(Vertex v, String lhs, String rhs){
-        return  new RuleImpl(v, mindmapsGraph, lhs, rhs);
+
+    public <V> ResourceImpl <V> buildResource(Vertex v, ResourceType<V> type, V value){
+        return new ResourceImpl<>(v, type, mindmapsGraph, value);
+    }
+
+    public RuleImpl buildRule(Vertex v, RuleType type){
+        return buildRule(v, type, v.value(Schema.ConceptProperty.RULE_LHS.name()), v.value(Schema.ConceptProperty.RULE_RHS.name()));
+    }
+    public RuleImpl buildRule(Vertex v, RuleType type, String lhs, String rhs){
+        return  new RuleImpl(v, type, mindmapsGraph, lhs, rhs);
     }
 
     /**
@@ -91,67 +97,72 @@ final class ElementFactory {
      * @return A concept built to the correct type
      */
     public ConceptImpl buildUnknownConcept(Vertex v){
+        if(!v.property(Schema.ConceptProperty.BASE_TYPE.name()).isPresent()){
+            return null;
+        }
+        
         Schema.BaseType type = Schema.BaseType.valueOf(v.value(Schema.ConceptProperty.BASE_TYPE.name()));
         ConceptImpl concept = null;
+        //All these types are null because at this stage the concept has been defined so we don't need to know the type.
         switch (type){
             case RELATION:
-                concept = buildRelation(v);
+                concept = buildRelation(v, null);
                 break;
             case CASTING:
-                concept = buildCasting(v);
+                concept = buildCasting(v, null);
                 break;
             case TYPE:
-                concept = buildConceptType(v);
+                concept = buildConceptType(v, null);
                 break;
             case ROLE_TYPE:
-                concept = buildRoleType(v);
+                concept = buildRoleType(v, null);
                 break;
             case RELATION_TYPE:
-                concept = buildRelationType(v);
+                concept = buildRelationType(v, null);
                 break;
             case ENTITY:
-                concept = buildEntity(v);
+                concept = buildEntity(v, null);
                 break;
             case ENTITY_TYPE:
-                concept = buildEntityType(v);
+                concept = buildEntityType(v, null);
                 break;
             case RESOURCE_TYPE:
-                concept = buildResourceType(v);
+                concept = buildResourceType(v, null);
                 break;
             case RESOURCE:
                 concept = buildResource(v, null);
                 break;
             case RULE:
-                concept = buildRule(v);
+                concept = buildRule(v, null);
                 break;
             case RULE_TYPE:
-                concept = buildRuleType(v);
+                concept = buildRuleType(v, null);
                 break;
         }
         return concept;
     }
 
-    public TypeImpl buildSpecificConceptType(Vertex vertex){
-        Schema.BaseType type = Schema.BaseType.valueOf(vertex.value(Schema.ConceptProperty.BASE_TYPE.name()));
+    public TypeImpl buildSpecificConceptType(Vertex vertex, Type type){
+        Schema.BaseType baseType = Schema.BaseType.valueOf(vertex.value(Schema.ConceptProperty.BASE_TYPE.name()));
         TypeImpl conceptType;
-        switch (type){
+        switch (baseType){
             case ROLE_TYPE:
-                conceptType = buildRoleType(vertex);
+                conceptType = buildRoleType(vertex, type);
                 break;
             case RELATION_TYPE:
-                conceptType = buildRelationType(vertex);
+                conceptType = buildRelationType(vertex, type);
                 break;
             case RESOURCE_TYPE:
-                conceptType = buildResourceType(vertex);
+                conceptType = buildResourceType(vertex, type);
                 break;
             case RULE_TYPE:
-                conceptType = buildRuleType(vertex);
+                conceptType = buildRuleType(vertex, type);
                 break;
             case ENTITY_TYPE:
-                conceptType = buildEntityType(vertex);
+                conceptType = buildEntityType(vertex, type);
                 break;
             default:
-                conceptType = buildConceptType(vertex);
+                conceptType = buildConceptType(vertex, type);
         }
         return conceptType;
     }

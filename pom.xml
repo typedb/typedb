@@ -25,7 +25,7 @@
     <groupId>io.mindmaps</groupId>
     <artifactId>mindmaps</artifactId>
     <packaging>pom</packaging>
-    <version>0.2.0-SNAPSHOT</version>
+    <version>0.3.0-SNAPSHOT</version>
     <name>MindmapsDB</name>
     <description>A distributed semantic graph database.</description>
     <url>http://mindmaps.io/platform.html</url>
@@ -64,9 +64,10 @@
         <swagger.version>1.5.8</swagger.version>
         <websocket.version>1.1</websocket.version>
         <jetty.version>9.3.6.v20151106</jetty.version>
-        <mjson.version>1.4-SNAPSHOT</mjson.version>
+        <mjson.version>1.4.0</mjson.version>
         <orientdb.version>3.2.1.1</orientdb.version>
         <logback.version>1.1.7</logback.version>
+        <junit.version>4.11</junit.version>
         <csv.version>3.8</csv.version>
     </properties>
 

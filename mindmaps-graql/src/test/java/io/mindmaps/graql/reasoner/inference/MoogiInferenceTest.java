@@ -6,6 +6,7 @@ import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
+import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.reasoner.graphs.GenericGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -47,10 +48,27 @@ public class MoogiInferenceTest {
     }
 
     @Test
+    public void testDecentPopularMovie(){
+        String queryString = "match $x has status 'decent popular movie';";
+        String explicitQuery = "match $x isa movie;"+
+                                "{$x has tmdb-vote-count > 1000.0;} or {$x has rotten-tomatoes-user-total-votes > 25000;};" +
+                                "$x has rotten-tomatoes-user-rating >= 3.0;";
+        MatchQuery query = qb.parseMatch(queryString);
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
+        }
+
+    @Test
+    public void testBadPopularMovie(){
+        String queryString = "match $x has status 'bad popular movie';";
+        String explicitQuery = "match $x isa movie;$x has tmdb-vote-count > 1000.0;$x has tmdb-vote-average < 4.0;";
+        MatchQuery query = qb.parseMatch(queryString);
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
+        }
+
+    @Test
     public void testActorDirector(){
         String queryString = "match $x has status 'actor-director';";
         String explicitQuery = "match (actor: $x) isa has-cast;(director: $x) isa production-crew;";
-
         MatchQuery query = qb.parseMatch(queryString);
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
@@ -59,18 +77,30 @@ public class MoogiInferenceTest {
 
     @Test
     public void testPopularActor(){
-        String queryString = "match $x has status 'popular actor'; limit 10;";
+        String queryString = "match $x has status 'popular actor';";
+        String explicitQuery = "match $y has rotten-tomatoes-user-total-votes > 25000;" +
+                               "(actor: $x, production-with-cast: $y) isa has-cast; select $x;";
         MatchQuery query = qb.parseMatch(queryString);
-        MatchQuery mq = reasoner.resolveToQuery(query);
-        System.out.println();
-    }
 
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
+    }
 
     @Test
     public void testPerson(){
         String queryString = "match $x isa person has name;";
         MatchQuery query = qb.parseMatch(queryString);
         MatchQuery mq = reasoner.resolveToQuery(query);
+    }
+
+    @Test
+    public void testRelated(){
+        String queryString = "match $x isa movie;$x has status 'decent movie';($x, director: $y);";
+        String explicitQuery = "match $x isa movie;$x has rotten-tomatoes-user-rating >= 3.0;($x, director: $y);";
+
+        MatchQuery query = qb.parseMatch(queryString);
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
