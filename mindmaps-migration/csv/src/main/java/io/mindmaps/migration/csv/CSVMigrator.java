@@ -115,10 +115,10 @@ public class CSVMigrator {
     }
 
     /**
-     * Conevrt native data format (CSVReader) to stream of templates
-     * @param template
-     * @param reader
-     * @return
+     * Convert native data format (CSVReader) to stream of templates
+     * @param template parametrized graql insert query
+     * @param reader CSV reader of data file
+     * @return Stream of data migrated into templates
      * @throws IOException
      */
     private Stream<String> resolve(String template, CSVReader reader) throws IOException {

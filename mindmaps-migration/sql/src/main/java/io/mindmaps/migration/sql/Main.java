@@ -19,11 +19,10 @@
 package io.mindmaps.migration.sql;
 
 import com.google.common.collect.Lists;
-import io.mindmaps.MindmapsGraph;
 import io.mindmaps.engine.loader.BlockingLoader;
 import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.engine.loader.Loader;
-import io.mindmaps.Mindmaps;
+import io.mindmaps.engine.util.ConfigProperties;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -36,9 +35,7 @@ import java.sql.DriverManager;
 public class Main {
 
     static void die(String errorMsg){
-        System.out.println(errorMsg);
-        System.out.println("\nSyntax: ./migration.sh sql -driver <jdbc driver> -database <database url> -user <username> -pass <password> [-engine <Mindmaps engine URL>] -graph <graph name>");
-        System.exit(-1);
+        throw new RuntimeException(errorMsg + "\nSyntax: ./migration.sh sql -driver <jdbc driver> -database <database url> -user <username> -pass <password> [-engine <Mindmaps engine URL>] [-graph <graph name>]");
     }
 
     public static void main(String[] args){
@@ -57,13 +54,13 @@ public class Main {
                 jdbcDBUrl = args[++i];
             else if ("-user".equals(args[i]))
                 jdbcUser = args[++i];
-            else if ("-password".equals(args[i]))
+            else if ("-pass".equals(args[i]))
                 jdbcPass = args[++i];
             else if ("-graph".equals(args[i]))
                 graphName = args[++i];
             else if ("-engine".equals(args[i]))
                 engineURL = args[++i];
-            else if("sql".equals(args[0]))
+            else if(i == 0 && "sql".equals(args[i]))
                 continue;
             else
                 die("Unknown option " + args[i]);
@@ -73,7 +70,10 @@ public class Main {
         if (jdbcDBUrl == null) die("Please specify the URL where the SQL db is running using -database option");
         if (jdbcUser == null) die("Please specify the username of the database using the -user option");
         if (jdbcPass == null) die("Please specify the password of the database using the -pass option");
-        if (graphName == null){ die("Please specify the name of the graph using the -graph option"); }
+
+        if (graphName == null){
+            graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+        }
 
         System.out.println("Migrating " + jdbcDBUrl + " using MM Engine " +
                 (engineURL == null ? "local" : engineURL ) + " into graph " + graphName);
@@ -83,10 +83,6 @@ public class Main {
         SQLDataMigrator dataMigrator = new SQLDataMigrator();
 
         try{
-
-            MindmapsGraph graph = engineURL == null ? Mindmaps.factory(Mindmaps.DEFAULT_URI, graphName).getGraph()
-                                                    : Mindmaps.factory(engineURL, graphName).getGraph();
-
             Loader loader = engineURL == null ? new BlockingLoader(graphName)
                                               : new DistributedLoader(graphName, Lists.newArrayList(engineURL));
 
@@ -95,15 +91,14 @@ public class Main {
             Connection connection = DriverManager.getConnection(jdbcDBUrl, jdbcUser, jdbcPass);
 
             schemaMigrator
-                    .graph(graph)
                     .configure(connection)
                     .migrate(loader)
                     .close();
 
             System.out.println("Schema migration successful");
 
+            connection = DriverManager.getConnection(jdbcDBUrl, jdbcUser, jdbcPass);
             dataMigrator
-                    .graph(graph)
                     .configure(connection)
                     .migrate(loader)
                     .close();
@@ -112,10 +107,8 @@ public class Main {
 
         }
         catch (Throwable throwable){
-            throwable.printStackTrace(System.err);
+           die(throwable.getMessage());
         }
-
-        System.exit(0);
     }
 
 }

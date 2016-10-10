@@ -23,6 +23,7 @@ import com.google.common.io.Files;
 import io.mindmaps.engine.loader.BlockingLoader;
 import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.engine.loader.Loader;
+import io.mindmaps.engine.util.ConfigProperties;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -37,24 +38,19 @@ import static java.util.stream.Collectors.joining;
 public class Main {
 
     static void die(String errorMsg) {
-        System.out.println(errorMsg);
-        System.out.println("\nSyntax: ./migration.sh json -schema <schema filename> -data <data filename or dir> -template <template file> [-graph <graph name>] [-batch <number of rows>] [-engine <Mindmaps engine URL>]");
-        System.exit(-1);
+        throw new RuntimeException(errorMsg + "\nSyntax: ./migration.sh json -data <data filename or dir> -template <template file> [-graph <graph name>] [-batch <number of rows>] [-engine <Mindmaps engine URL>]");
     }
 
     public static void main(String[] args){
 
         String batchSize = null;
         String jsonTemplateName = null;
-        String jsonSchemaFileName = null;
         String jsonDataFileName = null;
         String engineURL = null;
         String graphName = null;
 
         for (int i = 0; i < args.length; i++) {
-            if ("-schema".equals(args[i]))
-                jsonSchemaFileName = args[++i];
-            else if ("-data".equals(args[i]))
+            if ("-data".equals(args[i]))
                 jsonDataFileName = args[++i];
             else if ("-template".equals(args[i]))
                 jsonTemplateName = args[++i];
@@ -64,29 +60,21 @@ public class Main {
                 engineURL = args[++i];
             else if ("-batch".equals(args[i]))
                 batchSize = args[++i];
-            else if("json".equals(args[0]))
+            else if(i == 0 && "json".equals(args[i]))
                 continue;
             else
                 die("Unknown option " + args[i]);
         }
 
         // check for arguments
-        if(graphName == null){
-            die("Please provide the name of the graph using -graph");
-        }
-        if(jsonSchemaFileName == null){
-            die("Please specify CSV file using the -csv option");
-        }
         if(jsonDataFileName == null){
-            die("Please specify CSV file using the -csv option");
+            die("Please specify JSON data file or dir using the -data option");
+        }
+        if(jsonTemplateName == null){
+            die("Please specify Graql template using the -template option");
         }
 
         // get files
-        File jsonSchemaFile = new File(jsonSchemaFileName);
-        if(!jsonSchemaFile.exists() || jsonSchemaFile.isDirectory()){
-            die("Cannot find file: " + jsonSchemaFileName);
-        }
-
         File jsonDataFile = new File(jsonDataFileName);
         if(!jsonDataFile.exists()){
             die("Cannot find file: " + jsonDataFileName);
@@ -97,8 +85,11 @@ public class Main {
             die("Cannot find file: " + jsonTemplateName);
         }
 
-        System.out.println("Migrating schema " + jsonSchemaFileName +
-                " and data " + jsonDataFileName +
+        if(graphName == null){
+            graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+        }
+
+        System.out.println("Migrating data " + jsonDataFileName +
                 " using MM Engine " + (engineURL == null ? "local" : engineURL ) +
                 " into graph " + graphName);
 
@@ -113,12 +104,9 @@ public class Main {
 
             migrator.migrate(template, jsonDataFile);
 
-
-            System.out.println("DataType migration successful");
-
+            System.out.println("Data migration successful");
         } catch (Throwable throwable){
-            throwable.printStackTrace(System.err);
+            die(throwable.getMessage());
         }
-
     }
 }

@@ -23,6 +23,7 @@ import com.google.common.io.Files;
 import io.mindmaps.engine.loader.BlockingLoader;
 import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.engine.loader.Loader;
+import io.mindmaps.engine.util.ConfigProperties;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -37,9 +38,7 @@ import static java.util.stream.Collectors.joining;
 public class Main {
 
     static void die(String errorMsg) {
-        System.out.println(errorMsg);
-        System.out.println("\nSyntax: ./migration.sh csv -file <csv file> -template <template file> [-delimiter <delimiter>] [-batch <number of rows>] [-graph <graph name>] [-engine <Mindmaps engine URL>])");
-        System.exit(-1);
+        throw new RuntimeException(errorMsg + "\nSyntax: ./migration.sh csv -file <csv file> -template <template file> [-delimiter <delimiter>] [-batch <number of rows>] [-graph <graph name>] [-engine <Mindmaps engine URL>])");
     }
 
     public static void main(String[] args){
@@ -64,21 +63,21 @@ public class Main {
                 graphName = args[++i];
             else if ("-engine".equals(args[i]))
                 engineURL = args[++i];
-            else if("csv".equals(args[0]))
+            else if(i == 0 && "csv".equals(args[i]))
                 continue;
             else
                 die("Unknown option " + args[i]);
         }
 
         if(csvFileName == null){
-            die("Please specify CSV file using the -file option");
+            die("Please specify CSV file using the -csv option");
         }
         File csvFile = new File(csvFileName);
 
         if(csvTemplateName == null){
             die("Please specify the template using the -template option");
         }
-        File csvTemplate = new File(csvFileName);
+        File csvTemplate = new File(csvTemplateName);
 
         if(!csvTemplate.exists() || !csvFile.exists()){
             die("Cannot find file: " + csvFileName);
@@ -86,7 +85,7 @@ public class Main {
 
 
         if(graphName == null){
-            graphName = csvFile.getName().replace(".", "_");
+            graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
         }
 
         System.out.println("Migrating " + csvFileName + " using MM Engine " +
@@ -102,15 +101,12 @@ public class Main {
                                         .setBatchSize(batchSize == null ? CSVMigrator.BATCH_SIZE : Integer.valueOf(batchSize));
 
             String template = Files.readLines(csvTemplate, StandardCharsets.UTF_8).stream().collect(joining("\n"));
-
             migrator.migrate(template, csvFile);
 
             System.out.println("Migration complete!");
         }
         catch (Throwable throwable){
-            throwable.printStackTrace(System.err);
+            die(throwable.getMessage());
         }
-
-        System.exit(0);
     }
 }
