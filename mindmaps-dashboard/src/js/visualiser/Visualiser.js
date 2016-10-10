@@ -55,11 +55,8 @@ export default class Visualiser {
             },
             physics: {
                 "repulsion": {
-                  "centralGravity": 0.6,
-                  "springLength": 360,
-                  "springConstant": 0.09,
-                  "nodeDistance": 350,
-                  "damping": 0.82
+                  "centralGravity": 0.01,
+                  "damping": 0.5
                 },
                 "minVelocity": 0.75,
                 "solver": "repulsion"
