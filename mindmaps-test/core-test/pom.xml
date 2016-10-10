@@ -12,6 +12,39 @@
     <artifactId>core-test</artifactId>
     <packaging>jar</packaging>
 
+    <profiles>
+        <profile>
+            <id>tinker</id>
+            <dependencies>
+                <dependency>
+                    <groupId>io.mindmaps</groupId>
+                    <artifactId>tinker-test</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>titan</id>
+            <dependencies>
+                <dependency>
+                    <groupId>io.mindmaps</groupId>
+                    <artifactId>titan-test</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>orientdb</id>
+            <dependencies>
+                <dependency>
+                    <groupId>io.mindmaps</groupId>
+                    <artifactId>orientdb-test</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
+
     <dependencies>
         <dependency>
             <groupId>io.mindmaps</groupId>
