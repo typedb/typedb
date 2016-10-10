@@ -42,7 +42,7 @@ public class Scope {
     public Scope(Scope parent){
         this.parent = parent;
         this.values = new HashMap<>();
-        this.variablesEncountered = Sets.newHashSet(parent.variablesEncountered());
+        this.variablesEncountered = Sets.newHashSet(parent.variablesEncountered);
     }
 
     public Scope up() {

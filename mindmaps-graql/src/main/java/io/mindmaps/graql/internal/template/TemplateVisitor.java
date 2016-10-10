@@ -88,7 +88,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
     public Value visitForStatement(GraqlTemplateParser.ForStatementContext ctx) {
 
         // resolved variable
-        Value item = ctx.ID() != null ? this.visit(ctx.ID()) : Value.VOID;
+        String item = ctx.ID() != null ? ctx.ID().getText() : Value.VOID.toString();
         Value collection = this.visit(ctx.expr());
 
         if(!collection.isList()) {
@@ -97,11 +97,11 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
 
         Value returnValue = Value.VOID;
         for (Object object : collection.asList()) {
-            scope.assign(item.toString(), object);
+            scope.assign(item, object);
 
             returnValue = concat(returnValue, this.visit(ctx.block()));
 
-            scope.unassign(item.toString());
+            scope.unassign(item);
         }
 
         return returnValue;
@@ -245,7 +245,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         }
 
         if(ctx.DOLLAR() != null){
-            return ws("$" + formatVar.apply(replaced), ctx);
+            return ws(ctx.DOLLAR().getText() + formatVar.apply(replaced), ctx);
         }
 
         return ws(format.apply(replaced), ctx);

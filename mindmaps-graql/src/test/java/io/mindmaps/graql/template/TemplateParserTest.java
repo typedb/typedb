@@ -134,7 +134,7 @@ public class TemplateParserTest {
     }
 
     @Test
-    public void forLoopOverObjectsTest(){
+    public void forLoopOverObjectsWithEnhancedForSyntaxTest(){
         String template = "insert\n" +
                 "    $x isa person;\n" +
                 "    for ( addresses ) do {\n" +
@@ -162,6 +162,42 @@ public class TemplateParserTest {
         Map<String, Object> address2 = new HashMap<>();
         address2.put("street", "Hornsey St");
         address2.put("houseNumber", 8);
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("addresses", Arrays.asList(address1, address2));
+
+        assertParseEquals(template, data, expected);
+    }
+
+    @Test
+    public void forLoopOverObjectsWithNormalForSyntaxTest(){
+        String template = "insert\n" +
+                "    $x isa person;\n" +
+                "    for ( address in addresses ) do {\n" +
+                "        $y isa address;\n" +
+                "        $y has street <address.street> ;\n" +
+                "        $y has number <address.number> ;\n" +
+                "        ($x, $y) isa resides;\n" +
+                "    }";
+
+        String expected = "insert\n" +
+                "    $x0 isa person;\n" +
+                "        $y0 isa address;\n" +
+                "        $y0 has street \"Collins Ave\" ;\n" +
+                "        $y0 has number 8855 ;\n" +
+                "        ($x0, $y0) isa resides;\n" +
+                "        $y1 isa address;\n" +
+                "        $y1 has street \"Hornsey St\" ;\n" +
+                "        $y1 has number 8 ;\n" +
+                "        ($x0, $y1) isa resides;\n";
+
+        Map<String, Object> address1 = new HashMap<>();
+        address1.put("street", "Collins Ave");
+        address1.put("number", 8855);
+
+        Map<String, Object> address2 = new HashMap<>();
+        address2.put("street", "Hornsey St");
+        address2.put("number", 8);
 
         Map<String, Object> data = new HashMap<>();
         data.put("addresses", Arrays.asList(address1, address2));
