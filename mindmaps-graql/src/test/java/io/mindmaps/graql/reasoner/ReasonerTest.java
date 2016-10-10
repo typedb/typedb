@@ -18,12 +18,20 @@
 
 package io.mindmaps.graql.reasoner;
 
+import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Rule;
+import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.Reasoner;
+import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
+import io.mindmaps.graql.internal.reasoner.query.Query;
+import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
 import io.mindmaps.graql.internal.reasoner.rule.InferenceRule;
 import io.mindmaps.graql.reasoner.graphs.SNBGraph;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -32,6 +40,8 @@ import java.util.Map;
 import static io.mindmaps.graql.internal.reasoner.Utility.createReflexiveRule;
 import static io.mindmaps.graql.internal.reasoner.Utility.createSubPropertyRule;
 import static io.mindmaps.graql.internal.reasoner.Utility.createTransitiveRule;
+import static io.mindmaps.graql.internal.reasoner.Utility.printAnswers;
+import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class ReasonerTest {
@@ -91,4 +101,119 @@ public class ReasonerTest {
         assertTrue(R.getHead().equals(R2.getHead()));
         assertTrue(R.getBody().equals(R2.getBody()));
     }
+
+    public void testIdComma(){
+        MindmapsGraph graph = SNBGraph.getGraph();
+        String queryString = "match $x isa Person, id 'Bob';";
+        Query query = new Query(queryString, graph);
+        assertTrue(query.getAtoms().size() == 2);
+    }
+
+    @Test
+    public void testComma(){
+        MindmapsGraph graph = SNBGraph.getGraph();
+        String queryString = "match $x isa person, has firstname 'Bob', id 'Bob', value 'Bob', has age <21;";
+        String queryString2 = "match $x isa person; $x has firstname 'Bob';$x id 'Bob';$x value 'Bob';$x has age <21;";
+        Query query = new Query(queryString, graph);
+        Query query2 = new Query(queryString2, graph);
+        assertTrue(query.equals(query2));
+    }
+
+    @Test
+    //TODO create ValuePredicate instead being a part of Substitution
+    @Ignore
+    public void testComma2(){
+        MindmapsGraph graph = SNBGraph.getGraph();
+        String queryString = "match $x isa person, value <21 value >18;";
+        String queryString2 = "match $x isa person;$x value <21;$x value >18;";
+        Query query = new Query(queryString, graph);
+        Query query2 = new Query(queryString2, graph);
+        assertTrue(query.equals(query2));
+    }
+
+    @Test
+    public void testResourceAsVar(){
+        MindmapsGraph graph = SNBGraph.getGraph();
+        String queryString = "match $x isa person, has firstname $y;";
+        String queryString2 = "match $x isa person;$x has firstname $y;";
+        Query query = new Query(queryString, graph);
+        Query query2 = new Query(queryString2, graph);
+        assertTrue(query.equals(query2));
+    }
+
+    @Test
+    public void testResourceAsVar2(){
+        MindmapsGraph graph = SNBGraph.getGraph();
+        String queryString = "match $x has firstname $y;";
+        Query query = new Query(queryString, graph);
+        String body = "match $x isa person;$x id 'Bob';";
+        String head = "match $x has firstname 'Bob';";
+        graph.putRule("test", body, head, graph.getMetaRuleInference());
+
+        String explicitQuery = "match $x id 'Bob';";
+        Reasoner reasoner = new Reasoner(graph);
+        QueryBuilder qb = Graql.withGraph(graph);
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
+    }
+
+    @Test
+    public void testResourceAsVar3(){
+        MindmapsGraph graph = SNBGraph.getGraph();
+        String queryString = "match $x has firstname;";
+        Query query = new AtomicQuery(queryString, graph);
+        System.out.println();
+    }
+
+    @Test
+    @Ignore
+    public void testResourceAsVar4(){
+        MindmapsGraph graph = SNBGraph.getGraph();
+        String queryString = "match $x has firstname 'Bob';";
+        String queryString2 = "match $x has firstname $y;$y value 'Bob';select $x;";
+        Query query = new AtomicQuery(queryString, graph);
+        Query query2 = new AtomicQuery(queryString2, graph);
+        assertTrue(query.equals(query2));
+    }
+
+    @Test
+    public void testVarContraction(){
+        MindmapsGraph graph = SNBGraph.getGraph();
+        createReflexiveRule("testRule", graph.getRelationType("knows"), graph);
+        String queryString = "match ($x, $y) isa knows;select $y;";
+        String explicitQuery = "match $y isa person;$y id 'Bob' or $y id 'Charlie';";
+        Query query = new Query(queryString, graph);
+        QueryBuilder qb = Graql.withGraph(graph);
+        Reasoner reasoner = new Reasoner(graph);
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
+    }
+
+    @Test
+    @Ignore
+    //propagated sub [x/Bob] prevents from capturing the right inference
+    public void testVarContraction2(){
+        MindmapsGraph graph = SNBGraph.getGraph();
+        createReflexiveRule("testRule", graph.getRelationType("knows"), graph);
+        String queryString = "match ($x, $y) isa knows;$x id 'Bob';select $y;";
+        String explicitQuery = "match $y isa person;$y id 'Bob' or $y id 'Charlie';";
+        QueryBuilder qb = Graql.withGraph(graph);
+        Reasoner reasoner = new Reasoner(graph);
+        assertEquals(reasoner.resolve(new Query(queryString, graph)), Sets.newHashSet(qb.parseMatch(explicitQuery)));
+    }
+
+    @Test
+    @Ignore
+    //Bug with unification, perhaps should unify select vars not atom vars
+    public void testVarContraction3(){
+        MindmapsGraph graph = SNBGraph.getGraph();
+        String body = "match $x isa person;";
+        String head = "match ($x, $x) isa knows;";
+        graph.putRule("test", body, head, graph.getMetaRuleInference());
+
+        String queryString = "match ($x, $y) isa knows;$x id 'Bob';select $y;";
+        String explicitQuery = "match $y isa person;$y id 'Bob' or $y id 'Charlie';";
+        QueryBuilder qb = Graql.withGraph(graph);
+        Reasoner reasoner = new Reasoner(graph);
+        assertEquals(reasoner.resolve(new Query(queryString, graph)), Sets.newHashSet(qb.parseMatch(explicitQuery)));
+    }
+
 }

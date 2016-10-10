@@ -16,12 +16,12 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql.internal.analytics;
+package io.mindmaps.test.graql.analytics;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.MindmapsTitanTestBase;
+import io.mindmaps.MindmapsGraphFactory;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
@@ -32,44 +32,31 @@ import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.graql.internal.util.GraqlType;
 import org.apache.commons.collections.CollectionUtils;
-import org.javatuples.Pair;
-import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-public class AnalyticsTest extends MindmapsTitanTestBase {
+public class AnalyticsTest {
+    private static long startTime;
 
-    String keyspace;
-    MindmapsGraph graph;
-
-    long startTime;
-
-    @Before
-    public void setUp() throws InterruptedException {
-        Pair<MindmapsGraph, String> result = graphWithNewKeyspace();
-        graph = result.getValue0();
-        keyspace = result.getValue1();
-    }
-
-    @After
-    public void cleanGraph() {
-        graph.clear();
-        graph.close();
-    }
-
-    @Test
-    public void testAkoIsAccountedForInSubgraph() throws Exception {
+    public static void testAkoIsAccountedForInSubgraph(MindmapsGraph graph) throws Exception {
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
         RoleType owner = graph.putRoleType("owner");
@@ -90,22 +77,22 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         ct.add(animal);
         ct.add(mansBestFriend);
 
-        Analytics analytics = new Analytics(keyspace, ct);
+        Analytics analytics = new Analytics(graph.getKeyspace(), ct);
         analytics.degreesAndPersist();
 
         // check that dog has a degree to confirm ako has been inferred
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, graph.getKeyspace()).getGraph();
         foofoo = graph.getEntity("foofoo");
         Collection<Resource<?>> degrees = foofoo.resources();
         assertTrue(degrees.iterator().next().getValue().equals(0L));
     }
 
-    @Test
-    public void testCount() throws Exception {
+
+    public static void testCount(MindmapsGraph graph, MindmapsGraphFactory factory) throws Exception {
         // assert the graph is empty
         System.out.println();
         System.out.println("Counting");
-        Analytics computer = new Analytics(keyspace);
+        Analytics computer = new Analytics(graph.getKeyspace());
         startTime = System.currentTimeMillis();
         Assert.assertEquals(0, computer.count());
         System.out.println();
@@ -114,7 +101,7 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         // create 3 instances
         System.out.println();
         System.out.println("Creating 3 instances");
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+        graph = factory.getGraph();
         EntityType thing = graph.putEntityType("thing");
         EntityType anotherThing = graph.putEntityType("another");
         graph.putEntity("1", thing);
@@ -127,7 +114,7 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         System.out.println();
         System.out.println("Counting");
         startTime = System.currentTimeMillis();
-        computer = new Analytics(keyspace);
+        computer = new Analytics(graph.getKeyspace());
         Assert.assertEquals(3, computer.count());
         System.out.println();
         System.out.println(System.currentTimeMillis() - startTime + " ms");
@@ -135,17 +122,15 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         System.out.println();
         System.out.println("Counting");
         startTime = System.currentTimeMillis();
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
-        computer = new Analytics(keyspace, Collections.singleton(graph.getType("thing")));
+        graph = factory.getGraph();
+        computer = new Analytics(graph.getKeyspace(), Collections.singleton(graph.getType("thing")));
         Assert.assertEquals(2, computer.count());
         System.out.println();
         System.out.println(System.currentTimeMillis() - startTime + " ms");
     }
 
-    //Ignoring for now as this is failing on multiple PRs and is failing locally sometimes
-    @Ignore
-    @Test
-    public void testDegrees() throws Exception {
+
+    public static void testDegrees(MindmapsGraph graph, MindmapsGraphFactory factory) throws Exception {
         // create instances
         EntityType thing = graph.putEntityType("thing");
         EntityType anotherThing = graph.putEntityType("another");
@@ -204,8 +189,11 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         correctDegrees.put(graph.getRelation(id2), 2l);
         correctDegrees.put(graph.getRelation(id3), 2l);
 
+        graph.commit();
+        graph.close();
+
         // compute degrees
-        Analytics computer = new Analytics(keyspace);
+        Analytics computer = new Analytics(graph.getKeyspace());
         Map<Instance, Long> degrees = computer.degrees();
 
         assertTrue(!degrees.isEmpty());
@@ -227,14 +215,14 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         });
 
         // compute degrees on subgraph
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+        graph = factory.getGraph();
         thing = graph.getEntityType("thing");
         related = graph.getRelationType("related");
-        computer = new Analytics(keyspace, Sets.newHashSet(thing, related));
+        computer = new Analytics(graph.getKeyspace(), Sets.newHashSet(thing, related));
         graph.close();
         degrees = computer.degrees();
 
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+        graph = factory.getGraph();
         correctDegrees.put(graph.getRelation(id3), 1l);
 
         assertTrue(!degrees.isEmpty());
@@ -260,9 +248,8 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         });
     }
 
-    @Ignore
-    @Test
-    public void testDegreesAndPersist() throws Exception {
+
+    public static void testDegreesAndPersist(MindmapsGraph graph, MindmapsGraphFactory factory) throws Exception {
         // create instances
         EntityType thing = graph.putEntityType("thing");
         EntityType anotherThing = graph.putEntityType("another");
@@ -299,11 +286,11 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         Map<Instance, Long> correctDegrees = new HashMap<>();
 
         // compute degrees on subgraph
-        Analytics computer = new Analytics(keyspace, Sets.newHashSet(thing, related));
+        Analytics computer = new Analytics(graph.getKeyspace(), Sets.newHashSet(graph.getType("thing"), graph.getType("related")));
         computer.degreesAndPersist();
 
         // fetch instances
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+        graph = factory.getGraph();
         entity1 = graph.getEntity("1");
         entity2 = graph.getEntity("2");
         entity3 = graph.getEntity("3");
@@ -327,7 +314,7 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
             computer.degreesAndPersist();
 
             // refresh everything after commit
-            graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+            graph = factory.getGraph();
             // fetch instances
             entity1 = graph.getEntity("1");
             entity2 = graph.getEntity("2");
@@ -356,11 +343,11 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         for (int i = 0; i < 2; i++) {
 
             graph.close();
-            computer = new Analytics(keyspace);
+            computer = new Analytics(graph.getKeyspace());
             computer.degreesAndPersist();
 
             // after computation refresh concepts
-            graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+            graph = factory.getGraph();
 
             // fetch instances
             entity1 = graph.getEntity("1");
@@ -390,8 +377,7 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
     }
 
 
-    @Test
-    public void testDegreeIsCorrect() throws MindmapsValidationException, ExecutionException, InterruptedException {
+    public static void testDegreeIsCorrect(MindmapsGraph graph) throws MindmapsValidationException, ExecutionException, InterruptedException {
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
         RoleType owner = graph.putRoleType("owner");
@@ -452,7 +438,7 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         subGraphTypes.add(person);
         subGraphTypes.add(mansBestFriend);
 
-        Analytics analytics = new Analytics(keyspace, subGraphTypes);
+        Analytics analytics = new Analytics(graph.getKeyspace(), subGraphTypes);
         Map<Instance, Long> degrees = analytics.degrees();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> {
@@ -467,7 +453,7 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         almostFullTypes.add(hasName);
         almostFullTypes.add(name);
 
-        analytics = new Analytics(keyspace, almostFullTypes);
+        analytics = new Analytics(graph.getKeyspace(), almostFullTypes);
         degrees = analytics.degrees();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> {
@@ -475,7 +461,7 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         });
 
         // full graph
-        analytics = new Analytics(keyspace);
+        analytics = new Analytics(graph.getKeyspace());
         degrees = analytics.degrees();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> {
@@ -483,9 +469,8 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         });
     }
 
-    @Ignore
-    @Test
-    public void testDegreeIsPersisted() throws Exception {
+
+    public static void testDegreeIsPersisted(MindmapsGraph graph, MindmapsGraphFactory factory) throws Exception {
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
         RoleType owner = graph.putRoleType("owner");
@@ -510,13 +495,14 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         graph.commit();
 
         // compute and persist degrees
-        Analytics analytics = new Analytics(keyspace);
+        Analytics analytics = new Analytics(graph.getKeyspace());
         analytics.degreesAndPersist();
 
         // check degrees are correct
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+        graph = factory.getGraph();
+        MindmapsGraph finalGraph = graph;
         referenceDegrees.entrySet().forEach(entry -> {
-            Instance instance = graph.getInstance(entry.getKey());
+            Instance instance = finalGraph.getInstance(entry.getKey());
             if (instance.isEntity()) {
                 assertTrue(instance.asEntity().resources().iterator().next().getValue().equals(entry.getValue()));
             } else if (instance.isRelation()) {
@@ -543,15 +529,16 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         analytics.degreesAndPersist();
 
         // check only expected resources exist
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+        graph = factory.getGraph();
         rt = graph.getResourceType(Analytics.degree);
         degrees = rt.instances();
         degrees.forEach(i -> i.ownerInstances().iterator().forEachRemaining(r ->
                 allConcepts.add(r.getId())));
 
         // check degrees are correct
+        MindmapsGraph finalGraph1 = graph;
         referenceDegrees.entrySet().forEach(entry -> {
-            Instance instance = graph.getInstance(entry.getKey());
+            Instance instance = finalGraph1.getInstance(entry.getKey());
             if (instance.isEntity()) {
                 assertTrue(instance.asEntity().resources().iterator().next().getValue().equals(entry.getValue()));
             } else if (instance.isRelation()) {
@@ -572,8 +559,8 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         assertTrue(CollectionUtils.isEqualCollection(currentDegrees.values(), referenceDegrees.values()));
     }
 
-    @Test
-    public void testDegreeIsPersistedInPresenceOfOtherResource() throws MindmapsValidationException, ExecutionException, InterruptedException {
+
+    public static void testDegreeIsPersistedInPresenceOfOtherResource(MindmapsGraph graph, MindmapsGraphFactory factory) throws MindmapsValidationException, ExecutionException, InterruptedException {
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
         RoleType owner = graph.putRoleType("owner");
@@ -616,10 +603,10 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         ct.add(animal);
 
         // compute and persist degrees
-        Analytics analytics = new Analytics(keyspace, ct);
+        Analytics analytics = new Analytics(graph.getKeyspace(), ct);
         analytics.degreesAndPersist();
 
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+        graph = factory.getGraph();
         ResourceType<Long> degreeResource = graph.getResourceType(Analytics.degree);
 
         // check degrees are correct
@@ -651,8 +638,8 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         }
     }
 
-    @Test
-    public void testDegreeIsCorrectAssertionAboutAssertion() throws MindmapsValidationException, ExecutionException, InterruptedException {
+
+    public static void testDegreeIsCorrectAssertionAboutAssertion(MindmapsGraph graph) throws MindmapsValidationException, ExecutionException, InterruptedException {
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
         RoleType owner = graph.putRoleType("owner");
@@ -710,7 +697,7 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         ct.add(mansBestFriend);
         ct.add(startDate);
         ct.add(hasOwnershipResource);
-        Analytics analytics = new Analytics(keyspace, ct);
+        Analytics analytics = new Analytics(graph.getKeyspace(), ct);
         Map<Instance, Long> degrees = analytics.degrees();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> {
@@ -722,7 +709,7 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         ct.add(animal);
         ct.add(person);
         ct.add(mansBestFriend);
-        analytics = new Analytics(keyspace, ct);
+        analytics = new Analytics(graph.getKeyspace(), ct);
         degrees = analytics.degrees();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> {
@@ -730,8 +717,8 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         });
     }
 
-    @Test
-    public void testDegreeIsCorrectTernaryRelationships() throws MindmapsValidationException, ExecutionException, InterruptedException {
+
+    public static void testDegreeIsCorrectTernaryRelationships(MindmapsGraph graph, MindmapsGraphFactory factory) throws MindmapsValidationException, ExecutionException, InterruptedException {
 
         // make relation
         RoleType productionWithCast = graph.putRoleType("production-with-cast");
@@ -759,16 +746,15 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
 
         graph.commit();
 
-        Analytics analytics = new Analytics(keyspace);
+        Analytics analytics = new Analytics(graph.getKeyspace());
         Map<Instance, Long> degrees = analytics.degrees();
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+        graph = factory.getGraph();
         assertTrue(degrees.get(graph.getRelation(relationId)).equals(3L));
         assertTrue(degrees.get(graph.getEntity(marlonId)).equals(1L));
     }
 
-    @Ignore
-    @Test
-    public void testDegreeIsCorrectOneRoleplayerMultipleRoles() throws MindmapsValidationException, ExecutionException, InterruptedException {
+
+    public static void testDegreeIsCorrectOneRoleplayerMultipleRoles(MindmapsGraph graph) throws MindmapsValidationException, ExecutionException, InterruptedException {
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
         RoleType owner = graph.putRoleType("owner");
@@ -795,7 +781,7 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         // validate
         graph.commit();
 
-        Analytics analytics = new Analytics(keyspace);
+        Analytics analytics = new Analytics(graph.getKeyspace());
         Map<Instance, Long> degrees = analytics.degrees();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> {
@@ -803,8 +789,8 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         });
     }
 
-    @Test
-    public void testDegreeIsCorrectMissingRoleplayer() throws MindmapsValidationException, ExecutionException, InterruptedException {
+
+    public static void testDegreeIsCorrectMissingRoleplayer(MindmapsGraph graph, MindmapsGraphFactory factory) throws MindmapsValidationException, ExecutionException, InterruptedException {
 
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
@@ -829,7 +815,7 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         // validate
         graph.commit();
 
-        Analytics analytics = new Analytics(keyspace);
+        Analytics analytics = new Analytics(graph.getKeyspace());
         Map<Instance, Long> degrees = analytics.degrees();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> {
@@ -837,8 +823,8 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         });
     }
 
-    @Test
-    public void testDegreeIsCorrectRoleplayerWrongType() throws MindmapsValidationException, ExecutionException, InterruptedException {
+
+    public static void testDegreeIsCorrectRoleplayerWrongType(MindmapsGraph graph) throws MindmapsValidationException, ExecutionException, InterruptedException {
 
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
@@ -878,7 +864,7 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         ct.add(mansBestFriend);
         ct.add(person);
         ct.add(cat);
-        Analytics analytics = new Analytics(keyspace, ct);
+        Analytics analytics = new Analytics(graph.getKeyspace(), ct);
         Map<Instance, Long> degrees = analytics.degrees();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> {
@@ -886,8 +872,8 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         });
     }
 
-    @Test
-    public void testMultipleExecutionOfDegreeAndPersistWhileAddingNodes() throws MindmapsValidationException, ExecutionException, InterruptedException {
+
+    public static void testMultipleExecutionOfDegreeAndPersistWhileAddingNodes(MindmapsGraph graph) throws MindmapsValidationException, ExecutionException, InterruptedException {
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
         RoleType owner = graph.putRoleType("owner");
@@ -905,21 +891,21 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         graph.commit();
 
         // count and persist
-        Analytics analytics = new Analytics(keyspace);
+        Analytics analytics = new Analytics(graph.getKeyspace());
         assertEquals(3L, analytics.count());
         analytics.degreesAndPersist();
 
-        analytics = new Analytics(keyspace);
+        analytics = new Analytics(graph.getKeyspace());
         assertEquals(3L, analytics.count());
         analytics.degreesAndPersist();
 
-        analytics = new Analytics(keyspace);
+        analytics = new Analytics(graph.getKeyspace());
         assertEquals(3L, analytics.count());
         analytics.degreesAndPersist();
     }
 
-    @Test
-    public void testComputingUsingDegreeResource() throws MindmapsValidationException {
+
+    public static void testComputingUsingDegreeResource(MindmapsGraph graph) throws MindmapsValidationException {
         // create something with degrees
         RoleType pet = graph.putRoleType("pet");
         RoleType owner = graph.putRoleType("owner");
@@ -937,14 +923,41 @@ public class AnalyticsTest extends MindmapsTitanTestBase {
         graph.commit();
 
         // create degrees
-        new Analytics(keyspace, new HashSet<String>(), new HashSet<String>()).degreesAndPersist();
+        new Analytics(graph.getKeyspace(), new HashSet<String>(), new HashSet<String>()).degreesAndPersist();
 
         // compute sum
-        Analytics analytics = new Analytics(keyspace, new HashSet<>(), new HashSet<String>(Arrays.asList("degree")));
+        Analytics analytics = new Analytics(graph.getKeyspace(), new HashSet<>(), new HashSet<String>(Arrays.asList("degree")));
         assertEquals(4L,analytics.sum().get());
 
         // compute count
-        analytics = new Analytics(keyspace, new HashSet<String>(Arrays.asList("degree")), new HashSet<>());
+        analytics = new Analytics(graph.getKeyspace(), new HashSet<String>(Arrays.asList("degree")), new HashSet<>());
         assertEquals(graph.getResourceType("degree").instances().size(), analytics.count());
+    }
+
+    public static void testNullResourceDoesntBreakAnalytics(MindmapsGraph graph) throws MindmapsValidationException {
+        // make slightly odd graph
+        String resourceTypeId = "degree";
+        EntityType thing = graph.putEntityType("thing");
+        ResourceType resource = graph.putResourceType(resourceTypeId, ResourceType.DataType.LONG);
+        RoleType degreeOwner = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
+        RoleType degreeValue = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
+        RelationType relationType = graph.putRelationType(GraqlType.HAS_RESOURCE.getId(resourceTypeId))
+                .hasRole(degreeOwner)
+                .hasRole(degreeValue);
+        thing.playsRole(degreeOwner);
+
+        Entity thisThing = graph.addEntity(thing);
+        graph.addRelation(relationType).putRolePlayer(degreeOwner,thisThing);
+        graph.commit();
+
+        Analytics analytics = new Analytics(graph.getKeyspace(), new HashSet<>(), new HashSet<>());
+
+        // the null roleplayer caused analytics to fail at some stage
+        try {
+            analytics.degreesAndPersist();
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            fail();
+        }
     }
 }

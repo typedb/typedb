@@ -16,11 +16,10 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql.internal.analytics;
+package io.mindmaps.test.titan.graql.internal.analytics;
 
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.MindmapsTitanTestBase;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Relation;
@@ -28,7 +27,8 @@ import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.exception.MindmapsValidationException;
-import org.javatuples.Pair;
+import io.mindmaps.graql.internal.analytics.Analytics;
+import io.mindmaps.test.titan.MindmapsTitanTestBase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -70,9 +70,8 @@ public class ScalingTestIT extends MindmapsTitanTestBase {
 
     @Before
     public void setUp() throws InterruptedException {
-        Pair<MindmapsGraph, String> result = graphWithNewKeyspace();
-        graph = result.getValue0();
-        keyspace = result.getValue1();
+        graph = graphWithNewKeyspace();
+        keyspace = graph.getKeyspace();
 
         // compute the sample of graph sizes
         STEP_SIZE = MAX_SIZE/NUM_DIVS;

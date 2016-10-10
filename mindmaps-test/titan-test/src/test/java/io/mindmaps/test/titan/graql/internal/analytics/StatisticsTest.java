@@ -1,17 +1,17 @@
-package io.mindmaps.graql.internal.analytics;
+package io.mindmaps.test.titan.graql.internal.analytics;
 
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.MindmapsTitanTestBase;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.graql.internal.util.GraqlType;
+import io.mindmaps.test.titan.MindmapsTitanTestBase;
 import org.elasticsearch.common.collect.Sets;
-import org.javatuples.Pair;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -50,9 +50,8 @@ public class StatisticsTest extends MindmapsTitanTestBase {
 
     @Before
     public void setUp() throws InterruptedException, MindmapsValidationException {
-        Pair<MindmapsGraph, String> result = graphWithNewKeyspace();
-        graph = result.getValue0();
-        keyspace = result.getValue1();
+        graph = graphWithNewKeyspace();
+        keyspace = graph.getKeyspace();
     }
 
     @After

@@ -2,9 +2,7 @@ package io.mindmaps.graql.internal.analytics;
 
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.util.Schema;
-import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
@@ -34,7 +32,7 @@ public class MeanMapReduce extends MindmapsMapReduce<Map<String, Double>> {
     }
 
     @Override
-    public void map(final Vertex vertex, final MapEmitter<Serializable, Map<String, Double>> emitter) {
+    public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Map<String, Double>> emitter) {
         if (selectedTypes.contains(getVertexType(vertex)) &&
                 ((Long) vertex.value(DegreeVertexProgram.MEMORY_KEY)) > 0) {
             Map<String, Double> tuple = new HashMap<>(2);

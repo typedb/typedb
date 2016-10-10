@@ -31,6 +31,7 @@ import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.pattern.Patterns;
 import io.mindmaps.graql.internal.reasoner.query.Query;
+import java.util.stream.Collectors;
 import javafx.util.Pair;
 
 import java.util.*;
@@ -99,13 +100,6 @@ public abstract class AtomBase implements Atomic{
     public String toString(){ return atomPattern.toString(); }
 
     @Override
-    public void print() {
-        System.out.println("atom: \npattern: " + toString());
-        System.out.println("varName: " + varName + " typeId: " + typeId);
-        System.out.println();
-    }
-
-    @Override
     public boolean isResource(){ return !atomPattern.asVar().getResourcePredicates().isEmpty();}
     @Override
     public boolean isType(){ return !typeId.isEmpty();}
@@ -134,12 +128,13 @@ public abstract class AtomBase implements Atomic{
         return atomRecursive;
     }
     @Override
-    public boolean containsVar(String name){ return varName.equals(name);}
+    public boolean containsVar(String name){ return getVarNames().contains(name);}
 
     @Override
     public PatternAdmin getPattern(){ return atomPattern;}
-
-    private MatchQuery getBaseMatchQuery(MindmapsGraph graph) {
+    
+    @Override
+    public MatchQuery getMatchQuery(MindmapsGraph graph) {
         QueryBuilder qb = Graql.withGraph(graph);
         MatchQuery matchQuery = qb.match(getPattern());
 
@@ -153,11 +148,6 @@ public abstract class AtomBase implements Atomic{
             matchQuery.admin().getPattern().getPatterns().add(Patterns.conjunction(patterns));
         });
         return matchQuery.admin().select(selectVars);
-    }
-
-    @Override
-    public MatchQuery getMatchQuery(MindmapsGraph graph) {
-        return getBaseMatchQuery(graph);
     }
 
     @Override
@@ -244,7 +234,9 @@ public abstract class AtomBase implements Atomic{
 
     @Override
     public Set<Atomic> getTypeConstraints(){
-        throw new IllegalArgumentException(ErrorMessage.NO_TYPE_CONSTRAINTS.getMessage());
+        Set<Atomic> typeConstraints = getParentQuery().getTypeConstraints();
+        return typeConstraints.stream().filter(atom -> containsVar(atom.getVarName()))
+                .collect(Collectors.toSet());
     }
 
     @Override

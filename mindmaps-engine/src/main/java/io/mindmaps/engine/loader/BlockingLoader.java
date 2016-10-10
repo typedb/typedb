@@ -107,7 +107,6 @@ public class BlockingLoader extends Loader {
             for (int i = 0; i < repeatCommits; i++) {
                 AbstractMindmapsGraph graph = (AbstractMindmapsGraph) GraphFactory.getInstance().getGraphBatchLoading(name);
                 try {
-
                     insert(batch).withGraph(graph).execute();
                     graph.commit();
                     cache.addJobCasting(graphName, graph.getModifiedCastingIds());
@@ -123,6 +122,9 @@ public class BlockingLoader extends Loader {
                     handleError(e, 1);
                 }
             }
+        } catch (Throwable e){
+            LOG.error(e.getMessage());
+            LOG.error(ErrorMessage.FAILED_TRANSACTION.getMessage(repeatCommits));
         } finally {
             transactionsSemaphore.release();
         }

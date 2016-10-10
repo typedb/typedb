@@ -70,6 +70,11 @@ public class MindmapsTinkerGraphFactoryTest {
         assertEquals(graph2, graph2_copy);
 
         assertNotEquals(graph1, graph2);
+
+        TinkerGraph tinkerGraph1 = ((MindmapsTinkerGraph) graph1).getTinkerPopGraph();
+        TinkerGraph tinkerGraph2 = ((MindmapsTinkerGraph) graph2).getTinkerPopGraph();
+
+        assertEquals(tinkerGraph1, tinkerGraph2);
     }
 
     @Test
@@ -80,7 +85,7 @@ public class MindmapsTinkerGraphFactoryTest {
         assertTrue(mg1.isBatchLoadingEnabled());
         assertFalse(mg2.isBatchLoadingEnabled());
         assertNotEquals(mg1, mg2);
-        assertNotEquals(mg1.getTinkerPopGraph(), mg2.getTinkerPopGraph());
+        assertEquals(mg1.getTinkerPopGraph(), mg2.getTinkerPopGraph());
     }
 
     @Test

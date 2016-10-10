@@ -16,11 +16,10 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql.internal.analytics;
+package io.mindmaps.test.titan.graql.internal.analytics;
 
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.MindmapsTitanTestBase;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
@@ -31,20 +30,31 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.graql.internal.util.GraqlType;
-import org.javatuples.Pair;
+import io.mindmaps.test.titan.MindmapsTitanTestBase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 import static io.mindmaps.graql.Graql.or;
 import static io.mindmaps.graql.Graql.var;
 import static io.mindmaps.graql.Graql.withGraph;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class GraqlTest extends MindmapsTitanTestBase {
 
@@ -54,9 +64,8 @@ public class GraqlTest extends MindmapsTitanTestBase {
 
     @Before
     public void setUp() throws InterruptedException {
-        Pair<MindmapsGraph, String> result = graphWithNewKeyspace();
-        graph = result.getValue0();
-        keyspace = result.getValue1();
+        graph = graphWithNewKeyspace();
+        keyspace = graph.getKeyspace();
         qb = withGraph(graph);
     }
 
@@ -170,7 +179,7 @@ public class GraqlTest extends MindmapsTitanTestBase {
         });
     }
 
-    @Ignore
+    @Ignore //Ignored due to being expensive
     @Test
     public void testDegreesAndPersist() throws Exception {
 

@@ -32,7 +32,6 @@ import java.util.Set;
 
 public interface Atomic extends Cloneable{
 
-    void print();
     Atomic clone();
 
     /**
@@ -131,5 +130,4 @@ public interface Atomic extends Cloneable{
     Map<String, Pair<Type, RoleType>> getVarTypeRoleMap();
     Map<RoleType, Pair<String, Type>> getRoleVarTypeMap();
     Map<RoleType, String> getRoleConceptIdMap();
-
 }

@@ -60,7 +60,7 @@ public class QueryTest {
         for(Atomic atom : query.getAtoms())
             if (atom.toString().equals("$x value \"Bob\"")) containsAtom = true;
         assertTrue(containsAtom);
-        assertEquals(query.getValue("x"), "Bob");
+        assertEquals(query.getSubstitution("x"), "Bob");
     }
 
     @Test
@@ -74,8 +74,8 @@ public class QueryTest {
 
     @Test
     public void testTwinPattern() {
-        String queryString = "match $x isa person;$x id 'Bob';";
         String queryString2 = "match $x isa person, id 'Bob';";
+        String queryString = "match $x isa person;$x id 'Bob';";
         String queryString3 = "match $x isa person, value 'Bob';";
         String queryString4 = "match $x isa person;$x value 'Bob';";
 

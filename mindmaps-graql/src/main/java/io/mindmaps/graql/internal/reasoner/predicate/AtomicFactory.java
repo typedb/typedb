@@ -18,14 +18,21 @@
 
 package io.mindmaps.graql.internal.reasoner.predicate;
 
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.PatternAdmin;
+import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.admin.VarProperty;
+import io.mindmaps.graql.internal.pattern.property.HasResourceProperty;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.util.ErrorMessage;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import static io.mindmaps.graql.internal.reasoner.Utility.createFreshVariable;
 
 public class AtomicFactory {
 
@@ -36,23 +43,27 @@ public class AtomicFactory {
         VarAdmin var = pattern.asVar();
         if(var.isRelation())
             return new Relation(var);
-        else if (!var.getValuePredicates().isEmpty() || var.getId().isPresent())
+        else if(!var.getResourcePredicates().isEmpty())
+            return new Resource(var);
+        else if (!var.getValueEqualsPredicates().isEmpty() || var.getId().isPresent())
             return new Substitution(var);
         else
-            return new Atom(var);
+            return new Type(var);
     }
 
     public static Atomic create(PatternAdmin pattern, Query parent) {
         if (!pattern.isVar() )
         throw new IllegalArgumentException(ErrorMessage.PATTERN_NOT_VAR.getMessage(pattern.toString()));
-
+        
         VarAdmin var = pattern.asVar();
         if(var.isRelation())
             return new Relation(var, parent);
-        else if (!var.getValuePredicates().isEmpty() || var.getId().isPresent())
+        else if(!var.getResourcePredicates().isEmpty())
+            return new Resource(var, parent);
+        else if (!var.getValueEqualsPredicates().isEmpty() || var.getId().isPresent())
             return new Substitution(var, parent);
         else
-            return new Atom(var, parent);
+            return new Type(var, parent);
     }
 
     public static Atomic create(Atomic atom) {
@@ -61,22 +72,45 @@ public class AtomicFactory {
 
     public static Set<Atomic> createAtomSet(Conjunction<PatternAdmin> pat, Query parent) {
         Set<Atomic> atoms = new HashSet<>();
+        MindmapsGraph graph = parent.getGraph().orElse(null);
         Set<VarAdmin> vars = pat.getVars();
         vars.forEach(var -> {
-            if(var.getType().isPresent() && (var.getId().isPresent() || !var.getValueEqualsPredicates().isEmpty())) {
-                VarAdmin typeVar = Graql.var(var.getName()).isa(var.getType().orElse(null)).admin();
-                atoms.add(AtomicFactory.create(typeVar, parent));
+            if (var.getProperties(VarProperty.class).count() > 1 && !var.isRelation() ) {
+                String name = var.getName();
+                String id = var.getId().orElse("");
+                VarAdmin typeVar = var.getType().orElse(null);
+                String type = typeVar != null? typeVar.getId().orElse("") : "";
 
-                if (var.getId().isPresent()) {
-                    VarAdmin sub = Graql.var(var.getName()).id(var.getId().orElse(null)).admin();
-                    atoms.add(AtomicFactory.create(sub, parent));
+                if (typeVar != null){
+                    VarAdmin tVar = Graql.var(name).isa(type).admin();
+                    atoms.add(AtomicFactory.create(tVar, parent));
                 }
-                else if (!var.getValueEqualsPredicates().isEmpty()){
-                    if(var.getValueEqualsPredicates().size() > 1)
-                        throw new IllegalArgumentException(ErrorMessage.MULTI_VALUE_VAR.getMessage(var.toString()));
-                    VarAdmin sub = Graql.var(var.getName()).value(var.getValueEqualsPredicates().iterator().next()).admin();
-                    atoms.add(AtomicFactory.create(sub, parent));
-                }
+                if (!id.isEmpty()) atoms.add(new Substitution(name, graph.getEntity(id), parent));
+
+                //value equals predicates
+                var.getValueEqualsPredicates().forEach(eqPred -> {
+                    VarAdmin valueVar = Graql.var(name).value(eqPred).admin();
+                    Atomic atom = AtomicFactory.create(valueVar, parent);
+                    atoms.add(atom);
+                });
+
+                //resources
+                var.getProperties(HasResourceProperty.class).forEach(res -> {
+                    String resType = res.getType();
+                    VarAdmin resVar = res.getResource();
+
+                    resVar.getValuePredicates().forEach( pred -> {
+                        VarAdmin newVar = Graql.var(name).admin();
+                        newVar.has(resType, pred);
+                        atoms.add(AtomicFactory.create(newVar, parent));
+                    });
+
+                    //res val as a variable
+                    if(resVar.getValuePredicates().isEmpty()){
+                        VarAdmin newVar = Graql.var(name).has(resType, Graql.var(resVar.getName())).admin();
+                        atoms.add(AtomicFactory.create(newVar, parent));
+                    }
+                });
             }
             else
                 atoms.add(AtomicFactory.create(var, parent));

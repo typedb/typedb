@@ -115,13 +115,6 @@ public class ConceptTest {
         assertEquals(concept.getType(), conceptVertex.property(Schema.ConceptProperty.TYPE.name()).value());
     }
 
-    @Test(expected=RuntimeException.class)
-    public void updateConceptFailTooManyConcepts()  {
-        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex();
-        vertex.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), "VALUE");
-        mindmapsGraph.putEntityType("VALUE");
-    }
-
     @Test
     public void testEquality() {
         ConceptImpl c1= (ConceptImpl) mindmapsGraph.putEntityType("Value_1");

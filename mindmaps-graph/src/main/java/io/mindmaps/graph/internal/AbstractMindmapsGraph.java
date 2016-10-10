@@ -63,7 +63,7 @@ import java.util.stream.Collectors;
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
 
 public abstract class AbstractMindmapsGraph<G extends Graph> implements MindmapsGraph {
-    private final Logger LOG = LoggerFactory.getLogger(AbstractMindmapsGraph.class);
+    protected final Logger LOG = LoggerFactory.getLogger(AbstractMindmapsGraph.class);
     private final ThreadLocal<ConceptLog> context = new ThreadLocal<>();
     private final ElementFactory elementFactory;
     //private final ConceptLog conceptLog;

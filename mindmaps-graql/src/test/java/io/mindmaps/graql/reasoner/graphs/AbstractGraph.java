@@ -24,7 +24,6 @@ import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
-import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.RuleType;
 import io.mindmaps.exception.MindmapsValidationException;
 
@@ -96,6 +95,7 @@ public class AbstractGraph {
     }
     private static void buildRules() {
         RuleType inferenceRule = mindmaps.getMetaRuleInference();
+
 
         String R1_LHS = "match $x isa p;$y isa q;($x, $y) isa rel; select $x;";
         String R1_RHS = "match $x isa Q;";

@@ -44,11 +44,9 @@ public class InferenceRule {
     }
 
     public Atomic getRuleConclusionAtom() {
-        Set<Atomic> atoms = head.getAtoms();
-        if (atoms.size() > 1)
+        if (head.selectAtoms().size() > 1)
             throw new IllegalArgumentException(ErrorMessage.NON_HORN_RULE.getMessage(body.toString()));
-
-        Atomic atom = atoms.iterator().next();
+        Atomic atom = head.selectAtoms().iterator().next();
         atom.setParentQuery(body);
         return atom;
     }
