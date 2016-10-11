@@ -31,8 +31,15 @@ public class MedianVertexProgram extends MindmapsVertexProgram<Long> {
     private final MessageScope.Local<Long> countMessageScopeIn = MessageScope.Local.of(__::inE);
     private final MessageScope.Local<Long> countMessageScopeOut = MessageScope.Local.of(__::outE);
 
-    public static final String DEGREE = "degree";
-    public static final int MAX_ITERATION = 100;
+    public static final int MAX_ITERATION = 30;
+
+    // element key
+    public static final String DEGREE = "medianVertexProgram.degree";
+
+    // memory key
+    public static final String COUNT = "medianVertexProgram.count";
+    public static final String START_INDEX = "medianVertexProgram.count";
+    public static final String END_INDEX = "medianVertexProgram.count";
 
     private static final Set<String> ELEMENT_COMPUTE_KEYS = Collections.singleton(DEGREE);
 
