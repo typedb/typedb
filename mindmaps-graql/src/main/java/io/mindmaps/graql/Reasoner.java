@@ -264,7 +264,7 @@ public class Reasoner {
     private QueryAnswers resolveQuery(Query query, boolean materialize) {
         Iterator<Atomic> atIt = query.selectAtoms().iterator();
 
-        AtomicQuery atomicQuery = new AtomicMatchQuery(atIt.next().clone());
+        AtomicQuery atomicQuery = new AtomicMatchQuery(atIt.next());
         QueryAnswers answers = resolveAtomicQuery(atomicQuery);
         if(materialize) answers.materialize(atomicQuery);
         while(atIt.hasNext()){
