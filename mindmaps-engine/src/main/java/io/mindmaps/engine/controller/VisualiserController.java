@@ -190,14 +190,14 @@ public class VisualiserController {
             list.parallelStream()
                     .forEach(x -> {
                         JSONArray line = new JSONArray();
-                        for (Map.Entry<String, Concept> current : x.entrySet()) {
+                        x.entrySet().forEach(current-> {
                             LOG.trace("Building HAL resource for concept with id {}", current.getValue().getId());
                             Representation currentHal = new HALConcept(current.getValue(), MATCH_QUERY_FIXED_DEGREE, true,
                                     matchQuery.admin().getTypes().stream().map(Concept::getId).collect(Collectors.toSet())).getRepresentation();
                             if (linkedNodes.containsKey(current.getKey()))
                                 linkedNodes.get(current.getKey()).forEach(varName -> currentHal.withLink("edge_to", x.get(varName).getId()));
                             line.put(new JSONObject(currentHal.toString(RepresentationFactory.HAL_JSON)));
-                        }
+                        });
                         lines.put(line);
                     });
             LOG.debug("Done building resources.");
