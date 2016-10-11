@@ -16,41 +16,32 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.test.titan.graql.internal.analytics;
+package io.mindmaps.test.graql.analytics;
 
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.Entity;
-import io.mindmaps.concept.EntityType;
-import io.mindmaps.concept.Relation;
-import io.mindmaps.concept.RelationType;
-import io.mindmaps.concept.RoleType;
+import io.mindmaps.concept.*;
 import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.internal.analytics.Analytics;
-import io.mindmaps.test.titan.MindmapsTitanTestBase;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 import static io.mindmaps.graql.Graql.var;
+import static io.mindmaps.test.AbstractMindmapsEngineTest.graphWithNewKeyspace;
+import static io.mindmaps.test.AbstractMindmapsEngineTest.startTestEngine;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-public class ScalingTestIT extends MindmapsTitanTestBase {
+public class ScalingTestIT {
 
     private static final String[] HOST_NAME =
             {"localhost"};
@@ -67,6 +58,11 @@ public class ScalingTestIT extends MindmapsTitanTestBase {
     // test variables
     int STEP_SIZE;
     List<Integer> graphSizes;
+
+    @BeforeClass
+    public static void setUpClass() throws Exception {
+        startTestEngine();
+    }
 
     @Before
     public void setUp() throws InterruptedException {

@@ -16,62 +16,53 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.test.titan.graql.internal.analytics;
+package io.mindmaps.test.graql.analytics;
 
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.Entity;
-import io.mindmaps.concept.EntityType;
-import io.mindmaps.concept.Instance;
-import io.mindmaps.concept.RelationType;
-import io.mindmaps.concept.Resource;
-import io.mindmaps.concept.ResourceType;
-import io.mindmaps.concept.RoleType;
+import io.mindmaps.concept.*;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.graql.internal.util.GraqlType;
-import io.mindmaps.test.titan.MindmapsTitanTestBase;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import io.mindmaps.test.AbstractMindmapsEngineTest;
+import org.junit.*;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
+import static io.mindmaps.MindmapsTest.usingOrientDB;
+import static io.mindmaps.MindmapsTest.usingTinker;
 import static io.mindmaps.graql.Graql.or;
 import static io.mindmaps.graql.Graql.var;
 import static io.mindmaps.graql.Graql.withGraph;
+import static io.mindmaps.test.AbstractMindmapsEngineTest.graphWithNewKeyspace;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 
-public class GraqlTest extends MindmapsTitanTestBase {
+public class GraqlTest {
 
     String keyspace;
     MindmapsGraph graph;
     private QueryBuilder qb;
 
+    @BeforeClass
+    public static void setUpClass() throws Exception {
+        AbstractMindmapsEngineTest.startTestEngine();
+    }
+
     @Before
     public void setUp() throws InterruptedException {
+        // TODO: Make orientdb support analytics
+        assumeFalse(usingOrientDB());
+
         graph = graphWithNewKeyspace();
         keyspace = graph.getKeyspace();
         qb = withGraph(graph);
-    }
-
-    @After
-    public void cleanGraph() {
-        graph.clear();
     }
 
     @Test
@@ -121,6 +112,8 @@ public class GraqlTest extends MindmapsTitanTestBase {
 
     @Test
     public void testDegrees() throws Exception {
+        // TODO: Fix on TinkerGraphComputer
+        assumeFalse(usingTinker());
 
         // create 3 instances
         EntityType thing = graph.putEntityType("thing");
@@ -175,7 +168,7 @@ public class GraqlTest extends MindmapsTitanTestBase {
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(degree -> {
             assertTrue(correctDegrees.containsKey(degree.getKey()));
-            assertTrue(correctDegrees.get(degree.getKey()).equals(degree.getValue()));
+            assertEquals(correctDegrees.get(degree.getKey()), degree.getValue());
         });
     }
 
@@ -281,6 +274,9 @@ public class GraqlTest extends MindmapsTitanTestBase {
 
     @Test
     public void testStatisticsMethods() throws MindmapsValidationException {
+        // TODO: Fix on TinkerGraphComputer
+        assumeFalse(usingTinker());
+
         String resourceTypeId = "resource";
 
         RoleType resourceOwner = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
@@ -336,6 +332,9 @@ public class GraqlTest extends MindmapsTitanTestBase {
 
     @Test
     public void testAnalyticsDoesNotCommitByMistake() throws MindmapsValidationException {
+        // TODO: Fix on TinkerGraphComputer
+        assumeFalse(usingTinker());
+
         graph.putResourceType("number", ResourceType.DataType.LONG);
         graph.commit();
 

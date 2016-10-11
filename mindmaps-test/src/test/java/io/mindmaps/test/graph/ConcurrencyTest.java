@@ -18,9 +18,7 @@
 
 package io.mindmaps.test.graph;
 
-import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.MindmapsGraphFactory;
 import io.mindmaps.MindmapsTest;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
@@ -34,12 +32,12 @@ import org.junit.Test;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import static io.mindmaps.test.AbstractMindmapsEngineTest.graphWithNewKeyspace;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeFalse;
@@ -61,14 +59,7 @@ public class ConcurrencyTest {
 
     @Before
     public void setUp() {
-        String keyspace;
-        if (MindmapsTest.usingOrientDB()) {
-            keyspace = "memory";
-        } else {
-            keyspace = UUID.randomUUID().toString().replaceAll("-", "");
-        }
-        MindmapsGraphFactory factory = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace);
-        graph = factory.getGraph();
+        graph = graphWithNewKeyspace();
     }
 
     static void createOntology(MindmapsGraph graph) throws MindmapsValidationException {

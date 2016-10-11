@@ -5,6 +5,7 @@ import ch.qos.logback.classic.Logger;
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.MindmapsGraphFactory;
+import io.mindmaps.MindmapsTest;
 import io.mindmaps.engine.MindmapsEngineServer;
 import org.junit.After;
 import org.junit.Before;
@@ -36,8 +37,19 @@ public abstract class AbstractMindmapsEngineTest {
         sleep(5000);
     }
 
+    public static MindmapsGraphFactory factoryWithNewKeyspace() {
+        String keyspace;
+        if (MindmapsTest.usingOrientDB()) {
+            keyspace = "memory";
+        } else {
+            keyspace = UUID.randomUUID().toString().replaceAll("-", "");
+        }
+        return Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace);
+    }
+
     public static MindmapsGraph graphWithNewKeyspace() {
-        return Mindmaps.factory(Mindmaps.DEFAULT_URI, UUID.randomUUID().toString().replaceAll("-", "")).getGraph();
+        MindmapsGraphFactory factory = factoryWithNewKeyspace();
+        return factory.getGraph();
     }
 
     private static void startEmbeddedCassandra() {

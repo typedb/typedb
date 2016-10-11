@@ -20,7 +20,7 @@ package io.mindmaps;
 
 public class MindmapsTest {
 
-    public static String getConfig() {
+    private static String getConfig() {
         return System.getProperty("mindmaps.test-profile");
     }
 
