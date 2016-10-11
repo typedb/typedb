@@ -55,7 +55,11 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                 </li>
 
                 <li v-link-active>
-                    <a v-link="{ path: '/shell' }">Graql Visualiser</a>
+                    <a v-link="{ path: '/graph' }">Graph</a>
+                </li>
+
+                <li v-link-active>
+                    <a v-link="{ path: '/console' }">Console</a>
                 </li>
 
                 <li v-link-active>

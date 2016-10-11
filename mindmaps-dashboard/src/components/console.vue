@@ -23,7 +23,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
             <div class="panel panel-filled" style="margin-bottom: 0px;">
                 <div class="panel-body">
                     <div class="form-group">
-                        <textarea class="form-control" rows="3" placeholder=">>" v-model="graqlQuery" @keydown.enter="runQuery($event)" @keydown.delete="clearGraph($event)"></textarea>
+                        <textarea class="form-control" rows="3" placeholder=">>" v-model="graqlQuery" @keydown.enter="runQuery($event)" @keydown.delete="clearQuery($event)"></textarea>
                     </div>
                     <div class="from-buttons">
                         <button @click="runQuery" class="btn btn-default search-button">Submit<i class="pe-7s-angle-right-circle"></i></button>
@@ -34,14 +34,16 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
             </div>
             <div class="panel panel-c-info panel-collapse" v-show="typeInstances">
                 <div class="panel-body">
+
                     <div v-for="k in typeKeys">
                         <h4>
-                            <button @click="toggleElement(k+'-group')" class="btn btn-link">{{k | capitalize}}</button>
+                            <button @click="toggleElement(k+'-group')" class="btn btn-link">{{k | capitalize }}</button>
                         </h4>
                         <div class="row m-t-md type-row btn-group {{k}}-group" style="display: none;">
                             <button v-for="i in typeInstances[k]" @click="typeQuery(k, i)" class="btn btn-default">{{i}}</button>
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>
@@ -61,13 +63,13 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
         <div class="tabs-col col-md-12">
             <div class="tabs-container">
                 <ul class="nav nav-tabs">
-                    <li class="active"><a data-toggle="tab" href="#tab-1" aria-expanded="true">Graph</a></li>
+                    <li class="active"><a data-toggle="tab" href="#tab-1" aria-expanded="true">Console</a></li>
                     <li class=""><a data-toggle="tab" href="#tab-3" aria-expanded="false">Help</a></li>
                 </ul>
                 <div class="tab-content">
                     <div id="tab-1" class="tab-pane active">
                         <div class="panel-body">
-                            <div class="graph-div" v-el:graph @contextmenu="suppressEventDefault"></div>
+                            <pre class="language-graql">{{{graqlResponse}}}</pre>
                         </div>
 
                     </div>
@@ -88,57 +90,12 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                                     </tbody>
                                 </table>
                             </div>
-                            <br />
-                            <br />
-                            <h4>Graph Tab Interaction</h4>
-                            <br />
-                            <div class="table-responsive">
-                                <table class="table table-hover table-striped">
-                                    <thead>
-                                        <tr><th>Action</th><th>What it does</th></tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr><td>Left Click</td><td>Selects a node or edge.</td></tr>
-                                        <tr><td>Left Click + Alt</td><td>Show related ontology of selected node(s).</td></tr>
-                                        <tr><td>Left Click + Shift</td><td>Shows instances and isa of selected node(s), <b>WITHOUT</b> clearing the graph of all other non-related nodes.</td></tr>
-                                        <tr><td>Double Click</td><td>Shows instances and isa of selected node(s), whilst clearing the graph of all other non-related nodes.</td></tr>
-                                        <tr><td>Right Click</td><td>Show node label configuration menu. You can select what properties to display on the node label.</td></tr>
-                                        <tr><td>Right Click + Shift</td><td>Delete selected node(s).</td></tr>
-                                        <tr><td>Scroll wheel</td><td>Zoom in/out.</td></tr>
-                                        <tr><td>Click & Drag</td><td>Move graph.</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-2" v-show="nodeType">
-            <div class="panel panel-filled panel-c-white">
-                <div class="panel-heading">
-                    <div class="panel-tools">
-                        <a class="panel-close" @click="closeConfigPanel"><i class="fa fa-times"></i></a>
-                    </div>
-                    Display Configuration
-                </div>
-                <div class="panel-body">
-                    <p v-show="allNodeProps.length">Select properties to be show on nodes of type "{{nodeType}}".</p>
-                    <p v-else>Sorry, theres nothing you can configure for nodes of type "{{nodeType}}".</p>
-                    <br/>
-                    <ul class="dd-list">
-                        <li class="dd-item" v-for="prop in allNodeProps" v-bind:class="{'li-active':selectedProps.includes(prop)}">
-                            <div class="dd-handle" @click="configureNode(prop)"">{{prop}}</div>
-                        </li>
-                    </ul>
-                </div>
-                <div class="panel-footer" style="text-align: right">
-                    <button type="button" class="btn btn-warning" @click="closeConfigPanel">Done</button>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 </template>
 
@@ -179,7 +136,6 @@ h4 {
 import _ from 'underscore';
 import Prism from 'prismjs';
 
-import Visualiser from '../js/visualiser/Visualiser.js';
 import HALParser from '../js/HAL/HALParser.js';
 import EngineClient from '../js/EngineClient.js';
 import * as PLang from '../js/prismGraql.js';
@@ -190,44 +146,21 @@ export default {
             graqlQuery: undefined,
             errorMessage: undefined,
             errorPanelClass: undefined,
-            visualiser: {},
+            graqlResponse: undefined,
             engineClient: {},
             halParser: {},
 
             typeInstances: false,
-            typeKeys: [],
-
-            allNodeProps: [],
-            selectedProps: [],
-            nodeType: undefined
+            typeKeys: []
         }
     },
 
     created() {
-        visualiser = new Visualiser();
-        visualiser.setOnDoubleClick(this.doubleClick)
-                  .setOnRightClick(this.rightClick)
-                  .setOnClick(this.leftClick);
-
         engineClient = new EngineClient();
 
         halParser = new HALParser();
         halParser.setNewResource((id, p, a) => { visualiser.addNode(id, p, a) });
         halParser.setNewRelationship((f, t, l) => { visualiser.addEdge(f, t, l) });
-    },
-
-    attached() {
-        var graph = this.$els.graph;
-        visualiser.render(graph);
-
-        // set window height
-        var height = window.innerHeight - graph.offsetTop - $('.graph-div').offset().top;
-        $('.graph-div').height(height+"px");
-
-        window.onresize = function() {
-            var x = Math.abs(window.innerHeight - graph.offsetTop - $('.graph-div').offset().top);
-            $('.graph-div').height(x+"px");
-        };
     },
 
     methods: {
@@ -247,7 +180,7 @@ export default {
             if(this.graqlQuery == undefined)
                 return;
 
-            engineClient.graqlHAL(this.graqlQuery, this.graphResponse);
+            engineClient.graqlShell(this.graqlQuery, this.shellResponse);
             this.resetMsg();
         },
 
@@ -265,84 +198,20 @@ export default {
         },
 
         /*
-         * User interaction: visualiser
-         */
-        leftClick(param) {
-            // As multiselect is disabled, there will only ever be one node.
-            const node = param.nodes[0];
-            const eventKeys = param.event.srcEvent;
-
-            if(!eventKeys.altKey || node == undefined)
-                return;
-
-            if(!visualiser.expandCluster(node))
-                engineClient.request({ url: visualiser.nodes._data[x].ontology,
-                                       callback: this.typeQueryResponse });
-        },
-
-        doubleClick(param) {
-            const node = param.nodes[0];
-            if(node == undefined || visualiser.expandCluster(node))
-                return;
-
-            const eventKeys = param.event.srcEvent;
-            if(!eventKeys.shiftKey)
-                visualiser.clearGraph();
-
-            engineClient.request({url: node, callback: this.typeQueryResponse});
-        },
-
-        rightClick(param) {
-            const node = param.nodes[0];
-            if(node == undefined)
-                return;
-
-            if(param.event.shiftKey) {
-                param.nodes.map(x => { visualiser.deleteNode(x) });
-
-            } else if(!visualiser.expandCluster(node)) {
-                $('.tabs-col').removeClass('col-md-12').addClass('col-md-10');
-
-                this.allNodeProps = visualiser.getAllNodeProperties(node);
-                this.nodeType = visualiser.getNodeType(node);
-            }
-        },
-
-        /*
          * User interaction: visual elements control
          */
         toggleElement(e) {
             $('.'+e).toggle();
         },
 
-        configureNode(p) {
-            if(this.selectedProps.includes(p))
-                this.selectedProps = this.selectedProps.filter(x => x != p);
-            else
-                this.selectedProps.push(p);
-
-            visualiser.setDisplayProperties(this.nodeType, this.selectedProps);
-        },
-
-        closeConfigPanel() {
-            $('.tabs-col').removeClass('col-md-10').addClass('col-md-12');
-            this.nodeType = undefined;
-            this.allNodeProps = [];
-            this.selectedProps = [];
-        },
-
         /*
          * EngineClient callbacks
          */
-        graphResponse(resp, err) {
-            if(resp != null) {
-                if(!halParser.parseResponse(resp))
-                    this.showWarning("Sorry, no results found for your query.");
-                else
-                    visualiser.cluster();
-            } else {
+        shellResponse(resp, err) {
+            if(resp != null)
+                this.graqlResponse = Prism.highlight(resp, PLang.graql);
+            else
                 this.showError(err);
-            }
         },
 
         typeQueryResponse(resp, err) {
@@ -357,10 +226,6 @@ export default {
         /*
          * UX
          */
-        suppressEventDefault(e) {
-            e.preventDefault();
-        },
-
         showError(msg) {
             this.errorPanelClass = 'panel-c-danger';
             this.errorMessage = msg;
@@ -379,7 +244,6 @@ export default {
                 .removeClass('btn-danger')
                 .removeClass('btn-warning')
                 .addClass('btn-default');
-            this.closeConfigPanel();
         },
 
         clearGraph(ev) {
@@ -388,10 +252,8 @@ export default {
 
             // Reset all interface elements to default.
             this.graqlQuery = undefined;
+            this.graqlResponse = undefined;
             this.resetMsg();
-
-            // And clear the graph
-            visualiser.clearGraph();
         }
     }
 }
