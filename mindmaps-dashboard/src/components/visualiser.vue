@@ -295,7 +295,7 @@ export default {
                 return;
 
             if(!visualiser.expandCluster(node))
-                engineClient.request({ url: visualiser.nodes._data[x].ontology,
+                engineClient.request({ url: visualiser.nodes._data[node].ontology,
                                        callback: this.typeQueryResponse });
         },
 
