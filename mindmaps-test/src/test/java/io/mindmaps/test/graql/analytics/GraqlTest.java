@@ -160,7 +160,7 @@ public class GraqlTest extends AbstractMindmapsEngineTest {
         });
     }
 
-    @Ignore //Ignored due to being expensive
+    @Ignore // TODO: Ignored due to being expensive
     @Test
     public void testDegreesAndPersist() throws Exception {
 

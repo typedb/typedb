@@ -249,12 +249,10 @@ public class AnalyticsTest extends AbstractMindmapsEngineTest {
         });
     }
 
-    @Ignore // TODO: Fix this test
+    // TODO: Ignored due to being expensive
+    @Ignore
     @Test
     public void testDegreesAndPersist() throws Exception {
-        // TODO: Ignored due to being expensive
-        assumeFalse(usingTinker());
-
         // create instances
         EntityType thing = graph.putEntityType("thing");
         EntityType anotherThing = graph.putEntityType("another");
@@ -477,11 +475,10 @@ public class AnalyticsTest extends AbstractMindmapsEngineTest {
         });
     }
 
+    // TODO: Ignored due to being expensive
+    @Ignore
     @Test
     public void testDegreeIsPersisted() throws Exception {
-        // TODO: Ignored due to being expensive
-        assumeFalse(usingTinker());
-
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
         RoleType owner = graph.putRoleType("owner");
@@ -570,11 +567,10 @@ public class AnalyticsTest extends AbstractMindmapsEngineTest {
         assertTrue(CollectionUtils.isEqualCollection(currentDegrees.values(), referenceDegrees.values()));
     }
 
+    // TODO: Ignored due to being expensive
+    @Ignore
     @Test
     public void testDegreeIsPersistedInPresenceOfOtherResource() throws MindmapsValidationException, ExecutionException, InterruptedException {
-        // TODO: Ignored due to being expensive
-        assumeFalse(usingTinker());
-
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
         RoleType owner = graph.putRoleType("owner");
