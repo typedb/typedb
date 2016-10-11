@@ -26,13 +26,14 @@ import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.engine.postprocessing.Cache;
 import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.test.AbstractMindmapsEngineTest;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotNull;
 
-public class SimpleTests {
+public class SimpleTests extends AbstractMindmapsEngineTest {
 
     @Ignore //Failing due to inconsistent clears.
     @Test

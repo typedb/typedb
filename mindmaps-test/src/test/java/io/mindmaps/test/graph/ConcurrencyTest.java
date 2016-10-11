@@ -19,15 +19,12 @@
 package io.mindmaps.test.graph;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.test.MindmapsTest;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.test.AbstractMindmapsEngineTest;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.HashSet;
@@ -37,7 +34,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import static io.mindmaps.test.AbstractMindmapsEngineTest.graphWithNewKeyspace;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeFalse;
@@ -45,22 +41,11 @@ import static org.junit.Assume.assumeFalse;
 /**
  *
  */
-public class ConcurrencyTest {
+public class ConcurrencyTest extends AbstractMindmapsEngineTest {
     private final static String ROLE_1 = "role1";
     private final static String ROLE_2 = "role2";
     private final static String ENTITY_TYPE = "Entity Type";
     private final static String RELATION_TYPE = "Relation Type";
-    private MindmapsGraph graph;
-
-    @BeforeClass
-    public static void setUpClass() throws Exception {
-        AbstractMindmapsEngineTest.startTestEngine();
-    }
-
-    @Before
-    public void setUp() {
-        graph = graphWithNewKeyspace();
-    }
 
     static void createOntology(MindmapsGraph graph) throws MindmapsValidationException {
         RoleType role1 = graph.putRoleType(ROLE_1);
@@ -109,10 +94,10 @@ public class ConcurrencyTest {
     @Test
     public void testWritingTheSameDataConcurrentlyWithRetriesOnFailureAndInitialDataWrite()  throws ExecutionException, InterruptedException, MindmapsValidationException {
         // TODO: Fix this test in tinkergraph
-        assumeFalse(MindmapsTest.usingTinker());
+        assumeFalse(usingTinker());
 
         // TODO: Fix this test in orientdb
-        assumeFalse(MindmapsTest.usingOrientDB());
+        assumeFalse(usingOrientDB());
 
         createOntology(graph);
         writeData(graph);
@@ -123,13 +108,13 @@ public class ConcurrencyTest {
     @Test
     public void testWritingTheSameDataConcurrentlyWithRetriesOnFailure() throws ExecutionException, InterruptedException, MindmapsValidationException {
         // TODO: Fix this test in tinkergraph
-        assumeFalse(MindmapsTest.usingTinker());
+        assumeFalse(usingTinker());
 
         // TODO: Fix this test in titan
-        assumeFalse(MindmapsTest.usingTitan());
+        assumeFalse(usingTitan());
 
         // TODO: Fix this test in orientdb
-        assumeFalse(MindmapsTest.usingOrientDB());
+        assumeFalse(usingOrientDB());
 
         createOntology(graph);
         concurrentWriteSuper(graph);

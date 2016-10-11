@@ -19,7 +19,6 @@
 package io.mindmaps.test.graql.analytics;
 
 import io.mindmaps.Mindmaps;
-import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.*;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.ComputeQuery;
@@ -27,41 +26,30 @@ import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.test.AbstractMindmapsEngineTest;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-import static io.mindmaps.test.MindmapsTest.usingOrientDB;
-import static io.mindmaps.test.MindmapsTest.usingTinker;
 import static io.mindmaps.graql.Graql.or;
 import static io.mindmaps.graql.Graql.var;
 import static io.mindmaps.graql.Graql.withGraph;
-import static io.mindmaps.test.AbstractMindmapsEngineTest.graphWithNewKeyspace;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
-public class GraqlTest {
+public class GraqlTest extends AbstractMindmapsEngineTest {
 
-    String keyspace;
-    MindmapsGraph graph;
     private QueryBuilder qb;
 
-    @BeforeClass
-    public static void setUpClass() throws Exception {
-        AbstractMindmapsEngineTest.startTestEngine();
-    }
-
     @Before
-    public void setUp() throws InterruptedException {
+    public void setUp() {
         // TODO: Make orientdb support analytics
         assumeFalse(usingOrientDB());
-
-        graph = graphWithNewKeyspace();
-        keyspace = graph.getKeyspace();
         qb = withGraph(graph);
     }
 
@@ -69,7 +57,7 @@ public class GraqlTest {
     public void testGraqlCount() throws MindmapsValidationException, InterruptedException, ExecutionException {
 
         // assert the graph is empty
-        Analytics computer = new Analytics(keyspace);
+        Analytics computer = new Analytics(graph.getKeyspace());
         assertEquals(0, computer.count());
 
         // create 3 instances
@@ -149,7 +137,7 @@ public class GraqlTest {
         Map<Instance, Long> degrees = ((Map) ((ComputeQuery) qb.parse("compute degrees;")).execute());
 
         // assert degrees are correct
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, graph.getKeyspace()).getGraph();
 
         entity1 = graph.getEntity("1");
         entity2 = graph.getEntity("2");
@@ -240,7 +228,7 @@ public class GraqlTest {
         ((ComputeQuery) qb.parse("compute degreesAndPersist;")).execute();
 
         // assert persisted degrees are correct
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, graph.getKeyspace()).getGraph();
         entity1 = graph.getEntity("1");
         entity2 = graph.getEntity("2");
         entity3 = graph.getEntity("3");

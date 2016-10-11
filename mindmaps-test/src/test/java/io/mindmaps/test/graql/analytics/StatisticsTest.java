@@ -20,27 +20,23 @@ package io.mindmaps.test.graql.analytics;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.Mindmaps;
-import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.*;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.graql.internal.util.GraqlType;
+import io.mindmaps.test.AbstractMindmapsEngineTest;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.*;
 import java.util.function.Supplier;
 
-import static io.mindmaps.test.MindmapsTest.usingTinker;
-import static io.mindmaps.test.AbstractMindmapsEngineTest.graphWithNewKeyspace;
-import static io.mindmaps.test.AbstractMindmapsEngineTest.startTestEngine;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
-public class StatisticsTest {
+public class StatisticsTest extends AbstractMindmapsEngineTest {
 
     private static final String thing = "thing";
     private static final String anotherThing = "anotherThing";
@@ -55,18 +51,14 @@ public class StatisticsTest {
 
 
     String keyspace;
-    MindmapsGraph graph;
     Analytics computer;
     double delta = 0.000001;
 
-    @BeforeClass
-    public static void setUpClass() throws Exception {
-        startTestEngine();
-    }
-
     @Before
-    public void setUp() throws InterruptedException, MindmapsValidationException {
-        graph = graphWithNewKeyspace();
+    public void setUp() {
+        // TODO: Fix tests in orientdb
+        assumeFalse(usingOrientDB());
+
         keyspace = graph.getKeyspace();
     }
 

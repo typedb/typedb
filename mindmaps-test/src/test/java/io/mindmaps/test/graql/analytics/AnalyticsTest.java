@@ -21,44 +21,33 @@ package io.mindmaps.test.graql.analytics;
 import com.google.common.collect.Sets;
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.MindmapsGraphFactory;
 import io.mindmaps.concept.*;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.test.AbstractMindmapsEngineTest;
 import org.apache.commons.collections.CollectionUtils;
-import org.junit.*;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-import static io.mindmaps.test.MindmapsTest.usingOrientDB;
-import static io.mindmaps.test.MindmapsTest.usingTinker;
-import static io.mindmaps.test.AbstractMindmapsEngineTest.factoryWithNewKeyspace;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
-public class AnalyticsTest {
+public class AnalyticsTest extends AbstractMindmapsEngineTest {
     private static long startTime;
-    private MindmapsGraph graph;
-    private MindmapsGraphFactory factory;
-
-    @BeforeClass
-    public static void setUpClass() throws Exception {
-        AbstractMindmapsEngineTest.startTestEngine();
-    }
 
     @Before
     public void setUp() {
         // TODO: Make orientdb support analytics
         assumeFalse(usingOrientDB());
-
-        factory = factoryWithNewKeyspace();
-        graph = factory.getGraph();
     }
 
     @Test

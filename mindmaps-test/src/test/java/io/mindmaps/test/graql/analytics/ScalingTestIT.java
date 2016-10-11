@@ -24,6 +24,7 @@ import io.mindmaps.concept.*;
 import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.internal.analytics.Analytics;
+import io.mindmaps.test.AbstractMindmapsEngineTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -36,18 +37,16 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.test.AbstractMindmapsEngineTest.graphWithNewKeyspace;
-import static io.mindmaps.test.AbstractMindmapsEngineTest.startTestEngine;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assume.assumeTrue;
 
-public class ScalingTestIT {
+public class ScalingTestIT extends AbstractMindmapsEngineTest {
 
     private static final String[] HOST_NAME =
             {"localhost"};
 
     String keyspace;
-    MindmapsGraph graph;
 
     // test parameters
     int NUM_SUPER_NODES = 1; // the number of supernodes to generate in the test graph
@@ -61,12 +60,12 @@ public class ScalingTestIT {
 
     @BeforeClass
     public static void setUpClass() throws Exception {
-        startTestEngine();
+        // TODO: Make this work with tinker and orientdb
+        assumeTrue(usingTitan());
     }
 
     @Before
-    public void setUp() throws InterruptedException {
-        graph = graphWithNewKeyspace();
+    public void setUp() {
         keyspace = graph.getKeyspace();
 
         // compute the sample of graph sizes

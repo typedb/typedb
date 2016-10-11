@@ -24,6 +24,8 @@ import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.MindmapsGraphFactory;
 import io.mindmaps.engine.MindmapsEngineServer;
+import org.junit.Before;
+import org.junit.BeforeClass;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,6 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.lang.Thread.sleep;
 
 public abstract class AbstractMindmapsEngineTest {
+
     protected static MindmapsGraphFactory factory;
     protected static MindmapsGraph graph;
 
@@ -41,8 +44,9 @@ public abstract class AbstractMindmapsEngineTest {
         logger.setLevel(Level.OFF);
     }
 
+    @BeforeClass
     public static void startTestEngine() throws Exception {
-        if (EMBEDDED_CASS_ON.compareAndSet(false, true)) {
+        if (usingTitan() && EMBEDDED_CASS_ON.compareAndSet(false, true)) {
             startEmbeddedCassandra();
         }
 
@@ -52,19 +56,20 @@ public abstract class AbstractMindmapsEngineTest {
         sleep(5000);
     }
 
-    public static MindmapsGraphFactory factoryWithNewKeyspace() {
+    @Before
+    public void setUp() {
+        factory = factoryWithNewKeyspace();
+        graph = factory.getGraph();
+    }
+
+    private static MindmapsGraphFactory factoryWithNewKeyspace() {
         String keyspace;
-        if (MindmapsTest.usingOrientDB()) {
+        if (usingOrientDB()) {
             keyspace = "memory";
         } else {
             keyspace = UUID.randomUUID().toString().replaceAll("-", "");
         }
         return Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace);
-    }
-
-    public static MindmapsGraph graphWithNewKeyspace() {
-        MindmapsGraphFactory factory = factoryWithNewKeyspace();
-        return factory.getGraph();
     }
 
     private static void startEmbeddedCassandra() {
@@ -78,10 +83,24 @@ public abstract class AbstractMindmapsEngineTest {
 
             hideLogs();
             sleep(5000);
-        }
-        catch (ClassNotFoundException ignored) {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static String getConfig() {
+        return System.getProperty("mindmaps.test-profile");
+    }
+
+    protected static boolean usingTinker() {
+        return "tinker".equals(getConfig());
+    }
+
+    protected static boolean usingTitan() {
+        return "titan".equals(getConfig());
+    }
+
+    protected static boolean usingOrientDB() {
+        return "orientdb".equals(getConfig());
     }
 }
