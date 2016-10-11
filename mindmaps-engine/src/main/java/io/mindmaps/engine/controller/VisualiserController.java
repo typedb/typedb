@@ -25,7 +25,6 @@ import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.engine.visualiser.HALConcept;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.internal.pattern.property.RelationProperty;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.REST;
@@ -159,54 +158,68 @@ public class VisualiserController {
         if (currentGraphName == null) currentGraphName = defaultGraphName;
 
         try {
-
             MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName);
-            final JSONArray halArray = new JSONArray();
 
-            LOG.debug("Start querying for :[{}]", req.queryParams(REST.Request.QUERY_FIELD));
+            LOG.debug("Start querying for: [{}]", req.queryParams(REST.Request.QUERY_FIELD));
             MatchQuery matchQuery = withGraph(graph).parseMatch(req.queryParams(REST.Request.QUERY_FIELD));
-            Collection<Map<String, Concept>> list = matchQuery
+            Collection<Map<String, Concept>> graqlResultsList = matchQuery
                     .limit(SAFETY_LIMIT)
                     .stream().collect(Collectors.toList());
             LOG.debug("Done querying.");
 
-            final Map<String, Collection<String>> linkedNodes = new HashMap<>();
-            matchQuery.admin().getPattern().getVars().forEach(var -> {
-                if (var.getProperty(RelationProperty.class).isPresent()) {
-                    final List<String> castingsInPattern = var.getProperty(RelationProperty.class).get()
-                            .getCastings().map(x -> x.getRolePlayer().getName()).collect(Collectors.toList());
-                    if (castingsInPattern.size() > 1) {
-                        castingsInPattern.forEach(x -> {
-                            linkedNodes.putIfAbsent(x, new HashSet<>());
-                            castingsInPattern.forEach(y -> {
-                                if (!y.equals(x))
-                                    linkedNodes.get(x).add(y);
-                            });
-                        });
-                    }
-                }
-            });
-            JSONArray lines = new JSONArray();
-            list.parallelStream()
-                    .forEach(x -> {
-                        JSONArray line = new JSONArray();
-                        x.entrySet().forEach(current-> {
-                            LOG.trace("Building HAL resource for concept with id {}", current.getValue().getId());
-                            Representation currentHal = new HALConcept(current.getValue(), MATCH_QUERY_FIXED_DEGREE, true,
-                                    matchQuery.admin().getTypes().stream().map(Concept::getId).collect(Collectors.toSet())).getRepresentation();
-                            if (linkedNodes.containsKey(current.getKey()))
-                                linkedNodes.get(current.getKey()).forEach(varName -> currentHal.withLink("edge_to", x.get(varName).getId()));
-                            line.put(new JSONObject(currentHal.toString(RepresentationFactory.HAL_JSON)));
-                        });
-                        lines.put(line);
-                    });
+            Map<String, Collection<String>> linkedNodes = computeLinkedNodesFromQuery(matchQuery);
+            Set<String> typesAskedInQuery = matchQuery.admin().getTypes().stream().map(Concept::getId).collect(Collectors.toSet());
+            JSONArray collectionOfHalArrays = buildHALRepresentations(graqlResultsList, linkedNodes, typesAskedInQuery);
+
             LOG.debug("Done building resources.");
-            return lines.toString();
+            return collectionOfHalArrays.toString();
         } catch (Exception e) {
             LOG.error("Exception while building HAL representation - Match", e);
             res.status(500);
             return e.getMessage();
         }
+    }
+
+    private JSONArray buildHALRepresentations(Collection<Map<String, Concept>> graqlResultsList, Map<String, Collection<String>> linkedNodes, Set<String> typesAskedInQuery) {
+        JSONArray collectionOfHalArrays = new JSONArray();
+
+        graqlResultsList.parallelStream()
+                .forEach(resultLine -> {
+                    JSONArray line = new JSONArray();
+                    resultLine.entrySet().forEach(current -> {
+                        LOG.trace("Building HAL resource for concept with id {}", current.getValue().getId());
+                        Representation currentHal = new HALConcept(current.getValue(), MATCH_QUERY_FIXED_DEGREE, true,
+                                typesAskedInQuery).getRepresentation();
+                        if (linkedNodes.containsKey(current.getKey()))
+                            linkedNodes.get(current.getKey()).forEach(varName -> currentHal.withLink("edge_to", resultLine.get(varName).getId()));
+                        line.put(new JSONObject(currentHal.toString(RepresentationFactory.HAL_JSON)));
+                    });
+                    collectionOfHalArrays.put(line);
+                });
+        return collectionOfHalArrays;
+    }
+
+    private Map<String, Collection<String>> computeLinkedNodesFromQuery(MatchQuery matchQuery) {
+        final Map<String, Collection<String>> linkedNodes = new HashMap<>();
+        matchQuery.admin().getPattern().getVars().forEach(var -> {
+            //if in the current var is expressed some kind of relation (e.g. ($x,$y))
+            if (var.getProperty(RelationProperty.class).isPresent()) {
+                //collect all the role players in the current var's relations (e.g. 'x' and 'y')
+                final List<String> rolePlayersInVar = var.getProperty(RelationProperty.class).get()
+                        .getCastings().map(x -> x.getRolePlayer().getName()).collect(Collectors.toList());
+                //if it is a binary or ternary relation
+                if (rolePlayersInVar.size() > 1) {
+                    rolePlayersInVar.forEach(rolePlayer -> {
+                        linkedNodes.putIfAbsent(rolePlayer, new HashSet<>());
+                        rolePlayersInVar.forEach(y -> {
+                            if (!y.equals(rolePlayer))
+                                linkedNodes.get(rolePlayer).add(y);
+                        });
+                    });
+                }
+            }
+        });
+        return linkedNodes;
     }
 
 }
