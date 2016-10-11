@@ -37,7 +37,7 @@ public abstract class AbstractMindmapsEngineTest {
     protected static MindmapsGraphFactory factory;
     protected static MindmapsGraph graph;
 
-    private static AtomicBoolean EMBEDDED_CASS_ON = new AtomicBoolean(false);
+    private static AtomicBoolean ENGINE_ON = new AtomicBoolean(false);
 
     private static void hideLogs() {
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
@@ -46,18 +46,19 @@ public abstract class AbstractMindmapsEngineTest {
 
     @BeforeClass
     public static void startTestEngine() throws Exception {
-        if (usingTitan() && EMBEDDED_CASS_ON.compareAndSet(false, true)) {
-            startEmbeddedCassandra();
+        if (ENGINE_ON.compareAndSet(false, true)) {
+            if (usingTitan()) {
+                startEmbeddedCassandra();
+            }
+
+            MindmapsEngineServer.start();
         }
 
-        MindmapsEngineServer.stop();
-        sleep(5000);
-        MindmapsEngineServer.start();
         sleep(5000);
     }
 
     @Before
-    public void setUp() {
+    public final void createGraph() {
         factory = factoryWithNewKeyspace();
         graph = factory.getGraph();
     }
