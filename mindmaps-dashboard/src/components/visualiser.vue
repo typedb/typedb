@@ -32,14 +32,27 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                     </div>
                 </div>
             </div>
-            <div class="panel panel-c-info panel-collapse" v-show="typeInstances">
-                <div class="panel-body">
-                    <div v-for="k in typeKeys">
-                        <h4>
-                            <button @click="toggleElement(k+'-group')" class="btn btn-link">{{k | capitalize}}</button>
-                        </h4>
-                        <div class="row m-t-md type-row btn-group {{k}}-group" style="display: none;">
-                            <button v-for="i in typeInstances[k]" @click="typeQuery(k, i)" class="btn btn-default">{{i}}</button>
+        </div>
+    </div>
+
+    <div class="row" v-show="typeInstances">
+        <div class="col-xs-12">
+            <div class="panel panel-c-info panel-filled" style="margin-bottom: 0px; margin-top: 20px;">
+                <div class="tabs-col">
+                    <div class="tabs-container">
+                        <ul class="nav nav-tabs">
+                            <li v-for="k in typeKeys"><a data-toggle="tab" href="#{{k}}-tab" aria-expanded="false">{{k | capitalize}}</a></li>
+                        </ul>
+                    </div>
+                    <div class="tab-content">
+                        <div v-for="k in typeKeys" id="{{k}}-tab" class="tab-pane">
+                            <div class="panel-body types-panel" style="margin: 0px;">
+                                <div class="{{k}}-group row m-t-md" style="margin-top: 0px;">
+                                    <div class="col-lg-2 col-md-3 col-sm-6 col-xs-6 type-instance" v-for="i in typeInstances[k]">
+                                        <button  @click="typeQuery(k, i)" class="btn btn-link">{{i}}</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -159,11 +172,6 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 }
 .types-button {
     padding-left: 5px;
-}
-.type-row {
-    margin-top: 2px;
-    margin-bottom: 10px;
-    margin-left: 5px;
 }
 h4 {
     margin-top: 0px;
@@ -322,10 +330,6 @@ export default {
         /*
          * User interaction: visual elements control
          */
-        toggleElement(e) {
-            $('.'+e).toggle();
-        },
-
         configureNode(p) {
             if(this.selectedProps.includes(p))
                 this.selectedProps = this.selectedProps.filter(x => x != p);
