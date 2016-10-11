@@ -145,6 +145,12 @@ public class Analytics {
         return count.getOrDefault(CountMapReduce.MEMORY_KEY, 0L);
     }
 
+    public long countVP() {
+        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
+        ComputerResult result = computer.compute(new CountVertexProgram(subtypes));
+        return result.memory().get(CountVertexProgram.COUNT);
+    }
+
     /**
      * Minimum value of the selected resource-type.
      *
