@@ -3,13 +3,13 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>mindmaps-test</artifactId>
+        <artifactId>mindmaps</artifactId>
         <groupId>io.mindmaps</groupId>
         <version>0.3.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>core-test</artifactId>
+    <artifactId>mindmaps-test</artifactId>
     <packaging>jar</packaging>
 
     <properties>
@@ -25,7 +25,7 @@
 
                 <configuration>
                     <systemPropertyVariables>
-                        <mindmaps.conf>../../conf/test/${mindmaps.test-profile}/mindmaps-engine.properties</mindmaps.conf>
+                        <mindmaps.conf>../conf/test/${mindmaps.test-profile}/mindmaps-engine.properties</mindmaps.conf>
                         <mindmaps.test-profile>${mindmaps.test-profile}</mindmaps.test-profile>
                     </systemPropertyVariables>
                 </configuration>

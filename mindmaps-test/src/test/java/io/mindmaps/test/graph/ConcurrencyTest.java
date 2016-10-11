@@ -19,7 +19,7 @@
 package io.mindmaps.test.graph;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.MindmapsTest;
+import io.mindmaps.test.MindmapsTest;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.RelationType;

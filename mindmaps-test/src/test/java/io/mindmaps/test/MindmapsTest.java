@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps;
+package io.mindmaps.test;
 
 public class MindmapsTest {
 

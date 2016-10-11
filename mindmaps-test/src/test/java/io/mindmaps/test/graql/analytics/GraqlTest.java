@@ -32,8 +32,8 @@ import org.junit.*;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-import static io.mindmaps.MindmapsTest.usingOrientDB;
-import static io.mindmaps.MindmapsTest.usingTinker;
+import static io.mindmaps.test.MindmapsTest.usingOrientDB;
+import static io.mindmaps.test.MindmapsTest.usingTinker;
 import static io.mindmaps.graql.Graql.or;
 import static io.mindmaps.graql.Graql.var;
 import static io.mindmaps.graql.Graql.withGraph;

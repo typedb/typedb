@@ -32,7 +32,7 @@ import org.junit.Test;
 import java.util.*;
 import java.util.function.Supplier;
 
-import static io.mindmaps.MindmapsTest.usingTinker;
+import static io.mindmaps.test.MindmapsTest.usingTinker;
 import static io.mindmaps.test.AbstractMindmapsEngineTest.graphWithNewKeyspace;
 import static io.mindmaps.test.AbstractMindmapsEngineTest.startTestEngine;
 import static org.junit.Assert.assertEquals;

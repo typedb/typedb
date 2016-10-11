@@ -33,8 +33,8 @@ import org.junit.*;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-import static io.mindmaps.MindmapsTest.usingOrientDB;
-import static io.mindmaps.MindmapsTest.usingTinker;
+import static io.mindmaps.test.MindmapsTest.usingOrientDB;
+import static io.mindmaps.test.MindmapsTest.usingTinker;
 import static io.mindmaps.test.AbstractMindmapsEngineTest.factoryWithNewKeyspace;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
