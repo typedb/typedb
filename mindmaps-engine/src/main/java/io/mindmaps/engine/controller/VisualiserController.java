@@ -23,6 +23,9 @@ import io.mindmaps.concept.Concept;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.engine.visualiser.HALConcept;
 import io.mindmaps.factory.GraphFactory;
+import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.internal.pattern.property.RelationProperty;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.REST;
 import io.swagger.annotations.Api;
@@ -41,6 +44,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -66,7 +70,6 @@ public class VisualiserController {
         defaultGraphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
         separationDegree = ConfigProperties.getInstance().getPropertyAsInt(ConfigProperties.HAL_DEGREE_PROPERTY);
 
-
         get(REST.WebPath.CONCEPT_BY_ID_URI + REST.Request.ID_PARAMETER, this::getConceptById);
         get(REST.WebPath.CONCEPT_BY_ID_ONTOLOGY_URI + REST.Request.ID_PARAMETER, this::getConceptByIdOntology);
 
@@ -83,18 +86,24 @@ public class VisualiserController {
     })
     private String getConceptById(Request req, Response res) {
 
-        String graphNameParam = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
-        String currentGraphName = (graphNameParam == null) ? defaultGraphName : graphNameParam;
+        try {
+            String graphNameParam = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
+            String currentGraphName = (graphNameParam == null) ? defaultGraphName : graphNameParam;
 
-        MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName);
+            MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName);
 
-        Concept concept = graph.getConcept(req.params(REST.Request.ID_PARAMETER));
-        if (concept != null) {
-            LOG.trace("Building HAL resource for concept with id {}", concept.getId());
-            return new HALConcept(concept, separationDegree,false).render();
-        } else {
-            res.status(404);
-            return ErrorMessage.CONCEPT_ID_NOT_FOUND.getMessage(req.params(REST.Request.ID_PARAMETER));
+            Concept concept = graph.getConcept(req.params(REST.Request.ID_PARAMETER));
+            if (concept != null) {
+                LOG.trace("Building HAL resource for concept with id {}", concept.getId());
+                return new HALConcept(concept, separationDegree, false, new HashSet<String>()).render();
+            } else {
+                res.status(404);
+                return ErrorMessage.CONCEPT_ID_NOT_FOUND.getMessage(req.params(REST.Request.ID_PARAMETER));
+            }
+        } catch (Exception e) {
+            LOG.error("Exception while building HAL representation - by ID", e);
+            res.status(500);
+            return e.getMessage();
         }
     }
 
@@ -108,24 +117,30 @@ public class VisualiserController {
     })
     private String getConceptByIdOntology(Request req, Response res) {
 
-        String graphNameParam = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
-        String currentGraphName = (graphNameParam == null) ? defaultGraphName : graphNameParam;
+        try {
+            String graphNameParam = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
+            String currentGraphName = (graphNameParam == null) ? defaultGraphName : graphNameParam;
 
-        MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName);
+            MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName);
 
-        Concept concept = graph.getConcept(req.params(REST.Request.ID_PARAMETER));
-        if (concept != null) {
-            try {
-                LOG.trace("Building HAL resource for concept with id {}", concept.getId());
-                return new HALConcept(concept).render();
-            }catch(Exception e){
-                LOG.error("Exception while building HAL representation - by ID",e);
-                res.status(500);
-                return e.getMessage();
+            Concept concept = graph.getConcept(req.params(REST.Request.ID_PARAMETER));
+            if (concept != null) {
+                try {
+                    LOG.trace("Building HAL resource for concept with id {}", concept.getId());
+                    return new HALConcept(concept).render();
+                } catch (Exception e) {
+                    LOG.error("Exception while building HAL representation - by ID", e);
+                    res.status(500);
+                    return e.getMessage();
+                }
+            } else {
+                res.status(404);
+                return ErrorMessage.CONCEPT_ID_NOT_FOUND.getMessage(req.params(REST.Request.ID_PARAMETER));
             }
-        } else {
-            res.status(404);
-            return ErrorMessage.CONCEPT_ID_NOT_FOUND.getMessage(req.params(REST.Request.ID_PARAMETER));
+        } catch (Exception e) {
+            LOG.error("Exception while building HAL representation - by ID", e);
+            res.status(500);
+            return e.getMessage();
         }
     }
 
@@ -147,16 +162,23 @@ public class VisualiserController {
             MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName);
             final JSONArray halArray = new JSONArray();
 
-            LOG.debug("Start querying for :[{}]",req.queryParams(REST.Request.QUERY_FIELD));
-            Collection<Map<String,Concept>> list = withGraph(graph).parseMatch(req.queryParams(REST.Request.QUERY_FIELD))
+            LOG.debug("Start querying for :[{}]", req.queryParams(REST.Request.QUERY_FIELD));
+            MatchQuery matchQuery = withGraph(graph).parseMatch(req.queryParams(REST.Request.QUERY_FIELD));
+            Collection<Map<String, Concept>> list = matchQuery
                     .limit(SAFETY_LIMIT)
                     .stream().collect(Collectors.toList());
             LOG.debug("Done querying.");
+//            matchQuery.admin().getPattern().getVars().forEach(var->{
+//                if(var.getProperty(RelationProperty.class).isPresent()){
+//                    ((RelationProperty)var.admin().getProperty(RelationProperty.class)).getCastings().forEach();
+//                }
+//            });
             list.parallelStream()
                     .forEach(x -> x.values()
                             .forEach(concept -> {
                                 LOG.trace("Building HAL resource for concept with id {}", concept.getId());
-                                halArray.put(new JSONObject(new HALConcept(concept, MATCH_QUERY_FIXED_DEGREE,true).render()));
+                                halArray.put(new JSONObject(new HALConcept(concept, MATCH_QUERY_FIXED_DEGREE, true,
+                                        matchQuery.admin().getTypes().stream().map(Concept::getId).collect(Collectors.toSet())).render()));
                             }));
             LOG.debug("Done building resources.");
             return halArray.toString();
