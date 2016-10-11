@@ -301,7 +301,9 @@ export default class Visualiser {
                 return v;
             });
 
+        _.keys(this.nodes._data).forEach(x => {if(this.network.isCluster(x)) this.deleteNode(x)});
         this.network.setData({nodes: this.nodes, edges: this.edges});
+        this.cluster();
     }
 
     addCluster(clusterBy) {
