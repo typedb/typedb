@@ -27,10 +27,7 @@ import org.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Class used to build the HAL representation of a given concept.
@@ -45,22 +42,22 @@ public class HALConcept {
     private final String resourceLinkPrefix;
     private final String resourceLinkOntologyPrefix;
     private final Logger LOG = LoggerFactory.getLogger(HALConcept.class);
-    private final String ROOT_CONCEPT = "type";
-    private final String ISA_EDGE = "isa";
-    private final String AKO_EDGE = "ako";
-    private final String ONTOLOGY_LINK = "ontology";
-    private final String OUTBOUND_EDGE = "OUT";
-    private final String INBOUND_EDGE = "IN";
-    private final String HAS_ROLE_EDGE = "has-role";
-    private final String PLAYED_BY_EDGE = "played-by";
-    private final String PLAYS_ROLE_EDGE = "plays-role";
+    private final static String ROOT_CONCEPT = "type";
+    private final static String ISA_EDGE = "isa";
+    private final static String AKO_EDGE = "ako";
+    private final static String ONTOLOGY_LINK = "ontology";
+    private final static String OUTBOUND_EDGE = "OUT";
+    private final static String INBOUND_EDGE = "IN";
+    private final static String HAS_ROLE_EDGE = "has-role";
+    private final static String PLAYED_BY_EDGE = "played-by";
+    private final static String PLAYS_ROLE_EDGE = "plays-role";
 
     // - State properties
 
-    private final String ID_PROPERTY = "_id";
-    private final String TYPE_PROPERTY = "_type";
-    private final String BASETYPE_PROPERTY = "_baseType";
-    private final String DIRECTION_PROPERTY = "_direction";
+    private final static String ID_PROPERTY = "_id";
+    private final static String TYPE_PROPERTY = "_type";
+    private final static String BASETYPE_PROPERTY = "_baseType";
+    private final static String DIRECTION_PROPERTY = "_direction";
 
     private boolean embedType;
     private Set<String> typesInQuery = null;
@@ -272,17 +269,16 @@ public class HALConcept {
         resourceLinkOntologyPrefix = REST.WebPath.CONCEPT_BY_ID_ONTOLOGY_URI;
 
         factory = new StandardRepresentationFactory();
+        typesInQuery=new HashSet<>();
         halResource = factory.newRepresentation(resourceLinkPrefix + concept.getId());
         embedType = true;
 
-        try {
-            handleConceptOntology(halResource, concept);
-        } catch (Exception e) {
-            LOG.error("Exception while building HAL representation", e);
-        }
+        handleConceptOntology(halResource, concept);
+
     }
 
     private void handleConceptOntology(Representation halResource, Concept concept) {
+
 
         generateStateAndLinks(halResource, concept);
 
@@ -349,4 +345,6 @@ public class HALConcept {
     public String render() {
         return halResource.toString(RepresentationFactory.HAL_JSON);
     }
+
+    public Representation getRepresentation(){return halResource;}
 }

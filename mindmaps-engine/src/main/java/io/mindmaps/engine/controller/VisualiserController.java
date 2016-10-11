@@ -18,6 +18,7 @@
 
 package io.mindmaps.engine.controller;
 
+import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.engine.util.ConfigProperties;
@@ -43,13 +44,13 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.mindmaps.graql.Graql.withGraph;
 import static spark.Spark.get;
+
+import com.theoryinpractise.halbuilder.api.Representation;
 
 
 @Path("/graph")
@@ -168,20 +169,39 @@ public class VisualiserController {
                     .limit(SAFETY_LIMIT)
                     .stream().collect(Collectors.toList());
             LOG.debug("Done querying.");
-//            matchQuery.admin().getPattern().getVars().forEach(var->{
-//                if(var.getProperty(RelationProperty.class).isPresent()){
-//                    ((RelationProperty)var.admin().getProperty(RelationProperty.class)).getCastings().forEach();
-//                }
-//            });
+
+            final Map<String, Collection<String>> linkedNodes = new HashMap<>();
+            matchQuery.admin().getPattern().getVars().forEach(var -> {
+                if (var.getProperty(RelationProperty.class).isPresent()) {
+                    final List<String> castingsInPattern = var.getProperty(RelationProperty.class).get()
+                            .getCastings().map(x -> x.getRolePlayer().getName()).collect(Collectors.toList());
+                    if (castingsInPattern.size() > 1) {
+                        castingsInPattern.forEach(x -> {
+                            linkedNodes.putIfAbsent(x, new HashSet<>());
+                            castingsInPattern.forEach(y -> {
+                                if (!y.equals(x))
+                                    linkedNodes.get(x).add(y);
+                            });
+                        });
+                    }
+                }
+            });
+            JSONArray lines = new JSONArray();
             list.parallelStream()
-                    .forEach(x -> x.values()
-                            .forEach(concept -> {
-                                LOG.trace("Building HAL resource for concept with id {}", concept.getId());
-                                halArray.put(new JSONObject(new HALConcept(concept, MATCH_QUERY_FIXED_DEGREE, true,
-                                        matchQuery.admin().getTypes().stream().map(Concept::getId).collect(Collectors.toSet())).render()));
-                            }));
+                    .forEach(x -> {
+                        JSONArray line = new JSONArray();
+                        for (Map.Entry<String, Concept> current : x.entrySet()) {
+                            LOG.trace("Building HAL resource for concept with id {}", current.getValue().getId());
+                            Representation currentHal = new HALConcept(current.getValue(), MATCH_QUERY_FIXED_DEGREE, true,
+                                    matchQuery.admin().getTypes().stream().map(Concept::getId).collect(Collectors.toSet())).getRepresentation();
+                            if (linkedNodes.containsKey(current.getKey()))
+                                linkedNodes.get(current.getKey()).forEach(varName -> currentHal.withLink("edge_to", x.get(varName).getId()));
+                            line.put(new JSONObject(currentHal.toString(RepresentationFactory.HAL_JSON)));
+                        }
+                        lines.put(line);
+                    });
             LOG.debug("Done building resources.");
-            return halArray.toString();
+            return lines.toString();
         } catch (Exception e) {
             LOG.error("Exception while building HAL representation - Match", e);
             res.status(500);
