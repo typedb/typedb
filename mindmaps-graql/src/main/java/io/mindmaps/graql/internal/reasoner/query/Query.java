@@ -54,7 +54,7 @@ public class Query implements MatchQueryInternal {
         MatchQuery matchQuery = Graql.withGraph(graph).parseMatch(query);
         this.selectVars = Sets.newHashSet(matchQuery.admin().getSelectedNames());
         this.atomSet = AtomicFactory.createAtomSet(matchQuery.admin().getPattern(), this);
-        this.pattern = createPattern();
+        this.pattern = createPattern(atomSet);
         this.typeAtomMap = getTypeAtomMap(atomSet);
     }
 
@@ -62,7 +62,7 @@ public class Query implements MatchQueryInternal {
         this.graph = graph;
         this.selectVars = Sets.newHashSet(query.admin().getSelectedNames());
         this.atomSet = AtomicFactory.createAtomSet(query.admin().getPattern(), this);
-        this.pattern = createPattern();
+        this.pattern = createPattern(atomSet);
         this.typeAtomMap = getTypeAtomMap(atomSet);
     }
 
@@ -132,9 +132,9 @@ public class Query implements MatchQueryInternal {
     @Override
     public Conjunction<PatternAdmin> getPattern(){ return pattern;}
 
-    private Conjunction<PatternAdmin> createPattern(){
+    private Conjunction<PatternAdmin> createPattern(Set<Atomic> atoms){
         Set<PatternAdmin> patterns = new HashSet<>();
-        atomSet.forEach(atom -> patterns.add(atom.getPattern()));
+        atoms.forEach(atom -> patterns.add(atom.getPattern()));
         return Patterns.conjunction(patterns);
     }
 
