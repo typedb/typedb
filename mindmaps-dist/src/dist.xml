@@ -41,20 +41,22 @@
             <includes>
                 <include>pom.xml</include>
                 <include>LICENSE.txt</include>
-                <include>mindmaps-core</include>
-                <include>mindmaps-dashboard</include>
-                <include>mindmaps-dist</include>
-                <include>mindmaps-engine</include>
-                <include>mindmaps-graph</include>
-                <include>mindmaps-graql</include>
-                <include>mindmaps-graql-shell</include>
-                <include>mindmaps-migration</include>
-                <include>mindmaps-orientdb-factory</include>
-                <include>mindmaps-test</include>
-                <include>mindmaps-titan-factory</include>
+                <include>mindmaps-core/**</include>
+                <include>mindmaps-dashboard/**</include>
+                <include>mindmaps-dist/**</include>
+                <include>mindmaps-engine/**</include>
+                <include>mindmaps-graph/**</include>
+                <include>mindmaps-graql/**</include>
+                <include>mindmaps-graql-shell/**</include>
+                <include>mindmaps-migration/**</include>
+                <include>mindmaps-orientdb-factory/**</include>
+                <include>mindmaps-test/**</include>
+                <include>mindmaps-titan-factory/**</include>
             </includes>
             <excludes>
                 <exclude>**/target/</exclude>
+                <exclude>mindmaps-dashboard/node_modules/</exclude>
+                <exclude>mindmaps-dashboard/static/dashboard.js</exclude>
             </excludes>
         </fileSet>
         <fileSet>
