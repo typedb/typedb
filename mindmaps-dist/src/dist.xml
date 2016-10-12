@@ -82,7 +82,7 @@
             <outputDirectory>examples</outputDirectory>
             <directory>${basedir}/src/examples/</directory>
             <includes>
-                <include>*</include>
+                <include>**</include>
             </includes>
         </fileSet>
         <fileSet>
