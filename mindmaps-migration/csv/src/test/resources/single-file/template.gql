@@ -1,0 +1,6 @@
+$x isa make id <Make>;
+$y isa model id <Model>
+    if (Year != null) do {has year <Year> }
+    if (Description != null) do { has description <Description> }
+    if (Price != null) do { has price @double(Price) };
+(make-of-car: $x, model-of-car: $y) isa make-and-model;
