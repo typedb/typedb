@@ -25,6 +25,7 @@ import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.test.AbstractMindmapsEngineTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashSet;
@@ -105,17 +106,9 @@ public class ConcurrencyTest extends AbstractMindmapsEngineTest {
         assertResults(graph);
     }
 
+    @Ignore // TODO: Fix this test
     @Test
     public void testWritingTheSameDataConcurrentlyWithRetriesOnFailure() throws ExecutionException, InterruptedException, MindmapsValidationException {
-        // TODO: Fix this test in tinkergraph
-        assumeFalse(usingTinker());
-
-        // TODO: Fix this test in titan
-        assumeFalse(usingTitan());
-
-        // TODO: Fix this test in orientdb
-        assumeFalse(usingOrientDB());
-
         createOntology(graph);
         concurrentWriteSuper(graph);
         assertResults(graph);

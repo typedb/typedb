@@ -39,6 +39,8 @@ public abstract class AbstractMindmapsEngineTest {
 
     private static AtomicBoolean ENGINE_ON = new AtomicBoolean(false);
 
+    private static final String CONFIG = System.getProperty("mindmaps.test-profile");
+
     private static void hideLogs() {
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.OFF);
@@ -89,19 +91,15 @@ public abstract class AbstractMindmapsEngineTest {
         }
     }
 
-    private static String getConfig() {
-        return System.getProperty("mindmaps.test-profile");
-    }
-
     protected static boolean usingTinker() {
-        return "tinker".equals(getConfig());
+        return "tinker".equals(CONFIG);
     }
 
     protected static boolean usingTitan() {
-        return "titan".equals(getConfig());
+        return "titan".equals(CONFIG);
     }
 
     protected static boolean usingOrientDB() {
-        return "orientdb".equals(getConfig());
+        return "orientdb".equals(CONFIG);
     }
 }
