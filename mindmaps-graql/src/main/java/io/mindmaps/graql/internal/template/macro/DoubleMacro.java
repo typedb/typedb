@@ -36,6 +36,6 @@ public class DoubleMacro implements Macro<Double> {
 
     @Override
     public String name(){
-        return "int";
+        return "double";
     }
 }

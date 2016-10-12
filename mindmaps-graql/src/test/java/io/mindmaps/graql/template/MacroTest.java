@@ -79,14 +79,9 @@ public class MacroTest {
         assertParseEquals(template, Collections.singletonMap("value", 4), expected);
     }
 
-    @Test
-    public void intMacroBreaksWithWrongNumberArguments(){
-        assertTrue(false);
-    }
-
-    @Test
-    public void intMacroBreaksWithWrongTypeArguments(){
-        assertTrue(false);
+    @Test(expected = IllegalArgumentException.class)
+    public void intMacroBreaksWithWrongNumberArguments0(){
+        assertParseEquals("@int()", Collections.emptyMap(), "");
     }
 
     // double macro
@@ -100,14 +95,9 @@ public class MacroTest {
         assertParseEquals(template, Collections.singletonMap("value", 4.0), expected);
     }
 
-    @Test
+    @Test(expected = IllegalArgumentException.class)
     public void doubleMacroBreaksWithWrongNumberArguments(){
-        assertTrue(false);
-    }
-
-    @Test
-    public void doubleMacroBreaksWithWrongTypeArguments(){
-        assertTrue(false);
+        assertParseEquals("@double()", Collections.emptyMap(), "");
     }
 
     // equals
@@ -162,14 +152,13 @@ public class MacroTest {
         assertParseEquals(template, data, expected);
     }
 
-    @Test
+    @Test(expected = IllegalArgumentException.class)
     public void equalsMacroBreaksWithWrongNumberArguments(){
-        assertTrue(false);
+        assertParseEquals("@equals(this)", Collections.singletonMap("this", "one"), "");
     }
 
     @Test
     public void macroInArgumentTest(){
-
         String template = "if (@equals(this that)) do { equals } else { not }";
         String expected = " equals";
         Map<String, Object> data = new HashMap<>();
