@@ -367,8 +367,8 @@ public class TemplateParserTest {
     @Test
     public void ifElseIfTest(){
         String template = "" +
-                "if(firstName == true ) do { insert $person has hasName <firstName>; }\n" +
-                "elseif(firstName == false) do { insert $person; }\n" +
+                "if(eq firstName true) do { insert $person has hasName <firstName>; }\n" +
+                "elseif(eq firstName false) do { insert $person; }\n" +
                 "else { something }";
         String expected = " insert $person0 has hasName true;";
 
@@ -384,7 +384,7 @@ public class TemplateParserTest {
     @Test
     public void ifElseTest(){
         String template = "" +
-                "if ( firstName != null ) do {\n" +
+                "if (ne firstName null ) do {\n" +
                 "    insert $person has name <firstName>;" +
                 "}\n" +
                 "else {\n" +
@@ -405,7 +405,7 @@ public class TemplateParserTest {
 
     @Test
     public void andExpressionTest(){
-        String template = "if(this and that) do { something }";
+        String template = "if(and this that) do { something }";
         String expected = " something";
 
         Map<String, Object> data = new HashMap<>();
@@ -429,9 +429,17 @@ public class TemplateParserTest {
         assertParseEquals(template, data, expected);
     }
 
+    @Test(expected = RuntimeException.class)
+    public void andExpressionWrongTypeTest(){
+        Map<String, Object> data = new HashMap<>();
+        data.put("this", true);
+        data.put("that", 2);
+        assertParseEquals("if(and this that) do { something }", data, " something");
+    }
+
     @Test
     public void orExpressionTest(){
-        String template = "if(this or that) do { something }";
+        String template = "if(or this that) do { something }";
         String expected = " something";
 
         Map<String, Object> data = new HashMap<>();
@@ -455,6 +463,14 @@ public class TemplateParserTest {
         assertParseEquals(template, data, expected);
     }
 
+    @Test(expected = RuntimeException.class)
+    public void orExpressionWrongTypeTest(){
+        Map<String, Object> data = new HashMap<>();
+        data.put("this", true);
+        data.put("that", 2);
+        assertParseEquals("if(or this that) do { something }", data, " something");
+    }
+
     @Test
     public void notExpressionTest(){
         String template = "if(not this) do { something }";
@@ -464,6 +480,98 @@ public class TemplateParserTest {
 
         expected = "";
         assertParseEquals(template, Collections.singletonMap("this", true), expected);
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void notExpressionWrongTypeTest(){
+        assertParseEquals("if(not this) do {y}", Collections.singletonMap("this", "string"), "");
+    }
+
+    @Test
+    public void greaterExpressionTest(){
+        Map<String, Object> data = new HashMap<>();
+        data.put("first", 1);
+        data.put("second", 2);
+
+        assertParseEquals("if(gt first second) do {y}", data, "");
+        assertParseEquals("if(gt second first) do {y}", data, "y");
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void greaterExpressionWrongTypeTest(){
+        Map<String, Object> data = new HashMap<>();
+        data.put("first", 1);
+        data.put("second", "string");
+        assertParseEquals("if(gt first second) do {y}", data, "");
+    }
+
+    @Test
+    public void greaterEqualsExpressionTest(){
+        Map<String, Object> data = new HashMap<>();
+        data.put("first", 1);
+        data.put("second", 2);
+
+        assertParseEquals("if(ge first second) do {y}", data, "");
+        assertParseEquals("if(ge second first) do {y}", data, "y");
+
+        data.put("first", 2);
+        assertParseEquals("if(ge first second) do {y}", data, "y");
+
+        data.put("first", 2.0);
+        assertParseEquals("if(ge first second) do {y}", data, "y");
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void greaterEqualsExpressionWrongTypeTest(){
+        Map<String, Object> data = new HashMap<>();
+        data.put("first", 1);
+        data.put("second", "string");
+        assertParseEquals("if(ge first second) do {y}", data, "");
+    }
+
+    @Test
+    public void lessExpressionTest(){
+        Map<String, Object> data = new HashMap<>();
+        data.put("first", 1);
+        data.put("second", 2);
+
+        assertParseEquals("if(lt first second) do {y}", data, "y");
+        assertParseEquals("if(lt second first) do {y}", data, "");
+
+        data.put("second", 1);
+        assertParseEquals("if(lt second first) do {y}", data, "");
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void lessExpressionWrongTypeTest(){
+        Map<String, Object> data = new HashMap<>();
+        data.put("first", 1);
+        data.put("second", "string");
+        assertParseEquals("if(lt first second) do {y}", data, "");
+    }
+
+    @Test
+    public void lessEqualsExpressionTest(){
+        Map<String, Object> data = new HashMap<>();
+        data.put("first", 1);
+        data.put("second", 2);
+
+        assertParseEquals("if(le first second) do {y}", data, "y");
+        assertParseEquals("if(le second first) do {y}", data, "");
+
+        data.put("second", 2);
+        assertParseEquals("if(le first second) do {y}", data, "y");
+
+        data.put("second", 2.0);
+        assertParseEquals("if(le first second) do {y}", data, "y");
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void lessEqualsExpressionWrongTypeTest(){
+        Map<String, Object> data = new HashMap<>();
+        data.put("first", 1);
+        data.put("second", "string");
+        assertParseEquals("if(le first second) do {y}", data, "");
     }
 
     @Test

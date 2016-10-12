@@ -212,6 +212,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         return new Value(Boolean.valueOf(ctx.getText()));
     }
 
+    //  | EQ expr expr           #eqExpression
     @Override
     public Value visitEqExpression(GraqlTemplateParser.EqExpressionContext ctx) {
         Value lValue = this.visit(ctx.expr(0));
@@ -220,6 +221,7 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         return new Value(lValue.equals(rValue));
     }
 
+    //  | NEQ expr expr          #notEqExpression
     @Override
     public Value visitNotEqExpression(GraqlTemplateParser.NotEqExpressionContext ctx) {
         Value lValue = this.visit(ctx.expr(0));
@@ -228,6 +230,71 @@ public class TemplateVisitor extends GraqlTemplateBaseVisitor<Value> {
         return new Value(!lValue.equals(rValue));
     }
 
+    //  | GREATER expr expr      #greaterExpression
+    @Override
+    public Value visitGreaterExpression(GraqlTemplateParser.GreaterExpressionContext ctx) {
+        Value lValue = this.visit(ctx.expr(0));
+        Value rValue = this.visit(ctx.expr(1));
+
+        if(!lValue.isNumber() || !rValue.isNumber()){
+            throw new RuntimeException("Invalid GREATER THAN expression " + ctx.getText());
+        }
+
+        Number lNumber = lValue.isDouble() ? lValue.asDouble() : lValue.asInteger();
+        Number rNumber = rValue.isDouble() ? rValue.asDouble() : rValue.asInteger();
+
+        return new Value(lNumber.doubleValue() > rNumber.doubleValue());
+    }
+
+    //  | GREATEREQ expr expr    #greaterEqExpression
+    @Override
+    public Value visitGreaterEqExpression(GraqlTemplateParser.GreaterEqExpressionContext ctx) {
+        Value lValue = this.visit(ctx.expr(0));
+        Value rValue = this.visit(ctx.expr(1));
+
+        if(!lValue.isNumber() || !rValue.isNumber()){
+            throw new RuntimeException("Invalid GREATER THAN EQUALS expression " + ctx.getText());
+        }
+
+        Number lNumber = lValue.isDouble() ? lValue.asDouble() : lValue.asInteger();
+        Number rNumber = rValue.isDouble() ? rValue.asDouble() : rValue.asInteger();
+
+        return new Value(lNumber.doubleValue() >= rNumber.doubleValue());
+    }
+
+    //  | LESS expr expr         #lessExpression
+    @Override
+    public Value visitLessExpression(GraqlTemplateParser.LessExpressionContext ctx) {
+        Value lValue = this.visit(ctx.expr(0));
+        Value rValue = this.visit(ctx.expr(1));
+
+        if(!lValue.isNumber() || !rValue.isNumber()){
+            throw new RuntimeException("Invalid LESS THAN expression " + ctx.getText());
+        }
+
+        Number lNumber = lValue.isDouble() ? lValue.asDouble() : lValue.asInteger();
+        Number rNumber = rValue.isDouble() ? rValue.asDouble() : rValue.asInteger();
+
+        return new Value(lNumber.doubleValue() < rNumber.doubleValue());
+    }
+
+    //  | LESSEQ expr expr       #lessEqExpression
+    @Override
+    public Value visitLessEqExpression(GraqlTemplateParser.LessEqExpressionContext ctx) {
+        Value lValue = this.visit(ctx.expr(0));
+        Value rValue = this.visit(ctx.expr(1));
+
+        if(!lValue.isNumber() || !rValue.isNumber()){
+            throw new RuntimeException("Invalid LESS THAN EQUALS expression " + ctx.getText());
+        }
+
+        Number lNumber = lValue.isInteger() ? lValue.asInteger() : lValue.asDouble();
+        Number rNumber = rValue.isInteger() ? rValue.asInteger() : rValue.asDouble();
+
+        return new Value(lNumber.doubleValue() <= rNumber.doubleValue());
+    }
+
+    //  | NULL                   #nullExpression
     @Override
     public Value visitNullExpression(GraqlTemplateParser.NullExpressionContext ctx) {
         return Value.NULL;

@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class MacroTest {
 
@@ -37,8 +38,10 @@ public class MacroTest {
         parser = TemplateParser.create();
     }
 
+    // noescp macro
+
     @Test
-    public void noescpOneVarTest(){
+    public void noescpMacroOneVarTest(){
         String template = "this is a @noescp(value)";
         String expected = "this is a whale";
 
@@ -48,7 +51,7 @@ public class MacroTest {
     }
 
     @Test
-    public void noescpMultiVarTest(){
+    public void noescpMacroMultiVarTest(){
         String template = "My first name is @noescp(firstname) and my last name is @noescp(lastname)";
         String expected = "My first name is Phil and my last name is Collins";
 
@@ -58,6 +61,14 @@ public class MacroTest {
 
         assertParseEquals(template, data, expected);
     }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void noescpMacroBreaksWithWrongNumberArguments(){
+        String template = "@noescp(value otherValue)";
+        parser.parseTemplate(template, new HashMap<>());
+    }
+
+    // int macro
 
     @Test
     public void intMacroTest(){
@@ -69,6 +80,18 @@ public class MacroTest {
     }
 
     @Test
+    public void intMacroBreaksWithWrongNumberArguments(){
+        assertTrue(false);
+    }
+
+    @Test
+    public void intMacroBreaksWithWrongTypeArguments(){
+        assertTrue(false);
+    }
+
+    // double macro
+
+    @Test
     public void doubleMacroTest(){
         String template = "this is a double @double(value)";
         String expected = "this is a double 4.0";
@@ -76,6 +99,18 @@ public class MacroTest {
         assertParseEquals(template, Collections.singletonMap("value", "4.0"), expected);
         assertParseEquals(template, Collections.singletonMap("value", 4.0), expected);
     }
+
+    @Test
+    public void doubleMacroBreaksWithWrongNumberArguments(){
+        assertTrue(false);
+    }
+
+    @Test
+    public void doubleMacroBreaksWithWrongTypeArguments(){
+        assertTrue(false);
+    }
+
+    // equals
 
     @Test
     public void equalsMacroTest(){
@@ -127,16 +162,15 @@ public class MacroTest {
         assertParseEquals(template, data, expected);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void wrongNumberOfArgumentsTest(){
-        String template = "@noescp(value otherValue)";
-        parser.parseTemplate(template, new HashMap<>());
+    @Test
+    public void equalsMacroBreaksWithWrongNumberArguments(){
+        assertTrue(false);
     }
 
     @Test
     public void macroInArgumentTest(){
 
-        String template = "if (@equals (this that)) do { equals } else { not }";
+        String template = "if (@equals(this that)) do { equals } else { not }";
         String expected = " equals";
         Map<String, Object> data = new HashMap<>();
         data.put("this", "50");

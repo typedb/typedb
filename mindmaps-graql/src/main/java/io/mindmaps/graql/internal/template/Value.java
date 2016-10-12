@@ -52,8 +52,8 @@ public class Value {
         return value instanceof Double;
     }
 
-    public boolean isLong(){
-        return value instanceof Long;
+    public boolean isInteger(){
+        return value instanceof Integer;
     }
 
     public boolean isNumber(){
@@ -84,8 +84,8 @@ public class Value {
         return (Double) value;
     }
 
-    public long asLong(){
-        return (Long) value;
+    public int asInteger(){
+        return (Integer) value;
     }
 
     public List<Object> asList(){

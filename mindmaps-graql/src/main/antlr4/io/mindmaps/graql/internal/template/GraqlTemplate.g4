@@ -49,16 +49,20 @@ macro
 
 // evaluate and return value
 expr
- : ID                 #idExpression
- | NOT expr           #notExpression
- | LPAREN expr RPAREN #groupExpression
- | expr EQ expr       #eqExpression
- | expr NEQ expr      #notEqExpression
- | expr OR expr       #orExpression
- | expr AND expr      #andExpression
- | BOOLEAN            #booleanExpression
- | NULL               #nullExpression
- | macro              #macroExpression
+ : ID                     #idExpression
+ | NOT expr               #notExpression
+ | LPAREN expr RPAREN     #groupExpression
+ | EQ expr expr           #eqExpression
+ | NEQ expr expr          #notEqExpression
+ | OR expr expr           #orExpression
+ | AND expr expr          #andExpression
+ | GREATER expr expr      #greaterExpression
+ | GREATEREQ expr expr    #greaterEqExpression
+ | LESS expr expr         #lessExpression
+ | LESSEQ expr expr       #lessEqExpression
+ | BOOLEAN                #booleanExpression
+ | NULL                   #nullExpression
+ | macro                  #macroExpression
  ;
 
 replaceStatement
@@ -90,6 +94,10 @@ keyword
 | NULL
 | EQ
 | NEQ
+| GREATER
+| GREATEREQ
+| LESS
+| LESSEQ
 ;
 
 FOR         : 'for';
@@ -104,11 +112,15 @@ BOOLEAN     : TRUE | FALSE;
 TRUE        : 'true';
 FALSE       : 'false';
 
-EQ          : '==';
-NEQ         : '!=';
+EQ          : 'eq';
+NEQ         : 'ne';
 AND         : 'and';
 OR          : 'or';
 NOT         : 'not';
+GREATER     : 'gt';
+GREATEREQ   : 'ge';
+LESS        : 'lt';
+LESSEQ      : 'le';
 
 LPAREN      : '(';
 RPAREN      : ')';
