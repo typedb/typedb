@@ -27,7 +27,6 @@ import io.mindmaps.graql.internal.reasoner.query.Query;
 
 import java.util.Set;
 
-
 public class Substitution extends AtomBase{
 
     private final String val;
