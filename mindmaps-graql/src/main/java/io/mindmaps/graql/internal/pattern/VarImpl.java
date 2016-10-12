@@ -291,7 +291,7 @@ class VarImpl implements VarAdmin {
         if (userDefinedName) {
             return "$" + name;
         } else {
-            return getId().map(StringConverter::idToString).orElse("$" + name);
+            return getId().map(StringConverter::idToString).orElse("'" + toString() + "'");
         }
     }
 
