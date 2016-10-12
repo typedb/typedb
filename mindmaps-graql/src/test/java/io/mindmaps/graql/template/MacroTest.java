@@ -18,8 +18,7 @@
 
 package io.mindmaps.graql.template;
 
-import io.mindmaps.graql.internal.template.TemplateParser;
-import org.junit.BeforeClass;
+import io.mindmaps.graql.Graql;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -27,16 +26,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static junit.framework.TestCase.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class MacroTest {
-
-    private static TemplateParser parser;
-
-    @BeforeClass
-    public static void setup(){
-        parser = TemplateParser.create();
-    }
 
     // noescp macro
 
@@ -65,7 +56,7 @@ public class MacroTest {
     @Test(expected = IllegalArgumentException.class)
     public void noescpMacroBreaksWithWrongNumberArguments(){
         String template = "@noescp(value otherValue)";
-        parser.parseTemplate(template, new HashMap<>());
+        Graql.parseTemplate(template, new HashMap<>());
     }
 
     // int macro
@@ -176,7 +167,7 @@ public class MacroTest {
     }
 
     private void assertParseEquals(String template, Map<String, Object> data, String expected){
-        String result = parser.parseTemplate(template, data);
+        String result = Graql.parseTemplate(template, data);
         System.out.println(result);
         assertEquals(expected, result);
     }

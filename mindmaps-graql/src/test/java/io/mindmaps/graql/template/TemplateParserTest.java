@@ -18,8 +18,7 @@
 
 package io.mindmaps.graql.template;
 
-import io.mindmaps.graql.internal.template.TemplateParser;
-import org.junit.BeforeClass;
+import io.mindmaps.graql.Graql;
 import org.junit.Test;
 
 import java.util.*;
@@ -27,13 +26,6 @@ import java.util.*;
 import static junit.framework.TestCase.assertEquals;
 
 public class TemplateParserTest {
-
-    private static TemplateParser parser;
-
-    @BeforeClass
-    public static void setup(){
-        parser = TemplateParser.create();
-    }
 
     @Test
     public void oneValueOneLineTest(){
@@ -589,7 +581,7 @@ public class TemplateParserTest {
     private void assertParseEquals(String template, Map<String, Object> data, String expected){
         System.out.println(template);
         System.out.println();
-        String result = parser.parseTemplate(template, data);
+        String result = Graql.parseTemplate(template, data);
         System.out.println(result);
         assertEquals(expected, result);
     }
