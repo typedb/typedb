@@ -24,6 +24,7 @@ import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.parser.QueryParser;
 import io.mindmaps.graql.internal.pattern.Patterns;
 import io.mindmaps.graql.internal.query.Queries;
+import io.mindmaps.graql.internal.template.TemplateParser;
 import io.mindmaps.graql.internal.util.AdminConverter;
 
 import java.io.InputStream;
@@ -43,15 +44,18 @@ public class QueryBuilder {
 
     private final Optional<MindmapsGraph> graph;
     private final QueryParser queryParser;
+    private final TemplateParser templateParser;
 
     QueryBuilder() {
         this.graph = Optional.empty();
         queryParser = QueryParser.create(this);
+        templateParser = TemplateParser.create();
     }
 
     QueryBuilder(MindmapsGraph graph) {
         this.graph = Optional.of(graph);
         queryParser = QueryParser.create(this);
+        templateParser = TemplateParser.create();
     }
 
     /**
@@ -158,6 +162,15 @@ public class QueryBuilder {
      */
     public Query<?> parse(String queryString) {
         return queryParser.parseQuery(queryString);
+    }
+
+    /**
+     * @param template a string representing a templated graql query
+     * @param data data to use in template
+     * @return a resolved graql query
+     */
+    public String parseTemplate(String template, Map<String, Object> data){
+        return templateParser.parseTemplate(template, data);
     }
 
     public void registerAggregate(String name, Function<List<Object>, Aggregate> aggregateMethod) {
