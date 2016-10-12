@@ -16,8 +16,8 @@ pokemon-type isa entity-type
 
 pokedex-no isa resource-type datatype long;
 description isa resource-type datatype string;
-height isa resource-type datatype long;
-weight isa resource-type datatype long;
+height isa resource-type datatype double;
+weight isa resource-type datatype double;
 
 evolution isa relation-type
     has-role ancestor
