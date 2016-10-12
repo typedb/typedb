@@ -27,7 +27,6 @@ import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.internal.query.match.MatchOrder;
 import io.mindmaps.graql.internal.query.match.MatchQueryInternal;
-import io.mindmaps.graql.internal.reasoner.predicate.Substitution;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.internal.pattern.Patterns;
@@ -53,20 +52,17 @@ public class Query implements MatchQueryInternal {
     public Query(String query, MindmapsGraph graph) {
         this.graph = graph;
         MatchQuery matchQuery = Graql.withGraph(graph).parseMatch(query);
-        this.pattern = matchQuery.admin().getPattern();
         this.selectVars = Sets.newHashSet(matchQuery.admin().getSelectedNames());
-
-        this.atomSet = AtomicFactory.createAtomSet(pattern, this);
+        this.atomSet = AtomicFactory.createAtomSet(matchQuery.admin().getPattern(), this);
+        this.pattern = createPattern(atomSet);
         this.typeAtomMap = getTypeAtomMap(atomSet);
     }
 
     public Query(MatchQuery query, MindmapsGraph graph) {
         this.graph = graph;
-
-        this.pattern = query.admin().getPattern();
         this.selectVars = Sets.newHashSet(query.admin().getSelectedNames());
-
-        this.atomSet = AtomicFactory.createAtomSet(pattern, this);
+        this.atomSet = AtomicFactory.createAtomSet(query.admin().getPattern(), this);
+        this.pattern = createPattern(atomSet);
         this.typeAtomMap = getTypeAtomMap(atomSet);
     }
 
@@ -78,17 +74,16 @@ public class Query implements MatchQueryInternal {
         if (atom.getParentQuery() == null)
             throw new IllegalArgumentException(ErrorMessage.PARENT_MISSING.getMessage(atom.toString()));
         this.graph = atom.getParentQuery().getGraph().orElse(null);
-        this.pattern = Patterns.conjunction(Sets.newHashSet());
         this.selectVars = Sets.newHashSet(atom.getMatchQuery(graph).admin().getSelectedNames());
-
+        this.pattern = Patterns.conjunction(Sets.newHashSet());
         atomSet = new HashSet<>();
-        addAtom(atom);
+        addAtom(AtomicFactory.create(atom, this));
         addAtomConstraints(atom.getSubstitutions());
+        addAtomConstraints(atom.getValuePredicates());
         if(atom.isRelation() || atom.isResource())
             addAtomConstraints(atom.getTypeConstraints()
                                     .stream().filter(at -> !at.isRuleResolvable())
                                     .collect(Collectors.toSet()));
-
         this.typeAtomMap = getTypeAtomMap(atomSet);
     }
 
@@ -137,6 +132,12 @@ public class Query implements MatchQueryInternal {
     @Override
     public Conjunction<PatternAdmin> getPattern(){ return pattern;}
 
+    private Conjunction<PatternAdmin> createPattern(Set<Atomic> atoms){
+        Set<PatternAdmin> patterns = new HashSet<>();
+        atoms.forEach(atom -> patterns.add(atom.getPattern()));
+        return Patterns.conjunction(patterns);
+    }
+
     public boolean isRuleResolvable(){
         boolean ruleResolvable = false;
         Iterator<Atomic> it = atomSet.iterator();
@@ -160,10 +161,18 @@ public class Query implements MatchQueryInternal {
         return typeAtomMap.get(type);
     }
     public Set<Atomic> getSubstitutions(){
-        return getAtoms().stream().filter(Atomic::isSubstitution).collect(Collectors.toSet());
+        return getAtoms().stream()
+                .filter(Atomic::isSubstitution)
+                .collect(Collectors.toSet());
     }
     public Set<Atomic> getTypeConstraints(){
         return getAtoms().stream().filter(atom -> atom.isUnary() && !atom.isResource()).collect(Collectors.toSet());
+    }
+
+    public Set<Atomic> getValuePredicates(){
+        return getAtoms().stream()
+                .filter(Atomic::isValuePredicate)
+                .collect(Collectors.toSet());
     }
 
     public Set<String> getVarSet() {
@@ -183,7 +192,6 @@ public class Query implements MatchQueryInternal {
             Atomic at = it.next();
             isContained = atom.isEquivalent(at);
         }
-
         return isContained;
     }
 
@@ -227,7 +235,7 @@ public class Query implements MatchQueryInternal {
         Set<Atomic> toAdd = new HashSet<>();
 
         atomSet.stream().filter(atom -> atom.getVarNames().contains(from)).forEach(toRemove::add);
-        toRemove.forEach(atom -> toAdd.add(AtomicFactory.create(atom)));
+        toRemove.forEach(atom -> toAdd.add(AtomicFactory.create(atom, this)));
         toRemove.forEach(this::removeAtom);
         toAdd.forEach(atom -> atom.unify(from, to));
         toAdd.forEach(this::addAtom);
@@ -274,7 +282,7 @@ public class Query implements MatchQueryInternal {
                     return (!keyIntersection.isEmpty() || !valIntersection.isEmpty());
                 })
                 .forEach(toRemove::add);
-        toRemove.forEach(atom -> toAdd.add(AtomicFactory.create(atom)));
+        toRemove.forEach(atom -> toAdd.add(AtomicFactory.create(atom, this)));
         toRemove.forEach(this::removeAtom);
         toAdd.forEach(atom -> atom.unify(mappings));
         toAdd.forEach(this::addAtom);
@@ -351,6 +359,13 @@ public class Query implements MatchQueryInternal {
         return relevantSubs.isEmpty()? "" : relevantSubs.iterator().next().getVal();
     }
 
+    public String getValuePredicate(String var){
+        Set<Atomic> relevantVPs = getValuePredicates().stream()
+                .filter(vp -> vp.getVarName().equals(var))
+                .collect(Collectors.toSet());
+        return relevantVPs.isEmpty()? "" : relevantVPs.iterator().next().getVal();
+    }
+
     protected void addAtom(Atomic atom) {
         if(!containsAtom(atom)) {
             atomSet.add(atom);
@@ -366,7 +381,7 @@ public class Query implements MatchQueryInternal {
     public void addAtomConstraints(Set<Atomic> subs){
         subs.forEach(con -> {
             if (containsVar(con.getVarName())){
-                Atomic lcon = AtomicFactory.create(con);
+                Atomic lcon = AtomicFactory.create(con, this);
                 lcon.setParentQuery(this);
                 addAtom(lcon);
                 if (lcon.isSubstitution())
@@ -381,16 +396,18 @@ public class Query implements MatchQueryInternal {
      */
     public Set<Atomic> selectAtoms() {
         Set<Atomic> atoms = new HashSet<>(atomSet).stream()
-                .filter(atom -> !atom.isSubstitution()).collect(Collectors.toSet());
+                .filter(atom -> !atom.isSubstitution())
+                .filter(atom -> !atom.isValuePredicate())
+                .collect(Collectors.toSet());
         if (atoms.size() == 1) return atoms;
 
         Set<Atomic> selectedAtoms = atoms.stream()
                 .filter(atom -> (!atom.isUnary()) || atom.isRuleResolvable() || atom.isResource())
                 .collect(Collectors.toSet());
+
         if (selectedAtoms.isEmpty())
             throw new IllegalStateException(ErrorMessage.NO_ATOMS_SELECTED.getMessage(this.toString()));
         return selectedAtoms;
-
     }
 
     /**

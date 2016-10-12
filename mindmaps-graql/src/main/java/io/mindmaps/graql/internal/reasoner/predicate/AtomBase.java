@@ -224,18 +224,24 @@ public abstract class AtomBase implements Atomic{
 
     @Override
     public Set<Atomic> getSubstitutions() {
-        Set<Atomic> subs = new HashSet<>();
-        getParentQuery().getAtoms().forEach( atom ->{
-            if(atom.isSubstitution() && containsVar(atom.getVarName()) )
-                subs.add(atom);
-        });
-        return subs;
+        return getParentQuery().getAtoms().stream()
+                .filter(Atomic::isSubstitution)
+                .filter(atom -> containsVar(atom.getVarName()))
+                .collect(Collectors.toSet());
     }
 
     @Override
     public Set<Atomic> getTypeConstraints(){
-        Set<Atomic> typeConstraints = getParentQuery().getTypeConstraints();
-        return typeConstraints.stream().filter(atom -> containsVar(atom.getVarName()))
+        return getParentQuery().getTypeConstraints().stream()
+                .filter(atom -> containsVar(atom.getVarName()))
+                .collect(Collectors.toSet());
+    }
+
+    @Override
+    public Set<Atomic> getValuePredicates(){
+        return getParentQuery().getAtoms().stream()
+                .filter(Atomic::isValuePredicate)
+                .filter(atom -> containsVar(atom.getVarName()))
                 .collect(Collectors.toSet());
     }
 
@@ -250,6 +256,7 @@ public abstract class AtomBase implements Atomic{
     }
 
     @Override
+    //TODO change sub behaviour
     public Map<RoleType, String> getRoleConceptIdMap(){
         Map<RoleType, String> roleConceptMap = new HashMap<>();
         Map<String, Atomic> varSubMap = getVarSubMap();

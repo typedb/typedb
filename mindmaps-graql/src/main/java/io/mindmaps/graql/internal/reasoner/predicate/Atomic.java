@@ -50,7 +50,7 @@ public interface Atomic extends Cloneable{
     default boolean isRelation(){return false;}
 
     /**
-     * @return true if the atom corresponds to a value predicate (~unifier)
+     * @return true if the atom corresponds to a unifier (id predicate)
      * */
     default boolean isSubstitution(){ return false;}
 
@@ -58,6 +58,11 @@ public interface Atomic extends Cloneable{
      * @return true if the atom corresponds to a resource predicate
      * */
     default boolean isResource(){ return false;}
+
+    /**
+     * @return true if the atom corresponds to a value predicate
+     * */
+    default boolean isValuePredicate(){ return false;}
 
     /**
      * @return true if atom alpha-equivalent
@@ -124,6 +129,7 @@ public interface Atomic extends Cloneable{
 
     Set<Atomic> getSubstitutions();
     Set<Atomic> getTypeConstraints();
+    Set<Atomic> getValuePredicates();
 
     Map<String, Atomic> getVarSubMap();
 

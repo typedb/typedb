@@ -10,7 +10,7 @@ insert
 "Alice" isa person;
 "Bob" isa person;
 "Bob" has age 21, has gender "male";
-"Charlie" isa person;
+"Charlie" isa person, has firstname 'Charlie';
 "Denis" isa person;
 "Frank" isa person;
 "Gary" isa person;

@@ -48,7 +48,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testErrorNonAtomicQuery() {
-        exception.expect(IllegalArgumentException.class);
+        exception.expect(IllegalStateException.class);
         exception.expectMessage(ErrorMessage.NON_ATOMIC_QUERY.getMessage());
 
         String queryString = "match $x isa person;$y isa product;($x, $y) isa recommendation;($y, $t) isa typing;";

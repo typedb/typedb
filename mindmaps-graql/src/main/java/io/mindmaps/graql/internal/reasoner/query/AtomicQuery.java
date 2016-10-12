@@ -44,7 +44,7 @@ public class AtomicQuery extends Query{
     public AtomicQuery(String rhs, MindmapsGraph graph){
         super(rhs, graph);
         if(selectAtoms().size() > 1)
-            throw new IllegalArgumentException(ErrorMessage.NON_ATOMIC_QUERY.getMessage());
+            throw new IllegalStateException(ErrorMessage.NON_ATOMIC_QUERY.getMessage());
         atom = selectAtoms().iterator().next();
     }
 
@@ -64,7 +64,7 @@ public class AtomicQuery extends Query{
 
     public AtomicQuery(Atomic at) {
         super(at);
-        atom = at;
+        atom = selectAtoms().iterator().next();
     }
 
     @Override
@@ -143,5 +143,13 @@ public class AtomicQuery extends Query{
     public void unify(Map<String, String> unifiers) {
         super.unify(unifiers);
         atom = selectAtoms().iterator().next();
+    }
+
+    @Override
+    public Set<Atomic> selectAtoms() {
+        Set<Atomic> selectedAtoms = super.selectAtoms();
+        if (selectedAtoms.size() != 1)
+            throw new IllegalStateException(ErrorMessage.NON_ATOMIC_QUERY.getMessage(this.toString()));
+        return selectedAtoms;
     }
 }
