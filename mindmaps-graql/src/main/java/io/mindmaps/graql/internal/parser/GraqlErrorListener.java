@@ -32,14 +32,23 @@ class GraqlErrorListener extends BaseErrorListener {
     private final List<SyntaxError> errors = new ArrayList<>();
 
     GraqlErrorListener(String query) {
-        this.query = query.split("\n");
+        if (query.isEmpty()) {
+            this.query = null;
+        } else {
+            this.query = query.split("\n");
+        }
     }
 
     @Override
     public void syntaxError(
             Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg,
             RecognitionException e) {
+
+        if (query == null) {
+            errors.add(new SyntaxError(line, msg));
+        } else {
             errors.add(new SyntaxError(query[line-1], line, charPositionInLine, msg));
+        }
     }
 
     boolean hasErrors() {

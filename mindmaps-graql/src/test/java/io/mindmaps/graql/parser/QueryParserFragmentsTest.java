@@ -39,16 +39,16 @@ import java.util.Iterator;
 import java.util.UUID;
 
 import static io.mindmaps.graql.Graql.parsePatterns;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.core.AllOf.allOf;
+import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.*;
 
 public class QueryParserFragmentsTest {
 
     private static MindmapsGraph mindmapsGraph;
-    private QueryParser qp;
     @Rule
     public final ExpectedException exception = ExpectedException.none();
     private QueryBuilder qb;
@@ -101,16 +101,15 @@ public class QueryParserFragmentsTest {
     }
 
     @Test
-    public void testParseInfinitePatternStreamWithSyntaxError() throws IOException {
-        InputStream stream = new InfiniteStream("$x isa person; ($x, $y) is has-cast;\n");
+    public void testParseFinitePatternStreamWithSyntaxError() throws IOException {
+        String query = "insert\n\n($x, $y) is has-cast";
+        InputStream stream = new ByteArrayInputStream(query.getBytes(StandardCharsets.UTF_8));
 
-        Iterator<Pattern> patterns = qp.parsePatternsStream(stream).iterator();
+        Iterator<Pattern> patterns = qb.parsePatterns(stream).iterator();
 
-        VarAdmin var1 = patterns.next().admin().asVar();
-        assertEquals("$x isa person", var1.toString());
-
+        // Expect no pointer to the line text, but the line number and error
         exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(containsString("isa"));
+        exception.expectMessage(allOf(containsString("3"), containsString("isa"), not(containsString("^"))));
         patterns.next().admin().asVar();
     }
 

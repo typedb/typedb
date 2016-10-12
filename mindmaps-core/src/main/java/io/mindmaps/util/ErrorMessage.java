@@ -82,6 +82,7 @@ public enum ErrorMessage {
     //--------------------------------------------- Graql Errors -----------------------------------------------
     NO_GRAPH("no graph provided"),
 
+    SYNTAX_ERROR_NO_POINTER("syntax error at line %s:\n%s"),
     SYNTAX_ERROR("syntax error at line %s: \n%s\n%s\n%s"),
 
     MUST_BE_RESOURCE_TYPE("type '%s' must be a resource-type"),
