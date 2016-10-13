@@ -101,7 +101,7 @@ public enum ErrorMessage {
     MULTIPLE_ORDER("an ordering has been specified twice for this query"),
 
     INSERT_GET_NON_EXISTENT_ID("no concept with id '%s' exists"),
-    INSERT_UNDEFINED_VARIABLE("$%s doesn't exist and doesn't have an 'isa' or an 'ako'"),
+    INSERT_UNDEFINED_VARIABLE("%s doesn't have an 'isa', an 'ako' or an 'id'"),
     INSERT_PREDICATE("cannot insert a concept with a predicate"),
     INSERT_RELATION_WITH_ID("a relation cannot have an id"),
     INSERT_RELATION_WITHOUT_ISA("cannot insert a relation without an isa edge"),
