@@ -101,14 +101,6 @@ public class QueryBuilder {
     }
 
     /**
-     * @param queryString a string representing an ask query
-     * @return a parsed ask query
-     */
-    public AskQuery parseAsk(String queryString) {
-        return queryParser.parseAskQuery(queryString);
-    }
-
-    /**
      * @param queryString a string representing an insert query
      * @return a parsed insert query
      */

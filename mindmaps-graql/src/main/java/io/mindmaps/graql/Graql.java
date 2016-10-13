@@ -88,14 +88,6 @@ public class Graql {
     }
 
     /**
-     * @param queryString a string representing an ask query
-     * @return a parsed ask query
-     */
-    public static AskQuery parseAsk(String queryString) {
-        return withoutGraph().parseAsk(queryString);
-    }
-
-    /**
      * @param queryString a string representing an insert query
      * @return a parsed insert query
      */

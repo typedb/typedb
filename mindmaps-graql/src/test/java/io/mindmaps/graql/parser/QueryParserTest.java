@@ -56,7 +56,6 @@ import static io.mindmaps.graql.Graql.neq;
 import static io.mindmaps.graql.Graql.or;
 import static io.mindmaps.graql.Graql.parse;
 import static io.mindmaps.graql.Graql.parseAggregate;
-import static io.mindmaps.graql.Graql.parseAsk;
 import static io.mindmaps.graql.Graql.parseCompute;
 import static io.mindmaps.graql.Graql.parseDelete;
 import static io.mindmaps.graql.Graql.parseInsert;
@@ -272,12 +271,12 @@ public class QueryParserTest {
 
     @Test
     public void testPositiveAskQuery() {
-        assertTrue(parseAsk("match $x isa movie id 'Godfather'; ask;").withGraph(mindmapsGraph).execute());
+        assertTrue(Graql.<AskQuery>parse("match $x isa movie id 'Godfather'; ask;").withGraph(mindmapsGraph).execute());
     }
 
     @Test
     public void testNegativeAskQuery() {
-        assertFalse(qb.parseAsk("match $x isa movie id 'Dogfather'; ask;").execute());
+        assertFalse(qb.<AskQuery>parse("match $x isa movie id 'Dogfather'; ask;").execute());
     }
 
     @Test
@@ -350,8 +349,8 @@ public class QueryParserTest {
                 "insert concrete-type isa entity-type; abstract-type is-abstract isa entity-type;"
         ).execute();
 
-        assertFalse(qb.parseAsk("match concrete-type is-abstract; ask;").execute());
-        assertTrue(qb.parseAsk("match abstract-type is-abstract; ask;").execute());
+        assertFalse(qb.<AskQuery>parse("match concrete-type is-abstract; ask;").execute());
+        assertTrue(qb.<AskQuery>parse("match abstract-type is-abstract; ask;").execute());
     }
 
     @Test
@@ -387,9 +386,7 @@ public class QueryParserTest {
 
     @Test
     public void testComments() {
-        assertTrue(qb.parseAsk(
-                "match \n# there's a comment here\n$x isa###WOW HERES ANOTHER###\r\nmovie; ask;"
-        ).execute());
+        assertTrue(qb.<AskQuery>parse("match \n# there's a comment here\n$x isa###WOW HERES ANOTHER###\r\nmovie; ask;").execute());
     }
 
     @Test
