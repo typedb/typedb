@@ -418,12 +418,6 @@ public class AnalyticsTest extends AbstractMindmapsEngineTest {
 
         graph.commit();
 
-        mansBestFriend = graph.getRelationType("mans-best-friend");
-        hasName = graph.getRelationType("has-name");
-        person = graph.getEntityType("person");
-        animal = graph.getEntityType("animal");
-        name = graph.getResourceType("name");
-
         // create a subgraph excluding resources and the relationship
         HashSet<String> subGraphTypes = Sets.newHashSet("animal", "person", "mans-best-friend");
 

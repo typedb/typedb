@@ -110,7 +110,7 @@ public class ScalingTestIT extends AbstractMindmapsEngineTest {
             previousGraphSize = graphSize;
             writer.println("stop generate graph " + System.currentTimeMillis()/1000L + "s");
 
-            Analytics computer = new Analytics(keyspace);
+            Analytics computer = new Analytics(keyspace,new HashSet<>(),new HashSet<>());
 
             Long countTime = 0L;
             Long degreeTime = 0L;
@@ -191,7 +191,7 @@ public class ScalingTestIT extends AbstractMindmapsEngineTest {
                 graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
                 writer.println("gremlin count is: " + graph.getTinkerTraversal().count().next());
 
-                Analytics computer = new Analytics(CURRENT_KEYSPACE);
+                Analytics computer = new Analytics(CURRENT_KEYSPACE,new HashSet<>(),new HashSet<>());
 
                 writer.println("persist degree");
                 writer.flush();
@@ -214,7 +214,7 @@ public class ScalingTestIT extends AbstractMindmapsEngineTest {
                 writer.println("gremlin count is: " + graph.getTinkerTraversal().count().next());
 
                 writer.println("mutate degree");
-                computer = new Analytics(CURRENT_KEYSPACE);
+                computer = new Analytics(CURRENT_KEYSPACE,new HashSet<>(),new HashSet<>());
                 writer.flush();
                 startTime = System.currentTimeMillis();
                 computer.degreesAndPersist();
@@ -250,7 +250,7 @@ public class ScalingTestIT extends AbstractMindmapsEngineTest {
         // construct graph
         addNodes(keyspace, 0, MAX_SIZE);
 
-        Analytics computer = new Analytics(keyspace);
+        Analytics computer = new Analytics(keyspace,new HashSet<>(),new HashSet<>());
 
         computer.degreesAndPersist();
 
@@ -269,7 +269,7 @@ public class ScalingTestIT extends AbstractMindmapsEngineTest {
         // add edges to force mutation
         addEdges(keyspace, MAX_SIZE);
 
-        computer = new Analytics(keyspace);
+        computer = new Analytics(keyspace,new HashSet<>(),new HashSet<>());
 
         computer.degreesAndPersist();
 
