@@ -19,7 +19,10 @@
 package io.mindmaps.graql.internal.parser;
 
 import com.google.common.collect.ImmutableMap;
-import io.mindmaps.graql.*;
+import io.mindmaps.graql.Aggregate;
+import io.mindmaps.graql.Pattern;
+import io.mindmaps.graql.Query;
+import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.internal.antlr.GraqlLexer;
 import io.mindmaps.graql.internal.antlr.GraqlParser;
 import org.antlr.v4.runtime.*;
@@ -78,9 +81,11 @@ public class QueryParser {
     public <T extends Query<?>> T parseQuery(String queryString) {
         // We can't be sure the returned query type is correct - even at runtime(!) because Java erases generics.
         //
-        // e.g. AggregateQuery<Boolean> q = qp.parseQuery("match $x isa movie; aggregate count;");
+        // e.g.
+        // >> AggregateQuery<Boolean> q = qp.parseQuery("match $x isa movie; aggregate count;");
         // The above will work at compile time AND runtime - it will only fail when the query is executed:
-        // Boolean bool = q.execute();
+        // >> Boolean bool = q.execute();
+        // java.lang.ClassCastException: java.lang.Long cannot be cast to java.lang.Boolean
         //
         //noinspection unchecked
         return (T) parseQueryFragment(GraqlParser::queryEOF, QueryVisitor::visitQueryEOF, queryString);
