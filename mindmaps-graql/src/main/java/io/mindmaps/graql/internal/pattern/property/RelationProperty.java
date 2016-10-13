@@ -19,7 +19,6 @@
 package io.mindmaps.graql.internal.pattern.property;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.*;
 import io.mindmaps.graql.admin.UniqueVarProperty;
@@ -39,7 +38,6 @@ import static io.mindmaps.graql.internal.gremlin.FragmentPriority.DISTINCT_CASTI
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_BOUNDED;
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNBOUNDED;
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNIQUE;
-import static io.mindmaps.graql.internal.util.CommonUtil.toImmutableSet;
 import static io.mindmaps.util.Schema.EdgeLabel.CASTING;
 import static io.mindmaps.util.Schema.EdgeLabel.ISA;
 import static io.mindmaps.util.Schema.EdgeLabel.ROLE_PLAYER;
@@ -87,22 +85,19 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     public Collection<MultiTraversal> match(String start) {
         Collection<String> castingNames = new HashSet<>();
 
-        ImmutableSet<MultiTraversal> traversals = castings.stream().flatMap(casting -> {
+        Stream<MultiTraversal> traversals = castings.stream().flatMap(casting -> {
 
             String castingName = UUID.randomUUID().toString();
             castingNames.add(castingName);
 
             return multiTraversalsFromCasting(start, castingName, casting);
-        }).collect(toImmutableSet());
+        });
 
-        ImmutableSet<MultiTraversal> distinctCastingTraversals = castingNames.stream().flatMap(
-                castingName -> castingNames.stream()
-                        .filter(otherName -> !otherName.equals(castingName))
-                        .map(otherName -> makeDistinctCastingPattern(castingName, otherName)
-                )
-        ).collect(toImmutableSet());
+        Stream<MultiTraversal> distinctCastingTraversals = castingNames.stream().flatMap(
+                castingName -> castingNames.stream().map(otherName -> makeDistinctCastingPattern(castingName, otherName))
+        );
 
-        return Sets.union(traversals, distinctCastingTraversals);
+        return Stream.concat(traversals, distinctCastingTraversals).collect(toSet());
     }
 
     @Override
