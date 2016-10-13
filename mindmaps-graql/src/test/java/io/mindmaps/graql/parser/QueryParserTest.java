@@ -466,7 +466,7 @@ public class QueryParserTest {
         exception.expectMessage(allOf(
                 containsString("syntax error"), containsString("line 1"),
                 containsString("\nmatch $x isa "),
-                containsString("\n             ^"), containsString("EOF")
+                containsString("\n             ^")
         ));
         qb.parse("match $x isa ");
     }
