@@ -155,7 +155,7 @@ public class InsertQueryExecutor {
                 message = ErrorMessage.INSERT_METATYPE.getMessage(var.getPrintableName(), akoId);
             } else {
                 message = var.getId().map(ErrorMessage.INSERT_GET_NON_EXISTENT_ID::getMessage)
-                                .orElse(ErrorMessage.INSERT_UNDEFINED_VARIABLE.getMessage(var.getName()));
+                                .orElse(ErrorMessage.INSERT_UNDEFINED_VARIABLE.getMessage(var.getPrintableName()));
             }
 
             throw new IllegalStateException(message);
