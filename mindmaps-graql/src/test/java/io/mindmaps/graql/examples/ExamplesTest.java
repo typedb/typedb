@@ -142,6 +142,6 @@ public class ExamplesTest {
     }
 
     private void load(String... queries) {
-        Stream.of(queries).map((queryString) -> qb.parse(queryString)).forEach(InsertQuery::execute);
+        Stream.of(queries).map((queryString) -> qb.<InsertQuery>parse(queryString)).forEach(InsertQuery::execute);
     }
 }
