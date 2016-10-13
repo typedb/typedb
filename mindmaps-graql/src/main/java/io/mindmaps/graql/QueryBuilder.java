@@ -101,14 +101,6 @@ public class QueryBuilder {
     }
 
     /**
-     * @param queryString a string representing a delete query
-     * @return a parsed delete query
-     */
-    public DeleteQuery parseDelete(String queryString) {
-        return queryParser.parseDeleteQuery(queryString);
-    }
-
-    /**
      * @param queryString a string representing an aggregate query
      * @return a parsed aggregate query
      */

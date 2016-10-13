@@ -57,7 +57,6 @@ import static io.mindmaps.graql.Graql.or;
 import static io.mindmaps.graql.Graql.parse;
 import static io.mindmaps.graql.Graql.parseAggregate;
 import static io.mindmaps.graql.Graql.parseCompute;
-import static io.mindmaps.graql.Graql.parseDelete;
 import static io.mindmaps.graql.Graql.regex;
 import static io.mindmaps.graql.Graql.var;
 import static io.mindmaps.graql.Graql.withGraph;
@@ -287,7 +286,7 @@ public class QueryParserTest {
         Graql.<InsertQuery>parse("insert " + varString).withGraph(mindmapsGraph).execute();
         assertTrue(qb.match(var).ask().execute());
 
-        parseDelete("match $x " + varString + " delete $x;").withGraph(mindmapsGraph).execute();
+        Graql.<DeleteQuery>parse("match $x " + varString + " delete $x;").withGraph(mindmapsGraph).execute();
         assertFalse(qb.match(var).ask().execute());
     }
 
@@ -335,7 +334,7 @@ public class QueryParserTest {
         assertTrue(qb.match(var().isa("language").id("123").has("name", "HELLO")).ask().execute());
         assertTrue(qb.match(var().isa("language").id("456").has("name", "HELLO")).ask().execute());
 
-        qb.parseDelete("match $x isa language; delete $x;").execute();
+        qb.<DeleteQuery>parse("match $x isa language; delete $x;").execute();
         assertFalse(qb.match(language1).ask().execute());
         assertFalse(qb.match(language2).ask().execute());
     }

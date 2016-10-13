@@ -88,14 +88,6 @@ public class Graql {
     }
 
     /**
-     * @param queryString a string representing a delete query
-     * @return a parsed delete query
-     */
-    public static DeleteQuery parseDelete(String queryString) {
-        return withoutGraph().parseDelete(queryString);
-    }
-
-    /**
      * @param queryString a string representing an aggregate query
      * @return a parsed aggregate query
      */
