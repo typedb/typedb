@@ -1,0 +1,39 @@
+
+insert
+  person isa entity-type
+    plays-role person-with-address
+    plays-role person-with-phone;
+
+  address isa entity-type
+    plays-role address-of-person
+    plays-role address-with-street
+    has-resource city;
+
+  street-address isa entity-type
+    plays-role street-of-address
+    has-resource number
+    has-resource street;
+
+  phone-number isa entity-type
+    plays-role phone-of-person
+    has-resource location
+    has-resource code;
+
+  code isa resource-type datatype long;
+  location isa resource-type datatype string;
+  number isa resource-type datatype long;
+  street isa resource-type datatype string;
+  city isa resource-type datatype string;
+
+  person-with-address isa role-type;
+  address-of-person isa role-type;
+  address-with-street isa role-type;
+  street-of-address isa role-type;
+  person-with-phone isa role-type;
+  phone-of-person isa role-type;
+
+  address-has-street isa relation-type has-role street-of-address has-role address-with-street;
+  has-address isa relation-type has-role address-of-person has-role person-with-address;
+  has-phone isa relation-type has-role phone-of-person has-role person-with-phone;
+
+
