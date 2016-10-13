@@ -54,9 +54,9 @@ public abstract class AbstractMindmapsEngineTest {
             }
 
             MindmapsEngineServer.start();
-        }
 
-        sleep(5000);
+            sleep(5000);
+        }
     }
 
     @Before
