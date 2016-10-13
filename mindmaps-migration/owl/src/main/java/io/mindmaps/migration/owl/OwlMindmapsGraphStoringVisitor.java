@@ -193,6 +193,7 @@ public class OwlMindmapsGraphStoringVisitor implements OWLAxiomVisitorEx<Concept
         roleMap.put(migrator.namer().objectRole(superRelation.getId()), migrator.namer().objectRole(subRelation.getId()));
         createSubPropertyRule("sub-" + superRelation.getId() + UUID.randomUUID().toString(),
                                 superRelation, subRelation, roleMap, migrator.graph());
+
         subRelation.superType(superRelation);
         return null;
     }
