@@ -312,6 +312,26 @@ public class Analytics {
     }
 
     /**
+     * Compute the median of instances of the selected resource-type.
+     *
+     * @return median
+     */
+    public Optional<Long> median() {
+        String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypes);
+        if (!selectedTypesHaveInstanceInSubgraph(statisticsResourceTypes, subtypes)) return Optional.empty();
+
+        Set<String> allSubtypes = statisticsResourceTypes.stream()
+                .map(GraqlType.HAS_RESOURCE::getId).collect(Collectors.toSet());
+        allSubtypes.addAll(subtypes);
+        allSubtypes.addAll(statisticsResourceTypes);
+
+        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
+        ComputerResult result = computer.compute(
+                new MedianVertexProgram(allSubtypes, statisticsResourceTypes, dataType));
+        return Optional.of(result.memory().get(MedianVertexProgram.MEDIAN));
+    }
+
+    /**
      * Compute the standard deviation of instances of the selected resource-type.
      *
      * @return standard deviation
