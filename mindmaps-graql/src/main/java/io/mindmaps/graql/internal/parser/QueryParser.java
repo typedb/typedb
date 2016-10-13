@@ -76,6 +76,13 @@ public class QueryParser {
      * a query, the type will depend on the type of query.
      */
     public <T extends Query<?>> T parseQuery(String queryString) {
+        // We can't be sure the returned query type is correct - even at runtime(!) because Java erases generics.
+        //
+        // e.g. AggregateQuery<Boolean> q = qp.parseQuery("match $x isa movie; aggregate count;");
+        // The above will work at compile time AND runtime - it will only fail when the query is executed:
+        // Boolean bool = q.execute();
+        //
+        //noinspection unchecked
         return (T) parseQueryFragment(GraqlParser::queryEOF, QueryVisitor::visitQueryEOF, queryString);
     }
 
