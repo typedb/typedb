@@ -101,14 +101,6 @@ public class QueryBuilder {
     }
 
     /**
-     * @param queryString a string representing an aggregate query
-     * @return a parsed aggregate query
-     */
-    public AggregateQuery<?> parseAggregate(String queryString) {
-        return queryParser.parseAggregateQuery(queryString);
-    }
-
-    /**
      * @param queryString a string representing a delete query
      * @return a parsed compute query
      */

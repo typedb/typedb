@@ -88,14 +88,6 @@ public class Graql {
     }
 
     /**
-     * @param queryString a string representing an aggregate query
-     * @return a parsed aggregate query
-     */
-    public static AggregateQuery<?> parseAggregate(String queryString) {
-        return withoutGraph().parseAggregate(queryString);
-    }
-
-    /**
      * @param queryString a string representing a delete query
      * @return a parsed compute query
      */

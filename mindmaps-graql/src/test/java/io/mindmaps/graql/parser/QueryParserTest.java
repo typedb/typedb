@@ -55,7 +55,6 @@ import static io.mindmaps.graql.Graql.lte;
 import static io.mindmaps.graql.Graql.neq;
 import static io.mindmaps.graql.Graql.or;
 import static io.mindmaps.graql.Graql.parse;
-import static io.mindmaps.graql.Graql.parseAggregate;
 import static io.mindmaps.graql.Graql.parseCompute;
 import static io.mindmaps.graql.Graql.regex;
 import static io.mindmaps.graql.Graql.var;
@@ -423,7 +422,7 @@ public class QueryParserTest {
     @Test
     public void testParseAggregateToString() {
         String query = "match $x isa movie; aggregate group $x (count as c);";
-        assertEquals(query, parseAggregate(query).withGraph(mindmapsGraph).toString());
+        assertEquals(query, ((AggregateQuery<?>) parse(query)).withGraph(mindmapsGraph).toString());
     }
 
     @Test
