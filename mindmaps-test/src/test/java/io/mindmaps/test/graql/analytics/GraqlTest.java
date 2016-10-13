@@ -161,6 +161,8 @@ public class GraqlTest extends AbstractMindmapsEngineTest {
 
     @Test
     public void testDegreesAndPersist() throws Exception {
+        // TODO: Fix on TinkerGraphComputer
+        assumeFalse(usingTinker());
 
         // create 3 instances
         EntityType thing = graph.putEntityType("thing");
