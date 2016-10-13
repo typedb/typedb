@@ -15,6 +15,70 @@
     <!--
     ///////////////////////////////////////////////////////////////////////////////////////
     //
+    // Annotation properties
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    <owl:AnnotationProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasAncestor">
+        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:AnnotationProperty>
+
+    <owl:AnnotationProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasBrother">
+        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Man"/>
+    </owl:AnnotationProperty>
+
+    <owl:AnnotationProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasChild">
+        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:AnnotationProperty>
+
+    <owl:AnnotationProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasDaughter">
+        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Woman"/>
+    </owl:AnnotationProperty>
+
+    <owl:AnnotationProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasFather">
+        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Man"/>
+    </owl:AnnotationProperty>
+
+    <owl:AnnotationProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasGrandfather">
+        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Man"/>
+    </owl:AnnotationProperty>
+
+    <owl:AnnotationProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasGrandmother">
+        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Woman"/>
+    </owl:AnnotationProperty>
+
+    <owl:AnnotationProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasMother">
+        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Woman"/>
+    </owl:AnnotationProperty>
+
+    <owl:AnnotationProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isAuntOf">
+        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:AnnotationProperty>
+
+    <owl:AnnotationProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isBloodRelationOf">
+        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:AnnotationProperty>
+
+    <owl:AnnotationProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isDirectSiblingOf">
+        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:AnnotationProperty>
+
+    <owl:AnnotationProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isSiblingOf">
+        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:AnnotationProperty>
+
+    <owl:AnnotationProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isSisterOf">
+        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:AnnotationProperty>
+
+    <owl:AnnotationProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isUncleOf">
+        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+    </owl:AnnotationProperty>
+
+    <!--
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
     // Object Properties
     //
     ///////////////////////////////////////////////////////////////////////////////////////
@@ -62,12 +126,7 @@
 
     <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasForeMother"/>
 
-    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasGrandParent">
-        <rdfs:domain rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
-        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
-        <rdfs:subPropertyOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#hasAncestor"/>
-        <owl:inverseOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#isGrandParentOf"/>
-    </owl:ObjectProperty>
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasGrandParent"/>
 
     <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasGrandfather">
         <rdfs:subPropertyOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#hasGrandParent"/>
@@ -89,20 +148,6 @@
         </owl:propertyChainAxiom>
     </owl:ObjectProperty>
 
-    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasGreatUncle">
-        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Man"/>
-        <rdfs:domain rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
-        <rdfs:subPropertyOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#isBloodRelationOf"/>
-        <owl:inverseOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#isGreatUncleOf"/>
-    </owl:ObjectProperty>
-
-    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasGreatAunt">
-        <rdfs:domain rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
-        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Woman"/>
-        <rdfs:subPropertyOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#isBloodRelationOf"/>
-        <owl:inverseOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#isGreatAuntOf"/>
-    </owl:ObjectProperty>
-
     <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasMother">
         <rdfs:subPropertyOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#hasForeMother"/>
         <rdfs:subPropertyOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#hasParent"/>
@@ -111,26 +156,7 @@
         <rdfs:domain rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
     </owl:ObjectProperty>
 
-    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasParent">
-        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
-        <rdfs:domain rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
-        <rdfs:subPropertyOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#hasAncestor"/>
-        <owl:inverseOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#isParentOf"/>
-    </owl:ObjectProperty>
-
-    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasSon">
-        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Man"/>
-        <rdfs:domain rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
-        <rdfs:subPropertyOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#hasChild"/>
-        <owl:inverseOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#isSonOf"/>
-    </owl:ObjectProperty>
-
-    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasUncle">
-        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Man"/>
-        <rdfs:domain rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
-        <rdfs:subPropertyOf rdf:resource="#http://www.co-ode.org/roberts/family-tree.owl#isBloodRelationOf"/>
-        <owl:inverseOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#isUncleOf"/>
-    </owl:ObjectProperty>
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasParent"/>
 
     <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#hasSister">
         <owl:inverseOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#isSisterOf"/>
@@ -157,18 +183,11 @@
         </owl:propertyChainAxiom>
     </owl:ObjectProperty>
 
-    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isBrotherOf">
-        <rdfs:domain rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Man"/>
-        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
-        <owl:inverseOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#hasBrother"/>
-        <rdfs:subPropertyOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#isDirectSiblingOf"/>
-    </owl:ObjectProperty>
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isBrotherOf"/>
 
     <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isChildOf"/>
 
-    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isDaughterOf">
-        <rdfs:subPropertyOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#hasParent"/>
-    </owl:ObjectProperty>
+    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isDaughterOf"/>
 
     <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isDirectSiblingOf">
         <rdfs:subPropertyOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#isSiblingOf"/>
@@ -178,29 +197,9 @@
 
     <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isFatherOf"/>
 
-    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isGrandParentOf"/>
-
     <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isGrandfatherOf"/>
 
     <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isGrandmotherOf"/>
-
-    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isGreatUncleOf">
-        <rdfs:domain rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Man"/>
-        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
-        <owl:propertyChainAxiom rdf:parseType="Collection">
-            <rdf:Description rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isBrotherOf"/>
-            <rdf:Description rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isGrandParentOf"/>
-        </owl:propertyChainAxiom>
-    </owl:ObjectProperty>
-
-    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isGreatAuntOf">
-        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
-        <rdfs:domain rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Woman"/>
-        <owl:propertyChainAxiom rdf:parseType="Collection">
-            <rdf:Description rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isSisterOf"/>
-            <rdf:Description rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isGrandParentOf"/>
-        </owl:propertyChainAxiom>
-    </owl:ObjectProperty>
 
     <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isMotherOf"/>
 
@@ -217,14 +216,7 @@
 
     <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isSisterOf">
         <rdfs:subPropertyOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#isDirectSiblingOf"/>
-        <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
-    </owl:ObjectProperty>
-
-    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isSonOf">
-    </owl:ObjectProperty>
-
-    <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isDaughterOf">
-         <rdfs:subPropertyOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#hasParent"/>
+        <rdfs:domain rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Woman"/>
     </owl:ObjectProperty>
 
     <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isUncleOf">
@@ -602,11 +594,6 @@
         <hasBirthYear rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1845</hasBirthYear>
         <isSisterOf rdf:resource="#christopher_archer_1849"/>
         <isSisterOf rdf:resource="#john_archer_1835"/>
-    </owl:NamedIndividual>
-
-    <owl:NamedIndividual rdf:about="#clare_bright_1966">
-        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
-        <isSisterOf rdf:resource="#james_bright_1964"/>
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#eden_georgina_gardner_thompson_1810">
@@ -1387,18 +1374,6 @@
         <isFatherOf rdf:resource="#thomas_john_bright_1988"/>
     </owl:NamedIndividual>
 
-    <owl:NamedIndividual rdf:about="#thomas_john_bright_1988">
-        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
-        <isBrotherOf rdf:resource="#avril_bright_1990"/>
-    </owl:NamedIndividual>
-
-    <owl:NamedIndividual rdf:about="#avril_bright_1990">
-        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
-        <hasBirthYear rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1990</hasBirthYear>
-        <hasFather rdf:resource="#ian_bright_1959"/>
-        <isSisterOf rdf:resource="#thomas_john_bright_1988"/>
-    </owl:NamedIndividual>
-
     <owl:NamedIndividual rdf:about="#iris_ellen_archer_1906">
         <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <hasBirthYear rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1906</hasBirthYear>
@@ -1752,7 +1727,6 @@
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#jeremiah_jacobs">
-        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <isFatherOf rdf:resource="#james_jacobs_1806"/>
     </owl:NamedIndividual>
 
@@ -1794,10 +1768,6 @@
         <isFatherOf rdf:resource="#mark_bright_1956"/>
         <isFatherOf rdf:resource="#william_bright_1970"/>
         <hasFather rdf:resource="#william_george_bright_1901"/>
-    </owl:NamedIndividual>
-
-    <owl:NamedIndividual rdf:about="#janet_bright_1964">
-        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#john_cotton_1778">
@@ -2006,13 +1976,6 @@
         <isFemalePartnerIn rdf:resource="#m133"/>
         <isMotherOf rdf:resource="#mark_bright_1956"/>
         <isMotherOf rdf:resource="#william_bright_1970"/>
-    </owl:NamedIndividual>
-
-    <owl:NamedIndividual rdf:about="#mark_bright_1956">
-        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
-        <isBrotherOf rdf:resource="#ian_bright_1959"/>
-        <isBrotherOf rdf:resource="#janet_bright_1964"/>
-        <isBrotherOf rdf:resource="#william_bright_1970"/>
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#june_dowse_1941">
@@ -2473,13 +2436,6 @@
         <hasBrother rdf:resource="#martin_dowse_1944"/>
     </owl:NamedIndividual>
 
-    <owl:NamedIndividual rdf:about="#amanda_usher_1968">
-        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
-        <hasBirthYear rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1968</hasBirthYear>
-        <isSisterOf rdf:resource="#andrew_usher_1965"/>
-        <hasMother rdf:resource="#patricia_ann_kingswood_1944"/>
-    </owl:NamedIndividual>
-
     <owl:NamedIndividual rdf:about="#mega_clamper_1995">
         <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <hasBirthYear rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1995</hasBirthYear>
@@ -2537,12 +2493,6 @@
         <hasFather rdf:resource="#james_frank_hayden_bright_1891"/>
     </owl:NamedIndividual>
 
-    <owl:NamedIndividual rdf:about="#anne_archer_1964">
-        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
-        <hasBirthYear rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1964</hasBirthYear>
-        <hasFather rdf:resource="#alec_john_archer_1927"/>
-    </owl:NamedIndividual>
-
     <owl:NamedIndividual rdf:about="#paul_archer_1950">
         <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <hasBirthYear rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1950</hasBirthYear>
@@ -2561,11 +2511,6 @@
         <isFatherOf rdf:resource="#julie_bright_1966"/>
         <isMalePartnerIn rdf:resource="#m134"/>
         <hasFather rdf:resource="#william_george_bright_1901"/>
-    </owl:NamedIndividual>
-
-    <owl:NamedIndividual rdf:about="#julie_bright_1966">
-        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
-        <isSisterOf rdf:resource="#james_bright_1964"/>
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#priscilla_saunders_1810">
@@ -3239,12 +3184,6 @@
         <hasFather rdf:resource="#james_bright_1964"/>
     </owl:NamedIndividual>
 
-    <owl:NamedIndividual rdf:about="#james_bright_1964">
-        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
-        <isBrotherOf rdf:resource="#clare_bright_1966"/>
-        <isBrotherOf rdf:resource="#julie_bright_1966"/>
-    </owl:NamedIndividual>
-
     <owl:NamedIndividual rdf:about="#william_cotton">
         <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <isFatherOf rdf:resource="#john_cotton_1778"/>
@@ -3475,16 +3414,5 @@
         <hasDeathYear rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1810</hasDeathYear>
         <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <hasBirthYear rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1810</hasBirthYear>
-    </owl:NamedIndividual>
-
-    <owl:NamedIndividual rdf:about="#william_bright_1970">
-        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
-        <isBrotherOf rdf:resource="#janet_bright_1964"/>
-    </owl:NamedIndividual>
-
-    <owl:NamedIndividual rdf:about="#william_bright_2001">
-        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
-        <hasBirthYear rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">2001</hasBirthYear>
-        <hasFather rdf:resource="#james_bright_1964"/>
     </owl:NamedIndividual>
 </rdf:RDF>
