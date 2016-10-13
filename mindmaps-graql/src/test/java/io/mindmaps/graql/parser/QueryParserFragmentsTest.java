@@ -27,7 +27,9 @@ import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.admin.VarAdmin;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -37,6 +39,9 @@ import java.util.Iterator;
 import java.util.UUID;
 
 import static io.mindmaps.graql.Graql.parsePatterns;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.core.AllOf.allOf;
+import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -44,6 +49,8 @@ import static org.junit.Assert.assertTrue;
 public class QueryParserFragmentsTest {
 
     private static MindmapsGraph mindmapsGraph;
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
     private QueryBuilder qb;
 
     @BeforeClass
@@ -93,6 +100,18 @@ public class QueryParserFragmentsTest {
         assertFalse(patterns.hasNext());
     }
 
+    @Test
+    public void testParseFinitePatternStreamWithSyntaxError() throws IOException {
+        String query = "insert\n\n($x, $y) is has-cast";
+        InputStream stream = new ByteArrayInputStream(query.getBytes(StandardCharsets.UTF_8));
+
+        Iterator<Pattern> patterns = qb.parsePatterns(stream).iterator();
+
+        // Expect no pointer to the line text, but the line number and error
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(allOf(containsString("3"), containsString("isa"), not(containsString("^"))));
+        patterns.next().admin().asVar();
+    }
 
     class InfiniteStream extends InputStream {
 

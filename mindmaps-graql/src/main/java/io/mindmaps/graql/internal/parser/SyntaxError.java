@@ -27,6 +27,13 @@ class SyntaxError {
     private int charPositionInLine;
     private String msg;
 
+    SyntaxError(int line, String msg) {
+        this.queryLine = null;
+        this.line = line;
+        this.charPositionInLine = 0;
+        this.msg = msg;
+    }
+
     SyntaxError(String queryLine, int line, int charPositionInLine, String msg) {
         this.queryLine = queryLine;
         this.line = line;
@@ -36,13 +43,17 @@ class SyntaxError {
 
     @Override
     public String toString() {
-        // Error message appearance:
-        //
-        // syntax error at line 1:
-        // match $
-        //       ^
-        // blah blah antlr blah
-        String pointer = StringUtils.repeat(" ", charPositionInLine) + "^";
-        return ErrorMessage.SYNTAX_ERROR.getMessage(line, queryLine, pointer, msg);
+        if (queryLine == null) {
+            return ErrorMessage.SYNTAX_ERROR_NO_POINTER.getMessage(line, msg);
+        } else {
+            // Error message appearance:
+            //
+            // syntax error at line 1:
+            // match $
+            //       ^
+            // blah blah antlr blah
+            String pointer = StringUtils.repeat(" ", charPositionInLine) + "^";
+            return ErrorMessage.SYNTAX_ERROR.getMessage(line, queryLine, pointer, msg);
+        }
     }
 }
