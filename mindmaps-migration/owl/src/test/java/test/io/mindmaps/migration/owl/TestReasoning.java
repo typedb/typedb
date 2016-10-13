@@ -137,11 +137,11 @@ public class TestReasoning extends TestOwlMindMapsBase {
         String isAncestorOfId = "op-isAncestorOf";
 
         assertEquals(inferRelationHermit(hasAncestor, elisabethId), inferRelationMM(hasAncestorId, elisabethId));
-        //assertEquals(inferRelationHermit(hasAncestor, annId), inferRelationMM(hasAncestorId, annId));
+        assertEquals(inferRelationHermit(hasAncestor, annId), inferRelationMM(hasAncestorId, annId));
         //assertEquals(inferRelationHermit(hasAncestor, eleanorId), inferRelationMM(hasAncestorId, eleanorId));
 
         assertEquals(inferRelationHermit(isAncestorOf, anneId), inferRelationMM(isAncestorOfId, anneId));
-        //assertEquals(inferRelationHermit(isAncestorOf, megaId), inferRelationMM(isAncestorOfId, megaId));
+        assertEquals(inferRelationHermit(isAncestorOf, megaId), inferRelationMM(isAncestorOfId, megaId));
         //assertEquals(inferRelationHermit(isAncestorOf, reeceId), inferRelationMM(isAncestorOfId, reeceId));
     }
 }
