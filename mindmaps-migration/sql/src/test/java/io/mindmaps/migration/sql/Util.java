@@ -30,9 +30,14 @@ import java.util.stream.Collectors;
 
 public class Util {
 
+    public static final String USER = "test";
+    public static final String PASS = "";
+    public static final String DRIVER = "org.h2.Driver";
+    public static final String URL = "jdbc:h2:~/test;";
+
     public static String readSql(String name) {
         try {
-            URL dataUrl = SQLSchemaMigratorTest.class.getClassLoader().getResource(name);
+            URL dataUrl = Util.class.getClassLoader().getResource(name);
             assert dataUrl != null;
             return Files.readAllLines(Paths.get(dataUrl.toURI())).stream()
                     .filter(line -> !line.startsWith("--"))
@@ -58,15 +63,10 @@ public class Util {
         String schema = readSqlSchema(example);
         String data = readSqlData(example);
 
-        String user = "test";
-        String pass = "";
-        String driver = "org.h2.Driver";
-        String url = "jdbc:h2:~/test;";
-
         Connection connection;
         try {
-            Class.forName(driver).newInstance();
-            connection = DriverManager.getConnection(url, user, pass);
+            Class.forName(DRIVER).newInstance();
+            connection = DriverManager.getConnection(URL, USER, PASS);
         }
         catch (SQLException|ClassNotFoundException|InstantiationException|IllegalAccessException e){
             throw new RuntimeException(e);
