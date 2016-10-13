@@ -69,7 +69,7 @@ public class CountVertexProgram extends MindmapsVertexProgram {
     @Override
     public void safeExecute(final Vertex vertex, Messenger messenger, final Memory memory) {
         if (selectedTypes.contains(getVertexType(vertex))) {
-            memory.incr(COUNT, 1);
+            memory.incr(COUNT, 1L);
         }
     }
 
