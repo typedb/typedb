@@ -267,7 +267,7 @@ public class AdmissionsGraph {
 
     private static void addRules() {
         try {
-            List<String> lines = Files.readAllLines(Paths.get("src/test/resources/graql/admission-rules.gql"), StandardCharsets.UTF_8);
+            List<String> lines = Files.readAllLines(Paths.get("src/test/graql/admission-rules.gql"), StandardCharsets.UTF_8);
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
             Graql.withGraph(mindmaps).parseInsert(query).execute();
         }
