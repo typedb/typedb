@@ -72,11 +72,11 @@ public class Queries {
     }
 
     public static ComputeQuery compute(Optional<MindmapsGraph> graph, String computeMethod) {
-        return new ComputeQueryImpl(graph, computeMethod, new HashSet<>());
+        return new ComputeQueryImpl(graph, computeMethod, new HashSet<>(), new HashSet<>());
     }
 
-    public static ComputeQuery compute(Optional<MindmapsGraph> graph, String computeMethod, Set<String> typeIds) {
-        return new ComputeQueryImpl(graph, computeMethod, typeIds);
+    public static ComputeQuery compute(Optional<MindmapsGraph> graph, String computeMethod, Set<String> subTypeIds, Set<String> statisticsResourceTypeIds) {
+        return new ComputeQueryImpl(graph, computeMethod, subTypeIds, statisticsResourceTypeIds);
     }
 
     public static <T> AggregateQuery<T> aggregate(MatchQueryAdmin matchQuery, Aggregate<? super Map<String, Concept>, T> aggregate) {

@@ -257,7 +257,7 @@ public class GraqlTest extends AbstractMindmapsEngineTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testInvalidIdWithAnalytics() {
-        ((ComputeQuery) qb.parse("compute sum in thing;")).execute();
+        ((ComputeQuery) qb.parse("compute sum of thing;")).execute();
     }
 
     @Test
@@ -291,13 +291,13 @@ public class GraqlTest extends AbstractMindmapsEngineTest {
         graph.commit();
 
         // use graql to compute various statistics
-        Optional<Number> result = (Optional<Number>) ((ComputeQuery) qb.parse("compute sum in resource;")).execute();
+        Optional<Number> result = (Optional<Number>) ((ComputeQuery) qb.parse("compute sum of resource;")).execute();
         assertEquals(6L,(long) result.orElse(0L));
-        result = (Optional<Number>) ((ComputeQuery) qb.parse("compute min in resource;")).execute();
+        result = (Optional<Number>) ((ComputeQuery) qb.parse("compute min of resource;")).execute();
         assertEquals(1L,(long) result.orElse(0L));
-        result = (Optional<Number>) ((ComputeQuery) qb.parse("compute max in resource;")).execute();
+        result = (Optional<Number>) ((ComputeQuery) qb.parse("compute max of resource;")).execute();
         assertEquals(3L,(long) result.orElse(0L));
-        result = (Optional<Number>) ((ComputeQuery) qb.parse("compute mean in resource;")).execute();
+        result = (Optional<Number>) ((ComputeQuery) qb.parse("compute mean of resource;")).execute();
         assertEquals(2.0, (double) result.orElse(0L), 0.1);
 
     }
@@ -329,7 +329,7 @@ public class GraqlTest extends AbstractMindmapsEngineTest {
         Set<String> analyticsCommands = new HashSet<String>(Arrays.asList(
                 "compute count;",
                 "compute degrees;",
-                "compute mean in number;"));
+                "compute mean of number;"));
 
         analyticsCommands.forEach(command -> {
             // insert a node but do not commit it

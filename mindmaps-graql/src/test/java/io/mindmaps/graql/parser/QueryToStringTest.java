@@ -153,7 +153,7 @@ public class QueryToStringTest {
 
     @Test
     public void testComputeQuerySubgraphToString() {
-        ComputeQuery query = qb.compute("degrees", Sets.newHashSet("movie", "person"));
+        ComputeQuery query = qb.compute("degrees", Sets.newHashSet("movie", "person"), Sets.newHashSet());
         assertEquals("compute degrees in movie, person;", query.toString());
     }
 

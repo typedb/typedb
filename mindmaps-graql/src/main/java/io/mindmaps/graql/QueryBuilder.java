@@ -96,8 +96,8 @@ public class QueryBuilder {
         return Queries.compute(graph, computeMethod);
     }
 
-    public ComputeQuery compute(String computeMethod, Set<String> typeIds) {
-        return Queries.compute(graph, computeMethod, typeIds);
+    public ComputeQuery compute(String computeMethod, Set<String> subTypeIds, Set<String> statisticsResourceTypeIds) {
+        return Queries.compute(graph, computeMethod, subTypeIds, statisticsResourceTypeIds);
     }
 
     /**
