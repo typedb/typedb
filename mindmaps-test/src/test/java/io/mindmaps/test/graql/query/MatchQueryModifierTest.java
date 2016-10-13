@@ -19,22 +19,15 @@
 package io.mindmaps.test.graql.query;
 
 import com.google.common.collect.Lists;
-import io.mindmaps.Mindmaps;
-import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.test.AbstractMindmapsEngineTest;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -46,20 +39,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class MatchQueryModifierTest {
+public class MatchQueryModifierTest extends AbstractMindmapsEngineTest {
 
-    private static MindmapsGraph mindmapsGraph;
     private QueryBuilder qb;
-
-    @BeforeClass
-    public static void setUpClass() {
-        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        MovieGraphFactory.loadGraph(mindmapsGraph);
-    }
 
     @Before
     public void setUp() {
-        qb = withGraph(mindmapsGraph);
+        MovieGraphFactory.loadGraph(graph);
+        qb = withGraph(graph);
     }
 
     @Test

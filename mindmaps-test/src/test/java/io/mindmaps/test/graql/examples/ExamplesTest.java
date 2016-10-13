@@ -18,27 +18,24 @@
 
 package io.mindmaps.test.graql.examples;
 
-import io.mindmaps.Mindmaps;
-import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.test.AbstractMindmapsEngineTest;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.UUID;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
 
-public class ExamplesTest {
+public class ExamplesTest extends AbstractMindmapsEngineTest {
 
     private QueryBuilder qb;
 
     @Before
     public void setUp() {
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         qb = Graql.withGraph(graph);
     }
 

@@ -19,17 +19,14 @@
 package io.mindmaps.test.graql.parser;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.Mindmaps;
-import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.test.AbstractMindmapsEngineTest;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.UUID;
 
 import static io.mindmaps.graql.Graql.id;
 import static io.mindmaps.graql.Graql.lte;
@@ -40,15 +37,14 @@ import static io.mindmaps.graql.Graql.var;
 import static io.mindmaps.graql.Graql.withGraph;
 import static org.junit.Assert.assertEquals;
 
-public class QueryToStringTest {
+public class QueryToStringTest extends AbstractMindmapsEngineTest {
 
     private QueryBuilder qb;
 
     @Before
     public void setUp() {
-        MindmapsGraph mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        MovieGraphFactory.loadGraph(mindmapsGraph);
-        qb = withGraph(mindmapsGraph);
+        MovieGraphFactory.loadGraph(graph);
+        qb = withGraph(graph);
     }
 
     @Test

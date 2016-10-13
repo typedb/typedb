@@ -18,15 +18,13 @@
 
 package io.mindmaps.test.graql.parser;
 
-import io.mindmaps.Mindmaps;
-import io.mindmaps.MindmapsGraph;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.test.AbstractMindmapsEngineTest;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -36,7 +34,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
-import java.util.UUID;
 
 import static io.mindmaps.graql.Graql.parsePatterns;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -46,22 +43,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class QueryParserFragmentsTest {
+public class QueryParserFragmentsTest extends AbstractMindmapsEngineTest {
 
-    private static MindmapsGraph mindmapsGraph;
     @Rule
     public final ExpectedException exception = ExpectedException.none();
     private QueryBuilder qb;
 
-    @BeforeClass
-    public static void setUpClass() {
-        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        MovieGraphFactory.loadGraph(mindmapsGraph);
-    }
-
     @Before
     public void setUp() {
-        qb = Graql.withGraph(mindmapsGraph);
+        MovieGraphFactory.loadGraph(graph);
+        qb = Graql.withGraph(graph);
     }
 
     @Test

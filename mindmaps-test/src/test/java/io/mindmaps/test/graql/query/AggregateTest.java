@@ -19,13 +19,12 @@
 
 package io.mindmaps.test.graql.query;
 
-import io.mindmaps.Mindmaps;
-import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Instance;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.graql.AggregateQuery;
 import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.test.AbstractMindmapsEngineTest;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,7 +32,6 @@ import org.junit.Test;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 import static io.mindmaps.graql.Graql.average;
 import static io.mindmaps.graql.Graql.count;
@@ -47,16 +45,14 @@ import static io.mindmaps.graql.Graql.var;
 import static io.mindmaps.graql.Graql.withGraph;
 import static org.junit.Assert.assertEquals;
 
-public class AggregateTest {
+public class AggregateTest extends AbstractMindmapsEngineTest {
 
     private QueryBuilder qb;
-    private MindmapsGraph mindmapsGraph;
 
     @Before
     public void setUp() {
-        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        MovieGraphFactory.loadGraph(mindmapsGraph);
-        qb = withGraph(this.mindmapsGraph);
+        MovieGraphFactory.loadGraph(graph);
+        qb = withGraph(this.graph);
     }
 
     @Test
@@ -80,7 +76,7 @@ public class AggregateTest {
         groups.forEach((movie, results) -> {
             results.forEach(result -> {
                 assertEquals(movie, result.get("x"));
-                assertEquals(mindmapsGraph.getEntityType("person"), result.get("y").type());
+                assertEquals(graph.getEntityType("person"), result.get("y").type());
             });
         });
     }
@@ -92,7 +88,7 @@ public class AggregateTest {
 
         Map<Concept, Long> groupCount = groupCountQuery.execute();
 
-        Instance godfather = mindmapsGraph.getInstance("Godfather");
+        Instance godfather = graph.getInstance("Godfather");
 
         assertEquals(new Long(9), groupCount.get(godfather));
     }
