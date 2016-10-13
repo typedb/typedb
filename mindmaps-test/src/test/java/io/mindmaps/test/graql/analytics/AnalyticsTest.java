@@ -29,7 +29,6 @@ import io.mindmaps.test.AbstractMindmapsEngineTest;
 import org.apache.commons.collections.CollectionUtils;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.*;
@@ -65,17 +64,10 @@ public class AnalyticsTest extends AbstractMindmapsEngineTest {
         Entity foofoo = graph.putEntity("foofoo", dog);
         graph.commit();
 
-        // fetch types
-        mansBestFriend = graph.getRelationType("mans-best-friend");
-        person = graph.getEntityType("person");
-        animal = graph.getEntityType("animal");
+        // set subgraph
+        HashSet<String> ct = Sets.newHashSet("person", "animal", "mans-best-friend");
 
-        Set<Type> ct = new HashSet<>();
-        ct.add(person);
-        ct.add(animal);
-        ct.add(mansBestFriend);
-
-        Analytics analytics = new Analytics(graph.getKeyspace(), ct);
+        Analytics analytics = new Analytics(graph.getKeyspace(), ct, new HashSet<>());
         analytics.degreesAndPersist();
 
         // check that dog has a degree to confirm ako has been inferred
@@ -90,7 +82,7 @@ public class AnalyticsTest extends AbstractMindmapsEngineTest {
         // assert the graph is empty
         System.out.println();
         System.out.println("Counting");
-        Analytics computer = new Analytics(graph.getKeyspace());
+        Analytics computer = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
         startTime = System.currentTimeMillis();
         Assert.assertEquals(0, computer.count());
         System.out.println();
@@ -112,7 +104,7 @@ public class AnalyticsTest extends AbstractMindmapsEngineTest {
         System.out.println();
         System.out.println("Counting");
         startTime = System.currentTimeMillis();
-        computer = new Analytics(graph.getKeyspace());
+        computer = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
         Assert.assertEquals(3, computer.count());
         System.out.println();
         System.out.println(System.currentTimeMillis() - startTime + " ms");
@@ -121,7 +113,7 @@ public class AnalyticsTest extends AbstractMindmapsEngineTest {
         System.out.println("Counting");
         startTime = System.currentTimeMillis();
         graph = factory.getGraph();
-        computer = new Analytics(graph.getKeyspace(), Collections.singleton(graph.getType("thing")));
+        computer = new Analytics(graph.getKeyspace(), Collections.singleton("thing"),new HashSet<>());
         Assert.assertEquals(2, computer.count());
         System.out.println();
         System.out.println(System.currentTimeMillis() - startTime + " ms");
@@ -194,7 +186,7 @@ public class AnalyticsTest extends AbstractMindmapsEngineTest {
         graph.close();
 
         // compute degrees
-        Analytics computer = new Analytics(graph.getKeyspace());
+        Analytics computer = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
         Map<Instance, Long> degrees = computer.degrees();
 
         assertTrue(!degrees.isEmpty());
@@ -216,11 +208,7 @@ public class AnalyticsTest extends AbstractMindmapsEngineTest {
         });
 
         // compute degrees on subgraph
-        graph = factory.getGraph();
-        thing = graph.getEntityType("thing");
-        related = graph.getRelationType("related");
-        computer = new Analytics(graph.getKeyspace(), Sets.newHashSet(thing, related));
-        graph.close();
+        computer = new Analytics(graph.getKeyspace(), Sets.newHashSet("thing","related"),new HashSet<>());
         degrees = computer.degrees();
 
         graph = factory.getGraph();
@@ -249,8 +237,6 @@ public class AnalyticsTest extends AbstractMindmapsEngineTest {
         });
     }
 
-    // TODO: Ignored due to being expensive
-    @Ignore
     @Test
     public void testDegreesAndPersist() throws Exception {
         // create instances
@@ -289,7 +275,7 @@ public class AnalyticsTest extends AbstractMindmapsEngineTest {
         Map<Instance, Long> correctDegrees = new HashMap<>();
 
         // compute degrees on subgraph
-        Analytics computer = new Analytics(graph.getKeyspace(), Sets.newHashSet(graph.getType("thing"), graph.getType("related")));
+        Analytics computer = new Analytics(graph.getKeyspace(), Sets.newHashSet("thing", "related"),new HashSet<>());
         computer.degreesAndPersist();
 
         // fetch instances
@@ -346,7 +332,7 @@ public class AnalyticsTest extends AbstractMindmapsEngineTest {
         for (int i = 0; i < 2; i++) {
 
             graph.close();
-            computer = new Analytics(graph.getKeyspace());
+            computer = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
             computer.degreesAndPersist();
 
             // after computation refresh concepts
@@ -439,12 +425,9 @@ public class AnalyticsTest extends AbstractMindmapsEngineTest {
         name = graph.getResourceType("name");
 
         // create a subgraph excluding resources and the relationship
-        Set<Type> subGraphTypes = new HashSet<>();
-        subGraphTypes.add(animal);
-        subGraphTypes.add(person);
-        subGraphTypes.add(mansBestFriend);
+        HashSet<String> subGraphTypes = Sets.newHashSet("animal", "person", "mans-best-friend");
 
-        Analytics analytics = new Analytics(graph.getKeyspace(), subGraphTypes);
+        Analytics analytics = new Analytics(graph.getKeyspace(), subGraphTypes,new HashSet<>());
         Map<Instance, Long> degrees = analytics.degrees();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> {
@@ -452,14 +435,9 @@ public class AnalyticsTest extends AbstractMindmapsEngineTest {
         });
 
         // create a subgraph excluding resource type only
-        Set<Type> almostFullTypes = new HashSet<>();
-        almostFullTypes.add(animal);
-        almostFullTypes.add(person);
-        almostFullTypes.add(mansBestFriend);
-        almostFullTypes.add(hasName);
-        almostFullTypes.add(name);
+        HashSet<String> almostFullTypes = Sets.newHashSet("animal", "person", "mans-best-friend", "has-name", "name");
 
-        analytics = new Analytics(graph.getKeyspace(), almostFullTypes);
+        analytics = new Analytics(graph.getKeyspace(), almostFullTypes,new HashSet<>());
         degrees = analytics.degrees();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> {
@@ -467,7 +445,7 @@ public class AnalyticsTest extends AbstractMindmapsEngineTest {
         });
 
         // full graph
-        analytics = new Analytics(graph.getKeyspace());
+        analytics = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
         degrees = analytics.degrees();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> {
@@ -475,8 +453,6 @@ public class AnalyticsTest extends AbstractMindmapsEngineTest {
         });
     }
 
-    // TODO: Ignored due to being expensive
-    @Ignore
     @Test
     public void testDegreeIsPersisted() throws Exception {
         // create a simple graph
@@ -503,7 +479,7 @@ public class AnalyticsTest extends AbstractMindmapsEngineTest {
         graph.commit();
 
         // compute and persist degrees
-        Analytics analytics = new Analytics(graph.getKeyspace());
+        Analytics analytics = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
         analytics.degreesAndPersist();
 
         // check degrees are correct
@@ -567,8 +543,6 @@ public class AnalyticsTest extends AbstractMindmapsEngineTest {
         assertTrue(CollectionUtils.isEqualCollection(currentDegrees.values(), referenceDegrees.values()));
     }
 
-    // TODO: Ignored due to being expensive
-    @Ignore
     @Test
     public void testDegreeIsPersistedInPresenceOfOtherResource() throws MindmapsValidationException, ExecutionException, InterruptedException {
         // create a simple graph
@@ -604,16 +578,10 @@ public class AnalyticsTest extends AbstractMindmapsEngineTest {
         // validate
         graph.commit();
 
-        mansBestFriend = graph.getRelationType("mans-best-friend");
-        person = graph.getEntityType("person");
-        animal = graph.getEntityType("animal");
-        Set<Type> ct = new HashSet<>();
-        ct.add(mansBestFriend);
-        ct.add(person);
-        ct.add(animal);
+        HashSet<String> ct = Sets.newHashSet("person", "animal", "mans-best-friend");
 
         // compute and persist degrees
-        Analytics analytics = new Analytics(graph.getKeyspace(), ct);
+        Analytics analytics = new Analytics(graph.getKeyspace(), ct,new HashSet<>());
         analytics.degreesAndPersist();
 
         graph = factory.getGraph();
@@ -697,20 +665,9 @@ public class AnalyticsTest extends AbstractMindmapsEngineTest {
 
         graph.commit();
 
-        mansBestFriend = graph.getRelationType("mans-best-friend");
-        person = graph.getEntityType("person");
-        animal = graph.getEntityType("animal");
-        startDate = graph.getResourceType("start-date");
-        hasOwnershipResource = graph.getRelationType("has-ownership-resource");
-
         // create a subgraph with assertion on assertion
-        Set<Type> ct = new HashSet<>();
-        ct.add(animal);
-        ct.add(person);
-        ct.add(mansBestFriend);
-        ct.add(startDate);
-        ct.add(hasOwnershipResource);
-        Analytics analytics = new Analytics(graph.getKeyspace(), ct);
+        HashSet<String> ct = Sets.newHashSet("animal", "person", "mans-best-friend", "start-date", "has-ownership-resource");
+        Analytics analytics = new Analytics(graph.getKeyspace(), ct,new HashSet<>());
         Map<Instance, Long> degrees = analytics.degrees();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> {
@@ -719,10 +676,10 @@ public class AnalyticsTest extends AbstractMindmapsEngineTest {
 
         // create subgraph without assertion on assertion
         ct.clear();
-        ct.add(animal);
-        ct.add(person);
-        ct.add(mansBestFriend);
-        analytics = new Analytics(graph.getKeyspace(), ct);
+        ct.add("animal");
+        ct.add("person");
+        ct.add("mans-best-friend");
+        analytics = new Analytics(graph.getKeyspace(), ct,new HashSet<>());
         degrees = analytics.degrees();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> {
@@ -761,7 +718,7 @@ public class AnalyticsTest extends AbstractMindmapsEngineTest {
 
         graph.commit();
 
-        Analytics analytics = new Analytics(graph.getKeyspace());
+        Analytics analytics = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
         Map<Instance, Long> degrees = analytics.degrees();
         graph = factory.getGraph();
         assertTrue(degrees.get(graph.getRelation(relationId)).equals(3L));
@@ -799,7 +756,7 @@ public class AnalyticsTest extends AbstractMindmapsEngineTest {
         // validate
         graph.commit();
 
-        Analytics analytics = new Analytics(graph.getKeyspace());
+        Analytics analytics = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
         Map<Instance, Long> degrees = analytics.degrees();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> {
@@ -835,7 +792,7 @@ public class AnalyticsTest extends AbstractMindmapsEngineTest {
         // validate
         graph.commit();
 
-        Analytics analytics = new Analytics(graph.getKeyspace());
+        Analytics analytics = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
         Map<Instance, Long> degrees = analytics.degrees();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> {
@@ -878,15 +835,8 @@ public class AnalyticsTest extends AbstractMindmapsEngineTest {
 
         // check degree for dave owning cats
         //TODO: should we count the relationship even if there is no cat attached?
-        mansBestFriend = graph.getRelationType("mans-best-friend");
-        person = graph.getEntityType("person");
-        cat = graph.getEntityType("cat");
-
-        Set<Type> ct = new HashSet<>();
-        ct.add(mansBestFriend);
-        ct.add(person);
-        ct.add(cat);
-        Analytics analytics = new Analytics(graph.getKeyspace(), ct);
+        HashSet<String> ct = Sets.newHashSet("mans-best-friend", "cat", "person");
+        Analytics analytics = new Analytics(graph.getKeyspace(), ct,new HashSet<>());
         Map<Instance, Long> degrees = analytics.degrees();
         assertFalse(degrees.isEmpty());
         degrees.entrySet().forEach(entry -> {
@@ -916,20 +866,19 @@ public class AnalyticsTest extends AbstractMindmapsEngineTest {
         graph.commit();
 
         // count and persist
-        Analytics analytics = new Analytics(graph.getKeyspace());
+        Analytics analytics = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
         assertEquals(3L, analytics.count());
         analytics.degreesAndPersist();
 
-        analytics = new Analytics(graph.getKeyspace());
+        analytics = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
         assertEquals(3L, analytics.count());
         analytics.degreesAndPersist();
 
-        analytics = new Analytics(graph.getKeyspace());
+        analytics = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
         assertEquals(3L, analytics.count());
         analytics.degreesAndPersist();
     }
 
-    @Ignore // TODO: Fix this test (fails assertion that usm is 4)
     @Test
     public void testComputingUsingDegreeResource() throws MindmapsValidationException {
         // TODO: Fix on TinkerGraphComputer

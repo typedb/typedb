@@ -27,7 +27,6 @@ import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.test.AbstractMindmapsEngineTest;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.*;
@@ -57,7 +56,7 @@ public class GraqlTest extends AbstractMindmapsEngineTest {
     public void testGraqlCount() throws MindmapsValidationException, InterruptedException, ExecutionException {
 
         // assert the graph is empty
-        Analytics computer = new Analytics(graph.getKeyspace());
+        Analytics computer = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
         assertEquals(0, computer.count());
 
         // create 3 instances
@@ -160,7 +159,6 @@ public class GraqlTest extends AbstractMindmapsEngineTest {
         });
     }
 
-    @Ignore // TODO: Ignored due to being expensive
     @Test
     public void testDegreesAndPersist() throws Exception {
 
