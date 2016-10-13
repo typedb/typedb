@@ -55,11 +55,8 @@ export default class Visualiser {
             },
             physics: {
                 "repulsion": {
-                  "centralGravity": 0.6,
-                  "springLength": 360,
-                  "springConstant": 0.09,
-                  "nodeDistance": 350,
-                  "damping": 0.82
+                  "centralGravity": 0.01,
+                  "damping": 0.5
                 },
                 "minVelocity": 0.75,
                 "solver": "repulsion"
@@ -67,7 +64,8 @@ export default class Visualiser {
             interaction: {
                 hover: true,
                 multiselect: false
-            }
+            },
+            layout: { improvedLayout: false }
         };
 
         // Additional properties to show in node label by type.
@@ -242,8 +240,10 @@ export default class Visualiser {
     expandCluster(id) {
         if(this.network.isCluster(id)) {
             this.network.openCluster(id);
+            this.deleteNode(id);
             return true;
         }
+
         return false;
     }
 
@@ -298,7 +298,9 @@ export default class Visualiser {
                 return v;
             });
 
+        _.keys(this.nodes._data).forEach(x => {if(this.network.isCluster(x)) this.deleteNode(x)});
         this.network.setData({nodes: this.nodes, edges: this.edges});
+        this.cluster();
     }
 
     addCluster(clusterBy) {

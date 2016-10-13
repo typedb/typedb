@@ -20,42 +20,51 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 <section class="wrapper">
 
     <!-- Header-->
-    <nav class="navbar navbar-default navbar-fixed-top">
-        <div class="container-fluid">
-            <div class="navbar-header">
-                <div id="mobile-menu">
-                    <div class="left-nav-toggle">
-                        <a href="#">
-                            <i class="stroke-hamburgermenu"></i>
-                        </a>
-                    </div>
-                </div>
-                <a class="navbar-brand" href="/">
-                    MindmapsDB
-                    <span>{{version}}</span>
-                </a>
-            </div>
-            <div id="navbar" class="navbar-collapse collapse">
-                <div class="left-nav-toggle">
-                    <a href="">
-                        <i class="stroke-hamburgermenu"></i>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <!--<nav class="navbar navbar-default navbar-fixed-top">-->
+        <!--<div class="container-fluid">-->
+            <!--<div class="navbar-header">-->
+                <!--<div id="mobile-menu">-->
+                    <!--<div class="left-nav-toggle">-->
+                        <!--<a href="#">-->
+                            <!--<i class="stroke-hamburgermenu"></i>-->
+                        <!--</a>-->
+                    <!--</div>-->
+                <!--</div>-->
+                <!--<a class="navbar-brand" href="/">-->
+                    <!--MindmapsDB-->
+                    <!--<span>{{version}}</span>-->
+                <!--</a>-->
+            <!--</div>-->
+            <!--<div id="navbar" class="navbar-collapse collapse">-->
+                <!--<div class="left-nav-toggle">-->
+                    <!--<a href="">-->
+                        <!--<i class="stroke-hamburgermenu"></i>-->
+                    <!--</a>-->
+                <!--</div>-->
+            <!--</div>-->
+        <!--</div>-->
+    <!--</nav>-->
     <!-- End header-->
 
     <!-- Navigation-->
     <aside class="navigation">
+        <a class="navbar-brand" href="/">
+            MindmapsDB
+            <span>{{version}}</span>
+        </a>
         <nav>
             <ul class="nav luna-nav">
+                <li></li>
                 <li v-link-active>
                     <a v-link="{ path: '/status' }">Status</a>
                 </li>
 
                 <li v-link-active>
-                    <a v-link="{ path: '/shell' }">Graql Visualiser</a>
+                    <a v-link="{ path: '/graph' }">Graph</a>
+                </li>
+
+                <li v-link-active>
+                    <a v-link="{ path: '/console' }">Console</a>
                 </li>
 
                 <li v-link-active>

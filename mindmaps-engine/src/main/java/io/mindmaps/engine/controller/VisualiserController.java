@@ -18,6 +18,7 @@
 
 package io.mindmaps.engine.controller;
 
+import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
@@ -42,14 +43,11 @@ import spark.Response;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.mindmaps.graql.Graql.withGraph;
 import static spark.Spark.get;
-
-import com.theoryinpractise.halbuilder.api.Representation;
 
 
 @Path("/graph")
@@ -169,10 +167,10 @@ public class VisualiserController {
 
             Map<String, Collection<String>> linkedNodes = computeLinkedNodesFromQuery(matchQuery);
             Set<String> typesAskedInQuery = matchQuery.admin().getTypes().stream().map(Concept::getId).collect(Collectors.toSet());
-            JSONArray collectionOfHalArrays = buildHALRepresentations(graqlResultsList, linkedNodes, typesAskedInQuery);
+            JSONArray halArray = buildHALRepresentations(graqlResultsList, linkedNodes, typesAskedInQuery);
 
             LOG.debug("Done building resources.");
-            return collectionOfHalArrays.toString();
+            return halArray.toString();
         } catch (Exception e) {
             LOG.error("Exception while building HAL representation - Match", e);
             res.status(500);
@@ -181,22 +179,17 @@ public class VisualiserController {
     }
 
     private JSONArray buildHALRepresentations(Collection<Map<String, Concept>> graqlResultsList, Map<String, Collection<String>> linkedNodes, Set<String> typesAskedInQuery) {
-        JSONArray collectionOfHalArrays = new JSONArray();
-
+        final JSONArray lines = new JSONArray();
         graqlResultsList.parallelStream()
-                .forEach(resultLine -> {
-                    JSONArray line = new JSONArray();
-                    resultLine.entrySet().forEach(current -> {
-                        LOG.trace("Building HAL resource for concept with id {}", current.getValue().getId());
-                        Representation currentHal = new HALConcept(current.getValue(), MATCH_QUERY_FIXED_DEGREE, true,
-                                typesAskedInQuery).getRepresentation();
-                        if (linkedNodes.containsKey(current.getKey()))
-                            linkedNodes.get(current.getKey()).forEach(varName -> currentHal.withLink("edge_to", resultLine.get(varName).getId()));
-                        line.put(new JSONObject(currentHal.toString(RepresentationFactory.HAL_JSON)));
-                    });
-                    collectionOfHalArrays.put(line);
-                });
-        return collectionOfHalArrays;
+                .forEach(resultLine -> resultLine.entrySet().forEach(current -> {
+                    LOG.trace("Building HAL resource for concept with id {}", current.getValue().getId());
+                    Representation currentHal = new HALConcept(current.getValue(), MATCH_QUERY_FIXED_DEGREE, true,
+                            typesAskedInQuery).getRepresentation();
+                    if (linkedNodes.containsKey(current.getKey()))
+                        linkedNodes.get(current.getKey()).forEach(varName -> currentHal.withLink("edge_to", REST.WebPath.CONCEPT_BY_ID_URI + resultLine.get(varName).getId()));
+                    lines.put(new JSONObject(currentHal.toString(RepresentationFactory.HAL_JSON)));
+                }));
+        return lines;
     }
 
     private Map<String, Collection<String>> computeLinkedNodesFromQuery(MatchQuery matchQuery) {
