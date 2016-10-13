@@ -18,12 +18,9 @@
 package io.mindmaps.graql.internal.reasoner.predicate;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.pattern.property.HasResourceProperty;
 import io.mindmaps.graql.internal.reasoner.query.Query;
-import io.mindmaps.util.ErrorMessage;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -53,7 +50,7 @@ public class Resource extends AtomBase{
     }
 
     @Override
-    public boolean isUnary(){ return true;}
+    public boolean isResource(){ return true;}
 
     @Override
     public boolean equals(Object obj) {
@@ -79,7 +76,6 @@ public class Resource extends AtomBase{
         Query parent = getParentQuery();
         return this.typeId.equals(a2.getTypeId())
                 && parent.getSubstitution(valueVariable).equals(a2.getParentQuery().getSubstitution(a2.valueVariable));
-
     }
 
     @Override

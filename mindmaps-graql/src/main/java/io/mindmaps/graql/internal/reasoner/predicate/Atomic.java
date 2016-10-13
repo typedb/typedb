@@ -19,7 +19,6 @@
 package io.mindmaps.graql.internal.reasoner.predicate;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.MatchQuery;
@@ -33,12 +32,6 @@ import java.util.Set;
 public interface Atomic extends Cloneable{
 
     Atomic clone();
-
-    /**
-     * @return true if the atom corresponds to a unary predicate
-     * */
-    default boolean isUnary(){ return false;}
-
     /**
      * @return true if the atom corresponds to a predicate
      * */

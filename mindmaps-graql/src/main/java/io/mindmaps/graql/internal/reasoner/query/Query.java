@@ -166,7 +166,9 @@ public class Query implements MatchQueryInternal {
                 .collect(Collectors.toSet());
     }
     public Set<Atomic> getTypeConstraints(){
-        return getAtoms().stream().filter(atom -> atom.isUnary() && !atom.isResource()).collect(Collectors.toSet());
+        return getAtoms().stream()
+                .filter(Atomic::isType)
+                .collect(Collectors.toSet());
     }
 
     public Set<Atomic> getValuePredicates(){
@@ -402,7 +404,7 @@ public class Query implements MatchQueryInternal {
         if (atoms.size() == 1) return atoms;
 
         Set<Atomic> selectedAtoms = atoms.stream()
-                .filter(atom -> (!atom.isUnary()) || atom.isRuleResolvable() || atom.isResource())
+                .filter(atom -> (!atom.isType()) || atom.isRuleResolvable())
                 .collect(Collectors.toSet());
 
         if (selectedAtoms.isEmpty())
