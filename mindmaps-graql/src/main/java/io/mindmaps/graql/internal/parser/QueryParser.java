@@ -19,40 +19,26 @@
 package io.mindmaps.graql.internal.parser;
 
 import com.google.common.collect.ImmutableMap;
-import io.mindmaps.graql.Aggregate;
-import io.mindmaps.graql.AggregateQuery;
-import io.mindmaps.graql.AskQuery;
-import io.mindmaps.graql.ComputeQuery;
-import io.mindmaps.graql.DeleteQuery;
-import io.mindmaps.graql.InsertQuery;
-import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.Pattern;
-import io.mindmaps.graql.Query;
-import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.*;
 import io.mindmaps.graql.internal.antlr.GraqlLexer;
 import io.mindmaps.graql.internal.antlr.GraqlParser;
-import org.antlr.v4.runtime.ANTLRInputStream;
-import org.antlr.v4.runtime.CommonTokenFactory;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.Token;
-import org.antlr.v4.runtime.TokenStream;
-import org.antlr.v4.runtime.UnbufferedCharStream;
-import org.antlr.v4.runtime.UnbufferedTokenStream;
+import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static io.mindmaps.graql.Graql.*;
+import static io.mindmaps.graql.Graql.average;
+import static io.mindmaps.graql.Graql.count;
+import static io.mindmaps.graql.Graql.group;
+import static io.mindmaps.graql.Graql.max;
+import static io.mindmaps.graql.Graql.median;
+import static io.mindmaps.graql.Graql.min;
+import static io.mindmaps.graql.Graql.sum;
 
 /**
  * Class for parsing query strings into valid queries
@@ -82,54 +68,6 @@ public class QueryParser {
 
     public void registerAggregate(String name, Function<List<Object>, Aggregate> aggregateMethod) {
         aggregateMethods.put(name, aggregateMethod);
-    }
-
-    /**
-     * @param queryString a string representing a match query
-     * @return the parsed match query
-     */
-    public MatchQuery parseMatchQuery(String queryString) {
-        return parseQueryFragment(GraqlParser::matchEOF, QueryVisitor::visitMatchEOF, queryString);
-    }
-
-    /**
-     * @param queryString a string representing an ask query
-     * @return a parsed ask query
-     */
-    public AskQuery parseAskQuery(String queryString) {
-        return parseQueryFragment(GraqlParser::askEOF, QueryVisitor::visitAskEOF, queryString);
-    }
-
-    /**
-     * @param queryString a string representing an insert query
-     * @return a parsed insert query
-     */
-    public InsertQuery parseInsertQuery(String queryString) {
-        return parseQueryFragment(GraqlParser::insertEOF, QueryVisitor::visitInsertEOF, queryString);
-    }
-
-    /**
-     * @param queryString a string representing a delete query
-     * @return a parsed delete query
-     */
-    public DeleteQuery parseDeleteQuery(String queryString) {
-        return parseQueryFragment(GraqlParser::deleteEOF, QueryVisitor::visitDeleteEOF, queryString);
-    }
-
-    /**
-     * @param queryString a string representing an aggregate query
-     * @return a parsed aggregate query
-     */
-    public AggregateQuery<?> parseAggregateQuery(String queryString) {
-        return parseQueryFragment(GraqlParser::aggregateEOF, QueryVisitor::visitAggregateEOF, queryString);
-    }
-
-    /**
-     * @param queryString a string representing a compute query
-     * @return a parsed compute query
-     */
-    public ComputeQuery parseComputeQuery(String queryString) {
-        return parseQueryFragment(GraqlParser::computeEOF, QueryVisitor::visitComputeEOF, queryString);
     }
 
     /**
