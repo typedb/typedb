@@ -147,7 +147,7 @@ public class Graql {
      * @param queryString a string representing a query
      * @return a query, the type will depend on the type of query.
      */
-    public static Query<?> parse(String queryString) {
+    public static <T extends Query<?>> T parse(String queryString) {
         return withoutGraph().parse(queryString);
     }
 

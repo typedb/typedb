@@ -160,7 +160,7 @@ public class QueryBuilder {
      * @param queryString a string representing a query
      * @return a query, the type will depend on the type of query.
      */
-    public Query<?> parse(String queryString) {
+    public <T extends Query<?>> T parse(String queryString) {
         return queryParser.parseQuery(queryString);
     }
 
