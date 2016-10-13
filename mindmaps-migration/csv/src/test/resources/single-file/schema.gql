@@ -1,0 +1,18 @@
+insert
+
+model isa entity-type
+    has-resource year
+    has-resource description
+    has-resource price
+    plays-role model-of-car;
+make isa entity-type
+    plays-role make-of-car;
+
+year isa resource-type datatype string;
+description isa resource-type datatype string;
+price isa resource-type datatype double;
+
+make-and-model isa relation-type, has-role make-of-car, has-role model-of-car;
+make-of-car isa role-type;
+model-of-car isa role-type;
+

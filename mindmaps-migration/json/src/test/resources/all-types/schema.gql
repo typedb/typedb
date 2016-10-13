@@ -1,0 +1,13 @@
+insert
+  thing isa entity-type
+    has-resource a-int
+    has-resource a-boolean
+    has-resource a-number
+    has-resource a-string
+    has-resource a-null;
+
+a-int isa resource-type datatype long;
+a-boolean isa resource-type datatype boolean;
+a-number isa resource-type datatype double;
+a-string isa resource-type datatype string;
+a-null isa resource-type datatype string;

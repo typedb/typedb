@@ -1,0 +1,6 @@
+insert
+
+the-thing isa entity-type
+   has-resource a-string;
+
+a-string isa resource-type datatype string;
