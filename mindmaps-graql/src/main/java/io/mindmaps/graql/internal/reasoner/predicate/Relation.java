@@ -19,7 +19,6 @@
 package io.mindmaps.graql.internal.reasoner.predicate;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.Graql;
@@ -30,7 +29,6 @@ import io.mindmaps.util.ErrorMessage;
 import javafx.util.Pair;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static io.mindmaps.graql.internal.reasoner.Utility.getCompatibleRoleTypes;
 
@@ -117,10 +115,7 @@ public class Relation extends AtomBase {
 
     @Override
     public boolean isRelation(){ return true;}
-    @Override
-    public boolean isResource(){ return false;}
-    @Override
-    public boolean isType(){ return true;}
+
     public boolean hasExplicitRoleTypes(){
         boolean rolesDefined = true;
         Iterator<VarAdmin.Casting> it = castings.iterator();

@@ -20,8 +20,6 @@ package io.mindmaps.graql.internal.reasoner.predicate;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 
-import java.util.*;
-
 public class Type extends AtomBase{
 
     public Type(VarAdmin pattern) {
@@ -40,7 +38,7 @@ public class Type extends AtomBase{
     }
 
     @Override
-    public boolean isUnary(){ return true;}
+    public boolean isType(){ return true;}
 
     @Override
     public boolean equals(Object obj) {

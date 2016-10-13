@@ -122,7 +122,7 @@ public class AtomicTest {
         Atomic sub = AtomicFactory.create(qb.parseMatch(subString).admin().getPattern().getPatterns().iterator().next());
         Atomic res = AtomicFactory.create(qb.parseMatch(resString).admin().getPattern().getPatterns().iterator().next());
 
-        assert(atom.isUnary() && atom.isType());
+        assert(atom.isType());
         assert(relation.isRelation());
         assert(sub.isSubstitution());
         assert(res.isResource());
