@@ -101,14 +101,6 @@ public class QueryBuilder {
     }
 
     /**
-     * @param queryString a string representing a delete query
-     * @return a parsed compute query
-     */
-    public ComputeQuery parseCompute(String queryString) {
-        return queryParser.parseComputeQuery(queryString);
-    }
-
-    /**
      * @param inputStream a stream representing a list of patterns
      * @return a stream of patterns
      */

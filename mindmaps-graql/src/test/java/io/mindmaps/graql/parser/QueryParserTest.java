@@ -55,7 +55,6 @@ import static io.mindmaps.graql.Graql.lte;
 import static io.mindmaps.graql.Graql.neq;
 import static io.mindmaps.graql.Graql.or;
 import static io.mindmaps.graql.Graql.parse;
-import static io.mindmaps.graql.Graql.parseCompute;
 import static io.mindmaps.graql.Graql.regex;
 import static io.mindmaps.graql.Graql.var;
 import static io.mindmaps.graql.Graql.withGraph;
@@ -450,14 +449,14 @@ public class QueryParserTest {
 
     @Test
     public void testParseCompute() {
-        assertEquals("compute count;", parseCompute("compute count;").toString());
+        assertEquals("compute count;", Graql.<ComputeQuery>parse("compute count;").toString());
     }
 
     @Test
     public void testParseComputeWithSubgraph() {
         assertEquals(
                 "compute count in movie, person;",
-                parseCompute("compute count in movie, person;").toString()
+                Graql.<ComputeQuery>parse("compute count in movie, person;").toString()
         );
     }
 
