@@ -281,6 +281,32 @@ public class StatisticsTest extends AbstractMindmapsEngineTest {
         assertEquals(Math.sqrt(110.0 / 6), computer.std().get(), delta);
     }
 
+    @Test
+    public void testMedian() throws Exception {
+        // TODO: Fix in TinkerGraphComputer
+        assumeFalse(usingTinker());
+
+        // resource-type has no instance
+        addOntologyAndEntities();
+
+
+        // add resources, but resources are not connected to any entities
+        addResourcesInstances();
+
+
+        // connect entity and resources
+        addResourceRelations();
+        computer = new Analytics(keyspace, new HashSet<>(),
+                Collections.singleton((resourceType2)));
+        assertEquals(0L, computer.median().get().longValue());
+        computer = new Analytics(keyspace, Collections.singleton((thing)),
+                Collections.singleton((resourceType5)));
+        assertEquals(-7L, computer.median().get().longValue());
+        computer = new Analytics(keyspace, Sets.newHashSet((thing), (anotherThing)),
+                Sets.newHashSet((resourceType2), (resourceType5)));
+        assertEquals(-7L, computer.median().get().longValue());
+    }
+
     private void addOntologyAndEntities() throws MindmapsValidationException {
         EntityType entityType1 = graph.putEntityType(thing);
         EntityType entityType2 = graph.putEntityType(anotherThing);
