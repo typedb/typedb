@@ -101,14 +101,6 @@ public class QueryBuilder {
     }
 
     /**
-     * @param queryString a string representing an insert query
-     * @return a parsed insert query
-     */
-    public InsertQuery parseInsert(String queryString) {
-        return queryParser.parseInsertQuery(queryString);
-    }
-
-    /**
      * @param queryString a string representing a delete query
      * @return a parsed delete query
      */

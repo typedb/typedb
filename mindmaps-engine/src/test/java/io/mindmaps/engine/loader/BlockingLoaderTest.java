@@ -23,6 +23,8 @@ import io.mindmaps.engine.MindmapsEngineTestBase;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
+import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.InsertQuery;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -38,7 +40,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 
-import static io.mindmaps.graql.Graql.parseInsert;
 import static io.mindmaps.graql.Graql.parsePatterns;
 
 public class BlockingLoaderTest extends MindmapsEngineTestBase {
@@ -106,7 +107,7 @@ public class BlockingLoaderTest extends MindmapsEngineTestBase {
                 e.printStackTrace();
             }
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-            parseInsert(query).withGraph(graph).execute();
+        Graql.<InsertQuery>parse(query).withGraph(graph).execute();
         try {
             graph.commit();
         } catch (MindmapsValidationException e) {

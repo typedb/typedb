@@ -26,6 +26,8 @@ import io.mindmaps.engine.postprocessing.BackgroundTasks;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
+import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.util.ErrorMessage;
@@ -56,7 +58,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static io.mindmaps.graql.Graql.parseInsert;
 import static io.mindmaps.graql.Graql.parsePatterns;
 import static spark.Spark.before;
 import static spark.Spark.halt;
@@ -319,7 +320,7 @@ public class ImportController {
 
         List<String> lines = Files.readAllLines(Paths.get(ontologyFile), StandardCharsets.UTF_8);
         String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-        parseInsert(query).withGraph(graph).execute();
+        Graql.<InsertQuery>parse(query).withGraph(graph).execute();
         graph.commit();
 
         LOG.info("Ontology loaded. ");

@@ -58,7 +58,6 @@ import static io.mindmaps.graql.Graql.parse;
 import static io.mindmaps.graql.Graql.parseAggregate;
 import static io.mindmaps.graql.Graql.parseCompute;
 import static io.mindmaps.graql.Graql.parseDelete;
-import static io.mindmaps.graql.Graql.parseInsert;
 import static io.mindmaps.graql.Graql.regex;
 import static io.mindmaps.graql.Graql.var;
 import static io.mindmaps.graql.Graql.withGraph;
@@ -285,7 +284,7 @@ public class QueryParserTest {
         String varString = "id \"123\", isa movie has title \"The Title\";";
         assertFalse(qb.match(var).ask().execute());
 
-        parseInsert("insert " + varString).withGraph(mindmapsGraph).execute();
+        Graql.<InsertQuery>parse("insert " + varString).withGraph(mindmapsGraph).execute();
         assertTrue(qb.match(var).ask().execute());
 
         parseDelete("match $x " + varString + " delete $x;").withGraph(mindmapsGraph).execute();
@@ -294,8 +293,7 @@ public class QueryParserTest {
 
     @Test
     public void testInsertOntologyQuery() {
-        qb.parseInsert(
-                "insert " +
+        qb.<InsertQuery>parse("insert " +
                 "'pokemon' isa entity-type;" +
                 "evolution isa relation-type;" +
                 "evolves-from isa role-type;" +
@@ -306,8 +304,7 @@ public class QueryParserTest {
                 "$y id 'Pikachu' isa pokemon;" +
                 "$z id 'Raichu' isa pokemon;" +
                 "(evolves-from: $x ,evolves-to: $y) isa evolution;" +
-                "(evolves-from: $y, evolves-to: $z) isa evolution;"
-        ).execute();
+                "(evolves-from: $y, evolves-to: $z) isa evolution;").execute();
 
         assertTrue(qb.match(id("pokemon").isa(ENTITY_TYPE.getId())).ask().execute());
         assertTrue(qb.match(id("evolution").isa(RELATION_TYPE.getId())).ask().execute());
@@ -334,7 +331,7 @@ public class QueryParserTest {
         assertTrue(qb.match(language1).ask().execute());
         assertTrue(qb.match(language2).ask().execute());
 
-        qb.parseInsert("match $x isa language; insert $x has name \"HELLO\";").execute();
+        qb.<InsertQuery>parse("match $x isa language; insert $x has name \"HELLO\";").execute();
         assertTrue(qb.match(var().isa("language").id("123").has("name", "HELLO")).ask().execute());
         assertTrue(qb.match(var().isa("language").id("456").has("name", "HELLO")).ask().execute());
 
@@ -345,9 +342,7 @@ public class QueryParserTest {
 
     @Test
     public void testInsertIsAbstractQuery() {
-        qb.parseInsert(
-                "insert concrete-type isa entity-type; abstract-type is-abstract isa entity-type;"
-        ).execute();
+        qb.<InsertQuery>parse("insert concrete-type isa entity-type; abstract-type is-abstract isa entity-type;").execute();
 
         assertFalse(qb.<AskQuery>parse("match concrete-type is-abstract; ask;").execute());
         assertTrue(qb.<AskQuery>parse("match abstract-type is-abstract; ask;").execute());
@@ -363,7 +358,7 @@ public class QueryParserTest {
 
     @Test
     public void testInsertDataTypeQuery() {
-        qb.parseInsert("insert my-type isa resource-type, datatype long;").execute();
+        qb.<InsertQuery>parse("insert my-type isa resource-type, datatype long;").execute();
 
         MatchQuery query = qb.match(var("x").id("my-type"));
         ResourceType.DataType datatype = query.iterator().next().get("x").asResourceType().getDataType();
@@ -378,7 +373,7 @@ public class QueryParserTest {
 
         assertFalse(qb.match(var().isa("movie").value(unescaped).has("title", unescaped)).ask().execute());
 
-        qb.parseInsert("insert isa movie has title '" + escaped + "';").execute();
+        qb.<InsertQuery>parse("insert isa movie has title '" + escaped + "';").execute();
 
         assertFalse(qb.match(var().isa("movie").has("title", escaped)).ask().execute());
         assertTrue(qb.match(var().isa("movie").has("title", unescaped)).ask().execute());
@@ -394,10 +389,8 @@ public class QueryParserTest {
         String lhs = "match $x isa movie;";
         String rhs = "insert id '123' isa movie;";
 
-        qb.parseInsert(
-                "insert id 'my-rule-thing' isa rule-type; \n" +
-                "id 'rulerule' isa my-rule-thing, lhs {" + lhs + "}, rhs {" + rhs + "};"
-        ).execute();
+        qb.<InsertQuery>parse("insert id 'my-rule-thing' isa rule-type; \n" +
+                "id 'rulerule' isa my-rule-thing, lhs {" + lhs + "}, rhs {" + rhs + "};").execute();
 
         assertTrue(qb.match(var().id("my-rule-thing").isa(RULE_TYPE.getId())).ask().execute());
         assertTrue(qb.match(var().id("rulerule").isa("my-rule-thing").lhs(lhs).rhs(rhs)).ask().execute());
@@ -413,7 +406,7 @@ public class QueryParserTest {
 
     @Test
     public void testParseBoolean() {
-        assertEquals("insert has flag true;", qb.parseInsert("insert has flag true;").toString());
+        assertEquals("insert has flag true;", qb.<InsertQuery>parse("insert has flag true;").toString());
     }
 
     @Test
@@ -530,7 +523,7 @@ public class QueryParserTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testMultipleQueriesThrowsIllegalArgumentException() {
-        qb.parseInsert("insert $x isa movie; insert $y isa movie").execute();
+        qb.<InsertQuery>parse("insert $x isa movie; insert $y isa movie").execute();
     }
 
     @Test

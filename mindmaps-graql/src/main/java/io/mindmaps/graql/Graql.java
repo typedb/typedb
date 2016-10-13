@@ -88,14 +88,6 @@ public class Graql {
     }
 
     /**
-     * @param queryString a string representing an insert query
-     * @return a parsed insert query
-     */
-    public static InsertQuery parseInsert(String queryString) {
-        return withoutGraph().parseInsert(queryString);
-    }
-
-    /**
      * @param queryString a string representing a delete query
      * @return a parsed delete query
      */
