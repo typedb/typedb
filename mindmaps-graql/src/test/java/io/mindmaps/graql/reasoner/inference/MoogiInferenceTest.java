@@ -37,14 +37,14 @@ public class MoogiInferenceTest {
 
         String queryString = "match (production-with-genre: $x, genre-of-production: $y) isa has-genre;" +
                              "$x isa movie; $y isa genre; $y has description 'science fiction'; select $x;";
-        MatchQuery query = qb.parseMatch(queryString);
+        MatchQuery query = qb.parse(queryString);
 
         String explicitQuery = "match (production-with-genre: $x, genre-of-production: $y) isa has-genre;"+
                             "$y has description 'Sci-Fi' or $y has description 'science fiction' or $y has description 'Science Fiction';" +
                             "$x isa movie; select $x;";
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
     }
 
     @Test
@@ -53,16 +53,16 @@ public class MoogiInferenceTest {
         String explicitQuery = "match $x isa movie;"+
                                 "{$x has tmdb-vote-count > 1000.0;} or {$x has rotten-tomatoes-user-total-votes > 25000;};" +
                                 "$x has rotten-tomatoes-user-rating >= 3.0;";
-        MatchQuery query = qb.parseMatch(queryString);
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
+        MatchQuery query = qb.parse(queryString);
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         }
 
     @Test
     public void testBadPopularMovie(){
         String queryString = "match $x has status 'bad popular movie';";
         String explicitQuery = "match $x isa movie;$x has tmdb-vote-count > 1000.0;$x has tmdb-vote-average < 4.0;";
-        MatchQuery query = qb.parseMatch(queryString);
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
+        MatchQuery query = qb.parse(queryString);
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         }
 
     @Test
@@ -71,8 +71,8 @@ public class MoogiInferenceTest {
         String explicitQuery = "match (actor: $x) isa has-cast;(director: $x) isa production-crew;";
         Query query = new Query(queryString, graph);
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
     }
 
     @Test
@@ -80,16 +80,16 @@ public class MoogiInferenceTest {
         String queryString = "match $x has status 'popular actor';";
         String explicitQuery = "match $y has rotten-tomatoes-user-total-votes > 25000;" +
                                "(actor: $x, production-with-cast: $y) isa has-cast; select $x;";
-        MatchQuery query = qb.parseMatch(queryString);
+        MatchQuery query = qb.parse(queryString);
 
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
     }
 
     @Test
     public void testPerson(){
         String queryString = "match $x isa person has name;";
-        MatchQuery query = qb.parseMatch(queryString);
+        MatchQuery query = qb.parse(queryString);
         MatchQuery mq = reasoner.resolveToQuery(query);
     }
 
@@ -98,9 +98,9 @@ public class MoogiInferenceTest {
         String queryString = "match $x isa movie;$x has status 'decent movie';($x, director: $y);";
         String explicitQuery = "match $x isa movie;$x has rotten-tomatoes-user-rating >= 3.0;($x, director: $y);";
 
-        MatchQuery query = qb.parseMatch(queryString);
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
+        MatchQuery query = qb.parse(queryString);
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {

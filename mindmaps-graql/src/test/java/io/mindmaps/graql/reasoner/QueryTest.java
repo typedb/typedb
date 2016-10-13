@@ -23,7 +23,6 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
@@ -57,9 +56,9 @@ public class QueryTest {
 
         Query query = new Query(queryString, graph);
         Atomic vpAtom = AtomicFactory
-                .create(qb.parseMatch("match $x value 'Bob';").admin().getPattern().getPatterns().iterator().next());
+                .create(qb.<MatchQuery>parse("match $x value 'Bob';").admin().getPattern().getPatterns().iterator().next());
         Atomic subAtom = AtomicFactory
-                .create(qb.parseMatch("match $x id 'Bob';").admin().getPattern().getPatterns().iterator().next());
+                .create(qb.<MatchQuery>parse("match $x id 'Bob';").admin().getPattern().getPatterns().iterator().next());
         assertTrue(query.containsAtom(vpAtom));
         assertTrue(query.containsAtom(subAtom));
         assertEquals(query.getValuePredicate("x"), "Bob");
@@ -180,7 +179,7 @@ public class QueryTest {
 
     @Test
     public void testQueryResults(){
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(qb.parseMatch("match $x isa person;")));
+        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(qb.<MatchQuery>parse("match $x isa person;")));
         answers.forEach(ans -> System.out.println(ans.toString()));
     }
 

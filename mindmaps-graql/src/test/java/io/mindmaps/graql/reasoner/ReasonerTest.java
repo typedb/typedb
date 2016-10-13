@@ -21,9 +21,9 @@ package io.mindmaps.graql.reasoner;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.RelationType;
-import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
@@ -40,7 +40,6 @@ import java.util.Map;
 import static io.mindmaps.graql.internal.reasoner.Utility.createReflexiveRule;
 import static io.mindmaps.graql.internal.reasoner.Utility.createSubPropertyRule;
 import static io.mindmaps.graql.internal.reasoner.Utility.createTransitiveRule;
-import static io.mindmaps.graql.internal.reasoner.Utility.printAnswers;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -201,7 +200,7 @@ public class ReasonerTest {
         Query query = new Query(queryString, graph);
         QueryBuilder qb = Graql.withGraph(graph);
         Reasoner reasoner = new Reasoner(graph);
-        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.parseMatch(explicitQuery)));
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     @Test
@@ -214,7 +213,7 @@ public class ReasonerTest {
         String explicitQuery = "match $y isa person;$y id 'Bob' or $y id 'Charlie';";
         QueryBuilder qb = Graql.withGraph(graph);
         Reasoner reasoner = new Reasoner(graph);
-        assertEquals(reasoner.resolve(new Query(queryString, graph)), Sets.newHashSet(qb.parseMatch(explicitQuery)));
+        assertEquals(reasoner.resolve(new Query(queryString, graph)), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     @Test
@@ -230,7 +229,7 @@ public class ReasonerTest {
         String explicitQuery = "match $y isa person;$y id 'Bob' or $y id 'Charlie';";
         QueryBuilder qb = Graql.withGraph(graph);
         Reasoner reasoner = new Reasoner(graph);
-        assertEquals(reasoner.resolve(new Query(queryString, graph)), Sets.newHashSet(qb.parseMatch(explicitQuery)));
+        assertEquals(reasoner.resolve(new Query(queryString, graph)), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
 }

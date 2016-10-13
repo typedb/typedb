@@ -88,14 +88,6 @@ public class Graql {
     }
 
     /**
-     * @param queryString a string representing a match query
-     * @return the parsed match query
-     */
-    public static MatchQuery parseMatch(String queryString) {
-        return withoutGraph().parseMatch(queryString);
-    }
-
-    /**
      * @param queryString a string representing an ask query
      * @return a parsed ask query
      */

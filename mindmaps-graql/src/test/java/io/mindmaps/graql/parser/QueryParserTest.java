@@ -25,11 +25,7 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.example.MovieGraphFactory;
-import io.mindmaps.graql.AggregateQuery;
-import io.mindmaps.graql.Graql;
-import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.graql.Var;
+import io.mindmaps.graql.*;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.pattern.property.DataTypeProperty;
 import io.mindmaps.graql.internal.query.aggregate.AbstractAggregate;
@@ -64,7 +60,6 @@ import static io.mindmaps.graql.Graql.parseAsk;
 import static io.mindmaps.graql.Graql.parseCompute;
 import static io.mindmaps.graql.Graql.parseDelete;
 import static io.mindmaps.graql.Graql.parseInsert;
-import static io.mindmaps.graql.Graql.parseMatch;
 import static io.mindmaps.graql.Graql.regex;
 import static io.mindmaps.graql.Graql.var;
 import static io.mindmaps.graql.Graql.withGraph;
@@ -100,7 +95,7 @@ public class QueryParserTest {
     public void testSimpleQuery() {
         assertQueriesEqual(
                 qb.match(var("x").isa("movie")),
-                qb.parseMatch("match $x isa movie;")
+                qb.parse("match $x isa movie;")
         );
     }
 
@@ -111,7 +106,7 @@ public class QueryParserTest {
                 var().rel("actor", "brando").rel("char").rel("production-with-cast", "prod")
         ).select("char", "prod");
 
-        MatchQuery parsed = qb.parseMatch(
+        MatchQuery parsed = qb.parse(
                 "match\n" +
                         "$brando value \"Marl B\" isa person;\n" +
                         "(actor: $brando, $char, production-with-cast: $prod);\n" +
@@ -128,7 +123,7 @@ public class QueryParserTest {
                         .value(any(eq("Apocalypse Now"), lt("Juno").and(gt("Godfather")), eq("Spy")).and(neq("Apocalypse Now")))
         );
 
-        MatchQuery parsed = qb.parseMatch(
+        MatchQuery parsed = qb.parse(
                 "match\n" +
                         "$x isa movie\n" +
                         "\tvalue (= \"Apocalypse Now\" or < 'Juno' and > 'Godfather' or 'Spy') and !='Apocalypse Now';\n"
@@ -143,7 +138,7 @@ public class QueryParserTest {
                 var("x").isa("movie").value(all(lte("Juno"), gte("Godfather"), neq("Heat")).or(eq("The Muppets")))
         );
 
-        MatchQuery parsed = qb.parseMatch(
+        MatchQuery parsed = qb.parse(
                 "match $x isa movie, value (<= 'Juno' and >= 'Godfather' and != 'Heat') or = 'The Muppets';"
         );
 
@@ -177,7 +172,7 @@ public class QueryParserTest {
                         .has("tmdb-vote-average", lte(9.0))
         );
 
-        MatchQuery parsed = qb.parseMatch(
+        MatchQuery parsed = qb.parse(
                 "match $x has release-date < " + date + ", has tmdb-vote-count 100 has tmdb-vote-average<=9.0;"
         );
 
@@ -190,7 +185,7 @@ public class QueryParserTest {
                 var("x").has("tmdb-vote-count", lte(400))
         );
 
-        MatchQuery parsed = qb.parseMatch("match $x isa movie, has tmdb-vote-count <= 400;");
+        MatchQuery parsed = qb.parse("match $x isa movie, has tmdb-vote-count <= 400;");
 
         assertQueriesEqual(expected, parsed);
     }
@@ -203,7 +198,7 @@ public class QueryParserTest {
         ).limit(4).offset(2).distinct().orderBy("y");
 
         MatchQuery parsed =
-                qb.parseMatch("match ($x, $y); $y isa movie; limit 4; offset 2; distinct; order by $y;");
+                qb.parse("match ($x, $y); $y isa movie; limit 4; offset 2; distinct; order by $y;");
 
         assertOrderedQueriesEqual(expected, parsed);
     }
@@ -211,28 +206,28 @@ public class QueryParserTest {
     @Test
     public void testOntologyQuery() {
         MatchQuery expected = qb.match(var("x").playsRole("actor")).orderBy("x");
-        MatchQuery parsed = qb.parseMatch("match $x plays-role actor; order by $x asc;");
+        MatchQuery parsed = qb.parse("match $x plays-role actor; order by $x asc;");
         assertOrderedQueriesEqual(expected, parsed);
     }
 
     @Test
     public void testOrderQuery() {
         MatchQuery expected = qb.match(var("x").isa("movie").has("release-date", var("r"))).orderBy("r", false);
-        MatchQuery parsed = qb.parseMatch("match $x isa movie, has release-date $r; order by $r desc;");
+        MatchQuery parsed = qb.parse("match $x isa movie, has release-date $r; order by $r desc;");
         assertOrderedQueriesEqual(expected, parsed);
     }
 
     @Test
     public void testHasValueQuery() {
         MatchQuery expected = qb.match(var("x").value());
-        MatchQuery parsed = qb.parseMatch("match $x value;");
+        MatchQuery parsed = qb.parse("match $x value;");
         assertQueriesEqual(expected, parsed);
     }
 
     @Test
     public void testHasTmdbVoteCountQuery() {
         MatchQuery expected = qb.match(var("x").has("tmdb-vote-count"));
-        MatchQuery parsed = qb.parseMatch("match $x has tmdb-vote-count;");
+        MatchQuery parsed = qb.parse("match $x has tmdb-vote-count;");
         assertQueriesEqual(expected, parsed);
     }
 
@@ -246,7 +241,7 @@ public class QueryParserTest {
                 id("has-genre").hasRole(var("p"))
         );
 
-        MatchQuery parsed = qb.parseMatch(
+        MatchQuery parsed = qb.parse(
                 "match" +
                         "($p: $x, $y);" +
                         "$x isa $z;" +
@@ -268,7 +263,7 @@ public class QueryParserTest {
                 )
         );
 
-        MatchQuery parsed = qb.parseMatch(
+        MatchQuery parsed = qb.parse(
                 "match $x isa movie; { $y isa genre value 'drama'; ($x, $y); } or $x value 'The Muppets';"
         );
 
@@ -362,7 +357,7 @@ public class QueryParserTest {
     @Test
     public void testMatchDataTypeQuery() {
         MatchQuery expected = qb.match(var("x").datatype(ResourceType.DataType.DOUBLE));
-        MatchQuery parsed = qb.parseMatch("match $x datatype double;");
+        MatchQuery parsed = qb.parse("match $x datatype double;");
 
         assertQueriesEqual(expected, parsed);
     }
@@ -414,7 +409,7 @@ public class QueryParserTest {
     @Test
     public void testQueryParserWithoutGraph() {
         String queryString = "match $x isa movie; select $x;";
-        MatchQuery query = parseMatch("match $x isa movie; select $x;");
+        MatchQuery query = parse("match $x isa movie; select $x;");
         assertEquals(queryString, query.toString());
         assertTrue(query.withGraph(mindmapsGraph).stream().findAny().isPresent());
     }
@@ -486,7 +481,7 @@ public class QueryParserTest {
                 containsString("\nmatch $x isa "),
                 containsString("\n             ^"), containsString("EOF")
         ));
-        qb.parseMatch("match $x isa ");
+        qb.parse("match $x isa ");
     }
 
     @Test
@@ -496,12 +491,12 @@ public class QueryParserTest {
                 containsString("\nmatch $x is"),
                 containsString("\n         ^")
         ));
-        qb.parseMatch("match $x is");
+        qb.parse("match $x is");
     }
 
     @Test
     public void testHasVariable() {
-        MatchQuery query = qb.parseMatch("match Godfather has tmdb-vote-count $x;");
+        MatchQuery query = qb.parse("match Godfather has tmdb-vote-count $x;");
 
         //noinspection OptionalGetWithoutIsPresent
         assertEquals(1000L, query.get("x").findFirst().get().asResource().getValue());
@@ -509,7 +504,7 @@ public class QueryParserTest {
 
     @Test
     public void testRegexResourceType() {
-        MatchQuery query = qb.parseMatch("match $x regex /(fe)?male/;");
+        MatchQuery query = qb.parse("match $x regex /(fe)?male/;");
         assertEquals(1, query.stream().count());
         assertEquals("gender", query.get("x").findFirst().get().getId());
     }
@@ -521,7 +516,7 @@ public class QueryParserTest {
 
     @Test
     public void testParseBooleanType() {
-        MatchQuery query = parseMatch("match $x datatype boolean;");
+        MatchQuery query = parse("match $x datatype boolean;");
 
         VarAdmin var = query.admin().getPattern().getVars().iterator().next();
 
@@ -545,14 +540,14 @@ public class QueryParserTest {
     public void testMissingColon() {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(containsString("':'"));
-        qb.parseMatch("match (actor $x, $y) isa has-cast;");
+        qb.parse("match (actor $x, $y) isa has-cast;");
     }
 
     @Test
     public void testMissingComma() {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(containsString("','"));
-        qb.parseMatch("match ($x $y) isa has-cast;");
+        qb.parse("match ($x $y) isa has-cast;");
     }
 
     @Test

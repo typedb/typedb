@@ -58,7 +58,7 @@ public class AtomicTest {
         String atomString = "match $x isa person;";
 
         Query query = new Query(atomString, graph);
-        Atomic atom = AtomicFactory.create(qb.parseMatch(atomString).admin().getPattern());
+        Atomic atom = AtomicFactory.create(qb.<MatchQuery>parse(atomString).admin().getPattern());
     }
 
     @Test
@@ -71,7 +71,7 @@ public class AtomicTest {
         String atomString = "match $x isa person;";
 
         Query query = new Query(atomString, graph);
-        Atomic atom =  AtomicFactory.create(qb.parseMatch(atomString).admin().getPattern(), query);
+        Atomic atom =  AtomicFactory.create(qb.<MatchQuery>parse(atomString).admin().getPattern(), query);
     }
 
     @Test
@@ -83,7 +83,7 @@ public class AtomicTest {
         QueryBuilder qb = Graql.withGraph(graph);
         String recRelString = "match ($x, $y) isa resides;";
 
-        Atomic recRel = AtomicFactory.create(qb.parseMatch(recRelString).admin().getPattern().getPatterns().iterator().next());
+        Atomic recRel = AtomicFactory.create(qb.<MatchQuery>parse(recRelString).admin().getPattern().getPatterns().iterator().next());
 
         assert(recRel.isRecursive());
     }
@@ -98,10 +98,10 @@ public class AtomicTest {
         String nrecRelString = "match ($x, $y) isa recommendation;";
 
         Atomic recRel = AtomicFactory
-                .create(qb.parseMatch(recRelString).admin().getPattern().getPatterns().iterator().next()
+                .create(qb.<MatchQuery>parse(recRelString).admin().getPattern().getPatterns().iterator().next()
                         , new Query(recRelString, graph));
         Atomic nrecRel = AtomicFactory
-                .create(qb.parseMatch(nrecRelString).admin().getPattern().getPatterns().iterator().next()
+                .create(qb.<MatchQuery>parse(nrecRelString).admin().getPattern().getPatterns().iterator().next()
                         , new Query(recRelString, graph));
 
         assert(recRel.isRecursive());
@@ -117,10 +117,10 @@ public class AtomicTest {
         String subString = "match $x id 'Bob';";
         String resString = "match $x has gender 'male';";
 
-        Atomic atom = AtomicFactory.create(qb.parseMatch(atomString).admin().getPattern().getPatterns().iterator().next());
-        Atomic relation = AtomicFactory.create(qb.parseMatch(relString).admin().getPattern().getPatterns().iterator().next());
-        Atomic sub = AtomicFactory.create(qb.parseMatch(subString).admin().getPattern().getPatterns().iterator().next());
-        Atomic res = AtomicFactory.create(qb.parseMatch(resString).admin().getPattern().getPatterns().iterator().next());
+        Atomic atom = AtomicFactory.create(qb.<MatchQuery>parse(atomString).admin().getPattern().getPatterns().iterator().next());
+        Atomic relation = AtomicFactory.create(qb.<MatchQuery>parse(relString).admin().getPattern().getPatterns().iterator().next());
+        Atomic sub = AtomicFactory.create(qb.<MatchQuery>parse(subString).admin().getPattern().getPatterns().iterator().next());
+        Atomic res = AtomicFactory.create(qb.<MatchQuery>parse(resString).admin().getPattern().getPatterns().iterator().next());
 
         assert(atom.isType());
         assert(relation.isRelation());
@@ -171,7 +171,7 @@ public class AtomicTest {
 
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
 
-        MatchQuery MQ = qb.parseMatch(queryString);
+        MatchQuery MQ = qb.parse(queryString);
         Query query = new Query(MQ, graph);
 
         Atomic atom = query.selectAtoms().iterator().next();
@@ -195,7 +195,7 @@ public class AtomicTest {
 
         String queryString = "match ($x, $y, $z) isa ternary-relation-test;";
 
-        MatchQuery MQ = qb.parseMatch(queryString);
+        MatchQuery MQ = qb.parse(queryString);
         Query query = new Query(MQ, graph);
 
         Atomic atom = query.selectAtoms().iterator().next();

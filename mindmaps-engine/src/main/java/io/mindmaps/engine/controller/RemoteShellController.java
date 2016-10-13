@@ -23,6 +23,7 @@ import io.mindmaps.engine.session.RemoteSession;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
+import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -115,7 +116,7 @@ public class RemoteShellController {
         try {
             MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName);
 
-            return withGraph(graph).parseMatch(req.queryParams(REST.Request.QUERY_FIELD))
+            return withGraph(graph).<MatchQuery>parse(req.queryParams(REST.Request.QUERY_FIELD))
                     .resultsString()
                     .map(x -> x.replaceAll("\u001B\\[\\d+[m]", ""))
                     .collect(Collectors.joining("\n"));

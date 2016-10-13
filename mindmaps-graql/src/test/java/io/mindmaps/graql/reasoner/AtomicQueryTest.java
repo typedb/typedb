@@ -21,6 +21,7 @@ package io.mindmaps.graql.reasoner;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
@@ -68,7 +69,7 @@ public class AtomicQueryTest {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(ErrorMessage.PARENT_MISSING.getMessage());
 
-        Atomic atom = AtomicFactory.create(qb.parseMatch("match $x isa person").admin().getPattern());
+        Atomic atom = AtomicFactory.create(qb.<MatchQuery>parse("match $x isa person").admin().getPattern());
         AtomicQuery query = new AtomicQuery(atom);
     }
 

@@ -101,14 +101,6 @@ public class QueryBuilder {
     }
 
     /**
-     * @param queryString a string representing a match query
-     * @return the parsed match query
-     */
-    public MatchQuery parseMatch(String queryString) {
-        return queryParser.parseMatchQuery(queryString);
-    }
-
-    /**
      * @param queryString a string representing an ask query
      * @return a parsed ask query
      */

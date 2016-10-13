@@ -164,6 +164,6 @@ public class QueryToStringTest {
     }
 
     private void assertValidToString(MatchQuery query) {
-        QueryParserTest.assertQueriesEqual(query, qb.parseMatch(query.toString()));
+        QueryParserTest.assertQueriesEqual(query, qb.parse(query.toString()));
     }
 }
