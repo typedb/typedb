@@ -18,6 +18,8 @@
 
 package io.mindmaps.graql.internal.template;
 
+import io.mindmaps.graql.internal.antlr.GraqlTemplateLexer;
+import io.mindmaps.graql.internal.antlr.GraqlTemplateParser;
 import io.mindmaps.graql.internal.template.macro.DoubleMacro;
 import io.mindmaps.graql.internal.template.macro.IntMacro;
 import io.mindmaps.graql.internal.template.macro.Macro;
