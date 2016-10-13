@@ -30,6 +30,18 @@
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>2.19.1</version>
+
+                <configuration>
+                    <systemPropertyVariables>
+                        <mindmaps.conf>../conf/test/${mindmaps.test-profile}/mindmaps-engine.properties</mindmaps.conf>
+                        <mindmaps.test-profile>${mindmaps.test-profile}</mindmaps.test-profile>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
