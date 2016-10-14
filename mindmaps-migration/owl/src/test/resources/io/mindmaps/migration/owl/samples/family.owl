@@ -158,7 +158,6 @@
     </owl:ObjectProperty>
 
     <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isBrotherOf">
-        <rdfs:domain rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Man"/>
         <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <owl:inverseOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#hasBrother"/>
         <rdfs:subPropertyOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#isDirectSiblingOf"/>

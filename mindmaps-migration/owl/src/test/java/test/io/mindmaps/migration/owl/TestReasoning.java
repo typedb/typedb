@@ -103,7 +103,7 @@ public class TestReasoning extends TestOwlMindMapsBase {
         QueryBuilder qb = Graql.withGraph(migrator.graph());
         String richardId = "richard_henry_steward_1897";
         String hasGreatUncleId = "op-hasGreatUncle";
-        String explicitQuery = "match $x isa tPerson;$x id 'erichard_john_bright_1962';";
+        String explicitQuery = "match $x isa tPerson;{$x id 'erichard_john_bright_1962';} or {$x id 'erobert_david_bright_1965';};";
         assertEquals(inferRelationMM(hasGreatUncleId, richardId), Sets.newHashSet(qb.parseMatch(explicitQuery)));
 
         String queryString2 = "match (owl-subject-op-hasGreatUncle: $x, owl-object-op-hasGreatUncle: $y) isa op-hasGreatUncle;$x id 'eethel_archer_1912'; select $y;";
