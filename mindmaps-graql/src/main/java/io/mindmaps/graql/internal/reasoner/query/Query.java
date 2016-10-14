@@ -226,6 +226,7 @@ public class Query implements MatchQueryInternal {
         unify("temp", from);
     }
 
+
     /**
      * change each variable occurrence in the query (apply unifier [from/to])
      * @param from variable name to be changed

@@ -1,4 +1,3 @@
-
 /*
  * MindmapsDB - A Distributed Semantic Database
  * Copyright (C) 2016  Mindmaps Research Ltd
