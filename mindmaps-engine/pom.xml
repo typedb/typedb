@@ -37,11 +37,6 @@
         </dependency>
         <dependency>
             <groupId>io.mindmaps</groupId>
-            <artifactId>mindmaps-titan-factory</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.mindmaps</groupId>
             <artifactId>mindmaps-graph</artifactId>
             <version>${project.version}</version>
         </dependency>
