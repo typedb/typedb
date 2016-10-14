@@ -29,7 +29,6 @@ import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.Graql;
-import io.mindmaps.graql.InsertQuery;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -270,7 +269,7 @@ public class AdmissionsGraph {
         try {
             List<String> lines = Files.readAllLines(Paths.get("src/test/resources/graql/admission-rules.gql"), StandardCharsets.UTF_8);
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-            Graql.withGraph(mindmaps).<InsertQuery>parse(query).execute();
+            Graql.withGraph(mindmaps).parse(query).execute();
         }
         catch (IOException e){
             e.printStackTrace();

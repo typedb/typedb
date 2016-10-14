@@ -24,7 +24,6 @@ import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
-import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.util.ErrorMessage;
 import mjson.Json;
 import org.slf4j.Logger;
@@ -134,7 +133,7 @@ public class RESTLoader {
                 AbstractMindmapsGraph graph;
                 try {
                     graph = (AbstractMindmapsGraph) GraphFactory.getInstance().getGraphBatchLoading(name);
-                    withGraph(graph).<InsertQuery>parse(batch).execute();
+                    withGraph(graph).parse(batch).execute();
                     graph.commit();
                     cache.addJobCasting(name, graph.getModifiedCastingIds());
                     cache.addJobResource(name, graph.getModifiedResourceIds());

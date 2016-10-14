@@ -22,7 +22,6 @@ import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.Graql;
-import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.QueryBuilder;
 
 import java.io.IOException;
@@ -68,7 +67,7 @@ public class GenericGraph {
         try {
             List<String> lines = Files.readAllLines(Paths.get(filePath + fileName), StandardCharsets.UTF_8);
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-            qb.<InsertQuery>parse(query).execute();
+            qb.parse(query).execute();
         }
         catch (IOException e){
             e.printStackTrace();

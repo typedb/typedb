@@ -281,16 +281,16 @@ public class QueryParserTest {
         String varString = "id \"123\", isa movie has title \"The Title\";";
         assertFalse(qb.match(var).ask().execute());
 
-        Graql.<InsertQuery>parse("insert " + varString).withGraph(mindmapsGraph).execute();
+        Graql.parse("insert " + varString).withGraph(mindmapsGraph).execute();
         assertTrue(qb.match(var).ask().execute());
 
-        Graql.<DeleteQuery>parse("match $x " + varString + " delete $x;").withGraph(mindmapsGraph).execute();
+        Graql.parse("match $x " + varString + " delete $x;").withGraph(mindmapsGraph).execute();
         assertFalse(qb.match(var).ask().execute());
     }
 
     @Test
     public void testInsertOntologyQuery() {
-        qb.<InsertQuery>parse("insert " +
+        qb.parse("insert " +
                 "'pokemon' isa entity-type;" +
                 "evolution isa relation-type;" +
                 "evolves-from isa role-type;" +
@@ -328,18 +328,18 @@ public class QueryParserTest {
         assertTrue(qb.match(language1).ask().execute());
         assertTrue(qb.match(language2).ask().execute());
 
-        qb.<InsertQuery>parse("match $x isa language; insert $x has name \"HELLO\";").execute();
+        qb.parse("match $x isa language; insert $x has name \"HELLO\";").execute();
         assertTrue(qb.match(var().isa("language").id("123").has("name", "HELLO")).ask().execute());
         assertTrue(qb.match(var().isa("language").id("456").has("name", "HELLO")).ask().execute());
 
-        qb.<DeleteQuery>parse("match $x isa language; delete $x;").execute();
+        qb.parse("match $x isa language; delete $x;").execute();
         assertFalse(qb.match(language1).ask().execute());
         assertFalse(qb.match(language2).ask().execute());
     }
 
     @Test
     public void testInsertIsAbstractQuery() {
-        qb.<InsertQuery>parse("insert concrete-type isa entity-type; abstract-type is-abstract isa entity-type;").execute();
+        qb.parse("insert concrete-type isa entity-type; abstract-type is-abstract isa entity-type;").execute();
 
         assertFalse(qb.<AskQuery>parse("match concrete-type is-abstract; ask;").execute());
         assertTrue(qb.<AskQuery>parse("match abstract-type is-abstract; ask;").execute());
@@ -355,7 +355,7 @@ public class QueryParserTest {
 
     @Test
     public void testInsertDataTypeQuery() {
-        qb.<InsertQuery>parse("insert my-type isa resource-type, datatype long;").execute();
+        qb.parse("insert my-type isa resource-type, datatype long;").execute();
 
         MatchQuery query = qb.match(var("x").id("my-type"));
         ResourceType.DataType datatype = query.iterator().next().get("x").asResourceType().getDataType();
@@ -370,7 +370,7 @@ public class QueryParserTest {
 
         assertFalse(qb.match(var().isa("movie").value(unescaped).has("title", unescaped)).ask().execute());
 
-        qb.<InsertQuery>parse("insert isa movie has title '" + escaped + "';").execute();
+        qb.parse("insert isa movie has title '" + escaped + "';").execute();
 
         assertFalse(qb.match(var().isa("movie").has("title", escaped)).ask().execute());
         assertTrue(qb.match(var().isa("movie").has("title", unescaped)).ask().execute());
@@ -386,7 +386,7 @@ public class QueryParserTest {
         String lhs = "match $x isa movie;";
         String rhs = "insert id '123' isa movie;";
 
-        qb.<InsertQuery>parse("insert id 'my-rule-thing' isa rule-type; \n" +
+        qb.parse("insert id 'my-rule-thing' isa rule-type; \n" +
                 "id 'rulerule' isa my-rule-thing, lhs {" + lhs + "}, rhs {" + rhs + "};").execute();
 
         assertTrue(qb.match(var().id("my-rule-thing").isa(RULE_TYPE.getId())).ask().execute());
@@ -403,7 +403,7 @@ public class QueryParserTest {
 
     @Test
     public void testParseBoolean() {
-        assertEquals("insert has flag true;", qb.<InsertQuery>parse("insert has flag true;").toString());
+        assertEquals("insert has flag true;", qb.parse("insert has flag true;").toString());
     }
 
     @Test
@@ -449,14 +449,14 @@ public class QueryParserTest {
 
     @Test
     public void testParseCompute() {
-        assertEquals("compute count;", Graql.<ComputeQuery>parse("compute count;").toString());
+        assertEquals("compute count;", Graql.parse("compute count;").toString());
     }
 
     @Test
     public void testParseComputeWithSubgraph() {
         assertEquals(
                 "compute count in movie, person;",
-                Graql.<ComputeQuery>parse("compute count in movie, person;").toString()
+                Graql.parse("compute count in movie, person;").toString()
         );
     }
 

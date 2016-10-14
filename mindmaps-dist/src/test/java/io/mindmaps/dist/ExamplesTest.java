@@ -21,7 +21,6 @@ package io.mindmaps.dist;
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.Graql;
-import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.QueryBuilder;
 import org.junit.Before;
 import org.junit.Test;
@@ -65,6 +64,6 @@ public class ExamplesTest {
 
     private void runInsertQuery(String path) throws IOException {
         String query = Files.readAllLines(Paths.get(path)).stream().collect(joining("\n"));
-        qb.<InsertQuery>parse(query).execute();
+        qb.parse(query).execute();
     }
 }
