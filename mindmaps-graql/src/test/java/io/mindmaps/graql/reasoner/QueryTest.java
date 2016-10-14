@@ -25,6 +25,7 @@ import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
+import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
@@ -46,20 +47,22 @@ public class QueryTest {
 
     @BeforeClass
     public static void setUpClass() {
-
         graph = SNBGraph.getGraph();
         qb = Graql.withGraph(graph);
     }
 
     @Test
     public void testValuePredicate(){
-        String queryString = "match $x isa person;$x value 'Bob';";
+        String queryString = "match $x isa person;$x value 'Bob';$x id 'Bob';";
 
         Query query = new Query(queryString, graph);
-        boolean containsAtom = false;
-        for(Atomic atom : query.getAtoms())
-            if (atom.toString().equals("$x value \"Bob\"")) containsAtom = true;
-        assertTrue(containsAtom);
+        Atomic vpAtom = AtomicFactory
+                .create(qb.parseMatch("match $x value 'Bob';").admin().getPattern().getPatterns().iterator().next());
+        Atomic subAtom = AtomicFactory
+                .create(qb.parseMatch("match $x id 'Bob';").admin().getPattern().getPatterns().iterator().next());
+        assertTrue(query.containsAtom(vpAtom));
+        assertTrue(query.containsAtom(subAtom));
+        assertEquals(query.getValuePredicate("x"), "Bob");
         assertEquals(query.getSubstitution("x"), "Bob");
     }
 

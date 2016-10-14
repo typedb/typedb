@@ -20,16 +20,28 @@ package io.mindmaps.graql.internal.parser;
 
 import com.google.common.collect.ImmutableMap;
 import io.mindmaps.concept.ResourceType;
-import io.mindmaps.graql.*;
+import io.mindmaps.graql.Aggregate;
+import io.mindmaps.graql.AggregateQuery;
+import io.mindmaps.graql.AskQuery;
+import io.mindmaps.graql.ComputeQuery;
+import io.mindmaps.graql.DeleteQuery;
+import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.InsertQuery;
+import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.NamedAggregate;
+import io.mindmaps.graql.Pattern;
+import io.mindmaps.graql.Query;
+import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.ValuePredicate;
+import io.mindmaps.graql.Var;
+import io.mindmaps.graql.internal.antlr.GraqlBaseVisitor;
+import io.mindmaps.graql.internal.antlr.GraqlParser;
 import io.mindmaps.graql.internal.util.StringConverter;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
@@ -158,16 +170,31 @@ class QueryVisitor extends GraqlBaseVisitor {
         // TODO: Allow registering additional compute methods
         String computeMethod = visitId(ctx.id());
 
+        Set<String> statisticsResourceTypeIds = new HashSet<>(), subTypeIds = new HashSet<>();
+
         if (ctx.subgraph() != null) {
-            Set<String> typeIds = visitSubgraph(ctx.subgraph());
-            return queryBuilder.compute(computeMethod, typeIds);
-        } else {
-            return queryBuilder.compute(computeMethod);
+            subTypeIds = visitSubgraph(ctx.subgraph());
         }
+
+        if (ctx.statTypes() != null) {
+            statisticsResourceTypeIds = visitStatTypes(ctx.statTypes());
+        }
+
+        return queryBuilder.compute(computeMethod, subTypeIds, statisticsResourceTypeIds);
+    }
+
+    @Override
+    public Set<String> visitStatTypes(GraqlParser.StatTypesContext ctx) {
+        return visitIdList(ctx.idList());
     }
 
     @Override
     public Set<String> visitSubgraph(GraqlParser.SubgraphContext ctx) {
+        return visitIdList(ctx.idList());
+    }
+
+    @Override
+    public Set<String> visitIdList(GraqlParser.IdListContext ctx) {
         return ctx.id().stream().map(this::visitId).collect(toSet());
     }
 

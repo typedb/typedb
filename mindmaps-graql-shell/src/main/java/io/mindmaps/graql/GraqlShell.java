@@ -20,6 +20,7 @@ package io.mindmaps.graql;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
+import com.google.common.collect.Lists;
 import com.google.common.io.CharStreams;
 import io.mindmaps.graql.internal.shell.ErrorMessage;
 import io.mindmaps.graql.internal.shell.GraQLCompleter;
@@ -120,8 +121,8 @@ public class GraqlShell {
 
     private boolean waitingQuery = false;
 
-    // The query string to execute
-    private Optional<String> queryString;
+    // The query strings to execute
+    private Optional<List<String>> queryStrings;
 
     /**
      * Run a Graql REPL
@@ -152,8 +153,8 @@ public class GraqlShell {
             return;
         }
 
-        Optional<String> query = Optional.ofNullable(cmd.getOptionValue("e"));
-        String filePath = cmd.getOptionValue("f");
+        Optional<List<String>> queries = Optional.ofNullable(cmd.getOptionValue("e")).map(Lists::newArrayList);
+        String[] filePaths = cmd.getOptionValues("f");
 
         // Print usage message if requested or if invalid arguments provided
         if (cmd.hasOption("h") || !cmd.getArgList().isEmpty()) {
@@ -186,14 +187,13 @@ public class GraqlShell {
 
 
         try {
-            if (filePath != null) {
-                query = Optional.of(loadQuery(filePath));
+            if (filePaths != null) {
+                queries = Optional.of(loadQueries(filePaths));
             }
 
             URI uri = new URI("ws://" + uriString + REMOTE_SHELL_URI);
 
-            new GraqlShell(namespace, client, uri, query);
-
+            new GraqlShell(namespace, client, uri, queries);
         } catch (java.net.ConnectException e) {
             System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
         } catch (Throwable e) {
@@ -201,9 +201,19 @@ public class GraqlShell {
         }
     }
 
+    private static List<String> loadQueries(String[] filePaths) throws IOException {
+        List<String> queries = Lists.newArrayList();
+
+        for (String filePath : filePaths) {
+            queries.add(loadQuery(filePath));
+        }
+
+        return queries;
+    }
+
     private static String loadQuery(String filePath) throws IOException {
-        List<String> lines = Files.readAllLines(Paths.get(filePath), StandardCharsets.UTF_8);
-        return lines.stream().collect(Collectors.joining("\n"));
+            List<String> lines = Files.readAllLines(Paths.get(filePath), StandardCharsets.UTF_8);
+            return lines.stream().collect(Collectors.joining("\n"));
     }
 
     private static void sendBatchRequest(String uriString, String graqlPath) throws IOException {
@@ -232,10 +242,8 @@ public class GraqlShell {
     /**
      * Create a new Graql shell
      */
-    GraqlShell(String namespace, GraqlClient client, URI uri, Optional<String> queryString) throws Throwable {
+    GraqlShell(String namespace, GraqlClient client, URI uri, Optional<List<String>> queryStrings) throws Throwable {
         try {
-            this.queryString = queryString;
-
             console = new ConsoleReader(System.in, System.out);
 
             // Create handler to handle SIGINT (Ctrl-C) interrupts
@@ -253,7 +261,7 @@ public class GraqlShell {
             sendJson(Json.object(ACTION, ACTION_NAMESPACE, NAMESPACE, namespace));
 
             // Start shell
-            start();
+            start(queryStrings);
 
         } finally {
             client.close();
@@ -261,10 +269,12 @@ public class GraqlShell {
         }
     }
 
-    private void start() throws IOException {
-        if (queryString.isPresent()) {
-            executeQuery(queryString.get());
-            commit();
+    private void start(Optional<List<String>> queryStrings) throws IOException {
+        if (queryStrings.isPresent()) {
+            queryStrings.get().forEach(queryString -> {
+                executeQuery(queryString);
+                commit();
+            });
         } else {
             executeRepl();
         }

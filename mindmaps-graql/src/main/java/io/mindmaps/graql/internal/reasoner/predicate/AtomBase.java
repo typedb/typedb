@@ -20,7 +20,6 @@ package io.mindmaps.graql.internal.reasoner.predicate;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.concept.RoleType;
@@ -99,10 +98,6 @@ public abstract class AtomBase implements Atomic{
     @Override
     public String toString(){ return atomPattern.toString(); }
 
-    @Override
-    public boolean isResource(){ return !atomPattern.asVar().getResourcePredicates().isEmpty();}
-    @Override
-    public boolean isType(){ return !typeId.isEmpty();}
     @Override
     public boolean isRuleResolvable(){
         Type type = getParentQuery().getGraph().orElse(null).getType(getTypeId());
@@ -224,18 +219,24 @@ public abstract class AtomBase implements Atomic{
 
     @Override
     public Set<Atomic> getSubstitutions() {
-        Set<Atomic> subs = new HashSet<>();
-        getParentQuery().getAtoms().forEach( atom ->{
-            if(atom.isSubstitution() && containsVar(atom.getVarName()) )
-                subs.add(atom);
-        });
-        return subs;
+        return getParentQuery().getAtoms().stream()
+                .filter(Atomic::isSubstitution)
+                .filter(atom -> containsVar(atom.getVarName()))
+                .collect(Collectors.toSet());
     }
 
     @Override
     public Set<Atomic> getTypeConstraints(){
-        Set<Atomic> typeConstraints = getParentQuery().getTypeConstraints();
-        return typeConstraints.stream().filter(atom -> containsVar(atom.getVarName()))
+        return getParentQuery().getTypeConstraints().stream()
+                .filter(atom -> containsVar(atom.getVarName()))
+                .collect(Collectors.toSet());
+    }
+
+    @Override
+    public Set<Atomic> getValuePredicates(){
+        return getParentQuery().getAtoms().stream()
+                .filter(Atomic::isValuePredicate)
+                .filter(atom -> containsVar(atom.getVarName()))
                 .collect(Collectors.toSet());
     }
 
@@ -250,6 +251,7 @@ public abstract class AtomBase implements Atomic{
     }
 
     @Override
+    //TODO change sub behaviour
     public Map<RoleType, String> getRoleConceptIdMap(){
         Map<RoleType, String> roleConceptMap = new HashMap<>();
         Map<String, Atomic> varSubMap = getVarSubMap();
@@ -259,7 +261,6 @@ public abstract class AtomBase implements Atomic{
             String var = varTypePair.getKey();
             roleConceptMap.put(role, varSubMap.containsKey(var) ? varSubMap.get(var).getVal() : "");
         });
-
         return roleConceptMap;
     }
 

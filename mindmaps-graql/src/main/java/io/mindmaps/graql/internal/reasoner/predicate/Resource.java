@@ -18,33 +18,30 @@
 package io.mindmaps.graql.internal.reasoner.predicate;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.pattern.property.HasResourceProperty;
 import io.mindmaps.graql.internal.reasoner.query.Query;
-import io.mindmaps.util.ErrorMessage;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class Resource extends AtomBase{
 
-    //TODO change to ValuePredicate
-    private final String value;
+    private String valueVariable;
 
     public Resource(VarAdmin pattern) {
         super(pattern);
-        this.value = extractValue(pattern);
+        this.valueVariable = extractName(pattern);
     }
 
     public Resource(VarAdmin pattern, Query par) {
         super(pattern, par);
-        this.value = extractValue(pattern);
+        this.valueVariable = extractName(pattern);
     }
 
     public Resource(Resource a) {
         super(a);
-        this.value = extractValue(a.getPattern().asVar());
+        this.valueVariable = extractName(a.getPattern().asVar());
     }
 
     @Override
@@ -53,21 +50,21 @@ public class Resource extends AtomBase{
     }
 
     @Override
-    public boolean isUnary(){ return true;}
+    public boolean isResource(){ return true;}
 
     @Override
     public boolean equals(Object obj) {
         if (!(obj instanceof Resource)) return false;
         Resource a2 = (Resource) obj;
         return this.typeId.equals(a2.getTypeId()) && this.varName.equals(a2.getVarName())
-                && this.value.equals(a2.getVal());
+                && this.valueVariable.equals(a2.getVal());
     }
 
     @Override
     public int hashCode() {
         int hashCode = 1;
         hashCode = hashCode * 37 + this.typeId.hashCode();
-        hashCode = hashCode * 37 + this.value.hashCode();
+        hashCode = hashCode * 37 + this.valueVariable.hashCode();
         hashCode = hashCode * 37 + this.varName.hashCode();
         return hashCode;
     }
@@ -76,20 +73,28 @@ public class Resource extends AtomBase{
     public boolean isEquivalent(Object obj) {
         if (!(obj instanceof Resource)) return false;
         Resource a2 = (Resource) obj;
-        return this.typeId.equals(a2.getTypeId()) && this.value.equals(a2.getVal());
+        Query parent = getParentQuery();
+        return this.typeId.equals(a2.getTypeId())
+                && parent.getSubstitution(valueVariable).equals(a2.getParentQuery().getSubstitution(a2.valueVariable));
     }
 
     @Override
     public int equivalenceHashCode(){
         int hashCode = 1;
         hashCode = hashCode * 37 + this.typeId.hashCode();
-        hashCode = hashCode * 37 + this.value.hashCode();
+        hashCode = hashCode * 37 + getParentQuery().getSubstitution(this.valueVariable).hashCode();
         return hashCode;
     }
 
-    //TODO extract from ValuePredicate
     @Override
-    public String getVal(){ return value;}
+    public String getVal(){ return valueVariable;}
+
+    private void setValueVariable(String var){
+        valueVariable = var;
+        atomPattern.asVar().getProperties(HasResourceProperty.class).forEach(prop -> {
+           prop.getResource().setName(var);
+        });
+    }
 
     @Override
     public Set<String> getVarNames() {
@@ -97,6 +102,37 @@ public class Resource extends AtomBase{
         String valueVariable = extractName(getPattern().asVar());
         if (!valueVariable.isEmpty()) varNames.add(valueVariable);
         return varNames;
+    }
+
+    @Override
+    public Set<Atomic> getValuePredicates() {
+        return getParentQuery().getAtoms().stream()
+            .filter(Atomic::isValuePredicate)
+            .filter(atom -> atom.containsVar(getVal()))
+            .collect(Collectors.toSet());
+    }
+
+    @Override
+    public void unify(String from, String to) {
+        super.unify(from, to);
+        String var = valueVariable;
+        if (var.equals(from)) {
+            setValueVariable(to);
+        } else if (var.equals(to)) {
+            setValueVariable("captured->" + var);
+        }
+    }
+
+    @Override
+    public void unify (Map<String, String> unifiers) {
+        super.unify(unifiers);
+        String var = valueVariable;
+        if (unifiers.containsKey(var)) {
+            setValueVariable(unifiers.get(var));
+        }
+        else if (unifiers.containsValue(var)) {
+            setValueVariable("captured->" + var);
+        }
     }
 
     private String extractName(VarAdmin var){
@@ -108,19 +144,5 @@ public class Resource extends AtomBase{
                 name = resVar.getName();
         }
         return name;
-    }
-
-    private String extractValue(VarAdmin var) {
-        String value = "";
-        Map<VarAdmin, Set<ValuePredicateAdmin>> resourceMap = var.getResourcePredicates();
-        if (resourceMap.size() != 0) {
-            if (resourceMap.size() > 1)
-                throw new IllegalArgumentException(ErrorMessage.PATTERN_NOT_VAR.getMessage(this.toString()));
-            Map.Entry<VarAdmin, Set<ValuePredicateAdmin>> entry = resourceMap.entrySet().iterator().next();
-            value = entry.getValue().iterator().hasNext()? entry.getValue().iterator().next().getPredicate().getValue().toString() : "";
-        }
-        String valueVariable = extractName(getPattern().asVar());
-        if (!valueVariable.isEmpty()) value = "$" + valueVariable;
-        return value;
     }
 }

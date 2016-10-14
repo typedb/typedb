@@ -151,6 +151,16 @@ public class Graql {
         return withoutGraph().parse(queryString);
     }
 
+    // TEMPLATING
+
+    /**
+     * @param template a string representing a templated graql query
+     * @param data data to use in template
+     * @return a resolved graql query
+     */
+    public static String parseTemplate(String template, Map<String, Object> data){
+        return withoutGraph().parseTemplate(template, data);
+    }
 
     // PATTERNS AND VARS
 

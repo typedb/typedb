@@ -19,7 +19,6 @@
 package io.mindmaps.graql.internal.reasoner.predicate;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.MatchQuery;
@@ -33,12 +32,6 @@ import java.util.Set;
 public interface Atomic extends Cloneable{
 
     Atomic clone();
-
-    /**
-     * @return true if the atom corresponds to a unary predicate
-     * */
-    default boolean isUnary(){ return false;}
-
     /**
      * @return true if the atom corresponds to a predicate
      * */
@@ -50,7 +43,7 @@ public interface Atomic extends Cloneable{
     default boolean isRelation(){return false;}
 
     /**
-     * @return true if the atom corresponds to a value predicate (~unifier)
+     * @return true if the atom corresponds to a unifier (id predicate)
      * */
     default boolean isSubstitution(){ return false;}
 
@@ -58,6 +51,11 @@ public interface Atomic extends Cloneable{
      * @return true if the atom corresponds to a resource predicate
      * */
     default boolean isResource(){ return false;}
+
+    /**
+     * @return true if the atom corresponds to a value predicate
+     * */
+    default boolean isValuePredicate(){ return false;}
 
     /**
      * @return true if atom alpha-equivalent
@@ -124,6 +122,7 @@ public interface Atomic extends Cloneable{
 
     Set<Atomic> getSubstitutions();
     Set<Atomic> getTypeConstraints();
+    Set<Atomic> getValuePredicates();
 
     Map<String, Atomic> getVarSubMap();
 

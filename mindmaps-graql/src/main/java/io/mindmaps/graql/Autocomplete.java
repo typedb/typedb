@@ -21,7 +21,7 @@ package io.mindmaps.graql;
 import com.google.common.collect.ImmutableSet;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
-import io.mindmaps.graql.internal.parser.GraqlLexer;
+import io.mindmaps.graql.internal.antlr.GraqlLexer;
 import io.mindmaps.util.Schema;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.BaseErrorListener;

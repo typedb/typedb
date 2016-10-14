@@ -19,7 +19,6 @@
 package io.mindmaps.graql.internal.reasoner.predicate;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.Graql;
@@ -30,7 +29,6 @@ import io.mindmaps.util.ErrorMessage;
 import javafx.util.Pair;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static io.mindmaps.graql.internal.reasoner.Utility.getCompatibleRoleTypes;
 
@@ -49,7 +47,7 @@ public class Relation extends AtomBase {
     }
 
     public Relation(String id, Map<String, String> roleMap, Query par){
-        super(constructRelPattern(id, roleMap), par);
+        super(constructRelation(id, roleMap), par);
         castings.addAll(getPattern().asVar().getCastings());
     }
 
@@ -64,7 +62,7 @@ public class Relation extends AtomBase {
     }
 
     //rolePlayer-roleType
-    static private VarAdmin constructRelPattern(String id, Map<String, String> roleMap) {
+    public static VarAdmin constructRelation(String id, Map<String, String> roleMap) {
         Var var = Graql.var().isa(id);
         roleMap.forEach( (player, role) -> var.rel(role, player));
         return var.admin().asVar();
@@ -117,10 +115,7 @@ public class Relation extends AtomBase {
 
     @Override
     public boolean isRelation(){ return true;}
-    @Override
-    public boolean isResource(){ return false;}
-    @Override
-    public boolean isType(){ return true;}
+
     public boolean hasExplicitRoleTypes(){
         boolean rolesDefined = true;
         Iterator<VarAdmin.Casting> it = castings.iterator();

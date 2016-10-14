@@ -106,6 +106,10 @@ public abstract class Loader {
         this.batchSize = size;
     }
 
+    public int getBatchSize(){
+        return this.batchSize;
+    }
+
     public void setThreadsNumber(int number){
         this.threadsNumber = number;
     }

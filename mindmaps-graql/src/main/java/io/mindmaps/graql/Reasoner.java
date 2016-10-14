@@ -20,9 +20,16 @@ package io.mindmaps.graql;
 
 import com.google.common.collect.Lists;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.*;
+import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.RoleType;
+import io.mindmaps.concept.Rule;
+import io.mindmaps.concept.Type;
+import io.mindmaps.graql.internal.reasoner.predicate.Resource;
+import io.mindmaps.graql.internal.reasoner.query.AtomicMatchQuery;
+import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
+import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
+import io.mindmaps.graql.internal.reasoner.query.ReasonerMatchQuery;
 import io.mindmaps.graql.internal.reasoner.rule.InferenceRule;
-import io.mindmaps.graql.internal.reasoner.query.*;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import javafx.util.Pair;
@@ -43,7 +50,6 @@ public class Reasoner {
     public Reasoner(MindmapsGraph graph) {
         this.graph = graph;
         qb = Graql.withGraph(graph);
-
         linkConceptTypes();
     }
 
@@ -80,10 +86,9 @@ public class Reasoner {
             }
         }
         else if (parentAtom.isResource()) {
-            String parentVal = parentAtom.getVal();
-            if (parentVal.contains("$")) relRelevant = true;
-            else
-                relRelevant = parentVal.equals(childAtom.getVal());
+            String childVal = child.getHead().getValuePredicate(childAtom.getVal());
+            String parentVal = parent.getValuePredicate(parentAtom.getVal());
+            relRelevant = parentVal.isEmpty() || parentVal.equals(childVal);
         }
 
         return relRelevant;
@@ -259,7 +264,7 @@ public class Reasoner {
     private QueryAnswers resolveQuery(Query query, boolean materialize) {
         Iterator<Atomic> atIt = query.selectAtoms().iterator();
 
-        AtomicQuery atomicQuery = new AtomicMatchQuery(atIt.next());
+        AtomicQuery atomicQuery = new AtomicMatchQuery(atIt.next().clone());
         QueryAnswers answers = resolveAtomicQuery(atomicQuery);
         if(materialize) answers.materialize(atomicQuery);
         while(atIt.hasNext()){

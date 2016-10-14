@@ -32,7 +32,7 @@ hs_err_pid*
 logs/
 
 # Analytics files #
-mindmaps-test/titan-test/db/
-mindmaps-test/titan-test/output/
-mindmaps-test/titan-test/*.txt
+mindmaps-test/db/
+mindmaps-test/output/
+mindmaps-test/*.txt
 mindmaps-test/output/

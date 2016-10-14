@@ -555,6 +555,17 @@ public class QueryParserTest {
         qb.parseMatch("match ($x $y) isa has-cast;");
     }
 
+    @Test
+    public void testAdditionalSemicolon() {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage(allOf(containsString("id"), containsString("plays-role product-type")));
+        qb.parseInsert(
+                "insert " +
+                "tag-group isa role-type; product-type isa role-type;" +
+                "category isa entity-type, plays-role tag-group; plays-role product-type;"
+        ).execute();
+    }
+
     private void assertOrderedQueriesEqual(MatchQuery query, MatchQuery parsedQuery) {
         assertEquals(
                 Lists.newArrayList(query).toString(),
