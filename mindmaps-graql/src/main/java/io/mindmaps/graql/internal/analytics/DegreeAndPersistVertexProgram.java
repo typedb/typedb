@@ -44,7 +44,7 @@ class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
     }
 
     public DegreeAndPersistVertexProgram(String keySpace, Set<String> types) {
-        persistentProperties.put(KEYSPACE_KEY,keySpace);
+        persistentProperties.put(KEYSPACE_KEY, keySpace);
         selectedTypes = types;
     }
 
@@ -90,10 +90,8 @@ class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
                 break;
             case 2:
                 if (!isAnalyticsElement(vertex) && selectedTypes.contains(getVertexType(vertex))) {
-                    if (baseTypes.contains(vertex.value(Schema.ConceptProperty.BASE_TYPE.name()).toString())) {
-                        long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
-                        bulkResourceMutate.putValue(vertex, edgeCount);
-                    }
+                    long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
+                    bulkResourceMutate.putValue(vertex, edgeCount);
                 }
                 break;
         }
