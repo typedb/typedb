@@ -158,7 +158,6 @@
     </owl:ObjectProperty>
 
     <owl:ObjectProperty rdf:about="http://www.co-ode.org/roberts/family-tree.owl#isBrotherOf">
-        <rdfs:domain rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Man"/>
         <rdfs:range rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <owl:inverseOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#hasBrother"/>
         <rdfs:subPropertyOf rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#isDirectSiblingOf"/>
@@ -2480,11 +2479,31 @@
         <hasMother rdf:resource="#patricia_ann_kingswood_1944"/>
     </owl:NamedIndividual>
 
+    <owl:NamedIndividual rdf:about="#andrew_usher_1965">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+        <hasBirthYear rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1965</hasBirthYear>
+        <isBrotherOf rdf:resource="#amanda_usher_1968"/>
+        <hasMother rdf:resource="#patricia_ann_kingswood_1944"/>
+    </owl:NamedIndividual>
+
     <owl:NamedIndividual rdf:about="#mega_clamper_1995">
         <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
         <hasBirthYear rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1995</hasBirthYear>
         <hasMother rdf:resource="#amanda_usher_1968"/>
         <isSisterOf rdf:resource="#louise_clamper_1998"/>
+    </owl:NamedIndividual>
+
+    <owl:NamedIndividual rdf:about="#louise_clamper_1998">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+        <hasBirthYear rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1998</hasBirthYear>
+        <hasMother rdf:resource="#amanda_usher_1968"/>
+        <isSisterOf rdf:resource="#finlay_alex_clamper_2002"/>
+    </owl:NamedIndividual>
+
+    <owl:NamedIndividual rdf:about="#finlay_alex_clamper_2002">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+        <hasBirthYear rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">2002</hasBirthYear>
+        <isSonOf rdf:resource="#amanda_usher_1968"/>
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#minnie_green_1871">
@@ -2677,6 +2696,13 @@
         <hasFather rdf:resource="#david_bright_1934"/>
         <hasMother rdf:resource="#margaret_grace_rever_1934"/>
         <isBrotherOf rdf:resource="#robert_david_bright_1965"/>
+    </owl:NamedIndividual>
+
+    <owl:NamedIndividual rdf:about="#robert_david_bright_1965">
+        <rdf:type rdf:resource="http://www.co-ode.org/roberts/family-tree.owl#Person"/>
+        <hasFather rdf:resource="#david_bright_1934"/>
+        <hasMother rdf:resource="#margaret_grace_rever_1934"/>
+        <isBrotherOf rdf:resource="#richard_john_bright_1962"/>
     </owl:NamedIndividual>
 
     <owl:NamedIndividual rdf:about="#richard_pickard_1807">
