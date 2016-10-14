@@ -21,25 +21,32 @@ package io.mindmaps.migration.json;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.*;
+import io.mindmaps.concept.Entity;
+import io.mindmaps.concept.EntityType;
+import io.mindmaps.concept.Instance;
+import io.mindmaps.concept.Resource;
 import io.mindmaps.engine.MindmapsEngineServer;
 import io.mindmaps.engine.loader.BlockingLoader;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.Graql;
-import io.mindmaps.graql.internal.util.GraqlType;
-import org.junit.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.stream.Stream;
 
-import static io.mindmaps.migration.json.JsonMigratorUtil.*;
+import static io.mindmaps.migration.json.JsonMigratorUtil.getFile;
+import static io.mindmaps.migration.json.JsonMigratorUtil.getProperties;
+import static io.mindmaps.migration.json.JsonMigratorUtil.getProperty;
+import static io.mindmaps.migration.json.JsonMigratorUtil.getResource;
+import static io.mindmaps.migration.json.JsonMigratorUtil.getResources;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
@@ -221,7 +228,7 @@ public class JsonMigratorTest {
     private void load(File ontology) {
         try {
             Graql.withGraph(graph)
-                    .parseInsert(Files.readLines(ontology, StandardCharsets.UTF_8).stream().collect(joining("\n")))
+                    .parse(Files.readLines(ontology, StandardCharsets.UTF_8).stream().collect(joining("\n")))
                     .execute();
 
             graph.commit();
