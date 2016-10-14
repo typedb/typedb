@@ -405,7 +405,7 @@ public class MatchQueryTest {
 
     @Test
     public void testMatchRuleRightHandSide() {
-        MatchQuery query = qb.match(var("x").lhs("expect-lhs").rhs("expect-rhs"));
+        MatchQuery query = qb.match(var("x").lhs("match $x id 'expect-lhs';").rhs("match $x id 'expect-rhs';"));
         QueryUtil.assertResultsMatch(query, "x", "a-rule-type", "expectation-rule");
         assertTrue(query.iterator().next().get("x").asRule().getExpectation());
     }
