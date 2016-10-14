@@ -48,13 +48,12 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 
     <!-- Navigation-->
     <aside class="navigation">
-        <a class="navbar-brand" href="/">
+        <div class="brand" href="/">
             MindmapsDB
             <span>{{version}}</span>
-        </a>
+        </div>
         <nav>
             <ul class="nav luna-nav">
-                <li></li>
                 <li v-link-active>
                     <a v-link="{ path: '/status' }">Status</a>
                 </li>

@@ -956,7 +956,7 @@ body {
 .content {
     margin-left: 150px;
     position: relative;
-    padding: 30px;
+    padding: 30px 15px;
     transition: margin-left 0.3s ease-out;
     -webkit-transition: margin-left 0.3s ease-out;
 }
@@ -1243,30 +1243,40 @@ sup {
     min-height: 60px;
 }
 
-.navbar-brand,
-.navbar-brand:focus {
+.properties-tab{
+    margin-top:50px;
+    overflow: scroll;
+}
+
+.properties-list{
+    overflow: scroll;
+}
+
+.brand,
+.brand:focus {
     width: 150px;
     background-color: #f6a821;
-    height: 60px;
-    padding: 20px 5px;
+    height: 180px;
+    padding: 10px 5px;
     font-weight: 200;
     letter-spacing: 2px;
     color: #FFFFFF;
     margin-top:30px;
-    margin-bottom:20px;
-    font-size: 170%
+    font-size: 170%;
+    height: 50px;
+    line-height: 20px;
 }
 
-.navbar-default .navbar-brand {
+.navbar-default .brand {
     color: #FFFFFF;
 }
 
-.navbar-default .navbar-brand:hover {
+.navbar-default .brand:hover {
     color: #FFFFFF;
     background-color: #f5a212;
 }
 
-.navbar-brand span {
+.brand span {
     letter-spacing: normal;
     float: right;
     font-size: 12px;
@@ -1465,6 +1475,8 @@ sup {
 .panel .panel-footer {
     background-color: transparent;
     border: none;
+    bottom: 20px;
+    position: absolute;
 }
 
 .panel > .panel-heading {
