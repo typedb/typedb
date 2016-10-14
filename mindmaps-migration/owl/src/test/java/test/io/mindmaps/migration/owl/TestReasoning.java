@@ -1,35 +1,26 @@
 package test.io.mindmaps.migration.owl;
 
 import io.mindmaps.concept.Concept;
+import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
+import org.elasticsearch.common.collect.Sets;
+import org.junit.Before;
+import org.junit.Test;
+import org.semanticweb.HermiT.Configuration;
+import org.semanticweb.HermiT.Reasoner;
+import org.semanticweb.owlapi.model.*;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.elasticsearch.common.collect.Sets;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.semanticweb.HermiT.Configuration;
-import org.semanticweb.HermiT.Reasoner;
-import org.semanticweb.owlapi.model.IRI;
-import org.semanticweb.owlapi.model.OWLClass;
-import org.semanticweb.owlapi.model.OWLClassExpression;
-import org.semanticweb.owlapi.model.OWLDataFactory;
-import org.semanticweb.owlapi.model.OWLNamedIndividual;
-import org.semanticweb.owlapi.model.OWLObjectProperty;
-import org.semanticweb.owlapi.model.OWLOntology;
-
-
-import io.mindmaps.graql.Graql;
-
 import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.graql.internal.reasoner.Utility.printAnswers;
 import static org.junit.Assert.assertEquals;
 
 
@@ -41,16 +32,10 @@ public class TestReasoning extends TestOwlMindMapsBase {
     private io.mindmaps.graql.Reasoner mmReasoner;
 
     @Before
-    public void loadOwlFiles() {
-        try {
-            family = loadOntologyFromResource(dataPath + "family.owl");
-            migrator.ontology(family).graph(graph).migrate();
-            migrator.graph().commit();
-        }
-        catch (Throwable t) {
-            t.printStackTrace(System.err);
-            System.exit(-1);
-        }
+    public void loadOwlFiles() throws MindmapsValidationException {
+        family = loadOntologyFromResource(dataPath + "family.owl");
+        migrator.ontology(family).graph(graph).migrate();
+        migrator.graph().commit();
 
         owlReasoner = new Reasoner(new Configuration(), family);
         mmReasoner = new io.mindmaps.graql.Reasoner(migrator.graph());
