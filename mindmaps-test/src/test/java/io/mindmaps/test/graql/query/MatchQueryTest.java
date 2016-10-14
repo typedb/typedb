@@ -60,6 +60,7 @@ import static io.mindmaps.util.Schema.MetaType.RULE_TYPE;
 import static java.util.stream.Collectors.toList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
@@ -477,6 +478,21 @@ public class MatchQueryTest extends AbstractMindmapsEngineTest {
         MatchQuery query = qb.match(var("x").isa("movie"));
         List<Map<String, Concept>> list = query.execute();
         assertEquals(list, query.parallelStream().collect(toList()));
+    }
+
+    @Test
+    public void testDistinctRoleplayers() {
+        MatchQuery query = qb.match(var().rel("x").rel("y").rel("z").isa("has-cast"));
+
+        assertNotEquals(0, query.stream().count());
+
+        // Make sure none of the resulting relationships have 3 role-players all the same
+        query.forEach(result -> {
+            Concept x = result.get("x");
+            Concept y = result.get("y");
+            Concept z = result.get("z");
+            assertFalse(x + " = " + y + " = " + z, x.equals(y) && x.equals(z));
+        });
     }
 
     @Test(expected = IllegalArgumentException.class)

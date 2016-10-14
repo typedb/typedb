@@ -422,7 +422,7 @@ public class InsertQueryTest extends AbstractMindmapsEngineTest {
     public void testErrorWhenInsertRelationWithEmptyRolePlayer() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(
-                allOf(containsString("exist"), containsString("$y"), containsString("isa"), containsString("ako"))
+                allOf(containsString("$y"), containsString("id"), containsString("isa"), containsString("ako"))
         );
         qb.insert(
                 var().rel("genre-of-production", "x").rel("production-with-genre", "y").isa("has-genre"),
