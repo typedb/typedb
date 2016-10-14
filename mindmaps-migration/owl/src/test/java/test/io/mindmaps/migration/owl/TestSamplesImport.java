@@ -53,7 +53,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
-            System.exit(-1);
+            Assert.fail(t.toString());
         }
         // Verify
         try {
@@ -65,7 +65,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
-            System.exit(-1);
+            Assert.fail(t.toString());
         }       
     }
     
@@ -79,7 +79,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
-            System.exit(-1);
+            Assert.fail(t.toString());
         }
         // Verify
         try {
@@ -105,7 +105,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
-            System.exit(-1);
+            Assert.fail(t.toString());
         }       
     }
     
@@ -119,7 +119,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
-            System.exit(-1);
+            Assert.fail(t.toString());
         }
         // Verify
         try {
@@ -132,7 +132,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
-            System.exit(-1);
+            Assert.fail(t.toString());
         }
     }   
     
@@ -147,7 +147,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
-            System.exit(-1);
+            Assert.fail(t.toString());
         }
         // Verify
         try {
@@ -179,7 +179,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
-            System.exit(-1);
+            Assert.fail(t.toString());
         }
     }
 
@@ -193,7 +193,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
-            System.exit(-1);
+            Assert.fail(t.toString());
         }
         // Verify
         try {
@@ -216,7 +216,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
-            System.exit(-1);
+            Assert.fail(t.toString());
         }
     }
 
