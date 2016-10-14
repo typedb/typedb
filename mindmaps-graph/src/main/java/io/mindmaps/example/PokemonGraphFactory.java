@@ -38,15 +38,12 @@ public class PokemonGraphFactory{
     private static ResourceType<String> description;
     private static ResourceType<Long> height;
     private static ResourceType<Long> weight;
-    private static RoleType hasResourceTarget;
-    private static RoleType hasResourceValue;
     private static RoleType ancestor;
     private static RoleType descendent;
     private static RoleType pokemonWithType;
     private static RoleType typeOfPokemon;
     private static RoleType defendingType;
     private static RoleType attackingType;
-    private static RelationType hasResource;
     private static RelationType evolution;
     private static RelationType hasType;
     private static RelationType superEffective;
@@ -72,12 +69,6 @@ public class PokemonGraphFactory{
 
     private static void buildOntology(MindmapsGraph graph) {
 
-        hasResourceTarget = graph.putRoleType("has-resource-target");
-        hasResourceValue = graph.putRoleType("has-resource-value");
-        hasResource = graph.putRelationType("has-resource")
-                .hasRole(hasResourceTarget)
-                .hasRole(hasResourceValue);
-
         ancestor = graph.putRoleType("ancestor");
         descendent = graph.putRoleType("descendent");
         evolution = graph.putRelationType("evolution")
@@ -97,7 +88,6 @@ public class PokemonGraphFactory{
                 .hasRole(attackingType);
 
         pokemon = graph.putEntityType("pokemon")
-                .playsRole(hasResourceTarget)
                 .playsRole(ancestor)
                 .playsRole(descendent)
                 .playsRole(pokemonWithType);
@@ -107,14 +97,10 @@ public class PokemonGraphFactory{
                 .playsRole(defendingType)
                 .playsRole(attackingType);
 
-        pokedexNo = graph.putResourceType("pokedex-no", ResourceType.DataType.LONG)
-                .playsRole(hasResourceValue);
-        description = graph.putResourceType("description", ResourceType.DataType.STRING)
-                .playsRole(hasResourceValue);
-        height = graph.putResourceType("height", ResourceType.DataType.LONG)
-                .playsRole(hasResourceValue);
-        weight = graph.putResourceType("weight", ResourceType.DataType.LONG)
-                .playsRole(hasResourceValue);
+        pokedexNo = graph.putResourceType("pokedex-no", ResourceType.DataType.LONG);
+        description = graph.putResourceType("description", ResourceType.DataType.STRING);
+        height = graph.putResourceType("height", ResourceType.DataType.LONG);
+        weight = graph.putResourceType("weight", ResourceType.DataType.LONG);
     }
 
     private static void buildInstances(MindmapsGraph graph) {
@@ -179,18 +165,20 @@ public class PokemonGraphFactory{
                 .putRolePlayer(ancestor, charmeleon);
     }
 
-    private static void addResource(MindmapsGraph graph, Entity pokemon, String s, ResourceType<String> type) {
-            Resource<String> resource = graph.putResource(s, type);
-        graph.addRelation(hasResource)
-                .putRolePlayer(hasResourceTarget, pokemon)
-                .putRolePlayer(hasResourceValue, resource);
-    }
+    private static void addResource(MindmapsGraph graph, Entity entity, Object s, ResourceType type) {
+        Resource resource = graph.putResource(s, type);
 
-    private static void addResource(MindmapsGraph graph, Entity pokemon, Long l, ResourceType<Long> type) {
-            Resource<Long> resource = graph.putResource(l, type);
-        graph.addRelation(hasResource)
-                .putRolePlayer(hasResourceTarget, pokemon)
-                .putRolePlayer(hasResourceValue, resource);
+        RoleType owner = graph.putRoleType("has-" + type.getId() + "-owner");
+        RoleType value = graph.putRoleType("has-" + type.getId() + "-value");
+        RelationType relationType = graph.putRelationType("has-" + type.getId())
+                .hasRole(owner).hasRole(value);
+
+        pokemon.playsRole(owner);
+        type.playsRole(value);
+
+        graph.addRelation(relationType)
+                .putRolePlayer(owner, entity)
+                .putRolePlayer(value, resource);
     }
 
     private static void putTypes(MindmapsGraph graph, Entity pokemon, Entity... entities) {
