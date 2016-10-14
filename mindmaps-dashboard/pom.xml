@@ -71,7 +71,7 @@
                         </goals>
                         <phase>compile</phase>
                         <configuration>
-                            <executable>browserify</executable>
+                            <executable>node_modules/.bin/browserify</executable>
                             <commandlineArgs>-t vueify -e src/main.js -o static/dashboard.js</commandlineArgs>
                         </configuration>
                     </execution>
