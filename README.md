@@ -2,7 +2,7 @@
   
 Copyright (C) 2016  Mindmaps Research Ltd.  
 
-### Version 0.2.0 (1st October 2016)
+### Version 0.3.0 (14 October 2016)
 
 For release notes, please see our separate changelog file.   
 
