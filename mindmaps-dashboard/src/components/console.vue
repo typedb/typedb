@@ -186,7 +186,6 @@ export default {
                     "Shift-Backspace": this.clearGraph
                 }
             });
-        codeMirror.setSize(null, 100);
     },
 
     methods: {

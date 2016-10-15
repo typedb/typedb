@@ -18,11 +18,15 @@
 
 package io.mindmaps.engine.controller;
 
+import com.theoryinpractise.halbuilder.api.Representation;
+import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.engine.visualiser.HALConcept;
 import io.mindmaps.factory.GraphFactory;
+import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.internal.pattern.property.RelationProperty;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.REST;
 import io.swagger.annotations.Api;
@@ -39,9 +43,7 @@ import spark.Response;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.mindmaps.graql.Graql.withGraph;
@@ -66,7 +68,6 @@ public class VisualiserController {
         defaultGraphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
         separationDegree = ConfigProperties.getInstance().getPropertyAsInt(ConfigProperties.HAL_DEGREE_PROPERTY);
 
-
         get(REST.WebPath.CONCEPT_BY_ID_URI + REST.Request.ID_PARAMETER, this::getConceptById);
         get(REST.WebPath.CONCEPT_BY_ID_ONTOLOGY_URI + REST.Request.ID_PARAMETER, this::getConceptByIdOntology);
 
@@ -83,18 +84,24 @@ public class VisualiserController {
     })
     private String getConceptById(Request req, Response res) {
 
-        String graphNameParam = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
-        String currentGraphName = (graphNameParam == null) ? defaultGraphName : graphNameParam;
+        try {
+            String graphNameParam = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
+            String currentGraphName = (graphNameParam == null) ? defaultGraphName : graphNameParam;
 
-        MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName);
+            MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName);
 
-        Concept concept = graph.getConcept(req.params(REST.Request.ID_PARAMETER));
-        if (concept != null) {
-            LOG.trace("Building HAL resource for concept with id {}", concept.getId());
-            return new HALConcept(concept, separationDegree).render();
-        } else {
-            res.status(404);
-            return ErrorMessage.CONCEPT_ID_NOT_FOUND.getMessage(req.params(REST.Request.ID_PARAMETER));
+            Concept concept = graph.getConcept(req.params(REST.Request.ID_PARAMETER));
+            if (concept != null) {
+                LOG.trace("Building HAL resource for concept with id {}", concept.getId());
+                return new HALConcept(concept, separationDegree, false, new HashSet<String>()).render();
+            } else {
+                res.status(404);
+                return ErrorMessage.CONCEPT_ID_NOT_FOUND.getMessage(req.params(REST.Request.ID_PARAMETER));
+            }
+        } catch (Exception e) {
+            LOG.error("Exception while building HAL representation - by ID", e);
+            res.status(500);
+            return e.getMessage();
         }
     }
 
@@ -108,24 +115,30 @@ public class VisualiserController {
     })
     private String getConceptByIdOntology(Request req, Response res) {
 
-        String graphNameParam = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
-        String currentGraphName = (graphNameParam == null) ? defaultGraphName : graphNameParam;
+        try {
+            String graphNameParam = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
+            String currentGraphName = (graphNameParam == null) ? defaultGraphName : graphNameParam;
 
-        MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName);
+            MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName);
 
-        Concept concept = graph.getConcept(req.params(REST.Request.ID_PARAMETER));
-        if (concept != null) {
-            try {
-                LOG.trace("Building HAL resource for concept with id {}", concept.getId());
-                return new HALConcept(concept).render();
-            }catch(Exception e){
-                LOG.error("Exception while building HAL representation - by ID",e);
-                res.status(500);
-                return e.getMessage();
+            Concept concept = graph.getConcept(req.params(REST.Request.ID_PARAMETER));
+            if (concept != null) {
+                try {
+                    LOG.trace("Building HAL resource for concept with id {}", concept.getId());
+                    return new HALConcept(concept).render();
+                } catch (Exception e) {
+                    LOG.error("Exception while building HAL representation - by ID", e);
+                    res.status(500);
+                    return e.getMessage();
+                }
+            } else {
+                res.status(404);
+                return ErrorMessage.CONCEPT_ID_NOT_FOUND.getMessage(req.params(REST.Request.ID_PARAMETER));
             }
-        } else {
-            res.status(404);
-            return ErrorMessage.CONCEPT_ID_NOT_FOUND.getMessage(req.params(REST.Request.ID_PARAMETER));
+        } catch (Exception e) {
+            LOG.error("Exception while building HAL representation - by ID", e);
+            res.status(500);
+            return e.getMessage();
         }
     }
 
@@ -143,21 +156,19 @@ public class VisualiserController {
         if (currentGraphName == null) currentGraphName = defaultGraphName;
 
         try {
-
             MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName);
-            final JSONArray halArray = new JSONArray();
 
-            LOG.debug("Start querying for :[{}]",req.queryParams(REST.Request.QUERY_FIELD));
-            Collection<Map<String,Concept>> list = withGraph(graph).parseMatch(req.queryParams(REST.Request.QUERY_FIELD))
+            LOG.debug("Start querying for: [{}]", req.queryParams(REST.Request.QUERY_FIELD));
+            MatchQuery matchQuery = withGraph(graph).parseMatch(req.queryParams(REST.Request.QUERY_FIELD));
+            Collection<Map<String, Concept>> graqlResultsList = matchQuery
                     .limit(SAFETY_LIMIT)
                     .stream().collect(Collectors.toList());
             LOG.debug("Done querying.");
-            list.parallelStream()
-                    .forEach(x -> x.values()
-                            .forEach(concept -> {
-                                LOG.trace("Building HAL resource for concept with id {}", concept.getId());
-                                halArray.put(new JSONObject(new HALConcept(concept, MATCH_QUERY_FIXED_DEGREE).render()));
-                            }));
+
+            Map<String, Collection<String>> linkedNodes = computeLinkedNodesFromQuery(matchQuery);
+            Set<String> typesAskedInQuery = matchQuery.admin().getTypes().stream().map(Concept::getId).collect(Collectors.toSet());
+            JSONArray halArray = buildHALRepresentations(graqlResultsList, linkedNodes, typesAskedInQuery);
+
             LOG.debug("Done building resources.");
             return halArray.toString();
         } catch (Exception e) {
@@ -165,6 +176,43 @@ public class VisualiserController {
             res.status(500);
             return e.getMessage();
         }
+    }
+
+    private JSONArray buildHALRepresentations(Collection<Map<String, Concept>> graqlResultsList, Map<String, Collection<String>> linkedNodes, Set<String> typesAskedInQuery) {
+        final JSONArray lines = new JSONArray();
+        graqlResultsList.parallelStream()
+                .forEach(resultLine -> resultLine.entrySet().forEach(current -> {
+                    LOG.trace("Building HAL resource for concept with id {}", current.getValue().getId());
+                    Representation currentHal = new HALConcept(current.getValue(), MATCH_QUERY_FIXED_DEGREE, true,
+                            typesAskedInQuery).getRepresentation();
+                    if (linkedNodes.containsKey(current.getKey()))
+                        linkedNodes.get(current.getKey()).forEach(varName -> currentHal.withLink("edge_to", REST.WebPath.CONCEPT_BY_ID_URI + resultLine.get(varName).getId()));
+                    lines.put(new JSONObject(currentHal.toString(RepresentationFactory.HAL_JSON)));
+                }));
+        return lines;
+    }
+
+    private Map<String, Collection<String>> computeLinkedNodesFromQuery(MatchQuery matchQuery) {
+        final Map<String, Collection<String>> linkedNodes = new HashMap<>();
+        matchQuery.admin().getPattern().getVars().forEach(var -> {
+            //if in the current var is expressed some kind of relation (e.g. ($x,$y))
+            if (var.getProperty(RelationProperty.class).isPresent()) {
+                //collect all the role players in the current var's relations (e.g. 'x' and 'y')
+                final List<String> rolePlayersInVar = var.getProperty(RelationProperty.class).get()
+                        .getCastings().map(x -> x.getRolePlayer().getName()).collect(Collectors.toList());
+                //if it is a binary or ternary relation
+                if (rolePlayersInVar.size() > 1) {
+                    rolePlayersInVar.forEach(rolePlayer -> {
+                        linkedNodes.putIfAbsent(rolePlayer, new HashSet<>());
+                        rolePlayersInVar.forEach(y -> {
+                            if (!y.equals(rolePlayer))
+                                linkedNodes.get(rolePlayer).add(y);
+                        });
+                    });
+                }
+            }
+        });
+        return linkedNodes;
     }
 
 }

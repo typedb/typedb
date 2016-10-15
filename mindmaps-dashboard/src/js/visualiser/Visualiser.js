@@ -49,6 +49,13 @@ export default class Visualiser {
         // vis.js default config
         this.networkConfig = {
             autoResize: true,
+            nodes: {
+                    //shape: 'star',
+                    font: {
+                      size: 15,
+                      face: 'DIN'
+                    }
+                  },
             edges: {
                 arrows: { to: true },
                 smooth: { forceDirection: 'none' }
@@ -58,7 +65,7 @@ export default class Visualiser {
                   "centralGravity": 0.01,
                   "damping": 0.5
                 },
-                "minVelocity": 0.75,
+                "minVelocity": 4.50,
                 "solver": "repulsion"
             },
             interaction: {
@@ -143,8 +150,8 @@ export default class Visualiser {
                 ontology: bp.ontology,
                 properties: ap
             });
-
-            this.addCluster(bp.type);
+           // if(bp.baseType != "type")
+           //     this.addCluster(bp.type);
         }
 
         return this;
@@ -233,7 +240,7 @@ export default class Visualiser {
             })
         });
 
-        this.predefinedClusters();
+   //     this.predefinedClusters();
         return this;
     }
 
@@ -300,7 +307,7 @@ export default class Visualiser {
 
         _.keys(this.nodes._data).forEach(x => {if(this.network.isCluster(x)) this.deleteNode(x)});
         this.network.setData({nodes: this.nodes, edges: this.edges});
-        this.cluster();
+     //   this.cluster();
     }
 
     addCluster(clusterBy) {

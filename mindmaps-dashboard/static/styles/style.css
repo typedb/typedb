@@ -1,3 +1,5 @@
+@import url("fonts.css");
+
 .btn:active,
 .btn.active {
     box-shadow: none;
@@ -109,6 +111,7 @@ fieldset[disabled] .btn-accent.focus {
     color: #949ba2;
     background-color: transparent;
     border-color: #616779;
+    font-weight:lighter;
 }
 
 .btn-default:focus,
@@ -316,6 +319,7 @@ fieldset[disabled] .btn-success.focus {
     color: #949ba2;
     background-color: transparent;
     border-color: #56C0E0;
+    font-weight:lighter;
 }
 
 .btn-info:focus,
@@ -944,15 +948,15 @@ fieldset[disabled] .btn-danger.focus {
 
 body {
     background: #2f323b;
-    font-family: 'Roboto', sans-serif;
+    font-family: "Blender";
+    font-weight: 100;
     color: #949ba2;
 }
 
 .content {
-    margin-top: 60px;
-    margin-left: 200px;
+    margin-left: 150px;
     position: relative;
-    padding: 30px;
+    padding: 30px 15px;
     transition: margin-left 0.3s ease-out;
     -webkit-transition: margin-left 0.3s ease-out;
 }
@@ -973,9 +977,8 @@ body {
 }
 
 .navigation {
-    margin-top: 60px;
     background-color: #24262d;
-    width: 200px;
+    width: 150px;
     position: absolute;
     left: 0;
     bottom: 0;
@@ -986,6 +989,7 @@ body {
 
 .navigation nav {
     background-color: #2a2d35;
+    font-size:120%;
 }
 
 .navigation:before {
@@ -998,7 +1002,7 @@ body {
     z-index: -1;
     left: 0;
     background-color: #24262d;
-    width: 200px;
+    width: 150px;
 }
 
 body.nav-toggle .content {
@@ -1239,27 +1243,40 @@ sup {
     min-height: 60px;
 }
 
-.navbar-default .navbar-brand,
-.navbar-default .navbar-brand:focus {
-    width: 200px;
+.properties-tab{
+    margin-top:50px;
+    overflow: scroll;
+}
+
+.properties-list{
+    overflow: scroll;
+}
+
+.brand,
+.brand:focus {
+    width: 150px;
     background-color: #f6a821;
-    height: 60px;
-    padding: 20px 10px;
-    font-weight: 400;
-    letter-spacing: 8px;
+    height: 180px;
+    padding: 10px 5px;
+    font-weight: 200;
+    letter-spacing: 2px;
+    color: #FFFFFF;
+    margin-top:30px;
+    font-size: 170%;
+    height: 50px;
+    line-height: 20px;
+}
+
+.navbar-default .brand {
     color: #FFFFFF;
 }
 
-.navbar-default .navbar-brand {
-    color: #FFFFFF;
-}
-
-.navbar-default .navbar-brand:hover {
+.navbar-default .brand:hover {
     color: #FFFFFF;
     background-color: #f5a212;
 }
 
-.navbar-brand span {
+.brand span {
     letter-spacing: normal;
     float: right;
     font-size: 12px;
@@ -1458,6 +1475,8 @@ sup {
 .panel .panel-footer {
     background-color: transparent;
     border: none;
+    bottom: 20px;
+    position: absolute;
 }
 
 .panel > .panel-heading {

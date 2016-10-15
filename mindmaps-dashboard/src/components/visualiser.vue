@@ -17,39 +17,46 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 -->
 
 <template>
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-xs-12">
-            <div class="panel panel-filled" style="margin-bottom: 0px;">
-                <div class="panel-body">
-                    <div class="form-group">
-                        <textarea v-el:graql-editor class="form-control" rows="3" placeholder=">>"></textarea>
-                    </div>
-                    <div class="from-buttons">
-                        <button @click="runQuery" class="btn btn-default search-button">Submit<i class="pe-7s-angle-right-circle"></i></button>
-                        <button @click="clearGraph" class="btn btn-default">Clear<i class="pe-7s-refresh"></i></button>
-                        <button @click="getMetaTypes" class="btn btn-info">Show Types<i class="types-button" v-bind:class="[typeInstances ? 'pe-7s-angle-up-circle' : 'pe-7s-angle-down-circle']"></i></button>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-xs-12">
+                <div class="panel panel-filled" style="margin-bottom: 0px;">
+                    <div class="panel-body">
+                        <div class="form-group">
+                            <textarea v-el:graql-editor class="form-control" rows="3" placeholder=">>"></textarea>
+                        </div>
+                        <div class="from-buttons">
+                            <button @click="runQuery" class="btn btn-default search-button">Submit<i
+                                    class="pe-7s-angle-right-circle"></i></button>
+                            <button @click="clearGraph" class="btn btn-default">Clear<i class="pe-7s-refresh"></i>
+                            </button>
+                            <button @click="getMetaTypes" class="btn btn-info">Show Types<i class="types-button"
+                                                                                            v-bind:class="[typeInstances ? 'pe-7s-angle-up-circle' : 'pe-7s-angle-down-circle']"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="row" v-show="typeInstances">
-        <div class="col-xs-12">
-            <div class="panel panel-c-info panel-filled" style="margin-bottom: 0px; margin-top: 20px;">
-                <div class="tabs-col">
-                    <div class="tabs-container">
-                        <ul class="nav nav-tabs">
-                            <li v-for="k in typeKeys"><a data-toggle="tab" href="#{{k}}-tab" aria-expanded="false">{{k | capitalize}}</a></li>
-                        </ul>
-                    </div>
-                    <div class="tab-content">
-                        <div v-for="k in typeKeys" id="{{k}}-tab" class="tab-pane">
-                            <div class="panel-body types-panel" style="margin: 0px;">
-                                <div class="{{k}}-group row m-t-md" style="margin-top: 0px;">
-                                    <div class="col-lg-2 col-md-3 col-sm-6 col-xs-6 type-instance" v-for="i in typeInstances[k]">
-                                        <button  @click="typeQuery(k, i)" class="btn btn-link">{{i}}</button>
+        <div class="row" v-show="typeInstances">
+            <div class="col-xs-12">
+                <div class="panel panel-c-info panel-filled" style="margin-bottom: 0px; margin-top: 20px;">
+                    <div class="tabs-col">
+                        <div class="tabs-container">
+                            <ul class="nav nav-tabs">
+                                <li v-for="k in typeKeys"><a data-toggle="tab" href="#{{k}}-tab" aria-expanded="false">{{k
+                                    | capitalize}}</a></li>
+                            </ul>
+                        </div>
+                        <div class="tab-content">
+                            <div v-for="k in typeKeys" id="{{k}}-tab" class="tab-pane">
+                                <div class="panel-body types-panel" style="margin: 0px;">
+                                    <div class="{{k}}-group row m-t-md" style="margin-top: 0px;">
+                                        <div class="col-lg-2 col-md-3 col-sm-6 col-xs-6 type-instance"
+                                             v-for="i in typeInstances[k]">
+                                            <button @click="typeQuery(k, i)" class="btn btn-link">{{i}}</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -58,93 +65,146 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="row" v-show="errorMessage">
-        <div class="col-xs-12">
-            <div class="panel panel-filled" v-bind:class="errorPanelClass">
-                <div class="panel-body">
-                    {{errorMessage}}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row tab-row">
-        <div class="tabs-col col-md-12">
-            <div class="tabs-container">
-                <ul class="nav nav-tabs">
-                    <li class="active"><a data-toggle="tab" href="#tab-1" aria-expanded="true">Graph</a></li>
-                    <li class=""><a data-toggle="tab" href="#tab-3" aria-expanded="false">Help</a></li>
-                </ul>
-                <div class="tab-content">
-                    <div id="tab-1" class="tab-pane active">
-                        <div class="panel-body">
-                            <div class="graph-div" v-el:graph @contextmenu="suppressEventDefault"></div>
-                        </div>
-
-                    </div>
-                    <div id="tab-3" class="tab-pane">
-                        <div class="panel-body">
-                            <h4>Graql Entry</h4>
-                            <br />
-                            <div class="table-responsive">
-                                <table class="table table-hover table-striped">
-                                    <thead>
-                                        <tr><th>Key</th><th>What it does</th></tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr><td>ENTER</td><td>Submit Graql query.</td></tr>
-                                        <tr><td>Shift + Enter</td><td>New line.</td></tr>
-                                        <tr><td>Shift + Backspace</td><td>Clear graph & current query.</td></tr>
-                                        <tr><td>Shift + Delete</td><td>Clear graph & current query.</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <br />
-                            <br />
-                            <h4>Graph Tab Interaction</h4>
-                            <br />
-                            <div class="table-responsive">
-                                <table class="table table-hover table-striped">
-                                    <thead>
-                                        <tr><th>Action</th><th>What it does</th></tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr><td>Left Click</td><td>Selects a node or edge.</td></tr>
-                                        <tr><td>Left Click + Alt</td><td>Show related ontology of selected node(s).</td></tr>
-                                        <tr><td>Left Click + Shift</td><td>Shows instances and isa of selected node(s), <b>WITHOUT</b> clearing the graph of all other non-related nodes.</td></tr>
-                                        <tr><td>Double Click</td><td>Shows instances and isa of selected node(s), whilst clearing the graph of all other non-related nodes.</td></tr>
-                                        <tr><td>Right Click</td><td>Show node label configuration menu. You can select what properties to display on the node label.</td></tr>
-                                        <tr><td>Right Click + Shift</td><td>Delete selected node(s).</td></tr>
-                                        <tr><td>Scroll wheel</td><td>Zoom in/out.</td></tr>
-                                        <tr><td>Click & Drag</td><td>Move graph.</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+        <div class="row" v-show="errorMessage">
+            <div class="col-xs-12">
+                <div class="panel panel-filled" v-bind:class="errorPanelClass">
+                    <div class="panel-body">
+                        {{errorMessage}}
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-2" v-show="nodeType">
-            <div class="panel panel-filled panel-c-white">
-                <div class="panel-heading">
-                    <div class="panel-tools">
-                        <a class="panel-close" @click="closeConfigPanel"><i class="fa fa-times"></i></a>
-                    </div>
-                    Display Configuration
-                </div>
-                <div class="panel-body">
-                    <p v-show="allNodeProps.length">Select properties to be show on nodes of type "{{nodeType}}".</p>
-                    <p v-else>Sorry, theres nothing you can configure for nodes of type "{{nodeType}}".</p>
-                    <br/>
-                    <ul class="dd-list">
-                        <li class="dd-item" v-for="prop in allNodeProps" v-bind:class="{'li-active':selectedProps.includes(prop)}">
-                            <div class="dd-handle" @click="configureNode(prop)"">{{prop}}</div>
-                        </li>
+        <div class="row tab-row">
+            <div class="tabs-col col-md-12">
+                <div class="tabs-container">
+                    <ul class="nav nav-tabs">
+                        <li class="active"><a data-toggle="tab" href="#tab-1" aria-expanded="true">Graph</a></li>
+                        <li class=""><a data-toggle="tab" href="#tab-3" aria-expanded="false">Help</a></li>
                     </ul>
+                    <div class="tab-content">
+                        <div id="tab-1" class="tab-pane active">
+                            <div class="panel-body">
+                                <div class="graph-div" v-el:graph @contextmenu="suppressEventDefault"></div>
+                            </div>
+
+                        </div>
+                        <div id="tab-3" class="tab-pane">
+                            <div class="panel-body">
+                                <h4>Graql Entry</h4>
+                                <br/>
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-striped">
+                                        <thead>
+                                        <tr>
+                                            <th>Key</th>
+                                            <th>What it does</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr>
+                                            <td>ENTER</td>
+                                            <td>Submit Graql query.</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Shift + Enter</td>
+                                            <td>New line.</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Shift + Backspace</td>
+                                            <td>Clear graph & current query.</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Shift + Delete</td>
+                                            <td>Clear graph & current query.</td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <br/>
+                                <br/>
+                                <h4>Graph Tab Interaction</h4>
+                                <br/>
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-striped">
+                                        <thead>
+                                        <tr>
+                                            <th>Action</th>
+                                            <th>What it does</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr>
+                                            <td>Left Click</td>
+                                            <td>Selects a node or edge.</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Left Click + Alt</td>
+                                            <td>Show related ontology of selected node(s).</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Left Click + Shift</td>
+                                            <td>Shows instances and isa of selected node(s), <b>WITHOUT</b> clearing the
+                                                graph of all other non-related nodes.
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Double Click</td>
+                                            <td>Shows instances and isa of selected node(s), whilst clearing the graph
+                                                of all other non-related nodes.
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Right Click</td>
+                                            <td>Show node label configuration menu. You can select what properties to
+                                                display on the node label.
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Right Click + Shift</td>
+                                            <td>Delete selected node(s).</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Scroll wheel</td>
+                                            <td>Zoom in/out.</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Click & Drag</td>
+                                            <td>Move graph.</td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-2" v-show="nodeType">
+                <div class="panel panel-filled panel-c-white properties-tab">
+                    <div class="panel-heading">
+                        <div class="panel-tools">
+                            <a class="panel-close" @click="closeConfigPanel"><i class="fa fa-times"></i></a>
+                        </div>
+                        Display Configuration
+                    </div>
+                    <div class="panel-body">
+                        <div class="properties-list">
+                            <p v-show="allNodeProps.length">Select properties to be show on nodes of type
+                                "{{nodeType}}".</p>
+                            <p v-else>Sorry, theres nothing you can configure for nodes of type "{{nodeType}}".</p>
+                            <br/>
+                            <ul class="dd-list">
+                                <li class="dd-item" v-for="prop in allNodeProps"
+                                    v-bind:class="{'li-active':selectedProps.includes(prop)}">
+                                    <div class="dd-handle" @click="configureNode(prop)"
+                                    ">{{prop}}
+                        </div>
+                        </li>
+                        </ul>
+                    </div>
                 </div>
                 <div class="panel-footer" style="text-align: right">
                     <button type="button" class="btn btn-warning" @click="closeConfigPanel">Done</button>
@@ -152,7 +212,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
             </div>
         </div>
     </div>
-</div>
+    </div>
 </template>
 
 <style>
@@ -181,6 +241,7 @@ h4 {
 .li-active {
      background-color: #337ab7;
 }
+
 </style>
 
 <script>
@@ -236,23 +297,25 @@ export default {
         // set window height
         var height = window.innerHeight - graph.offsetTop - $('.graph-div').offset().top;
         $('.graph-div').height(height+"px");
+        $('.properties-tab').height($('.graph-div').height());
 
         window.onresize = function() {
             var x = Math.abs(window.innerHeight - graph.offsetTop - $('.graph-div').offset().top);
             $('.graph-div').height(x+"px");
+            $('.properties-tab').height($('.graph-div').height());
         };
 
         codeMirror = CodeMirror.fromTextArea(this.$els.graqlEditor, {
                 lineNumbers: true,
                 theme: "dracula",
                 mode: "graql",
+                viewportMargin: Infinity,
                 extraKeys: {
                     Enter: this.runQuery,
                     "Shift-Delete": this.clearGraph,
                     "Shift-Backspace": this.clearGraph
                 }
             });
-        codeMirror.setSize(null, 100);
     },
 
     methods: {
@@ -407,4 +470,5 @@ export default {
         }
     }
 }
+
 </script>
