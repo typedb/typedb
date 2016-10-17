@@ -95,10 +95,10 @@ public class ValidatorTest {
         cast.hasRole(feature);
         cast.hasRole(actor);
 
-        mindmapsGraph.putRelation(UUID.randomUUID().toString(), cast).
+        mindmapsGraph.addRelation(cast).
                 putRolePlayer(feature, godfather).putRolePlayer(actor, pacino);
 
-        mindmapsGraph.putRelation(UUID.randomUUID().toString(), movieHasGenre).
+        mindmapsGraph.addRelation(movieHasGenre).
                 putRolePlayer(movieOfGenre, godfather).putRolePlayer(movieGenre, crime);
 
         movieHasGenre.hasRole(movieOfGenre);
@@ -128,7 +128,7 @@ public class ValidatorTest {
         Instance kyle = mindmapsGraph.addEntity(fakeType);
         Instance icke = mindmapsGraph.addEntity(fakeType);
 
-        RelationImpl assertion = (RelationImpl) mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType).
+        RelationImpl assertion = (RelationImpl) mindmapsGraph.addRelation(relationType).
                 putRolePlayer(kicker, kyle).putRolePlayer(kickee, icke);
 
         boolean failure = false;
@@ -178,7 +178,7 @@ public class ValidatorTest {
         InstanceImpl kyle = (InstanceImpl) mindmapsGraph.addEntity(fakeType);
         InstanceImpl icke = (InstanceImpl) mindmapsGraph.addEntity(fakeType);
 
-        Relation relation = mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType).
+        mindmapsGraph.addRelation(relationType).
                 putRolePlayer(kicker, kyle).putRolePlayer(kickee, icke);
 
         Validator validator = new Validator(mindmapsGraph);
@@ -197,7 +197,7 @@ public class ValidatorTest {
         Instance kyle = mindmapsGraph.addEntity(fakeType);
         Instance icke = mindmapsGraph.addEntity(fakeType);
 
-        RelationImpl assertion = (RelationImpl) mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType).
+        RelationImpl assertion = (RelationImpl) mindmapsGraph.addRelation(relationType).
                 putRolePlayer(kicker, kyle).putRolePlayer(kickee, icke);
         CastingImpl casting = (CastingImpl) assertion.getMappingCasting().toArray()[0];
         Validator validator = new Validator(mindmapsGraph);
@@ -249,7 +249,7 @@ public class ValidatorTest {
         int n = 100;
         for (int i=0; i < n; i++) {
             Instance newPerson = mindmapsGraph.addEntity(person);
-            mindmapsGraph.putRelation(UUID.randomUUID().toString(), cast).
+            mindmapsGraph.addRelation(cast).
                     putRolePlayer(actor, newPerson).putRolePlayer(feature, godfather);
         }
 

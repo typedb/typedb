@@ -76,7 +76,7 @@ public class ValidateGlobalRulesTest {
         Instance geralt = mindmapsGraph.addEntity(hunter);
         InstanceImpl werewolf = (InstanceImpl) mindmapsGraph.addEntity(wolf);
 
-        RelationImpl assertion = (RelationImpl) mindmapsGraph.putRelation(UUID.randomUUID().toString(), hunts).
+        RelationImpl assertion = (RelationImpl) mindmapsGraph.addRelation(hunts).
                 putRolePlayer(witcher, geralt).putRolePlayer(monster, werewolf);
         for (CastingImpl casting : assertion.getMappingCasting()) {
             assertFalse(ValidateGlobalRules.validatePlaysRoleStructure(casting));
@@ -179,7 +179,7 @@ public class ValidateGlobalRulesTest {
         RelationType kills = mindmapsGraph.putRelationType("kills");
         RelationType naps = mindmapsGraph.putRelationType("naps").hasRole(napper);
 
-        RelationImpl assertion = (RelationImpl) mindmapsGraph.putRelation(UUID.randomUUID().toString(), kills).
+        RelationImpl assertion = (RelationImpl) mindmapsGraph.addRelation(kills).
                 putRolePlayer(hunter, cartman).putRolePlayer(monster, werewolf).putRolePlayer(creature, cathulu);
 
         kills.hasRole(monster);
@@ -189,7 +189,7 @@ public class ValidateGlobalRulesTest {
         kills.hasRole(creature);
         assertTrue(ValidateGlobalRules.validateRelationshipStructure(assertion));
 
-        RelationImpl assertion2 = (RelationImpl) mindmapsGraph.putRelation(UUID.randomUUID().toString(), naps).putRolePlayer(hunter, cathulu);
+        RelationImpl assertion2 = (RelationImpl) mindmapsGraph.addRelation(naps).putRolePlayer(hunter, cathulu);
         assertFalse(ValidateGlobalRules.validateRelationshipStructure(assertion2));
     }
 
@@ -220,7 +220,7 @@ public class ValidateGlobalRulesTest {
         Entity e1 = mindmapsGraph.addEntity(entityType);
         Entity e2 = mindmapsGraph.addEntity(entityType);
 
-        mindmapsGraph.putRelation(UUID.randomUUID().toString(), hasCast).putRolePlayer(r1, e1).putRolePlayer(r2, e2);
+        mindmapsGraph.addRelation(hasCast).putRolePlayer(r1, e1).putRolePlayer(r2, e2);
 
         assertTrue(ValidateGlobalRules.validateIsAbstractHasNoIncomingIsaEdges((TypeImpl) relationType));
     }

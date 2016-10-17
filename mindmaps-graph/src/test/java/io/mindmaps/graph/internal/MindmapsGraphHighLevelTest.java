@@ -107,7 +107,7 @@ public class MindmapsGraphHighLevelTest {
         relationType.hasRole(role1);
         relationType.hasRole(role2);
         relationType.hasRole(role3);
-        RelationImpl assertion = (RelationImpl) graph.putRelation("a thing", relationType).
+        RelationImpl assertion = (RelationImpl) graph.addRelation(relationType).
                 putRolePlayer(role1, rolePlayer1).
                 putRolePlayer(role2, rolePlayer2).
                 putRolePlayer(role3, rolePlayer3);
@@ -186,7 +186,7 @@ public class MindmapsGraphHighLevelTest {
         relationType.hasRole(role1);
         relationType.hasRole(role2);
         relationType.hasRole(role3);
-        RelationImpl relationConcept1 = (RelationImpl) graph.putRelation("a", relationType).
+        RelationImpl relationConcept1 = (RelationImpl) graph.addRelation(relationType).
                 putRolePlayer(role1, rolePlayer1).putRolePlayer(role2, rolePlayer2).putRolePlayer(role3, null);
 
         //Checking it
@@ -249,7 +249,7 @@ public class MindmapsGraphHighLevelTest {
                 containsString(ErrorMessage.ROLE_IS_NULL.getMessage(rolePlayer1))
         ));
 
-        graph.putRelation(UUID.randomUUID().toString(), relationType).putRolePlayer(null, rolePlayer1);
+        graph.addRelation(relationType).putRolePlayer(null, rolePlayer1);
     }
 
     @Test
@@ -561,7 +561,7 @@ public class MindmapsGraphHighLevelTest {
         Instance godfather2 = graph.addEntity(type);
 
         assertEquals(0, graph.getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
-        RelationImpl relation = (RelationImpl) graph.putRelation("a", cast).
+        RelationImpl relation = (RelationImpl) graph.addRelation(cast).
                 putRolePlayer(actor, pacino).putRolePlayer(actor2, thing).putRolePlayer(actor3, godfather);
         assertEquals(1, graph.getTinkerPopGraph().traversal().V().has(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.RELATION.name()).toList().size());
         assertNotEquals(String.valueOf(relation.getBaseIdentifier()), relation.getId());

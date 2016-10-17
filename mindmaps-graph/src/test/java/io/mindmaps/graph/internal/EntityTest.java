@@ -66,7 +66,7 @@ public class EntityTest {
         EntityType entityType = mindmapsGraph.putEntityType("entity type");
         RelationType relationType = mindmapsGraph.putRelationType("RelationType");
         Instance scope = mindmapsGraph.addEntity(entityType);
-        Relation relation = mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType);
+        Relation relation = mindmapsGraph.addRelation(relationType);
         relation.scope(scope);
         scope.delete();
         assertNull(mindmapsGraph.getConceptByBaseIdentifier(((ConceptImpl) scope).getBaseIdentifier()));
@@ -81,8 +81,8 @@ public class EntityTest {
 
         RoleTypeImpl role = (RoleTypeImpl) mindmapsGraph.putRoleType("Role");
         RoleTypeImpl role2 = (RoleTypeImpl) mindmapsGraph.putRoleType("Role 2");
-        Relation relation = mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType);
-        Relation relation2 = mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType);
+        Relation relation = mindmapsGraph.addRelation(relationType);
+        Relation relation2 = mindmapsGraph.addRelation(relationType);
         CastingImpl casting1 = mindmapsGraph.putCasting(role, rolePlayer1, (RelationImpl) relation);
         CastingImpl casting2 = mindmapsGraph.putCasting(role2, rolePlayer1, (RelationImpl) relation2);
 

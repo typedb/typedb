@@ -308,7 +308,7 @@ public class ConceptTest {
     @Test
     public void  testAsRelation() {
         RelationType type = mindmapsGraph.putRelationType("a type");
-        Concept concept = mindmapsGraph.putRelation(UUID.randomUUID().toString(), type);
+        Concept concept = mindmapsGraph.addRelation(type);
         assertTrue(concept.isRelation());
         Relation concept2 = concept.asRelation();
         assertEquals(concept2, concept);

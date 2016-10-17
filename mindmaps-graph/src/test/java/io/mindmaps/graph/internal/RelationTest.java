@@ -82,7 +82,7 @@ public class RelationTest {
         type = mindmapsGraph.putEntityType("Main concept Type");
         relationType = mindmapsGraph.putRelationType("Main relation type");
 
-        relation = (RelationImpl) mindmapsGraph.putRelation("A relation", relationType);
+        relation = (RelationImpl) mindmapsGraph.addRelation(relationType);
         role1 = (RoleTypeImpl) mindmapsGraph.putRoleType("Role 1");
         rolePlayer1 = (InstanceImpl) mindmapsGraph.addEntity(type);
         role2 = (RoleTypeImpl) mindmapsGraph.putRoleType("Role 2");
@@ -99,15 +99,8 @@ public class RelationTest {
     }
 
     @Test
-    public void simplePutRelation(){
-        Relation rel = mindmapsGraph.putRelation("id", relationType);
-        assertEquals(rel, mindmapsGraph.getRelation("id"));
-        assertNull(mindmapsGraph.getRelation("id2"));
-    }
-
-    @Test
     public void testPutRolePlayer(){
-        Relation relation = mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType);
+        Relation relation = mindmapsGraph.addRelation(relationType);
         RoleType roleType = mindmapsGraph.putRoleType("A role");
         Instance instance = mindmapsGraph.addEntity(type);
 
@@ -120,8 +113,8 @@ public class RelationTest {
     @Test
     public void scopeTest(){
         RelationType relationType = mindmapsGraph.putRelationType("rel type");
-        RelationImpl relation = (RelationImpl) mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType);
-        RelationImpl relationValue = (RelationImpl) mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType);
+        RelationImpl relation = (RelationImpl) mindmapsGraph.addRelation(relationType);
+        RelationImpl relationValue = (RelationImpl) mindmapsGraph.addRelation(relationType);
         InstanceImpl scope = (InstanceImpl) mindmapsGraph.addEntity(type);
         relation.scope(scope);
         relationValue.scope(scope);
@@ -169,7 +162,7 @@ public class RelationTest {
     @Test
     public void testDeleteScope() throws ConceptException {
         RelationType relationType = mindmapsGraph.putRelationType("Relation type");
-        RelationImpl relation2 = (RelationImpl) mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType);
+        RelationImpl relation2 = (RelationImpl) mindmapsGraph.addRelation(relationType);
         InstanceImpl scope1 = (InstanceImpl) mindmapsGraph.addEntity(type);
         Instance scope2 = mindmapsGraph.addEntity(type);
         InstanceImpl scope3 = (InstanceImpl) mindmapsGraph.addEntity(type);
@@ -230,7 +223,7 @@ public class RelationTest {
         RoleType roleType3 = mindmapsGraph.putRoleType("Role 3");
         RelationType relationType = mindmapsGraph.putRelationType("Relation Type");
 
-        Relation rel = mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType).
+        Relation rel = mindmapsGraph.addRelation(relationType).
                 putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2).putRolePlayer(roleType3, resource);
 
         Relation rel2 = mindmapsGraph.addRelation(relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance3);
@@ -260,7 +253,7 @@ public class RelationTest {
         Instance instance1 = mindmapsGraph.addEntity(type);
         Instance instance2 = mindmapsGraph.addEntity(type);
 
-        RelationImpl relation = (RelationImpl) mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType);
+        RelationImpl relation = (RelationImpl) mindmapsGraph.addRelation(relationType);
         assertTrue(relation.getIndex().startsWith("RelationBaseId_" + relation.getBaseIdentifier()));
 
         relation.putRolePlayer(roleType1, instance1);
@@ -295,14 +288,14 @@ public class RelationTest {
         Instance instance2 = mindmapsGraph.addEntity(type);
         RelationType relationType = mindmapsGraph.putRelationType("relation type").hasRole(roleType1).hasRole(roleType2);
 
-        Relation relation1 = mindmapsGraph.putRelation("abc", relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
+        Relation relation1 = mindmapsGraph.addRelation(relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
 
         expectedException.expect(ConceptException.class);
         expectedException.expectMessage(allOf(
                 containsString(ErrorMessage.RELATION_EXISTS.getMessage(relation1))
         ));
 
-        mindmapsGraph.putRelation("def", relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
+        mindmapsGraph.addRelation(relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
     }
 
     @Test
@@ -314,8 +307,8 @@ public class RelationTest {
         Instance instance2 = mindmapsGraph.addEntity(type);
         RelationType relationType = mindmapsGraph.putRelationType("relation type").hasRole(roleType1).hasRole(roleType2);
 
-        Relation relation1 = mindmapsGraph.putRelation("abc", relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
-        Relation relation2 = mindmapsGraph.putRelation("def", relationType).putRolePlayer(roleType1, instance1);
+        Relation relation1 = mindmapsGraph.addRelation(relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
+        Relation relation2 = mindmapsGraph.addRelation(relationType).putRolePlayer(roleType1, instance1);
 
         expectedException.expect(ConceptException.class);
         expectedException.expectMessage(allOf(
@@ -333,7 +326,7 @@ public class RelationTest {
         RelationType relationType1 = mindmapsGraph.putRelationType("Another relation type").hasRole(roleType1).hasRole(roleType2);
         Instance instance1 = mindmapsGraph.addEntity(type);
 
-        Relation relation1 = mindmapsGraph.putRelation("abc", relationType1).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, null);
+        Relation relation1 = mindmapsGraph.addRelation(relationType1).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, null);
 
         Map<RoleType, Instance> roleTypeInstanceMap = new HashMap<>();
         roleTypeInstanceMap.put(roleType1, instance1);

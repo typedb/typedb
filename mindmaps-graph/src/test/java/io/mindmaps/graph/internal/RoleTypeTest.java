@@ -132,19 +132,19 @@ public class RoleTypeTest {
         Entity c = mindmapsGraph.addEntity(entityType);
         Entity d = mindmapsGraph.addEntity(entityType);
 
-        mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType).
+        mindmapsGraph.addRelation(relationType).
                 putRolePlayer(roleA, a).
                 putRolePlayer(roleB, b);
 
-        mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType).
+        mindmapsGraph.addRelation(relationType).
                 putRolePlayer(roleA, c).
                 putRolePlayer(roleB, d);
 
-        mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType).
+        mindmapsGraph.addRelation(relationType).
                 putRolePlayer(roleA, a).
                 putRolePlayer(roleB, c);
 
-        mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType).
+        mindmapsGraph.addRelation(relationType).
                 putRolePlayer(roleA, c).
                 putRolePlayer(roleB, b);
 

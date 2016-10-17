@@ -75,13 +75,13 @@ public class ResourceTest {
 
         assertEquals(0, birthDate.ownerInstances().size());
 
-        mindmapsGraph.putRelation(UUID.randomUUID().toString(), hasResource).
+        mindmapsGraph.addRelation(hasResource).
                 putRolePlayer(resourceRole, birthDate).putRolePlayer(actorRole, pacino);
-        mindmapsGraph.putRelation(UUID.randomUUID().toString(), hasResource).
+        mindmapsGraph.addRelation(hasResource).
                 putRolePlayer(resourceRole, birthDate).putRolePlayer(actorRole, jennifer);
-        mindmapsGraph.putRelation(UUID.randomUUID().toString(), hasResource).
+        mindmapsGraph.addRelation(hasResource).
                 putRolePlayer(resourceRole, birthDate).putRolePlayer(actorRole, bob);
-        mindmapsGraph.putRelation(UUID.randomUUID().toString(), hasResource).
+        mindmapsGraph.addRelation(hasResource).
                 putRolePlayer(resourceRole, birthDate).putRolePlayer(actorRole, alice);
 
         assertEquals(4, birthDate.ownerInstances().size());
