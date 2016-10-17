@@ -241,7 +241,7 @@ public class Analytics {
      *
      * @return median
      */
-    public Optional<Long> median() {
+    public Optional<Number> median() {
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypes);
         if (!selectedTypesHaveInstanceInSubgraph(statisticsResourceTypes, subtypes)) return Optional.empty();
 

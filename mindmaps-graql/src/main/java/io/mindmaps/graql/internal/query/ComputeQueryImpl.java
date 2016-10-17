@@ -89,6 +89,10 @@ class ComputeQueryImpl implements ComputeQuery {
                     analytics = getAnalytics(keyspace, true);
                     return analytics.sum();
                 }
+                case "median": {
+                    analytics = getAnalytics(keyspace, true);
+                    return analytics.median();
+                }
                 default: {
                     throw new RuntimeException(ErrorMessage.NO_ANALYTICS_METHOD.getMessage(computeMethod));
                 }

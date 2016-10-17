@@ -35,7 +35,7 @@ public class MedianVertexProgram extends MindmapsVertexProgram<Long> {
     private final MessageScope.Local<Long> countMessageScopeIn = MessageScope.Local.of(__::inE);
     private final MessageScope.Local<Long> countMessageScopeOut = MessageScope.Local.of(__::outE);
 
-    public static final int MAX_ITERATION = 10;
+    public static final int MAX_ITERATION = 20;
     private static final String RESOURCE_DATA_TYPE = "medianVertexProgram.resourceDataType";
     private static final String RESOURCE_TYPE = "medianVertexProgram.statisticsResourceType";
 
@@ -51,9 +51,7 @@ public class MedianVertexProgram extends MindmapsVertexProgram<Long> {
     public static final String MEDIAN = "medianVertexProgram.median";
     public static final String PIVOT = "medianVertexProgram.pivot";
     public static final String PIVOT_POSITIVE = "medianVertexProgram.pivotPositive";
-//    public static final String PIVOT_POSITIVE_SAVED = "medianVertexProgram.pivotPositiveSaved";
     public static final String PIVOT_NEGATIVE = "medianVertexProgram.pivotNegative";
-//    public static final String PIVOT_NEGATIVE_SAVED = "medianVertexProgram.pivotNegativeSaved";
     public static final String POSITIVE_COUNT = "medianVertexProgram.positiveCount";
     public static final String NEGATIVE_COUNT = "medianVertexProgram.negativeCount";
     public static final String FOUND = "medianVertexProgram.found";
@@ -62,7 +60,6 @@ public class MedianVertexProgram extends MindmapsVertexProgram<Long> {
     private static final Set<String> ELEMENT_COMPUTE_KEYS = Sets.newHashSet(DEGREE, LABEL);
     private static final Set<String> MEMORY_COMPUTE_KEYS = Sets.newHashSet(COUNT, MEDIAN, FOUND,
             INDEX_START, INDEX_END, INDEX_MEDIAN, PIVOT, PIVOT_POSITIVE, PIVOT_NEGATIVE,
-//            PIVOT_POSITIVE_SAVED, PIVOT_NEGATIVE_SAVED,
             POSITIVE_COUNT, NEGATIVE_COUNT, LABEL_SELECTED);
 
     private Set<String> statisticsResourceTypes = new HashSet<>();
@@ -98,8 +95,10 @@ public class MedianVertexProgram extends MindmapsVertexProgram<Long> {
     @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {
         final Set<MessageScope> set = new HashSet<>();
-        set.add(this.countMessageScopeOut);
-        set.add(this.countMessageScopeIn);
+        if (memory.getIteration() < 4) {
+            set.add(this.countMessageScopeOut);
+            set.add(this.countMessageScopeIn);
+        }
         return set;
     }
 
@@ -117,35 +116,27 @@ public class MedianVertexProgram extends MindmapsVertexProgram<Long> {
                 statisticsResourceTypes.add((String) configuration.getProperty(RESOURCE_TYPE + "." + key)));
     }
 
-//    @Override
-//    public void workerIterationStart(final Memory memory) {
-//        memory.set(PIVOT_POSITIVE_SAVED, 0L);
-//        memory.set(PIVOT_NEGATIVE_SAVED, 0L);
-//    }
-
-//    @Override
-//    public void workerIterationEnd(final Memory memory) {
-//        System.out.println("PIVOT_NEGATIVE_SAVED = " + memory.<Long>get(PIVOT_NEGATIVE_SAVED));
-//        System.out.println("PIVOT_NEGATIVE = " + memory.<Long>get(PIVOT_NEGATIVE));
-//    }
-
     @Override
     public void setup(final Memory memory) {
         System.out.println();
         System.out.println("Start !!!!!!!!");
         System.out.println();
         memory.set(COUNT, 0L);
-        memory.set(MEDIAN, 0L);
-//        memory.set(PIVOT_POSITIVE_SAVED, 0L);
-//        memory.set(PIVOT_NEGATIVE_SAVED, 0L);
-
         memory.set(LABEL_SELECTED, memory.getIteration());
-        memory.set(PIVOT, 0L);
-        memory.set(PIVOT_NEGATIVE, 0L);
-        memory.set(PIVOT_POSITIVE, 0L);
         memory.set(NEGATIVE_COUNT, 0L);
         memory.set(POSITIVE_COUNT, 0L);
         memory.set(FOUND, false);
+        if (persistentProperties.get(RESOURCE_DATA_TYPE).equals(Schema.ConceptProperty.VALUE_LONG.name())) {
+            memory.set(MEDIAN, 0L);
+            memory.set(PIVOT, 0L);
+            memory.set(PIVOT_NEGATIVE, 0L);
+            memory.set(PIVOT_POSITIVE, 0L);
+        } else {
+            memory.set(MEDIAN, 0D);
+            memory.set(PIVOT, 0D);
+            memory.set(PIVOT_NEGATIVE, 0D);
+            memory.set(PIVOT_POSITIVE, 0D);
+        }
     }
 
     @Override
@@ -194,12 +185,12 @@ public class MedianVertexProgram extends MindmapsVertexProgram<Long> {
                 break;
             case 3:
                 if (statisticsResourceTypes.contains(getVertexType(vertex)) && (long) vertex.value(DEGREE) > 0) {
-                    long value = vertex.value((String) persistentProperties.get(RESOURCE_DATA_TYPE));
-                    if (value < memory.<Long>get(PIVOT)) {
+                    Number value = vertex.value((String) persistentProperties.get(RESOURCE_DATA_TYPE));
+                    if (value.doubleValue() < memory.<Number>get(PIVOT).doubleValue()) {
                         vertex.property(LABEL, -memory.getIteration());
                         memory.incr(NEGATIVE_COUNT, vertex.value(DEGREE));
                         memory.set(PIVOT_NEGATIVE, value);
-                    } else if (value > memory.<Long>get(PIVOT)) {
+                    } else if (value.doubleValue() > memory.<Number>get(PIVOT).doubleValue()) {
                         vertex.property(LABEL, memory.getIteration());
                         memory.incr(POSITIVE_COUNT, vertex.value(DEGREE));
                         memory.set(PIVOT_POSITIVE, value);
@@ -211,17 +202,14 @@ public class MedianVertexProgram extends MindmapsVertexProgram<Long> {
             default:
                 if (statisticsResourceTypes.contains(getVertexType(vertex)) && (long) vertex.value(DEGREE) > 0 &&
                         (int) vertex.value(LABEL) == memory.<Integer>get(LABEL_SELECTED)) {
-
-//                    System.out.println("OLD PIVOT = " + memory.<Long>get(PIVOT));
-
-                    long value = vertex.value((String) persistentProperties.get(RESOURCE_DATA_TYPE));
-//                    System.out.println("value = " + value);
-
-                    if (value < memory.<Long>get(PIVOT)) {
+                    Number value = vertex.value((String) persistentProperties.get(RESOURCE_DATA_TYPE));
+//                    if (value < memory.<Long>get(PIVOT)) {
+                    if (value.doubleValue() < memory.<Number>get(PIVOT).doubleValue()) {
                         vertex.property(LABEL, -memory.getIteration());
                         memory.incr(NEGATIVE_COUNT, vertex.value(DEGREE));
                         memory.set(PIVOT_NEGATIVE, value);
-                    } else if (value > memory.<Long>get(PIVOT)) {
+//                    } else if (value > memory.<Long>get(PIVOT)) {
+                    } else if (value.doubleValue() > memory.<Number>get(PIVOT).doubleValue()) {
                         vertex.property(LABEL, memory.getIteration());
                         memory.incr(POSITIVE_COUNT, vertex.value(DEGREE));
                         memory.set(PIVOT_POSITIVE, value);
@@ -250,7 +238,7 @@ public class MedianVertexProgram extends MindmapsVertexProgram<Long> {
             long indexNegativeEnd = memory.<Long>get(INDEX_START) + memory.<Long>get(NEGATIVE_COUNT) - 1;
             long indexPositiveStart = memory.<Long>get(INDEX_END) - memory.<Long>get(POSITIVE_COUNT) + 1;
 
-            System.out.println("pivot: " + memory.<Long>get(PIVOT));
+            System.out.println("pivot: " + memory.get(PIVOT));
 
             System.out.println(memory.<Long>get(INDEX_START) + ", " + indexNegativeEnd);
             System.out.println(indexPositiveStart + ", " + memory.<Long>get(INDEX_END));
@@ -258,8 +246,8 @@ public class MedianVertexProgram extends MindmapsVertexProgram<Long> {
             System.out.println("negative count: " + memory.<Long>get(NEGATIVE_COUNT));
             System.out.println("positive count: " + memory.<Long>get(POSITIVE_COUNT));
 
-            System.out.println("negative pivot: " + memory.<Long>get(PIVOT_NEGATIVE));
-            System.out.println("positive pivot: " + memory.<Long>get(PIVOT_POSITIVE));
+            System.out.println("negative pivot: " + memory.get(PIVOT_NEGATIVE));
+            System.out.println("positive pivot: " + memory.get(PIVOT_POSITIVE));
 
             if (indexNegativeEnd < memory.<Long>get(INDEX_MEDIAN)) {
                 if (indexPositiveStart > memory.<Long>get(INDEX_MEDIAN)) {
@@ -267,17 +255,17 @@ public class MedianVertexProgram extends MindmapsVertexProgram<Long> {
                     System.out.println("FOUND IT!!!");
                 } else {
                     memory.set(INDEX_START, indexPositiveStart);
-                    memory.set(PIVOT, memory.<Long>get(PIVOT_POSITIVE));
+                    memory.set(PIVOT, memory.get(PIVOT_POSITIVE));
                     memory.set(LABEL_SELECTED, memory.getIteration());
-                    System.out.println("new pivot: " + memory.<Long>get(PIVOT));
+                    System.out.println("new pivot: " + memory.get(PIVOT));
                 }
             } else {
                 memory.set(INDEX_END, indexNegativeEnd);
-                memory.set(PIVOT, memory.<Long>get(PIVOT_NEGATIVE));
+                memory.set(PIVOT, memory.get(PIVOT_NEGATIVE));
                 memory.set(LABEL_SELECTED, -memory.getIteration());
-                System.out.println("new pivot: " + memory.<Long>get(PIVOT));
+                System.out.println("new pivot: " + memory.get(PIVOT));
             }
-            memory.set(MEDIAN, memory.<Long>get(PIVOT));
+            memory.set(MEDIAN, memory.get(PIVOT));
 
             memory.set(POSITIVE_COUNT, 0L);
             memory.set(NEGATIVE_COUNT, 0L);

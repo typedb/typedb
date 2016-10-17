@@ -75,6 +75,7 @@ public class StatisticsTest extends AbstractMindmapsEngineTest {
         assertIllegalStateExceptionThrown(computer::mean);
         assertIllegalStateExceptionThrown(computer::sum);
         assertIllegalStateExceptionThrown(computer::std);
+        assertIllegalStateExceptionThrown(computer::median);
 
         // resources-types set is empty
         computer = new Analytics(keyspace, Collections.singleton("thing"), new HashSet<>());
@@ -83,6 +84,7 @@ public class StatisticsTest extends AbstractMindmapsEngineTest {
         assertIllegalStateExceptionThrown(computer::mean);
         assertIllegalStateExceptionThrown(computer::sum);
         assertIllegalStateExceptionThrown(computer::std);
+        assertIllegalStateExceptionThrown(computer::median);
 
         // if it's not a resource-type
         computer = new Analytics(keyspace, Collections.singleton("thing"),
@@ -92,6 +94,7 @@ public class StatisticsTest extends AbstractMindmapsEngineTest {
         assertIllegalStateExceptionThrown(computer::mean);
         assertIllegalStateExceptionThrown(computer::sum);
         assertIllegalStateExceptionThrown(computer::std);
+        assertIllegalStateExceptionThrown(computer::median);
 
         // resource-type has no instance
         computer = new Analytics(keyspace, new HashSet<>(), Collections.singleton(resourceType7));
@@ -100,6 +103,7 @@ public class StatisticsTest extends AbstractMindmapsEngineTest {
         assertFalse(computer.min().isPresent());
         assertFalse(computer.sum().isPresent());
         assertFalse(computer.std().isPresent());
+        assertFalse(computer.median().isPresent());
 
         // resources are not connected to any entities
         computer = new Analytics(keyspace, new HashSet<>(), Collections.singleton(resourceType3));
@@ -108,6 +112,7 @@ public class StatisticsTest extends AbstractMindmapsEngineTest {
         assertFalse(computer.min().isPresent());
         assertFalse(computer.sum().isPresent());
         assertFalse(computer.std().isPresent());
+        assertFalse(computer.median().isPresent());
 
         // resource-type has incorrect data type
         computer = new Analytics(keyspace, new HashSet<>(), Collections.singleton(resourceType4));
@@ -116,6 +121,7 @@ public class StatisticsTest extends AbstractMindmapsEngineTest {
         assertIllegalStateExceptionThrown(computer::mean);
         assertIllegalStateExceptionThrown(computer::sum);
         assertIllegalStateExceptionThrown(computer::std);
+        assertIllegalStateExceptionThrown(computer::median);
 
         // resource-types have different data types
         computer = new Analytics(keyspace, new HashSet<>(),
@@ -125,6 +131,7 @@ public class StatisticsTest extends AbstractMindmapsEngineTest {
         assertIllegalStateExceptionThrown(computer::mean);
         assertIllegalStateExceptionThrown(computer::sum);
         assertIllegalStateExceptionThrown(computer::std);
+        assertIllegalStateExceptionThrown(computer::median);
     }
 
     private void assertIllegalStateExceptionThrown(Supplier<Optional> method) {
@@ -201,11 +208,21 @@ public class StatisticsTest extends AbstractMindmapsEngineTest {
 
         // resource-type has no instance
         addOntologyAndEntities();
-
+        computer = new Analytics(keyspace, new HashSet<>(),
+                Collections.singleton(resourceType1));
+        assertFalse(computer.sum().isPresent());
+        computer = new Analytics(keyspace, Sets.newHashSet(thing),
+                Collections.singleton(resourceType2));
+        assertFalse(computer.sum().isPresent());
 
         // add resources, but resources are not connected to any entities
         addResourcesInstances();
-
+        computer = new Analytics(keyspace, new HashSet<>(),
+                Collections.singleton(resourceType1));
+        assertFalse(computer.sum().isPresent());
+        computer = new Analytics(keyspace, Sets.newHashSet(thing),
+                Collections.singleton(resourceType2));
+        assertFalse(computer.sum().isPresent());
 
         // connect entity and resources
         addResourceRelations();
@@ -230,11 +247,21 @@ public class StatisticsTest extends AbstractMindmapsEngineTest {
 
         // resource-type has no instance
         addOntologyAndEntities();
-
+        computer = new Analytics(keyspace, new HashSet<>(),
+                Collections.singleton(resourceType1));
+        assertFalse(computer.mean().isPresent());
+        computer = new Analytics(keyspace, Sets.newHashSet(thing),
+                Collections.singleton(resourceType2));
+        assertFalse(computer.mean().isPresent());
 
         // add resources, but resources are not connected to any entities
         addResourcesInstances();
-
+        computer = new Analytics(keyspace, new HashSet<>(),
+                Collections.singleton(resourceType1));
+        assertFalse(computer.mean().isPresent());
+        computer = new Analytics(keyspace, Sets.newHashSet(thing),
+                Collections.singleton(resourceType2));
+        assertFalse(computer.mean().isPresent());
 
         // connect entity and resources
         addResourceRelations();
@@ -259,11 +286,21 @@ public class StatisticsTest extends AbstractMindmapsEngineTest {
 
         // resource-type has no instance
         addOntologyAndEntities();
-
+        computer = new Analytics(keyspace, new HashSet<>(),
+                Collections.singleton(resourceType1));
+        assertFalse(computer.std().isPresent());
+        computer = new Analytics(keyspace, Sets.newHashSet(thing),
+                Collections.singleton(resourceType2));
+        assertFalse(computer.std().isPresent());
 
         // add resources, but resources are not connected to any entities
         addResourcesInstances();
-
+        computer = new Analytics(keyspace, new HashSet<>(),
+                Collections.singleton(resourceType1));
+        assertFalse(computer.std().isPresent());
+        computer = new Analytics(keyspace, Sets.newHashSet(thing),
+                Collections.singleton(resourceType2));
+        assertFalse(computer.std().isPresent());
 
         // connect entity and resources
         addResourceRelations();
@@ -288,14 +325,35 @@ public class StatisticsTest extends AbstractMindmapsEngineTest {
 
         // resource-type has no instance
         addOntologyAndEntities();
-
+        computer = new Analytics(keyspace, new HashSet<>(),
+                Collections.singleton(resourceType1));
+        assertFalse(computer.median().isPresent());
+        computer = new Analytics(keyspace, Sets.newHashSet(thing),
+                Collections.singleton(resourceType2));
+        assertFalse(computer.median().isPresent());
 
         // add resources, but resources are not connected to any entities
         addResourcesInstances();
-
+        computer = new Analytics(keyspace, new HashSet<>(),
+                Collections.singleton(resourceType1));
+        assertFalse(computer.median().isPresent());
+        computer = new Analytics(keyspace, Sets.newHashSet(thing),
+                Collections.singleton(resourceType2));
+        assertFalse(computer.median().isPresent());
 
         // connect entity and resources
         addResourceRelations();
+
+        computer = new Analytics(keyspace, new HashSet<>(),
+                Collections.singleton((resourceType1)));
+        assertEquals(1.5D, computer.median().get().doubleValue(), delta);
+        computer = new Analytics(keyspace, new HashSet<>(),
+                Collections.singleton((resourceType6)));
+        assertEquals(7.5D, computer.median().get().doubleValue(), delta);
+        computer = new Analytics(keyspace, new HashSet<>(),
+                Sets.newHashSet(resourceType1, resourceType6));
+        assertEquals(1.8D, computer.median().get().doubleValue(), delta);
+
         computer = new Analytics(keyspace, new HashSet<>(),
                 Collections.singleton((resourceType2)));
         assertEquals(0L, computer.median().get().longValue());
