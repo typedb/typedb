@@ -438,9 +438,16 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      */
     private T type(V type) {
         if(type != null){
-            setType(String.valueOf(type.getId()));
-            putEdge(type, Schema.EdgeLabel.ISA);
+            TypeImpl currentIsa = getParentIsa();
+            if(currentIsa == null){
+                setType(String.valueOf(type.getId()));
+                putEdge(type, Schema.EdgeLabel.ISA);
+            } else if(!currentIsa.equals(type)){
+                throw new InvalidConceptTypeException(ErrorMessage.IMMUTABLE_TYPE.getMessage(this, type, currentIsa));
+            }
+
         }
+
         return getThis();
     }
 
