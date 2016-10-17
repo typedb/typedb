@@ -34,7 +34,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static io.mindmaps.graql.internal.util.CommonUtil.toImmutableSet;
-import static io.mindmaps.graql.internal.util.StringConverter.getKeywords;
+import static io.mindmaps.graql.internal.util.StringConverter.GRAQL_KEYWORDS;
 
 /**
  * An autocomplete result suggesting keywords, types and variables that the user may wish to type
@@ -86,7 +86,7 @@ public class Autocomplete {
      * @return a set of potential autocomplete words
      */
     private static ImmutableSet<String> findCandidates(MindmapsGraph graph, String query, Optional<? extends Token> optToken) {
-        ImmutableSet<String> allCandidates = Stream.of(getKeywords(), getTypes(graph), getVariables(query))
+        ImmutableSet<String> allCandidates = Stream.of(GRAQL_KEYWORDS.stream(), getTypes(graph), getVariables(query))
                 .flatMap(Function.identity()).collect(toImmutableSet());
 
         return optToken.map(
