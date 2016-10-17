@@ -46,6 +46,7 @@ public class GraqlShellTest {
 
     private GraqlClientMock client;
     private String expectedVersion = "graql-9.9.9";
+    private static final String historyFile = "/graql-test-history";
 
     @Before
     public void setUp() {
@@ -299,7 +300,7 @@ public class GraqlShellTest {
             System.setOut(out);
             System.setErr(err);
 
-            GraqlShell.runShell(args, expectedVersion, client);
+            GraqlShell.runShell(args, expectedVersion, historyFile, client);
         } finally {
             resetIO();
         }
