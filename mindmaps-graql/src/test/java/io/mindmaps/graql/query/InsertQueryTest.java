@@ -477,6 +477,13 @@ public class InsertQueryTest {
         qb.insert(var("x").isa("name")).execute();
     }
 
+    @Test
+    public void testErrorInsertResourceWithId() {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage(allOf(containsString("resource"), containsString("id"), containsString("bobby")));
+        qb.insert(id("bobby").value("bob").isa("name")).execute();
+    }
+
     private void assertInsert(Var... vars) {
         // Make sure vars don't exist
         for (Var var : vars) {
