@@ -21,6 +21,7 @@ import com.google.common.collect.Sets;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.pattern.property.HasResourceProperty;
 import io.mindmaps.graql.internal.reasoner.query.Query;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -144,5 +145,18 @@ public class Resource extends AtomBase{
                 name = resVar.getName();
         }
         return name;
+    }
+
+    @Override
+    public Map<String, String> getUnifiers(Atomic parentAtom) {
+        Map<String, String> unifiers = new HashMap<>();
+        String childVarName = this.getVarName();
+        String parentVarName = parentAtom.getVarName();
+        String childValVarName = this.getVal();
+        String parentValVarName = parentAtom.getVal();
+
+        if (!childVarName.equals(parentVarName)) unifiers.put(childVarName, parentVarName);
+        if (!childValVarName.equals(parentValVarName)) unifiers.put(childValVarName, parentValVarName);
+        return unifiers;
     }
 }
