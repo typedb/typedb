@@ -18,6 +18,7 @@
 
 package io.mindmaps.graph.internal;
 
+import io.mindmaps.exception.InvalidConceptTypeException;
 import io.mindmaps.util.Schema;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.exception.ConceptException;
@@ -214,6 +215,10 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      * @return The Type itself
      */
     public T superType(T type) {
+        if(Schema.MetaType.isMetaId(type.getId()) && !Schema.MetaType.isMetaId(getId())){
+            throw new InvalidConceptTypeException(ErrorMessage.CANNOT_SUBCLASS_META.getMessage(type.getId(), getId()));
+        }
+
         //Track any existing data if there is some
         Type currentSuperType = superType();
         if(currentSuperType != null){
