@@ -111,7 +111,7 @@ public class VisualiserControllerTest extends MindmapsEngineTestBase{
 
     @Test
     public void notExistingIDInDefaultGraph() {
-        get("/graph/concept/actor-123").then().statusCode(404).extract().response().andReturn();
+        get("/graph/concept/actor-123").then().statusCode(500).extract().response().andReturn();
     }
 
     @After

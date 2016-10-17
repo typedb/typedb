@@ -83,9 +83,11 @@ public class HALConcept {
 
         if (embedType && concept.type() != null &&
                 (typesInQuery.contains(concept.type().getId())
-                        || typesInQuery.contains(concept.type().superType().getId())))
+                        || (concept.type().superType() != null &&
+                        typesInQuery.contains(concept.type().superType().getId()))))
             embedType(halResource, concept);
 
+        //If a match query contains an assertion we always embed the role players
         if (concept.isRelation() && separationDegree == 0) {
             generateRelationEmbedded(halResource, concept.asRelation(), 1);
         }

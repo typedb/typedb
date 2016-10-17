@@ -22,10 +22,11 @@ import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
+import io.mindmaps.engine.MindmapsEngineServer;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.engine.visualiser.HALConcept;
+import io.mindmaps.exception.MindmapsEngineServerException;
 import io.mindmaps.factory.GraphFactory;
-import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.internal.pattern.property.RelationProperty;
 import io.mindmaps.util.ErrorMessage;
@@ -42,12 +43,14 @@ import spark.Request;
 import spark.Response;
 
 import javax.ws.rs.GET;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.mindmaps.graql.Graql.withGraph;
+import static spark.Spark.exception;
 import static spark.Spark.get;
 
 
@@ -73,6 +76,7 @@ public class VisualiserController {
         get(REST.WebPath.CONCEPT_BY_ID_ONTOLOGY_URI + REST.Request.ID_PARAMETER, this::getConceptByIdOntology);
 
         get(REST.WebPath.GRAPH_MATCH_QUERY_URI, this::matchQuery);
+
     }
 
     @GET
@@ -92,17 +96,11 @@ public class VisualiserController {
             MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName);
 
             Concept concept = graph.getConcept(req.params(REST.Request.ID_PARAMETER));
-            if (concept != null) {
-                LOG.trace("Building HAL resource for concept with id {}", concept.getId());
-                return new HALConcept(concept, separationDegree, false, new HashSet<String>()).render();
-            } else {
-                res.status(404);
-                return ErrorMessage.CONCEPT_ID_NOT_FOUND.getMessage(req.params(REST.Request.ID_PARAMETER));
-            }
+            LOG.trace("Building HAL resource for concept with id {}", concept.getId());
+            return new HALConcept(concept, separationDegree, false, new HashSet<>()).render();
+
         } catch (Exception e) {
-            LOG.error("Exception while building HAL representation - by ID", e);
-            res.status(500);
-            return e.getMessage();
+            throw new MindmapsEngineServerException(500, e);
         }
     }
 
@@ -123,23 +121,11 @@ public class VisualiserController {
             MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName);
 
             Concept concept = graph.getConcept(req.params(REST.Request.ID_PARAMETER));
-            if (concept != null) {
-                try {
-                    LOG.trace("Building HAL resource for concept with id {}", concept.getId());
-                    return new HALConcept(concept).render();
-                } catch (Exception e) {
-                    LOG.error("Exception while building HAL representation - by ID", e);
-                    res.status(500);
-                    return e.getMessage();
-                }
-            } else {
-                res.status(404);
-                return ErrorMessage.CONCEPT_ID_NOT_FOUND.getMessage(req.params(REST.Request.ID_PARAMETER));
-            }
+            LOG.trace("Building HAL resource for concept with id {}", concept.getId());
+            return new HALConcept(concept).render();
+
         } catch (Exception e) {
-            LOG.error("Exception while building HAL representation - by ID", e);
-            res.status(500);
-            return e.getMessage();
+            throw new MindmapsEngineServerException(500, e);
         }
     }
 
@@ -173,9 +159,7 @@ public class VisualiserController {
             LOG.debug("Done building resources.");
             return halArray.toString();
         } catch (Exception e) {
-            LOG.error("Exception while building HAL representation - Match", e);
-            res.status(500);
-            return e.getMessage();
+            throw new MindmapsEngineServerException(500, e);
         }
     }
 

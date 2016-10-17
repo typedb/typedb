@@ -20,6 +20,7 @@ package io.mindmaps.engine.controller;
 
 import io.mindmaps.engine.postprocessing.Cache;
 import io.mindmaps.engine.util.ConfigProperties;
+import io.mindmaps.exception.MindmapsEngineServerException;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.REST;
 import io.mindmaps.util.Schema;
@@ -107,9 +108,7 @@ public class CommitLogController {
 
             return "Graph [" + graphName + "] now has [" + numJobs + "] post processing jobs";
         } catch(Exception e){
-            LOG.error("Exception when submitting commit log", e);
-            res.status(500);
-            return e.getMessage();
+            throw new MindmapsEngineServerException(500,e);
         }
     }
     private long getJobCount(Set jobs){

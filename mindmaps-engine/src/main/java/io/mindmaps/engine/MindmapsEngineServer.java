@@ -20,6 +20,7 @@ package io.mindmaps.engine;
 
 import io.mindmaps.engine.controller.*;
 import io.mindmaps.engine.util.ConfigProperties;
+import io.mindmaps.exception.MindmapsEngineServerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Spark;
@@ -62,6 +63,13 @@ public class MindmapsEngineServer {
         new CommitLogController();
         new TransactionController();
         new StatusController();
+
+
+        //Register Exception Handler
+        exception(MindmapsEngineServerException.class, (e, request, response) -> {
+            response.status(((MindmapsEngineServerException) e).getStatus());
+            response.body("New exception: "+e.getMessage()+" - Please refer to mindmaps.log file for full stack trace.");
+        });
 
         // This method will block until all the controllers are ready to serve requests
         awaitInitialization();

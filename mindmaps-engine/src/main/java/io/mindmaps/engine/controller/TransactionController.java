@@ -18,9 +18,10 @@
 
 package io.mindmaps.engine.controller;
 
-import io.mindmaps.util.REST;
 import io.mindmaps.engine.loader.RESTLoader;
 import io.mindmaps.engine.util.ConfigProperties;
+import io.mindmaps.exception.MindmapsEngineServerException;
+import io.mindmaps.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiOperation;
@@ -35,7 +36,8 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import java.util.UUID;
 
-import static spark.Spark.*;
+import static spark.Spark.get;
+import static spark.Spark.post;
 
 
 @Path("/transaction")
@@ -72,8 +74,7 @@ public class TransactionController {
             res.status(201);
             return uuid.toString();
         } else {
-            res.status(405);
-            return "Error";
+            throw new MindmapsEngineServerException(500,"Error while trying to load a new transaction. Please refer to mindmaps.log for details.");
         }
     }
 
@@ -87,9 +88,7 @@ public class TransactionController {
         try {
             return loader.getStatus(UUID.fromString(req.params(REST.Request.UUID_PARAMETER)));
         } catch (Exception e) {
-            LOG.error("Exception",e);
-            res.status(400);
-            return e.getMessage();
+            throw new MindmapsEngineServerException(500,e);
         }
     }
 
@@ -101,9 +100,7 @@ public class TransactionController {
         try {
             return loader.getLoaderState();
         } catch (Exception e) {
-            LOG.error("Exception",e);
-            res.status(500);
-            return e.getMessage();
+            throw new MindmapsEngineServerException(500,e);
         }
     }
 }

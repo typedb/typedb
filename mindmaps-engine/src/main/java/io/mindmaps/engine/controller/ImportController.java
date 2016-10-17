@@ -18,15 +18,12 @@
 
 package io.mindmaps.engine.controller;
 
-import io.mindmaps.MindmapsGraph;
 import io.mindmaps.engine.loader.BlockingLoader;
 import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.engine.loader.Loader;
 import io.mindmaps.engine.postprocessing.BackgroundTasks;
 import io.mindmaps.engine.util.ConfigProperties;
-import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.factory.GraphFactory;
-import io.mindmaps.graql.Graql;
+import io.mindmaps.exception.MindmapsEngineServerException;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.util.ErrorMessage;
@@ -48,28 +45,13 @@ import javax.ws.rs.Produces;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static io.mindmaps.graql.Graql.parsePatterns;
-import static spark.Spark.before;
-import static spark.Spark.halt;
-import static spark.Spark.post;
+import static spark.Spark.*;
 
 
 @Api(value = "/import", description = "Endpoints to import data and ontologies from Graqlfiles to a graph.")
@@ -97,17 +79,16 @@ public class ImportController {
 
     public ImportController() {
 
-        before(REST.WebPath.IMPORT_DATA_URI,(req,res)->{
-            if(loadingInProgress.get())
+        before(REST.WebPath.IMPORT_DATA_URI, (req, res) -> {
+            if (loadingInProgress.get())
                 halt(423, "Another loading process is still running.\n");
         });
-        before(REST.WebPath.IMPORT_DISTRIBUTED_URI,(req,res)->{
-            if(loadingInProgress.get())
+        before(REST.WebPath.IMPORT_DISTRIBUTED_URI, (req, res) -> {
+            if (loadingInProgress.get())
                 halt(423, "Another loading process is still running.\n");
         });
 
         post(REST.WebPath.IMPORT_DATA_URI, this::importDataREST);
-        post(REST.WebPath.IMPORT_ONTOLOGY_URI, this::importOntologyREST);
         post(REST.WebPath.IMPORT_DISTRIBUTED_URI, this::importDataRESTDistributed);
 
         entitiesMap = new ConcurrentHashMap<>();
@@ -139,20 +120,12 @@ public class ImportController {
 
             Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(pathToFile, new DistributedLoader(graphName, hosts)));
 
-        } catch (JSONException j) {
-            LOG.error("Malformed request.", j);
-            res.status(400);
+        } catch (JSONException | FileNotFoundException j) {
             loadingInProgress.set(false);
-            return j.getMessage();
-        } catch (FileNotFoundException e) {
-            LOG.error(e.getMessage());
-            loadingInProgress.set(false);
-            res.status(400);
-            return e.getMessage();
+            throw new MindmapsEngineServerException(400, j);
         } catch (Exception e) {
-            LOG.error("Exception", e);
-            res.status(500);
-            return e.getMessage();
+            loadingInProgress.set(false);
+            throw new MindmapsEngineServerException(500, e);
         }
 
         return "Distributed loading successfully STARTED. \n";
@@ -180,56 +153,18 @@ public class ImportController {
 
             Executors.newSingleThreadExecutor().submit(() -> importDataFromFile(pathToFile, new BlockingLoader(graphName)));
 
-        } catch (JSONException j) {
-            LOG.error("Malformed request.", j);
+        } catch (JSONException | FileNotFoundException j) {
             loadingInProgress.set(false);
-            res.status(400);
-            return j.getMessage();
-        } catch (FileNotFoundException e) {
-            LOG.error(e.getMessage());
-            loadingInProgress.set(false);
-            res.status(400);
-            return e.getMessage();
+            throw new MindmapsEngineServerException(400, j);
         } catch (Exception e) {
-            LOG.error("Exception", e);
-            res.status(500);
-            return e.getMessage();
+            loadingInProgress.set(false);
+            throw new MindmapsEngineServerException(500, e);
         }
 
         return "Total patterns found [" + totalPatterns + "]. \n" +
                 " -[" + independentPatterns + "] entities \n" +
                 " -[" + (totalPatterns - independentPatterns) + "] relations/resources \n" +
                 "Loading successfully STARTED. \n";
-    }
-
-
-    @POST
-    @Path("/ontology")
-    @ApiOperation(
-            value = "Import ontology from a Graql file. It does not perform any batching.",
-            notes = "This is a separate import from data, since a batch loading is not performed in this case. The ontology must be loaded in one single transaction. ")
-    @ApiImplicitParam(name = "path", value = "File path on the server.", required = true, dataType = "string", paramType = "body")
-
-    private String importOntologyREST(Request req, Response res) {
-        try {
-            JSONObject bodyObject = new JSONObject(req.body());
-            String pathToFile = bodyObject.get(REST.Request.PATH_FIELD).toString();
-            String graphName;
-            if (bodyObject.has(REST.Request.GRAPH_NAME_PARAM))
-                graphName = bodyObject.get(REST.Request.GRAPH_NAME_PARAM).toString();
-            else
-                graphName = defaultGraphName;
-            importOntologyFromFile(pathToFile, graphName);
-        } catch (JSONException j) {
-            LOG.error("Malformed request.", j);
-            res.status(400);
-            return j.getMessage();
-        } catch (Exception e) {
-            LOG.error("Exception while loading ontology.", e);
-            res.status(500);
-            return e.getMessage();
-        }
-        return "Ontology successfully loaded. \n";
     }
 
     private void initialiseLoading(String pathToFile) throws FileNotFoundException {
@@ -240,7 +175,7 @@ public class ImportController {
                 .filter(pattern -> isIndependentEntity(pattern.admin().asVar()))
                 .count();
 
-        printingState=checkLoadingExecutor.scheduleAtFixedRate(this::checkLoadingStatus, 10, 10, TimeUnit.SECONDS);
+        printingState = checkLoadingExecutor.scheduleAtFixedRate(this::checkLoadingStatus, 10, 10, TimeUnit.SECONDS);
 
         processedEntities.set(0);
         processedRelations.set(0);
@@ -312,26 +247,10 @@ public class ImportController {
             }
         }
 
-
         if (ready) {
             processedRelations.incrementAndGet();
             loader.addToQueue(var);
         }
-
-    }
-
-    private void importOntologyFromFile(String ontologyFile, String graphName) throws IOException, MindmapsValidationException {
-
-        MindmapsGraph graph = GraphFactory.getInstance().getGraphBatchLoading(graphName);
-
-        LOG.info("Loading new ontology .. ");
-
-        List<String> lines = Files.readAllLines(Paths.get(ontologyFile), StandardCharsets.UTF_8);
-        String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-        Graql.parse(query).withGraph(graph).execute();
-        graph.commit();
-
-        LOG.info("Ontology loaded. ");
 
     }
 }

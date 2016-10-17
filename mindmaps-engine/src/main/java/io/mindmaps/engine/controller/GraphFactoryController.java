@@ -19,9 +19,10 @@
 package io.mindmaps.engine.controller;
 
 
+import io.mindmaps.engine.util.ConfigProperties;
+import io.mindmaps.exception.MindmapsEngineServerException;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.REST;
-import io.mindmaps.engine.util.ConfigProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +30,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-import static spark.Spark.before;
 import static spark.Spark.get;
 
 
@@ -64,9 +64,7 @@ public class GraphFactoryController {
                 }
                 return new String(Files.readAllBytes(Paths.get(prop.getPath(graphConfig))));
             } catch (IOException e) {
-                LOG.error(ErrorMessage.NO_CONFIG_FILE.getMessage(prop.getPath(graphConfig)));
-                res.status(500);
-                return ErrorMessage.NO_CONFIG_FILE.getMessage(prop.getPath(graphConfig));
+                throw new MindmapsEngineServerException(500, ErrorMessage.NO_CONFIG_FILE.getMessage(prop.getPath(graphConfig)));
             }
         });
 
