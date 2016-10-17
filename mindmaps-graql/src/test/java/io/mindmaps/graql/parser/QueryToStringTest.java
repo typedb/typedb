@@ -157,6 +157,12 @@ public class QueryToStringTest {
         assertEquals("compute degrees in movie, person;", query.toString());
     }
 
+    @Test
+    public void testQueryToStringWithReservedKeywords() {
+        MatchQuery query = qb.match(var("x").isa("isa"));
+        assertEquals("match $x isa \"isa\";", query.toString());
+    }
+
     @Test(expected=UnsupportedOperationException.class)
     public void testToStringUnsupported() {
         //noinspection ResultOfMethodCallIgnored
