@@ -260,8 +260,8 @@ public class TypeTest {
         Type type = mindmapsGraph.putEntityType("A Concept Type");
         RuleType ruleType = mindmapsGraph.putRuleType("A Rule Type");
         assertEquals(0, type.getRulesOfHypothesis().size());
-        Rule rule1 = mindmapsGraph.putRule("A Rule 1", "lhs", "rhs", ruleType).addHypothesis(type);
-        Rule rule2 = mindmapsGraph.putRule("A Rule 2", "lhs", "rhs", ruleType).addHypothesis(type);
+        Rule rule1 = mindmapsGraph.addRule("lhs", "rhs", ruleType).addHypothesis(type);
+        Rule rule2 = mindmapsGraph.addRule("lhs", "rhs", ruleType).addHypothesis(type);
         assertEquals(2, type.getRulesOfHypothesis().size());
         assertTrue(type.getRulesOfHypothesis().contains(rule1));
         assertTrue(type.getRulesOfHypothesis().contains(rule2));
@@ -272,8 +272,8 @@ public class TypeTest {
         Type type = mindmapsGraph.putEntityType("A Concept Type");
         RuleType ruleType = mindmapsGraph.putRuleType("A Rule Type");
         assertEquals(0, type.getRulesOfConclusion().size());
-        Rule rule1 = mindmapsGraph.putRule("A Rule 1", "lhs", "rhs", ruleType).addConclusion(type);
-        Rule rule2 = mindmapsGraph.putRule("A Rule 2", "lhs", "rhs", ruleType).addConclusion(type);
+        Rule rule1 = mindmapsGraph.addRule("lhs", "rhs", ruleType).addConclusion(type);
+        Rule rule2 = mindmapsGraph.addRule("lhs", "rhs", ruleType).addConclusion(type);
         assertEquals(2, type.getRulesOfConclusion().size());
         assertTrue(type.getRulesOfConclusion().contains(rule1));
         assertTrue(type.getRulesOfConclusion().contains(rule2));

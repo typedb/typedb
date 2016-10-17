@@ -48,7 +48,7 @@ public class RuleTest {
     @Test
     public void testType() {
         RuleType conceptType = mindmapsGraph.putRuleType("A Thing");
-        Rule rule = mindmapsGraph.putRule("A rule", "lhs", "rhs", conceptType);
+        Rule rule = mindmapsGraph.addRule("lhs", "rhs", conceptType);
         assertNotNull(rule.type());
         assertEquals(conceptType, rule.type());
     }
@@ -56,7 +56,7 @@ public class RuleTest {
     @Test
     public void testRuleValues() throws Exception {
         RuleType conceptType = mindmapsGraph.putRuleType("A Thing");
-        Rule rule = mindmapsGraph.putRule("A rule", "lhs", "rhs", conceptType);
+        Rule rule = mindmapsGraph.addRule("lhs", "rhs", conceptType);
         assertEquals("lhs", rule.getLHS());
         assertEquals("rhs", rule.getRHS());
     }
@@ -64,7 +64,7 @@ public class RuleTest {
     @Test
     public void testExpectation() throws Exception {
         RuleType conceptType = mindmapsGraph.putRuleType("A Thing");
-        Rule rule = mindmapsGraph.putRule("A rule", "lhs", "rhs", conceptType);
+        Rule rule = mindmapsGraph.addRule("lhs", "rhs", conceptType);
         assertFalse(rule.getExpectation());
         rule.setExpectation(true);
         assertTrue(rule.getExpectation());
@@ -73,7 +73,7 @@ public class RuleTest {
     @Test
     public void testMaterialise() throws Exception {
         RuleType conceptType = mindmapsGraph.putRuleType("A Thing");
-        Rule rule = mindmapsGraph.putRule("A rule", "lhs", "rhs", conceptType);
+        Rule rule = mindmapsGraph.addRule("lhs", "rhs", conceptType);
         assertFalse(rule.isMaterialise());
         rule.setMaterialise(true);
         assertTrue(rule.isMaterialise());
@@ -82,7 +82,7 @@ public class RuleTest {
     @Test
     public void testAddHypothesis() throws Exception {
         RuleType conceptType = mindmapsGraph.putRuleType("A Thing");
-        Rule rule = mindmapsGraph.putRule("A Rule", "lhs", "rhs", conceptType);
+        Rule rule = mindmapsGraph.addRule("lhs", "rhs", conceptType);
         Vertex ruleVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(((RuleImpl) rule).getBaseIdentifier()).next();
         Type type1 = mindmapsGraph.putEntityType("A Concept Type 1");
         Type type2 = mindmapsGraph.putEntityType("A Concept Type 2");
@@ -94,7 +94,7 @@ public class RuleTest {
     @Test
     public void testAddConclusion() throws Exception {
         RuleType conceptType = mindmapsGraph.putRuleType("A Thing");
-        Rule rule = mindmapsGraph.putRule("A Rule", "lhs", "rhs", conceptType);
+        Rule rule = mindmapsGraph.addRule("lhs", "rhs", conceptType);
         Vertex ruleVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(((RuleImpl) rule).getBaseIdentifier()).next();
         Type type1 = mindmapsGraph.putEntityType("A Concept Type 1");
         Type type2 = mindmapsGraph.putEntityType("A Concept Type 2");
@@ -106,7 +106,7 @@ public class RuleTest {
     @Test
     public void testHypothesisTypes(){
         RuleType ruleType = mindmapsGraph.putRuleType("A Rule Type");
-        Rule rule = mindmapsGraph.putRule("A Rule", "lhs", "rhs", ruleType);
+        Rule rule = mindmapsGraph.addRule("lhs", "rhs", ruleType);
         assertEquals(0, rule.getHypothesisTypes().size());
 
         Type ct1 = mindmapsGraph.putEntityType("A Concept Type 1");
@@ -120,7 +120,7 @@ public class RuleTest {
     @Test
     public void testConclusionTypes(){
         RuleType ruleType = mindmapsGraph.putRuleType("A Rule Type");
-        Rule rule = mindmapsGraph.putRule("A Rule", "lhs", "rhs", ruleType);
+        Rule rule = mindmapsGraph.addRule("lhs", "rhs", ruleType);
         assertEquals(0, rule.getConclusionTypes().size());
 
         Type ct1 = mindmapsGraph.putEntityType("A Concept Type 1");

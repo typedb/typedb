@@ -303,14 +303,6 @@ public class MindmapsGraphLowLevelTest {
     }
 
     @Test
-    public void testGetRule(){
-        assertNull(mindmapsGraph.getRule("Bob"));
-        RuleType type = mindmapsGraph.putRuleType("Type");
-        RuleImpl c2 = (RuleImpl) mindmapsGraph.putRule("Bob", "lhs", "rhs", type);
-        assertEquals(c2, mindmapsGraph.getRule("Bob"));
-    }
-
-    @Test
     public void getSuperConceptType(){
         assertEquals(mindmapsGraph.getMetaType().getId(), Schema.MetaType.TYPE.getId());
     }

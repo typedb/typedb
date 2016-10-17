@@ -326,7 +326,7 @@ public class ConceptTest {
     @Test
     public void  testAsRule() {
         RuleType type = mindmapsGraph.putRuleType("a type");
-        Concept concept = mindmapsGraph.putRule("Test", "lhs", "rhs", type);
+        Concept concept = mindmapsGraph.addRule("lhs", "rhs", type);
         assertTrue(concept.isRule());
         io.mindmaps.concept.Rule concept2 = concept.asRule();
         assertEquals(concept2, concept);
@@ -343,7 +343,7 @@ public class ConceptTest {
     @Test
     public void  testAsInstance() {
         RuleType type = mindmapsGraph.putRuleType("a type");
-        Concept concept = mindmapsGraph.putRule("Test", "lhs", "rhs", type);
+        Concept concept = mindmapsGraph.addRule("lhs", "rhs", type);
         assertTrue(concept.isInstance());
         Instance concept2 = concept.asInstance();
         assertEquals(concept2, concept);
