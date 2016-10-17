@@ -65,7 +65,7 @@ public class EntityTest {
     public void testDeleteScope() throws ConceptException {
         EntityType entityType = mindmapsGraph.putEntityType("entity type");
         RelationType relationType = mindmapsGraph.putRelationType("RelationType");
-        Instance scope = mindmapsGraph.putEntity("scope", entityType);
+        Instance scope = mindmapsGraph.addEntity(entityType);
         Relation relation = mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType);
         relation.scope(scope);
         scope.delete();
@@ -76,7 +76,7 @@ public class EntityTest {
     public void testGetCastings(){
         RelationType relationType = mindmapsGraph.putRelationType("rel type");
         EntityType entityType = mindmapsGraph.putEntityType("entity type");
-        InstanceImpl rolePlayer1 = (InstanceImpl) mindmapsGraph.putEntity("role-player1", entityType);
+        InstanceImpl rolePlayer1 = (InstanceImpl) mindmapsGraph.addEntity(entityType);
         assertEquals(0, rolePlayer1.getIncomingNeighbours(Schema.EdgeLabel.CASTING).size());
 
         RoleTypeImpl role = (RoleTypeImpl) mindmapsGraph.putRoleType("Role");
@@ -102,9 +102,9 @@ public class EntityTest {
         RoleType role1 = mindmapsGraph.putRoleType("role1");
         RoleType role2 = mindmapsGraph.putRoleType("role2");
         RoleType role3 = mindmapsGraph.putRoleType("role3");
-        Instance rolePlayer1 = mindmapsGraph.putEntity("role-player1", type);
-        Instance rolePlayer2 = mindmapsGraph.putEntity("role-player2", type);
-        Instance rolePlayer3 = mindmapsGraph.putEntity("role-player3", type);
+        Instance rolePlayer1 = mindmapsGraph.addEntity(type);
+        Instance rolePlayer2 = mindmapsGraph.addEntity(type);
+        Instance rolePlayer3 = mindmapsGraph.addEntity(type);
 
         relationType.hasRole(role1);
         relationType.hasRole(role2);
@@ -131,7 +131,7 @@ public class EntityTest {
         RoleType role1 = mindmapsGraph.putRoleType("role1");
         RoleType role2 = mindmapsGraph.putRoleType("role2");
         RoleType role3 = mindmapsGraph.putRoleType("role3");
-        Instance rolePlayer1 = mindmapsGraph.putEntity("role-player1", type);
+        Instance rolePlayer1 = mindmapsGraph.addEntity(type);
 
         relationType.hasRole(role1);
         relationType.hasRole(role2);
@@ -162,11 +162,11 @@ public class EntityTest {
         RoleType musical = mindmapsGraph.putRoleType("Musical");
         RoleType actor = mindmapsGraph.putRoleType("Actor");
         RoleType singer = mindmapsGraph.putRoleType("Singer");
-        Instance pacino = mindmapsGraph.putEntity("Pacino", entityType);
-        Instance godfather = mindmapsGraph.putEntity("Godfather", entityType);
-        Instance godfather2 = mindmapsGraph.putEntity("Godfather 2", entityType);
-        Instance godfather3 = mindmapsGraph.putEntity("Godfather 3", entityType);
-        Instance godfather4 = mindmapsGraph.putEntity("Godfather 4", entityType);
+        Instance pacino = mindmapsGraph.addEntity(entityType);
+        Instance godfather = mindmapsGraph.addEntity(entityType);
+        Instance godfather2 = mindmapsGraph.addEntity(entityType);
+        Instance godfather3 = mindmapsGraph.addEntity(entityType);
+        Instance godfather4 = mindmapsGraph.addEntity(entityType);
 
         castActing.hasRole(actor).hasRole(feature);
         castSinging.hasRole(singer).hasRole(musical);
@@ -212,7 +212,7 @@ public class EntityTest {
         RoleType resourceRole = mindmapsGraph.putRoleType("Resource Role");
         RoleType actorRole = mindmapsGraph.putRoleType("Actor");
 
-        Entity pacino = mindmapsGraph.putEntity("pacino", randomThing);
+        Entity pacino = mindmapsGraph.addEntity(randomThing);
         Resource birthplace = mindmapsGraph.putResource("a place", resourceType);
         Resource age = mindmapsGraph.putResource("100", resourceType);
         Resource family = mindmapsGraph.putResource("people", resourceType);

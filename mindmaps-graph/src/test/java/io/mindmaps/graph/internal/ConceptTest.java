@@ -168,7 +168,7 @@ public class ConceptTest {
     @Test
     public void testToString() {
         EntityType concept = mindmapsGraph.putEntityType("a");
-        Instance concept2 = mindmapsGraph.putEntity("concept2", concept);
+        Instance concept2 = mindmapsGraph.addEntity(concept);
 
         assertFalse(concept2.toString().contains("ConceptType"));
         assertFalse(concept2.toString().contains("Subject Identifier"));
@@ -232,12 +232,12 @@ public class ConceptTest {
     @Test
     public void testGetEdgesIncomingOfType(){
         EntityType entityType = mindmapsGraph.putEntityType("entity type");
-        InstanceImpl conceptInstance1 = (InstanceImpl) mindmapsGraph.putEntity("ci1", entityType);
-        InstanceImpl conceptInstance2 = (InstanceImpl) mindmapsGraph.putEntity("ci2", entityType);
-        InstanceImpl conceptInstance3 = (InstanceImpl) mindmapsGraph.putEntity("ci3", entityType);
-        InstanceImpl conceptInstance4 = (InstanceImpl) mindmapsGraph.putEntity("ci4", entityType);
-        InstanceImpl conceptInstance5 = (InstanceImpl) mindmapsGraph.putEntity("ci5", entityType);
-        InstanceImpl conceptInstance6 = (InstanceImpl) mindmapsGraph.putEntity("ci6", entityType);
+        InstanceImpl conceptInstance1 = (InstanceImpl) mindmapsGraph.addEntity(entityType);
+        InstanceImpl conceptInstance2 = (InstanceImpl) mindmapsGraph.addEntity(entityType);
+        InstanceImpl conceptInstance3 = (InstanceImpl) mindmapsGraph.addEntity(entityType);
+        InstanceImpl conceptInstance4 = (InstanceImpl) mindmapsGraph.addEntity(entityType);
+        InstanceImpl conceptInstance5 = (InstanceImpl) mindmapsGraph.addEntity(entityType);
+        InstanceImpl conceptInstance6 = (InstanceImpl) mindmapsGraph.addEntity(entityType);
         Vertex conceptInstance1_Vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(conceptInstance1.getBaseIdentifier()).next();
         Vertex conceptInstance2_Vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(conceptInstance2.getBaseIdentifier()).next();
         Vertex conceptInstance3_Vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(conceptInstance3.getBaseIdentifier()).next();
@@ -299,7 +299,7 @@ public class ConceptTest {
     @Test
     public void  testAsEntity() {
         EntityType entityType = mindmapsGraph.putEntityType("entity type");
-        Concept concept = mindmapsGraph.putEntity("Test", entityType);
+        Concept concept = mindmapsGraph.addEntity(entityType);
         assertTrue(concept.isEntity());
         Instance concept2 = concept.asEntity();
         assertEquals(concept2, concept);
@@ -352,7 +352,7 @@ public class ConceptTest {
     @Test
     public void incorrectConversion(){
         EntityType thingType = mindmapsGraph.putEntityType("thing type");
-        Entity thing = mindmapsGraph.putEntity("thing", thingType);
+        Entity thing = mindmapsGraph.addEntity(thingType);
 
         expectedException.expect(RuntimeException.class);
         expectedException.expectMessage(allOf(

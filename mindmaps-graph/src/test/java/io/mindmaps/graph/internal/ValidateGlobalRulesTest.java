@@ -73,8 +73,8 @@ public class ValidateGlobalRulesTest {
         RelationType hunts = mindmapsGraph.putRelationType("hunts");
         RoleTypeImpl witcher = (RoleTypeImpl) mindmapsGraph.putRoleType("witcher");
         RoleTypeImpl monster = (RoleTypeImpl) mindmapsGraph.putRoleType("monster");
-        Instance geralt = mindmapsGraph.putEntity("geralt", hunter);
-        InstanceImpl werewolf = (InstanceImpl) mindmapsGraph.putEntity("werewolf", wolf);
+        Instance geralt = mindmapsGraph.addEntity(hunter);
+        InstanceImpl werewolf = (InstanceImpl) mindmapsGraph.addEntity(wolf);
 
         RelationImpl assertion = (RelationImpl) mindmapsGraph.putRelation(UUID.randomUUID().toString(), hunts).
                 putRolePlayer(witcher, geralt).putRolePlayer(monster, werewolf);
@@ -173,9 +173,9 @@ public class ValidateGlobalRulesTest {
         RoleType hunter = mindmapsGraph.putRoleType("hunter");
         RoleType monster = mindmapsGraph.putRoleType("monster");
         RoleType creature = mindmapsGraph.putRoleType("creature");
-        Instance cathulu = mindmapsGraph.putEntity("cathulu", fakeType);
-        Instance werewolf = mindmapsGraph.putEntity("werewolf", fakeType);
-        Instance cartman = mindmapsGraph.putEntity("cartman", fakeType);
+        Instance cathulu = mindmapsGraph.addEntity(fakeType);
+        Instance werewolf = mindmapsGraph.addEntity(fakeType);
+        Instance cartman = mindmapsGraph.addEntity(fakeType);
         RelationType kills = mindmapsGraph.putRelationType("kills");
         RelationType naps = mindmapsGraph.putRelationType("naps").hasRole(napper);
 
@@ -217,8 +217,8 @@ public class ValidateGlobalRulesTest {
         RelationType relationType = mindmapsGraph.putRelationType("relationType").setAbstract(true);
         RelationType hasCast = mindmapsGraph.putRelationType("has cast").superType(relationType).hasRole(r1).hasRole(r2);
 
-        Entity e1 = mindmapsGraph.putEntity("e1", entityType);
-        Entity e2 = mindmapsGraph.putEntity("e2", entityType);
+        Entity e1 = mindmapsGraph.addEntity(entityType);
+        Entity e2 = mindmapsGraph.addEntity(entityType);
 
         mindmapsGraph.putRelation(UUID.randomUUID().toString(), hasCast).putRolePlayer(r1, e1).putRolePlayer(r2, e2);
 

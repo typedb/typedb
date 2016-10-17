@@ -73,8 +73,8 @@ public class OntologyMutationTest {
         woman = mindmapsGraph.putEntityType("Woman").superType(person);
         car = mindmapsGraph.putEntityType("Car");
 
-        alice = mindmapsGraph.putEntity("Alice", woman);
-        bob = mindmapsGraph.putEntity("Bob", man);
+        alice = mindmapsGraph.addEntity(woman);
+        bob = mindmapsGraph.addEntity(man);
         relation = mindmapsGraph.addRelation(marriage).putRolePlayer(wife, alice).putRolePlayer(husband, bob);
         mindmapsGraph.commit();
     }
