@@ -148,7 +148,7 @@ public enum ErrorMessage {
 
     //--------------------------------------------- Reasoner Errors -----------------------------------------------
     NON_HORN_RULE("The specified rule [%s] is not a Horn rule"),
-    PARENT_MISSING("Attempted operation on atom %s that does not have a parent"),
+    PARENT_MISSING("Attempted operation on atom [%s] that does not have a parent"),
     PATTERN_NOT_VAR("The pattern [%s] is not a var"),
     MULTIPLE_RESOURCES("Multiple resource types found during data extraction in atom [%s]"),
     MULTIPLE_VALUE_PREDICATES("Multiple value predicates found during data extraction in atom [%s]"),
@@ -156,9 +156,9 @@ public enum ErrorMessage {
     NO_TYPE_CONSTRAINTS("Attempted to return constraints from non-relation atom"),
     LOOP_CLAUSE("Unable to find suitable starting atom (loop?)"),
     NON_ATOMIC_QUERY("Addressed query is not atomic"),
-    MULTI_VALUE_VAR("Multi value variable found [$s] on query construction"),
-    NO_ATOMS_SELECTED("No atoms were selected from query [$s]"),
-    MATERIALIZATION_ERROR("Not enough information available to materialize [$s]"),
+    MULTI_VALUE_VAR("Multi value variable found [%s] on query construction"),
+    NO_ATOMS_SELECTED("No atoms were selected from query [%s]"),
+    MATERIALIZATION_ERROR("Not enough information available to materialize [%s]"),
     ANSWER_ERROR("Answer method called on an instance with no answers"),
     RULE_CREATION_ARITY_ERROR("Arity mismatch when creating rule"),
 
