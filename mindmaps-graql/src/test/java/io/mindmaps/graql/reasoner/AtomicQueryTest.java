@@ -24,6 +24,11 @@ import io.mindmaps.graql.AskQuery;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.Var;
+import io.mindmaps.graql.admin.Conjunction;
+import io.mindmaps.graql.admin.PatternAdmin;
+import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.pattern.Patterns;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
@@ -43,17 +48,15 @@ public class AtomicQueryTest {
 
     @BeforeClass
     public static void setUpClass() {
-
         graph = SNBGraph.getGraph();
         qb = Graql.withGraph(graph);
     }
 
     @Test
     public void testErrorNonAtomicQuery() {
-        exception.expect(IllegalStateException.class);
-        exception.expectMessage(ErrorMessage.NON_ATOMIC_QUERY.getMessage());
-
         String queryString = "match $x isa person;$y isa product;($x, $y) isa recommendation;($y, $t) isa typing;";
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage(ErrorMessage.NON_ATOMIC_QUERY.getMessage(queryString));
         AtomicQuery atomicQuery = new AtomicQuery(queryString, graph);
     }
 
@@ -61,39 +64,46 @@ public class AtomicQueryTest {
     public void testCopyConstructor(){
         String queryString = "match ($x, $y) isa recommendation;";
         AtomicQuery atomicQuery = new AtomicQuery(queryString, graph);
-
         assert(atomicQuery.equals(new AtomicQuery(atomicQuery)));
     }
 
     @Test
     public void testErrorNoParent(){
-        exception.expect(IllegalArgumentException.class);
-        exception.expectMessage(ErrorMessage.PARENT_MISSING.getMessage());
-
-        Atomic atom = AtomicFactory.create(qb.<MatchQuery>parse("match $x isa person").admin().getPattern());
+        exception.expect(IllegalStateException.class);
+        VarAdmin var = Patterns.var("x isa person;");
+        exception.expectMessage(ErrorMessage.PARENT_MISSING.getMessage(var.toString()));
+        Atomic atom = AtomicFactory.create(var);
         AtomicQuery query = new AtomicQuery(atom);
+    }
+
+    @Test
+    public void testPatternNotVar(){
+        exception.expect(IllegalArgumentException.class);
+        Conjunction<PatternAdmin> pattern = qb.<MatchQuery>parse("match $x isa person;").admin().getPattern();
+        exception.expectMessage(ErrorMessage.PATTERN_NOT_VAR.getMessage(pattern.toString()));
+        Atomic atom = AtomicFactory.create(pattern);
     }
 
     @Test
     public void testErrorOnMaterialize(){
         exception.expect(IllegalStateException.class);
-        exception.expectMessage(ErrorMessage.MATERIALIZATION_ERROR.getMessage());
-
         String queryString = "match ($x, $y) isa recommendation;";
+        Substitution sub = new Substitution("x", graph.getConcept("Bob"));
         AtomicQuery atomicQuery = new AtomicQuery(queryString, graph);
+        AtomicQuery atomicQuery2 = new AtomicQuery(atomicQuery);
+        atomicQuery2.addAtomConstraints(Sets.newHashSet(sub));
+        exception.expectMessage(ErrorMessage.MATERIALIZATION_ERROR.getMessage(atomicQuery2.toString()));
         atomicQuery.materialize(Sets.newHashSet(new Substitution("x", graph.getConcept("Bob"))));
     }
 
     @Test
     public void testMaterialize(){
-
         assert(!qb.<AskQuery>parse("match ($x, $y) isa recommendation;$x id 'Bob';$y id 'Colour of Magic'; ask;").execute());
 
         String queryString = "match ($x, $y) isa recommendation;";
         AtomicQuery atomicQuery = new AtomicQuery(queryString, graph);
         atomicQuery.materialize(Sets.newHashSet(new Substitution("x", graph.getConcept("Bob"))
                                                 , new Substitution("y", graph.getConcept("Colour of Magic"))));
-
         assert(qb.<AskQuery>parse("match ($x, $y) isa recommendation;$x id 'Bob';$y id 'Colour of Magic'; ask;").execute());
     }
 
