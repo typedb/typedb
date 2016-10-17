@@ -44,12 +44,12 @@ public class Main {
         System.out.println("\nSyntax: ./migration.sh owl -file <owl filename> [-graph <graph name>] [-engine <Mindmaps engine URL>]");
         System.exit(-1);
     }
-        
+
     public static void main(String[] argv) {
         String owlFilename = null;
         String engineUrl = null;
         String graphName = null;
-        
+
         for (int i = 0; i < argv.length; i++) {
             if ("-file".equals(argv[i]))
                 owlFilename = argv[++i];
@@ -61,8 +61,8 @@ public class Main {
                 continue;
             else
                 die("Unknown option " + argv[i]);
-        }       
-        
+        }
+
         if (owlFilename == null)
             die("Please specify owl file with the -owl option.");
         File owlfile = new File(owlFilename);
@@ -70,12 +70,12 @@ public class Main {
             die("Cannot find file: " + owlFilename);
         if (graphName == null)
             graphName = owlfile.getName().replace(".", "_");
-        
-        System.out.println("Migrating " + owlFilename + " using MM Engine " + 
+
+        System.out.println("Migrating " + owlFilename + " using MM Engine " +
                             (engineUrl == null ? "local" : engineUrl ) + " into graph " + graphName);
-        
+
         OWLMigrator migrator = new OWLMigrator();
-        
+
         try {
             MindmapsGraph graph = engineUrl == null ? Mindmaps.factory(Mindmaps.DEFAULT_URI, graphName).getGraph()
                                                     : Mindmaps.factory(engineUrl, graphName).getGraph();
@@ -92,21 +92,5 @@ public class Main {
             if (migrator.graph() != null)
                 migrator.graph().close();
         }
-    }
-
-    // stub to test and throw away stuff
-    static void test() {
-        try {
-            MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, "onco").getGraph();
-            graph.putRelationType("authorship");
-            RelationType reltype = (RelationType)graph.getType("relation-type").instances().stream().findFirst().get();
-            reltype.hasRoles().forEach(System.out::println);
-            reltype.hasRole(graph.putRoleType("authro1")).hasRole(graph.putRoleType("author2"));
-            graph.commit();
-        }
-        catch (Throwable t) {
-            t.printStackTrace(System.err);
-        }
-        System.exit(0);
     }
 }
