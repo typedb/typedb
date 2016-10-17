@@ -180,7 +180,7 @@ public class GraqlShell {
             try {
                 sendBatchRequest(uriString, cmd.getOptionValue("b"));
             } catch (IOException e) {
-                System.err.println(e.toString());
+                throw new RuntimeException(e);
             }
             return;
         }
@@ -233,9 +233,17 @@ public class GraqlShell {
             os.write(out);
         }
 
-        try (InputStream is = http.getInputStream()) {
-            String response = CharStreams.toString(new InputStreamReader(is, Charsets.UTF_8));
-            System.out.println(response);
+        int statusCode = http.getResponseCode();
+        if (statusCode >= 200 && statusCode < 400) {
+            try (InputStream is = http.getInputStream()) {
+                String response = CharStreams.toString(new InputStreamReader(is, Charsets.UTF_8));
+                System.out.println(response);
+            }
+        } else {
+            try (InputStream is = http.getErrorStream()) {
+                String response = CharStreams.toString(new InputStreamReader(is, Charsets.UTF_8));
+                System.out.println(response);
+            }
         }
     }
 
