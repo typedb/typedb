@@ -269,7 +269,7 @@ public class AdmissionsGraph {
         try {
             List<String> lines = Files.readAllLines(Paths.get("src/test/resources/graql/admission-rules.gql"), StandardCharsets.UTF_8);
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
-            Graql.withGraph(mindmaps).parseInsert(query).execute();
+            Graql.withGraph(mindmaps).parse(query).execute();
         }
         catch (IOException e){
             e.printStackTrace();

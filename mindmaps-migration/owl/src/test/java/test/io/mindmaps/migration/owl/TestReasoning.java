@@ -89,7 +89,7 @@ public class TestReasoning extends TestOwlMindMapsBase {
         String richardId = "richard_henry_steward_1897";
         String hasGreatUncleId = "op-hasGreatUncle";
         String explicitQuery = "match $x isa tPerson;{$x id 'erichard_john_bright_1962';} or {$x id 'erobert_david_bright_1965';};";
-        assertEquals(inferRelationMM(hasGreatUncleId, richardId), Sets.newHashSet(qb.parseMatch(explicitQuery)));
+        assertEquals(inferRelationMM(hasGreatUncleId, richardId), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
 
         String queryString2 = "match (owl-subject-op-hasGreatUncle: $x, owl-object-op-hasGreatUncle: $y) isa op-hasGreatUncle;$x id 'eethel_archer_1912'; select $y;";
         String explicitQuery2 = "match $y isa tPerson;"+
@@ -98,7 +98,7 @@ public class TestReasoning extends TestOwlMindMapsBase {
                                 "{$y id 'ewalter_whitfield_1863';} or" +
                                 "{$y id 'ewilliam_whitfield_1852';} or" +
                                 "{$y id 'egeorge_whitfield_1865';};";
-        assertEquals(mmReasoner.resolve(new Query(queryString2, graph)), Sets.newHashSet(qb.parseMatch(explicitQuery2)));
+        assertEquals(mmReasoner.resolve(new Query(queryString2, graph)), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery2)));
 
         String queryString3 = "match (owl-subject-op-hasGreatAunt: $x, owl-object-op-hasGreatAunt: $y) isa op-hasGreatAunt;" +
                                 "$x id 'emary_kate_green_1865'; select $y;";
@@ -107,7 +107,7 @@ public class TestReasoning extends TestOwlMindMapsBase {
                 "{$y id 'esarah_ingelby_1821';} or {$y id 'eann_pickard_1809';} or" +
                 "{$y id 'esusanna_pickard_1803';} or {$y id 'emary_green_1803';} or" +
                 "{$y id 'erebecca_green_1800';} or {$y id 'eann_green_1806';};";
-        assertEquals(mmReasoner.resolve(new Query(queryString3, graph)), Sets.newHashSet(qb.parseMatch(explicitQuery3)));
+        assertEquals(mmReasoner.resolve(new Query(queryString3, graph)), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery3)));
 
         String eleanorId = "eleanor_pringle_1741";
         String elisabethId = "elizabeth_clamper_1760";

@@ -147,7 +147,7 @@ public class JsonMigratorMainTest {
     private void load(File ontology) {
         try {
             Graql.withGraph(graph)
-                    .parseInsert(Files.readLines(ontology, StandardCharsets.UTF_8).stream().collect(joining("\n")))
+                    .parse(Files.readLines(ontology, StandardCharsets.UTF_8).stream().collect(joining("\n")))
                     .execute();
 
             graph.commit();

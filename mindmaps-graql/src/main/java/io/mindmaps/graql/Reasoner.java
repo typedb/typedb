@@ -24,7 +24,6 @@ import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.Type;
-import io.mindmaps.graql.internal.reasoner.predicate.Resource;
 import io.mindmaps.graql.internal.reasoner.query.AtomicMatchQuery;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
@@ -114,8 +113,8 @@ public class Reasoner {
 
     private void linkConceptTypes(Rule rule) {
         LOG.debug("Linking rule " + rule.getId() + "...");
-        MatchQuery qLHS = qb.parseMatch(rule.getLHS());
-        MatchQuery qRHS = qb.parseMatch(rule.getRHS());
+        MatchQuery qLHS = qb.parse(rule.getLHS());
+        MatchQuery qRHS = qb.parse(rule.getRHS());
 
         Set<Type> hypothesisConceptTypes = qLHS.admin().getTypes();
         Set<Type> conclusionConceptTypes = qRHS.admin().getTypes();
@@ -129,7 +128,7 @@ public class Reasoner {
 
     public Set<Rule> getRules() {
         Set<Rule> rules = new HashSet<>();
-        MatchQuery sq = qb.parseMatch("match $x isa inference-rule;");
+        MatchQuery sq = qb.parse("match $x isa inference-rule;");
 
         List<Map<String, Concept>> results = Lists.newArrayList(sq);
 

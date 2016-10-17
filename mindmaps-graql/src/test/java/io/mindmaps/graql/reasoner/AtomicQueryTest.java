@@ -20,7 +20,9 @@ package io.mindmaps.graql.reasoner;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.graql.AskQuery;
 import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
@@ -68,7 +70,7 @@ public class AtomicQueryTest {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(ErrorMessage.PARENT_MISSING.getMessage());
 
-        Atomic atom = AtomicFactory.create(qb.parseMatch("match $x isa person").admin().getPattern());
+        Atomic atom = AtomicFactory.create(qb.<MatchQuery>parse("match $x isa person").admin().getPattern());
         AtomicQuery query = new AtomicQuery(atom);
     }
 
@@ -85,14 +87,14 @@ public class AtomicQueryTest {
     @Test
     public void testMaterialize(){
 
-        assert(!qb.parseAsk("match ($x, $y) isa recommendation;$x id 'Bob';$y id 'Colour of Magic'; ask;").execute());
+        assert(!qb.<AskQuery>parse("match ($x, $y) isa recommendation;$x id 'Bob';$y id 'Colour of Magic'; ask;").execute());
 
         String queryString = "match ($x, $y) isa recommendation;";
         AtomicQuery atomicQuery = new AtomicQuery(queryString, graph);
         atomicQuery.materialize(Sets.newHashSet(new Substitution("x", graph.getConcept("Bob"))
                                                 , new Substitution("y", graph.getConcept("Colour of Magic"))));
 
-        assert(qb.parseAsk("match ($x, $y) isa recommendation;$x id 'Bob';$y id 'Colour of Magic'; ask;").execute());
+        assert(qb.<AskQuery>parse("match ($x, $y) isa recommendation;$x id 'Bob';$y id 'Colour of Magic'; ask;").execute());
     }
 
 }

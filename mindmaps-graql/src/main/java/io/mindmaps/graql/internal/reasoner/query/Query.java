@@ -51,7 +51,7 @@ public class Query implements MatchQueryInternal {
 
     public Query(String query, MindmapsGraph graph) {
         this.graph = graph;
-        MatchQuery matchQuery = Graql.withGraph(graph).parseMatch(query);
+        MatchQuery matchQuery = Graql.withGraph(graph).parse(query);
         this.selectVars = Sets.newHashSet(matchQuery.admin().getSelectedNames());
         this.atomSet = AtomicFactory.createAtomSet(matchQuery.admin().getPattern(), this);
         this.pattern = createPattern(atomSet);

@@ -18,6 +18,8 @@
 
 package io.mindmaps.engine.loader;
 
+import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.Var;
 import mjson.Json;
 import org.slf4j.Logger;
@@ -27,8 +29,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static io.mindmaps.graql.Graql.parseInsert;
 
 /**
  * RESTLoader to perform bulk loading into the graph
@@ -78,7 +78,7 @@ public abstract class Loader {
      */
     public void addToQueue(String vars){
         try {
-            addToQueue(parseInsert(vars).admin().getVars());
+            addToQueue(Graql.<InsertQuery>parse(vars).admin().getVars());
         }
         catch (IllegalArgumentException e){
             System.out.println(vars);

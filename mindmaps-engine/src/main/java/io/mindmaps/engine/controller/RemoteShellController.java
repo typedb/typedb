@@ -41,7 +41,9 @@ import javax.ws.rs.Produces;
 import java.util.stream.Collectors;
 
 import static io.mindmaps.graql.Graql.withGraph;
-import static spark.Spark.*;
+import static spark.Spark.get;
+import static spark.Spark.webSocket;
+import static spark.Spark.webSocketIdleTimeoutMillis;
 
 
 @Path("/shell")
@@ -115,7 +117,7 @@ public class RemoteShellController {
         try {
             MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName);
 
-            return withGraph(graph).parseMatch(req.queryParams(REST.Request.QUERY_FIELD))
+            return withGraph(graph).parse(req.queryParams(REST.Request.QUERY_FIELD))
                     .resultsString()
                     .map(x -> x.replaceAll("\u001B\\[\\d+[m]", ""))
                     .collect(Collectors.joining("\n"));

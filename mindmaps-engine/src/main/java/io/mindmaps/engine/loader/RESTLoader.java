@@ -133,7 +133,7 @@ public class RESTLoader {
                 AbstractMindmapsGraph graph;
                 try {
                     graph = (AbstractMindmapsGraph) GraphFactory.getInstance().getGraphBatchLoading(name);
-                    withGraph(graph).parseInsert(batch).execute();
+                    withGraph(graph).parse(batch).execute();
                     graph.commit();
                     cache.addJobCasting(name, graph.getModifiedCastingIds());
                     cache.addJobResource(name, graph.getModifiedResourceIds());

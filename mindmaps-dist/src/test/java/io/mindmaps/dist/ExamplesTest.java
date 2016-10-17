@@ -64,6 +64,6 @@ public class ExamplesTest {
 
     private void runInsertQuery(String path) throws IOException {
         String query = Files.readAllLines(Paths.get(path)).stream().collect(joining("\n"));
-        qb.parseInsert(query).execute();
+        qb.parse(query).execute();
     }
 }

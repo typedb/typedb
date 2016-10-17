@@ -88,54 +88,6 @@ public class Graql {
     }
 
     /**
-     * @param queryString a string representing a match query
-     * @return the parsed match query
-     */
-    public static MatchQuery parseMatch(String queryString) {
-        return withoutGraph().parseMatch(queryString);
-    }
-
-    /**
-     * @param queryString a string representing an ask query
-     * @return a parsed ask query
-     */
-    public static AskQuery parseAsk(String queryString) {
-        return withoutGraph().parseAsk(queryString);
-    }
-
-    /**
-     * @param queryString a string representing an insert query
-     * @return a parsed insert query
-     */
-    public static InsertQuery parseInsert(String queryString) {
-        return withoutGraph().parseInsert(queryString);
-    }
-
-    /**
-     * @param queryString a string representing a delete query
-     * @return a parsed delete query
-     */
-    public static DeleteQuery parseDelete(String queryString) {
-        return withoutGraph().parseDelete(queryString);
-    }
-
-    /**
-     * @param queryString a string representing an aggregate query
-     * @return a parsed aggregate query
-     */
-    public static AggregateQuery<?> parseAggregate(String queryString) {
-        return withoutGraph().parseAggregate(queryString);
-    }
-
-    /**
-     * @param queryString a string representing a delete query
-     * @return a parsed compute query
-     */
-    public static ComputeQuery parseCompute(String queryString) {
-        return withoutGraph().parseCompute(queryString);
-    }
-
-    /**
      * @param inputStream a stream representing a list of patterns
      * @return a stream of patterns
      */
@@ -147,7 +99,7 @@ public class Graql {
      * @param queryString a string representing a query
      * @return a query, the type will depend on the type of query.
      */
-    public static Query<?> parse(String queryString) {
+    public static <T extends Query<?>> T parse(String queryString) {
         return withoutGraph().parse(queryString);
     }
 

@@ -26,6 +26,7 @@ import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.engine.visualiser.HALConcept;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.internal.pattern.property.RelationProperty;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.REST;
@@ -159,7 +160,7 @@ public class VisualiserController {
             MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName);
 
             LOG.debug("Start querying for: [{}]", req.queryParams(REST.Request.QUERY_FIELD));
-            MatchQuery matchQuery = withGraph(graph).parseMatch(req.queryParams(REST.Request.QUERY_FIELD));
+            MatchQuery matchQuery = withGraph(graph).parse(req.queryParams(REST.Request.QUERY_FIELD));
             Collection<Map<String, Concept>> graqlResultsList = matchQuery
                     .limit(SAFETY_LIMIT)
                     .stream().collect(Collectors.toList());

@@ -101,54 +101,6 @@ public class QueryBuilder {
     }
 
     /**
-     * @param queryString a string representing a match query
-     * @return the parsed match query
-     */
-    public MatchQuery parseMatch(String queryString) {
-        return queryParser.parseMatchQuery(queryString);
-    }
-
-    /**
-     * @param queryString a string representing an ask query
-     * @return a parsed ask query
-     */
-    public AskQuery parseAsk(String queryString) {
-        return queryParser.parseAskQuery(queryString);
-    }
-
-    /**
-     * @param queryString a string representing an insert query
-     * @return a parsed insert query
-     */
-    public InsertQuery parseInsert(String queryString) {
-        return queryParser.parseInsertQuery(queryString);
-    }
-
-    /**
-     * @param queryString a string representing a delete query
-     * @return a parsed delete query
-     */
-    public DeleteQuery parseDelete(String queryString) {
-        return queryParser.parseDeleteQuery(queryString);
-    }
-
-    /**
-     * @param queryString a string representing an aggregate query
-     * @return a parsed aggregate query
-     */
-    public AggregateQuery<?> parseAggregate(String queryString) {
-        return queryParser.parseAggregateQuery(queryString);
-    }
-
-    /**
-     * @param queryString a string representing a delete query
-     * @return a parsed compute query
-     */
-    public ComputeQuery parseCompute(String queryString) {
-        return queryParser.parseComputeQuery(queryString);
-    }
-
-    /**
      * @param inputStream a stream representing a list of patterns
      * @return a stream of patterns
      */
@@ -160,7 +112,7 @@ public class QueryBuilder {
      * @param queryString a string representing a query
      * @return a query, the type will depend on the type of query.
      */
-    public Query<?> parse(String queryString) {
+    public <T extends Query<?>> T parse(String queryString) {
         return queryParser.parseQuery(queryString);
     }
 
