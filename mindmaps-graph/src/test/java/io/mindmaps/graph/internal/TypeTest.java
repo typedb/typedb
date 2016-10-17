@@ -27,6 +27,7 @@ import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.RuleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.exception.ConceptException;
+import io.mindmaps.exception.InvalidConceptTypeException;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
 import org.junit.After;
@@ -146,6 +147,19 @@ public class TypeTest {
         }
         assertTrue(correctExceptionThrown);
 
+    }
+
+    @Test
+    public void testCannotSubClassMetaTypes(){
+        RuleType metaType = mindmapsGraph.getMetaRuleInference();
+        RuleType superType = mindmapsGraph.putRuleType("An Entity Type");
+
+        expectedException.expect(InvalidConceptTypeException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.CANNOT_SUBCLASS_META.getMessage(metaType.getId(), superType.getId()))
+        ));
+
+        superType.superType(metaType);
     }
 
     @Test
