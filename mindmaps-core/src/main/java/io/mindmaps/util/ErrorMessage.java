@@ -46,7 +46,6 @@ public enum ErrorMessage {
     TRANSACTIONS_NOT_SUPPORTED("The graph backend [%s] does not actually support transactions. The graph was not committed or refreshed."),
     RESOURCE_INDEX_ALREADY_TAKEN("The resource index [%s] is already taken by concept [%s]"),
     IMMUTABLE_VALUE("The value [%s] of concept [%s] cannot be changed to [%s] due to the property [%s] being immutable"),
-    IMMUTABLE_TYPE("The type of concept [%s] cannot be set to [%s] as it is already set to [%s]"),
     NULL_VALUE("The value of [%s] cannot be set to [null]"),
     CANNOT_LOAD_EXAMPLE("Cannot load example to this graph. Please try a new empty graph."),
     META_TYPE_IMMUTABLE("The meta type [%s] is immutable"),
