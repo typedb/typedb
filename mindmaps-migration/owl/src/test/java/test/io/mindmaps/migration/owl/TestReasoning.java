@@ -12,7 +12,14 @@ import org.junit.Before;
 import org.junit.Test;
 import org.semanticweb.HermiT.Configuration;
 import org.semanticweb.HermiT.Reasoner;
-import org.semanticweb.owlapi.model.*;
+import org.semanticweb.owlapi.model.IRI;
+import org.semanticweb.owlapi.model.OWLClass;
+import org.semanticweb.owlapi.model.OWLClassExpression;
+import org.semanticweb.owlapi.model.OWLDataFactory;
+import org.semanticweb.owlapi.model.OWLNamedIndividual;
+import org.semanticweb.owlapi.model.OWLObjectProperty;
+import org.semanticweb.owlapi.model.OWLOntology;
+import org.semanticweb.owlapi.reasoner.OWLReasoner;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -23,12 +30,11 @@ import java.util.stream.Collectors;
 import static io.mindmaps.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 
-
 public class TestReasoning extends TestOwlMindMapsBase {
-	private IRI baseIri = IRI.create("http://www.co-ode.org/roberts/family-tree.owl");
-	private OWLOntology family = null;
-	private String dataPath = "/io/mindmaps/migration/owl/samples/";
-    private Reasoner owlReasoner;
+    private IRI baseIri = IRI.create("http://www.co-ode.org/roberts/family-tree.owl");
+    private OWLOntology family = null;
+    private String dataPath = "/io/mindmaps/migration/owl/samples/";
+    private OWLReasoner hermit;
     private io.mindmaps.graql.Reasoner mmReasoner;
 
     @Before
@@ -36,13 +42,12 @@ public class TestReasoning extends TestOwlMindMapsBase {
         family = loadOntologyFromResource(dataPath + "family.owl");
         migrator.ontology(family).graph(graph).migrate();
         migrator.graph().commit();
-
-        owlReasoner = new Reasoner(new Configuration(), family);
+        hermit = new Reasoner(new Configuration(), family);
         mmReasoner = new io.mindmaps.graql.Reasoner(migrator.graph());
     }
 
     //infer all subjects of relation relationIRI with object 'instanceId'
-    private QueryAnswers inferRelationHermit(IRI relationIRI, String instanceId) {
+    private QueryAnswers inferRelationOWL(IRI relationIRI, String instanceId, OWLReasoner reasoner) {
         IRI instance = baseIri.resolve("#" + instanceId);
 
         OWLDataFactory df = manager.getOWLDataFactory();
@@ -51,9 +56,9 @@ public class TestReasoning extends TestOwlMindMapsBase {
 
         long owlStartTime = System.currentTimeMillis();
         OWLClassExpression expr = df.getOWLObjectIntersectionOf(
-                    person,
-                    df.getOWLObjectHasValue(relation, df.getOWLNamedIndividual(instance)));
-        Set<OWLNamedIndividual> owlResult = owlReasoner.getInstances(expr).entities().collect(Collectors.toSet());
+                person,
+                df.getOWLObjectHasValue(relation, df.getOWLNamedIndividual(instance)));
+        Set<OWLNamedIndividual> owlResult = reasoner.getInstances(expr).entities().collect(Collectors.toSet());
         long owlTime = System.currentTimeMillis() - owlStartTime;
 
         Set<Map<String, Concept>> OWLanswers = new HashSet<>();
@@ -63,7 +68,7 @@ public class TestReasoning extends TestOwlMindMapsBase {
             OWLanswers.add(resultMap);
         });
 
-        System.out.println("Hermit answers: " + OWLanswers.size() + " in " + owlTime + " ms");
+        System.out.println(reasoner.toString() + " answers: " + OWLanswers.size() + " in " + owlTime + " ms");
         return new QueryAnswers(OWLanswers);
     }
 
@@ -74,9 +79,9 @@ public class TestReasoning extends TestOwlMindMapsBase {
         String subjectRoleId = "owl-subject-" + relationId;
         String objectRoleId = "owl-object-" + relationId;
         MatchQuery query = qb.match(
-                            var("x").isa("tPerson"),
-                            var("y").id("e"+instanceId),
-                            var().isa(relationId).rel(subjectRoleId, "x").rel(objectRoleId, "y") ).select("x");
+                var("x").isa("tPerson"),
+                var("y").id("e"+instanceId),
+                var().isa(relationId).rel(subjectRoleId, "x").rel(objectRoleId, "y") ).select("x");
         QueryAnswers mmAnswers = mmReasoner.resolve(query);
         long mmTime = System.currentTimeMillis() - mmStartTime;
         System.out.println("MMReasoner answers: " + mmAnswers.size() + " in " + mmTime + " ms");
@@ -93,15 +98,15 @@ public class TestReasoning extends TestOwlMindMapsBase {
 
         String queryString2 = "match (owl-subject-op-hasGreatUncle: $x, owl-object-op-hasGreatUncle: $y) isa op-hasGreatUncle;$x id 'eethel_archer_1912'; select $y;";
         String explicitQuery2 = "match $y isa tPerson;"+
-                                "{$y id 'eharry_whitfield_1854';} or" +
-                                "{$y id 'ejames_whitfield_1848';} or" +
-                                "{$y id 'ewalter_whitfield_1863';} or" +
-                                "{$y id 'ewilliam_whitfield_1852';} or" +
-                                "{$y id 'egeorge_whitfield_1865';};";
+                "{$y id 'eharry_whitfield_1854';} or" +
+                "{$y id 'ejames_whitfield_1848';} or" +
+                "{$y id 'ewalter_whitfield_1863';} or" +
+                "{$y id 'ewilliam_whitfield_1852';} or" +
+                "{$y id 'egeorge_whitfield_1865';};";
         assertEquals(mmReasoner.resolve(new Query(queryString2, graph)), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery2)));
 
         String queryString3 = "match (owl-subject-op-hasGreatAunt: $x, owl-object-op-hasGreatAunt: $y) isa op-hasGreatAunt;" +
-                                "$x id 'emary_kate_green_1865'; select $y;";
+                "$x id 'emary_kate_green_1865'; select $y;";
         String explicitQuery3= "match $y isa tPerson;{$y id 'etamar_green_1810';} or" +
                 "{$y id 'ezilpah_green_1810';} or {$y id 'eelizabeth_pickard_1805';} or" +
                 "{$y id 'esarah_ingelby_1821';} or {$y id 'eann_pickard_1809';} or" +
@@ -121,12 +126,12 @@ public class TestReasoning extends TestOwlMindMapsBase {
         String hasAncestorId = "op-hasAncestor";
         String isAncestorOfId = "op-isAncestorOf";
 
-        assertEquals(inferRelationHermit(hasAncestor, elisabethId), inferRelationMM(hasAncestorId, elisabethId));
-        assertEquals(inferRelationHermit(hasAncestor, annId), inferRelationMM(hasAncestorId, annId));
-        //assertEquals(inferRelationHermit(hasAncestor, eleanorId), inferRelationMM(hasAncestorId, eleanorId));
+        assertEquals(inferRelationOWL(hasAncestor, eleanorId, hermit), inferRelationMM(hasAncestorId, eleanorId));
+        assertEquals(inferRelationOWL(hasAncestor, elisabethId, hermit), inferRelationMM(hasAncestorId, elisabethId));
+        //assertEquals(inferRelationOWL(hasAncestor, annId, hermit), inferRelationMM(hasAncestorId, annId));
 
-        assertEquals(inferRelationHermit(isAncestorOf, anneId), inferRelationMM(isAncestorOfId, anneId));
-        assertEquals(inferRelationHermit(isAncestorOf, megaId), inferRelationMM(isAncestorOfId, megaId));
-        //assertEquals(inferRelationHermit(isAncestorOf, reeceId), inferRelationMM(isAncestorOfId, reeceId));
+        assertEquals(inferRelationOWL(isAncestorOf, anneId, hermit), inferRelationMM(isAncestorOfId, anneId));
+        assertEquals(inferRelationOWL(isAncestorOf, megaId, hermit), inferRelationMM(isAncestorOfId, megaId));
+        //assertEquals(inferRelationOWL(isAncestorOf, reeceId, hermit), inferRelationMM(isAncestorOfId, reeceId));
     }
 }
