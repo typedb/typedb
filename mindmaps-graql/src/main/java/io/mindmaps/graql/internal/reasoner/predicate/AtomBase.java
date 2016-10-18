@@ -148,7 +148,7 @@ public abstract class AtomBase implements Atomic{
     @Override
     public Query getParentQuery(){
         if(parent == null)
-            throw new IllegalStateException(ErrorMessage.PARENT_MISSING.getMessage());
+            throw new IllegalStateException(ErrorMessage.PARENT_MISSING.getMessage(this.toString()));
         return parent;
     }
 
