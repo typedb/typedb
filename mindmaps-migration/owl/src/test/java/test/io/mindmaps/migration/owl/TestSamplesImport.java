@@ -220,18 +220,18 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
         }
     }
 
-    public static void main(String []argv) {
-        JUnitCore junit = new JUnitCore();
-        Result result = null;
-        do      {
-            result = junit.run(Request.method(TestSamplesImport.class, "test1Ontology"));
-        } while (result.getFailureCount() == 0 && false);
-        System.out.println("Failures " + result.getFailureCount());
-        if (result.getFailureCount() > 0) {
-            for (Failure failure : result.getFailures()) {
-                failure.getException().printStackTrace();
-            }
-        }
+//    public static void main(String []argv) {
+//        JUnitCore junit = new JUnitCore();
+//        Result result = null;
+//        do      {
+//            result = junit.run(Request.method(TestSamplesImport.class, "test1Ontology"));
+//        } while (result.getFailureCount() == 0 && false);
+//        System.out.println("Failures " + result.getFailureCount());
+//        if (result.getFailureCount() > 0) {
+//            for (Failure failure : result.getFailures()) {
+//                failure.getException().printStackTrace();
+//            }
+//        }
 //        System.exit(0);
-    }
+//    }
 }
