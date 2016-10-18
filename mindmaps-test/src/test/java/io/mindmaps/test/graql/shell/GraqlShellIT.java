@@ -47,6 +47,7 @@ public class GraqlShellIT extends AbstractMindmapsEngineTest {
     private static PrintStream trueOut;
     private static PrintStream trueErr;
     private static String expectedVersion = "graql-9.9.9";
+    private static final String historyFile = "/graql-test-history";
 
     @BeforeClass
     public static void setUpClass() throws Exception {
@@ -272,7 +273,7 @@ public class GraqlShellIT extends AbstractMindmapsEngineTest {
             System.setOut(out);
             System.setErr(err);
             
-            GraqlShell.runShell(newArgs, expectedVersion, new GraqlClientImpl());
+            GraqlShell.runShell(newArgs, expectedVersion, historyFile, new GraqlClientImpl());
         } catch (Exception e) {
             System.setErr(trueErr);
             e.printStackTrace();
