@@ -19,7 +19,6 @@
 package io.mindmaps.test.graql.query;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.EntityType;
@@ -30,13 +29,13 @@ import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Var;
+import io.mindmaps.test.AbstractEngineTest;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static io.mindmaps.concept.ResourceType.DataType.LONG;
@@ -57,18 +56,18 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
-public class InsertQueryTest {
+public class InsertQueryTest extends AbstractEngineTest {
 
-    private MindmapsGraph mindmapsGraph;
+    private MindmapsGraph graph;
     private QueryBuilder qb;
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
     @Before
     public void setUp() {
-        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        MovieGraphFactory.loadGraph(mindmapsGraph);
-        qb = withGraph(this.mindmapsGraph);
+        graph = factoryWithNewKeyspace().getGraph();
+        MovieGraphFactory.loadGraph(graph);
+        qb = withGraph(graph);
     }
 
     @Test
@@ -360,7 +359,7 @@ public class InsertQueryTest {
         EntityType newType = typeQuery.get("n").findFirst().get().asEntityType();
 
         assertTrue(newType.asEntityType().isAbstract());
-        assertTrue(newType.playsRoles().contains(mindmapsGraph.getRoleType("has-title-owner")));
+        assertTrue(newType.playsRoles().contains(graph.getRoleType("has-title-owner")));
 
         assertTrue(qb.match(var().isa("new-type")).ask().execute());
     }

@@ -24,7 +24,7 @@ import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.test.AbstractMindmapsEngineTest;
+import io.mindmaps.test.AbstractGraphTest;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -42,7 +42,7 @@ import static org.junit.Assume.assumeFalse;
 /**
  *
  */
-public class ConcurrencyTest extends AbstractMindmapsEngineTest {
+public class ConcurrencyTest extends AbstractGraphTest {
     private final static String ROLE_1 = "role1";
     private final static String ROLE_2 = "role2";
     private final static String ENTITY_TYPE = "Entity Type";

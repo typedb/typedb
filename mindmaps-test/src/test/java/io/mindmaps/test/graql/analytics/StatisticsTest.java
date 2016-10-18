@@ -27,7 +27,7 @@ import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.graql.internal.analytics.MindmapsVertexProgram;
 import io.mindmaps.graql.internal.util.GraqlType;
-import io.mindmaps.test.AbstractMindmapsEngineTest;
+import io.mindmaps.test.AbstractGraphTest;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -37,7 +37,7 @@ import java.util.function.Supplier;
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeFalse;
 
-public class StatisticsTest extends AbstractMindmapsEngineTest {
+public class StatisticsTest extends AbstractGraphTest {
 
     private static final String thing = "thing";
     private static final String anotherThing = "anotherThing";

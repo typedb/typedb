@@ -23,12 +23,11 @@ import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.ResourceType;
-import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.test.AbstractReadOnlyGraphTest;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.text.ParseException;
@@ -64,22 +63,15 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
-public class MatchQueryTest {
+public class MatchQueryTest extends AbstractReadOnlyGraphTest {
 
-    private static MindmapsGraph mindmapsGraph;
     private QueryBuilder qb;
 
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("EEE MMM dd HH:mm:ss zzz yyyy", Locale.US);
 
-    @BeforeClass
-    public static void setUpClass() {
-        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        MovieGraphFactory.loadGraph(mindmapsGraph);
-    }
-
     @Before
     public void setUp() {
-        qb = Graql.withGraph(mindmapsGraph);
+        qb = Graql.withGraph(graph);
     }
 
     @Test

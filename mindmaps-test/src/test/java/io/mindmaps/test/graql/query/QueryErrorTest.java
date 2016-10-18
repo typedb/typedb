@@ -21,11 +21,10 @@ package io.mindmaps.test.graql.query;
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.ResourceType;
-import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.test.AbstractReadOnlyGraphTest;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -38,21 +37,14 @@ import static io.mindmaps.graql.Graql.withGraph;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.StringContains.containsString;
 
-public class QueryErrorTest {
+public class QueryErrorTest extends AbstractReadOnlyGraphTest {
     @Rule
     public final ExpectedException exception = ExpectedException.none();
-    private static MindmapsGraph mindmapsGraph;
     private QueryBuilder qb;
-
-    @BeforeClass
-    public static void setUpClass() {
-        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        MovieGraphFactory.loadGraph(mindmapsGraph);
-    }
 
     @Before
     public void setUp() {
-        qb = withGraph(mindmapsGraph);
+        qb = withGraph(graph);
     }
 
     @Test

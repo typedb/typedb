@@ -27,6 +27,7 @@ import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
+import io.mindmaps.test.AbstractEngineTest;
 import io.mindmaps.test.graql.reasoner.graphs.AdmissionsGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -35,7 +36,7 @@ import static io.mindmaps.graql.internal.reasoner.Utility.printAnswers;
 import static org.junit.Assert.assertEquals;
 
 
-public class AdmissionsInferenceTest {
+public class AdmissionsInferenceTest extends AbstractEngineTest {
 
     private static MindmapsGraph graph;
     private static Reasoner reasoner;

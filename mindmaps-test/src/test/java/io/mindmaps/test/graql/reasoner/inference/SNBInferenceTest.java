@@ -26,6 +26,7 @@ import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
+import io.mindmaps.test.AbstractEngineTest;
 import io.mindmaps.test.graql.reasoner.graphs.SNBGraph;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -35,7 +36,7 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
-public class SNBInferenceTest {
+public class SNBInferenceTest extends AbstractEngineTest {
 
     /**
      * Tests transitivity

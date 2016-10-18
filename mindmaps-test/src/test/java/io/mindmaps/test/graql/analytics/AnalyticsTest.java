@@ -25,7 +25,7 @@ import io.mindmaps.concept.*;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.graql.internal.util.GraqlType;
-import io.mindmaps.test.AbstractMindmapsEngineTest;
+import io.mindmaps.test.AbstractGraphTest;
 import org.apache.commons.collections.CollectionUtils;
 import org.junit.Assert;
 import org.junit.Before;
@@ -40,7 +40,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
-public class AnalyticsTest extends AbstractMindmapsEngineTest {
+public class AnalyticsTest extends AbstractGraphTest {
     private static long startTime;
 
     @Before

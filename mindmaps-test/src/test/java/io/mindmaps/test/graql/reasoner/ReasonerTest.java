@@ -30,6 +30,7 @@ import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
 import io.mindmaps.graql.internal.reasoner.rule.InferenceRule;
+import io.mindmaps.test.AbstractEngineTest;
 import io.mindmaps.test.graql.reasoner.graphs.SNBGraph;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -44,7 +45,7 @@ import static io.mindmaps.graql.internal.reasoner.Utility.printAnswers;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class ReasonerTest {
+public class ReasonerTest extends AbstractEngineTest {
 
     @Test
     public void testSubPropertyRule() {

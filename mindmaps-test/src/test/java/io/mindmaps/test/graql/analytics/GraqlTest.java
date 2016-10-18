@@ -25,7 +25,7 @@ import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.graql.internal.util.GraqlType;
-import io.mindmaps.test.AbstractMindmapsEngineTest;
+import io.mindmaps.test.AbstractGraphTest;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -41,7 +41,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
-public class GraqlTest extends AbstractMindmapsEngineTest {
+public class GraqlTest extends AbstractGraphTest {
 
     private QueryBuilder qb;
 

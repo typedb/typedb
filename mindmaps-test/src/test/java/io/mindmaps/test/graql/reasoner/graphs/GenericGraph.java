@@ -18,18 +18,17 @@
 
 package io.mindmaps.test.graql.reasoner.graphs;
 
-import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.test.AbstractEngineTest;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.UUID;
 
 public class GenericGraph {
 
@@ -37,7 +36,7 @@ public class GenericGraph {
     private final static String filePath = "src/test/graql/";
 
     public static MindmapsGraph getGraph(String graqlFile) {
-        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        mindmaps = AbstractEngineTest.factoryWithNewKeyspace().getGraph();
         buildGraph(graqlFile);
         commit();
 
@@ -45,7 +44,7 @@ public class GenericGraph {
     }
 
     public static MindmapsGraph getGraph(String ontologyFile, String... files) {
-        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        mindmaps = AbstractEngineTest.factoryWithNewKeyspace().getGraph();
         loadGraqlFile(ontologyFile);
         for( String graqlFile : files) {
             loadGraqlFile(graqlFile);

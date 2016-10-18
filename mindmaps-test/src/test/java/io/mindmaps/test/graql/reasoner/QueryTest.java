@@ -28,19 +28,20 @@ import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
+import io.mindmaps.test.AbstractEngineTest;
 import io.mindmaps.test.graql.reasoner.graphs.GenericGraph;
 import io.mindmaps.test.graql.reasoner.graphs.GeoGraph;
 import io.mindmaps.test.graql.reasoner.graphs.SNBGraph;
-import java.util.Map;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 
-public class QueryTest {
+public class QueryTest extends AbstractEngineTest {
 
     private static MindmapsGraph graph;
     private static QueryBuilder qb;

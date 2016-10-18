@@ -18,7 +18,6 @@
 
 package io.mindmaps.test.graql.reasoner.graphs;
 
-import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
@@ -26,8 +25,7 @@ import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.RuleType;
 import io.mindmaps.exception.MindmapsValidationException;
-
-import java.util.UUID;
+import io.mindmaps.test.AbstractEngineTest;
 
 public class AbstractGraph {
 
@@ -40,7 +38,7 @@ public class AbstractGraph {
     private static Instance instanceU, instanceT, instanceP;
 
     public static MindmapsGraph getGraph() {
-        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        mindmaps = AbstractEngineTest.factoryWithNewKeyspace().getGraph();
         buildGraph();
 
         try {

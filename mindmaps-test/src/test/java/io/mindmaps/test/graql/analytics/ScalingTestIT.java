@@ -26,7 +26,7 @@ import io.mindmaps.concept.*;
 import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.internal.analytics.Analytics;
-import io.mindmaps.test.AbstractMindmapsEngineTest;
+import io.mindmaps.test.AbstractGraphTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -43,7 +43,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeTrue;
 
-public class ScalingTestIT extends AbstractMindmapsEngineTest {
+public class ScalingTestIT extends AbstractGraphTest {
 
     private static final String[] HOST_NAME =
             {"localhost"};

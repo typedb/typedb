@@ -20,17 +20,21 @@ package io.mindmaps.test.graql.parser;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import io.mindmaps.Mindmaps;
-import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.example.MovieGraphFactory;
-import io.mindmaps.graql.*;
+import io.mindmaps.graql.AggregateQuery;
+import io.mindmaps.graql.AskQuery;
+import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.InsertQuery;
+import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.Var;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.pattern.property.DataTypeProperty;
 import io.mindmaps.graql.internal.query.aggregate.AbstractAggregate;
+import io.mindmaps.test.AbstractGraphTest;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -39,7 +43,6 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Stream;
 
 import static io.mindmaps.graql.Graql.all;
@@ -67,23 +70,18 @@ import static org.hamcrest.core.AllOf.allOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 
-public class QueryParserTest {
+public class QueryParserTest extends AbstractGraphTest {
 
-    private static MindmapsGraph mindmapsGraph;
     private QueryBuilder qb;
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
-    @BeforeClass
-    public static void setUpClass() {
-        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        MovieGraphFactory.loadGraph(mindmapsGraph);
-    }
-
     @Before
     public void setUp() {
-        qb = withGraph(mindmapsGraph);
+        MovieGraphFactory.loadGraph(graph);
+        qb = withGraph(graph);
     }
 
     @Test
@@ -267,7 +265,7 @@ public class QueryParserTest {
 
     @Test
     public void testPositiveAskQuery() {
-        assertTrue(Graql.<AskQuery>parse("match $x isa movie id 'Godfather'; ask;").withGraph(mindmapsGraph).execute());
+        assertTrue(Graql.<AskQuery>parse("match $x isa movie id 'Godfather'; ask;").withGraph(graph).execute());
     }
 
     @Test
@@ -281,10 +279,13 @@ public class QueryParserTest {
         String varString = "id \"123\", isa movie has title \"The Title\";";
         assertFalse(qb.match(var).ask().execute());
 
-        Graql.parse("insert " + varString).withGraph(mindmapsGraph).execute();
+        Graql.parse("insert " + varString).withGraph(graph).execute();
         assertTrue(qb.match(var).ask().execute());
 
-        Graql.parse("match $x " + varString + " delete $x;").withGraph(mindmapsGraph).execute();
+        // TODO: Fix delete queries in titan
+        assumeFalse(usingTitan());
+
+        Graql.parse("match $x " + varString + " delete $x;").withGraph(graph).execute();
         assertFalse(qb.match(var).ask().execute());
     }
 
@@ -331,6 +332,9 @@ public class QueryParserTest {
         qb.parse("match $x isa language; insert $x has name \"HELLO\";").execute();
         assertTrue(qb.match(var().isa("language").id("123").has("name", "HELLO")).ask().execute());
         assertTrue(qb.match(var().isa("language").id("456").has("name", "HELLO")).ask().execute());
+
+        // TODO: Fix delete queries in titan
+        assumeFalse(usingTitan());
 
         qb.parse("match $x isa language; delete $x;").execute();
         assertFalse(qb.match(language1).ask().execute());
@@ -398,7 +402,7 @@ public class QueryParserTest {
         String queryString = "match $x isa movie; select $x;";
         MatchQuery query = parse("match $x isa movie; select $x;");
         assertEquals(queryString, query.toString());
-        assertTrue(query.withGraph(mindmapsGraph).stream().findAny().isPresent());
+        assertTrue(query.withGraph(graph).stream().findAny().isPresent());
     }
 
     @Test
@@ -421,12 +425,12 @@ public class QueryParserTest {
     @Test
     public void testParseAggregateToString() {
         String query = "match $x isa movie; aggregate group $x (count as c);";
-        assertEquals(query, ((AggregateQuery<?>) parse(query)).withGraph(mindmapsGraph).toString());
+        assertEquals(query, ((AggregateQuery<?>) parse(query)).withGraph(graph).toString());
     }
 
     @Test
     public void testCustomAggregate() {
-        QueryBuilder qb = Graql.withGraph(mindmapsGraph);
+        QueryBuilder qb = Graql.withGraph(graph);
 
         qb.registerAggregate(
                 "get-any", args -> new AbstractAggregate<Map<String, Concept>, Concept>() {
