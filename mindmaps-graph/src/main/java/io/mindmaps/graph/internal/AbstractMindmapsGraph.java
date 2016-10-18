@@ -238,6 +238,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         return vertex;
     }
 
+    @Deprecated
     @Override
     public Entity putEntity(String itemIdentifier, EntityType type) {
         return elementFactory.buildEntity(putVertex(itemIdentifier, Schema.BaseType.ENTITY), type);
@@ -298,6 +299,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         return putConceptType(itemIdentifier, Schema.BaseType.RULE_TYPE, getMetaRuleType()).asRuleType();
     }
 
+    @Deprecated
     @Override
     public Rule putRule(String itemIdentifier, String lhs, String rhs, RuleType type) {
         return elementFactory.buildRule(putVertex(itemIdentifier, Schema.BaseType.RULE), type, lhs, rhs);
@@ -308,6 +310,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         return elementFactory.buildRule(addVertex(Schema.BaseType.RULE), type, lhs, rhs);
     }
 
+    @Deprecated
     @Override
     public Relation putRelation(String itemIdentifier, RelationType type) {
         RelationImpl relation = elementFactory.buildRelation(putVertex(itemIdentifier, Schema.BaseType.RELATION), type);
