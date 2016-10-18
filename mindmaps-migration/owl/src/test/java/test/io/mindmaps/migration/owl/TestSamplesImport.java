@@ -232,6 +232,6 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
                 failure.getException().printStackTrace();
             }
         }
-        System.exit(0);     
+//        System.exit(0);
     }
 }
