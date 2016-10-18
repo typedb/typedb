@@ -26,7 +26,6 @@ import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
 import io.mindmaps.test.graql.reasoner.graphs.CWGraph;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -34,23 +33,15 @@ import static org.junit.Assert.assertEquals;
 
 public class CWInferenceTest {
 
-    private static MindmapsGraph graph;
-    private static Reasoner reasoner;
-    private static QueryBuilder qb;
-
-    @BeforeClass
-    public static void setUpClass() {
-        graph = CWGraph.getGraph();
-        reasoner = new Reasoner(graph);
-        qb = Graql.withGraph(graph);
-    }
-
     private static void printMatchQuery(MatchQuery query) {
         System.out.println(query.toString().replace(" or ", "\nor\n").replace("};", "};\n").replace("; {", ";\n{"));
     }
 
     @Test
     public void testWeapon() {
+        MindmapsGraph graph = CWGraph.getGraph();
+        QueryBuilder qb = Graql.withGraph(graph);
+        Reasoner reasoner = new Reasoner(graph);
         String queryString = "match $x isa weapon;";
         MatchQuery query = qb.parse(queryString);
 
@@ -64,7 +55,24 @@ public class CWInferenceTest {
     }
 
     @Test
+    public void testAlignment() {
+        MindmapsGraph graph = CWGraph.getGraph();
+        QueryBuilder qb = Graql.withGraph(graph);
+        Reasoner reasoner = new Reasoner(graph);
+        String queryString = "match $z isa country;$z has alignment 'hostile';";
+        MatchQuery query = qb.parse(queryString);
+
+        String explicitQuery = "match $z isa country, id 'Nono';";
+
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        //assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
+    }
+
+    @Test
     public void testTransactionQuery() {
+        MindmapsGraph graph = CWGraph.getGraph();
+        QueryBuilder qb = Graql.withGraph(graph);
+        Reasoner reasoner = new Reasoner(graph);
         String queryString = "match $x isa person;$z isa country;($x, $y, $z) isa transaction;";
         MatchQuery query = qb.parse(queryString);
 
@@ -87,6 +95,9 @@ public class CWInferenceTest {
 
     @Test
     public void testTransactionQuery2() {
+        MindmapsGraph graph = CWGraph.getGraph();
+        QueryBuilder qb = Graql.withGraph(graph);
+        Reasoner reasoner = new Reasoner(graph);
         String queryString = "match $x isa person;$z isa country;$y isa weapon;($x, $y, $z) isa transaction;";
         MatchQuery query = qb.parse(queryString);
 
@@ -112,6 +123,9 @@ public class CWInferenceTest {
 
     @Test
     public void testQuery() {
+        MindmapsGraph graph = CWGraph.getGraph();
+        QueryBuilder qb = Graql.withGraph(graph);
+        Reasoner reasoner = new Reasoner(graph);
         String queryString = "match $x isa criminal;";
         MatchQuery query = qb.parse(queryString);
 
@@ -139,6 +153,9 @@ public class CWInferenceTest {
 
     @Test
     public void testQueryWithOr() {
+        MindmapsGraph graph = CWGraph.getGraph();
+        QueryBuilder qb = Graql.withGraph(graph);
+        Reasoner reasoner = new Reasoner(graph);
         String queryString = "match {$x isa criminal;} or {$x has nationality 'American';$x isa person;};";
         MatchQuery query = qb.parse(queryString);
 
@@ -166,6 +183,9 @@ public class CWInferenceTest {
 
     @Test
     public void testVarSub() {
+        MindmapsGraph graph = CWGraph.getGraph();
+        QueryBuilder qb = Graql.withGraph(graph);
+        Reasoner reasoner = new Reasoner(graph);
         String queryString = "match" +
                 "$y isa person;$yy isa country;$yyy isa weapon;\n" +
                 "($y, $yy, $yyy) isa transaction;";
@@ -193,6 +213,9 @@ public class CWInferenceTest {
 
     @Test
     public void testVarSub2() {
+        MindmapsGraph graph = CWGraph.getGraph();
+        QueryBuilder qb = Graql.withGraph(graph);
+        Reasoner reasoner = new Reasoner(graph);
         String queryString = "match" +
                 "$y isa person;$z isa country;$x isa weapon;\n" +
                 "($y, $z, $x) isa transaction;";

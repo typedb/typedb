@@ -42,6 +42,17 @@ $x has GPR >3.29;
 $x has specialHonours 'honour student';},
 rhs {match $x has admissionStatus 'conditional';};
 
+"R9" isa inference-rule,
+lhs {match $x isa applicant;
+$x has decisionType 'conditional';
+$x has specialHonours 'none';
+$x has GRE >1099;},
+rhs {match $x has admissionStatus 'conditional';};
+
+#########################################
+#############Wait for transcript######
+#########################################
+
 "R6" isa inference-rule,
 lhs {match $x isa applicant;
 $x has decisionType 'conditional';
@@ -54,13 +65,6 @@ lhs {match $x isa applicant;
 $x has decisionType 'conditional';
 $x has GPR <3.3;},
 rhs {match $x has admissionStatus 'wait for transcript';};
-
-"R9" isa inference-rule,
-lhs {match $x isa applicant;
-$x has decisionType 'conditional';
-$x has specialHonours 'none';
-$x has GRE >1099;},
-rhs {match $x has admissionStatus 'conditional';};
 
 #########################################
 #########Admission denied#########

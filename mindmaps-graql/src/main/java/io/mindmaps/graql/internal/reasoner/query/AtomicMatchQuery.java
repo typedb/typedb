@@ -4,7 +4,10 @@ import com.google.common.collect.Sets;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 
+import io.mindmaps.graql.internal.reasoner.predicate.Substitution;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static io.mindmaps.graql.internal.reasoner.Utility.findEquivalentAtomicQuery;
@@ -62,4 +65,18 @@ public class AtomicMatchQuery extends AtomicQuery{
         });
     }
 
+    @Override
+    public QueryAnswers materialise(){
+        QueryAnswers fullAnswers = new QueryAnswers();
+        answers.forEach(answer -> {
+            Set<Substitution> subs = new HashSet<>();
+            answer.forEach((var, con) -> {
+                Substitution sub = new Substitution(var, con);
+                if (!containsAtom(sub))
+                    subs.add(sub);
+            });
+            fullAnswers.addAll(materialise(subs));
+        });
+        return fullAnswers;
+    }
 }

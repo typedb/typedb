@@ -129,7 +129,6 @@ public class Reasoner {
     public Set<Rule> getRules() {
         Set<Rule> rules = new HashSet<>();
         MatchQuery sq = qb.parse("match $x isa inference-rule;");
-
         List<Map<String, Concept>> results = Lists.newArrayList(sq);
 
         for (Map<String, Concept> result : results) {
@@ -138,7 +137,6 @@ public class Reasoner {
                 rules.add((Rule) concept);
             }
         }
-
         return rules;
     }
 
@@ -192,14 +190,13 @@ public class Reasoner {
         return newAnswers;
     }
 
-    private QueryAnswers answer(AtomicQuery atomicQuery, Set<AtomicQuery> subGoals, Map<AtomicQuery, QueryAnswers> matAnswers) {
+    private QueryAnswers answer(AtomicQuery atomicQuery, Set<AtomicQuery> subGoals, Map<AtomicQuery,
+            QueryAnswers> matAnswers, boolean materialise) {
         Atomic atom = atomicQuery.getAtom();
-
         atomicQuery.DBlookup();
-        atomicQuery.memoryLookup(matAnswers);
+        if(!materialise) atomicQuery.memoryLookup(matAnswers);
 
         boolean queryAdmissible = !subGoals.contains(atomicQuery);
-
         if(queryAdmissible) {
             Set<Rule> rules = getApplicableRules(atom);
             for (Rule rl : rules) {
@@ -212,30 +209,31 @@ public class Reasoner {
                 Iterator<Atomic> atIt = atoms.iterator();
 
                 subGoals.add(atomicQuery);
-                Atomic at = atIt.next();
-                AtomicQuery childAtomicQuery = new AtomicMatchQuery(at);
+                AtomicQuery childAtomicQuery = new AtomicMatchQuery(atIt.next());
                 atomicQuery.establishRelation(childAtomicQuery);
-                QueryAnswers subs = answer(childAtomicQuery, subGoals, matAnswers);
+                QueryAnswers subs = answer(childAtomicQuery, subGoals, matAnswers, materialise);
                 while(atIt.hasNext()){
-                    at = atIt.next();
-                    childAtomicQuery = new AtomicMatchQuery(at);
+                    childAtomicQuery = new AtomicMatchQuery(atIt.next());
                     atomicQuery.establishRelation(childAtomicQuery);
-                    QueryAnswers localSubs = answer(childAtomicQuery, subGoals, matAnswers);
+                    QueryAnswers localSubs = answer(childAtomicQuery, subGoals, matAnswers, materialise);
                     subs = subs.join(localSubs);
                 }
+                QueryAnswers answers = propagateHeadSubstitutions(atomicQuery, ruleHead, subs)
+                                            .filterVars(atomicQuery.getSelectedNames());
+                QueryAnswers newAnswers = new QueryAnswers();
+                if (materialise || atom.isResource())
+                    newAnswers.addAll(new AtomicMatchQuery(ruleHead, answers).materialise());
+                if (!newAnswers.isEmpty()) answers = newAnswers;
 
-                QueryAnswers answers = propagateHeadSubstitutions(atomicQuery, ruleHead, subs);
-                QueryAnswers filteredAnswers = answers.filter(atomicQuery.getSelectedNames());
+                QueryAnswers filteredAnswers = answers.filterInComplete(atomicQuery.getSelectedNames());
                 atomicQuery.getAnswers().addAll(filteredAnswers);
-
-                recordAnswers(atomicQuery, matAnswers);
+                if (!materialise) recordAnswers(atomicQuery, matAnswers);
             }
         }
-
         return atomicQuery.getAnswers();
     }
 
-    private QueryAnswers resolveAtomicQuery(AtomicQuery atomicQuery) {
+    private QueryAnswers resolveAtomicQuery(AtomicQuery atomicQuery, boolean materialise) {
         int dAns;
         int iter = 0;
 
@@ -246,34 +244,28 @@ public class Reasoner {
         else {
             Map<AtomicQuery, QueryAnswers> matAnswers = new HashMap<>();
             matAnswers.put(atomicQuery, atomicQuery.getAnswers());
-
             do {
                 Set<AtomicQuery> subGoals = new HashSet<>();
                 dAns = atomicQuery.getAnswers().size();
-                answer(atomicQuery, subGoals, matAnswers);
+                answer(atomicQuery, subGoals, matAnswers, materialise);
                 propagateAnswers(matAnswers);
                 LOG.debug("iter: " + iter++ + " answers: " + atomicQuery.getAnswers().size());
                 dAns = atomicQuery.getAnswers().size() - dAns;
             } while (dAns != 0);
             return atomicQuery.getAnswers();
         }
-
     }
 
-    private QueryAnswers resolveQuery(Query query, boolean materialize) {
+    private QueryAnswers resolveQuery(Query query, boolean materialise) {
         Iterator<Atomic> atIt = query.selectAtoms().iterator();
-
         AtomicQuery atomicQuery = new AtomicMatchQuery(atIt.next().clone());
-        QueryAnswers answers = resolveAtomicQuery(atomicQuery);
-        if(materialize) answers.materialize(atomicQuery);
+        QueryAnswers answers = resolveAtomicQuery(atomicQuery, materialise);
         while(atIt.hasNext()){
             atomicQuery = new AtomicMatchQuery(atIt.next());
-            QueryAnswers subAnswers = resolveAtomicQuery(atomicQuery);
-            if(materialize) subAnswers.materialize(atomicQuery);
+            QueryAnswers subAnswers = resolveAtomicQuery(atomicQuery, materialise);
             answers = answers.join(subAnswers);
         }
-
-        return answers.filter(query.getSelectedNames());
+        return answers.filterVars(query.getSelectedNames());
     }
 
     /**
@@ -281,15 +273,24 @@ public class Reasoner {
      * @param inputQuery the query string to be expanded
      * @return set of answers
      */
-    public QueryAnswers resolve(MatchQuery inputQuery) {
+    public QueryAnswers resolve(MatchQuery inputQuery, boolean materialise) {
         Query query = new ReasonerMatchQuery(inputQuery, graph);
-        return resolveQuery(query, false);
+        return resolveQuery(query, materialise);
     }
 
-    public MatchQuery resolveToQuery(MatchQuery inputQuery) {
+    public QueryAnswers  resolve(MatchQuery inputQuery) { return resolve(inputQuery, false);}
+
+    /**
+     * Resolve a given query using the rule base
+     * @param inputQuery the query string to be expanded
+     * @return MatchQuery with answers
+     */
+    public MatchQuery resolveToQuery(MatchQuery inputQuery, boolean materialise) {
         Query query = new Query(inputQuery, graph);
         if (!query.isRuleResolvable()) return inputQuery;
-        QueryAnswers answers = resolveQuery(query, false);
+        QueryAnswers answers = resolveQuery(query, materialise);
         return new ReasonerMatchQuery(inputQuery, graph, answers);
     }
+
+    public MatchQuery resolveToQuery(MatchQuery inputQuery) { return resolveToQuery(inputQuery, false);}
 }
