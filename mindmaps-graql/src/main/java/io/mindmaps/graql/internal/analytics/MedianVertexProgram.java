@@ -88,7 +88,12 @@ public class MedianVertexProgram extends MindmapsVertexProgram<Long> {
 
     @Override
     public GraphComputer.Persist getPreferredPersist() {
-        return GraphComputer.Persist.VERTEX_PROPERTIES;
+        return GraphComputer.Persist.NOTHING;
+    }
+
+    @Override
+    public GraphComputer.ResultGraph getPreferredResultGraph() {
+        return GraphComputer.ResultGraph.ORIGINAL;
     }
 
     @Override
