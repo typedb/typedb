@@ -129,6 +129,7 @@ public enum ErrorMessage {
 
     //--------------------------------------------- Engine Errors -----------------------------------------------
     NO_CONFIG_FILE("Cannot find config file [%s]"),
+    NO_LOG_CONFIG_FILE("It was not possible to find the Logback configuration file [%s]. Default configurations for logging will be used."),
     NO_GRAQL_FILE("Cannot find Graql file [%s]"),
     ILLEGAL_ARGUMENT_EXCEPTION("Illegal argument exception caused by [%s]"),
     CONCEPT_ID_NOT_FOUND("ID [%s] not found in the graph."),

@@ -22,14 +22,12 @@ import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
-import io.mindmaps.engine.MindmapsEngineServer;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.engine.visualiser.HALConcept;
 import io.mindmaps.exception.MindmapsEngineServerException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.internal.pattern.property.RelationProperty;
-import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -43,14 +41,12 @@ import spark.Request;
 import spark.Response;
 
 import javax.ws.rs.GET;
-import javax.ws.rs.NotFoundException;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.mindmaps.graql.Graql.withGraph;
-import static spark.Spark.exception;
 import static spark.Spark.get;
 
 
@@ -60,6 +56,7 @@ import static spark.Spark.get;
 public class VisualiserController {
 
     private final Logger LOG = LoggerFactory.getLogger(VisualiserController.class);
+
 
     private String defaultGraphName;
     private int separationDegree;

@@ -74,7 +74,7 @@ public class TransactionController {
             res.status(201);
             return uuid.toString();
         } else {
-            throw new MindmapsEngineServerException(500,"Error while trying to load a new transaction. Please refer to mindmaps.log for details.");
+            throw new MindmapsEngineServerException(500,"Error while trying to load a new transaction.");
         }
     }
 
