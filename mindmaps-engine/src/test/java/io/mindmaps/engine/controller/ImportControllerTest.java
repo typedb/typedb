@@ -19,14 +19,23 @@
 package io.mindmaps.engine.controller;
 
 import com.jayway.restassured.response.Response;
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.engine.MindmapsEngineTestBase;
 import io.mindmaps.engine.util.ConfigProperties;
+import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
+import io.mindmaps.graql.Graql;
 import io.mindmaps.util.REST;
 import mjson.Json;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.List;
 
 import static com.jayway.restassured.RestAssured.given;
 
@@ -44,12 +53,7 @@ public class ImportControllerTest extends MindmapsEngineTestBase {
         String ontologyPath = getClass().getClassLoader().getResource("dblp-ontology.gql").getPath();
         String dataPath = getClass().getClassLoader().getResource("small_nametags.gql").getPath();
 
-
-        Response ontologyResponse = given().contentType("application/json").
-                body(Json.object("path", ontologyPath).toString()).when().
-                post(REST.WebPath.IMPORT_ONTOLOGY_URI);
-
-        ontologyResponse.then().assertThat().statusCode(200);
+        importOntology(ontologyPath,graphName);
 
         Response dataResponse = given().contentType("application/json").
                 body(Json.object("path", dataPath).toString()).when().
@@ -74,11 +78,7 @@ public class ImportControllerTest extends MindmapsEngineTestBase {
         String dataPath = getClass().getClassLoader().getResource("small_nametags.gql").getPath();
 
 
-        Response ontologyResponse = given().contentType("application/json").
-                body(Json.object("path", ontologyPath).toString()).when().
-                post(REST.WebPath.IMPORT_ONTOLOGY_URI);
-
-        ontologyResponse.then().assertThat().statusCode(200);
+        importOntology(ontologyPath,graphName);
 
         Response dataResponse = given().contentType("application/json").
                 body(Json.object("path", dataPath, "hosts", Json.array().add("127.0.0.1")).toString()).when().
@@ -103,12 +103,7 @@ public class ImportControllerTest extends MindmapsEngineTestBase {
         String dataPath = getClass().getClassLoader().getResource("small_nametags.gql").getPath();
         String customGraph = "importgraph";
 
-
-        Response ontologyResponse = given().contentType("application/json").
-                body(Json.object("path", ontologyPath, "graphName", customGraph).toString()).when().
-                post(REST.WebPath.IMPORT_ONTOLOGY_URI);
-
-        ontologyResponse.then().assertThat().statusCode(200);
+        importOntology(ontologyPath,customGraph);
 
         Response dataResponse = given().contentType("application/json").
                 body(Json.object("path", dataPath, "graphName", customGraph).toString()).when().
@@ -125,6 +120,24 @@ public class ImportControllerTest extends MindmapsEngineTestBase {
 
         Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(customGraph).getConcept("X506965727265204162656c").getId());
         GraphFactory.getInstance().getGraphBatchLoading(customGraph).clear();
+    }
+
+    private void importOntology(String ontologyFile, String graphNameParam){
+        MindmapsGraph graph = GraphFactory.getInstance().getGraphBatchLoading(graphNameParam);
+
+        List<String> lines = null;
+        try {
+            lines = Files.readAllLines(Paths.get(ontologyFile), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
+        Graql.parse(query).withGraph(graph).execute();
+        try {
+            graph.commit();
+        } catch (MindmapsValidationException e) {
+            e.printStackTrace();
+        }
     }
 
 

@@ -21,6 +21,7 @@ package io.mindmaps.engine.controller;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.engine.session.RemoteSession;
 import io.mindmaps.engine.util.ConfigProperties;
+import io.mindmaps.exception.MindmapsEngineServerException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import io.mindmaps.util.REST;
@@ -41,9 +42,7 @@ import javax.ws.rs.Produces;
 import java.util.stream.Collectors;
 
 import static io.mindmaps.graql.Graql.withGraph;
-import static spark.Spark.get;
-import static spark.Spark.webSocket;
-import static spark.Spark.webSocketIdleTimeoutMillis;
+import static spark.Spark.*;
 
 
 @Path("/shell")
@@ -92,9 +91,7 @@ public class RemoteShellController {
 
             return responseObj.toString();
         } catch (Exception e) {
-            LOG.error("New Exception", e);
-            res.status(500);
-            return e.getMessage();
+            throw new MindmapsEngineServerException(500, e);
         }
     }
 
@@ -113,7 +110,6 @@ public class RemoteShellController {
 
         LOG.debug("Received match query: \"" + req.queryParams(REST.Request.QUERY_FIELD) + "\"");
 
-
         try {
             MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName);
 
@@ -122,9 +118,7 @@ public class RemoteShellController {
                     .map(x -> x.replaceAll("\u001B\\[\\d+[m]", ""))
                     .collect(Collectors.joining("\n"));
         } catch (Exception e) {
-            LOG.error("New Exception", e);
-            res.status(500);
-            return e.getMessage();
+            throw new MindmapsEngineServerException(500,e);
         }
     }
 
