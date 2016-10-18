@@ -18,6 +18,8 @@
 
 package io.mindmaps.test.graql.analytics;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.*;
@@ -41,7 +43,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeTrue;
 
-public class ScalingTestIT extends AbstractMindmapsEngineTest {
+public class ScalingTestIT {
 
     private static final String[] HOST_NAME =
             {"localhost"};
@@ -58,40 +60,42 @@ public class ScalingTestIT extends AbstractMindmapsEngineTest {
     int STEP_SIZE;
     List<Integer> graphSizes;
 
-    @BeforeClass
-    public static void setUpClass() throws Exception {
-        // TODO: Make this work with tinker and orientdb
-        assumeTrue(usingTitan());
+    private static void hideLogs() {
+        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+        logger.setLevel(Level.OFF);
     }
 
     @Before
     public void setUp() {
-        keyspace = graph.getKeyspace();
+        hideLogs();
 
         // compute the sample of graph sizes
         STEP_SIZE = MAX_SIZE/NUM_DIVS;
         graphSizes = new ArrayList<>();
         for (int i = 1;i < NUM_DIVS;i++) graphSizes.add(i*STEP_SIZE);
         graphSizes.add(MAX_SIZE);
+
+        // get a random keyspace
+        keyspace = UUID.randomUUID().toString().replaceAll("-", "").toLowerCase();
     }
 
     @After
     public void cleanGraph() {
+        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
         graph.clear();
     }
 
     @Test
-    public void countAndDegreeIT() throws InterruptedException, ExecutionException, MindmapsValidationException {
+    public void countIT() throws InterruptedException, ExecutionException, MindmapsValidationException {
         PrintWriter writer = null;
 
         try {
-            writer = new PrintWriter("timingsCountAndDegree.txt", "UTF-8");
+            writer = new PrintWriter("timingsCount.txt", "UTF-8");
         } catch (FileNotFoundException | UnsupportedEncodingException e) {
             e.printStackTrace();
         }
 
-        Map<Integer, Long> scaleToAverageTimeCount = new HashMap<>();
-        Map<Integer, Long> scaleToAverageTimeDegree = new HashMap<>();
+        Map<Long, Long> scaleToAverageTimeCount = new HashMap<>();
 
         // Insert super nodes into graph
         simpleOntology(keyspace);
@@ -110,47 +114,34 @@ public class ScalingTestIT extends AbstractMindmapsEngineTest {
             previousGraphSize = graphSize;
             writer.println("stop generate graph " + System.currentTimeMillis()/1000L + "s");
 
-            Analytics computer = new Analytics(keyspace,new HashSet<>(),new HashSet<>());
+            Analytics computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
 
             Long countTime = 0L;
-            Long degreeTime = 0L;
-            Long degreeAndPersistTime = 0L;
             Long startTime = 0L;
             Long stopTime = 0L;
+            Long conceptCount = 0L;
 
-            graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+            MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
 
             for (int i=0;i<REPEAT;i++) {
                 writer.println("gremlin count is: " + graph.getTinkerTraversal().count().next());
                 writer.println("repeat number: "+i);
                 writer.flush();
                 startTime = System.currentTimeMillis();
-                writer.println("count: " + computer.count());
+                conceptCount = computer.count();
+                writer.println("count: " + conceptCount);
                 writer.flush();
                 stopTime = System.currentTimeMillis();
                 countTime+=stopTime-startTime;
                 writer.println("count time: " + countTime / ((i + 1) * 1000));
-
-                writer.println("degree");
-                writer.flush();
-                startTime = System.currentTimeMillis();
-                computer.degrees();
-                stopTime = System.currentTimeMillis();
-                degreeTime+=stopTime-startTime;
-                writer.println("degree time: " + degreeTime / ((i + 1) * 1000));
-
             }
 
             countTime /= REPEAT*1000;
-            degreeTime /= REPEAT*1000;
             writer.println("time to count: " + countTime);
-            scaleToAverageTimeCount.put(graphSize,countTime);
-            writer.println("time to degrees: " + degreeTime);
-            scaleToAverageTimeDegree.put(graphSize,degreeTime);
+            scaleToAverageTimeCount.put(conceptCount,countTime);
         }
 
         writer.println("counts: " + scaleToAverageTimeCount);
-        writer.println("degrees: " + scaleToAverageTimeDegree);
 
         writer.flush();
         writer.close();
@@ -169,8 +160,9 @@ public class ScalingTestIT extends AbstractMindmapsEngineTest {
 
         Long startTime = 0L;
         Long stopTime = 0L;
-        Map<Integer, Long> scaleToAverageTimeDegreeAndPersistWrite = new HashMap<>();
-        Map<Integer, Long> scaleToAverageTimeDegreeAndPersistMutate = new HashMap<>();
+        Map<Long, Long> scaleToAverageTimeDegreeAndPersistWrite = new HashMap<>();
+        Map<Long, Long> scaleToAverageTimeDegreeAndPersistMutate = new HashMap<>();
+        Long conceptCount = 0L;
 
         for (int graphSize : graphSizes) {
             Long degreeAndPersistTimeWrite = 0L;
@@ -188,10 +180,10 @@ public class ScalingTestIT extends AbstractMindmapsEngineTest {
                 addNodes(CURRENT_KEYSPACE, 0, graphSize);
                 writer.println("stop generate graph " + System.currentTimeMillis()/1000L + "s");
 
-                graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+                MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, CURRENT_KEYSPACE).getGraph();
                 writer.println("gremlin count is: " + graph.getTinkerTraversal().count().next());
 
-                Analytics computer = new Analytics(CURRENT_KEYSPACE,new HashSet<>(),new HashSet<>());
+                Analytics computer = new Analytics(CURRENT_KEYSPACE, new HashSet<>(), new HashSet<>());
 
                 writer.println("persist degree");
                 writer.flush();
@@ -210,11 +202,11 @@ public class ScalingTestIT extends AbstractMindmapsEngineTest {
 
                 writer.println("stop mutate graph " + System.currentTimeMillis() / 1000L + "s");
 
-                graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, CURRENT_KEYSPACE).getGraph();
+                graph = Mindmaps.factory(Mindmaps.DEFAULT_URI,CURRENT_KEYSPACE).getGraph();
                 writer.println("gremlin count is: " + graph.getTinkerTraversal().count().next());
 
                 writer.println("mutate degree");
-                computer = new Analytics(CURRENT_KEYSPACE,new HashSet<>(),new HashSet<>());
+                computer = new Analytics(CURRENT_KEYSPACE, new HashSet<>(), new HashSet<>());
                 writer.flush();
                 startTime = System.currentTimeMillis();
                 computer.degreesAndPersist();
@@ -227,12 +219,13 @@ public class ScalingTestIT extends AbstractMindmapsEngineTest {
                 writer.println("stop clean graph" + System.currentTimeMillis()/1000L + "s");
             }
 
+            conceptCount = Long.valueOf(graphSize)*3/2;
             degreeAndPersistTimeWrite /= REPEAT*1000;
             degreeAndPersistTimeMutate /= REPEAT*1000;
             writer.println("time to degreesAndPersistWrite: " + degreeAndPersistTimeWrite);
             writer.println("time to degreesAndPersistMutate: " + degreeAndPersistTimeMutate);
-            scaleToAverageTimeDegreeAndPersistWrite.put(graphSize,degreeAndPersistTimeWrite);
-            scaleToAverageTimeDegreeAndPersistMutate.put(graphSize,degreeAndPersistTimeMutate);
+            scaleToAverageTimeDegreeAndPersistWrite.put(conceptCount,degreeAndPersistTimeWrite);
+            scaleToAverageTimeDegreeAndPersistMutate.put(conceptCount,degreeAndPersistTimeMutate);
         }
 
         writer.println("degreesAndPersistWrite: " + scaleToAverageTimeDegreeAndPersistWrite);
@@ -250,12 +243,12 @@ public class ScalingTestIT extends AbstractMindmapsEngineTest {
         // construct graph
         addNodes(keyspace, 0, MAX_SIZE);
 
-        Analytics computer = new Analytics(keyspace,new HashSet<>(),new HashSet<>());
+        Analytics computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
 
         computer.degreesAndPersist();
 
         // assert mutated degrees are as expected
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
         EntityType thing = graph.getEntityType("thing");
         Collection<Entity> things = thing.instances();
 
@@ -269,7 +262,7 @@ public class ScalingTestIT extends AbstractMindmapsEngineTest {
         // add edges to force mutation
         addEdges(keyspace, MAX_SIZE);
 
-        computer = new Analytics(keyspace,new HashSet<>(),new HashSet<>());
+        computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
 
         computer.degreesAndPersist();
 
@@ -339,7 +332,6 @@ public class ScalingTestIT extends AbstractMindmapsEngineTest {
         thing.playsRole(relation1).playsRole(relation2);
         RelationType related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
         graph.commit();
-        graph.close();
     }
 
     private Set<String> makeSuperNodes(String keyspace) throws MindmapsValidationException {
@@ -383,5 +375,4 @@ public class ScalingTestIT extends AbstractMindmapsEngineTest {
         }
         distributedLoader.waitToFinish();
     }
-
 }
