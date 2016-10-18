@@ -27,7 +27,6 @@ import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.BaseErrorListener;
 import org.antlr.v4.runtime.Token;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -35,6 +34,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static io.mindmaps.graql.internal.util.CommonUtil.toImmutableSet;
+import static io.mindmaps.graql.internal.util.StringConverter.GRAQL_KEYWORDS;
 
 /**
  * An autocomplete result suggesting keywords, types and variables that the user may wish to type
@@ -86,7 +86,7 @@ public class Autocomplete {
      * @return a set of potential autocomplete words
      */
     private static ImmutableSet<String> findCandidates(MindmapsGraph graph, String query, Optional<? extends Token> optToken) {
-        ImmutableSet<String> allCandidates = Stream.of(getKeywords(), getTypes(graph), getVariables(query))
+        ImmutableSet<String> allCandidates = Stream.of(GRAQL_KEYWORDS.stream(), getTypes(graph), getVariables(query))
                 .flatMap(Function.identity()).collect(toImmutableSet());
 
         return optToken.map(
@@ -114,20 +114,6 @@ public class Autocomplete {
                 .filter(token -> !candidates.contains(" "))
                 .map(Token::getStartIndex)
                 .orElse(cursorPosition);
-    }
-
-    /**
-     * @return all Graql keywords
-     */
-    private static Stream<String> getKeywords() {
-        HashSet<String> keywords = new HashSet<>();
-
-        for (int i = 1; GraqlLexer.VOCABULARY.getLiteralName(i) != null; i ++) {
-            String name = GraqlLexer.VOCABULARY.getLiteralName(i);
-            keywords.add(name.replaceAll("'", ""));
-        }
-
-        return keywords.stream();
     }
 
     /**
