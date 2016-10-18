@@ -57,7 +57,7 @@ public abstract class MindmapsVertexProgram<T> extends CommonOLAP implements Ver
     @Override
     public void execute(Vertex vertex, Messenger<T> messenger, Memory memory) {
         // try to deal with ghost vertex issues by ignoring them
-        if (isAlive(vertex)) {
+        if (Utility.isAlive(vertex)) {
             safeExecute(vertex, messenger, memory);
         }
     }

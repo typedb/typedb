@@ -53,7 +53,7 @@ public abstract class MindmapsMapReduce<T> extends CommonOLAP
     @Override
     public void map(Vertex vertex, MapEmitter<Serializable, T> emitter) {
         // try to deal with ghost vertex issues by ignoring them
-        if (isAlive(vertex)) {
+        if (Utility.isAlive(vertex)) {
             safeMap(vertex, emitter);
         }
     }

@@ -22,13 +22,22 @@ import com.google.common.collect.Sets;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.util.Schema;
 import org.apache.commons.configuration.Configuration;
-import org.apache.tinkerpop.gremlin.process.computer.*;
+import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
+import org.apache.tinkerpop.gremlin.process.computer.Memory;
+import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
+import org.apache.tinkerpop.gremlin.process.computer.Messenger;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
+
+/**
+ * This class implements quick select algorithm to find the median.
+ */
 
 public class MedianVertexProgram extends MindmapsVertexProgram<Long> {
 
@@ -143,7 +152,7 @@ public class MedianVertexProgram extends MindmapsVertexProgram<Long> {
     public void safeExecute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
         switch (memory.getIteration()) {
             case 0:
-                if (selectedTypes.contains(getVertexType(vertex))) {
+                if (selectedTypes.contains(Utility.getVertexType(vertex))) {
                     String type = vertex.value(Schema.ConceptProperty.BASE_TYPE.name());
                     if (type.equals(Schema.BaseType.ENTITY.name()) || type.equals(Schema.BaseType.RESOURCE.name())) {
                         messenger.sendMessage(this.countMessageScopeIn, 1L);
@@ -171,10 +180,11 @@ public class MedianVertexProgram extends MindmapsVertexProgram<Long> {
                 }
                 break;
             case 2:
-                if (statisticsResourceTypes.contains(getVertexType(vertex))) {
+                if (statisticsResourceTypes.contains(Utility.getVertexType(vertex))) {
                     // put degree
                     long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
                     vertex.property(DEGREE, edgeCount);
+                    //TODO: select three values in each iteration, pick the median of the three as pivot
                     // select pivot randomly
                     if (edgeCount > 0) {
                         memory.set(PIVOT,
@@ -184,7 +194,8 @@ public class MedianVertexProgram extends MindmapsVertexProgram<Long> {
                 }
                 break;
             case 3:
-                if (statisticsResourceTypes.contains(getVertexType(vertex)) && (long) vertex.value(DEGREE) > 0) {
+                if (statisticsResourceTypes.contains(Utility.getVertexType(vertex)) &&
+                        (long) vertex.value(DEGREE) > 0) {
                     Number value = vertex.value((String) persistentProperties.get(RESOURCE_DATA_TYPE));
                     if (value.doubleValue() < memory.<Number>get(PIVOT).doubleValue()) {
                         vertex.property(LABEL, -memory.getIteration());
@@ -195,20 +206,22 @@ public class MedianVertexProgram extends MindmapsVertexProgram<Long> {
                         memory.incr(POSITIVE_COUNT, vertex.value(DEGREE));
                         memory.set(PIVOT_POSITIVE, value);
                     } else {
+                        // also assign a label to pivot, so all the selected resources have LABEL
                         vertex.property(LABEL, 0);
                     }
                 }
                 break;
+
+            // default case is almost the same as case 3, except that in case 3 no vertex has LABEL
             default:
-                if (statisticsResourceTypes.contains(getVertexType(vertex)) && (long) vertex.value(DEGREE) > 0 &&
+                if (statisticsResourceTypes.contains(Utility.getVertexType(vertex)) &&
+                        (long) vertex.value(DEGREE) > 0 &&
                         (int) vertex.value(LABEL) == memory.<Integer>get(LABEL_SELECTED)) {
                     Number value = vertex.value((String) persistentProperties.get(RESOURCE_DATA_TYPE));
-//                    if (value < memory.<Long>get(PIVOT)) {
                     if (value.doubleValue() < memory.<Number>get(PIVOT).doubleValue()) {
                         vertex.property(LABEL, -memory.getIteration());
                         memory.incr(NEGATIVE_COUNT, vertex.value(DEGREE));
                         memory.set(PIVOT_NEGATIVE, value);
-//                    } else if (value > memory.<Long>get(PIVOT)) {
                     } else if (value.doubleValue() > memory.<Number>get(PIVOT).doubleValue()) {
                         vertex.property(LABEL, memory.getIteration());
                         memory.incr(POSITIVE_COUNT, vertex.value(DEGREE));
@@ -270,6 +283,7 @@ public class MedianVertexProgram extends MindmapsVertexProgram<Long> {
             memory.set(POSITIVE_COUNT, 0L);
             memory.set(NEGATIVE_COUNT, 0L);
         }
+
         return memory.<Boolean>get(FOUND) || memory.getIteration() >= MAX_ITERATION;
     }
 }

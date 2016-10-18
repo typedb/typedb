@@ -47,7 +47,7 @@ class CountMapReduce extends MindmapsMapReduce<Long> {
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Long> emitter) {
         // use the ghost node detector here again
         if (!selectedTypes.isEmpty()) {
-            if (selectedTypes.contains(getVertexType(vertex))) {
+            if (selectedTypes.contains(Utility.getVertexType(vertex))) {
                 emitter.emit(MEMORY_KEY, 1l);
                 return;
             }
