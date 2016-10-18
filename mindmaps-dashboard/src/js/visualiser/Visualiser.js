@@ -38,7 +38,8 @@ export default class Visualiser {
             click: x => {},
             doubleClick: x => {},
             rightClick: x => {},
-            hover: x => {}
+            hover: x => {},
+            dragEnd: x=>{}
         };
 
         this.style = new Style();
@@ -114,6 +115,14 @@ export default class Visualiser {
     }
 
     /**
+    * Register callback for when a node dragging is finished.
+    */
+    setOnDragEnd(fn) {
+            this.callbacks.dragEnd = fn;
+            return this;
+    }
+
+    /**
      * Start visualisation and render graph. This needs to be called only once, but all callbacks should be configured
      * prior.
      */
@@ -127,6 +136,7 @@ export default class Visualiser {
         this.network.on('doubleClick', this.callbacks.doubleClick);
         this.network.on('oncontext', this.callbacks.rightClick);
         this.network.on('hoverNode', this.callbacks.hover);
+        this.network.on('dragEnd', this.callbacks.dragEnd);
         this.network.on('stabilized', () => { this.setSimulation(false) });
 
         return this;
@@ -155,6 +165,16 @@ export default class Visualiser {
         }
 
         return this;
+    }
+
+    disablePhysicsOnNode(id) {
+            if(this.nodeExists(id)) {
+                this.nodes.update({
+                    id: id,
+                    physics:false
+                });
+            }
+            return this;
     }
 
     /**
