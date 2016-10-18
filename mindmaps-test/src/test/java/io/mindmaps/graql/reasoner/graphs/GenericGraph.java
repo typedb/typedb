@@ -34,7 +34,7 @@ import java.util.UUID;
 public class GenericGraph {
 
     protected static MindmapsGraph mindmaps;
-    private final static String filePath = "src/test/resources/graql/";
+    private final static String filePath = "src/test/graql/";
 
     public static MindmapsGraph getGraph(String graqlFile) {
         mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
