@@ -18,6 +18,7 @@
 
 package io.mindmaps.test.graql.reasoner.graphs;
 
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
@@ -27,7 +28,8 @@ import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.RuleType;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.test.AbstractEngineTest;
+
+import java.util.UUID;
 
 public class GeoGraph {
 
@@ -46,7 +48,7 @@ public class GeoGraph {
     private static Instance UW, PW, Imperial, UniversityOfMunich, UCL;
 
     public static MindmapsGraph getGraph() {
-        mindmaps = AbstractEngineTest.factoryWithNewKeyspace().getGraph();
+        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         buildGraph();
         try {
             mindmaps.commit();

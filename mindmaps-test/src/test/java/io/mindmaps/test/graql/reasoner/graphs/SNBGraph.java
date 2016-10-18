@@ -19,24 +19,25 @@
 package io.mindmaps.test.graql.reasoner.graphs;
 
 
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.test.AbstractEngineTest;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.UUID;
 
 public class SNBGraph {
 
     private static MindmapsGraph mindmaps;
 
     public static MindmapsGraph getGraph() {
-        mindmaps = AbstractEngineTest.factoryWithNewKeyspace().getGraph();
+        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         buildGraph();
 
         try {
