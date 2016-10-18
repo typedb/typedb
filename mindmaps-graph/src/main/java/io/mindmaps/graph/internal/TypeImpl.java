@@ -98,8 +98,8 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      *
      * @return All outgoing ako parents including itself
      */
-    public Set<Type> getAkoHierarchySuperSet() {
-        Set<Type> superSet= new HashSet<>();
+    Set<TypeImpl<?, ?>> getAkoHierarchySuperSet() {
+        Set<TypeImpl<?, ?>> superSet= new HashSet<>();
         superSet.add(this);
         TypeImpl akoParent = getParentAko();
 
