@@ -74,6 +74,7 @@ public class REST {
         public static final String ACTION_COMMIT = "commit";
         public static final String ACTION_ROLLBACK = "rollback";
         public static final String ACTION_AUTOCOMPLETE = "autocomplete";
+        public static final String ACTION_PING = "ping";
 
         public static final String NAMESPACE = "namespace";
         public static final String QUERY = "query";
