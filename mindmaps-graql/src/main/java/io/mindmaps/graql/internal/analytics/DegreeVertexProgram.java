@@ -93,10 +93,8 @@ public class DegreeVertexProgram extends MindmapsVertexProgram<Long> {
                 break;
             case 2:
                 if (selectedTypes.contains(getVertexType(vertex))) {
-                    if (baseTypes.contains(vertex.value(Schema.ConceptProperty.BASE_TYPE.name()).toString())) {
-                        long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
-                        vertex.property(MEMORY_KEY, edgeCount);
-                    }
+                    long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
+                    vertex.property(MEMORY_KEY, edgeCount);
                 }
                 break;
         }
