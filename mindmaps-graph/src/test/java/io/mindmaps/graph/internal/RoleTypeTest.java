@@ -121,6 +121,16 @@ public class RoleTypeTest {
     }
 
     @Test
+    public void testPlayedByTypes(){
+        RoleType crewMember = mindmapsGraph.putRoleType("crew-member").setAbstract(true);
+        EntityType person = mindmapsGraph.putEntityType("person").playsRole(crewMember);
+        RoleType productionDesigner = mindmapsGraph.putRoleType("production-designer").superType(crewMember);
+
+        assertEquals(1, productionDesigner.playedByTypes().size());
+        assertEquals(person, productionDesigner.playedByTypes().iterator().next());
+    }
+
+    @Test
     public  void getInstancesTest(){
         RoleType roleA = mindmapsGraph.putRoleType("roleA");
         RoleType roleB = mindmapsGraph.putRoleType("roleB");
