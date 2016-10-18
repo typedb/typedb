@@ -52,8 +52,8 @@ property       : 'isa' variable                   # isa
                | 'has-scope' variable             # hasScope
                | 'id' STRING                      # propId
                | 'value' predicate?               # propValue
-               | 'lhs' '{' query '}'              # propLhs
-               | 'rhs' '{' query '}'              # propRhs
+               | 'lhs' '{' patterns '}'           # propLhs
+               | 'rhs' '{' patterns '}'           # propRhs
                | 'has' id (predicate | VARIABLE)? # propHas
                | 'has-resource' variable          # propResource
                | '(' casting (',' casting)* ')'   # propRel

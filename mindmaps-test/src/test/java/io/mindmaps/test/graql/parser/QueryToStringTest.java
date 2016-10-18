@@ -107,12 +107,12 @@ public class QueryToStringTest {
 
     @Test
     public void testQueryWithRhsToString() {
-        assertValidToString(qb.match(var("x").rhs("match $x isa movie; delete $x;")));
+        assertValidToString(qb.match(var("x").rhs("$x isa movie;")));
     }
 
     @Test
     public void testQueryWithLhsToString() {
-        assertValidToString(qb.match(var("x").lhs("match $x isa person; ask;")));
+        assertValidToString(qb.match(var("x").lhs("$x isa person;")));
     }
 
     @Test

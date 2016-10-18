@@ -96,6 +96,14 @@ public class Graql {
     }
 
     /**
+     * @param patternsString a string representing a list of patterns
+     * @return a list of patterns
+     */
+    public static List<Pattern> parsePatterns(String patternsString) {
+        return withoutGraph().parsePatterns(patternsString);
+    }
+
+    /**
      * @param queryString a string representing a query
      * @return a query, the type will depend on the type of query.
      */

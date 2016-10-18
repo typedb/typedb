@@ -171,7 +171,7 @@ public class GraqlShellIT extends AbstractMindmapsEngineTest {
                 "insert man isa entity-type; person isa entity-type;\n" +
                 "insert 'felix' isa man;\n" +
                 "match $x isa person;\n" +
-                "insert my-rule isa inference-rule lhs {match $x isa man;} rhs {match $x isa person;};\n" +
+                "insert my-rule isa inference-rule lhs {$x isa man;} rhs {$x isa person;};\n" +
                 "match $x isa person;\n"
         );
 
