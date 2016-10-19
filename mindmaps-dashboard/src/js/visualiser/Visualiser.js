@@ -41,7 +41,6 @@ export default class Visualiser {
             hover: x => {},
             dragEnd: x=>{}
         };
-
         this.style = new Style();
 
         // vis.js network, instantiated on render.
@@ -66,7 +65,7 @@ export default class Visualiser {
                   "centralGravity": 0.01,
                   "damping": 0.5
                 },
-                "minVelocity": 4.50,
+                "minVelocity": 0.8,
                 "solver": "repulsion"
             },
             interaction: {
