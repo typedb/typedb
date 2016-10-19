@@ -43,7 +43,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeTrue;
 
-public class ScalingTestIT {
+public class ScalingTestIT extends AbstractMindmapsEngineTest {
 
     private static final String[] HOST_NAME =
             {"localhost"};
@@ -52,9 +52,9 @@ public class ScalingTestIT {
 
     // test parameters
     int NUM_SUPER_NODES = 1; // the number of supernodes to generate in the test graph
-    int MAX_SIZE = 150; // the maximum number of non super nodes to add to the test graph
-    int NUM_DIVS = 3; // the number of divisions of the MAX_SIZE to use in the scaling test
-    int REPEAT = 3; // the number of times to repeat at each size for average runtimes
+    int MAX_SIZE = 4; // the maximum number of non super nodes to add to the test graph
+    int NUM_DIVS = 2; // the number of divisions of the MAX_SIZE to use in the scaling test
+    int REPEAT = 1; // the number of times to repeat at each size for average runtimes
 
     // test variables
     int STEP_SIZE;
@@ -63,6 +63,11 @@ public class ScalingTestIT {
     private static void hideLogs() {
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.OFF);
+    }
+
+    @BeforeClass
+    static public void useTitanOnly() {
+        assumeTrue(usingTitan());
     }
 
     @Before
@@ -76,7 +81,9 @@ public class ScalingTestIT {
         graphSizes.add(MAX_SIZE);
 
         // get a random keyspace
-        keyspace = UUID.randomUUID().toString().replaceAll("-", "").toLowerCase();
+        //TODO: run on independent mindmaps
+//        keyspace = UUID.randomUUID().toString().replaceAll("-", "").toLowerCase();
+        keyspace = graph.getKeyspace();
     }
 
     @After
@@ -129,6 +136,7 @@ public class ScalingTestIT {
                 writer.flush();
                 startTime = System.currentTimeMillis();
                 conceptCount = computer.count();
+                assertEquals(Long.valueOf(NUM_SUPER_NODES*(graphSize+1)+graphSize),conceptCount);
                 writer.println("count: " + conceptCount);
                 writer.flush();
                 stopTime = System.currentTimeMillis();
