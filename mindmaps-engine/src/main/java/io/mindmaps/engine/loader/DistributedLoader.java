@@ -102,8 +102,8 @@ public class DistributedLoader extends Loader {
      * Block the main thread until all of the transactions have finished loading
      */
     public void waitToFinish() {
+        flush();
         if(future != null){
-            flush();
             try {
                 future.get();
             } catch (InterruptedException | ExecutionException e) {
