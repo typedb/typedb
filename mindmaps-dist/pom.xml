@@ -64,6 +64,11 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>io.mindmaps</groupId>
+            <artifactId>migration-export</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- Factories -->
         <dependency>
