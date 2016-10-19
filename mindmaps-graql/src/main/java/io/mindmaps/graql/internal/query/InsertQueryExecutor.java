@@ -230,20 +230,15 @@ public class InsertQueryExecutor {
         } else if (typeId.equals(Schema.MetaType.RULE_TYPE.getId())) {
             return graph.putRuleType(getTypeIdOrThrow(id));
         } else if (type.isEntityType()) {
-            return putInstance(id, type.asEntityType(), graph::putEntity, graph::addEntity);
+            return graph.addEntity(type.asEntityType());
         } else if (type.isRelationType()) {
-            return putInstance(id, type.asRelationType(), graph::putRelation, graph::addRelation);
+            return graph.addRelation(type.asRelationType());
         } else if (type.isResourceType()) {
             return graph.putResource(getValue(var), type.asResourceType());
         } else if (type.isRuleType()) {
             String lhs = var.getProperty(LhsProperty.class).get().getLhs();
             String rhs = var.getProperty(RhsProperty.class).get().getRhs();
-
-            return putInstance(
-                    id, type.asRuleType(),
-                    (ruleId, ruleType) -> graph.putRule(ruleId, lhs, rhs, ruleType),
-                    ruleType -> graph.addRule(lhs, rhs, ruleType)
-            );
+            return graph.addRule(lhs, rhs, type.asRuleType());
         } else {
             throw new RuntimeException("Unrecognized type " + type.getId());
         }
