@@ -47,7 +47,7 @@ public class ExamplesTest {
     @Test
     public void testModern() throws IOException {
         runInsertQuery("src/examples/modern.gql");
-        assertTrue(qb.match(id("marko").isa("person")).ask().execute());
+        assertTrue(qb.match(var().has("name", "marko").isa("person")).ask().execute());
     }
 
     @Test
