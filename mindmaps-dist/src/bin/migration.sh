@@ -19,7 +19,11 @@ elif [ $1 == "owl" ]
 then
   echo "owl migration starting"
   java -cp "`dirname $path`/../lib/*" -Dmindmaps.dir=$SCRIPTPATH io.mindmaps.migration.owl.Main ${1+"$@"}
+elif [ $1 == "export" ]
+then
+  echo "owl migration starting"
+  java -cp "`dirname $path`/../lib/*" -Dmindmaps.dir=$SCRIPTPATH io.mindmaps.migration.owl.Main ${1+"$@"}
 else
-  echo "usage: ./migration.sh {owl, sql, csv} <params>"
+  echo "usage: ./migration.sh {owl, sql, csv, json, export} <params>"
 fi
 
