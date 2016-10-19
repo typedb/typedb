@@ -286,8 +286,8 @@ public class ValidatorTest {
         RelationType rel = mindmapsGraph.putRelationType("rel").hasRole(role1).hasRole(role2);
         EntityType ent = mindmapsGraph.putEntityType("ent").playsRole(role1).playsRole(role2);
         EntityType ent_t = mindmapsGraph.putEntityType("ent_t");
-        Entity ent1 = mindmapsGraph.putEntity("ent1", ent);
-        Entity ent2 = mindmapsGraph.putEntity("ent2", ent);
+        Entity ent1 = mindmapsGraph.addEntity(ent);
+        Entity ent2 = mindmapsGraph.addEntity(ent);
         mindmapsGraph.addRelation(rel).putRolePlayer(role1, ent1).putRolePlayer(role2, ent2);
         mindmapsGraph.commit();
 
@@ -296,7 +296,7 @@ public class ValidatorTest {
                 containsString(ErrorMessage.IMMUTABLE_TYPE.getMessage(ent1, ent_t, ent))
         ));
 
-        mindmapsGraph.putEntity("ent1", ent_t);
+        mindmapsGraph.putEntity(ent1.getId(), ent_t);
     }
 
     @Test
