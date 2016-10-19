@@ -89,7 +89,6 @@ public class Reasoner {
             String parentVal = parent.getValuePredicate(parentAtom.getVal());
             relRelevant = parentVal.isEmpty() || parentVal.equals(childVal);
         }
-
         return relRelevant;
     }
 
