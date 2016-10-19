@@ -34,7 +34,7 @@ import java.util.Set;
  */
 public abstract class MindmapsVertexProgram<T> extends CommonOLAP implements VertexProgram<T> {
 
-    final static Logger LOGGER = LoggerFactory.getLogger(MindmapsVertexProgram.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(MindmapsVertexProgram.class);
 
     static final Logger LOGGER = LoggerFactory.getLogger(MindmapsVertexProgram.class);
 
