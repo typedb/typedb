@@ -53,7 +53,7 @@ property       : 'isa' variable                   # isa
                | 'id' STRING                      # propId
                | 'value' predicate?               # propValue
                | 'lhs' '{' patterns '}'           # propLhs
-               | 'rhs' '{' patterns '}'           # propRhs
+               | 'rhs' '{' varPatterns '}'        # propRhs
                | 'has' id (predicate | VARIABLE)? # propHas
                | 'has-resource' variable          # propResource
                | '(' casting (',' casting)* ')'   # propRel
