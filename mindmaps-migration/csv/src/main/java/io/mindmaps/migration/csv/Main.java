@@ -37,6 +37,8 @@ import static java.util.stream.Collectors.joining;
  */
 public class Main {
 
+    private static ConfigProperties properties = ConfigProperties.getInstance();
+
     static void die(String errorMsg) {
         throw new RuntimeException(errorMsg + "\nSyntax: ./migration.sh csv -file <csv file> -template <template file> [-delimiter <delimiter>] [-batch <number of rows>] [-graph <graph name>] [-engine <Mindmaps engine URL>])");
     }
@@ -85,7 +87,7 @@ public class Main {
 
 
         if(graphName == null){
-            graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+            graphName = properties.getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
         }
 
         System.out.println("Migrating " + csvFileName + " using MM Engine " +
