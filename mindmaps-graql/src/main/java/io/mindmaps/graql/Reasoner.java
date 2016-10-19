@@ -191,7 +191,6 @@ public class Reasoner {
 
     private QueryAnswers answer(AtomicQuery atomicQuery, Set<AtomicQuery> subGoals, Map<AtomicQuery, QueryAnswers> matAnswers) {
         Atomic atom = atomicQuery.getAtom();
-
         atomicQuery.DBlookup();
         atomicQuery.memoryLookup(matAnswers);
 
