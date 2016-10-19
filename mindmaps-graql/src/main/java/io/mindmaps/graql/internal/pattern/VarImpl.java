@@ -18,23 +18,51 @@
 
 package io.mindmaps.graql.internal.pattern;
 
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Maps;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.graql.ValuePredicate;
 import io.mindmaps.graql.Var;
-import io.mindmaps.graql.admin.*;
-import io.mindmaps.graql.internal.pattern.property.*;
+import io.mindmaps.graql.admin.Conjunction;
+import io.mindmaps.graql.admin.Disjunction;
+import io.mindmaps.graql.admin.UniqueVarProperty;
+import io.mindmaps.graql.admin.ValuePredicateAdmin;
+import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.admin.VarProperty;
+import io.mindmaps.graql.internal.pattern.property.AkoProperty;
+import io.mindmaps.graql.internal.pattern.property.DataTypeProperty;
+import io.mindmaps.graql.internal.pattern.property.HasResourceProperty;
+import io.mindmaps.graql.internal.pattern.property.HasResourceTypeProperty;
+import io.mindmaps.graql.internal.pattern.property.HasRoleProperty;
+import io.mindmaps.graql.internal.pattern.property.HasScopeProperty;
+import io.mindmaps.graql.internal.pattern.property.IdProperty;
+import io.mindmaps.graql.internal.pattern.property.IsAbstractProperty;
+import io.mindmaps.graql.internal.pattern.property.IsaProperty;
+import io.mindmaps.graql.internal.pattern.property.LhsProperty;
+import io.mindmaps.graql.internal.pattern.property.PlaysRoleProperty;
+import io.mindmaps.graql.internal.pattern.property.RegexProperty;
+import io.mindmaps.graql.internal.pattern.property.RelationProperty;
+import io.mindmaps.graql.internal.pattern.property.RhsProperty;
+import io.mindmaps.graql.internal.pattern.property.ValueFlagProperty;
+import io.mindmaps.graql.internal.pattern.property.ValueProperty;
 import io.mindmaps.graql.internal.util.CommonUtil;
 import io.mindmaps.graql.internal.util.StringConverter;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.Stack;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static io.mindmaps.graql.Graql.eq;
 import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.graql.internal.util.CommonUtil.toImmutableSet;
+import static io.mindmaps.graql.internal.util.CommonUtil.toImmutableMultiset;
 import static io.mindmaps.util.ErrorMessage.CONFLICTING_PROPERTIES;
 import static io.mindmaps.util.ErrorMessage.SET_GENERATED_VARIABLE_NAME;
 import static java.util.stream.Collectors.groupingBy;
@@ -417,8 +445,8 @@ class VarImpl implements VarAdmin {
                 .map(RelationProperty::getCastings)
                 .orElse(Stream.empty());
 
-        ImmutableSet<VarAdmin.Casting> castings =
-                Stream.concat(oldCastings, Stream.of(casting)).collect(toImmutableSet());
+        ImmutableMultiset<VarAdmin.Casting> castings =
+                Stream.concat(oldCastings, Stream.of(casting)).collect(toImmutableMultiset());
 
         relationProperty.ifPresent(properties::remove);
 

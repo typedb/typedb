@@ -163,6 +163,11 @@ public class QueryToStringTest {
         assertEquals("match $x isa \"isa\";", query.toString());
     }
 
+    @Test
+    public void testRepeatRoleplayerToString() {
+        assertEquals("match ($x, $x);", match(var().rel("x").rel("x")).toString());
+    }
+
     @Test(expected=UnsupportedOperationException.class)
     public void testToStringUnsupported() {
         //noinspection ResultOfMethodCallIgnored

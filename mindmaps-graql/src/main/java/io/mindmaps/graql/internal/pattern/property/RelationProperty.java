@@ -18,10 +18,15 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
+import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.*;
+import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.Instance;
+import io.mindmaps.concept.Relation;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.RoleType;
 import io.mindmaps.graql.admin.UniqueVarProperty;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.Fragment;
@@ -32,7 +37,11 @@ import io.mindmaps.graql.internal.util.CommonUtil;
 import io.mindmaps.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.DISTINCT_CASTING;
@@ -48,9 +57,9 @@ import static java.util.stream.Collectors.toSet;
 
 public class RelationProperty extends AbstractVarProperty implements UniqueVarProperty, VarPropertyInternal {
 
-    private final ImmutableSet<VarAdmin.Casting> castings;
+    private final ImmutableMultiset<VarAdmin.Casting> castings;
 
-    public RelationProperty(ImmutableSet<VarAdmin.Casting> castings) {
+    public RelationProperty(ImmutableMultiset<VarAdmin.Casting> castings) {
         this.castings = castings;
     }
 
