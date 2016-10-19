@@ -23,6 +23,8 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.*;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -31,6 +33,8 @@ import java.util.Set;
  * A vertex program specific to Mindmaps with common method implementations.
  */
 public abstract class MindmapsVertexProgram<T> extends CommonOLAP implements VertexProgram<T> {
+
+    final static Logger LOGGER = LoggerFactory.getLogger(MindmapsVertexProgram.class);
 
     final MessageScope.Local<Long> countMessageScopeIn = MessageScope.Local.of(__::inE);
     final MessageScope.Local<Long> countMessageScopeOut = MessageScope.Local.of(__::outE);

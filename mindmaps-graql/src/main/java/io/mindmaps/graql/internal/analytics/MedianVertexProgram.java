@@ -132,9 +132,7 @@ public class MedianVertexProgram extends MindmapsVertexProgram<Long> {
 
     @Override
     public void setup(final Memory memory) {
-        System.out.println();
-        System.out.println("Start !!!!!!!!");
-        System.out.println();
+        LOGGER.debug("MedianVertexProgram Started !!!!!!!!");
         memory.set(COUNT, 0L);
         memory.set(LABEL_SELECTED, memory.getIteration());
         memory.set(NEGATIVE_COUNT, 0L);
@@ -239,49 +237,47 @@ public class MedianVertexProgram extends MindmapsVertexProgram<Long> {
 
     @Override
     public boolean terminate(final Memory memory) {
-        System.out.println();
-        System.out.println("Iteration: " + memory.getIteration());
-        System.out.println();
+        LOGGER.debug("Iteration: " + memory.getIteration());
 
         if (memory.getIteration() == 2) {
             memory.set(INDEX_START, 0L);
             memory.set(INDEX_END, memory.<Long>get(COUNT) - 1L);
             memory.set(INDEX_MEDIAN, (memory.<Long>get(COUNT) - 1L) / 2L);
 
-            System.out.println("count: " + memory.<Long>get(COUNT));
-            System.out.println("first pivot: " + memory.<Long>get(PIVOT));
+            LOGGER.debug("count: " + memory.<Long>get(COUNT));
+            LOGGER.debug("first pivot: " + memory.<Long>get(PIVOT));
 
         } else if (memory.getIteration() > 2) {
 
             long indexNegativeEnd = memory.<Long>get(INDEX_START) + memory.<Long>get(NEGATIVE_COUNT) - 1;
             long indexPositiveStart = memory.<Long>get(INDEX_END) - memory.<Long>get(POSITIVE_COUNT) + 1;
 
-            System.out.println("pivot: " + memory.get(PIVOT));
+            LOGGER.debug("pivot: " + memory.get(PIVOT));
 
-            System.out.println(memory.<Long>get(INDEX_START) + ", " + indexNegativeEnd);
-            System.out.println(indexPositiveStart + ", " + memory.<Long>get(INDEX_END));
+            LOGGER.debug(memory.<Long>get(INDEX_START) + ", " + indexNegativeEnd);
+            LOGGER.debug(indexPositiveStart + ", " + memory.<Long>get(INDEX_END));
 
-            System.out.println("negative count: " + memory.<Long>get(NEGATIVE_COUNT));
-            System.out.println("positive count: " + memory.<Long>get(POSITIVE_COUNT));
+            LOGGER.debug("negative count: " + memory.<Long>get(NEGATIVE_COUNT));
+            LOGGER.debug("positive count: " + memory.<Long>get(POSITIVE_COUNT));
 
-            System.out.println("negative pivot: " + memory.get(PIVOT_NEGATIVE));
-            System.out.println("positive pivot: " + memory.get(PIVOT_POSITIVE));
+            LOGGER.debug("negative pivot: " + memory.get(PIVOT_NEGATIVE));
+            LOGGER.debug("positive pivot: " + memory.get(PIVOT_POSITIVE));
 
             if (indexNegativeEnd < memory.<Long>get(INDEX_MEDIAN)) {
                 if (indexPositiveStart > memory.<Long>get(INDEX_MEDIAN)) {
                     memory.set(FOUND, true);
-                    System.out.println("FOUND IT!!!");
+                    LOGGER.debug("FOUND IT!!!");
                 } else {
                     memory.set(INDEX_START, indexPositiveStart);
                     memory.set(PIVOT, memory.get(PIVOT_POSITIVE));
                     memory.set(LABEL_SELECTED, memory.getIteration());
-                    System.out.println("new pivot: " + memory.get(PIVOT));
+                    LOGGER.debug("new pivot: " + memory.get(PIVOT));
                 }
             } else {
                 memory.set(INDEX_END, indexNegativeEnd);
                 memory.set(PIVOT, memory.get(PIVOT_NEGATIVE));
                 memory.set(LABEL_SELECTED, -memory.getIteration());
-                System.out.println("new pivot: " + memory.get(PIVOT));
+                LOGGER.debug("new pivot: " + memory.get(PIVOT));
             }
             memory.set(MEDIAN, memory.get(PIVOT));
 

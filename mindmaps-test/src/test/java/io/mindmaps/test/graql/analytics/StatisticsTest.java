@@ -18,11 +18,14 @@
 
 package io.mindmaps.test.graql.analytics;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Sets;
 import io.mindmaps.Mindmaps;
 import io.mindmaps.concept.*;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.internal.analytics.Analytics;
+import io.mindmaps.graql.internal.analytics.MindmapsVertexProgram;
 import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.test.AbstractMindmapsEngineTest;
 import org.junit.Before;
@@ -31,9 +34,7 @@ import org.junit.Test;
 import java.util.*;
 import java.util.function.Supplier;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.junit.Assume.assumeFalse;
 
 public class StatisticsTest extends AbstractMindmapsEngineTest {
@@ -60,6 +61,9 @@ public class StatisticsTest extends AbstractMindmapsEngineTest {
         assumeFalse(usingOrientDB());
 
         keyspace = graph.getKeyspace();
+
+        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(MindmapsVertexProgram.class);
+        logger.setLevel(Level.DEBUG);
     }
 
     @Test
