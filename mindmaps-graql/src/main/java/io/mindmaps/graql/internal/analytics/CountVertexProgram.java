@@ -46,14 +46,8 @@ public class CountVertexProgram extends MindmapsVertexProgram {
     }
 
     @Override
-    public GraphComputer.Persist getPreferredPersist() {
-        return GraphComputer.Persist.VERTEX_PROPERTIES;
-    }
-
-    @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {
-        final Set<MessageScope> set = new HashSet<>();
-        return set;
+        return Collections.emptySet();
     }
 
     @Override

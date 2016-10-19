@@ -26,17 +26,13 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
 class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
 
-
-    private static final String MEMORY_KEY = "oldAssertionId";
-
     private static final String KEYSPACE_KEY = "keyspace";
-
-    private static final Set<String> COMPUTE_KEYS = Collections.singleton(MEMORY_KEY);
 
     private BulkResourceMutate bulkResourceMutate;
 
@@ -51,11 +47,6 @@ class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
     @Override
     public GraphComputer.Persist getPreferredPersist() {
         return GraphComputer.Persist.NOTHING;
-    }
-
-    @Override
-    public Set<String> getElementComputeKeys() {
-        return COMPUTE_KEYS;
     }
 
     @Override

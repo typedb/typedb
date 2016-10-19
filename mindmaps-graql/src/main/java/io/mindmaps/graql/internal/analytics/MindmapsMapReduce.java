@@ -22,6 +22,8 @@ import io.mindmaps.util.ErrorMessage;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -31,14 +33,16 @@ import java.util.Map;
  */
 public abstract class MindmapsMapReduce<T> extends CommonOLAP
         implements MapReduce<Serializable, T, Serializable, T, Map<Serializable, T>> {
-    static final String MAP_REDUCE_MEMORY_KEY = "MindmapsMapReduce.memoryKey";
 
+    static final Logger LOGGER = LoggerFactory.getLogger(MindmapsMapReduce.class);
+
+    static final String MAP_REDUCE_MEMORY_KEY = "MindmapsMapReduce.memoryKey";
 
     /**
      * An alternative to the execute method when ghost vertices are an issue. Our "Ghostbuster".
      *
-     * @param vertex        a vertex that may be a ghost
-     * @param emitter       Tinker emitter object
+     * @param vertex  a vertex that may be a ghost
+     * @param emitter Tinker emitter object
      */
     abstract void safeMap(Vertex vertex, MapEmitter<Serializable, T> emitter);
 

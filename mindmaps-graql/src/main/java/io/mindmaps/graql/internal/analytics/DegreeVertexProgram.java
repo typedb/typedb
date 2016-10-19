@@ -31,9 +31,10 @@ public class DegreeVertexProgram extends MindmapsVertexProgram<Long> {
     private final MessageScope.Local<Long> countMessageScopeIn = MessageScope.Local.of(__::inE);
     private final MessageScope.Local<Long> countMessageScopeOut = MessageScope.Local.of(__::outE);
 
-    public static final String MEMORY_KEY = "degree";
+    // element key
+    public static final String DEGREE = "medianVertexProgram.degree";
 
-    private static final Set<String> COMPUTE_KEYS = Collections.singleton(MEMORY_KEY);
+    private static final Set<String> ELEMENT_COMPUTE_KEYS = Collections.singleton(DEGREE);
 
     public DegreeVertexProgram() {
     }
@@ -48,8 +49,13 @@ public class DegreeVertexProgram extends MindmapsVertexProgram<Long> {
     }
 
     @Override
+    public GraphComputer.ResultGraph getPreferredResultGraph() {
+        return GraphComputer.ResultGraph.NEW;
+    }
+
+    @Override
     public Set<String> getElementComputeKeys() {
-        return COMPUTE_KEYS;
+        return ELEMENT_COMPUTE_KEYS;
     }
 
     @Override
@@ -92,7 +98,7 @@ public class DegreeVertexProgram extends MindmapsVertexProgram<Long> {
                         long message = iterator.next();
                         // count number of assertions connected
                         if (message < 0) assertionCount++;
-                        // check if a message is received from the role-player
+                            // check if a message is received from the role-player
                         else hasRolePlayer = true;
                     }
 
@@ -108,7 +114,7 @@ public class DegreeVertexProgram extends MindmapsVertexProgram<Long> {
             case 2:
                 if (selectedTypes.contains(Utility.getVertexType(vertex))) {
                     long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
-                    vertex.property(MEMORY_KEY, edgeCount);
+                    vertex.property(DEGREE, edgeCount);
                 }
                 break;
         }
