@@ -18,12 +18,21 @@
 
 package io.mindmaps.graql.internal.util;
 
+import com.google.common.collect.ImmutableSet;
+import io.mindmaps.graql.internal.antlr.GraqlLexer;
 import org.apache.commons.lang.StringEscapeUtils;
+
+import java.util.HashSet;
+import java.util.stream.Stream;
+
+import static io.mindmaps.graql.internal.util.CommonUtil.toImmutableSet;
 
 /**
  * Class for converting Graql strings, used in the parser and for toString methods
  */
 public class StringConverter {
+
+    public static final ImmutableSet<String> GRAQL_KEYWORDS = getKeywords().collect(toImmutableSet());
 
     private StringConverter() {}
 
@@ -71,10 +80,25 @@ public class StringConverter {
      * then it will be returned as-is, otherwise it will be quoted and escaped.
      */
     public static String idToString(String id) {
-        if (id.matches("^[a-zA-Z_][a-zA-Z0-9_-]*$")) {
+        if (id.matches("^[a-zA-Z_][a-zA-Z0-9_-]*$") && !GRAQL_KEYWORDS.contains(id)) {
             return id;
         } else {
             return quoteString(id);
         }
     }
+
+    /**
+     * @return all Graql keywords
+     */
+    private static Stream<String> getKeywords() {
+        HashSet<String> keywords = new HashSet<>();
+
+        for (int i = 1; GraqlLexer.VOCABULARY.getLiteralName(i) != null; i ++) {
+            String name = GraqlLexer.VOCABULARY.getLiteralName(i);
+            keywords.add(name.replaceAll("'", ""));
+        }
+
+        return keywords.stream();
+    }
+
 }

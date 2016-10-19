@@ -89,6 +89,7 @@ public interface MindmapsGraph extends AutoCloseable{
      * @param type The type of this Entity
      * @return A new or existing Entity with the provided Id.
      */
+    @Deprecated
     Entity putEntity(String id, EntityType type);
 
     /**
@@ -116,6 +117,7 @@ public interface MindmapsGraph extends AutoCloseable{
      * @param type The rule type of this Rule
      * @return new or existing Rule with the provided Id.
      */
+    @Deprecated
     Rule putRule(String id, String lhs, String rhs, RuleType type);
 
     /**
@@ -132,6 +134,7 @@ public interface MindmapsGraph extends AutoCloseable{
      * @param type The relation type of this Relation
      * @return A new empty relation.
      */
+    @Deprecated
     Relation putRelation(String id, RelationType type);
 
     /**

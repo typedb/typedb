@@ -58,9 +58,9 @@ public class CastingTest {
         mindmapsGraph.initialiseMetaConcepts();
         role = (RoleTypeImpl) mindmapsGraph.putRoleType("Role");
         EntityTypeImpl conceptType = (EntityTypeImpl) mindmapsGraph.putEntityType("A thing");
-        rolePlayer = (InstanceImpl) mindmapsGraph.putEntity("role player main", conceptType);
+        rolePlayer = (InstanceImpl) mindmapsGraph.addEntity(conceptType);
         RelationTypeImpl relationType = (RelationTypeImpl) mindmapsGraph.putRelationType("A type");
-        relation = (RelationImpl) mindmapsGraph.putRelation("a relation", relationType);
+        relation = (RelationImpl) mindmapsGraph.addRelation(relationType);
         casting = mindmapsGraph.putCasting(role, rolePlayer, relation);
     }
     @After
@@ -77,7 +77,7 @@ public class CastingTest {
 
         EntityType type = mindmapsGraph.putEntityType("Another entity type");
         RoleTypeImpl role = (RoleTypeImpl) mindmapsGraph.putRoleType("Role 2");
-        InstanceImpl rolePlayer = (InstanceImpl) mindmapsGraph.putEntity("An instance", type);
+        InstanceImpl rolePlayer = (InstanceImpl) mindmapsGraph.addEntity(type);
         CastingImpl casting2 = mindmapsGraph.putCasting(role, rolePlayer, relation);
         assertNotEquals(casting, casting2);
     }
@@ -142,7 +142,7 @@ public class CastingTest {
         RoleTypeImpl role2 = (RoleTypeImpl) mindmapsGraph.putRoleType("Role 2");
         RelationTypeImpl genericRelation = (RelationTypeImpl) mindmapsGraph.putRelationType("gr");
         RelationTypeImpl resourceType = (RelationTypeImpl) mindmapsGraph.putRelationType("rt");
-        RelationImpl relationValue = (RelationImpl) mindmapsGraph.putRelation(UUID.randomUUID().toString(), resourceType);
+        RelationImpl relationValue = (RelationImpl) mindmapsGraph.addRelation(resourceType);
 
         relation.addEdge(genericRelation, Schema.EdgeLabel.ISA);
         relationValue.addEdge(resourceType, Schema.EdgeLabel.ISA);

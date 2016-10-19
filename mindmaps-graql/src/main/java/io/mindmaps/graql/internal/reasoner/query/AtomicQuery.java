@@ -44,7 +44,7 @@ public class AtomicQuery extends Query{
     public AtomicQuery(String rhs, MindmapsGraph graph){
         super(rhs, graph);
         if(selectAtoms().size() > 1)
-            throw new IllegalStateException(ErrorMessage.NON_ATOMIC_QUERY.getMessage());
+            throw new IllegalStateException(ErrorMessage.NON_ATOMIC_QUERY.getMessage(this.toString()));
         atom = selectAtoms().iterator().next();
     }
 

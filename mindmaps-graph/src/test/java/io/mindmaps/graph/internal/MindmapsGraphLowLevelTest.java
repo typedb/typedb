@@ -130,7 +130,7 @@ public class MindmapsGraphLowLevelTest {
         RoleTypeImpl role = (RoleTypeImpl) mindmapsGraph.putRoleType("Role");
         EntityType thing = mindmapsGraph.putEntityType("thing");
         InstanceImpl rolePlayer = (InstanceImpl) mindmapsGraph.addEntity(thing);
-        RelationImpl relation = (RelationImpl) mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType);
+        RelationImpl relation = (RelationImpl) mindmapsGraph.addRelation(relationType);
         CastingImpl casting = mindmapsGraph.putCasting(role, rolePlayer, relation);
 
         //Check it
@@ -154,7 +154,7 @@ public class MindmapsGraphLowLevelTest {
         RoleTypeImpl role = (RoleTypeImpl) mindmapsGraph.putRoleType("Role");
         EntityType thing = mindmapsGraph.putEntityType("thing");
         InstanceImpl rolePlayer = (InstanceImpl) mindmapsGraph.addEntity(thing);
-        RelationImpl relation = (RelationImpl) mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType);
+        RelationImpl relation = (RelationImpl) mindmapsGraph.addRelation(relationType);
         CastingImpl casting1 = mindmapsGraph.putCasting(role, rolePlayer, relation);
         CastingImpl casting2 = mindmapsGraph.putCasting(role, rolePlayer, relation);
         assertEquals(casting1, casting2);
@@ -182,7 +182,7 @@ public class MindmapsGraphLowLevelTest {
         RoleTypeImpl role = (RoleTypeImpl) mindmapsGraph.putRoleType("role");
         EntityType thing = mindmapsGraph.putEntityType("thing");
         InstanceImpl rolePlayer = (InstanceImpl) mindmapsGraph.addEntity(thing);
-        RelationImpl relation = (RelationImpl) mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType);
+        RelationImpl relation = (RelationImpl) mindmapsGraph.addRelation(relationType);
 
         //First Casting
         makeArtificialCasting(role, rolePlayer, relation);
@@ -208,7 +208,7 @@ public class MindmapsGraphLowLevelTest {
         InstanceImpl<?, ?> rolePlayer1 = (InstanceImpl) mindmapsGraph.addEntity(type);
         InstanceImpl<?, ?> rolePlayer2 = (InstanceImpl) mindmapsGraph.addEntity(type);
 
-        RelationImpl assertion = (RelationImpl) mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType).
+        RelationImpl assertion = (RelationImpl) mindmapsGraph.addRelation(relationType).
                 putRolePlayer(role1, rolePlayer1).putRolePlayer(role2, null);
         CastingImpl casting1 = mindmapsGraph.putCasting(role1, rolePlayer1, assertion);
         CastingImpl casting2 = mindmapsGraph.putCasting(role2, rolePlayer2, assertion);
@@ -253,7 +253,7 @@ public class MindmapsGraphLowLevelTest {
     @Test
     public void testGetRelation(){
         RelationType relationType = mindmapsGraph.putRelationType("Hello");
-        Relation c1 = mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType);
+        Relation c1 = mindmapsGraph.addRelation(relationType);
         assertEquals(c1, mindmapsGraph.getRelation(c1.getId()));
         assertNull(mindmapsGraph.getResourceType("BOB"));
     }
@@ -300,14 +300,6 @@ public class MindmapsGraphLowLevelTest {
         Resource c2 = mindmapsGraph.putResource("1", type);
         assertEquals(c2, mindmapsGraph.getResourcesByValue("1").iterator().next());
         assertEquals(1, mindmapsGraph.getResourcesByValue("1").size());
-    }
-
-    @Test
-    public void testGetRule(){
-        assertNull(mindmapsGraph.getRule("Bob"));
-        RuleType type = mindmapsGraph.putRuleType("Type");
-        RuleImpl c2 = (RuleImpl) mindmapsGraph.putRule("Bob", "lhs", "rhs", type);
-        assertEquals(c2, mindmapsGraph.getRule("Bob"));
     }
 
     @Test
@@ -384,7 +376,7 @@ public class MindmapsGraphLowLevelTest {
         ResourceType<String> c = mindmapsGraph.putResourceType("c", ResourceType.DataType.STRING);
 
         Entity instanceA = mindmapsGraph.addEntity(a);
-        Relation instanceB = mindmapsGraph.putRelation(UUID.randomUUID().toString(), b);
+        Relation instanceB = mindmapsGraph.addRelation(b);
         mindmapsGraph.putResource("1", c);
 
         assertEquals(instanceA, mindmapsGraph.getInstance(instanceA.getId()));

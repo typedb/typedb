@@ -66,22 +66,22 @@ public class ResourceTest {
         RelationType hasResource = mindmapsGraph.putRelationType("Has Resource");
         RoleType resourceRole = mindmapsGraph.putRoleType("Resource Role");
         RoleType actorRole = mindmapsGraph.putRoleType("Actor");
-        Instance pacino = mindmapsGraph.putEntity("pacino", randomThing);
-        Instance jennifer = mindmapsGraph.putEntity("jennifer", randomThing);
-        Instance bob = mindmapsGraph.putEntity("bob", randomThing);
-        Instance alice = mindmapsGraph.putEntity("alice", randomThing);
+        Instance pacino = mindmapsGraph.addEntity(randomThing);
+        Instance jennifer = mindmapsGraph.addEntity(randomThing);
+        Instance bob = mindmapsGraph.addEntity(randomThing);
+        Instance alice = mindmapsGraph.addEntity(randomThing);
         Resource birthDate = mindmapsGraph.putResource("10/10/10", resourceType);
         hasResource.hasRole(resourceRole).hasRole(actorRole);
 
         assertEquals(0, birthDate.ownerInstances().size());
 
-        mindmapsGraph.putRelation(UUID.randomUUID().toString(), hasResource).
+        mindmapsGraph.addRelation(hasResource).
                 putRolePlayer(resourceRole, birthDate).putRolePlayer(actorRole, pacino);
-        mindmapsGraph.putRelation(UUID.randomUUID().toString(), hasResource).
+        mindmapsGraph.addRelation(hasResource).
                 putRolePlayer(resourceRole, birthDate).putRolePlayer(actorRole, jennifer);
-        mindmapsGraph.putRelation(UUID.randomUUID().toString(), hasResource).
+        mindmapsGraph.addRelation(hasResource).
                 putRolePlayer(resourceRole, birthDate).putRolePlayer(actorRole, bob);
-        mindmapsGraph.putRelation(UUID.randomUUID().toString(), hasResource).
+        mindmapsGraph.addRelation(hasResource).
                 putRolePlayer(resourceRole, birthDate).putRolePlayer(actorRole, alice);
 
         assertEquals(4, birthDate.ownerInstances().size());

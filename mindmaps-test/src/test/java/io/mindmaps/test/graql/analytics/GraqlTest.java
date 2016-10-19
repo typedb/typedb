@@ -299,6 +299,8 @@ public class GraqlTest extends AbstractMindmapsEngineTest {
         assertEquals(3L,(long) result.orElse(0L));
         result = (Optional<Number>) ((ComputeQuery) qb.parse("compute mean of resource;")).execute();
         assertEquals(2.0, (double) result.orElse(0L), 0.1);
+        result = (Optional<Number>) ((ComputeQuery) qb.parse("compute median of resource;")).execute();
+        assertEquals(2L, (long) result.orElse(0L));
 
     }
 

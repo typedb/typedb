@@ -52,13 +52,6 @@
             <scope>compile</scope>
         </dependency>
 
-        <dependency>
-            <groupId>io.mindmaps</groupId>
-            <artifactId>mindmaps-graph</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-
     </dependencies>
 
     <build>

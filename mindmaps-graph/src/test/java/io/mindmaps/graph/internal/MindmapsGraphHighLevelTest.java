@@ -86,9 +86,9 @@ public class MindmapsGraphHighLevelTest {
         role1 = (RoleTypeImpl) graph.putRoleType("role1");
         role2 = (RoleTypeImpl) graph.putRoleType("role2");
         role3 = (RoleTypeImpl) graph.putRoleType("role3");
-        rolePlayer1 = (InstanceImpl) graph.putEntity("role-player1", type);
-        rolePlayer2 = (InstanceImpl) graph.putEntity("role-player2", type);
-        rolePlayer3 = (InstanceImpl) graph.putEntity("role-player3", type);
+        rolePlayer1 = (InstanceImpl) graph.addEntity(type);
+        rolePlayer2 = (InstanceImpl) graph.addEntity(type);
+        rolePlayer3 = (InstanceImpl) graph.addEntity(type);
     }
     @After
     public void destroyGraphAccessManager()  throws Exception{
@@ -107,7 +107,7 @@ public class MindmapsGraphHighLevelTest {
         relationType.hasRole(role1);
         relationType.hasRole(role2);
         relationType.hasRole(role3);
-        RelationImpl assertion = (RelationImpl) graph.putRelation("a thing", relationType).
+        RelationImpl assertion = (RelationImpl) graph.addRelation(relationType).
                 putRolePlayer(role1, rolePlayer1).
                 putRolePlayer(role2, rolePlayer2).
                 putRolePlayer(role3, rolePlayer3);
@@ -186,7 +186,7 @@ public class MindmapsGraphHighLevelTest {
         relationType.hasRole(role1);
         relationType.hasRole(role2);
         relationType.hasRole(role3);
-        RelationImpl relationConcept1 = (RelationImpl) graph.putRelation("a", relationType).
+        RelationImpl relationConcept1 = (RelationImpl) graph.addRelation(relationType).
                 putRolePlayer(role1, rolePlayer1).putRolePlayer(role2, rolePlayer2).putRolePlayer(role3, null);
 
         //Checking it
@@ -249,7 +249,7 @@ public class MindmapsGraphHighLevelTest {
                 containsString(ErrorMessage.ROLE_IS_NULL.getMessage(rolePlayer1))
         ));
 
-        graph.putRelation(UUID.randomUUID().toString(), relationType).putRolePlayer(null, rolePlayer1);
+        graph.addRelation(relationType).putRolePlayer(null, rolePlayer1);
     }
 
     @Test
@@ -287,12 +287,12 @@ public class MindmapsGraphHighLevelTest {
         RoleTypeImpl actor = (RoleTypeImpl) graph.putRoleType("Actor");
         EntityType movie = graph.putEntityType("Movie");
         EntityType person = graph.putEntityType("Person");
-        InstanceImpl pacino = (InstanceImpl) graph.putEntity("Pacino", person);
-        InstanceImpl godfather = (InstanceImpl) graph.putEntity("Godfather", movie);
+        InstanceImpl pacino = (InstanceImpl) graph.addEntity(person);
+        InstanceImpl godfather = (InstanceImpl) graph.addEntity(movie);
         EntityType genre = graph.putEntityType("Genre");
         RoleTypeImpl movieOfGenre = (RoleTypeImpl) graph.putRoleType("Movie of Genre");
         RoleTypeImpl movieGenre = (RoleTypeImpl) graph.putRoleType("Movie Genre");
-        InstanceImpl crime = (InstanceImpl) graph.putEntity("Crime", genre);
+        InstanceImpl crime = (InstanceImpl) graph.addEntity(genre);
         RelationTypeImpl movieHasGenre = (RelationTypeImpl) graph.putRelationType("Movie Has Genre");
 
         //Construction
@@ -410,12 +410,12 @@ public class MindmapsGraphHighLevelTest {
         RoleTypeImpl actor = (RoleTypeImpl) graph.putRoleType("Actor");
         EntityType movie = graph.putEntityType("Movie");
         EntityType person = graph.putEntityType("Person");
-        InstanceImpl pacino = (InstanceImpl) graph.putEntity("Pacino", person);
-        InstanceImpl godfather = (InstanceImpl) graph.putEntity("Godfather", movie);
+        InstanceImpl pacino = (InstanceImpl) graph.addEntity(person);
+        InstanceImpl godfather = (InstanceImpl) graph.addEntity(movie);
         EntityType genre = graph.putEntityType("Genre");
         RoleTypeImpl movieOfGenre = (RoleTypeImpl) graph.putRoleType("Movie of Genre");
         RoleTypeImpl movieGenre = (RoleTypeImpl) graph.putRoleType("Movie Genre");
-        InstanceImpl crime = (InstanceImpl) graph.putEntity("Crime", genre);
+        InstanceImpl crime = (InstanceImpl) graph.addEntity(genre);
         RelationTypeImpl movieHasGenre = (RelationTypeImpl) graph.putRelationType("Movie Has Genre");
 
         graph.addRelation(cast).putRolePlayer(feature, godfather).putRolePlayer(actor, pacino);
@@ -476,8 +476,8 @@ public class MindmapsGraphHighLevelTest {
         RoleType actor = graph.putRoleType("Actor");
         EntityType movie = graph.putEntityType("Movie");
         EntityType person = graph.putEntityType("Person");
-        Instance pacino = graph.putEntity("Pacino", person);
-        Instance godfather = graph.putEntity("Godfather", movie);
+        Instance pacino = graph.addEntity(person);
+        Instance godfather = graph.addEntity(movie);
 
         RelationImpl assertion = (RelationImpl) graph.addRelation(cast).
                 putRolePlayer(feature, null).putRolePlayer(actor, pacino);
@@ -495,12 +495,12 @@ public class MindmapsGraphHighLevelTest {
         RoleTypeImpl actor = (RoleTypeImpl) graph.putRoleType("Actor");
         EntityType movie = graph.putEntityType("Movie");
         EntityType person = graph.putEntityType("Person");
-        InstanceImpl<?, ?> pacino = (InstanceImpl) graph.putEntity("Pacino", person);
-        InstanceImpl<?, ?> godfather = (InstanceImpl) graph.putEntity("Godfather", movie);
+        InstanceImpl<?, ?> pacino = (InstanceImpl) graph.addEntity(person);
+        InstanceImpl<?, ?> godfather = (InstanceImpl) graph.addEntity(movie);
         RoleType actor2 = graph.putRoleType("Actor 2");
         RoleType actor3 = graph.putRoleType("Actor 3");
         RoleType character = graph.putRoleType("Character");
-        Instance thing = graph.putEntity("Thing", type);
+        Instance thing = graph.addEntity(type);
 
         RelationImpl relation = (RelationImpl) graph.addRelation(cast).
                 putRolePlayer(feature, godfather).putRolePlayer(actor, pacino).putRolePlayer(actor2, pacino);
@@ -552,16 +552,16 @@ public class MindmapsGraphHighLevelTest {
         RoleType actor2 = graph.putRoleType("Actor 2");
         RoleType actor3 = graph.putRoleType("Actor 3");
         RelationType cast = graph.putRelationType("Cast").hasRole(actor).hasRole(actor2).hasRole(actor3);
-        Instance pacino = graph.putEntity("Pacino", type);
-        Instance thing = graph.putEntity("Thing", type);
-        Instance godfather = graph.putEntity("Godfather", type);
+        Instance pacino = graph.addEntity(type);
+        Instance thing = graph.addEntity(type);
+        Instance godfather = graph.addEntity(type);
 
-        Instance pacino2 = graph.putEntity("Pacino", type);
-        Instance thing2 = graph.putEntity("Thing", type);
-        Instance godfather2 = graph.putEntity("Godfather", type);
+        Instance pacino2 = graph.addEntity(type);
+        Instance thing2 = graph.addEntity(type);
+        Instance godfather2 = graph.addEntity(type);
 
         assertEquals(0, graph.getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.RELATION.name()).toList().size());
-        RelationImpl relation = (RelationImpl) graph.putRelation("a", cast).
+        RelationImpl relation = (RelationImpl) graph.addRelation(cast).
                 putRolePlayer(actor, pacino).putRolePlayer(actor2, thing).putRolePlayer(actor3, godfather);
         assertEquals(1, graph.getTinkerPopGraph().traversal().V().has(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.RELATION.name()).toList().size());
         assertNotEquals(String.valueOf(relation.getBaseIdentifier()), relation.getId());
@@ -580,10 +580,10 @@ public class MindmapsGraphHighLevelTest {
         RoleTypeImpl actor = (RoleTypeImpl) graph.putRoleType("Actor");
         EntityType movie = graph.putEntityType("Movie");
         EntityType person = graph.putEntityType("Person");
-        InstanceImpl pacino = (InstanceImpl) graph.putEntity("Pacino", person);
-        InstanceImpl godfather = (InstanceImpl) graph.putEntity("Godfather", movie);
-        InstanceImpl godfather2 = (InstanceImpl) graph.putEntity("Godfather 2", movie);
-        InstanceImpl godfather3 = (InstanceImpl) graph.putEntity("Godfather 3", movie);
+        InstanceImpl pacino = (InstanceImpl) graph.addEntity(person);
+        InstanceImpl godfather = (InstanceImpl) graph.addEntity(movie);
+        InstanceImpl godfather2 = (InstanceImpl) graph.addEntity(movie);
+        InstanceImpl godfather3 = (InstanceImpl) graph.addEntity(movie);
 
         graph.addRelation(cast).putRolePlayer(feature, godfather).putRolePlayer(actor, pacino);
         graph.addRelation(cast).putRolePlayer(feature, godfather2).putRolePlayer(actor, pacino);

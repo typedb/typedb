@@ -121,30 +121,40 @@ public class RoleTypeTest {
     }
 
     @Test
+    public void testPlayedByTypes(){
+        RoleType crewMember = mindmapsGraph.putRoleType("crew-member").setAbstract(true);
+        EntityType person = mindmapsGraph.putEntityType("person").playsRole(crewMember);
+        RoleType productionDesigner = mindmapsGraph.putRoleType("production-designer").superType(crewMember);
+
+        assertEquals(1, productionDesigner.playedByTypes().size());
+        assertEquals(person, productionDesigner.playedByTypes().iterator().next());
+    }
+
+    @Test
     public  void getInstancesTest(){
         RoleType roleA = mindmapsGraph.putRoleType("roleA");
         RoleType roleB = mindmapsGraph.putRoleType("roleB");
         RelationType relationType = mindmapsGraph.putRelationType("relationType").hasRole(roleA).hasRole(roleB);
         EntityType entityType = mindmapsGraph.putEntityType("entityType").playsRole(roleA).playsRole(roleB);
 
-        Entity a = mindmapsGraph.putEntity("a", entityType);
-        Entity b = mindmapsGraph.putEntity("b", entityType);
-        Entity c = mindmapsGraph.putEntity("c", entityType);
-        Entity d = mindmapsGraph.putEntity("d", entityType);
+        Entity a = mindmapsGraph.addEntity(entityType);
+        Entity b = mindmapsGraph.addEntity(entityType);
+        Entity c = mindmapsGraph.addEntity(entityType);
+        Entity d = mindmapsGraph.addEntity(entityType);
 
-        mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType).
+        mindmapsGraph.addRelation(relationType).
                 putRolePlayer(roleA, a).
                 putRolePlayer(roleB, b);
 
-        mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType).
+        mindmapsGraph.addRelation(relationType).
                 putRolePlayer(roleA, c).
                 putRolePlayer(roleB, d);
 
-        mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType).
+        mindmapsGraph.addRelation(relationType).
                 putRolePlayer(roleA, a).
                 putRolePlayer(roleB, c);
 
-        mindmapsGraph.putRelation(UUID.randomUUID().toString(), relationType).
+        mindmapsGraph.addRelation(relationType).
                 putRolePlayer(roleA, c).
                 putRolePlayer(roleB, b);
 

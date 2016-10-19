@@ -31,14 +31,24 @@ import jline.console.ConsoleReader;
 import jline.console.completer.AggregateCompleter;
 import jline.console.history.FileHistory;
 import mjson.Json;
-import org.apache.commons.cli.*;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import sun.misc.Signal;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
@@ -114,6 +124,8 @@ public class GraqlShell {
     private final File tempFile = new File(System.getProperty("java.io.tmpdir") + TEMP_FILENAME);
     private ConsoleReader console;
 
+    private final String historyFilename;
+
     private Session session;
 
     // A future containing an autocomplete result, once it has been received
@@ -129,10 +141,10 @@ public class GraqlShell {
      * @param args arguments to the Graql shell. Possible arguments can be listed by running {@code graql.sh --help}
      */
     public static void main(String[] args) {
-        runShell(args, Version.VERSION, new GraqlClientImpl());
+        runShell(args, Version.VERSION, HISTORY_FILENAME, new GraqlClientImpl());
     }
 
-    public static void runShell(String[] args, String version, GraqlClient client) {
+    public static void runShell(String[] args, String version, String historyFilename, GraqlClient client) {
 
         Options options = new Options();
         options.addOption("n", "name", true, "name of the graph");
@@ -180,7 +192,7 @@ public class GraqlShell {
             try {
                 sendBatchRequest(uriString, cmd.getOptionValue("b"));
             } catch (IOException e) {
-                System.err.println(e.toString());
+                throw new RuntimeException(e);
             }
             return;
         }
@@ -193,7 +205,7 @@ public class GraqlShell {
 
             URI uri = new URI("ws://" + uriString + REMOTE_SHELL_URI);
 
-            new GraqlShell(namespace, client, uri, queries);
+            new GraqlShell(historyFilename, namespace, client, uri, queries);
         } catch (java.net.ConnectException e) {
             System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
         } catch (Throwable e) {
@@ -233,16 +245,29 @@ public class GraqlShell {
             os.write(out);
         }
 
-        try (InputStream is = http.getInputStream()) {
-            String response = CharStreams.toString(new InputStreamReader(is, Charsets.UTF_8));
-            System.out.println(response);
+        int statusCode = http.getResponseCode();
+        if (statusCode >= 200 && statusCode < 400) {
+            try (InputStream is = http.getInputStream()) {
+                String response = CharStreams.toString(new InputStreamReader(is, Charsets.UTF_8));
+                System.out.println(response);
+            }
+        } else {
+            try (InputStream is = http.getErrorStream()) {
+                String response = CharStreams.toString(new InputStreamReader(is, Charsets.UTF_8));
+                System.out.println(response);
+            }
         }
     }
 
     /**
      * Create a new Graql shell
      */
-    GraqlShell(String namespace, GraqlClient client, URI uri, Optional<List<String>> queryStrings) throws Throwable {
+    GraqlShell(
+            String historyFilename, String namespace, GraqlClient client, URI uri, Optional<List<String>> queryStrings
+    ) throws Throwable {
+
+        this.historyFilename = historyFilename;
+
         try {
             console = new ConsoleReader(System.in, System.out);
 
@@ -298,7 +323,7 @@ public class GraqlShell {
         }
 
         // Create history file
-        File historyFile = new File(System.getProperty("java.io.tmpdir") + HISTORY_FILENAME);
+        File historyFile = new File(System.getProperty("java.io.tmpdir") + historyFilename);
         //noinspection ResultOfMethodCallIgnored
         historyFile.createNewFile();
         FileHistory history = new FileHistory(historyFile);
