@@ -39,24 +39,22 @@ person plays-role SG-role-A, plays-role SG-role-B;
 ####################################################
 
 "R1" isa inference-rule,
-lhs {match
+lhs {
 ($x, $y) isa Sibling;},
-rhs {match
+rhs {
 ($x, $y) isa SameGen;};
 
 "R2" isa inference-rule,
-lhs {match
+lhs {
 (parent: $x, child: $u) isa Parent;
 ($u, $v) isa SameGen;
-(parent: $y, child: $v) isa Parent;
-select $x, $y;},
-rhs {match
+(parent: $y, child: $v) isa Parent;},
+rhs {
 ($x, $y) isa SameGen;};
 
 "R3" isa inference-rule,
-lhs {match
+lhs {
 (parent: $z, child: $x) isa Parent;
-(parent: $z, child: $y) isa Parent;
-select $x, $y;},
-rhs {match
+(parent: $z, child: $y) isa Parent;},
+rhs {
 ($x, $y) isa Sibling;};

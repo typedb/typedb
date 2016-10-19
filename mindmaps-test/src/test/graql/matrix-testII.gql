@@ -33,20 +33,20 @@ entity plays-role S-from plays-role S-to;
 ####################################################
 
 "R1" isa inference-rule,
-lhs {match
+lhs {
 (Q-from: $x, Q-to: $y) isa Q;},
-rhs {match
+rhs {
 (P-from: $x, P-to: $y) isa P;};
 
 "R2" isa inference-rule,
-lhs {match
+lhs {
 (Q-from: $x, Q-to: $z) isa Q;
 (P-from: $z, P-to: $y) isa P;},
-rhs {match
+rhs {
 (P-from: $x, P-to: $y) isa P;};
 
 "R3" isa inference-rule,
-lhs {match
+lhs {
 (P-from: $x, P-to: $y) isa P;},
-rhs {match
+rhs {
 (S-from: $x, S-to: $y) isa S;};

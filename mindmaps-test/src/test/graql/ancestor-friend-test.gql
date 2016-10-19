@@ -42,14 +42,14 @@ Person plays-role person, plays-role ancestor-friend;
 ####################################################
 
 "R1" isa inference-rule,
-lhs {match
+lhs {
 ($x, $y) isa Friend;},
-rhs {match
+rhs {
 ($x, $y) isa Ancestor-friend;};
 
 "R2" isa inference-rule,
-lhs {match
+lhs {
 (parent: $x, child: $z) isa Parent;
-(person: $z, ancestor-friend: $y) isa Ancestor-friend; select $x, $y;},
-rhs {match
+(person: $z, ancestor-friend: $y) isa Ancestor-friend;},
+rhs {
 (person: $x, ancestor-friend: $y) isa Ancestor-friend;};
