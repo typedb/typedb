@@ -71,10 +71,10 @@ public class BackgroundTasksTest extends MindmapsEngineTestBase{
         RoleType roleType2 = mindmapsGraph.putRoleType("role 2");
         RelationType relationType = mindmapsGraph.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
         EntityType thing = mindmapsGraph.putEntityType("thing").playsRole(roleType1).playsRole(roleType2);
-        Instance instance1 = mindmapsGraph.putEntity("1", thing);
-        Instance instance2 = mindmapsGraph.putEntity("2", thing);
-        Instance instance3 = mindmapsGraph.putEntity("3", thing);
-        Instance instance4 = mindmapsGraph.putEntity("4", thing);
+        Instance instance1 = mindmapsGraph.addEntity(thing);
+        Instance instance2 = mindmapsGraph.addEntity(thing);
+        Instance instance3 = mindmapsGraph.addEntity(thing);
+        Instance instance4 = mindmapsGraph.addEntity(thing);
 
         mindmapsGraph.addRelation(relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
 
