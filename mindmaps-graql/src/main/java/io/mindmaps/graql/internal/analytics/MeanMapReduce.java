@@ -33,10 +33,10 @@ public class MeanMapReduce extends MindmapsMapReduce<Map<String, Double>> {
 
     @Override
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Map<String, Double>> emitter) {
-        if (selectedTypes.contains(getVertexType(vertex)) &&
-                ((Long) vertex.value(DegreeVertexProgram.MEMORY_KEY)) > 0) {
+        if (selectedTypes.contains(Utility.getVertexType(vertex)) &&
+                ((Long) vertex.value(DegreeVertexProgram.DEGREE)) > 0) {
             Map<String, Double> tuple = new HashMap<>(2);
-            Double degree = ((Long)vertex.value(DegreeVertexProgram.MEMORY_KEY)).doubleValue();
+            Double degree = ((Long)vertex.value(DegreeVertexProgram.DEGREE)).doubleValue();
             tuple.put(SUM, degree *
                     ((Number) vertex.value((String) persistentProperties.get(RESOURCE_DATA_TYPE_KEY))).doubleValue());
             tuple.put(COUNT, degree);

@@ -23,6 +23,8 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.*;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -31,6 +33,8 @@ import java.util.Set;
  * A vertex program specific to Mindmaps with common method implementations.
  */
 public abstract class MindmapsVertexProgram<T> extends CommonOLAP implements VertexProgram<T> {
+
+    static final Logger LOGGER = LoggerFactory.getLogger(MindmapsVertexProgram.class);
 
     final MessageScope.Local<Long> countMessageScopeIn = MessageScope.Local.of(__::inE);
     final MessageScope.Local<Long> countMessageScopeOut = MessageScope.Local.of(__::outE);
@@ -52,12 +56,13 @@ public abstract class MindmapsVertexProgram<T> extends CommonOLAP implements Ver
     }
 
     @Override
-    public void setup(final Memory memory) {}
+    public void setup(final Memory memory) {
+    }
 
     @Override
     public void execute(Vertex vertex, Messenger<T> messenger, Memory memory) {
         // try to deal with ghost vertex issues by ignoring them
-        if (isAlive(vertex)) {
+        if (Utility.isAlive(vertex)) {
             safeExecute(vertex, messenger, memory);
         }
     }
@@ -65,15 +70,20 @@ public abstract class MindmapsVertexProgram<T> extends CommonOLAP implements Ver
     /**
      * An alternative to the execute method when ghost vertices are an issue. Our "Ghostbuster".
      *
-     * @param vertex        a vertex that may be a ghost
-     * @param messenger     Tinker message passing object
-     * @param memory        Tinker memory object
+     * @param vertex    a vertex that may be a ghost
+     * @param messenger Tinker message passing object
+     * @param memory    Tinker memory object
      */
     abstract void safeExecute(Vertex vertex, Messenger<T> messenger, Memory memory);
 
     @Override
     public GraphComputer.ResultGraph getPreferredResultGraph() {
-        return GraphComputer.ResultGraph.NEW;
+        return GraphComputer.ResultGraph.ORIGINAL;
+    }
+
+    @Override
+    public GraphComputer.Persist getPreferredPersist() {
+        return GraphComputer.Persist.NOTHING;
     }
 
     @Override
@@ -81,7 +91,7 @@ public abstract class MindmapsVertexProgram<T> extends CommonOLAP implements Ver
         try {
             return (MindmapsVertexProgram) super.clone();
         } catch (final CloneNotSupportedException e) {
-            throw new IllegalStateException(ErrorMessage.CLONE_FAILED.getMessage(this.getClass().toString(),e.getMessage()),e);
+            throw new IllegalStateException(ErrorMessage.CLONE_FAILED.getMessage(this.getClass().toString(), e.getMessage()), e);
         }
     }
 
