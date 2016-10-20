@@ -18,23 +18,18 @@
 
 package io.mindmaps.migration.csv;
 
-import com.google.common.io.Files;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.engine.MindmapsEngineServer;
 import io.mindmaps.engine.util.ConfigProperties;
-import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
-import io.mindmaps.graql.Graql;
 import org.junit.*;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 
-import static java.util.stream.Collectors.joining;
+import static io.mindmaps.migration.base.util.MigratorTestUtil.load;
 import static junit.framework.TestCase.assertEquals;
 
 public class CSVMigratorMainTest {
@@ -61,7 +56,7 @@ public class CSVMigratorMainTest {
     @Before
     public void setup(){
         graph = GraphFactory.getInstance().getGraphBatchLoading(GRAPH_NAME);
-        load(get("single-file/schema.gql"));
+        load(graph, get("single-file/schema.gql"));
     }
 
     @After
@@ -137,18 +132,5 @@ public class CSVMigratorMainTest {
 
     private File get(String fileName){
         return new File(CSVMigratorMainTest.class.getClassLoader().getResource(fileName).getPath());
-    }
-
-    // common class
-    private void load(File ontology) {
-        try {
-            Graql.withGraph(graph)
-                    .parse(Files.readLines(ontology, StandardCharsets.UTF_8).stream().collect(joining("\n")))
-                    .execute();
-
-            graph.commit();
-        } catch (IOException|MindmapsValidationException e){
-            throw new RuntimeException(e);
-        }
     }
 }

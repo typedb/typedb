@@ -16,11 +16,10 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.migration.sql;
+package io.mindmaps.test.migration.sql;
 
+import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.Connection;
@@ -28,7 +27,9 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.stream.Collectors;
 
-public class Util {
+import static io.mindmaps.test.migration.AbstractMindmapsMigratorTest.getFile;
+
+public class SQLMigratorUtil {
 
     public static final String USER = "test";
     public static final String PASS = "";
@@ -37,13 +38,12 @@ public class Util {
 
     public static String readSql(String name) {
         try {
-            URL dataUrl = Util.class.getClassLoader().getResource(name);
-            assert dataUrl != null;
-            return Files.readAllLines(Paths.get(dataUrl.toURI())).stream()
+            File file = getFile("sql", name);
+            return Files.readAllLines(Paths.get(file.toURI())).stream()
                     .filter(line -> !line.startsWith("--"))
                     .collect(Collectors.joining());
         }
-        catch (URISyntaxException |IOException e){
+        catch (IOException e){
             e.printStackTrace();
         }
         return null;
@@ -84,5 +84,4 @@ public class Util {
 
         return connection;
     }
-
 }

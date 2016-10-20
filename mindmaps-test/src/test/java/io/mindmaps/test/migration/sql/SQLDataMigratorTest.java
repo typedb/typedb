@@ -16,19 +16,18 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.migration.sql;
+package io.mindmaps.test.migration.sql;
 
-import io.mindmaps.MindmapsGraph;
-import io.mindmaps.engine.MindmapsEngineServer;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.engine.loader.BlockingLoader;
-import io.mindmaps.engine.util.ConfigProperties;
-import io.mindmaps.factory.GraphFactory;
-import org.junit.After;
+import io.mindmaps.migration.sql.Namer;
+import io.mindmaps.migration.sql.SQLDataMigrator;
+import io.mindmaps.migration.sql.SQLSchemaMigrator;
+import io.mindmaps.test.migration.AbstractMindmapsMigratorTest;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -41,79 +40,65 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class SQLDataMigratorTest {
+public class SQLDataMigratorTest extends AbstractMindmapsMigratorTest {
 
-    private MindmapsGraph graph;
-    private BlockingLoader loader;
-    private Namer namer = new Namer() {};
+    private static Namer namer = new Namer(){};
 
+    private static BlockingLoader loader;
     private static SQLSchemaMigrator schemaMigrator;
     private static SQLDataMigrator dataMigrator;
 
     @BeforeClass
     public static void start(){
-        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
-        System.setProperty(ConfigProperties.CURRENT_DIR_SYSTEM_PROPERTY, System.getProperty("user.dir")+"/../");
-
-        MindmapsEngineServer.start();
-
         schemaMigrator = new SQLSchemaMigrator();
         dataMigrator = new SQLDataMigrator();
     }
 
     @AfterClass
     public static void stop(){
-        MindmapsEngineServer.stop();
-    }
-
-    @Before
-    public void setup(){
-        String GRAPH_NAME = "test";
-        loader = new BlockingLoader(GRAPH_NAME);
-        loader.setThreadsNumber(1);
-        graph = GraphFactory.getInstance().getGraphBatchLoading(GRAPH_NAME);
-    }
-
-    @After
-    public void shutdown() throws SQLException {
-        graph.clear();
         dataMigrator.close();
         schemaMigrator.close();
     }
 
+    @Before
+    public void setup(){
+        loader = new BlockingLoader(graph.getKeyspace());
+        loader.setExecutorSize(1);
+    }
+
     @Test
     public void usersDataTest() throws SQLException {
-        Connection connection = Util.setupExample("simple");
+        Connection connection = SQLMigratorUtil.setupExample("simple");
         schemaMigrator.configure(connection).migrate(loader);
         dataMigrator.configure(connection).migrate(loader);
 
         Entity alex = graph.getEntity("USERS-2");
         assertNotNull(alex);
 
-        assertResourceRelationExists("NAME", "alex", alex, "USERS");
-        assertResourceRelationExists("EMAIL", "alex@yahoo.com", alex, "USERS");
-        assertResourceRelationExists("ID", 2L, alex, "USERS");
+        assertResourceEntityRelationExists("NAME", "alex", alex);
+        assertResourceEntityRelationExists("EMAIL", "alex@yahoo.com", alex);
+        assertResourceEntityRelationExists("ID", 2L, alex);
 
         Entity alexandra = graph.getEntity("USERS-4");
         assertNotNull(alexandra);
 
-        assertResourceRelationExists("NAME", "alexandra", alexandra, "USERS");
-        assertResourceRelationExists("ID", 4L, alexandra, "USERS");
+        assertResourceEntityRelationExists("NAME", "alexandra", alexandra);
+        assertResourceEntityRelationExists("ID", 4L, alexandra);
     }
 
-    @Test(expected = AssertionError.class)
+    @Test(expected = NullPointerException.class)
     public void usersDataDoesNotExist() throws SQLException {
-        Connection connection = Util.setupExample("simple");
+        Connection connection = SQLMigratorUtil.setupExample("simple");
         schemaMigrator.configure(connection).migrate(loader);
         dataMigrator.configure(connection).migrate(loader);
 
         Entity alexandra = graph.getEntity("USERS-4");
-        assertResourceRelationExists("email", "alexandra@yahoo.com", alexandra, "USERS");
+        assertResourceEntityRelationExists("email", "alexandra@yahoo.com", alexandra);
     }
 
     @Test
     public void postgresDataTest() throws SQLException, MindmapsValidationException {
-        Connection connection = Util.setupExample("postgresql-example");
+        Connection connection = SQLMigratorUtil.setupExample("postgresql-example");
         schemaMigrator.configure(connection).migrate(loader);
         dataMigrator.configure(connection).migrate(loader);
 
@@ -136,13 +121,13 @@ public class SQLDataMigratorTest {
         assertNotNull(japanese);
         assertNotNull(tokyo);
 
-        assertRelationExists(japan, tokyo, "CAPITAL");
-        assertRelationExists(japanese, japan, "COUNTRYCODE");
+        assertRelationBetweenInstancesExists(japan, tokyo, "CAPITAL");
+        assertRelationBetweenInstancesExists(japanese, japan, "COUNTRYCODE");
     }
 
     @Test
     public void combinedKeyDataTest() throws SQLException {
-        Connection connection = Util.setupExample("combined-key");
+        Connection connection = SQLMigratorUtil.setupExample("combined-key");
         schemaMigrator.configure(connection).migrate(loader);
         dataMigrator.configure(connection).migrate(loader);
 
@@ -155,16 +140,13 @@ public class SQLDataMigratorTest {
         assertNotNull(louise);
     }
 
-    private void assertResourceRelationExists(String type, Object value, Entity owner, String tableName){
-        assertTrue(owner.resources().stream().anyMatch(resource ->
-                resource.type().getId().equals(namer.resourceName(tableName, type)) &&
-                        resource.getValue().equals(value)));
+    public static void assertRelationBetweenInstancesExists(Instance instance1, Instance instance2, String relation){
+        String relName = namer.relationName(relation);
+        AbstractMindmapsMigratorTest.assertRelationBetweenInstancesExists(instance1, instance2, relName);
     }
 
-    private void assertRelationExists(Entity parent, Entity child, String relName) {
-        RoleType parentRole = graph.getRoleType(relName + "-parent");
-
-        assertTrue(parent.relations(parentRole).stream().anyMatch(relation ->
-                relation.rolePlayers().values().contains(child)));
+    public static void assertResourceEntityRelationExists(String resourceName, Object resourceValue, Entity owner){
+        String resource = namer.resourceName(owner.type().getId(), resourceName);
+        AbstractMindmapsMigratorTest.assertResourceEntityRelationExists(resource, resourceValue, owner);
     }
 }

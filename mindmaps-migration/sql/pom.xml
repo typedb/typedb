@@ -26,21 +26,11 @@
         <version>0.3.0-SNAPSHOT</version>
     </parent>
 
-    <properties>
-        <h2.version>1.4.192</h2.version>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>io.mindmaps</groupId>
             <artifactId>migration-base</artifactId>
             <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <version>${h2.version}</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 

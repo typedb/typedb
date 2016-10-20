@@ -42,10 +42,10 @@ public class Main {
     public static void main(String[] args){
         MigrationCLI interpreter = new MigrationCLI(args);
 
-        String jdbcDriver = interpreter.getRequiredOption("driver", "No driver specified (-driver");
-        String jdbcDBUrl = interpreter.getRequiredOption("db", "No db specified (-database");
-        String jdbcUser = interpreter.getRequiredOption("user", "No username specified (-user");
-        String jdbcPass = interpreter.getRequiredOption("pass", "No password specified (-pass");
+        String jdbcDriver = interpreter.getRequiredOption("driver", "No driver specified (-driver)");
+        String jdbcDBUrl = interpreter.getRequiredOption("db", "No db specified (-database)");
+        String jdbcUser = interpreter.getRequiredOption("user", "No username specified (-user)");
+        String jdbcPass = interpreter.getRequiredOption("pass", "No password specified (-pass)");
 
         interpreter.printInitMessage(jdbcDBUrl);
 
