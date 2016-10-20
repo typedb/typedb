@@ -219,8 +219,8 @@ public class ReasonerTest {
     //Bug with unification, perhaps should unify select vars not atom vars
     public void testVarContraction3(){
         MindmapsGraph graph = SNBGraph.getGraph();
-        String body = "match $x isa person;";
-        String head = "match ($x, $x) isa knows;";
+        String body = "$x isa person;";
+        String head = "($x, $x) isa knows;";
         graph.putRule("test", body, head, graph.getMetaRuleInference());
 
         String queryString = "match ($x, $y) isa knows;$x id 'Bob';select $y;";
