@@ -19,14 +19,12 @@
 package io.mindmaps.test.graql.query;
 
 import com.google.common.collect.Lists;
-import io.mindmaps.Mindmaps;
-import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.test.AbstractReadOnlyGraphTest;
+import io.mindmaps.test.AbstractMovieGraphTest;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -35,7 +33,6 @@ import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Stream;
 
 import static io.mindmaps.graql.Graql.all;
@@ -52,7 +49,6 @@ import static io.mindmaps.graql.Graql.neq;
 import static io.mindmaps.graql.Graql.or;
 import static io.mindmaps.graql.Graql.regex;
 import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.graql.Graql.withGraph;
 import static io.mindmaps.util.Schema.MetaType.ENTITY_TYPE;
 import static io.mindmaps.util.Schema.MetaType.RESOURCE_TYPE;
 import static io.mindmaps.util.Schema.MetaType.RULE_TYPE;
@@ -63,7 +59,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
-public class MatchQueryTest extends AbstractReadOnlyGraphTest {
+public class MatchQueryTest extends AbstractMovieGraphTest {
 
     private QueryBuilder qb;
 
@@ -411,8 +407,8 @@ public class MatchQueryTest extends AbstractReadOnlyGraphTest {
 
     @Test
     public void testAkoRelationType() {
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        QueryBuilder qb = withGraph(graph);
+        // Work with a fresh graph for this test
+        rollbackGraph();
 
         qb.insert(
                 id("ownership").isa("relation-type").hasRole("owner").hasRole("possession"),

@@ -18,18 +18,15 @@
 
 package io.mindmaps.test.graql.query;
 
-import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.test.AbstractReadOnlyGraphTest;
+import io.mindmaps.test.AbstractMovieGraphTest;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import java.util.UUID;
 
 import static io.mindmaps.graql.Graql.id;
 import static io.mindmaps.graql.Graql.var;
@@ -37,7 +34,7 @@ import static io.mindmaps.graql.Graql.withGraph;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.hamcrest.core.StringContains.containsString;
 
-public class QueryErrorTest extends AbstractReadOnlyGraphTest {
+public class QueryErrorTest extends AbstractMovieGraphTest {
     @Rule
     public final ExpectedException exception = ExpectedException.none();
     private QueryBuilder qb;
@@ -138,7 +135,7 @@ public class QueryErrorTest extends AbstractReadOnlyGraphTest {
     @Test
     public void testExceptionWhenNoHasResourceRelation() throws MindmapsValidationException {
         // Create a fresh graph, with no has-resource between person and name
-        MindmapsGraph empty = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        MindmapsGraph empty = factoryWithNewKeyspace().getGraph();
 
         QueryBuilder emptyQb = withGraph(empty);
         emptyQb.insert(

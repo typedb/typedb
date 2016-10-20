@@ -21,19 +21,42 @@ package io.mindmaps.test;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.MindmapsGraphFactory;
 import io.mindmaps.example.MovieGraphFactory;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 
-public abstract class AbstractReadOnlyGraphTest extends AbstractEngineTest {
+/**
+ * Abstract test class that uses the movie graph, automatically rolling back after every test to a fresh movie graph.
+ * Do not commit to this graph, because it is shared between all tests for performance!
+ */
+public abstract class AbstractMovieGraphTest extends AbstractEngineTest {
 
     protected static MindmapsGraphFactory factory;
     protected static MindmapsGraph graph;
 
-    @BeforeClass
-    public static void createGraph() {
+    @Before
+    public void createGraph() {
         if (factory == null || graph == null) {
             factory = factoryWithNewKeyspace();
             graph = factory.getGraph();
             MovieGraphFactory.loadGraph(graph);
         }
     }
+
+    @After
+    public final void rollbackGraph() {
+        if (usingTinker()) {
+            // If using tinker, make a fresh graph
+            factory = null;
+            graph = null;
+        } else {
+            try {
+                graph.rollback();
+            } catch (UnsupportedOperationException e) {
+                // If operation unsupported, make a fresh graph
+                factory = null;
+                graph = null;
+            }
+        }
+    }
+
 }

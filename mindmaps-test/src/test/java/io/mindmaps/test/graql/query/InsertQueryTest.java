@@ -19,7 +19,6 @@
 package io.mindmaps.test.graql.query;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.ResourceType;
@@ -29,7 +28,7 @@ import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Var;
-import io.mindmaps.test.AbstractEngineTest;
+import io.mindmaps.test.AbstractMovieGraphTest;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -54,19 +53,23 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 
 @SuppressWarnings("OptionalGetWithoutIsPresent")
-public class InsertQueryTest extends AbstractEngineTest {
+public class InsertQueryTest extends AbstractMovieGraphTest {
 
-    private MindmapsGraph graph;
     private QueryBuilder qb;
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
     @Before
     public void setUp() {
+        // TODO: Fix delete queries in titan
+        assumeFalse(usingTitan());
+
         graph = factoryWithNewKeyspace().getGraph();
         MovieGraphFactory.loadGraph(graph);
+
         qb = withGraph(graph);
     }
 

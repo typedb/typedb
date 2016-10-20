@@ -26,7 +26,7 @@ import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.PatternAdmin;
-import io.mindmaps.test.AbstractReadOnlyGraphTest;
+import io.mindmaps.test.AbstractMovieGraphTest;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -42,7 +42,7 @@ import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-public class AdminTest extends AbstractReadOnlyGraphTest {
+public class AdminTest extends AbstractMovieGraphTest {
 
     private QueryBuilder qb;
 

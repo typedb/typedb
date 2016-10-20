@@ -20,17 +20,40 @@ package io.mindmaps.test;
 
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.MindmapsGraphFactory;
+import org.junit.After;
 import org.junit.Before;
 
+/**
+ * Abstract test class that provides an empty graph, automatically rolling back after every test to a fresh empty graph.
+ * Do not commit to this graph, because it is shared between all tests for performance!
+ */
 public abstract class AbstractGraphTest extends AbstractEngineTest {
 
-    protected MindmapsGraphFactory factory;
-    protected MindmapsGraph graph;
+    protected static MindmapsGraphFactory factory;
+    protected static MindmapsGraph graph;
 
     @Before
-    public final void createGraph() {
-        factory = factoryWithNewKeyspace();
-        graph = factory.getGraph();
+    public void createGraph() {
+        if (factory == null || graph == null) {
+            factory = factoryWithNewKeyspace();
+            graph = factory.getGraph();
+        }
     }
 
+    @After
+    public final void rollbackGraph() {
+        if (usingTinker()) {
+            // If using tinker, make a fresh graph
+            factory = null;
+            graph = null;
+        } else {
+            try {
+                graph.rollback();
+            } catch (UnsupportedOperationException e) {
+                // If operation unsupported, make a fresh graph
+                factory = null;
+                graph = null;
+            }
+        }
+    }
 }

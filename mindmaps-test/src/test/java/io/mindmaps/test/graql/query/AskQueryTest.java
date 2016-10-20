@@ -19,7 +19,7 @@
 package io.mindmaps.test.graql.query;
 
 import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.test.AbstractReadOnlyGraphTest;
+import io.mindmaps.test.AbstractMovieGraphTest;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,7 +30,7 @@ import static io.mindmaps.graql.Graql.withGraph;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class AskQueryTest extends AbstractReadOnlyGraphTest {
+public class AskQueryTest extends AbstractMovieGraphTest {
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();

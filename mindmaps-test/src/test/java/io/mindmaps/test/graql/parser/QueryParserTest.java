@@ -22,7 +22,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.ResourceType;
-import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.graql.AggregateQuery;
 import io.mindmaps.graql.AskQuery;
 import io.mindmaps.graql.Graql;
@@ -33,7 +32,7 @@ import io.mindmaps.graql.Var;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.pattern.property.DataTypeProperty;
 import io.mindmaps.graql.internal.query.aggregate.AbstractAggregate;
-import io.mindmaps.test.AbstractGraphTest;
+import io.mindmaps.test.AbstractMovieGraphTest;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -72,7 +71,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
-public class QueryParserTest extends AbstractGraphTest {
+public class QueryParserTest extends AbstractMovieGraphTest {
 
     private QueryBuilder qb;
     @Rule
@@ -80,7 +79,6 @@ public class QueryParserTest extends AbstractGraphTest {
 
     @Before
     public void setUp() {
-        MovieGraphFactory.loadGraph(graph);
         qb = withGraph(graph);
     }
 

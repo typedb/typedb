@@ -20,14 +20,14 @@ package io.mindmaps.test.graql.query;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.graql.Autocomplete;
-import io.mindmaps.test.AbstractReadOnlyGraphTest;
+import io.mindmaps.test.AbstractMovieGraphTest;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class AutocompleteTest extends AbstractReadOnlyGraphTest {
+public class AutocompleteTest extends AbstractMovieGraphTest {
 
     @Test
     public void testAutocompleteEmpty() {

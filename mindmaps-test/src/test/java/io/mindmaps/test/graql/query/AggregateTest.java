@@ -23,7 +23,7 @@ import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Instance;
 import io.mindmaps.graql.AggregateQuery;
 import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.test.AbstractReadOnlyGraphTest;
+import io.mindmaps.test.AbstractMovieGraphTest;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -44,7 +44,7 @@ import static io.mindmaps.graql.Graql.withGraph;
 import static io.mindmaps.test.graql.query.QueryUtil.movies;
 import static org.junit.Assert.assertEquals;
 
-public class AggregateTest extends AbstractReadOnlyGraphTest {
+public class AggregateTest extends AbstractMovieGraphTest {
 
     private QueryBuilder qb;
 

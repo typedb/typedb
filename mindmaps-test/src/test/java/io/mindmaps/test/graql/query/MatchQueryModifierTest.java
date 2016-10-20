@@ -22,7 +22,7 @@ import com.google.common.collect.Lists;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.test.AbstractReadOnlyGraphTest;
+import io.mindmaps.test.AbstractMovieGraphTest;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -42,7 +42,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class MatchQueryModifierTest extends AbstractReadOnlyGraphTest {
+public class MatchQueryModifierTest extends AbstractMovieGraphTest {
 
     private QueryBuilder qb;
 

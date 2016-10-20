@@ -18,13 +18,11 @@
 
 package io.mindmaps.test.graql.query;
 
-import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.graql.AskQuery;
 import io.mindmaps.graql.DeleteQuery;
 import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.test.AbstractGraphTest;
-import org.junit.Before;
+import io.mindmaps.test.AbstractMovieGraphTest;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -36,15 +34,10 @@ import static io.mindmaps.graql.Graql.withGraph;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class QueryBuilderTest extends AbstractGraphTest {
+public class QueryBuilderTest extends AbstractMovieGraphTest {
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
-
-    @Before
-    public void setUp() {
-        MovieGraphFactory.loadGraph(graph);
-    }
 
     @Test
     public void testBuildQueryGraphFirst() {
