@@ -36,6 +36,7 @@ public class Relation extends AtomBase {
 
     private final Set<VarAdmin.Casting> castings = new HashSet<>();
     private Map<RoleType, Pair<String, Type>> roleVarTypeMap = null;
+    private Map<String, Pair<Type, RoleType>> varTypeRoleMap = null;
 
     public Relation(VarAdmin pattern) {
         super(pattern);
@@ -176,7 +177,7 @@ public class Relation extends AtomBase {
      * Attempts to infer the implicit roleTypes of vars in a relAtom
      * @return map containing a varName - varType, varRoleType triple
      */
-    public Map<String, Pair<Type, RoleType>> getVarTypeRoleMap() {
+    private Map<String, Pair<Type, RoleType>> computeVarTypeRoleMap() {
         Map<String, Pair<Type, RoleType>> roleVarTypeMap = new HashMap<>();
         if (getParentQuery() == null) return roleVarTypeMap;
 
@@ -209,6 +210,13 @@ public class Relation extends AtomBase {
             }
         }
         return roleVarTypeMap;
+    }
+
+    @Override
+    public Map<String, Pair<Type, RoleType>> getVarTypeRoleMap() {
+        if (varTypeRoleMap == null)
+            varTypeRoleMap = computeVarTypeRoleMap();
+        return varTypeRoleMap;
     }
 
     /**
