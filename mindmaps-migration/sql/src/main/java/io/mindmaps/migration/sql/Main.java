@@ -18,14 +18,12 @@
 
 package io.mindmaps.migration.sql;
 
-import com.google.common.collect.Lists;
-import io.mindmaps.engine.loader.BlockingLoader;
-import io.mindmaps.engine.loader.DistributedLoader;
-import io.mindmaps.engine.loader.Loader;
-import io.mindmaps.engine.util.ConfigProperties;
+import io.mindmaps.migration.base.io.MigrationCLI;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+
+import static io.mindmaps.migration.base.io.MigrationCLI.die;
 
 /**
  * Main program to migrate a SQL database into a Mindmaps graph. For use from a command line.
@@ -34,77 +32,44 @@ import java.sql.DriverManager;
  */
 public class Main {
 
-    static void die(String errorMsg){
-        throw new RuntimeException(errorMsg + "\nSyntax: ./migration.sh sql -driver <jdbc driver> -database <database url> -user <username> -pass <password> [-engine <Mindmaps engine URL>] [-graph <graph name>]");
+    static {
+        MigrationCLI.addOption("driver", "driver", true, "JDBC driver");
+        MigrationCLI.addOption("db", "database", true, "URL to SQL database");
+        MigrationCLI.addOption("user", "user", true, "Username to access SQL database");
+        MigrationCLI.addOption("pass", "pass", true, "Password to access SQL database");
     }
 
     public static void main(String[] args){
+        MigrationCLI interpreter = new MigrationCLI(args);
 
-        String jdbcDriver = null;
-        String jdbcDBUrl = null;
-        String jdbcUser = null;
-        String jdbcPass = null;
-        String engineURL = null;
-        String graphName = null;
+        String jdbcDriver = interpreter.getRequiredOption("driver", "No driver specified (-driver");
+        String jdbcDBUrl = interpreter.getRequiredOption("db", "No db specified (-database");
+        String jdbcUser = interpreter.getRequiredOption("user", "No username specified (-user");
+        String jdbcPass = interpreter.getRequiredOption("pass", "No password specified (-pass");
 
-        for (int i = 0; i < args.length; i++) {
-            if ("-driver".equals(args[i]))
-                jdbcDriver = args[++i];
-            else if ("-database".equals(args[i]))
-                jdbcDBUrl = args[++i];
-            else if ("-user".equals(args[i]))
-                jdbcUser = args[++i];
-            else if ("-pass".equals(args[i]))
-                jdbcPass = args[++i];
-            else if ("-graph".equals(args[i]))
-                graphName = args[++i];
-            else if ("-engine".equals(args[i]))
-                engineURL = args[++i];
-            else if(i == 0 && "sql".equals(args[i]))
-                continue;
-            else
-                die("Unknown option " + args[i]);
-        }
-
-        if (jdbcDriver == null) die("Please specify the JDBC diver on the classpath using -driver option");
-        if (jdbcDBUrl == null) die("Please specify the URL where the SQL db is running using -database option");
-        if (jdbcUser == null) die("Please specify the username of the database using the -user option");
-        if (jdbcPass == null) die("Please specify the password of the database using the -pass option");
-
-        if (graphName == null){
-            graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
-        }
-
-        System.out.println("Migrating " + jdbcDBUrl + " using MM Engine " +
-                (engineURL == null ? "local" : engineURL ) + " into graph " + graphName);
+        interpreter.printInitMessage(jdbcDBUrl);
 
         // perform migration
         SQLSchemaMigrator schemaMigrator = new SQLSchemaMigrator();
         SQLDataMigrator dataMigrator = new SQLDataMigrator();
 
         try{
-            Loader loader = engineURL == null ? new BlockingLoader(graphName)
-                                              : new DistributedLoader(graphName, Lists.newArrayList(engineURL));
-
             // make JDBC connection
             Class.forName(jdbcDriver).newInstance();
             Connection connection = DriverManager.getConnection(jdbcDBUrl, jdbcUser, jdbcPass);
 
             schemaMigrator
                     .configure(connection)
-                    .migrate(loader)
+                    .migrate(interpreter.getLoader())
                     .close();
-
-            System.out.println("Schema migration successful");
 
             connection = DriverManager.getConnection(jdbcDBUrl, jdbcUser, jdbcPass);
             dataMigrator
                     .configure(connection)
-                    .migrate(loader)
+                    .migrate(interpreter.getLoader())
                     .close();
 
-            System.out.println("DataType migration successful");
-
+            interpreter.printCompletionMessage();
         }
         catch (Throwable throwable){
            die(throwable.getMessage());

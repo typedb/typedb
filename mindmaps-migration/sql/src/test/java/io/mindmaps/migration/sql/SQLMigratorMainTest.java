@@ -91,13 +91,13 @@ public class SQLMigratorMainTest {
         String name = "different";
         graph = GraphFactory.getInstance().getGraphBatchLoading(name);
         runAndAssertDataCorrect(new String[]{"-driver", Util.DRIVER, "-database", Util.URL, "-user", Util.USER, "-pass", Util.PASS,
-                                             "-graph", name});
+                                             "-keyspace", name});
     }
 
     @Test
     public void sqlMainDistributedLoaderTest(){
         runAndAssertDataCorrect(new String[]{"-driver", Util.DRIVER, "-database", Util.URL, "-user", Util.USER, "-pass", Util.PASS,
-                                             "-engine", "0.0.0.0"});
+                                             "-uri", "0.0.0.0"});
     }
 
     @Test(expected = RuntimeException.class)

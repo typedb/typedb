@@ -71,7 +71,7 @@ public class CSVMigratorMainTest {
 
     @Test
     public void csvMainTest(){
-        runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile, "-graph", GRAPH_NAME});
+        runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile, "-keyspace", GRAPH_NAME});
     }
 
     @Test
@@ -82,7 +82,7 @@ public class CSVMigratorMainTest {
 
     @Test
     public void csvMainTestDistributedLoader(){
-        runAndAssertDataCorrect(new String[]{"csv", "-file", dataFile, "-template", templateFile, "-engine", "0.0.0.0"});
+        runAndAssertDataCorrect(new String[]{"csv", "-file", dataFile, "-template", templateFile, "-uri", "0.0.0.0"});
     }
 
     @Test

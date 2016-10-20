@@ -18,16 +18,13 @@
 
 package io.mindmaps.migration.json;
 
-import com.google.common.collect.Lists;
 import com.google.common.io.Files;
-import io.mindmaps.engine.loader.BlockingLoader;
-import io.mindmaps.engine.loader.DistributedLoader;
-import io.mindmaps.engine.loader.Loader;
-import io.mindmaps.engine.util.ConfigProperties;
+import io.mindmaps.migration.base.io.MigrationCLI;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 
+import static io.mindmaps.migration.base.io.MigrationCLI.die;
 import static java.util.stream.Collectors.joining;
 
 /**
@@ -37,74 +34,42 @@ import static java.util.stream.Collectors.joining;
  */
 public class Main {
 
-    static void die(String errorMsg) {
-        throw new RuntimeException(errorMsg + "\nSyntax: ./migration.sh json -data <data filename or dir> -template <template file> [-graph <graph name>] [-batch <number of rows>] [-engine <Mindmaps engine URL>]");
+    static {
+        MigrationCLI.addOption("f", "file", true, "json data file");
+        MigrationCLI.addOption("t", "template", true, "graql template to apply over data");
+        MigrationCLI.addOption("b", "batch", true, "number of row to load at once");
     }
 
     public static void main(String[] args){
 
-        String batchSize = null;
-        String jsonTemplateName = null;
-        String jsonDataFileName = null;
-        String engineURL = null;
-        String graphName = null;
+        MigrationCLI interpreter = new MigrationCLI(args);
 
-        for (int i = 0; i < args.length; i++) {
-            if ("-data".equals(args[i]))
-                jsonDataFileName = args[++i];
-            else if ("-template".equals(args[i]))
-                jsonTemplateName = args[++i];
-            else if ("-graph".equals(args[i]))
-                graphName = args[++i];
-            else if ("-engine".equals(args[i]))
-                engineURL = args[++i];
-            else if ("-batch".equals(args[i]))
-                batchSize = args[++i];
-            else if(i == 0 && "json".equals(args[i]))
-                continue;
-            else
-                die("Unknown option " + args[i]);
-        }
-
-        // check for arguments
-        if(jsonDataFileName == null){
-            die("Please specify JSON data file or dir using the -data option");
-        }
-        if(jsonTemplateName == null){
-            die("Please specify Graql template using the -template option");
-        }
+        String jsonDataFileName = interpreter.getRequiredOption("f", "Data file missing (-f)");
+        String jsonTemplateName = interpreter.getRequiredOption("t", "Template file missing (-t)");
+        int batchSize = interpreter.hasOption("b") ? Integer.valueOf(interpreter.getOption("b")) : JsonMigrator.BATCH_SIZE;
 
         // get files
         File jsonDataFile = new File(jsonDataFileName);
+        File jsonTemplateFile = new File(jsonTemplateName);
+
         if(!jsonDataFile.exists()){
             die("Cannot find file: " + jsonDataFileName);
         }
 
-        File jsonTemplateFile = new File(jsonTemplateName);
         if(!jsonTemplateFile.exists() || jsonTemplateFile.isDirectory()){
             die("Cannot find file: " + jsonTemplateName);
         }
 
-        if(graphName == null){
-            graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
-        }
-
-        System.out.println("Migrating data " + jsonDataFileName +
-                " using MM Engine " + (engineURL == null ? "local" : engineURL ) +
-                " into graph " + graphName);
+        interpreter.printInitMessage(jsonDataFile.getPath());
 
         try{
-            Loader loader = engineURL == null ? new BlockingLoader(graphName)
-                                              : new DistributedLoader(graphName, Lists.newArrayList(engineURL));
-
-            JsonMigrator migrator = new JsonMigrator(loader)
-                    .setBatchSize(batchSize == null ? JsonMigrator.BATCH_SIZE : Integer.valueOf(batchSize));
+            JsonMigrator migrator = new JsonMigrator(interpreter.getLoader())
+                                        .setBatchSize(batchSize);
 
             String template = Files.readLines(jsonTemplateFile, StandardCharsets.UTF_8).stream().collect(joining("\n"));
-
             migrator.migrate(template, jsonDataFile);
 
-            System.out.println("Data migration successful");
+            interpreter.printCompletionMessage();
         } catch (Throwable throwable){
             die(throwable.getMessage());
         }

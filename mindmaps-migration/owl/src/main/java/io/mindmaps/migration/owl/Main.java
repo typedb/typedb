@@ -17,12 +17,12 @@
  */
 package io.mindmaps.migration.owl;
 
-import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.RelationType;
-import io.mindmaps.Mindmaps;
+import io.mindmaps.migration.base.io.MigrationCLI;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 
 import java.io.File;
+
+import static io.mindmaps.migration.base.io.MigrationCLI.die;
 
 /**
  * <p>
@@ -38,51 +38,30 @@ import java.io.File;
  *
  */
 public class Main {
-    
-    static void die(String errorMsg) {
-        System.out.println(errorMsg);
-        System.out.println("\nSyntax: ./migration.sh owl -file <owl filename> [-graph <graph name>] [-engine <Mindmaps engine URL>]");
-        System.exit(-1);
+
+    static {
+        MigrationCLI.addOption("f", "file", true, "owl file");
     }
 
-    public static void main(String[] argv) {
-        String owlFilename = null;
-        String engineUrl = null;
-        String graphName = null;
+    public static void main(String[] args) {
 
-        for (int i = 0; i < argv.length; i++) {
-            if ("-file".equals(argv[i]))
-                owlFilename = argv[++i];
-            else if ("-graph".equals(argv[i]))
-                graphName = argv[++i];
-            else if ("-engine".equals(argv[i]))
-                engineUrl = argv[++i];
-            else if("owl".equals(argv[0]))
-                continue;
-            else
-                die("Unknown option " + argv[i]);
-        }
+        MigrationCLI interpreter = new MigrationCLI(args);
 
-        if (owlFilename == null)
-            die("Please specify owl file with the -owl option.");
+        String owlFilename = interpreter.getRequiredOption("f", "Please specify owl file with the -owl option.");
+
         File owlfile = new File(owlFilename);
         if (!owlfile.exists())
             die("Cannot find file: " + owlFilename);
-        if (graphName == null)
-            graphName = owlfile.getName().replace(".", "_");
 
-        System.out.println("Migrating " + owlFilename + " using MM Engine " +
-                            (engineUrl == null ? "local" : engineUrl ) + " into graph " + graphName);
+        interpreter.printInitMessage(owlfile.getPath());
 
         OWLMigrator migrator = new OWLMigrator();
-
         try {
-            MindmapsGraph graph = engineUrl == null ? Mindmaps.factory(Mindmaps.DEFAULT_URI, graphName).getGraph()
-                                                    : Mindmaps.factory(engineUrl, graphName).getGraph();
-            migrator.graph(graph)
+            migrator.graph(interpreter.getGraph())
                     .ontology(OWLManager.createOWLOntologyManager().loadOntologyFromOntologyDocument(owlfile))
                     .migrate();
-            System.out.println("Migration successfully completed!");
+
+            interpreter.printCompletionMessage();
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);

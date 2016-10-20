@@ -72,9 +72,9 @@ public class JsonMigratorMainTest {
     @Test
     public void jsonMigratorMainTest(){
         String[] args = {
-                "-data", dataFile,
+                "-file", dataFile,
                 "-template", templateFile,
-                "-graph", GRAPH_NAME
+                "-keyspace", GRAPH_NAME
         };
 
         runAndAssertDataCorrect(args);
@@ -83,9 +83,9 @@ public class JsonMigratorMainTest {
     @Test
     public void jsonMainDistributedLoaderTest(){
         String[] args = {
-                "-data", dataFile,
+                "-file", dataFile,
                 "-template", templateFile,
-                "-engine", "0.0.0.0"
+                "-uri", "0.0.0.0"
         };
 
         runAndAssertDataCorrect(args);
@@ -98,7 +98,7 @@ public class JsonMigratorMainTest {
 
     @Test(expected = RuntimeException.class)
     public void jsonMainNoTemplateFileNameTest(){
-        runAndAssertDataCorrect(new String[]{"-data", ""});
+        runAndAssertDataCorrect(new String[]{"-file", ""});
     }
 
     @Test(expected = RuntimeException.class)
@@ -108,22 +108,22 @@ public class JsonMigratorMainTest {
 
     @Test(expected = RuntimeException.class)
     public void jsonMainNoDataFileExistsTest(){
-        runAndAssertDataCorrect(new String[]{"-data", dataFile + "wrong", "-template", templateFile + "wrong"});
+        runAndAssertDataCorrect(new String[]{"-file", dataFile + "wrong", "-template", templateFile + "wrong"});
     }
 
     @Test(expected = RuntimeException.class)
     public void jsonMainNoTemplateFileExistsTest(){
-        runAndAssertDataCorrect(new String[]{"-data", dataFile, "-template", templateFile + "wrong"});
+        runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile + "wrong"});
     }
 
     @Test
     public void jsonMainBatchSizeArgumentTest(){
-        runAndAssertDataCorrect(new String[]{"-data", dataFile, "-template", templateFile, "-batch", "100"});
+        runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile, "-batch", "100"});
     }
 
     @Test(expected = RuntimeException.class)
     public void jsonMainThrowableTest(){
-        runAndAssertDataCorrect(new String[]{"-data", dataFile, "-template", templateFile, "-batch", "hello"});
+        runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile, "-batch", "hello"});
     }
 
     private void runAndAssertDataCorrect(String[] args){

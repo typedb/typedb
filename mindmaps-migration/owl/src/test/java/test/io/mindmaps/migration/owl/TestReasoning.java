@@ -1,5 +1,6 @@
 package test.io.mindmaps.migration.owl;
 
+import com.google.common.collect.Sets;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.Graql;
@@ -7,7 +8,6 @@ import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
-import org.elasticsearch.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Test;
 import org.semanticweb.HermiT.Configuration;
