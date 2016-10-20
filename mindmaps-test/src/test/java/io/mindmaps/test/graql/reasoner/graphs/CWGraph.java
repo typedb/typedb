@@ -190,47 +190,45 @@ public class CWGraph {
         RuleType inferenceRule = mindmaps.getMetaRuleInference();
 
         //R1: "It is a crime for an American to sell weapons to hostile nations"
-        String R1_LHS = "match " +
+        String R1_LHS =
                 "$x isa person;$x has nationality 'American';" +
                 "$y isa weapon;" +
                 "$z isa country;$z has alignment 'hostile';" +
-                "(seller: $x, transaction-item: $y, buyer: $z) isa transaction;" +
-                "select $x;";
+                "(seller: $x, transaction-item: $y, buyer: $z) isa transaction;";
 
-        String R1_RHS = "match $x isa criminal;";
+        String R1_RHS = "$x isa criminal;";
 
         mindmaps.putRule("R1", R1_LHS, R1_RHS, inferenceRule);
 
         //R2: "Missiles are a kind of a weapon"
-        String  R2_LHS = "match $x isa missile;";
-        String R2_RHS = "match $x isa weapon;";
+        String  R2_LHS = "$x isa missile;";
+        String R2_RHS = "$x isa weapon;";
 
         mindmaps.putRule("R2", R2_LHS, R2_RHS, inferenceRule);
 
         //R3: "If a country is an enemy of America then it is hostile"
-        String R3_LHS = "match " +
+        String R3_LHS =
                 "$x isa country;" +
                 "($x, $y) isa is-enemy-of;" +
-                "$y isa country;$y id 'America';" +
-                "select $x;";
-        String R3_RHS = "match $x has alignment 'hostile';";
+                "$y isa country;$y id 'America';";
+        String R3_RHS = "$x has alignment 'hostile';";
 
         mindmaps.putRule("R3", R3_LHS, R3_RHS, inferenceRule);
 
         //R4: "If a rocket is self-propelled and guided, it is a missile"
-        String R4_LHS = "match $x isa rocket;$x has propulsion 'gsp';";
-        String R4_RHS = "match $x isa missile;";
+        String R4_LHS = "$x isa rocket;$x has propulsion 'gsp';";
+        String R4_RHS = "$x isa missile;";
 
         mindmaps.putRule("R4", R4_LHS, R4_RHS, inferenceRule);
 
-        String R5_LHS = "match "+
+        String R5_LHS =
                 "$x isa person;" +
                 "$y isa country;" +
                 "$z isa weapon;" +
-                "($x, $y) isa is-paid-by;\n" +
+                "($x, $y) isa is-paid-by;" +
                 "($y, $z) isa owns;";
 
-        String R5_RHS = "match (seller: $x, buyer: $y, transaction-item: $z) isa transaction;";
+        String R5_RHS = "(seller: $x, buyer: $y, transaction-item: $z) isa transaction;";
 
         mindmaps.putRule("R5", R5_LHS, R5_RHS, inferenceRule);
     }
@@ -251,6 +249,4 @@ public class CWGraph {
                 .putRolePlayer(targetRole, instance)
                 .putRolePlayer(valueRole, resourceInstance);
     }
-
-
 }

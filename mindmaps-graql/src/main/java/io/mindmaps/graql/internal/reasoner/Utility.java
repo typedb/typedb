@@ -25,6 +25,8 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.*;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.Var;
+import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.pattern.Patterns;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
@@ -162,12 +164,11 @@ public class Utility {
         if (arity != 2)
             throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
 
-        Var startVar = Graql.var().isa(relType.getId()).rel(fromRoleId, "x").rel(toRoleId, "z");
-        Var endVar = Graql.var().isa(relType.getId()).rel(fromRoleId, "z").rel(toRoleId, "y");
-        Var headVar = Graql.var().isa(relType.getId()).rel(fromRoleId, "x").rel(toRoleId, "y");
-
-        String body = Graql.match(startVar, endVar).select("x", "y").toString();
-        String head = Graql.match(headVar).select("x", "y").toString();
+        VarAdmin startVar = Graql.var().isa(relType.getId()).rel(fromRoleId, "x").rel(toRoleId, "z").admin();
+        VarAdmin endVar = Graql.var().isa(relType.getId()).rel(fromRoleId, "z").rel(toRoleId, "y").admin();
+        VarAdmin headVar = Graql.var().isa(relType.getId()).rel(fromRoleId, "x").rel(toRoleId, "y").admin();
+        String body = Patterns.conjunction(Sets.newHashSet(startVar, endVar)).toString() + ";";
+        String head = headVar.toString() + ";";
         return graph.putRule(ruleId, body, head, graph.getMetaRuleInference());
     }
 
@@ -183,11 +184,8 @@ public class Utility {
         if (arity != 2)
             throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
 
-        Var bodyVar = Graql.var().isa(relType.getId()).rel("x").rel("y");
-        Var headVar = Graql.var().isa(relType.getId()).rel("x").rel("x");
-
-        String body = Graql.match(bodyVar).select("x").toString();
-        String head = Graql.match(headVar).select("x").toString();
+        String body = Graql.var().isa(relType.getId()).rel("x").rel("y").toString() + ";";
+        String head = Graql.var().isa(relType.getId()).rel("x").rel("x").toString() + ";";
         return graph.putRule(ruleId, body, head, graph.getMetaRuleInference());
     }
 
@@ -206,7 +204,6 @@ public class Utility {
         final int childArity = child.hasRoles().size();
         if (parentArity != childArity || parentArity != roleMappings.size())
             throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
-
         Var parentVar = Graql.var().isa(parent.getId());
         Var childVar = Graql.var().isa(child.getId());
         Set<String> vars = new HashSet<>();
@@ -217,9 +214,8 @@ public class Utility {
             childVar.rel(childRoleId, varName);
             vars.add(varName);
         });
-
-        String body = Graql.match(childVar).toString();
-        String head = Graql.match(parentVar).toString();
+        String body = childVar.toString() + ";";
+        String head = parentVar.toString() + ";";
         return graph.putRule(ruleId, body, head, graph.getMetaRuleInference());
     }
 
@@ -227,19 +223,19 @@ public class Utility {
                                              LinkedHashMap<RelationType, Pair<String, String>> chain, MindmapsGraph graph){
         Stack<String> varNames = new Stack<>();
         varNames.push("x");
-        Set<Var> bodyVars = new HashSet<>();
+        Set<VarAdmin> bodyVars = new HashSet<>();
         chain.forEach( (relType, rolePair) ->{
             String varName = createFreshVariable(Sets.newHashSet(varNames), "x");
-            Var var = Graql.var().isa(relType.getId())
+            VarAdmin var = Graql.var().isa(relType.getId())
                     .rel(rolePair.getKey(), varNames.peek())
-                    .rel(rolePair.getValue(), varName);
+                    .rel(rolePair.getValue(), varName).admin();
             varNames.push(varName);
             bodyVars.add(var);
         });
 
         Var headVar = Graql.var().isa(relation.getId()).rel(fromRoleId, "x").rel(toRoleId, varNames.peek());
-        String body = Graql.match(bodyVars).select("x", varNames.peek()).toString();
-        String head = Graql.match(headVar).toString();
+        String body = Patterns.conjunction(bodyVars).toString() + ";";
+        String head = headVar.toString() + ";";
         return graph.putRule(ruleId, body, head, graph.getMetaRuleInference());
     }
 

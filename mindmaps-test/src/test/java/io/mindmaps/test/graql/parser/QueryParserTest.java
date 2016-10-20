@@ -383,8 +383,8 @@ public class QueryParserTest {
 
     @Test
     public void testInsertRules() {
-        String lhs = "match $x isa movie;";
-        String rhs = "insert id '123' isa movie;";
+        String lhs = "$x isa movie;";
+        String rhs = "id '123' isa movie;";
 
         qb.parse("insert id 'my-rule-thing' isa rule-type; \n" +
                 "id 'rulerule' isa my-rule-thing, lhs {" + lhs + "}, rhs {" + rhs + "};").execute();

@@ -49,6 +49,7 @@ class GraqlSession {
     private final Logger LOG = LoggerFactory.getLogger(GraqlSession.class);
 
     private static final int QUERY_CHUNK_SIZE = 1000;
+    private static final int PING_INTERVAL = 60_000;
 
     private boolean queryCancelled = false;
 
@@ -59,6 +60,25 @@ class GraqlSession {
         this.session = session;
         this.graph = graph;
         reasoner = new Reasoner(graph);
+
+        // Begin sending pings
+        Thread thread = new Thread(this::ping);
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void ping() {
+        // This runs on a daemon thread, so it will be terminated when the JVM stops
+        //noinspection InfiniteLoopStatement
+        while (true) {
+            sendJson(Json.object(ACTION, ACTION_PING));
+
+            try {
+                Thread.sleep(PING_INTERVAL);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     /**

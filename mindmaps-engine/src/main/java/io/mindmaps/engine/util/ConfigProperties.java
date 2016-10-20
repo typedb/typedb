@@ -18,10 +18,12 @@
 
 package io.mindmaps.engine.util;
 
+import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.nio.file.Paths;
 import java.util.Properties;
@@ -99,14 +101,12 @@ public class ConfigProperties {
             e.printStackTrace();
         }
         prop.put(PROJECT_VERSION, Version.VERSION);
-        setLogConfigFile();
+        initialiseLogger();
         setLogLevel();
         computeThreadsNumber();
-        LOG = LoggerFactory.getLogger(ConfigProperties.class);
         LOG.info("Project directory in use: [" + getProjectPath() + "]");
         LOG.info("Configuration file in use: [" + configFilePath + "]");
         LOG.info("Number of threads set to [" + numOfThreads + "]");
-        LOG.info("Logging configuration file in use:[" + System.getProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY) + "]");
     }
 
 
@@ -130,11 +130,18 @@ public class ConfigProperties {
      * It also sets the -Dmindmaps.log.file system property equal to the one specified in mindmaps-engine.properties.
      * The mindmaps.log.file property will be used by logback.xml
      */
-    private void setLogConfigFile() {
+    private void initialiseLogger() {
         if (System.getProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY) == null)
             System.setProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY, getProjectPath() + DEFAULT_LOG_CONFIG_FILE);
 
         System.setProperty(LOG_FILE_OUTPUT_SYSTEM_PROPERTY, getPath(LOGGING_FILE_PATH));
+
+        if (!(new File(System.getProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY))).exists()) {
+            LoggerFactory.getLogger(ConfigProperties.class).error(ErrorMessage.NO_LOG_CONFIG_FILE.getMessage(System.getProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY)));
+        } else {
+            LOG = LoggerFactory.getLogger(ConfigProperties.class);
+            LOG.info("Logging configuration file in use:[" + System.getProperty(LOG_FILE_CONFIG_SYSTEM_PROPERTY) + "]");
+        }
     }
 
     /**
@@ -174,7 +181,6 @@ public class ConfigProperties {
     }
 
     /**
-     *
      * @return Number of available threads to be used to instantiate new threadpools.
      */
     public int getAvailableThreads() {

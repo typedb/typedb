@@ -143,6 +143,22 @@ public class CSVMigratorTest {
     }
 
     @Test
+    public void testMigrateAsStringMethod(){
+        load(get("multi-file/schema.gql"));
+        assertNotNull(graph.getEntityType("pokemon"));
+
+        String pokemonTypeTemplate = "$x isa pokemon-type id <id>-type has description <identifier>;";
+        String templated = migrator.graql(pokemonTypeTemplate, get("multi-file/data/types.csv"));
+
+        String expected = "insert  $x0 isa pokemon-type id \"1-type\" has description \"normal\"; $x1 isa pokemon-type id \"2-type\" has description \"fighting\"; $x2 isa pokemon-type id \"3-type\" has description \"flying\"; $x3 isa pokemon-type id \"4-type\" has description \"poison\"; $x4 isa pokemon-type id \"5-type\" has description \"ground\";\n" +
+                "insert  $x0 isa pokemon-type id \"6-type\" has description \"rock\"; $x1 isa pokemon-type id \"7-type\" has description \"bug\"; $x2 isa pokemon-type id \"8-type\" has description \"ghost\"; $x3 isa pokemon-type id \"9-type\" has description \"steel\"; $x4 isa pokemon-type id \"10-type\" has description \"fire\";\n" +
+                "insert  $x0 isa pokemon-type id \"11-type\" has description \"water\"; $x1 isa pokemon-type id \"12-type\" has description \"grass\"; $x2 isa pokemon-type id \"13-type\" has description \"electric\"; $x3 isa pokemon-type id \"14-type\" has description \"psychic\"; $x4 isa pokemon-type id \"15-type\" has description \"ice\";\n" +
+                "insert  $x0 isa pokemon-type id \"16-type\" has description \"dragon\"; $x1 isa pokemon-type id \"17-type\" has description \"dark\"; $x2 isa pokemon-type id \"18-type\" has description \"fairy\"; $x3 isa pokemon-type id \"10001-type\" has description \"unknown\"; $x4 isa pokemon-type id \"10002-type\" has description \"shadow\";";
+
+        assertEquals(expected, templated);
+    }
+
+    @Test
     public void icijTest() {
 
 //        schemaMigrator.configure("entity", parser("icij/data/Entities.csv")).migrate(loader);

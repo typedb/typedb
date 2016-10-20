@@ -35,6 +35,7 @@ import static org.junit.Assert.assertTrue;
 public class RemoteShellControllerTest extends MindmapsEngineTestBase {
 
     private String graphName;
+    private String entityId;
 
     @Before
     public void setUp() throws Exception {
@@ -42,7 +43,7 @@ public class RemoteShellControllerTest extends MindmapsEngineTestBase {
         MindmapsGraph graph = GraphFactory.getInstance().getGraph(graphName);
 
         EntityType man = graph.putEntityType("Man");
-        graph.putEntity("actor-123", man);
+        entityId = graph.addEntity(man).getId();
         graph.commit();
     }
 
@@ -52,7 +53,7 @@ public class RemoteShellControllerTest extends MindmapsEngineTestBase {
     public void existingID() {
         Response response = get("/shell/match?graphName=" + graphName + "&query=match $x isa Man").then().statusCode(200).extract().response().andReturn();
         String message = response.getBody().asString();
-        assertTrue(message.contains("actor-123"));
+        assertTrue(message.contains(entityId));
     }
 
     @After

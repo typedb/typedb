@@ -39,22 +39,22 @@ entity plays-role P-roleA, plays-role P-roleB;
 ####################################################
 
 "R1" isa inference-rule,
-lhs {match
+lhs {
 $x isa q;
 ($x, $y) isa TC;},
-rhs {match
+rhs {
 ($x, $y) isa N-TC;};
 
 "R2" isa inference-rule,
-lhs {match
+lhs {
 ($x, $y) isa P;},
-rhs {match
+rhs {
 ($x, $y) isa TC;};
 
 "R3" isa inference-rule,
-lhs {match
+lhs {
 ($x, $z) isa P;
-($z, $y) isa TC; select $x, $y;},
-rhs {match
+($z, $y) isa TC;},
+rhs {
 ($x, $y) isa TC;};
 

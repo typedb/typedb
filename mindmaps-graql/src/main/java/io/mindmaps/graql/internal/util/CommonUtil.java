@@ -18,6 +18,7 @@
 
 package io.mindmaps.graql.internal.util;
 
+import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 
 import java.util.Iterator;
@@ -83,6 +84,35 @@ public class CommonUtil {
             @Override
             public Function<ImmutableSet.Builder<T>, ImmutableSet<T>> finisher() {
                 return ImmutableSet.Builder::build;
+            }
+
+            @Override
+            public Set<Characteristics> characteristics() {
+                return ImmutableSet.of();
+            }
+        };
+    }
+
+    public static <T> Collector<T, ImmutableMultiset.Builder<T>, ImmutableMultiset<T>> toImmutableMultiset() {
+        return new Collector<T, ImmutableMultiset.Builder<T>, ImmutableMultiset<T>>() {
+            @Override
+            public Supplier<ImmutableMultiset.Builder<T>> supplier() {
+                return ImmutableMultiset::builder;
+            }
+
+            @Override
+            public BiConsumer<ImmutableMultiset.Builder<T>, T> accumulator() {
+                return ImmutableMultiset.Builder::add;
+            }
+
+            @Override
+            public BinaryOperator<ImmutableMultiset.Builder<T>> combiner() {
+                return (b1, b2) -> b1.addAll(b2.build());
+            }
+
+            @Override
+            public Function<ImmutableMultiset.Builder<T>, ImmutableMultiset<T>> finisher() {
+                return ImmutableMultiset.Builder::build;
             }
 
             @Override

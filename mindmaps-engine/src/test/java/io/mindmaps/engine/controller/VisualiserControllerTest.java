@@ -41,6 +41,7 @@ import static org.junit.Assert.assertTrue;
 public class VisualiserControllerTest extends MindmapsEngineTestBase{
 
     private static String graphName = "specialtestgraph";
+    private String entityId;
 
     // Adding Ignore since I have to re-write the tests, give that the HAL format is now different.
 
@@ -48,7 +49,7 @@ public class VisualiserControllerTest extends MindmapsEngineTestBase{
     public void setUp() throws Exception {
         MindmapsGraph graph = GraphFactory.getInstance().getGraph(graphName);
         EntityType man = graph.putEntityType("Man");
-        graph.putEntity("actor-123", man);
+        entityId = graph.addEntity(man).getId();
         graph.commit();
     }
 
@@ -61,7 +62,7 @@ public class VisualiserControllerTest extends MindmapsEngineTestBase{
 
     @Ignore
     public void getEntityByID() {
-        Response response = get(REST.WebPath.CONCEPT_BY_ID_URI+"actor-123?graphName="+graphName).then().statusCode(200).extract().response().andReturn();
+        Response response = get(REST.WebPath.CONCEPT_BY_ID_URI + entityId + "?graphName="+graphName).then().statusCode(200).extract().response().andReturn();
         JSONObject message = new JSONObject(response.getBody().asString());
         makeSureThisIsOurMan(message);
     }
@@ -82,9 +83,9 @@ public class VisualiserControllerTest extends MindmapsEngineTestBase{
 
     private void makeSureThisIsOurMan(JSONObject message){
         assertEquals(message.getString("_type"),"Man");
-        assertEquals(message.getString("_id"),"actor-123");
+        assertEquals(message.getString("_id"),entityId);
         assertEquals(message.getString("_baseType"),"entity-type");
-        assertEquals(message.getJSONObject("_links").getJSONObject("self").getString("href"),"/graph/concept/actor-123");
+        assertEquals(message.getJSONObject("_links").getJSONObject("self").getString("href"),"/graph/concept/" + entityId);
 
         JSONObject embeddedType = message.getJSONObject("_embedded").getJSONArray("isa").getJSONObject(0);
         assertEquals(embeddedType.getString("_baseType"),"type");
@@ -105,13 +106,13 @@ public class VisualiserControllerTest extends MindmapsEngineTestBase{
         JSONArray isaEmbeddedArray = message.getJSONObject("_embedded").getJSONArray("isa");
         Set<String> ids = new HashSet<>();
         isaEmbeddedArray.forEach(x ->ids.add(((JSONObject)x).getString("_id")));
-        assertTrue(ids.contains("actor-123"));
+        assertTrue(ids.contains(entityId));
         assertTrue(ids.contains("entity-type"));
     }
 
     @Test
     public void notExistingIDInDefaultGraph() {
-        get("/graph/concept/actor-123").then().statusCode(500).extract().response().andReturn();
+        get("/graph/concept/" + entityId).then().statusCode(500).extract().response().andReturn();
     }
 
     @After

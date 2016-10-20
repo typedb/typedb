@@ -48,7 +48,6 @@ public class ReasonerTest {
     @Test
     public void testSubPropertyRule() {
         MindmapsGraph graph = SNBGraph.getGraph();
-
         Map<String, String> roleMap = new HashMap<>();
         RelationType parent = graph.getRelationType("sublocate");
         RelationType child = graph.getRelationType("resides");
@@ -56,11 +55,10 @@ public class ReasonerTest {
         roleMap.put(graph.getRoleType("member-location").getId(), graph.getRoleType("subject-location").getId());
         roleMap.put(graph.getRoleType("container-location").getId(), graph.getRoleType("located-subject").getId());
 
-        String body = "match (subject-location: $x, located-subject: $x1) isa resides;";
-        String head = "match (member-location: $x, container-location: $x1) isa sublocate;";
+        String body = "(subject-location: $x, located-subject: $x1) isa resides;";
+        String head = "(member-location: $x, container-location: $x1) isa sublocate;";
 
         InferenceRule R2 = new InferenceRule(graph.putRule("test", body, head, graph.getMetaRuleInference()), graph);
-
         Rule rule = createSubPropertyRule("testRule", parent , child, roleMap, graph);
         InferenceRule R = new InferenceRule(rule, graph);
 
@@ -77,10 +75,9 @@ public class ReasonerTest {
 
         InferenceRule R = new InferenceRule(rule, graph);
 
-        String body = "match (member-location: $x, container-location: $z) isa sublocate;" +
-                      "(member-location: $z, container-location: $y) isa sublocate;" +
-                      "select $x, $y;";
-        String head = "match (member-location: $x, container-location: $y) isa sublocate;";
+        String body = "(member-location: $x, container-location: $z) isa sublocate;" +
+                      "(member-location: $z, container-location: $y) isa sublocate;";
+        String head = "(member-location: $x, container-location: $y) isa sublocate;";
 
         InferenceRule R2 = new InferenceRule(graph.putRule("test", body, head, graph.getMetaRuleInference()), graph);
         assertTrue(R.getHead().equals(R2.getHead()));
@@ -93,8 +90,8 @@ public class ReasonerTest {
         Rule rule = createReflexiveRule("testRule", graph.getRelationType("knows"), graph);
         InferenceRule R = new InferenceRule(rule, graph);
 
-        String body = "match ($x, $y) isa knows;select $x;";
-        String head = "match ($x, $x) isa knows;";
+        String body = "($x, $y) isa knows;";
+        String head = "($x, $x) isa knows;";
 
         InferenceRule R2 = new InferenceRule(graph.putRule("test", body, head, graph.getMetaRuleInference()), graph);
         assertTrue(R.getHead().equals(R2.getHead()));
@@ -144,8 +141,8 @@ public class ReasonerTest {
         MindmapsGraph graph = SNBGraph.getGraph();
         String queryString = "match $x has firstname $y;";
         Query query = new Query(queryString, graph);
-        String body = "match $x isa person;$x id 'Bob';";
-        String head = "match $x has firstname 'Bob';";
+        String body = "$x isa person;$x id 'Bob';";
+        String head = "$x has firstname 'Bob';";
         graph.putRule("test", body, head, graph.getMetaRuleInference());
 
         Reasoner reasoner = new Reasoner(graph);
