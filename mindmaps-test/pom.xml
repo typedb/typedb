@@ -142,5 +142,20 @@
             <version>${h2.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.mindmaps</groupId>
+            <artifactId>migration-csv</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.mindmaps</groupId>
+            <artifactId>migration-owl</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.mindmaps</groupId>
+            <artifactId>migration-json</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 </project>

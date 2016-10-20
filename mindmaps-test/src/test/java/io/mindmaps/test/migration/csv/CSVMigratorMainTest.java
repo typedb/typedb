@@ -16,97 +16,79 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.migration.csv;
+package io.mindmaps.test.migration.csv;
 
-import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.ResourceType;
-import io.mindmaps.engine.MindmapsEngineServer;
-import io.mindmaps.engine.util.ConfigProperties;
-import io.mindmaps.factory.GraphFactory;
+import io.mindmaps.migration.csv.Main;
+import io.mindmaps.test.migration.AbstractMindmapsMigratorTest;
 import org.junit.*;
 
-import java.io.File;
 import java.util.Collection;
 
-import static io.mindmaps.migration.base.util.MigratorTestUtil.load;
 import static junit.framework.TestCase.assertEquals;
 
-public class CSVMigratorMainTest {
+public class CSVMigratorMainTest extends AbstractMindmapsMigratorTest {
 
-    private final String GRAPH_NAME = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
-    private MindmapsGraph graph;
-
-    private final String dataFile = get("single-file/data/cars.csv").getAbsolutePath();;
-    private final String templateFile = get("single-file/template.gql").getAbsolutePath();
-
-    @BeforeClass
-    public static void start(){
-        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
-        System.setProperty(ConfigProperties.CURRENT_DIR_SYSTEM_PROPERTY, System.getProperty("user.dir")+"/../");
-
-        MindmapsEngineServer.start();
-    }
-
-    @AfterClass
-    public static void stop(){
-        MindmapsEngineServer.stop();
-    }
+    private final String dataFile = getFile("csv", "single-file/data/cars.csv").getAbsolutePath();;
+    private final String templateFile = getFile("csv", "single-file/template.gql").getAbsolutePath();
 
     @Before
     public void setup(){
-        graph = GraphFactory.getInstance().getGraphBatchLoading(GRAPH_NAME);
-        load(graph, get("single-file/schema.gql"));
-    }
-
-    @After
-    public void shutdown(){
-        graph.clear();
+        load(getFile("csv", "single-file/schema.gql"));
     }
 
     @Test
     public void csvMainTest(){
-        runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile, "-keyspace", GRAPH_NAME});
+        runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace()});
     }
 
     @Test
     public void tsvMainTest(){
-        String tsvFile = get("single-file/data/cars.tsv").getAbsolutePath();
-        runAndAssertDataCorrect(new String[]{"-file", tsvFile, "-template", templateFile, "-delimiter", "\t"});
+        String tsvFile = getFile("csv", "single-file/data/cars.tsv").getAbsolutePath();
+        runAndAssertDataCorrect(new String[]{"-file", tsvFile, "-template", templateFile, "-delimiter", "\t", "-keyspace", graph.getKeyspace()});
     }
 
     @Test
     public void csvMainTestDistributedLoader(){
-        runAndAssertDataCorrect(new String[]{"csv", "-file", dataFile, "-template", templateFile, "-uri", "0.0.0.0"});
+        runAndAssertDataCorrect(new String[]{"csv", "-file", dataFile, "-template", templateFile, "-uri", "0.0.0.0", "-keyspace", graph.getKeyspace()});
     }
 
     @Test
     public void csvMainDifferentBatchSizeTest(){
-        runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile, "-batch", "100"});
+        runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile, "-batch", "100", "-keyspace", graph.getKeyspace()});
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void csvMainNoFileNameTest(){
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("Data file missing (-f)");
         runAndAssertDataCorrect(new String[]{});
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void csvMainNoTemplateNameTest(){
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("Template file missing (-t)");
         runAndAssertDataCorrect(new String[]{"-file", dataFile});
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void csvMainInvalidTemplateFileTest(){
+        exception.expect(RuntimeException.class);
         runAndAssertDataCorrect(new String[]{"-file", dataFile + "wrong", "-template", templateFile + "wrong"});
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void csvMainThrowableTest(){
+        exception.expect(NumberFormatException.class);
         runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile, "-batch", "hello"});
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void unknownArgumentTest(){
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("Unrecognized option: -whale");
         runAndAssertDataCorrect(new String[]{ "-whale", ""});
     }
 
@@ -128,9 +110,5 @@ public class CSVMigratorMainTest {
 
         Entity ventureLarge = graph.getEntity("Venture Large");
         assertEquals(0, ventureLarge.resources(description).size());
-    }
-
-    private File get(String fileName){
-        return new File(CSVMigratorMainTest.class.getClassLoader().getResource(fileName).getPath());
     }
 }

@@ -68,6 +68,13 @@ public class SQLMigratorMainTest extends AbstractMindmapsMigratorTest {
     }
 
     @Test
+    public void unknownArgumentTest(){
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("Unrecognized option: -whale");
+        runAndAssertDataCorrect(new String[]{ "-whale", ""});
+    }
+
+    @Test
     public void sqlMainDifferentGraphNameTest(){
         runAndAssertDataCorrect(new String[]{"-driver", SQLMigratorUtil.DRIVER, "-database", SQLMigratorUtil.URL, "-user", SQLMigratorUtil.USER, "-pass", SQLMigratorUtil.PASS,
                                              "-keyspace", graph.getKeyspace()});
