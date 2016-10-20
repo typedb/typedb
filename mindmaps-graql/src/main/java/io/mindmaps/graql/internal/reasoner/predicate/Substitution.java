@@ -18,14 +18,10 @@
 
 package io.mindmaps.graql.internal.reasoner.predicate;
 
-import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.Graql;
-import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.reasoner.query.Query;
-
-import java.util.Set;
 
 public class Substitution extends AtomBase{
 
@@ -103,17 +99,5 @@ public class Substitution extends AtomBase{
     @Override
     public String getVal(){ return val;}
 
-    private String extractValue(VarAdmin var) {
-        String value = "";
-
-        if (!var.admin().getValuePredicates().isEmpty()){
-            Set<ValuePredicateAdmin> valuePredicates = var.admin().getValuePredicates();
-            if (valuePredicates.size() != 1)
-                throw new IllegalArgumentException(ErrorMessage.MULTIPLE_VALUE_PREDICATES.getMessage(atomPattern.toString()));
-            else
-                value = valuePredicates.iterator().next().getPredicate().getValue().toString();
-        }
-        else if(var.admin().getId().isPresent()) value = var.admin().getId().orElse("");
-        return value;
-    }
+    private String extractValue(VarAdmin var){ return var.admin().getId().orElse("");}
 }

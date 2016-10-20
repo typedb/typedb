@@ -40,6 +40,7 @@ import java.util.Map;
 import static io.mindmaps.graql.internal.reasoner.Utility.createReflexiveRule;
 import static io.mindmaps.graql.internal.reasoner.Utility.createSubPropertyRule;
 import static io.mindmaps.graql.internal.reasoner.Utility.createTransitiveRule;
+import static io.mindmaps.graql.internal.reasoner.Utility.printAnswers;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -147,7 +148,7 @@ public class ReasonerTest {
 
         Reasoner reasoner = new Reasoner(graph);
         QueryBuilder qb = Graql.withGraph(graph);
-        QueryAnswers answers = reasoner.resolve(query);
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
     }
 
     @Test
