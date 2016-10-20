@@ -92,9 +92,7 @@ public class Resource extends AtomBase{
 
     private void setValueVariable(String var){
         valueVariable = var;
-        atomPattern.asVar().getProperties(HasResourceProperty.class).forEach(prop -> {
-           prop.getResource().setName(var);
-        });
+        atomPattern.asVar().getProperties(HasResourceProperty.class).forEach(prop -> prop.getResource().setName(var));
     }
 
     @Override

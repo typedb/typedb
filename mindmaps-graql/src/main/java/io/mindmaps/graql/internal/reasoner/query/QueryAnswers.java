@@ -21,7 +21,6 @@ package io.mindmaps.graql.internal.reasoner.query;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
-import io.mindmaps.graql.internal.reasoner.predicate.Substitution;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -31,10 +30,10 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
     public QueryAnswers(){super();}
     public QueryAnswers(Collection<? extends Map<String, Concept>> ans){ super(ans);}
 
-    public QueryAnswers filter(Set<String> vars) {
+    public QueryAnswers filterVars(Set<String> vars) {
         QueryAnswers results = new QueryAnswers();
         if (this.isEmpty()) return results;
-
+        
         this.forEach(answer -> {
             Map<String, Concept> map = new HashMap<>();
             answer.forEach((var, concept) -> {
@@ -43,8 +42,13 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
             });
             if (!map.isEmpty()) results.add(map);
         });
-
         return new QueryAnswers(results.stream().distinct().collect(Collectors.toSet()));
+    }
+
+    public QueryAnswers filterInComplete(Set<String> vars) {
+        return new QueryAnswers(this.stream()
+                .filter(answer -> answer.size() == vars.size())
+                .collect(Collectors.toSet()));
     }
 
     public QueryAnswers join(QueryAnswers localTuples) {
@@ -73,18 +77,6 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
             }
         }
         return join;
-    }
-
-    public void materialize(AtomicQuery query){
-        this.forEach(answer -> {
-            Set<Substitution> subs = new HashSet<>();
-            answer.forEach((var, con) -> {
-                Substitution sub = new Substitution(var, con);
-                if (!query.containsAtom(sub))
-                    subs.add(sub);
-            });
-            query.materialize(subs);
-        });
     }
 
     public QueryAnswers unify(Map<String, String> unifiers){
@@ -152,6 +144,6 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
         }
 
         QueryAnswers unifiedAnswers = answers.unify(unifiers, subVars, constraints);
-        return unifiedAnswers.filter(parentQuery.getSelectedNames());
+        return unifiedAnswers.filterVars(parentQuery.getSelectedNames());
     }
 }

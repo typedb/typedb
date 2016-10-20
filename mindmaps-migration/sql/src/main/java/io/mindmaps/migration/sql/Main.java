@@ -34,6 +34,8 @@ import java.sql.DriverManager;
  */
 public class Main {
 
+    private static ConfigProperties properties = ConfigProperties.getInstance();
+
     static void die(String errorMsg){
         throw new RuntimeException(errorMsg + "\nSyntax: ./migration.sh sql -driver <jdbc driver> -database <database url> -user <username> -pass <password> [-engine <Mindmaps engine URL>] [-graph <graph name>]");
     }
@@ -72,7 +74,7 @@ public class Main {
         if (jdbcPass == null) die("Please specify the password of the database using the -pass option");
 
         if (graphName == null){
-            graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+            graphName = properties.getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
         }
 
         System.out.println("Migrating " + jdbcDBUrl + " using MM Engine " +
@@ -103,7 +105,7 @@ public class Main {
                     .migrate(loader)
                     .close();
 
-            System.out.println("DataType migration successful");
+            System.out.println("Data migration successful");
 
         }
         catch (Throwable throwable){

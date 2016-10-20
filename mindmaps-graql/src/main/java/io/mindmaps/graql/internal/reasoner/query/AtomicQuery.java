@@ -20,6 +20,7 @@ package io.mindmaps.graql.internal.reasoner.query;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.graql.Graql;
@@ -82,7 +83,7 @@ public class AtomicQuery extends Query{
         return this.isEquivalent(a2);
     }
 
-    public void addChild(AtomicQuery q){
+    private void addChild(AtomicQuery q){
         if (!this.isEquivalent(q) && atom.getTypeId().equals(q.getAtom().getTypeId())){
             children.add(q);
             q.setParent(this);
@@ -109,21 +110,43 @@ public class AtomicQuery extends Query{
     public Atomic getAtom(){ return atom;}
     public Set<AtomicQuery> getChildren(){ return children;}
 
-    private void materialize() {
-        if( getAtoms().stream().filter(Atomic::isSubstitution).collect(Collectors.toSet()).size() != getVarSet().size())
-            throw new IllegalStateException(ErrorMessage.MATERIALIZATION_ERROR.getMessage(this.toString()));
+    /**
+     * materialise the query provided all variables are mapped
+     */
+    private QueryAnswers materialiseComplete() {
+        QueryAnswers insertAnswers = new QueryAnswers();
+        if( getAtoms().stream()
+                .filter(atom -> atom.isSubstitution() || atom.isValuePredicate())
+                .collect(Collectors.toSet()).size() < getVarSet().size())
+            throw new IllegalStateException(ErrorMessage.MATERIALIZATION_ERROR.getMessage(getMatchQuery().toString()));
         if (!getMatchQuery().ask().execute()) {
             InsertQuery insert = Graql.insert(getPattern().getVars()).withGraph(graph);
-            insert.execute();
+            insert.stream()
+                    .filter(Concept::isResource)
+                    .forEach(c -> {
+                        Map<String, Concept> answer = new HashMap<>();
+                        answer.put(atom.getVarName(), graph.getEntity(getSubstitution(atom.getVarName())));
+                        answer.put(atom.getVal(), c);
+                        insertAnswers.add(answer);
+                    });
         }
+        return insertAnswers;
     }
 
-    public void materialize(Set<Substitution> subs) {
+    public QueryAnswers materialise(){ return materialiseComplete();}
+
+    /**
+     * Add explicit substitutions and materialise
+     * @subs substitutions of variables
+     */
+    public QueryAnswers materialise(Set<Substitution> subs) {
+        QueryAnswers insertAnswers = new QueryAnswers();
         subs.forEach(this::addAtom);
 
         //extrapolate if needed
         Atomic atom = getAtom();
-        if(atom.isRelation() && (atom.getRoleVarTypeMap().isEmpty() || !((Relation) atom).hasExplicitRoleTypes() )){
+        if(atom.isRelation() &&
+                (atom.getRoleVarTypeMap().isEmpty() || !((Relation) atom).hasExplicitRoleTypes() )){
             String relTypeId = atom.getTypeId();
             RelationType relType = graph.getRelationType(relTypeId);
             Set<String> vars = atom.getVarNames();
@@ -136,15 +159,16 @@ public class AtomicQuery extends Query{
             roleMaps.forEach( map -> {
                 Relation relationWithRoles = new Relation(relTypeId, map, this.parent);
                 addAtom(relationWithRoles);
-                materialize();
+                insertAnswers.addAll(materialiseComplete());
                 removeAtom(relationWithRoles);
             });
             addAtom(atom);
         }
         else
-            materialize();
+            insertAnswers.addAll(materialiseComplete());
 
         subs.forEach(this::removeAtom);
+        return insertAnswers;
     }
 
     @Override

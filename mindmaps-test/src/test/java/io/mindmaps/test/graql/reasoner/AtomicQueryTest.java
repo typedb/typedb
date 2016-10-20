@@ -97,7 +97,7 @@ public class AtomicQueryTest {
         AtomicQuery atomicQuery2 = new AtomicQuery(atomicQuery);
         atomicQuery2.addAtomConstraints(Sets.newHashSet(sub));
         exception.expectMessage(ErrorMessage.MATERIALIZATION_ERROR.getMessage(atomicQuery2.toString()));
-        atomicQuery.materialize(Sets.newHashSet(new Substitution("x", graph.getConcept("Bob"))));
+        atomicQuery.materialise(Sets.newHashSet(new Substitution("x", graph.getConcept("Bob"))));
     }
 
     @Test
@@ -106,7 +106,7 @@ public class AtomicQueryTest {
 
         String queryString = "match ($x, $y) isa recommendation;";
         AtomicQuery atomicQuery = new AtomicQuery(queryString, graph);
-        atomicQuery.materialize(Sets.newHashSet(new Substitution("x", graph.getConcept("Bob"))
+        atomicQuery.materialise(Sets.newHashSet(new Substitution("x", graph.getConcept("Bob"))
                                                 , new Substitution("y", graph.getConcept("Colour of Magic"))));
         assert(qb.<AskQuery>parse("match ($x, $y) isa recommendation;$x id 'Bob';$y id 'Colour of Magic'; ask;").execute());
     }

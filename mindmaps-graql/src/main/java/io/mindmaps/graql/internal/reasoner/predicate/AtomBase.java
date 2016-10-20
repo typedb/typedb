@@ -97,11 +97,9 @@ public abstract class AtomBase implements Atomic{
     public String toString(){ return atomPattern.toString(); }
 
     @Override
-    public boolean isRuleResolvable(){
+    public boolean isRuleResolvable() {
         Type type = getParentQuery().getGraph().orElse(null).getType(getTypeId());
-        if (type == null) return false;
-        else
-            return !type.getRulesOfConclusion().isEmpty();
+        return type != null && !type.getRulesOfConclusion().isEmpty();
     }
 
     @Override
@@ -134,7 +132,6 @@ public abstract class AtomBase implements Atomic{
         //add substitutions
         Map<String, Atomic> varSubMap = getVarSubMap();
         Set<String> selectVars = getVarNames();
-        //form a disjunction of each set of subs for a given variable and add to query
         varSubMap.forEach( (var, sub) -> {
             Set<PatternAdmin> patterns = new HashSet<>();
             patterns.add(sub.getPattern());
@@ -194,7 +191,6 @@ public abstract class AtomBase implements Atomic{
     public Map<String, String> getUnifiers(Atomic parentAtom) {
         Set<String> varsToAllocate = parentAtom.getVarNames();
         Set<String> childBVs = getVarNames();
-
         Map<String, String> unifiers = new HashMap<>();
         Map<String, Pair<Type, RoleType>> childMap = getVarTypeRoleMap();
         Map<RoleType, Pair<String, Type>> parentMap = parentAtom.getRoleVarTypeMap();

@@ -37,6 +37,8 @@ import static java.util.stream.Collectors.joining;
  */
 public class Main {
 
+    private static ConfigProperties properties = ConfigProperties.getInstance();
+
     static void die(String errorMsg) {
         throw new RuntimeException(errorMsg + "\nSyntax: ./migration.sh json -data <data filename or dir> -template <template file> [-graph <graph name>] [-batch <number of rows>] [-engine <Mindmaps engine URL>]");
     }
@@ -86,7 +88,7 @@ public class Main {
         }
 
         if(graphName == null){
-            graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
+            graphName = properties.getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
         }
 
         System.out.println("Migrating data " + jsonDataFileName +

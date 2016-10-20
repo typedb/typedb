@@ -111,14 +111,17 @@ public class BlockingLoader extends Loader {
                     graph.commit();
                     cache.addJobCasting(graphName, graph.getModifiedCastingIds());
                     cache.addJobResource(graphName, graph.getModifiedResourceIds());
+                    graph.close();
                     return;
 
                 } catch (MindmapsValidationException e) {
                     //If it's a validation exception there is no point in re-trying
                     LOG.error(ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));
+                    graph.close();
                     return;
                 } catch (Exception e) {
                     //If it's not a validation exception we need to remain in the for loop
+                    graph.close();
                     handleError(e, 1);
                 }
             }

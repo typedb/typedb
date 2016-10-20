@@ -91,7 +91,6 @@ public class Reasoner {
             String parentVal = parent.getValuePredicate(parentAtom.getVal());
             relRelevant = parentVal.isEmpty() || parentVal.equals(childVal);
         }
-
         return relRelevant;
     }
 
@@ -193,7 +192,45 @@ public class Reasoner {
         return newAnswers;
     }
 
-    private QueryAnswers answer(AtomicQuery atomicQuery, Set<AtomicQuery> subGoals, Map<AtomicQuery, AtomicQuery> matAnswers) {
+    private QueryAnswers answerWM(AtomicQuery atomicQuery, Set<AtomicQuery> subGoals){
+        boolean queryAdmissible = !subGoals.contains(atomicQuery);
+        atomicQuery.DBlookup();
+
+        if(queryAdmissible) {
+            Atomic atom = atomicQuery.getAtom();
+            Set<Rule> rules = getApplicableRules(atom);
+            for (Rule rl : rules) {
+                InferenceRule rule = new InferenceRule(rl, graph);
+                rule.unify(atom);
+                Query ruleBody = rule.getBody();
+                AtomicQuery ruleHead = rule.getHead();
+
+                Set<Atomic> atoms = ruleBody.selectAtoms();
+                Iterator<Atomic> atIt = atoms.iterator();
+
+                subGoals.add(atomicQuery);
+                AtomicQuery childAtomicQuery = new AtomicMatchQuery(atIt.next());
+                atomicQuery.establishRelation(childAtomicQuery);
+                QueryAnswers subs = answerWM(childAtomicQuery, subGoals);
+                while(atIt.hasNext()){
+                    childAtomicQuery = new AtomicMatchQuery(atIt.next());
+                    atomicQuery.establishRelation(childAtomicQuery);
+                    QueryAnswers localSubs = answerWM(childAtomicQuery, subGoals);
+                    subs = subs.join(localSubs);
+                }
+                QueryAnswers answers = propagateHeadSubstitutions(atomicQuery, ruleHead, subs)
+                        .filterVars(atomicQuery.getSelectedNames());
+                QueryAnswers newAnswers = new QueryAnswers();
+                newAnswers.addAll(new AtomicMatchQuery(ruleHead, answers).materialise());
+                if (!newAnswers.isEmpty()) answers = newAnswers;
+                QueryAnswers filteredAnswers = answers.filterInComplete(atomicQuery.getSelectedNames());
+                atomicQuery.getAnswers().addAll(filteredAnswers);
+            }
+        }
+        return atomicQuery.getAnswers();
+    }
+
+    private QueryAnswers answer(AtomicQuery atomicQuery, Set<AtomicQuery> subGoals, Map<AtomicQuery, AtomicQuery> matAnswers){
         boolean queryAdmissible = !subGoals.contains(atomicQuery);
         boolean queryVisited = matAnswers.containsKey(atomicQuery);
 
@@ -229,8 +266,15 @@ public class Reasoner {
                     subs = subs.join(localSubs);
                 }
 
-                QueryAnswers answers = propagateHeadSubstitutions(atomicQuery, ruleHead, subs);
-                QueryAnswers filteredAnswers = answers.filter(atomicQuery.getSelectedNames());
+                QueryAnswers answers = propagateHeadSubstitutions(atomicQuery, ruleHead, subs)
+                        .filterVars(atomicQuery.getSelectedNames());
+
+                QueryAnswers newAnswers = new QueryAnswers();
+                if (atom.isResource())
+                    newAnswers.addAll(new AtomicMatchQuery(ruleHead, answers).materialise());
+                if (!newAnswers.isEmpty()) answers = newAnswers;
+
+                QueryAnswers filteredAnswers = answers.filterInComplete(atomicQuery.getSelectedNames());
                 atomicQuery.getAnswers().addAll(filteredAnswers);
                 recordAnswers(atomicQuery, matAnswers);
             }
@@ -241,7 +285,17 @@ public class Reasoner {
         return atomicQuery.getAnswers();
     }
 
-    private QueryAnswers resolveAtomicQuery(AtomicQuery atomicQuery) {
+    private void answer(AtomicQuery atomicQuery, Set<AtomicQuery> subGoals, Map<AtomicQuery, AtomicQuery> matAnswers,
+                        boolean materialise){
+        if(!materialise) {
+            answer(atomicQuery, subGoals, matAnswers);
+            propagateAnswers(matAnswers);
+        }
+        else
+            answerWM(atomicQuery, subGoals);
+    }
+
+    private QueryAnswers resolveAtomicQuery(AtomicQuery atomicQuery, boolean materialise) {
         int dAns;
         int iter = 0;
 
@@ -251,13 +305,15 @@ public class Reasoner {
         }
         else {
             Map<AtomicQuery, AtomicQuery> matAnswers = new HashMap<>();
-            atomicQuery.DBlookup();
-            recordAnswers(atomicQuery, matAnswers);
+            if (!materialise) {
+                atomicQuery.DBlookup();
+                recordAnswers(atomicQuery, matAnswers);
+                matAnswers.put(atomicQuery, atomicQuery);
+            }
             do {
                 Set<AtomicQuery> subGoals = new HashSet<>();
                 dAns = atomicQuery.getAnswers().size();
-                answer(atomicQuery, subGoals, matAnswers);
-                propagateAnswers(matAnswers);
+                answer(atomicQuery, subGoals, matAnswers, materialise);
                 LOG.debug("iter: " + iter++ + " answers: " + atomicQuery.getAnswers().size());
                 dAns = atomicQuery.getAnswers().size() - dAns;
             } while (dAns != 0);
@@ -265,20 +321,16 @@ public class Reasoner {
         }
     }
 
-    private QueryAnswers resolveQuery(Query query, boolean materialize) {
+    private QueryAnswers resolveQuery(Query query, boolean materialise) {
         Iterator<Atomic> atIt = query.selectAtoms().iterator();
-
         AtomicQuery atomicQuery = new AtomicMatchQuery(atIt.next().clone());
-        QueryAnswers answers = resolveAtomicQuery(atomicQuery);
-        if(materialize) answers.materialize(atomicQuery);
+        QueryAnswers answers = resolveAtomicQuery(atomicQuery, materialise);
         while(atIt.hasNext()){
             atomicQuery = new AtomicMatchQuery(atIt.next());
-            QueryAnswers subAnswers = resolveAtomicQuery(atomicQuery);
-            if(materialize) subAnswers.materialize(atomicQuery);
+            QueryAnswers subAnswers = resolveAtomicQuery(atomicQuery, materialise);
             answers = answers.join(subAnswers);
         }
-
-        return answers.filter(query.getSelectedNames());
+        return answers.filterVars(query.getSelectedNames());
     }
 
     /**
@@ -286,15 +338,24 @@ public class Reasoner {
      * @param inputQuery the query string to be expanded
      * @return set of answers
      */
-    public QueryAnswers resolve(MatchQuery inputQuery) {
+    public QueryAnswers resolve(MatchQuery inputQuery, boolean materialise) {
         Query query = new ReasonerMatchQuery(inputQuery, graph);
-        return resolveQuery(query, false);
+        return resolveQuery(query, materialise);
     }
 
-    public MatchQuery resolveToQuery(MatchQuery inputQuery) {
+    public QueryAnswers  resolve(MatchQuery inputQuery) { return resolve(inputQuery, false);}
+
+    /**
+     * Resolve a given query using the rule base
+     * @param inputQuery the query string to be expanded
+     * @return MatchQuery with answers
+     */
+    public MatchQuery resolveToQuery(MatchQuery inputQuery, boolean materialise) {
         Query query = new Query(inputQuery, graph);
         if (!query.isRuleResolvable()) return inputQuery;
-        QueryAnswers answers = resolveQuery(query, false);
+        QueryAnswers answers = resolveQuery(query, materialise);
         return new ReasonerMatchQuery(inputQuery, graph, answers);
     }
+
+    public MatchQuery resolveToQuery(MatchQuery inputQuery) { return resolveToQuery(inputQuery, false);}
 }

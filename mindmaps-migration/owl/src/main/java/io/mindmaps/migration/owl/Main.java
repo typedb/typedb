@@ -20,6 +20,7 @@ package io.mindmaps.migration.owl;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.Mindmaps;
+import io.mindmaps.engine.util.ConfigProperties;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 
 import java.io.File;
@@ -38,7 +39,9 @@ import java.io.File;
  *
  */
 public class Main {
-    
+
+    private static ConfigProperties properties = ConfigProperties.getInstance();
+
     static void die(String errorMsg) {
         System.out.println(errorMsg);
         System.out.println("\nSyntax: ./migration.sh owl -file <owl filename> [-graph <graph name>] [-engine <Mindmaps engine URL>]");
