@@ -273,8 +273,8 @@ public class QueryParserTest extends AbstractMovieGraphTest {
 
     @Test
     public void testConstructQuery() {
-        Var var = var().id("123").isa("movie").has("title", "The Title");
-        String varString = "id \"123\", isa movie has title \"The Title\";";
+        Var var = var().isa("movie").has("title", "The Title");
+        String varString = "isa movie has title \"The Title\";";
         assertFalse(qb.match(var).ask().execute());
 
         Graql.parse("insert " + varString).withGraph(graph).execute();
@@ -295,10 +295,11 @@ public class QueryParserTest extends AbstractMovieGraphTest {
                 "evolves-from isa role-type;" +
                 "id \"evolves-to\" isa role-type;" +
                 "evolution has-role evolves-from, has-role evolves-to;" +
-                "pokemon plays-role evolves-from plays-role evolves-to;" +
-                "$x id 'Pichu' isa pokemon;" +
-                "$y id 'Pikachu' isa pokemon;" +
-                "$z id 'Raichu' isa pokemon;" +
+                "pokemon plays-role evolves-from plays-role evolves-to has-resource name;" +
+                "name isa resource-type datatype string;" +
+                "$x has name 'Pichu' isa pokemon;" +
+                "$y has name 'Pikachu' isa pokemon;" +
+                "$z has name 'Raichu' isa pokemon;" +
                 "(evolves-from: $x ,evolves-to: $y) isa evolution;" +
                 "(evolves-from: $y, evolves-to: $z) isa evolution;").execute();
 
@@ -310,9 +311,9 @@ public class QueryParserTest extends AbstractMovieGraphTest {
         assertTrue(qb.match(id("pokemon").playsRole("evolves-from").playsRole("evolves-to")).ask().execute());
 
         assertTrue(qb.match(
-                var("x").id("Pichu").isa("pokemon"),
-                var("y").id("Pikachu").isa("pokemon"),
-                var("z").id("Raichu").isa("pokemon"),
+                var("x").has("name", "Pichu").isa("pokemon"),
+                var("y").has("name", "Pikachu").isa("pokemon"),
+                var("z").has("name", "Raichu").isa("pokemon"),
                 var().rel("evolves-from", "x").rel("evolves-to", "y").isa("evolution"),
                 var().rel("evolves-from", "y").rel("evolves-to", "z").isa("evolution")
         ).ask().execute());
@@ -320,16 +321,16 @@ public class QueryParserTest extends AbstractMovieGraphTest {
 
     @Test
     public void testMatchInsertQuery() {
-        Var language1 = var().isa("language").id("123");
-        Var language2 = var().isa("language").id("456");
+        Var language1 = var().isa("language").has("name", "123");
+        Var language2 = var().isa("language").has("name", "456");
 
         qb.insert(language1, language2).execute();
         assertTrue(qb.match(language1).ask().execute());
         assertTrue(qb.match(language2).ask().execute());
 
         qb.parse("match $x isa language; insert $x has name \"HELLO\";").execute();
-        assertTrue(qb.match(var().isa("language").id("123").has("name", "HELLO")).ask().execute());
-        assertTrue(qb.match(var().isa("language").id("456").has("name", "HELLO")).ask().execute());
+        assertTrue(qb.match(var().isa("language").has("name", "123").has("name", "HELLO")).ask().execute());
+        assertTrue(qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).ask().execute());
 
         // TODO: Fix delete queries in titan
         assumeFalse(usingTitan());
@@ -389,10 +390,10 @@ public class QueryParserTest extends AbstractMovieGraphTest {
         String rhs = "id '123' isa movie;";
 
         qb.parse("insert id 'my-rule-thing' isa rule-type; \n" +
-                "id 'rulerule' isa my-rule-thing, lhs {" + lhs + "}, rhs {" + rhs + "};").execute();
+                "isa my-rule-thing, lhs {" + lhs + "}, rhs {" + rhs + "};").execute();
 
         assertTrue(qb.match(var().id("my-rule-thing").isa(RULE_TYPE.getId())).ask().execute());
-        assertTrue(qb.match(var().id("rulerule").isa("my-rule-thing").lhs(lhs).rhs(rhs)).ask().execute());
+        assertTrue(qb.match(var().isa("my-rule-thing").lhs(lhs).rhs(rhs)).ask().execute());
     }
 
     @Test
