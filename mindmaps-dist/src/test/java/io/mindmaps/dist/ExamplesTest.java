@@ -53,7 +53,7 @@ public class ExamplesTest {
     @Test
     public void testPhilosophers() throws IOException {
         runInsertQuery("src/examples/philosophers.gql");
-        assertTrue(qb.match(id("Alexander").has("title", "Shah of Persia")).ask().execute());
+        assertTrue(qb.match(var().has("name", "Alexander").has("title", "Shah of Persia")).ask().execute());
     }
 
     @Test
