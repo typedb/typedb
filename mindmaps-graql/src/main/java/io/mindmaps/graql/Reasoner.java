@@ -268,7 +268,6 @@ public class Reasoner {
 
                 QueryAnswers answers = propagateHeadSubstitutions(atomicQuery, ruleHead, subs)
                         .filterVars(atomicQuery.getSelectedNames());
-
                 QueryAnswers newAnswers = new QueryAnswers();
                 if (atom.isResource())
                     newAnswers.addAll(new AtomicMatchQuery(ruleHead, answers).materialise());
