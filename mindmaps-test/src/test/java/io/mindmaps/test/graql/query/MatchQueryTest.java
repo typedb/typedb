@@ -501,6 +501,13 @@ public class MatchQueryTest {
         });
     }
 
+    @Test
+    public void testRelatedToSelf() {
+        MatchQuery query = qb.match(var().rel("x").rel("x").rel("x"));
+        
+        assertEquals(0, query.stream().count());
+    }
+
     @Test(expected = IllegalArgumentException.class)
     public void testMatchEmpty() {
         qb.match().execute();
