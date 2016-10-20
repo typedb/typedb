@@ -405,7 +405,7 @@ public class MatchQueryTest {
 
     @Test
     public void testMatchRuleRightHandSide() {
-        MatchQuery query = qb.match(var("x").lhs("match $x id 'expect-lhs';").rhs("match $x id 'expect-rhs';"));
+        MatchQuery query = qb.match(var("x").lhs("$x id 'expect-lhs';").rhs("$x id 'expect-rhs';"));
         QueryUtil.assertResultsMatch(query, "x", "a-rule-type", "expectation-rule");
         assertTrue(query.iterator().next().get("x").asRule().getExpectation());
     }
@@ -499,6 +499,13 @@ public class MatchQueryTest {
             Concept z = result.get("z");
             assertFalse(x + " = " + y + " = " + z, x.equals(y) && x.equals(z));
         });
+    }
+
+    @Test
+    public void testRelatedToSelf() {
+        MatchQuery query = qb.match(var().rel("x").rel("x").rel("x"));
+        
+        assertEquals(0, query.stream().count());
     }
 
     @Test(expected = IllegalArgumentException.class)

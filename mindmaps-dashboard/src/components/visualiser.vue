@@ -281,7 +281,8 @@ export default {
         visualiser = new Visualiser();
         visualiser.setOnDoubleClick(this.doubleClick)
                   .setOnRightClick(this.rightClick)
-                  .setOnClick(this.leftClick);
+                  .setOnClick(this.leftClick)
+                  .setOnDragEnd(this.dragEnd);
 
         engineClient = new EngineClient();
 
@@ -360,6 +361,12 @@ export default {
             if(!visualiser.expandCluster(node))
                 engineClient.request({ url: visualiser.nodes._data[node].ontology,
                                        callback: this.typeQueryResponse });
+        },
+
+        dragEnd(param) {
+            // As multiselect is disabled, there will only ever be one node.
+            const node = param.nodes[0];
+            visualiser.disablePhysicsOnNode(node);
         },
 
         doubleClick(param) {

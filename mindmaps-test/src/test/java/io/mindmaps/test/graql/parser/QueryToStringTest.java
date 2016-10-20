@@ -107,12 +107,12 @@ public class QueryToStringTest {
 
     @Test
     public void testQueryWithRhsToString() {
-        assertValidToString(qb.match(var("x").rhs("match $x isa movie; delete $x;")));
+        assertValidToString(qb.match(var("x").rhs("$x isa movie;")));
     }
 
     @Test
     public void testQueryWithLhsToString() {
-        assertValidToString(qb.match(var("x").lhs("match $x isa person; ask;")));
+        assertValidToString(qb.match(var("x").lhs("$x isa person;")));
     }
 
     @Test
@@ -161,6 +161,11 @@ public class QueryToStringTest {
     public void testQueryToStringWithReservedKeywords() {
         MatchQuery query = qb.match(var("x").isa("isa"));
         assertEquals("match $x isa \"isa\";", query.toString());
+    }
+
+    @Test
+    public void testRepeatRoleplayerToString() {
+        assertEquals("match ($x, $x);", match(var().rel("x").rel("x")).toString());
     }
 
     @Test(expected=UnsupportedOperationException.class)

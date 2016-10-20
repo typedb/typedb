@@ -3,6 +3,9 @@ package io.mindmaps.graql.internal.reasoner.rule;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.Type;
+import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.internal.pattern.Patterns;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.query.Query;
@@ -25,8 +28,9 @@ public class InferenceRule {
 
     public InferenceRule(Rule rl, MindmapsGraph graph){
         this.rule = rl;
-        body = new Query(rule.getLHS(), graph);
-        head = new AtomicQuery(rule.getRHS(), graph);
+        QueryBuilder qb = Graql.withGraph(graph);
+        body = new Query(qb.match(qb.parsePatterns(rule.getLHS())), graph);
+        head = new AtomicQuery(qb.match(qb.parsePatterns(rule.getRHS())), graph);
     }
 
     public Query getBody(){return body;}

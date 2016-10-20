@@ -69,6 +69,7 @@ import static io.mindmaps.util.REST.RemoteShell.ACTION_AUTOCOMPLETE;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_COMMIT;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_ERROR;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_NAMESPACE;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_PING;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY_ABORT;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY_END;
@@ -108,6 +109,7 @@ public class GraqlShell {
     private static final String LICENSE_COMMAND = "license";
 
     private static final int QUERY_CHUNK_SIZE = 1000;
+    private static final int PING_INTERVAL = 60_000;
 
     /**
      * Array of available commands in shell
@@ -295,6 +297,12 @@ public class GraqlShell {
     }
 
     private void start(Optional<List<String>> queryStrings) throws IOException {
+
+        // Begin sending pings
+        Thread thread = new Thread(this::ping);
+        thread.setDaemon(true);
+        thread.start();
+
         if (queryStrings.isPresent()) {
             queryStrings.get().forEach(queryString -> {
                 executeQuery(queryString);
@@ -420,6 +428,20 @@ public class GraqlShell {
             case ACTION_ERROR:
                 System.err.print(json.at(ERROR).asString());
                 break;
+        }
+    }
+
+    private void ping() {
+        // This runs on a daemon thread, so it will be terminated when the JVM stops
+        //noinspection InfiniteLoopStatement
+        while (true) {
+            sendJson(Json.object(ACTION, ACTION_PING));
+
+            try {
+                Thread.sleep(PING_INTERVAL);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 

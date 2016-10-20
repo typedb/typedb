@@ -1,5 +1,4 @@
 <configuration scan="true">
-    <jmxConfigurator />
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${cassandra.logdir}/cassandra.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">

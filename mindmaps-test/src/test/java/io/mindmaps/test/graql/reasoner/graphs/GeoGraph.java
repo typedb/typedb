@@ -198,12 +198,10 @@ public class GeoGraph {
     private static void buildRules() {
         RuleType inferenceRule = mindmaps.getMetaRuleInference();
 
-        String transitivity_LHS = "match " +
-                "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
-                "(geo-entity: $y, entity-location: $z) isa is-located-in; select $x, $z;";
+        String transitivity_LHS = "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
+                "(geo-entity: $y, entity-location: $z) isa is-located-in;";
 
-        String transitivity_RHS = "match " +
-                "(geo-entity: $x, entity-location: $z) isa is-located-in; select $x, $z;";
+        String transitivity_RHS = "(geo-entity: $x, entity-location: $z) isa is-located-in;";
 
         mindmaps.putRule("transitivity", transitivity_LHS, transitivity_RHS, inferenceRule);
     }
