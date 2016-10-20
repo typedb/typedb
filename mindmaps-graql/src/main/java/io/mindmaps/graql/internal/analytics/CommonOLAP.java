@@ -38,8 +38,8 @@ abstract class CommonOLAP {
     /**
      * The types that are reserved by analytics and are not "seen" by analytics.
      */
-    public static final Set<String> analyticsElements =
-            Sets.newHashSet(Analytics.degree, GraqlType.HAS_RESOURCE.getId(Analytics.degree));
+    public static final Set<String> analyticsElements = Collections.unmodifiableSet(
+            Sets.newHashSet(Analytics.degree, GraqlType.HAS_RESOURCE.getId(Analytics.degree)));
 
     /**
      * The concepts that can be "seen" by analytics by default.
@@ -106,40 +106,4 @@ abstract class CommonOLAP {
         return this.getClass().getSimpleName();
     }
 
-    /**
-     * The Mindmaps type property on a given Tinkerpop vertex.
-     *
-     * @param vertex the Tinkerpop vertex
-     * @return the type
-     */
-    static String getVertexType(Vertex vertex) {
-        return vertex.value(Schema.ConceptProperty.TYPE.name());
-    }
-
-    /**
-     * Whether the Tinkerpop vertex has a Mindmaps type property reserved for analytics.
-     *
-     * @param vertex the Tinkerpop vertex
-     * @return if the type is reserved or not
-     */
-    static boolean isAnalyticsElement(Vertex vertex) {
-        return analyticsElements.contains(getVertexType(vertex));
-    }
-
-    /**
-     * The state of the vertex in the database. This may detect ghost nodes and allow them to be excluded from
-     * computations. If the vertex is alive it is likely to be a valid Mindmaps concept.
-     *
-     * @return if the vertex is alive
-     */
-    boolean isAlive(Vertex vertex) {
-        if(vertex == null)
-            return false;
-
-        try {
-            return vertex.property(Schema.BaseType.TYPE.name()).isPresent();
-        } catch (IllegalStateException e){
-            return false;
-        }
-    }
 }

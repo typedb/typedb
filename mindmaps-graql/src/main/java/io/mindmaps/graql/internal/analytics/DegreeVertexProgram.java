@@ -31,9 +31,10 @@ public class DegreeVertexProgram extends MindmapsVertexProgram<Long> {
     private final MessageScope.Local<Long> countMessageScopeIn = MessageScope.Local.of(__::inE);
     private final MessageScope.Local<Long> countMessageScopeOut = MessageScope.Local.of(__::outE);
 
-    public static final String MEMORY_KEY = "degree";
+    // element key
+    public static final String DEGREE = "medianVertexProgram.degree";
 
-    private static final Set<String> COMPUTE_KEYS = Collections.singleton(MEMORY_KEY);
+    private static final Set<String> ELEMENT_COMPUTE_KEYS = Collections.singleton(DEGREE);
 
     public DegreeVertexProgram() {
     }
@@ -48,8 +49,13 @@ public class DegreeVertexProgram extends MindmapsVertexProgram<Long> {
     }
 
     @Override
+    public GraphComputer.ResultGraph getPreferredResultGraph() {
+        return GraphComputer.ResultGraph.NEW;
+    }
+
+    @Override
     public Set<String> getElementComputeKeys() {
-        return COMPUTE_KEYS;
+        return ELEMENT_COMPUTE_KEYS;
     }
 
     @Override
@@ -63,17 +69,25 @@ public class DegreeVertexProgram extends MindmapsVertexProgram<Long> {
     @Override
     public void safeExecute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
         switch (memory.getIteration()) {
+
+            // iteration 0 starts from all the instances in the subgraph
             case 0:
-                if (selectedTypes.contains(getVertexType(vertex))) {
+                // check if vertex is in the subgraph
+                if (selectedTypes.contains(Utility.getVertexType(vertex))) {
                     String type = vertex.value(Schema.ConceptProperty.BASE_TYPE.name());
                     if (type.equals(Schema.BaseType.ENTITY.name()) || type.equals(Schema.BaseType.RESOURCE.name())) {
+                        // each role-player sends 1 to castings following incoming edges
                         messenger.sendMessage(this.countMessageScopeIn, 1L);
                     } else if (type.equals(Schema.BaseType.RELATION.name())) {
+                        // the assertion can also be role-player, so sending 1 to castings following incoming edges
                         messenger.sendMessage(this.countMessageScopeIn, 1L);
+                        // send -1 to castings following outgoing edges
                         messenger.sendMessage(this.countMessageScopeOut, -1L);
                     }
                 }
                 break;
+
+            // iteration 1 starts from all the castings
             case 1:
                 String type = vertex.value(Schema.ConceptProperty.BASE_TYPE.name());
                 if (type.equals(Schema.BaseType.CASTING.name())) {
@@ -82,19 +96,25 @@ public class DegreeVertexProgram extends MindmapsVertexProgram<Long> {
                     Iterator<Long> iterator = messenger.receiveMessages();
                     while (iterator.hasNext()) {
                         long message = iterator.next();
+                        // count number of assertions connected
                         if (message < 0) assertionCount++;
+                            // check if a message is received from the role-player
                         else hasRolePlayer = true;
                     }
+
+                    // make sure this role-player is in the subgraph
                     if (hasRolePlayer) {
                         messenger.sendMessage(this.countMessageScopeIn, 1L);
                         messenger.sendMessage(this.countMessageScopeOut, assertionCount);
                     }
                 }
                 break;
+
+            // last iteration starts from all the instances in the subgraph
             case 2:
-                if (selectedTypes.contains(getVertexType(vertex))) {
+                if (selectedTypes.contains(Utility.getVertexType(vertex))) {
                     long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
-                    vertex.property(MEMORY_KEY, edgeCount);
+                    vertex.property(DEGREE, edgeCount);
                 }
                 break;
         }
