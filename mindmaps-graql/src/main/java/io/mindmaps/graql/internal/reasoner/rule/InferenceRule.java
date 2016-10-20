@@ -5,7 +5,6 @@ import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.graql.internal.pattern.Patterns;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.query.Query;
@@ -61,7 +60,6 @@ public class InferenceRule {
         Type RHStype = getRuleConclusionType();
         if (rule.getHypothesisTypes().contains(RHStype) )
             ruleRecursive = true;
-
         return ruleRecursive;
     }
 

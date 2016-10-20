@@ -27,7 +27,6 @@ import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.pattern.Patterns;
-import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.util.ErrorMessage;
@@ -65,17 +64,6 @@ public class Utility {
             }
             System.out.println();
         }
-    }
-
-    public static AtomicQuery findEquivalentAtomicQuery(AtomicQuery query, Set<AtomicQuery> queries) {
-        AtomicQuery equivalentQuery = null;
-        Iterator<AtomicQuery> it = queries.iterator();
-        while( it.hasNext() && equivalentQuery == null) {
-            AtomicQuery current = it.next();
-            if (query.isEquivalent(current))
-                equivalentQuery = current;
-        }
-        return equivalentQuery;
     }
 
     public static Set<RoleType> getCompatibleRoleTypes(String typeId, String relId, MindmapsGraph graph) {

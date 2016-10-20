@@ -18,12 +18,12 @@ public class MoogiInferenceTest {
     private static MindmapsGraph graph;
     private static Reasoner reasoner;
     private static QueryBuilder qb;
-    private static String dataDir = "femtomoogi/";
-    private static String schemaFile = dataDir + "schema.gql";
-    private static String entityFile = dataDir + "entities-new.gql";
-    private static String assertionFile = dataDir + "assertions_2-new.gql";
-    private static String assertionFile2 = dataDir + "assertions_3-new.gql";
-    private static String ruleFile = dataDir + "rules.gql";
+    private final static String dataDir = "femtomoogi/";
+    private final static String schemaFile = dataDir + "schema.gql";
+    private final static String entityFile = dataDir + "entities-new.gql";
+    private final static String assertionFile = dataDir + "assertions_2-new.gql";
+    private final static String assertionFile2 = dataDir + "assertions_3-new.gql";
+    private final static String ruleFile = dataDir + "rules.gql";
 
     @BeforeClass
     public static void setUpClass() {

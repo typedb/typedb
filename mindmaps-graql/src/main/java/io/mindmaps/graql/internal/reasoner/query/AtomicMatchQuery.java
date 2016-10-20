@@ -7,7 +7,6 @@ import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static io.mindmaps.graql.internal.reasoner.Utility.findEquivalentAtomicQuery;
 import static io.mindmaps.graql.internal.reasoner.query.QueryAnswers.getUnifiedAnswers;
 
 public class AtomicMatchQuery extends AtomicQuery{
@@ -43,20 +42,16 @@ public class AtomicMatchQuery extends AtomicQuery{
     }
 
     @Override
-    public void memoryLookup(Map<AtomicQuery, QueryAnswers> matAnswers) {
-        QueryAnswers memAnswers = new QueryAnswers();
-
-        if (matAnswers.keySet().contains(this)) {
-            AtomicQuery equivalentQuery = findEquivalentAtomicQuery(this, matAnswers.keySet());
-            memAnswers = getUnifiedAnswers(this, equivalentQuery, matAnswers.get(equivalentQuery));
-        }
-        answers.addAll(memAnswers);
+    public void memoryLookup(Map<AtomicQuery, AtomicQuery> matAnswers) {
+        AtomicQuery equivalentQuery = matAnswers.get(this);
+        if(equivalentQuery != null)
+            answers.addAll(getUnifiedAnswers(this, equivalentQuery, equivalentQuery.getAnswers()));
     }
 
     @Override
-    public void propagateAnswers(Map<AtomicQuery, QueryAnswers> matAnswers) {
+    public void propagateAnswers(Map<AtomicQuery, AtomicQuery> matAnswers) {
         getChildren().forEach(childQuery -> {
-            QueryAnswers ans = getUnifiedAnswers(childQuery, this, matAnswers.get(this));
+            QueryAnswers ans = getUnifiedAnswers(childQuery, this, matAnswers.get(this).getAnswers());
             childQuery.getAnswers().addAll(ans);
             childQuery.propagateAnswers(matAnswers);
         });

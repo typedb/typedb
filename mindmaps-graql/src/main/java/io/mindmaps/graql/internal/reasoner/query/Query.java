@@ -149,10 +149,10 @@ public class Query implements MatchQueryInternal {
 
     public QueryAnswers getAnswers(){ throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());}
     public void DBlookup(){ throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());}
-    public void memoryLookup(Map<AtomicQuery, QueryAnswers> matAnswers){
+    public void memoryLookup(Map<AtomicQuery, AtomicQuery> matAnswers){
         throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
     }
-    public void propagateAnswers(Map<AtomicQuery, QueryAnswers> matAnswers){
+    public void propagateAnswers(Map<AtomicQuery, AtomicQuery> matAnswers){
         throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
     }
 

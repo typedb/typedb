@@ -39,9 +39,7 @@ public abstract class AtomBase implements Atomic{
 
     protected String varName;
     protected final String typeId;
-
     protected final PatternAdmin atomPattern;
-
     private Query parent = null;
 
     public AtomBase() {
@@ -251,7 +249,6 @@ public abstract class AtomBase implements Atomic{
     }
 
     @Override
-    //TODO change sub behaviour
     public Map<RoleType, String> getRoleConceptIdMap(){
         Map<RoleType, String> roleConceptMap = new HashMap<>();
         Map<String, Atomic> varSubMap = getVarSubMap();
@@ -278,9 +275,6 @@ public abstract class AtomBase implements Atomic{
         return roleVarTypeMap;
     }
 
-    public Map<RoleType, Pair<String, Type>> getRoleVarTypeMap() {
-        return new HashMap<>();
-    }
-
+    public Map<RoleType, Pair<String, Type>> getRoleVarTypeMap() { return new HashMap<>();}
 }
 

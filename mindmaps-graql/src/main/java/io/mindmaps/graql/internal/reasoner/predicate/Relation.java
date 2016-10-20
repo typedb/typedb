@@ -35,6 +35,7 @@ import static io.mindmaps.graql.internal.reasoner.Utility.getCompatibleRoleTypes
 public class Relation extends AtomBase {
 
     private final Set<VarAdmin.Casting> castings = new HashSet<>();
+    private Map<RoleType, Pair<String, Type>> roleVarTypeMap = null;
 
     public Relation(VarAdmin pattern) {
         super(pattern);
@@ -214,11 +215,9 @@ public class Relation extends AtomBase {
      * Attempts to infer the implicit roleTypes and matching types based on contents of the parent query
      * @return map containing a RoleType-Type pair
      */
-    public Map<RoleType, Pair<String, Type>> getRoleVarTypeMap() {
+    private Map<RoleType, Pair<String, Type>> computeRoleVarTypeMap() {
         Map<RoleType, Pair<String, Type>> roleVarTypeMap = new HashMap<>();
-
         if (getParentQuery() == null) return roleVarTypeMap;
-
 
         MindmapsGraph graph =  getParentQuery().getGraph().orElse(null);
         Map<String, Type> varTypeMap = getParentQuery().getVarTypeMap();
@@ -254,7 +253,6 @@ public class Relation extends AtomBase {
                 }
             }
         }
-
         Collection<RoleType> rolesToAllocate = graph.getRelationType(getTypeId()).hasRoles();
         rolesToAllocate.removeAll(allocatedRoles);
         varsToAllocate.removeAll(allocatedVars);
@@ -264,7 +262,13 @@ public class Relation extends AtomBase {
             Type type = varTypeMap.get(var);
             roleVarTypeMap.put(role, new Pair<>(var, type));
         }
+        return roleVarTypeMap;
+    }
 
+    @Override
+    public Map<RoleType, Pair<String, Type>> getRoleVarTypeMap() {
+        if (roleVarTypeMap == null)
+            roleVarTypeMap = computeRoleVarTypeMap();
         return roleVarTypeMap;
     }
 }
