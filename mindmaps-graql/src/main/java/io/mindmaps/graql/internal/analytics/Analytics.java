@@ -145,12 +145,6 @@ public class Analytics {
         return count.getOrDefault(CountMapReduce.MEMORY_KEY, 0L);
     }
 
-    public long countVP() {
-        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
-        ComputerResult result = computer.compute(new CountVertexProgram(subtypes));
-        return result.memory().get(CountVertexProgram.COUNT);
-    }
-
     /**
      * Minimum value of the selected resource-type.
      *
@@ -292,9 +286,9 @@ public class Analytics {
         ComputerResult result = computer.compute(new DegreeVertexProgram(subtypes));
         MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraph();
         result.graph().traversal().V().forEachRemaining(v -> {
-            if (v.keys().contains(DegreeVertexProgram.MEMORY_KEY)) {
+            if (v.keys().contains(DegreeVertexProgram.DEGREE)) {
                 Instance instance = graph.getInstance(v.value(ITEM_IDENTIFIER.name()));
-                allDegrees.put(instance, v.value(DegreeVertexProgram.MEMORY_KEY));
+                allDegrees.put(instance, v.value(DegreeVertexProgram.DEGREE));
             }
         });
         return allDegrees;

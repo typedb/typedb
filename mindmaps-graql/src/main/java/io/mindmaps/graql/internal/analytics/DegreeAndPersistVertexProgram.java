@@ -26,17 +26,13 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
 class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
 
-
-    private static final String MEMORY_KEY = "oldAssertionId";
-
     private static final String KEYSPACE_KEY = "keyspace";
-
-    private static final Set<String> COMPUTE_KEYS = Collections.singleton(MEMORY_KEY);
 
     private BulkResourceMutate bulkResourceMutate;
 
@@ -54,15 +50,10 @@ class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
     }
 
     @Override
-    public Set<String> getElementComputeKeys() {
-        return COMPUTE_KEYS;
-    }
-
-    @Override
     public void safeExecute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
         switch (memory.getIteration()) {
             case 0:
-                if (selectedTypes.contains(getVertexType(vertex)) && !isAnalyticsElement(vertex)) {
+                if (selectedTypes.contains(Utility.getVertexType(vertex)) && !Utility.isAnalyticsElement(vertex)) {
                     String type = vertex.value(Schema.ConceptProperty.BASE_TYPE.name());
                     if (type.equals(Schema.BaseType.ENTITY.name()) || type.equals(Schema.BaseType.RESOURCE.name())) {
                         messenger.sendMessage(countMessageScopeIn, 1L);
@@ -89,7 +80,7 @@ class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
                 }
                 break;
             case 2:
-                if (!isAnalyticsElement(vertex) && selectedTypes.contains(getVertexType(vertex))) {
+                if (!Utility.isAnalyticsElement(vertex) && selectedTypes.contains(Utility.getVertexType(vertex))) {
                     long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
                     bulkResourceMutate.putValue(vertex, edgeCount);
                 }
