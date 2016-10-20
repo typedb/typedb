@@ -254,7 +254,6 @@ public class Reasoner {
             Map<AtomicQuery, AtomicQuery> matAnswers = new HashMap<>();
             atomicQuery.DBlookup();
             recordAnswers(atomicQuery, matAnswers);
-
             do {
                 Set<AtomicQuery> subGoals = new HashSet<>();
                 dAns = atomicQuery.getAnswers().size();
@@ -265,7 +264,6 @@ public class Reasoner {
             } while (dAns != 0);
             return atomicQuery.getAnswers();
         }
-
     }
 
     private QueryAnswers resolveQuery(Query query, boolean materialize) {

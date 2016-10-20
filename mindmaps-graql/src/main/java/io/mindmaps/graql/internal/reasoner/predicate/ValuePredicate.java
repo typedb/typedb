@@ -63,6 +63,8 @@ public class ValuePredicate extends AtomBase {
         return new ValuePredicate(this);
     }
 
+    //public ValuePredicateAdmin getPredicate(){ return predicate;};
+
     @Override
     public boolean equals(Object obj) {
         if (!(obj instanceof ValuePredicate)) return false;
@@ -83,13 +85,15 @@ public class ValuePredicate extends AtomBase {
     public boolean isEquivalent(Object obj){
         if (!(obj instanceof ValuePredicate)) return false;
         ValuePredicate a2 = (ValuePredicate) obj;
-        return this.getVal().equals(a2.getVal());
+        return this.predicate.getClass().equals(a2.predicate.getClass()) &&
+                this.getVal().equals(a2.getVal());
     }
 
     @Override
     public int equivalenceHashCode() {
         int hashCode = 1;
         hashCode = hashCode * 37 + this.getVal().hashCode();
+        hashCode = hashCode * 37 + this.predicate.getClass().hashCode();
         return hashCode;
     }
 

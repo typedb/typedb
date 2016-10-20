@@ -28,6 +28,7 @@ import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
+import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.Relation;
@@ -42,6 +43,7 @@ import org.junit.rules.ExpectedException;
 import java.util.*;
 
 import static io.mindmaps.graql.internal.reasoner.Utility.computeRoleCombinations;
+import static org.junit.Assert.assertTrue;
 
 public class AtomicTest {
 
@@ -143,7 +145,6 @@ public class AtomicTest {
         atom = query.getAtomsWithType(graph.getType("owns")).iterator().next();
 
         Map<RoleType, Pair<String, Type>> roleMap2 = atom.getRoleVarTypeMap();
-
         assert(roleMap.size() == 2 && roleMap2.size() == 2);
     }
 
@@ -160,7 +161,6 @@ public class AtomicTest {
         query = new Query(queryString, graph);
         atom = query.getAtomsWithType(graph.getType("transaction")).iterator().next();
         Map<RoleType, Pair<String, Type>> roleMap2 = atom.getRoleVarTypeMap();
-
         assert(roleMap.size() == 3 && roleMap2.size() == 3);
     }
 
@@ -212,5 +212,14 @@ public class AtomicTest {
 
         Collection<Relation> rels = new LinkedList<>();
         roleMaps.forEach( map -> rels.add(new Relation(relTypeId, map, null)));
+    }
+
+    @Test
+    public void testValuePredicateComparison(){
+        MindmapsGraph graph = SNBGraph.getGraph();
+        QueryBuilder qb = Graql.withGraph(graph);
+        Atomic atom = AtomicFactory.create(qb.parsePatterns("$x value '0';").iterator().next().admin());
+        Atomic atom2 = AtomicFactory.create(qb.parsePatterns("$x value != '0';").iterator().next().admin());
+        assertTrue(!atom.isEquivalent(atom2));
     }
 }

@@ -32,11 +32,16 @@ import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
 import io.mindmaps.graql.internal.reasoner.predicate.Substitution;
+import io.mindmaps.test.graql.reasoner.graphs.GenericGraph;
 import io.mindmaps.test.graql.reasoner.graphs.SNBGraph;
 import io.mindmaps.util.ErrorMessage;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import static org.junit.Assert.assertTrue;
 
 public class AtomicQueryTest {
     private static MindmapsGraph graph;
@@ -104,6 +109,20 @@ public class AtomicQueryTest {
         atomicQuery.materialize(Sets.newHashSet(new Substitution("x", graph.getConcept("Bob"))
                                                 , new Substitution("y", graph.getConcept("Colour of Magic"))));
         assert(qb.<AskQuery>parse("match ($x, $y) isa recommendation;$x id 'Bob';$y id 'Colour of Magic'; ask;").execute());
+    }
+
+    @Test
+    public void testUnification(){
+        MindmapsGraph localGraph = GenericGraph.getGraph("ancestor-friend-test.gql");
+        AtomicQuery parentQuery = new AtomicQuery("match ($Y, $z) isa Friend; $Y id 'd'; select $z;", localGraph);
+        AtomicQuery childQuery = new AtomicQuery("match ($X, $Y) isa Friend; $Y id 'd'; select $X;", localGraph);
+
+        Atomic parentAtom = parentQuery.getAtom();
+        Atomic childAtom = childQuery.getAtom();
+        Map<String, String> unifiers = childAtom.getUnifiers(parentAtom);
+        Map<String, String> correctUnifiers = new HashMap<>();
+        correctUnifiers.put("X", "z");
+        assertTrue(unifiers.equals(correctUnifiers));
     }
 
 }
