@@ -87,6 +87,9 @@ public class HALConcept {
                         typesInQuery.contains(concept.type().superType().getId()))))
             embedType(halResource, concept);
 
+        if (concept.type() == null && typesInQuery.contains(ROOT_CONCEPT))
+            embedType(halResource, concept);
+
         //If a match query contains an assertion we always embed the role players
         if (concept.isRelation() && separationDegree == 0) {
             generateRelationEmbedded(halResource, concept.asRelation(), 1);
@@ -130,13 +133,15 @@ public class HALConcept {
             generateStateAndLinks(HALType, concept.type());
             halResource.withRepresentation(ISA_EDGE, HALType);
         } else {
-            HALType = factory.newRepresentation(resourceLinkPrefix + ROOT_CONCEPT);
-            HALType.withProperty(ID_PROPERTY, ROOT_CONCEPT)
-                    .withProperty(TYPE_PROPERTY, ROOT_CONCEPT)
-                    .withProperty(BASETYPE_PROPERTY, ROOT_CONCEPT)
-                    .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE)
-                    .withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix + concept.getId());
-            halResource.withRepresentation(AKO_EDGE, HALType);
+            if (!concept.getId().equals(ROOT_CONCEPT)) {
+                HALType = factory.newRepresentation(resourceLinkPrefix + ROOT_CONCEPT);
+                HALType.withProperty(ID_PROPERTY, ROOT_CONCEPT)
+                        .withProperty(TYPE_PROPERTY, ROOT_CONCEPT)
+                        .withProperty(BASETYPE_PROPERTY, ROOT_CONCEPT)
+                        .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE)
+                        .withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix + concept.getId());
+                halResource.withRepresentation(AKO_EDGE, HALType);
+            }
         }
 
     }

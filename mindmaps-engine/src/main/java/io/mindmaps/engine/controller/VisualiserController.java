@@ -29,7 +29,6 @@ import io.mindmaps.exception.MindmapsEngineServerException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.internal.pattern.property.RelationProperty;
-import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -60,6 +59,7 @@ import static spark.Spark.get;
 public class VisualiserController {
 
     private final Logger LOG = LoggerFactory.getLogger(VisualiserController.class);
+
 
     private String defaultGraphName;
     private int separationDegree;
