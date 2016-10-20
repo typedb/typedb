@@ -69,11 +69,11 @@ public class DistributedLoaderTest extends MindmapsEngineTestBase{
         loadOntologyFromFile();
         loadDataFromFile(data);
 
-        assertNotNull(graph.getConcept("X4d616e75656c20417a656e6861").getId());
-        assertNotNull(graph.getConcept("X44616e69656c61204675696f726561").getId());
-        assertNotNull(graph.getConcept("X422e20476174686d616e6e").getId());
-        assertNotNull(graph.getConcept("X416e6472657720522e2057656262").getId());
-        assertNotNull(graph.getConcept("X4a752d4d696e205a68616f").getId());
+        assertNotNull(graph.getResourcesByValue("X4d616e75656c20417a656e6861").iterator().next().getId());
+        assertNotNull(graph.getResourcesByValue("X44616e69656c61204675696f726561").iterator().next().getId());
+        assertNotNull(graph.getResourcesByValue("X422e20476174686d616e6e").iterator().next().getId());
+        assertNotNull(graph.getResourcesByValue("X416e6472657720522e2057656262").iterator().next().getId());
+        assertNotNull(graph.getResourcesByValue("X4a752d4d696e205a68616f").iterator().next().getId());
 
         int size = graph.getEntityType("name_tag").instances().size();
         assertEquals(size, 100);

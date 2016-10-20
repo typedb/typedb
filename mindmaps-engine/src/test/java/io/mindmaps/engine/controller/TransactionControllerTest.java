@@ -49,7 +49,7 @@ public class TransactionControllerTest extends MindmapsEngineTestBase{
 
     @Test
     public void insertValidQuery() {
-        String exampleInsertQuery = "insert id \"actor-123\" isa Man;";
+        String exampleInsertQuery = "insert $x isa Man;";
         String transactionUUID = given().body(exampleInsertQuery).
                 when().post(REST.WebPath.NEW_TRANSACTION_URI + "?graphName=mindmapstest").body().asString();
         int i = 0;
@@ -64,7 +64,7 @@ public class TransactionControllerTest extends MindmapsEngineTestBase{
             }
         }
 
-        assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getConcept("actor-123"));
+        assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getEntityType("Man").instances().iterator().next());
     }
 
     @Test
