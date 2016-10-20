@@ -422,10 +422,10 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
                 id("person").isa("entity-type").playsRole("shareholder"),
                 id("company").isa("entity-type").playsRole("organization-with-shares"),
 
-                id("apple").isa("company"),
-                id("bob").isa("person"),
+                var("apple").isa("company"),
+                var("bob").isa("person"),
 
-                var().rel("organization-with-shares", id("apple")).rel("shareholder", id("bob")).isa("share-ownership")
+                var().rel("organization-with-shares", "apple").rel("shareholder", "bob").isa("share-ownership")
         ).execute();
 
         // This should work despite subs
