@@ -56,47 +56,47 @@ entity plays-role B5-role-A, plays-role B5-role-B;
 ##################################################
 
 "R1" isa inference-rule,
-lhs {match
+lhs {
 ($x, $z) isa P1;
-($z, $y) isa Q; select $x, $y;},
-rhs {match
+($z, $y) isa Q;},
+rhs {
 ($x, $y) isa P;};
 
 "R2" isa inference-rule,
-lhs {match
+lhs {
 ($x, $z) isa P;
-($z, $y) isa P2; select $x, $y;},
-rhs {match
+($z, $y) isa P2;},
+rhs {
 ($x, $y) isa Q;};
 
 "R3" isa inference-rule,
-lhs {match
+lhs {
 ($x, $y) isa B3;},
-rhs {match
+rhs {
 ($x, $y) isa P;};
 
 "R4" isa inference-rule,
-lhs {match
+lhs {
 ($x, $z) isa B1;
-($z, $y) isa P1; select $x, $y;},
-rhs {match
+($z, $y) isa P1;},
+rhs {
 ($x, $y) isa P1;};
 
 "R5" isa inference-rule,
-lhs {match
+lhs {
 ($x, $y) isa B4;}
-rhs {match
+rhs {
 ($x, $y) isa P1;};
 
 "R6" isa inference-rule,
-lhs {match
+lhs {
 ($x, $z) isa B2;
-($z, $y) isa P2; select $x, $y;},
-rhs {match
+($z, $y) isa P2;},
+rhs {
 ($x, $y) isa P2;};
 
 "R7" isa inference-rule,
-lhs {match
+lhs {
 ($x, $y) isa B5;},
-rhs {match
+rhs {
 ($x, $y) isa P2;};

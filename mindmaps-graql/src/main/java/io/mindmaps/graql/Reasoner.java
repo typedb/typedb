@@ -24,6 +24,7 @@ import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.Type;
+import io.mindmaps.graql.internal.pattern.Patterns;
 import io.mindmaps.graql.internal.reasoner.query.AtomicMatchQuery;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
@@ -113,8 +114,8 @@ public class Reasoner {
 
     private void linkConceptTypes(Rule rule) {
         LOG.debug("Linking rule " + rule.getId() + "...");
-        MatchQuery qLHS = qb.parse(rule.getLHS());
-        MatchQuery qRHS = qb.parse(rule.getRHS());
+        MatchQuery qLHS = qb.match(qb.parsePatterns(rule.getLHS()));
+        MatchQuery qRHS = qb.match(qb.parsePatterns(rule.getRHS()));
 
         Set<Type> hypothesisConceptTypes = qLHS.admin().getTypes();
         Set<Type> conclusionConceptTypes = qRHS.admin().getTypes();
@@ -123,22 +124,18 @@ public class Reasoner {
         conclusionConceptTypes.forEach(rule::addConclusion);
 
         LOG.debug("Rule " + rule.getId() + " linked");
-
     }
 
     public Set<Rule> getRules() {
         Set<Rule> rules = new HashSet<>();
         MatchQuery sq = qb.parse("match $x isa inference-rule;");
-
         List<Map<String, Concept>> results = Lists.newArrayList(sq);
-
         for (Map<String, Concept> result : results) {
             for (Map.Entry<String, Concept> entry : result.entrySet()) {
                 Concept concept = entry.getValue();
                 rules.add((Rule) concept);
             }
         }
-
         return rules;
     }
 
@@ -158,8 +155,8 @@ public class Reasoner {
     }
 
     private void propagateAnswers(Map<AtomicQuery, QueryAnswers> matAnswers){
-        matAnswers.keySet().forEach( aq -> {
-           if (aq.getParent() == null) aq.propagateAnswers(matAnswers);
+        matAnswers.keySet().forEach(aq -> {
+            if (aq.getParent() == null) aq.propagateAnswers(matAnswers);
         });
     }
 
@@ -194,7 +191,6 @@ public class Reasoner {
 
     private QueryAnswers answer(AtomicQuery atomicQuery, Set<AtomicQuery> subGoals, Map<AtomicQuery, QueryAnswers> matAnswers) {
         Atomic atom = atomicQuery.getAtom();
-
         atomicQuery.DBlookup();
         atomicQuery.memoryLookup(matAnswers);
 

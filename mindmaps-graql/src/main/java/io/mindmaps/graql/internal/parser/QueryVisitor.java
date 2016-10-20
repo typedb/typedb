@@ -282,12 +282,12 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public UnaryOperator<Var> visitPropLhs(GraqlParser.PropLhsContext ctx) {
-        return var -> var.lhs(getOriginalText(ctx.query()));
+        return var -> var.lhs(getOriginalText(ctx.patterns()));
     }
 
     @Override
     public UnaryOperator<Var> visitPropRhs(GraqlParser.PropRhsContext ctx) {
-        return var -> var.rhs(getOriginalText(ctx.query()));
+        return var -> var.rhs(getOriginalText(ctx.varPatterns()));
     }
 
     @Override

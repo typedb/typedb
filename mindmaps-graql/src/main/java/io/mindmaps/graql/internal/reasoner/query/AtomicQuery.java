@@ -24,6 +24,7 @@ import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.InsertQuery;
+import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.Relation;
 import io.mindmaps.graql.internal.reasoner.predicate.Substitution;
@@ -43,6 +44,13 @@ public class AtomicQuery extends Query{
 
     public AtomicQuery(String rhs, MindmapsGraph graph){
         super(rhs, graph);
+        if(selectAtoms().size() > 1)
+            throw new IllegalStateException(ErrorMessage.NON_ATOMIC_QUERY.getMessage(this.toString()));
+        atom = selectAtoms().iterator().next();
+    }
+
+    public AtomicQuery(MatchQuery query, MindmapsGraph graph){
+        super(query, graph);
         if(selectAtoms().size() > 1)
             throw new IllegalStateException(ErrorMessage.NON_ATOMIC_QUERY.getMessage(this.toString()));
         atom = selectAtoms().iterator().next();

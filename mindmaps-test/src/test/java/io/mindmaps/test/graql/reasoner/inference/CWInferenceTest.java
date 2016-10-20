@@ -227,8 +227,8 @@ public class CWInferenceTest {
 
         localGraph.putEntityType("region");
 
-        String R6_LHS = "match $x isa region;";
-        String R6_RHS = "match $x isa country;";
+        String R6_LHS = "$x isa region;";
+        String R6_RHS = "$x isa country;";
         localGraph.putRule("R6", R6_LHS, R6_RHS, inferenceRule);
 
         localReasoner.linkConceptTypes();

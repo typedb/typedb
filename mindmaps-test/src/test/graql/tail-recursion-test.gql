@@ -24,14 +24,14 @@ entity plays-role Q-from plays-role Q-to;
 ####################################################
 
 "R1" isa inference-rule,
-lhs {match
+lhs {
 (Q-from: $x, Q-to: $y) isa Q;},
-rhs {match
+rhs {
 (P-from: $x, P-to: $y) isa P;};
 
 "R2" isa inference-rule,
-lhs {match
+lhs {
 (Q-from: $x, Q-to: $z) isa Q;
 (P-from: $z, P-to: $y) isa P;},
-rhs {match
+rhs {
 (P-from: $x, P-to: $y) isa P;};

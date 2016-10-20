@@ -28,7 +28,12 @@ import io.mindmaps.graql.internal.template.TemplateParser;
 import io.mindmaps.graql.internal.util.AdminConverter;
 
 import java.io.InputStream;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -106,6 +111,14 @@ public class QueryBuilder {
      */
     public Stream<Pattern> parsePatterns(InputStream inputStream) {
         return queryParser.parsePatterns(inputStream);
+    }
+
+    /**
+     * @param patternsString a string representing a list of patterns
+     * @return a list of patterns
+     */
+    public List<Pattern> parsePatterns(String patternsString) {
+        return queryParser.parsePatterns(patternsString);
     }
 
     /**
