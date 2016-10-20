@@ -300,11 +300,11 @@ public class MovieGraphFactory {
         // These rules are totally made up for testing purposes and don't work!
         RuleType aRuleType = mindmapsGraph.putRuleType("a-rule-type");
 
-        mindmapsGraph.putRule("expectation-rule", "match $x id 'expect-lhs';", "match $x id 'expect-rhs';", aRuleType)
+        mindmapsGraph.putRule("expectation-rule", "$x id 'expect-lhs';", "$x id 'expect-rhs';", aRuleType)
                 .setExpectation(true)
                 .addConclusion(movie).addHypothesis(person);
 
-        mindmapsGraph.putRule("materialize-rule", "match $x id 'materialize-lhs';", "match $x id 'materialize-rhs';", aRuleType)
+        mindmapsGraph.putRule("materialize-rule", "$x id 'materialize-lhs';", "$x id 'materialize-rhs';", aRuleType)
                 .setMaterialise(true)
                 .addConclusion(person).addConclusion(genre).addHypothesis(hasCast);
     }
