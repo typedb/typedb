@@ -56,12 +56,12 @@ import org.semanticweb.owlapi.model.OWLInverseObjectPropertiesAxiom;
 import org.semanticweb.owlapi.model.OWLEquivalentObjectPropertiesAxiom;
 
 import java.util.Optional;
+import org.semanticweb.owlapi.model.SWRLRule;
 
 import static io.mindmaps.graql.internal.reasoner.Utility.createPropertyChainRule;
 import static io.mindmaps.graql.internal.reasoner.Utility.createReflexiveRule;
 import static io.mindmaps.graql.internal.reasoner.Utility.createSubPropertyRule;
 import static io.mindmaps.graql.internal.reasoner.Utility.createTransitiveRule;
-
 
 
 /**
@@ -78,8 +78,8 @@ import static io.mindmaps.graql.internal.reasoner.Utility.createTransitiveRule;
  *
  */
 public class OwlMindmapsGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, OWLEntityVisitorEx<Concept> {
-    private OWLMigrator migrator;   
-            
+    private OWLMigrator migrator;
+
     public OwlMindmapsGraphStoringVisitor(OWLMigrator migrator) {
         this.migrator = migrator;
     }
@@ -361,7 +361,12 @@ public class OwlMindmapsGraphStoringVisitor implements OWLAxiomVisitorEx<Concept
         return migrator.graph().addRelation(propertyRelation)
                  .putRolePlayer(migrator.entityRole(entity.type(), resource.type()), entity)
                  .putRolePlayer(migrator.resourceRole(resource.type()), resource);
-    }   
-    
+    }
+
+    @Override
+    public Concept visit(SWRLRule node) {
+        //TODO
+        return null;
+    }
     
 }

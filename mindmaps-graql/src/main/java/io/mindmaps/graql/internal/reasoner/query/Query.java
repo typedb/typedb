@@ -109,6 +109,8 @@ public class Query implements MatchQueryInternal {
         return hashCode;
     }
 
+    public void print(){ atomSet.forEach(System.out::println);}
+
     @Override
     public String toString() { return getMatchQuery().toString();}
 
@@ -138,6 +140,9 @@ public class Query implements MatchQueryInternal {
         return Patterns.conjunction(patterns);
     }
 
+    /**
+     * @return true if any of the atoms constituting the query can be resolved through a rule
+     */
     public boolean isRuleResolvable(){
         boolean ruleResolvable = false;
         Iterator<Atomic> it = atomSet.iterator();

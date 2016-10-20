@@ -18,19 +18,19 @@
 
 package io.mindmaps.graql.internal.analytics;
 
-import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
+
+/**
+ * This class is not used in analytics, as CountMapReduce is consistently faster.
+ */
 
 public class CountVertexProgram extends MindmapsVertexProgram {
 
@@ -46,14 +46,8 @@ public class CountVertexProgram extends MindmapsVertexProgram {
     }
 
     @Override
-    public GraphComputer.Persist getPreferredPersist() {
-        return GraphComputer.Persist.VERTEX_PROPERTIES;
-    }
-
-    @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {
-        final Set<MessageScope> set = new HashSet<>();
-        return set;
+        return Collections.emptySet();
     }
 
     @Override
@@ -68,7 +62,7 @@ public class CountVertexProgram extends MindmapsVertexProgram {
 
     @Override
     public void safeExecute(final Vertex vertex, Messenger messenger, final Memory memory) {
-        if (selectedTypes.contains(getVertexType(vertex))) {
+        if (selectedTypes.contains(Utility.getVertexType(vertex))) {
             memory.incr(COUNT, 1L);
         }
     }

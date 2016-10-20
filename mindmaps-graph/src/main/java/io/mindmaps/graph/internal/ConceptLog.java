@@ -71,7 +71,7 @@ class ConceptLog {
      * @return All the concepts which have been affected within the transaction in some way
      */
     public Set<ConceptImpl> getModifiedConcepts () {
-        modifiedConcepts = modifiedConcepts.stream().filter(ConceptImpl::isAlive).collect(Collectors.toSet());
+        modifiedConcepts = modifiedConcepts.stream().filter(c -> c != null && c.isAlive()).collect(Collectors.toSet());
         return modifiedConcepts;
     }
 
