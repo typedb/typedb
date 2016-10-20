@@ -92,6 +92,7 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
     }
 
     private QueryAnswers unify(Map<String, String> unifiers, Map<String, Concept> subVars, Map<String, Concept> constraints){
+        if (unifiers.isEmpty()) return new QueryAnswers(this);
         QueryAnswers unifiedAnswers = new QueryAnswers();
         this.forEach(entry -> {
             Map<String, Concept> answer = new HashMap<>(subVars);

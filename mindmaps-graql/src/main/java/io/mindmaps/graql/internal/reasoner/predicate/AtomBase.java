@@ -200,6 +200,7 @@ public abstract class AtomBase implements Atomic{
         Map<String, Pair<Type, RoleType>> childMap = getVarTypeRoleMap();
         Map<RoleType, Pair<String, Type>> parentMap = parentAtom.getRoleVarTypeMap();
 
+        //TODO add looking through substitutions
         for (String chVar : childBVs) {
             RoleType role = childMap.containsKey(chVar) ? childMap.get(chVar).getValue() : null;
             String pVar = role != null && parentMap.containsKey(role) ? parentMap.get(role).getKey() : "";

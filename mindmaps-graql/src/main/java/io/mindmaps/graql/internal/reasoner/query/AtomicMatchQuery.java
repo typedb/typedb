@@ -44,8 +44,10 @@ public class AtomicMatchQuery extends AtomicQuery{
     @Override
     public void memoryLookup(Map<AtomicQuery, AtomicQuery> matAnswers) {
         AtomicQuery equivalentQuery = matAnswers.get(this);
-        if(equivalentQuery != null)
-            answers.addAll(getUnifiedAnswers(this, equivalentQuery, equivalentQuery.getAnswers()));
+        if(equivalentQuery != null) {
+            QueryAnswers unifiedAnswers = getUnifiedAnswers(this, equivalentQuery, equivalentQuery.getAnswers());
+            answers.addAll(unifiedAnswers);
+        }
     }
 
     @Override

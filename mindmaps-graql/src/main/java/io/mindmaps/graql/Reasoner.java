@@ -19,6 +19,7 @@
 package io.mindmaps.graql;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.RoleType;
@@ -37,6 +38,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static io.mindmaps.graql.internal.reasoner.query.QueryAnswers.getUnifiedAnswers;
 
 public class Reasoner {
 
@@ -160,8 +163,11 @@ public class Reasoner {
     }
 
     private void recordAnswers(AtomicQuery atomicQuery, Map<AtomicQuery, AtomicQuery> matAnswers) {
-        if (matAnswers.keySet().contains(atomicQuery))
-            matAnswers.get(atomicQuery).getAnswers().addAll(atomicQuery.getAnswers());
+        AtomicQuery equivalentQuery = matAnswers.get(atomicQuery);
+        if (equivalentQuery != null) {
+            QueryAnswers unifiedAnswers = getUnifiedAnswers(equivalentQuery, atomicQuery, atomicQuery.getAnswers());
+            matAnswers.get(atomicQuery).getAnswers().addAll(unifiedAnswers);
+        }
         else
             matAnswers.put(atomicQuery, atomicQuery);
     }
@@ -190,10 +196,15 @@ public class Reasoner {
 
     private QueryAnswers answer(AtomicQuery atomicQuery, Set<AtomicQuery> subGoals, Map<AtomicQuery, AtomicQuery> matAnswers) {
         boolean queryAdmissible = !subGoals.contains(atomicQuery);
+        boolean queryVisited = matAnswers.containsKey(atomicQuery);
 
         if(queryAdmissible) {
-            atomicQuery.DBlookup();
-            recordAnswers(atomicQuery, matAnswers);
+            if (!queryVisited){
+                atomicQuery.DBlookup();
+                recordAnswers(atomicQuery, matAnswers);
+            }
+            else
+                atomicQuery.memoryLookup(matAnswers);
 
             Atomic atom = atomicQuery.getAtom();
             Set<Rule> rules = getApplicableRules(atom);
@@ -241,7 +252,8 @@ public class Reasoner {
         }
         else {
             Map<AtomicQuery, AtomicQuery> matAnswers = new HashMap<>();
-            matAnswers.put(atomicQuery, atomicQuery);
+            atomicQuery.DBlookup();
+            recordAnswers(atomicQuery, matAnswers);
 
             do {
                 Set<AtomicQuery> subGoals = new HashSet<>();
