@@ -69,7 +69,7 @@ import static io.mindmaps.util.REST.RemoteShell.ACTION;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_AUTOCOMPLETE;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_COMMIT;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_ERROR;
-import static io.mindmaps.util.REST.RemoteShell.ACTION_NAMESPACE;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_KEYSPACE;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_PING;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY_ABORT;
@@ -77,7 +77,7 @@ import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY_END;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_ROLLBACK;
 import static io.mindmaps.util.REST.RemoteShell.AUTOCOMPLETE_CURSOR;
 import static io.mindmaps.util.REST.RemoteShell.ERROR;
-import static io.mindmaps.util.REST.RemoteShell.NAMESPACE;
+import static io.mindmaps.util.REST.RemoteShell.KEYSPACE;
 import static io.mindmaps.util.REST.RemoteShell.QUERY;
 import static io.mindmaps.util.REST.RemoteShell.QUERY_RESULT;
 import static io.mindmaps.util.REST.WebPath.IMPORT_DATA_URI;
@@ -96,7 +96,7 @@ public class GraqlShell {
 
     private static final String LICENSE_LOCATION = "LICENSE.txt";
 
-    private static final String DEFAULT_NAMESPACE = "mindmaps";
+    private static final String DEFAULT_KEYSPACE = "mindmaps";
     private static final String DEFAULT_URI = "localhost:4567";
 
     private static final String PROMPT = ">>> ";
@@ -150,7 +150,7 @@ public class GraqlShell {
     public static void runShell(String[] args, String version, String historyFilename, GraqlClient client) {
 
         Options options = new Options();
-        options.addOption("n", "name", true, "name of the graph");
+        options.addOption("k", "keyspace", true, "keyspace of the graph");
         options.addOption("e", "execute", true, "query to execute");
         options.addOption("f", "file", true, "graql file path to execute");
         options.addOption("u", "uri", true, "uri to factory to engine");
@@ -188,7 +188,7 @@ public class GraqlShell {
             return;
         }
 
-        String namespace = cmd.getOptionValue("n", DEFAULT_NAMESPACE);
+        String keyspace = cmd.getOptionValue("k", DEFAULT_KEYSPACE);
         String uriString = cmd.getOptionValue("u", DEFAULT_URI);
 
         if (cmd.hasOption("b")) {
@@ -208,7 +208,7 @@ public class GraqlShell {
 
             URI uri = new URI("ws://" + uriString + REMOTE_SHELL_URI);
 
-            new GraqlShell(historyFilename, namespace, client, uri, queries);
+            new GraqlShell(historyFilename, keyspace, client, uri, queries);
         } catch (java.net.ConnectException e) {
             System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
         } catch (Throwable e) {
@@ -266,7 +266,7 @@ public class GraqlShell {
      * Create a new Graql shell
      */
     GraqlShell(
-            String historyFilename, String namespace, GraqlClient client, URI uri, Optional<List<String>> queryStrings
+            String historyFilename, String keyspace, GraqlClient client, URI uri, Optional<List<String>> queryStrings
     ) throws Throwable {
 
         this.historyFilename = historyFilename;
@@ -286,7 +286,7 @@ public class GraqlShell {
             }
 
             // Send the requested keyspace to the server once connected
-            sendJson(Json.object(ACTION, ACTION_NAMESPACE, NAMESPACE, namespace));
+            sendJson(Json.object(ACTION, ACTION_KEYSPACE, KEYSPACE, keyspace));
 
             // Start shell
             start(queryStrings);

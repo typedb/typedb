@@ -77,7 +77,7 @@ public class RemoteSession {
             Json json = Json.read(message);
 
             switch (json.at(ACTION).asString()) {
-                case ACTION_NAMESPACE:
+                case ACTION_KEYSPACE:
                     startSession(session, json);
                     break;
                 case ACTION_QUERY:
@@ -109,8 +109,8 @@ public class RemoteSession {
      * Start a new Graql shell session
      */
     private void startSession(Session session, Json json) {
-        String namespace = json.at(NAMESPACE).asString();
-        MindmapsGraph graph = getGraph.apply(namespace);
+        String keyspace = json.at(KEYSPACE).asString();
+        MindmapsGraph graph = getGraph.apply(keyspace);
         GraqlSession graqlSession = new GraqlSession(session, graph);
         sessions.put(session, graqlSession);
     }

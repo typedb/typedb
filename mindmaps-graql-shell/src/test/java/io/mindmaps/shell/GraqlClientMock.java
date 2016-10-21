@@ -31,16 +31,16 @@ import java.util.concurrent.Future;
 
 class GraqlClientMock implements GraqlClient {
 
-    private RemoteSession server = new RemoteSession(namespace -> {
-        this.namespace = namespace;
+    private RemoteSession server = new RemoteSession(keyspace -> {
+        this.keyspace = keyspace;
         return Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
     });
 
-    private String namespace = null;
+    private String keyspace = null;
     private URI uri;
 
-    String getNamespace() {
-        return namespace;
+    String getKeyspace() {
+        return keyspace;
     }
 
     URI getURI() {
