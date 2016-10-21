@@ -19,6 +19,7 @@
 package io.mindmaps.engine.controller;
 
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.concept.Concept;
 import io.mindmaps.engine.session.RemoteSession;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsEngineServerException;
@@ -80,14 +81,12 @@ public class RemoteShellController {
         String currentGraphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
         if (currentGraphName == null) currentGraphName = defaultGraphName;
 
-        try {
-            AbstractMindmapsGraph graph = (AbstractMindmapsGraph) GraphFactory.getInstance().getGraph(currentGraphName);
-
+        try(MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)){
             JSONObject responseObj = new JSONObject();
-            responseObj.put(REST.Response.ROLES_JSON_FIELD, new JSONArray(graph.getMetaRoleType().instances().stream().map(x -> x.getId()).toArray()));
-            responseObj.put(REST.Response.ENTITIES_JSON_FIELD, new JSONArray(graph.getMetaEntityType().instances().stream().map(x -> x.getId()).toArray()));
-            responseObj.put(REST.Response.RELATIONS_JSON_FIELD, new JSONArray(graph.getMetaRelationType().instances().stream().map(x -> x.getId()).toArray()));
-            responseObj.put(REST.Response.RESOURCES_JSON_FIELD, new JSONArray(graph.getMetaResourceType().instances().stream().map(x -> x.getId()).toArray()));
+            responseObj.put(REST.Response.ROLES_JSON_FIELD, new JSONArray(graph.getMetaRoleType().instances().stream().map(Concept::getId).toArray()));
+            responseObj.put(REST.Response.ENTITIES_JSON_FIELD, new JSONArray(graph.getMetaEntityType().instances().stream().map(Concept::getId).toArray()));
+            responseObj.put(REST.Response.RELATIONS_JSON_FIELD, new JSONArray(graph.getMetaRelationType().instances().stream().map(Concept::getId).toArray()));
+            responseObj.put(REST.Response.RESOURCES_JSON_FIELD, new JSONArray(graph.getMetaResourceType().instances().stream().map(Concept::getId).toArray()));
 
             return responseObj.toString();
         } catch (Exception e) {
@@ -110,9 +109,7 @@ public class RemoteShellController {
 
         LOG.debug("Received match query: \"" + req.queryParams(REST.Request.QUERY_FIELD) + "\"");
 
-        try {
-            MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName);
-
+        try(MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)) {
             return withGraph(graph).parse(req.queryParams(REST.Request.QUERY_FIELD))
                     .resultsString()
                     .map(x -> x.replaceAll("\u001B\\[\\d+[m]", ""))
