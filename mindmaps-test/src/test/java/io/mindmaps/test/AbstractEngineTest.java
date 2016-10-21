@@ -33,7 +33,7 @@ import static java.lang.Thread.sleep;
 /**
  * Abstract test class that automatically starts the backend and engine and provides a method to get a graph factory
  */
-public class AbstractEngineTest {
+public abstract class AbstractEngineTest {
     private static final String CONFIG = System.getProperty("mindmaps.test-profile");
     private static AtomicBoolean ENGINE_ON = new AtomicBoolean(false);
 
@@ -55,7 +55,7 @@ public class AbstractEngineTest {
         }
     }
 
-    public static MindmapsGraphFactory factoryWithNewKeyspace() {
+    protected static MindmapsGraphFactory factoryWithNewKeyspace() {
         String keyspace;
         if (usingOrientDB()) {
             keyspace = "memory";

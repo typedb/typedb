@@ -25,7 +25,6 @@ import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
-import io.mindmaps.test.AbstractEngineTest;
 import io.mindmaps.test.graql.reasoner.graphs.GenericGraph;
 import io.mindmaps.test.graql.reasoner.graphs.MatrixGraph;
 import io.mindmaps.test.graql.reasoner.graphs.MatrixGraphII;
@@ -41,7 +40,7 @@ import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 
-public class RecursiveInferenceTest extends AbstractEngineTest {
+public class RecursiveInferenceTest {
 
     /**from Vieille - Recursive Axioms in Deductive Databases p. 192*/
     @Test

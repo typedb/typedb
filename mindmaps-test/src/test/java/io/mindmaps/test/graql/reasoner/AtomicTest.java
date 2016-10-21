@@ -27,14 +27,11 @@ import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
-import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
-import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
-import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
 import io.mindmaps.graql.internal.reasoner.predicate.Relation;
+import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.query.Query;
-import io.mindmaps.test.AbstractEngineTest;
 import io.mindmaps.test.graql.reasoner.graphs.CWGraph;
 import io.mindmaps.test.graql.reasoner.graphs.GenericGraph;
 import io.mindmaps.test.graql.reasoner.graphs.SNBGraph;
@@ -53,7 +50,7 @@ import java.util.Set;
 import static io.mindmaps.graql.internal.reasoner.Utility.computeRoleCombinations;
 import static org.junit.Assert.assertTrue;
 
-public class AtomicTest extends AbstractEngineTest {
+public class AtomicTest {
 
     @org.junit.Rule
     public final ExpectedException exception = ExpectedException.none();

@@ -25,14 +25,13 @@ import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
-import io.mindmaps.test.AbstractEngineTest;
 import io.mindmaps.test.graql.reasoner.graphs.CWGraph;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
 
-public class CWInferenceTest extends AbstractEngineTest {
+public class CWInferenceTest {
 
     private static void printMatchQuery(MatchQuery query) {
         System.out.println(query.toString().replace(" or ", "\nor\n").replace("};", "};\n").replace("; {", ";\n{"));

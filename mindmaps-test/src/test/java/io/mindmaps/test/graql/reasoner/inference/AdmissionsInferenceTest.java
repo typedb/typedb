@@ -21,13 +21,10 @@ package io.mindmaps.test.graql.reasoner.inference;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.Graql;
-import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
-import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
-import io.mindmaps.test.AbstractEngineTest;
+import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.test.graql.reasoner.graphs.AdmissionsGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -36,7 +33,7 @@ import static io.mindmaps.graql.internal.reasoner.Utility.printAnswers;
 import static org.junit.Assert.assertEquals;
 
 
-public class AdmissionsInferenceTest extends AbstractEngineTest {
+public class AdmissionsInferenceTest {
 
     private static MindmapsGraph graph;
     private static Reasoner reasoner;

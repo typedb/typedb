@@ -7,14 +7,13 @@ import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.internal.reasoner.query.Query;
-import io.mindmaps.test.AbstractEngineTest;
 import io.mindmaps.test.graql.reasoner.graphs.GenericGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class MoogiInferenceTest extends AbstractEngineTest {
+public class MoogiInferenceTest {
 
     private static MindmapsGraph graph;
     private static Reasoner reasoner;

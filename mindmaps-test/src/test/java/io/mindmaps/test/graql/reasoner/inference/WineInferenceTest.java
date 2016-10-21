@@ -24,7 +24,6 @@ import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
-import io.mindmaps.test.AbstractEngineTest;
 import io.mindmaps.test.graql.reasoner.graphs.GenericGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -32,7 +31,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 
-public class WineInferenceTest extends AbstractEngineTest {
+public class WineInferenceTest {
 
     private static Reasoner reasoner;
     private static QueryBuilder qb;

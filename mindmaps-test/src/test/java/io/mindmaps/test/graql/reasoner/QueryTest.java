@@ -28,7 +28,6 @@ import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
-import io.mindmaps.test.AbstractEngineTest;
 import io.mindmaps.test.graql.reasoner.graphs.GenericGraph;
 import io.mindmaps.test.graql.reasoner.graphs.GeoGraph;
 import io.mindmaps.test.graql.reasoner.graphs.SNBGraph;
@@ -41,7 +40,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 
-public class QueryTest extends AbstractEngineTest {
+public class QueryTest {
 
     private static MindmapsGraph graph;
     private static QueryBuilder qb;
