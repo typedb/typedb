@@ -32,7 +32,7 @@ public class Main {
     static {
         options.addOption("f", "file", true, "output file");
         options.addOption("o", "ontology", false, "export ontology");
-        options.addOption("c", "contents", false, "export data");
+        options.addOption("d", "data", false, "export data");
     }
 
     public static void main(String[] args){
