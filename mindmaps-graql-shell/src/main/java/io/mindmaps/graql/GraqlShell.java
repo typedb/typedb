@@ -38,6 +38,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
@@ -405,6 +406,9 @@ public class GraqlShell {
 
     @OnWebSocketClose
     public void onClose(int statusCode, String reason) throws IOException, ExecutionException, InterruptedException {
+        if (statusCode != 1000) {
+            System.err.println("Websocket closed, code: " + statusCode + ", reason: " + reason);
+        }
     }
 
     @OnWebSocketMessage
@@ -432,15 +436,22 @@ public class GraqlShell {
     }
 
     private void ping() {
-        // This runs on a daemon thread, so it will be terminated when the JVM stops
-        //noinspection InfiniteLoopStatement
-        while (true) {
-            sendJson(Json.object(ACTION, ACTION_PING));
+        try {
+            // This runs on a daemon thread, so it will be terminated when the JVM stops
+            //noinspection InfiniteLoopStatement
+            while (true) {
+                sendJson(Json.object(ACTION, ACTION_PING));
 
-            try {
-                Thread.sleep(PING_INTERVAL);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+                try {
+                    Thread.sleep(PING_INTERVAL);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        } catch (WebSocketException e) {
+            // Report an error if the session is still open
+            if (session.isOpen()) {
+                throw new RuntimeException(e);
             }
         }
     }
