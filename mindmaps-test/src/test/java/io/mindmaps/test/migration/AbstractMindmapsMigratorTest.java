@@ -60,7 +60,6 @@ public class AbstractMindmapsMigratorTest extends AbstractMindmapsEngineTest {
     }
 
     public static File getFile(String component, String fileName){
-        System.out.println(component + "/" + fileName);
         return new File(AbstractMindmapsMigratorTest.class.getResource(component + "/" + fileName).getPath());
     }
 

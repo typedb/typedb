@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-package io.mindmaps.migration.export;
+package io.mindmaps.test.migration.export;
 
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
@@ -28,7 +28,10 @@ import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.Type;
+import io.mindmaps.migration.export.GraphWriter;
+import io.mindmaps.test.migration.AbstractMindmapsMigratorTest;
 import org.junit.After;
+import org.junit.Before;
 
 import java.util.Map;
 
@@ -36,18 +39,14 @@ import static java.util.stream.Collectors.toMap;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 
-public abstract class GraphWriterTestBase {
+public abstract class GraphWriterTestBase extends AbstractMindmapsMigratorTest {
 
-    protected static final MindmapsGraph original = Mindmaps.factory(Mindmaps.IN_MEMORY, "original").getGraph();
     protected static final MindmapsGraph copy = Mindmaps.factory(Mindmaps.IN_MEMORY, "copy").getGraph();
-    protected static final GraphWriter writer = new GraphWriter(original);
+    protected static GraphWriter writer;
 
-    @After
-    public void clear(){
-        copy.getMetaType().instances().stream().flatMap(c -> c.asType().instances().stream()).forEach(Concept::delete);
-        copy.getMetaType().instances().stream().filter(i -> {
-            return !i.getId().equals("inference-rule") && !i.getId().equals("constraint-rule");
-        }).forEach(Concept::delete);
+    @Before
+    public void start(){
+        writer = new GraphWriter(graph);
     }
 
     public void assertDataEqual(MindmapsGraph one, MindmapsGraph two){
@@ -68,7 +67,6 @@ public abstract class GraphWriterTestBase {
         } else if(instance instanceof Resource){
             assertResourceCopied(instance.asResource(), two);
         }
-
     }
 
     public void assertEntityCopied(Entity entity1, MindmapsGraph two){
@@ -114,8 +112,6 @@ public abstract class GraphWriterTestBase {
     }
 
     public boolean typesEqual(Type one, Type two){
-        System.out.println(one);
-        System.out.println(two);
         return one.getId().equals(two.getId())
                 && one.isAbstract().equals(two.isAbstract())
                 && one.type().getId().equals(two.type().getId())

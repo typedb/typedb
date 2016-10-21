@@ -15,18 +15,18 @@
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-package io.mindmaps.migration.export;
+package io.mindmaps.test.migration.export;
 
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.graql.Graql;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 public class MovieGraphWriterTest extends GraphWriterTestBase {
 
-    @BeforeClass
-    public static void setup() {
-        MovieGraphFactory.loadGraph(original);
+    @Before
+    public void setup() {
+        MovieGraphFactory.loadGraph(graph);
     }
 
     @Test
@@ -34,7 +34,7 @@ public class MovieGraphWriterTest extends GraphWriterTestBase {
         String ontology = writer.dumpOntology();
         Graql.withGraph(copy).parse(ontology).execute();
 
-        assertOntologiesEqual(original, copy);
+        assertOntologiesEqual(graph, copy);
     }
 
     @Test
@@ -45,6 +45,6 @@ public class MovieGraphWriterTest extends GraphWriterTestBase {
         String data = writer.dumpData();
         Graql.withGraph(copy).parse(data).execute();
 
-        assertDataEqual(original, copy);
+        assertDataEqual(graph, copy);
     }
 }
