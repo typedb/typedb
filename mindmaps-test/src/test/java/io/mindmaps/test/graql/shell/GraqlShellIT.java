@@ -21,7 +21,7 @@ package io.mindmaps.test.graql.shell;
 import com.google.common.base.Strings;
 import io.mindmaps.graql.GraqlClientImpl;
 import io.mindmaps.graql.GraqlShell;
-import io.mindmaps.test.AbstractGraphTest;
+import io.mindmaps.test.AbstractRollbackGraphTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -42,7 +42,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class GraqlShellIT extends AbstractGraphTest {
+public class GraqlShellIT extends AbstractRollbackGraphTest {
     private static InputStream trueIn;
     private static PrintStream trueOut;
     private static PrintStream trueErr;

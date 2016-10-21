@@ -26,7 +26,7 @@ import io.mindmaps.concept.*;
 import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.internal.analytics.Analytics;
-import io.mindmaps.test.AbstractGraphTest;
+import io.mindmaps.test.AbstractRollbackGraphTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;

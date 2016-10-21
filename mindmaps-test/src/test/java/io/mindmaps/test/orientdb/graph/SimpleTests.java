@@ -26,14 +26,14 @@ import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.engine.postprocessing.Cache;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.test.AbstractGraphTest;
+import io.mindmaps.test.AbstractRollbackGraphTest;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotNull;
 
-public class SimpleTests extends AbstractGraphTest {
+public class SimpleTests extends AbstractRollbackGraphTest {
 
     @Ignore //Failing due to inconsistent clears.
     @Test

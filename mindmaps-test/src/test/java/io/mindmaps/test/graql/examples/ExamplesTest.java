@@ -22,7 +22,7 @@ import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.test.AbstractGraphTest;
+import io.mindmaps.test.AbstractRollbackGraphTest;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -30,7 +30,7 @@ import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
 
-public class ExamplesTest extends AbstractGraphTest {
+public class ExamplesTest extends AbstractRollbackGraphTest {
 
     private QueryBuilder qb;
 
