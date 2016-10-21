@@ -18,33 +18,29 @@
 
 package io.mindmaps.migration.json;
 
-import com.google.common.collect.Iterators;
 import io.mindmaps.engine.loader.Loader;
 import io.mindmaps.graql.Graql;
+import io.mindmaps.migration.base.AbstractTemplatedMigrator;
 import mjson.Json;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FilenameFilter;
 import java.net.MalformedURLException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
 /**
  * Migrator for migrating JSON data into Mindmaps instances
  */
-public class JsonMigrator {
+public class JsonMigrator extends AbstractTemplatedMigrator {
 
-    public static final int BATCH_SIZE = 5;
-    private static Logger LOG = LoggerFactory.getLogger(JsonMigrator.class);
-
-    private final Loader loader;
-    private int batchSize = BATCH_SIZE;
-
+    private static final String NEWLINE = "\n";
 
     /**
      * Create a JsonMigrator to migrate into the given graph
@@ -53,15 +49,7 @@ public class JsonMigrator {
         this.loader = loader;
     }
 
-    /**
-     * Set number of files/objects to migrate in one batch
-     * @param batchSize number of objects to migrate at once
-     */
-    public JsonMigrator setBatchSize(int batchSize){
-        this.batchSize = batchSize;
-        return this;
-    }
-
+    @Override
     public void migrate(String template, File jsonFileOrDir){
         checkBatchSize();
 
@@ -80,10 +68,18 @@ public class JsonMigrator {
         }
     }
 
-    public void graql(String template, File file){
-        checkBatchSize();
+    @Override
+    public String graql(String template, File file){
+        File[] files = {file};
+        if(file.isDirectory()){
+            files = file.listFiles(jsonFiles);
+        }
 
-
+        try {
+            return resolve(template, Arrays.stream(files)).collect(joining(NEWLINE));
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -124,17 +120,6 @@ public class JsonMigrator {
     }
 
     /**
-     * Warn the user when the batch size of the loader is greater than 1.
-     * If the batch size is greater than 1, it is possible that multiple of the same variables will be committed in
-     * one batch and the resulting committed data will be corrupted.
-     */
-    private void checkBatchSize(){
-        if(loader.getBatchSize() > 1){
-            LOG.warn("Loading with batch size [" + loader.getBatchSize() + "]. This can cause conflicts on commit.");
-        }
-    }
-
-    /**
      * Convert a file into a Json object
      * @param file file to be converted
      * @return Json object representing the file, empty if problem reading file
@@ -152,15 +137,4 @@ public class JsonMigrator {
      * Filter that will only accept JSON files with the .json extension
      */
     private FilenameFilter jsonFiles = (dir, name) -> name.toLowerCase().endsWith(".json");
-
-    /**
-     * Partition a stream into a stream of collections, each with batchSize elements.
-     * @param iterator Iterator to partition
-     * @param <T> Type of values of iterator
-     * @return Stream over a collection that are each of batchSize
-     */
-    private <T> Stream<Collection<T>> partitionedStream(Iterator<T> iterator){
-        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(
-                Iterators.partition(iterator, batchSize), Spliterator.ORDERED), false);
-    }
 }

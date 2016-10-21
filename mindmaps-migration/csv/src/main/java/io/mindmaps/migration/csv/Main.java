@@ -19,6 +19,7 @@
 package io.mindmaps.migration.csv;
 
 import com.google.common.io.Files;
+import io.mindmaps.migration.base.AbstractTemplatedMigrator;
 import io.mindmaps.migration.base.io.MigrationCLI;
 import org.apache.commons.cli.Options;
 
@@ -63,7 +64,7 @@ public class Main {
         cli.printInitMessage(csvDataFile.getPath());
 
         try{
-            CSVMigrator migrator = new CSVMigrator(cli.getLoader())
+            AbstractTemplatedMigrator migrator = new CSVMigrator(cli.getLoader())
                                         .setDelimiter(csvDelimiter)
                                         .setBatchSize(batchSize);
 

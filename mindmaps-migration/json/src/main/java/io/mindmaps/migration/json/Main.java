@@ -19,6 +19,7 @@
 package io.mindmaps.migration.json;
 
 import com.google.common.io.Files;
+import io.mindmaps.migration.base.AbstractTemplatedMigrator;
 import io.mindmaps.migration.base.io.MigrationCLI;
 import org.apache.commons.cli.Options;
 
@@ -64,7 +65,7 @@ public class Main {
         cli.printInitMessage(jsonDataFile.getPath());
 
         try{
-            JsonMigrator migrator = new JsonMigrator(cli.getLoader())
+            AbstractTemplatedMigrator migrator = new JsonMigrator(cli.getLoader())
                                         .setBatchSize(batchSize);
 
             String template = Files.readLines(jsonTemplateFile, StandardCharsets.UTF_8).stream().collect(joining("\n"));
