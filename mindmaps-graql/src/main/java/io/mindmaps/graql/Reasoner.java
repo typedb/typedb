@@ -38,6 +38,8 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static io.mindmaps.graql.internal.reasoner.query.QueryAnswers.getUnifiedAnswers;
+
 public class Reasoner {
 
     private final MindmapsGraph graph;
@@ -159,8 +161,11 @@ public class Reasoner {
     }
 
     private void recordAnswers(AtomicQuery atomicQuery, Map<AtomicQuery, AtomicQuery> matAnswers) {
-        if (matAnswers.keySet().contains(atomicQuery))
-            matAnswers.get(atomicQuery).getAnswers().addAll(atomicQuery.getAnswers());
+        AtomicQuery equivalentQuery = matAnswers.get(atomicQuery);
+        if (equivalentQuery != null) {
+            QueryAnswers unifiedAnswers = getUnifiedAnswers(equivalentQuery, atomicQuery, atomicQuery.getAnswers());
+            matAnswers.get(atomicQuery).getAnswers().addAll(unifiedAnswers);
+        }
         else
             matAnswers.put(atomicQuery, atomicQuery);
     }
@@ -227,10 +232,15 @@ public class Reasoner {
 
     private QueryAnswers answer(AtomicQuery atomicQuery, Set<AtomicQuery> subGoals, Map<AtomicQuery, AtomicQuery> matAnswers){
         boolean queryAdmissible = !subGoals.contains(atomicQuery);
+        boolean queryVisited = matAnswers.containsKey(atomicQuery);
 
         if(queryAdmissible) {
-            atomicQuery.DBlookup();
-            recordAnswers(atomicQuery, matAnswers);
+            if (!queryVisited){
+                atomicQuery.DBlookup();
+                recordAnswers(atomicQuery, matAnswers);
+            }
+            else
+                atomicQuery.memoryLookup(matAnswers);
 
             Atomic atom = atomicQuery.getAtom();
             Set<Rule> rules = getApplicableRules(atom);
@@ -258,7 +268,6 @@ public class Reasoner {
 
                 QueryAnswers answers = propagateHeadSubstitutions(atomicQuery, ruleHead, subs)
                         .filterVars(atomicQuery.getSelectedNames());
-
                 QueryAnswers newAnswers = new QueryAnswers();
                 if (atom.isResource())
                     newAnswers.addAll(new AtomicMatchQuery(ruleHead, answers).materialise());
@@ -295,7 +304,11 @@ public class Reasoner {
         }
         else {
             Map<AtomicQuery, AtomicQuery> matAnswers = new HashMap<>();
-            matAnswers.put(atomicQuery, atomicQuery);
+            if (!materialise) {
+                atomicQuery.DBlookup();
+                recordAnswers(atomicQuery, matAnswers);
+                matAnswers.put(atomicQuery, atomicQuery);
+            }
             do {
                 Set<AtomicQuery> subGoals = new HashSet<>();
                 dAns = atomicQuery.getAnswers().size();

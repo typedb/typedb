@@ -47,15 +47,12 @@ public class Query implements MatchQueryInternal {
     private final Conjunction<PatternAdmin> pattern;
     private final Set<String> selectVars;
 
-    private final Map<Type, Set<Atomic>> typeAtomMap;
-
     public Query(String query, MindmapsGraph graph) {
         this.graph = graph;
         MatchQuery matchQuery = Graql.withGraph(graph).parse(query);
         this.selectVars = Sets.newHashSet(matchQuery.admin().getSelectedNames());
         this.atomSet = AtomicFactory.createAtomSet(matchQuery.admin().getPattern(), this);
         this.pattern = createPattern(atomSet);
-        this.typeAtomMap = getTypeAtomMap(atomSet);
     }
 
     public Query(MatchQuery query, MindmapsGraph graph) {
@@ -63,7 +60,6 @@ public class Query implements MatchQueryInternal {
         this.selectVars = Sets.newHashSet(query.admin().getSelectedNames());
         this.atomSet = AtomicFactory.createAtomSet(query.admin().getPattern(), this);
         this.pattern = createPattern(atomSet);
-        this.typeAtomMap = getTypeAtomMap(atomSet);
     }
 
     public Query(Query q) {
@@ -84,7 +80,6 @@ public class Query implements MatchQueryInternal {
             addAtomConstraints(atom.getTypeConstraints()
                                     .stream().filter(at -> !at.isRuleResolvable())
                                     .collect(Collectors.toSet()));
-        this.typeAtomMap = getTypeAtomMap(atomSet);
     }
 
     //alpha-equivalence equality
@@ -162,9 +157,6 @@ public class Query implements MatchQueryInternal {
     }
 
     public Set<Atomic> getAtoms() { return new HashSet<>(atomSet);}
-    public Set<Atomic> getAtomsWithType(Type type) {
-        return typeAtomMap.get(type);
-    }
     public Set<Atomic> getSubstitutions(){
         return getAtoms().stream()
                 .filter(Atomic::isSubstitution)
@@ -320,18 +312,6 @@ public class Query implements MatchQueryInternal {
             return Graql.match(pattern.getPatterns()).select(selectVars).withGraph(graph);
     }
 
-    private Map<Type, Set<Atomic>> getTypeAtomMap(Set<Atomic> atoms) {
-        Map<Type, Set<Atomic>> map = new HashMap<>();
-        for (Atomic atom : atoms) {
-            Type type = graph.getType(atom.getTypeId());
-            if (map.containsKey(type))
-                map.get(type).add(atom);
-            else
-                map.put(type, Sets.newHashSet(atom));
-        }
-        return map;
-    }
-
     public Map<String, Type> getVarTypeMap() {
         Map<String, Type> map = new HashMap<>();
 
@@ -432,5 +412,4 @@ public class Query implements MatchQueryInternal {
 
         return equivalent;
     }
-
 }

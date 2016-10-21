@@ -190,24 +190,36 @@ public abstract class AtomBase implements Atomic{
     @Override
     public Map<String, String> getUnifiers(Atomic parentAtom) {
         Set<String> varsToAllocate = parentAtom.getVarNames();
-
         Set<String> childBVs = getVarNames();
         Map<String, String> unifiers = new HashMap<>();
         Map<String, Pair<Type, RoleType>> childMap = getVarTypeRoleMap();
         Map<RoleType, Pair<String, Type>> parentMap = parentAtom.getRoleVarTypeMap();
 
+        //try based on substitutions
+        Query parentQuery = parentAtom.getParentQuery();
+        getParentQuery().getSubstitutions().stream().filter(sub -> containsVar(sub.getVarName())).forEach(sub -> {
+            String chVar = sub.getVarName();
+            String id = sub.getVal();
+            Set<Atomic> parentSubs = parentQuery.getSubstitutions().stream()
+                        .filter(s -> s.getVal().equals(id)).collect(Collectors.toSet());
+            String pVar = parentSubs.isEmpty()? "" : parentSubs.iterator().next().getVarName();
+            if (!pVar.isEmpty()) {
+                if (!chVar.equals(pVar)) unifiers.put(chVar, pVar);
+                childBVs.remove(chVar);
+                varsToAllocate.remove(pVar);
+            }
+        });
+
+        //try based on roles
         for (String chVar : childBVs) {
             RoleType role = childMap.containsKey(chVar) ? childMap.get(chVar).getValue() : null;
             String pVar = role != null && parentMap.containsKey(role) ? parentMap.get(role).getKey() : "";
             if (pVar.isEmpty())
                 pVar = varsToAllocate.iterator().next();
 
-            if (!chVar.equals(pVar))
-                unifiers.put(chVar, pVar);
-
+            if (!chVar.equals(pVar)) unifiers.put(chVar, pVar);
             varsToAllocate.remove(pVar);
         }
-
         return unifiers;
     }
 

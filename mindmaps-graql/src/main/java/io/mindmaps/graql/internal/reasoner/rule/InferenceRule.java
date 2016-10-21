@@ -54,14 +54,6 @@ public class InferenceRule {
         return atom;
     }
 
-    public boolean isRuleRecursive() {
-        boolean ruleRecursive = false;
-        Type RHStype = getRuleConclusionType();
-        if (rule.getHypothesisTypes().contains(RHStype) )
-            ruleRecursive = true;
-        return ruleRecursive;
-    }
-
     private void propagateConstraints(Atomic parentAtom){
         body.addAtomConstraints(parentAtom.getSubstitutions());
         head.addAtomConstraints(body.getSubstitutions());
