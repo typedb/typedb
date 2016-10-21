@@ -19,11 +19,10 @@
 package io.mindmaps.migration.sql;
 
 import io.mindmaps.migration.base.io.MigrationCLI;
+import org.apache.commons.cli.Options;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
-
-import static io.mindmaps.migration.base.io.MigrationCLI.die;
 
 /**
  * Main program to migrate a SQL database into a Mindmaps graph. For use from a command line.
@@ -32,22 +31,24 @@ import static io.mindmaps.migration.base.io.MigrationCLI.die;
  */
 public class Main {
 
-    static {
-        MigrationCLI.addOption("driver", "driver", true, "JDBC driver");
-        MigrationCLI.addOption("db", "database", true, "URL to SQL database");
-        MigrationCLI.addOption("user", "user", true, "Username to access SQL database");
-        MigrationCLI.addOption("pass", "pass", true, "Password to access SQL database");
+    private static Options getOptions(){
+        Options options = new Options();
+        options.addOption("driver", "driver", true, "JDBC driver");
+        options.addOption("db", "database", true, "URL to SQL database");
+        options.addOption("user", "user", true, "Username to access SQL database");
+        options.addOption("pass", "pass", true, "Password to access SQL database");
+        return options;
     }
 
     public static void main(String[] args){
-        MigrationCLI interpreter = new MigrationCLI(args);
+        MigrationCLI cli = new MigrationCLI(args, getOptions());
 
-        String jdbcDriver = interpreter.getRequiredOption("driver", "No driver specified (-driver)");
-        String jdbcDBUrl = interpreter.getRequiredOption("db", "No db specified (-database)");
-        String jdbcUser = interpreter.getRequiredOption("user", "No username specified (-user)");
-        String jdbcPass = interpreter.getRequiredOption("pass", "No password specified (-pass)");
+        String jdbcDriver = cli.getRequiredOption("driver", "No driver specified (-driver)");
+        String jdbcDBUrl = cli.getRequiredOption("db", "No db specified (-database)");
+        String jdbcUser = cli.getRequiredOption("user", "No username specified (-user)");
+        String jdbcPass = cli.getRequiredOption("pass", "No password specified (-pass)");
 
-        interpreter.printInitMessage(jdbcDBUrl);
+        cli.printInitMessage(jdbcDBUrl);
 
         // perform migration
         SQLSchemaMigrator schemaMigrator = new SQLSchemaMigrator();
@@ -60,19 +61,19 @@ public class Main {
 
             schemaMigrator
                     .configure(connection)
-                    .migrate(interpreter.getLoader())
+                    .migrate(cli.getLoader())
                     .close();
 
             connection = DriverManager.getConnection(jdbcDBUrl, jdbcUser, jdbcPass);
             dataMigrator
                     .configure(connection)
-                    .migrate(interpreter.getLoader())
+                    .migrate(cli.getLoader())
                     .close();
 
-            interpreter.printCompletionMessage();
+            cli.printCompletionMessage();
         }
         catch (Throwable throwable){
-           die(throwable.getMessage());
+           cli.die(throwable.getMessage());
         }
     }
 

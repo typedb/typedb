@@ -18,11 +18,10 @@
 package io.mindmaps.migration.owl;
 
 import io.mindmaps.migration.base.io.MigrationCLI;
+import org.apache.commons.cli.Options;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 
 import java.io.File;
-
-import static io.mindmaps.migration.base.io.MigrationCLI.die;
 
 /**
  * <p>
@@ -39,29 +38,30 @@ import static io.mindmaps.migration.base.io.MigrationCLI.die;
  */
 public class Main {
 
+    private static Options options = new Options();
     static {
-        MigrationCLI.addOption("f", "file", true, "owl file");
+        options.addOption("f", "file", true, "owl file");
     }
 
     public static void main(String[] args) {
 
-        MigrationCLI interpreter = new MigrationCLI(args);
+        MigrationCLI cli = new MigrationCLI(args, options);
 
-        String owlFilename = interpreter.getRequiredOption("f", "Please specify owl file with the -owl option.");
+        String owlFilename = cli.getRequiredOption("f", "Please specify owl file with the -owl option.");
 
         File owlfile = new File(owlFilename);
         if (!owlfile.exists())
-            die("Cannot find file: " + owlFilename);
+            cli.die("Cannot find file: " + owlFilename);
 
-        interpreter.printInitMessage(owlfile.getPath());
+        cli.printInitMessage(owlfile.getPath());
 
         OWLMigrator migrator = new OWLMigrator();
         try {
-            migrator.graph(interpreter.getGraph())
+            migrator.graph(cli.getGraph())
                     .ontology(OWLManager.createOWLOntologyManager().loadOntologyFromOntologyDocument(owlfile))
                     .migrate();
 
-            interpreter.printCompletionMessage();
+            cli.printCompletionMessage();
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);

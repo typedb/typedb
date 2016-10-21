@@ -20,11 +20,11 @@ package io.mindmaps.migration.json;
 
 import com.google.common.io.Files;
 import io.mindmaps.migration.base.io.MigrationCLI;
+import org.apache.commons.cli.Options;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 
-import static io.mindmaps.migration.base.io.MigrationCLI.die;
 import static java.util.stream.Collectors.joining;
 
 /**
@@ -34,44 +34,45 @@ import static java.util.stream.Collectors.joining;
  */
 public class Main {
 
+    private static Options options = new Options();
     static {
-        MigrationCLI.addOption("f", "file", true, "json data file");
-        MigrationCLI.addOption("t", "template", true, "graql template to apply over data");
-        MigrationCLI.addOption("b", "batch", true, "number of row to load at once");
+        options.addOption("f", "file", true, "json data file");
+        options.addOption("t", "template", true, "graql template to apply over data");
+        options.addOption("b", "batch", true, "number of row to load at once");
     }
 
     public static void main(String[] args){
 
-        MigrationCLI interpreter = new MigrationCLI(args);
+        MigrationCLI cli = new MigrationCLI(args, options);
 
-        String jsonDataFileName = interpreter.getRequiredOption("f", "Data file missing (-f)");
-        String jsonTemplateName = interpreter.getRequiredOption("t", "Template file missing (-t)");
-        int batchSize = interpreter.hasOption("b") ? Integer.valueOf(interpreter.getOption("b")) : JsonMigrator.BATCH_SIZE;
+        String jsonDataFileName = cli.getRequiredOption("f", "Data file missing (-f)");
+        String jsonTemplateName = cli.getRequiredOption("t", "Template file missing (-t)");
+        int batchSize = cli.hasOption("b") ? Integer.valueOf(cli.getOption("b")) : JsonMigrator.BATCH_SIZE;
 
         // get files
         File jsonDataFile = new File(jsonDataFileName);
         File jsonTemplateFile = new File(jsonTemplateName);
 
         if(!jsonDataFile.exists()){
-            die("Cannot find file: " + jsonDataFileName);
+            cli.die("Cannot find file: " + jsonDataFileName);
         }
 
         if(!jsonTemplateFile.exists() || jsonTemplateFile.isDirectory()){
-            die("Cannot find file: " + jsonTemplateName);
+            cli.die("Cannot find file: " + jsonTemplateName);
         }
 
-        interpreter.printInitMessage(jsonDataFile.getPath());
+        cli.printInitMessage(jsonDataFile.getPath());
 
         try{
-            JsonMigrator migrator = new JsonMigrator(interpreter.getLoader())
+            JsonMigrator migrator = new JsonMigrator(cli.getLoader())
                                         .setBatchSize(batchSize);
 
             String template = Files.readLines(jsonTemplateFile, StandardCharsets.UTF_8).stream().collect(joining("\n"));
             migrator.migrate(template, jsonDataFile);
 
-            interpreter.printCompletionMessage();
+            cli.printCompletionMessage();
         } catch (Throwable throwable){
-            die(throwable.getMessage());
+            cli.die(throwable.getMessage());
         }
     }
 }

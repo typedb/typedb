@@ -20,11 +20,11 @@ package io.mindmaps.migration.csv;
 
 import com.google.common.io.Files;
 import io.mindmaps.migration.base.io.MigrationCLI;
+import org.apache.commons.cli.Options;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 
-import static io.mindmaps.migration.base.io.MigrationCLI.die;
 import static java.util.stream.Collectors.joining;
 
 /**
@@ -34,44 +34,46 @@ import static java.util.stream.Collectors.joining;
  */
 public class Main {
 
-    static {
-        MigrationCLI.addOption("f", "file", true, "csv file");
-        MigrationCLI.addOption("t", "template", true, "graql template to apply over data");
-        MigrationCLI.addOption("d", "delimiter", true, "delimiter of columns in input file");
-        MigrationCLI.addOption("b", "batch", true, "number of row to load at once");
+    private static Options getOptions(){
+        Options options = new Options();
+        options.addOption("f", "file", true, "csv file");
+        options.addOption("t", "template", true, "graql template to apply over data");
+        options.addOption("d", "delimiter", true, "delimiter of columns in input file");
+        options.addOption("b", "batch", true, "number of row to load at once");
+        return options;
     }
 
     public static void main(String[] args){
 
-        MigrationCLI interpreter = new MigrationCLI(args);
+        MigrationCLI cli = new MigrationCLI(args, getOptions());
 
-        String csvDataFileName = interpreter.getRequiredOption("f", "Data file missing (-f)");
-        String csvTemplateName = interpreter.getRequiredOption("t", "Template file missing (-t)");
-        char csvDelimiter =  interpreter.hasOption("d") ? interpreter.getOption("d").charAt(0) : CSVMigrator.DELIMITER;
-        int batchSize = interpreter.hasOption("b") ? Integer.valueOf(interpreter.getOption("b")) : CSVMigrator.BATCH_SIZE;
+        String csvDataFileName = cli.getRequiredOption("f", "Data file missing (-f)");
+        String csvTemplateName = cli.getRequiredOption("t", "Template file missing (-t)");
+        char csvDelimiter =  cli.hasOption("d") ? cli.getOption("d").charAt(0) : CSVMigrator.DELIMITER;
+        int batchSize = cli.hasOption("b") ? Integer.valueOf(cli.getOption("b")) : CSVMigrator.BATCH_SIZE;
 
         // get files
         File csvDataFile = new File(csvDataFileName);
         File csvTemplate = new File(csvTemplateName);
 
         if(!csvTemplate.exists() || !csvDataFile.exists()){
-            die("Cannot find file: " + csvDataFileName);
+            cli.die("Cannot find file: " + csvDataFileName);
         }
 
-        interpreter.printInitMessage(csvDataFile.getPath());
+        cli.printInitMessage(csvDataFile.getPath());
 
         try{
-            CSVMigrator migrator = new CSVMigrator(interpreter.getLoader())
+            CSVMigrator migrator = new CSVMigrator(cli.getLoader())
                                         .setDelimiter(csvDelimiter)
                                         .setBatchSize(batchSize);
 
             String template = Files.readLines(csvTemplate, StandardCharsets.UTF_8).stream().collect(joining("\n"));
             migrator.migrate(template, csvDataFile);
 
-            interpreter.printCompletionMessage();
+            cli.printCompletionMessage();
         }
         catch (Throwable throwable){
-            die(throwable.getMessage());
+            cli.die(throwable.getMessage());
         }
     }
 }

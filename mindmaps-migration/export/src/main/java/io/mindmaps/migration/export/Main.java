@@ -19,40 +19,40 @@ package io.mindmaps.migration.export;
 
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.migration.base.io.MigrationCLI;
+import org.apache.commons.cli.Options;
 
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Writer;
 
-import static io.mindmaps.migration.base.io.MigrationCLI.die;
-
 public class Main {
 
+    private static Options options = new Options();
     static {
-        MigrationCLI.addOption("f", "file", true, "output file");
-        MigrationCLI.addOption("o", "ontology", false, "export ontology");
-        MigrationCLI.addOption("d", "data", false, "export data");
+        options.addOption("f", "file", true, "output file");
+        options.addOption("o", "ontology", false, "export ontology");
+        options.addOption("c", "contents", false, "export data");
     }
 
     public static void main(String[] args){
 
-        MigrationCLI interpreter = new MigrationCLI(args);
+        MigrationCLI cli = new MigrationCLI(args, options);
 
-        String outputFile = interpreter.getOption("f");
+        String outputFile = cli.getOption("f");
 
-        System.out.println("Writing graph " + interpreter.getKeyspace() + " using MM Engine " +
-                interpreter.getEngineURI() + " to " + (outputFile == null ? "System.out" : outputFile));
+        System.out.println("Writing graph " + cli.getKeyspace() + " using MM Engine " +
+                cli.getEngineURI() + " to " + (outputFile == null ? "System.out" : outputFile));
 
-        MindmapsGraph graph = interpreter.getGraph();
+        MindmapsGraph graph = cli.getGraph();
         GraphWriter graphWriter = new GraphWriter(graph);
 
         StringBuilder builder = new StringBuilder();
-        if(interpreter.hasOption("o")){
+        if(cli.hasOption("o")){
             builder.append(graphWriter.dumpOntology());
         }
 
-        if(interpreter.hasOption("d")){
+        if(cli.hasOption("d")){
            builder.append(graphWriter.dumpData());
         }
 
@@ -64,13 +64,13 @@ public class Main {
             writer.write(builder.toString());
             writer.flush();
         } catch (IOException e){
-            die("Problem writing to file " + outputFile);
+            cli.die("Problem writing to file " + outputFile);
         } finally {
             if(outputFile != null && writer != null) {
                 try {
                     writer.close();
                 } catch (IOException e) {
-                    die("Problem closing output stream.");
+                    cli.die("Problem closing output stream.");
                 }
             }
             graph.close();
