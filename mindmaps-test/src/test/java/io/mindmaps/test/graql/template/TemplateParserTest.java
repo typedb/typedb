@@ -579,10 +579,7 @@ public class TemplateParserTest {
     }
 
     private void assertParseEquals(String template, Map<String, Object> data, String expected){
-        System.out.println(template);
-        System.out.println();
         String result = Graql.parseTemplate(template, data);
-        System.out.println(result);
         assertEquals(expected, result);
     }
 }
