@@ -162,5 +162,11 @@
             <artifactId>migration-export</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>net.sourceforge.owlapi</groupId>
+            <artifactId>org.semanticweb.hermit</artifactId>
+            <version>1.3.8.500</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>

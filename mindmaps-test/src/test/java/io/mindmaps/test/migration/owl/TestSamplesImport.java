@@ -15,16 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-package test.io.mindmaps.migration.owl;
+package io.mindmaps.test.migration.owl;
 
 import java.util.Optional;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.JUnitCore;
-import org.junit.runner.Request;
-import org.junit.runner.Result;
-import org.junit.runner.notification.Failure;
 import org.semanticweb.owlapi.model.OWLOntology;
 
 import io.mindmaps.concept.Entity;
@@ -47,7 +43,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
     public void testShoppingOntology()  {       
         // Load
         try {
-            OWLOntology O = loadOntologyFromResource("/io/mindmaps/migration/owl/samples/Shopping.owl");
+            OWLOntology O = loadOntologyFromResource("owl", "Shopping.owl");
             migrator.ontology(O).graph(graph).migrate();
             migrator.graph().commit();
         }
@@ -73,7 +69,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
     public void testShakespeareOntology()   {       
         // Load
         try {
-            OWLOntology O = loadOntologyFromResource("/io/mindmaps/migration/owl/samples/shakespeare.owl");         
+            OWLOntology O = loadOntologyFromResource("owl", "shakespeare.owl");
             migrator.ontology(O).graph(graph).migrate();
             migrator.graph().commit();
         }
@@ -99,7 +95,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
             Assert.assertNotNull(author);
             final Entity work = migrator.graph().getEntity("eHamlet");
             Assert.assertNotNull(work);
-            checkRelation(author, "op-wrote", work);
+            assertRelationBetweenInstancesExists(work, author, "op-wrote");
             Reasoner reasoner = new Reasoner(migrator.graph());
             Assert.assertTrue(!reasoner.getRules().isEmpty());
         }
@@ -113,7 +109,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
     public void testProductOntology()   {
         // Load
         try {
-            OWLOntology O = loadOntologyFromResource("/io/mindmaps/migration/owl/samples/Product.owl");
+            OWLOntology O = loadOntologyFromResource("owl", "Product.owl");
             migrator.ontology(O).graph(graph).migrate();
             migrator.graph().commit();
         }
@@ -128,7 +124,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
             Optional<Entity> e = findById(type.instances(), "eProduct5");
             Assert.assertTrue(e.isPresent());
             e.get().resources().stream().map(Resource::type).forEach(System.out::println);
-            checkResource(e.get(),  "Product_Available", "14"); 
+            assertResourceEntityRelationExists("Product_Available", "14", e.get());
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
@@ -140,7 +136,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
     public void test1Ontology() {       
         // Load
         try {
-            OWLOntology O = loadOntologyFromResource("/io/mindmaps/migration/owl/samples/test1.owl");
+            OWLOntology O = loadOntologyFromResource("owl", "test1.owl");
             O.axioms().forEach(System.out::println);            
             migrator.ontology(O).graph(graph).migrate();
             migrator.graph().commit();
@@ -187,7 +183,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
     public void testFamilyOntology()   {
         // Load
         try {
-            OWLOntology O = loadOntologyFromResource("/io/mindmaps/migration/owl/samples/family.owl");
+            OWLOntology O = loadOntologyFromResource("owl", "family.owl");
             migrator.ontology(O).graph(graph).migrate();
             migrator.graph().commit();
         }
