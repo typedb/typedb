@@ -35,7 +35,6 @@ public class TransactionState{
     private final String STATE_FIELD = "state";
     private final String EXCEPTION_FIELD = "exception";
 
-
     public TransactionState(State state){
         currentState=state;
     }
@@ -52,12 +51,11 @@ public class TransactionState{
 
     public String getException(){return exception;}
 
-
     @Override
     public String toString() {
         return Json.object()
-                .set(STATE_FIELD, currentState.toString())
-                .set(EXCEPTION_FIELD, exception)
+                .set(STATE_FIELD, getState().toString())
+                .set(EXCEPTION_FIELD, getException())
                 .toString();
     }
 }

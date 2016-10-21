@@ -129,7 +129,7 @@ public class DistributedLoader extends Loader {
             throw new HTTPException(responseCode);
         }
 
-        markAsLoading(getResponseBody(currentConn));
+        loadingJobs.incrementAndGet();
         LOG.info("Transaction sent to host: " + hostsArray[currentHost]);
 
         if(future == null){ startCheckingStatus(); }

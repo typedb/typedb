@@ -103,25 +103,21 @@ public class BlockingLoader extends Loader {
 
     private void loadData(String name, Collection<Var> batch) {
 
-        try {
+        try(AbstractMindmapsGraph graph = (AbstractMindmapsGraph) GraphFactory.getInstance().getGraphBatchLoading(name)) {
             for (int i = 0; i < repeatCommits; i++) {
-                AbstractMindmapsGraph graph = (AbstractMindmapsGraph) GraphFactory.getInstance().getGraphBatchLoading(name);
                 try {
                     insert(batch).withGraph(graph).execute();
                     graph.commit();
                     cache.addJobCasting(graphName, graph.getModifiedCastingIds());
                     cache.addJobResource(graphName, graph.getModifiedResourceIds());
-                    graph.close();
                     return;
 
                 } catch (MindmapsValidationException e) {
                     //If it's a validation exception there is no point in re-trying
                     LOG.error(ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));
-                    graph.close();
                     return;
                 } catch (Exception e) {
                     //If it's not a validation exception we need to remain in the for loop
-                    graph.close();
                     handleError(e, 1);
                 }
             }
