@@ -217,6 +217,14 @@ public class Relation extends AtomBase {
     public Map<String, Pair<Type, RoleType>> getVarTypeRoleMap() {
         if (varTypeRoleMap == null)
             varTypeRoleMap = computeVarTypeRoleMap();
+        if (roleVarTypeMap == null){
+            roleVarTypeMap = new HashMap<>();
+            varTypeRoleMap.forEach( (var, tpair) -> {
+                RoleType rt = tpair.getValue();
+                if (rt != null)
+                    roleVarTypeMap.put(rt, new Pair<>(var, tpair.getKey()));
+            });
+        }
         return varTypeRoleMap;
     }
 
