@@ -20,6 +20,7 @@ package io.mindmaps.migration.owl;
 import io.mindmaps.migration.base.io.MigrationCLI;
 import org.apache.commons.cli.Options;
 import org.semanticweb.owlapi.apibinding.OWLManager;
+import org.semanticweb.owlapi.model.OWLOntology;
 
 import java.io.File;
 
@@ -64,8 +65,7 @@ public class Main {
             cli.printCompletionMessage();
         }
         catch (Throwable t) {
-            t.printStackTrace(System.err);
-            System.exit(-1);
+            cli.die(t.getMessage());
         }
         finally {
             if (migrator.graph() != null)
