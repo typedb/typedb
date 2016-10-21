@@ -148,7 +148,7 @@ public class AtomicQuery extends Query{
         if(atom.isRelation() &&
                 (atom.getRoleVarTypeMap().isEmpty() || !((Relation) atom).hasExplicitRoleTypes() )){
             String relTypeId = atom.getTypeId();
-            RelationType relType = graph.getRelationType(relTypeId);
+            RelationType relType = (RelationType) atom.getType();
             Set<String> vars = atom.getVarNames();
             Set<RoleType> roles = Sets.newHashSet(relType.hasRoles());
 

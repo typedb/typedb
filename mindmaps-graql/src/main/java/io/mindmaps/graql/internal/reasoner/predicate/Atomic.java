@@ -117,6 +117,7 @@ public interface Atomic extends Cloneable{
 
     String getVarName();
     Set<String> getVarNames();
+    Type getType();
     String getTypeId();
     String getVal();
 
