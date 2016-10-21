@@ -19,23 +19,19 @@
 package io.mindmaps.test.graql.query;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.Mindmaps;
-import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Type;
-import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.graql.DeleteQuery;
 import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.PatternAdmin;
+import io.mindmaps.test.AbstractMovieGraphTest;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Stream;
 
 import static io.mindmaps.graql.Graql.id;
@@ -46,20 +42,13 @@ import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-public class AdminTest {
+public class AdminTest extends AbstractMovieGraphTest {
 
-    private static MindmapsGraph mindmapsGraph;
     private QueryBuilder qb;
-
-    @BeforeClass
-    public static void setUpClass() {
-        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        MovieGraphFactory.loadGraph(mindmapsGraph);
-    }
 
     @Before
     public void setUp() {
-        qb = withGraph(mindmapsGraph);
+        qb = withGraph(graph);
     }
 
     @Test
@@ -72,7 +61,7 @@ public class AdminTest {
 
         Set<Type> types = Stream.of(
                 "movie", "production", "tmdb-vote-count", "character", "production-with-cast", "has-cast"
-        ).map(mindmapsGraph::getType).collect(toSet());
+        ).map(graph::getType).collect(toSet());
 
         assertEquals(types, query.admin().getTypes());
     }
@@ -146,7 +135,7 @@ public class AdminTest {
     @Test
     public void testInsertQueryGetTypes() {
         InsertQuery query = qb.insert(var("x").isa("person").has("name"), var().rel("actor", "x").isa("has-cast"));
-        Set<Type> types = Stream.of("person", "name", "actor", "has-cast").map(mindmapsGraph::getType).collect(toSet());
+        Set<Type> types = Stream.of("person", "name", "actor", "has-cast").map(graph::getType).collect(toSet());
         assertEquals(types, query.admin().getTypes());
     }
 
@@ -156,7 +145,7 @@ public class AdminTest {
                         .insert(var("x").isa("person").has("name"), var().rel("actor", "x").isa("has-cast"));
 
         Set<Type> types =
-                Stream.of("movie", "person", "name", "actor", "has-cast").map(mindmapsGraph::getType).collect(toSet());
+                Stream.of("movie", "person", "name", "actor", "has-cast").map(graph::getType).collect(toSet());
 
         assertEquals(types, query.admin().getTypes());
     }

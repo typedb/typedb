@@ -27,11 +27,11 @@ import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
+import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
+import io.mindmaps.graql.internal.reasoner.predicate.Relation;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.query.Query;
-import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
-import io.mindmaps.graql.internal.reasoner.predicate.Relation;
 import io.mindmaps.test.graql.reasoner.graphs.CWGraph;
 import io.mindmaps.test.graql.reasoner.graphs.GenericGraph;
 import io.mindmaps.test.graql.reasoner.graphs.SNBGraph;
@@ -40,7 +40,12 @@ import javafx.util.Pair;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Set;
 
 import static io.mindmaps.graql.internal.reasoner.Utility.computeRoleCombinations;
 import static org.junit.Assert.assertTrue;

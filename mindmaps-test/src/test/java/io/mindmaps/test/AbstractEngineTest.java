@@ -21,10 +21,8 @@ package io.mindmaps.test;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import io.mindmaps.Mindmaps;
-import io.mindmaps.MindmapsGraph;
 import io.mindmaps.MindmapsGraphFactory;
 import io.mindmaps.engine.MindmapsEngineServer;
-import org.junit.Before;
 import org.junit.BeforeClass;
 
 import java.util.UUID;
@@ -32,14 +30,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.lang.Thread.sleep;
 
-public abstract class AbstractMindmapsEngineTest {
-
-    protected static MindmapsGraphFactory factory;
-    protected static MindmapsGraph graph;
-
-    private static AtomicBoolean ENGINE_ON = new AtomicBoolean(false);
-
+/**
+ * Abstract test class that automatically starts the backend and engine and provides a method to get a graph factory
+ */
+public abstract class AbstractEngineTest {
     private static final String CONFIG = System.getProperty("mindmaps.test-profile");
+    private static AtomicBoolean ENGINE_ON = new AtomicBoolean(false);
 
     private static void hideLogs() {
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
@@ -59,13 +55,7 @@ public abstract class AbstractMindmapsEngineTest {
         }
     }
 
-    @Before
-    public final void createGraph() {
-        factory = factoryWithNewKeyspace();
-        graph = factory.getGraph();
-    }
-
-    private static MindmapsGraphFactory factoryWithNewKeyspace() {
+    protected static MindmapsGraphFactory factoryWithNewKeyspace() {
         String keyspace;
         if (usingOrientDB()) {
             keyspace = "memory";

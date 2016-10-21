@@ -28,18 +28,19 @@ import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.pattern.Patterns;
-import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
 import io.mindmaps.graql.internal.reasoner.predicate.Substitution;
+import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.test.graql.reasoner.graphs.GenericGraph;
 import io.mindmaps.test.graql.reasoner.graphs.SNBGraph;
 import io.mindmaps.util.ErrorMessage;
-import java.util.HashMap;
-import java.util.Map;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertTrue;
 

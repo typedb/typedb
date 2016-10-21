@@ -18,19 +18,14 @@
 
 package io.mindmaps.test.graql.query;
 
-import io.mindmaps.Mindmaps;
-import io.mindmaps.MindmapsGraph;
-import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.graql.AskQuery;
 import io.mindmaps.graql.DeleteQuery;
 import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.MatchQuery;
-import org.junit.Before;
+import io.mindmaps.test.AbstractMovieGraphTest;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import java.util.UUID;
 
 import static io.mindmaps.graql.Graql.insert;
 import static io.mindmaps.graql.Graql.match;
@@ -39,65 +34,58 @@ import static io.mindmaps.graql.Graql.withGraph;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class QueryBuilderTest {
+public class QueryBuilderTest extends AbstractMovieGraphTest {
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
-    private static MindmapsGraph mindmapsGraph;
-
-    @Before
-    public void setUp() {
-        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        MovieGraphFactory.loadGraph(mindmapsGraph);
-    }
 
     @Test
     public void testBuildQueryGraphFirst() {
-        MatchQuery query = withGraph(mindmapsGraph).match(var("x").isa("movie"));
+        MatchQuery query = withGraph(graph).match(var("x").isa("movie"));
         QueryUtil.assertResultsMatch(query, "x", "movie", QueryUtil.movies);
     }
 
     @Test
     public void testBuildMatchQueryGraphLast() {
-        MatchQuery query = match(var("x").isa("movie")).withGraph(mindmapsGraph);
+        MatchQuery query = match(var("x").isa("movie")).withGraph(graph);
         QueryUtil.assertResultsMatch(query, "x", "movie", QueryUtil.movies);
     }
 
     @Test
     public void testBuildAskQueryGraphLast() {
-        AskQuery query = match(var("x").isa("movie")).ask().withGraph(mindmapsGraph);
+        AskQuery query = match(var("x").isa("movie")).ask().withGraph(graph);
         assertTrue(query.execute());
     }
 
     @Test
     public void testBuildInsertQueryGraphLast() {
-        assertFalse(withGraph(mindmapsGraph).match(var().id("a-movie")).ask().execute());
-        InsertQuery query = insert(var().id("a-movie").isa("movie")).withGraph(mindmapsGraph);
+        assertFalse(withGraph(graph).match(var().id("a-movie")).ask().execute());
+        InsertQuery query = insert(var().id("a-movie").isa("movie")).withGraph(graph);
         query.execute();
-        assertTrue(withGraph(mindmapsGraph).match(var().id("a-movie")).ask().execute());
+        assertTrue(withGraph(graph).match(var().id("a-movie")).ask().execute());
     }
 
     @Test
     public void testBuildDeleteQueryGraphLast() {
         // Insert some data to delete
-        withGraph(mindmapsGraph).insert(var().id("123").isa("movie")).execute();
+        withGraph(graph).insert(var().id("123").isa("movie")).execute();
 
-        assertTrue(withGraph(mindmapsGraph).match(var().id("123")).ask().execute());
+        assertTrue(withGraph(graph).match(var().id("123")).ask().execute());
 
-        DeleteQuery query = match(var("x").id("123")).delete("x").withGraph(mindmapsGraph);
+        DeleteQuery query = match(var("x").id("123")).delete("x").withGraph(graph);
         query.execute();
 
-        assertFalse(withGraph(mindmapsGraph).match(var().id("123")).ask().execute());
+        assertFalse(withGraph(graph).match(var().id("123")).ask().execute());
     }
 
     @Test
     public void testBuildMatchInsertQueryGraphLast() {
-        assertFalse(withGraph(mindmapsGraph).match(var().id("a-movie")).ask().execute());
+        assertFalse(withGraph(graph).match(var().id("a-movie")).ask().execute());
         InsertQuery query =
                 match(var("x").id("movie")).
-                insert(var().id("a-movie").isa("movie")).withGraph(mindmapsGraph);
+                insert(var().id("a-movie").isa("movie")).withGraph(graph);
         query.execute();
-        assertTrue(withGraph(mindmapsGraph).match(var().id("a-movie")).ask().execute());
+        assertTrue(withGraph(graph).match(var().id("a-movie")).ask().execute());
     }
 
     @Test
@@ -134,13 +122,13 @@ public class QueryBuilderTest {
     public void testValidationWhenGraphProvided() {
         MatchQuery query = match(var("x").isa("not-a-thing"));
         exception.expect(IllegalStateException.class);
-        query.withGraph(mindmapsGraph).stream();
+        query.withGraph(graph).stream();
     }
 
     @Test
     public void testErrorWhenSpecifyGraphTwice() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage("graph");
-        withGraph(mindmapsGraph).match(var("x").isa("movie")).withGraph(mindmapsGraph).stream();
+        withGraph(graph).match(var("x").isa("movie")).withGraph(graph).stream();
     }
 }

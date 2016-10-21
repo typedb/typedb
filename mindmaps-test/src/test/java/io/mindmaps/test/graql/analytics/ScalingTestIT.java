@@ -22,11 +22,15 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.*;
+import io.mindmaps.concept.Entity;
+import io.mindmaps.concept.EntityType;
+import io.mindmaps.concept.Relation;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.RoleType;
 import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.internal.analytics.Analytics;
-import io.mindmaps.test.AbstractMindmapsEngineTest;
+import io.mindmaps.test.AbstractGraphTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -35,7 +39,14 @@ import org.junit.Test;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import static io.mindmaps.graql.Graql.var;
@@ -43,7 +54,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeTrue;
 
-public class ScalingTestIT extends AbstractMindmapsEngineTest {
+public class ScalingTestIT extends AbstractGraphTest {
 
     private static final String[] HOST_NAME =
             {"localhost"};

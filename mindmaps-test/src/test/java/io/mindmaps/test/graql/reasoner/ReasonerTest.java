@@ -28,7 +28,6 @@ import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.query.Query;
-import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
 import io.mindmaps.graql.internal.reasoner.rule.InferenceRule;
 import io.mindmaps.test.graql.reasoner.graphs.SNBGraph;
 import org.junit.Ignore;
@@ -40,7 +39,6 @@ import java.util.Map;
 import static io.mindmaps.graql.internal.reasoner.Utility.createReflexiveRule;
 import static io.mindmaps.graql.internal.reasoner.Utility.createSubPropertyRule;
 import static io.mindmaps.graql.internal.reasoner.Utility.createTransitiveRule;
-import static io.mindmaps.graql.internal.reasoner.Utility.printAnswers;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 

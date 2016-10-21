@@ -21,17 +21,31 @@ package io.mindmaps.test.graql.analytics;
 import com.google.common.collect.Sets;
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.*;
+import io.mindmaps.concept.Entity;
+import io.mindmaps.concept.EntityType;
+import io.mindmaps.concept.Instance;
+import io.mindmaps.concept.Relation;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.Resource;
+import io.mindmaps.concept.ResourceType;
+import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.graql.internal.util.GraqlType;
-import io.mindmaps.test.AbstractMindmapsEngineTest;
+import io.mindmaps.test.AbstractGraphTest;
 import org.apache.commons.collections.CollectionUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertEquals;
@@ -40,7 +54,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
-public class AnalyticsTest extends AbstractMindmapsEngineTest {
+public class AnalyticsTest extends AbstractGraphTest {
     private static long startTime;
 
     @Before
