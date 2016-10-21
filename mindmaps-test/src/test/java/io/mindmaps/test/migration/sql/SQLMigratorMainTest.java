@@ -83,7 +83,7 @@ public class SQLMigratorMainTest extends AbstractMindmapsMigratorTest {
     @Test
     public void sqlMainDistributedLoaderTest(){
         runAndAssertDataCorrect(new String[]{"-driver", SQLMigratorUtil.DRIVER, "-database", SQLMigratorUtil.URL, "-user", SQLMigratorUtil.USER, "-pass", SQLMigratorUtil.PASS,
-                                             "-uri", "0.0.0.0", "-keyspace", graph.getKeyspace()});
+                                             "-uri", "localhost:4567", "-keyspace", graph.getKeyspace()});
     }
 
     @Test

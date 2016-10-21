@@ -44,7 +44,7 @@ public class JsonMigratorMainTest extends AbstractMindmapsMigratorTest {
 
     @Test
     public void jsonMainDistributedLoaderTest(){
-        runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace(), "-uri", "0.0.0.0"});
+        runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace(), "-uri", "localhost:4567"});
     }
 
     @Test

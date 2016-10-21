@@ -66,7 +66,7 @@ public class GraphWriterMainTest extends AbstractMindmapsMigratorTest {
 
     @Test
     public void exportEngineURLProvidedTest(){
-        runAndAssertDataCorrect(new String[]{"export", "-data", "-uri", "0.0.0.0:4567", "-keyspace", graph.getKeyspace()});
+        runAndAssertDataCorrect(new String[]{"export", "-data", "-uri", "localhost:4567", "-keyspace", graph.getKeyspace()});
     }
 
     private void runAndAssertDataCorrect(String[] args){

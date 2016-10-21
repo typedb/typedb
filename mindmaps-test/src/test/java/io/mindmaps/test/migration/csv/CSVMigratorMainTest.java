@@ -51,7 +51,7 @@ public class CSVMigratorMainTest extends AbstractMindmapsMigratorTest {
 
     @Test
     public void csvMainTestDistributedLoader(){
-        runAndAssertDataCorrect(new String[]{"csv", "-file", dataFile, "-template", templateFile, "-uri", "0.0.0.0:4567", "-keyspace", graph.getKeyspace()});
+        runAndAssertDataCorrect(new String[]{"csv", "-file", dataFile, "-template", templateFile, "-uri", "localhost:4567", "-keyspace", graph.getKeyspace()});
     }
 
     @Test
