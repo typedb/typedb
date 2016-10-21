@@ -33,7 +33,6 @@ public class GraphWriterMainTest extends AbstractMindmapsMigratorTest {
     @Before
     public void start(){
         PokemonGraphFactory.loadGraph(graph);
-        System.out.println("WHEEE");
     }
 
     @Test

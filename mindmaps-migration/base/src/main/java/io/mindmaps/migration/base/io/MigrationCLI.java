@@ -20,10 +20,13 @@ package io.mindmaps.migration.base.io;
 
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.concept.Concept;
 import io.mindmaps.engine.loader.BlockingLoader;
 import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.engine.loader.Loader;
 import io.mindmaps.engine.util.ConfigProperties;
+import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.QueryBuilder;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -33,6 +36,9 @@ import org.apache.commons.cli.ParseException;
 
 import java.io.PrintWriter;
 import java.util.Collections;
+
+import static io.mindmaps.graql.Graql.count;
+import static io.mindmaps.graql.Graql.var;
 
 public class MigrationCLI {
 
@@ -56,19 +62,39 @@ public class MigrationCLI {
             die(e.getMessage());
         }
 
-        if (cmd.hasOption("h") || cmd.getArgList().isEmpty()) {
+        if (cmd.hasOption("h") || cmd.getOptions().length == 0) {
             printHelpMessage();
         }
     }
 
-    public String printInitMessage(String dataToMigrate){
-        return "Migrating data " + dataToMigrate +
+    public void printInitMessage(String dataToMigrate){
+        System.out.println("Migrating data " + dataToMigrate +
                 " using MM Engine " + getEngineURI() +
-                " into graph " + getKeyspace();
+                " into graph " + getKeyspace());
     }
 
-    public String printCompletionMessage(){
-        return "Migration Complete";
+    public void printCompletionMessage(){
+        MindmapsGraph graph = getGraph();
+        QueryBuilder qb = Graql.withGraph(graph);
+
+        StringBuilder builder = new StringBuilder();
+        builder.append("Graph ontology contains:\n");
+        builder.append("\t ").append(graph.getMetaEntityType().instances().size()).append(" entity types\n");
+        builder.append("\t ").append(graph.getMetaRelationType().instances().size()).append(" relation types\n");
+        builder.append("\t ").append(graph.getMetaRoleType().instances().size()).append(" role types\n");
+        builder.append("\t ").append(graph.getMetaResourceType().instances().size()).append(" resource types\n");
+        builder.append("\t ").append(graph.getMetaRuleType().instances().size()).append(" rule types\n\n");
+
+        builder.append("Graph data contains:\n");
+        builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("entity-type")).aggregate(count()).execute()).append(" entities\n");
+        builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("relation-type")).aggregate(count()).execute()).append(" relations\n");
+        builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("resource-type")).aggregate(count()).execute()).append(" resources\n");
+        builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("rule-type")).aggregate(count()).execute()).append(" rules\n\n");
+
+        builder.append("Migration complete");
+        System.out.println(builder);
+
+        graph.close();
     }
 
     public String getEngineURI(){

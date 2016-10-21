@@ -37,11 +37,6 @@ public class JsonMigratorMainTest extends AbstractMindmapsMigratorTest {
         load(getFile("json", "simple-schema/schema.gql"));
     }
 
-    @After
-    public void shutdown(){
-        graph.clear();
-    }
-
     @Test
     public void jsonMigratorMainTest(){
         runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace()});
