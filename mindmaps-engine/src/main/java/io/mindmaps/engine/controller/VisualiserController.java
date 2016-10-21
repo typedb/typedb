@@ -88,13 +88,10 @@ public class VisualiserController {
             @ApiImplicitParam(name = "graphName", value = "Name of graph to use", dataType = "string", paramType = "query")
     })
     private String getConceptById(Request req, Response res) {
+        String graphNameParam = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
+        String currentGraphName = (graphNameParam == null) ? defaultGraphName : graphNameParam;
 
-        try {
-            String graphNameParam = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
-            String currentGraphName = (graphNameParam == null) ? defaultGraphName : graphNameParam;
-
-            MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName);
-
+        try(MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)){
             Concept concept = graph.getConcept(req.params(REST.Request.ID_PARAMETER));
             LOG.trace("Building HAL resource for concept with id {}", concept.getId());
             return new HALConcept(concept, separationDegree, false, new HashSet<>()).render();
@@ -113,13 +110,10 @@ public class VisualiserController {
             @ApiImplicitParam(name = "graphName", value = "Name of graph to use", dataType = "string", paramType = "query")
     })
     private String getConceptByIdOntology(Request req, Response res) {
+        String graphNameParam = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
+        String currentGraphName = (graphNameParam == null) ? defaultGraphName : graphNameParam;
 
-        try {
-            String graphNameParam = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
-            String currentGraphName = (graphNameParam == null) ? defaultGraphName : graphNameParam;
-
-            MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName);
-
+        try(MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)) {
             Concept concept = graph.getConcept(req.params(REST.Request.ID_PARAMETER));
             LOG.trace("Building HAL resource for concept with id {}", concept.getId());
             return new HALConcept(concept).render();
@@ -142,8 +136,7 @@ public class VisualiserController {
         String currentGraphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
         if (currentGraphName == null) currentGraphName = defaultGraphName;
 
-        try {
-            MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName);
+        try (MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)) {
 
             LOG.debug("Start querying for: [{}]", req.queryParams(REST.Request.QUERY_FIELD));
             MatchQuery matchQuery = withGraph(graph).parse(req.queryParams(REST.Request.QUERY_FIELD));

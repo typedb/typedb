@@ -133,22 +133,4 @@ public abstract class Loader {
                 .set(TransactionState.State.ERROR.name(), errorJobs.get())
                 .set(TransactionState.State.FINISHED.name(), finishedJobs.get()).toString());
     }
-
-    public void markAsQueued(String transaction){
-        enqueuedJobs.incrementAndGet();
-    }
-
-    public void markAsLoading(String transaction){
-        loadingJobs.incrementAndGet();
-    }
-
-    public void markAsFinished(String transaction){
-        loadingJobs.decrementAndGet();
-        finishedJobs.incrementAndGet();
-    }
-
-    public void markAsError(String transaction){
-        loadingJobs.decrementAndGet();
-        errorJobs.incrementAndGet();
-    }
 }
