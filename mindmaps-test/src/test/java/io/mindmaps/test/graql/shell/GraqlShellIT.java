@@ -171,18 +171,18 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
     @Test
     public void testReasoner() throws Exception {
         String result = testShell(
-                "insert man isa entity-type; person isa entity-type;\n" +
-                "insert 'felix' isa man;\n" +
-                "match $x isa person;\n" +
-                "insert my-rule isa inference-rule lhs {$x isa man;} rhs {$x isa person;};\n" +
-                "match $x isa person;\n"
+                "insert man isa entity-type has-resource name; person isa entity-type; name isa resource-type datatype string;\n" +
+                "insert has name 'felix' isa man;\n" +
+                "match isa person, has name $x;\n" +
+                "insert $my-rule isa inference-rule lhs {$x isa man;} rhs {$x isa person;};\n" +
+                "match isa person, has name $x;\n"
         );
 
         // Make sure first 'match' query has no results and second has exactly one result
         String[] results = result.split("\n");
         int matchCount = 0;
         for (int i = 0; i < results.length; i ++) {
-            if (results[i].contains(">>> match $x isa person")) {
+            if (results[i].contains(">>> match isa person, has name $x;")) {
 
                 if (matchCount == 0) {
                     // First 'match' result is before rule is added, so should have no results
@@ -196,20 +196,20 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
             }
         }
 
-        assertEquals(2, matchCount);
+        assertEquals(result, 2, matchCount);
     }
 
     @Test
     public void testInvalidQuery() throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
-        testShell("insert movie isa entity-type; moon isa movie; europa isa moon;\n", err);
+        testShell("insert movie isa entity-type; $moon isa movie; $europa isa $moon;\n", err);
 
-        assertThat(err.toString(), allOf(containsString("moon"), containsString("not"), containsString("type")));
+        assertThat(err.toString(), allOf(containsString("not"), containsString("type")));
     }
 
     @Test
     public void testComputeCount() throws Exception {
-        String result = testShell("insert X isa entity-type; a isa X; b isa X; c isa X;\ncommit\ncompute count;\n");
+        String result = testShell("insert X isa entity-type; $a isa X; $b isa X; $c isa X;\ncommit\ncompute count;\n");
         assertThat(result, containsString("\n3\n"));
     }
 
@@ -241,9 +241,9 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
 
     @Test
     public void testLargeQuery() throws Exception {
-        String id = Strings.repeat("really-", 100000) + "long-id";
-        String[] result = testShell("insert X isa entity-type; '" + id + "' isa X;\nmatch $x isa X;\n").split("\n");
-        assertThat(result[result.length-2], allOf(containsString("$x"), containsString(id)));
+        String value = Strings.repeat("really-", 100000) + "long-value";
+        String[] result = testShell("insert X isa resource-type datatype string; value '" + value + "' isa X;\nmatch $x isa X;\n").split("\n");
+        assertThat(result[result.length-2], allOf(containsString("$x"), containsString(value)));
     }
 
     private static String randomString(int length) {
