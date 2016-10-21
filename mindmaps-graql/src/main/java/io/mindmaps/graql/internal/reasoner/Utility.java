@@ -66,23 +66,19 @@ public class Utility {
         }
     }
 
-    public static Set<RoleType> getCompatibleRoleTypes(String typeId, String relId, MindmapsGraph graph) {
+    public static Set<RoleType> getCompatibleRoleTypes(Type type, Type relType) {
         Set<RoleType> cRoles = new HashSet<>();
-
-        Collection<RoleType> typeRoles = graph.getType(typeId).playsRoles();
-        Collection<RoleType> relRoles = graph.getRelationType(relId).hasRoles();
+        Collection<RoleType> typeRoles = type.playsRoles();
+        Collection<RoleType> relRoles = ((RelationType) relType).hasRoles();
         relRoles.stream().filter(typeRoles::contains).forEach(cRoles::add);
         return cRoles;
     }
 
-    public static boolean checkAtomsCompatible(Atomic a, Atomic b, MindmapsGraph graph) {
+    public static boolean checkAtomsCompatible(Atomic a, Atomic b) {
         if (!(a.isType() && b.isType()) || (a.isRelation() || b.isRelation())
            || !a.getVarName().equals(b.getVarName()) || a.isResource() || b.isResource()) return true;
-        String aTypeId = a.getTypeId();
-        Type aType = graph.getType(aTypeId);
-        String bTypeId = b.getTypeId();
-        Type bType = graph.getType(bTypeId);
-
+        Type aType = a.getType();
+        Type bType = b.getType();
         return checkTypesCompatible(aType, bType) && (a.getVal().isEmpty() || b.getVal().isEmpty() || a.getVal().equals(b.getVal()) );
     }
 
@@ -107,19 +103,6 @@ public class Utility {
             tempVars.add(var);
             tempRoles.add(role);
         });
-    }
-
-    public static Var createRelationVar(RelationType relType){
-        Var var = Graql.var();
-        Collection<RoleType> roles = relType.hasRoles();
-        Set<String> vars = new HashSet<>();
-
-        roles.forEach(role -> {
-            String varName = createFreshVariable(vars, "x");
-            var.rel(role.getId(), varName);
-            vars.add(varName);
-        });
-        return var;
     }
 
     /**

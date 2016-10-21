@@ -319,7 +319,7 @@ public class Query implements MatchQueryInternal {
             if (atom.isType() && !atom.isResource() ) {
                 if (!atom.isRelation()) {
                     String var = atom.getVarName();
-                    Type type = graph.getType(atom.getTypeId());
+                    Type type = atom.getType();
                     if (!map.containsKey(var))
                         map.put(var, type);
                     else

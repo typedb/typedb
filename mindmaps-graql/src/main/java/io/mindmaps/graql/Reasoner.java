@@ -96,19 +96,15 @@ public class Reasoner {
 
     private Set<Rule> getApplicableRules(Atomic atom) {
         Set<Rule> children = new HashSet<>();
-
-        String typeId = atom.getTypeId();
-        if (typeId.isEmpty()) return children;
-        Type type = graph.getType(typeId);
+        Type type = atom.getType();
+        if (type == null) return children;
 
         Collection<Rule> rulesFromType = type.getRulesOfConclusion();
-
         rulesFromType.forEach( rule -> {
             InferenceRule child = workingMemory.get(rule.getId());
             boolean ruleRelevant = checkRuleApplicableToAtom(atom, child);
             if (ruleRelevant) children.add(rule);
         });
-
         return children;
     }
 

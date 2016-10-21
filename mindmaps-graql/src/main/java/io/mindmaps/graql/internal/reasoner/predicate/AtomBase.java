@@ -38,6 +38,7 @@ import java.util.*;
 public abstract class AtomBase implements Atomic{
 
     protected String varName;
+    protected Type type = null;
     protected final String typeId;
     protected final PatternAdmin atomPattern;
     private Query parent = null;
@@ -56,10 +57,7 @@ public abstract class AtomBase implements Atomic{
     }
 
     public AtomBase(VarAdmin pattern, Query par) {
-        this.atomPattern = pattern;
-        Pair<String, String> varData = extractDataFromVar(atomPattern.asVar());
-        this.varName = varData.getKey();
-        this.typeId = varData.getValue();
+        this(pattern);
         this.parent = par;
     }
 
@@ -181,6 +179,12 @@ public abstract class AtomBase implements Atomic{
     @Override
     public Set<String> getVarNames(){
         return Sets.newHashSet(varName);
+    }
+    @Override
+    public Type getType(){
+        if (type == null)
+            type = getParentQuery().getGraph().orElse(null).getType(typeId);
+        return type;
     }
     @Override
     public String getTypeId(){ return typeId;}
