@@ -24,17 +24,17 @@ import java.util.stream.Stream;
  * a pattern to match in the graph. comprised of {@code Fragments}, each describing one way to represent the traversal,
  * starting from different variables.
  * <p>
- * A {@code MultiTraversal} may contain only one {@code Fragment} (e.g. checking the 'id' property), while others may
+ * A {@code EquivalentFragmentSet} may contain only one {@code Fragment} (e.g. checking the 'id' property), while others may
  * be comprised of two fragments (e.g. $x isa $y, which may start from $x or $y).
  */
-public interface MultiTraversal {
+public interface EquivalentFragmentSet {
 
-    static MultiTraversal create(Fragment... fragments) {
-        return new MultiTraversalImpl(fragments);
+    static EquivalentFragmentSet create(Fragment... fragments) {
+        return new EquivalentFragmentSetImpl(fragments);
     }
 
     /**
-     * @return a stream of fragments that this MultiTraversal contains
+     * @return a stream of fragments that this EquivalentFragmentSet contains
      */
     Stream<Fragment> getFragments();
 }

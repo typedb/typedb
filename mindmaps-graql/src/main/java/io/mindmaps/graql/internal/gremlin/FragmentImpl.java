@@ -31,7 +31,7 @@ class FragmentImpl implements Fragment {
     private final FragmentPriority priority;
     private final String start;
     private final Optional<String> end;
-    private MultiTraversal multiTraversal;
+    private EquivalentFragmentSet equivalentFragmentSet;
 
     /**
      * @param traversal a function that extends an existing traversal
@@ -61,14 +61,12 @@ class FragmentImpl implements Fragment {
         this.end = Optional.of(end);
     }
 
-    @Override
-    public MultiTraversal getMultiTraversal() {
-        return multiTraversal;
+    public EquivalentFragmentSet getEquivalentFragmentSet() {
+        return equivalentFragmentSet;
     }
 
-    @Override
-    public void setMultiTraversal(MultiTraversal multiTraversal) {
-        this.multiTraversal = multiTraversal;
+    public void setEquivalentFragmentSet(EquivalentFragmentSet equivalentFragmentSet) {
+        this.equivalentFragmentSet = equivalentFragmentSet;
     }
 
     @Override

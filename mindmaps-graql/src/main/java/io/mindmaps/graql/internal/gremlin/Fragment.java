@@ -38,11 +38,11 @@ import java.util.function.UnaryOperator;
  * Variable names refer to Graql variables. Some of these variable names may be randomly-generated UUIDs, such as for
  * castings.
  * <p>
- * A {@code Fragment} is usually contained in a {@code MultiTraversal}, which contains multiple fragments describing
+ * A {@code Fragment} is usually contained in a {@code EquivalentFragmentSet}, which contains multiple fragments describing
  * the different directions the traversal can be followed in, with different starts and ends.
  * <p>
  * A gremlin traversal is created from a {@code Query} by appending together fragments in order of priority, one from
- * each {@code MultiTraversal} describing the {@code Query}.
+ * each {@code EquivalentFragmentSet} describing the {@code Query}.
  */
 public interface Fragment extends Comparable<Fragment> {
 
@@ -58,14 +58,14 @@ public interface Fragment extends Comparable<Fragment> {
     }
 
     /**
-     * @return the MultiTraversal that contains this Fragment
+     * @return the EquivalentFragmentSet that contains this Fragment
      */
-    MultiTraversal getMultiTraversal();
+    EquivalentFragmentSet getEquivalentFragmentSet();
 
     /**
-     * @param multiTraversal the MultiTraversal that contains this Fragment
+     * @param equivalentFragmentSet the EquivalentFragmentSet that contains this Fragment
      */
-    void setMultiTraversal(MultiTraversal multiTraversal);
+    void setEquivalentFragmentSet(EquivalentFragmentSet equivalentFragmentSet);
 
     /**
      * @param traversal the traversal to extend with this Fragment

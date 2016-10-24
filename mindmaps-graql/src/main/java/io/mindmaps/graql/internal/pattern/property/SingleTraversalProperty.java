@@ -32,9 +32,9 @@ interface SingleTraversalProperty extends VarPropertyInternal {
     FragmentPriority getPriority();
 
     @Override
-    default Collection<MultiTraversal> match(String start) {
+    default Collection<EquivalentFragmentSet> match(String start) {
         Fragment fragment = Fragment.create(this::applyTraversal, getPriority(), start);
-        MultiTraversal multiTraversal = MultiTraversal.create(fragment);
-        return Sets.newHashSet(multiTraversal);
+        EquivalentFragmentSet equivalentFragmentSet = EquivalentFragmentSet.create(fragment);
+        return Sets.newHashSet(equivalentFragmentSet);
     }
 }

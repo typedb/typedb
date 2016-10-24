@@ -40,9 +40,9 @@ import static java.util.stream.Collectors.toSet;
  * A query that does not contain any disjunctions, so it can be represented as a single gremlin traversal.
  * <p>
  * The {@code ConjunctionQuery} is passed a {@code Pattern.Conjunction<Var.Admin>}. A {@code VarTraversal} can be
- * extracted from each {@code Var} and {@code MultiTraversals} can be extracted from each {@code VarTraversal}.
+ * extracted from each {@code Var} and {@code EquivalentFragmentSet}s can be extracted from each {@code VarTraversal}.
  * <p>
- * The {@code MultiTraversals} are sorted to produce a set of lists of {@code Fragments}. Each list of fragments
+ * The {@code EquivalentFragmentSet}s are sorted to produce a set of lists of {@code Fragments}. Each list of fragments
  * describes a connected component in the query. Most queries are completely connected, so there will be only one
  * list of fragments in the set. If the query is disconnected (e.g. match $x isa movie, $y isa person), then there
  * will be multiple lists of fragments in the set.
@@ -52,7 +52,7 @@ import static java.util.stream.Collectors.toSet;
 class ConjunctionQuery {
 
     private final Set<VarAdmin> vars;
-    private final ImmutableSet<MultiTraversal> multiTraversals;
+    private final ImmutableSet<EquivalentFragmentSet> equivalentFragmentSets;
     private final Set<List<Fragment>> fragments;
     private final MindmapsGraph graph;
 
@@ -67,7 +67,7 @@ class ConjunctionQuery {
             throw new IllegalArgumentException(ErrorMessage.MATCH_NO_PATTERNS.getMessage());
         }
 
-        this.multiTraversals = vars.stream()
+        this.equivalentFragmentSets = vars.stream()
                 .map(VarTraversals::new)
                 .flatMap(VarTraversals::getTraversals)
                 .collect(toImmutableSet());
@@ -170,8 +170,8 @@ class ConjunctionQuery {
 
         // Track properties and fragments that have been used
         Set<Fragment> remainingFragments = getFragments().collect(toSet());
-        Set<MultiTraversal> remainingTraversals = Sets.newHashSet(multiTraversals);
-        Set<MultiTraversal> matchedTraversals = new HashSet<>();
+        Set<EquivalentFragmentSet> remainingTraversals = Sets.newHashSet(equivalentFragmentSets);
+        Set<EquivalentFragmentSet> matchedTraversals = new HashSet<>();
 
         // Result set of fragments (one entry in the set for each connected part of the query)
         Set<List<Fragment>> allSortedFragments = new HashSet<>();
@@ -192,14 +192,14 @@ class ConjunctionQuery {
             while (!reachableFragments.isEmpty()) {
                 // Take highest priority fragment from reachable fragments
                 Fragment fragment = reachableFragments.poll();
-                MultiTraversal multiTraversal = fragment.getMultiTraversal();
+                EquivalentFragmentSet equivalentFragmentSet = fragment.getEquivalentFragmentSet();
 
                 // Only choose one fragment from each pattern
-                if (matchedTraversals.contains(multiTraversal)) continue;
+                if (matchedTraversals.contains(equivalentFragmentSet)) continue;
 
                 remainingFragments.remove(fragment);
-                remainingTraversals.remove(multiTraversal);
-                matchedTraversals.add(multiTraversal);
+                remainingTraversals.remove(equivalentFragmentSet);
+                matchedTraversals.add(equivalentFragmentSet);
                 sortedFragments.add(fragment);
 
                 // If the fragment has a variable at the end, then fragments starting at that variable are reachable
@@ -221,6 +221,6 @@ class ConjunctionQuery {
      * @return a stream of Fragments in this query
      */
     private Stream<Fragment> getFragments() {
-        return multiTraversals.stream().flatMap(MultiTraversal::getFragments);
+        return equivalentFragmentSets.stream().flatMap(EquivalentFragmentSet::getFragments);
     }
 }

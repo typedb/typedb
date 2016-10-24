@@ -21,7 +21,7 @@ package io.mindmaps.graql.internal.pattern.property;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.gremlin.MultiTraversal;
+import io.mindmaps.graql.internal.gremlin.EquivalentFragmentSet;
 import io.mindmaps.graql.internal.query.InsertQueryExecutor;
 import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.util.ErrorMessage;
@@ -77,8 +77,8 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     }
 
     @Override
-    public Collection<MultiTraversal> match(String start) {
-        Collection<MultiTraversal> traversals = new HashSet<>();
+    public Collection<EquivalentFragmentSet> match(String start) {
+        Collection<EquivalentFragmentSet> traversals = new HashSet<>();
 
         traversals.addAll(ownerPlaysRole.match(start));
 

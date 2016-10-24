@@ -47,7 +47,7 @@ public class ShortcutTraversal {
     private final List<String> roleplayers = new ArrayList<>();
     private boolean valid = true;
     private Optional<String> type = Optional.empty();
-    private MultiTraversal multiTraversal = null;
+    private EquivalentFragmentSet equivalentFragmentSet = null;
 
     /**
      * @return true if a shortcut edge can be used in the traversal
@@ -64,23 +64,23 @@ public class ShortcutTraversal {
     }
 
     /**
-     * @return a MultiTraversal that follows shortcut edges
+     * @return a EquivalentFragmentSet that follows shortcut edges
      */
-    MultiTraversal getMultiTraversal() {
-        if (multiTraversal == null) makeMultiTraversal();
-        return multiTraversal;
+    EquivalentFragmentSet getEquivalentFragmentSet() {
+        if (equivalentFragmentSet == null) makeEquivalentFragmentSet();
+        return equivalentFragmentSet;
     }
 
     /**
-     * Create a MultiTraversal that follows shortcut edges
+     * Create a EquivalentFragmentSet that follows shortcut edges
      */
-    private void makeMultiTraversal() {
+    private void makeEquivalentFragmentSet() {
         Optional<String> roleA = roletypes.get(0);
         String playerA = roleplayers.get(0);
         Optional<String> roleB = roletypes.get(1);
         String playerB = roleplayers.get(1);
 
-        multiTraversal = MultiTraversal.create(
+        equivalentFragmentSet = EquivalentFragmentSet.create(
                 new FragmentImpl(t -> makeTraversal(t, roleA, roleB), FragmentPriority.EDGE_RELATION, playerA, playerB),
                 new FragmentImpl(t -> makeTraversal(t, roleB, roleA), FragmentPriority.EDGE_RELATION, playerB, playerA)
         );

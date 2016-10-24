@@ -23,8 +23,8 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.admin.UniqueVarProperty;
 import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.gremlin.EquivalentFragmentSet;
 import io.mindmaps.graql.internal.gremlin.Fragment;
-import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 import io.mindmaps.graql.internal.gremlin.ShortcutTraversal;
 import io.mindmaps.util.ErrorMessage;
 
@@ -71,8 +71,8 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
     }
 
     @Override
-    public Collection<MultiTraversal> match(String start) {
-        return Sets.newHashSet(MultiTraversal.create(
+    public Collection<EquivalentFragmentSet> match(String start) {
+        return Sets.newHashSet(EquivalentFragmentSet.create(
                 Fragment.create(
                         t -> outSubs(outSubs(t).out(ISA.getLabel())),
                         EDGE_UNIQUE, start, type.getName()

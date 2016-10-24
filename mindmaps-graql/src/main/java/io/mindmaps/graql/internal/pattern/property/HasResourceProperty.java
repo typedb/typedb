@@ -23,8 +23,8 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.*;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.gremlin.EquivalentFragmentSet;
 import io.mindmaps.graql.internal.gremlin.Fragment;
-import io.mindmaps.graql.internal.gremlin.MultiTraversal;
 import io.mindmaps.graql.internal.query.InsertQueryExecutor;
 import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.util.ErrorMessage;
@@ -75,8 +75,8 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     }
 
     @Override
-    public Collection<MultiTraversal> match(String start) {
-        return Sets.newHashSet(MultiTraversal.create(
+    public Collection<EquivalentFragmentSet> match(String start) {
+        return Sets.newHashSet(EquivalentFragmentSet.create(
                 Fragment.create(t ->
                         t.outE(SHORTCUT.getLabel()).has(TO_TYPE.name(), resourceType).inV(),
                         EDGE_UNBOUNDED, start, resource.getName()

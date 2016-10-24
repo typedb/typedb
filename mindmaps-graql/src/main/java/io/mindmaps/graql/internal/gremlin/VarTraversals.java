@@ -26,17 +26,17 @@ import java.util.HashSet;
 import java.util.stream.Stream;
 
 /**
- * A collection of {@code MultiTraversals} that describe a {@code Var}.
+ * A collection of {@code EquivalentFragmentSet}s that describe a {@code Var}.
  * <p>
- * A {@code VarTraversals} is constructed from a {@code Var} and produces several {@code MultiTraversals} that are used
- * by {@code Query} to produce gremlin traversals.
+ * A {@code VarTraversals} is constructed from a {@code Var} and produces several {@code EquivalentFragmentSet}s that
+ * are used by {@code GremlinQuery} to produce gremlin traversals.
  * <p>
  * If possible, the {@code VarTraversals} will be represented using a {@code ShortcutTraversal}.
  */
 class VarTraversals {
 
     private final ShortcutTraversal shortcutTraversal = new ShortcutTraversal();
-    private final Collection<MultiTraversal> traversals = new HashSet<>();
+    private final Collection<EquivalentFragmentSet> traversals = new HashSet<>();
     private final Collection<VarTraversals> innerVarTraversals = new HashSet<>();
 
     /**
@@ -56,7 +56,7 @@ class VarTraversals {
         var.getProperties().forEach(property -> {
             VarPropertyInternal propertyInternal = (VarPropertyInternal) property;
             propertyInternal.modifyShortcutTraversal(shortcutTraversal);
-            Collection<MultiTraversal> traversals = propertyInternal.match(start);
+            Collection<EquivalentFragmentSet> traversals = propertyInternal.match(start);
             this.traversals.addAll(traversals);
             property.getImplicitInnerVars().map(VarTraversals::new).forEach(innerVarTraversals::add);
         });
@@ -65,12 +65,12 @@ class VarTraversals {
     /**
      * @return a stream of traversals describing the variable
      */
-    public Stream<MultiTraversal> getTraversals() {
-        Stream<MultiTraversal> myPatterns;
-        Stream<MultiTraversal> innerPatterns = innerVarTraversals.stream().flatMap(VarTraversals::getTraversals);
+    public Stream<EquivalentFragmentSet> getTraversals() {
+        Stream<EquivalentFragmentSet> myPatterns;
+        Stream<EquivalentFragmentSet> innerPatterns = innerVarTraversals.stream().flatMap(VarTraversals::getTraversals);
 
         if (shortcutTraversal.isValid()) {
-            myPatterns = Stream.of(shortcutTraversal.getMultiTraversal());
+            myPatterns = Stream.of(shortcutTraversal.getEquivalentFragmentSet());
         } else {
             myPatterns = traversals.stream();
         }

@@ -22,16 +22,16 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Stream;
 
-class MultiTraversalImpl implements MultiTraversal {
+class EquivalentFragmentSetImpl implements EquivalentFragmentSet {
 
     private final Collection<Fragment> fragments;
 
     /**
-     * @param fragments an array of Fragments that this MultiTraversal contains
+     * @param fragments an array of Fragments that this EquivalentFragmentSet contains
      */
-    MultiTraversalImpl(Fragment... fragments) {
+    EquivalentFragmentSetImpl(Fragment... fragments) {
         this.fragments = Arrays.asList(fragments);
-        this.fragments.forEach(f -> f.setMultiTraversal(this));
+        this.fragments.forEach(f -> f.setEquivalentFragmentSet(this));
     }
 
     @Override
