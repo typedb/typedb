@@ -90,7 +90,6 @@ public class TestReasoning extends TestOwlMindMapsBase {
     }
 
     @Test
-    @Ignore
     public void testFullReasoning(){
         QueryBuilder qb = Graql.withGraph(migrator.graph());
         String richardId = "richard_henry_steward_1897";
