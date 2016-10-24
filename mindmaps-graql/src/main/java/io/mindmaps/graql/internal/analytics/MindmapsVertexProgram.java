@@ -36,8 +36,6 @@ public abstract class MindmapsVertexProgram<T> extends CommonOLAP implements Ver
 
     static final Logger LOGGER = LoggerFactory.getLogger(MindmapsVertexProgram.class);
 
-    static final Logger LOGGER = LoggerFactory.getLogger(MindmapsVertexProgram.class);
-
     final MessageScope.Local<Long> countMessageScopeIn = MessageScope.Local.of(__::inE);
     final MessageScope.Local<Long> countMessageScopeOut = MessageScope.Local.of(__::outE);
 
