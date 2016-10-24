@@ -19,11 +19,11 @@
 package io.mindmaps.graql.internal.analytics;
 
 import com.google.common.collect.Sets;
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsComputer;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.*;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.Mindmaps;
 import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.util.ErrorMessage;
@@ -32,9 +32,7 @@ import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.mindmaps.graql.Graql.or;
-import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.graql.Graql.withGraph;
+import static io.mindmaps.graql.Graql.*;
 
 /**
  * OLAP computations that can be applied to a Mindmaps Graph. The current implementation uses the SparkGraphComputer

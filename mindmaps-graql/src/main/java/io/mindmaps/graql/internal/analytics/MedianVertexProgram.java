@@ -22,15 +22,14 @@ import com.google.common.collect.Sets;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.util.Schema;
 import org.apache.commons.configuration.Configuration;
-import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -41,10 +40,7 @@ import java.util.Set;
 
 public class MedianVertexProgram extends MindmapsVertexProgram<Long> {
 
-    private final MessageScope.Local<Long> countMessageScopeIn = MessageScope.Local.of(__::inE);
-    private final MessageScope.Local<Long> countMessageScopeOut = MessageScope.Local.of(__::outE);
-
-    public static final int MAX_ITERATION = 20;
+    public static final int MAX_ITERATION = 40;
     private static final String RESOURCE_DATA_TYPE = "medianVertexProgram.resourceDataType";
     private static final String RESOURCE_TYPE = "medianVertexProgram.statisticsResourceType";
 
@@ -87,16 +83,6 @@ public class MedianVertexProgram extends MindmapsVertexProgram<Long> {
     }
 
     @Override
-    public GraphComputer.Persist getPreferredPersist() {
-        return GraphComputer.Persist.NOTHING;
-    }
-
-    @Override
-    public GraphComputer.ResultGraph getPreferredResultGraph() {
-        return GraphComputer.ResultGraph.ORIGINAL;
-    }
-
-    @Override
     public Set<String> getElementComputeKeys() {
         return ELEMENT_COMPUTE_KEYS;
     }
@@ -108,12 +94,8 @@ public class MedianVertexProgram extends MindmapsVertexProgram<Long> {
 
     @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {
-        final Set<MessageScope> set = new HashSet<>();
-        if (memory.getIteration() < 4) {
-            set.add(this.countMessageScopeOut);
-            set.add(this.countMessageScopeIn);
-        }
-        return set;
+        if (memory.getIteration() < 3) return messageScopeSet;
+        return Collections.emptySet();
     }
 
     @Override
@@ -158,10 +140,10 @@ public class MedianVertexProgram extends MindmapsVertexProgram<Long> {
                 if (selectedTypes.contains(Utility.getVertexType(vertex))) {
                     String type = vertex.label();
                     if (type.equals(Schema.BaseType.ENTITY.name()) || type.equals(Schema.BaseType.RESOURCE.name())) {
-                        messenger.sendMessage(this.countMessageScopeIn, 1L);
+                        messenger.sendMessage(this.messageScopeIn, 1L);
                     } else if (type.equals(Schema.BaseType.RELATION.name())) {
-                        messenger.sendMessage(this.countMessageScopeIn, 1L);
-                        messenger.sendMessage(this.countMessageScopeOut, -1L);
+                        messenger.sendMessage(this.messageScopeIn, 1L);
+                        messenger.sendMessage(this.messageScopeOut, -1L);
                     }
                 }
                 break;
@@ -177,8 +159,8 @@ public class MedianVertexProgram extends MindmapsVertexProgram<Long> {
                         else hasRolePlayer = true;
                     }
                     if (hasRolePlayer) {
-                        messenger.sendMessage(this.countMessageScopeIn, 1L);
-                        messenger.sendMessage(this.countMessageScopeOut, assertionCount);
+                        messenger.sendMessage(this.messageScopeIn, 1L);
+                        messenger.sendMessage(this.messageScopeOut, assertionCount);
                     }
                 }
                 break;

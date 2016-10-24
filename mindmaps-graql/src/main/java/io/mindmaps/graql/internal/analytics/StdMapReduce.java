@@ -15,7 +15,6 @@ import java.util.Set;
 public class StdMapReduce extends MindmapsMapReduce<Map<String, Double>> {
 
     public static final String MEMORY_KEY = "std";
-    private static final String RESOURCE_TYPE_KEY = "RESOURCE_TYPE_KEY";
     private static final String RESOURCE_DATA_TYPE_KEY = "RESOURCE_DATA_TYPE_KEY";
 
     public static final String COUNT = "C";
@@ -37,10 +36,9 @@ public class StdMapReduce extends MindmapsMapReduce<Map<String, Double>> {
         if (selectedTypes.contains(Utility.getVertexType(vertex)) &&
                 ((Long) vertex.value(DegreeVertexProgram.DEGREE)) > 0) {
             Map<String, Double> tuple = new HashMap<>(3);
-            Double degree = ((Long)vertex.value(DegreeVertexProgram.DEGREE)).doubleValue();
-//            Number value = vertex.value((String) persistentProperties.get(RESOURCE_DATA_TYPE_KEY));
+            Double degree = ((Long) vertex.value(DegreeVertexProgram.DEGREE)).doubleValue();
             double value =
-                    ((Number)vertex.value((String) persistentProperties.get(RESOURCE_DATA_TYPE_KEY))).doubleValue();
+                    ((Number) vertex.value((String) persistentProperties.get(RESOURCE_DATA_TYPE_KEY))).doubleValue();
             tuple.put(SUM, value * degree);
             tuple.put(SQUARE_SUM, value * value * degree);
             tuple.put(COUNT, degree);

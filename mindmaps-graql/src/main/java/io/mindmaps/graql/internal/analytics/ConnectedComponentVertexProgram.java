@@ -21,7 +21,9 @@ package io.mindmaps.graql.internal.analytics;
 import com.google.common.collect.Sets;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
+import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
@@ -74,7 +76,7 @@ public class ConnectedComponentVertexProgram extends MindmapsVertexProgram<Strin
         switch (memory.getIteration()) {
             case 0:
                 if (selectedTypes.contains(Utility.getVertexType(vertex))) {
-                    String type = vertex.value(Schema.ConceptProperty.BASE_TYPE.name());
+                    String type = vertex.label();
                     if (type.equals(Schema.BaseType.ENTITY.name()) || type.equals(Schema.BaseType.RESOURCE.name())) {
                         // each role-player sends 1 to castings following incoming edges
                         messenger.sendMessage(this.messageScopeIn, MESSAGE_FROM_ROLE_PLAYER);
@@ -87,7 +89,7 @@ public class ConnectedComponentVertexProgram extends MindmapsVertexProgram<Strin
                 }
                 break;
             case 1:
-                if (vertex.value(Schema.ConceptProperty.BASE_TYPE.name()).equals(Schema.BaseType.CASTING.name())) {
+                if (vertex.label().equals(Schema.BaseType.CASTING.name())) {
                     Set<String> messageSet = new HashSet<>();
                     boolean hasBothMessages = false;
                     Iterator<String> iterator = messenger.receiveMessages();
@@ -109,7 +111,7 @@ public class ConnectedComponentVertexProgram extends MindmapsVertexProgram<Strin
                 break;
             case 2:
                 //similar to default case, except that casting has no cluster label before this iteration
-                if (vertex.value(Schema.ConceptProperty.BASE_TYPE.name()).equals(Schema.BaseType.CASTING.name()) &&
+                if (vertex.label().equals(Schema.BaseType.CASTING.name()) &&
                         (boolean) vertex.value(IS_ACTIVE_CASTING)) {
                     String max = IteratorUtils.reduce(messenger.receiveMessages(), "Alex",
                             (a, b) -> a.compareTo(b) > 0 ? a : b);
@@ -133,7 +135,7 @@ public class ConnectedComponentVertexProgram extends MindmapsVertexProgram<Strin
                         }
                     }
                 } else {
-                    if (vertex.value(Schema.ConceptProperty.BASE_TYPE.name()).equals(Schema.BaseType.CASTING.name()) &&
+                    if (vertex.label().equals(Schema.BaseType.CASTING.name()) &&
                             (boolean) vertex.value(IS_ACTIVE_CASTING)) {
                         String currentMax = vertex.value(CLUSTER_LABEL);
                         String max = IteratorUtils.reduce(messenger.receiveMessages(), currentMax,
@@ -153,8 +155,8 @@ public class ConnectedComponentVertexProgram extends MindmapsVertexProgram<Strin
     @Override
     public boolean terminate(final Memory memory) {
         LOGGER.debug("Iteration: " + memory.getIteration());
-        final boolean voteToHalt = memory.<Boolean>get(VOTE_TO_HALT);
         if (memory.getIteration() < 3) return false;
+        final boolean voteToHalt = memory.<Boolean>get(VOTE_TO_HALT);
         if (voteToHalt || memory.getIteration() == MAX_ITERATION) {
             return true;
         } else {
