@@ -406,7 +406,8 @@ public class GraqlShell {
 
     @OnWebSocketClose
     public void onClose(int statusCode, String reason) throws IOException, ExecutionException, InterruptedException {
-        if (statusCode != 1000) {
+        // 1000 = Normal close, 1001 = Going away
+        if (statusCode != 1000 && statusCode != 1001) {
             System.err.println("Websocket closed, code: " + statusCode + ", reason: " + reason);
         }
     }

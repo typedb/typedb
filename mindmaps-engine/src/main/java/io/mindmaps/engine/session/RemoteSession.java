@@ -62,8 +62,8 @@ public class RemoteSession {
     @OnWebSocketClose
     public void onClose(Session session, int statusCode, String reason) {
         String message = "Websocket closed, code: " + statusCode + ", reason: " + reason;
-        // 1000 = Normal close
-        if (statusCode == 1000) {
+        // 1000 = Normal close, 1001 = Going away
+        if (statusCode == 1000 || statusCode == 1001) {
             LOG.debug(message);
         } else {
             LOG.error(message);
