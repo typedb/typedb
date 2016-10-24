@@ -18,17 +18,20 @@
 
 package io.mindmaps.graql.internal.gremlin;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.util.ErrorMessage;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.PriorityQueue;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static io.mindmaps.graql.internal.util.CommonUtil.toImmutableSet;
@@ -53,14 +56,12 @@ class ConjunctionQuery {
 
     private final Set<VarAdmin> vars;
     private final ImmutableSet<EquivalentFragmentSet> equivalentFragmentSets;
-    private final Set<List<Fragment>> fragments;
-    private final MindmapsGraph graph;
+    private final ImmutableList<Fragment> sortedFragments;
 
     /**
      * @param patternConjunction a pattern containing no disjunctions to find in the graph
      */
-    ConjunctionQuery(MindmapsGraph graph, Conjunction<VarAdmin> patternConjunction) {
-        this.graph = graph;
+    ConjunctionQuery(Conjunction<VarAdmin> patternConjunction) {
         vars = patternConjunction.getPatterns();
 
         if (vars.size() == 0) {
@@ -70,76 +71,7 @@ class ConjunctionQuery {
         this.equivalentFragmentSets =
                 vars.stream().flatMap(Traversals::equivalentFragmentSets).collect(toImmutableSet());
 
-        this.fragments = sortedFragments();
-
-    }
-
-    /**
-     * @return a gremlin traversal that represents this inner query
-     */
-    GraphTraversal<Vertex, Map<String, Vertex>> getTraversal() {
-        GraphTraversal<Vertex, Vertex> traversal = graph.getTinkerTraversal();
-
-        Set<String> foundNames = new HashSet<>();
-
-        Iterator<List<Fragment>> fragmentIterator = fragments.iterator();
-
-        // Apply fragments in order into one single traversal
-        while (fragmentIterator.hasNext()) {
-            String currentName = null;
-            List<Fragment> fragmentList = fragmentIterator.next();
-
-            for (Fragment fragment : fragmentList) {
-                applyFragment(fragment, traversal, currentName, foundNames);
-                currentName = fragment.getEnd().orElse(fragment.getStart());
-            }
-
-            // Restart traversal for each connected component
-            if (fragmentIterator.hasNext()) traversal = traversal.V();
-        }
-
-        // Select all the variable names
-        String[] traversalNames = foundNames.toArray(new String[foundNames.size()]);
-        return traversal.select(traversalNames[0], traversalNames[0], traversalNames);
-    }
-
-    /**
-     * Apply the given fragment to the traversal. Keeps track of variable names so far so that it can decide whether
-     * to use "as" or "select" steps in gremlin.
-     * @param fragment the fragment to apply to the traversal
-     * @param traversal the gremlin traversal to apply the fragment to
-     * @param currentName the variable name that the traversal is currently at
-     * @param names a set of variable names so far encountered in the query
-     */
-    private void applyFragment(
-            Fragment fragment, GraphTraversal<Vertex, Vertex> traversal, String currentName, Set<String> names
-    ) {
-        String start = fragment.getStart();
-
-        if (currentName != null) {
-            if (!currentName.equals(start)) {
-                // If the variable name has been visited but the traversal is not at that variable name, select it
-                traversal.select(start);
-            }
-        } else {
-            // If the variable name has not been visited yet, remember it and use the 'as' step
-            names.add(start);
-            traversal.as(start);
-        }
-
-        // Apply fragment to traversal
-        fragment.applyTraversal(traversal);
-
-        fragment.getEnd().ifPresent(end -> {
-            if (!names.contains(end)) {
-                // This variable name has not been encountered before, remember it and use the 'as' step
-                names.add(end);
-                traversal.as(end);
-            } else {
-                // This variable name has been encountered before, confirm it is the same
-                traversal.where(P.eq(end));
-            }
-        });
+        this.sortedFragments = sortFragments();
     }
 
     /**
@@ -151,6 +83,10 @@ class ConjunctionQuery {
                 .flatMap(v -> v.getTypeIds().stream());
     }
 
+    ImmutableList<Fragment> getSortedFragments() {
+        return sortedFragments;
+    }
+
     /**
      * Sort the fragments describing the query, such that every property is represented in the fragments and the
      * fragments are ordered by priority in order to perform the query quickly.
@@ -159,20 +95,20 @@ class ConjunctionQuery {
      *
      * @return a set of list of fragments, sorted by priority.
      */
-    private Set<List<Fragment>> sortedFragments() {
+    private ImmutableList<Fragment> sortFragments() {
         // Sort fragments using a topological sort, such that each fragment leads to the next.
         // fragments are also sorted by "priority" to improve the performance of the search
 
         // Maintain a map of fragments grouped by starting variable for fast lookup
-        Map<String, Set<Fragment>> fragmentMap = getFragments().collect(groupingBy(Fragment::getStart, toSet()));
+        Map<String, Set<Fragment>> fragmentMap = streamFragments().collect(groupingBy(Fragment::getStart, toSet()));
 
         // Track properties and fragments that have been used
-        Set<Fragment> remainingFragments = getFragments().collect(toSet());
+        Set<Fragment> remainingFragments = streamFragments().collect(toSet());
         Set<EquivalentFragmentSet> remainingTraversals = Sets.newHashSet(equivalentFragmentSets);
         Set<EquivalentFragmentSet> matchedTraversals = new HashSet<>();
 
         // Result set of fragments (one entry in the set for each connected part of the query)
-        Set<List<Fragment>> allSortedFragments = new HashSet<>();
+        List<Fragment> sortedFragments = new ArrayList<>();
 
         while (!remainingTraversals.isEmpty()) {
             // Traversal is started from the highest priority fragment
@@ -184,8 +120,6 @@ class ConjunctionQuery {
 
             // A queue of reachable fragments, with the highest priority fragments always on top
             PriorityQueue<Fragment> reachableFragments = new PriorityQueue<>(fragmentMap.get(start));
-
-            List<Fragment> sortedFragments = new ArrayList<>();
 
             while (!reachableFragments.isEmpty()) {
                 // Take highest priority fragment from reachable fragments
@@ -208,17 +142,15 @@ class ConjunctionQuery {
                         }
                 );
             }
-
-            allSortedFragments.add(sortedFragments);
         }
 
-        return allSortedFragments;
+        return ImmutableList.copyOf(sortedFragments);
     }
 
     /**
      * @return a stream of Fragments in this query
      */
-    private Stream<Fragment> getFragments() {
+    private Stream<Fragment> streamFragments() {
         return equivalentFragmentSets.stream().flatMap(EquivalentFragmentSet::getFragments);
     }
 }
