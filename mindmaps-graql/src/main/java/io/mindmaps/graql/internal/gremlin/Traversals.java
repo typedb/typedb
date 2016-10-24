@@ -18,9 +18,15 @@
 
 package io.mindmaps.graql.internal.gremlin;
 
+import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.pattern.property.VarPropertyInternal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.stream.Stream;
 
 import static io.mindmaps.util.Schema.EdgeLabel.SUB;
 
@@ -36,5 +42,37 @@ public class Traversals {
     @SuppressWarnings("unchecked")
     public static GraphTraversal<Vertex, Vertex> inSubs(GraphTraversal<Vertex, Vertex> traversal) {
         return traversal.union(__.identity(), __.repeat(__.in(SUB.getLabel())).emit()).unfold();
+    }
+
+    static Stream<EquivalentFragmentSet> equivalentFragmentSets(VarAdmin var) {
+        ShortcutTraversal shortcutTraversal = new ShortcutTraversal();
+        Collection<EquivalentFragmentSet> traversals = new HashSet<>();
+
+        // If the user has provided a variable name, it can't be represented with a shortcut edge because it may be
+        // referred to later.
+        if (var.isUserDefinedName()) {
+            shortcutTraversal.setInvalid();
+        }
+
+        String start = var.getName();
+
+        var.getProperties().forEach(property -> {
+            VarPropertyInternal propertyInternal = (VarPropertyInternal) property;
+            propertyInternal.modifyShortcutTraversal(shortcutTraversal);
+            Collection<EquivalentFragmentSet> newTraversals = propertyInternal.match(start);
+            traversals.addAll(newTraversals);
+        });
+
+        Stream<EquivalentFragmentSet> myPatterns;
+        Stream<EquivalentFragmentSet> innerPatterns =
+                var.getImplicitInnerVars().stream().flatMap(Traversals::equivalentFragmentSets);
+
+        if (shortcutTraversal.isValid()) {
+            myPatterns = Stream.of(shortcutTraversal.getEquivalentFragmentSet());
+        } else {
+            myPatterns = traversals.stream();
+        }
+
+        return Stream.concat(myPatterns, innerPatterns);
     }
 }

@@ -67,10 +67,8 @@ class ConjunctionQuery {
             throw new IllegalArgumentException(ErrorMessage.MATCH_NO_PATTERNS.getMessage());
         }
 
-        this.equivalentFragmentSets = vars.stream()
-                .map(VarTraversals::new)
-                .flatMap(VarTraversals::getTraversals)
-                .collect(toImmutableSet());
+        this.equivalentFragmentSets =
+                vars.stream().flatMap(Traversals::equivalentFragmentSets).collect(toImmutableSet());
 
         this.fragments = sortedFragments();
 
