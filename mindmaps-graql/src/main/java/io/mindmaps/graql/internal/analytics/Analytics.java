@@ -295,14 +295,20 @@ public class Analytics {
     public Map<Instance, Long> degrees() {
         Map<Instance, Long> allDegrees = new HashMap<>();
         MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
-        ComputerResult result = computer.compute(new DegreeVertexProgram(subtypes));
+        ComputerResult result = computer.compute(new DegreeVertexProgram(subtypes), new DegreeMapReduce(subtypes));
+        Map<Long, Set<String>> degreeMap = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
+
+        //TODO: Remove the following, just return degreeMap, fix the test
         MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraph();
-        result.graph().traversal().V().forEachRemaining(v -> {
-            if (v.keys().contains(DegreeVertexProgram.DEGREE)) {
-                Instance instance = graph.getInstance(v.value(ITEM_IDENTIFIER.name()));
-                allDegrees.put(instance, v.value(DegreeVertexProgram.DEGREE));
-            }
+        degreeMap.forEach((k, v) -> {
+            for (String id : v) allDegrees.put(graph.getInstance(id), k);
         });
+//        result.graph().traversal().V().forEachRemaining(v -> {
+//            if (v.keys().contains(DegreeVertexProgram.DEGREE)) {
+//                Instance instance = graph.getInstance(v.value(ITEM_IDENTIFIER.name()));
+//                allDegrees.put(instance, v.value(DegreeVertexProgram.DEGREE));
+//            }
+//        });
         return allDegrees;
     }
 

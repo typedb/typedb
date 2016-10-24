@@ -119,7 +119,6 @@ public class ConnectedComponentVertexProgram extends MindmapsVertexProgram<Strin
                 }
                 break;
             default:
-                // TODO: MessageScope does not support filtering by edge label
                 // split the default case because shortcut edges cannot be filtered out
                 if (memory.getIteration() % 2 == 1) {
                     if (selectedTypes.contains(Utility.getVertexType(vertex))) {

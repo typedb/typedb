@@ -98,7 +98,7 @@ class ComputeQueryImpl implements ComputeQuery {
                 }
             }
         } catch (InvalidConceptTypeException e) {
-            throw new IllegalArgumentException(ErrorMessage.MUST_BE_RESOURCE_TYPE.getMessage(subTypeIds),e);
+            throw new IllegalArgumentException(ErrorMessage.MUST_BE_RESOURCE_TYPE.getMessage(subTypeIds), e);
         }
 
     }
@@ -114,7 +114,8 @@ class ComputeQueryImpl implements ComputeQuery {
             Map<Instance, ?> map = (Map<Instance, ?>) computeResult;
             return map.entrySet().stream().map(e -> e.getKey().getId() + "\t" + e.getValue());
         } else if (computeResult instanceof Optional) {
-            return ((Optional) computeResult).isPresent() ? Stream.of(((Optional) computeResult).get().toString()) : Stream.of("There are no instances of this resource type.");
+            return ((Optional) computeResult).isPresent() ? Stream.of(((Optional) computeResult).get().toString()) :
+                    Stream.of("There are no instances of this resource type.");
         } else {
             return Stream.of(computeResult.toString());
         }
