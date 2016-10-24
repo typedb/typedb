@@ -57,76 +57,60 @@ public class SNBInferenceTest {
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
     }
 
+    @Test
+    public void testTransitivityPrime() {
+        MindmapsGraph graph = SNBGraph.getGraph();
+        QueryBuilder qb = Graql.withGraph(graph);
+        Reasoner reasoner = new Reasoner(graph);
+
+        String queryString = "match " +
+                "$x isa university;$y isa country;($x, $y) isa resides;";
+        MatchQuery query = qb.parse(queryString);
+
+        String explicitQuery = "match " +
+                "$x isa university;$x id 'University of Cambridge';$y isa country;$y id 'UK';";
+
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+    }
+
     /**
-     * Tests transitivity for non-Horn clause query
+     * Tests transitivity
      */
     @Test
-    @Ignore
     public void testTransitivity2() {
         MindmapsGraph graph = SNBGraph.getGraph();
         QueryBuilder qb = Graql.withGraph(graph);
         Reasoner reasoner = new Reasoner(graph);
 
-        String queryString = "match " +
-                "{$x isa university} or {$x isa company};\n" +
-                "$y isa country;\n" +
-                "($x, $y) isa resides";
+        String queryString = "match $x isa company;$y isa country;" +
+                "(located-subject: $x, subject-location: $y) isa resides;";
         MatchQuery query = qb.parse(queryString);
 
         String explicitQuery = "match " +
-                "{$x isa university;$x id 'University of Cambridge'} or" +
-                "{$x isa company;$x id 'Mindmaps'};" +
-                "$y isa country;$y id 'UK'";
+                "$x isa company;$x id 'Mindmaps';" +
+                "$y isa country;$y id 'UK';";
 
-        //assertQueriesEqual(reasoner.expand(query), qb.parseMatch(explicitQuery));
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
     }
 
     @Test
-    @Ignore
-    public void testTransitivity3() {
+    public void testTransitivity2Prime() {
         MindmapsGraph graph = SNBGraph.getGraph();
         QueryBuilder qb = Graql.withGraph(graph);
         Reasoner reasoner = new Reasoner(graph);
 
-        String queryString = "match " +
-                "{$y isa university} or {$y isa company};\n" +
-                "$x isa country;\n" +
-                "(subject-location $x, located-subject $y) isa resides";
+        String queryString = "match $x isa company;$y isa country;" +
+                "($x, $y) isa resides;";
         MatchQuery query = qb.parse(queryString);
 
         String explicitQuery = "match " +
-                "{$y isa university;$y id 'University of Cambridge'} or" +
-                "{$y isa company;$y id 'Mindmaps'};" +
-                "$x isa country;$x id 'UK'";
+                "$x isa company;$x id 'Mindmaps';" +
+                "$y isa country;$y id 'UK';";
 
-        //assertQueriesEqual(reasoner.expand(query), qb.parseMatch(explicitQuery));
-    }
-
-    /**
-     * Tests transitivity and Bug #7343
-     */
-    @Test
-    @Ignore
-    public void testTransitivity4() {
-        MindmapsGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = Graql.withGraph(graph);
-        Reasoner reasoner = new Reasoner(graph);
-
-        String queryString = " match" +
-                "{$x isa university} or {$x isa company};\n" +
-                "$y isa continent;\n" +
-                "($x, $y) isa resides";
-        MatchQuery query = qb.parse(queryString);
-
-        String explicitQuery = "match " +
-                            "{$x isa university} or {$x isa company};\n" +
-                            "$y isa continent;\n" +
-                            "{($x, $y) isa resides} or\n" +
-                            "{($x, $yy) isa resides; {(container-location $y, member-location $yy) isa sublocate} or\n" +
-                            "{(container-location $y, member-location $yyyy) isa sublocate; (container-location $yyyy, member-location $yy) isa sublocate}}" +
-                            "select $x, $y;";
-
-        //assertQueriesEqual(reasoner.expand(query), qb.parseMatch(explicitQuery));
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
     }
 
     /**
@@ -476,22 +460,6 @@ public class SNBInferenceTest {
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
-    }
-
-    @Test
-    @Ignore
-    public void testDoubleVars() {
-        MindmapsGraph graph = SNBGraph.getGraph();
-        QueryBuilder qb = Graql.withGraph(graph);
-        Reasoner reasoner = new Reasoner(graph);
-
-        String queryString = "match $x isa person;{($x, $y) isa recommendation} or " +
-                "{" +
-                "$x isa person;$t isa tag, id 'Enter_the_Chicken';" +
-                "($x, $t) isa tagging;$y isa tag;{$y id 'Buckethead'} or {$y id 'Primus'}" +
-                "} select $x, $y;";
-
-        MatchQuery query = qb.parse(queryString);
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {
