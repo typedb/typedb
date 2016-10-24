@@ -1,0 +1,49 @@
+insert
+
+###################################################
+####################Ontology######################
+#################################################
+
+"vertex" isa entity-type;
+
+
+"link-endA" isa role-type;
+"link-endB" isa role-type;
+"link" isa relation-type, has-role link-endA, has-role link-endB;
+vertex plays-role link-endA, plays-role link-endB;
+
+"reach-endA" isa role-type;
+"reach-endB" isa role-type;
+"reachable" isa relation-type, has-role reach-endA, has-role reach-endB;
+vertex plays-role reach-endA, plays-role reach-endB;
+
+####################################################
+##################DATA#############################
+####################################################
+
+"a" isa vertex;
+"b" isa vertex;
+"c" isa vertex;
+"d" isa vertex;
+
+(link-endA: 'a', link-endB: 'b') isa link;
+(link-endA: 'b', link-endB: 'c') isa link;
+(link-endA: 'c', link-endB: 'c') isa link;
+(link-endA: 'c', link-endB: 'd') isa link;
+
+####################################################
+##################RULES#############################
+####################################################
+
+"R1" isa inference-rule,
+lhs {
+($x, $y) isa link;},
+rhs {
+($x, $y) isa reachable;};
+
+"R2" isa inference-rule,
+lhs {
+($x, $z) isa link;
+($z, $y) isa reachable;},
+rhs {
+($x, $y) isa reachable;};

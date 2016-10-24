@@ -277,6 +277,23 @@ public class RecursiveInferenceTest {
         assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
+    @Test
+    public void testReachabilitySymmetric(){
+        MindmapsGraph graph = GenericGraph.getGraph("reachability-test-symmetric.gql");
+        QueryBuilder qb = Graql.withGraph(graph);
+        Reasoner reasoner = new Reasoner(graph);
+
+        String queryString = "match ($x, $y) isa reachable;$x id 'a';";
+        MatchQuery query = qb.parse(queryString);
+
+        String explicitQuery = "match $y isa vertex;" +
+                "{$y id 'a';} or {$y id 'b';} or {$y id 'c';} or {$y id 'd';};";
+
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+    }
+
     /** test 6.1 from Cao p 71*/
     @Test
     public void testMatrix(){
@@ -405,6 +422,22 @@ public class RecursiveInferenceTest {
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match (path-from: $x, path-to: $y) isa path;$x id 'a0'; select $y;";
+        MatchQuery query = qb.parse(queryString);
+        String explicitQuery = "match $y isa vertex;";
+
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+    }
+
+    @Test
+    public void testPathSymmetric(){
+        final int N = 3;
+        MindmapsGraph graph = PathGraph.getGraph(N, 3);
+        QueryBuilder qb = Graql.withGraph(graph);
+        Reasoner reasoner = new Reasoner(graph);
+
+        String queryString = "match ($x, $y) isa path;$x id 'a0'; select $y;";
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $y isa vertex;";
 
