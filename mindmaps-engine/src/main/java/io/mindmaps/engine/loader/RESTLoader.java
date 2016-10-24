@@ -127,12 +127,10 @@ public class RESTLoader {
 
         loadingJobs.incrementAndGet();
 
-        try {
+        try(AbstractMindmapsGraph graph = (AbstractMindmapsGraph) GraphFactory.getInstance().getGraphBatchLoading(name)) {
             for (int i = 0; i < repeatCommits; i++) {
 
-                AbstractMindmapsGraph graph;
                 try {
-                    graph = (AbstractMindmapsGraph) GraphFactory.getInstance().getGraphBatchLoading(name);
                     withGraph(graph).parse(batch).execute();
                     graph.commit();
                     cache.addJobCasting(name, graph.getModifiedCastingIds());

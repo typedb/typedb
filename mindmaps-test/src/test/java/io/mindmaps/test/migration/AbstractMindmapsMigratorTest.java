@@ -30,8 +30,7 @@ import io.mindmaps.concept.Type;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.internal.util.GraqlType;
-import io.mindmaps.test.AbstractMindmapsEngineTest;
-import org.junit.After;
+import io.mindmaps.test.AbstractRollbackGraphTest;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 
@@ -47,23 +46,18 @@ import static java.util.stream.Collectors.joining;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static io.mindmaps.concept.ResourceType.DataType;
+import io.mindmaps.concept.ResourceType.DataType;
 
-public class AbstractMindmapsMigratorTest extends AbstractMindmapsEngineTest {
+public class AbstractMindmapsMigratorTest extends AbstractRollbackGraphTest {
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
-
-    @After
-    public void clear(){
-        graph.clear();
-    }
 
     public static File getFile(String component, String fileName){
         return new File(AbstractMindmapsMigratorTest.class.getResource(component + "/" + fileName).getPath());
     }
 
-    public static void load(File ontology) {
+    public void load(File ontology) {
         try {
             Graql.withGraph(graph)
                     .parse(Files.readLines(ontology, StandardCharsets.UTF_8).stream().collect(joining("\n")))
@@ -75,14 +69,14 @@ public class AbstractMindmapsMigratorTest extends AbstractMindmapsEngineTest {
         }
     }
 
-    public static ResourceType assertResourceTypeExists(String name, DataType datatype) {
+    public ResourceType assertResourceTypeExists(String name, DataType datatype) {
         ResourceType resourceType = graph.getResourceType(name);
         assertNotNull(resourceType);
         assertEquals(datatype.getName(), resourceType.getDataType().getName());
         return resourceType;
     }
 
-    public static void assertResourceTypeRelationExists(String name, DataType datatype, Type owner){
+    public void assertResourceTypeRelationExists(String name, DataType datatype, Type owner){
         ResourceType resource = assertResourceTypeExists(name, datatype);
 
         RelationType relationType = graph.getRelationType(GraqlType.HAS_RESOURCE.getId(name));
@@ -100,7 +94,7 @@ public class AbstractMindmapsMigratorTest extends AbstractMindmapsEngineTest {
         assertTrue(resource.playsRoles().contains(roleOther));
     }
 
-    public static void assertResourceEntityRelationExists(String resourceName, Object resourceValue, Entity owner){
+    public void assertResourceEntityRelationExists(String resourceName, Object resourceValue, Entity owner){
         ResourceType resourceType = graph.getResourceType(resourceName);
 
         assertEquals(resourceValue, owner.resources(resourceType).stream()
@@ -108,7 +102,7 @@ public class AbstractMindmapsMigratorTest extends AbstractMindmapsEngineTest {
                 .findFirst().get());
     }
 
-    public static void assertRelationBetweenTypesExists(Type type1, Type type2, String relation){
+    public void assertRelationBetweenTypesExists(Type type1, Type type2, String relation){
         RelationType relationType = graph.getRelationType(relation);
 
         RoleType role1 = type1.playsRoles().stream().filter(r -> r.relationType().getId().equals(relation)).findFirst().get();
@@ -118,7 +112,7 @@ public class AbstractMindmapsMigratorTest extends AbstractMindmapsEngineTest {
         assertTrue(relationType.hasRoles().contains(role2));
     }
 
-    public static void assertRelationBetweenInstancesExists(Instance instance1, Instance instance2, String relation){
+    public void assertRelationBetweenInstancesExists(Instance instance1, Instance instance2, String relation){
         RelationType relationType = graph.getRelationType(relation);
 
         RoleType role1 = instance1.playsRoles().stream().filter(r -> r.relationType().equals(relationType)).findFirst().get();
@@ -126,12 +120,12 @@ public class AbstractMindmapsMigratorTest extends AbstractMindmapsEngineTest {
     }
 
 
-    public static Instance getProperty(Instance instance, String name) {
+    public Instance getProperty(Instance instance, String name) {
         assertEquals(getProperties(instance, name).size(), 1);
         return getProperties(instance, name).iterator().next();
     }
 
-    public static Collection<Instance> getProperties(Instance instance, String name) {
+    public Collection<Instance> getProperties(Instance instance, String name) {
         RelationType relation = graph.getRelationType(name);
 
         Set<Instance> instances = new HashSet<>();
@@ -144,12 +138,12 @@ public class AbstractMindmapsMigratorTest extends AbstractMindmapsEngineTest {
         return instances;
     }
 
-    public static Resource getResource(Instance instance, String name) {
+    public Resource getResource(Instance instance, String name) {
         assertEquals(getResources(instance, name).count(), 1);
         return getResources(instance, name).findAny().get();
     }
 
-    public static Stream<Resource> getResources(Instance instance, String name) {
+    public Stream<Resource> getResources(Instance instance, String name) {
         RoleType roleOwner = graph.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(name));
         RoleType roleOther = graph.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(name));
 

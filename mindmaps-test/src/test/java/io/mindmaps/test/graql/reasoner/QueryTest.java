@@ -31,10 +31,10 @@ import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
 import io.mindmaps.test.graql.reasoner.graphs.GenericGraph;
 import io.mindmaps.test.graql.reasoner.graphs.GeoGraph;
 import io.mindmaps.test.graql.reasoner.graphs.SNBGraph;
-import java.util.Map;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

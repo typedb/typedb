@@ -28,15 +28,21 @@ import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.pattern.Patterns;
-import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
 import io.mindmaps.graql.internal.reasoner.predicate.Substitution;
+import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
+import io.mindmaps.test.graql.reasoner.graphs.GenericGraph;
 import io.mindmaps.test.graql.reasoner.graphs.SNBGraph;
 import io.mindmaps.util.ErrorMessage;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.junit.Assert.assertTrue;
 
 public class AtomicQueryTest {
     private static MindmapsGraph graph;
@@ -92,7 +98,7 @@ public class AtomicQueryTest {
         AtomicQuery atomicQuery2 = new AtomicQuery(atomicQuery);
         atomicQuery2.addAtomConstraints(Sets.newHashSet(sub));
         exception.expectMessage(ErrorMessage.MATERIALIZATION_ERROR.getMessage(atomicQuery2.toString()));
-        atomicQuery.materialize(Sets.newHashSet(new Substitution("x", graph.getConcept("Bob"))));
+        atomicQuery.materialise(Sets.newHashSet(new Substitution("x", graph.getConcept("Bob"))));
     }
 
     @Test
@@ -101,9 +107,23 @@ public class AtomicQueryTest {
 
         String queryString = "match ($x, $y) isa recommendation;";
         AtomicQuery atomicQuery = new AtomicQuery(queryString, graph);
-        atomicQuery.materialize(Sets.newHashSet(new Substitution("x", graph.getConcept("Bob"))
+        atomicQuery.materialise(Sets.newHashSet(new Substitution("x", graph.getConcept("Bob"))
                                                 , new Substitution("y", graph.getConcept("Colour of Magic"))));
         assert(qb.<AskQuery>parse("match ($x, $y) isa recommendation;$x id 'Bob';$y id 'Colour of Magic'; ask;").execute());
+    }
+
+    @Test
+    public void testUnification(){
+        MindmapsGraph localGraph = GenericGraph.getGraph("ancestor-friend-test.gql");
+        AtomicQuery parentQuery = new AtomicQuery("match ($Y, $z) isa Friend; $Y id 'd'; select $z;", localGraph);
+        AtomicQuery childQuery = new AtomicQuery("match ($X, $Y) isa Friend; $Y id 'd'; select $X;", localGraph);
+
+        Atomic parentAtom = parentQuery.getAtom();
+        Atomic childAtom = childQuery.getAtom();
+        Map<String, String> unifiers = childAtom.getUnifiers(parentAtom);
+        Map<String, String> correctUnifiers = new HashMap<>();
+        correctUnifiers.put("X", "z");
+        assertTrue(unifiers.equals(correctUnifiers));
     }
 
 }

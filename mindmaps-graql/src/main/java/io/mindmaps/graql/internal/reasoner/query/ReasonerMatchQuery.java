@@ -22,11 +22,6 @@ public class ReasonerMatchQuery extends Query{
         answers = new QueryAnswers(ans);
     }
 
-    public ReasonerMatchQuery(Query query, QueryAnswers ans){
-        super(query);
-        answers = new QueryAnswers(ans);
-    }
-
     @Override
     public Stream<Map<String, Concept>> stream() {
         return answers.stream();

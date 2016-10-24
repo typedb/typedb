@@ -18,15 +18,8 @@
 
 package io.mindmaps.test.graql.parser;
 
-import io.mindmaps.Mindmaps;
-import io.mindmaps.MindmapsGraph;
-import io.mindmaps.example.MovieGraphFactory;
-import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.Pattern;
-import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.admin.VarAdmin;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -36,7 +29,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
-import java.util.UUID;
 
 import static io.mindmaps.graql.Graql.parsePatterns;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -48,21 +40,8 @@ import static org.junit.Assert.assertTrue;
 
 public class QueryParserFragmentsTest {
 
-    private static MindmapsGraph mindmapsGraph;
     @Rule
     public final ExpectedException exception = ExpectedException.none();
-    private QueryBuilder qb;
-
-    @BeforeClass
-    public static void setUpClass() {
-        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        MovieGraphFactory.loadGraph(mindmapsGraph);
-    }
-
-    @Before
-    public void setUp() {
-        qb = Graql.withGraph(mindmapsGraph);
-    }
 
     @Test
     public void testParseInfinitePatternsStream() throws IOException {
@@ -88,7 +67,7 @@ public class QueryParserFragmentsTest {
         String query = "#TRAP COMMENT\ninsert $x isa person; ($x, $y) isa has-cast;";
         InputStream stream = new ByteArrayInputStream(query.getBytes(StandardCharsets.UTF_8));
 
-        Iterator<Pattern> patterns = qb.parsePatterns(stream).iterator();
+        Iterator<Pattern> patterns = parsePatterns(stream).iterator();
 
         VarAdmin var1 = patterns.next().admin().asVar();
         assertEquals("$x isa person", var1.toString());
@@ -105,7 +84,7 @@ public class QueryParserFragmentsTest {
         String query = "insert\n\n($x, $y) is has-cast";
         InputStream stream = new ByteArrayInputStream(query.getBytes(StandardCharsets.UTF_8));
 
-        Iterator<Pattern> patterns = qb.parsePatterns(stream).iterator();
+        Iterator<Pattern> patterns = parsePatterns(stream).iterator();
 
         // Expect no pointer to the line text, but the line number and error
         exception.expect(IllegalArgumentException.class);

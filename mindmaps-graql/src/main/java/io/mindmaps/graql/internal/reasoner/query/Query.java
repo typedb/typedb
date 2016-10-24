@@ -47,15 +47,12 @@ public class Query implements MatchQueryInternal {
     private final Conjunction<PatternAdmin> pattern;
     private final Set<String> selectVars;
 
-    private final Map<Type, Set<Atomic>> typeAtomMap;
-
     public Query(String query, MindmapsGraph graph) {
         this.graph = graph;
         MatchQuery matchQuery = Graql.withGraph(graph).parse(query);
         this.selectVars = Sets.newHashSet(matchQuery.admin().getSelectedNames());
         this.atomSet = AtomicFactory.createAtomSet(matchQuery.admin().getPattern(), this);
         this.pattern = createPattern(atomSet);
-        this.typeAtomMap = getTypeAtomMap(atomSet);
     }
 
     public Query(MatchQuery query, MindmapsGraph graph) {
@@ -63,7 +60,6 @@ public class Query implements MatchQueryInternal {
         this.selectVars = Sets.newHashSet(query.admin().getSelectedNames());
         this.atomSet = AtomicFactory.createAtomSet(query.admin().getPattern(), this);
         this.pattern = createPattern(atomSet);
-        this.typeAtomMap = getTypeAtomMap(atomSet);
     }
 
     public Query(Query q) {
@@ -84,7 +80,6 @@ public class Query implements MatchQueryInternal {
             addAtomConstraints(atom.getTypeConstraints()
                                     .stream().filter(at -> !at.isRuleResolvable())
                                     .collect(Collectors.toSet()));
-        this.typeAtomMap = getTypeAtomMap(atomSet);
     }
 
     //alpha-equivalence equality
@@ -108,6 +103,8 @@ public class Query implements MatchQueryInternal {
         }
         return hashCode;
     }
+
+    public void print(){ atomSet.forEach(System.out::println);}
 
     @Override
     public String toString() { return getMatchQuery().toString();}
@@ -138,6 +135,9 @@ public class Query implements MatchQueryInternal {
         return Patterns.conjunction(patterns);
     }
 
+    /**
+     * @return true if any of the atoms constituting the query can be resolved through a rule
+     */
     public boolean isRuleResolvable(){
         boolean ruleResolvable = false;
         Iterator<Atomic> it = atomSet.iterator();
@@ -149,17 +149,14 @@ public class Query implements MatchQueryInternal {
 
     public QueryAnswers getAnswers(){ throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());}
     public void DBlookup(){ throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());}
-    public void memoryLookup(Map<AtomicQuery, QueryAnswers> matAnswers){
+    public void memoryLookup(Map<AtomicQuery, AtomicQuery> matAnswers){
         throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
     }
-    public void propagateAnswers(Map<AtomicQuery, QueryAnswers> matAnswers){
+    public void propagateAnswers(Map<AtomicQuery, AtomicQuery> matAnswers){
         throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
     }
 
     public Set<Atomic> getAtoms() { return new HashSet<>(atomSet);}
-    public Set<Atomic> getAtomsWithType(Type type) {
-        return typeAtomMap.get(type);
-    }
     public Set<Atomic> getSubstitutions(){
         return getAtoms().stream()
                 .filter(Atomic::isSubstitution)
@@ -315,18 +312,6 @@ public class Query implements MatchQueryInternal {
             return Graql.match(pattern.getPatterns()).select(selectVars).withGraph(graph);
     }
 
-    private Map<Type, Set<Atomic>> getTypeAtomMap(Set<Atomic> atoms) {
-        Map<Type, Set<Atomic>> map = new HashMap<>();
-        for (Atomic atom : atoms) {
-            Type type = graph.getType(atom.getTypeId());
-            if (map.containsKey(type))
-                map.get(type).add(atom);
-            else
-                map.put(type, Sets.newHashSet(atom));
-        }
-        return map;
-    }
-
     public Map<String, Type> getVarTypeMap() {
         Map<String, Type> map = new HashMap<>();
 
@@ -334,7 +319,7 @@ public class Query implements MatchQueryInternal {
             if (atom.isType() && !atom.isResource() ) {
                 if (!atom.isRelation()) {
                     String var = atom.getVarName();
-                    Type type = graph.getType(atom.getTypeId());
+                    Type type = atom.getType();
                     if (!map.containsKey(var))
                         map.put(var, type);
                     else
@@ -427,5 +412,4 @@ public class Query implements MatchQueryInternal {
 
         return equivalent;
     }
-
 }

@@ -41,9 +41,7 @@ import static spark.Spark.get;
 public class StatusController {
 
     public StatusController() {
-
         get(REST.WebPath.GET_STATUS_CONFIG_URI, this::getStatus);
-
     }
 
     @GET

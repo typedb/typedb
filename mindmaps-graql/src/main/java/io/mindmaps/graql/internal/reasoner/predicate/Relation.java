@@ -19,6 +19,7 @@
 package io.mindmaps.graql.internal.reasoner.predicate;
 
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.Graql;
@@ -35,6 +36,8 @@ import static io.mindmaps.graql.internal.reasoner.Utility.getCompatibleRoleTypes
 public class Relation extends AtomBase {
 
     private final Set<VarAdmin.Casting> castings = new HashSet<>();
+    private Map<RoleType, Pair<String, Type>> roleVarTypeMap = null;
+    private Map<String, Pair<Type, RoleType>> varTypeRoleMap = null;
 
     public Relation(VarAdmin pattern) {
         super(pattern);
@@ -175,12 +178,12 @@ public class Relation extends AtomBase {
      * Attempts to infer the implicit roleTypes of vars in a relAtom
      * @return map containing a varName - varType, varRoleType triple
      */
-    public Map<String, Pair<Type, RoleType>> getVarTypeRoleMap() {
+    private Map<String, Pair<Type, RoleType>> computeVarTypeRoleMap() {
         Map<String, Pair<Type, RoleType>> roleVarTypeMap = new HashMap<>();
         if (getParentQuery() == null) return roleVarTypeMap;
 
         MindmapsGraph graph =  getParentQuery().getGraph().orElse(null);
-        String relTypeId = getTypeId();
+        Type relType = getType();
         Set<String> vars = getVarNames();
         Map<String, Type> varTypeMap = getParentQuery().getVarTypeMap();
 
@@ -196,7 +199,7 @@ public class Relation extends AtomBase {
                 roleVarTypeMap.put(var, new Pair<>(type, graph.getRoleType(roleTypeId)));
             else {
                 if (type != null) {
-                    Set<RoleType> cRoles = getCompatibleRoleTypes(type.getId(), relTypeId, getParentQuery().getGraph().orElse(null));
+                    Set<RoleType> cRoles = getCompatibleRoleTypes(type, relType);
 
                     //if roleType is unambigous
                     if (cRoles.size() == 1)
@@ -210,16 +213,28 @@ public class Relation extends AtomBase {
         return roleVarTypeMap;
     }
 
+    @Override
+    public Map<String, Pair<Type, RoleType>> getVarTypeRoleMap() {
+        if (varTypeRoleMap == null)
+            varTypeRoleMap = computeVarTypeRoleMap();
+        if (roleVarTypeMap == null){
+            roleVarTypeMap = new HashMap<>();
+            varTypeRoleMap.forEach( (var, tpair) -> {
+                RoleType rt = tpair.getValue();
+                if (rt != null)
+                    roleVarTypeMap.put(rt, new Pair<>(var, tpair.getKey()));
+            });
+        }
+        return varTypeRoleMap;
+    }
+
     /**
      * Attempts to infer the implicit roleTypes and matching types based on contents of the parent query
      * @return map containing a RoleType-Type pair
      */
-    public Map<RoleType, Pair<String, Type>> getRoleVarTypeMap() {
+    private Map<RoleType, Pair<String, Type>> computeRoleVarTypeMap() {
         Map<RoleType, Pair<String, Type>> roleVarTypeMap = new HashMap<>();
-
         if (getParentQuery() == null) return roleVarTypeMap;
-
-
         MindmapsGraph graph =  getParentQuery().getGraph().orElse(null);
         Map<String, Type> varTypeMap = getParentQuery().getVarTypeMap();
         Set<String> allocatedVars = new HashSet<>();
@@ -237,14 +252,14 @@ public class Relation extends AtomBase {
             }
         });
 
-        String relTypeId = getTypeId();
+        RelationType relType = (RelationType) getType();
         Set<String> varsToAllocate = getVarNames();
         varsToAllocate.removeAll(allocatedVars);
         for (String var : varsToAllocate) {
             Type type = varTypeMap.get(var);
 
-            if (type != null) {
-                Set<RoleType> cRoles = getCompatibleRoleTypes(type.getId(), relTypeId, graph);
+            if (type != null && relType != null) {
+                Set<RoleType> cRoles = getCompatibleRoleTypes(type, relType);
                 //if roleType is unambigous
                 if (cRoles.size() == 1) {
                     RoleType role = cRoles.iterator().next();
@@ -254,8 +269,7 @@ public class Relation extends AtomBase {
                 }
             }
         }
-
-        Collection<RoleType> rolesToAllocate = graph.getRelationType(getTypeId()).hasRoles();
+        Collection<RoleType> rolesToAllocate = relType.hasRoles();
         rolesToAllocate.removeAll(allocatedRoles);
         varsToAllocate.removeAll(allocatedVars);
         if (rolesToAllocate.size() == 1 && varsToAllocate.size() == 1) {
@@ -264,7 +278,13 @@ public class Relation extends AtomBase {
             Type type = varTypeMap.get(var);
             roleVarTypeMap.put(role, new Pair<>(var, type));
         }
+        return roleVarTypeMap;
+    }
 
+    @Override
+    public Map<RoleType, Pair<String, Type>> getRoleVarTypeMap() {
+        if (roleVarTypeMap == null)
+            roleVarTypeMap = computeRoleVarTypeMap();
         return roleVarTypeMap;
     }
 }

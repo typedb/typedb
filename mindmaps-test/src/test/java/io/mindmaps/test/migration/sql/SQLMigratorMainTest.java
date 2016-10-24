@@ -99,14 +99,14 @@ public class SQLMigratorMainTest extends AbstractMindmapsMigratorTest {
         Entity alex = graph.getEntity("USERS-2");
         assertNotNull(alex);
 
-        SQLDataMigratorTest.assertResourceEntityRelationExists("NAME", "alex", alex);
-        SQLDataMigratorTest.assertResourceEntityRelationExists("EMAIL", "alex@yahoo.com", alex);
-        SQLDataMigratorTest.assertResourceEntityRelationExists("ID", 2L, alex);
+        assertResourceEntityRelationExists("NAME", "alex", alex);
+        assertResourceEntityRelationExists("EMAIL", "alex@yahoo.com", alex);
+        assertResourceEntityRelationExists("ID", 2L, alex);
 
         Entity alexandra = graph.getEntity("USERS-4");
         assertNotNull(alexandra);
 
-        SQLDataMigratorTest.assertResourceEntityRelationExists("NAME", "alexandra", alexandra);
-        SQLDataMigratorTest.assertResourceEntityRelationExists("ID", 4L, alexandra);
+        assertResourceEntityRelationExists("NAME", "alexandra", alexandra);
+        assertResourceEntityRelationExists("ID", 4L, alexandra);
     }
 }

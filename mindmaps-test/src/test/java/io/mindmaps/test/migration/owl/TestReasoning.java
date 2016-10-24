@@ -9,6 +9,7 @@ import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.semanticweb.HermiT.Configuration;
 import org.semanticweb.HermiT.Reasoner;
@@ -25,12 +26,14 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
 import java.util.stream.Collectors;
 
 import static io.mindmaps.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 
 public class TestReasoning extends TestOwlMindMapsBase {
+
     private IRI baseIri = IRI.create("http://www.co-ode.org/roberts/family-tree.owl");
     private OWLReasoner hermit;
     private io.mindmaps.graql.Reasoner mmReasoner;
@@ -87,6 +90,7 @@ public class TestReasoning extends TestOwlMindMapsBase {
     }
 
     @Test
+    @Ignore
     public void testFullReasoning(){
         QueryBuilder qb = Graql.withGraph(migrator.graph());
         String richardId = "richard_henry_steward_1897";

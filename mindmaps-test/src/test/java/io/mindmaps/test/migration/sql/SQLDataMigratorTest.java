@@ -140,13 +140,13 @@ public class SQLDataMigratorTest extends AbstractMindmapsMigratorTest {
         assertNotNull(louise);
     }
 
-    public static void assertRelationBetweenInstancesExists(Instance instance1, Instance instance2, String relation){
+    public void assertRelationBetweenInstancesExists(Instance instance1, Instance instance2, String relation){
         String relName = namer.relationName(relation);
-        AbstractMindmapsMigratorTest.assertRelationBetweenInstancesExists(instance1, instance2, relName);
+        assertRelationBetweenInstancesExists(instance1, instance2, relName);
     }
 
-    public static void assertResourceEntityRelationExists(String resourceName, Object resourceValue, Entity owner){
+    public void assertResourceEntityRelationExists(String resourceName, Object resourceValue, Entity owner){
         String resource = namer.resourceName(owner.type().getId(), resourceName);
-        AbstractMindmapsMigratorTest.assertResourceEntityRelationExists(resource, resourceValue, owner);
+        assertResourceEntityRelationExists(resource, resourceValue, owner);
     }
 }

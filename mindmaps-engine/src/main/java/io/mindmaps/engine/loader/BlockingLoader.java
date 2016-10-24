@@ -103,9 +103,8 @@ public class BlockingLoader extends Loader {
 
     private void loadData(String name, Collection<Var> batch) {
 
-        try {
+        try(AbstractMindmapsGraph graph = (AbstractMindmapsGraph) GraphFactory.getInstance().getGraphBatchLoading(name)) {
             for (int i = 0; i < repeatCommits; i++) {
-                AbstractMindmapsGraph graph = (AbstractMindmapsGraph) GraphFactory.getInstance().getGraphBatchLoading(name);
                 try {
                     insert(batch).withGraph(graph).execute();
                     graph.commit();

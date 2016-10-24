@@ -38,10 +38,9 @@ import java.util.*;
 public abstract class AtomBase implements Atomic{
 
     protected String varName;
+    protected Type type = null;
     protected final String typeId;
-
     protected final PatternAdmin atomPattern;
-
     private Query parent = null;
 
     public AtomBase() {
@@ -58,10 +57,7 @@ public abstract class AtomBase implements Atomic{
     }
 
     public AtomBase(VarAdmin pattern, Query par) {
-        this.atomPattern = pattern;
-        Pair<String, String> varData = extractDataFromVar(atomPattern.asVar());
-        this.varName = varData.getKey();
-        this.typeId = varData.getValue();
+        this(pattern);
         this.parent = par;
     }
 
@@ -99,11 +95,9 @@ public abstract class AtomBase implements Atomic{
     public String toString(){ return atomPattern.toString(); }
 
     @Override
-    public boolean isRuleResolvable(){
+    public boolean isRuleResolvable() {
         Type type = getParentQuery().getGraph().orElse(null).getType(getTypeId());
-        if (type == null) return false;
-        else
-            return !type.getRulesOfConclusion().isEmpty();
+        return type != null && !type.getRulesOfConclusion().isEmpty();
     }
 
     @Override
@@ -136,7 +130,6 @@ public abstract class AtomBase implements Atomic{
         //add substitutions
         Map<String, Atomic> varSubMap = getVarSubMap();
         Set<String> selectVars = getVarNames();
-        //form a disjunction of each set of subs for a given variable and add to query
         varSubMap.forEach( (var, sub) -> {
             Set<PatternAdmin> patterns = new HashSet<>();
             patterns.add(sub.getPattern());
@@ -188,6 +181,12 @@ public abstract class AtomBase implements Atomic{
         return Sets.newHashSet(varName);
     }
     @Override
+    public Type getType(){
+        if (type == null)
+            type = getParentQuery().getGraph().orElse(null).getType(typeId);
+        return type;
+    }
+    @Override
     public String getTypeId(){ return typeId;}
     @Override
     public String getVal(){ return null;}
@@ -195,25 +194,36 @@ public abstract class AtomBase implements Atomic{
     @Override
     public Map<String, String> getUnifiers(Atomic parentAtom) {
         Set<String> varsToAllocate = parentAtom.getVarNames();
-
         Set<String> childBVs = getVarNames();
-
         Map<String, String> unifiers = new HashMap<>();
         Map<String, Pair<Type, RoleType>> childMap = getVarTypeRoleMap();
         Map<RoleType, Pair<String, Type>> parentMap = parentAtom.getRoleVarTypeMap();
 
+        //try based on substitutions
+        Query parentQuery = parentAtom.getParentQuery();
+        getParentQuery().getSubstitutions().stream().filter(sub -> containsVar(sub.getVarName())).forEach(sub -> {
+            String chVar = sub.getVarName();
+            String id = sub.getVal();
+            Set<Atomic> parentSubs = parentQuery.getSubstitutions().stream()
+                        .filter(s -> s.getVal().equals(id)).collect(Collectors.toSet());
+            String pVar = parentSubs.isEmpty()? "" : parentSubs.iterator().next().getVarName();
+            if (!pVar.isEmpty()) {
+                if (!chVar.equals(pVar)) unifiers.put(chVar, pVar);
+                childBVs.remove(chVar);
+                varsToAllocate.remove(pVar);
+            }
+        });
+
+        //try based on roles
         for (String chVar : childBVs) {
             RoleType role = childMap.containsKey(chVar) ? childMap.get(chVar).getValue() : null;
             String pVar = role != null && parentMap.containsKey(role) ? parentMap.get(role).getKey() : "";
             if (pVar.isEmpty())
                 pVar = varsToAllocate.iterator().next();
 
-            if (!chVar.equals(pVar))
-                unifiers.put(chVar, pVar);
-
+            if (!chVar.equals(pVar)) unifiers.put(chVar, pVar);
             varsToAllocate.remove(pVar);
         }
-
         return unifiers;
     }
 
@@ -251,7 +261,6 @@ public abstract class AtomBase implements Atomic{
     }
 
     @Override
-    //TODO change sub behaviour
     public Map<RoleType, String> getRoleConceptIdMap(){
         Map<RoleType, String> roleConceptMap = new HashMap<>();
         Map<String, Atomic> varSubMap = getVarSubMap();
@@ -278,9 +287,6 @@ public abstract class AtomBase implements Atomic{
         return roleVarTypeMap;
     }
 
-    public Map<RoleType, Pair<String, Type>> getRoleVarTypeMap() {
-        return new HashMap<>();
-    }
-
+    public Map<RoleType, Pair<String, Type>> getRoleVarTypeMap() { return new HashMap<>();}
 }
 

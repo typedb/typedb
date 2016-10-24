@@ -22,10 +22,9 @@ import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
-import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
+import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.test.graql.reasoner.graphs.AdmissionsGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -92,29 +91,18 @@ public class AdmissionsInferenceTest {
         String queryString = "match $x isa applicant;$x has admissionStatus 'full';";
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $x isa applicant; $x id 'Eva' or $x id 'Charlie';";
-
+        
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        printAnswers(reasoner.resolve(query, true));
+        assertEquals(Sets.newHashSet(qb.<MatchQuery>parse(queryString)), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
-    
-    //TODO discards results for $y
+
     @Test
     public void testAdmissions() {
         String queryString = "match $x has admissionStatus $y;";
         Query query = new Query(queryString, graph);
-        String explicitQuery = "match " +
-                "{$x id 'Bob';} or" +
-                "{$x id 'Alice';} or" +
-                "{$x id 'Charlie';} or" +
-                "{$x id 'Denis';} or" +
-                "{$x id 'Frank';} or" +
-                "{$x id 'Eva';};";
-
-        QueryAnswers answers = reasoner.resolve(query);
-        printAnswers(answers);
-
-        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertEquals(Sets.newHashSet(reasoner.resolve(query)), Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {

@@ -5,7 +5,6 @@ import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.graql.internal.pattern.Patterns;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.query.Query;
@@ -15,6 +14,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static io.mindmaps.graql.internal.reasoner.Utility.createFreshVariable;
 
@@ -38,8 +38,7 @@ public class InferenceRule {
     private Type getRuleConclusionType() {
         Set<Type> types = new HashSet<>();
         Collection<Type> unfilteredTypes = rule.getConclusionTypes();
-        for(Type type : unfilteredTypes)
-            if (!type.isRoleType()) types.add(type);
+        types.addAll(unfilteredTypes.stream().filter(type -> !type.isRoleType()).collect(Collectors.toList()));
 
         if (types.size() > 1)
             throw new IllegalArgumentException(ErrorMessage.NON_HORN_RULE.getMessage(rule.getId()));
@@ -55,21 +54,11 @@ public class InferenceRule {
         return atom;
     }
 
-    public boolean isRuleRecursive() {
-        boolean ruleRecursive = false;
-
-        Type RHStype = getRuleConclusionType();
-        if (rule.getHypothesisTypes().contains(RHStype) )
-            ruleRecursive = true;
-
-        return ruleRecursive;
-    }
-
     private void propagateConstraints(Atomic parentAtom){
         body.addAtomConstraints(parentAtom.getSubstitutions());
         head.addAtomConstraints(body.getSubstitutions());
 
-        if(parentAtom.isRelation()) {
+        if(parentAtom.isRelation() || parentAtom.isResource()) {
             head.addAtomConstraints(parentAtom.getTypeConstraints());
             body.addAtomConstraints(parentAtom.getTypeConstraints());
         }

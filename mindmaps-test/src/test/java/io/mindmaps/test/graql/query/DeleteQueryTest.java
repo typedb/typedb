@@ -18,18 +18,14 @@
 
 package io.mindmaps.test.graql.query;
 
-import io.mindmaps.Mindmaps;
-import io.mindmaps.MindmapsGraph;
-import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Var;
+import io.mindmaps.test.AbstractMovieGraphTest;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import java.util.UUID;
 
 import static io.mindmaps.graql.Graql.var;
 import static io.mindmaps.util.Schema.MetaType.ENTITY_TYPE;
@@ -38,8 +34,9 @@ import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 
-public class DeleteQueryTest {
+public class DeleteQueryTest extends AbstractMovieGraphTest {
 
     private QueryBuilder qb;
     @Rule
@@ -47,9 +44,10 @@ public class DeleteQueryTest {
 
     @Before
     public void setUp() {
-        MindmapsGraph mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        MovieGraphFactory.loadGraph(mindmapsGraph);
-        qb = Graql.withGraph(mindmapsGraph);
+        // TODO: Fix delete queries in titan
+        assumeFalse(usingTitan());
+
+        qb = Graql.withGraph(graph);
     }
 
     @Test

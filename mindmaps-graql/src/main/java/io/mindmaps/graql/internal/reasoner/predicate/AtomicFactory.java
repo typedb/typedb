@@ -122,7 +122,6 @@ public class AtomicFactory {
 
                 //resources
                 atoms.addAll(createResourceAtomSet(var, parent));
-
             }
             else {
                 Set<Atomic> resourceAtomSet = createResourceAtomSet(var, parent);

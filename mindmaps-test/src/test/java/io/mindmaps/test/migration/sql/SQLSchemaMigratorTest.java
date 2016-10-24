@@ -200,13 +200,13 @@ public class SQLSchemaMigratorTest extends AbstractMindmapsMigratorTest {
         assertResourceTypeRelationExists("EMAIL", ResourceType.DataType.STRING, type);
     }
 
-    public static void assertResourceTypeRelationExists(String name, ResourceType.DataType datatype, Type owner) {
+    public void assertResourceTypeRelationExists(String name, ResourceType.DataType datatype, Type owner) {
         String resourceName = namer.resourceName(owner.getId(), name);
-        AbstractMindmapsMigratorTest.assertResourceTypeRelationExists(resourceName, datatype, owner);
+        assertResourceTypeRelationExists(resourceName, datatype, owner);
     }
 
-    public static void assertRelationBetweenTypesExists(Type type1, Type type2, String relation) {
+    public void assertRelationBetweenTypesExists(Type type1, Type type2, String relation) {
         String relName = namer.relationName(relation);
-        AbstractMindmapsMigratorTest.assertRelationBetweenTypesExists(type1, type2, relName);
+        assertRelationBetweenTypesExists(type1, type2, relName);
     }
 }

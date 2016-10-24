@@ -28,7 +28,6 @@ import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.query.Query;
-import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
 import io.mindmaps.graql.internal.reasoner.rule.InferenceRule;
 import io.mindmaps.test.graql.reasoner.graphs.SNBGraph;
 import org.junit.Ignore;
@@ -147,7 +146,7 @@ public class ReasonerTest {
 
         Reasoner reasoner = new Reasoner(graph);
         QueryBuilder qb = Graql.withGraph(graph);
-        QueryAnswers answers = reasoner.resolve(query);
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
     }
 
     @Test
@@ -218,8 +217,8 @@ public class ReasonerTest {
     //Bug with unification, perhaps should unify select vars not atom vars
     public void testVarContraction3(){
         MindmapsGraph graph = SNBGraph.getGraph();
-        String body = "match $x isa person;";
-        String head = "match ($x, $x) isa knows;";
+        String body = "$x isa person;";
+        String head = "($x, $x) isa knows;";
         graph.putRule("test", body, head, graph.getMetaRuleInference());
 
         String queryString = "match ($x, $y) isa knows;$x id 'Bob';select $y;";
