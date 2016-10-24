@@ -45,6 +45,10 @@ public class Traversals {
     }
 
     static Stream<EquivalentFragmentSet> equivalentFragmentSets(VarAdmin var) {
+        return var.getImplicitInnerVars().stream().flatMap(Traversals::equivalentFragmentSetsBase);
+    }
+
+    private static Stream<EquivalentFragmentSet> equivalentFragmentSetsBase(VarAdmin var) {
         ShortcutTraversal shortcutTraversal = new ShortcutTraversal();
         Collection<EquivalentFragmentSet> traversals = new HashSet<>();
 
@@ -63,16 +67,10 @@ public class Traversals {
             traversals.addAll(newTraversals);
         });
 
-        Stream<EquivalentFragmentSet> myPatterns;
-        Stream<EquivalentFragmentSet> innerPatterns =
-                var.getImplicitInnerVars().stream().flatMap(Traversals::equivalentFragmentSets);
-
         if (shortcutTraversal.isValid()) {
-            myPatterns = Stream.of(shortcutTraversal.getEquivalentFragmentSet());
+            return Stream.of(shortcutTraversal.getEquivalentFragmentSet());
         } else {
-            myPatterns = traversals.stream();
+            return traversals.stream();
         }
-
-        return Stream.concat(myPatterns, innerPatterns);
     }
 }
