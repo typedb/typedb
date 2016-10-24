@@ -1,3 +1,130 @@
+- 0.4.0 release
+- Fix bug where engine tries to ping shell after it has stopped (#456)
+- Type lookups reduction (#454)
+- Make Graql tests run on all backends (#435)
+- Try-with-resources in Engine (#452)
+- Temporarily ignore randomly failing test (#453)
+- Performance speedup and bug fixes (#451)
+- simplified memorylookup, reduced number of db lookups and precomputing role inferences (#449)
+- Bug fixed where debug printed in Migration script (#448)
+- Ignore ghost node in modified concepts list (#447)
+- reinstated optional materialisation + handling of inferred resources (#437)
+- Refactor analytics (#450)
+- Fix movie graph to use new rule LHS and RHS format (#446)
+- Add periodic pings to graql shell to prevent timeouts (#438)
+- Remove several uses of deprecated `MindmapsGraph#put` methods (#442)
+- Engine and dashboard updated (#444)
+- Rules as patterns (#441)
+- Fix bug when repeating roleplayer (#445)
+- Adding json migration dependency to dist (#439)
+- Graph writer added to Migration  (#436)
+- BUG scaling tests not running periodically on Jenkins (#443)
+- distributed loader did not flush at the correct time when waiting on finished (#440)
+- Update README.md
+- Make getPlayedByTypes() traverse across akos (#431)
+- BUG failures on Jenkins (#432)
+- Move Graql tests into mm-test, to allow removal of mm-graph dependency (#434)
+- Unification fix (#430)
+- Add new analytics method median (#425)
+- Exception handler (#428)
+- Removing unused method in OWL migrator (#427)
+- Handle batch load when engine returns an error response code (#426)
+- Make sure reserved words are correctly quoted with `query.toString()` (#424)
+- Mock out Graql history file so tests don't overwrite user shell history (#422)
+- Deprecate put by item identifier on instances (#420)
+- Remove System.exit from last OWL migration test (#421)
+- Print error when inserting a resource with an ID specified (#423)
+- Remove redundant parse methods (#417)
+- Make sure that meta types cannot be subclassed (#419)
+- Setting mindmaps dir when using migration scripts (#414)
+- Dashboard minor restyling (#418)
+- Pokemon graph factory correct has-resource syntax (#410)
+- Run browserify with relative path (#409)
+- remove System.exit from OWL migration test
+- Fix System.exit bug in OWL tests (#413)
+- Owl fix (#416)
+- Remove accidental "sleep 5 seconds" at start of every mm-test test (#408)
+- extended owl test (#403)
+- FIx bug where roleplayers were not distinct (#402)
+- CSV & JSON migration using Graql templates (#400)
+- Improve error messages when something has no variable name or ID (#398)
+- Add support for statistics methods in compute query (#393)
+- TASK #9944 - migrate tests to new analytics constructor (#407)
+- Make Travis logs more verbose (#401)
+- Add config for integration tests to mindmaps-test pom.xml (#406)
+- Increasing coverage in SQl migration main (#404)
+- Excluding templating generated antlr classes from coverage (#397)
+- removed unary (#399)
+- Fix bug when parsing a stream of patterns containing a syntax error (#395)
+- Include src files recursively. (#396)
+- Include examples recursively (#392)
+- Add example tests (#391)
+- (#10103) Graql templating (#388)
+- Refactor mindmaps-test to use maven profiles (#387)
+- Excluding generated antlr classes from coverage (#381)
+- binary resources (#379)
+- Add support for loading multiple files in graql shell (#377)
+- Get things working on ubuntu (#389)
+- Include files in the package + tar.gz (#386)
+- Bug #10118 Error on right click (#385)
+- Functionality #9961 Revert to old physics model (#384)
+- Functionality #10088 'Show Types' display tabs (#383)
+- Bug #10098 Cluster nodes disconnected after updating node labels (#382)
+- Node lables fix (#380)
+- Functionality #9144 Syntax highlighting of GRAQL queries (#376)
+- Functionality #9960 Split Visualiser & Shell into separate components/pages (#369)
+- Improve error when missing colon between role type and roleplayer (#370)
+- BUG #9963 - analytics does not handle null roleplayers (#375)
+- atomix fixes (#374)
+- Node lables fix (#364)
+- Improve vendor support in mm-test (#373)
+- More common testing (#368)
+- Add Graql examples to mindmaps-dist (#371)
+- Get TinkerGraphFactory to return the same graph when asking for batch or normal graph (#367)
+- Make graql pattern parser require keyword "insert" at start (#366)
+- Logging in BatchLoader (#365)
+- Atomic cleanup (#363)
+- BUG #9604 - random failures on travis (#362)
+- Setup commong testing framework between OrientDB and Titan (#361)
+- Add `mindmaps.sh clean` command (#360)
+- support for commas in queries (#359)
+- Functionality #9912 Clustering (#349)
+- atom creation fix (#354)
+- Re-add Ignore in GraqlShellTest (#358)
+- Several small refactors and tests (#357)
+- Fix issue when errors sent to graql shell are too large (#356)
+- BUG #9838 and computing statistics on degree (#355)
+- Improved Orientdb Integration (#353)
+- Support Tinker Graph Computer (#341)
+- added mapping for owl reflexive property (#351)
+- New importController (#347)
+- Bug #9821 Colour of meta-type (e.g. entity-type) and type (e.g. movie) should be different (#324)
+- BUG #9813 Accidentally committing concepts in graql with analytics. (#352)
+- Correct name of Titan Index (#350)
+- Make graql shell print message from engine when batch loading (#348)
+- Bug #9921 Sort Display Configuration items alphabetically (#345)
+- Bug #9920 preventDefault() called on non-keyboard events (#344)
+- Migration test fix (#346)
+- Bug #9894 Update help menu for shift+left click (#325)
+- Revert "BUG #9604 - random failures on travis" (#343)
+- BUG #9604 - random failures on travis (#338)
+- Refactor VarProperty classes (#329)
+- fixed typing of owl family individuals (#337)
+- Add rollback to list of shell commands (#342)
+- Add support for sending batch requests from shell (#340)
+- Making types immutable (#339)
+- More reasoning with owl ontologies (#332)
+- Bug #9862 graql shell not working with analytics statistics (#331)
+- BUG - needed titan-factory dependency in mindmaps-dist (#336)
+- Migration test fixes (#335)
+- Cleanup after Taking out Titan Dependency (#334)
+- Remove titan dependency single engine (#333)
+- Bug #9893 Show _type instead of _id for relations (#330)
+- Restarting Engine on Integration Tests (#328)
+- Upgrade to 0.3.0-SNAPSHOT (#323)
+- Update README.md
+Version 0.2.0
+- Upgrade to 0.2.0-SNAPHOT (#202)
 - Fixing mindmaps-dist version problems (#204)
 - Fix bug where resources were in "quotes" even if they weren't strings (#203)
 - Introduce new Query interface (#205)
@@ -114,3 +241,320 @@
 - Fix bug when casting resource data types (#320)
 - Fix statistics (#322)
 - update mjson to stable version 1.4.0
+- update poms to version 0.2.0 for official release
+- Update README.md
+- Upgrade to 0.3.0-SNAPSHOT (#323)
+- Restarting Engine on Integration Tests (#328)
+- Bug #9893 Show _type instead of _id for relations (#330)
+- Remove titan dependency single engine (#333)
+- Cleanup after Taking out Titan Dependency (#334)
+- Migration test fixes (#335)
+- BUG - needed titan-factory dependency in mindmaps-dist (#336)
+- Bug #9862 graql shell not working with analytics statistics (#331)
+- More reasoning with owl ontologies (#332)
+- Making types immutable (#339)
+- Add support for sending batch requests from shell (#340)
+- Add rollback to list of shell commands (#342)
+- fixed typing of owl family individuals (#337)
+- Refactor VarProperty classes (#329)
+- BUG #9604 - random failures on travis (#338)
+- Revert "BUG #9604 - random failures on travis" (#343)
+- Bug #9894 Update help menu for shift+left click (#325)
+- Migration test fix (#346)
+- Bug #9920 preventDefault() called on non-keyboard events (#344)
+- Bug #9921 Sort Display Configuration items alphabetically (#345)
+- Make graql shell print message from engine when batch loading (#348)
+- Correct name of Titan Index (#350)
+- BUG #9813 Accidentally committing concepts in graql with analytics. (#352)
+- Bug #9821 Colour of meta-type (e.g. entity-type) and type (e.g. movie) should be different (#324)
+- New importController (#347)
+- added mapping for owl reflexive property (#351)
+- Support Tinker Graph Computer (#341)
+- Improved Orientdb Integration (#353)
+- BUG #9838 and computing statistics on degree (#355)
+- Fix issue when errors sent to graql shell are too large (#356)
+- Several small refactors and tests (#357)
+- Re-add Ignore in GraqlShellTest (#358)
+- atom creation fix (#354)
+- Functionality #9912 Clustering (#349)
+- support for commas in queries (#359)
+- Add `mindmaps.sh clean` command (#360)
+- Setup commong testing framework between OrientDB and Titan (#361)
+- BUG #9604 - random failures on travis (#362)
+- Atomic cleanup (#363)
+- Logging in BatchLoader (#365)
+- Make graql pattern parser require keyword "insert" at start (#366)
+- Get TinkerGraphFactory to return the same graph when asking for batch or normal graph (#367)
+- Add Graql examples to mindmaps-dist (#371)
+- More common testing (#368)
+- Improve vendor support in mm-test (#373)
+- Node lables fix (#364)
+- atomix fixes (#374)
+- BUG #9963 - analytics does not handle null roleplayers (#375)
+- Improve error when missing colon between role type and roleplayer (#370)
+- Functionality #9960 Split Visualiser & Shell into separate components/pages (#369)
+- Functionality #9144 Syntax highlighting of GRAQL queries (#376)
+- Node lables fix (#380)
+- Bug #10098 Cluster nodes disconnected after updating node labels (#382)
+- Functionality #10088 'Show Types' display tabs (#383)
+- Functionality #9961 Revert to old physics model (#384)
+- Bug #10118 Error on right click (#385)
+- Include files in the package + tar.gz (#386)
+- Get things working on ubuntu (#389)
+- Add support for loading multiple files in graql shell (#377)
+- binary resources (#379)
+- Excluding generated antlr classes from coverage (#381)
+- Refactor mindmaps-test to use maven profiles (#387)
+- (#10103) Graql templating (#388)
+- Add example tests (#391)
+- Include examples recursively (#392)
+- Include src files recursively. (#396)
+- Fix bug when parsing a stream of patterns containing a syntax error (#395)
+- removed unary (#399)
+- Excluding templating generated antlr classes from coverage (#397)
+- Increasing coverage in SQl migration main (#404)
+- Add config for integration tests to mindmaps-test pom.xml (#406)
+- Make Travis logs more verbose (#401)
+- TASK #9944 - migrate tests to new analytics constructor (#407)
+- Add support for statistics methods in compute query (#393)
+- Improve error messages when something has no variable name or ID (#398)
+- CSV & JSON migration using Graql templates (#400)
+- FIx bug where roleplayers were not distinct (#402)
+- extended owl test (#403)
+- Remove accidental "sleep 5 seconds" at start of every mm-test test (#408)
+- Owl fix (#416)
+- Fix System.exit bug in OWL tests (#413)
+- remove System.exit from OWL migration test
+- Run browserify with relative path (#409)
+- Pokemon graph factory correct has-resource syntax (#410)
+- Dashboard minor restyling (#418)
+- Setting mindmaps dir when using migration scripts (#414)
+- Make sure that meta types cannot be subclassed (#419)
+- Remove redundant parse methods (#417)
+- Print error when inserting a resource with an ID specified (#423)
+- Remove System.exit from last OWL migration test (#421)
+- Deprecate put by item identifier on instances (#420)
+- Mock out Graql history file so tests don't overwrite user shell history (#422)
+- Make sure reserved words are correctly quoted with `query.toString()` (#424)
+- Handle batch load when engine returns an error response code (#426)
+- Removing unused method in OWL migrator (#427)
+- Exception handler (#428)
+- Add new analytics method median (#425)
+- Unification fix (#430)
+- Move Graql tests into mm-test, to allow removal of mm-graph dependency (#434)
+- BUG failures on Jenkins (#432)
+- Make getPlayedByTypes() traverse across akos (#431)
+- Update README.md
+- distributed loader did not flush at the correct time when waiting on finished (#440)
+- BUG scaling tests not running periodically on Jenkins (#443)
+- Graph writer added to Migration  (#436)
+- Adding json migration dependency to dist (#439)
+- Fix bug when repeating roleplayer (#445)
+- Rules as patterns (#441)
+- Engine and dashboard updated (#444)
+- Remove several uses of deprecated `MindmapsGraph#put` methods (#442)
+- Add periodic pings to graql shell to prevent timeouts (#438)
+- Fix movie graph to use new rule LHS and RHS format (#446)
+- Refactor analytics (#450)
+- reinstated optional materialisation + handling of inferred resources (#437)
+- Ignore ghost node in modified concepts list (#447)
+- Bug fixed where debug printed in Migration script (#448)
+- simplified memorylookup, reduced number of db lookups and precomputing role inferences (#449)
+- Performance speedup and bug fixes (#451)
+- Temporarily ignore randomly failing test (#453)
+- Try-with-resources in Engine (#452)
+- Make Graql tests run on all backends (#435)
+- Type lookups reduction (#454)
+- Fix bug where engine tries to ping shell after it has stopped (#456)
+
+
+Version v0.1.0
+- Initial commit
+- Create .gitignore
+- Update README.md
+- Project initilisation
+- Engine integration
+- Fix tinkerpop dependency conflicts
+- Make shell correctly handle InvalidConceptTypeException
+- Fix crash with recursive definition (e.g. thing isa thing)
+- Fix bug where valid insert queries were failing
+- Fix bug when adding resource types and instances
+- Mindmaps client + Mindmaps Engine
+- Hiding Vendor Factories
+- Remove putting shortcuts from post processing. Now we need to fix duplicates which may arise
+- Make some interface methods more permissive
+- Add support for 'has-resource' syntax
+- Integrating Reasoner
+- Use "union" step in gremlin to join disjoint traversals
+- Fix factory tests to always clear graph before and after tests
+- Refactor autocomplete to be in main graql module
+- Add Gitter badge
+- Update README.md
+- Update README.md
+- Update README.md
+- Improving validation. Also adding a test which we should really try to get passing regarding Role Type inheritance
+- Expanding how mindmaps graphs are built via factory and rest API
+- Copyright GPLv3
+- Moving batch loading trigger to graph level rather than transaction level
+- Print license from graql
+- initial QSQ and handling expansions using DNF
+- fixed issues
+- Java doccing with minor code cleanup
+- Configuration fixes
+- Fix shell to work with newest engine
+- Add mindmaps-dist
+- Add test for escaping strings in graql
+- Add support for specifying graph name in graql shell
+- Fix bug where IDs were not quoted when converting queries to strings
+- Fix bug where autocomplete was not working in shell
+- Add support for parsing lists of patterns
+- Make insert queries print newlines between patterns
+- Add support for parsing large streams of graql patterns
+- Fix bug where role players treated as types during validation
+- Rearrange string representation of queries to be clearer
+- Fix bug where query.toString didn't include "has-resource"
+- Fix bug when providing transaction to match.insert query
+- Add support for reasoner to shell
+- config renaming
+- Fix bug when parsing to the end of a stream of patterns
+- Fix bug with validation due to ako on role-types
+- Disallow inserting types without providing an ID
+- Fix broken graql test
+- reworked var substitution
+- Fix bug with parsing booleans
+- Make queries mostly immutable
+- New casting post processing.
+- Some refactoring to core api componenets
+- Refactor MatchQuery implementations
+- Updated BlockingLoader and DistributedLoader:
+- Clear Engine cache when clearing the graph with core. (#71)
+- Make mindmaps-dist not require cassandra installed (#72)
+- pom.xml for maven central distribution - copied over/merged from development branch
+- pom.xml merge conflict resolution
+- Fix removed things from pom during merge (#73)
+- Introduce mindmaps-base package to house global constants (#75)
+- New Relation Post processing (#76)
+- Fix tests to not require cassandra running (#77)
+- more tests, bit refactoring, java docs (#78)
+- Refactor graql package structure (#79)
+- General clean-up of graql (#81)
+- Refactor MatchQuery to move transaction and ordering into new classes (#82)
+- Speed up mindmaps-titan-factory tests (#83)
+- Add 'getTypes' to InsertQuery (#85)
+- Hide the underlaying tinkerpop graph completely (#87)
+- Add support for simple aggregate queries (#88)
+- Refactor aggregate functionality (#89)
+- Refactoring factory to better support other vendors (#90)
+- Cleanup after major refactor of factory and core (#91)
+- Thread local transactions which will enable us to use implicit thread construction rather than explicit (#92)
+- make gpg signing optional: activate profile by passing -DperformRelease=true command line option to maven
+- Add travis CI config file (#93)
+- Add travis CI config file (#93) (#94)
+- updated readme with badges
+- updated readme with badges
+- updated readme with badges
+- Add slack integration to Travis CI (#95)
+- updated readme links
+- updated readme links
+- updated readme links
+- updated readme links
+- updated readme links
+- Getting rid of vendor specific transaction (#96)
+- Major refactor of Graql (#98)
+- Move several interfaces to mindmaps-base with dependency inversion (#100)
+- updated developer list on pom.xml
+- Coveralls integration (#99)
+- Det rid of accidentally commited deps.txt (#101)
+- Handle case where engine url is null more elegantly (#103)
+- Add support for aggregates to graql parser (#104)
+- experimental SLD-AL & refactor (#105)
+- added slack badge
+- Add "sum" aggregate (#106)
+- Add status to mindmaps.sh (#107)
+- Graph computer interface (#108)
+- experimental Urbani QSQR (#109)
+- Add several aggregate methods (#111)
+- bug fixes and refactor (#112)
+- TASK #8955: First merge of Analytics (#113)
+- added scalable tests from Cao and Nguyen (#115)
+- Loaders & Documentation (#116)
+- Allow specifying URI of engine in graql shell (#117)
+- Add better syntax errors to graql (#118)
+- TASK #8702: Migrate analytics prototype tests (#119)
+- Validation runtime bottleneck fix, close() does not actually throw exception (#120)
+- Fix circular ako edges (#122)
+- removed answer explosion, better selection and fixes (#121)
+- collectors fix (#124)
+- New changes to Engine:
+- small fix in assets path and moved MindmapsEngineServer inside io.mindmaps
+- Hal path master (#125)
+- Make Travis automatically cache Maven directory (#126)
+- adding multiple HAL objects
+- Fixed creation of logs folder and project path (#128)
+- Analytics (#127)
+- new getPath method in ConfigProperties
+- New getPath method to read paths from config files   - the new method will return the path if it is absolute     or it will prepend the project dir to it if it is relative   - new endpoint /graph/match
+- Hal subgraphs and getPath (#129)
+- Moving batch loading trigger to MindmapsClient (#130)
+- mark the RAML plugin in Engine to be ignore by the m2e Eclipse plugin
+- Computer keyspace no longer needs to be hardcoded (#131)
+- Make LHS and RHS of rules manadatory (#135)
+- Incorporate custom keyspaces into analytics. (#136)
+- Changes to Engine: (#133)
+- Fix circular ako edges for instances() and move autoclosable interface (#137)
+- support for resolution without expansions (#138)
+- Making sure castings are not removed when we delete a relation (#140)
+- Update README.md
+- Update README.md
+- Remove plugins conflciting with coveralls (#143)
+- Cleanup up some core code and improved test coverage slightly (#145)
+- add migration parent module and OWL submodule
+- some OWL migration cleanup, including removal of dreaded tab character
+- Temporarily ignore failing tests
+- Only use reasoner if there are rules defined in the graph (#148)
+- Making Graph Factory Vendor Agnostic (#146)
+- Put integration plugin back in with no version number to avoid conflict (#150)
+- Make Graql shell queries execute on the engine server (#149)
+- Remove Set ID (#151)
+- Fix bug where queries involving types were slow (#152)
+- Integrating CSV migrator (#8829) (#157)
+- Run tests only once wiht travic and coveralls (#156)
+- Remote master (#153)
+- Make analytics tests always use fresh keyspaces (#161)
+- Make resources unique by type and value (#144)
+- Make Travis only run tests once, not twice for coveralls (#160)
+- Remove Subject Identifier (#162)
+- Allow user to interrupt shell queries with SIGINT (Ctrl-C) (#165)
+- TASK #9223 scale tests for degree and persist only (#166)
+- Remove putRelation by role map (#167)
+- Add support for aggregate queries to shell (#168)
+- Fix bug where errors were "in quotes" in Graql shell (#169)
+- Integration of SQL migration (#8918) (#164)
+- Repackage engine to io.mindmaps.engine (#170)
+- Update compute query syntax (#172)
+- migration compile problems fix.
+- Remove references to "tranasction" (#175)
+- Some refactoring of naming and packages (#177)
+- fixing and making migration tests smaller (#176)
+- Graql refactor to reduce visibility of classes (#178)
+- More refactoring of core and base (#179)
+- Fix Graql shell bugs (#180)
+- HAL Builder small refactor (#181)
+- Dashboard merge (#185)
+- remove superfluous OWLMigrator.getGraph
+- Close graph rather than transaction (#186)
+- Minor javadoc updates (#187)
+- Remove dependency added accidentally during a refactor (#188)
+- mindmaps computer javadocs (#189)
+- Updating copyright (#191)
+- Improve ComputeQuery behaviour (#193)
+- Remove internal repos from pom (#190)
+- Add support for has-resource queries with var on right-hand side (#194)
+- Make sure GraqlShell tests always reset stdout (#195)
+- commented out building of dashboard module (temporarily) and updated README.md
+- reasoner release (#196)
+- code cleanup and refactor (#198)
+- Migration shell script (#197)
+- New log config file (#199)
+- fix countVertexProgram (#201)
+- release version 0.1.0
