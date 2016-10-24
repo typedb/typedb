@@ -34,7 +34,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 
 public class MindmapsFactoryBuilderTest {
-    private final static String TEST_CONFIG = "../conf/test/mindmaps-tinker-test.properties";
+    private final static String TEST_CONFIG = "../conf/test/tinker/mindmaps-tinker.properties";
     private final static String KEYSPACE = "keyspace";
     private final static String ENGINE_URL = "rubbish";
 
