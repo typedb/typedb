@@ -155,9 +155,6 @@ public class Query implements MatchQueryInternal {
     public void propagateAnswers(Map<AtomicQuery, AtomicQuery> matAnswers){
         throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
     }
-    public void record(AtomicQuery ruleHead, Map<AtomicQuery, AtomicQuery> matAnswers){
-        throw new IllegalStateException(ErrorMessage.ANSWER_ERROR.getMessage());
-    }
 
     public Set<Atomic> getAtoms() { return new HashSet<>(atomSet);}
     public Set<Atomic> getSubstitutions(){
