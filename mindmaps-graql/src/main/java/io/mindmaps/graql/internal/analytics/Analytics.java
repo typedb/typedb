@@ -276,6 +276,18 @@ public class Analytics {
     }
 
     /**
+     * Compute the number of connected components.
+     *
+     * @return a map of set, each set contains all the vertex ids belonging to one connected component
+     */
+    public Map<String, Set<String>> connectedComponent() {
+        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
+        ComputerResult result = computer.compute(new ConnectedComponentVertexProgram(subtypes),
+                new ClusterPopulationMapReduce(subtypes));
+        return result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
+    }
+
+    /**
      * Compute the number of relations that each instance takes part in.
      *
      * @return a map from each instance to its degree
