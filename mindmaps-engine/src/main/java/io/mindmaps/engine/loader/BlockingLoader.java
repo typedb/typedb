@@ -91,12 +91,17 @@ public class BlockingLoader extends Loader {
         flush();
         try {
             executor.shutdown();
-            executor.awaitTermination(5, TimeUnit.MINUTES);
+            boolean finished = executor.awaitTermination(5, TimeUnit.MINUTES);
+
             LOG.info("All tasks submitted, waiting for termination..");
+            if(finished){
+                LOG.info("All tasks done. Loading complete.");
+            } else {
+                LOG.warn("Loading exceeded timeout.");
+            }
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         } finally {
-            LOG.info("All tasks done!");
             executor = Executors.newFixedThreadPool(threadsNumber);
         }
     }
