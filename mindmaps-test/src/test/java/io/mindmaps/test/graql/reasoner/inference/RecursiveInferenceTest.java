@@ -38,6 +38,7 @@ import org.junit.Test;
 import java.util.Map;
 import java.util.Set;
 
+import static io.mindmaps.graql.internal.reasoner.Utility.printAnswers;
 import static org.junit.Assert.assertEquals;
 
 public class RecursiveInferenceTest {
@@ -89,7 +90,7 @@ public class RecursiveInferenceTest {
 
     /**as above but both directions*/
     @Test
-    public void testAncestor2() {
+    public void testAncestorPrime() {
         MindmapsGraph graph = GenericGraph.getGraph("ancestor-test.gql");
         QueryBuilder qb = Graql.withGraph(graph);
         Reasoner reasoner = new Reasoner(graph);
@@ -103,6 +104,48 @@ public class RecursiveInferenceTest {
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
         assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+    }
+
+    @Test
+    public void testAncestor2() {
+        MindmapsGraph graph = GenericGraph.getGraph("ancestor-test.gql");
+        QueryBuilder qb = Graql.withGraph(graph);
+        Reasoner reasoner = new Reasoner(graph);
+
+        String queryString = "match (ancestor: $X, descendant: $Y) isa Ancestor;";
+        MatchQuery query = qb.parse(queryString);
+
+        String explicitQuery = "match $Y isa Person;" +
+                "{$X id 'a';$Y id 'aa';} or {$X id 'a';$Y id 'ab';} or {$X id 'a';$Y id 'aaa';} or {$X id 'a';$Y id 'aab';} or {$X id 'a';$Y id 'aaaa';} or " +
+                "{$X id 'aa';$Y id 'aaa';} or {$X id 'aa';$Y id 'aab';} or {$X id 'aa';$Y id 'aaaa';} or " +
+                "{$X id 'aaa';$Y id 'aaaa';} or " +
+                "{$X id 'c';$Y id 'ca';};";
+
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+    }
+
+    @Test
+    public void testAncestor2Prime() {
+        MindmapsGraph graph = GenericGraph.getGraph("ancestor-test.gql");
+        QueryBuilder qb = Graql.withGraph(graph);
+        Reasoner reasoner = new Reasoner(graph);
+
+        String queryString = "match ($X, $Y) isa Ancestor;";
+        MatchQuery query = qb.parse(queryString);
+
+        String explicitQuery = "match $Y isa Person;" +
+                "{$X id 'a';$Y id 'aa';} or {$X id 'a';$Y id 'ab';} or {$X id 'a';$Y id 'aaa';} or {$X id 'a';$Y id 'aab';} or {$X id 'a';$Y id 'aaaa';} or " +
+                "{$Y id 'a';$X id 'aa';} or {$Y id 'a';$X id 'ab';} or {$Y id 'a';$X id 'aaa';} or {$Y id 'a';$X id 'aab';} or {$Y id 'a';$X id 'aaaa';} or " +
+                "{$X id 'aa';$Y id 'aaa';} or {$X id 'aa';$Y id 'aab';} or {$X id 'aa';$Y id 'aaaa';} or " +
+                "{$Y id 'aa';$X id 'aaa';} or {$Y id 'aa';$X id 'aab';} or {$Y id 'aa';$X id 'aaaa';} or " +
+                "{$X id 'aaa';$Y id 'aaaa';} or " +
+                "{$Y id 'aaa';$X id 'aaaa';} or " +
+                "{$X id 'c';$Y id 'ca';} or " +
+                "{$Y id 'c';$X id 'ca';};";
+
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     /**from Vieille - Recursive Axioms in Deductive Databases (QSQ approach) p. 186*/

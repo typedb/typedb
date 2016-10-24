@@ -35,7 +35,7 @@ public class PathGraph extends GenericGraph {
         return mindmaps;
     }
 
-    private static void buildExtensionalDB(int n, int children) {
+    protected static void buildExtensionalDB(int n, int children) {
         long startTime = System.currentTimeMillis();
 
         EntityType vertex = mindmaps.getEntityType("vertex");
