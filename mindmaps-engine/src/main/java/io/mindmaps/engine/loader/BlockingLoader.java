@@ -63,6 +63,7 @@ public class BlockingLoader extends Loader {
 
     public void setExecutorSize(int size) {
         try {
+            threadsNumber = size;
             executor.shutdown();
             executor.awaitTermination(5, TimeUnit.MINUTES);
         } catch (InterruptedException e) {
