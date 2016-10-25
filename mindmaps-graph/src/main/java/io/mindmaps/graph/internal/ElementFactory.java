@@ -97,11 +97,7 @@ final class ElementFactory {
      * @return A concept built to the correct type
      */
     public ConceptImpl buildUnknownConcept(Vertex v){
-        if(!v.property(Schema.ConceptProperty.BASE_TYPE.name()).isPresent()){
-            return null;
-        }
-        
-        Schema.BaseType type = Schema.BaseType.valueOf(v.value(Schema.ConceptProperty.BASE_TYPE.name()));
+        Schema.BaseType type = Schema.BaseType.valueOf(v.label());
         ConceptImpl concept = null;
         //All these types are null because at this stage the concept has been defined so we don't need to know the type.
         switch (type){
@@ -143,7 +139,7 @@ final class ElementFactory {
     }
 
     public TypeImpl buildSpecificConceptType(Vertex vertex, Type type){
-        Schema.BaseType baseType = Schema.BaseType.valueOf(vertex.value(Schema.ConceptProperty.BASE_TYPE.name()));
+        Schema.BaseType baseType = Schema.BaseType.valueOf(vertex.label());
         TypeImpl conceptType;
         switch (baseType){
             case ROLE_TYPE:

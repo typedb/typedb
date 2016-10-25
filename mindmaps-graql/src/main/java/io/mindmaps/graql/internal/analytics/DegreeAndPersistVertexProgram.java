@@ -25,8 +25,6 @@ import org.apache.tinkerpop.gremlin.process.computer.Messenger;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -54,7 +52,7 @@ class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
         switch (memory.getIteration()) {
             case 0:
                 if (selectedTypes.contains(Utility.getVertexType(vertex)) && !Utility.isAnalyticsElement(vertex)) {
-                    String type = vertex.value(Schema.ConceptProperty.BASE_TYPE.name());
+                    String type = vertex.label();
                     if (type.equals(Schema.BaseType.ENTITY.name()) || type.equals(Schema.BaseType.RESOURCE.name())) {
                         messenger.sendMessage(countMessageScopeIn, 1L);
                     } else if (type.equals(Schema.BaseType.RELATION.name())) {
@@ -64,7 +62,7 @@ class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
                 }
                 break;
             case 1:
-                if (vertex.value(Schema.ConceptProperty.BASE_TYPE.name()).equals(Schema.BaseType.CASTING.name())) {
+                if (vertex.label().equals(Schema.BaseType.CASTING.name())) {
                     boolean hasRolePlayer = false;
                     long assertionCount = 0;
                     Iterator<Long> iterator = messenger.receiveMessages();

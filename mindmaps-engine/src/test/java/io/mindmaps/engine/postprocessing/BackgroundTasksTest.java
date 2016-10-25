@@ -89,21 +89,21 @@ public class BackgroundTasksTest extends MindmapsEngineTestBase{
         mindmapsGraph.commit();
 
         //Check Number of castings is as expected
-        assertEquals(2, ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph().traversal().V().has(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.CASTING.name()).toList().size());
+        assertEquals(2, ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
 
         //Break The Graph With Fake Castings
         buildDuplicateCasting(relationTypeId, mainRoleTypeId, mainInstanceId, otherRoleTypeId, otherInstanceId3);
         buildDuplicateCasting(relationTypeId, mainRoleTypeId, mainInstanceId, otherRoleTypeId, otherInstanceId4);
 
         //Check the graph is broken
-        assertEquals(6, ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph().traversal().V().has(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.CASTING.name()).toList().size());
+        assertEquals(6, ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
 
         waitForCache(true, keyspace, 4);
         //Now fix everything
         backgroundTasks.forcePostprocessing();
 
         //Check it's all fixed
-        assertEquals(4, ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph().traversal().V().has(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.CASTING.name()).toList().size());
+        assertEquals(4, ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
     }
 
     private void buildDuplicateCasting(String relationTypeId, String mainRoleTypeId, String mainInstanceId, String otherRoleTypeId, String otherInstanceId) throws Exception {
@@ -129,8 +129,7 @@ public class BackgroundTasksTest extends MindmapsEngineTestBase{
                 has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), mainInstanceId).next();
 
         //Create Fake Casting
-        Vertex castingVertex = rawGraph.addVertex();
-        castingVertex.property(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.CASTING.name());
+        Vertex castingVertex = rawGraph.addVertex(Schema.BaseType.CASTING.name());
         castingVertex.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), UUID.randomUUID().toString());
         castingVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), mainRoleTypeVertex);
 
@@ -177,8 +176,7 @@ public class BackgroundTasksTest extends MindmapsEngineTestBase{
         Vertex vertexResourceType = (Vertex) graph.getTinkerTraversal()
                 .has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), resourceType.getId()).next();
 
-        Vertex resourceVertex = graph.getTinkerPopGraph().addVertex();
-        resourceVertex.property(Schema.ConceptProperty.BASE_TYPE.name(), Schema.BaseType.RESOURCE.name());
+        Vertex resourceVertex = graph.getTinkerPopGraph().addVertex(Schema.BaseType.RESOURCE.name());
         resourceVertex.property(Schema.ConceptProperty.INDEX.name(),originalResource.value(Schema.ConceptProperty.INDEX.name()));
         resourceVertex.property(Schema.ConceptProperty.VALUE_STRING.name(), originalResource.value(Schema.ConceptProperty.VALUE_STRING.name()));
         resourceVertex.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), UUID.randomUUID().toString());

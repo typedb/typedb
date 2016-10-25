@@ -130,7 +130,9 @@ public class MindmapsTitanGraphFactoryTest {
     @Test
     public void testVertexLabels(){
         TitanManagement management = sharedGraph.openManagement();
-        assertNotNull(management.getVertexLabel(Schema.VERTEX_LABEL));
+        for (Schema.BaseType baseType : Schema.BaseType.values()) {
+            assertNotNull(management.getVertexLabel(baseType.name()));
+        }
     }
 
     @Test

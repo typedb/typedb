@@ -156,7 +156,7 @@ public class MedianVertexProgram extends MindmapsVertexProgram<Long> {
         switch (memory.getIteration()) {
             case 0:
                 if (selectedTypes.contains(Utility.getVertexType(vertex))) {
-                    String type = vertex.value(Schema.ConceptProperty.BASE_TYPE.name());
+                    String type = vertex.label();
                     if (type.equals(Schema.BaseType.ENTITY.name()) || type.equals(Schema.BaseType.RESOURCE.name())) {
                         messenger.sendMessage(this.countMessageScopeIn, 1L);
                     } else if (type.equals(Schema.BaseType.RELATION.name())) {
@@ -166,7 +166,7 @@ public class MedianVertexProgram extends MindmapsVertexProgram<Long> {
                 }
                 break;
             case 1:
-                String type = vertex.value(Schema.ConceptProperty.BASE_TYPE.name());
+                String type = vertex.label();
                 if (type.equals(Schema.BaseType.CASTING.name())) {
                     boolean hasRolePlayer = false;
                     long assertionCount = 0;

@@ -117,9 +117,12 @@ class MindmapsTitanInternalFactory extends AbstractMindmapsInternalFactory<Mindm
     }
 
     private static void makeVertexLabels(TitanManagement management){
-        VertexLabel foundLabel = management.getVertexLabel(Schema.VERTEX_LABEL);
-        if(foundLabel == null)
-            management.makeVertexLabel(Schema.VERTEX_LABEL).make();
+        for (Schema.BaseType baseType : Schema.BaseType.values()) {
+            VertexLabel foundLabel = management.getVertexLabel(baseType.name());
+            if(foundLabel == null) {
+                management.makeVertexLabel(baseType.name()).make();
+            }
+        }
     }
 
     private static void makeIndicesVertexCentric(TitanManagement management){
