@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -52,6 +53,7 @@ public abstract class Loader {
         loadingJobs = new AtomicInteger();
         errorJobs = new AtomicInteger();
         finishedJobs = new AtomicInteger();
+        batch = new HashSet<>();
     }
 
     /**
@@ -132,5 +134,14 @@ public abstract class Loader {
                 .set(TransactionState.State.LOADING.name(), loadingJobs.get())
                 .set(TransactionState.State.ERROR.name(), errorJobs.get())
                 .set(TransactionState.State.FINISHED.name(), finishedJobs.get()).toString());
+    }
+
+    protected void handleError(Exception e, int i) {
+        LOG.error("Caught exception ", e);
+        try {
+            Thread.sleep((i + 2) * 1000);
+        } catch (InterruptedException e1) {
+            LOG.error("Caught exception ", e1);
+        }
     }
 }

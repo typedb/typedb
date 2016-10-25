@@ -18,6 +18,7 @@
 
 package io.mindmaps.engine.loader;
 
+import io.mindmaps.MindmapsGraph;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import io.mindmaps.exception.MindmapsValidationException;
@@ -42,34 +43,35 @@ import static io.mindmaps.graql.Graql.insert;
  */
 public class BlockingLoader extends Loader {
 
-    private ExecutorService executor;
-    private Cache cache;
+    private static ConfigProperties prop = ConfigProperties.getInstance();
+
+    private static int repeatCommits = prop.getPropertyAsInt(ConfigProperties.LOADER_REPEAT_COMMITS);
+    private static Cache cache = Cache.getInstance();
+
     private static Semaphore transactionsSemaphore;
-    private static int repeatCommits;
+    private ExecutorService executor;
     private String graphName;
 
-    public BlockingLoader(String graphNameInit) {
+    public BlockingLoader(String graphName) {
+        setBatchSize(prop.getPropertyAsInt(ConfigProperties.BATCH_SIZE_PROPERTY));
+        setThreadsNumber(prop.getAvailableThreads());
+        initExecutor();
+        initSemaphore();
 
-        ConfigProperties prop = ConfigProperties.getInstance();
-        threadsNumber = prop.getAvailableThreads();
-        batchSize = prop.getPropertyAsInt(ConfigProperties.BATCH_SIZE_PROPERTY);
-        repeatCommits = prop.getPropertyAsInt(ConfigProperties.LOADER_REPEAT_COMMITS);
-        graphName = graphNameInit;
-        cache = Cache.getInstance();
-        executor = Executors.newFixedThreadPool(threadsNumber);
-        transactionsSemaphore = new Semaphore(threadsNumber * 3);
-        batch = new HashSet<>();
+        this.graphName = graphName;
     }
 
-    public void setExecutorSize(int size) {
-        try {
-            executor.shutdown();
-            executor.awaitTermination(5, TimeUnit.MINUTES);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        } finally {
-            executor = Executors.newFixedThreadPool(size);
-        }
+    public void setExecutorSize(int size){
+        shutdownExecutor();
+        setThreadsNumber(size);
+        initExecutor();
+        initSemaphore();
+    }
+
+    public void waitToFinish() {
+        flush();
+        shutdownExecutor();
+        initExecutor();
     }
 
     protected void submitBatch(Collection<Var> vars) {
@@ -87,31 +89,16 @@ public class BlockingLoader extends Loader {
         }
     }
 
-    public void waitToFinish() {
-        flush();
-        try {
-            executor.shutdown();
-            executor.awaitTermination(5, TimeUnit.MINUTES);
-            LOG.info("All tasks submitted, waiting for termination..");
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        } finally {
-            LOG.info("All tasks done!");
-            executor = Executors.newFixedThreadPool(threadsNumber);
-        }
-    }
-
     private void loadData(String name, Collection<Var> batch) {
 
-        try(AbstractMindmapsGraph graph = (AbstractMindmapsGraph) GraphFactory.getInstance().getGraphBatchLoading(name)) {
+        try(MindmapsGraph graph = GraphFactory.getInstance().getGraphBatchLoading(name)) {
             for (int i = 0; i < repeatCommits; i++) {
                 try {
                     insert(batch).withGraph(graph).execute();
                     graph.commit();
-                    cache.addJobCasting(graphName, graph.getModifiedCastingIds());
-                    cache.addJobResource(graphName, graph.getModifiedResourceIds());
+                    cache.addJobCasting(graphName, ((AbstractMindmapsGraph) graph).getModifiedCastingIds());
+                    cache.addJobResource(graphName, ((AbstractMindmapsGraph) graph).getModifiedCastingIds());
                     return;
-
                 } catch (MindmapsValidationException e) {
                     //If it's a validation exception there is no point in re-trying
                     LOG.error(ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));
@@ -122,20 +109,37 @@ public class BlockingLoader extends Loader {
                 }
             }
         } catch (Throwable e){
-            LOG.error(e.getMessage());
-            LOG.error(ErrorMessage.FAILED_TRANSACTION.getMessage(repeatCommits));
+            LOG.error(e.getMessage() + ErrorMessage.FAILED_TRANSACTION.getMessage(repeatCommits));
         } finally {
             transactionsSemaphore.release();
         }
-        LOG.error(ErrorMessage.FAILED_TRANSACTION.getMessage(repeatCommits));
     }
 
-    private void handleError(Exception e, int i) {
-        LOG.error("Caught exception ", e);
-        try {
-            Thread.sleep((i + 2) * 1000);
-        } catch (InterruptedException e1) {
-            LOG.error("Caught exception ", e1);
+    private void shutdownExecutor(){
+        if(executor == null){
+            return;
         }
+
+        try {
+            executor.shutdown();
+            boolean finished = executor.awaitTermination(5, TimeUnit.MINUTES);
+
+            LOG.info("All tasks submitted, waiting for termination..");
+            if(finished){
+                LOG.info("All tasks done.");
+            } else {
+                LOG.warn("Loading exceeded timeout.");
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void initExecutor(){
+        executor = Executors.newFixedThreadPool(threadsNumber);
+    }
+
+    private void initSemaphore(){
+        transactionsSemaphore = new Semaphore(threadsNumber * 3);
     }
 }
