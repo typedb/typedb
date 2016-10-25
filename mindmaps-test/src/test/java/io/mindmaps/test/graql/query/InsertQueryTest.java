@@ -89,7 +89,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     }
 
     @Test
-    public void testInsertAko() {
+    public void testInsertSub() {
         assertInsert(var("x").id("http://mindmaps.io/cool-movie").sub("movie"));
     }
 
@@ -245,7 +245,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     }
 
     @Test
-    public void testInsertAkoResourceType() {
+    public void testInsertSubResourceType() {
         qb.insert(
                 id("my-type").isa(RESOURCE_TYPE.getId()).datatype(STRING),
                 id("sub-type").sub("my-type")
@@ -258,7 +258,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     }
 
     @Test
-    public void testInsertAkoRoleType() {
+    public void testInsertSubRoleType() {
         qb.insert(
                 id("marriage").isa(RELATION_TYPE.getId()).hasRole("spouse1").hasRole("spouse2"),
                 id("spouse").isa(ROLE_TYPE.getId()).isAbstract(),
@@ -334,7 +334,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     }
 
     @Test
-    public void testErrorWhenAkoRelation() {
+    public void testErrorWhenSubRelation() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(containsString("isa"), containsString("relation")));
         qb.insert(
@@ -378,7 +378,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     }
 
     @Test
-    public void testInsertRuleAko() {
+    public void testInsertRuleSub() {
         assertInsert(var("x").id("an-sub-rule-type").sub("a-rule-type"));
     }
 

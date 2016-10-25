@@ -5,10 +5,10 @@ insert
 #################################################
 
 "entity" isa entity-type;
-"start" ako entity;
-"end" ako entity;
-"a-entity" ako entity;
-"b-entity" ako entity;
+"start" sub entity;
+"end" sub entity;
+"a-entity" sub entity;
+"b-entity" sub entity;
 
 "R1-from" isa role-type;
 "R1-to" isa role-type;

@@ -5,7 +5,7 @@ insert
 #################################################
 
 "entity" isa entity-type;
-"Human" ako entity;
+"Human" sub entity;
 
 "parent" isa role-type;
 "child" isa role-type;

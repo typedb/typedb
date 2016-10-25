@@ -64,7 +64,7 @@ public class AnalyticsTest extends AbstractGraphTest {
     }
 
     @Test
-    public void testAkoIsAccountedForInSubgraph() throws Exception {
+    public void testSubIsAccountedForInSubgraph() throws Exception {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
