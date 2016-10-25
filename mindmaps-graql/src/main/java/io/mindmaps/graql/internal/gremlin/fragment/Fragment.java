@@ -63,6 +63,11 @@ public interface Fragment extends Comparable<Fragment> {
     void applyTraversal(GraphTraversal<Vertex, Vertex> traversal);
 
     /**
+     * The name of the fragment
+     */
+    String getName();
+
+    /**
      * @return the variable name that this fragment starts from in the query
      */
     String getStart();

@@ -7,6 +7,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Optional;
 
+import static io.mindmaps.graql.internal.util.StringConverter.idToString;
 import static io.mindmaps.util.Schema.EdgeLabel.SHORTCUT;
 import static io.mindmaps.util.Schema.EdgeProperty.FROM_ROLE;
 import static io.mindmaps.util.Schema.EdgeProperty.RELATION_TYPE_ID;
@@ -35,6 +36,14 @@ class ShortcutFragment extends AbstractFragment {
         roleEnd.ifPresent(re -> edgeTraversal.has(TO_ROLE.name(), re));
         relationType.ifPresent(rt -> edgeTraversal.has(RELATION_TYPE_ID.name(), rt));
         edgeTraversal.inV();
+    }
+
+    @Override
+    public String getName() {
+        String start = roleStart.map(rs -> idToString(rs) + " ").orElse("");
+        String type = relationType.map(rt -> ":" + idToString(rt)).orElse("");
+        String end = roleEnd.map(re -> " " + idToString(re)).orElse("");
+        return "-[" + start + "shortcut" + type + end + "]->";
     }
 
     @Override

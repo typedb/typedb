@@ -20,6 +20,11 @@ class DistinctCastingFragment extends AbstractFragment {
     }
 
     @Override
+    public String getName() {
+        return "[distinct-casting:$" + otherCastingName + "]";
+    }
+
+    @Override
     public FragmentPriority getPriority() {
         return FragmentPriority.DISTINCT_CASTING;
     }

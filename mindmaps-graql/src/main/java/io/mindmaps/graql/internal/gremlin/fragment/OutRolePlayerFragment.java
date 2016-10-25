@@ -18,6 +18,11 @@ class OutRolePlayerFragment extends AbstractFragment {
     }
 
     @Override
+    public String getName() {
+        return "-[role-player]->";
+    }
+
+    @Override
     public FragmentPriority getPriority() {
         return FragmentPriority.EDGE_UNIQUE;
     }

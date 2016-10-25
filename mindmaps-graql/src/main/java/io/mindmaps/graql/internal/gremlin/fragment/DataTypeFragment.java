@@ -22,6 +22,11 @@ class DataTypeFragment extends AbstractFragment {
     }
 
     @Override
+    public String getName() {
+        return "[datatype:" + dataType.getName() + "]";
+    }
+
+    @Override
     public FragmentPriority getPriority() {
         return FragmentPriority.VALUE_NONSPECIFIC;
     }

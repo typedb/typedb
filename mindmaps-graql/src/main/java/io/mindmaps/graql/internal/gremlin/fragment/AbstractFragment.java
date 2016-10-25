@@ -46,4 +46,9 @@ abstract class AbstractFragment implements Fragment{
         if (this == other) return 0;
         return getPriority().compareTo(other.getPriority());
     }
+
+    @Override
+    public String toString() {
+        return "$" + start + getName() + end.map(e -> "$" + e).orElse("");
+    }
 }

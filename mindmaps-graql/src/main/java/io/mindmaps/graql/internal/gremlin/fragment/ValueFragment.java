@@ -23,6 +23,11 @@ class ValueFragment extends AbstractFragment {
     }
 
     @Override
+    public String getName() {
+        return "[value:" + predicate + "]";
+    }
+
+    @Override
     public FragmentPriority getPriority() {
         if (predicate.isSpecific()) {
             return FragmentPriority.VALUE_SPECIFIC;

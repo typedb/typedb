@@ -19,6 +19,11 @@ class InIsaFragment extends AbstractFragment {
     }
 
     @Override
+    public String getName() {
+        return "<-[isa]-";
+    }
+
+    @Override
     public FragmentPriority getPriority() {
         return FragmentPriority.EDGE_UNBOUNDED;
     }

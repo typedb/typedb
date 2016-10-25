@@ -18,6 +18,11 @@ class InCastingFragment extends AbstractFragment {
     }
 
     @Override
+    public String getName() {
+        return "<-[casting]-";
+    }
+
+    @Override
     public FragmentPriority getPriority() {
         return FragmentPriority.EDGE_UNBOUNDED;
     }

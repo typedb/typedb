@@ -11,7 +11,10 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+
+import static java.util.stream.Collectors.joining;
 
 /**
  * A traversal over a Mindmaps graph, representing one of many ways to execute a {@code MatchQuery}.
@@ -124,6 +127,28 @@ public class GraqlTraversal {
 
     @Override
     public String toString() {
-        return fragments.toString();
+        return "{" + fragments.stream().map(list -> {
+            StringBuilder sb = new StringBuilder();
+            String currentName = null;
+
+            for (Fragment fragment : list) {
+                if (!fragment.getStart().equals(currentName)) {
+                    if (currentName != null) sb.append(" ");
+
+                    sb.append("$").append(fragment.getStart());
+                    currentName = fragment.getStart();
+                }
+
+                sb.append(fragment.getName());
+
+                Optional<String> end = fragment.getEnd();
+                if (end.isPresent()) {
+                    sb.append("$").append(end.get());
+                    currentName = end.get();
+                }
+            }
+
+            return sb.toString();
+        }).collect(joining(", ")) + "}";
     }
 }

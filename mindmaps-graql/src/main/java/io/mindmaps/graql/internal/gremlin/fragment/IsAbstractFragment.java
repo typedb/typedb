@@ -18,6 +18,11 @@ class IsAbstractFragment extends AbstractFragment {
     }
 
     @Override
+    public String getName() {
+        return "[is-abstract]";
+    }
+
+    @Override
     public FragmentPriority getPriority() {
         return FragmentPriority.VALUE_NONSPECIFIC;
     }

@@ -17,6 +17,11 @@ class InSubFragment extends AbstractFragment {
     }
 
     @Override
+    public String getName() {
+        return "<-[ako]-";
+    }
+
+    @Override
     public FragmentPriority getPriority() {
         return FragmentPriority.EDGE_BOUNDED;
     }

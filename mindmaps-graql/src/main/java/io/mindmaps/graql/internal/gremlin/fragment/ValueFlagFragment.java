@@ -27,6 +27,11 @@ class ValueFlagFragment extends AbstractFragment {
     }
 
     @Override
+    public String getName() {
+        return "[value]";
+    }
+
+    @Override
     public FragmentPriority getPriority() {
         return FragmentPriority.VALUE_NONSPECIFIC;
     }

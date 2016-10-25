@@ -18,6 +18,11 @@ class InHasRoleFragment extends AbstractFragment {
     }
 
     @Override
+    public String getName() {
+        return "<-[has-role]-";
+    }
+
+    @Override
     public FragmentPriority getPriority() {
         return FragmentPriority.EDGE_UNIQUE;
     }

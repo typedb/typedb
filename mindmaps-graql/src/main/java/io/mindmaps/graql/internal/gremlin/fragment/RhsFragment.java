@@ -4,6 +4,7 @@ import io.mindmaps.graql.internal.gremlin.FragmentPriority;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import static io.mindmaps.graql.internal.util.StringConverter.valueToString;
 import static io.mindmaps.util.Schema.ConceptProperty.RULE_RHS;
 
 class RhsFragment extends AbstractFragment {
@@ -18,6 +19,11 @@ class RhsFragment extends AbstractFragment {
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
         traversal.has(RULE_RHS.name(), rhs);
+    }
+
+    @Override
+    public String getName() {
+        return "[rhs:" + valueToString(rhs) + "]";
     }
 
     @Override
