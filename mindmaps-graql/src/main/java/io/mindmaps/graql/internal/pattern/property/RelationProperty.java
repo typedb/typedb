@@ -30,12 +30,10 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.graql.admin.UniqueVarProperty;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.EquivalentFragmentSet;
-import io.mindmaps.graql.internal.gremlin.Fragment;
 import io.mindmaps.graql.internal.gremlin.ShortcutTraversal;
 import io.mindmaps.graql.internal.query.InsertQueryExecutor;
 import io.mindmaps.graql.internal.util.CommonUtil;
 import io.mindmaps.util.ErrorMessage;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -44,14 +42,14 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import static io.mindmaps.graql.internal.gremlin.FragmentPriority.DISTINCT_CASTING;
-import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_BOUNDED;
-import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNBOUNDED;
-import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNIQUE;
+import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.distinctCasting;
+import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.inCasting;
+import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.inIsa;
+import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.inRolePlayer;
+import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.outCasting;
+import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.outIsa;
+import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.outRolePlayer;
 import static io.mindmaps.graql.internal.util.CommonUtil.toImmutableSet;
-import static io.mindmaps.util.Schema.EdgeLabel.CASTING;
-import static io.mindmaps.util.Schema.EdgeLabel.ISA;
-import static io.mindmaps.util.Schema.EdgeLabel.ROLE_PLAYER;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
@@ -148,15 +146,9 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
 
         return Stream.of(
                 // Pattern between relation and casting
-                EquivalentFragmentSet.create(
-                        Fragment.create(t -> t.out(CASTING.getLabel()), EDGE_BOUNDED, start, casting),
-                        Fragment.create(t -> t.in(CASTING.getLabel()), EDGE_UNBOUNDED, casting, start)
-                ),
+                EquivalentFragmentSet.create(outCasting(start, casting), inCasting(casting, start)),
                 // Pattern between casting and roleplayer
-                EquivalentFragmentSet.create(
-                        Fragment.create(t -> t.out(ROLE_PLAYER.getLabel()), EDGE_UNIQUE, casting, other),
-                        Fragment.create(t -> t.in(ROLE_PLAYER.getLabel()), EDGE_BOUNDED, other, casting)
-                )
+                EquivalentFragmentSet.create(outRolePlayer(casting, other), inRolePlayer(other, casting))
         );
     }
 
@@ -171,22 +163,16 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
 
         return Stream.of(
                 // Pattern between relation and casting
-                EquivalentFragmentSet.create(
-                        Fragment.create(t -> t.out(CASTING.getLabel()), EDGE_BOUNDED, start, casting),
-                        Fragment.create(t -> t.in(CASTING.getLabel()), EDGE_UNBOUNDED, casting, start)
-                ),
+                EquivalentFragmentSet.create(outCasting(start, casting), inCasting(casting, start)),
 
                 // Pattern between casting and roleplayer
                 EquivalentFragmentSet.create(
-                        Fragment.create(t -> t.out(ROLE_PLAYER.getLabel()), EDGE_UNIQUE, casting, roleplayerName),
-                        Fragment.create(t -> t.in(ROLE_PLAYER.getLabel()), EDGE_BOUNDED, roleplayerName, casting)
+                        outRolePlayer(casting, roleplayerName),
+                        inRolePlayer(roleplayerName, casting)
                 ),
 
                 // Pattern between casting and role type
-                EquivalentFragmentSet.create(
-                        Fragment.create(t -> t.out(ISA.getLabel()), EDGE_UNIQUE, casting, roletypeName),
-                        Fragment.create(t -> t.in(ISA.getLabel()), EDGE_UNBOUNDED, roletypeName, casting)
-                )
+                EquivalentFragmentSet.create(outIsa(casting, roletypeName), inIsa(roletypeName, casting))
         );
     }
 
@@ -196,7 +182,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      * @return a EquivalentFragmentSet that indicates two castings are unique
      */
     private EquivalentFragmentSet makeDistinctCastingPattern(String casting, String otherCastingId) {
-        return EquivalentFragmentSet.create(Fragment.create(t -> t.where(P.neq(otherCastingId)), DISTINCT_CASTING, casting));
+        return EquivalentFragmentSet.create(distinctCasting(casting, otherCastingId));
     }
 
     @Override

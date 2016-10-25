@@ -24,16 +24,11 @@ import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.EquivalentFragmentSet;
-import io.mindmaps.graql.internal.gremlin.Fragment;
+import io.mindmaps.graql.internal.gremlin.fragment.Fragments;
 import io.mindmaps.graql.internal.query.InsertQueryExecutor;
 
 import java.util.Collection;
 import java.util.stream.Stream;
-
-import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_BOUNDED;
-import static io.mindmaps.graql.internal.gremlin.Traversals.inSubs;
-import static io.mindmaps.graql.internal.gremlin.Traversals.outSubs;
-import static io.mindmaps.util.Schema.EdgeLabel.PLAYS_ROLE;
 
 public class PlaysRoleProperty extends AbstractVarProperty implements NamedProperty {
 
@@ -60,14 +55,8 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
     @Override
     public Collection<EquivalentFragmentSet> match(String start) {
         return Sets.newHashSet(EquivalentFragmentSet.create(
-                Fragment.create(
-                        t -> inSubs(outSubs(t).out(PLAYS_ROLE.getLabel())),
-                        EDGE_BOUNDED, start, role.getName()
-                ),
-                Fragment.create(
-                        t -> inSubs(outSubs(t).in(PLAYS_ROLE.getLabel())),
-                        EDGE_BOUNDED, role.getName(), start
-                )
+                Fragments.outPlaysRole(start, role.getName()),
+                Fragments.inPlaysRole(role.getName(), start)
         ));
     }
 

@@ -24,15 +24,11 @@ import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.EquivalentFragmentSet;
-import io.mindmaps.graql.internal.gremlin.Fragment;
+import io.mindmaps.graql.internal.gremlin.fragment.Fragments;
 import io.mindmaps.graql.internal.query.InsertQueryExecutor;
 
 import java.util.Collection;
 import java.util.stream.Stream;
-
-import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_BOUNDED;
-import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNIQUE;
-import static io.mindmaps.util.Schema.EdgeLabel.HAS_ROLE;
 
 public class HasRoleProperty extends AbstractVarProperty implements NamedProperty {
 
@@ -59,8 +55,8 @@ public class HasRoleProperty extends AbstractVarProperty implements NamedPropert
     @Override
     public Collection<EquivalentFragmentSet> match(String start) {
         return Sets.newHashSet(EquivalentFragmentSet.create(
-                Fragment.create(t -> t.out(HAS_ROLE.getLabel()), EDGE_BOUNDED, start, role.getName()),
-                Fragment.create(t -> t.in(HAS_ROLE.getLabel()), EDGE_UNIQUE, role.getName(), start)
+                Fragments.outHasRole(start, role.getName()),
+                Fragments.inHasRole(role.getName(), start)
         ));
     }
 

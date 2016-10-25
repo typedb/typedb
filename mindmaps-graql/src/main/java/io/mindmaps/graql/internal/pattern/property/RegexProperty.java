@@ -20,16 +20,12 @@ package io.mindmaps.graql.internal.pattern.property;
 
 import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.admin.UniqueVarProperty;
-import io.mindmaps.graql.internal.gremlin.FragmentPriority;
+import io.mindmaps.graql.internal.gremlin.fragment.Fragment;
+import io.mindmaps.graql.internal.gremlin.fragment.Fragments;
 import io.mindmaps.graql.internal.query.InsertQueryExecutor;
 import io.mindmaps.graql.internal.util.StringConverter;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import static io.mindmaps.util.Schema.ConceptProperty.REGEX;
-
-public class RegexProperty extends AbstractVarProperty implements UniqueVarProperty, SingleTraversalProperty, NamedProperty {
+public class RegexProperty extends AbstractVarProperty implements UniqueVarProperty, SingleFragmentProperty, NamedProperty {
 
     private final String regex;
 
@@ -52,13 +48,8 @@ public class RegexProperty extends AbstractVarProperty implements UniqueVarPrope
     }
 
     @Override
-    public GraphTraversal<Vertex, Vertex> applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
-        return traversal.has(REGEX.name(), P.eq(regex));
-    }
-
-    @Override
-    public FragmentPriority getPriority() {
-        return FragmentPriority.VALUE_NONSPECIFIC;
+    public Fragment getFragment(String start) {
+        return Fragments.regex(start, regex);
     }
 
     @Override

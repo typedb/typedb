@@ -24,6 +24,7 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.gremlin.fragment.Fragment;
 import io.mindmaps.graql.internal.query.match.MatchOrder;
 import io.mindmaps.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;

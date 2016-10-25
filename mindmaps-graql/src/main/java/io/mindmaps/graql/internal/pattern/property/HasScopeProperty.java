@@ -24,15 +24,11 @@ import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Instance;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.EquivalentFragmentSet;
-import io.mindmaps.graql.internal.gremlin.Fragment;
+import io.mindmaps.graql.internal.gremlin.fragment.Fragments;
 import io.mindmaps.graql.internal.query.InsertQueryExecutor;
 
 import java.util.Collection;
 import java.util.stream.Stream;
-
-import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_BOUNDED;
-import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNBOUNDED;
-import static io.mindmaps.util.Schema.EdgeLabel.HAS_SCOPE;
 
 public class HasScopeProperty extends AbstractVarProperty implements NamedProperty {
 
@@ -59,8 +55,8 @@ public class HasScopeProperty extends AbstractVarProperty implements NamedProper
     @Override
     public Collection<EquivalentFragmentSet> match(String start) {
         return Sets.newHashSet(EquivalentFragmentSet.create(
-                Fragment.create(t -> t.out(HAS_SCOPE.getLabel()), EDGE_BOUNDED, start, scope.getName()),
-                Fragment.create(t -> t.in(HAS_SCOPE.getLabel()), EDGE_UNBOUNDED, scope.getName(), start)
+                Fragments.outHasScope(start, scope.getName()),
+                Fragments.inHasScope(scope.getName(), start)
         ));
     }
 

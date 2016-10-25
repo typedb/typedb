@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.gremlin.fragment.Fragment;
 import io.mindmaps.util.ErrorMessage;
 
 import java.util.ArrayList;

@@ -16,13 +16,14 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql.internal.gremlin;
+package io.mindmaps.graql.internal.gremlin.fragment;
 
+import io.mindmaps.graql.internal.gremlin.EquivalentFragmentSet;
+import io.mindmaps.graql.internal.gremlin.FragmentPriority;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Optional;
-import java.util.function.UnaryOperator;
 
 /**
  * represents a graph traversal, with one start point and optionally an end point
@@ -45,17 +46,6 @@ import java.util.function.UnaryOperator;
  * each {@code EquivalentFragmentSet} describing the {@code Query}.
  */
 public interface Fragment extends Comparable<Fragment> {
-
-    static Fragment create(UnaryOperator<GraphTraversal<Vertex, Vertex>> traversal, FragmentPriority priority, String start) {
-        return new FragmentImpl(traversal, priority, start);
-    }
-
-    static Fragment create(
-                UnaryOperator<GraphTraversal<Vertex, Vertex>> traversal,
-                FragmentPriority priority, String start, String end
-        ) {
-        return new FragmentImpl(traversal, priority, start, end);
-    }
 
     /**
      * @return the EquivalentFragmentSet that contains this Fragment

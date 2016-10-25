@@ -18,6 +18,10 @@
 
 package io.mindmaps.graql.internal.gremlin;
 
+import io.mindmaps.graql.internal.gremlin.fragment.Fragment;
+
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.stream.Stream;
 
 /**
@@ -27,14 +31,26 @@ import java.util.stream.Stream;
  * A {@code EquivalentFragmentSet} may contain only one {@code Fragment} (e.g. checking the 'id' property), while others may
  * be comprised of two fragments (e.g. $x isa $y, which may start from $x or $y).
  */
-public interface EquivalentFragmentSet {
+public class EquivalentFragmentSet {
 
-    static EquivalentFragmentSet create(Fragment... fragments) {
-        return new EquivalentFragmentSetImpl(fragments);
+    private final Collection<Fragment> fragments;
+
+    public static EquivalentFragmentSet create(Fragment... fragments) {
+        return new EquivalentFragmentSet(fragments);
+    }
+
+    /**
+     * @param fragments an array of Fragments that this EquivalentFragmentSet contains
+     */
+    private EquivalentFragmentSet(Fragment... fragments) {
+        this.fragments = Arrays.asList(fragments);
+        this.fragments.forEach(f -> f.setEquivalentFragmentSet(this));
     }
 
     /**
      * @return a stream of fragments that this EquivalentFragmentSet contains
      */
-    Stream<Fragment> getFragments();
+    Stream<Fragment> getFragments() {
+        return fragments.stream();
+    }
 }

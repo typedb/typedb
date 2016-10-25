@@ -19,21 +19,18 @@
 package io.mindmaps.graql.internal.pattern.property;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.graql.internal.gremlin.*;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import io.mindmaps.graql.internal.gremlin.EquivalentFragmentSet;
+import io.mindmaps.graql.internal.gremlin.fragment.Fragment;
 
 import java.util.Collection;
 
-interface SingleTraversalProperty extends VarPropertyInternal {
+interface SingleFragmentProperty extends VarPropertyInternal {
 
-    GraphTraversal<Vertex, Vertex> applyTraversal(GraphTraversal<Vertex, Vertex> traversal);
-
-    FragmentPriority getPriority();
+    Fragment getFragment(String start);
 
     @Override
     default Collection<EquivalentFragmentSet> match(String start) {
-        Fragment fragment = Fragment.create(this::applyTraversal, getPriority(), start);
+        Fragment fragment = getFragment(start);
         EquivalentFragmentSet equivalentFragmentSet = EquivalentFragmentSet.create(fragment);
         return Sets.newHashSet(equivalentFragmentSet);
     }

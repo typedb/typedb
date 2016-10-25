@@ -3,6 +3,7 @@ package io.mindmaps.graql.internal.gremlin;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.graql.internal.gremlin.fragment.Fragment;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -17,7 +18,7 @@ import java.util.Set;
  * Comprised of ordered {@code Fragment}s which are used to construct a TinkerPop {@code GraphTraversal}, which can be
  * retrieved and executed.
  */
-class GraqlTraversal {
+public class GraqlTraversal {
 
     //            Set of disjunctions
     //             |
@@ -32,7 +33,7 @@ class GraqlTraversal {
         this.fragments = fragments;
     }
 
-    static GraqlTraversal create(MindmapsGraph graph, ImmutableSet<ImmutableList<Fragment>> fragments) {
+    public static GraqlTraversal create(MindmapsGraph graph, ImmutableSet<ImmutableList<Fragment>> fragments) {
         return new GraqlTraversal(graph, fragments);
     }
 
@@ -117,7 +118,12 @@ class GraqlTraversal {
     /**
      * Get the estimated complexity of the traversal.
      */
-    long getComplexity() {
+    public long getComplexity() {
         return 0;
+    }
+
+    @Override
+    public String toString() {
+        return fragments.toString();
     }
 }

@@ -20,11 +20,17 @@ package io.mindmaps.graql.internal.pattern.property;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.*;
+import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.Instance;
+import io.mindmaps.concept.Relation;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.Resource;
+import io.mindmaps.concept.ResourceType;
+import io.mindmaps.concept.RoleType;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.EquivalentFragmentSet;
-import io.mindmaps.graql.internal.gremlin.Fragment;
+import io.mindmaps.graql.internal.gremlin.fragment.Fragments;
 import io.mindmaps.graql.internal.query.InsertQueryExecutor;
 import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.util.ErrorMessage;
@@ -35,10 +41,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import static io.mindmaps.graql.Graql.id;
-import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNBOUNDED;
 import static io.mindmaps.graql.internal.util.CommonUtil.tryAny;
-import static io.mindmaps.util.Schema.EdgeLabel.SHORTCUT;
-import static io.mindmaps.util.Schema.EdgeProperty.TO_TYPE;
 
 public class HasResourceProperty extends AbstractVarProperty implements NamedProperty {
 
@@ -76,15 +79,13 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     @Override
     public Collection<EquivalentFragmentSet> match(String start) {
+        Optional<String> hasResource = Optional.of(GraqlType.HAS_RESOURCE.getId(resourceType));
+        Optional<String> hasResourceOwner = Optional.of(GraqlType.HAS_RESOURCE_OWNER.getId(resourceType));
+        Optional<String> hasResourceValue = Optional.of(GraqlType.HAS_RESOURCE_VALUE.getId(resourceType));
+
         return Sets.newHashSet(EquivalentFragmentSet.create(
-                Fragment.create(t ->
-                        t.outE(SHORTCUT.getLabel()).has(TO_TYPE.name(), resourceType).inV(),
-                        EDGE_UNBOUNDED, start, resource.getName()
-                ),
-                Fragment.create(t ->
-                        t.inE(SHORTCUT.getLabel()).has(TO_TYPE.name(), resourceType).outV(),
-                        EDGE_UNBOUNDED, resource.getName(), start
-                )
+                Fragments.shortcut(hasResource, hasResourceOwner, hasResourceValue, start, resource.getName()),
+                Fragments.shortcut(hasResource, hasResourceValue, hasResourceOwner, resource.getName(), start)
         ));
     }
 
