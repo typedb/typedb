@@ -25,6 +25,8 @@ import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.util.ErrorMessage;
 
+import java.io.Serializable;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -69,6 +71,10 @@ class ComputeQueryImpl implements ComputeQuery {
                     analytics.degreesAndPersist();
                     return "Degrees have been persisted.";
                 }
+                case "connectedComponents": {
+                    analytics = getAnalytics(keyspace, false);
+                    return analytics.connectedComponent();
+                }
                 case "max": {
                     analytics = getAnalytics(keyspace, true);
                     return analytics.max();
@@ -94,7 +100,7 @@ class ComputeQueryImpl implements ComputeQuery {
                     return analytics.median();
                 }
                 default: {
-                    throw new RuntimeException(ErrorMessage.NO_ANALYTICS_METHOD.getMessage(computeMethod));
+                    throw new IllegalArgumentException(ErrorMessage.NO_ANALYTICS_METHOD.getMessage(computeMethod));
                 }
             }
         } catch (InvalidConceptTypeException e) {
@@ -111,8 +117,14 @@ class ComputeQueryImpl implements ComputeQuery {
     public Stream<String> resultsString() {
         Object computeResult = execute();
         if (computeResult instanceof Map) {
-            Map<Instance, ?> map = (Map<Instance, ?>) computeResult;
-            return map.entrySet().stream().map(e -> e.getKey().getId() + "\t" + e.getValue());
+            Map<Serializable, Set<String>> map = (Map<Serializable, Set<String>>) computeResult;
+            return map.entrySet().stream().map(entry -> {
+                StringBuilder stringBuilder = new StringBuilder();
+                for (String s : entry.getValue()) {
+                    stringBuilder.append(entry.getKey()).append("\t").append(s).append("\n");
+                }
+                return stringBuilder.toString();
+            });
         } else if (computeResult instanceof Optional) {
             return ((Optional) computeResult).isPresent() ? Stream.of(((Optional) computeResult).get().toString()) :
                     Stream.of("There are no instances of this resource type.");

@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
 import static io.mindmaps.graql.Graql.or;
 import static io.mindmaps.graql.Graql.var;
 import static io.mindmaps.graql.Graql.withGraph;
-import static io.mindmaps.util.Schema.ConceptProperty.ITEM_IDENTIFIER;
 
 /**
  * OLAP computations that can be applied to a Mindmaps Graph. The current implementation uses the SparkGraphComputer
@@ -292,24 +291,10 @@ public class Analytics {
      *
      * @return a map from each instance to its degree
      */
-    public Map<Instance, Long> degrees() {
-        Map<Instance, Long> allDegrees = new HashMap<>();
+    public Map<Long, Set<String>> degrees() {
         MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
-        ComputerResult result = computer.compute(new DegreeVertexProgram(subtypes), new DegreeMapReduce(subtypes));
-        Map<Long, Set<String>> degreeMap = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
-
-        //TODO: Remove the following, just return degreeMap, fix the test
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraph();
-        degreeMap.forEach((k, v) -> {
-            for (String id : v) allDegrees.put(graph.getInstance(id), k);
-        });
-//        result.graph().traversal().V().forEachRemaining(v -> {
-//            if (v.keys().contains(DegreeVertexProgram.DEGREE)) {
-//                Instance instance = graph.getInstance(v.value(ITEM_IDENTIFIER.name()));
-//                allDegrees.put(instance, v.value(DegreeVertexProgram.DEGREE));
-//            }
-//        });
-        return allDegrees;
+        ComputerResult result = computer.compute(new DegreeVertexProgram(subtypes), new DegreeDistributionMapReduce(subtypes));
+        return result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
     }
 
     /**

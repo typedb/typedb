@@ -30,6 +30,11 @@ public class ClusteringTest extends AbstractGraphTest {
     private static final String resourceType6 = "resourceType6";
     private static final String resourceType7 = "resourceType7";
 
+    private String entityId1;
+    private String entityId2;
+    private String entityId3;
+    private String entityId4;
+
     String keyspace;
     Analytics computer;
     double delta = 0.000001;
@@ -85,10 +90,14 @@ public class ClusteringTest extends AbstractGraphTest {
         EntityType entityType1 = graph.putEntityType(thing);
         EntityType entityType2 = graph.putEntityType(anotherThing);
 
-        Entity entity1 = graph.putEntity("1", entityType1);
-        Entity entity2 = graph.putEntity("2", entityType1);
-        Entity entity3 = graph.putEntity("3", entityType1);
-        Entity entity4 = graph.putEntity("4", entityType2);
+        Entity entity1 = graph.addEntity(entityType1);
+        Entity entity2 = graph.addEntity(entityType1);
+        Entity entity3 = graph.addEntity(entityType1);
+        Entity entity4 = graph.addEntity(entityType2);
+        entityId1 = entity1.getId();
+        entityId2 = entity2.getId();
+        entityId3 = entity3.getId();
+        entityId4 = entity4.getId();
 
         RoleType relation1 = graph.putRoleType("relation1");
         RoleType relation2 = graph.putRoleType("relation2");
@@ -174,40 +183,13 @@ public class ClusteringTest extends AbstractGraphTest {
         graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
     }
 
-    private void addResourcesInstances() throws MindmapsValidationException {
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
-
-        graph.putResource(1.2, graph.getResourceType(resourceType1));
-        graph.putResource(1.5, graph.getResourceType(resourceType1));
-        graph.putResource(1.8, graph.getResourceType(resourceType1));
-
-        graph.putResource(4L, graph.getResourceType(resourceType2));
-        graph.putResource(-1L, graph.getResourceType(resourceType2));
-        graph.putResource(0L, graph.getResourceType(resourceType2));
-
-        graph.putResource(6L, graph.getResourceType(resourceType5));
-        graph.putResource(7L, graph.getResourceType(resourceType5));
-        graph.putResource(8L, graph.getResourceType(resourceType5));
-
-        graph.putResource(7.2, graph.getResourceType(resourceType6));
-        graph.putResource(7.5, graph.getResourceType(resourceType6));
-        graph.putResource(7.8, graph.getResourceType(resourceType6));
-
-        graph.putResource("a", graph.getResourceType(resourceType4));
-        graph.putResource("b", graph.getResourceType(resourceType4));
-        graph.putResource("c", graph.getResourceType(resourceType4));
-
-        graph.commit();
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
-    }
-
     private void addResourceRelations() throws MindmapsValidationException {
         graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
 
-        Entity entity1 = graph.getEntity("1");
-        Entity entity2 = graph.getEntity("2");
-        Entity entity3 = graph.getEntity("3");
-        Entity entity4 = graph.getEntity("4");
+        Entity entity1 = graph.getEntity(entityId1);
+        Entity entity2 = graph.getEntity(entityId2);
+        Entity entity3 = graph.getEntity(entityId3);
+        Entity entity4 = graph.getEntity(entityId4);
 
         RoleType resourceOwner1 = graph.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceType1));
         RoleType resourceOwner2 = graph.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceType2));

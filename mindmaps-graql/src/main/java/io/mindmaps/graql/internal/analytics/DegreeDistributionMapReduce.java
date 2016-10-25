@@ -7,12 +7,12 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.io.Serializable;
 import java.util.*;
 
-class DegreeMapReduce extends MindmapsMapReduce<Set<String>> {
+class DegreeDistributionMapReduce extends MindmapsMapReduce<Set<String>> {
 
-    public DegreeMapReduce() {
+    public DegreeDistributionMapReduce() {
     }
 
-    public DegreeMapReduce(Set<String> selectedTypes) {
+    public DegreeDistributionMapReduce(Set<String> selectedTypes) {
         this.selectedTypes = selectedTypes;
     }
 
