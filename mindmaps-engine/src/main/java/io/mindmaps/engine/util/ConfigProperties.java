@@ -36,7 +36,7 @@ import java.util.Properties;
 public class ConfigProperties {
 
     //Test Configs
-    public static final String TEST_CONFIG_FILE = "../conf/test/mindmaps-engine-test.properties";
+    public static final String TEST_CONFIG_FILE = "../conf/test/tinker/mindmaps-engine.properties";
 
     public static final String DEFAULT_CONFIG_FILE = "../conf/main/mindmaps-engine.properties";
     public static final String DEFAULT_LOG_CONFIG_FILE = "../conf/main/logback.xml";
