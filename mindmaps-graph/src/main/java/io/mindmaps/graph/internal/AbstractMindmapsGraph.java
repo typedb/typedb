@@ -215,8 +215,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     //----------------------------------------------Concept Functionality-----------------------------------------------
     //------------------------------------ Construction
     private Vertex addVertex(Schema.BaseType baseType){
-        Vertex v = getTinkerPopGraph().addVertex(Schema.VERTEX_LABEL);
-        v.property(Schema.ConceptProperty.BASE_TYPE.name(), baseType.name());
+        Vertex v = getTinkerPopGraph().addVertex(baseType.name());
         return v;
     }
 

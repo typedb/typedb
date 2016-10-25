@@ -18,13 +18,15 @@
 
 package io.mindmaps.graql.internal.analytics;
 
-import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 class CountMapReduce extends MindmapsMapReduce<Long> {
 
@@ -51,7 +53,7 @@ class CountMapReduce extends MindmapsMapReduce<Long> {
                 emitter.emit(MEMORY_KEY, 1l);
                 return;
             }
-        } else if (baseTypes.contains(vertex.value(Schema.ConceptProperty.BASE_TYPE.name()).toString())) {
+        } else if (baseTypes.contains(vertex.label())) {
             emitter.emit(MEMORY_KEY, 1l);
             return;
         }

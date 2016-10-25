@@ -19,7 +19,14 @@ public class MindmapsOrientDBGraph extends AbstractMindmapsGraph<OrientGraph> {
 
     @Override
     public GraphTraversal<Vertex, Vertex> getTinkerTraversal(){
-        return getTinkerPopGraph().traversal().withStrategies(ReadOnlyStrategy.instance()).V().hasLabel(Schema.VERTEX_LABEL);
+        Schema.BaseType[] baseTypes = Schema.BaseType.values();
+        String [] labels = new String [baseTypes.length];
+
+        for(int i = 0; i < labels.length; i ++){
+            labels[i] = baseTypes[i].name();
+        }
+
+        return getTinkerPopGraph().traversal().withStrategies(ReadOnlyStrategy.instance()).V().hasLabel(labels);
     }
 
     @Override

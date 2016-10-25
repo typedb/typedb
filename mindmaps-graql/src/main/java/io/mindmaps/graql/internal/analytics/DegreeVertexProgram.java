@@ -74,7 +74,7 @@ public class DegreeVertexProgram extends MindmapsVertexProgram<Long> {
             case 0:
                 // check if vertex is in the subgraph
                 if (selectedTypes.contains(Utility.getVertexType(vertex))) {
-                    String type = vertex.value(Schema.ConceptProperty.BASE_TYPE.name());
+                    String type = vertex.label();
                     if (type.equals(Schema.BaseType.ENTITY.name()) || type.equals(Schema.BaseType.RESOURCE.name())) {
                         // each role-player sends 1 to castings following incoming edges
                         messenger.sendMessage(this.countMessageScopeIn, 1L);
@@ -89,7 +89,7 @@ public class DegreeVertexProgram extends MindmapsVertexProgram<Long> {
 
             // iteration 1 starts from all the castings
             case 1:
-                String type = vertex.value(Schema.ConceptProperty.BASE_TYPE.name());
+                String type = vertex.label();
                 if (type.equals(Schema.BaseType.CASTING.name())) {
                     boolean hasRolePlayer = false;
                     long assertionCount = 0;

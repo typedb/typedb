@@ -592,7 +592,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @return The base ttpe of this concept which helps us identify the concept
      */
     public String getBaseType(){
-        return vertex.value(Schema.ConceptProperty.BASE_TYPE.name());
+        return vertex.label();
     }
 
     /**

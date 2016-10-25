@@ -78,7 +78,9 @@ public class MindmapsOrientDBGraphFactoryTest {
     @Test
     public void testVertexIndices(){
         MindmapsOrientDBGraph mindmapsGraph = orientGraphFactory.getGraph(false);
-        assertEquals(6, mindmapsGraph.getTinkerPopGraph().getVertexIndexedKeys(Schema.VERTEX_LABEL).size());
+        for (Schema.BaseType baseType : Schema.BaseType.values()) {
+            assertEquals(6, mindmapsGraph.getTinkerPopGraph().getVertexIndexedKeys(baseType.name()).size());
+        }
 
         assertNotNull(mindmapsGraph.getMetaEntityType());
         assertNotNull(mindmapsGraph.getMetaRelationType());

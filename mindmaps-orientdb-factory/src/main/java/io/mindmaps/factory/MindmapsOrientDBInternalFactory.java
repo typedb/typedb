@@ -68,7 +68,9 @@ public class MindmapsOrientDBInternalFactory extends AbstractMindmapsInternalFac
     }
 
     private OrientGraph createGraphWithSchema(OrientGraphFactory factory, OrientGraph graph){
-        graph.createVertexClass(Schema.VERTEX_LABEL);
+        for (Schema.BaseType baseType : Schema.BaseType.values()) {
+            graph.createVertexClass(baseType.name());
+        }
 
         for (Schema.EdgeLabel edgeLabel : Schema.EdgeLabel.values()) {
             graph.createEdgeClass(edgeLabel.name());
@@ -108,8 +110,10 @@ public class MindmapsOrientDBInternalFactory extends AbstractMindmapsInternalFac
                 indexConfig.setProperty(UNIQUE, "UNIQUE");
             }
 
-            if(!graph.getVertexIndexedKeys(Schema.VERTEX_LABEL).contains(conceptProperty)) {
-                graph.createVertexIndex(conceptProperty, Schema.VERTEX_LABEL, indexConfig);
+            for (Schema.BaseType baseType : Schema.BaseType.values()) {
+                if(!graph.getVertexIndexedKeys(baseType.name()).contains(conceptProperty)) {
+                    graph.createVertexIndex(conceptProperty, baseType.name(), indexConfig);
+                }
             }
         }
 
