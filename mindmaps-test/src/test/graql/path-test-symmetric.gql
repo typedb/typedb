@@ -1,0 +1,37 @@
+insert
+
+###################################################
+####################Ontology######################
+#################################################
+
+"start-vertex" isa entity-type;
+"vertex" isa entity-type;
+
+"arcA" isa role-type;
+"arcB" isa role-type;
+"arc" isa relation-type, has-role arcA, has-role arcB;
+vertex plays-role arcA, plays-role arcB;
+start-vertex plays-role arcA, plays-role arcB;
+
+"pathA" isa role-type;
+"pathB" isa role-type;
+"path" isa relation-type, has-role pathA, has-role pathB;
+vertex plays-role pathA, plays-role pathB;
+start-vertex plays-role pathA, plays-role pathB;
+
+####################################################
+##################RULES#############################
+####################################################
+
+"R1" isa inference-rule,
+lhs {
+($x, $y) isa arc;},
+rhs {
+($x, $y) isa path;};
+
+"R2" isa inference-rule,
+lhs {
+($x, $z) isa path;
+($z, y) isa path;},
+rhs {
+($x, $y) isa path;};

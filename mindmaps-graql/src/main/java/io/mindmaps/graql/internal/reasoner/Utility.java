@@ -213,4 +213,13 @@ public class Utility {
     public static boolean checkTypesCompatible(Type aType, Type bType) {
         return aType.equals(bType) || aType.subTypes().contains(bType) || bType.subTypes().contains(aType);
     }
+
+    public static <T> Set<T> subtractSets(Set<T> A, Set<T> B){
+        Set<T> sub =  A.size() > B.size()? Sets.newHashSet(A) : Sets.newHashSet(B);
+        if (A.size() > B.size())
+            sub.removeAll(B);
+        else
+            sub.removeAll(A);
+        return sub;
+    }
 }

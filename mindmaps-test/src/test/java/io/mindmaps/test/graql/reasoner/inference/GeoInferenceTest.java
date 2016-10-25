@@ -61,9 +61,39 @@ public class GeoInferenceTest {
     }
 
     @Test
+    public void testQueryPrime() {
+        String queryString = "match " +
+                "$x isa city;($x, $y) isa is-located-in;\n"+
+                "$y isa country;$y id 'Poland'; select $x;";
+        MatchQuery query = qb.parse(queryString);
+        printMatchQueryResults(query.distinct());
+
+        String explicitQuery = "match " +
+                "$x isa city;{$x id 'Warsaw';} or {$x id 'Wroclaw';};" +
+                "$y isa country;$y id 'Poland'; select $x;";
+
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+    }
+
+    @Test
     public void testQuery2() {
         String queryString = "match " +
                 "$x isa university;(geo-entity: $x, entity-location: $y) isa is-located-in;"+
+                "$y isa country;$y id 'Poland'; select $x;";
+        MatchQuery query = qb.parse(queryString);
+        String explicitQuery = "match " +
+                "$x isa university;{$x id 'University-of-Warsaw';} or {$x id 'Warsaw-Polytechnics';};" +
+                "$y isa country;$y id 'Poland'; select $x;";
+
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+    }
+
+    @Test
+    public void testQuery2Prime() {
+        String queryString = "match " +
+                "$x isa university;($x, $y) isa is-located-in;"+
                 "$y isa country;$y id 'Poland'; select $x;";
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match " +
