@@ -222,7 +222,7 @@ public class HALConcept {
 
     private void attachRelation(Representation halResource, Concept rel, String role, int separationDegree) {
         Representation relationResource = factory.newRepresentation(resourceLinkPrefix + rel.getId())
-                .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
+                .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
         handleConcept(relationResource, rel, separationDegree - 1);
         halResource.withRepresentation(role, relationResource);
     }
