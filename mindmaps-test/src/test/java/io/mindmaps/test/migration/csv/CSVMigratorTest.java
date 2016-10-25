@@ -135,7 +135,7 @@ public class CSVMigratorTest extends AbstractMindmapsMigratorTest {
                 .map(Var::toString)
                 .collect(joining("\n"));
 
-        String expected = "$x16 has description \"dark\" id \"17-type\" isa pokemon-type\n";
+        String expected = "id \"17-type\"";
         assertTrue(templated.contains(expected));
     }
 }
