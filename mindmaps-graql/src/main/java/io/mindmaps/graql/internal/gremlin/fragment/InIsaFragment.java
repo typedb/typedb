@@ -28,4 +28,9 @@ class InIsaFragment extends AbstractFragment {
         return FragmentPriority.EDGE_UNBOUNDED;
     }
 
+    @Override
+    public long fragmentCost(long previousCost) {
+        return previousCost * NUM_INSTANCES_PER_TYPE;
+    }
+
 }

@@ -28,4 +28,9 @@ class DistinctCastingFragment extends AbstractFragment {
     public FragmentPriority getPriority() {
         return FragmentPriority.DISTINCT_CASTING;
     }
+
+    @Override
+    public long fragmentCost(long previousCost) {
+        return previousCost / NUM_ROLES_PER_RELATION;
+    }
 }

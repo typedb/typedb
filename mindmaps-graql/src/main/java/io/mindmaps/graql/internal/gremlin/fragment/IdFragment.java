@@ -30,4 +30,14 @@ class IdFragment extends AbstractFragment {
     public FragmentPriority getPriority() {
         return FragmentPriority.ID;
     }
+
+    @Override
+    public long indexCost() {
+        return 1;
+    }
+
+    @Override
+    public long fragmentCost(long previousCost) {
+        return 1;
+    }
 }

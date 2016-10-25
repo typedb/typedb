@@ -50,4 +50,9 @@ class ShortcutFragment extends AbstractFragment {
     public FragmentPriority getPriority() {
         return FragmentPriority.EDGE_RELATION;
     }
+
+    @Override
+    public long fragmentCost(long previousCost) {
+        return previousCost * NUM_SHORTCUT_EDGES_PER_INSTANCE;
+    }
 }

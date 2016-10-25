@@ -26,4 +26,9 @@ class InCastingFragment extends AbstractFragment {
     public FragmentPriority getPriority() {
         return FragmentPriority.EDGE_UNBOUNDED;
     }
+
+    @Override
+    public long fragmentCost(long previousCost) {
+        return previousCost * NUM_RELATION_PER_CASTING;
+    }
 }
