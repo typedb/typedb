@@ -18,10 +18,9 @@
 
 package io.mindmaps.test.graql.analytics;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.MindmapsGraphFactory;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Relation;
@@ -30,10 +29,9 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.internal.analytics.Analytics;
-import io.mindmaps.test.AbstractGraphTest;
+import io.mindmaps.test.AbstractScalingTest;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.FileNotFoundException;
@@ -52,14 +50,21 @@ import java.util.concurrent.ExecutionException;
 import static io.mindmaps.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assume.assumeTrue;
 
-public class ScalingTestIT extends AbstractGraphTest {
+/**
+ * These tests are used for generating a report of the performance of analytics. In order to run them on a machine use
+ * this maven command: mvn verify -Dtest=ScalingTestIT -DfailIfNoTests=false -Pscaling
+ *
+ * NB: Mindmaps must be running on a machine already and you may need to significantly increase the size of the java
+ * heap to stop failures.
+ */
+public class ScalingTestIT extends AbstractScalingTest {
 
     private static final String[] HOST_NAME =
             {"localhost"};
 
     String keyspace;
+    private MindmapsGraphFactory factory;
 
     // test parameters
     int NUM_SUPER_NODES = 1; // the number of supernodes to generate in the test graph
@@ -71,20 +76,8 @@ public class ScalingTestIT extends AbstractGraphTest {
     int STEP_SIZE;
     List<Integer> graphSizes;
 
-    private static void hideLogs() {
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.OFF);
-    }
-
-    @BeforeClass
-    static public void useTitanOnly() {
-        assumeTrue(usingTitan());
-    }
-
     @Before
     public void setUp() {
-        hideLogs();
-
         // compute the sample of graph sizes
         STEP_SIZE = MAX_SIZE/NUM_DIVS;
         graphSizes = new ArrayList<>();
@@ -92,8 +85,8 @@ public class ScalingTestIT extends AbstractGraphTest {
         graphSizes.add(MAX_SIZE);
 
         // get a random keyspace
-        //TODO: run on independent mindmaps
-//        keyspace = UUID.randomUUID().toString().replaceAll("-", "").toLowerCase();
+        factory = factoryWithNewKeyspace();
+        MindmapsGraph graph = factory.getGraph();
         keyspace = graph.getKeyspace();
     }
 

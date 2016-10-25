@@ -127,7 +127,8 @@ public class RESTLoader {
 
         loadingJobs.incrementAndGet();
 
-        try(AbstractMindmapsGraph graph = (AbstractMindmapsGraph) GraphFactory.getInstance().getGraphBatchLoading(name)) {
+        try {
+            AbstractMindmapsGraph graph = (AbstractMindmapsGraph) GraphFactory.getInstance().getGraphBatchLoading(name);
             for (int i = 0; i < repeatCommits; i++) {
 
                 try {

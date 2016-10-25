@@ -43,7 +43,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class GraqlShellIT extends AbstractRollbackGraphTest {
+public class GraqlShellTest extends AbstractRollbackGraphTest {
     private static InputStream trueIn;
     private static PrintStream trueOut;
     private static PrintStream trueErr;
