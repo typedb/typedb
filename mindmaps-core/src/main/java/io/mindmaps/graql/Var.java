@@ -109,13 +109,13 @@ public interface Var extends Pattern {
      * @param type a concept type id that this variable must be a kind of
      * @return this
      */
-    Var ako(String type);
+    Var sub(String type);
 
     /**
      * @param type a concept type that this variable must be a kind of
      * @return this
      */
-    Var ako(Var type);
+    Var sub(Var type);
 
     /**
      * @param type a role type id that this relation type variable must have

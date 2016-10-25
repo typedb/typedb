@@ -29,12 +29,12 @@ public class Traversals {
     private Traversals() {}
 
     @SuppressWarnings("unchecked")
-    public static GraphTraversal<Vertex, Vertex> outAkos(GraphTraversal<Vertex, Vertex> traversal) {
+    public static GraphTraversal<Vertex, Vertex> outSubs(GraphTraversal<Vertex, Vertex> traversal) {
         return traversal.union(__.identity(), __.repeat(__.out(SUB.getLabel())).emit()).unfold();
     }
 
     @SuppressWarnings("unchecked")
-    public static GraphTraversal<Vertex, Vertex> inAkos(GraphTraversal<Vertex, Vertex> traversal) {
+    public static GraphTraversal<Vertex, Vertex> inSubs(GraphTraversal<Vertex, Vertex> traversal) {
         return traversal.union(__.identity(), __.repeat(__.in(SUB.getLabel())).emit()).unfold();
     }
 }

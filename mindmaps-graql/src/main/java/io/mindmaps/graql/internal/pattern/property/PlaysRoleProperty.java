@@ -31,8 +31,8 @@ import java.util.Collection;
 import java.util.stream.Stream;
 
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_BOUNDED;
-import static io.mindmaps.graql.internal.gremlin.Traversals.inAkos;
-import static io.mindmaps.graql.internal.gremlin.Traversals.outAkos;
+import static io.mindmaps.graql.internal.gremlin.Traversals.inSubs;
+import static io.mindmaps.graql.internal.gremlin.Traversals.outSubs;
 import static io.mindmaps.util.Schema.EdgeLabel.PLAYS_ROLE;
 
 public class PlaysRoleProperty extends AbstractVarProperty implements NamedProperty {
@@ -61,11 +61,11 @@ public class PlaysRoleProperty extends AbstractVarProperty implements NamedPrope
     public Collection<MultiTraversal> match(String start) {
         return Sets.newHashSet(MultiTraversal.create(
                 Fragment.create(
-                        t -> inAkos(outAkos(t).out(PLAYS_ROLE.getLabel())),
+                        t -> inSubs(outSubs(t).out(PLAYS_ROLE.getLabel())),
                         EDGE_BOUNDED, start, role.getName()
                 ),
                 Fragment.create(
-                        t -> inAkos(outAkos(t).in(PLAYS_ROLE.getLabel())),
+                        t -> inSubs(outSubs(t).in(PLAYS_ROLE.getLabel())),
                         EDGE_BOUNDED, role.getName(), start
                 )
         ));

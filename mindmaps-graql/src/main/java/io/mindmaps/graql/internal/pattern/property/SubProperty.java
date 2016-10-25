@@ -34,11 +34,11 @@ import java.util.stream.Stream;
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_BOUNDED;
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNIQUE;
 
-public class AkoProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
+public class SubProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
     private final VarAdmin superType;
 
-    public AkoProperty(VarAdmin superType) {
+    public SubProperty(VarAdmin superType) {
         this.superType = superType;
     }
 
@@ -48,7 +48,7 @@ public class AkoProperty extends AbstractVarProperty implements NamedProperty, U
 
     @Override
     public String getName() {
-        return "ako";
+        return "sub";
     }
 
     @Override
@@ -59,8 +59,8 @@ public class AkoProperty extends AbstractVarProperty implements NamedProperty, U
     @Override
     public Collection<MultiTraversal> match(String start) {
         return Sets.newHashSet(MultiTraversal.create(
-                Fragment.create(Traversals::outAkos, EDGE_UNIQUE, start, superType.getName()),
-                Fragment.create(Traversals::inAkos, EDGE_BOUNDED, superType.getName(), start)
+                Fragment.create(Traversals::outSubs, EDGE_UNIQUE, start, superType.getName()),
+                Fragment.create(Traversals::inSubs, EDGE_BOUNDED, superType.getName(), start)
         ));
     }
 
@@ -98,7 +98,7 @@ public class AkoProperty extends AbstractVarProperty implements NamedProperty, U
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        AkoProperty that = (AkoProperty) o;
+        SubProperty that = (SubProperty) o;
 
         return superType.equals(that.superType);
 

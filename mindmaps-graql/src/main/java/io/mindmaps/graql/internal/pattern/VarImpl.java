@@ -29,7 +29,7 @@ import io.mindmaps.graql.admin.UniqueVarProperty;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.admin.VarProperty;
-import io.mindmaps.graql.internal.pattern.property.AkoProperty;
+import io.mindmaps.graql.internal.pattern.property.SubProperty;
 import io.mindmaps.graql.internal.pattern.property.DataTypeProperty;
 import io.mindmaps.graql.internal.pattern.property.HasResourceProperty;
 import io.mindmaps.graql.internal.pattern.property.HasResourceTypeProperty;
@@ -163,13 +163,13 @@ class VarImpl implements VarAdmin {
     }
 
     @Override
-    public Var ako(String type) {
-        return ako(var().id(type));
+    public Var sub(String type) {
+        return sub(var().id(type));
     }
 
     @Override
-    public Var ako(Var type) {
-        return addProperty(new AkoProperty(type.admin()));
+    public Var sub(Var type) {
+        return addProperty(new SubProperty(type.admin()));
     }
 
     @Override

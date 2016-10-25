@@ -96,7 +96,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
 
     /**
      *
-     * @return All outgoing ako parents including itself
+     * @return All outgoing sub parents including itself
      */
     Set<TypeImpl<?, ?>> getAkoHierarchySuperSet() {
         Set<TypeImpl<?, ?>> superSet= new HashSet<>();
@@ -117,7 +117,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
     /**
      *
      * @param root The current type to example
-     * @return All the ako children of the root. Effectively calls  {@link TypeImpl#getSubConceptTypes()} recursively
+     * @return All the sub children of the root. Effectively calls  {@link TypeImpl#getSubConceptTypes()} recursively
      */
     @SuppressWarnings("unchecked")
     private Set<T> nextAkoLevel(TypeImpl<?, ?> root){
@@ -143,7 +143,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
 
     /**
      *
-     * @return All of the concepts direct ako children spanning a single level.
+     * @return All of the concepts direct sub children spanning a single level.
      */
     private Collection<TypeImpl> getSubConceptTypes(){
         Collection<TypeImpl> subSet = new HashSet<>();
@@ -233,7 +233,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
         deleteEdges(Direction.OUT, Schema.EdgeLabel.SUB);
         deleteEdges(Direction.OUT, Schema.EdgeLabel.ISA);
         putEdge(type, Schema.EdgeLabel.SUB);
-        type(); //Check if there is a circular ako loop
+        type(); //Check if there is a circular sub loop
         return getThis();
     }
 

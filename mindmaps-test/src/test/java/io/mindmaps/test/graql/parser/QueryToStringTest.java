@@ -71,7 +71,7 @@ public class QueryToStringTest extends AbstractMovieGraphTest {
 
     @Test
     public void testQueryWithAkoToString() {
-        assertValidToString(qb.match(var("x").ako(var("y"))));
+        assertValidToString(qb.match(var("x").sub(var("y"))));
     }
 
     @Test

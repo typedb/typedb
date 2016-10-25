@@ -189,7 +189,7 @@ public class GraqlShellTest {
     @Test
     public void testAutocompleteFill() throws IOException {
         // The typo is deliberate because this is an auto-complete test
-        String result = testShell("match $x ako typ\t;\n");
+        String result = testShell("match $x sub typ\t;\n");
         assertThat(result, containsString("\"relation-type\""));
     }
 

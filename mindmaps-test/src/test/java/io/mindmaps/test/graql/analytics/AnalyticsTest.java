@@ -84,7 +84,7 @@ public class AnalyticsTest extends AbstractGraphTest {
         Analytics analytics = new Analytics(graph.getKeyspace(), ct, new HashSet<>());
         analytics.degreesAndPersist();
 
-        // check that dog has a degree to confirm ako has been inferred
+        // check that dog has a degree to confirm sub has been inferred
         graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, graph.getKeyspace()).getGraph();
         foofoo = graph.getEntity("foofoo");
         Collection<Resource<?>> degrees = foofoo.resources();

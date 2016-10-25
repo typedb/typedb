@@ -44,7 +44,7 @@ public class HALConcept {
     private final Logger LOG = LoggerFactory.getLogger(HALConcept.class);
     private final static String ROOT_CONCEPT = "type";
     private final static String ISA_EDGE = "isa";
-    private final static String AKO_EDGE = "ako";
+    private final static String AKO_EDGE = "sub";
     private final static String ONTOLOGY_LINK = "ontology";
     private final static String OUTBOUND_EDGE = "OUT";
     private final static String INBOUND_EDGE = "IN";
