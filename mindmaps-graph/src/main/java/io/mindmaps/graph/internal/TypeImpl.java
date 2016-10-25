@@ -98,17 +98,17 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      *
      * @return All outgoing sub parents including itself
      */
-    Set<TypeImpl<?, ?>> getAkoHierarchySuperSet() {
+    Set<TypeImpl<?, ?>> getSubHierarchySuperSet() {
         Set<TypeImpl<?, ?>> superSet= new HashSet<>();
         superSet.add(this);
-        TypeImpl akoParent = getParentSub();
+        TypeImpl subParent = getParentSub();
 
-        while(akoParent != null){
-            if(superSet.contains(akoParent))
+        while(subParent != null){
+            if(superSet.contains(subParent))
                 throw new ConceptException(ErrorMessage.LOOP_DETECTED.getMessage(toString(), Schema.EdgeLabel.SUB.getLabel()));
             else
-                superSet.add(akoParent);
-            akoParent = akoParent.getParentSub();
+                superSet.add(subParent);
+            subParent = subParent.getParentSub();
         }
 
         return superSet;
@@ -120,13 +120,13 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      * @return All the sub children of the root. Effectively calls  {@link TypeImpl#getSubConceptTypes()} recursively
      */
     @SuppressWarnings("unchecked")
-    private Set<T> nextAkoLevel(TypeImpl<?, ?> root){
+    private Set<T> nextSubLevel(TypeImpl<?, ?> root){
         Set<T> results = new HashSet<>();
         results.add((T) root);
 
         Collection<TypeImpl> children = root.getSubConceptTypes();
         for(TypeImpl child: children){
-            results.addAll(nextAkoLevel(child));
+            results.addAll(nextSubLevel(child));
         }
 
         return results;
@@ -138,7 +138,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      */
     @Override
     public Collection<T> subTypes(){
-        return nextAkoLevel(this);
+        return nextSubLevel(this);
     }
 
     /**

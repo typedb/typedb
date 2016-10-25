@@ -111,28 +111,28 @@ public class TypeTest {
     }
 
     @Test
-    public void testGetAkoHierarchySuperSet() throws Exception{
+    public void testGetSubHierarchySuperSet() throws Exception{
         TypeImpl c1 = (TypeImpl) mindmapsGraph.putEntityType("c1");
         TypeImpl c2 = (TypeImpl) mindmapsGraph.putEntityType("c2");
         TypeImpl c3 = (TypeImpl) mindmapsGraph.putEntityType("c3'");
         TypeImpl c4 = (TypeImpl) mindmapsGraph.putEntityType("c4");
 
-        assertTrue(c1.getAkoHierarchySuperSet().contains(c1));
-        assertFalse(c1.getAkoHierarchySuperSet().contains(c2));
-        assertFalse(c1.getAkoHierarchySuperSet().contains(c3));
-        assertFalse(c1.getAkoHierarchySuperSet().contains(c4));
+        assertTrue(c1.getSubHierarchySuperSet().contains(c1));
+        assertFalse(c1.getSubHierarchySuperSet().contains(c2));
+        assertFalse(c1.getSubHierarchySuperSet().contains(c3));
+        assertFalse(c1.getSubHierarchySuperSet().contains(c4));
 
         c1.superType(c2);
-        assertTrue(c1.getAkoHierarchySuperSet().contains(c1));
-        assertTrue(c1.getAkoHierarchySuperSet().contains(c2));
-        assertFalse(c1.getAkoHierarchySuperSet().contains(c3));
-        assertFalse(c1.getAkoHierarchySuperSet().contains(c4));
+        assertTrue(c1.getSubHierarchySuperSet().contains(c1));
+        assertTrue(c1.getSubHierarchySuperSet().contains(c2));
+        assertFalse(c1.getSubHierarchySuperSet().contains(c3));
+        assertFalse(c1.getSubHierarchySuperSet().contains(c4));
 
         c2.superType(c3);
-        assertTrue(c1.getAkoHierarchySuperSet().contains(c1));
-        assertTrue(c1.getAkoHierarchySuperSet().contains(c2));
-        assertTrue(c1.getAkoHierarchySuperSet().contains(c3));
-        assertFalse(c1.getAkoHierarchySuperSet().contains(c4));
+        assertTrue(c1.getSubHierarchySuperSet().contains(c1));
+        assertTrue(c1.getSubHierarchySuperSet().contains(c2));
+        assertTrue(c1.getSubHierarchySuperSet().contains(c3));
+        assertFalse(c1.getSubHierarchySuperSet().contains(c4));
 
         mindmapsGraph.getTinkerPopGraph().traversal().V().
                 has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), c3.getId()).
@@ -141,7 +141,7 @@ public class TypeTest {
         boolean correctExceptionThrown = false;
         try{
             c4.superType(c2);
-            c1.getAkoHierarchySuperSet();
+            c1.getSubHierarchySuperSet();
         } catch(RuntimeException e){
             correctExceptionThrown = e.getMessage().contains("loop");
         }
@@ -163,7 +163,7 @@ public class TypeTest {
     }
 
     @Test
-    public void testGetAkoChildrenSet(){
+    public void testGetSubChildrenSet(){
         EntityType parent = mindmapsGraph.putEntityType("parent");
         EntityType child1 = mindmapsGraph.putEntityType("c1");
         EntityType child2 = mindmapsGraph.putEntityType("c2");
@@ -182,7 +182,7 @@ public class TypeTest {
     }
 
     @Test
-    public void testGetAkoHierarchySubSet(){
+    public void testGetSubHierarchySubSet(){
         EntityType parent = mindmapsGraph.putEntityType("p");
         EntityType superParent = mindmapsGraph.putEntityType("sp");
         EntityType child1 = mindmapsGraph.putEntityType("c1");
@@ -353,13 +353,13 @@ public class TypeTest {
     }
 
     @Test(expected=ConceptException.class)
-    public void testCircularAKO(){
+    public void testCircularSub(){
         EntityType entityType = mindmapsGraph.putEntityType("Entity");
         entityType.superType(entityType);
     }
 
     @Test(expected=ConceptException.class)
-    public void testCircularAKOLong(){
+    public void testCircularSubLong(){
         EntityType entityType1 = mindmapsGraph.putEntityType("Entity1");
         EntityType entityType2 = mindmapsGraph.putEntityType("Entity2");
         EntityType entityType3 = mindmapsGraph.putEntityType("Entity3");

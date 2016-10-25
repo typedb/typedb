@@ -148,7 +148,7 @@ public class ConceptTest {
     }
 
     @Test
-    public void testGetParentAko(){
+    public void testGetParentSub(){
         TypeImpl conceptType = (TypeImpl) mindmapsGraph.putEntityType("conceptType");
         assertNull(conceptType.getParentSub());
         TypeImpl conceptParent = (TypeImpl) mindmapsGraph.putEntityType("CP");
