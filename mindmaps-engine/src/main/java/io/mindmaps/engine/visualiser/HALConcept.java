@@ -44,7 +44,7 @@ public class HALConcept {
     private final Logger LOG = LoggerFactory.getLogger(HALConcept.class);
     private final static String ROOT_CONCEPT = "type";
     private final static String ISA_EDGE = "isa";
-    private final static String AKO_EDGE = "sub";
+    private final static String SUB_EDGE = "sub";
     private final static String ONTOLOGY_LINK = "ontology";
     private final static String OUTBOUND_EDGE = "OUT";
     private final static String INBOUND_EDGE = "IN";
@@ -140,7 +140,7 @@ public class HALConcept {
                         .withProperty(BASETYPE_PROPERTY, ROOT_CONCEPT)
                         .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE)
                         .withLink(ONTOLOGY_LINK, resourceLinkOntologyPrefix + concept.getId());
-                halResource.withRepresentation(AKO_EDGE, HALType);
+                halResource.withRepresentation(SUB_EDGE, HALType);
             }
         }
 
@@ -261,7 +261,7 @@ public class HALConcept {
                 Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId())
                         .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
                 handleConcept(instanceResource, instance, separationDegree - 1);
-                halResource.withRepresentation(AKO_EDGE, instanceResource);
+                halResource.withRepresentation(SUB_EDGE, instanceResource);
             }
         });
     }
@@ -306,7 +306,7 @@ public class HALConcept {
                     Representation instanceResource = factory.newRepresentation(resourceLinkPrefix + instance.getId())
                             .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
                     generateStateAndLinks(instanceResource, instance);
-                    halResource.withRepresentation(AKO_EDGE, instanceResource);
+                    halResource.withRepresentation(SUB_EDGE, instanceResource);
                 }
             });
     }
