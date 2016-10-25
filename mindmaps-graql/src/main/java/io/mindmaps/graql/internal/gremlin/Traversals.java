@@ -22,7 +22,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import static io.mindmaps.util.Schema.EdgeLabel.AKO;
+import static io.mindmaps.util.Schema.EdgeLabel.SUB;
 
 public class Traversals {
 
@@ -30,11 +30,11 @@ public class Traversals {
 
     @SuppressWarnings("unchecked")
     public static GraphTraversal<Vertex, Vertex> outAkos(GraphTraversal<Vertex, Vertex> traversal) {
-        return traversal.union(__.identity(), __.repeat(__.out(AKO.getLabel())).emit()).unfold();
+        return traversal.union(__.identity(), __.repeat(__.out(SUB.getLabel())).emit()).unfold();
     }
 
     @SuppressWarnings("unchecked")
     public static GraphTraversal<Vertex, Vertex> inAkos(GraphTraversal<Vertex, Vertex> traversal) {
-        return traversal.union(__.identity(), __.repeat(__.in(AKO.getLabel())).emit()).unfold();
+        return traversal.union(__.identity(), __.repeat(__.in(SUB.getLabel())).emit()).unfold();
     }
 }

@@ -77,7 +77,7 @@ public class ConceptTest {
     @Test(expected=MoreThanOneEdgeException.class)
     public void testGetEdgeOutgoingOfType(){
         ConceptImpl<?, ?> concept = (ConceptImpl<?, ?>) mindmapsGraph.putEntityType("Thing");
-        assertNull(concept.getEdgeOutgoingOfType(Schema.EdgeLabel.AKO));
+        assertNull(concept.getEdgeOutgoingOfType(Schema.EdgeLabel.SUB));
 
         TypeImpl type1 = (TypeImpl) mindmapsGraph.putEntityType("Type 1");
         TypeImpl type2 = (TypeImpl) mindmapsGraph.putEntityType("Type 2");
@@ -150,12 +150,12 @@ public class ConceptTest {
     @Test
     public void testGetParentAko(){
         TypeImpl conceptType = (TypeImpl) mindmapsGraph.putEntityType("conceptType");
-        assertNull(conceptType.getParentAko());
+        assertNull(conceptType.getParentSub());
         TypeImpl conceptParent = (TypeImpl) mindmapsGraph.putEntityType("CP");
         conceptType.superType(conceptParent);
-        Concept foundConcept = conceptType.getParentAko();
+        Concept foundConcept = conceptType.getParentSub();
         assertEquals(conceptParent, foundConcept);
-        assertNull(conceptParent.getParentAko());
+        assertNull(conceptParent.getParentSub());
         assertNull(conceptType.getParentIsa());
     }
 
@@ -210,7 +210,7 @@ public class ConceptTest {
 
         expectedException.expect(ConceptException.class);
         expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.LOOP_DETECTED.getMessage(c1.toString(), Schema.EdgeLabel.AKO.getLabel() + " " + Schema.EdgeLabel.ISA.getLabel()))
+                containsString(ErrorMessage.LOOP_DETECTED.getMessage(c1.toString(), Schema.EdgeLabel.SUB.getLabel() + " " + Schema.EdgeLabel.ISA.getLabel()))
         ));
 
         TypeImpl c2 = (TypeImpl) mindmapsGraph.putEntityType("c2");
@@ -223,9 +223,9 @@ public class ConceptTest {
         c2_Vertex.edges(Direction.BOTH).next().remove();
         c3_Vertex.edges(Direction.BOTH).next().remove();
 
-        c1_Vertex.addEdge(Schema.EdgeLabel.AKO.getLabel(), c2_Vertex);
-        c2_Vertex.addEdge(Schema.EdgeLabel.AKO.getLabel(), c3_Vertex);
-        c3_Vertex.addEdge(Schema.EdgeLabel.AKO.getLabel(), c1_Vertex);
+        c1_Vertex.addEdge(Schema.EdgeLabel.SUB.getLabel(), c2_Vertex);
+        c2_Vertex.addEdge(Schema.EdgeLabel.SUB.getLabel(), c3_Vertex);
+        c3_Vertex.addEdge(Schema.EdgeLabel.SUB.getLabel(), c1_Vertex);
         c1.type();
     }
 

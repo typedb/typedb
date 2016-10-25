@@ -71,7 +71,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
     @Override
     @SuppressWarnings("unchecked")
     public T superType() {
-        Concept concept = getOutgoingNeighbour(Schema.EdgeLabel.AKO);
+        Concept concept = getOutgoingNeighbour(Schema.EdgeLabel.SUB);
         if(concept == null)
             return null;
         else
@@ -101,14 +101,14 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
     Set<TypeImpl<?, ?>> getAkoHierarchySuperSet() {
         Set<TypeImpl<?, ?>> superSet= new HashSet<>();
         superSet.add(this);
-        TypeImpl akoParent = getParentAko();
+        TypeImpl akoParent = getParentSub();
 
         while(akoParent != null){
             if(superSet.contains(akoParent))
-                throw new ConceptException(ErrorMessage.LOOP_DETECTED.getMessage(toString(), Schema.EdgeLabel.AKO.getLabel()));
+                throw new ConceptException(ErrorMessage.LOOP_DETECTED.getMessage(toString(), Schema.EdgeLabel.SUB.getLabel()));
             else
                 superSet.add(akoParent);
-            akoParent = akoParent.getParentAko();
+            akoParent = akoParent.getParentSub();
         }
 
         return superSet;
@@ -147,7 +147,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      */
     private Collection<TypeImpl> getSubConceptTypes(){
         Collection<TypeImpl> subSet = new HashSet<>();
-        getIncomingNeighbours(Schema.EdgeLabel.AKO).forEach(concept -> subSet.add((TypeImpl) concept));
+        getIncomingNeighbours(Schema.EdgeLabel.SUB).forEach(concept -> subSet.add((TypeImpl) concept));
         return subSet;
     }
 
@@ -163,9 +163,9 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
         //noinspection unchecked
         GraphTraversal<Vertex, Vertex> traversal = getMindmapsGraph().getTinkerPopGraph().traversal().V()
                 .has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), getId())
-                .union(__.identity(), __.repeat(__.in(Schema.EdgeLabel.AKO.getLabel())).emit()).unfold()
+                .union(__.identity(), __.repeat(__.in(Schema.EdgeLabel.SUB.getLabel())).emit()).unfold()
                 .in(Schema.EdgeLabel.ISA.getLabel())
-                .union(__.identity(), __.repeat(__.in(Schema.EdgeLabel.AKO.getLabel())).emit()).unfold();
+                .union(__.identity(), __.repeat(__.in(Schema.EdgeLabel.SUB.getLabel())).emit()).unfold();
 
         traversal.forEachRemaining(vertex -> {
             ConceptImpl concept = getMindmapsGraph().getElementFactory().buildUnknownConcept(vertex);
@@ -230,9 +230,9 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
             });
         }
 
-        deleteEdges(Direction.OUT, Schema.EdgeLabel.AKO);
+        deleteEdges(Direction.OUT, Schema.EdgeLabel.SUB);
         deleteEdges(Direction.OUT, Schema.EdgeLabel.ISA);
-        putEdge(type, Schema.EdgeLabel.AKO);
+        putEdge(type, Schema.EdgeLabel.SUB);
         type(); //Check if there is a circular ako loop
         return getThis();
     }

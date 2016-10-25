@@ -263,10 +263,10 @@ public class TypeTest {
         EntityTypeImpl conceptType = (EntityTypeImpl) mindmapsGraph.putEntityType("A Thing");
         EntityTypeImpl conceptType2 = (EntityTypeImpl) mindmapsGraph.putEntityType("A Super Thing");
         assertNotNull(conceptType.getOutgoingNeighbour(Schema.EdgeLabel.ISA));
-        assertNull(conceptType.getOutgoingNeighbour(Schema.EdgeLabel.AKO));
+        assertNull(conceptType.getOutgoingNeighbour(Schema.EdgeLabel.SUB));
         conceptType.superType(conceptType2);
         assertNull(conceptType.getOutgoingNeighbour(Schema.EdgeLabel.ISA));
-        assertNotNull(conceptType.getOutgoingNeighbour(Schema.EdgeLabel.AKO));
+        assertNotNull(conceptType.getOutgoingNeighbour(Schema.EdgeLabel.SUB));
     }
 
     @Test
