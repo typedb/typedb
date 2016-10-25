@@ -37,17 +37,11 @@ import java.util.*;
 
 public abstract class AtomBase implements Atomic{
 
-    protected String varName;
+    protected String varName = null;
     protected Type type = null;
-    protected final String typeId;
-    protected final PatternAdmin atomPattern;
+    protected String typeId = null;
+    protected PatternAdmin atomPattern = null;
     private Query parent = null;
-
-    public AtomBase() {
-        this.varName = null;
-        this.typeId = null;
-        this.atomPattern = null;
-    }
 
     public AtomBase(VarAdmin pattern) {
         this.atomPattern = pattern;
@@ -96,8 +90,8 @@ public abstract class AtomBase implements Atomic{
 
     @Override
     public boolean isRuleResolvable() {
-        Type type = getParentQuery().getGraph().orElse(null).getType(getTypeId());
-        return type != null && !type.getRulesOfConclusion().isEmpty();
+        Type type = getType();
+        return type != null && !getType().getRulesOfConclusion().isEmpty();
     }
 
     @Override
@@ -140,8 +134,6 @@ public abstract class AtomBase implements Atomic{
 
     @Override
     public Query getParentQuery(){
-        if(parent == null)
-            throw new IllegalStateException(ErrorMessage.PARENT_MISSING.getMessage(this.toString()));
         return parent;
     }
 

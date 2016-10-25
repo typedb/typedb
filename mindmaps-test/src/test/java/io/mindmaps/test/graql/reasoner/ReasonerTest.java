@@ -29,6 +29,7 @@ import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.internal.reasoner.rule.InferenceRule;
+import io.mindmaps.test.graql.reasoner.graphs.GeoGraph;
 import io.mindmaps.test.graql.reasoner.graphs.SNBGraph;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -39,6 +40,7 @@ import java.util.Map;
 import static io.mindmaps.graql.internal.reasoner.Utility.createReflexiveRule;
 import static io.mindmaps.graql.internal.reasoner.Utility.createSubPropertyRule;
 import static io.mindmaps.graql.internal.reasoner.Utility.createTransitiveRule;
+import static io.mindmaps.graql.internal.reasoner.Utility.printAnswers;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -188,6 +190,97 @@ public class ReasonerTest {
     }
 
     @Test
+    public void testNoRelationType(){
+        MindmapsGraph lgraph = GeoGraph.getGraph();
+        String queryString = "match $x isa city;$y isa country;($x, $y);$y id 'Poland';";
+        String queryString2 = "match $x isa city;$y isa country;" +
+                    "(geo-entity: $x, entity-location: $y) isa is-located-in;$y id 'Poland';";
+        MatchQuery query = new Query(queryString, lgraph);
+        MatchQuery query2 = new Query(queryString2, lgraph);
+
+        Reasoner reasoner = new Reasoner(lgraph);
+        assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
+    }
+
+    @Test
+    public void testNoRelationTypeWithRoles(){
+        MindmapsGraph lgraph = GeoGraph.getGraph();
+        String queryString = "match $x isa city;$y isa country;(geo-entity: $x, $y);$y id 'Poland';";
+        String queryString2 = "match $x isa city;$y isa country;" +
+                    "(geo-entity: $x, entity-location: $y) isa is-located-in;$y id 'Poland';";
+        MatchQuery query = new Query(queryString, lgraph);
+        MatchQuery query2 = new Query(queryString2, lgraph);
+
+        Reasoner reasoner = new Reasoner(lgraph);
+        assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
+    }
+
+    @Test
+    public void testNoRelationTypeWithRoles2(){
+        MindmapsGraph lgraph = GeoGraph.getGraph();
+        String queryString = "match $x isa city;$y isa country;(geo-entity: $x, $y);";
+        String queryString2 = "match $x isa city;$y isa country;" +
+                "(geo-entity: $x, entity-location: $y) isa is-located-in;";
+        MatchQuery query = new Query(queryString, lgraph);
+        MatchQuery query2 = new Query(queryString2, lgraph);
+
+        Reasoner reasoner = new Reasoner(lgraph);
+        assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
+    }
+
+    @Test
+    public void testAKO(){
+        MindmapsGraph lgraph = GeoGraph.getGraph();
+        String queryString = "match $x isa $type;$type ako geoObject;" +
+                "(geo-entity: $x, entity-location: $y) isa is-located-in; $y isa country;$y id 'Poland';";
+        String queryString2 = "match $y isa country;$y id 'Poland';" +
+                "(geo-entity: $x, entity-location: $y) isa is-located-in;";
+        MatchQuery query = new Query(queryString, lgraph);
+        MatchQuery query2 = new Query(queryString2, lgraph);
+
+        Reasoner reasoner = new Reasoner(lgraph);
+        assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
+    }
+
+    @Test
+    public void testPlaysRole(){
+        MindmapsGraph lgraph = GeoGraph.getGraph();
+        String queryString = "match $x isa $type;$type plays-role geo-entity;$y isa country;$y id 'Poland';" +
+             "($x, $y);select $x, $y;";
+        String queryString2 = "match $y isa country;$y id 'Poland';" +
+                "($x, $y) isa is-located-in;";
+        MatchQuery query = new Query(queryString, lgraph);
+        MatchQuery query2 = new Query(queryString2, lgraph);
+
+        Reasoner reasoner = new Reasoner(lgraph);
+        assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
+    }
+
+    @Test
+    public void testAllVarsRelation(){
+        MindmapsGraph lgraph = GeoGraph.getGraph();
+        String queryString = "match ($x, $y) isa $rel;";
+        String queryString2 = "match ($x, $y) isa is-located-in;";
+        MatchQuery query = new Query(queryString, lgraph);
+        MatchQuery query2 = new Query(queryString2, lgraph);
+
+        Reasoner reasoner = new Reasoner(lgraph);
+        assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
+    }
+
+    @Test
+    public void testHasResource(){
+        MindmapsGraph lgraph = SNBGraph.getGraph();
+        String queryString = "match $x isa $type;$type has-resource name;$y isa product;($x, $y) isa recommendation;";
+        String queryString2 = "match $x isa $person;$y isa product;($x, $y) isa recommendation;";
+        MatchQuery query = new Query(queryString, lgraph);
+        MatchQuery query2 = new Query(queryString2, lgraph);
+
+        Reasoner reasoner = new Reasoner(lgraph);
+        assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
+    }
+
+    @Test
     public void testVarContraction(){
         MindmapsGraph graph = SNBGraph.getGraph();
         createReflexiveRule("testRule", graph.getRelationType("knows"), graph);
@@ -228,4 +321,44 @@ public class ReasonerTest {
         assertEquals(reasoner.resolve(new Query(queryString, graph)), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
+    @Test
+    @Ignore
+    public void testTypeVariable(){
+        MindmapsGraph lgraph = GeoGraph.getGraph();
+        String queryString = "match $x isa $type;$type isa city;"+
+                "(geo-entity: $x, entity-location: $y), isa is-located-in; $y isa country;select $x, $y;";
+        String queryString2 = "match $x isa city;"+
+                "(geo-entity: $x, entity-location: $y), isa is-located-in; $y isa country;";
+        MatchQuery query = new Query(queryString, lgraph);
+        MatchQuery query2 = new Query(queryString2, lgraph);
+
+        Reasoner reasoner = new Reasoner(lgraph);
+        printAnswers(reasoner.resolve(query));
+        assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
+    }
+
+    @Test
+    @Ignore
+    public void testTypeVariable2(){
+        MindmapsGraph lgraph = GeoGraph.getGraph();
+        String queryString = "match $x isa $type;$type isa city;"+
+                "(geo-entity: $x, entity-location: $y), isa is-located-in; $y isa country;$y id 'Poland';select $x, $y";
+        String queryString2 = "match $x isa city;"+
+                "(geo-entity: $x, entity-location: $y), isa is-located-in;$y id 'Poland'; $y isa country;";
+        MatchQuery query = new Query(queryString, lgraph);
+        MatchQuery query2 = new Query(queryString2, lgraph);
+
+        Reasoner reasoner = new Reasoner(lgraph);
+        assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
+    }
+
+    @Test
+    public void testRelationVariable(){
+        MindmapsGraph lgraph = GeoGraph.getGraph();
+        String queryString = "match $r($x, $y);";
+        MatchQuery query = new Query(queryString, lgraph);
+
+        Reasoner reasoner = new Reasoner(lgraph);
+        printAnswers(reasoner.resolve(query));
+    }
 }
