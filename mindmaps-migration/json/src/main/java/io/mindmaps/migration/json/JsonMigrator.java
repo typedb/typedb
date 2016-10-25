@@ -18,133 +18,84 @@
 
 package io.mindmaps.migration.json;
 
-import com.google.common.collect.Iterators;
-import io.mindmaps.engine.loader.Loader;
-import io.mindmaps.graql.Graql;
+import com.google.common.io.CharStreams;
+import io.mindmaps.graql.Var;
+import io.mindmaps.migration.base.AbstractMigrator;
 import mjson.Json;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileReader;
 import java.io.FilenameFilter;
-import java.net.MalformedURLException;
-import java.util.*;
+import java.io.IOException;
+import java.io.Reader;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-
-import static java.util.stream.Collectors.toList;
 
 /**
  * Migrator for migrating JSON data into Mindmaps instances
  */
-public class JsonMigrator {
+public class JsonMigrator extends AbstractMigrator {
 
-    public static final int BATCH_SIZE = 5;
-    private static Logger LOG = LoggerFactory.getLogger(JsonMigrator.class);
-
-    private final Loader loader;
-    private int batchSize = BATCH_SIZE;
-
-
-    /**
-     * Create a JsonMigrator to migrate into the given graph
-     */
-    public JsonMigrator(Loader loader) {
-        this.loader = loader;
-    }
-
-    /**
-     * Set number of files/objects to migrate in one batch
-     * @param batchSize number of objects to migrate at once
-     */
-    public JsonMigrator setBatchSize(int batchSize){
-        this.batchSize = batchSize;
-        return this;
-    }
-
-    public void migrate(String template, File jsonFileOrDir){
-        checkBatchSize();
-
+    @Override
+    public  Stream<Collection<Var>> migrate(String template, File jsonFileOrDir) {
         File[] files = {jsonFileOrDir};
         if(jsonFileOrDir.isDirectory()){
             files = jsonFileOrDir.listFiles(jsonFiles);
         }
 
-        try {
-            resolve(template, Arrays.stream(files)).forEach(loader::addToQueue);
-        } catch (Throwable e) {
-            throw new RuntimeException(e);
-        } finally {
-            loader.flush();
-            loader.waitToFinish();
-        }
-    }
+        Stream<String> jsonObjects = Stream.of(files).
+                map(this::asReader)
+                .map(this::asString);
 
-    public void graql(String template, File file){
-        checkBatchSize();
-
-
+        return partitionedStream(jsonObjects.map(this::toJsonMap).iterator())
+                .map(i -> template(template, i));
     }
 
     /**
-     * Convert native data format to a stream of templates
+     * Readers contains a Json object
      * @param template parametrized graql insert query
-     * @param files
-     * @return
+     * @param reader reader over the data to be migrated
      */
-    private Stream<String> resolve(String template, Stream<File> files){
-        Stream<Json> json = files.map(this::convertFile);
-
-        return partitionedStream(json.iterator())
-                .map(this::batchParse)
-                .map(data -> template(template, data));
-    }
-
-    /**
-     * Call parse of a collection of input data
-     */
-    private Collection<Map<String, Object>> batchParse(Collection<Json> batch){
-        return batch.stream().map(this::parse).collect(toList());
+    @Override
+    public Stream<Collection<Var>> migrate(String template, Reader reader){
+        return Stream.of(template(template, Collections.singletonList(toJsonMap(asString(reader)))));
     }
 
     /**
      * Convert data in JSON object to a Map<String, Object>, the current templating input.
      * There is a direct mapping between any JSON object and a Map.
-     * @param json json to convert
+     * @param data data to convert
      * @return converted json map
      */
-    private Map<String, Object> parse(Json json){
-        return json.asMap();
-    }
-
-    private String template(String template, Collection<Map<String, Object>> data){
-        Map<String, Object> forData = Collections.singletonMap("data", data);
-        template = "for (data) do { " + template + "}";
-        return  "insert " + Graql.parseTemplate(template, forData);
+    private Map<String, Object> toJsonMap(String data){
+        return Json.read(data).asMap();
     }
 
     /**
-     * Warn the user when the batch size of the loader is greater than 1.
-     * If the batch size is greater than 1, it is possible that multiple of the same variables will be committed in
-     * one batch and the resulting committed data will be corrupted.
+     * Convert a reader to a string
+     * @param reader reader to be converted
+     * @return Json object representing the file, empty if problem reading file
      */
-    private void checkBatchSize(){
-        if(loader.getBatchSize() > 1){
-            LOG.warn("Loading with batch size [" + loader.getBatchSize() + "]. This can cause conflicts on commit.");
+    private String asString(Reader reader){
+        try {
+            return CharStreams.toString(reader);
+        } catch (IOException e){
+            throw new RuntimeException("Problem reading input");
         }
     }
 
     /**
-     * Convert a file into a Json object
+     * Convert a file into a Reader
      * @param file file to be converted
      * @return Json object representing the file, empty if problem reading file
      */
-    private Json convertFile(File file){
+    private FileReader asReader(File file){
         try {
-            return Json.read(file.toURI().toURL());
-        } catch (MalformedURLException e){
-            LOG.warn("Problem reading Json file " + file.getPath());
-            return Json.object();
+            return new FileReader(file);
+        } catch (IOException e){
+            throw new RuntimeException("Problem reading input");
         }
     }
 
@@ -152,15 +103,4 @@ public class JsonMigrator {
      * Filter that will only accept JSON files with the .json extension
      */
     private FilenameFilter jsonFiles = (dir, name) -> name.toLowerCase().endsWith(".json");
-
-    /**
-     * Partition a stream into a stream of collections, each with batchSize elements.
-     * @param iterator Iterator to partition
-     * @param <T> Type of values of iterator
-     * @return Stream over a collection that are each of batchSize
-     */
-    private <T> Stream<Collection<T>> partitionedStream(Iterator<T> iterator){
-        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(
-                Iterators.partition(iterator, batchSize), Spliterator.ORDERED), false);
-    }
 }
