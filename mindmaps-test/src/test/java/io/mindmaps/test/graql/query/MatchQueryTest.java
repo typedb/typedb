@@ -515,9 +515,15 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     public void testMatchAllPairs() {
         long numConcepts = qb.match(var("x")).stream().count();
         MatchQuery pairs = qb.match(var("x"), var("y"));
-        
+
         // We expect there to be a result for every pair of concepts
         assertEquals(numConcepts * numConcepts, pairs.stream().count());
+    }
+
+    @Test
+    public void testNoInstancesOfRoleType() {
+        MatchQuery query = qb.match(var("x").isa(var("y")), var("y").id("actor"));
+        assertEquals(0, query.stream().count());
     }
 
     @Test(expected = IllegalArgumentException.class)
