@@ -33,8 +33,8 @@ import java.util.Set;
 
 public class ConnectedComponentVertexProgram extends MindmapsVertexProgram<String> {
 
-    public static final int MAX_ITERATION = 100;
-
+    private static final int MAX_ITERATION = 100;
+    private static final String MIN_STRING = "0";
     // element key
     private static final String IS_ACTIVE_CASTING = "medianVertexProgram.isActiveCasting";
     protected static final String CLUSTER_LABEL = "medianVertexProgram.clusterLabel";
@@ -113,7 +113,7 @@ public class ConnectedComponentVertexProgram extends MindmapsVertexProgram<Strin
                 //similar to default case, except that casting has no cluster label before this iteration
                 if (vertex.label().equals(Schema.BaseType.CASTING.name()) &&
                         (boolean) vertex.value(IS_ACTIVE_CASTING)) {
-                    String max = IteratorUtils.reduce(messenger.receiveMessages(), "Alex",
+                    String max = IteratorUtils.reduce(messenger.receiveMessages(), MIN_STRING,
                             (a, b) -> a.compareTo(b) > 0 ? a : b);
                     vertex.property(CLUSTER_LABEL, max);
                     messenger.sendMessage(messageScopeIn, max);
