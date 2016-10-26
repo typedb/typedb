@@ -290,7 +290,7 @@ public class MindmapsTitanGraphFactoryTest {
         Set<Future> futures = new HashSet<>();
         ExecutorService pool = Executors.newFixedThreadPool(10);
 
-        for(int i = 0; i < 100; i ++) {
+        for(int i = 0; i < 200; i ++) {
             futures.add(pool.submit(() -> {
                 MindmapsTitanGraph graph = (MindmapsTitanGraph) titanGraphFactory.getGraph(false);
                 assertFalse(graph.getTinkerPopGraph().isClosed());
@@ -312,6 +312,18 @@ public class MindmapsTitanGraphFactoryTest {
 
             assertFalse(exceptionThrown);
         }
+    }
+
+    @Test
+    public void testGraphNotClosed(){
+        MindmapsTitanGraph graph = (MindmapsTitanGraph) titanGraphFactory.getGraph(false);
+        assertFalse(graph.getTinkerPopGraph().isClosed());
+        graph.putEntityType("A Thing");
+        graph.close();
+
+        graph = (MindmapsTitanGraph) titanGraphFactory.getGraph(false);
+        assertFalse(graph.getTinkerPopGraph().isClosed());
+        graph.putEntityType("A Thing");
     }
 
 

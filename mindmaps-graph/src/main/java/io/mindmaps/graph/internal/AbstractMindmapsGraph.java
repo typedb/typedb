@@ -611,10 +611,13 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     public void close() {
         getConceptLog().clearTransaction();
         try {
-            graph.close();
+            closeGraphTransaction();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+    protected void closeGraphTransaction() throws Exception {
+        graph.close();
     }
 
     /**
