@@ -71,7 +71,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
     @Override
     @SuppressWarnings("unchecked")
     public T superType() {
-        Concept concept = getOutgoingNeighbour(Schema.EdgeLabel.AKO);
+        Concept concept = getOutgoingNeighbour(Schema.EdgeLabel.SUB);
         if(concept == null)
             return null;
         else
@@ -96,19 +96,19 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
 
     /**
      *
-     * @return All outgoing ako parents including itself
+     * @return All outgoing sub parents including itself
      */
-    Set<TypeImpl<?, ?>> getAkoHierarchySuperSet() {
+    Set<TypeImpl<?, ?>> getSubHierarchySuperSet() {
         Set<TypeImpl<?, ?>> superSet= new HashSet<>();
         superSet.add(this);
-        TypeImpl akoParent = getParentAko();
+        TypeImpl subParent = getParentSub();
 
-        while(akoParent != null){
-            if(superSet.contains(akoParent))
-                throw new ConceptException(ErrorMessage.LOOP_DETECTED.getMessage(toString(), Schema.EdgeLabel.AKO.getLabel()));
+        while(subParent != null){
+            if(superSet.contains(subParent))
+                throw new ConceptException(ErrorMessage.LOOP_DETECTED.getMessage(toString(), Schema.EdgeLabel.SUB.getLabel()));
             else
-                superSet.add(akoParent);
-            akoParent = akoParent.getParentAko();
+                superSet.add(subParent);
+            subParent = subParent.getParentSub();
         }
 
         return superSet;
@@ -117,16 +117,16 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
     /**
      *
      * @param root The current type to example
-     * @return All the ako children of the root. Effectively calls  {@link TypeImpl#getSubConceptTypes()} recursively
+     * @return All the sub children of the root. Effectively calls  {@link TypeImpl#getSubConceptTypes()} recursively
      */
     @SuppressWarnings("unchecked")
-    private Set<T> nextAkoLevel(TypeImpl<?, ?> root){
+    private Set<T> nextSubLevel(TypeImpl<?, ?> root){
         Set<T> results = new HashSet<>();
         results.add((T) root);
 
         Collection<TypeImpl> children = root.getSubConceptTypes();
         for(TypeImpl child: children){
-            results.addAll(nextAkoLevel(child));
+            results.addAll(nextSubLevel(child));
         }
 
         return results;
@@ -138,16 +138,16 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      */
     @Override
     public Collection<T> subTypes(){
-        return nextAkoLevel(this);
+        return nextSubLevel(this);
     }
 
     /**
      *
-     * @return All of the concepts direct ako children spanning a single level.
+     * @return All of the concepts direct sub children spanning a single level.
      */
     private Collection<TypeImpl> getSubConceptTypes(){
         Collection<TypeImpl> subSet = new HashSet<>();
-        getIncomingNeighbours(Schema.EdgeLabel.AKO).forEach(concept -> subSet.add((TypeImpl) concept));
+        getIncomingNeighbours(Schema.EdgeLabel.SUB).forEach(concept -> subSet.add((TypeImpl) concept));
         return subSet;
     }
 
@@ -163,9 +163,9 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
         //noinspection unchecked
         GraphTraversal<Vertex, Vertex> traversal = getMindmapsGraph().getTinkerPopGraph().traversal().V()
                 .has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), getId())
-                .union(__.identity(), __.repeat(__.in(Schema.EdgeLabel.AKO.getLabel())).emit()).unfold()
+                .union(__.identity(), __.repeat(__.in(Schema.EdgeLabel.SUB.getLabel())).emit()).unfold()
                 .in(Schema.EdgeLabel.ISA.getLabel())
-                .union(__.identity(), __.repeat(__.in(Schema.EdgeLabel.AKO.getLabel())).emit()).unfold();
+                .union(__.identity(), __.repeat(__.in(Schema.EdgeLabel.SUB.getLabel())).emit()).unfold();
 
         traversal.forEachRemaining(vertex -> {
             ConceptImpl concept = getMindmapsGraph().getElementFactory().buildUnknownConcept(vertex);
@@ -230,10 +230,10 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
             });
         }
 
-        deleteEdges(Direction.OUT, Schema.EdgeLabel.AKO);
+        deleteEdges(Direction.OUT, Schema.EdgeLabel.SUB);
         deleteEdges(Direction.OUT, Schema.EdgeLabel.ISA);
-        putEdge(type, Schema.EdgeLabel.AKO);
-        type(); //Check if there is a circular ako loop
+        putEdge(type, Schema.EdgeLabel.SUB);
+        type(); //Check if there is a circular sub loop
         return getThis();
     }
 

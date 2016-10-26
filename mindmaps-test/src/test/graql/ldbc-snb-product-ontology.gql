@@ -1,7 +1,7 @@
 insert 
 
 entity isa entity-type, is-abstract;
-product ako entity, has-resource min-age, has-resource max-age, has-resource gender;
+product sub entity, has-resource min-age, has-resource max-age, has-resource gender;
 
 # product resources
 min-age isa resource-type, datatype long;
@@ -21,7 +21,7 @@ product plays-role recommended-product;
 person isa entity-type;
 person plays-role recommended-customer;
 
-place ako entity;
+place sub entity;
 place plays-role product-origin;
 
 typed-product isa role-type;

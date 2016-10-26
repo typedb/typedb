@@ -182,16 +182,16 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
         while(notFound && currentConcept != null){
             ConceptImpl concept = currentConcept.getParentIsa();
             if(concept != null){
-                //Checks the following case c1 -ako-> c2 -ako-> c3 -isa-> c1 is invalid
+                //Checks the following case c1 -sub-> c2 -sub-> c3 -isa-> c1 is invalid
                 if(visitedConcepts.contains(concept) && !concept.equals(currentConcept)){
-                    throw new ConceptException(ErrorMessage.LOOP_DETECTED.getMessage(toString(), Schema.EdgeLabel.AKO.getLabel() + " " + Schema.EdgeLabel.ISA.getLabel()));
+                    throw new ConceptException(ErrorMessage.LOOP_DETECTED.getMessage(toString(), Schema.EdgeLabel.SUB.getLabel() + " " + Schema.EdgeLabel.ISA.getLabel()));
                 }
                 notFound = false;
                 type = concept.asType();
             } else {
-                currentConcept = currentConcept.getParentAko();
+                currentConcept = currentConcept.getParentSub();
                 if(visitedConcepts.contains(currentConcept)){
-                    throw new ConceptException(ErrorMessage.LOOP_DETECTED.getMessage(toString(), Schema.EdgeLabel.AKO.getLabel() + " " + Schema.EdgeLabel.ISA.getLabel()));
+                    throw new ConceptException(ErrorMessage.LOOP_DETECTED.getMessage(toString(), Schema.EdgeLabel.SUB.getLabel() + " " + Schema.EdgeLabel.ISA.getLabel()));
                 }
                 visitedConcepts.add(currentConcept);
 
@@ -466,12 +466,12 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
 
     /**
      *
-     * @return The result of following one outgoing ako edge to a Type.
+     * @return The result of following one outgoing sub edge to a Type.
      */
-    public TypeImpl getParentAko(){
-        Concept akoParent = getOutgoingNeighbour(Schema.EdgeLabel.AKO);
-        if(akoParent != null){
-            return (TypeImpl) akoParent;
+    public TypeImpl getParentSub(){
+        Concept subParent = getOutgoingNeighbour(Schema.EdgeLabel.SUB);
+        if(subParent != null){
+            return (TypeImpl) subParent;
         } else {
             return null;
         }

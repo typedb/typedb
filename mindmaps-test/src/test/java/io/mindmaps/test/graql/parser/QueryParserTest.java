@@ -228,7 +228,7 @@ public class QueryParserTest extends AbstractMovieGraphTest {
                 var().rel(var("p"), "x").rel("y"),
                 var("x").isa(var("z")),
                 var("y").value("crime"),
-                var("z").ako("production"),
+                var("z").sub("production"),
                 id("has-genre").hasRole(var("p"))
         );
 
@@ -237,7 +237,7 @@ public class QueryParserTest extends AbstractMovieGraphTest {
                         "($p: $x, $y);" +
                         "$x isa $z;" +
                         "$y value 'crime';" +
-                        "$z ako production;" +
+                        "$z sub production;" +
                         "has-genre has-role $p;"
         );
 

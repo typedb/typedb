@@ -6,7 +6,7 @@ insert
 
 "entity" isa entity-type;
 
-"q" ako entity;
+"q" sub entity;
 
 "N-TC-roleA" isa role-type;
 "N-TC-roleB" isa role-type;

@@ -20,21 +20,21 @@ id "name_tag_string" isa resource-type datatype string;
   ## DBLP record entities, i.e. first order children
 id "dblp_record" isa entity-type plays-role editor_target plays-role publisher_target plays-role authored_record plays-role journal_target plays-role note_target plays-role referenced_record plays-role referencing_record has-resource dblp_mdate has-resource dblp_title has-resource dblp_booktitle has-resource dblp_pages has-resource dblp_year has-resource dblp_address has-resource dblp_volume has-resource dblp_number has-resource dblp_month has-resource dblp_url has-resource dblp_ee has-resource dblp_cdrom has-resource dblp_cite has-resource dblp_isbn has-resource dblp_series has-resource dblp_school has-resource dblp_chapter;
 
-id "dblp_article" ako dblp_record;
+id "dblp_article" sub dblp_record;
 
-id "dblp_inproceedings" ako dblp_record;
+id "dblp_inproceedings" sub dblp_record;
 
-id "dblp_proceedings" ako dblp_record;
+id "dblp_proceedings" sub dblp_record;
 
-id "dblp_book" ako dblp_record;
+id "dblp_book" sub dblp_record;
 
-id "dblp_incollection" ako dblp_record;
+id "dblp_incollection" sub dblp_record;
 
-id "dblp_phdthesis" ako dblp_record;
+id "dblp_phdthesis" sub dblp_record;
 
-id "dblp_masterthesis" ako dblp_record;
+id "dblp_masterthesis" sub dblp_record;
 
-id "dblp_www" ako dblp_record;
+id "dblp_www" sub dblp_record;
 
 
     ### DBLP resources. Mostly attributes of the records
@@ -79,9 +79,9 @@ id "dblp_chapter" isa resource-type	datatype string	;
 # Each of these attaches a name tag to a record
 
       ### Author is a named entity with a couple of resources
-id "dblp_author" ako entity_with_name has-role authored_record has-role author_tag has-resource author_number has-resource is_last_author;
-id "authored_record" ako named_entity;
-id "author_tag" ako name_of_named_entity;
+id "dblp_author" sub entity_with_name has-role authored_record has-role author_tag has-resource author_number has-resource is_last_author;
+id "authored_record" sub named_entity;
+id "author_tag" sub name_of_named_entity;
 
 id "author_number" isa resource-type datatype long;
 
@@ -92,17 +92,17 @@ id "is_last_author" isa resource-type	datatype boolean;
 
     ### The other named entities are editors, journals or tags
 
-id "dblp_editor" ako entity_with_name	has-role editor_target has-role editor_tag;
-id "editor_target" ako named_entity;
-id "editor_tag" ako name_of_named_entity;
+id "dblp_editor" sub entity_with_name	has-role editor_target has-role editor_tag;
+id "editor_target" sub named_entity;
+id "editor_tag" sub name_of_named_entity;
 
-id "dblp_journal" ako entity_with_name has-role journal_target has-role journal_tag;
-id "journal_target" ako named_entity;
-id "journal_tag" ako name_of_named_entity;
+id "dblp_journal" sub entity_with_name has-role journal_target has-role journal_tag;
+id "journal_target" sub named_entity;
+id "journal_tag" sub name_of_named_entity;
 
-id "dblp_publisher" ako entity_with_name has-role publisher_target has-role publisher_tag;
-id "publisher_target" ako named_entity;
-id "publisher_tag" ako name_of_named_entity;
+id "dblp_publisher" sub entity_with_name has-role publisher_target has-role publisher_tag;
+id "publisher_target" sub named_entity;
+id "publisher_tag" sub name_of_named_entity;
 
 # Crossref is a special case it is just a link to another resource
 id "dblp_crossref" isa relation-type has-role referencing_record has-role referenced_record;
@@ -112,13 +112,13 @@ id "referencing_record" isa role-type;
 # Note has a value (the note string) and might have a note
 # type (for example "affiliation") type gets attached like a
 # name
-id "dblp_note" ako entity_with_name has-role note_target has-role note_tag_role;
-id "note_target" ako named_entity;
-id "note_tag_role" ako name_of_named_entity;
+id "dblp_note" sub entity_with_name has-role note_target has-role note_tag_role;
+id "note_target" sub named_entity;
+id "note_tag_role" sub name_of_named_entity;
 
-id "typed_note_tag" ako entity_with_name has-role typed_note_target has-role note_type_tag;
-id "typed_note_target" ako named_entity;
-id "note_type_tag" ako name_of_named_entity;
+id "typed_note_tag" sub entity_with_name has-role typed_note_target has-role note_type_tag;
+id "typed_note_target" sub named_entity;
+id "note_type_tag" sub name_of_named_entity;
 
 id "note_tag" isa entity-type	has-resource dblp_note_string plays-role named_entity plays-role name_of_named_entity;
 

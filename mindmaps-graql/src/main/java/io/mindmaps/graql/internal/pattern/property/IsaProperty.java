@@ -34,8 +34,8 @@ import java.util.stream.Stream;
 
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNBOUNDED;
 import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNIQUE;
-import static io.mindmaps.graql.internal.gremlin.Traversals.inAkos;
-import static io.mindmaps.graql.internal.gremlin.Traversals.outAkos;
+import static io.mindmaps.graql.internal.gremlin.Traversals.inSubs;
+import static io.mindmaps.graql.internal.gremlin.Traversals.outSubs;
 import static io.mindmaps.util.Schema.EdgeLabel.ISA;
 
 public class IsaProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
@@ -74,11 +74,11 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
     public Collection<MultiTraversal> match(String start) {
         return Sets.newHashSet(MultiTraversal.create(
                 Fragment.create(
-                        t -> outAkos(outAkos(t).out(ISA.getLabel())),
+                        t -> outSubs(outSubs(t).out(ISA.getLabel())),
                         EDGE_UNIQUE, start, type.getName()
                 ),
                 Fragment.create(
-                        t -> inAkos(inAkos(t).in(ISA.getLabel())),
+                        t -> inSubs(inSubs(t).in(ISA.getLabel())),
                         EDGE_UNBOUNDED, type.getName(), start
                 )
         ));

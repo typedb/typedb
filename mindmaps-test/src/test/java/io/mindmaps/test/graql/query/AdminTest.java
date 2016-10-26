@@ -54,7 +54,7 @@ public class AdminTest extends AbstractMovieGraphTest {
     @Test
     public void testGetTypesInQuery() {
         MatchQuery query = qb.match(
-                var("x").isa(id("movie").ako("production")).has("tmdb-vote-count", 400),
+                var("x").isa(id("movie").sub("production")).has("tmdb-vote-count", 400),
                 var("y").isa("character").id("123"),
                 var().rel("production-with-cast", "x").rel("y").isa("has-cast")
         );

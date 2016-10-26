@@ -89,8 +89,8 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     }
 
     @Test
-    public void testInsertAko() {
-        assertInsert(var("x").id("http://mindmaps.io/cool-movie").ako("movie"));
+    public void testInsertSub() {
+        assertInsert(var("x").id("http://mindmaps.io/cool-movie").sub("movie"));
     }
 
     @Test
@@ -245,25 +245,25 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     }
 
     @Test
-    public void testInsertAkoResourceType() {
+    public void testInsertSubResourceType() {
         qb.insert(
                 id("my-type").isa(RESOURCE_TYPE.getId()).datatype(STRING),
-                id("ako-type").ako("my-type")
+                id("sub-type").sub("my-type")
         ).execute();
 
-        MatchQuery query = qb.match(var("x").id("ako-type"));
+        MatchQuery query = qb.match(var("x").id("sub-type"));
         ResourceType.DataType datatype = query.iterator().next().get("x").asResourceType().getDataType();
 
         assertEquals(STRING, datatype);
     }
 
     @Test
-    public void testInsertAkoRoleType() {
+    public void testInsertSubRoleType() {
         qb.insert(
                 id("marriage").isa(RELATION_TYPE.getId()).hasRole("spouse1").hasRole("spouse2"),
                 id("spouse").isa(ROLE_TYPE.getId()).isAbstract(),
-                id("spouse1").ako("spouse"),
-                id("spouse2").ako("spouse")
+                id("spouse1").sub("spouse"),
+                id("spouse2").sub("spouse")
         ).execute();
 
         assertTrue(qb.match(id("spouse1")).ask().execute());
@@ -334,11 +334,11 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     }
 
     @Test
-    public void testErrorWhenAkoRelation() {
+    public void testErrorWhenSubRelation() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(containsString("isa"), containsString("relation")));
         qb.insert(
-                var().ako("has-genre").rel("genre-of-production", "x").rel("production-with-genre", "y"),
+                var().sub("has-genre").rel("genre-of-production", "x").rel("production-with-genre", "y"),
                 var("x").id("Godfather").isa("movie"),
                 var("y").id("comedy").isa("genre")
         ).execute();
@@ -378,8 +378,8 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     }
 
     @Test
-    public void testInsertRuleAko() {
-        assertInsert(var("x").id("an-ako-rule-type").ako("a-rule-type"));
+    public void testInsertRuleSub() {
+        assertInsert(var("x").id("an-sub-rule-type").sub("a-rule-type"));
     }
 
     @Test
@@ -432,7 +432,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     public void testErrorWhenInsertRelationWithEmptyRolePlayer() {
         exception.expect(IllegalStateException.class);
         exception.expectMessage(
-                allOf(containsString("$y"), containsString("id"), containsString("isa"), containsString("ako"))
+                allOf(containsString("$y"), containsString("id"), containsString("isa"), containsString("sub"))
         );
         qb.insert(
                 var().rel("genre-of-production", "x").rel("production-with-genre", "y").isa("has-genre"),
@@ -455,7 +455,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         exception.expectMessage(
                 allOf(containsString("meta-type"), containsString("my-thing"), containsString(RELATION_TYPE.getId()))
         );
-        qb.insert(id("my-thing").ako(RELATION_TYPE.getId())).execute();
+        qb.insert(id("my-thing").sub(RELATION_TYPE.getId())).execute();
     }
 
     @Test

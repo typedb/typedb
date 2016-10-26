@@ -27,7 +27,7 @@ import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.pattern.Patterns;
-import io.mindmaps.graql.internal.pattern.property.AkoProperty;
+import io.mindmaps.graql.internal.pattern.property.SubProperty;
 import io.mindmaps.graql.internal.pattern.property.DataTypeProperty;
 import io.mindmaps.graql.internal.pattern.property.LhsProperty;
 import io.mindmaps.graql.internal.pattern.property.RhsProperty;
@@ -139,16 +139,16 @@ public class InsertQueryExecutor {
         VarAdmin var = mergeVar(varToAdd);
 
         Optional<VarAdmin> typeVar = var.getType();
-        Optional<VarAdmin> akoVar = getAko(var);
+        Optional<VarAdmin> subVar = getSub(var);
 
-        if (typeVar.isPresent() && akoVar.isPresent()) {
+        if (typeVar.isPresent() && subVar.isPresent()) {
             String printableName = var.getPrintableName();
-            throw new IllegalStateException(ErrorMessage.INSERT_ISA_AND_AKO.getMessage(printableName));
+            throw new IllegalStateException(ErrorMessage.INSERT_ISA_AND_SUB.getMessage(printableName));
         }
 
-        // Use either ako or isa to decide type
+        // Use either sub or isa to decide type
         Optional<Type> typeConcept = optionalOr(
-                akoVar.map(this::getConcept).map(Concept::type),
+                subVar.map(this::getConcept).map(Concept::type),
                 typeVar.map(this::getConcept).map(Concept::asType)
         );
 
@@ -162,9 +162,9 @@ public class InsertQueryExecutor {
         if (concept == null) {
             String message;
 
-            if (akoVar.isPresent()) {
-                String akoId = akoVar.get().getId().orElse("<no-id>");
-                message = ErrorMessage.INSERT_METATYPE.getMessage(var.getPrintableName(), akoId);
+            if (subVar.isPresent()) {
+                String subId = subVar.get().getId().orElse("<no-id>");
+                message = ErrorMessage.INSERT_METATYPE.getMessage(var.getPrintableName(), subId);
             } else {
                 message = var.getId().map(ErrorMessage.INSERT_GET_NON_EXISTENT_ID::getMessage)
                                 .orElse(ErrorMessage.INSERT_UNDEFINED_VARIABLE.getMessage(var.getPrintableName()));
@@ -301,7 +301,7 @@ public class InsertQueryExecutor {
                 var.getProperty(DataTypeProperty.class).map(DataTypeProperty::getDatatype);
 
         Optional<ResourceType.DataType<?>> indirectDataType =
-                getAko(var).map(ako -> getConcept(ako).asResourceType().getDataType());
+                getSub(var).map(sub -> getConcept(sub).asResourceType().getDataType());
 
         Optional<ResourceType.DataType<?>> dataType = optionalOr(directDataType, indirectDataType);
 
@@ -310,7 +310,7 @@ public class InsertQueryExecutor {
         );
     }
 
-    private Optional<VarAdmin> getAko(VarAdmin var) {
-        return var.getProperty(AkoProperty.class).map(AkoProperty::getSuperType);
+    private Optional<VarAdmin> getSub(VarAdmin var) {
+        return var.getProperty(SubProperty.class).map(SubProperty::getSuperType);
     }
 }

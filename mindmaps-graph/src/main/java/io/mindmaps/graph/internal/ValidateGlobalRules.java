@@ -56,7 +56,7 @@ class ValidateGlobalRules {
             visitedConcepts.add(currentConcept);
             if(currentConcept.playsRoles().contains(roleType))
                 return true;
-            currentConcept = currentConcept.getParentAko();
+            currentConcept = currentConcept.getParentSub();
         }
 
         return false;

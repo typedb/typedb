@@ -343,8 +343,8 @@ class QueryVisitor extends GraqlBaseVisitor {
     }
 
     @Override
-    public UnaryOperator<Var> visitAko(GraqlParser.AkoContext ctx) {
-        return var -> var.ako(visitVariable(ctx.variable()));
+    public UnaryOperator<Var> visitSub(GraqlParser.SubContext ctx) {
+        return var -> var.sub(visitVariable(ctx.variable()));
     }
 
     @Override

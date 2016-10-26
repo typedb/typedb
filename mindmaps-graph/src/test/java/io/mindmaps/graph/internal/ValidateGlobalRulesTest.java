@@ -103,7 +103,7 @@ public class ValidateGlobalRulesTest {
         ((Edge) mindmapsGraph.getTinkerTraversal().
                 has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), werewolf.getId()).
                 outE(Schema.EdgeLabel.ISA.getLabel()).next()).remove();
-        ((Edge) mindmapsGraph.getTinkerPopGraph().traversal().V(wolf.getBaseIdentifier()).outE(Schema.EdgeLabel.AKO.getLabel()).as("edge").otherV().hasId(creature.getBaseIdentifier()).select("edge").next()).remove();
+        ((Edge) mindmapsGraph.getTinkerPopGraph().traversal().V(wolf.getBaseIdentifier()).outE(Schema.EdgeLabel.SUB.getLabel()).as("edge").otherV().hasId(creature.getBaseIdentifier()).select("edge").next()).remove();
         ((Edge) mindmapsGraph.getTinkerPopGraph().traversal().V(creature.getBaseIdentifier()).outE(Schema.EdgeLabel.PLAYS_ROLE.getLabel()).as("edge").otherV().hasId(monster.getBaseIdentifier()).select("edge").next()).remove();
 
         flags = new boolean[]{false, false};
