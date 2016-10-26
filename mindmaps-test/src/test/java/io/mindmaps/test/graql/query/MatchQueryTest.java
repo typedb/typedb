@@ -496,6 +496,12 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
         assertEquals(0, query.stream().count());
     }
 
+    @Test
+    public void testNoInstancesOfRoleType() {
+        MatchQuery query = qb.match(var("x").isa(var("y")), var("y").id("actor"));
+        assertEquals(0, query.stream().count());
+    }
+
     @Test(expected = IllegalArgumentException.class)
     public void testMatchEmpty() {
         qb.match().execute();
