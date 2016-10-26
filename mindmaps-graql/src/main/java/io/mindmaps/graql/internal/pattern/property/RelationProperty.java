@@ -29,13 +29,11 @@ import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.graql.admin.UniqueVarProperty;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.gremlin.Fragment;
-import io.mindmaps.graql.internal.gremlin.MultiTraversal;
+import io.mindmaps.graql.internal.gremlin.EquivalentFragmentSet;
 import io.mindmaps.graql.internal.gremlin.ShortcutTraversal;
 import io.mindmaps.graql.internal.query.InsertQueryExecutor;
 import io.mindmaps.graql.internal.util.CommonUtil;
 import io.mindmaps.util.ErrorMessage;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -44,14 +42,14 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import static io.mindmaps.graql.internal.gremlin.FragmentPriority.DISTINCT_CASTING;
-import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_BOUNDED;
-import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNBOUNDED;
-import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNIQUE;
+import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.distinctCasting;
+import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.inCasting;
+import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.inIsa;
+import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.inRolePlayer;
+import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.outCasting;
+import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.outIsa;
+import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.outRolePlayer;
 import static io.mindmaps.graql.internal.util.CommonUtil.toImmutableSet;
-import static io.mindmaps.util.Schema.EdgeLabel.CASTING;
-import static io.mindmaps.util.Schema.EdgeLabel.ISA;
-import static io.mindmaps.util.Schema.EdgeLabel.ROLE_PLAYER;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
@@ -93,18 +91,18 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     }
 
     @Override
-    public Collection<MultiTraversal> match(String start) {
+    public Collection<EquivalentFragmentSet> match(String start) {
         Collection<String> castingNames = new HashSet<>();
 
-        ImmutableSet<MultiTraversal> traversals = castings.stream().flatMap(casting -> {
+        ImmutableSet<EquivalentFragmentSet> traversals = castings.stream().flatMap(casting -> {
 
             String castingName = UUID.randomUUID().toString();
             castingNames.add(castingName);
 
-            return multiTraversalsFromCasting(start, castingName, casting);
+            return equivalentFragmentSetFromCasting(start, castingName, casting);
         }).collect(toImmutableSet());
 
-        ImmutableSet<MultiTraversal> distinctCastingTraversals = castingNames.stream().flatMap(
+        ImmutableSet<EquivalentFragmentSet> distinctCastingTraversals = castingNames.stream().flatMap(
                 castingName -> castingNames.stream()
                         .filter(otherName -> !otherName.equals(castingName))
                         .map(otherName -> makeDistinctCastingPattern(castingName, otherName)
@@ -129,7 +127,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
         });
     }
 
-    private Stream<MultiTraversal> multiTraversalsFromCasting(String start, String castingName, VarAdmin.Casting casting) {
+    private Stream<EquivalentFragmentSet> equivalentFragmentSetFromCasting(String start, String castingName, VarAdmin.Casting casting) {
         Optional<VarAdmin> roleType = casting.getRoleType();
 
         if (roleType.isPresent()) {
@@ -143,20 +141,14 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      * Add some patterns where this variable is a relation and the given variable is a roleplayer of that relation
      * @param rolePlayer a variable that is a roleplayer of this relation
      */
-    private Stream<MultiTraversal> addRelatesPattern(String start, String casting, VarAdmin rolePlayer) {
+    private Stream<EquivalentFragmentSet> addRelatesPattern(String start, String casting, VarAdmin rolePlayer) {
         String other = rolePlayer.getName();
 
         return Stream.of(
                 // Pattern between relation and casting
-                MultiTraversal.create(
-                        Fragment.create(t -> t.out(CASTING.getLabel()), EDGE_BOUNDED, start, casting),
-                        Fragment.create(t -> t.in(CASTING.getLabel()), EDGE_UNBOUNDED, casting, start)
-                ),
+                EquivalentFragmentSet.create(outCasting(start, casting), inCasting(casting, start)),
                 // Pattern between casting and roleplayer
-                MultiTraversal.create(
-                        Fragment.create(t -> t.out(ROLE_PLAYER.getLabel()), EDGE_UNIQUE, casting, other),
-                        Fragment.create(t -> t.in(ROLE_PLAYER.getLabel()), EDGE_BOUNDED, other, casting)
-                )
+                EquivalentFragmentSet.create(outRolePlayer(casting, other), inRolePlayer(other, casting))
         );
     }
 
@@ -165,38 +157,32 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
      * @param roleType a variable that is the roletype of the given roleplayer
      * @param rolePlayer a variable that is a roleplayer of this relation
      */
-    private Stream<MultiTraversal> addRelatesPattern(String start, String casting, VarAdmin roleType, VarAdmin rolePlayer) {
+    private Stream<EquivalentFragmentSet> addRelatesPattern(String start, String casting, VarAdmin roleType, VarAdmin rolePlayer) {
         String roletypeName = roleType.getName();
         String roleplayerName = rolePlayer.getName();
 
         return Stream.of(
                 // Pattern between relation and casting
-                MultiTraversal.create(
-                        Fragment.create(t -> t.out(CASTING.getLabel()), EDGE_BOUNDED, start, casting),
-                        Fragment.create(t -> t.in(CASTING.getLabel()), EDGE_UNBOUNDED, casting, start)
-                ),
+                EquivalentFragmentSet.create(outCasting(start, casting), inCasting(casting, start)),
 
                 // Pattern between casting and roleplayer
-                MultiTraversal.create(
-                        Fragment.create(t -> t.out(ROLE_PLAYER.getLabel()), EDGE_UNIQUE, casting, roleplayerName),
-                        Fragment.create(t -> t.in(ROLE_PLAYER.getLabel()), EDGE_BOUNDED, roleplayerName, casting)
+                EquivalentFragmentSet.create(
+                        outRolePlayer(casting, roleplayerName),
+                        inRolePlayer(roleplayerName, casting)
                 ),
 
                 // Pattern between casting and role type
-                MultiTraversal.create(
-                        Fragment.create(t -> t.out(ISA.getLabel()), EDGE_UNIQUE, casting, roletypeName),
-                        Fragment.create(t -> t.in(ISA.getLabel()), EDGE_UNBOUNDED, roletypeName, casting)
-                )
+                EquivalentFragmentSet.create(outIsa(casting, roletypeName), inIsa(roletypeName, casting))
         );
     }
 
     /**
      * @param casting a casting variable name
      * @param otherCastingId a different casting variable name
-     * @return a MultiTraversal that indicates two castings are unique
+     * @return a EquivalentFragmentSet that indicates two castings are unique
      */
-    private MultiTraversal makeDistinctCastingPattern(String casting, String otherCastingId) {
-        return MultiTraversal.create(Fragment.create(t -> t.where(P.neq(otherCastingId)), DISTINCT_CASTING, casting));
+    private EquivalentFragmentSet makeDistinctCastingPattern(String casting, String otherCastingId) {
+        return EquivalentFragmentSet.create(distinctCasting(casting, otherCastingId));
     }
 
     @Override

@@ -16,13 +16,14 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql.internal.gremlin;
+package io.mindmaps.graql.internal.gremlin.fragment;
 
+import io.mindmaps.graql.internal.gremlin.EquivalentFragmentSet;
+import io.mindmaps.graql.internal.gremlin.FragmentPriority;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Optional;
-import java.util.function.UnaryOperator;
 
 /**
  * represents a graph traversal, with one start point and optionally an end point
@@ -38,39 +39,33 @@ import java.util.function.UnaryOperator;
  * Variable names refer to Graql variables. Some of these variable names may be randomly-generated UUIDs, such as for
  * castings.
  * <p>
- * A {@code Fragment} is usually contained in a {@code MultiTraversal}, which contains multiple fragments describing
+ * A {@code Fragment} is usually contained in a {@code EquivalentFragmentSet}, which contains multiple fragments describing
  * the different directions the traversal can be followed in, with different starts and ends.
  * <p>
  * A gremlin traversal is created from a {@code Query} by appending together fragments in order of priority, one from
- * each {@code MultiTraversal} describing the {@code Query}.
+ * each {@code EquivalentFragmentSet} describing the {@code Query}.
  */
 public interface Fragment extends Comparable<Fragment> {
 
-    static Fragment create(UnaryOperator<GraphTraversal<Vertex, Vertex>> traversal, FragmentPriority priority, String start) {
-        return new FragmentImpl(traversal, priority, start);
-    }
-
-    static Fragment create(
-                UnaryOperator<GraphTraversal<Vertex, Vertex>> traversal,
-                FragmentPriority priority, String start, String end
-        ) {
-        return new FragmentImpl(traversal, priority, start, end);
-    }
+    /**
+     * @return the EquivalentFragmentSet that contains this Fragment
+     */
+    EquivalentFragmentSet getEquivalentFragmentSet();
 
     /**
-     * @return the MultiTraversal that contains this Fragment
+     * @param equivalentFragmentSet the EquivalentFragmentSet that contains this Fragment
      */
-    MultiTraversal getMultiTraversal();
-
-    /**
-     * @param multiTraversal the MultiTraversal that contains this Fragment
-     */
-    void setMultiTraversal(MultiTraversal multiTraversal);
+    void setEquivalentFragmentSet(EquivalentFragmentSet equivalentFragmentSet);
 
     /**
      * @param traversal the traversal to extend with this Fragment
      */
     void applyTraversal(GraphTraversal<Vertex, Vertex> traversal);
+
+    /**
+     * The name of the fragment
+     */
+    String getName();
 
     /**
      * @return the variable name that this fragment starts from in the query

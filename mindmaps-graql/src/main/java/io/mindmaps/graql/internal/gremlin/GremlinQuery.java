@@ -18,14 +18,15 @@
 
 package io.mindmaps.graql.internal.gremlin;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
+import io.mindmaps.graql.internal.gremlin.fragment.Fragment;
 import io.mindmaps.graql.internal.query.match.MatchOrder;
 import io.mindmaps.util.ErrorMessage;
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -34,6 +35,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import static io.mindmaps.graql.internal.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -70,20 +72,21 @@ public class GremlinQuery {
         this.names = names;
         this.order = order;
 
-        innerQueries = patterns.stream().map(p -> new ConjunctionQuery(graph, p)).collect(toList());
+        innerQueries = patterns.stream().map(p -> new ConjunctionQuery(p)).collect(toList());
     }
 
     /**
      * @return a gremlin traversal to execute to find results
      */
     public GraphTraversal<Vertex, Map<String, Vertex>> getTraversal() {
-        Traversal[] collect =
-                innerQueries.stream().map(ConjunctionQuery::getTraversal).toArray(Traversal[]::new);
+        ImmutableSet<ImmutableList<Fragment>> fragments =
+                innerQueries.stream().map(ConjunctionQuery::getSortedFragments).collect(toImmutableSet());
+
+        GraqlTraversal graqlTraversal = GraqlTraversal.create(graph, fragments);
 
         // Because 'union' accepts an array, we can't use generics...
         //noinspection unchecked
-        GraphTraversal<Vertex, Map<String, Vertex>> traversal =
-                graph.getTinkerTraversal().limit(1).union(collect);
+        GraphTraversal<Vertex, Map<String, Vertex>> traversal = graqlTraversal.getGraphTraversal();
 
         order.ifPresent(o -> o.orderTraversal(traversal));
 

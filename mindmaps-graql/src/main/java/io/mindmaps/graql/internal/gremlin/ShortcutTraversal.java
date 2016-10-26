@@ -18,15 +18,11 @@
 
 package io.mindmaps.graql.internal.gremlin;
 
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import io.mindmaps.graql.internal.gremlin.fragment.Fragments;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import static io.mindmaps.util.Schema.EdgeLabel.SHORTCUT;
-import static io.mindmaps.util.Schema.EdgeProperty.*;
 
 /**
  * some {@code VarTraversals} can be represented using shortcut edges.
@@ -47,7 +43,7 @@ public class ShortcutTraversal {
     private final List<String> roleplayers = new ArrayList<>();
     private boolean valid = true;
     private Optional<String> type = Optional.empty();
-    private MultiTraversal multiTraversal = null;
+    private EquivalentFragmentSet equivalentFragmentSet = null;
 
     /**
      * @return true if a shortcut edge can be used in the traversal
@@ -64,42 +60,26 @@ public class ShortcutTraversal {
     }
 
     /**
-     * @return a MultiTraversal that follows shortcut edges
+     * @return a EquivalentFragmentSet that follows shortcut edges
      */
-    MultiTraversal getMultiTraversal() {
-        if (multiTraversal == null) makeMultiTraversal();
-        return multiTraversal;
+    EquivalentFragmentSet getEquivalentFragmentSet() {
+        if (equivalentFragmentSet == null) makeEquivalentFragmentSet();
+        return equivalentFragmentSet;
     }
 
     /**
-     * Create a MultiTraversal that follows shortcut edges
+     * Create a EquivalentFragmentSet that follows shortcut edges
      */
-    private void makeMultiTraversal() {
+    private void makeEquivalentFragmentSet() {
         Optional<String> roleA = roletypes.get(0);
         String playerA = roleplayers.get(0);
         Optional<String> roleB = roletypes.get(1);
         String playerB = roleplayers.get(1);
 
-        multiTraversal = MultiTraversal.create(
-                new FragmentImpl(t -> makeTraversal(t, roleA, roleB), FragmentPriority.EDGE_RELATION, playerA, playerB),
-                new FragmentImpl(t -> makeTraversal(t, roleB, roleA), FragmentPriority.EDGE_RELATION, playerB, playerA)
+        equivalentFragmentSet = EquivalentFragmentSet.create(
+                Fragments.shortcut(type, roleA, roleB, playerA, playerB),
+                Fragments.shortcut(type, roleB, roleA, playerB, playerA)
         );
-    }
-
-    /**
-     * @param traversal the traversal to start from
-     * @param roleA the role type of A, if one is specified
-     * @param roleB the role type of B, if one is specified
-     * @return a traversal following a shortcut edge from A to B using the given roles
-     */
-    private GraphTraversal<Vertex, Vertex> makeTraversal(
-            GraphTraversal<Vertex, Vertex> traversal, Optional<String> roleA, Optional<String> roleB
-    ) {
-        GraphTraversal<Vertex, Edge> edgeTraversal = traversal.outE(SHORTCUT.getLabel());
-        roleA.ifPresent(ra -> edgeTraversal.has(FROM_ROLE.name(), ra));
-        roleB.ifPresent(rb -> edgeTraversal.has(TO_ROLE.name(), rb));
-        type.ifPresent(t -> edgeTraversal.has(RELATION_TYPE_ID.name(), t));
-        return edgeTraversal.inV();
     }
 
     /**

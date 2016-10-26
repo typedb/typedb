@@ -20,15 +20,11 @@ package io.mindmaps.graql.internal.pattern.property;
 
 import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.admin.UniqueVarProperty;
-import io.mindmaps.graql.internal.gremlin.FragmentPriority;
+import io.mindmaps.graql.internal.gremlin.fragment.Fragment;
+import io.mindmaps.graql.internal.gremlin.fragment.Fragments;
 import io.mindmaps.graql.internal.query.InsertQueryExecutor;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import static io.mindmaps.util.Schema.ConceptProperty.IS_ABSTRACT;
-
-public class IsAbstractProperty extends AbstractVarProperty implements UniqueVarProperty, SingleTraversalProperty {
+public class IsAbstractProperty extends AbstractVarProperty implements UniqueVarProperty, SingleFragmentProperty {
 
     @Override
     public void buildString(StringBuilder builder) {
@@ -36,13 +32,8 @@ public class IsAbstractProperty extends AbstractVarProperty implements UniqueVar
     }
 
     @Override
-    public GraphTraversal<Vertex, Vertex> applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
-        return traversal.has(IS_ABSTRACT.name(), P.eq(true));
-    }
-
-    @Override
-    public FragmentPriority getPriority() {
-        return FragmentPriority.EDGE_UNBOUNDED;
+    public Fragment getFragment(String start) {
+        return Fragments.isAbstract(start);
     }
 
     @Override
