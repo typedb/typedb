@@ -30,11 +30,15 @@ import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.test.AbstractScalingTest;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVPrinter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
@@ -46,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import static io.mindmaps.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
@@ -71,10 +76,13 @@ public class ScalingTestIT extends AbstractScalingTest {
     int MAX_SIZE = 10; // the maximum number of non super nodes to add to the test graph
     int NUM_DIVS = 2; // the number of divisions of the MAX_SIZE to use in the scaling test
     int REPEAT = 1; // the number of times to repeat at each size for average runtimes
+    int MAX_WORKERS = Runtime.getRuntime().availableProcessors(); // the maximum number of workers that spark should use
+    int WORKER_DIVS = 4; // the number of divisions of MAX_WORKERS to use for testing
 
     // test variables
     int STEP_SIZE;
     List<Integer> graphSizes;
+    List<Integer> workerNumbers;
 
     @Before
     public void setUp() {
@@ -83,6 +91,9 @@ public class ScalingTestIT extends AbstractScalingTest {
         graphSizes = new ArrayList<>();
         for (int i = 1;i < NUM_DIVS;i++) graphSizes.add(i*STEP_SIZE);
         graphSizes.add(MAX_SIZE);
+        STEP_SIZE = MAX_WORKERS/WORKER_DIVS;
+        workerNumbers = new ArrayList<>();
+        for (int i = 1;i <= WORKER_DIVS;i++) workerNumbers.add(i*STEP_SIZE);
 
         // get a random keyspace
         factory = factoryWithNewKeyspace();
@@ -97,7 +108,13 @@ public class ScalingTestIT extends AbstractScalingTest {
     }
 
     @Test
-    public void countIT() throws InterruptedException, ExecutionException, MindmapsValidationException {
+    public void countIT() throws InterruptedException, ExecutionException, MindmapsValidationException, IOException {
+        Appendable out = new PrintWriter("countIT.txt","UTF-8");
+        List<String> headers = new ArrayList<>();
+        headers.add("Size");
+        headers.addAll(workerNumbers.stream().map(String::valueOf).collect(Collectors.toList()));
+        CSVPrinter printer = CSVFormat.DEFAULT.withHeader(headers.toArray(new String[0])).print(out);
+
         PrintWriter writer = null;
 
         try {
@@ -116,47 +133,55 @@ public class ScalingTestIT extends AbstractScalingTest {
         int previousGraphSize = 0;
         for (int graphSize : graphSizes) {
             writer.println("current scale - super " + NUM_SUPER_NODES + " - nodes " + graphSize);
+            printer.print(String.valueOf(graphSize));
 
-
-            writer.println("start generate graph " + System.currentTimeMillis()/1000L + "s");
+            writer.println("start generate graph " + System.currentTimeMillis() / 1000L + "s");
             writer.flush();
             addNodes(keyspace, previousGraphSize, graphSize);
             addEdgesToSuperNodes(keyspace, superNodes, previousGraphSize, graphSize);
             previousGraphSize = graphSize;
-            writer.println("stop generate graph " + System.currentTimeMillis()/1000L + "s");
+            writer.println("stop generate graph " + System.currentTimeMillis() / 1000L + "s");
+            writer.flush();
 
-            Analytics computer = new AnalyticsMock(keyspace, new HashSet<>(), new HashSet<>(),1);
+            for (int workerNumber : workerNumbers) {
+                Analytics computer = new AnalyticsMock(keyspace, new HashSet<>(), new HashSet<>(), workerNumber);
 
-            Long countTime = 0L;
-            Long startTime = 0L;
-            Long stopTime = 0L;
-            Long conceptCount = 0L;
+                Long countTime = 0L;
+                Long startTime = 0L;
+                Long stopTime = 0L;
+                Long conceptCount = 0L;
 
-            MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+                MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
 
-            for (int i=0;i<REPEAT;i++) {
-                writer.println("gremlin count is: " + graph.getTinkerTraversal().count().next());
-                writer.println("repeat number: "+i);
-                writer.flush();
-                startTime = System.currentTimeMillis();
-                conceptCount = computer.count();
-                assertEquals(Long.valueOf(NUM_SUPER_NODES*(graphSize+1)+graphSize),conceptCount);
-                writer.println("count: " + conceptCount);
-                writer.flush();
-                stopTime = System.currentTimeMillis();
-                countTime+=stopTime-startTime;
-                writer.println("count time: " + countTime / ((i + 1) * 1000));
+                for (int i = 0; i < REPEAT; i++) {
+                    writer.println("gremlin count is: " + graph.getTinkerTraversal().count().next());
+                    writer.println("repeat number: " + i);
+                    writer.flush();
+                    startTime = System.currentTimeMillis();
+                    conceptCount = computer.count();
+                    assertEquals(Long.valueOf(NUM_SUPER_NODES * (graphSize + 1) + graphSize), conceptCount);
+                    writer.println("count: " + conceptCount);
+                    writer.flush();
+                    stopTime = System.currentTimeMillis();
+                    countTime += stopTime - startTime;
+                    writer.println("count time: " + countTime / ((i + 1) * 1000));
+                }
+
+                countTime /= REPEAT * 1000;
+                writer.println("time to count: " + countTime);
+                printer.print(String.valueOf(countTime));
+                scaleToAverageTimeCount.put(conceptCount, countTime);
             }
-
-            countTime /= REPEAT*1000;
-            writer.println("time to count: " + countTime);
-            scaleToAverageTimeCount.put(conceptCount,countTime);
+            printer.println();
+            printer.flush();
         }
 
         writer.println("counts: " + scaleToAverageTimeCount);
 
         writer.flush();
         writer.close();
+        printer.flush();
+        printer.close();
     }
 
     @Test
