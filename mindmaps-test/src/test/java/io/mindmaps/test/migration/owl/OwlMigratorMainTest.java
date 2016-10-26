@@ -47,15 +47,9 @@ public class OwlMigratorMainTest extends TestOwlMindMapsBase{
         runAndAssertDataCorrect(new String[]{"owl", "-file", "grah/?*", "-keyspace", graph.getKeyspace()});
     }
 
-    @Test
-    public void owlMainInvalidFileTest(){
-        exception.expect(RuntimeException.class);
-        String tsvFile = getFile("csv", "single-file/data/cars.tsv").getAbsolutePath();
-        runAndAssertDataCorrect(new String[]{"owl", "-file", tsvFile, "-keyspace", graph.getKeyspace()});
-    }
-
     public void runAndAssertDataCorrect(String[] args){
         Main.main(args);
+        graph = factory.getGraph();
 
         EntityType top = graph.getEntityType("tThing");
         EntityType type = graph.getEntityType("tAuthor");
@@ -75,6 +69,6 @@ public class OwlMigratorMainTest extends TestOwlMindMapsBase{
         Assert.assertNotNull(work);
         assertRelationBetweenInstancesExists(work, author, "op-wrote");
         Reasoner reasoner = new Reasoner(graph);
-        Assert.assertTrue(!reasoner.getRules().isEmpty());
+        Assert.assertTrue(!reasoner.getRules(graph).isEmpty());
     }
 }
