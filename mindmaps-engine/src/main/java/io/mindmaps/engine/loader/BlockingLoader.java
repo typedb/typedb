@@ -80,7 +80,9 @@ public class BlockingLoader extends Loader {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+
         Collection<Var> deepCopy = new ArrayList<>(vars);
+
         try {
             executor.submit(() -> loadData(graphName, deepCopy));
         } catch (Exception e) {

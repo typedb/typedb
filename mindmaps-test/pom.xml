@@ -129,5 +129,49 @@
             <artifactId>commons-collections</artifactId>
             <version>3.2.1</version>
         </dependency>
+
+        <!-- migration -->
+        <dependency>
+            <groupId>io.mindmaps</groupId>
+            <artifactId>migration-sql</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>${h2.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.mindmaps</groupId>
+            <artifactId>migration-csv</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.mindmaps</groupId>
+            <artifactId>migration-owl</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.mindmaps</groupId>
+            <artifactId>migration-json</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.mindmaps</groupId>
+            <artifactId>migration-export</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.mindmaps</groupId>
+            <artifactId>migration-base</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.sourceforge.owlapi</groupId>
+            <artifactId>org.semanticweb.hermit</artifactId>
+            <version>1.3.8.500</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>
