@@ -312,7 +312,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     public void testVariablesEverywhere() {
         MatchQuery query = qb.match(
                 var()
-                        .rel(id("production-with-genre"), var("x").isa(var().ako(id("production"))))
+                        .rel(id("production-with-genre"), var("x").isa(var().sub(id("production"))))
                         .rel(var().has("name", "crime"))
         );
 
@@ -320,8 +320,8 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     }
 
     @Test
-    public void testAkoSelf() {
-        MatchQuery query = qb.match(id("movie").ako(var("x")));
+    public void testSubSelf() {
+        MatchQuery query = qb.match(id("movie").sub(var("x")));
 
         QueryUtil.assertResultsMatch(query, "x", ENTITY_TYPE.getId(), "movie", "production");
     }
@@ -406,17 +406,17 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     }
 
     @Test
-    public void testAkoRelationType() {
+    public void testSubRelationType() {
         // Work with a fresh graph for this test
         rollbackGraph();
 
         qb.insert(
                 id("ownership").isa("relation-type").hasRole("owner").hasRole("possession"),
-                id("organization-with-shares").ako("possession"),
+                id("organization-with-shares").sub("possession"),
                 id("possession").isa("role-type"),
 
-                id("share-ownership").ako("ownership").hasRole("shareholder").hasRole("organization-with-shares"),
-                id("shareholder").ako("owner"),
+                id("share-ownership").sub("ownership").hasRole("shareholder").hasRole("organization-with-shares"),
+                id("shareholder").sub("owner"),
                 id("owner").isa("role-type"),
 
                 id("person").isa("entity-type").playsRole("shareholder"),
@@ -428,7 +428,7 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
                 var().rel("organization-with-shares", id("apple")).rel("shareholder", id("bob")).isa("share-ownership")
         ).execute();
 
-        // This should work despite akos
+        // This should work despite subs
         qb.match(var().rel("x").rel("shareholder", "y").isa("ownership")).stream().count();
     }
 
@@ -446,14 +446,14 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     }
 
     @Test
-    public void testPlaysRoleAko() {
+    public void testPlaysRoleSub() {
         qb.insert(
-                id("c").ako(id("b").ako(id("a").isa("entity-type"))),
-                id("f").ako(id("e").ako(id("d").isa("role-type"))),
+                id("c").sub(id("b").sub(id("a").isa("entity-type"))),
+                id("f").sub(id("e").sub(id("d").isa("role-type"))),
                 id("b").playsRole("e")
         ).execute();
 
-        // Make sure AKOs are followed correctly...
+        // Make sure SUBs are followed correctly...
         assertTrue(qb.match(id("b").playsRole("e")).ask().execute());
         assertTrue(qb.match(id("b").playsRole("f")).ask().execute());
         assertTrue(qb.match(id("c").playsRole("e")).ask().execute());

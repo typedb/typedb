@@ -5,8 +5,8 @@ insert
 #################################################
 
 "entity" isa entity-type;
-"a-entity" ako entity;
-"b-entity" ako entity;
+"a-entity" sub entity;
+"b-entity" sub entity;
 
 "P-from" isa role-type;
 "P-to" isa role-type;

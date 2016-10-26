@@ -5,9 +5,9 @@ insert
 #################################################
 
 "entity" isa entity-type;
-"a-entity" ako entity;
-"b-entity" ako entity;
-"S" ako entity;
+"a-entity" sub entity;
+"b-entity" sub entity;
+"S" sub entity;
 
 "R-rA" isa role-type;
 "R-rB" isa role-type;

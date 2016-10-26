@@ -46,7 +46,7 @@ varPatterns    : (varPattern ';')+ ;
 varPattern     : variable | variable? property (','? property)* ;
 
 property       : 'isa' variable                   # isa
-               | 'ako' variable                   # ako
+               | 'sub' variable                   # sub
                | 'has-role' variable              # hasRole
                | 'plays-role' variable            # playsRole
                | 'has-scope' variable             # hasScope

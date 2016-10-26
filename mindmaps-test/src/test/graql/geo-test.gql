@@ -6,11 +6,11 @@ insert
 
 "entity" isa entity-type, is-abstract;
 
-"city" ako entity;
-"region" ako entity;
-"country" ako entity;
-"continent" ako entity;
-"university" ako entity;
+"city" sub entity;
+"region" sub entity;
+"country" sub entity;
+"continent" sub entity;
+"university" sub entity;
 
 "geo-entity" isa role-type;
 "entity-location" isa role-type;

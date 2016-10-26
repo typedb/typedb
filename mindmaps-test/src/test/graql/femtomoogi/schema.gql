@@ -77,10 +77,10 @@ insert
     has-resource overview
     has-resource release-date;
 
-"movie" ako production
+"movie" sub production
     plays-role movie-with-keyword-person;
 
-"tv-series" ako production;
+"tv-series" sub production;
 
 "production-crew" isa relation-type
     has-role production-with-crew
@@ -96,16 +96,16 @@ insert
     has-role costume-designer;
 "production-with-crew" isa role-type;
 "crew-member" isa role-type is-abstract;
-"director" ako crew-member;
-"production-designer" ako crew-member;
-"composer" ako crew-member;
-"editor" ako crew-member;
-"animator" ako crew-member;
-"writer" ako crew-member;
-"costume-designer" ako crew-member;
-"producer" ako crew-member;
-"photography-director" ako crew-member;
-"art-director" ako crew-member;
+"director" sub crew-member;
+"production-designer" sub crew-member;
+"composer" sub crew-member;
+"editor" sub crew-member;
+"animator" sub crew-member;
+"writer" sub crew-member;
+"costume-designer" sub crew-member;
+"producer" sub crew-member;
+"photography-director" sub crew-member;
+"art-director" sub crew-member;
 
 "has-cast" isa relation-type
     has-role character-being-played
@@ -227,21 +227,21 @@ insert
 "marriage" isa relation-type
     has-role spouse1
     has-role spouse2;
-"spouse" ako relative, is-abstract;
-"spouse1" ako spouse;
-"spouse2" ako spouse;
+"spouse" sub relative, is-abstract;
+"spouse1" sub spouse;
+"spouse2" sub spouse;
 
 "has-child" isa relation-type
     has-role parent
     has-role child;
-"parent" ako relative;
-"child" ako relative;
+"parent" sub relative;
+"child" sub relative;
 
 "has-partner" isa relation-type
     has-role person-has-partner
     has-role partner;
-"person-has-partner" ako relative;
-"partner" ako relative;
+"person-has-partner" sub relative;
+"partner" sub relative;
 
 "personal-details" isa relation-type
     has-role detailed-person
@@ -293,9 +293,9 @@ insert
     has-role chairperson;
 "company-with-board" isa role-type;
 "board-member" isa role-type is-abstract;
-"ceo" ako board-member;
-"founder" ako board-member;
-"chairperson" ako board-member;
+"ceo" sub board-member;
+"founder" sub board-member;
+"chairperson" sub board-member;
 
 "company-has-headquarters-location" isa relation-type
     has-role company-with-headquarters
@@ -314,7 +314,7 @@ insert
     plays-role country-of-citizenship
     has-resource name;
 
-"country" ako location
+"country" sub location
     has-resource iso-3166;
 
 "language" isa entity-type

@@ -44,7 +44,7 @@ public enum FragmentPriority {
     VALUE_NONSPECIFIC,
 
     /**
-     * Moving along an edge, where a concept can be expected to have at most one (e.g. ISA, AKO)
+     * Moving along an edge, where a concept can be expected to have at most one (e.g. ISA, SUB)
      */
     EDGE_UNIQUE,
 

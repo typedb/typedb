@@ -31,7 +31,7 @@ public final class Schema {
      */
     public enum EdgeLabel {
         ISA("isa"),
-        AKO("ako"),
+        SUB("sub"),
         HAS_ROLE("has-role"),
         PLAYS_ROLE("plays-role"),
         HAS_SCOPE("has-scope"),
