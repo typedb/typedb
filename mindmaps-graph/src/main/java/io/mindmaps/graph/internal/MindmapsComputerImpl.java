@@ -49,8 +49,6 @@ public class MindmapsComputerImpl implements MindmapsComputer {
         }
     }
 
-
-
     @Override
     public ComputerResult compute(MapReduce mapReduce) {
         try {

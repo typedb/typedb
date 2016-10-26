@@ -44,8 +44,8 @@ import static io.mindmaps.util.REST.WebPath.GRAPH_FACTORY_URI;
  */
 public class MindmapsGraphFactoryImpl implements MindmapsGraphFactory{
     private static final String COMPUTER = "graph.computer";
-    protected final String uri;
-    protected final String keyspace;
+    private final String uri;
+    private final String keyspace;
 
     public MindmapsGraphFactoryImpl(String keyspace, String uri){
         this.uri = uri;
@@ -114,10 +114,10 @@ public class MindmapsGraphFactoryImpl implements MindmapsGraphFactory{
         }
     }
 
-    protected static class ConfigureFactory {
+    static class ConfigureFactory {
         String path;
-        public String graphComputer;
-        public MindmapsInternalFactory factory;
+        String graphComputer;
+        MindmapsInternalFactory factory;
 
         ConfigureFactory(String path, String graphComputer, MindmapsInternalFactory factory){
             this.path = path;

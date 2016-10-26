@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.test.graql.analytics;
+package io.mindmaps.factory;
 
 import io.mindmaps.graph.internal.MindmapsComputerImpl;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;

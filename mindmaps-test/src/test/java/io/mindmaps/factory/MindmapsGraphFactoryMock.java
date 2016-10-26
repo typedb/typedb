@@ -16,10 +16,8 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.test.graql.analytics;
-
+package io.mindmaps.factory;
 import io.mindmaps.MindmapsComputer;
-import io.mindmaps.factory.MindmapsGraphFactoryImpl;
 import io.mindmaps.util.REST;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
@@ -27,8 +25,13 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
  *
  */
 public class MindmapsGraphFactoryMock extends MindmapsGraphFactoryImpl {
+    private final String keyspace;
+    private final String uri;
+
     public MindmapsGraphFactoryMock(String keyspace, String uri) {
         super(keyspace.toLowerCase(), uri);
+        this.keyspace = keyspace;
+        this.uri = uri;
     }
 
     public MindmapsComputer getGraphComputer(int numberOfWorkers) {
