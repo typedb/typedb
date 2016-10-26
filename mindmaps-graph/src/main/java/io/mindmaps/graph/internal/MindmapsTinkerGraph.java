@@ -35,6 +35,7 @@ public class MindmapsTinkerGraph extends AbstractMindmapsGraph<TinkerGraph> {
     public void clear(){
         super.clear();
         EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.DELETE_METHOD);
+        initialiseMetaConcepts();
     }
 
     @Override
