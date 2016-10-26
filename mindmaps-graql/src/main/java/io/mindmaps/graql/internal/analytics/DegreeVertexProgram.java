@@ -28,9 +28,6 @@ import java.util.*;
 
 public class DegreeVertexProgram extends MindmapsVertexProgram<Long> {
 
-    private final MessageScope.Local<Long> countMessageScopeIn = MessageScope.Local.of(__::inE);
-    private final MessageScope.Local<Long> countMessageScopeOut = MessageScope.Local.of(__::outE);
-
     // element key
     public static final String DEGREE = "medianVertexProgram.degree";
 
@@ -44,26 +41,8 @@ public class DegreeVertexProgram extends MindmapsVertexProgram<Long> {
     }
 
     @Override
-    public GraphComputer.Persist getPreferredPersist() {
-        return GraphComputer.Persist.VERTEX_PROPERTIES;
-    }
-
-    @Override
-    public GraphComputer.ResultGraph getPreferredResultGraph() {
-        return GraphComputer.ResultGraph.NEW;
-    }
-
-    @Override
     public Set<String> getElementComputeKeys() {
         return ELEMENT_COMPUTE_KEYS;
-    }
-
-    @Override
-    public Set<MessageScope> getMessageScopes(final Memory memory) {
-        final Set<MessageScope> set = new HashSet<>();
-        set.add(this.countMessageScopeOut);
-        set.add(this.countMessageScopeIn);
-        return set;
     }
 
     @Override
@@ -77,12 +56,12 @@ public class DegreeVertexProgram extends MindmapsVertexProgram<Long> {
                     String type = vertex.label();
                     if (type.equals(Schema.BaseType.ENTITY.name()) || type.equals(Schema.BaseType.RESOURCE.name())) {
                         // each role-player sends 1 to castings following incoming edges
-                        messenger.sendMessage(this.countMessageScopeIn, 1L);
+                        messenger.sendMessage(this.messageScopeIn, 1L);
                     } else if (type.equals(Schema.BaseType.RELATION.name())) {
                         // the assertion can also be role-player, so sending 1 to castings following incoming edges
-                        messenger.sendMessage(this.countMessageScopeIn, 1L);
+                        messenger.sendMessage(this.messageScopeIn, 1L);
                         // send -1 to castings following outgoing edges
-                        messenger.sendMessage(this.countMessageScopeOut, -1L);
+                        messenger.sendMessage(this.messageScopeOut, -1L);
                     }
                 }
                 break;
@@ -104,8 +83,8 @@ public class DegreeVertexProgram extends MindmapsVertexProgram<Long> {
 
                     // make sure this role-player is in the subgraph
                     if (hasRolePlayer) {
-                        messenger.sendMessage(this.countMessageScopeIn, 1L);
-                        messenger.sendMessage(this.countMessageScopeOut, assertionCount);
+                        messenger.sendMessage(this.messageScopeIn, 1L);
+                        messenger.sendMessage(this.messageScopeOut, assertionCount);
                     }
                 }
                 break;

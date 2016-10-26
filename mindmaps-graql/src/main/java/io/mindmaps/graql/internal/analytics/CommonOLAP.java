@@ -23,7 +23,6 @@ import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.util.Schema;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.*;
 

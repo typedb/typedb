@@ -117,59 +117,54 @@ public class GraqlTest extends AbstractGraphTest {
 
         // create 3 instances
         EntityType thing = graph.putEntityType("thing");
-        Entity entity1 = graph.putEntity("1", thing);
-        Entity entity2 = graph.putEntity("2", thing);
-        Entity entity3 = graph.putEntity("3", thing);
-        Entity entity4 = graph.putEntity("4", thing);
+        String entity1 = graph.addEntity(thing).getId();
+        String entity2 = graph.addEntity(thing).getId();
+        String entity3 = graph.addEntity(thing).getId();
+        String entity4 = graph.addEntity(thing).getId();
 
-        RoleType relation1 = graph.putRoleType("relation1");
-        RoleType relation2 = graph.putRoleType("relation2");
-        thing.playsRole(relation1).playsRole(relation2);
-        RelationType related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
+        RoleType role1 = graph.putRoleType("role1");
+        RoleType role2 = graph.putRoleType("role2");
+        thing.playsRole(role1).playsRole(role2);
+        RelationType related = graph.putRelationType("related").hasRole(role1).hasRole(role2);
 
         // relate them
-        String id1 = UUID.randomUUID().toString();
-        graph.putRelation(id1, related)
-                .putRolePlayer(relation1, entity1)
-                .putRolePlayer(relation2, entity2);
+        String id1 = graph.addRelation(related)
+                .putRolePlayer(role1, graph.getInstance(entity1))
+                .putRolePlayer(role2, graph.getInstance(entity2))
+                .getId();
 
-        String id2 = UUID.randomUUID().toString();
-        graph.putRelation(id2, related)
-                .putRolePlayer(relation1, entity2)
-                .putRolePlayer(relation2, entity3);
+        String id2 = graph.addRelation(related)
+                .putRolePlayer(role1, graph.getInstance(entity2))
+                .putRolePlayer(role2, graph.getInstance(entity3))
+                .getId();
 
-        String id3 = UUID.randomUUID().toString();
-        graph.putRelation(id3, related)
-                .putRolePlayer(relation1, entity2)
-                .putRolePlayer(relation2, entity4);
+        String id3 = graph.addRelation(related)
+                .putRolePlayer(role1, graph.getInstance(entity2))
+                .putRolePlayer(role2, graph.getInstance(entity4))
+                .getId();
 
         graph.commit();
 
         // compute degrees
-        Map<Instance, Long> degrees = ((Map) ((ComputeQuery) qb.parse("compute degrees;")).execute());
+        Map<Long, Set<String>> degrees = ((Map) qb.parse("compute degrees;").execute());
 
         // assert degrees are correct
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, graph.getKeyspace()).getGraph();
-
-        entity1 = graph.getEntity("1");
-        entity2 = graph.getEntity("2");
-        entity3 = graph.getEntity("3");
-        entity4 = graph.getEntity("4");
-
-        Map<Instance, Long> correctDegrees = new HashMap<>();
+        Map<String, Long> correctDegrees = new HashMap<>();
         correctDegrees.put(entity1, 1l);
         correctDegrees.put(entity2, 3l);
         correctDegrees.put(entity3, 1l);
         correctDegrees.put(entity4, 1l);
-        correctDegrees.put(graph.getRelation(id1), 2l);
-        correctDegrees.put(graph.getRelation(id2), 2l);
-        correctDegrees.put(graph.getRelation(id3), 2l);
+        correctDegrees.put(id1, 2l);
+        correctDegrees.put(id2, 2l);
+        correctDegrees.put(id3, 2l);
 
-        assertFalse(degrees.isEmpty());
-        degrees.entrySet().forEach(degree -> {
-            assertTrue(correctDegrees.containsKey(degree.getKey()));
-            assertEquals(correctDegrees.get(degree.getKey()), degree.getValue());
-        });
+        assertTrue(!degrees.isEmpty());
+        degrees.entrySet().forEach(entry -> entry.getValue().forEach(
+                id -> {
+                    assertTrue(correctDegrees.containsKey(id));
+                    assertEquals(correctDegrees.get(id), entry.getKey());
+                }
+        ));
     }
 
     @Test

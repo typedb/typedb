@@ -19,11 +19,11 @@
 package io.mindmaps.graql.internal.analytics;
 
 import com.google.common.collect.Sets;
+import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsComputer;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.*;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.Mindmaps;
 import io.mindmaps.graql.Pattern;
 import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.util.ErrorMessage;
@@ -32,10 +32,7 @@ import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static io.mindmaps.graql.Graql.or;
-import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.graql.Graql.withGraph;
-import static io.mindmaps.util.Schema.ConceptProperty.ITEM_IDENTIFIER;
+import static io.mindmaps.graql.Graql.*;
 
 /**
  * OLAP computations that can be applied to a Mindmaps Graph. The current implementation uses the SparkGraphComputer
@@ -276,22 +273,26 @@ public class Analytics {
     }
 
     /**
+     * Compute the number of connected components.
+     *
+     * @return a map of set, each set contains all the vertex ids belonging to one connected component
+     */
+    public Map<String, Set<String>> connectedComponent() {
+        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
+        ComputerResult result = computer.compute(new ConnectedComponentVertexProgram(subtypes),
+                new ClusterPopulationMapReduce(subtypes));
+        return result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
+    }
+
+    /**
      * Compute the number of relations that each instance takes part in.
      *
      * @return a map from each instance to its degree
      */
-    public Map<Instance, Long> degrees() {
-        Map<Instance, Long> allDegrees = new HashMap<>();
+    public Map<Long, Set<String>> degrees() {
         MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
-        ComputerResult result = computer.compute(new DegreeVertexProgram(subtypes));
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraph();
-        result.graph().traversal().V().forEachRemaining(v -> {
-            if (v.keys().contains(DegreeVertexProgram.DEGREE)) {
-                Instance instance = graph.getInstance(v.value(ITEM_IDENTIFIER.name()));
-                allDegrees.put(instance, v.value(DegreeVertexProgram.DEGREE));
-            }
-        });
-        return allDegrees;
+        ComputerResult result = computer.compute(new DegreeVertexProgram(subtypes), new DegreeDistributionMapReduce(subtypes));
+        return result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
     }
 
     /**
