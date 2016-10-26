@@ -44,8 +44,8 @@ import static io.mindmaps.util.REST.WebPath.GRAPH_FACTORY_URI;
  */
 public class MindmapsGraphFactoryImpl implements MindmapsGraphFactory{
     private static final String COMPUTER = "graph.computer";
-    private final String uri;
-    private final String keyspace;
+    protected final String uri;
+    protected final String keyspace;
 
     public MindmapsGraphFactoryImpl(String keyspace, String uri){
         this.uri = uri;
@@ -85,7 +85,7 @@ public class MindmapsGraphFactoryImpl implements MindmapsGraphFactory{
      * @param graphType The type of graph to produce, default, batch, or compute
      * @return A new or existing mindmaps graph with the defined name connecting to the specified remote uri
      */
-    private static ConfigureFactory configureGraphFactory(String keyspace, String engineUrl, String graphType){
+    protected static ConfigureFactory configureGraphFactory(String keyspace, String engineUrl, String graphType){
         try {
             String restFactoryUri = engineUrl + GRAPH_FACTORY_URI + "?" + GRAPH_CONFIG_PARAM + "=" + graphType;
             String config = EngineCommunicator.contactEngine(restFactoryUri, REST.HttpConn.GET_METHOD);
@@ -114,10 +114,10 @@ public class MindmapsGraphFactoryImpl implements MindmapsGraphFactory{
         }
     }
 
-    private static class ConfigureFactory {
+    protected static class ConfigureFactory {
         String path;
-        String graphComputer;
-        MindmapsInternalFactory factory;
+        public String graphComputer;
+        public MindmapsInternalFactory factory;
 
         ConfigureFactory(String path, String graphComputer, MindmapsInternalFactory factory){
             this.path = path;

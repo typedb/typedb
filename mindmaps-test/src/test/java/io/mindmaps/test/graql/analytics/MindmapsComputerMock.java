@@ -16,27 +16,31 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.factory;
+package io.mindmaps.test.graql.analytics;
 
-import io.mindmaps.MindmapsGraph;
+import io.mindmaps.graph.internal.MindmapsComputerImpl;
+import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 /**
- * The interface used to build new graphs from different vendors.
- * Adding new vendor support means implementing this interface.
+ *
  */
-public interface MindmapsInternalFactory<M extends MindmapsGraph, T extends Graph> {
-    /**
-     *
-     * @param batchLoading A flag which indicates if the graph has batch loading enabled or not.
-     * @return An instance of Mindmaps graph
-     */
-    M getGraph(boolean batchLoading);
+public class MindmapsComputerMock extends MindmapsComputerImpl {
 
-    /**
-     *
-     * @param batchLoading A flag which indicates if the graph has batch loading enabled or not.
-     * @return An instance of a tinker graph
-     */
-    T getTinkerPopGraph(boolean batchLoading);
+    int numberOfWorkers;
+
+    public MindmapsComputerMock(Graph graph, String graphComputerType) {
+        super(graph, graphComputerType);
+    }
+
+    public MindmapsComputerMock(Graph graph, String graphComputerType, int numberOfWorkers) {
+        super(graph, graphComputerType);
+        this.numberOfWorkers = numberOfWorkers;
+
+    }
+
+    @Override
+    protected GraphComputer getComputer() {
+        return graph.compute(this.graphComputer).workers(numberOfWorkers);
+    }
 }

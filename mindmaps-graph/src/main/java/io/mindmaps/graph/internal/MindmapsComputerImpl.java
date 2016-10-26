@@ -29,8 +29,8 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import java.util.concurrent.ExecutionException;
 
 public class MindmapsComputerImpl implements MindmapsComputer {
-    private final Graph graph;
-    private final Class<? extends GraphComputer> graphComputer;
+    protected final Graph graph;
+    protected final Class<? extends GraphComputer> graphComputer;
 
     public MindmapsComputerImpl(Graph graph, String graphComputerType) {
         this.graph = graph;
@@ -40,7 +40,7 @@ public class MindmapsComputerImpl implements MindmapsComputer {
     @Override
     public ComputerResult compute(VertexProgram program, MapReduce... mapReduces) {
         try {
-            GraphComputer graphComputer = graph.compute(this.graphComputer).program(program);
+            GraphComputer graphComputer = getComputer().program(program);
             for (MapReduce mapReduce : mapReduces)
                 graphComputer = graphComputer.mapReduce(mapReduce);
             return graphComputer.submit().get();
@@ -49,10 +49,12 @@ public class MindmapsComputerImpl implements MindmapsComputer {
         }
     }
 
+
+
     @Override
     public ComputerResult compute(MapReduce mapReduce) {
         try {
-            return graph.compute(graphComputer).mapReduce(mapReduce).submit().get();
+            return getComputer().mapReduce(mapReduce).submit().get();
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }
@@ -70,5 +72,8 @@ public class MindmapsComputerImpl implements MindmapsComputer {
         }
     }
 
+    protected GraphComputer getComputer() {
+        return graph.compute(this.graphComputer);
+    }
 
 }

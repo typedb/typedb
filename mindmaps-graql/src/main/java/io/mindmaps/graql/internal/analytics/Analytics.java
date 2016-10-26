@@ -48,7 +48,7 @@ public class Analytics {
     public static final String degree = "degree";
     private static final int numberOfOntologyChecks = 10;
 
-    private final String keySpace;
+    protected final String keySpace;
 
     /**
      * The concept type ids that define which instances appear in the subgraph.
@@ -139,7 +139,7 @@ public class Analytics {
      * @return the number of instances
      */
     public long count() {
-        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
+        MindmapsComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(new CountMapReduce(subtypes));
         Map<String, Long> count = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
         return count.getOrDefault(CountMapReduce.MEMORY_KEY, 0L);
@@ -428,5 +428,9 @@ public class Analytics {
                 .map(type -> var("x").isa(type)).collect(Collectors.toList());
 
         return withGraph(graph).match(or(checkResourceTypes), or(checkSubtypes)).ask().execute();
+    }
+
+    protected MindmapsComputer getGraphComputer() {
+        return Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
     }
 }

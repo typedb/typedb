@@ -68,7 +68,7 @@ public class ScalingTestIT extends AbstractScalingTest {
 
     // test parameters
     int NUM_SUPER_NODES = 1; // the number of supernodes to generate in the test graph
-    int MAX_SIZE = 4; // the maximum number of non super nodes to add to the test graph
+    int MAX_SIZE = 10; // the maximum number of non super nodes to add to the test graph
     int NUM_DIVS = 2; // the number of divisions of the MAX_SIZE to use in the scaling test
     int REPEAT = 1; // the number of times to repeat at each size for average runtimes
 
@@ -125,7 +125,7 @@ public class ScalingTestIT extends AbstractScalingTest {
             previousGraphSize = graphSize;
             writer.println("stop generate graph " + System.currentTimeMillis()/1000L + "s");
 
-            Analytics computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
+            Analytics computer = new AnalyticsMock(keyspace, new HashSet<>(), new HashSet<>(),1);
 
             Long countTime = 0L;
             Long startTime = 0L;
