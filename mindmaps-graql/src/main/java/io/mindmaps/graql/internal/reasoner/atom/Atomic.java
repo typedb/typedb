@@ -29,30 +29,6 @@ public interface Atomic extends Cloneable{
 
     default boolean isAtom(){ return false;}
     default boolean isPredicate(){ return false;}
-    /**
-     * @return true if the atom corresponds to a atom
-     * */
-    default boolean isType(){ return false;}
-
-    /**
-     * @return true if the atom corresponds to a non-unary atom
-     * */
-    default boolean isRelation(){return false;}
-
-    /**
-     * @return true if the atom corresponds to a unifier (id atom)
-     * */
-    default boolean isSubstitution(){ return false;}
-
-    /**
-     * @return true if the atom corresponds to a resource atom
-     * */
-    default boolean isResource(){ return false;}
-
-    /**
-     * @return true if the atom corresponds to a value atom
-     * */
-    default boolean isValuePredicate(){ return false;}
 
     /**
      * @return true if atom alpha-equivalent

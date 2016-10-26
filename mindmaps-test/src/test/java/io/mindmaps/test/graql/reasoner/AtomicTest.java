@@ -30,6 +30,7 @@ import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.internal.reasoner.atom.Atom;
 import io.mindmaps.graql.internal.reasoner.atom.Atomic;
 import io.mindmaps.graql.internal.reasoner.atom.AtomicFactory;
+import io.mindmaps.graql.internal.reasoner.atom.Predicate;
 import io.mindmaps.graql.internal.reasoner.atom.Relation;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.query.Query;
@@ -130,10 +131,10 @@ public class AtomicTest {
         Atomic sub = AtomicFactory.create(qb.<MatchQuery>parse(subString).admin().getPattern().getPatterns().iterator().next());
         Atomic res = AtomicFactory.create(qb.<MatchQuery>parse(resString).admin().getPattern().getPatterns().iterator().next());
 
-        assert(atom.isType());
-        assert(relation.isRelation());
-        assert(sub.isSubstitution());
-        assert(res.isResource());
+        assert(((Atom) atom).isType());
+        assert(((Atom) relation).isRelation());
+        assert(((Atom) res).isResource());
+        assert(((Predicate) sub).isSubstitution());
     }
 
     @Test

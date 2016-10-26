@@ -157,21 +157,24 @@ public class Query implements MatchQueryInternal {
     public Set<Atomic> getAtoms() { return new HashSet<>(atomSet);}
     public Set<Predicate> getSubstitutions(){
         return getAtoms().stream()
-                .filter(Atomic::isSubstitution)
+                .filter(Atomic::isPredicate)
                 .map(at -> (Predicate) at)
+                .filter(Predicate::isSubstitution)
                 .collect(Collectors.toSet());
     }
     public Set<Atom> getTypeConstraints(){
         return getAtoms().stream()
-                .filter(Atomic::isType)
+                .filter(Atomic::isAtom)
                 .map(at -> (Atom) at)
+                .filter(Atom::isType)
                 .collect(Collectors.toSet());
     }
 
     public Set<Predicate> getValuePredicates(){
         return getAtoms().stream()
-                .filter(Atomic::isValuePredicate)
+                .filter(Atomic::isPredicate)
                 .map(at -> (Predicate) at)
+                .filter(Predicate::isValuePredicate)
                 .collect(Collectors.toSet());
     }
 
@@ -316,27 +319,23 @@ public class Query implements MatchQueryInternal {
     public Map<String, Type> getVarTypeMap() {
         Map<String, Type> map = new HashMap<>();
 
-        atomSet.stream().filter(Atomic::isType).filter(at -> !at.isResource()).map(at -> (Atom) at)
+        getTypeConstraints().stream().filter(at -> !at.isResource())
                 .forEach(atom -> {
-            //if (atom.isType() && !atom.isResource() ) {
-                if (!atom.isRelation()) {
-                    String var = atom.getVarName();
-                    Type type = atom.getType();
-                    if (!map.containsKey(var))
-                        map.put(var, type);
-                    else
-                        map.replace(var, type);
-                }
-                else {
-                    Set<String> vars = atom.getVarNames();
-                    vars.forEach(var -> {
+                    if (!atom.isRelation()) {
+                        String var = atom.getVarName();
+                        Type type = atom.getType();
                         if (!map.containsKey(var))
-                            map.put(var, null);
-                    });
-                }
-           // }
-        });
-
+                            map.put(var, type);
+                        else
+                           map.replace(var, type);
+                    }
+                    else {
+                        Set<String> vars = atom.getVarNames();
+                        vars.forEach(var -> {
+                           if (!map.containsKey(var))
+                                map.put(var, null);
+                        });
+                    }});
         return map;
     }
 
@@ -373,7 +372,7 @@ public class Query implements MatchQueryInternal {
                     Atomic lcon = AtomicFactory.create(con, this);
                     lcon.setParentQuery(this);
                     addAtom(lcon);
-                    if (lcon.isSubstitution())
+                    if (lcon.isPredicate() && ((Predicate)lcon).isSubstitution())
                         selectVars.remove(lcon.getVarName());
         });
     }

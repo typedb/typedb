@@ -76,6 +76,21 @@ public abstract class Atom extends AtomBase {
     @Override
     public boolean isAtom(){ return true;}
 
+    /**
+     * @return true if the atom corresponds to a atom
+     * */
+    public boolean isType(){ return false;}
+
+    /**
+     * @return true if the atom corresponds to a non-unary atom
+     * */
+    public boolean isRelation(){return false;}
+
+    /**
+     * @return true if the atom corresponds to a resource atom
+     * */
+    public boolean isResource(){ return false;}
+
     @Override
     public boolean isRuleResolvable() {
         Type type = getType();

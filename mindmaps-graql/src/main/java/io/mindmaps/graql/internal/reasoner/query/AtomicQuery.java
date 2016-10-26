@@ -112,7 +112,7 @@ public class AtomicQuery extends Query{
     private QueryAnswers materialiseComplete() {
         QueryAnswers insertAnswers = new QueryAnswers();
         if( getAtoms().stream()
-                .filter(atom -> atom.isSubstitution() || atom.isValuePredicate())
+                .filter(Atomic::isPredicate)
                 .collect(Collectors.toSet()).size() < getVarSet().size())
             throw new IllegalStateException(ErrorMessage.MATERIALIZATION_ERROR.getMessage(getMatchQuery().toString()));
         if (!getMatchQuery().ask().execute()) {

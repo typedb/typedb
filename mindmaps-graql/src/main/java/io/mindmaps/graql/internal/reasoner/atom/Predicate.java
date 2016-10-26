@@ -42,6 +42,16 @@ public abstract class Predicate<T> extends AtomBase{
         this.predicate = extractPredicate(pred.getPattern().asVar());
     }
 
+    /**
+     * @return true if the atom corresponds to a unifier (id atom)
+     * */
+    public boolean isSubstitution(){ return false;}
+
+    /**
+     * @return true if the atom corresponds to a value atom
+     * */
+    public boolean isValuePredicate(){ return false;}
+
     @Override
     public boolean equals(Object obj) {
         if (!(obj.getClass().equals(this.getClass()))) return false;
