@@ -73,15 +73,6 @@ public class AtomicQueryTest {
     }
 
     @Test
-    public void testErrorNoParent(){
-        exception.expect(IllegalStateException.class);
-        VarAdmin var = Patterns.var("x isa person;");
-        exception.expectMessage(ErrorMessage.PARENT_MISSING.getMessage(var.toString()));
-        Atomic atom = AtomicFactory.create(var);
-        AtomicQuery query = new AtomicQuery(atom);
-    }
-
-    @Test
     public void testPatternNotVar(){
         exception.expect(IllegalArgumentException.class);
         Conjunction<PatternAdmin> pattern = qb.<MatchQuery>parse("match $x isa person;").admin().getPattern();

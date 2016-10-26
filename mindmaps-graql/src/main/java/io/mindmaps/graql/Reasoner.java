@@ -43,14 +43,12 @@ import static io.mindmaps.graql.internal.reasoner.query.QueryAnswers.getUnifiedA
 public class Reasoner {
 
     private final MindmapsGraph graph;
-    private final QueryBuilder qb;
     private final Logger LOG = LoggerFactory.getLogger(Reasoner.class);
 
     private final Map<String, InferenceRule> workingMemory = new HashMap<>();
 
     public Reasoner(MindmapsGraph graph) {
         this.graph = graph;
-        qb = Graql.withGraph(graph);
         linkConceptTypes();
     }
 
@@ -94,22 +92,31 @@ public class Reasoner {
         return relRelevant;
     }
 
+    //TODO move to Atomic?
     private Set<Rule> getApplicableRules(Atomic atom) {
         Set<Rule> children = new HashSet<>();
         Type type = atom.getType();
-        if (type == null) return children;
-
-        Collection<Rule> rulesFromType = type.getRulesOfConclusion();
-        rulesFromType.forEach( rule -> {
-            InferenceRule child = workingMemory.get(rule.getId());
-            boolean ruleRelevant = checkRuleApplicableToAtom(atom, child);
-            if (ruleRelevant) children.add(rule);
-        });
+        //TODO change if we allow for Types having null type
+        if (type == null) {
+            Collection<Rule> applicableRules = Reasoner.getRules(graph).stream()
+                    .filter(rule -> rule.getConclusionTypes().stream().filter(Type::isRelationType).count() != 0)
+                    .collect(Collectors.toSet());
+            children.addAll(applicableRules);
+        }
+        else{
+            Collection<Rule> rulesFromType = type.getRulesOfConclusion();
+            rulesFromType.forEach(rule -> {
+                InferenceRule child = workingMemory.get(rule.getId());
+                boolean ruleRelevant = checkRuleApplicableToAtom(atom, child);
+                if (ruleRelevant) children.add(rule);
+            });
+        }
         return children;
     }
 
     private void linkConceptTypes(Rule rule) {
         LOG.debug("Linking rule " + rule.getId() + "...");
+        QueryBuilder qb = Graql.withGraph(graph);
         MatchQuery qLHS = qb.match(qb.parsePatterns(rule.getLHS()));
         MatchQuery qRHS = qb.match(qb.parsePatterns(rule.getRHS()));
 
@@ -122,8 +129,9 @@ public class Reasoner {
         LOG.debug("Rule " + rule.getId() + " linked");
     }
 
-    public Set<Rule> getRules() {
+    public static Set<Rule> getRules(MindmapsGraph graph) {
         Set<Rule> rules = new HashSet<>();
+        QueryBuilder qb = Graql.withGraph(graph);
         MatchQuery sq = qb.parse("match $x isa inference-rule;");
         List<Map<String, Concept>> results = Lists.newArrayList(sq);
         for (Map<String, Concept> result : results) {
@@ -139,7 +147,7 @@ public class Reasoner {
      * Link all unlinked rules in the rule base to their matching types
      */
     public void linkConceptTypes() {
-        Set<Rule> rules = getRules();
+        Set<Rule> rules = getRules(graph);
         LOG.debug(rules.size() + " rules initialized...");
 
         for (Rule rule : rules) {

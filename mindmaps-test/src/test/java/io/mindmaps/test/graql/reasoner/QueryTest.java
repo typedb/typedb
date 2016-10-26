@@ -23,6 +23,7 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
+import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
 import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
@@ -36,6 +37,7 @@ import org.junit.Test;
 
 import java.util.Map;
 
+import static io.mindmaps.graql.internal.reasoner.Utility.printAnswers;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -176,12 +178,6 @@ public class QueryTest {
         Atomic childAtomCopy = childCopy.getAtom();
 
         assertTrue(!childAtomCopy.equals(childAtom));
-    }
-
-    @Test
-    public void testQueryResults(){
-        QueryAnswers answers = new QueryAnswers(Sets.newHashSet(qb.<MatchQuery>parse("match $x isa person;")));
-        answers.forEach(ans -> System.out.println(ans.toString()));
     }
 
     private void assertQueriesEqual(MatchQuery q1, MatchQuery q2) {

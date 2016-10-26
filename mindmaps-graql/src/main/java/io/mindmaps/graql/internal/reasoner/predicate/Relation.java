@@ -21,8 +21,10 @@ package io.mindmaps.graql.internal.reasoner.predicate;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
+import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.reasoner.query.Query;
@@ -42,21 +44,25 @@ public class Relation extends AtomBase {
     public Relation(VarAdmin pattern) {
         super(pattern);
         castings.addAll(pattern.getCastings());
+        inferTypeFromRoles();
     }
 
     public Relation(VarAdmin pattern, Query par) {
         super(pattern, par);
         castings.addAll(pattern.getCastings());
+        inferTypeFromRoles();
     }
 
     public Relation(String id, Map<String, String> roleMap, Query par){
         super(constructRelation(id, roleMap), par);
         castings.addAll(getPattern().asVar().getCastings());
+        inferTypeFromRoles();
     }
 
     public Relation(Relation a) {
         super(a);
         castings.addAll(a.getPattern().asVar().getCastings());
+        inferTypeFromRoles();
     }
 
     @Override
@@ -67,7 +73,12 @@ public class Relation extends AtomBase {
     //rolePlayer-roleType
     public static VarAdmin constructRelation(String id, Map<String, String> roleMap) {
         Var var = Graql.var().isa(id);
-        roleMap.forEach( (player, role) -> var.rel(role, player));
+        roleMap.forEach( (player, role) -> {
+            if (role == null)
+                var.rel(player);
+            else
+                var.rel(role, player);
+        });
         return var.admin().asVar();
     }
 
@@ -119,13 +130,48 @@ public class Relation extends AtomBase {
     @Override
     public boolean isRelation(){ return true;}
 
+    @Override
+    public boolean isRuleResolvable() {
+        Type t = getType();
+        if (t != null)
+            return !t.getRulesOfConclusion().isEmpty();
+        else{
+            MindmapsGraph graph = getParentQuery().getGraph().orElse(null);
+            Set<Rule> rules = Reasoner.getRules(graph);
+            return rules.stream()
+                    .flatMap(rule -> rule.getConclusionTypes().stream())
+                    .filter(Type::isRelationType).count() != 0;
+        }
+    }
+
+
     public boolean hasExplicitRoleTypes(){
-        boolean rolesDefined = true;
+        boolean rolesDefined = false;
         Iterator<VarAdmin.Casting> it = castings.iterator();
-        while (it.hasNext() && rolesDefined)
+        while (it.hasNext() && !rolesDefined)
             rolesDefined = it.next().getRoleType().isPresent();
         return rolesDefined;
     }
+
+    private Set<RoleType> getExplicitRoleTypes(){
+        Set<RoleType> roleTypes = new HashSet<>();
+        MindmapsGraph graph = getParentQuery().getGraph().orElse(null);
+        castings.stream()
+                .filter(c -> c.getRoleType().isPresent())
+                .filter(c -> c.getRoleType().get().getId().isPresent())
+                .map( c -> graph.getRoleType(c.getRoleType().orElse(null).getId().orElse("")))
+                .forEach(roleTypes::add);
+        return roleTypes;
+    }
+
+    private void inferTypeFromRoles() {
+        if (getParentQuery() != null && typeId.isEmpty() && hasExplicitRoleTypes()){
+            type = getExplicitRoleTypes().iterator().next().relationType();
+            typeId = type.getId();
+            atomPattern.admin().asVar().isa(typeId);
+        }
+    }
+
     @Override
     public boolean containsVar(String name) {
         boolean varFound = false;
@@ -198,7 +244,7 @@ public class Relation extends AtomBase {
             if (!roleTypeId.isEmpty())
                 roleVarTypeMap.put(var, new Pair<>(type, graph.getRoleType(roleTypeId)));
             else {
-                if (type != null) {
+                if (type != null && relType != null) {
                     Set<RoleType> cRoles = getCompatibleRoleTypes(type, relType);
 
                     //if roleType is unambigous
@@ -206,7 +252,6 @@ public class Relation extends AtomBase {
                         roleVarTypeMap.put(var, new Pair<>(type, cRoles.iterator().next()));
                     else
                         roleVarTypeMap.put(var, new Pair<>(type, null));
-
                 }
             }
         }
@@ -217,14 +262,6 @@ public class Relation extends AtomBase {
     public Map<String, Pair<Type, RoleType>> getVarTypeRoleMap() {
         if (varTypeRoleMap == null)
             varTypeRoleMap = computeVarTypeRoleMap();
-        if (roleVarTypeMap == null){
-            roleVarTypeMap = new HashMap<>();
-            varTypeRoleMap.forEach( (var, tpair) -> {
-                RoleType rt = tpair.getValue();
-                if (rt != null)
-                    roleVarTypeMap.put(rt, new Pair<>(var, tpair.getKey()));
-            });
-        }
         return varTypeRoleMap;
     }
 
@@ -234,7 +271,7 @@ public class Relation extends AtomBase {
      */
     private Map<RoleType, Pair<String, Type>> computeRoleVarTypeMap() {
         Map<RoleType, Pair<String, Type>> roleVarTypeMap = new HashMap<>();
-        if (getParentQuery() == null) return roleVarTypeMap;
+        if (getParentQuery() == null || getType() == null) return roleVarTypeMap;
         MindmapsGraph graph =  getParentQuery().getGraph().orElse(null);
         Map<String, Type> varTypeMap = getParentQuery().getVarTypeMap();
         Set<String> allocatedVars = new HashSet<>();
@@ -278,13 +315,32 @@ public class Relation extends AtomBase {
             Type type = varTypeMap.get(var);
             roleVarTypeMap.put(role, new Pair<>(var, type));
         }
+
+        //update pattern and castings
+        Map<String, String> roleMap = new HashMap<>();
+        roleVarTypeMap.forEach( (r, tp) -> roleMap.put(tp.getKey(), r.getId()));
+        getVarNames().stream()
+                    .filter(var -> !roleMap.containsKey(var))
+                    .forEach( var -> roleMap.put(var, null));
+        atomPattern = constructRelation(typeId, roleMap);
+        castings.addAll(getPattern().asVar().getCastings());
+
         return roleVarTypeMap;
     }
 
     @Override
     public Map<RoleType, Pair<String, Type>> getRoleVarTypeMap() {
-        if (roleVarTypeMap == null)
-            roleVarTypeMap = computeRoleVarTypeMap();
+        if (roleVarTypeMap == null) {
+            if (varTypeRoleMap != null) {
+                roleVarTypeMap = new HashMap<>();
+                varTypeRoleMap.forEach((var, tpair) -> {
+                    RoleType rt = tpair.getValue();
+                    if (rt != null)
+                        roleVarTypeMap.put(rt, new Pair<>(var, tpair.getKey()));
+                });
+            } else
+                roleVarTypeMap = computeRoleVarTypeMap();
+        }
         return roleVarTypeMap;
     }
 }

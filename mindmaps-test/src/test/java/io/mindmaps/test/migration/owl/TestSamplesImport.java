@@ -97,7 +97,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
             Assert.assertNotNull(work);
             assertRelationBetweenInstancesExists(work, author, "op-wrote");
             Reasoner reasoner = new Reasoner(migrator.graph());
-            Assert.assertTrue(!reasoner.getRules().isEmpty());
+            Assert.assertTrue(!Reasoner.getRules(graph).isEmpty());
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
@@ -208,7 +208,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
             Assert.assertTrue(bloodRelation.subTypes().contains(isUncleOf));
 
             Reasoner reasoner = new Reasoner(migrator.graph());
-            Assert.assertTrue(!reasoner.getRules().isEmpty());
+            Assert.assertTrue(!Reasoner.getRules(graph).isEmpty());
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);

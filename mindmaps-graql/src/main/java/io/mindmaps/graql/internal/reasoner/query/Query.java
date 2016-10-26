@@ -27,6 +27,7 @@ import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.internal.query.match.MatchOrder;
 import io.mindmaps.graql.internal.query.match.MatchQueryInternal;
+import io.mindmaps.graql.internal.reasoner.predicate.Relation;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.internal.pattern.Patterns;
@@ -47,19 +48,15 @@ public class Query implements MatchQueryInternal {
     private final Conjunction<PatternAdmin> pattern;
     private final Set<String> selectVars;
 
-    public Query(String query, MindmapsGraph graph) {
-        this.graph = graph;
-        MatchQuery matchQuery = Graql.withGraph(graph).parse(query);
-        this.selectVars = Sets.newHashSet(matchQuery.admin().getSelectedNames());
-        this.atomSet = AtomicFactory.createAtomSet(matchQuery.admin().getPattern(), this);
-        this.pattern = createPattern(atomSet);
-    }
-
     public Query(MatchQuery query, MindmapsGraph graph) {
         this.graph = graph;
         this.selectVars = Sets.newHashSet(query.admin().getSelectedNames());
         this.atomSet = AtomicFactory.createAtomSet(query.admin().getPattern(), this);
         this.pattern = createPattern(atomSet);
+    }
+
+    public Query(String query, MindmapsGraph graph) {
+        this(Graql.withGraph(graph).<MatchQuery>parse(query), graph);
     }
 
     public Query(Query q) {
