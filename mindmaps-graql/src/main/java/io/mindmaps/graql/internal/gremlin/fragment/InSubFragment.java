@@ -18,7 +18,7 @@ class InSubFragment extends AbstractFragment {
 
     @Override
     public String getName() {
-        return "<-[ako]-";
+        return "<-[sub]-";
     }
 
     @Override
