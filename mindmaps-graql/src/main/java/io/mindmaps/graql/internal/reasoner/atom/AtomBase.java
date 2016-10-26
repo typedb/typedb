@@ -98,17 +98,5 @@ public abstract class AtomBase implements Atomic{
     }
 
     public abstract Map<String, String> getUnifiers(Atomic parentAtom);
-
-    /*
-    public abstract Set<Atom> getTypeConstraints();
-    public abstract Set<Predicate> getSubstitutions();
-    public abstract Set<Predicate> getValuePredicates();
-
-    public abstract Map<String, Predicate> getVarSubMap();
-
-    public abstract Map<String, Pair<Type, RoleType>> getVarTypeRoleMap();
-    public abstract Map<RoleType, Pair<String, Type>> getRoleVarTypeMap();
-    public abstract Map<RoleType, String> getRoleConceptIdMap();
-    */
 }
 
