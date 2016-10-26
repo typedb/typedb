@@ -4,7 +4,7 @@ import io.mindmaps.graql.internal.gremlin.FragmentPriority;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import static io.mindmaps.graql.internal.gremlin.Traversals.inSubs;
+import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.inSubs;
 import static io.mindmaps.util.Schema.EdgeLabel.ISA;
 
 class InIsaFragment extends AbstractFragment {

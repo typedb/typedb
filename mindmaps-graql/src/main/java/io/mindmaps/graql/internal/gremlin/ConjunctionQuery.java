@@ -24,9 +24,11 @@ import com.google.common.collect.Sets;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.fragment.Fragment;
+import io.mindmaps.graql.internal.pattern.property.VarPropertyInternal;
 import io.mindmaps.util.ErrorMessage;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -70,7 +72,7 @@ class ConjunctionQuery {
         }
 
         this.equivalentFragmentSets =
-                vars.stream().flatMap(Traversals::equivalentFragmentSets).collect(toImmutableSet());
+                vars.stream().flatMap(ConjunctionQuery::equivalentFragmentSetsRecursive).collect(toImmutableSet());
 
         this.sortedFragments = sortFragments();
     }
@@ -146,6 +148,36 @@ class ConjunctionQuery {
         }
 
         return ImmutableList.copyOf(sortedFragments);
+    }
+
+    private static Stream<EquivalentFragmentSet> equivalentFragmentSetsRecursive(VarAdmin var) {
+        return var.getImplicitInnerVars().stream().flatMap(ConjunctionQuery::equivalentFragmentSetsOfVar);
+    }
+
+    private static Stream<EquivalentFragmentSet> equivalentFragmentSetsOfVar(VarAdmin var) {
+        ShortcutTraversal shortcutTraversal = new ShortcutTraversal();
+        Collection<EquivalentFragmentSet> traversals = new HashSet<>();
+
+        // If the user has provided a variable name, it can't be represented with a shortcut edge because it may be
+        // referred to later.
+        if (var.isUserDefinedName()) {
+            shortcutTraversal.setInvalid();
+        }
+
+        String start = var.getName();
+
+        var.getProperties().forEach(property -> {
+            VarPropertyInternal propertyInternal = (VarPropertyInternal) property;
+            propertyInternal.modifyShortcutTraversal(shortcutTraversal);
+            Collection<EquivalentFragmentSet> newTraversals = propertyInternal.match(start);
+            traversals.addAll(newTraversals);
+        });
+
+        if (shortcutTraversal.isValid()) {
+            return Stream.of(shortcutTraversal.getEquivalentFragmentSet());
+        } else {
+            return traversals.stream();
+        }
     }
 
     /**

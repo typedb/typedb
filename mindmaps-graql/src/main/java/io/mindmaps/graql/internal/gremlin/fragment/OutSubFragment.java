@@ -1,7 +1,6 @@
 package io.mindmaps.graql.internal.gremlin.fragment;
 
 import io.mindmaps.graql.internal.gremlin.FragmentPriority;
-import io.mindmaps.graql.internal.gremlin.Traversals;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -13,7 +12,7 @@ class OutSubFragment extends AbstractFragment {
 
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
-        Traversals.outSubs(traversal);
+        Fragments.outSubs(traversal);
     }
 
     @Override

@@ -2,8 +2,13 @@ package io.mindmaps.graql.internal.gremlin.fragment;
 
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Optional;
+
+import static io.mindmaps.util.Schema.EdgeLabel.SUB;
 
 public class Fragments {
 
@@ -106,5 +111,15 @@ public class Fragments {
 
     public static ValueFlagFragment value(String start) {
         return new ValueFlagFragment(start);
+    }
+
+    @SuppressWarnings("unchecked")
+    static GraphTraversal<Vertex, Vertex> outSubs(GraphTraversal<Vertex, Vertex> traversal) {
+        return traversal.union(__.identity(), __.repeat(__.out(SUB.getLabel())).emit()).unfold();
+    }
+
+    @SuppressWarnings("unchecked")
+    static GraphTraversal<Vertex, Vertex> inSubs(GraphTraversal<Vertex, Vertex> traversal) {
+        return traversal.union(__.identity(), __.repeat(__.in(SUB.getLabel())).emit()).unfold();
     }
 }
