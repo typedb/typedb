@@ -20,6 +20,7 @@ package io.mindmaps.test.graql.analytics;
 
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsComputer;
+import io.mindmaps.factory.MindmapsGraphFactoryMock;
 import io.mindmaps.graql.internal.analytics.Analytics;
 
 import java.util.Set;
@@ -29,19 +30,22 @@ import java.util.Set;
  */
 public class AnalyticsMock extends Analytics {
     int numberOfWorkers;
+    private final String keyspace;
 
     public AnalyticsMock(String keySpace, Set<String> subTypeIds, Set<String> statisticsResourceTypeIds) {
         super(keySpace, subTypeIds, statisticsResourceTypeIds);
+        this.keyspace = keySpace;
     }
 
     public AnalyticsMock(String keySpace, Set<String> subTypeIds, Set<String> statisticsResourceTypeIds, int numberOfWorkers) {
         super(keySpace, subTypeIds, statisticsResourceTypeIds);
         this.numberOfWorkers = numberOfWorkers;
+        this.keyspace = keySpace;
     }
 
     @Override
     protected MindmapsComputer getGraphComputer() {
-        MindmapsGraphFactoryMock factory = new MindmapsGraphFactoryMock(keySpace, Mindmaps.DEFAULT_URI);
+        MindmapsGraphFactoryMock factory = new MindmapsGraphFactoryMock(keyspace, Mindmaps.DEFAULT_URI);
         return factory.getGraphComputer(numberOfWorkers);
     }
 }

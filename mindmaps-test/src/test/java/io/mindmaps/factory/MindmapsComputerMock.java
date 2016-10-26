@@ -26,21 +26,25 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
  *
  */
 public class MindmapsComputerMock extends MindmapsComputerImpl {
-
-    int numberOfWorkers;
+    private final Graph graph;
+    private final String graphComputerType;
+    private int numberOfWorkers;
 
     public MindmapsComputerMock(Graph graph, String graphComputerType) {
         super(graph, graphComputerType);
+        this.graph = graph;
+        this.graphComputerType = graphComputerType;
     }
 
     public MindmapsComputerMock(Graph graph, String graphComputerType, int numberOfWorkers) {
         super(graph, graphComputerType);
         this.numberOfWorkers = numberOfWorkers;
-
+        this.graph = graph;
+        this.graphComputerType = graphComputerType;
     }
 
     @Override
     protected GraphComputer getComputer() {
-        return graph.compute(this.graphComputer).workers(numberOfWorkers);
+        return graph.compute(getGraphComputer(graphComputerType)).workers(numberOfWorkers);
     }
 }

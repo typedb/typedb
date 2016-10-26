@@ -29,8 +29,8 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import java.util.concurrent.ExecutionException;
 
 public class MindmapsComputerImpl implements MindmapsComputer {
-    protected final Graph graph;
-    protected final Class<? extends GraphComputer> graphComputer;
+    private final Graph graph;
+    private final Class<? extends GraphComputer> graphComputer;
 
     public MindmapsComputerImpl(Graph graph, String graphComputerType) {
         this.graph = graph;
@@ -62,7 +62,7 @@ public class MindmapsComputerImpl implements MindmapsComputer {
      * @return A graph compute supported by this mindmaps graph
      */
     @SuppressWarnings("unchecked")
-    private Class<? extends GraphComputer> getGraphComputer(String graphComputerType) {
+    protected Class<? extends GraphComputer> getGraphComputer(String graphComputerType) {
         try {
             return (Class<? extends GraphComputer>) Class.forName(graphComputerType);
         } catch (ClassNotFoundException e) {

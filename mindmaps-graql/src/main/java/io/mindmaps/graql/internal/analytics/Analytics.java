@@ -48,7 +48,7 @@ public class Analytics {
     public static final String degree = "degree";
     private static final int numberOfOntologyChecks = 10;
 
-    protected final String keySpace;
+    private final String keySpace;
 
     /**
      * The concept type ids that define which instances appear in the subgraph.
