@@ -23,7 +23,6 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.engine.loader.Loader;
 import io.mindmaps.graql.Var;
-import io.mindmaps.migration.sql.SQLModel.SQLTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,9 +107,9 @@ public class SQLDataMigrator implements Iterable<Collection<Var>>, Closeable {
      */
     public Iterator<Collection<Var>> iterator(){
         return new Iterator<Collection<Var>>() {
-            Iterator<SQLTable> tables = metadata.iterator();
+            Iterator<SQLModel.SQLTable> tables = metadata.iterator();
             PreparedStatement currentStatement = null;
-            SQLTable currentTable = null;
+            SQLModel.SQLTable currentTable = null;
             ResultSet currentRow = null;
 
             @Override
@@ -229,7 +228,7 @@ public class SQLDataMigrator implements Iterable<Collection<Var>>, Closeable {
     /**
      * Loop through the rows, migrating the columns as resources or relations. Each row is an entity.
      */
-    private Collection<Var> migrateRow(SQLTable currentTable, ResultSet row) throws SQLException {
+    private Collection<Var> migrateRow(SQLModel.SQLTable currentTable, ResultSet row) throws SQLException {
         String tableType = currentTable.getEntityType();
 
         // create an instance and insert
@@ -245,7 +244,7 @@ public class SQLDataMigrator implements Iterable<Collection<Var>>, Closeable {
     /**
      * Loop through each of the columns in the row, migrating each as a resource or relation.
      */
-    private Collection<Var> migrateColumns(SQLTable table, ResultSet row, Var instance) throws SQLException{
+    private Collection<Var> migrateColumns(SQLModel.SQLTable table, ResultSet row, Var instance) throws SQLException{
         String tableType = table.getEntityType();
         Map<String, ResourceType.DataType> columns = table.getColumns();
         Map<String, String> foreign = table.getForeignKeyColumns();
