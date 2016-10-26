@@ -37,12 +37,15 @@ import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -281,6 +284,36 @@ public class MindmapsTitanGraphFactoryTest {
         }
 
     }
+
+    @Test
+    public void testMultithreadedRetrievalOfGraphs(){
+        Set<Future> futures = new HashSet<>();
+        ExecutorService pool = Executors.newFixedThreadPool(10);
+
+        for(int i = 0; i < 100; i ++) {
+            futures.add(pool.submit(() -> {
+                MindmapsTitanGraph graph = (MindmapsTitanGraph) titanGraphFactory.getGraph(false);
+                assertFalse(graph.getTinkerPopGraph().isClosed());
+                graph.putEntityType("A Thing");
+                graph.close();
+            }));
+        }
+
+        boolean exceptionThrown = false;
+        for (Future future: futures){
+            try {
+                future.get();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e){
+                e.printStackTrace();
+                exceptionThrown = true;
+            }
+
+            assertFalse(exceptionThrown);
+        }
+    }
+
 
     private static TitanGraph getGraph() {
         String name = UUID.randomUUID().toString();
