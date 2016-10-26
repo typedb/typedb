@@ -26,9 +26,10 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
-import io.mindmaps.graql.internal.reasoner.predicate.Relation;
-import io.mindmaps.graql.internal.reasoner.predicate.Substitution;
+import io.mindmaps.graql.internal.reasoner.atom.Atom;
+import io.mindmaps.graql.internal.reasoner.atom.Atomic;
+import io.mindmaps.graql.internal.reasoner.atom.Relation;
+import io.mindmaps.graql.internal.reasoner.atom.Substitution;
 import io.mindmaps.util.ErrorMessage;
 
 import java.util.*;
@@ -38,40 +39,35 @@ import static io.mindmaps.graql.internal.reasoner.Utility.computeRoleCombination
 
 public class AtomicQuery extends Query{
 
-    private Atomic atom;
+    private Atom atom;
     private AtomicQuery parent = null;
 
     final private Set<AtomicQuery> children = new HashSet<>();
 
     public AtomicQuery(String rhs, MindmapsGraph graph){
         super(rhs, graph);
-        if(selectAtoms().size() > 1)
-            throw new IllegalStateException(ErrorMessage.NON_ATOMIC_QUERY.getMessage(this.toString()));
         atom = selectAtoms().iterator().next();
     }
 
     public AtomicQuery(MatchQuery query, MindmapsGraph graph){
         super(query, graph);
-        if(selectAtoms().size() > 1)
-            throw new IllegalStateException(ErrorMessage.NON_ATOMIC_QUERY.getMessage(this.toString()));
         atom = selectAtoms().iterator().next();
     }
 
     public AtomicQuery(AtomicQuery q){
         super(q);
-        Atomic coreAtom = null;
-        Iterator<Atomic> it = atomSet.iterator();
+        Atom coreAtom = null;
+        Iterator<Atom> it = atomSet.stream().filter(Atomic::isAtom).map(at -> (Atom) at).iterator();
         while(it.hasNext() && coreAtom == null) {
-            Atomic at = it.next();
+            Atom at = it.next();
             if (at.equals(q.getAtom())) coreAtom = at;
         }
         atom = coreAtom;
-
         parent = q.getParent();
         children.addAll(q.getChildren());
     }
 
-    public AtomicQuery(Atomic at) {
+    public AtomicQuery(Atom at) {
         super(at);
         atom = selectAtoms().iterator().next();
     }
@@ -98,7 +94,7 @@ public class AtomicQuery extends Query{
      * @param aq query to compare
      */
     public void establishRelation(AtomicQuery aq){
-        Atomic aqAtom = aq.getAtom();
+        Atom aqAtom = aq.getAtom();
         if(atom.getTypeId().equals(aqAtom.getTypeId())) {
             if (atom.isRelation() && aqAtom.getRoleVarTypeMap().size() > atom.getRoleVarTypeMap().size())
                 aq.addChild(this);
@@ -107,7 +103,7 @@ public class AtomicQuery extends Query{
         }
     }
 
-    public Atomic getAtom(){ return atom;}
+    public Atom getAtom(){ return atom;}
     public Set<AtomicQuery> getChildren(){ return children;}
 
     /**
@@ -126,7 +122,7 @@ public class AtomicQuery extends Query{
                     .forEach(c -> {
                         Map<String, Concept> answer = new HashMap<>();
                         answer.put(atom.getVarName(), graph.getEntity(getSubstitution(atom.getVarName())));
-                        answer.put(atom.getVal(), c);
+                        answer.put(atom.getValueVariable(), c);
                         insertAnswers.add(answer);
                     });
         }
@@ -144,7 +140,7 @@ public class AtomicQuery extends Query{
         subs.forEach(this::addAtom);
 
         //extrapolate if needed
-        Atomic atom = getAtom();
+        Atom atom = getAtom();
         if(atom.isRelation() &&
                 (atom.getRoleVarTypeMap().isEmpty() || !((Relation) atom).hasExplicitRoleTypes() )){
             String relTypeId = atom.getTypeId();
@@ -178,8 +174,8 @@ public class AtomicQuery extends Query{
     }
 
     @Override
-    public Set<Atomic> selectAtoms() {
-        Set<Atomic> selectedAtoms = super.selectAtoms();
+    public Set<Atom> selectAtoms() {
+        Set<Atom> selectedAtoms = super.selectAtoms();
         if (selectedAtoms.size() != 1)
             throw new IllegalStateException(ErrorMessage.NON_ATOMIC_QUERY.getMessage(this.toString()));
         return selectedAtoms;

@@ -21,28 +21,28 @@ package io.mindmaps.graql;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 
 /**
- * a predicate on a value in a query.
+ * a atom on a value in a query.
  * <p>
- * A predicate describes a predicate (true/false) function that can be tested against some value in the graph.
+ * A atom describes a atom (true/false) function that can be tested against some value in the graph.
  * <p>
  * Predicates can be combined together using the methods {@code and}, {@code or}, {@code any} and {@code all}.
  */
 public interface ValuePredicate {
 
     /**
-     * @param other the other predicate
-     * @return a predicate that returns true when both predicates are true
+     * @param other the other atom
+     * @return a atom that returns true when both predicates are true
      */
     ValuePredicate and(ValuePredicate other);
 
     /**
-     * @param other the other predicate
-     * @return a predicate that returns true when either predicate is true
+     * @param other the other atom
+     * @return a atom that returns true when either atom is true
      */
     ValuePredicate or(ValuePredicate other);
 
     /**
-     * @return an Admin class allowing inspection of this predicate
+     * @return an Admin class allowing inspection of this atom
      */
     ValuePredicateAdmin admin();
 

@@ -24,12 +24,14 @@ import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.Type;
+import io.mindmaps.graql.internal.reasoner.atom.Atom;
+import io.mindmaps.graql.internal.reasoner.atom.Predicate;
 import io.mindmaps.graql.internal.reasoner.query.AtomicMatchQuery;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
 import io.mindmaps.graql.internal.reasoner.query.ReasonerMatchQuery;
 import io.mindmaps.graql.internal.reasoner.rule.InferenceRule;
-import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
+import io.mindmaps.graql.internal.reasoner.atom.Atomic;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import javafx.util.Pair;
 import org.slf4j.Logger;
@@ -52,10 +54,10 @@ public class Reasoner {
         linkConceptTypes();
     }
 
-    private boolean checkRuleApplicableToAtom(Atomic parentAtom, InferenceRule child) {
+    private boolean checkRuleApplicableToAtom(Atom parentAtom, InferenceRule child) {
         boolean relRelevant = true;
         Query parent = parentAtom.getParentQuery();
-        Atomic childAtom = child.getRuleConclusionAtom();
+        Atom childAtom = child.getRuleConclusionAtom();
 
         if (parentAtom.isRelation()) {
             Map<RoleType, Pair<String, Type>> childRoleVarTypeMap = childAtom.getRoleVarTypeMap();
@@ -85,15 +87,15 @@ public class Reasoner {
             }
         }
         else if (parentAtom.isResource()) {
-            String childVal = child.getHead().getValuePredicate(childAtom.getVal());
-            String parentVal = parent.getValuePredicate(parentAtom.getVal());
+            String childVal = child.getHead().getValuePredicate(childAtom.getValueVariable());
+            String parentVal = parent.getValuePredicate(parentAtom.getValueVariable());
             relRelevant = parentVal.isEmpty() || parentVal.equals(childVal);
         }
         return relRelevant;
     }
 
     //TODO move to Atomic?
-    private Set<Rule> getApplicableRules(Atomic atom) {
+    private Set<Rule> getApplicableRules(Atom atom) {
         Set<Rule> children = new HashSet<>();
         Type type = atom.getType();
         //TODO change if we allow for Types having null type
@@ -180,7 +182,7 @@ public class Reasoner {
 
         Set<String> queryVars = atomicQuery.getSelectedNames();
         Set<String> headVars = ruleHead.getSelectedNames();
-        Set<Atomic> extraSubs = new HashSet<>();
+        Set<Predicate> extraSubs = new HashSet<>();
         if(queryVars.size() > headVars.size()){
             extraSubs.addAll(ruleHead.getSubstitutions()
                     .stream().filter(sub -> queryVars.contains(sub.getVarName()))
@@ -189,7 +191,7 @@ public class Reasoner {
 
         answers.forEach( map -> {
             Map<String, Concept> newAns = new HashMap<>(map);
-            extraSubs.forEach(sub -> newAns.put(sub.getVarName(), graph.getInstance(sub.getVal())) );
+            extraSubs.forEach(sub -> newAns.put(sub.getVarName(), graph.getInstance(sub.getPredicateValue())) );
             newAnswers.add(newAns);
         });
 
@@ -201,7 +203,7 @@ public class Reasoner {
         atomicQuery.DBlookup();
 
         if(queryAdmissible) {
-            Atomic atom = atomicQuery.getAtom();
+            Atom atom = atomicQuery.getAtom();
             Set<Rule> rules = getApplicableRules(atom);
             for (Rule rl : rules) {
                 InferenceRule rule = new InferenceRule(rl, graph);
@@ -209,8 +211,8 @@ public class Reasoner {
                 Query ruleBody = rule.getBody();
                 AtomicQuery ruleHead = rule.getHead();
 
-                Set<Atomic> atoms = ruleBody.selectAtoms();
-                Iterator<Atomic> atIt = atoms.iterator();
+                Set<Atom> atoms = ruleBody.selectAtoms();
+                Iterator<Atom> atIt = atoms.iterator();
 
                 subGoals.add(atomicQuery);
                 AtomicQuery childAtomicQuery = new AtomicMatchQuery(atIt.next());
@@ -246,7 +248,7 @@ public class Reasoner {
             else
                 atomicQuery.memoryLookup(matAnswers);
 
-            Atomic atom = atomicQuery.getAtom();
+            Atom atom = atomicQuery.getAtom();
             Set<Rule> rules = getApplicableRules(atom);
             for (Rule rl : rules) {
                 InferenceRule rule = new InferenceRule(rl, graph);
@@ -254,11 +256,11 @@ public class Reasoner {
                 Query ruleBody = rule.getBody();
                 AtomicQuery ruleHead = rule.getHead();
 
-                Set<Atomic> atoms = ruleBody.selectAtoms();
-                Iterator<Atomic> atIt = atoms.iterator();
+                Set<Atom> atoms = ruleBody.selectAtoms();
+                Iterator<Atom> atIt = atoms.iterator();
 
                 subGoals.add(atomicQuery);
-                Atomic at = atIt.next();
+                Atom at = atIt.next();
                 AtomicQuery childAtomicQuery = new AtomicMatchQuery(at);
                 atomicQuery.establishRelation(childAtomicQuery);
                 QueryAnswers subs = answer(childAtomicQuery, subGoals, matAnswers);
@@ -325,8 +327,8 @@ public class Reasoner {
     }
 
     private QueryAnswers resolveQuery(Query query, boolean materialise) {
-        Iterator<Atomic> atIt = query.selectAtoms().iterator();
-        AtomicQuery atomicQuery = new AtomicMatchQuery(atIt.next().clone());
+        Iterator<Atom> atIt = query.selectAtoms().iterator();
+        AtomicQuery atomicQuery = new AtomicMatchQuery(atIt.next());
         QueryAnswers answers = resolveAtomicQuery(atomicQuery, materialise);
         while(atIt.hasNext()){
             atomicQuery = new AtomicMatchQuery(atIt.next());

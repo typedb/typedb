@@ -29,7 +29,7 @@ class EqPredicate extends AbstractValuePredicate {
     private Object value;
 
     /**
-     * @param value the value that this predicate is testing against
+     * @param value the value that this atom is testing against
      */
     EqPredicate(Object value) {
         super(ImmutableSet.of(value));

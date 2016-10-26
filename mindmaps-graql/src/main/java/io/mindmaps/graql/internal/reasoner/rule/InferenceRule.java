@@ -5,7 +5,8 @@ import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
+import io.mindmaps.graql.internal.reasoner.atom.Atom;
+import io.mindmaps.graql.internal.reasoner.atom.Atomic;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.util.ErrorMessage;
@@ -46,15 +47,15 @@ public class InferenceRule {
         return types.iterator().next();
     }
 
-    public Atomic getRuleConclusionAtom() {
+    public Atom getRuleConclusionAtom() {
         if (head.selectAtoms().size() > 1)
             throw new IllegalArgumentException(ErrorMessage.NON_HORN_RULE.getMessage(body.toString()));
-        Atomic atom = head.selectAtoms().iterator().next();
+        Atom atom = head.selectAtoms().iterator().next();
         atom.setParentQuery(body);
         return atom;
     }
 
-    private void propagateConstraints(Atomic parentAtom){
+    private void propagateConstraints(Atom parentAtom){
         body.addAtomConstraints(parentAtom.getSubstitutions());
         head.addAtomConstraints(body.getSubstitutions());
 
@@ -66,7 +67,7 @@ public class InferenceRule {
 
     /**
      * propagate variables to child via a relation atom (atom variables are bound)
-     * @param parentAtom   parent atom (predicate) being resolved (subgoal)
+     * @param parentAtom   parent atom (atom) being resolved (subgoal)
      */
     private void unifyViaAtom(Atomic parentAtom) {
         Atomic childAtom = getRuleConclusionAtom();
@@ -95,9 +96,9 @@ public class InferenceRule {
 
     /**
      * make child query consistent by performing variable substitution so that parent variables are propagated
-     * @param parentAtom   parent atom (predicate) being resolved (subgoal)
+     * @param parentAtom   parent atom (atom) being resolved (subgoal)
      */
-   public void unify(Atomic parentAtom) {
+   public void unify(Atom parentAtom) {
         unifyViaAtom(parentAtom);
         propagateConstraints(parentAtom);
     }

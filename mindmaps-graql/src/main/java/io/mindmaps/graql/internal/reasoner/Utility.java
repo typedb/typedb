@@ -28,7 +28,7 @@ import io.mindmaps.graql.Var;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.pattern.Patterns;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
+import io.mindmaps.graql.internal.reasoner.atom.Atomic;
 import io.mindmaps.util.ErrorMessage;
 import javafx.util.Pair;
 
@@ -72,14 +72,6 @@ public class Utility {
         Collection<RoleType> relRoles = ((RelationType) relType).hasRoles();
         relRoles.stream().filter(typeRoles::contains).forEach(cRoles::add);
         return cRoles;
-    }
-
-    public static boolean checkAtomsCompatible(Atomic a, Atomic b) {
-        if (!(a.isType() && b.isType()) || (a.isRelation() || b.isRelation())
-           || !a.getVarName().equals(b.getVarName()) || a.isResource() || b.isResource()) return true;
-        Type aType = a.getType();
-        Type bType = b.getType();
-        return checkTypesCompatible(aType, bType) && (a.getVal().isEmpty() || b.getVal().isEmpty() || a.getVal().equals(b.getVal()) );
     }
 
     //rolePlayer-roleType maps

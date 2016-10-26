@@ -15,18 +15,19 @@
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-package io.mindmaps.graql.internal.reasoner.predicate;
+package io.mindmaps.graql.internal.reasoner.atom;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.pattern.property.HasResourceProperty;
 import io.mindmaps.graql.internal.reasoner.query.Query;
+import io.mindmaps.util.ErrorMessage;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class Resource extends AtomBase{
+public class Resource extends Atom{
 
     private String valueVariable;
 
@@ -45,6 +46,17 @@ public class Resource extends AtomBase{
         this.valueVariable = extractName(a.getPattern().asVar());
     }
 
+    private String extractName(VarAdmin var){
+        String name = "";
+        Set<HasResourceProperty> props = var.getProperties(HasResourceProperty.class).collect(Collectors.toSet());
+        if(props.size() == 1){
+            VarAdmin resVar = props.iterator().next().getResource();
+            if (resVar.getValuePredicates().isEmpty() && resVar.isUserDefinedName())
+                name = resVar.getName();
+        }
+        return name;
+    }
+
     @Override
     public Atomic clone(){
         return new Resource(this);
@@ -58,7 +70,7 @@ public class Resource extends AtomBase{
         if (!(obj instanceof Resource)) return false;
         Resource a2 = (Resource) obj;
         return this.typeId.equals(a2.getTypeId()) && this.varName.equals(a2.getVarName())
-                && this.valueVariable.equals(a2.getVal());
+                && this.valueVariable.equals(a2.getValueVariable());
     }
 
     @Override
@@ -87,8 +99,7 @@ public class Resource extends AtomBase{
         return hashCode;
     }
 
-    @Override
-    public String getVal(){ return valueVariable;}
+    public String getValueVariable(){ return valueVariable;}
 
     private void setValueVariable(String var){
         valueVariable = var;
@@ -101,14 +112,6 @@ public class Resource extends AtomBase{
         String valueVariable = extractName(getPattern().asVar());
         if (!valueVariable.isEmpty()) varNames.add(valueVariable);
         return varNames;
-    }
-
-    @Override
-    public Set<Atomic> getValuePredicates() {
-        return getParentQuery().getAtoms().stream()
-            .filter(Atomic::isValuePredicate)
-            .filter(atom -> atom.containsVar(getVal()))
-            .collect(Collectors.toSet());
     }
 
     @Override
@@ -134,24 +137,16 @@ public class Resource extends AtomBase{
         }
     }
 
-    private String extractName(VarAdmin var){
-        String name = "";
-        Set<HasResourceProperty> props = var.getProperties(HasResourceProperty.class).collect(Collectors.toSet());
-        if(props.size() == 1){
-            VarAdmin resVar = props.iterator().next().getResource();
-            if (resVar.getValuePredicates().isEmpty() && resVar.isUserDefinedName())
-                name = resVar.getName();
-        }
-        return name;
-    }
-
     @Override
     public Map<String, String> getUnifiers(Atomic parentAtom) {
+        if (!(parentAtom instanceof Resource))
+            throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
+
         Map<String, String> unifiers = new HashMap<>();
         String childVarName = this.getVarName();
         String parentVarName = parentAtom.getVarName();
-        String childValVarName = this.getVal();
-        String parentValVarName = parentAtom.getVal();
+        String childValVarName = this.getValueVariable();
+        String parentValVarName = ((Resource) parentAtom).getValueVariable();
 
         if (!childVarName.equals(parentVarName)) unifiers.put(childVarName, parentVarName);
         if (!childValVarName.equals(parentValVarName)) unifiers.put(childValVarName, parentValVarName);

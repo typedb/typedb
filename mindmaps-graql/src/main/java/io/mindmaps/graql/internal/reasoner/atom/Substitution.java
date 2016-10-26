@@ -16,35 +16,30 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql.internal.reasoner.predicate;
+package io.mindmaps.graql.internal.reasoner.atom;
 
 import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 
-public class Substitution extends AtomBase{
-
-    private final String val;
+public class Substitution extends Predicate<String>{
 
     public Substitution(VarAdmin pattern) {
         super(pattern);
-        this.val = extractValue(pattern);
     }
 
     public Substitution(VarAdmin pattern, Query par) {
         super(pattern, par);
-        this.val = extractValue(pattern);
     }
 
     public Substitution(Substitution a) {
         super(a);
-        this.val = extractValue(a.getPattern().asVar());
     }
 
     public Substitution(String varName, Concept con) {
         super(createSubstitution(varName, con));
-        this.val = con.getId();
+        this.predicate = con.getId();
     }
 
     public Substitution(String varName, Concept con, Query parent) {
@@ -63,41 +58,10 @@ public class Substitution extends AtomBase{
 
     @Override
     public boolean isSubstitution(){ return true;}
-    @Override
-    public boolean isRuleResolvable(){ return false;}
 
     @Override
-    public boolean equals(Object obj) {
-        if (!(obj instanceof Substitution)) return false;
-        Substitution a2 = (Substitution) obj;
-        return this.getVarName().equals(a2.getVarName())
-                && this.getVal().equals(a2.getVal());
-    }
+    public String getPredicateValue() { return predicate;}
 
     @Override
-    public int hashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + this.val.hashCode();
-        hashCode = hashCode * 37 + this.varName.hashCode();
-        return hashCode;
-    }
-
-    @Override
-    public boolean isEquivalent(Object obj){
-        if (!(obj instanceof Substitution)) return false;
-        Substitution a2 = (Substitution) obj;
-        return this.getVal().equals(a2.getVal());
-    }
-
-    @Override
-    public int equivalenceHashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + this.val.hashCode();
-        return hashCode;
-    }
-
-    @Override
-    public String getVal(){ return val;}
-
-    private String extractValue(VarAdmin var){ return var.admin().getId().orElse("");}
+    protected String extractPredicate(VarAdmin var){ return var.admin().getId().orElse("");}
 }

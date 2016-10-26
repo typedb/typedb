@@ -26,7 +26,7 @@ abstract class ComparatorPredicate extends AbstractValuePredicate {
     protected Object value;
 
     /**
-     * @param value the value that this predicate is testing against
+     * @param value the value that this atom is testing against
      */
     public ComparatorPredicate(Object value) {
         super(ImmutableSet.of(value));

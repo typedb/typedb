@@ -27,7 +27,7 @@ class RegexPredicate extends AbstractValuePredicate {
     private final String pattern;
 
     /**
-     * @param pattern the regex pattern that this predicate is testing against
+     * @param pattern the regex pattern that this atom is testing against
      */
     RegexPredicate(String pattern) {
         super(ImmutableSet.of(pattern));

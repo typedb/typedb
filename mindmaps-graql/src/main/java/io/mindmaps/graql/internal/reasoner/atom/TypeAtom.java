@@ -15,26 +15,26 @@
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-package io.mindmaps.graql.internal.reasoner.predicate;
+package io.mindmaps.graql.internal.reasoner.atom;
 
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 
-public class Type extends AtomBase{
+public class TypeAtom extends Atom{
 
-    public Type(VarAdmin pattern) {
+    public TypeAtom(VarAdmin pattern) {
         super(pattern);
     }
-    public Type(VarAdmin pattern, Query par) {
+    public TypeAtom(VarAdmin pattern, Query par) {
         super(pattern, par);
     }
-    public Type(Type a) {
+    public TypeAtom(TypeAtom a) {
         super(a);
     }
 
     @Override
     public Atomic clone(){
-        return new Type(this);
+        return new TypeAtom(this);
     }
 
     @Override
@@ -42,8 +42,8 @@ public class Type extends AtomBase{
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof Type)) return false;
-        Type a2 = (Type) obj;
+        if (!(obj instanceof TypeAtom)) return false;
+        TypeAtom a2 = (TypeAtom) obj;
         return this.typeId.equals(a2.getTypeId()) && this.varName.equals(a2.getVarName());
     }
 
@@ -57,8 +57,8 @@ public class Type extends AtomBase{
 
     @Override
     public boolean isEquivalent(Object obj) {
-        if (!(obj instanceof Type)) return false;
-        Type a2 = (Type) obj;
+        if (!(obj instanceof TypeAtom)) return false;
+        TypeAtom a2 = (TypeAtom) obj;
         return this.typeId.equals(a2.getTypeId());
     }
 

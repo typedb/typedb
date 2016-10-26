@@ -65,8 +65,8 @@ public class ValueProperty extends AbstractVarProperty implements NamedProperty,
     }
 
     /**
-     * @param predicate a predicate to test on a vertex
-     * @return the correct VALUE property to check on the vertex for the given predicate
+     * @param predicate a atom to test on a vertex
+     * @return the correct VALUE property to check on the vertex for the given atom
      */
     private Schema.ConceptProperty getValuePropertyForPredicate(ValuePredicateAdmin predicate) {
         Object value = predicate.getInnerValues().iterator().next();
