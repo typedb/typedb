@@ -21,14 +21,7 @@ package io.mindmaps.test.graql.analytics;
 import com.google.common.collect.Sets;
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.Entity;
-import io.mindmaps.concept.EntityType;
-import io.mindmaps.concept.Instance;
-import io.mindmaps.concept.Relation;
-import io.mindmaps.concept.RelationType;
-import io.mindmaps.concept.Resource;
-import io.mindmaps.concept.ResourceType;
-import io.mindmaps.concept.RoleType;
+import io.mindmaps.concept.*;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.graql.internal.util.GraqlType;
@@ -38,24 +31,13 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.junit.Assume.assumeFalse;
 
 public class AnalyticsTest extends AbstractGraphTest {
-    private static long startTime;
 
     @Before
     public void setUp() {
@@ -71,23 +53,21 @@ public class AnalyticsTest extends AbstractGraphTest {
         // create a simple graph
         RoleType pet = graph.putRoleType("pet");
         RoleType owner = graph.putRoleType("owner");
-        RelationType mansBestFriend = graph.putRelationType("mans-best-friend").hasRole(pet).hasRole(owner);
-        EntityType person = graph.putEntityType("person").playsRole(owner);
+        graph.putRelationType("mans-best-friend").hasRole(pet).hasRole(owner);
+        graph.putEntityType("person").playsRole(owner);
         EntityType animal = graph.putEntityType("animal").playsRole(pet);
         EntityType dog = graph.putEntityType("dog").superType(animal);
-        Entity foofoo = graph.putEntity("foofoo", dog);
+        String foofoo = graph.addEntity(dog).getId();
         graph.commit();
 
         // set subgraph
         HashSet<String> ct = Sets.newHashSet("person", "animal", "mans-best-friend");
-
         Analytics analytics = new Analytics(graph.getKeyspace(), ct, new HashSet<>());
         analytics.degreesAndPersist();
 
         // check that dog has a degree to confirm sub has been inferred
         graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, graph.getKeyspace()).getGraph();
-        foofoo = graph.getEntity("foofoo");
-        Collection<Resource<?>> degrees = foofoo.resources();
+        Collection<Resource<?>> degrees = graph.getEntity(foofoo).resources();
         assertTrue(degrees.iterator().next().getValue().equals(0L));
     }
 
@@ -96,8 +76,8 @@ public class AnalyticsTest extends AbstractGraphTest {
         // assert the graph is empty
         System.out.println();
         System.out.println("Counting");
-        Analytics computer = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
-        startTime = System.currentTimeMillis();
+        Analytics computer = new Analytics(graph.getKeyspace(), new HashSet<>(), new HashSet<>());
+        long startTime = System.currentTimeMillis();
         Assert.assertEquals(0, computer.count());
         System.out.println();
         System.out.println(System.currentTimeMillis() - startTime + " ms");
@@ -108,9 +88,9 @@ public class AnalyticsTest extends AbstractGraphTest {
         graph = factory.getGraph();
         EntityType thing = graph.putEntityType("thing");
         EntityType anotherThing = graph.putEntityType("another");
-        graph.putEntity("1", thing);
-        graph.putEntity("2", thing);
-        graph.putEntity("3", anotherThing);
+        graph.addEntity(thing).getId();
+        graph.addEntity(thing).getId();
+        graph.addEntity(anotherThing).getId();
         graph.commit();
         graph.close();
 
@@ -118,7 +98,7 @@ public class AnalyticsTest extends AbstractGraphTest {
         System.out.println();
         System.out.println("Counting");
         startTime = System.currentTimeMillis();
-        computer = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
+        computer = new Analytics(graph.getKeyspace(), new HashSet<>(), new HashSet<>());
         Assert.assertEquals(3, computer.count());
         System.out.println();
         System.out.println(System.currentTimeMillis() - startTime + " ms");
@@ -127,7 +107,7 @@ public class AnalyticsTest extends AbstractGraphTest {
         System.out.println("Counting");
         startTime = System.currentTimeMillis();
         graph = factory.getGraph();
-        computer = new Analytics(graph.getKeyspace(), Collections.singleton("thing"),new HashSet<>());
+        computer = new Analytics(graph.getKeyspace(), Collections.singleton("thing"), new HashSet<>());
         Assert.assertEquals(2, computer.count());
         System.out.println();
         System.out.println(System.currentTimeMillis() - startTime + " ms");
@@ -142,102 +122,85 @@ public class AnalyticsTest extends AbstractGraphTest {
         EntityType thing = graph.putEntityType("thing");
         EntityType anotherThing = graph.putEntityType("another");
 
-        Entity entity1 = graph.putEntity("1", thing);
-        Entity entity2 = graph.putEntity("2", thing);
-        Entity entity3 = graph.putEntity("3", thing);
-        Entity entity4 = graph.putEntity("4", anotherThing);
+        String entity1 = graph.addEntity(thing).getId();
+        String entity2 = graph.addEntity(thing).getId();
+        String entity3 = graph.addEntity(thing).getId();
+        String entity4 = graph.addEntity(anotherThing).getId();
 
-        RoleType relation1 = graph.putRoleType("relation1");
-        RoleType relation2 = graph.putRoleType("relation2");
-        thing.playsRole(relation1).playsRole(relation2);
-        anotherThing.playsRole(relation1).playsRole(relation2);
-        RelationType related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
+        RoleType role1 = graph.putRoleType("role1");
+        RoleType role2 = graph.putRoleType("role2");
+        thing.playsRole(role1).playsRole(role2);
+        anotherThing.playsRole(role1).playsRole(role2);
+        RelationType related = graph.putRelationType("related").hasRole(role1).hasRole(role2);
 
         // relate them
-        String id1 = UUID.randomUUID().toString();
-        graph.putRelation(id1, related)
-                .putRolePlayer(relation1, entity1)
-                .putRolePlayer(relation2, entity2);
+        String id1 = graph.addRelation(related)
+                .putRolePlayer(role1, graph.getInstance(entity1))
+                .putRolePlayer(role2, graph.getInstance(entity2))
+                .getId();
 
-        String id2 = UUID.randomUUID().toString();
-        graph.putRelation(id2, related)
-                .putRolePlayer(relation1, entity2)
-                .putRolePlayer(relation2, entity3);
+        String id2 = graph.addRelation(related)
+                .putRolePlayer(role1, graph.getInstance(entity2))
+                .putRolePlayer(role2, graph.getInstance(entity3))
+                .getId();
 
-        String id3 = UUID.randomUUID().toString();
-        graph.putRelation(id3, related)
-                .putRolePlayer(relation1, entity2)
-                .putRolePlayer(relation2, entity4);
-
-        graph.commit();
-
-        // assert degrees are correct
-        // create instances
-        thing = graph.putEntityType("thing");
-        anotherThing = graph.putEntityType("another");
-
-        entity1 = graph.putEntity("1", thing);
-        entity2 = graph.putEntity("2", thing);
-        entity3 = graph.putEntity("3", thing);
-        entity4 = graph.putEntity("4", anotherThing);
-
-        relation1 = graph.putRoleType("relation1");
-        relation2 = graph.putRoleType("relation2");
-        thing.playsRole(relation1).playsRole(relation2);
-        anotherThing.playsRole(relation1).playsRole(relation2);
-        related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
-
-        Map<Instance, Long> correctDegrees = new HashMap<>();
-        correctDegrees.put(entity1, 1l);
-        correctDegrees.put(entity2, 3l);
-        correctDegrees.put(entity3, 1l);
-        correctDegrees.put(entity4, 1l);
-        correctDegrees.put(graph.getRelation(id1), 2l);
-        correctDegrees.put(graph.getRelation(id2), 2l);
-        correctDegrees.put(graph.getRelation(id3), 2l);
+        String id3 = graph.addRelation(related)
+                .putRolePlayer(role1, graph.getInstance(entity2))
+                .putRolePlayer(role2, graph.getInstance(entity4))
+                .getId();
 
         graph.commit();
         graph.close();
 
-        // compute degrees
-        Analytics computer = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
-        Map<Instance, Long> degrees = computer.degrees();
+        Map<String, Long> correctDegrees = new HashMap<>();
+        correctDegrees.put(entity1, 1l);
+        correctDegrees.put(entity2, 3l);
+        correctDegrees.put(entity3, 1l);
+        correctDegrees.put(entity4, 1l);
+        correctDegrees.put(id1, 2l);
+        correctDegrees.put(id2, 2l);
+        correctDegrees.put(id3, 2l);
 
+        // compute degrees
+        Analytics computer = new Analytics(graph.getKeyspace(), new HashSet<>(), new HashSet<>());
+        Map<Long, Set<String>> degrees = computer.degrees();
         assertTrue(!degrees.isEmpty());
-        degrees.entrySet().forEach(degree -> {
-            assertTrue(correctDegrees.containsKey(degree.getKey()));
-            assertEquals(correctDegrees.get(degree.getKey()), degree.getValue());
-        });
+        degrees.entrySet().forEach(entry -> entry.getValue().forEach(
+                id -> {
+                    assertTrue(correctDegrees.containsKey(id));
+                    assertEquals(correctDegrees.get(id), entry.getKey());
+                }
+        ));
 
         // compute degrees again after persisting degrees
         computer.degreesAndPersist();
-        Map<Instance, Long> degrees2 = computer.degrees();
-
+        Map<Long, Set<String>> degrees2 = computer.degrees();
         assertEquals(degrees.size(), degrees2.size());
-
-        assertTrue(!degrees.isEmpty());
-        degrees.entrySet().forEach(degree -> {
-            assertTrue(correctDegrees.containsKey(degree.getKey()));
-            assertTrue(correctDegrees.get(degree.getKey()).equals(degree.getValue()));
-        });
+        degrees2.entrySet().forEach(entry -> entry.getValue().forEach(
+                id -> {
+                    assertTrue(correctDegrees.containsKey(id));
+                    assertEquals(correctDegrees.get(id), entry.getKey());
+                }
+        ));
 
         // compute degrees on subgraph
-        computer = new Analytics(graph.getKeyspace(), Sets.newHashSet("thing","related"),new HashSet<>());
-        degrees = computer.degrees();
+        computer = new Analytics(graph.getKeyspace(), Sets.newHashSet("thing", "related"), new HashSet<>());
+        Map<Long, Set<String>> degrees3 = computer.degrees();
 
-        graph = factory.getGraph();
-        correctDegrees.put(graph.getRelation(id3), 1l);
+        correctDegrees.put(id3, 1l);
 
-        assertTrue(!degrees.isEmpty());
-        degrees.entrySet().forEach(degree -> {
-            assertTrue(correctDegrees.containsKey(degree.getKey()));
-            assertEquals(correctDegrees.get(degree.getKey()), degree.getValue());
-        });
+        assertTrue(!degrees3.isEmpty());
+        degrees3.entrySet().forEach(entry -> entry.getValue().forEach(
+                id -> {
+                    assertTrue(correctDegrees.containsKey(id));
+                    assertEquals(correctDegrees.get(id), entry.getKey());
+                }
+        ));
     }
 
-    private static void checkDegrees(MindmapsGraph graph, Map<Instance, Long> correctDegrees) {
-        correctDegrees.entrySet().forEach(degree -> {
-            Instance instance = degree.getKey();
+    private static void checkDegrees(MindmapsGraph graph, Map<String, Long> correctDegrees) {
+        correctDegrees.entrySet().forEach(entry -> {
+            Instance instance = graph.getInstance(entry.getKey());
             // TODO: when shortcut edges are removed properly during concurrent deletion revert code
             Collection<Resource<?>> resources = null;
             if (instance.isEntity()) {
@@ -247,7 +210,7 @@ public class AnalyticsTest extends AbstractGraphTest {
             }
             assert resources != null;
             assertEquals(1, resources.size());
-            assertTrue(resources.iterator().next().getValue().equals(degree.getValue()));
+            assertTrue(resources.iterator().next().getValue().equals(entry.getValue()));
         });
     }
 
@@ -260,80 +223,57 @@ public class AnalyticsTest extends AbstractGraphTest {
         EntityType thing = graph.putEntityType("thing");
         EntityType anotherThing = graph.putEntityType("another");
 
-        Entity entity1 = graph.putEntity("1", thing);
-        Entity entity2 = graph.putEntity("2", thing);
-        Entity entity3 = graph.putEntity("3", thing);
-        Entity entity4 = graph.putEntity("4", anotherThing);
+        String entity1 = graph.addEntity(thing).getId();
+        String entity2 = graph.addEntity(thing).getId();
+        String entity3 = graph.addEntity(thing).getId();
+        String entity4 = graph.addEntity(anotherThing).getId();
 
-        RoleType relation1 = graph.putRoleType("relation1");
-        RoleType relation2 = graph.putRoleType("relation2");
-        thing.playsRole(relation1).playsRole(relation2);
-        anotherThing.playsRole(relation1).playsRole(relation2);
-        RelationType related = graph.putRelationType("related").hasRole(relation1).hasRole(relation2);
+        RoleType role1 = graph.putRoleType("role1");
+        RoleType role2 = graph.putRoleType("role2");
+        thing.playsRole(role1).playsRole(role2);
+        anotherThing.playsRole(role1).playsRole(role2);
+        RelationType related = graph.putRelationType("related").hasRole(role1).hasRole(role2);
 
         // relate them
-        String id1 = UUID.randomUUID().toString();
-        graph.putRelation(id1, related)
-                .putRolePlayer(relation1, entity1)
-                .putRolePlayer(relation2, entity2);
+        String id1 = graph.addRelation(related)
+                .putRolePlayer(role1, graph.getInstance(entity1))
+                .putRolePlayer(role2, graph.getInstance(entity2))
+                .getId();
 
-        String id2 = UUID.randomUUID().toString();
-        graph.putRelation(id2, related)
-                .putRolePlayer(relation1, entity2)
-                .putRolePlayer(relation2, entity3);
+        String id2 = graph.addRelation(related)
+                .putRolePlayer(role1, graph.getInstance(entity2))
+                .putRolePlayer(role2, graph.getInstance(entity3))
+                .getId();
 
-        String id3 = UUID.randomUUID().toString();
-        graph.putRelation(id3, related)
-                .putRolePlayer(relation1, entity2)
-                .putRolePlayer(relation2, entity4);
+        String id3 = graph.addRelation(related)
+                .putRolePlayer(role1, graph.getInstance(entity2))
+                .putRolePlayer(role2, graph.getInstance(entity4))
+                .getId();
 
         graph.commit();
 
-        Map<Instance, Long> correctDegrees = new HashMap<>();
-
         // compute degrees on subgraph
-        Analytics computer = new Analytics(graph.getKeyspace(), Sets.newHashSet("thing", "related"),new HashSet<>());
+        Analytics computer = new Analytics(graph.getKeyspace(), Sets.newHashSet("thing", "related"), new HashSet<>());
         computer.degreesAndPersist();
 
-        // fetch instances
-        graph = factory.getGraph();
-        entity1 = graph.getEntity("1");
-        entity2 = graph.getEntity("2");
-        entity3 = graph.getEntity("3");
-
+        Map<String, Long> correctDegrees = new HashMap<>();
         correctDegrees.clear();
         correctDegrees.put(entity1, 1l);
         correctDegrees.put(entity2, 3l);
         correctDegrees.put(entity3, 1l);
-        correctDegrees.put(graph.getRelation(id1), 2l);
-        correctDegrees.put(graph.getRelation(id2), 2l);
-        correctDegrees.put(graph.getRelation(id3), 1l);
+        correctDegrees.put(id1, 2l);
+        correctDegrees.put(id2, 2l);
+        correctDegrees.put(id3, 1l);
 
         // assert persisted degrees are correct
         checkDegrees(graph, correctDegrees);
 
-        long numVertices = 0;
-
         // compute again and again ...
+        long numVertices = 0;
         for (int i = 0; i < 2; i++) {
             graph.close();
             computer.degreesAndPersist();
-
-            // refresh everything after commit
             graph = factory.getGraph();
-            // fetch instances
-            entity1 = graph.getEntity("1");
-            entity2 = graph.getEntity("2");
-            entity3 = graph.getEntity("3");
-
-            correctDegrees.clear();
-            correctDegrees.put(entity1, 1l);
-            correctDegrees.put(entity2, 3l);
-            correctDegrees.put(entity3, 1l);
-            correctDegrees.put(graph.getRelation(id1), 2l);
-            correctDegrees.put(graph.getRelation(id2), 2l);
-            correctDegrees.put(graph.getRelation(id3), 1l);
-
             checkDegrees(graph, correctDegrees);
 
             // assert the number of vertices remain the same
@@ -344,32 +284,14 @@ public class AnalyticsTest extends AbstractGraphTest {
             }
         }
 
-
         // compute degrees on all types, again and again ...
+        correctDegrees.put(entity4, 1l);
+        correctDegrees.put(id3, 2l);
         for (int i = 0; i < 2; i++) {
-
             graph.close();
-            computer = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
+            computer = new Analytics(graph.getKeyspace(), new HashSet<>(), new HashSet<>());
             computer.degreesAndPersist();
-
-            // after computation refresh concepts
             graph = factory.getGraph();
-
-            // fetch instances
-            entity1 = graph.getEntity("1");
-            entity2 = graph.getEntity("2");
-            entity3 = graph.getEntity("3");
-            entity4 = graph.getEntity("4");
-
-            correctDegrees.clear();
-            correctDegrees.put(entity1, 1l);
-            correctDegrees.put(entity2, 3l);
-            correctDegrees.put(entity3, 1l);
-            correctDegrees.put(graph.getRelation(id1), 2l);
-            correctDegrees.put(graph.getRelation(id2), 2l);
-            correctDegrees.put(entity4, 1l);
-            correctDegrees.put(graph.getRelation(id3), 2l);
-
             checkDegrees(graph, correctDegrees);
 
             // assert the number of vertices remain the same
@@ -397,11 +319,12 @@ public class AnalyticsTest extends AbstractGraphTest {
         EntityType person = graph.putEntityType("person").playsRole(owner);
         EntityType animal = graph.putEntityType("animal").playsRole(pet).playsRole(target);
         ResourceType<String> name = graph.putResourceType("name", ResourceType.DataType.STRING).playsRole(value);
-        ResourceType<String> altName = graph.putResourceType("alternate-name", ResourceType.DataType.STRING).playsRole(value);
+        ResourceType<String> altName =
+                graph.putResourceType("alternate-name", ResourceType.DataType.STRING).playsRole(value);
 
         // add data to the graph
-        Entity coco = graph.putEntity("coco", animal);
-        Entity dave = graph.putEntity("dave", person);
+        Entity coco = graph.addEntity(animal);
+        Entity dave = graph.addEntity(person);
         Resource coconut = graph.putResource("coconut", name);
         Resource stinky = graph.putResource("stinky", altName);
         Relation daveOwnsCoco = graph.addRelation(mansBestFriend).putRolePlayer(owner, dave).putRolePlayer(pet, coco);
@@ -437,31 +360,38 @@ public class AnalyticsTest extends AbstractGraphTest {
 
         // create a subgraph excluding resources and the relationship
         HashSet<String> subGraphTypes = Sets.newHashSet("animal", "person", "mans-best-friend");
-
-        Analytics analytics = new Analytics(graph.getKeyspace(), subGraphTypes,new HashSet<>());
-        Map<Instance, Long> degrees = analytics.degrees();
+        Analytics computer = new Analytics(graph.getKeyspace(), subGraphTypes, new HashSet<>());
+        Map<Long, Set<String>> degrees = computer.degrees();
         assertFalse(degrees.isEmpty());
-        degrees.entrySet().forEach(entry -> {
-            assertEquals(subGraphReferenceDegrees.get(entry.getKey().getId()), entry.getValue());
-        });
+        degrees.entrySet().forEach(entry -> entry.getValue().forEach(
+                id -> {
+                    assertTrue(subGraphReferenceDegrees.containsKey(id));
+                    assertEquals(subGraphReferenceDegrees.get(id), entry.getKey());
+                }
+        ));
 
         // create a subgraph excluding resource type only
         HashSet<String> almostFullTypes = Sets.newHashSet("animal", "person", "mans-best-friend", "has-name", "name");
-
-        analytics = new Analytics(graph.getKeyspace(), almostFullTypes,new HashSet<>());
-        degrees = analytics.degrees();
+        computer = new Analytics(graph.getKeyspace(), almostFullTypes, new HashSet<>());
+        degrees = computer.degrees();
         assertFalse(degrees.isEmpty());
-        degrees.entrySet().forEach(entry -> {
-            assertEquals(almostFullReferenceDegrees.get(entry.getKey().getId()), entry.getValue());
-        });
+        degrees.entrySet().forEach(entry -> entry.getValue().forEach(
+                id -> {
+                    assertTrue(almostFullReferenceDegrees.containsKey(id));
+                    assertEquals(almostFullReferenceDegrees.get(id), entry.getKey());
+                }
+        ));
 
         // full graph
-        analytics = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
-        degrees = analytics.degrees();
+        computer = new Analytics(graph.getKeyspace(), new HashSet<>(), new HashSet<>());
+        degrees = computer.degrees();
         assertFalse(degrees.isEmpty());
-        degrees.entrySet().forEach(entry -> {
-            assertEquals(referenceDegrees.get(entry.getKey().getId()), entry.getValue());
-        });
+        degrees.entrySet().forEach(entry -> entry.getValue().forEach(
+                id -> {
+                    assertTrue(referenceDegrees.containsKey(id));
+                    assertEquals(referenceDegrees.get(id), entry.getKey());
+                }
+        ));
     }
 
     @Test
@@ -473,13 +403,14 @@ public class AnalyticsTest extends AbstractGraphTest {
         RoleType pet = graph.putRoleType("pet");
         RoleType owner = graph.putRoleType("owner");
         RoleType breeder = graph.putRoleType("breeder");
-        RelationType mansBestFriend = graph.putRelationType("mans-best-friend").hasRole(pet).hasRole(owner).hasRole(breeder);
+        RelationType mansBestFriend = graph.putRelationType("mans-best-friend")
+                .hasRole(pet).hasRole(owner).hasRole(breeder);
         EntityType person = graph.putEntityType("person").playsRole(owner).playsRole(breeder);
         EntityType animal = graph.putEntityType("animal").playsRole(pet);
 
         // make one person breeder and owner
-        Entity coco = graph.putEntity("coco", animal);
-        Entity dave = graph.putEntity("dave", person);
+        Entity coco = graph.addEntity(animal);
+        Entity dave = graph.addEntity(person);
         Relation daveBreedsAndOwnsCoco = graph.addRelation(mansBestFriend)
                 .putRolePlayer(pet, coco).putRolePlayer(owner, dave);
 
@@ -493,7 +424,7 @@ public class AnalyticsTest extends AbstractGraphTest {
         graph.commit();
 
         // compute and persist degrees
-        Analytics analytics = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
+        Analytics analytics = new Analytics(graph.getKeyspace(), new HashSet<>(), new HashSet<>());
         analytics.degreesAndPersist();
 
         // check degrees are correct
@@ -515,9 +446,7 @@ public class AnalyticsTest extends AbstractGraphTest {
         Map<Instance, Long> currentDegrees = new HashMap<>();
         degrees.forEach(degree -> {
             Long degreeValue = degree.getValue();
-            degree.ownerInstances().forEach(instance -> {
-                currentDegrees.put(instance, degreeValue);
-            });
+            degree.ownerInstances().forEach(instance -> currentDegrees.put(instance, degreeValue));
         });
 
         // check all resources exist and no more
@@ -548,9 +477,7 @@ public class AnalyticsTest extends AbstractGraphTest {
         currentDegrees.clear();
         degrees.forEach(degree -> {
             Long degreeValue = degree.getValue();
-            degree.ownerInstances().forEach(instance -> {
-                currentDegrees.put(instance, degreeValue);
-            });
+            degree.ownerInstances().forEach(instance -> currentDegrees.put(instance, degreeValue));
         });
 
         // check all resources exist and no more
@@ -558,7 +485,8 @@ public class AnalyticsTest extends AbstractGraphTest {
     }
 
     @Test
-    public void testDegreeIsPersistedInPresenceOfOtherResource() throws MindmapsValidationException, ExecutionException, InterruptedException {
+    public void testDegreeIsPersistedInPresenceOfOtherResource()
+            throws MindmapsValidationException, ExecutionException, InterruptedException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -566,13 +494,14 @@ public class AnalyticsTest extends AbstractGraphTest {
         RoleType pet = graph.putRoleType("pet");
         RoleType owner = graph.putRoleType("owner");
         RoleType breeder = graph.putRoleType("breeder");
-        RelationType mansBestFriend = graph.putRelationType("mans-best-friend").hasRole(pet).hasRole(owner).hasRole(breeder);
+        RelationType mansBestFriend = graph.putRelationType("mans-best-friend")
+                .hasRole(pet).hasRole(owner).hasRole(breeder);
         EntityType person = graph.putEntityType("person").playsRole(owner).playsRole(breeder);
         EntityType animal = graph.putEntityType("animal").playsRole(pet);
 
         // make one person breeder and owner
-        Entity coco = graph.putEntity("coco", animal);
-        Entity dave = graph.putEntity("dave", person);
+        Entity coco = graph.addEntity(animal);
+        Entity dave = graph.addEntity(person);
         Relation daveBreedsAndOwnsCoco = graph.addRelation(mansBestFriend)
                 .putRolePlayer(pet, coco).putRolePlayer(owner, dave);
 
@@ -587,7 +516,8 @@ public class AnalyticsTest extends AbstractGraphTest {
         RoleType degreeValue = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(Analytics.degree));
         RelationType hasResource = graph.putRelationType(GraqlType.HAS_RESOURCE.getId(Analytics.degree))
                 .hasRole(degreeOwner).hasRole(degreeValue);
-        ResourceType<Long> decoyResourceType = graph.putResourceType("decoy-resource", ResourceType.DataType.LONG).playsRole(degreeValue);
+        ResourceType<Long> decoyResourceType =
+                graph.putResourceType("decoy-resource", ResourceType.DataType.LONG).playsRole(degreeValue);
         Resource<Long> decoyResource = graph.putResource(100L, decoyResourceType);
         graph.addRelation(hasResource).putRolePlayer(degreeOwner, coco).putRolePlayer(degreeValue, decoyResource);
         animal.playsRole(degreeOwner);
@@ -598,7 +528,7 @@ public class AnalyticsTest extends AbstractGraphTest {
         HashSet<String> ct = Sets.newHashSet("person", "animal", "mans-best-friend");
 
         // compute and persist degrees
-        Analytics analytics = new Analytics(graph.getKeyspace(), ct,new HashSet<>());
+        Analytics analytics = new Analytics(graph.getKeyspace(), ct, new HashSet<>());
         analytics.degreesAndPersist();
 
         graph = factory.getGraph();
@@ -634,7 +564,8 @@ public class AnalyticsTest extends AbstractGraphTest {
     }
 
     @Test
-    public void testDegreeIsCorrectAssertionAboutAssertion() throws MindmapsValidationException, ExecutionException, InterruptedException {
+    public void testDegreeIsCorrectAssertionAboutAssertion()
+            throws MindmapsValidationException, ExecutionException, InterruptedException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -648,23 +579,28 @@ public class AnalyticsTest extends AbstractGraphTest {
         EntityType person = graph.putEntityType("person").playsRole(owner);
         EntityType animal = graph.putEntityType("animal").playsRole(pet).playsRole(target);
         ResourceType<String> name = graph.putResourceType("name", ResourceType.DataType.STRING).playsRole(value);
-        ResourceType<String> altName = graph.putResourceType("alternate-name", ResourceType.DataType.STRING).playsRole(value);
+        ResourceType<String> altName =
+                graph.putResourceType("alternate-name", ResourceType.DataType.STRING).playsRole(value);
         RoleType ownership = graph.putRoleType("ownership");
         RoleType ownershipResource = graph.putRoleType("ownership-resource");
-        RelationType hasOwnershipResource = graph.putRelationType("has-ownership-resource").hasRole(ownership).hasRole(ownershipResource);
-        ResourceType<String> startDate = graph.putResourceType("start-date", ResourceType.DataType.STRING).playsRole(ownershipResource);
+        RelationType hasOwnershipResource =
+                graph.putRelationType("has-ownership-resource").hasRole(ownership).hasRole(ownershipResource);
+        ResourceType<String> startDate =
+                graph.putResourceType("start-date", ResourceType.DataType.STRING).playsRole(ownershipResource);
         mansBestFriend.playsRole(ownership);
 
         // add data to the graph
-        Entity coco = graph.putEntity("coco", animal);
-        Entity dave = graph.putEntity("dave", person);
+        Entity coco = graph.addEntity(animal);
+        Entity dave = graph.addEntity(person);
         Resource coconut = graph.putResource("coconut", name);
         Resource stinky = graph.putResource("stinky", altName);
-        Relation daveOwnsCoco = graph.addRelation(mansBestFriend).putRolePlayer(owner, dave).putRolePlayer(pet, coco);
+        Relation daveOwnsCoco = graph.addRelation(mansBestFriend)
+                .putRolePlayer(owner, dave).putRolePlayer(pet, coco);
         graph.addRelation(hasName).putRolePlayer(target, coco).putRolePlayer(value, coconut);
         graph.addRelation(hasName).putRolePlayer(target, coco).putRolePlayer(value, stinky);
         Resource sd = graph.putResource("01/01/01", startDate);
-        Relation ownsFrom = graph.addRelation(hasOwnershipResource).putRolePlayer(ownershipResource, sd).putRolePlayer(ownership, daveOwnsCoco);
+        Relation ownsFrom = graph.addRelation(hasOwnershipResource)
+                .putRolePlayer(ownershipResource, sd).putRolePlayer(ownership, daveOwnsCoco);
 
         // manually compute the degree
         Map<String, Long> referenceDegrees1 = new HashMap<>();
@@ -683,29 +619,37 @@ public class AnalyticsTest extends AbstractGraphTest {
         graph.commit();
 
         // create a subgraph with assertion on assertion
-        HashSet<String> ct = Sets.newHashSet("animal", "person", "mans-best-friend", "start-date", "has-ownership-resource");
-        Analytics analytics = new Analytics(graph.getKeyspace(), ct,new HashSet<>());
-        Map<Instance, Long> degrees = analytics.degrees();
-        assertFalse(degrees.isEmpty());
-        degrees.entrySet().forEach(entry -> {
-            assertEquals(referenceDegrees1.get(entry.getKey().getId()), entry.getValue());
-        });
+        HashSet<String> ct =
+                Sets.newHashSet("animal", "person", "mans-best-friend", "start-date", "has-ownership-resource");
+        Analytics computer = new Analytics(graph.getKeyspace(), ct, new HashSet<>());
+        Map<Long, Set<String>> degrees = computer.degrees();
+        assertTrue(!degrees.isEmpty());
+        degrees.entrySet().forEach(entry -> entry.getValue().forEach(
+                id -> {
+                    assertTrue(referenceDegrees1.containsKey(id));
+                    assertEquals(referenceDegrees1.get(id), entry.getKey());
+                }
+        ));
 
         // create subgraph without assertion on assertion
         ct.clear();
         ct.add("animal");
         ct.add("person");
         ct.add("mans-best-friend");
-        analytics = new Analytics(graph.getKeyspace(), ct,new HashSet<>());
-        degrees = analytics.degrees();
+        computer = new Analytics(graph.getKeyspace(), ct, new HashSet<>());
+        degrees = computer.degrees();
         assertFalse(degrees.isEmpty());
-        degrees.entrySet().forEach(entry -> {
-            assertEquals(referenceDegrees2.get(entry.getKey().getId()), entry.getValue());
-        });
+        degrees.entrySet().forEach(entry -> entry.getValue().forEach(
+                id -> {
+                    assertTrue(referenceDegrees2.containsKey(id));
+                    assertEquals(referenceDegrees2.get(id), entry.getKey());
+                }
+        ));
     }
 
     @Test
-    public void testDegreeIsCorrectTernaryRelationships() throws MindmapsValidationException, ExecutionException, InterruptedException {
+    public void testDegreeIsCorrectTernaryRelationships()
+            throws MindmapsValidationException, ExecutionException, InterruptedException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -722,10 +666,10 @@ public class AnalyticsTest extends AbstractGraphTest {
         EntityType person = graph.putEntityType("person").playsRole(actor);
         EntityType character = graph.putEntityType("character").playsRole(characterBeingPlayed);
 
-        Entity godfather = graph.putEntity("Godfather", movie);
-        Entity marlonBrando = graph.putEntity("Marlon-Brando", person);
+        Entity godfather = graph.addEntity(movie);
+        Entity marlonBrando = graph.addEntity(person);
         String marlonId = marlonBrando.getId();
-        Entity donVitoCorleone = graph.putEntity("Don-Vito-Corleone", character);
+        Entity donVitoCorleone = graph.addEntity(character);
 
         Relation relation = graph.addRelation(hasCast)
                 .putRolePlayer(productionWithCast, godfather)
@@ -735,15 +679,16 @@ public class AnalyticsTest extends AbstractGraphTest {
 
         graph.commit();
 
-        Analytics analytics = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
-        Map<Instance, Long> degrees = analytics.degrees();
+        Analytics computer = new Analytics(graph.getKeyspace(), new HashSet<>(), new HashSet<>());
+        Map<Long, Set<String>> degrees = computer.degrees();
         graph = factory.getGraph();
-        assertTrue(degrees.get(graph.getRelation(relationId)).equals(3L));
-        assertTrue(degrees.get(graph.getEntity(marlonId)).equals(1L));
+        assertTrue(degrees.get(3L).contains(relationId));
+        assertTrue(degrees.get(1L).contains(marlonId));
     }
 
     @Test
-    public void testDegreeIsCorrectOneRoleplayerMultipleRoles() throws MindmapsValidationException, ExecutionException, InterruptedException {
+    public void testDegreeIsCorrectOneRoleplayerMultipleRoles()
+            throws MindmapsValidationException, ExecutionException, InterruptedException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -751,13 +696,14 @@ public class AnalyticsTest extends AbstractGraphTest {
         RoleType pet = graph.putRoleType("pet");
         RoleType owner = graph.putRoleType("owner");
         RoleType breeder = graph.putRoleType("breeder");
-        RelationType mansBestFriend = graph.putRelationType("mans-best-friend").hasRole(pet).hasRole(owner).hasRole(breeder);
+        RelationType mansBestFriend = graph.putRelationType("mans-best-friend")
+                .hasRole(pet).hasRole(owner).hasRole(breeder);
         EntityType person = graph.putEntityType("person").playsRole(owner).playsRole(breeder);
         EntityType animal = graph.putEntityType("animal").playsRole(pet);
 
         // make one person breeder and owner
-        Entity coco = graph.putEntity("coco", animal);
-        Entity dave = graph.putEntity("dave", person);
+        Entity coco = graph.addEntity(animal);
+        Entity dave = graph.addEntity(person);
 
         Relation daveBreedsAndOwnsCoco = graph.addRelation(mansBestFriend)
                 .putRolePlayer(pet, coco)
@@ -773,16 +719,20 @@ public class AnalyticsTest extends AbstractGraphTest {
         // validate
         graph.commit();
 
-        Analytics analytics = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
-        Map<Instance, Long> degrees = analytics.degrees();
+        Analytics computer = new Analytics(graph.getKeyspace(), new HashSet<>(), new HashSet<>());
+        Map<Long, Set<String>> degrees = computer.degrees();
         assertFalse(degrees.isEmpty());
-        degrees.entrySet().forEach(entry -> {
-            assertEquals(referenceDegrees.get(entry.getKey().getId()), entry.getValue());
-        });
+        degrees.entrySet().forEach(entry -> entry.getValue().forEach(
+                id -> {
+                    assertTrue(referenceDegrees.containsKey(id));
+                    assertEquals(referenceDegrees.get(id), entry.getKey());
+                }
+        ));
     }
 
     @Test
-    public void testDegreeIsCorrectMissingRoleplayer() throws MindmapsValidationException, ExecutionException, InterruptedException {
+    public void testDegreeIsCorrectMissingRoleplayer()
+            throws MindmapsValidationException, ExecutionException, InterruptedException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -790,13 +740,14 @@ public class AnalyticsTest extends AbstractGraphTest {
         RoleType pet = graph.putRoleType("pet");
         RoleType owner = graph.putRoleType("owner");
         RoleType breeder = graph.putRoleType("breeder");
-        RelationType mansBestFriend = graph.putRelationType("mans-best-friend").hasRole(pet).hasRole(owner).hasRole(breeder);
+        RelationType mansBestFriend = graph.putRelationType("mans-best-friend")
+                .hasRole(pet).hasRole(owner).hasRole(breeder);
         EntityType person = graph.putEntityType("person").playsRole(owner).playsRole(breeder);
         EntityType animal = graph.putEntityType("animal").playsRole(pet);
 
         // make one person breeder and owner
-        Entity coco = graph.putEntity("coco", animal);
-        Entity dave = graph.putEntity("dave", person);
+        Entity coco = graph.addEntity(animal);
+        Entity dave = graph.addEntity(person);
         Relation daveBreedsAndOwnsCoco = graph.addRelation(mansBestFriend)
                 .putRolePlayer(pet, coco).putRolePlayer(owner, dave);
 
@@ -809,16 +760,20 @@ public class AnalyticsTest extends AbstractGraphTest {
         // validate
         graph.commit();
 
-        Analytics analytics = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
-        Map<Instance, Long> degrees = analytics.degrees();
+        Analytics analytics = new Analytics(graph.getKeyspace(), new HashSet<>(), new HashSet<>());
+        Map<Long, Set<String>> degrees = analytics.degrees();
         assertFalse(degrees.isEmpty());
-        degrees.entrySet().forEach(entry -> {
-            assertEquals(referenceDegrees.get(entry.getKey().getId()), entry.getValue());
-        });
+        degrees.entrySet().forEach(entry -> entry.getValue().forEach(
+                id -> {
+                    assertTrue(referenceDegrees.containsKey(id));
+                    assertEquals(referenceDegrees.get(id), entry.getKey());
+                }
+        ));
     }
 
     @Test
-    public void testDegreeIsCorrectRoleplayerWrongType() throws MindmapsValidationException, ExecutionException, InterruptedException {
+    public void testDegreeIsCorrectRoleplayerWrongType()
+            throws MindmapsValidationException, ExecutionException, InterruptedException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -826,15 +781,16 @@ public class AnalyticsTest extends AbstractGraphTest {
         RoleType pet = graph.putRoleType("pet");
         RoleType owner = graph.putRoleType("owner");
         RoleType breeder = graph.putRoleType("breeder");
-        RelationType mansBestFriend = graph.putRelationType("mans-best-friend").hasRole(pet).hasRole(owner).hasRole(breeder);
+        RelationType mansBestFriend = graph.putRelationType("mans-best-friend")
+                .hasRole(pet).hasRole(owner).hasRole(breeder);
         EntityType person = graph.putEntityType("person").playsRole(owner).playsRole(breeder);
         EntityType dog = graph.putEntityType("dog").playsRole(pet);
         EntityType cat = graph.putEntityType("cat").playsRole(pet);
 
         // make one person breeder and owner of a dog and a cat
-        Entity beast = graph.putEntity("beast", dog);
-        Entity coco = graph.putEntity("coco", cat);
-        Entity dave = graph.putEntity("dave", person);
+        Entity beast = graph.addEntity(dog);
+        Entity coco = graph.addEntity(cat);
+        Entity dave = graph.addEntity(person);
         Relation daveBreedsAndOwnsCoco = graph.addRelation(mansBestFriend)
                 .putRolePlayer(owner, dave).putRolePlayer(breeder, dave).putRolePlayer(pet, coco);
         Relation daveBreedsAndOwnsBeast = graph.addRelation(mansBestFriend)
@@ -853,16 +809,20 @@ public class AnalyticsTest extends AbstractGraphTest {
         // check degree for dave owning cats
         //TODO: should we count the relationship even if there is no cat attached?
         HashSet<String> ct = Sets.newHashSet("mans-best-friend", "cat", "person");
-        Analytics analytics = new Analytics(graph.getKeyspace(), ct,new HashSet<>());
-        Map<Instance, Long> degrees = analytics.degrees();
+        Analytics analytics = new Analytics(graph.getKeyspace(), ct, new HashSet<>());
+        Map<Long, Set<String>> degrees = analytics.degrees();
         assertFalse(degrees.isEmpty());
-        degrees.entrySet().forEach(entry -> {
-            assertEquals(referenceDegrees.get(entry.getKey().getId()), entry.getValue());
-        });
+        degrees.entrySet().forEach(entry -> entry.getValue().forEach(
+                id -> {
+                    assertTrue(referenceDegrees.containsKey(id));
+                    assertEquals(referenceDegrees.get(id), entry.getKey());
+                }
+        ));
     }
 
     @Test
-    public void testMultipleExecutionOfDegreeAndPersistWhileAddingNodes() throws MindmapsValidationException, ExecutionException, InterruptedException {
+    public void testMultipleExecutionOfDegreeAndPersistWhileAddingNodes()
+            throws MindmapsValidationException, ExecutionException, InterruptedException {
         // TODO: Fix on TinkerGraphComputer
         assumeFalse(usingTinker());
 
@@ -874,8 +834,8 @@ public class AnalyticsTest extends AbstractGraphTest {
         EntityType cat = graph.putEntityType("cat").playsRole(pet);
 
         // make one person breeder and owner of a dog and a cat
-        Entity coco = graph.putEntity("coco", cat);
-        Entity dave = graph.putEntity("dave", person);
+        Entity coco = graph.addEntity(cat);
+        Entity dave = graph.addEntity(person);
         graph.addRelation(mansBestFriend)
                 .putRolePlayer(owner, dave).putRolePlayer(pet, coco);
 
@@ -883,15 +843,15 @@ public class AnalyticsTest extends AbstractGraphTest {
         graph.commit();
 
         // count and persist
-        Analytics analytics = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
+        Analytics analytics = new Analytics(graph.getKeyspace(), new HashSet<>(), new HashSet<>());
         assertEquals(3L, analytics.count());
         analytics.degreesAndPersist();
 
-        analytics = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
+        analytics = new Analytics(graph.getKeyspace(), new HashSet<>(), new HashSet<>());
         assertEquals(3L, analytics.count());
         analytics.degreesAndPersist();
 
-        analytics = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
+        analytics = new Analytics(graph.getKeyspace(), new HashSet<>(), new HashSet<>());
         assertEquals(3L, analytics.count());
         analytics.degreesAndPersist();
     }
@@ -909,8 +869,8 @@ public class AnalyticsTest extends AbstractGraphTest {
         EntityType cat = graph.putEntityType("cat").playsRole(pet);
 
         // make one person breeder and owner of a dog and a cat
-        Entity coco = graph.putEntity("coco", cat);
-        Entity dave = graph.putEntity("dave", person);
+        Entity coco = graph.addEntity(cat);
+        Entity dave = graph.addEntity(person);
         graph.addRelation(mansBestFriend)
                 .putRolePlayer(owner, dave).putRolePlayer(pet, coco);
 
@@ -918,14 +878,14 @@ public class AnalyticsTest extends AbstractGraphTest {
         graph.commit();
 
         // create degrees
-        new Analytics(graph.getKeyspace(), new HashSet<String>(), new HashSet<String>()).degreesAndPersist();
+        new Analytics(graph.getKeyspace(), new HashSet<>(), new HashSet<>()).degreesAndPersist();
 
         // compute sum
-        Analytics analytics = new Analytics(graph.getKeyspace(), new HashSet<>(), new HashSet<String>(Arrays.asList("degree")));
-        assertEquals(4L,analytics.sum().get());
+        Analytics analytics = new Analytics(graph.getKeyspace(), new HashSet<>(), Collections.singleton("degree"));
+        assertEquals(4L, analytics.sum().get());
 
         // compute count
-        analytics = new Analytics(graph.getKeyspace(), new HashSet<String>(Arrays.asList("degree")), new HashSet<>());
+        analytics = new Analytics(graph.getKeyspace(), Collections.singleton("degree"), new HashSet<>());
         assertEquals(graph.getResourceType("degree").instances().size(), analytics.count());
     }
 
@@ -937,7 +897,8 @@ public class AnalyticsTest extends AbstractGraphTest {
         // make slightly odd graph
         String resourceTypeId = "degree";
         EntityType thing = graph.putEntityType("thing");
-        ResourceType resource = graph.putResourceType(resourceTypeId, ResourceType.DataType.LONG);
+
+        graph.putResourceType(resourceTypeId, ResourceType.DataType.LONG);
         RoleType degreeOwner = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
         RoleType degreeValue = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
         RelationType relationType = graph.putRelationType(GraqlType.HAS_RESOURCE.getId(resourceTypeId))
@@ -946,12 +907,12 @@ public class AnalyticsTest extends AbstractGraphTest {
         thing.playsRole(degreeOwner);
 
         Entity thisThing = graph.addEntity(thing);
-        graph.addRelation(relationType).putRolePlayer(degreeOwner,thisThing);
+        graph.addRelation(relationType).putRolePlayer(degreeOwner, thisThing);
         graph.commit();
 
         Analytics analytics = new Analytics(graph.getKeyspace(), new HashSet<>(), new HashSet<>());
 
-        // the null roleplayer caused analytics to fail at some stage
+        // the null role-player caused analytics to fail at some stage
         try {
             analytics.degreesAndPersist();
         } catch (RuntimeException e) {

@@ -29,7 +29,7 @@ class MinMapReduce extends MindmapsMapReduce<Number> {
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Number> emitter) {
         if (persistentProperties.get(RESOURCE_DATA_TYPE_KEY).equals(ResourceType.DataType.LONG.getName())) {
             if (selectedTypes.contains(Utility.getVertexType(vertex)) &&
-                    ((Number)vertex.value(DegreeVertexProgram.DEGREE)).longValue() > 0) {
+                    ((Number) vertex.value(DegreeVertexProgram.DEGREE)).longValue() > 0) {
                 emitter.emit(MEMORY_KEY, vertex.value(Schema.ConceptProperty.VALUE_LONG.name()));
                 return;
             }

@@ -43,21 +43,16 @@ class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
     }
 
     @Override
-    public GraphComputer.Persist getPreferredPersist() {
-        return GraphComputer.Persist.NOTHING;
-    }
-
-    @Override
     public void safeExecute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
         switch (memory.getIteration()) {
             case 0:
                 if (selectedTypes.contains(Utility.getVertexType(vertex)) && !Utility.isAnalyticsElement(vertex)) {
                     String type = vertex.label();
                     if (type.equals(Schema.BaseType.ENTITY.name()) || type.equals(Schema.BaseType.RESOURCE.name())) {
-                        messenger.sendMessage(countMessageScopeIn, 1L);
+                        messenger.sendMessage(messageScopeIn, 1L);
                     } else if (type.equals(Schema.BaseType.RELATION.name())) {
-                        messenger.sendMessage(countMessageScopeOut, -1L);
-                        messenger.sendMessage(countMessageScopeIn, 1L);
+                        messenger.sendMessage(messageScopeOut, -1L);
+                        messenger.sendMessage(messageScopeIn, 1L);
                     }
                 }
                 break;
@@ -72,8 +67,8 @@ class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
                         else hasRolePlayer = true;
                     }
                     if (hasRolePlayer) {
-                        messenger.sendMessage(countMessageScopeIn, 1L);
-                        messenger.sendMessage(countMessageScopeOut, assertionCount);
+                        messenger.sendMessage(messageScopeIn, 1L);
+                        messenger.sendMessage(messageScopeOut, assertionCount);
                     }
                 }
                 break;

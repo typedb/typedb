@@ -15,7 +15,6 @@ import java.util.Set;
 public class MeanMapReduce extends MindmapsMapReduce<Map<String, Double>> {
 
     public static final String MEMORY_KEY = "mean";
-    private static final String RESOURCE_TYPE_KEY = "RESOURCE_TYPE_KEY";
     private static final String RESOURCE_DATA_TYPE_KEY = "RESOURCE_DATA_TYPE_KEY";
 
     public static final String COUNT = "C";
@@ -36,7 +35,7 @@ public class MeanMapReduce extends MindmapsMapReduce<Map<String, Double>> {
         if (selectedTypes.contains(Utility.getVertexType(vertex)) &&
                 ((Long) vertex.value(DegreeVertexProgram.DEGREE)) > 0) {
             Map<String, Double> tuple = new HashMap<>(2);
-            Double degree = ((Long)vertex.value(DegreeVertexProgram.DEGREE)).doubleValue();
+            Double degree = ((Long) vertex.value(DegreeVertexProgram.DEGREE)).doubleValue();
             tuple.put(SUM, degree *
                     ((Number) vertex.value((String) persistentProperties.get(RESOURCE_DATA_TYPE_KEY))).doubleValue());
             tuple.put(COUNT, degree);

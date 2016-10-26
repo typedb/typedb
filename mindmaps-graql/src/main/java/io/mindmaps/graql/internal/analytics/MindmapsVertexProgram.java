@@ -18,6 +18,7 @@
 
 package io.mindmaps.graql.internal.analytics;
 
+import com.google.common.collect.Sets;
 import io.mindmaps.util.ErrorMessage;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.*;
@@ -26,7 +27,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -36,15 +36,13 @@ public abstract class MindmapsVertexProgram<T> extends CommonOLAP implements Ver
 
     static final Logger LOGGER = LoggerFactory.getLogger(MindmapsVertexProgram.class);
 
-    final MessageScope.Local<Long> countMessageScopeIn = MessageScope.Local.of(__::inE);
-    final MessageScope.Local<Long> countMessageScopeOut = MessageScope.Local.of(__::outE);
+    final MessageScope.Local<Long> messageScopeIn = MessageScope.Local.of(__::inE);
+    final MessageScope.Local<Long> messageScopeOut = MessageScope.Local.of(__::outE);
+    final Set<MessageScope> messageScopeSet = Sets.newHashSet(messageScopeIn, messageScopeOut);
 
     @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {
-        final Set<MessageScope> set = new HashSet<>();
-        set.add(countMessageScopeOut);
-        set.add(countMessageScopeIn);
-        return set;
+        return messageScopeSet;
     }
 
     @Override
