@@ -7,9 +7,16 @@ import io.mindmaps.graql.internal.gremlin.fragment.Fragment;
 import io.mindmaps.test.AbstractRollbackGraphTest;
 import org.junit.Test;
 
+import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.distinctCasting;
 import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.id;
+import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.inCasting;
+import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.inHasRole;
 import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.inIsa;
+import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.inRolePlayer;
+import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.outCasting;
+import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.outHasRole;
 import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.outIsa;
+import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.outRolePlayer;
 import static org.junit.Assert.assertTrue;
 
 public class GraqlTraversalTest extends AbstractRollbackGraphTest {
@@ -45,6 +52,46 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
         GraqlTraversal locallyOptimalSpecificInstance = traversal(yId, yTypeOfX, xId);
         GraqlTraversal globallyOptimalSpecificInstance = traversal(xId, xIsaY, yId);
         assertFaster(globallyOptimalSpecificInstance, locallyOptimalSpecificInstance);
+    }
+
+    @Test
+    public void testHasRoleFasterFromRoleType() {
+        GraqlTraversal hasRoleFromRelationType = traversal(yId, outHasRole("y", "x"), xId);
+        GraqlTraversal hasRoleFromRoleType = traversal(xId, inHasRole("x", "y"), yId);
+        assertFaster(hasRoleFromRoleType, hasRoleFromRelationType);
+    }
+
+    @Test
+    public void testCheckDistinctCastingEarlyFaster() {
+        Fragment distinctCasting = distinctCasting("c2", "c1");
+        Fragment inRolePlayer = inRolePlayer("x", "c1");
+        Fragment inCasting = inCasting("c1", "r");
+        Fragment outCasting = outCasting("r", "c2");
+        Fragment outRolePlayer = outRolePlayer("c2", "y");
+
+        GraqlTraversal distinctEarly =
+                traversal(xId, inRolePlayer, inCasting, outCasting, distinctCasting, outRolePlayer);
+        GraqlTraversal distinctLate =
+                traversal(xId, inRolePlayer, inCasting, outCasting, outRolePlayer, distinctCasting);
+
+        assertFaster(distinctEarly, distinctLate);
+    }
+
+    @Test
+    public void testRestartTraversalSlower() {
+        // This distinct casting will require restarting the traversal with a new V() step
+        Fragment distinctCasting = distinctCasting("c1", "c2");
+        Fragment inRolePlayer = inRolePlayer("x", "c1");
+        Fragment inCasting = inCasting("c1", "r");
+        Fragment outCasting = outCasting("r", "c2");
+        Fragment outRolePlayer = outRolePlayer("c2", "y");
+
+        GraqlTraversal distinctEarly =
+                traversal(xId, inRolePlayer, inCasting, outCasting, distinctCasting, outRolePlayer);
+        GraqlTraversal distinctLate =
+                traversal(xId, inRolePlayer, inCasting, outCasting, outRolePlayer, distinctCasting);
+
+        assertFaster(distinctLate, distinctEarly);
     }
 
     private static GraqlTraversal traversal(Fragment... fragments) {
