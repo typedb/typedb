@@ -229,9 +229,9 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testAKO(){
+    public void testSub(){
         MindmapsGraph lgraph = GeoGraph.getGraph();
-        String queryString = "match $x isa $type;$type ako geoObject;" +
+        String queryString = "match $x isa $type;$type sub geoObject;" +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in; $y isa country;$y id 'Poland';";
         String queryString2 = "match $y isa country;$y id 'Poland';" +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;";
