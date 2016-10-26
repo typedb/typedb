@@ -18,14 +18,8 @@
 
 package io.mindmaps.graql.internal.reasoner.atom;
 
-import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.RoleType;
-import io.mindmaps.concept.Type;
-import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.internal.reasoner.query.Query;
-import javafx.util.Pair;
-
 import java.util.Map;
 import java.util.Set;
 
@@ -113,25 +107,4 @@ public interface Atomic extends Cloneable{
 
     String getVarName();
     Set<String> getVarNames();
-
-    //for predicates
-    //String getVal();
-
-    //for atoms
-    //Type getType();
-    //String getTypeId();
-
-    //for atoms
-    /*
-    Set<Predicate> getSubstitutions();
-    Set<Atomic> getTypeConstraints();
-    Set<Predicate> getValuePredicates();
-
-    Map<String, Predicate> getVarSubMap();
-
-    Map<String, Pair<Type, RoleType>> getVarTypeRoleMap();
-    Map<RoleType, Pair<String, Type>> getRoleVarTypeMap();
-    Map<RoleType, String> getRoleConceptIdMap();
-    */
-
 }

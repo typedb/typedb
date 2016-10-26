@@ -28,7 +28,6 @@ import io.mindmaps.graql.Var;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.pattern.Patterns;
 import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.internal.reasoner.atom.Atomic;
 import io.mindmaps.util.ErrorMessage;
 import javafx.util.Pair;
 

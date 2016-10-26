@@ -19,19 +19,10 @@
 package io.mindmaps.graql.internal.reasoner.atom;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.Rule;
-import io.mindmaps.util.ErrorMessage;
-import io.mindmaps.concept.RoleType;
-import io.mindmaps.concept.Type;
-import io.mindmaps.graql.*;
 import io.mindmaps.graql.admin.PatternAdmin;
-import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.pattern.Patterns;
 import io.mindmaps.graql.internal.reasoner.query.Query;
-import java.util.stream.Collectors;
-import javafx.util.Pair;
 
 import java.util.*;
 

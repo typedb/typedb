@@ -17,8 +17,6 @@
  */
 package io.mindmaps.graql.internal.reasoner.atom;
 
-import io.mindmaps.MindmapsGraph;
-import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.util.ErrorMessage;

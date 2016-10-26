@@ -3,7 +3,6 @@ package io.mindmaps.graql.internal.reasoner.query;
 import com.google.common.collect.Sets;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.internal.reasoner.atom.Atom;
-import io.mindmaps.graql.internal.reasoner.atom.Atomic;
 
 import io.mindmaps.graql.internal.reasoner.atom.Substitution;
 import java.util.HashSet;
