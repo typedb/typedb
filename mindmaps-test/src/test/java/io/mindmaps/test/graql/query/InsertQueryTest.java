@@ -486,6 +486,12 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         qb.insert(id("bobby").value("bob").isa("name")).execute();
     }
 
+    @Test
+    public void testInsertDuplicatePattern() {
+        qb.insert(var().isa("person").has("name", "a name"), var().isa("person").has("name", "a name")).execute();
+        assertEquals(2, qb.match(var().has("name", "a name")).stream().count());
+    }
+
     private void assertInsert(Var... vars) {
         // Make sure vars don't exist
         for (Var var : vars) {
