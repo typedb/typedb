@@ -22,17 +22,13 @@ import com.google.common.collect.Sets;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.admin.UniqueVarProperty;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.gremlin.Fragment;
-import io.mindmaps.graql.internal.gremlin.MultiTraversal;
-import io.mindmaps.graql.internal.gremlin.Traversals;
+import io.mindmaps.graql.internal.gremlin.EquivalentFragmentSet;
+import io.mindmaps.graql.internal.gremlin.fragment.Fragments;
 import io.mindmaps.graql.internal.query.InsertQueryExecutor;
 import io.mindmaps.util.ErrorMessage;
 
 import java.util.Collection;
 import java.util.stream.Stream;
-
-import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_BOUNDED;
-import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNIQUE;
 
 public class SubProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty {
 
@@ -57,10 +53,10 @@ public class SubProperty extends AbstractVarProperty implements NamedProperty, U
     }
 
     @Override
-    public Collection<MultiTraversal> match(String start) {
-        return Sets.newHashSet(MultiTraversal.create(
-                Fragment.create(Traversals::outSubs, EDGE_UNIQUE, start, superType.getName()),
-                Fragment.create(Traversals::inSubs, EDGE_BOUNDED, superType.getName(), start)
+    public Collection<EquivalentFragmentSet> match(String start) {
+        return Sets.newHashSet(EquivalentFragmentSet.create(
+                Fragments.outSub(start, superType.getName()),
+                Fragments.inSub(superType.getName(), start)
         ));
     }
 

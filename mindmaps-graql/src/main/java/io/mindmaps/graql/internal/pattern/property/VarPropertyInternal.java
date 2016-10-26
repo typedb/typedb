@@ -22,7 +22,7 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.admin.VarProperty;
-import io.mindmaps.graql.internal.gremlin.MultiTraversal;
+import io.mindmaps.graql.internal.gremlin.EquivalentFragmentSet;
 import io.mindmaps.graql.internal.gremlin.ShortcutTraversal;
 import io.mindmaps.graql.internal.query.InsertQueryExecutor;
 
@@ -47,9 +47,9 @@ public interface VarPropertyInternal extends VarProperty {
     }
 
     /**
-     * Return a collection of {@link MultiTraversal} to match the given property in the graph
+     * Return a collection of {@link EquivalentFragmentSet} to match the given property in the graph
      */
-    Collection<MultiTraversal> match(String start);
+    Collection<EquivalentFragmentSet> match(String start);
 
     /**
      * Insert the given property into the graph, if possible.

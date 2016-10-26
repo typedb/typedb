@@ -20,14 +20,10 @@ package io.mindmaps.graql.internal.pattern.property;
 
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.graql.admin.UniqueVarProperty;
-import io.mindmaps.graql.internal.gremlin.FragmentPriority;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import io.mindmaps.graql.internal.gremlin.fragment.Fragment;
+import io.mindmaps.graql.internal.gremlin.fragment.Fragments;
 
-import static io.mindmaps.util.Schema.ConceptProperty.DATA_TYPE;
-
-public class DataTypeProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty, SingleTraversalProperty {
+public class DataTypeProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty, SingleFragmentProperty {
 
     private final ResourceType.DataType<?> datatype;
 
@@ -60,13 +56,8 @@ public class DataTypeProperty extends AbstractVarProperty implements NamedProper
     }
 
     @Override
-    public GraphTraversal<Vertex, Vertex> applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
-        return traversal.has(DATA_TYPE.name(), P.eq(datatype.getName()));
-    }
-
-    @Override
-    public FragmentPriority getPriority() {
-        return FragmentPriority.VALUE_NONSPECIFIC;
+    public Fragment getFragment(String start) {
+        return Fragments.dataType(start, datatype);
     }
 
     @Override

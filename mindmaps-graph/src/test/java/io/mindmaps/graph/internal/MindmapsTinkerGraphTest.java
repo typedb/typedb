@@ -106,5 +106,6 @@ public class MindmapsTinkerGraphTest {
         assertNotNull(mindmapsGraph.getEntityType("entity type"));
         mindmapsGraph.clear();
         assertNull(mindmapsGraph.getEntityType("entity type"));
+        assertNotNull(mindmapsGraph.getMetaEntityType());
     }
 }

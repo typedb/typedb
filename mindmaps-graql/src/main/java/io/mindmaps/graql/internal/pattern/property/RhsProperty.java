@@ -19,14 +19,10 @@
 package io.mindmaps.graql.internal.pattern.property;
 
 import io.mindmaps.graql.admin.UniqueVarProperty;
-import io.mindmaps.graql.internal.gremlin.FragmentPriority;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import io.mindmaps.graql.internal.gremlin.fragment.Fragment;
+import io.mindmaps.graql.internal.gremlin.fragment.Fragments;
 
-import static io.mindmaps.util.Schema.ConceptProperty.RULE_RHS;
-
-public class RhsProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty, SingleTraversalProperty {
+public class RhsProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty, SingleFragmentProperty {
 
     private final String rhs;
 
@@ -49,13 +45,8 @@ public class RhsProperty extends AbstractVarProperty implements UniqueVarPropert
     }
 
     @Override
-    public GraphTraversal<Vertex, Vertex> applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
-        return traversal.has(RULE_RHS.name(), P.eq(rhs));
-    }
-
-    @Override
-    public FragmentPriority getPriority() {
-        return FragmentPriority.VALUE_NONSPECIFIC;
+    public Fragment getFragment(String start) {
+        return Fragments.rhs(start, rhs);
     }
 
     @Override

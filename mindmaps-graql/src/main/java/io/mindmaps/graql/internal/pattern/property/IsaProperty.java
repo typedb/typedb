@@ -23,20 +23,14 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.admin.UniqueVarProperty;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.gremlin.Fragment;
-import io.mindmaps.graql.internal.gremlin.MultiTraversal;
+import io.mindmaps.graql.internal.gremlin.EquivalentFragmentSet;
 import io.mindmaps.graql.internal.gremlin.ShortcutTraversal;
+import io.mindmaps.graql.internal.gremlin.fragment.Fragments;
 import io.mindmaps.util.ErrorMessage;
 
 import java.util.Collection;
 import java.util.Optional;
 import java.util.stream.Stream;
-
-import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNBOUNDED;
-import static io.mindmaps.graql.internal.gremlin.FragmentPriority.EDGE_UNIQUE;
-import static io.mindmaps.graql.internal.gremlin.Traversals.inSubs;
-import static io.mindmaps.graql.internal.gremlin.Traversals.outSubs;
-import static io.mindmaps.util.Schema.EdgeLabel.ISA;
 
 public class IsaProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty {
 
@@ -71,16 +65,10 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
     }
 
     @Override
-    public Collection<MultiTraversal> match(String start) {
-        return Sets.newHashSet(MultiTraversal.create(
-                Fragment.create(
-                        t -> outSubs(outSubs(t).out(ISA.getLabel())),
-                        EDGE_UNIQUE, start, type.getName()
-                ),
-                Fragment.create(
-                        t -> inSubs(inSubs(t).in(ISA.getLabel())),
-                        EDGE_UNBOUNDED, type.getName(), start
-                )
+    public Collection<EquivalentFragmentSet> match(String start) {
+        return Sets.newHashSet(EquivalentFragmentSet.create(
+                Fragments.outIsa(start, type.getName()),
+                Fragments.inIsa(type.getName(), start)
         ));
     }
 

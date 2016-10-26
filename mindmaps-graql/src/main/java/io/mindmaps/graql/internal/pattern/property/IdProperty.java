@@ -20,17 +20,14 @@ package io.mindmaps.graql.internal.pattern.property;
 
 import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.admin.UniqueVarProperty;
-import io.mindmaps.graql.internal.gremlin.FragmentPriority;
+import io.mindmaps.graql.internal.gremlin.fragment.Fragment;
+import io.mindmaps.graql.internal.gremlin.fragment.Fragments;
 import io.mindmaps.graql.internal.query.InsertQueryExecutor;
 import io.mindmaps.graql.internal.util.StringConverter;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static io.mindmaps.util.ErrorMessage.INSERT_RESOURCE_WITH_ID;
-import static io.mindmaps.util.Schema.ConceptProperty.ITEM_IDENTIFIER;
 
-public class IdProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty, SingleTraversalProperty {
+public class IdProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty, SingleFragmentProperty {
 
     private final String id;
 
@@ -53,13 +50,8 @@ public class IdProperty extends AbstractVarProperty implements NamedProperty, Un
     }
 
     @Override
-    public GraphTraversal<Vertex, Vertex> applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
-        return traversal.has(ITEM_IDENTIFIER.name(), P.eq(id));
-    }
-
-    @Override
-    public FragmentPriority getPriority() {
-        return FragmentPriority.ID;
+    public Fragment getFragment(String start) {
+        return Fragments.id(start, id);
     }
 
     @Override
