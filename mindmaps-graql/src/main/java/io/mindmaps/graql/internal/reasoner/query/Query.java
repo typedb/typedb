@@ -318,8 +318,7 @@ public class Query implements MatchQueryInternal {
 
     public Map<String, Type> getVarTypeMap() {
         Map<String, Type> map = new HashMap<>();
-
-        getTypeConstraints().stream().filter(at -> !at.isResource())
+        getTypeConstraints()
                 .forEach(atom -> {
                     if (!atom.isRelation()) {
                         String var = atom.getVarName();
