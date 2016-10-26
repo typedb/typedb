@@ -550,6 +550,13 @@ public class QueryParserTest extends AbstractMovieGraphTest {
         ).execute();
     }
 
+    @Test
+    public void testLimitMistake() {
+        exception.expect(IllegalArgumentException.class);
+        exception.expectMessage(containsString("limit1"));
+        qb.parse("match ($x, $y); limit1;");
+    }
+
     private void assertOrderedQueriesEqual(MatchQuery query, MatchQuery parsedQuery) {
         assertEquals(
                 Lists.newArrayList(query).toString(),

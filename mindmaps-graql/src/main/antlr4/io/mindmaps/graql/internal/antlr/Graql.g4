@@ -43,7 +43,7 @@ pattern        : varPattern                    # varPatternCase
                ;
 
 varPatterns    : (varPattern ';')+ ;
-varPattern     : variable | variable? property (','? property)* ;
+varPattern     : VARIABLE | variable? property (','? property)* ;
 
 property       : 'isa' variable                   # isa
                | 'sub' variable                   # sub

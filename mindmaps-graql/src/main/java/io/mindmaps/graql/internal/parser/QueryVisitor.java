@@ -262,7 +262,12 @@ class QueryVisitor extends GraqlBaseVisitor {
 
     @Override
     public Var visitVarPattern(GraqlParser.VarPatternContext ctx) {
-        Var var = visitVariable(ctx.variable());
+        Var var;
+        if (ctx.VARIABLE() != null) {
+            var = var(getVariable(ctx.VARIABLE()));
+        } else {
+            var = visitVariable(ctx.variable());
+        }
         return getVarProperties(ctx.property()).apply(var);
     }
 
