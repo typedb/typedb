@@ -24,6 +24,7 @@ import com.google.common.collect.Sets;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.fragment.Fragment;
+import io.mindmaps.graql.internal.gremlin.fragment.Fragments;
 import io.mindmaps.graql.internal.pattern.property.VarPropertyInternal;
 import io.mindmaps.util.ErrorMessage;
 
@@ -175,8 +176,11 @@ class ConjunctionQuery {
 
         if (shortcutTraversal.isValid()) {
             return Stream.of(shortcutTraversal.getEquivalentFragmentSet());
-        } else {
+        } else if (!traversals.isEmpty()) {
             return traversals.stream();
+        } else {
+            // If this variable has no properties, only confirm that it is not a casting and nothing else.
+            return Stream.of(EquivalentFragmentSet.create(Fragments.notCasting(start)));
         }
     }
 

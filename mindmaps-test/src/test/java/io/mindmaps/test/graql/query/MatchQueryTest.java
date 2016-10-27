@@ -496,6 +496,30 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
         assertEquals(0, query.stream().count());
     }
 
+    @Test
+    public void testMatchAll() {
+        MatchQuery query = qb.match(var("x"));
+
+        // Make sure there a reasonable number of results
+        assertTrue(query.stream().count() > 10);
+
+        query.get("x").forEach(concept -> {
+            // Make sure results never contain castings
+            if (concept.type() != null) {
+                assertFalse(concept.type().isRoleType());
+            }
+        });
+    }
+
+    @Test
+    public void testMatchAllPairs() {
+        long numConcepts = qb.match(var("x")).stream().count();
+        MatchQuery pairs = qb.match(var("x"), var("y"));
+        
+        // We expect there to be a result for every pair of concepts
+        assertEquals(numConcepts * numConcepts, pairs.stream().count());
+    }
+
     @Test(expected = IllegalArgumentException.class)
     public void testMatchEmpty() {
         qb.match().execute();
