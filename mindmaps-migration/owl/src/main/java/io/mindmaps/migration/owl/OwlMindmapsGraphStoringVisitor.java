@@ -191,8 +191,7 @@ public class OwlMindmapsGraphStoringVisitor implements OWLAxiomVisitorEx<Concept
         Map<String, String> roleMap = new HashMap<>();
         roleMap.put(migrator.namer().subjectRole(superRelation.getId()), migrator.namer().subjectRole(subRelation.getId()));
         roleMap.put(migrator.namer().objectRole(superRelation.getId()), migrator.namer().objectRole(subRelation.getId()));
-        createSubPropertyRule("sub-" + superRelation.getId() + UUID.randomUUID().toString(),
-                                superRelation, subRelation, roleMap, migrator.graph());
+        createSubPropertyRule(superRelation, subRelation, roleMap, migrator.graph());
 
         subRelation.superType(superRelation);
         return null;
@@ -226,8 +225,7 @@ public class OwlMindmapsGraphStoringVisitor implements OWLAxiomVisitorEx<Concept
                             migrator.namer().subjectRole(eqRelation.getId()));
                     roleMap.put(migrator.namer().objectRole(relation.getId()),
                             migrator.namer().objectRole(eqRelation.getId()));
-                    createSubPropertyRule("eq-" + relation.getId() + "-" + eqRelation.getId()
-                                        + "-" + UUID.randomUUID().toString(), relation, eqRelation, roleMap, migrator.graph());
+                    createSubPropertyRule(relation, eqRelation, roleMap, migrator.graph());
                 }
             });
         }
@@ -244,12 +242,12 @@ public class OwlMindmapsGraphStoringVisitor implements OWLAxiomVisitorEx<Concept
         Map<String, String> roleMapFD = new HashMap<>();
         roleMapFD.put(migrator.namer().subjectRole(relation.getId()), migrator.namer().objectRole(inverseRelation.getId()));
         roleMapFD.put(migrator.namer().objectRole(relation.getId()), migrator.namer().subjectRole(inverseRelation.getId()));
-        createSubPropertyRule("inv-" + relation.getId() + "-" + UUID.randomUUID().toString(), relation, inverseRelation, roleMapFD, migrator.graph());
+        createSubPropertyRule(relation, inverseRelation, roleMapFD, migrator.graph());
 
         Map<String, String> roleMapBD = new HashMap<>();
         roleMapBD.put(migrator.namer().subjectRole(inverseRelation.getId()), migrator.namer().objectRole(relation.getId()));
         roleMapBD.put(migrator.namer().objectRole(inverseRelation.getId()), migrator.namer().subjectRole(relation.getId()));
-        createSubPropertyRule("inv-" + inverseRelation.getId() + "-" + UUID.randomUUID().toString(), inverseRelation, relation, roleMapBD, migrator.graph());
+        createSubPropertyRule(inverseRelation, relation, roleMapBD, migrator.graph());
         return null;
     }
 
@@ -258,7 +256,7 @@ public class OwlMindmapsGraphStoringVisitor implements OWLAxiomVisitorEx<Concept
         if (!axiom.getProperty().isOWLObjectProperty())
             return null;
         RelationType relation = migrator.relation(axiom.getProperty().asOWLObjectProperty());
-        createTransitiveRule("trst-" + relation.getId() + "-" + UUID.randomUUID().toString(), relation, migrator.namer().subjectRole(relation.getId()),
+        createTransitiveRule(relation, migrator.namer().subjectRole(relation.getId()),
                 migrator.namer().objectRole(relation.getId()), migrator.graph());
         return null;
     }
@@ -268,7 +266,7 @@ public class OwlMindmapsGraphStoringVisitor implements OWLAxiomVisitorEx<Concept
         if (!axiom.getProperty().isOWLObjectProperty())
             return null;
         RelationType relation = migrator.relation(axiom.getProperty().asOWLObjectProperty());
-        createReflexiveRule("rflx-" + relation.getId() + "-" + UUID.randomUUID().toString(), relation, migrator.graph());
+        createReflexiveRule(relation, migrator.graph());
         return null;
     }
 
@@ -284,8 +282,8 @@ public class OwlMindmapsGraphStoringVisitor implements OWLAxiomVisitorEx<Concept
             chain.put(relation,  new Pair<>(migrator.namer().subjectRole(relation.getId()), migrator.namer().objectRole(relation.getId())));
         });
 
-        createPropertyChainRule("pch-" + superRelation.getId() + "-" + UUID.randomUUID().toString(), superRelation,
-                migrator.namer().subjectRole(superRelation.getId()), migrator.namer().objectRole(superRelation.getId()), chain, migrator.graph());
+        createPropertyChainRule(superRelation, migrator.namer().subjectRole(superRelation.getId()),
+                migrator.namer().objectRole(superRelation.getId()), chain, migrator.graph());
         return null;
     }
 

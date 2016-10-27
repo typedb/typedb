@@ -59,8 +59,8 @@ public class ReasonerTest {
         String body = "(subject-location: $x, located-subject: $x1) isa resides;";
         String head = "(member-location: $x, container-location: $x1) isa sublocate;";
 
-        InferenceRule R2 = new InferenceRule(graph.putRule("test", body, head, graph.getMetaRuleInference()), graph);
-        Rule rule = createSubPropertyRule("testRule", parent , child, roleMap, graph);
+        InferenceRule R2 = new InferenceRule(graph.addRule(body, head, graph.getMetaRuleInference()), graph);
+        Rule rule = createSubPropertyRule(parent , child, roleMap, graph);
         InferenceRule R = new InferenceRule(rule, graph);
 
         assertTrue(R.getHead().equals(R2.getHead()));
@@ -71,7 +71,7 @@ public class ReasonerTest {
     public void testTransitiveRule() {
         MindmapsGraph graph = SNBGraph.getGraph();
 
-        Rule rule = createTransitiveRule("testRule", graph.getRelationType("sublocate"),
+        Rule rule = createTransitiveRule(graph.getRelationType("sublocate"),
                 graph.getRoleType("member-location").getId(), graph.getRoleType("container-location").getId(), graph);
 
         InferenceRule R = new InferenceRule(rule, graph);
@@ -88,7 +88,7 @@ public class ReasonerTest {
     @Test
     public void testReflexiveRule() {
         MindmapsGraph graph = SNBGraph.getGraph();
-        Rule rule = createReflexiveRule("testRule", graph.getRelationType("knows"), graph);
+        Rule rule = createReflexiveRule(graph.getRelationType("knows"), graph);
         InferenceRule R = new InferenceRule(rule, graph);
 
         String body = "($x, $y) isa knows;";
@@ -283,7 +283,7 @@ public class ReasonerTest {
     @Test
     public void testVarContraction(){
         MindmapsGraph graph = SNBGraph.getGraph();
-        createReflexiveRule("testRule", graph.getRelationType("knows"), graph);
+        createReflexiveRule(graph.getRelationType("knows"), graph);
         String queryString = "match ($x, $y) isa knows;select $y;";
         String explicitQuery = "match $y isa person;$y id 'Bob' or $y id 'Charlie';";
         Query query = new Query(queryString, graph);
@@ -297,7 +297,7 @@ public class ReasonerTest {
     //propagated sub [x/Bob] prevents from capturing the right inference
     public void testVarContraction2(){
         MindmapsGraph graph = SNBGraph.getGraph();
-        createReflexiveRule("testRule", graph.getRelationType("knows"), graph);
+        createReflexiveRule(graph.getRelationType("knows"), graph);
         String queryString = "match ($x, $y) isa knows;$x id 'Bob';select $y;";
         String explicitQuery = "match $y isa person;$y id 'Bob' or $y id 'Charlie';";
         QueryBuilder qb = Graql.withGraph(graph);

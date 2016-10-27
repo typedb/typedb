@@ -295,7 +295,7 @@ public class Reasoner {
                         boolean materialise){
         if(!materialise) {
             answer(atomicQuery, subGoals, matAnswers);
-            //propagateAnswers(matAnswers);
+            propagateAnswers(matAnswers);
         }
         else
             answerWM(atomicQuery, subGoals);

@@ -132,8 +132,8 @@ public class AtomicQuery extends Query{
                         answer.put(atom.getValueVariable(), c);
                         insertAnswers.add(answer);
                     });
-            String test = "match $x isa applicant;";
-            System.out.println("No of applicants: " + Sets.newHashSet(Graql.withGraph(graph).<MatchQuery>parse(test)).size());
+            //String test = "match $x isa applicant;";
+            //System.out.println("No of applicants: " + Sets.newHashSet(Graql.withGraph(graph).<MatchQuery>parse(test)).size());
         }
         else{
             System.out.println("Not materialising, concepts already exist");

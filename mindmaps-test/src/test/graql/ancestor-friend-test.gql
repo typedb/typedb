@@ -5,7 +5,8 @@ insert
 ####################Ontology######################
 #################################################
 
-"Person" isa entity-type;
+"Person" isa entity-type
+    has-resource name;
 
 "friendA" isa role-type;
 "friendB" isa role-type;
@@ -22,32 +23,34 @@ Person plays-role parent, plays-role child;
 "Ancestor-friend" isa relation-type, has-role person, has-role ancestor-friend;
 Person plays-role person, plays-role ancestor-friend;
 
+"name" isa resource-type, datatype string;
+
 ####################################################
 ##################DATA#############################
 ####################################################
 
-"a" isa Person;
-"b" isa Person;
-"c" isa Person;
-"d" isa Person;
-"g" isa Person;
+$a isa Person, has name "a";
+$b isa Person, has name "b";
+$c isa Person, has name "c";
+$d  isa Person, has name "d";
+$g  isa Person, has name "g";
 
-(parent: 'a', child: 'b') isa Parent;
-(parent: 'b', child: 'c') isa Parent;
-(friendA: 'a', friendB: 'g') isa Friend;
-(friendA: 'c', friendB: 'd') isa Friend;
+(parent: $a, child: $b) isa Parent;
+(parent: $b, child: $c) isa Parent;
+(friendA: $a, friendB: $g) isa Friend;
+(friendA: $c, friendB: $d) isa Friend;
 
 ####################################################
 ##################RULES#############################
 ####################################################
 
-"R1" isa inference-rule,
+isa inference-rule,
 lhs {
 ($x, $y) isa Friend;},
 rhs {
 ($x, $y) isa Ancestor-friend;};
 
-"R2" isa inference-rule,
+isa inference-rule,
 lhs {
 (parent: $x, child: $z) isa Parent;
 (person: $z, ancestor-friend: $y) isa Ancestor-friend;},
