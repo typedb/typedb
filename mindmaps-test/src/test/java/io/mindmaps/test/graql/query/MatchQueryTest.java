@@ -25,6 +25,7 @@ import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.test.AbstractMovieGraphTest;
+import io.mindmaps.util.Schema;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -49,6 +50,7 @@ import static io.mindmaps.graql.Graql.neq;
 import static io.mindmaps.graql.Graql.or;
 import static io.mindmaps.graql.Graql.regex;
 import static io.mindmaps.graql.Graql.var;
+import static io.mindmaps.util.Schema.ConceptProperty.ITEM_IDENTIFIER;
 import static io.mindmaps.util.Schema.MetaType.ENTITY_TYPE;
 import static io.mindmaps.util.Schema.MetaType.RESOURCE_TYPE;
 import static io.mindmaps.util.Schema.MetaType.RULE_TYPE;
@@ -539,6 +541,15 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
         query.get("y").forEach(concept -> {
             assertFalse(concept.isRoleType());
         });
+    }
+
+    @Test
+    public void testCannotLookUpCastingById() {
+        String castingId = graph.getTinkerTraversal()
+                .hasLabel(Schema.BaseType.CASTING.name()).<String>values(ITEM_IDENTIFIER.name()).next();
+
+        MatchQuery query = qb.match(var("x").id(castingId));
+        assertEquals(0, query.stream().count());
     }
 
     @Test(expected = IllegalArgumentException.class)

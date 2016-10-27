@@ -2,9 +2,11 @@ package io.mindmaps.graql.internal.gremlin.fragment;
 
 import io.mindmaps.graql.internal.gremlin.FragmentPriority;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static io.mindmaps.graql.internal.util.StringConverter.idToString;
+import static io.mindmaps.util.Schema.BaseType.CASTING;
 import static io.mindmaps.util.Schema.ConceptProperty.ITEM_IDENTIFIER;
 
 class IdFragment extends AbstractFragment {
@@ -18,7 +20,8 @@ class IdFragment extends AbstractFragment {
 
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
-        traversal.has(ITEM_IDENTIFIER.name(), id);
+        // Whenever looking up by ID, we have to confirm this is not a casting
+        traversal.has(ITEM_IDENTIFIER.name(), id).not(__.hasLabel(CASTING.name()));
     }
 
     @Override
