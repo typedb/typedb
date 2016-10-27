@@ -115,6 +115,7 @@
                     <descriptors>
                         <descriptor>${project.basedir}/src/dist.xml</descriptor>
                     </descriptors>
+                    <appendAssemblyId>false</appendAssemblyId>
                 </configuration>
             </plugin>
         </plugins>
