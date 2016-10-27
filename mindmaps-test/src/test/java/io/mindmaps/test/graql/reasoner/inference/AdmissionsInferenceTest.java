@@ -48,9 +48,9 @@ public class AdmissionsInferenceTest {
 
     @Test
     public void testConditionalAdmission() {
-        String queryString = "match $x isa applicant;$x has name $name;$x has admissionStatus 'conditional';";
+        String queryString = "match $x isa applicant;$x has admissionStatus 'conditional';";
         Query query = new Query(queryString, graph);
-        String explicitQuery = "match $x isa applicant, has name $name;$name value 'Bob';";
+        String explicitQuery = "match $x isa applicant, has name 'Bob';";
 
         printAnswers(reasoner.resolve(query));
         //assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
@@ -102,6 +102,7 @@ public class AdmissionsInferenceTest {
     }
 
     @Test
+    //works without has name!
     public void testAdmissions() {
         String queryString = "match $x has admissionStatus $y;$x has name $name;";
         Query query = new Query(queryString, graph);

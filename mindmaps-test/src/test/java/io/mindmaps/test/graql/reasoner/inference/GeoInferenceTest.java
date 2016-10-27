@@ -58,21 +58,20 @@ public class GeoInferenceTest {
 
         //printAnswers(reasoner.resolve(query));
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-       // assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
     }
 
     @Test
     public void testQueryPrime() {
         String queryString = "match $x isa city;$x has name $name;"+
                 "($x, $y) isa is-located-in;"+
-                "$y isa country;$y has name 'Poland'; select $x, $name;";
+                "$y sa country;$y has name 'Poland'; select $x, $name;";
         MatchQuery query = qb.parse(queryString);
         printMatchQueryResults(query.distinct());
 
         String explicitQuery = "match " +
                 "$x isa city;$x has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $x, $name;";
 
-        printAnswers(reasoner.resolve(query));
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
     }

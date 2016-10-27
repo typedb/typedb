@@ -187,11 +187,8 @@ public abstract class Atom extends AtomBase {
     }
 
     public Set<Predicate> getValuePredicates(){
-        Set<String> resVars = getResources().stream()
-                .map(Atom::getValueVariable)
-                .collect(Collectors.toSet());
         return getParentQuery().getValuePredicates().stream()
-                .filter(atom -> (containsVar(atom.getVarName())) || resVars.contains(atom.getVarName()))
+                .filter(atom -> (containsVar(atom.getVarName())))
                 .collect(Collectors.toSet());
     }
 

@@ -257,28 +257,20 @@ public class Reasoner {
                 Query ruleBody = rule.getBody();
                 AtomicQuery ruleHead = rule.getHead();
 
-                QueryAnswers subs = new QueryAnswers();
-                if (!ruleBody.isRuleResolvable()){
-                    subs.addAll(Sets.newHashSet(ruleBody.getMatchQuery().distinct()));
-                    //subs.addAll(Sets.newHashSet(Graql.withGraph(graph)
-                    //        .match(ruleBody.getPattern()).select(ruleBody.getVarSet()).distinct()));
-                }
-                else {
-                    Set<Atom> atoms = ruleBody.selectAtoms();
-                    Iterator<Atom> atIt = atoms.iterator();
+                Set<Atom> atoms = ruleBody.selectAtoms();
+                Iterator<Atom> atIt = atoms.iterator();
 
-                    subGoals.add(atomicQuery);
-                    Atom at = atIt.next();
-                    AtomicQuery childAtomicQuery = new AtomicMatchQuery(at);
+                subGoals.add(atomicQuery);
+                Atom at = atIt.next();
+                AtomicQuery childAtomicQuery = new AtomicMatchQuery(at);
+                atomicQuery.establishRelation(childAtomicQuery);
+                QueryAnswers subs = answer(childAtomicQuery, subGoals, matAnswers);
+                while (atIt.hasNext()) {
+                    at = atIt.next();
+                    childAtomicQuery = new AtomicMatchQuery(at);
                     atomicQuery.establishRelation(childAtomicQuery);
-                    subs = answer(childAtomicQuery, subGoals, matAnswers);
-                    while (atIt.hasNext()) {
-                        at = atIt.next();
-                        childAtomicQuery = new AtomicMatchQuery(at);
-                        atomicQuery.establishRelation(childAtomicQuery);
-                        QueryAnswers localSubs = answer(childAtomicQuery, subGoals, matAnswers);
-                        subs = subs.join(localSubs);
-                    }
+                    QueryAnswers localSubs = answer(childAtomicQuery, subGoals, matAnswers);
+                    subs = subs.join(localSubs);
                 }
 
                 QueryAnswers answers = propagateHeadSubstitutions(atomicQuery, ruleHead, subs)

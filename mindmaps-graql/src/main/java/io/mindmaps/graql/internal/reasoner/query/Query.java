@@ -398,9 +398,6 @@ public class Query implements MatchQueryInternal {
         addAtomConstraints(atom.getTypeConstraints()
                     .stream().filter(at -> !at.isRuleResolvable())
                     .collect(Collectors.toSet()));
-        addAtomConstraints(atom.getResources()
-                .stream().filter(at -> !at.isRuleResolvable())
-                .collect(Collectors.toSet()));
     }
 
     /**
@@ -415,7 +412,7 @@ public class Query implements MatchQueryInternal {
 
         //pass relations or rule-resolvable types and resources
         Set<Atom> selectedAtoms = atoms.stream()
-                .filter(atom -> (atom.isRelation()) || atom.isRuleResolvable())
+                .filter(atom -> (!atom.isType()) || atom.isRuleResolvable())
                 .collect(Collectors.toSet());
 
         if (selectedAtoms.isEmpty())
