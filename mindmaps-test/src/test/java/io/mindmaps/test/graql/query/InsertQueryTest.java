@@ -315,7 +315,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testErrorWhenInsertWithPredicate() {
         exception.expect(IllegalStateException.class);
-        exception.expectMessage(containsString("atom"));
+        exception.expectMessage(containsString("predicate"));
         qb.insert(var().id("123").value(gt(3))).execute();
     }
 
