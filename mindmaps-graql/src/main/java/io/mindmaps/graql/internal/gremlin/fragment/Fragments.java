@@ -38,11 +38,21 @@ public class Fragments {
     }
 
     public static InIsaFragment inIsa(String start, String end) {
-        return new InIsaFragment(start, end);
+        return new InIsaFragment(start, end, false);
     }
 
     public static OutIsaFragment outIsa(String start, String end) {
-        return new OutIsaFragment(start, end);
+        return new OutIsaFragment(start, end, false);
+    }
+
+    // This method is a special case that allows getting the instances of role-types (castings)
+    public static InIsaFragment inIsaCastings(String start, String end) {
+        return new InIsaFragment(start, end, true);
+    }
+
+    // This method is a special case that allows getting the instances of role-types (castings)
+    public static OutIsaFragment outIsaCastings(String start, String end) {
+        return new OutIsaFragment(start, end, true);
     }
 
     public static InHasScopeFragment inHasScope(String start, String end) {

@@ -25,6 +25,7 @@ import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.test.AbstractMovieGraphTest;
+import io.mindmaps.util.Schema;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -49,6 +50,7 @@ import static io.mindmaps.graql.Graql.neq;
 import static io.mindmaps.graql.Graql.or;
 import static io.mindmaps.graql.Graql.regex;
 import static io.mindmaps.graql.Graql.var;
+import static io.mindmaps.util.Schema.ConceptProperty.ITEM_IDENTIFIER;
 import static io.mindmaps.util.Schema.MetaType.ENTITY_TYPE;
 import static io.mindmaps.util.Schema.MetaType.RESOURCE_TYPE;
 import static io.mindmaps.util.Schema.MetaType.RULE_TYPE;
@@ -515,9 +517,39 @@ public class MatchQueryTest extends AbstractMovieGraphTest {
     public void testMatchAllPairs() {
         long numConcepts = qb.match(var("x")).stream().count();
         MatchQuery pairs = qb.match(var("x"), var("y"));
-        
+
         // We expect there to be a result for every pair of concepts
         assertEquals(numConcepts * numConcepts, pairs.stream().count());
+    }
+
+    @Test
+    public void testNoInstancesOfRoleType() {
+        MatchQuery query = qb.match(var("x").isa(var("y")), var("y").id("actor"));
+        assertEquals(0, query.stream().count());
+    }
+
+    @Test
+    public void testNoInstancesOfRoleTypeUnselectedVariable() {
+        MatchQuery query = qb.match(var().isa(var("y")), var("y").id("actor"));
+        assertEquals(0, query.stream().count());
+    }
+
+    @Test
+    public void testNoInstancesOfRoleTypeStartingFromCasting() {
+        MatchQuery query = qb.match(var("x").isa(var("y")));
+
+        query.get("y").forEach(concept -> {
+            assertFalse(concept.isRoleType());
+        });
+    }
+
+    @Test
+    public void testCannotLookUpCastingById() {
+        String castingId = graph.getTinkerTraversal()
+                .hasLabel(Schema.BaseType.CASTING.name()).<String>values(ITEM_IDENTIFIER.name()).next();
+
+        MatchQuery query = qb.match(var("x").id(castingId));
+        assertEquals(0, query.stream().count());
     }
 
     @Test(expected = IllegalArgumentException.class)
