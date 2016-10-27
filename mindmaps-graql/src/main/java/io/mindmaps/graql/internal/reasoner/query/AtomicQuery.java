@@ -111,12 +111,19 @@ public class AtomicQuery extends Query{
      */
     private QueryAnswers materialiseComplete() {
         QueryAnswers insertAnswers = new QueryAnswers();
+        /*
         if( getAtoms().stream()
                 .filter(Atomic::isPredicate)
-                .collect(Collectors.toSet()).size() < getVarSet().size())
+                .collect(Collectors.toSet()).size() < getVarSet().size()) {
+            System.out.println("Materialising: ");
+            getPattern().getVars().forEach(System.out::println);
             throw new IllegalStateException(ErrorMessage.MATERIALIZATION_ERROR.getMessage(getMatchQuery().toString()));
+        }
+        */
         if (!getMatchQuery().ask().execute()) {
             InsertQuery insert = Graql.insert(getPattern().getVars()).withGraph(graph);
+            System.out.println("Materialising: ");
+            getPattern().getVars().forEach(System.out::println);
             insert.stream()
                     .filter(Concept::isResource)
                     .forEach(c -> {
@@ -125,6 +132,11 @@ public class AtomicQuery extends Query{
                         answer.put(atom.getValueVariable(), c);
                         insertAnswers.add(answer);
                     });
+            String test = "match $x isa applicant;";
+            System.out.println("No of applicants: " + Sets.newHashSet(Graql.withGraph(graph).<MatchQuery>parse(test)).size());
+        }
+        else{
+            System.out.println("Not materialising, concepts already exist");
         }
         return insertAnswers;
     }

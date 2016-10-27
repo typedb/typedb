@@ -21,6 +21,7 @@ package io.mindmaps.graql.internal.reasoner.query;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
@@ -29,6 +30,7 @@ import io.mindmaps.graql.internal.query.match.MatchOrder;
 import io.mindmaps.graql.internal.query.match.MatchQueryInternal;
 import io.mindmaps.graql.internal.reasoner.atom.Atom;
 import io.mindmaps.graql.internal.reasoner.atom.Predicate;
+import io.mindmaps.graql.internal.reasoner.atom.Resource;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.internal.pattern.Patterns;
@@ -38,8 +40,10 @@ import io.mindmaps.graql.internal.reasoner.atom.AtomicFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javafx.util.Pair;
 
 import static io.mindmaps.graql.internal.reasoner.Utility.createFreshVariable;
+import static io.mindmaps.graql.internal.reasoner.Utility.subtractSets;
 
 public class Query implements MatchQueryInternal {
 
@@ -72,12 +76,11 @@ public class Query implements MatchQueryInternal {
         this.pattern = Patterns.conjunction(Sets.newHashSet());
         atomSet = new HashSet<>();
         addAtom(AtomicFactory.create(atom, this));
-        addAtomConstraints(atom.getSubstitutions());
-        addAtomConstraints(atom.getValuePredicates());
-        if(atom.isRelation() || atom.isResource())
-            addAtomConstraints(atom.getTypeConstraints()
-                                    .stream().filter(at -> !at.isRuleResolvable())
-                                    .collect(Collectors.toSet()));
+        addAtomConstraints(atom);
+        //add parent select vars
+        Set<String> extraVarsToSelect = getResources().stream().map(Atom::getValueVariable).collect(Collectors.toSet());
+        Set<String> mappedVars = getValuePredicates().stream().map(Predicate::getVarName).collect(Collectors.toSet());
+        this.selectVars.addAll(subtractSets(extraVarsToSelect, mappedVars));
     }
 
     //alpha-equivalence equality
@@ -178,13 +181,19 @@ public class Query implements MatchQueryInternal {
                 .collect(Collectors.toSet());
     }
 
+    public Set<Atom> getResources(){
+        return getAtoms().stream()
+                .filter(Atomic::isAtom)
+                .map(at -> (Atom) at)
+                .filter(Atom::isResource)
+                .collect(Collectors.toSet());
+    }
+
     public Set<String> getVarSet() {
         Set<String> vars = new HashSet<>();
         atomSet.forEach(atom -> vars.addAll(atom.getVarNames()));
         return vars;
     }
-
-    private boolean containsVar(String var) { return getVarSet().contains(var);}
 
     public boolean containsAtom(Atomic atom){ return atomSet.contains(atom);}
     private boolean containsEquivalentAtom(Atomic atom){
@@ -311,9 +320,9 @@ public class Query implements MatchQueryInternal {
 
     public MatchQuery getMatchQuery() {
         if (selectVars.isEmpty())
-            return Graql.match(pattern.getPatterns()).withGraph(graph);
+            return Graql.withGraph(graph).match(getPattern());
         else
-            return Graql.match(pattern.getPatterns()).select(selectVars).withGraph(graph);
+            return Graql.withGraph(graph).match(getPattern()).select(selectVars);
     }
 
     public Map<String, Type> getVarTypeMap() {
@@ -336,6 +345,15 @@ public class Query implements MatchQueryInternal {
                         });
                     }});
         return map;
+    }
+
+    public Pair<ResourceType, String> getResource(String var){
+        Set<Atom> relevantResources = getResources().stream()
+                .filter(res -> res.getVarName().equals(var))
+                .collect(Collectors.toSet());
+        if (relevantResources.isEmpty()) return null;
+        Atom res = relevantResources.iterator().next();
+        return new Pair<>((ResourceType) res.getType(), getValuePredicate(res.getValueVariable()));
     }
 
     public String getSubstitution(String var) {
@@ -364,16 +382,25 @@ public class Query implements MatchQueryInternal {
         pattern.getPatterns().remove(atom.getPattern());
     }
 
-    public void addAtomConstraints(Set<? extends Atomic> constrs){
-        constrs.stream()
-                .filter(type -> containsVar(type.getVarName()))
-                .forEach(con -> {
-                    Atomic lcon = AtomicFactory.create(con, this);
-                    lcon.setParentQuery(this);
-                    addAtom(lcon);
-                    if (lcon.isPredicate() && ((Predicate)lcon).isSubstitution())
-                        selectVars.remove(lcon.getVarName());
+    public void addAtomConstraints(Set<? extends Atomic> cstrs){
+        cstrs.forEach(con -> {
+            Atomic lcon = AtomicFactory.create(con, this);
+            lcon.setParentQuery(this);
+            addAtom(lcon);
+            if (lcon.isPredicate() && ((Predicate)lcon).isSubstitution())
+                selectVars.remove(lcon.getVarName());
         });
+    }
+
+    public void addAtomConstraints(Atom atom){
+        addAtomConstraints(atom.getSubstitutions());
+        addAtomConstraints(atom.getValuePredicates());
+        addAtomConstraints(atom.getTypeConstraints()
+                    .stream().filter(at -> !at.isRuleResolvable())
+                    .collect(Collectors.toSet()));
+        addAtomConstraints(atom.getResources()
+                .stream().filter(at -> !at.isRuleResolvable())
+                .collect(Collectors.toSet()));
     }
 
     /**
@@ -386,8 +413,9 @@ public class Query implements MatchQueryInternal {
                 .collect(Collectors.toSet());
         if (atoms.size() == 1) return atoms;
 
+        //pass relations or rule-resolvable types and resources
         Set<Atom> selectedAtoms = atoms.stream()
-                .filter(atom -> (!atom.isType()) || atom.isRuleResolvable())
+                .filter(atom -> (atom.isRelation()) || atom.isRuleResolvable())
                 .collect(Collectors.toSet());
 
         if (selectedAtoms.isEmpty())

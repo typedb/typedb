@@ -20,6 +20,7 @@ package io.mindmaps.graql.internal.reasoner.query;
 
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.internal.reasoner.atom.Atom;
 import io.mindmaps.graql.internal.reasoner.atom.Atomic;
@@ -32,6 +33,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javafx.util.Pair;
 
 import static io.mindmaps.graql.internal.reasoner.Utility.subtractSets;
 
@@ -90,10 +92,12 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
     }
 
     public QueryAnswers unify(Map<String, String> unifiers){
-        return unify(unifiers, new HashMap<>(), new HashMap<>(), new HashMap<>());
+        return unify(unifiers, new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>());
     }
 
-    private QueryAnswers unify(Map<String, String> unifiers, Map<String, Concept> subVars, Map<String, Concept> valueConstraints, Map<String, Type> typeConstraints){
+    private QueryAnswers unify(Map<String, String> unifiers, Map<String, Concept> subVars,
+                               Map<String, Concept> idConstraints, Map<String, Type> typeConstraints,
+                               Map<String, Pair<ResourceType, String>> conceptResourceConstraints){
         if (unifiers.isEmpty()) return new QueryAnswers(this);
         QueryAnswers unifiedAnswers = new QueryAnswers();
         this.forEach(entry -> {
@@ -103,12 +107,18 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
             while (it.hasNext() && isCompatible) {
                 String var = it.next();
                 Concept con = entry.get(var);
+                //unify
                 if (unifiers.containsKey(var)) var = unifiers.get(var);
-                if ( ( valueConstraints.containsKey(var) && !valueConstraints.get(var).equals(con) ) ||
-                        ( typeConstraints.containsKey(var) && !typeConstraints.get(var).equals(con.type()) ) )
+
+                if ( ( idConstraints.containsKey(var) && !idConstraints.get(var).equals(con) ) ||
+                        ( typeConstraints.containsKey(var) && !typeConstraints.get(var).equals(con.type()) ))
                     isCompatible = false;
-                else
-                    answer.put(var, con);
+                if ( isCompatible && conceptResourceConstraints.containsKey(var) ){
+                    Pair<ResourceType, String> pair = conceptResourceConstraints.get(var);
+                    if ( con.asEntity().resources(pair.getKey()).iterator().next().getValue() != pair.getValue())
+                        isCompatible = false;
+                }
+                if (isCompatible) answer.put(var, con);
             }
             if (isCompatible && !answer.isEmpty())
                 unifiedAnswers.add(answer);
@@ -127,13 +137,16 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
         MindmapsGraph graph = childQuery.getGraph().orElse(null);
         Atomic childAtom = childQuery.getAtom();
         Atomic parentAtom = parentQuery.getAtom();
+        Set<String> parentSelectVars = parentQuery.getSelectedNames();
+        Set<String> childSelectVars  = childQuery.getSelectedNames();
 
         Map<String, String> unifiers = childAtom.getUnifiers(parentAtom);
 
         //identify extra subs contribute to/constraining answers
         Map<String, Concept> subVars = new HashMap<>();
-        Map<String, Concept> valueConstraints = new HashMap<>();
+        Map<String, Concept> idConstraints = new HashMap<>();
         Map<String, Type> typeConstraints = new HashMap<>();
+        Map<String, Pair<ResourceType, String>> conceptResourceConstraints = new HashMap<>();
 
         //find extra type constraints
         Set<Atom> extraTypes =  subtractSets(parentQuery.getTypeConstraints(), childQuery.getTypeConstraints());
@@ -142,7 +155,7 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
         });
 
         //find extra subs
-        if (parentQuery.getSelectedNames().size() != childQuery.getSelectedNames().size()){
+        if (parentSelectVars.size() != childSelectVars.size()){
             //get |child - parent| set difference
             Set<Predicate> extraSubs = subtractSets(parentQuery.getSubstitutions(), childQuery.getSubstitutions());
             extraSubs.forEach( sub -> {
@@ -150,13 +163,35 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
                 Concept con = graph.getConcept(sub.getPredicateValue());
                 if (unifiers.containsKey(var)) var = unifiers.get(var);
                 if (childQuery.getSelectedNames().size() > parentQuery.getSelectedNames().size())
-                    valueConstraints.put(var, con);
+                    idConstraints.put(var, con);
                 else
                     subVars.put(var, con);
             });
         }
 
-        QueryAnswers unifiedAnswers = answers.unify(unifiers, subVars, valueConstraints, typeConstraints);
+        Set<Predicate> extraSubs = subtractSets(parentQuery.getSubstitutions(), childQuery.getSubstitutions());
+        extraSubs.forEach( sub -> {
+            String var = sub.getVarName();
+            Concept con = graph.getConcept(sub.getPredicateValue());
+            if (unifiers.containsKey(var)) var = unifiers.get(var);
+            if (childSelectVars.size() > parentSelectVars.size())
+                idConstraints.put(var, con);
+            else
+                subVars.put(var, con);
+        });
+
+        /*
+        parentQuery.getResources().stream()
+                .filter(res -> parentSelectVars.contains(res.getVarName()))
+                .filter(res -> !parentQuery.getValuePredicate(res.getValueVariable()).isEmpty())
+                .forEach(res -> {
+                    Pair<ResourceType, String> pair = parentQuery.getResource(res.getVarName());
+                    if (pair != null)
+                        conceptResourceConstraints.put(res.getVarName(), pair);
+                });
+        */
+        QueryAnswers unifiedAnswers = answers.unify(unifiers,
+                subVars, idConstraints, typeConstraints, conceptResourceConstraints);
         return unifiedAnswers.filterVars(parentQuery.getSelectedNames());
     }
 }

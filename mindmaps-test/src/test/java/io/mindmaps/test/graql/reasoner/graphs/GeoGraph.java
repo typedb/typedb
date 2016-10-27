@@ -36,10 +36,11 @@ public class GeoGraph {
     private static MindmapsGraph mindmaps;
 
     private static EntityType university, city, region, country, continent, geographicalObject;
-    private static RelationType hasResource, isLocatedIn;
+    private static RelationType hasNameRelation, isLocatedIn;
+    private static ResourceType<String> name;
 
     private static RoleType geoEntity, entityLocation;
-    private static RoleType hasResourceTarget, hasResourceValue;
+    private static RoleType hasNameTarget, hasNameValue;
 
     private static Instance Europe, NorthAmerica;
     private static Instance Warsaw, Wroclaw, London, Munich, Paris, Milan;
@@ -66,62 +67,68 @@ public class GeoGraph {
     }
 
     private static void buildOntology() {
-        hasResourceTarget = mindmaps.putRoleType("has-resource-target");
-        hasResourceValue = mindmaps.putRoleType("has-resource-value");
-        hasResource = mindmaps.putRelationType("has-resource")
-                .hasRole(hasResourceTarget).hasRole(hasResourceValue);
-
-
+        hasNameTarget = mindmaps.putRoleType("has-name-owner");
+        hasNameValue = mindmaps.putRoleType("has-name-value");
+        hasNameRelation = mindmaps.putRelationType("has-name")
+                .hasRole(hasNameTarget).hasRole(hasNameValue);
+        name = mindmaps.putResourceType("name", ResourceType.DataType.STRING).playsRole(hasNameValue);
+        
         geoEntity = mindmaps.putRoleType("geo-entity");
         entityLocation = mindmaps.putRoleType("entity-location");
         isLocatedIn = mindmaps.putRelationType("is-located-in")
                 .hasRole(geoEntity).hasRole(entityLocation);
 
-        geographicalObject = mindmaps.putEntityType("geoObject");
+        geographicalObject = mindmaps.putEntityType("geoObject").playsRole(hasNameTarget);
 
-        continent = mindmaps.putEntityType("continent").superType(geographicalObject)
-                    .playsRole(entityLocation);
-        country = mindmaps.putEntityType("country").superType(geographicalObject)
-                .playsRole(geoEntity).playsRole(entityLocation);
-        region = mindmaps.putEntityType("region").superType(geographicalObject)
-                .playsRole(geoEntity).playsRole(entityLocation);
-        city = mindmaps.putEntityType("city").superType(geographicalObject)
-                .playsRole(geoEntity).playsRole(entityLocation);
+        continent = mindmaps.putEntityType("continent")
+                .superType(geographicalObject)
+                .playsRole(entityLocation);
+        country = mindmaps.putEntityType("country")
+                .superType(geographicalObject)
+                .playsRole(geoEntity)
+                .playsRole(entityLocation);
+        region = mindmaps.putEntityType("region")
+                .superType(geographicalObject)
+                .playsRole(geoEntity)
+                .playsRole(entityLocation);
+        city = mindmaps.putEntityType("city")
+                .superType(geographicalObject)
+                .playsRole(geoEntity)
+                .playsRole(entityLocation);
         university = mindmaps.putEntityType("university")
-                        .playsRole(geoEntity);
+                        .playsRole(geoEntity)
+                        .playsRole(hasNameTarget);
     }
 
     private static void buildInstances() {
+        Europe = putEntity("Europe", continent);
+        NorthAmerica = putEntity("NorthAmerica", continent);
 
-        Europe = mindmaps.putEntity("Europe", continent);
-        NorthAmerica = mindmaps.putEntity("Europe", continent);
+        Poland = putEntity("Poland", country);
+        England = putEntity("England", country);
+        Germany = putEntity("Germany", country);
+        France = putEntity("France", country);
+        Italy = putEntity("Italy", country);
 
-        Poland = mindmaps.putEntity("Poland", country);
-        England = mindmaps.putEntity("England", country);
-        Germany = mindmaps.putEntity("Germany", country);
-        France = mindmaps.putEntity("France", country);
-        Italy = mindmaps.putEntity("Italy", country);
+        Masovia = putEntity("Masovia", region);
+        Silesia = putEntity("Silesia", region);
+        GreaterLondon = putEntity("GreaterLondon", region);
+        Bavaria = putEntity("Bavaria", region);
+        IleDeFrance = putEntity("IleDeFrance", region);
+        Lombardy = putEntity("Lombardy", region);
 
-        Masovia = mindmaps.putEntity("Masovia", region);
-        Silesia = mindmaps.putEntity("Silesia", region);
-        GreaterLondon = mindmaps.putEntity("GreaterLondon", region);
-        Bavaria = mindmaps.putEntity("Bavaria", region);
-        IleDeFrance = mindmaps.putEntity("IleDeFrance", region);
-        Lombardy = mindmaps.putEntity("Lombardy", region);
+        Warsaw = putEntity("Warsaw", city);
+        Wroclaw = putEntity("Wroclaw", city);
+        London = putEntity("London", city);
+        Munich = putEntity("Munich", city);
+        Paris = putEntity("Paris", city);
+        Milan = putEntity("Milan", city);
 
-        Warsaw = mindmaps.putEntity("Warsaw", city);
-        Wroclaw = mindmaps.putEntity("Wroclaw", city);
-        London = mindmaps.putEntity("London", city);
-        Munich = mindmaps.putEntity("Munich", city);
-        Paris = mindmaps.putEntity("Paris", city);
-        Milan = mindmaps.putEntity("Milan", city);
-
-        UW = mindmaps.putEntity("University-of-Warsaw", university);
-        PW = mindmaps.putEntity("Warsaw-Polytechnics", university);
-        Imperial = mindmaps.putEntity("Imperial College London", university);
-        UCL = mindmaps.putEntity("University College London", university);
-        UniversityOfMunich = mindmaps.putEntity("University of Munich", university);
-
+        UW = putEntity("University-of-Warsaw", university);
+        PW = putEntity("Warsaw-Polytechnics", university);
+        Imperial = putEntity("Imperial College London", university);
+        UCL = putEntity("University College London", university);
+        UniversityOfMunich = putEntity("University of Munich", university);
     }
 
     private static void buildRelations() {
@@ -197,20 +204,23 @@ public class GeoGraph {
     }
     private static void buildRules() {
         RuleType inferenceRule = mindmaps.getMetaRuleInference();
-
         String transitivity_LHS = "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "(geo-entity: $y, entity-location: $z) isa is-located-in;";
-
         String transitivity_RHS = "(geo-entity: $x, entity-location: $z) isa is-located-in;";
-
-        mindmaps.putRule("transitivity", transitivity_LHS, transitivity_RHS, inferenceRule);
+        mindmaps.addRule(transitivity_LHS, transitivity_RHS, inferenceRule);
     }
 
-    private static <T> void putResource(Instance instance, ResourceType<T> resourceType, T resource) {
-        Resource resourceInstance = mindmaps.putResource(resource, resourceType);
+    private static Instance putEntity(String id, EntityType type) {
+        Instance inst = mindmaps.addEntity(type);
+        putResource(inst, name, id, hasNameRelation, hasNameTarget, hasNameValue);
+        return inst;
+    }
 
-        mindmaps.addRelation(hasResource)
-                .putRolePlayer(hasResourceTarget, instance)
-                .putRolePlayer(hasResourceValue, resourceInstance);
+    private static <T> void putResource(Instance instance, ResourceType<T> resourceType, T resource, RelationType relationType,
+                                        RoleType targetRole, RoleType valueRole) {
+        Resource resourceInstance = mindmaps.putResource(resource, resourceType);
+        mindmaps.addRelation(relationType)
+                .putRolePlayer(targetRole, instance)
+                .putRolePlayer(valueRole, resourceInstance);
     }
 }
