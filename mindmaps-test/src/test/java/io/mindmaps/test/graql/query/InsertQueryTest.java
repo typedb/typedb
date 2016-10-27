@@ -492,6 +492,13 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         assertEquals(2, qb.match(var().has("name", "a name")).stream().count());
     }
 
+    @Test
+    public void testInsertInstanceWithoutType() {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage(allOf(containsString("123"), containsString("isa")));
+        qb.insert(id("123").has("name", "Bob")).execute();
+    }
+
     private void assertInsert(Var... vars) {
         // Make sure vars don't exist
         for (Var var : vars) {

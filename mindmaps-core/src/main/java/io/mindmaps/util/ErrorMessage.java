@@ -102,7 +102,7 @@ public enum ErrorMessage {
     MULTIPLE_GRAPH("a graph has been specified twice for this query"),
     MULTIPLE_ORDER("an ordering has been specified twice for this query"),
 
-    INSERT_GET_NON_EXISTENT_ID("no concept with id '%s' exists"),
+    INSERT_WITHOUT_TYPE("'%s' doesn't have an 'isa' or a 'sub'"),
     INSERT_UNDEFINED_VARIABLE("%s doesn't have an 'isa', a 'sub' or an 'id'"),
     INSERT_PREDICATE("cannot insert a concept with a predicate"),
     INSERT_RELATION_WITH_ID("a relation cannot have an id"),

@@ -166,7 +166,7 @@ public class InsertQueryExecutor {
                 String subId = subVar.get().getId().orElse("<no-id>");
                 message = ErrorMessage.INSERT_METATYPE.getMessage(var.getPrintableName(), subId);
             } else {
-                message = var.getId().map(ErrorMessage.INSERT_GET_NON_EXISTENT_ID::getMessage)
+                message = var.getId().map(ErrorMessage.INSERT_WITHOUT_TYPE::getMessage)
                                 .orElse(ErrorMessage.INSERT_UNDEFINED_VARIABLE.getMessage(var.getPrintableName()));
             }
 
