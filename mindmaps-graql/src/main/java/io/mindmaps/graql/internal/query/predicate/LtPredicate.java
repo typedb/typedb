@@ -23,7 +23,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 class LtPredicate extends ComparatorPredicate {
 
     /**
-     * @param value the value that this predicate is testing against
+     * @param value the value that this atom is testing against
      */
     LtPredicate(Object value) {
         super(value);

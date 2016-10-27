@@ -16,46 +16,19 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql.internal.reasoner.predicate;
+package io.mindmaps.graql.internal.reasoner.atom;
 
-import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.RoleType;
-import io.mindmaps.concept.Type;
-import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.internal.reasoner.query.Query;
-import javafx.util.Pair;
-
 import java.util.Map;
 import java.util.Set;
 
 public interface Atomic extends Cloneable{
 
     Atomic clone();
-    /**
-     * @return true if the atom corresponds to a predicate
-     * */
-    default boolean isType(){ return false;}
 
-    /**
-     * @return true if the atom corresponds to a non-unary predicate
-     * */
-    default boolean isRelation(){return false;}
-
-    /**
-     * @return true if the atom corresponds to a unifier (id predicate)
-     * */
-    default boolean isSubstitution(){ return false;}
-
-    /**
-     * @return true if the atom corresponds to a resource predicate
-     * */
-    default boolean isResource(){ return false;}
-
-    /**
-     * @return true if the atom corresponds to a value predicate
-     * */
-    default boolean isValuePredicate(){ return false;}
+    default boolean isAtom(){ return false;}
+    default boolean isPredicate(){ return false;}
 
     /**
      * @return true if atom alpha-equivalent
@@ -80,13 +53,6 @@ public interface Atomic extends Cloneable{
      * @return the corresponding pattern
      * */
     PatternAdmin getPattern();
-
-    /**
-     *
-     * @param graph graph
-     * @return match query obtained by selecting free variables
-     */
-    MatchQuery getMatchQuery(MindmapsGraph graph);
 
     /**
      * @return the query this atom belongs to
@@ -117,17 +83,4 @@ public interface Atomic extends Cloneable{
 
     String getVarName();
     Set<String> getVarNames();
-    Type getType();
-    String getTypeId();
-    String getVal();
-
-    Set<Atomic> getSubstitutions();
-    Set<Atomic> getTypeConstraints();
-    Set<Atomic> getValuePredicates();
-
-    Map<String, Atomic> getVarSubMap();
-
-    Map<String, Pair<Type, RoleType>> getVarTypeRoleMap();
-    Map<RoleType, Pair<String, Type>> getRoleVarTypeMap();
-    Map<RoleType, String> getRoleConceptIdMap();
 }

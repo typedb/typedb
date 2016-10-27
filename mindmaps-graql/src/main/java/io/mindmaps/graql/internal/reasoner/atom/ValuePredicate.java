@@ -1,4 +1,3 @@
-
 /*
  * MindmapsDB - A Distributed Semantic Database
  * Copyright (C) 2016  Mindmaps Research Ltd
@@ -17,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql.internal.reasoner.predicate;
+package io.mindmaps.graql.internal.reasoner.atom;
 
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
@@ -25,24 +24,14 @@ import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import java.util.Set;
 
-public class ValuePredicate extends AtomBase {
-
-    private final ValuePredicateAdmin predicate;
+public class ValuePredicate extends Predicate<ValuePredicateAdmin> {
 
     public ValuePredicate(VarAdmin pattern) {
         super(pattern);
-        Set<ValuePredicateAdmin> predicates = pattern.getValuePredicates();
-        if (predicates.size() > 1)
-            throw new IllegalStateException("Attempting creation of ValuePredicate atom with more than single predicate");
-        this.predicate = predicates.iterator().next();
     }
 
     public ValuePredicate(VarAdmin pattern, Query par) {
         super(pattern, par);
-        Set<ValuePredicateAdmin> predicates = pattern.getValuePredicates();
-        if (predicates.size() > 1)
-            throw new IllegalStateException("Attempting creation of ValuePredicate atom with more than single predicate");
-        this.predicate = predicates.iterator().next();
     }
 
     public ValuePredicate(ValuePredicate pred) {
@@ -63,36 +52,17 @@ public class ValuePredicate extends AtomBase {
         return new ValuePredicate(this);
     }
 
-    //public ValuePredicateAdmin getPredicate(){ return predicate;};
-
-    @Override
-    public boolean equals(Object obj) {
-        if (!(obj instanceof ValuePredicate)) return false;
-        ValuePredicate a2 = (ValuePredicate) obj;
-        return this.getVarName().equals(a2.getVarName())
-                && this.getVal().equals(a2.getVal());
-    }
-
-    @Override
-    public int hashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + this.getVal().hashCode();
-        hashCode = hashCode * 37 + this.varName.hashCode();
-        return hashCode;
-    }
-
     @Override
     public boolean isEquivalent(Object obj){
         if (!(obj instanceof ValuePredicate)) return false;
         ValuePredicate a2 = (ValuePredicate) obj;
         return this.predicate.getClass().equals(a2.predicate.getClass()) &&
-                this.getVal().equals(a2.getVal());
+                this.getPredicateValue().equals(a2.getPredicateValue());
     }
 
     @Override
     public int equivalenceHashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + this.getVal().hashCode();
+        int hashCode = super.hashCode();
         hashCode = hashCode * 37 + this.predicate.getClass().hashCode();
         return hashCode;
     }
@@ -101,7 +71,13 @@ public class ValuePredicate extends AtomBase {
     public boolean isValuePredicate(){ return true;}
 
     @Override
-    public String getVal(){
-            return predicate.getPredicate().getValue().toString();
+    public String getPredicateValue() { return predicate.getPredicate().getValue().toString();}
+
+    @Override
+    protected ValuePredicateAdmin extractPredicate(VarAdmin pattern) {
+        Set<ValuePredicateAdmin> predicates = pattern.getValuePredicates();
+        if (predicates.size() > 1)
+            throw new IllegalStateException("Attempting creation of ValuePredicate atom with more than single predicate");
+        return predicates.iterator().next();
     }
 }

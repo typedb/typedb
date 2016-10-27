@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.graql.internal.reasoner.predicate;
+package io.mindmaps.graql.internal.reasoner.atom;
 
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.Graql;
@@ -46,7 +46,7 @@ public class AtomicFactory {
         else if (!var.getValuePredicates().isEmpty())
             return new ValuePredicate(var);
         else
-            return new Type(var);
+            return new TypeAtom(var);
     }
 
     public static Atomic create(PatternAdmin pattern, Query parent) {
@@ -63,7 +63,7 @@ public class AtomicFactory {
         else if (!var.getValuePredicates().isEmpty())
             return new ValuePredicate(var, parent);
         else
-            return new Type(var, parent);
+            return new TypeAtom(var, parent);
     }
 
     public static Atomic create(Atomic atom, Query parent) {
@@ -85,7 +85,7 @@ public class AtomicFactory {
             VarAdmin resVar = Graql.var(varName).has(resType, Graql.var(valueVariable)).admin();
             resourceAtoms.add(AtomicFactory.create(resVar, parent));
 
-            //add value predicate
+            //add value atom
             baseVar.getValuePredicates().forEach(pred -> {
                     VarAdmin resourceValueVar = Graql.var(valueVariable).value(pred).admin();
                     resourceAtoms.add(AtomicFactory.create(resourceValueVar, parent));
@@ -130,7 +130,6 @@ public class AtomicFactory {
                     atoms.addAll(resourceAtomSet);
             }
         });
-
         return atoms;
     }
 }

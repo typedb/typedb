@@ -55,7 +55,7 @@ public interface Var extends Pattern {
     Var value(Object value);
 
     /**
-     * @param predicate a predicate this variable's value must match
+     * @param predicate a atom this variable's value must match
      * @return this
      */
     Var value(ValuePredicate predicate);
@@ -76,16 +76,16 @@ public interface Var extends Pattern {
     Var has(String type, Object value);
 
     /**
-     * the variable must have a resource or name of the given type that matches the given predicate
+     * the variable must have a resource or name of the given type that matches the given atom
      *
      * @param type a resource type in the ontology
-     * @param predicate a predicate on the value of a resource
+     * @param predicate a atom on the value of a resource
      * @return this
      */
     Var has(String type, ValuePredicate predicate);
 
     /**
-     * the variable must have a resource or name of the given type that matches the given predicate
+     * the variable must have a resource or name of the given type that matches the given atom
      *
      * @param type a resource type in the ontology
      * @param var a variable representing a resource

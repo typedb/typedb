@@ -34,7 +34,7 @@ abstract class AbstractValuePredicate implements ValuePredicateAdmin {
     private final ImmutableSet<Object> innerValues;
 
     /**
-     * @param innerValues the values that this predicate is testing against
+     * @param innerValues the values that this atom is testing against
      */
     AbstractValuePredicate(ImmutableSet<Object> innerValues) {
         this.innerValues = innerValues;

@@ -277,7 +277,7 @@ public class Graql {
 
     /**
      * @param value the value
-     * @return a predicate that is true when a value equals the specified value
+     * @return a atom that is true when a value equals the specified value
      */
     public static ValuePredicate eq(Object value) {
         Objects.requireNonNull(value);
@@ -286,7 +286,7 @@ public class Graql {
 
     /**
      * @param value the value
-     * @return a predicate that is true when a value does not equal the specified value
+     * @return a atom that is true when a value does not equal the specified value
      */
     public static ValuePredicate neq(Object value) {
         Objects.requireNonNull(value);
@@ -295,7 +295,7 @@ public class Graql {
 
     /**
      * @param value the value
-     * @return a predicate that is true when a value is strictly greater than the specified value
+     * @return a atom that is true when a value is strictly greater than the specified value
      */
     public static ValuePredicate gt(Comparable value) {
         Objects.requireNonNull(value);
@@ -304,7 +304,7 @@ public class Graql {
 
     /**
      * @param value the value
-     * @return a predicate that is true when a value is greater or equal to the specified value
+     * @return a atom that is true when a value is greater or equal to the specified value
      */
     public static ValuePredicate gte(Comparable value) {
         Objects.requireNonNull(value);
@@ -313,7 +313,7 @@ public class Graql {
 
     /**
      * @param value the value
-     * @return a predicate that is true when a value is strictly less than the specified value
+     * @return a atom that is true when a value is strictly less than the specified value
      */
     public static ValuePredicate lt(Comparable value) {
         Objects.requireNonNull(value);
@@ -322,7 +322,7 @@ public class Graql {
 
     /**
      * @param value the value
-     * @return a predicate that is true when a value is less or equal to the specified value
+     * @return a atom that is true when a value is less or equal to the specified value
      */
     public static ValuePredicate lte(Comparable value) {
         Objects.requireNonNull(value);
@@ -331,7 +331,7 @@ public class Graql {
 
     /**
      * @param predicates an array of predicates
-     * @return a predicate that returns true when all the predicates are true
+     * @return a atom that returns true when all the predicates are true
      */
     public static ValuePredicate all(ValuePredicate predicate, ValuePredicate... predicates) {
         return Arrays.stream(predicates).reduce(predicate, ValuePredicate::and);
@@ -339,7 +339,7 @@ public class Graql {
 
     /**
      * @param predicates an array of predicates
-     * @return a predicate that returns true when any of the predicates are true
+     * @return a atom that returns true when any of the predicates are true
      */
     public static ValuePredicate any(ValuePredicate predicate, ValuePredicate... predicates) {
         return Arrays.stream(predicates).reduce(predicate, ValuePredicate::or);
@@ -347,7 +347,7 @@ public class Graql {
 
     /**
      * @param pattern a regex pattern
-     * @return a predicate that returns true when a value matches the given regular expression
+     * @return a atom that returns true when a value matches the given regular expression
      */
     public static ValuePredicate regex(String pattern) {
         Objects.requireNonNull(pattern);
@@ -356,7 +356,7 @@ public class Graql {
 
     /**
      * @param substring a substring to match
-     * @return a predicate that returns true when a value contains the given substring
+     * @return a atom that returns true when a value contains the given substring
      */
     public static ValuePredicate contains(String substring) {
         Objects.requireNonNull(substring);

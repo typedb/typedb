@@ -15,8 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-
-package io.mindmaps.graql.internal.reasoner.predicate;
+package io.mindmaps.graql.internal.reasoner.atom;
 
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.RelationType;
@@ -28,14 +27,13 @@ import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.reasoner.query.Query;
-import io.mindmaps.util.ErrorMessage;
 import javafx.util.Pair;
 
 import java.util.*;
 
 import static io.mindmaps.graql.internal.reasoner.Utility.getCompatibleRoleTypes;
 
-public class Relation extends AtomBase {
+public class Relation extends Atom {
 
     private final Set<VarAdmin.Casting> castings = new HashSet<>();
     private Map<RoleType, Pair<String, Type>> roleVarTypeMap = null;
@@ -116,7 +114,6 @@ public class Relation extends AtomBase {
         }
 
         return isEquivalent;
-
     }
 
     @Override
@@ -213,11 +210,6 @@ public class Relation extends AtomBase {
         Set<String> vars = new HashSet<>();
         castings.forEach(c -> vars.add(c.getRolePlayer().getName()));
         return vars;
-    }
-
-    @Override
-    public String getVal(){
-        throw new IllegalAccessError(ErrorMessage.NO_VAL_IN_RELATION.getMessage());
     }
 
     /**

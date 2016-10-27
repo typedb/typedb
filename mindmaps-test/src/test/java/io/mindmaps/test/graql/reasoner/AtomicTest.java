@@ -27,9 +27,11 @@ import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
-import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
-import io.mindmaps.graql.internal.reasoner.predicate.AtomicFactory;
-import io.mindmaps.graql.internal.reasoner.predicate.Relation;
+import io.mindmaps.graql.internal.reasoner.atom.Atom;
+import io.mindmaps.graql.internal.reasoner.atom.Atomic;
+import io.mindmaps.graql.internal.reasoner.atom.AtomicFactory;
+import io.mindmaps.graql.internal.reasoner.atom.Predicate;
+import io.mindmaps.graql.internal.reasoner.atom.Relation;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.test.graql.reasoner.graphs.CWGraph;
@@ -129,10 +131,10 @@ public class AtomicTest {
         Atomic sub = AtomicFactory.create(qb.<MatchQuery>parse(subString).admin().getPattern().getPatterns().iterator().next());
         Atomic res = AtomicFactory.create(qb.<MatchQuery>parse(resString).admin().getPattern().getPatterns().iterator().next());
 
-        assert(atom.isType());
-        assert(relation.isRelation());
-        assert(sub.isSubstitution());
-        assert(res.isResource());
+        assert(((Atom) atom).isType());
+        assert(((Atom) relation).isRelation());
+        assert(((Atom) res).isResource());
+        assert(((Predicate) sub).isSubstitution());
     }
 
     @Test
@@ -140,7 +142,7 @@ public class AtomicTest {
         MindmapsGraph graph = CWGraph.getGraph();
         String queryString = "match isa owns, ($z, $y); $z isa country; $y isa weapon; select $y, $z;";
         AtomicQuery query = new AtomicQuery(queryString, graph);
-        Atomic atom = query.getAtom();
+        Atom atom = query.getAtom();
         Map<RoleType, Pair<String, Type>> roleMap = atom.getRoleVarTypeMap();
 
         queryString = "match isa owns, ($z, $y); $z isa country; select $y, $z;";
@@ -156,7 +158,7 @@ public class AtomicTest {
         MindmapsGraph graph = CWGraph.getGraph();
         String queryString = "match ($z, $y, $x), isa transaction;$z isa country;$x isa person; select $x, $y, $z;";
         AtomicQuery query = new AtomicQuery(queryString, graph);
-        Atomic atom = query.getAtom();
+        Atom atom = query.getAtom();
         Map<RoleType, Pair<String, Type>> roleMap = atom.getRoleVarTypeMap();
 
         queryString = "match ($z, $y, seller: $x), isa transaction;$z isa country;$y isa weapon; select $x, $y, $z;";
@@ -172,11 +174,10 @@ public class AtomicTest {
         QueryBuilder qb = Graql.withGraph(graph);
 
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
-
         MatchQuery MQ = qb.parse(queryString);
-        Query query = new Query(MQ, graph);
+        AtomicQuery query = new AtomicQuery(MQ, graph);
 
-        Atomic atom = query.selectAtoms().iterator().next();
+        Atom atom = query.getAtom();
         Set<String> vars = atom.getVarNames();
 
         String relTypeId = atom.getTypeId();
@@ -196,11 +197,10 @@ public class AtomicTest {
         QueryBuilder qb = Graql.withGraph(graph);
 
         String queryString = "match ($x, $y, $z) isa ternary-relation-test;";
-
         MatchQuery MQ = qb.parse(queryString);
-        Query query = new Query(MQ, graph);
+        AtomicQuery query = new AtomicQuery(MQ, graph);
 
-        Atomic atom = query.selectAtoms().iterator().next();
+        Atom atom = query.getAtom();
         Map<RoleType, Pair<String, Type>> rmap = atom.getRoleVarTypeMap();
 
         Set<String> vars = atom.getVarNames();

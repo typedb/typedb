@@ -2,26 +2,21 @@ package io.mindmaps.graql.internal.reasoner.query;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.concept.Concept;
-import io.mindmaps.concept.RelationType;
-import io.mindmaps.concept.RoleType;
-import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
+import io.mindmaps.graql.internal.reasoner.atom.Atom;
 
-import io.mindmaps.graql.internal.reasoner.predicate.Relation;
-import io.mindmaps.graql.internal.reasoner.predicate.Substitution;
-import java.util.HashMap;
+import io.mindmaps.graql.internal.reasoner.atom.Substitution;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static io.mindmaps.graql.internal.reasoner.Utility.computeRoleCombinations;
 import static io.mindmaps.graql.internal.reasoner.query.QueryAnswers.getUnifiedAnswers;
 
 public class AtomicMatchQuery extends AtomicQuery{
 
     final private QueryAnswers answers;
 
-    public AtomicMatchQuery(Atomic atom){
+    public AtomicMatchQuery(Atom atom){
         super(atom);
         answers = new QueryAnswers();
     }

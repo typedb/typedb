@@ -21,8 +21,10 @@ package io.mindmaps.graql.internal.reasoner.query;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Type;
-import io.mindmaps.graql.internal.reasoner.predicate.Atomic;
+import io.mindmaps.graql.internal.reasoner.atom.Atom;
+import io.mindmaps.graql.internal.reasoner.atom.Atomic;
 
+import io.mindmaps.graql.internal.reasoner.atom.Predicate;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -134,7 +136,7 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
         Map<String, Type> typeConstraints = new HashMap<>();
 
         //find extra type constraints
-        Set<Atomic> extraTypes =  subtractSets(parentQuery.getTypeConstraints(), childQuery.getTypeConstraints());
+        Set<Atom> extraTypes =  subtractSets(parentQuery.getTypeConstraints(), childQuery.getTypeConstraints());
         extraTypes.forEach( type -> {
            typeConstraints.put(type.getVarName(), type.getType());
         });
@@ -142,10 +144,10 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
         //find extra subs
         if (parentQuery.getSelectedNames().size() != childQuery.getSelectedNames().size()){
             //get |child - parent| set difference
-            Set<Atomic> extraSubs = subtractSets(parentQuery.getSubstitutions(), childQuery.getSubstitutions());
+            Set<Predicate> extraSubs = subtractSets(parentQuery.getSubstitutions(), childQuery.getSubstitutions());
             extraSubs.forEach( sub -> {
                 String var = sub.getVarName();
-                Concept con = graph.getConcept(sub.getVal());
+                Concept con = graph.getConcept(sub.getPredicateValue());
                 if (unifiers.containsKey(var)) var = unifiers.get(var);
                 if (childQuery.getSelectedNames().size() > parentQuery.getSelectedNames().size())
                     valueConstraints.put(var, con);

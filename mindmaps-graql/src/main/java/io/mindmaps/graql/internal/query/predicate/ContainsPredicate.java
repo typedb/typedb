@@ -23,7 +23,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 class ContainsPredicate extends ComparatorPredicate {
 
     /**
-     * @param substring the value that this predicate is testing against
+     * @param substring the value that this atom is testing against
      */
     ContainsPredicate(String substring) {
         super(substring);

@@ -36,26 +36,26 @@ public interface ValuePredicateAdmin extends ValuePredicate {
     }
 
     /**
-     * @return whether this predicate is specific (e.g. "eq" is specific, "regex" is not)
+     * @return whether this atom is specific (e.g. "eq" is specific, "regex" is not)
      */
     default boolean isSpecific() {
         return false;
     }
 
     /**
-     * @return the value comparing against, if this is an "equality" predicate, otherwise nothing
+     * @return the value comparing against, if this is an "equality" atom, otherwise nothing
      */
     default Optional<Object> equalsValue() {
         return Optional.empty();
     }
 
     /**
-     * @return all values referred to in the predicate (including within 'ors' and 'ands')
+     * @return all values referred to in the atom (including within 'ors' and 'ands')
      */
     Set<Object> getInnerValues();
 
     /**
-     * @return the gremlin predicate object this ValuePredicate wraps
+     * @return the gremlin atom object this ValuePredicate wraps
      */
     P<Object> getPredicate();
 }

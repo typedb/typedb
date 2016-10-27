@@ -15,78 +15,81 @@
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
+package io.mindmaps.graql.internal.reasoner.atom;
 
-package io.mindmaps.graql.internal.reasoner.predicate;
-
-import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.Rule;
-import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.concept.RoleType;
+import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.Type;
-import io.mindmaps.graql.*;
+import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.pattern.Patterns;
 import io.mindmaps.graql.internal.reasoner.query.Query;
+import io.mindmaps.util.ErrorMessage;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javafx.util.Pair;
 
-import java.util.*;
+public abstract class Atom extends AtomBase {
 
-public abstract class AtomBase implements Atomic{
-
-    protected String varName = null;
     protected Type type = null;
     protected String typeId = null;
-    protected PatternAdmin atomPattern = null;
-    private Query parent = null;
 
-    public AtomBase(VarAdmin pattern) {
+    public Atom(VarAdmin pattern) {
+        super(pattern);
         this.atomPattern = pattern;
-        Pair<String, String> varData = extractDataFromVar(atomPattern.asVar());
-        this.varName = varData.getKey();
-        this.typeId = varData.getValue();
+        this.typeId = extractTypeId(atomPattern.asVar());
     }
 
-    public AtomBase(VarAdmin pattern, Query par) {
-        this(pattern);
-        this.parent = par;
+    public Atom(VarAdmin pattern, Query par) {
+        super(pattern, par);
+        this.typeId = extractTypeId(atomPattern.asVar());
     }
 
-    public AtomBase(AtomBase a) {
-        if (a.getParentQuery() != null)
-            this.parent = a.getParentQuery();
-
-        this.atomPattern = Patterns.mergeVars(Sets.newHashSet(a.atomPattern.asVar()));
-        Pair<String, String> varData = extractDataFromVar(atomPattern.asVar());
-        varName = varData.getKey();
-        typeId = varData.getValue();
+    public Atom(Atom a) {
+        super(a);
+        this.typeId = extractTypeId(atomPattern.asVar());
     }
 
-    public abstract Atomic clone();
-
-    private Pair<String, String> extractDataFromVar(VarAdmin var) {
+    private String extractTypeId(VarAdmin var) {
         String vTypeId;
-        String vName = var.getName();
-
         Map<VarAdmin, Set<ValuePredicateAdmin>> resourceMap = var.getResourcePredicates();
         if (resourceMap.size() != 0) {
             if (resourceMap.size() != 1)
                 throw new IllegalArgumentException(ErrorMessage.MULTIPLE_RESOURCES.getMessage(var.toString()));
-
             Map.Entry<VarAdmin, Set<ValuePredicateAdmin>> entry = resourceMap.entrySet().iterator().next();
             vTypeId = entry.getKey().getId().orElse("");
         }
         else
             vTypeId = var.getType().flatMap(VarAdmin::getId).orElse("");
-
-        return new Pair<>(vName, vTypeId);
+        return vTypeId;
     }
 
     @Override
-    public String toString(){ return atomPattern.toString(); }
+    public boolean isAtom(){ return true;}
+
+    /**
+     * @return true if the atom corresponds to a atom
+     * */
+    public boolean isType(){ return false;}
+
+    /**
+     * @return true if the atom corresponds to a non-unary atom
+     * */
+    public boolean isRelation(){return false;}
+
+    /**
+     * @return true if the atom corresponds to a resource atom
+     * */
+    public boolean isResource(){ return false;}
 
     @Override
     public boolean isRuleResolvable() {
@@ -110,19 +113,13 @@ public abstract class AtomBase implements Atomic{
 
         return atomRecursive;
     }
-    @Override
-    public boolean containsVar(String name){ return getVarNames().contains(name);}
 
-    @Override
-    public PatternAdmin getPattern(){ return atomPattern;}
-    
-    @Override
     public MatchQuery getMatchQuery(MindmapsGraph graph) {
         QueryBuilder qb = Graql.withGraph(graph);
         MatchQuery matchQuery = qb.match(getPattern());
 
         //add substitutions
-        Map<String, Atomic> varSubMap = getVarSubMap();
+        Map<String, Predicate> varSubMap = getVarSubMap();
         Set<String> selectVars = getVarNames();
         varSubMap.forEach( (var, sub) -> {
             Set<PatternAdmin> patterns = new HashSet<>();
@@ -132,72 +129,36 @@ public abstract class AtomBase implements Atomic{
         return matchQuery.admin().select(selectVars);
     }
 
-    @Override
-    public Query getParentQuery(){
-        return parent;
-    }
-
-    @Override
-    public void setParentQuery(Query q){ parent = q;}
-
-    private void setVarName(String var){
-        varName = var;
-        atomPattern.asVar().setName(var);
-    }
-
-    @Override
-    public void unify(String from, String to) {
-        String var = getVarName();
-        if (var.equals(from)) {
-            setVarName(to);
-        } else if (var.equals(to)) {
-            setVarName("captured->" + var);
-        }
-    }
-
-    @Override
-    public void unify(Map<String, String> unifiers){
-        String var = getVarName();
-        if (unifiers.containsKey(var)) {
-            setVarName(unifiers.get(var));
-        }
-        else if (unifiers.containsValue(var)) {
-            setVarName("captured->" + var);
-        }
-    }
-
-    @Override
-    public String getVarName(){ return varName;}
-    @Override
-    public Set<String> getVarNames(){
-        return Sets.newHashSet(varName);
-    }
-    @Override
     public Type getType(){
         if (type == null)
             type = getParentQuery().getGraph().orElse(null).getType(typeId);
         return type;
     }
-    @Override
+
     public String getTypeId(){ return typeId;}
-    @Override
-    public String getVal(){ return null;}
+
+    public String getValueVariable() {
+        throw new IllegalArgumentException("getValueVariable called on Atom object " + getPattern());
+    }
 
     @Override
     public Map<String, String> getUnifiers(Atomic parentAtom) {
+        if (!(parentAtom instanceof Atom))
+            throw new IllegalArgumentException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
+
         Set<String> varsToAllocate = parentAtom.getVarNames();
         Set<String> childBVs = getVarNames();
         Map<String, String> unifiers = new HashMap<>();
         Map<String, Pair<Type, RoleType>> childMap = getVarTypeRoleMap();
-        Map<RoleType, Pair<String, Type>> parentMap = parentAtom.getRoleVarTypeMap();
+        Map<RoleType, Pair<String, Type>> parentMap = ((Atom) parentAtom).getRoleVarTypeMap();
 
         //try based on substitutions
         Query parentQuery = parentAtom.getParentQuery();
         getParentQuery().getSubstitutions().stream().filter(sub -> containsVar(sub.getVarName())).forEach(sub -> {
             String chVar = sub.getVarName();
-            String id = sub.getVal();
+            String id = sub.getPredicateValue();
             Set<Atomic> parentSubs = parentQuery.getSubstitutions().stream()
-                        .filter(s -> s.getVal().equals(id)).collect(Collectors.toSet());
+                    .filter(s -> s.getPredicateValue().equals(id)).collect(Collectors.toSet());
             String pVar = parentSubs.isEmpty()? "" : parentSubs.iterator().next().getVarName();
             if (!pVar.isEmpty()) {
                 if (!chVar.equals(pVar)) unifiers.put(chVar, pVar);
@@ -219,32 +180,26 @@ public abstract class AtomBase implements Atomic{
         return unifiers;
     }
 
-    @Override
-    public Set<Atomic> getSubstitutions() {
-        return getParentQuery().getAtoms().stream()
-                .filter(Atomic::isSubstitution)
+    public Set<Predicate> getSubstitutions() {
+        return getParentQuery().getSubstitutions().stream()
                 .filter(atom -> containsVar(atom.getVarName()))
                 .collect(Collectors.toSet());
     }
 
-    @Override
-    public Set<Atomic> getTypeConstraints(){
+    public Set<Predicate> getValuePredicates(){
+        return getParentQuery().getValuePredicates().stream()
+                .filter(atom -> containsVar(atom.getVarName()))
+                .collect(Collectors.toSet());
+    }
+
+    public Set<Atom> getTypeConstraints(){
         return getParentQuery().getTypeConstraints().stream()
                 .filter(atom -> containsVar(atom.getVarName()))
                 .collect(Collectors.toSet());
     }
 
-    @Override
-    public Set<Atomic> getValuePredicates(){
-        return getParentQuery().getAtoms().stream()
-                .filter(Atomic::isValuePredicate)
-                .filter(atom -> containsVar(atom.getVarName()))
-                .collect(Collectors.toSet());
-    }
-
-    @Override
-    public Map<String, Atomic> getVarSubMap() {
-        Map<String, Atomic> map = new HashMap<>();
+    public Map<String, Predicate> getVarSubMap() {
+        Map<String, Predicate> map = new HashMap<>();
         getSubstitutions().forEach( sub -> {
             String var = sub.getVarName();
             map.put(var, sub);
@@ -252,15 +207,14 @@ public abstract class AtomBase implements Atomic{
         return map;
     }
 
-    @Override
     public Map<RoleType, String> getRoleConceptIdMap(){
         Map<RoleType, String> roleConceptMap = new HashMap<>();
-        Map<String, Atomic> varSubMap = getVarSubMap();
+        Map<String, Predicate> varSubMap = getVarSubMap();
         Map<RoleType, Pair<String, Type>> roleVarMap = getRoleVarTypeMap();
 
         roleVarMap.forEach( (role, varTypePair) -> {
             String var = varTypePair.getKey();
-            roleConceptMap.put(role, varSubMap.containsKey(var) ? varSubMap.get(var).getVal() : "");
+            roleConceptMap.put(role, varSubMap.containsKey(var) ? varSubMap.get(var).getPredicateValue() : "");
         });
         return roleConceptMap;
     }
@@ -281,4 +235,3 @@ public abstract class AtomBase implements Atomic{
 
     public Map<RoleType, Pair<String, Type>> getRoleVarTypeMap() { return new HashMap<>();}
 }
-
