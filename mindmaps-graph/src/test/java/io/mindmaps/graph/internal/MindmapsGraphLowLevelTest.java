@@ -296,9 +296,12 @@ public class MindmapsGraphLowLevelTest {
     public void testGetResource(){
         assertNull(mindmapsGraph.getResource("Bob"));
         ResourceType type = mindmapsGraph.putResourceType("Type", ResourceType.DataType.STRING);
+        ResourceType type2 = mindmapsGraph.putResourceType("Type 2", ResourceType.DataType.STRING);
         Resource c2 = mindmapsGraph.putResource("1", type);
         assertEquals(c2, mindmapsGraph.getResourcesByValue("1").iterator().next());
         assertEquals(1, mindmapsGraph.getResourcesByValue("1").size());
+        assertEquals(c2, mindmapsGraph.getResource("1", type));
+        assertNull(mindmapsGraph.getResource("1", type2));
     }
 
     @Test

@@ -276,22 +276,12 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
 
     @Override
     public <V> Resource<V> putResource(V value, ResourceType<V> type) {
-        ResourceImpl<V> resource;
-        String index = ResourceImpl.generateResourceIndex(type.getId(), value.toString());
-        ConceptImpl concept = getConcept(Schema.ConceptProperty.INDEX, index);
-
-        if(concept == null){
+        Resource<V> resource = getResource(value, type);
+        if(resource == null){
             resource = elementFactory.buildResource(addVertex(Schema.BaseType.RESOURCE), type, value);
-        } else {
-            if(concept.isResource()) {
-                resource = (ResourceImpl<V>) concept.asResource();
-            } else {
-                throw new ConceptException(ErrorMessage.RESOURCE_INDEX_ALREADY_TAKEN.getMessage(index, concept));
-            }
         }
         return resource;
     }
-
 
     @Override
     public RuleType putRuleType(String itemIdentifier) {
@@ -363,6 +353,17 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     @Override
     public <V> Resource<V> getResource(String id) {
         return validConceptOfType(getConcept(id), ResourceImpl.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <V> Resource<V> getResource(V value, ResourceType<V> type){
+        String index = ResourceImpl.generateResourceIndex(type.getId(), value.toString());
+        ConceptImpl concept = getConcept(Schema.ConceptProperty.INDEX, index);
+        if(concept != null){
+            return concept.asResource();
+        }
+        return null;
     }
 
     @Override
