@@ -95,19 +95,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
     }
 
     /**
-     *
-     * @param key The key of the property to retrieve
-     * @return The value in the property
-     */
-    private Object getProperty(String key){
-        VertexProperty property = vertex.property(key);
-        if(property != null && property.isPresent())
-            return property.value();
-        else
-            return null;
-    }
-
-    /**
      * Deletes the concept.
      * @throws ConceptException Throws an exception if the node has any edges attached to it.
      */
@@ -557,7 +544,11 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @return The value stored in the property
      */
     public Object getProperty(Schema.ConceptProperty key){
-        return getProperty(key.name());
+        VertexProperty property = vertex.property(key.name());
+        if(property != null && property.isPresent())
+            return property.value();
+        else
+            return null;
     }
 
     /**
@@ -609,7 +600,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @return The id of the type of this concept. This is a shortcut used to prevent traversals.
      */
     public String getType(){
-        return String.valueOf(getProperty(Schema.ConceptProperty.TYPE));
+        return (String) getProperty(Schema.ConceptProperty.TYPE);
     }
 
     /**
