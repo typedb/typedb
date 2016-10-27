@@ -40,7 +40,7 @@ public class MindmapsComputerImpl implements MindmapsComputer {
     @Override
     public ComputerResult compute(VertexProgram program, MapReduce... mapReduces) {
         try {
-            GraphComputer graphComputer = graph.compute(this.graphComputer).program(program);
+            GraphComputer graphComputer = getComputer().program(program);
             for (MapReduce mapReduce : mapReduces)
                 graphComputer = graphComputer.mapReduce(mapReduce);
             return graphComputer.submit().get();
@@ -52,7 +52,7 @@ public class MindmapsComputerImpl implements MindmapsComputer {
     @Override
     public ComputerResult compute(MapReduce mapReduce) {
         try {
-            return graph.compute(graphComputer).mapReduce(mapReduce).submit().get();
+            return getComputer().mapReduce(mapReduce).submit().get();
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }
@@ -62,7 +62,7 @@ public class MindmapsComputerImpl implements MindmapsComputer {
      * @return A graph compute supported by this mindmaps graph
      */
     @SuppressWarnings("unchecked")
-    private Class<? extends GraphComputer> getGraphComputer(String graphComputerType) {
+    protected Class<? extends GraphComputer> getGraphComputer(String graphComputerType) {
         try {
             return (Class<? extends GraphComputer>) Class.forName(graphComputerType);
         } catch (ClassNotFoundException e) {
@@ -70,5 +70,8 @@ public class MindmapsComputerImpl implements MindmapsComputer {
         }
     }
 
+    protected GraphComputer getComputer() {
+        return graph.compute(this.graphComputer);
+    }
 
 }

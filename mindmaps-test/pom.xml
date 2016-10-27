@@ -95,6 +95,30 @@
                 </dependency>
             </dependencies>
         </profile>
+
+        <profile>
+            <id>scaling</id>
+            <properties>
+                <mindmaps.test-profile>titan</mindmaps.test-profile>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>io.mindmaps</groupId>
+                    <artifactId>mindmaps-titan-factory</artifactId>
+                    <version>${project.version}</version>
+                    <exclusions>
+                        <exclusion>
+                            <groupId>org.slf4j</groupId>
+                            <artifactId>slf4j-log4j12</artifactId>
+                        </exclusion>
+                        <exclusion>
+                            <groupId>ch.qos.logback</groupId>
+                            <artifactId>logback-classic</artifactId>
+                        </exclusion>
+                    </exclusions>
+                </dependency>
+            </dependencies>
+        </profile>
     </profiles>
 
     <dependencies>
@@ -128,6 +152,11 @@
             <groupId>commons-collections</groupId>
             <artifactId>commons-collections</artifactId>
             <version>3.2.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
+            <version>1.3</version>
         </dependency>
     </dependencies>
 </project>
