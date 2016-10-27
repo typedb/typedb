@@ -280,7 +280,19 @@ public class Analytics {
     public Map<String, Set<String>> connectedComponent() {
         MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
         ComputerResult result = computer.compute(new ConnectedComponentVertexProgram(subtypes),
-                new ClusterPopulationMapReduce(subtypes));
+                new ClusterMemberMapReduce(subtypes, ConnectedComponentVertexProgram.CLUSTER_LABEL));
+        return result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
+    }
+
+    /**
+     * Compute the number of connected components.
+     *
+     * @return a map of component size
+     */
+    public Map<String, Long> connectedComponentSize() {
+        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
+        ComputerResult result = computer.compute(new ConnectedComponentVertexProgram(subtypes),
+                new ClusterSizeMapReduce(subtypes, ConnectedComponentVertexProgram.CLUSTER_LABEL));
         return result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
     }
 

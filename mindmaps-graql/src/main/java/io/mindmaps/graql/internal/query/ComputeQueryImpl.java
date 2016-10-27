@@ -117,14 +117,21 @@ class ComputeQueryImpl implements ComputeQuery {
     public Stream<String> resultsString() {
         Object computeResult = execute();
         if (computeResult instanceof Map) {
-            Map<Serializable, Set<String>> map = (Map<Serializable, Set<String>>) computeResult;
-            return map.entrySet().stream().map(entry -> {
-                StringBuilder stringBuilder = new StringBuilder();
-                for (String s : entry.getValue()) {
-                    stringBuilder.append(entry.getKey()).append("\t").append(s).append("\n");
-                }
-                return stringBuilder.toString();
-            });
+            if (((Map) computeResult).isEmpty())
+                return Stream.of("There are no instances of the selected type(s).");
+            if (((Map) computeResult).values().iterator().next() instanceof Set) {
+                Map<Serializable, Set<String>> map = (Map<Serializable, Set<String>>) computeResult;
+                return map.entrySet().stream().map(entry -> {
+                    StringBuilder stringBuilder = new StringBuilder();
+                    for (String s : entry.getValue()) {
+                        stringBuilder.append(entry.getKey()).append("\t").append(s).append("\n");
+                    }
+                    return stringBuilder.toString();
+                });
+            } else {
+                Map<Serializable, ?> map = (Map<Serializable, ?>) computeResult;
+                return map.entrySet().stream().map(entry -> entry.getKey() + "\t" + entry.getValue());
+            }
         } else if (computeResult instanceof Optional) {
             return ((Optional) computeResult).isPresent() ? Stream.of(((Optional) computeResult).get().toString()) :
                     Stream.of("There are no instances of this resource type.");
