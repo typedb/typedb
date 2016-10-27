@@ -61,7 +61,7 @@ public class QueryTest {
         assertTrue(query.containsAtom(vpAtom));
         assertTrue(query.containsAtom(subAtom));
         assertEquals(query.getValuePredicate("x"), "Bob");
-        assertEquals(query.getSubstitution("x"), "Bob");
+        assertEquals(query.getIdPredicate("x"), "Bob");
     }
 
     @Test

@@ -118,7 +118,7 @@ public abstract class Atom extends AtomBase {
         QueryBuilder qb = Graql.withGraph(graph);
         MatchQuery matchQuery = qb.match(getPattern());
 
-        //add substitutions
+        //add IdPredicates
         Map<String, Predicate> varSubMap = getVarSubMap();
         Set<String> selectVars = getVarNames();
         varSubMap.forEach( (var, sub) -> {
@@ -152,12 +152,12 @@ public abstract class Atom extends AtomBase {
         Map<String, Pair<Type, RoleType>> childMap = getVarTypeRoleMap();
         Map<RoleType, Pair<String, Type>> parentMap = ((Atom) parentAtom).getRoleVarTypeMap();
 
-        //try based on substitutions
+        //try based on IdPredicates
         Query parentQuery = parentAtom.getParentQuery();
-        getParentQuery().getSubstitutions().stream().filter(sub -> containsVar(sub.getVarName())).forEach(sub -> {
+        getParentQuery().getIdPredicates().stream().filter(sub -> containsVar(sub.getVarName())).forEach(sub -> {
             String chVar = sub.getVarName();
             String id = sub.getPredicateValue();
-            Set<Atomic> parentSubs = parentQuery.getSubstitutions().stream()
+            Set<Atomic> parentSubs = parentQuery.getIdPredicates().stream()
                     .filter(s -> s.getPredicateValue().equals(id)).collect(Collectors.toSet());
             String pVar = parentSubs.isEmpty()? "" : parentSubs.iterator().next().getVarName();
             if (!pVar.isEmpty()) {
@@ -180,8 +180,8 @@ public abstract class Atom extends AtomBase {
         return unifiers;
     }
 
-    public Set<Predicate> getSubstitutions() {
-        return getParentQuery().getSubstitutions().stream()
+    public Set<Predicate> getIdPredicates() {
+        return getParentQuery().getIdPredicates().stream()
                 .filter(atom -> containsVar(atom.getVarName()))
                 .collect(Collectors.toSet());
     }
@@ -200,7 +200,7 @@ public abstract class Atom extends AtomBase {
 
     public Map<String, Predicate> getVarSubMap() {
         Map<String, Predicate> map = new HashMap<>();
-        getSubstitutions().forEach( sub -> {
+        getIdPredicates().forEach( sub -> {
             String var = sub.getVarName();
             map.put(var, sub);
         });

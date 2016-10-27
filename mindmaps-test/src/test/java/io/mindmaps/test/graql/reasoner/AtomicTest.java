@@ -134,7 +134,7 @@ public class AtomicTest {
         assert(((Atom) atom).isType());
         assert(((Atom) relation).isRelation());
         assert(((Atom) res).isResource());
-        assert(((Predicate) sub).isSubstitution());
+        assert(((Predicate) sub).isIdPredicate());
     }
 
     @Test

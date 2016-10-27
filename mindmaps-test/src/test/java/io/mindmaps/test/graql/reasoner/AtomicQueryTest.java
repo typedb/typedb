@@ -28,7 +28,7 @@ import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.internal.reasoner.atom.Atomic;
 import io.mindmaps.graql.internal.reasoner.atom.AtomicFactory;
-import io.mindmaps.graql.internal.reasoner.atom.Substitution;
+import io.mindmaps.graql.internal.reasoner.atom.IdPredicate;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.test.graql.reasoner.graphs.GenericGraph;
 import io.mindmaps.test.graql.reasoner.graphs.SNBGraph;
@@ -82,12 +82,12 @@ public class AtomicQueryTest {
     public void testErrorOnMaterialize(){
         exception.expect(IllegalStateException.class);
         String queryString = "match ($x, $y) isa recommendation;";
-        Substitution sub = new Substitution("x", graph.getConcept("Bob"));
+        IdPredicate sub = new IdPredicate("x", graph.getConcept("Bob"));
         AtomicQuery atomicQuery = new AtomicQuery(queryString, graph);
         AtomicQuery atomicQuery2 = new AtomicQuery(atomicQuery);
         atomicQuery2.addAtomConstraints(Sets.newHashSet(sub));
         exception.expectMessage(ErrorMessage.MATERIALIZATION_ERROR.getMessage(atomicQuery2.toString()));
-        atomicQuery.materialise(Sets.newHashSet(new Substitution("x", graph.getConcept("Bob"))));
+        atomicQuery.materialise(Sets.newHashSet(new IdPredicate("x", graph.getConcept("Bob"))));
     }
 
     @Test
@@ -96,8 +96,8 @@ public class AtomicQueryTest {
 
         String queryString = "match ($x, $y) isa recommendation;";
         AtomicQuery atomicQuery = new AtomicQuery(queryString, graph);
-        atomicQuery.materialise(Sets.newHashSet(new Substitution("x", graph.getConcept("Bob"))
-                                                , new Substitution("y", graph.getConcept("Colour of Magic"))));
+        atomicQuery.materialise(Sets.newHashSet(new IdPredicate("x", graph.getConcept("Bob"))
+                                                , new IdPredicate("y", graph.getConcept("Colour of Magic"))));
         assert(qb.<AskQuery>parse("match ($x, $y) isa recommendation;$x id 'Bob';$y id 'Colour of Magic'; ask;").execute());
     }
 

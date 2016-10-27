@@ -72,12 +72,11 @@ public class Query implements MatchQueryInternal {
         this.pattern = Patterns.conjunction(Sets.newHashSet());
         atomSet = new HashSet<>();
         addAtom(AtomicFactory.create(atom, this));
-        addAtomConstraints(atom.getSubstitutions());
+        addAtomConstraints(atom.getIdPredicates());
         addAtomConstraints(atom.getValuePredicates());
-        if(atom.isRelation() || atom.isResource())
-            addAtomConstraints(atom.getTypeConstraints()
-                                    .stream().filter(at -> !at.isRuleResolvable())
-                                    .collect(Collectors.toSet()));
+        addAtomConstraints(atom.getTypeConstraints()
+                .stream().filter(at -> !at.isRuleResolvable())
+                .collect(Collectors.toSet()));
     }
 
     //alpha-equivalence equality
@@ -155,11 +154,11 @@ public class Query implements MatchQueryInternal {
     }
 
     public Set<Atomic> getAtoms() { return new HashSet<>(atomSet);}
-    public Set<Predicate> getSubstitutions(){
+    public Set<Predicate> getIdPredicates(){
         return getAtoms().stream()
                 .filter(Atomic::isPredicate)
                 .map(at -> (Predicate) at)
-                .filter(Predicate::isSubstitution)
+                .filter(Predicate::isIdPredicate)
                 .collect(Collectors.toSet());
     }
     public Set<Atom> getTypeConstraints(){
@@ -338,8 +337,8 @@ public class Query implements MatchQueryInternal {
         return map;
     }
 
-    public String getSubstitution(String var) {
-        Set<Predicate> relevantSubs = getSubstitutions().stream()
+    public String getIdPredicate(String var) {
+        Set<Predicate> relevantSubs = getIdPredicates().stream()
                 .filter(sub -> sub.getVarName().equals(var))
                 .collect(Collectors.toSet());
         return relevantSubs.isEmpty()? "" : relevantSubs.iterator().next().getPredicateValue();
@@ -371,7 +370,7 @@ public class Query implements MatchQueryInternal {
                     Atomic lcon = AtomicFactory.create(con, this);
                     lcon.setParentQuery(this);
                     addAtom(lcon);
-                    if (lcon.isPredicate() && ((Predicate)lcon).isSubstitution())
+                    if (lcon.isPredicate() && ((Predicate)lcon).isIdPredicate())
                         selectVars.remove(lcon.getVarName());
         });
     }
