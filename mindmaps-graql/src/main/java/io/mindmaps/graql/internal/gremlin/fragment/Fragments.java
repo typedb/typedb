@@ -38,12 +38,7 @@ public class Fragments {
     }
 
     public static InIsaFragment inIsa(String start, String end) {
-        return new InIsaFragment(start, end, false);
-    }
-
-    // This method is a special case that allows getting the instances of role-types (castings)
-    public static InIsaFragment inIsaCastings(String start, String end) {
-        return new InIsaFragment(start, end, true);
+        return new InIsaFragment(start, end);
     }
 
     public static OutIsaFragment outIsa(String start, String end) {

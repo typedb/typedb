@@ -38,6 +38,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static io.mindmaps.util.Schema.BaseType.CASTING;
 import static io.mindmaps.util.Schema.ConceptProperty.ITEM_IDENTIFIER;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
@@ -71,7 +72,10 @@ public class MatchQueryBase implements MatchQueryInternal {
         }
 
         GraphTraversal<Vertex, Map<String, Vertex>> traversal = getQuery(graph, order).getTraversal();
-        return traversal.toStream().map(vertices -> makeResults(graph, vertices)).sequential();
+        return traversal.toStream()
+                .filter(this::containsNoCastings)
+                .map(vertices -> makeResults(graph, vertices))
+                .sequential();
     }
 
     @Override
@@ -141,6 +145,14 @@ public class MatchQueryBase implements MatchQueryInternal {
      */
     private GremlinQuery getQuery(MindmapsGraph graph, Optional<MatchOrder> order) {
         return new GremlinQuery(graph, this.pattern, getSelectedNames(), order);
+    }
+
+    /**
+     * @param vertices a map of vertices where the key is the variable name
+     * @return whether any of the vertices are castings
+     */
+    private boolean containsNoCastings(Map<String, Vertex> vertices) {
+        return vertices.values().stream().allMatch(v -> !v.label().equals(CASTING.name()));
     }
 
     /**
