@@ -11,20 +11,25 @@ import static io.mindmaps.util.Schema.EdgeLabel.ISA;
 
 class InIsaFragment extends AbstractFragment {
 
-    InIsaFragment(String start, String end) {
+    private final boolean allowCastings;
+
+    InIsaFragment(String start, String end, boolean allowCastings) {
         super(start, end);
+        this.allowCastings = allowCastings;
     }
 
     @Override
     public void applyTraversal(GraphTraversal<Vertex, Vertex> traversal) {
-        // Make sure we never get instances of role types
-        traversal.not(__.hasLabel(ROLE_TYPE.name()));
+        if (!allowCastings) {
+            // Make sure we never get instances of role types
+            traversal.not(__.hasLabel(ROLE_TYPE.name()));
+        }
         inSubs(inSubs(traversal).in(ISA.getLabel()));
     }
 
     @Override
     public String getName() {
-        return "<-[isa]-";
+        return "<-[isa" + (allowCastings ? ":allow-castings" : "") + "]-";
     }
 
     @Override
