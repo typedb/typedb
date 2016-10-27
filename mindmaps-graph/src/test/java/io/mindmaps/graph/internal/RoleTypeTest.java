@@ -158,13 +158,7 @@ public class RoleTypeTest {
                 putRolePlayer(roleA, c).
                 putRolePlayer(roleB, b);
 
-        assertEquals(roleA.instances().size(), 2);
-        assertTrue(roleA.instances().contains(a));
-        assertTrue(roleA.instances().contains(c));
-
-        assertEquals(roleB.instances().size(), 3);
-        assertTrue(roleB.instances().contains(b));
-        assertTrue(roleB.instances().contains(c));
-        assertTrue(roleB.instances().contains(d));
+        assertEquals(roleA.instances().size(), 0);
+        assertEquals(roleB.instances().size(), 0);
     }
 }

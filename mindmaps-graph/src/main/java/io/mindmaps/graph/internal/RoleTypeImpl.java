@@ -27,6 +27,7 @@ import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -72,12 +73,7 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
      */
     @Override
     public Collection<Instance> instances(){
-        Set<Instance> instances = new HashSet<>();
-        getIncomingNeighbours(Schema.EdgeLabel.ISA).forEach(concept -> {
-            CastingImpl casting = (CastingImpl) concept;
-            instances.add(casting.getRolePlayer());
-        });
-        return instances;
+        return Collections.emptyList();
     }
 
     /**
