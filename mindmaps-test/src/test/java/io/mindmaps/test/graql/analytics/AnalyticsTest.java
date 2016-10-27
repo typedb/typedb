@@ -23,6 +23,7 @@ import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.*;
 import io.mindmaps.exception.MindmapsValidationException;
+import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.test.AbstractGraphTest;
@@ -210,7 +211,7 @@ public class AnalyticsTest extends AbstractGraphTest {
             }
             assert resources != null;
             assertEquals(1, resources.size());
-            assertTrue(resources.iterator().next().getValue().equals(entry.getValue()));
+            assertEquals(entry.getValue(),resources.iterator().next().getValue());
         });
     }
 
@@ -271,7 +272,6 @@ public class AnalyticsTest extends AbstractGraphTest {
         // compute again and again ...
         long numVertices = 0;
         for (int i = 0; i < 2; i++) {
-            graph.close();
             computer.degreesAndPersist();
             graph = factory.getGraph();
             checkDegrees(graph, correctDegrees);
@@ -284,12 +284,14 @@ public class AnalyticsTest extends AbstractGraphTest {
             }
         }
 
+        ((AbstractMindmapsGraph) graph).getTinkerPopGraph().close();
+        computer = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
+
         // compute degrees on all types, again and again ...
         correctDegrees.put(entity4, 1l);
         correctDegrees.put(id3, 2l);
         for (int i = 0; i < 2; i++) {
-            graph.close();
-            computer = new Analytics(graph.getKeyspace(), new HashSet<>(), new HashSet<>());
+
             computer.degreesAndPersist();
             graph = factory.getGraph();
             checkDegrees(graph, correctDegrees);
