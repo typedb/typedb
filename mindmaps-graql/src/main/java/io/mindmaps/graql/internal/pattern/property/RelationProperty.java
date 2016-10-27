@@ -44,7 +44,7 @@ import java.util.stream.Stream;
 
 import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.distinctCasting;
 import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.inCasting;
-import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.inIsa;
+import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.inIsaCastings;
 import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.inRolePlayer;
 import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.outCasting;
 import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.outIsa;
@@ -172,7 +172,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
                 ),
 
                 // Pattern between casting and role type
-                EquivalentFragmentSet.create(outIsa(casting, roletypeName), inIsa(roletypeName, casting))
+                EquivalentFragmentSet.create(outIsa(casting, roletypeName), inIsaCastings(roletypeName, casting))
         );
     }
 
