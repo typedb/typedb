@@ -27,6 +27,8 @@ import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.Var;
+import io.mindmaps.migration.base.LoadingMigrator;
 import org.junit.*;
 
 import java.io.File;
@@ -42,7 +44,8 @@ import static org.junit.Assert.assertTrue;
 public class CSVMigratorTest {
 
     private MindmapsGraph graph;
-    private CSVMigrator migrator;
+    private LoadingMigrator migrator;
+    private CSVMigrator csvMigrator;
 
     @BeforeClass
     public static void start(){
@@ -62,10 +65,14 @@ public class CSVMigratorTest {
         String GRAPH_NAME = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
 
         graph = GraphFactory.getInstance().getGraphBatchLoading(GRAPH_NAME);
+
         BlockingLoader loader = new BlockingLoader(GRAPH_NAME);
         loader.setExecutorSize(1);
 
-        migrator = new CSVMigrator(loader);
+        csvMigrator = new CSVMigrator();
+        csvMigrator.setBatchSize(50);
+
+        migrator = new LoadingMigrator(loader, csvMigrator);
     }
 
     @After
@@ -74,13 +81,8 @@ public class CSVMigratorTest {
     }
 
     @Test
-    public void multiFileMigrateGraqlStringTest(){
-
-    }
-
-    @Test
     public void multiFileMigrateGraphPersistenceTest(){
-        load(get("multi-file/schema.gql"));
+        load(getFile("multi-file/schema.gql"));
         assertNotNull(graph.getEntityType("pokemon"));
 
         String pokemonTemplate = "" +
@@ -94,9 +96,9 @@ public class CSVMigratorTest {
 
         String edgeTemplate = "(pokemon-with-type: <pokemon_id>-pokemon, type-of-pokemon: <type_id>-type) isa has-type;";
 
-        migrate(pokemonTemplate, get("multi-file/data/pokemon.csv"));
-        migrate(pokemonTypeTemplate, get("multi-file/data/types.csv"));
-        migrate(edgeTemplate, get("multi-file/data/edges.csv"));
+        migrate(pokemonTemplate, getFile("multi-file/data/pokemon.csv"));
+        migrate(pokemonTypeTemplate, getFile("multi-file/data/types.csv"));
+        migrate(edgeTemplate, getFile("multi-file/data/edges.csv"));
 
         Collection<Entity> pokemon = graph.getEntityType("pokemon").instances();
         assertEquals(151, pokemon.size());
@@ -112,7 +114,7 @@ public class CSVMigratorTest {
 
     @Test
     public void multipleEntitiesInOneFileTest(){
-        load(get("single-file/schema.gql"));
+        load(getFile("single-file/schema.gql"));
         assertNotNull(graph.getEntityType("make"));
 
         String template = "" +
@@ -123,7 +125,7 @@ public class CSVMigratorTest {
                 "    if (ne Price null) do { has price @double(Price) ;\n" +
                 "(make-of-car: $x, model-of-car: $y) isa make-and-model;";
 
-        migrate(template, get("single-file/data/cars.csv"));
+        migrate(template, getFile("single-file/data/cars.csv"));
 
         // test
         Collection<Entity> makes = graph.getEntityType("make").instances();
@@ -143,44 +145,18 @@ public class CSVMigratorTest {
     }
 
     @Test
-    public void icijTest() {
+    public void testMigrateAsStringMethod(){
+        load(getFile("multi-file/schema.gql"));
+        assertNotNull(graph.getEntityType("pokemon"));
 
-//        schemaMigrator.configure("entity", parser("icij/data/Entities.csv")).migrate(loader);
+        String pokemonTypeTemplate = "$x isa pokemon-type id <id>-type has description <identifier>;";
+        String templated = csvMigrator.migrate(pokemonTypeTemplate, getFile("multi-file/data/types.csv"))
+                .flatMap(Collection::stream)
+                .map(Var::toString)
+                .collect(joining("\n"));
 
-        // test a entity
-//        Entity thing = Graql.withGraph(graph).match(var("x").isa("entity")).iterator().next().get("x").asEntity();
-//        assertNotNull(thing);
-//        assertResourceRelationExists("name-resource", thing);
-//        assertResourceRelationExists("country_codes-resource", thing);
-
-//        schemaMigrator.configure("address", parser("icij/data/Addresses.csv")).migrate(loader);
-
-        // test an address
-//        thing = Graql.withGraph(graph).match(var("x").isa("address")).iterator().next().get("x").asEntity();
-//        assertNotNull(thing);
-//        assertResourceRelationExists("valid_until-resource", thing);
-//        assertResourceRelationExists("countries-resource", thing);
-
-//        schemaMigrator.configure("officer", parser("icij/data/Officers.csv")).migrate(loader);
-
-//        // test an officer
-//        thing = Graql.withGraph(graph).match(var("x").isa("officer")).iterator().next().get("x").asEntity();
-//        assertNotNull(thing);
-//        assertResourceRelationExists("valid_until-resource", thing);
-//        assertResourceRelationExists("country_codes-resource", thing);
-
-//        schemaMigrator.configure("intermediary", parser("icij/data/Intermediaries.csv")).migrate(loader);
-
-        // test an intermediary
-//        thing = Graql.withGraph(graph).match(var("x").isa("intermediary")).iterator().next().get("x").asEntity();
-//        assertNotNull(thing);
-//        assertResourceRelationExists("countries-resource", thing);
-//        assertResourceRelationExists("status-resource", thing);
-    }
-
-    private void assertResourceRelationExists(String type, Entity owner){
-        assertTrue(owner.resources().stream().anyMatch(resource ->
-                resource.type().getId().equals(type)));
+        String expected = "id \"17-type\"";
+        assertTrue(templated.contains(expected));
     }
 
     private void assertRelationExists(RelationType rel, Entity entity1, Entity entity2){
@@ -188,7 +164,7 @@ public class CSVMigratorTest {
                 r.rolePlayers().values().contains(entity1) && r.rolePlayers().values().contains(entity2)));
     }
 
-    private File get(String fileName){
+    private File getFile(String fileName){
         return new File(CSVMigratorTest.class.getClassLoader().getResource(fileName).getPath());
     }
 

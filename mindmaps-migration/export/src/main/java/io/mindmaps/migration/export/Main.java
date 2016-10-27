@@ -17,78 +17,63 @@
  */
 package io.mindmaps.migration.export;
 
-import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.migration.base.io.MigrationCLI;
+import org.apache.commons.cli.Options;
 
-import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.Writer;
 
 public class Main {
 
-    static void die(String errorMsg){
-        throw new RuntimeException(errorMsg + "\nSyntax: ./migration.sh export {ontology, data} -file <output file> -graph <graph name> [-engine <Mindmaps engine URL>]");
+    private static Options options = new Options();
+    static {
+        options.addOption("f", "file", true, "output file");
+        options.addOption("o", "ontology", false, "export ontology");
+        options.addOption("d", "data", false, "export data");
     }
 
     public static void main(String[] args){
 
-        String graphName = null;
-        String outputFileName = null;
-        String engineURL = null;
-        boolean ontology = false;
-        boolean data = false;
+        MigrationCLI cli = new MigrationCLI(args, options);
 
-        for (int i = 0; i < args.length; i++) {
-            if ("-file".equals(args[i]))
-                outputFileName = args[++i];
-            else if("-graph".equals(args[i]))
-                graphName = args[++i];
-            else if("-engine".equals(args[i]))
-                engineURL = args[++i];
-            else if(i == 1 && "ontology".equals(args[i]))
-                ontology = true;
-            else if(i == 1 && "data".equals(args[i]))
-                data = true;
-            else if(i == 0 && "export".equals(args[i]))
-               continue;
-            else
-                die("Unknown option " + args[i]);
+        String outputFile = cli.getOption("f");
+
+        System.out.println("Writing graph " + cli.getKeyspace() + " using MM Engine " +
+                cli.getEngineURI() + " to " + (outputFile == null ? "System.out" : outputFile));
+
+        MindmapsGraph graph = cli.getGraph();
+        GraphWriter graphWriter = new GraphWriter(graph);
+
+        StringBuilder builder = new StringBuilder();
+        if(cli.hasOption("o")){
+            builder.append(graphWriter.dumpOntology());
         }
 
-        engineURL = engineURL == null ? Mindmaps.DEFAULT_URI : engineURL;
-        if(graphName == null){
-            die("You must provide a graph name argument using -graph");
+        if(cli.hasOption("d")){
+           builder.append(graphWriter.dumpData());
         }
 
-        System.out.println("Writing graph " + graphName + " using MM Engine " +
-                engineURL + " to file " + (outputFileName == null ? "System.out" : outputFileName));
+        Writer writer = null;
+        try {
+            writer = outputFile != null ? new FileWriter(outputFile) : new PrintWriter(System.out);
 
-        MindmapsGraph graph = Mindmaps.factory(engineURL, graphName).getGraph();
-        GraphWriter writer = new GraphWriter(graph);
-
-        String contents = null;
-        if(ontology){
-            contents = writer.dumpOntology();
-        } else if(data){
-            contents = writer.dumpData();
-        }
-
-        if(outputFileName == null){
-            System.out.println(contents);
-            return;
-        }
-
-        try{
-            File outputFile = new File(outputFileName);
-            outputFile.createNewFile();
-
-            BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(outputFile));
-            bufferedWriter.write(contents);
-            bufferedWriter.flush();
-            bufferedWriter.close();
+            // If there is no fileWriter, use a printWriter
+            writer.write(builder.toString());
+            writer.flush();
         } catch (IOException e){
-            die("Problem writing to file " + outputFileName);
+            cli.die("Problem writing to file " + outputFile);
+        } finally {
+            if(outputFile != null && writer != null) {
+                try {
+                    writer.close();
+                } catch (IOException e) {
+                    cli.die("Problem closing output stream.");
+                }
+            }
+            graph.close();
         }
     }
 }

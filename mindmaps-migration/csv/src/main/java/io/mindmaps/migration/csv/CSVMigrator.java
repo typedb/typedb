@@ -18,22 +18,20 @@
 
 package io.mindmaps.migration.csv;
 
-import com.google.common.collect.Iterators;
 import com.opencsv.CSVReader;
-import io.mindmaps.engine.loader.Loader;
-import io.mindmaps.graql.Graql;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.mindmaps.graql.Var;
+import io.mindmaps.migration.base.AbstractMigrator;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.*;
+import java.io.Reader;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
-import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
@@ -41,35 +39,10 @@ import static java.util.stream.Collectors.toMap;
  * The CSV data migrator will migrate all of the data in a CSV file into Mindmaps Graql var patters, to be
  * imported into a graph as the user sees fit.
  */
-public class CSVMigrator {
+public class CSVMigrator extends AbstractMigrator {
 
-    private static Logger LOG = LoggerFactory.getLogger(CSVMigrator.class);
-
-    public static final int BATCH_SIZE = 5;
     public static final char DELIMITER = ',';
-    private static final String NEWLINE = "\n";
-
-    private final Loader loader;
     private char delimiter = DELIMITER;
-    private int batchSize = BATCH_SIZE;
-
-    /**
-     * Construct a CSV migrator
-     * @param loader loader for the migrator to use
-     */
-    public CSVMigrator(Loader loader){
-        this.loader = loader;
-        loader.setBatchSize(1);
-    }
-
-    /**
-     * Set number of rows to migrate in one batch
-     * @param batchSize number of rows to migrate at once
-     */
-    public CSVMigrator setBatchSize(int batchSize){
-        this.batchSize = batchSize;
-        return this;
-    }
 
     /**
      * Set delimiter the input file will be split on
@@ -80,53 +53,35 @@ public class CSVMigrator {
         return this;
     }
 
-    /**
-     * Migrate all the data in the given file based on the given template.
-     * @param template parametrized graql insert query
-     * @param file file containing data to be migrated
-     */
-    public void migrate(String template, File file){
-        checkBatchSize();
-
-        try (CSVReader reader =  new CSVReader(new FileReader(file), delimiter, '"', 0)){
-           resolve(template, reader).forEach(loader::addToQueue);
-        } catch (IOException e){
-            throw new RuntimeException(e);
-        } finally {
-            loader.flush();
-            loader.waitToFinish();
-        }
-    }
-
-    /**
-     * Migrate all the data in the given file based on the given template.
-     * @param template parametrized graql insert query
-     * @param file file containing data to be migrated
-     * @return Graql insert statement representing the file
-     */
-    public String graql(String template, File file){
-        checkBatchSize();
-
-        try (CSVReader reader =  new CSVReader(new FileReader(file), delimiter, '"', 0)){
-            return resolve(template, reader).collect(joining(NEWLINE));
+    @Override
+    public Stream<Collection<Var>> migrate(String template, File file){
+        try (FileReader reader = new FileReader(file)){
+            return migrate(template, reader);
         } catch (IOException e){
             throw new RuntimeException(e);
         }
     }
 
     /**
-     * Convert native data format (CSVReader) to stream of templates
+     * Each String in the stream is a CSV file
      * @param template parametrized graql insert query
-     * @param reader CSV reader of data file
-     * @return Stream of data migrated into templates
-     * @throws IOException
+     * @param reader reader over the data to be migrated
+     * @return
      */
-    private Stream<String> resolve(String template, CSVReader reader) throws IOException {
-        String[] header = reader.readNext();
+    @Override
+    public Stream<Collection<Var>> migrate(String template, final Reader reader) {
+        try(CSVReader csvReader = new CSVReader(reader, delimiter, '"', 0)) {
 
-        return partitionedStream(reader.iterator())
-                .map(batch -> batchParse(header, batch))
-                .map(data -> template(template, data));
+            Iterator<String[]> it = csvReader.iterator();
+
+            String[] header = it.next();
+
+            return partitionedStream(it).collect(toList()).stream()
+                    .map(col -> batchParse(header, col))
+                    .map(col -> template(template, col));
+        } catch (IOException e){
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -155,34 +110,6 @@ public class CSVMigrator {
                         i -> header[i],
                         i -> data[i]
                 ));
-    }
-
-    private String template(String template, Collection<Map<String, Object>> data){
-        Map<String, Object> forData = Collections.singletonMap("data", data);
-        template = "for(data) do { " + template + "}";
-        return "insert " + Graql.parseTemplate(template, forData);
-    }
-
-    /**
-     * Warn the user when the batch size of the loader is greater than 1.
-     * If the batch size is greater than 1, it is possible that multiple of the same variables will be committed in
-     * one batch and the resulting committed data will be corrupted.
-     */
-    private void checkBatchSize(){
-        if(loader.getBatchSize() > 1){
-            LOG.warn("Loading with batch size [" + loader.getBatchSize() + "]. This can cause conflicts on commit.");
-        }
-    }
-
-    /**
-     * Partition a stream into a stream of collections, each with batchSize elements.
-     * @param iterator Iterator to partition
-     * @param <T> Type of values of iterator
-     * @return Stream over a collection that are each of batchSize
-     */
-    private <T> Stream<Collection<T>> partitionedStream(Iterator<T> iterator){
-        return StreamSupport.stream( Spliterators.spliteratorUnknownSize(
-                Iterators.partition(iterator, batchSize), Spliterator.ORDERED), false);
     }
 
     /**
