@@ -45,7 +45,7 @@ abstract class AbstractMindmapsInternalFactory<M extends AbstractMindmapsGraph<G
     abstract G buildTinkerPopGraph();
 
     @Override
-    public M getGraph(boolean batchLoading){
+    public synchronized M getGraph(boolean batchLoading){
         if(batchLoading){
             batchLoadingMindmapsGraph = getGraph(batchLoadingMindmapsGraph, batchLoadingGraph, batchLoading);
             return batchLoadingMindmapsGraph;
@@ -62,7 +62,7 @@ abstract class AbstractMindmapsInternalFactory<M extends AbstractMindmapsGraph<G
     }
 
     @Override
-    public G getTinkerPopGraph(boolean batchLoading){
+    public synchronized G getTinkerPopGraph(boolean batchLoading){
         if(batchLoading){
             batchLoadingGraph = getTinkerPopGraph(batchLoadingGraph);
             return batchLoadingGraph;

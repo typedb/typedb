@@ -34,4 +34,9 @@ public class MindmapsTitanGraph extends AbstractMindmapsGraph<TitanGraph> {
         TitanCleanup.clear(titanGraph);
         EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.DELETE_METHOD);
     }
+
+    @Override
+    protected void closeGraphTransaction() throws Exception {
+        getTinkerPopGraph().tx().close();
+    }
 }
