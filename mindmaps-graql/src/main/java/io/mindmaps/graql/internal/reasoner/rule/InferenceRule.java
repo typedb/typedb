@@ -56,8 +56,8 @@ public class InferenceRule {
     }
 
     private void propagateConstraints(Atom parentAtom){
-        body.addAtomConstraints(parentAtom.getSubstitutions());
-        head.addAtomConstraints(body.getSubstitutions());
+        body.addAtomConstraints(parentAtom.getIdPredicates());
+        head.addAtomConstraints(body.getIdPredicates());
 
         if(parentAtom.isRelation() || parentAtom.isResource()) {
             head.addAtomConstraints(parentAtom.getTypeConstraints());
@@ -95,7 +95,7 @@ public class InferenceRule {
     }
 
     /**
-     * make child query consistent by performing variable substitution so that parent variables are propagated
+     * make child query consistent by performing variable IdPredicate so that parent variables are propagated
      * @param parentAtom   parent atom (atom) being resolved (subgoal)
      */
    public void unify(Atom parentAtom) {

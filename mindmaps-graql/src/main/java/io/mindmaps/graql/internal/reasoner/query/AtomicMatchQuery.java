@@ -3,8 +3,7 @@ package io.mindmaps.graql.internal.reasoner.query;
 import com.google.common.collect.Sets;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.internal.reasoner.atom.Atom;
-
-import io.mindmaps.graql.internal.reasoner.atom.Substitution;
+import io.mindmaps.graql.internal.reasoner.atom.IdPredicate;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -64,9 +63,9 @@ public class AtomicMatchQuery extends AtomicQuery{
     public QueryAnswers materialise(){
         QueryAnswers fullAnswers = new QueryAnswers();
         answers.forEach(answer -> {
-            Set<Substitution> subs = new HashSet<>();
+            Set<IdPredicate> subs = new HashSet<>();
             answer.forEach((var, con) -> {
-                Substitution sub = new Substitution(var, con);
+                IdPredicate sub = new IdPredicate(var, con);
                 if (!containsAtom(sub))
                     subs.add(sub);
             });

@@ -257,10 +257,10 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testAllVarsRelation(){
-        MindmapsGraph lgraph = GeoGraph.getGraph();
-        String queryString = "match ($x, $y) isa $rel;";
-        String queryString2 = "match ($x, $y) isa is-located-in;";
+    public void testHasResource(){
+        MindmapsGraph lgraph = SNBGraph.getGraph();
+        String queryString = "match $x isa $type;$type has-resource name;$y isa product;($x, $y) isa recommendation;";
+        String queryString2 = "match $x isa $person;$y isa product;($x, $y) isa recommendation;";
         MatchQuery query = new Query(queryString, lgraph);
         MatchQuery query2 = new Query(queryString2, lgraph);
 
@@ -269,10 +269,10 @@ public class ReasonerTest {
     }
 
     @Test
-    public void testHasResource(){
-        MindmapsGraph lgraph = SNBGraph.getGraph();
-        String queryString = "match $x isa $type;$type has-resource name;$y isa product;($x, $y) isa recommendation;";
-        String queryString2 = "match $x isa $person;$y isa product;($x, $y) isa recommendation;";
+    public void testAllVarsRelation(){
+        MindmapsGraph lgraph = GeoGraph.getGraph();
+        String queryString = "match ($x, $y) isa $rel;";
+        String queryString2 = "match ($x, $y) isa is-located-in;";
         MatchQuery query = new Query(queryString, lgraph);
         MatchQuery query2 = new Query(queryString2, lgraph);
 
@@ -325,7 +325,7 @@ public class ReasonerTest {
     @Ignore
     public void testTypeVariable(){
         MindmapsGraph lgraph = GeoGraph.getGraph();
-        String queryString = "match $x isa $type;$type isa city;"+
+        String queryString = "match $x isa $type;$type id 'city';"+
                 "(geo-entity: $x, entity-location: $y), isa is-located-in; $y isa country;select $x, $y;";
         String queryString2 = "match $x isa city;"+
                 "(geo-entity: $x, entity-location: $y), isa is-located-in; $y isa country;";

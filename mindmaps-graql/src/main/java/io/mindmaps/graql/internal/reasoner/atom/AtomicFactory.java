@@ -18,17 +18,13 @@
 
 package io.mindmaps.graql.internal.reasoner.atom;
 
-import io.mindmaps.MindmapsGraph;
-import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.pattern.property.HasResourceProperty;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.util.ErrorMessage;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 
 public class AtomicFactory {
 
@@ -42,7 +38,7 @@ public class AtomicFactory {
         else if(!var.getResourcePredicates().isEmpty())
             return new Resource(var);
         else if (var.getId().isPresent())
-            return new Substitution(var);
+            return new IdPredicate(var);
         else if (!var.getValuePredicates().isEmpty())
             return new ValuePredicate(var);
         else
@@ -51,7 +47,7 @@ public class AtomicFactory {
 
     public static Atomic create(PatternAdmin pattern, Query parent) {
         if (!pattern.isVar() )
-        throw new IllegalArgumentException(ErrorMessage.PATTERN_NOT_VAR.getMessage(pattern.toString()));
+            throw new IllegalArgumentException(ErrorMessage.PATTERN_NOT_VAR.getMessage(pattern.toString()));
 
         VarAdmin var = pattern.asVar();
         if(var.isRelation())
@@ -59,7 +55,7 @@ public class AtomicFactory {
         else if(!var.getResourcePredicates().isEmpty())
             return new Resource(var, parent);
         else if (var.getId().isPresent())
-            return new Substitution(var, parent);
+            return new IdPredicate(var, parent);
         else if (!var.getValuePredicates().isEmpty())
             return new ValuePredicate(var, parent);
         else
@@ -72,64 +68,14 @@ public class AtomicFactory {
         return copy;
     }
 
-    private static Set<Atomic> createResourceAtomSet(PatternAdmin pattern, Query parent){
-        Set<Atomic> resourceAtoms = new HashSet<>();
-        VarAdmin var = pattern.asVar();
-        String varName = var.getName();
-        var.getProperties(HasResourceProperty.class).forEach(res -> {
-            String resType = res.getType();
-            VarAdmin baseVar = res.getResource();
-            String valueVariable = baseVar.isUserDefinedName()?
-                    baseVar.getName() : varName + "-" + resType + "-" + UUID.randomUUID().toString();
-
-            VarAdmin resVar = Graql.var(varName).has(resType, Graql.var(valueVariable)).admin();
-            resourceAtoms.add(AtomicFactory.create(resVar, parent));
-
-            //add value atom
-            baseVar.getValuePredicates().forEach(pred -> {
-                    VarAdmin resourceValueVar = Graql.var(valueVariable).value(pred).admin();
-                    resourceAtoms.add(AtomicFactory.create(resourceValueVar, parent));
-            });
-        });
-        return resourceAtoms;
-    }
-
     public static Set<Atomic> createAtomSet(Conjunction<PatternAdmin> pattern, Query parent) {
         Set<Atomic> atoms = new HashSet<>();
-        MindmapsGraph graph = parent.getGraph().orElse(null);
-
         Set<VarAdmin> vars = pattern.getVars();
-        vars.forEach(var -> {
-            if (var.getProperties().count() > 1 && !var.isRelation() ) {
-                String name = var.getName();
-                String id = var.getId().orElse("");
-                VarAdmin typeVar = var.getType().orElse(null);
-                String type = typeVar != null? typeVar.getId().orElse("") : "";
-
-                if (typeVar != null){
-                    VarAdmin tVar = Graql.var(name).isa(type).admin();
-                    atoms.add(AtomicFactory.create(tVar, parent));
-                }
-                if (!id.isEmpty())
-                    atoms.add(new Substitution(name, graph.getEntity(id), parent));
-
-                //value equals predicates
-                var.getValuePredicates().forEach(pred -> {
-                    VarAdmin valueVar = Graql.var(name).value(pred).admin();
-                    Atomic atom = AtomicFactory.create(valueVar, parent);
-                    atoms.add(atom);
-                });
-
-                //resources
-                atoms.addAll(createResourceAtomSet(var, parent));
-            }
-            else {
-                Set<Atomic> resourceAtomSet = createResourceAtomSet(var, parent);
-                if (resourceAtomSet.isEmpty()) atoms.add(AtomicFactory.create(var, parent));
-                else
-                    atoms.addAll(resourceAtomSet);
-            }
-        });
+        vars.stream().filter(VarAdmin::isRelation).forEach(var -> atoms.add(create(var, parent)));
+        vars.stream()
+                .filter(var -> !var.isRelation())
+                .forEach(var -> var.getProperties()
+                        .forEach(prop -> atoms.addAll(PropertyMapper.map(prop, var, parent))));
         return atoms;
     }
 }

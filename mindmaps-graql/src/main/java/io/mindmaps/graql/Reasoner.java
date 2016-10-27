@@ -77,8 +77,8 @@ public class Reasoner {
                             //Check for any constraints on the variables
                             String chVar = childRoleVarTypeMap.get(role).getKey();
                             String pVar = entry.getValue().getKey();
-                            String chId = child.getBody().getSubstitution(chVar);
-                            String pId = parent.getSubstitution(pVar);
+                            String chId = child.getBody().getIdPredicate(chVar);
+                            String pId = parent.getIdPredicate(pVar);
                             if (!chId.isEmpty() && !pId.isEmpty())
                                 relRelevant &= chId.equals(pId);
                         }
@@ -176,7 +176,7 @@ public class Reasoner {
             matAnswers.put(atomicQuery, atomicQuery);
     }
 
-    private QueryAnswers propagateHeadSubstitutions(Query atomicQuery, Query ruleHead, QueryAnswers answers){
+    private QueryAnswers propagateHeadIdPredicates(Query atomicQuery, Query ruleHead, QueryAnswers answers){
         QueryAnswers newAnswers = new QueryAnswers();
         if(answers.isEmpty()) return newAnswers;
 
@@ -184,7 +184,7 @@ public class Reasoner {
         Set<String> headVars = ruleHead.getSelectedNames();
         Set<Predicate> extraSubs = new HashSet<>();
         if(queryVars.size() > headVars.size()){
-            extraSubs.addAll(ruleHead.getSubstitutions()
+            extraSubs.addAll(ruleHead.getIdPredicates()
                     .stream().filter(sub -> queryVars.contains(sub.getVarName()))
                     .collect(Collectors.toSet()));
         }
@@ -224,7 +224,7 @@ public class Reasoner {
                     QueryAnswers localSubs = answerWM(childAtomicQuery, subGoals);
                     subs = subs.join(localSubs);
                 }
-                QueryAnswers answers = propagateHeadSubstitutions(atomicQuery, ruleHead, subs)
+                QueryAnswers answers = propagateHeadIdPredicates(atomicQuery, ruleHead, subs)
                         .filterVars(atomicQuery.getSelectedNames());
                 QueryAnswers newAnswers = new QueryAnswers();
                 newAnswers.addAll(new AtomicMatchQuery(ruleHead, answers).materialise());
@@ -272,7 +272,7 @@ public class Reasoner {
                     subs = subs.join(localSubs);
                 }
 
-                QueryAnswers answers = propagateHeadSubstitutions(atomicQuery, ruleHead, subs)
+                QueryAnswers answers = propagateHeadIdPredicates(atomicQuery, ruleHead, subs)
                         .filterVars(atomicQuery.getSelectedNames());
                 QueryAnswers newAnswers = new QueryAnswers();
                 if (atom.isResource())

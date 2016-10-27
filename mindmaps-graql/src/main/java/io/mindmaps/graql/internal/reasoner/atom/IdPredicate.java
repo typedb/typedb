@@ -23,41 +23,41 @@ import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 
-public class Substitution extends Predicate<String>{
+public class IdPredicate extends Predicate<String>{
 
-    public Substitution(VarAdmin pattern) {
+    public IdPredicate(VarAdmin pattern) {
         super(pattern);
     }
 
-    public Substitution(VarAdmin pattern, Query par) {
+    public IdPredicate(VarAdmin pattern, Query par) {
         super(pattern, par);
     }
 
-    public Substitution(Substitution a) {
+    public IdPredicate(IdPredicate a) {
         super(a);
     }
 
-    public Substitution(String varName, Concept con) {
-        super(createSubstitution(varName, con));
+    public IdPredicate(String varName, Concept con) {
+        super(createIdPredicate(varName, con));
         this.predicate = con.getId();
     }
 
-    public Substitution(String varName, Concept con, Query parent) {
+    public IdPredicate(String varName, Concept con, Query parent) {
         this(varName, con);
         setParentQuery(parent);
     }
 
-    public static VarAdmin createSubstitution(String varName, Concept con){
+    public static VarAdmin createIdPredicate(String varName, Concept con){
         return Graql.var(varName).id(con.getId()).admin();
     }
 
     @Override
     public Atomic clone(){
-        return new Substitution(this);
+        return new IdPredicate(this);
     }
 
     @Override
-    public boolean isSubstitution(){ return true;}
+    public boolean isIdPredicate(){ return true;}
 
     @Override
     public String getPredicateValue() { return predicate;}

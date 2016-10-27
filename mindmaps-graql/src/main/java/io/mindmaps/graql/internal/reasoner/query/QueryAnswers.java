@@ -144,7 +144,7 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
         //find extra subs
         if (parentQuery.getSelectedNames().size() != childQuery.getSelectedNames().size()){
             //get |child - parent| set difference
-            Set<Predicate> extraSubs = subtractSets(parentQuery.getSubstitutions(), childQuery.getSubstitutions());
+            Set<Predicate> extraSubs = subtractSets(parentQuery.getIdPredicates(), childQuery.getIdPredicates());
             extraSubs.forEach( sub -> {
                 String var = sub.getVarName();
                 Concept con = graph.getConcept(sub.getPredicateValue());

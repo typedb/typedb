@@ -29,7 +29,7 @@ import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.internal.reasoner.atom.Atom;
 import io.mindmaps.graql.internal.reasoner.atom.Atomic;
 import io.mindmaps.graql.internal.reasoner.atom.Relation;
-import io.mindmaps.graql.internal.reasoner.atom.Substitution;
+import io.mindmaps.graql.internal.reasoner.atom.IdPredicate;
 import io.mindmaps.util.ErrorMessage;
 
 import java.util.*;
@@ -121,7 +121,7 @@ public class AtomicQuery extends Query{
                     .filter(Concept::isResource)
                     .forEach(c -> {
                         Map<String, Concept> answer = new HashMap<>();
-                        answer.put(atom.getVarName(), graph.getEntity(getSubstitution(atom.getVarName())));
+                        answer.put(atom.getVarName(), graph.getEntity(getIdPredicate(atom.getVarName())));
                         answer.put(atom.getValueVariable(), c);
                         insertAnswers.add(answer);
                     });
@@ -132,10 +132,10 @@ public class AtomicQuery extends Query{
     public QueryAnswers materialise(){ return materialiseComplete();}
 
     /**
-     * Add explicit substitutions and materialise
-     * @subs substitutions of variables
+     * Add explicit IdPredicates and materialise
+     * @subs IdPredicates of variables
      */
-    public QueryAnswers materialise(Set<Substitution> subs) {
+    public QueryAnswers materialise(Set<IdPredicate> subs) {
         QueryAnswers insertAnswers = new QueryAnswers();
         subs.forEach(this::addAtom);
 
