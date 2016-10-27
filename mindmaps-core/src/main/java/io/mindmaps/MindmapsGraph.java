@@ -54,13 +54,24 @@ public interface MindmapsGraph extends AutoCloseable{
     /**
      *
      * @param id A unique Id for the Resource Type
-     * @param type The data type of the resource type.
+     * @param dataType The data type of the resource type.
      *             Supported types include: DataType.STRING, DataType.LONG, DataType.DOUBLE, and DataType.BOOLEAN
      * @param <V> The data type of the resource type. Supported types include: String, Long, Double, Boolean.
      *           This should match the parameter type
      * @return A new or existing Resource Type with the provided Id.
      */
-    <V> ResourceType <V> putResourceType(String id, ResourceType.DataType<V> type);
+    <V> ResourceType <V> putResourceType(String id, ResourceType.DataType<V> dataType);
+
+    /**
+     *
+     * @param id A unique Id for the Resource Type
+     * @param dataType The data type of the resource type.
+     *             Supported types include: DataType.STRING, DataType.LONG, DataType.DOUBLE, and DataType.BOOLEAN
+     * @param <V> The data type of the resource type. Supported types include: String, Long, Double, Boolean.
+     *           This should match the parameter type
+     * @return A new or existing Resource Type with the provided Id which guarantees that it's instances can only be connected to one entity.
+     */
+    <V> ResourceType <V> putResourceTypeUnique(String id, ResourceType.DataType<V> dataType);
 
     /**
      *

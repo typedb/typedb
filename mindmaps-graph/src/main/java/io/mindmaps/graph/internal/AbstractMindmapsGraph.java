@@ -271,7 +271,17 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         return elementFactory.buildResourceType(
                 putConceptType(id, Schema.BaseType.RESOURCE_TYPE, getMetaResourceType()).getVertex(),
                 getMetaResourceType(),
-                dataType);
+                dataType,
+                false);
+    }
+
+    @Override
+    public <V> ResourceType <V> putResourceTypeUnique(String id, ResourceType.DataType<V> dataType){
+        return elementFactory.buildResourceType(
+                putConceptType(id, Schema.BaseType.RESOURCE_TYPE, getMetaResourceType()).getVertex(),
+                getMetaResourceType(),
+                dataType,
+                true);
     }
 
     @Override

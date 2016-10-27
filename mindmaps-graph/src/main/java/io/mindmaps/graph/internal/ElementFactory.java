@@ -60,8 +60,8 @@ final class ElementFactory {
     public <V> ResourceTypeImpl<V> buildResourceType(Vertex v, Type type){
         return new ResourceTypeImpl<>(v, type, mindmapsGraph);
     }
-    public <V> ResourceTypeImpl<V> buildResourceType(Vertex v, Type type, ResourceType.DataType<V> dataType){
-        return new ResourceTypeImpl<>(v, type, mindmapsGraph, dataType);
+    public <V> ResourceTypeImpl<V> buildResourceType(Vertex v, Type type, ResourceType.DataType<V> dataType, boolean isUnique){
+        return new ResourceTypeImpl<>(v, type, mindmapsGraph, dataType, isUnique);
     }
 
     public RelationTypeImpl buildRelationType(Vertex v, Type type){

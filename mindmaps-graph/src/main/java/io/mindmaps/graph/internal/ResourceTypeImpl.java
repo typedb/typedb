@@ -39,9 +39,10 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
         super(v, type, mindmapsGraph);
     }
 
-    ResourceTypeImpl(Vertex v, Type type, AbstractMindmapsGraph mindmapsGraph, DataType<D> dataType) {
+    ResourceTypeImpl(Vertex v, Type type, AbstractMindmapsGraph mindmapsGraph, DataType<D> dataType, boolean isUnique) {
         super(v, type, mindmapsGraph);
         setImmutableProperty(Schema.ConceptProperty.DATA_TYPE, dataType.getName());
+        setImmutableProperty(Schema.ConceptProperty.IS_UNIQUE, isUnique);
     }
 
     /**
@@ -89,5 +90,11 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
         if(object == null)
             return null;
         return (String) object;
+    }
+
+    @Override
+    public Boolean isUnique() {
+        Object object = getProperty(Schema.ConceptProperty.IS_UNIQUE);
+        return (object == null) ? null : (Boolean) object;
     }
 }
