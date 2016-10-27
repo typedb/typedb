@@ -74,10 +74,9 @@ public class Query implements MatchQueryInternal {
         addAtom(AtomicFactory.create(atom, this));
         addAtomConstraints(atom.getIdPredicates());
         addAtomConstraints(atom.getValuePredicates());
-        if(atom.isRelation() || atom.isResource())
-            addAtomConstraints(atom.getTypeConstraints()
-                                    .stream().filter(at -> !at.isRuleResolvable())
-                                    .collect(Collectors.toSet()));
+        addAtomConstraints(atom.getTypeConstraints()
+                .stream().filter(at -> !at.isRuleResolvable())
+                .collect(Collectors.toSet()));
     }
 
     //alpha-equivalence equality
