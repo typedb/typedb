@@ -26,11 +26,14 @@ import io.mindmaps.concept.RuleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Internal factory to produce different types of concepts
  */
 final class ElementFactory {
+    protected final Logger LOG = LoggerFactory.getLogger(ElementFactory.class);
     private final AbstractMindmapsGraph mindmapsGraph;
 
     public ElementFactory(AbstractMindmapsGraph mindmapsGraph){
@@ -97,7 +100,14 @@ final class ElementFactory {
      * @return A concept built to the correct type
      */
     public ConceptImpl buildUnknownConcept(Vertex v){
-        Schema.BaseType type = Schema.BaseType.valueOf(v.label());
+        Schema.BaseType type;
+        try {
+            type = Schema.BaseType.valueOf(v.label());
+        } catch (IllegalArgumentException e){
+            LOG.warn("Found vertex [" + v + "] which has an invalid base type [" + v.label() + "] ignoring . . . ");
+            return null;
+        }
+
         ConceptImpl concept = null;
         //All these types are null because at this stage the concept has been defined so we don't need to know the type.
         switch (type){
