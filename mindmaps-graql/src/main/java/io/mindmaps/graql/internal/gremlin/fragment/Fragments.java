@@ -113,6 +113,10 @@ public class Fragments {
         return new ValueFlagFragment(start);
     }
 
+    public static NotCastingFragment notCasting(String start) {
+        return new NotCastingFragment(start);
+    }
+
     @SuppressWarnings("unchecked")
     static GraphTraversal<Vertex, Vertex> outSubs(GraphTraversal<Vertex, Vertex> traversal) {
         return traversal.union(__.identity(), __.repeat(__.out(SUB.getLabel())).emit()).unfold();

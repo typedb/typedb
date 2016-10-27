@@ -68,6 +68,11 @@ public enum FragmentPriority {
      * Confirming that castings are all distinct
      */
     // TODO: Should this have higher priority?
-    DISTINCT_CASTING;
+    DISTINCT_CASTING,
+
+    /**
+     * The identity step, that does nothing
+     */
+    NOT_CASTING
 
 }
