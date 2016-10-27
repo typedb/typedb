@@ -26,4 +26,9 @@ class InHasRoleFragment extends AbstractFragment {
     public FragmentPriority getPriority() {
         return FragmentPriority.EDGE_UNIQUE;
     }
+
+    @Override
+    public long fragmentCost(long previousCost) {
+        return previousCost;
+    }
 }

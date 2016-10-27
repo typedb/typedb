@@ -36,6 +36,20 @@ class ValueFragment extends AbstractFragment {
         }
     }
 
+    @Override
+    public long indexCost() {
+        if (predicate.isSpecific()) {
+            return 1;
+        } else {
+            return super.indexCost();
+        }
+    }
+
+    @Override
+    public long fragmentCost(long previousCost) {
+        return previousCost;
+    }
+
     /**
      * @return the correct VALUE property to check on the vertex for the given predicate
      */

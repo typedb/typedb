@@ -24,4 +24,9 @@ class InSubFragment extends AbstractFragment {
     public FragmentPriority getPriority() {
         return FragmentPriority.EDGE_BOUNDED;
     }
+
+    @Override
+    public long fragmentCost(long previousCost) {
+        return previousCost * NUM_SUBTYPES_PER_TYPE;
+    }
 }

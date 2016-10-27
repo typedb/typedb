@@ -28,4 +28,9 @@ class OutIsaFragment extends AbstractFragment {
         return FragmentPriority.EDGE_UNIQUE;
     }
 
+    @Override
+    public long fragmentCost(long previousCost) {
+        return previousCost;
+    }
+
 }

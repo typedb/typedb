@@ -29,4 +29,9 @@ class InPlaysRoleFragment extends AbstractFragment {
         return FragmentPriority.EDGE_BOUNDED;
     }
 
+    @Override
+    public long fragmentCost(long previousCost) {
+        return previousCost * NUM_TYPES_PER_ROLE;
+    }
+
 }

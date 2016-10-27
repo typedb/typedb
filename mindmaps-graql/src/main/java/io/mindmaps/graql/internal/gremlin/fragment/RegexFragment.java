@@ -30,4 +30,9 @@ class RegexFragment extends AbstractFragment {
     public FragmentPriority getPriority() {
         return FragmentPriority.VALUE_NONSPECIFIC;
     }
+
+    @Override
+    public long fragmentCost(long previousCost) {
+        return previousCost;
+    }
 }
