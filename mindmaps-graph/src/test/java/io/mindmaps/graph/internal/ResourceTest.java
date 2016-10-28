@@ -171,7 +171,7 @@ public class ResourceTest {
         //Create Resources
         ResourceType primaryKeyType = mindmapsGraph.putResourceTypeUnique("My Primary Key", ResourceType.DataType.STRING).playsRole(primaryKeyRole);
         Resource pimaryKey1 = mindmapsGraph.putResource("A Primary Key 1", primaryKeyType);
-        Resource pimaryKey2 = mindmapsGraph.putResource("A Primary Key 1", primaryKeyType);
+        Resource pimaryKey2 = mindmapsGraph.putResource("A Primary Key 2", primaryKeyType);
 
         //Create Entities
         EntityType entityType = mindmapsGraph.putEntityType("My Entity Type").playsRole(entityRole);

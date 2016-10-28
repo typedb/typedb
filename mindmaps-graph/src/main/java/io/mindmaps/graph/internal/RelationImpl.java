@@ -18,6 +18,8 @@
 
 package io.mindmaps.graph.internal;
 
+import io.mindmaps.concept.Resource;
+import io.mindmaps.exception.ConceptNotUniqueException;
 import io.mindmaps.util.Schema;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.exception.ConceptException;
@@ -129,6 +131,13 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
     public Relation putRolePlayer(RoleType roleType, Instance instance) {
         if(roleType == null){
             throw new IllegalArgumentException(ErrorMessage.ROLE_IS_NULL.getMessage(instance));
+        }
+
+        if(instance != null && instance.isResource()){
+            Resource<Object> resource = instance.asResource();
+            if(resource.type().isUnique() && !resource.ownerInstances().isEmpty()) {
+                throw new ConceptNotUniqueException(resource, resource.ownerInstances().iterator().next());
+            }
         }
 
         if(mindmapsGraph.isBatchLoadingEnabled()) {
