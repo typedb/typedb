@@ -37,8 +37,9 @@ abstract class CommonOLAP {
     /**
      * The types that are reserved by analytics and are not "seen" by analytics.
      */
-    public static final Set<String> analyticsElements = Collections.unmodifiableSet(
-            Sets.newHashSet(Analytics.degree, GraqlType.HAS_RESOURCE.getId(Analytics.degree)));
+    public static final Set<String> analyticsElements = Collections.unmodifiableSet(Sets.newHashSet(
+            Analytics.degree, GraqlType.HAS_RESOURCE.getId(Analytics.degree),
+            Analytics.connectedComponent, GraqlType.HAS_RESOURCE.getId(Analytics.connectedComponent)));
 
     /**
      * The concepts that can be "seen" by analytics by default.
