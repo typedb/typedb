@@ -137,6 +137,7 @@ public class Analytics {
      */
     public long count() {
         MindmapsComputer computer = getGraphComputer();
+        if (!selectedTypesHaveInstance()) return 0L;
         ComputerResult result = computer.compute(new CountMapReduce(subtypes));
         Map<String, Long> count = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
         return count.getOrDefault(CountMapReduce.MEMORY_KEY, 0L);
@@ -149,7 +150,7 @@ public class Analytics {
      */
     public Optional<Number> min() {
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypes);
-        if (!selectedTypesHaveInstanceInSubgraph(statisticsResourceTypes, subtypes)) return Optional.empty();
+        if (!selectedResourceTypesHaveInstance(statisticsResourceTypes)) return Optional.empty();
 
         Set<String> allSubtypes = statisticsResourceTypes.stream()
                 .map(GraqlType.HAS_RESOURCE::getId).collect(Collectors.toSet());
@@ -170,7 +171,7 @@ public class Analytics {
      */
     public Optional<Number> max() {
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypes);
-        if (!selectedTypesHaveInstanceInSubgraph(statisticsResourceTypes, subtypes)) return Optional.empty();
+        if (!selectedResourceTypesHaveInstance(statisticsResourceTypes)) return Optional.empty();
 
         Set<String> allSubtypes = statisticsResourceTypes.stream()
                 .map(GraqlType.HAS_RESOURCE::getId).collect(Collectors.toSet());
@@ -191,7 +192,7 @@ public class Analytics {
      */
     public Optional<Number> sum() {
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypes);
-        if (!selectedTypesHaveInstanceInSubgraph(statisticsResourceTypes, subtypes)) return Optional.empty();
+        if (!selectedResourceTypesHaveInstance(statisticsResourceTypes)) return Optional.empty();
 
         Set<String> allSubtypes = statisticsResourceTypes.stream()
                 .map(GraqlType.HAS_RESOURCE::getId).collect(Collectors.toSet());
@@ -212,7 +213,7 @@ public class Analytics {
      */
     public Optional<Double> mean() {
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypes);
-        if (!selectedTypesHaveInstanceInSubgraph(statisticsResourceTypes, subtypes)) return Optional.empty();
+        if (!selectedResourceTypesHaveInstance(statisticsResourceTypes)) return Optional.empty();
 
         Set<String> allSubtypes = statisticsResourceTypes.stream()
                 .map(GraqlType.HAS_RESOURCE::getId).collect(Collectors.toSet());
@@ -234,7 +235,7 @@ public class Analytics {
      */
     public Optional<Number> median() {
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypes);
-        if (!selectedTypesHaveInstanceInSubgraph(statisticsResourceTypes, subtypes)) return Optional.empty();
+        if (!selectedResourceTypesHaveInstance(statisticsResourceTypes)) return Optional.empty();
 
         Set<String> allSubtypes = statisticsResourceTypes.stream()
                 .map(GraqlType.HAS_RESOURCE::getId).collect(Collectors.toSet());
@@ -254,7 +255,7 @@ public class Analytics {
      */
     public Optional<Double> std() {
         String dataType = checkSelectedResourceTypesHaveCorrectDataType(statisticsResourceTypes);
-        if (!selectedTypesHaveInstanceInSubgraph(statisticsResourceTypes, subtypes)) return Optional.empty();
+        if (!selectedResourceTypesHaveInstance(statisticsResourceTypes)) return Optional.empty();
 
         Set<String> allSubtypes = statisticsResourceTypes.stream()
                 .map(GraqlType.HAS_RESOURCE::getId).collect(Collectors.toSet());
@@ -278,6 +279,7 @@ public class Analytics {
      * @return a map of set, each set contains all the vertex ids belonging to one connected component
      */
     public Map<String, Set<String>> connectedComponent() {
+        if (!selectedTypesHaveInstance()) return Collections.emptyMap();
         MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
         ComputerResult result = computer.compute(new ConnectedComponentVertexProgram(subtypes),
                 new ClusterMemberMapReduce(subtypes, ConnectedComponentVertexProgram.CLUSTER_LABEL));
@@ -290,6 +292,7 @@ public class Analytics {
      * @return a map of component size
      */
     public Map<String, Long> connectedComponentSize() {
+        if (!selectedTypesHaveInstance()) return Collections.emptyMap();
         MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
         ComputerResult result = computer.compute(new ConnectedComponentVertexProgram(subtypes),
                 new ClusterSizeMapReduce(subtypes, ConnectedComponentVertexProgram.CLUSTER_LABEL));
@@ -430,8 +433,7 @@ public class Analytics {
         return dataType;
     }
 
-    private boolean selectedTypesHaveInstanceInSubgraph(Set<String> statisticsResourceTypes,
-                                                        Set<String> subtypes) {
+    private boolean selectedResourceTypesHaveInstance(Set<String> statisticsResourceTypes) {
 
         MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, this.keySpace).getGraph();
 
@@ -441,6 +443,17 @@ public class Analytics {
                 .map(type -> var("x").isa(type)).collect(Collectors.toList());
 
         return withGraph(graph).match(or(checkResourceTypes), or(checkSubtypes)).ask().execute();
+    }
+
+    private boolean selectedTypesHaveInstance() {
+        if (subtypes.isEmpty()) return false;
+
+        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, this.keySpace).getGraph();
+
+        List<Pattern> checkSubtypes = subtypes.stream()
+                .map(type -> var("x").isa(type)).collect(Collectors.toList());
+
+        return withGraph(graph).match(or(checkSubtypes)).ask().execute();
     }
 
     protected MindmapsComputer getGraphComputer() {

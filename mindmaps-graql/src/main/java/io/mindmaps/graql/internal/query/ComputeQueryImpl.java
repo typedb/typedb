@@ -75,6 +75,10 @@ class ComputeQueryImpl implements ComputeQuery {
                     analytics = getAnalytics(keyspace, false);
                     return analytics.connectedComponent();
                 }
+                case "connectedComponentsSize": {
+                    analytics = getAnalytics(keyspace, false);
+                    return analytics.connectedComponentSize();
+                }
                 case "max": {
                     analytics = getAnalytics(keyspace, true);
                     return analytics.max();
@@ -134,7 +138,7 @@ class ComputeQueryImpl implements ComputeQuery {
             }
         } else if (computeResult instanceof Optional) {
             return ((Optional) computeResult).isPresent() ? Stream.of(((Optional) computeResult).get().toString()) :
-                    Stream.of("There are no instances of this resource type.");
+                    Stream.of("There are no instances of this resource type(s).");
         } else {
             return Stream.of(computeResult.toString());
         }

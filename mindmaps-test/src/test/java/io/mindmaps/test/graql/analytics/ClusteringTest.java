@@ -16,6 +16,7 @@ import org.junit.Test;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
 public class ClusteringTest extends AbstractGraphTest {
@@ -55,14 +56,21 @@ public class ClusteringTest extends AbstractGraphTest {
         // TODO: Fix in TinkerGraphComputer
         assumeFalse(usingTinker());
 
-        addOntologyAndEntities();
         computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
 
         Map<String, Long> sizeMap = computer.connectedComponentSize();
+        assertTrue(sizeMap.isEmpty());
+        Map<String, Set<String>> memberMap = computer.connectedComponent();
+        assertTrue(memberMap.isEmpty());
+
+        addOntologyAndEntities();
+        computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
+
+        sizeMap = computer.connectedComponentSize();
         assertEquals(1, sizeMap.size());
         assertEquals(7L, sizeMap.values().iterator().next().longValue());
 
-        Map<String, Set<String>> memberMap = computer.connectedComponent();
+        memberMap = computer.connectedComponent();
         assertEquals(1, memberMap.size());
         assertEquals(7, memberMap.values().iterator().next().size()); // 4 entities, 3 assertions
 
