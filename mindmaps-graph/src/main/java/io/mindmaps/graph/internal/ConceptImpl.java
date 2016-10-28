@@ -59,7 +59,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
         return (T) this;
     }
 
-    final AbstractMindmapsGraph mindmapsGraph;
+    private final AbstractMindmapsGraph mindmapsGraph;
     private Vertex vertex;
 
     ConceptImpl(Vertex v, V type, AbstractMindmapsGraph mindmapsGraph){
@@ -642,7 +642,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      *
      * @return The mindmaps graph this concept is bound to.
      */
-    AbstractMindmapsGraph getMindmapsGraph() {return mindmapsGraph;}
+    protected AbstractMindmapsGraph getMindmapsGraph() {return mindmapsGraph;}
 
     //--------- Create Links -------//
     /**
