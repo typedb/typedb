@@ -4,7 +4,8 @@ insert
 ####################Ontology######################
 #################################################
 
-"entity" isa entity-type, is-abstract;
+"entity" isa entity-type, is-abstract
+    has-resource name;
 
 "city" sub entity;
 "region" sub entity;
@@ -23,62 +24,64 @@ entity plays-role geo-entity, plays-role entity-location;
 "ternary-relation-test" isa relation-type, has-role role1, has-role role2, has-role role3;
 entity plays-role role1, plays-role role2, plays-role role3;
 
+"name" isa resource-type, datatype string;
+
 ####################################################
 ##################DATA#############################
 ####################################################
 
-"Europe" isa continent;
-"NorthAmerica" isa continent;
+$europe isa continent, has name "Europe";
+$north-america isa continent, has name "NorthAmerica";
 
-"Poland" isa country;
-"England" isa country;
-"Germany" isa country;
-"France" isa country;
-"Italy" isa country;
+$poland isa country, has name "Poland";
+$england isa country, has name "England";
+$germany isa country, has name "Germany";
+$france isa country, has name "France";
+$italy isa country, has name "Italy";
 
-"Masovia" isa region;
-"Silesia" isa region;
-"GreaterLondon" isa region;
-"Bavaria" isa region;
-"IleDeFrance" isa region;
-"Lombardy" isa region;
+$masovia isa region, has name "Masovia";
+$silesia isa region, has name "Silesia";
+$greater-london isa region, has name "GreaterLondon";
+$bavaria isa region, has name "Bavaria";
+$ile-de-france isa region, has name "IleDeFrance";
+$lombardy isa region, has name "Lombardy";
 
-"Warsaw" isa city;
-"Wroclaw" isa city;
-"London" isa city;
-"Munich" isa city;
-"Paris" isa city;
-"Milan" isa city;
+$warsaw isa city, has name "Warsaw";
+$wroclaw isa city, has name "Wroclaw";
+$london isa city, has name "London";
+$munich isa city, has name "Munich";
+$paris isa city, has name "Paris";
+$milan isa city, has name "Milan";
 
-"University-of-Warsaw" isa university;
-"Warsaw-Polytechnics" isa university;
-"Imperial-College-London" isa university;
-"University-College-London" isa university;
-"University-of-Munich" isa university;
+$uni-warsaw isa university, has name "University-of-Warsaw";
+$warsaw-poly isa university, has name "Warsaw-Polytechnics";
+$imperial isa university, has name "Imperial-College-London";
+$ucl isa university, has name "University-College-London";
+$uni-munich isa university, has name "University-of-Munich";
 
-(geo-entity: 'Warsaw-Polytechnics', entity-location: 'Warsaw') isa is-located-in;
-(geo-entity: 'University-of-Warsaw', entity-location: 'Warsaw') isa is-located-in;
-(geo-entity: 'Imperial-College-London', entity-location: 'London') isa is-located-in;
-(geo-entity: 'University-College-London', entity-location: 'London') isa is-located-in;
+(geo-entity: $warsaw-poly, entity-location: $warsaw) isa is-located-in;
+(geo-entity: $uni-warsaw, entity-location: $warsaw) isa is-located-in;
+(geo-entity: $imperial, entity-location: $london) isa is-located-in;
+(geo-entity: $ucl, entity-location: $london) isa is-located-in;
 
-(geo-entity: 'Warsaw', entity-location: 'Masovia') isa is-located-in;
-(geo-entity: 'Masovia', entity-location: 'Poland') isa is-located-in;
-(geo-entity: 'Wroclaw', entity-location: 'Silesia') isa is-located-in;
-(geo-entity: 'Silesia', entity-location: 'Poland') isa is-located-in;
-(geo-entity: 'Poland', entity-location: 'Europe') isa is-located-in;
+(geo-entity: $warsaw, entity-location: $masovia) isa is-located-in;
+(geo-entity: $masovia, entity-location: $poland) isa is-located-in;
+(geo-entity: $wroclaw, entity-location: $silesia) isa is-located-in;
+(geo-entity: $silesia, entity-location: $poland) isa is-located-in;
+(geo-entity: $poland, entity-location: $europe) isa is-located-in;
 
-(geo-entity: 'London', entity-location: 'GreaterLondon') isa is-located-in;
-(geo-entity: 'GreaterLondon', entity-location: 'England') isa is-located-in;
-(geo-entity: 'England', entity-location: 'Europe') isa is-located-in;
+(geo-entity: $london, entity-location: $greater-london) isa is-located-in;
+(geo-entity: $greater-london, entity-location: $england) isa is-located-in;
+(geo-entity: $england, entity-location: $europe) isa is-located-in;
 
-(geo-entity: 'Munich', entity-location: 'Bavaria') isa is-located-in;
-(geo-entity: 'Bavaria', entity-location: 'Germany') isa is-located-in;
-(geo-entity: 'Germany', entity-location: 'Europe') isa is-located-in;
+(geo-entity: $munich, entity-location: $bavaria) isa is-located-in;
+(geo-entity: $bavaria, entity-location: $germany) isa is-located-in;
+(geo-entity: $germany, entity-location: $europe) isa is-located-in;
 
-(geo-entity: 'Milan', entity-location: 'Lombardy') isa is-located-in;
-(geo-entity: 'Lombardy', entity-location: 'Italy') isa is-located-in;
-(geo-entity: 'Italy', entity-location: 'Europe') isa is-located-in;
+(geo-entity: $milan, entity-location: $lombardy) isa is-located-in;
+(geo-entity: $lombardy, entity-location: $italy) isa is-located-in;
+(geo-entity: $italy, entity-location: $europe) isa is-located-in;
 
-(geo-entity: 'Paris', entity-location: 'IleDeFrance') isa is-located-in;
-(geo-entity: 'IleDeFrance', entity-location: 'France') isa is-located-in;
-(geo-entity: 'France', entity-location: 'Europe') isa is-located-in;
+(geo-entity: $paris, entity-location: $ile-de-france) isa is-located-in;
+(geo-entity: $ile-de-france, entity-location: $france) isa is-located-in;
+(geo-entity: $france, entity-location: $europe) isa is-located-in;
