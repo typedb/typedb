@@ -169,10 +169,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
         while(notFound && currentConcept != null){
             ConceptImpl concept = currentConcept.getParentIsa();
             if(concept != null){
-                //Checks the following case c1 -sub-> c2 -sub-> c3 -isa-> c1 is invalid
-                if(visitedConcepts.contains(concept) && !concept.equals(currentConcept)){
-                    throw new ConceptException(ErrorMessage.LOOP_DETECTED.getMessage(toString(), Schema.EdgeLabel.SUB.getLabel() + " " + Schema.EdgeLabel.ISA.getLabel()));
-                }
                 notFound = false;
                 type = concept.asType();
             } else {
