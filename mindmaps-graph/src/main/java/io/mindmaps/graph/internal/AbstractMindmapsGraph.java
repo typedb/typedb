@@ -101,28 +101,28 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     public boolean initialiseMetaConcepts(){
         if(isMetaOntologyNotInitialised()){
             TypeImpl type = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE), null);
-            type.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.TYPE.getId());
+            type.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaSchema.TYPE.getId());
 
             TypeImpl entityType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE), null);
-            entityType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.ENTITY_TYPE.getId());
+            entityType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaSchema.ENTITY_TYPE.getId());
 
             TypeImpl relationType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE), null);
-            relationType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.RELATION_TYPE.getId());
+            relationType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaSchema.RELATION_TYPE.getId());
 
             TypeImpl resourceType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE), null);
-            resourceType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.RESOURCE_TYPE.getId());
+            resourceType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaSchema.RESOURCE_TYPE.getId());
 
             TypeImpl roleType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE), null);
-            roleType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.ROLE_TYPE.getId());
+            roleType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaSchema.ROLE_TYPE.getId());
 
             TypeImpl ruleType = elementFactory.buildConceptType(addVertex(Schema.BaseType.TYPE), null);
-            ruleType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.RULE_TYPE.getId());
+            ruleType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaSchema.RULE_TYPE.getId());
 
             RuleTypeImpl inferenceRuleType = elementFactory.buildRuleType(addVertex(Schema.BaseType.RULE_TYPE), ruleType);
-            inferenceRuleType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.INFERENCE_RULE.getId());
+            inferenceRuleType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaSchema.INFERENCE_RULE.getId());
 
             RuleTypeImpl constraintRuleType = elementFactory.buildRuleType(addVertex(Schema.BaseType.RULE_TYPE), ruleType);
-            constraintRuleType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaType.CONSTRAINT_RULE.getId());
+            constraintRuleType.setProperty(Schema.ConceptProperty.ITEM_IDENTIFIER, Schema.MetaSchema.CONSTRAINT_RULE.getId());
 
             type.setType(type.getId());
             relationType.setType(type.getId());
@@ -220,7 +220,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     }
 
     private Vertex putVertex(String itemIdentifier, Schema.BaseType baseType){
-        if(Schema.MetaType.isMetaId(itemIdentifier)){
+        if(Schema.MetaSchema.isMetaId(itemIdentifier)){
             throw new ConceptException(ErrorMessage.ID_RESERVED.getMessage(itemIdentifier));
         }
 
@@ -417,42 +417,42 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
 
     @Override
     public Type getMetaType() {
-        return getConceptType(Schema.MetaType.TYPE.getId());
+        return getConceptType(Schema.MetaSchema.TYPE.getId());
     }
 
     @Override
     public Type getMetaRelationType() {
-        return getConceptType(Schema.MetaType.RELATION_TYPE.getId());
+        return getConceptType(Schema.MetaSchema.RELATION_TYPE.getId());
     }
 
     @Override
     public Type getMetaRoleType() {
-        return getConceptType(Schema.MetaType.ROLE_TYPE.getId());
+        return getConceptType(Schema.MetaSchema.ROLE_TYPE.getId());
     }
 
     @Override
     public Type getMetaResourceType() {
-        return getConceptType(Schema.MetaType.RESOURCE_TYPE.getId());
+        return getConceptType(Schema.MetaSchema.RESOURCE_TYPE.getId());
     }
 
     @Override
     public Type getMetaEntityType() {
-        return getConceptType(Schema.MetaType.ENTITY_TYPE.getId());
+        return getConceptType(Schema.MetaSchema.ENTITY_TYPE.getId());
     }
 
     @Override
     public Type getMetaRuleType(){
-        return getConceptType(Schema.MetaType.RULE_TYPE.getId());
+        return getConceptType(Schema.MetaSchema.RULE_TYPE.getId());
     }
 
     @Override
     public RuleType getMetaRuleInference() {
-        return getConceptType(Schema.MetaType.INFERENCE_RULE.getId()).asRuleType();
+        return getConceptType(Schema.MetaSchema.INFERENCE_RULE.getId()).asRuleType();
     }
 
     @Override
     public RuleType getMetaRuleConstraint() {
-        return getConceptType(Schema.MetaType.CONSTRAINT_RULE.getId()).asRuleType();
+        return getConceptType(Schema.MetaSchema.CONSTRAINT_RULE.getId()).asRuleType();
     }
 
     //-----------------------------------------------Casting Functionality----------------------------------------------

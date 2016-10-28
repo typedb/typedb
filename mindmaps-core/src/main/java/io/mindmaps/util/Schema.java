@@ -64,7 +64,7 @@ public final class Schema {
     /**
      * The concepts which represent our internal schema
      */
-    public enum MetaType {
+    public enum MetaSchema {
         TYPE("type"),
         ENTITY_TYPE("entity-type"),
         ROLE_TYPE("role-type"),
@@ -76,7 +76,7 @@ public final class Schema {
 
 
         private final String id;
-        MetaType(String i){
+        MetaSchema(String i){
             id = i;
         }
 
@@ -85,8 +85,8 @@ public final class Schema {
         }
 
         public static boolean isMetaId(String id){
-            for (MetaType metaType : MetaType.values()) {
-                if(metaType.getId().equals(id))
+            for (MetaSchema metaSchema : MetaSchema.values()) {
+                if(metaSchema.getId().equals(id))
                     return true;
             }
             return false;
