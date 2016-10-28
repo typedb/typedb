@@ -27,10 +27,10 @@ import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.pattern.Patterns;
-import io.mindmaps.graql.internal.pattern.property.SubProperty;
 import io.mindmaps.graql.internal.pattern.property.DataTypeProperty;
 import io.mindmaps.graql.internal.pattern.property.LhsProperty;
 import io.mindmaps.graql.internal.pattern.property.RhsProperty;
+import io.mindmaps.graql.internal.pattern.property.SubProperty;
 import io.mindmaps.graql.internal.pattern.property.VarPropertyInternal;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
@@ -44,12 +44,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.Stack;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static io.mindmaps.graql.internal.util.CommonUtil.optionalOr;
+import static io.mindmaps.util.ErrorMessage.INSERT_INSTANCE_WITH_ID;
 import static io.mindmaps.util.ErrorMessage.INSERT_NON_RESOURCE_WITH_VALUE;
 
 /**
@@ -230,15 +230,19 @@ public class InsertQueryExecutor {
         } else if (typeId.equals(Schema.MetaType.RULE_TYPE.getId())) {
             return graph.putRuleType(getTypeIdOrThrow(id));
         } else if (type.isEntityType()) {
-            return graph.addEntity(type.asEntityType());
+            return addOrGetInstance(id, type.asEntityType(), graph::getEntity, graph::addEntity);
         } else if (type.isRelationType()) {
-            return graph.addRelation(type.asRelationType());
+            return addOrGetInstance(id, type.asRelationType(), graph::getRelation, graph::addRelation);
         } else if (type.isResourceType()) {
-            return graph.putResource(getValue(var), type.asResourceType());
+            return addOrGetInstance(id, type.asResourceType(), graph::getResource,
+                    resourceType -> graph.putResource(getValue(var), resourceType)
+            );
         } else if (type.isRuleType()) {
-            String lhs = var.getProperty(LhsProperty.class).get().getLhs();
-            String rhs = var.getProperty(RhsProperty.class).get().getRhs();
-            return graph.addRule(lhs, rhs, type.asRuleType());
+            return addOrGetInstance(id, type.asRuleType(), graph::getRule, ruleType -> {
+                String lhs = var.getProperty(LhsProperty.class).get().getLhs();
+                String rhs = var.getProperty(RhsProperty.class).get().getRhs();
+                return graph.addRule(lhs, rhs, ruleType);
+            });
         } else {
             throw new RuntimeException("Unrecognized type " + type.getId());
         }
@@ -248,16 +252,19 @@ public class InsertQueryExecutor {
      * Put an instance of a type which may or may not have an ID specified
      * @param id the ID of the instance to create, or empty to not specify an ID
      * @param type the type of the instance
-     * @param putInstance a 'put' method on a MindmapsGraph, such as graph::putEntity
+     * @param getInstance a 'get' method on a MindmapsGraph, such as graph::getEntity
      * @param addInstance an 'add' method on a MindmapsGraph such a graph::addEntity
      * @param <T> the class of the type of the instance, e.g. EntityType
      * @param <S> the class of the instance, e.g. Entity
      * @return an instance of the specified type, with the given ID if one was specified
      */
-    private <T extends Type, S extends Instance> S putInstance(
-            Optional<String> id, T type, BiFunction<String, T, S> putInstance, Function<T, S> addInstance
+    private <T extends Type, S extends Instance> S addOrGetInstance(
+            Optional<String> id, T type, Function<String, S> getInstance, Function<T, S> addInstance
     ) {
-        return id.map(i -> putInstance.apply(i, type)).orElseGet(() -> addInstance.apply(type));
+        return id.map(getInstance).orElseGet(() -> {
+                if (id.isPresent()) throw new IllegalStateException(INSERT_INSTANCE_WITH_ID.getMessage(id.get()));
+                return addInstance.apply(type);
+        });
     }
 
     /**
