@@ -32,7 +32,7 @@ import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.RuleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.exception.ConceptException;
-import io.mindmaps.exception.ConceptIdNotUniqueException;
+import io.mindmaps.exception.ConceptNotUniqueException;
 import io.mindmaps.exception.GraphRuntimeException;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.exception.MoreThanOneConceptException;
@@ -231,7 +231,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
             vertex.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), itemIdentifier);
         } else {
             if(!baseType.name().equals(concept.getBaseType()))
-                throw new ConceptIdNotUniqueException(concept, itemIdentifier);
+                throw new ConceptNotUniqueException(concept, itemIdentifier);
             vertex = concept.getVertex();
         }
         return vertex;
@@ -271,7 +271,17 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         return elementFactory.buildResourceType(
                 putConceptType(id, Schema.BaseType.RESOURCE_TYPE, getMetaResourceType()).getVertex(),
                 getMetaResourceType(),
-                dataType);
+                dataType,
+                false);
+    }
+
+    @Override
+    public <V> ResourceType <V> putResourceTypeUnique(String id, ResourceType.DataType<V> dataType){
+        return elementFactory.buildResourceType(
+                putConceptType(id, Schema.BaseType.RESOURCE_TYPE, getMetaResourceType()).getVertex(),
+                getMetaResourceType(),
+                dataType,
+                true);
     }
 
     @Override

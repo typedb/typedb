@@ -97,6 +97,12 @@ public interface ResourceType<D> extends Type {
     String getRegex();
 
     /**
+     *
+     * @return True if the resource type is unique and its instances are limited to one connection to an entity
+     */
+    Boolean isUnique();
+
+    /**
      * A class used to hold the supported data types of resources and any other concepts.
      * This is used tp constrain value data types to only those we explicitly support.
      * @param <D> The data type.
