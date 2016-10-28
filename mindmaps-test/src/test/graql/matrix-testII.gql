@@ -4,7 +4,8 @@ insert
 ####################Ontology######################
 #################################################
 
-"entity" isa entity-type;
+"entity" isa entity-type
+    has-resource index;
 "a-entity" sub entity;
 
 "P-from" isa role-type;
@@ -22,11 +23,7 @@ entity plays-role Q-from plays-role Q-to;
 "S" isa relation-type, has-role S-from, has-role S-to;
 entity plays-role S-from plays-role S-to;
 
-####################################################
-##################DATA#############################
-####################################################
-
-"a" isa entity;
+"index" isa resource-type, datatype string;
 
 ####################################################
 ##################RULES#############################

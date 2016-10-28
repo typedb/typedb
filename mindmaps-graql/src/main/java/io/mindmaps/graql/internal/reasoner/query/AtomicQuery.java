@@ -122,8 +122,8 @@ public class AtomicQuery extends Query{
         */
         if (!getMatchQuery().ask().execute()) {
             InsertQuery insert = Graql.insert(getPattern().getVars()).withGraph(graph);
-            System.out.println("Materialising: ");
-            getPattern().getVars().forEach(System.out::println);
+            //System.out.println("Materialising: ");
+            //getPattern().getVars().forEach(System.out::println);
             insert.stream()
                     .filter(Concept::isResource)
                     .forEach(c -> {
@@ -136,7 +136,7 @@ public class AtomicQuery extends Query{
             //System.out.println("No of applicants: " + Sets.newHashSet(Graql.withGraph(graph).<MatchQuery>parse(test)).size());
         }
         else{
-            System.out.println("Not materialising, concepts already exist");
+            //System.out.println("Not materialising, concepts already exist");
         }
         return insertAnswers;
     }

@@ -4,7 +4,8 @@ insert
 ####################Ontology######################
 #################################################
 
-"entity" isa entity-type;
+"entity" isa entity-type
+    has-resource index;
 "start" sub entity;
 "end" sub entity;
 "a-entity" sub entity;
@@ -35,51 +36,53 @@ entity plays-role Q2-from plays-role Q2-to;
 "P" isa relation-type, has-role P-from, has-role P-to;
 entity plays-role P-from plays-role P-to;
 
+"index" isa resource-type, datatype string;
+
 ####################################################
 ##################DATA#############################
 ####################################################
 
-"c" isa entity;
-"d" isa entity;
-"e" isa entity;
+$c isa entity, has index "c";
+$d isa entity, has index "d";
+$e isa entity, has index "e";
 
 ####################################################
 ##################RULES#############################
 ####################################################
 
-"rule1" isa inference-rule,
+isa inference-rule,
 lhs {
 (R1-from: $x, R1-to: $y) isa R1;},
 rhs {
 (Q1-from: $x, Q1-to: $y) isa Q1;};
 
-"rule2" isa inference-rule,
+isa inference-rule,
 lhs {
 (R1-from: $x, R1-to: $z) isa R1;
 (Q1-from: $z, Q1-to: $y) isa Q1;},
 rhs {
 (Q1-from: $x, Q1-to: $y) isa Q1;};
 
-"rule3" isa inference-rule,
+isa inference-rule,
 lhs {
 (R2-from: $x, R2-to: $y) isa R2;},
 rhs {
 (Q2-from: $x, Q2-to: $y) isa Q2;};
 
-"rule4" isa inference-rule,
+isa inference-rule,
 lhs {
 (R2-from: $x, R2-to: $z) isa R2;
 (Q2-from: $z, Q2-to: $y) isa Q2;},
 rhs {
 (Q2-from: $x, Q2-to: $y) isa Q2;};
 
-"rule5" isa inference-rule,
+isa inference-rule,
 lhs {
 (Q1-from: $x, Q1-to: $y) isa Q1;},
 rhs {
 (P-from: $x, P-to: $y) isa P;};
 
-"rule6" isa inference-rule,
+isa inference-rule,
 lhs {
 (Q1-from: $x, Q1-to: $y) isa Q6;},
 rhs {

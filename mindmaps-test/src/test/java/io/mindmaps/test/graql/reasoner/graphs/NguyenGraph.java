@@ -20,7 +20,10 @@ package io.mindmaps.test.graql.reasoner.graphs;
 
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.EntityType;
+import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.Resource;
+import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 
 public class NguyenGraph extends GenericGraph{
@@ -41,44 +44,74 @@ public class NguyenGraph extends GenericGraph{
         RoleType Pfrom = mindmaps.getRoleType("P-rA");
         RoleType Pto = mindmaps.getRoleType("P-rB");
 
+        EntityType entity = mindmaps.getEntityType("entity");
         EntityType aEntity = mindmaps.getEntityType("a-entity");
         EntityType bEntity = mindmaps.getEntityType("b-entity");
         RelationType R = mindmaps.getRelationType("R");
         RelationType P = mindmaps.getRelationType("P");
         RelationType Q = mindmaps.getRelationType("Q");
 
-        mindmaps.putEntity("a" + (n+1), aEntity);
+        String cId = putEntity("c", entity).getId();
+        String dId = putEntity("d", entity).getId();
+        String eId = putEntity("e", entity).getId();
+
+        String[] aInstancesIds = new String[n+2];
+        String[] bInstancesIds = new String[n+2];
+
+        aInstancesIds[n+1] = putEntity("a" + (n+1), aEntity).getId();
         for(int i = 0 ; i <= n ;i++) {
-            mindmaps.putEntity("a" + i, aEntity);
-            mindmaps.putEntity("b" + i, bEntity);
+            aInstancesIds[i] = putEntity("a" + i, aEntity).getId();
+            bInstancesIds[i] = putEntity("b" + i, bEntity).getId();
         }
 
         mindmaps.addRelation(R)
-                .putRolePlayer(Rfrom, mindmaps.getInstance("d"))
-                .putRolePlayer(Rto, mindmaps.getInstance("e"));
+                .putRolePlayer(Rfrom, mindmaps.getInstance(dId))
+                .putRolePlayer(Rto, mindmaps.getInstance(eId));
 
         mindmaps.addRelation(P)
-                .putRolePlayer(Pfrom, mindmaps.getInstance("c"))
-                .putRolePlayer(Pto, mindmaps.getInstance("d"));
+                .putRolePlayer(Pfrom, mindmaps.getInstance(cId))
+                .putRolePlayer(Pto, mindmaps.getInstance(dId));
 
         mindmaps.addRelation(Q)
-                .putRolePlayer(Qfrom, mindmaps.getInstance("e"))
-                .putRolePlayer(Qto, mindmaps.getInstance("a0"));
+                .putRolePlayer(Qfrom, mindmaps.getInstance(eId))
+                .putRolePlayer(Qto, mindmaps.getInstance(aInstancesIds[0]));
 
         for(int i = 0 ; i <= n ;i++){
             mindmaps.addRelation(P)
-                    .putRolePlayer(Pfrom, mindmaps.getInstance("b" + i))
-                    .putRolePlayer(Pto, mindmaps.getInstance("c"));
+                    .putRolePlayer(Pfrom, mindmaps.getInstance(bInstancesIds[i]))
+                    .putRolePlayer(Pto, mindmaps.getInstance(cId));
             mindmaps.addRelation(P)
-                    .putRolePlayer(Pfrom, mindmaps.getInstance("c"))
-                    .putRolePlayer(Pto, mindmaps.getInstance("b" + i));
+                    .putRolePlayer(Pfrom, mindmaps.getInstance(cId))
+                    .putRolePlayer(Pto, mindmaps.getInstance(bInstancesIds[i]));
+                    //.putRolePlayer(Pto, mindmaps.getInstance("b" + i));
             mindmaps.addRelation(Q)
-                    .putRolePlayer(Qfrom, mindmaps.getInstance("a" + i))
-                    .putRolePlayer(Qto, mindmaps.getInstance("b" + i));
+                    .putRolePlayer(Qfrom, mindmaps.getInstance(aInstancesIds[i]))
+                    .putRolePlayer(Qto, mindmaps.getInstance(bInstancesIds[i]));
+                    //.putRolePlayer(Qfrom, mindmaps.getInstance("a" + i))
+                    //.putRolePlayer(Qto, mindmaps.getInstance("b" + i));
             mindmaps.addRelation(Q)
-                    .putRolePlayer(Qfrom, mindmaps.getInstance("b" + i))
-                    .putRolePlayer(Qto, mindmaps.getInstance("a" + (i+1)));
+                    .putRolePlayer(Qfrom, mindmaps.getInstance(bInstancesIds[i]))
+                    .putRolePlayer(Qto, mindmaps.getInstance(aInstancesIds[i+1]));
+                    //.putRolePlayer(Qfrom, mindmaps.getInstance("b" + i))
+                    //.putRolePlayer(Qto, mindmaps.getInstance("a" + (i+1)));
         }
+    }
 
+    private static Instance putEntity(String id, EntityType type) {
+        ResourceType<String> index = mindmaps.getResourceType("index");
+        RelationType indexRelation = mindmaps.getRelationType("has-index");
+        RoleType indexTarget = mindmaps.getRoleType("has-index-owner");
+        RoleType indexValue = mindmaps.getRoleType("has-index-value");
+        Instance inst = mindmaps.addEntity(type);
+        putResource(inst, index, id, indexRelation, indexTarget, indexValue);
+        return inst;
+    }
+
+    private static <T> void putResource(Instance instance, ResourceType<T> resourceType, T resource, RelationType relationType,
+                                        RoleType targetRole, RoleType valueRole) {
+        Resource resourceInstance = mindmaps.putResource(resource, resourceType);
+        mindmaps.addRelation(relationType)
+                .putRolePlayer(targetRole, instance)
+                .putRolePlayer(valueRole, resourceInstance);
     }
 }

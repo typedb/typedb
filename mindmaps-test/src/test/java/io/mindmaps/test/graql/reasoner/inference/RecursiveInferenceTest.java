@@ -305,7 +305,7 @@ public class RecursiveInferenceTest {
         QueryBuilder qb = Graql.withGraph(graph);
         Reasoner reasoner = new Reasoner(graph);
 
-        String queryString = "match (Q1-from: $x, Q1-to: $y) isa Q1; $x id 'a0'; select $y;";
+        String queryString = "match (Q1-from: $x, Q1-to: $y) isa Q1; $x has index 'a0'; select $y;";
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $y isa a-entity or $y isa end;";
 
@@ -322,7 +322,7 @@ public class RecursiveInferenceTest {
         QueryBuilder qb = Graql.withGraph(graph);
         Reasoner reasoner = new Reasoner(graph);
 
-        String queryString = "match (P-from: $x, P-to: $y) isa P; $x id 'a0'; select $y;";
+        String queryString = "match (P-from: $x, P-to: $y) isa P; $x has index 'a0'; select $y;";
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $y isa b-entity;";
 
@@ -339,7 +339,7 @@ public class RecursiveInferenceTest {
         QueryBuilder qb = Graql.withGraph(graph);
         Reasoner reasoner = new Reasoner(graph);
 
-        String queryString = "match (N-rA: $x, N-rB: $y) isa N; $x id 'c'; select $y;";
+        String queryString = "match (N-rA: $x, N-rB: $y) isa N; $x has index 'c'; select $y;";
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $y isa a-entity;";
 
@@ -349,6 +349,7 @@ public class RecursiveInferenceTest {
     }
 
     @Test
+
     public void testNguyen2(){
         final int N = 9;
         MindmapsGraph graph = NguyenGraph.getGraph(N);
@@ -390,7 +391,7 @@ public class RecursiveInferenceTest {
         QueryBuilder qb = Graql.withGraph(graph);
         Reasoner reasoner = new Reasoner(graph);
 
-        String queryString = "match (S-from: $x, S-to: $y) isa S;$x id 'a'; select $y;";
+        String queryString = "match (S-from: $x, S-to: $y) isa S;$x has index 'a'; select $y;";
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $y isa a-entity;";
 

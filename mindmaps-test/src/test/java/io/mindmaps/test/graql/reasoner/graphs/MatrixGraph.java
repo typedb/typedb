@@ -20,8 +20,13 @@ package io.mindmaps.test.graql.reasoner.graphs;
 
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.EntityType;
+import io.mindmaps.concept.Instance;
+import io.mindmaps.concept.Relation;
 import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.Resource;
+import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
+import java.util.Vector;
 
 public class MatrixGraph extends GenericGraph{
 
@@ -44,32 +49,53 @@ public class MatrixGraph extends GenericGraph{
         RelationType R1 = mindmaps.getRelationType("R1");
         RelationType R2 = mindmaps.getRelationType("R2");
 
-        mindmaps.putEntity("a0", mindmaps.getEntityType("start"));
-        mindmaps.putEntity("a" + m, mindmaps.getEntityType("end"));
+        String[] aInstancesIds = new String[m+1];
+        String[][] bInstancesIds = new String[m][n+1];
+        aInstancesIds[0] = putEntity("a0", mindmaps.getEntityType("start")).getId();
+        aInstancesIds[m] = putEntity("a" + m, mindmaps.getEntityType("end")).getId();
         for(int i = 1 ; i < m ;i++)
-            mindmaps.putEntity("a" + i, aEntity);
+            aInstancesIds[i] = putEntity("a" + i, aEntity).getId();
 
         for(int i = 1 ; i < m ;i++)
             for(int j = 1 ; j <= n ;j++)
-                mindmaps.putEntity("b" + i + j, bEntity);
+                bInstancesIds[i][j] = putEntity("b" + i + j, bEntity).getId();
 
-        for (int i = 0; i < m; i++)
+        for (int i = 0; i < m; i++) {
             mindmaps.addRelation(R1)
-                    .putRolePlayer(R1from, mindmaps.getInstance("a" + i))
-                    .putRolePlayer(R1to, mindmaps.getInstance("a" + (i+1)));
+                    .putRolePlayer(R1from, mindmaps.getInstance(aInstancesIds[i]))
+                    .putRolePlayer(R1to, mindmaps.getInstance(aInstancesIds[i + 1]));
+        }
 
         for(int j = 1 ; j <= n ;j++) {
             mindmaps.addRelation(R2)
-                    .putRolePlayer(R2from, mindmaps.getInstance("a0"))
-                    .putRolePlayer(R2to, mindmaps.getInstance("b1" + j));
+                    .putRolePlayer(R2from, mindmaps.getInstance(aInstancesIds[0]))
+                    .putRolePlayer(R2to, mindmaps.getInstance(bInstancesIds[1][j]));
             mindmaps.addRelation(R2)
-                    .putRolePlayer(R2from, mindmaps.getInstance("b" + (m-1) + j))
-                    .putRolePlayer(R2to, mindmaps.getInstance("a" + m));
+                    .putRolePlayer(R2from, mindmaps.getInstance(bInstancesIds[m-1][j]))
+                    .putRolePlayer(R2to, mindmaps.getInstance(aInstancesIds[m]));
             for (int i = 1; i < m - 1; i++) {
                 mindmaps.addRelation(R2)
-                        .putRolePlayer(R2from, mindmaps.getInstance("b" + i + j))
-                        .putRolePlayer(R2to, mindmaps.getInstance("b" + (i+1) + j));
+                        .putRolePlayer(R2from, mindmaps.getInstance(bInstancesIds[i][j]))
+                        .putRolePlayer(R2to, mindmaps.getInstance(bInstancesIds[i+1][j]));
             }
         }
+    }
+
+    private static Instance putEntity(String id, EntityType type) {
+        ResourceType<String> index = mindmaps.getResourceType("index");
+        RelationType indexRelation = mindmaps.getRelationType("has-index");
+        RoleType indexTarget = mindmaps.getRoleType("has-index-owner");
+        RoleType indexValue = mindmaps.getRoleType("has-index-value");
+        Instance inst = mindmaps.addEntity(type);
+        putResource(inst, index, id, indexRelation, indexTarget, indexValue);
+        return inst;
+    }
+
+    private static <T> void putResource(Instance instance, ResourceType<T> resourceType, T resource, RelationType relationType,
+                                        RoleType targetRole, RoleType valueRole) {
+        Resource resourceInstance = mindmaps.putResource(resource, resourceType);
+        mindmaps.addRelation(relationType)
+                .putRolePlayer(targetRole, instance)
+                .putRolePlayer(valueRole, resourceInstance);
     }
 }
