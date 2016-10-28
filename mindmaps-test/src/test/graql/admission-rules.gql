@@ -94,3 +94,99 @@ $x has specialHonours 'none';
 $x has GRE >1099;
 $x has vGRE <400;},
 rhs {$x has admissionStatus 'admit at department\'s discretion';};
+
+#########################################
+#############Wait for transcript######
+#########################################
+
+isa inference-rule,
+lhs {$x isa applicant;
+$x has decisionType 'conditional';
+$x has specialHonours 'none';
+$x has GRE <1100;},
+rhs {$x has admissionStatus 'wait for transcript';};
+
+isa inference-rule,
+lhs {$x isa applicant;
+$x has decisionType 'conditional';
+$x has GPR <3.3;},
+rhs {$x has admissionStatus 'wait for transcript';};
+
+
+#########################################
+#########Admission denied#########
+#########################################
+
+isa inference-rule,
+lhs {$x isa applicant;
+$x has languageRequirement 'unsatisfied';},
+rhs {$x has admissionStatus 'denied';};
+
+isa inference-rule,
+lhs {$x isa applicant;
+$x has considerGPR 'true';$x has GPR <2.5;},
+rhs {$x has admissionStatus 'denied';};
+
+isa inference-rule,
+lhs {$x isa applicant;
+$x has priorGraduateWork 'completed';
+$x has GPR <3.0;},
+rhs {$x has admissionStatus 'denied';};
+
+isa inference-rule,
+lhs {$x isa applicant;
+$x has considerGPR 'true';
+$x has GPR >2.49;
+$x has GRE <900;},
+rhs {$x has admissionStatus 'denied';};
+
+isa inference-rule,
+lhs {$x isa applicant;
+$x has considerGPR 'true';
+$x has specialHonours 'none';
+$x has GPR >2.49;
+$x has GRE <900;},
+rhs {$x has admissionStatus 'denied';};
+
+#########################################
+##############Provisional admission##############
+#########################################
+
+isa inference-rule,
+lhs {$x isa applicant;
+$x has considerGPR 'true';
+$x has GPR >2.49;
+$x has specialHonours 'none';
+$x has GRE >899;
+$x has GRE <1100;
+$x has vGRE <400;},
+rhs {$x has admissionStatus 'provisional with English remediation';};
+
+isa inference-rule,
+lhs {$x isa applicant;
+$x has considerGPR 'true';
+$x has GPR >2.99;
+$x has specialHonours 'none';
+$x has GRE >899;
+$x has GRE <1100;
+$x has vGRE >399;},
+rhs {$x has admissionStatus 'provisional';};
+
+isa inference-rule,
+lhs {$x isa applicant;
+$x has considerGPR 'true';
+$x has GPR >2.49;
+$x has GPR <3.0;
+$x has specialHonours 'none';
+$x has GRE >899;
+$x has vGRE <400;},
+rhs {$x has admissionStatus 'provisional with English remediation';};
+
+isa inference-rule,
+lhs {$x isa applicant;
+$x has considerGPR 'true';
+$x has GPR >2.49;
+$x has GPR <3.0;
+$x has GRE >899;
+$x has vGRE <400;},
+rhs {$x has admissionStatus 'provisional';};

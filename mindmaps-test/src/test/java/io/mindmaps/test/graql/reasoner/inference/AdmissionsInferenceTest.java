@@ -26,6 +26,7 @@ import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.test.graql.reasoner.graphs.AdmissionsGraph;
+import io.mindmaps.test.graql.reasoner.graphs.NguyenGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -35,33 +36,30 @@ import static org.junit.Assert.assertEquals;
 
 public class AdmissionsInferenceTest {
 
-    private static MindmapsGraph graph;
-    private static Reasoner reasoner;
-    private static QueryBuilder qb;
-
-    @BeforeClass
-    public static void setUpClass() {
-        graph = AdmissionsGraph.getGraph();
-        reasoner = new Reasoner(graph);
-        qb = Graql.withGraph(graph);
-    }
-
     @Test
     public void testConditionalAdmission() {
+        MindmapsGraph graph = AdmissionsGraph.getGraph();
+        QueryBuilder qb = Graql.withGraph(graph);
+        Reasoner reasoner = new Reasoner(graph);
+
         String queryString = "match $x isa applicant;$x has admissionStatus 'conditional';";
         Query query = new Query(queryString, graph);
         String explicitQuery = "match $x isa applicant, has name 'Bob';";
 
         printAnswers(reasoner.resolve(query));
-        //assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         //assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
     }
 
     @Test
     public void testDeniedAdmission() {
+        MindmapsGraph graph = AdmissionsGraph.getGraph();
+        QueryBuilder qb = Graql.withGraph(graph);
+        Reasoner reasoner = new Reasoner(graph);
+
         String queryString = "match $x isa applicant;$x has admissionStatus 'denied';";
         MatchQuery query = qb.parse(queryString);
-        String explicitQuery = "match $x isa applicant, id 'Alice';";
+        String explicitQuery = "match $x isa applicant, has name 'Alice';";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
@@ -69,9 +67,13 @@ public class AdmissionsInferenceTest {
 
     @Test
     public void testProvisionalAdmission() {
+        MindmapsGraph graph = AdmissionsGraph.getGraph();
+        QueryBuilder qb = Graql.withGraph(graph);
+        Reasoner reasoner = new Reasoner(graph);
+
         String queryString = "match $x isa applicant;$x has admissionStatus 'provisional';";
         MatchQuery query = qb.parse(queryString);
-        String explicitQuery = "match $x isa applicant, id 'Denis';";
+        String explicitQuery = "match $x isa applicant, has name 'Denis';";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
@@ -79,9 +81,13 @@ public class AdmissionsInferenceTest {
 
     @Test
     public void testWaitForTranscriptAdmission() {
+        MindmapsGraph graph = AdmissionsGraph.getGraph();
+        QueryBuilder qb = Graql.withGraph(graph);
+        Reasoner reasoner = new Reasoner(graph);
+
         String queryString = "match $x isa applicant;$x has admissionStatus 'wait for transcript';";
         MatchQuery query = qb.parse(queryString);
-        String explicitQuery = "match $x isa applicant, id 'Frank';";
+        String explicitQuery = "match $x isa applicant, has name 'Frank';";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
@@ -89,21 +95,25 @@ public class AdmissionsInferenceTest {
 
     @Test
     public void testFullStatusAdmission() {
+        MindmapsGraph graph = AdmissionsGraph.getGraph();
+        QueryBuilder qb = Graql.withGraph(graph);
+        Reasoner reasoner = new Reasoner(graph);
+
         String queryString = "match $x isa applicant;$x has name $name;$x has admissionStatus 'full';";
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $x isa applicant, has name $name;{$name value 'Charlie';} or {$name value 'Eva';};";
 
-        printAnswers(reasoner.resolve(query));
-        printAnswers(Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-        printAnswers(Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
-        //assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
-       // assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
         assertEquals(Sets.newHashSet(qb.<MatchQuery>parse(queryString)), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     @Test
-    //works without has name!
     public void testAdmissions() {
+        MindmapsGraph graph = AdmissionsGraph.getGraph();
+        QueryBuilder qb = Graql.withGraph(graph);
+        Reasoner reasoner = new Reasoner(graph);
+
         String queryString = "match $x has admissionStatus $y;$x has name $name;";
         Query query = new Query(queryString, graph);
         assertEquals(Sets.newHashSet(reasoner.resolve(query)), Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
