@@ -16,6 +16,7 @@ import org.junit.Test;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
 public class ClusteringTest extends AbstractGraphTest {
@@ -55,35 +56,67 @@ public class ClusteringTest extends AbstractGraphTest {
         // TODO: Fix in TinkerGraphComputer
         assumeFalse(usingTinker());
 
+        computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
+
+        Map<String, Long> sizeMap = computer.connectedComponentSize();
+        assertTrue(sizeMap.isEmpty());
+        Map<String, Set<String>> memberMap = computer.connectedComponent();
+        assertTrue(memberMap.isEmpty());
+
         addOntologyAndEntities();
         computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
-        Map<String, Set<String>> resultMap = computer.connectedComponent();
-        assertEquals(1, resultMap.size());
-        assertEquals(7, resultMap.values().iterator().next().size()); // 4 entities, 3 assertions
+
+        sizeMap = computer.connectedComponentSize();
+        assertEquals(1, sizeMap.size());
+        assertEquals(7L, sizeMap.values().iterator().next().longValue());
+
+        memberMap = computer.connectedComponent();
+        assertEquals(1, memberMap.size());
+        assertEquals(7, memberMap.values().iterator().next().size()); // 4 entities, 3 assertions
 
         addResourceRelations();
         computer = new Analytics(keyspace, new HashSet<>(), new HashSet<>());
-        resultMap = computer.connectedComponent();
-        assertEquals(6, resultMap.size());
-        Map<Integer, Integer> populationCount = new HashMap<>();
-        resultMap.values().forEach(value -> populationCount.put(value.size(),
-                populationCount.containsKey(value.size()) ? populationCount.get(value.size()) + 1 : 1));
-        assertEquals(5, populationCount.get(1).intValue()); // 5 resources are not connected to anything
-        assertEquals(1, populationCount.get(27).intValue());
+
+        sizeMap = computer.connectedComponentSize();
+        Map<Long, Integer> populationCount0 = new HashMap<>();
+        sizeMap.values().forEach(value -> populationCount0.put(value,
+                populationCount0.containsKey(value) ? populationCount0.get(value) + 1 : 1));
+        assertEquals(5, populationCount0.get(1L).intValue()); // 5 resources are not connected to anything
+        assertEquals(1, populationCount0.get(27L).intValue());
+
+        memberMap = computer.connectedComponent();
+        assertEquals(6, memberMap.size());
+        Map<Integer, Integer> populationCount1 = new HashMap<>();
+        memberMap.values().forEach(value -> populationCount1.put(value.size(),
+                populationCount1.containsKey(value.size()) ? populationCount1.get(value.size()) + 1 : 1));
+        assertEquals(5, populationCount1.get(1).intValue()); // 5 resources are not connected to anything
+        assertEquals(1, populationCount1.get(27).intValue());
 
         computer = new Analytics(keyspace, Collections.singleton(resourceType1), new HashSet<>());
-        resultMap = computer.connectedComponent();
-        assertEquals(4, resultMap.size());
+
+        sizeMap = computer.connectedComponentSize();
+        assertEquals(4, sizeMap.size());
+        memberMap = computer.connectedComponent();
+        assertEquals(4, memberMap.size());
 
         computer = new Analytics(keyspace, Sets.newHashSet(thing, anotherThing, "related", resourceType1,
                 resourceType2, resourceType3, resourceType4, resourceType5, resourceType6), new HashSet<>());
-        resultMap = computer.connectedComponent();
-        assertEquals(14, resultMap.size());
-        Map<Integer, Integer> populationCount1 = new HashMap<>();
-        resultMap.values().forEach(value -> populationCount1.put(value.size(),
-                populationCount1.containsKey(value.size()) ? populationCount1.get(value.size()) + 1 : 1));
-        assertEquals(1, populationCount1.get(7).intValue());
-        assertEquals(13, populationCount1.get(1).intValue());
+
+        sizeMap = computer.connectedComponentSize();
+        assertEquals(14, sizeMap.size());
+        Map<Long, Integer> populationCount2 = new HashMap<>();
+        sizeMap.values().forEach(value -> populationCount2.put(value,
+                populationCount2.containsKey(value) ? populationCount2.get(value) + 1 : 1));
+        assertEquals(1, populationCount2.get(7L).intValue());
+        assertEquals(13, populationCount2.get(1L).intValue());
+
+        memberMap = computer.connectedComponent();
+        assertEquals(14, memberMap.size());
+        Map<Integer, Integer> populationCount3 = new HashMap<>();
+        memberMap.values().forEach(value -> populationCount3.put(value.size(),
+                populationCount3.containsKey(value.size()) ? populationCount3.get(value.size()) + 1 : 1));
+        assertEquals(1, populationCount3.get(7).intValue());
+        assertEquals(13, populationCount3.get(1).intValue());
     }
 
     private void addOntologyAndEntities() throws MindmapsValidationException {

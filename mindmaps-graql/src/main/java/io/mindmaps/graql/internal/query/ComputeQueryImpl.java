@@ -74,6 +74,10 @@ class ComputeQueryImpl implements ComputeQuery {
                     analytics = getAnalytics(keyspace, false);
                     return analytics.connectedComponent();
                 }
+                case "connectedComponentsSize": {
+                    analytics = getAnalytics(keyspace, false);
+                    return analytics.connectedComponentSize();
+                }
                 case "max": {
                     analytics = getAnalytics(keyspace, true);
                     return analytics.max();
@@ -116,17 +120,21 @@ class ComputeQueryImpl implements ComputeQuery {
     public Stream<String> resultsString() {
         Object computeResult = execute();
         if (computeResult instanceof Map) {
-            Map<Serializable, Set<String>> map = (Map<Serializable, Set<String>>) computeResult;
-            return map.entrySet().stream().map(entry -> {
-                StringBuilder stringBuilder = new StringBuilder();
-                for (String s : entry.getValue()) {
-                    stringBuilder.append(entry.getKey()).append("\t").append(s).append("\n");
-                }
-                return stringBuilder.toString();
-            });
-        } else {
-            return Stream.of(StringConverter.graqlString(computeResult));
+            if (((Map) computeResult).isEmpty())
+                return Stream.of("There are no instances of the selected type(s).");
+            if (((Map) computeResult).values().iterator().next() instanceof Set) {
+                Map<Serializable, Set<String>> map = (Map<Serializable, Set<String>>) computeResult;
+                return map.entrySet().stream().map(entry -> {
+                    StringBuilder stringBuilder = new StringBuilder();
+                    for (String s : entry.getValue()) {
+                        stringBuilder.append(entry.getKey()).append("\t").append(s).append("\n");
+                    }
+                    return stringBuilder.toString();
+                });
+            }
         }
+
+        return Stream.of(StringConverter.graqlString(computeResult));
     }
 
     @Override

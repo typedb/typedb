@@ -7,19 +7,22 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.io.Serializable;
 import java.util.*;
 
-class ClusterPopulationMapReduce extends MindmapsMapReduce<Set<String>> {
+class ClusterMemberMapReduce extends MindmapsMapReduce<Set<String>> {
 
-    public ClusterPopulationMapReduce() {
+    private static final String CLUSTER_LABEL = "clusterMemberMapReduce.clusterLabel";
+
+    public ClusterMemberMapReduce() {
     }
 
-    public ClusterPopulationMapReduce(Set<String> selectedTypes) {
+    public ClusterMemberMapReduce(Set<String> selectedTypes, String clusterLabel) {
         this.selectedTypes = selectedTypes;
+        this.persistentProperties.put(CLUSTER_LABEL, clusterLabel);
     }
 
     @Override
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Set<String>> emitter) {
         if (selectedTypes.contains(Utility.getVertexType(vertex))) {
-            emitter.emit(vertex.value(ConnectedComponentVertexProgram.CLUSTER_LABEL),
+            emitter.emit(vertex.value((String)persistentProperties.get(CLUSTER_LABEL)),
                     Collections.singleton(vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name())));
         }
     }
