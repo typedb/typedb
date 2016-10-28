@@ -30,7 +30,6 @@ import io.mindmaps.graql.internal.query.match.MatchOrder;
 import io.mindmaps.graql.internal.query.match.MatchQueryInternal;
 import io.mindmaps.graql.internal.reasoner.atom.Atom;
 import io.mindmaps.graql.internal.reasoner.atom.Predicate;
-import io.mindmaps.graql.internal.reasoner.atom.Resource;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.graql.admin.PatternAdmin;
 import io.mindmaps.graql.internal.pattern.Patterns;
@@ -43,7 +42,6 @@ import java.util.stream.Stream;
 import javafx.util.Pair;
 
 import static io.mindmaps.graql.internal.reasoner.Utility.createFreshVariable;
-import static io.mindmaps.graql.internal.reasoner.Utility.subtractSets;
 
 public class Query implements MatchQueryInternal {
 
@@ -77,10 +75,6 @@ public class Query implements MatchQueryInternal {
         atomSet = new HashSet<>();
         addAtom(AtomicFactory.create(atom, this));
         addAtomConstraints(atom);
-        //add parent select vars
-        Set<String> extraVarsToSelect = getResources().stream().map(Atom::getValueVariable).collect(Collectors.toSet());
-        Set<String> mappedVars = getValuePredicates().stream().map(Predicate::getVarName).collect(Collectors.toSet());
-        this.selectVars.addAll(subtractSets(extraVarsToSelect, mappedVars));
     }
 
     //alpha-equivalence equality

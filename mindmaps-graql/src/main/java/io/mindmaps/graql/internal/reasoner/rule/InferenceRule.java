@@ -1,6 +1,5 @@
 package io.mindmaps.graql.internal.reasoner.rule;
 
-import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.Type;
@@ -59,12 +58,7 @@ public class InferenceRule {
     private void propagateConstraints(Atom parentAtom){
         body.addAtomConstraints(parentAtom.getSubstitutions());
         body.addAtomConstraints(parentAtom.getTypeConstraints().stream().filter(at -> !at.isRuleResolvable()).collect(Collectors.toSet()));
-        /*
-        if (!parentAtom.isResource()) {
-            body.addAtomConstraints(parentAtom.getResources());
-            body.addAtomConstraints(parentAtom.getResourceValuePredicates());
-        }
-        */
+
         head.addAtomConstraints(body.getSubstitutions());
         head.addAtomConstraints(parentAtom.getTypeConstraints());
     }

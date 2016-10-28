@@ -65,7 +65,7 @@ public class GeoInferenceTest {
     public void testQueryPrime() {
         String queryString = "match $x isa city;$x has name $name;"+
                 "($x, $y) isa is-located-in;"+
-                "$y sa country;$y has name 'Poland'; select $x, $name;";
+                "$y isa country;$y has name 'Poland'; select $x, $name;";
         MatchQuery query = qb.parse(queryString);
         printMatchQueryResults(query.distinct());
 
