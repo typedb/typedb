@@ -31,7 +31,7 @@ import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.RuleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.exception.ConceptException;
-import io.mindmaps.exception.ConceptIdNotUniqueException;
+import io.mindmaps.exception.ConceptNotUniqueException;
 import io.mindmaps.exception.InvalidConceptTypeException;
 import io.mindmaps.exception.InvalidConceptValueException;
 import io.mindmaps.exception.MoreThanOneEdgeException;
@@ -122,7 +122,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
         if(mindmapsGraph.isBatchLoadingEnabled() || updateAllowed(key, id))
             return setProperty(key, id);
         else
-            throw new ConceptIdNotUniqueException(this, key, id);
+            throw new ConceptNotUniqueException(this, key, id);
     }
 
     /**
