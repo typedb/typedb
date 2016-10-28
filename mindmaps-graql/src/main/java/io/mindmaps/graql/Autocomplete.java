@@ -123,7 +123,7 @@ public class Autocomplete {
     private static Stream<String> getTypes(MindmapsGraph graph) {
         Stream<String> types = graph.getMetaType().instances().stream().map(Concept::getId);
 
-        Stream<String> metaTypes = Stream.of(Schema.MetaType.values()).map(Schema.MetaType::getId);
+        Stream<String> metaTypes = Stream.of(Schema.MetaSchema.values()).map(Schema.MetaSchema::getId);
 
         return Stream.concat(types, metaTypes);
     }

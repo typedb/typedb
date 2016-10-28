@@ -306,32 +306,32 @@ public class MindmapsGraphLowLevelTest {
 
     @Test
     public void getSuperConceptType(){
-        assertEquals(mindmapsGraph.getMetaType().getId(), Schema.MetaType.TYPE.getId());
+        assertEquals(mindmapsGraph.getMetaType().getId(), Schema.MetaSchema.TYPE.getId());
     }
 
     @Test
     public void getSuperRelationType(){
-        assertEquals(mindmapsGraph.getMetaRelationType().getId(), Schema.MetaType.RELATION_TYPE.getId());
+        assertEquals(mindmapsGraph.getMetaRelationType().getId(), Schema.MetaSchema.RELATION_TYPE.getId());
     }
 
     @Test
     public void getSuperRoleType(){
-        assertEquals(mindmapsGraph.getMetaRoleType().getId(), Schema.MetaType.ROLE_TYPE.getId());
+        assertEquals(mindmapsGraph.getMetaRoleType().getId(), Schema.MetaSchema.ROLE_TYPE.getId());
     }
 
     @Test
     public void getSuperResourceType(){
-        assertEquals(mindmapsGraph.getMetaResourceType().getId(), Schema.MetaType.RESOURCE_TYPE.getId());
+        assertEquals(mindmapsGraph.getMetaResourceType().getId(), Schema.MetaSchema.RESOURCE_TYPE.getId());
     }
 
     @Test
     public void testGetMetaRuleInference() {
-        assertEquals(mindmapsGraph.getMetaRuleInference().getId(), Schema.MetaType.INFERENCE_RULE.getId());
+        assertEquals(mindmapsGraph.getMetaRuleInference().getId(), Schema.MetaSchema.INFERENCE_RULE.getId());
     }
 
     @Test
     public void testGetMetaRuleConstraint() {
-        assertEquals(mindmapsGraph.getMetaRuleConstraint().getId(), Schema.MetaType.CONSTRAINT_RULE.getId());
+        assertEquals(mindmapsGraph.getMetaRuleConstraint().getId(), Schema.MetaSchema.CONSTRAINT_RULE.getId());
     }
 
     @Test
@@ -358,10 +358,10 @@ public class MindmapsGraphLowLevelTest {
         RoleType testRoleType = mindmapsGraph.putRoleType("Test Role Type");
         RelationType testRelationType = mindmapsGraph.putRelationType("Test Relation Type");
 
-        assertEquals(Schema.MetaType.ENTITY_TYPE.getId(), testType.type().getId());
-        assertEquals(Schema.MetaType.RESOURCE_TYPE.getId(), testResourceType.type().getId());
-        assertEquals(Schema.MetaType.ROLE_TYPE.getId(), testRoleType.type().getId());
-        assertEquals(Schema.MetaType.RELATION_TYPE.getId(), testRelationType.type().getId());
+        assertEquals(Schema.MetaSchema.ENTITY_TYPE.getId(), testType.type().getId());
+        assertEquals(Schema.MetaSchema.RESOURCE_TYPE.getId(), testResourceType.type().getId());
+        assertEquals(Schema.MetaSchema.ROLE_TYPE.getId(), testRoleType.type().getId());
+        assertEquals(Schema.MetaSchema.RELATION_TYPE.getId(), testRelationType.type().getId());
 
     }
 
