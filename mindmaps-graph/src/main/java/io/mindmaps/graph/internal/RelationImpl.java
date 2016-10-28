@@ -27,6 +27,7 @@ import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.Relation;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -133,13 +134,23 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
             throw new IllegalArgumentException(ErrorMessage.ROLE_IS_NULL.getMessage(instance));
         }
 
+        //Check if it is a unique resource
         if(instance != null && instance.isResource()){
             Resource<Object> resource = instance.asResource();
-            if(resource.type().isUnique() && !resource.ownerInstances().isEmpty()) {
-                throw new ConceptNotUniqueException(resource, resource.ownerInstances().iterator().next());
+            if(resource.type().isUnique()) {
+
+                GraphTraversal traversal = getMindmapsGraph().getTinkerTraversal().
+                        has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), resource.getId()).
+                        out(Schema.EdgeLabel.SHORTCUT.getLabel());
+
+                if(traversal.hasNext()) {
+                    ConceptImpl foundNeighbour = getMindmapsGraph().getElementFactory().buildUnknownConcept((Vertex) traversal.next());
+                    throw new ConceptNotUniqueException(resource, foundNeighbour.asInstance());
+                }
             }
         }
 
+        //Do the actual put of the role and role player
         if(getMindmapsGraph().isBatchLoadingEnabled()) {
             return addNewRolePlayer(null, roleType, instance);
         } else {
