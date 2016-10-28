@@ -39,9 +39,10 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
         super(v, type, mindmapsGraph);
     }
 
-    ResourceTypeImpl(Vertex v, Type type, AbstractMindmapsGraph mindmapsGraph, DataType<D> dataType) {
+    ResourceTypeImpl(Vertex v, Type type, AbstractMindmapsGraph mindmapsGraph, DataType<D> dataType, boolean isUnique) {
         super(v, type, mindmapsGraph);
         setImmutableProperty(Schema.ConceptProperty.DATA_TYPE, dataType.getName());
+        setImmutableProperty(Schema.ConceptProperty.IS_UNIQUE, isUnique);
     }
 
     /**
@@ -73,11 +74,10 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
      * @return The data type which instances of this resource must conform to.
      */
     //This unsafe cast is suppressed because at this stage we do not know what the type is when reading from the rootGraph.
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "SuspiciousMethodCalls"})
     @Override
     public DataType<D> getDataType() {
-        Object object = getProperty(Schema.ConceptProperty.DATA_TYPE);
-        return (DataType<D>) DataType.SUPPORTED_TYPES.get(String.valueOf(object));
+        return (DataType<D>) DataType.SUPPORTED_TYPES.get(getProperty(Schema.ConceptProperty.DATA_TYPE));
     }
 
     /**
@@ -85,9 +85,15 @@ class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> impleme
      */
     @Override
     public String getRegex() {
-        Object object = getProperty(Schema.ConceptProperty.REGEX);
-        if(object == null)
-            return null;
-        return (String) object;
+        return getProperty(Schema.ConceptProperty.REGEX);
+    }
+
+    /**
+     *
+     * @return True if the resource type is unique and its instances are limited to one connection to an entity
+     */
+    @Override
+    public Boolean isUnique() {
+        return getProperty(Schema.ConceptProperty.IS_UNIQUE);
     }
 }

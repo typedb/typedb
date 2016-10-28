@@ -18,6 +18,8 @@
 
 package io.mindmaps.graph.internal;
 
+import io.mindmaps.concept.Resource;
+import io.mindmaps.exception.ConceptNotUniqueException;
 import io.mindmaps.util.Schema;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.exception.ConceptException;
@@ -25,6 +27,7 @@ import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.Relation;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -131,12 +134,29 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
             throw new IllegalArgumentException(ErrorMessage.ROLE_IS_NULL.getMessage(instance));
         }
 
-        if(mindmapsGraph.isBatchLoadingEnabled()) {
+        //Check if it is a unique resource
+        if(instance != null && instance.isResource()){
+            Resource<Object> resource = instance.asResource();
+            if(resource.type().isUnique()) {
+
+                GraphTraversal traversal = getMindmapsGraph().getTinkerTraversal().
+                        has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), resource.getId()).
+                        out(Schema.EdgeLabel.SHORTCUT.getLabel());
+
+                if(traversal.hasNext()) {
+                    ConceptImpl foundNeighbour = getMindmapsGraph().getElementFactory().buildUnknownConcept((Vertex) traversal.next());
+                    throw new ConceptNotUniqueException(resource, foundNeighbour.asInstance());
+                }
+            }
+        }
+
+        //Do the actual put of the role and role player
+        if(getMindmapsGraph().isBatchLoadingEnabled()) {
             return addNewRolePlayer(null, roleType, instance);
         } else {
             Map<RoleType, Instance> roleMap = rolePlayers();
             roleMap.put(roleType, instance);
-            Relation otherRelation = mindmapsGraph.getRelation(type(), roleMap);
+            Relation otherRelation = getMindmapsGraph().getRelation(type(), roleMap);
 
             if(otherRelation == null){
                 return addNewRolePlayer(roleMap, roleType, instance);
@@ -158,9 +178,9 @@ class RelationImpl extends InstanceImpl<Relation, RelationType> implements Relat
      */
     private Relation addNewRolePlayer(Map<RoleType, Instance> roleMap, RoleType roleType, Instance instance){
         if(instance != null)
-            mindmapsGraph.putCasting((RoleTypeImpl) roleType, (InstanceImpl) instance, this);
+            getMindmapsGraph().putCasting((RoleTypeImpl) roleType, (InstanceImpl) instance, this);
 
-        if(mindmapsGraph.isBatchLoadingEnabled()){
+        if(getMindmapsGraph().isBatchLoadingEnabled()){
             setHash(null);
         } else {
             setHash(roleMap);

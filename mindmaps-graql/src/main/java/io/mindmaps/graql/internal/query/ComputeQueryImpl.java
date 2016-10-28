@@ -19,14 +19,13 @@
 package io.mindmaps.graql.internal.query;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.Instance;
 import io.mindmaps.exception.InvalidConceptTypeException;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.internal.analytics.Analytics;
+import io.mindmaps.graql.internal.util.StringConverter;
 import io.mindmaps.util.ErrorMessage;
 
 import java.io.Serializable;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -132,16 +131,10 @@ class ComputeQueryImpl implements ComputeQuery {
                     }
                     return stringBuilder.toString();
                 });
-            } else {
-                Map<Serializable, ?> map = (Map<Serializable, ?>) computeResult;
-                return map.entrySet().stream().map(entry -> entry.getKey() + "\t" + entry.getValue());
             }
-        } else if (computeResult instanceof Optional) {
-            return ((Optional) computeResult).isPresent() ? Stream.of(((Optional) computeResult).get().toString()) :
-                    Stream.of("There are no instances of this resource type(s).");
-        } else {
-            return Stream.of(computeResult.toString());
         }
+
+        return Stream.of(StringConverter.graqlString(computeResult));
     }
 
     @Override

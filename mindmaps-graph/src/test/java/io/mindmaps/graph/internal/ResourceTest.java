@@ -19,12 +19,14 @@
 package io.mindmaps.graph.internal;
 
 import io.mindmaps.Mindmaps;
+import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
+import io.mindmaps.exception.ConceptNotUniqueException;
 import io.mindmaps.util.ErrorMessage;
 import org.junit.Before;
 import org.junit.Test;
@@ -156,5 +158,36 @@ public class ResourceTest {
                 containsString(ErrorMessage.INVALID_DATATYPE.getMessage("1", String.class.getName()))
         ));
         mindmapsGraph.putResource(1L, stringResourceType);
+    }
+
+    @Test
+    public void testUniqueResource(){
+        //Create Ontology
+        RoleType primaryKeyRole = mindmapsGraph.putRoleType("Primary Key Role");
+        RoleType entityRole = mindmapsGraph.putRoleType("Entity Role");
+        RelationType hasPrimaryKey = mindmapsGraph.putRelationType("Has Parimary Key").hasRole(primaryKeyRole).hasRole(entityRole);
+
+
+        //Create Resources
+        ResourceType primaryKeyType = mindmapsGraph.putResourceTypeUnique("My Primary Key", ResourceType.DataType.STRING).playsRole(primaryKeyRole);
+        Resource pimaryKey1 = mindmapsGraph.putResource("A Primary Key 1", primaryKeyType);
+        Resource pimaryKey2 = mindmapsGraph.putResource("A Primary Key 2", primaryKeyType);
+
+        //Create Entities
+        EntityType entityType = mindmapsGraph.putEntityType("My Entity Type").playsRole(entityRole);
+        Entity entity1 = mindmapsGraph.addEntity(entityType);
+        Entity entity2 = mindmapsGraph.addEntity(entityType);
+        Entity entity3 = mindmapsGraph.addEntity(entityType);
+
+        //Link Entities to resources
+        mindmapsGraph.addRelation(hasPrimaryKey).putRolePlayer(primaryKeyRole, pimaryKey1).putRolePlayer(entityRole, entity1);
+        mindmapsGraph.addRelation(hasPrimaryKey).putRolePlayer(primaryKeyRole, pimaryKey2).putRolePlayer(entityRole, entity2);
+
+        expectedException.expect(ConceptNotUniqueException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.RESOURCE_TYPE_UNIQUE.getMessage(pimaryKey1.getId(), entity1.getId()))
+        ));
+
+        mindmapsGraph.addRelation(hasPrimaryKey).putRolePlayer(primaryKeyRole, pimaryKey1).putRolePlayer(entityRole, entity3);
     }
 }

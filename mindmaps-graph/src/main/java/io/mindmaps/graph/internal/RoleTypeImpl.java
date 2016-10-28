@@ -82,7 +82,7 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
      */
     public Set<CastingImpl> castings(){
         Set<CastingImpl> castings = new HashSet<>();
-        getIncomingNeighbours(Schema.EdgeLabel.ISA).forEach(concept -> ((CastingImpl) concept).getRelations().forEach(relation -> mindmapsGraph.getConceptLog().putConcept(relation)));
+        getIncomingNeighbours(Schema.EdgeLabel.ISA).forEach(concept -> ((CastingImpl) concept).getRelations().forEach(relation -> getMindmapsGraph().getConceptLog().putConcept(relation)));
         return castings;
     }
 }

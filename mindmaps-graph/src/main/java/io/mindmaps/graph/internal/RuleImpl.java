@@ -67,10 +67,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      */
     @Override
     public String getLHS() {
-        Object object = getProperty(Schema.ConceptProperty.RULE_LHS);
-        if(object == null)
-            return null;
-        return (String) object;
+        return getProperty(Schema.ConceptProperty.RULE_LHS);
     }
 
     /**
@@ -79,10 +76,7 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      */
     @Override
     public String getRHS() {
-        Object object = getProperty(Schema.ConceptProperty.RULE_RHS);
-        if(object == null)
-            return null;
-        return (String) object;
+        return getProperty(Schema.ConceptProperty.RULE_RHS);
     }
 
 
@@ -92,9 +86,8 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      * @return
      */
     @Override
-    public boolean getExpectation() {
-        Object object = getProperty(Schema.ConceptProperty.IS_EXPECTED);
-        return object != null && Boolean.parseBoolean(object.toString());
+    public Boolean getExpectation() {
+        return getPropertyBoolean(Schema.ConceptProperty.IS_EXPECTED);
     }
 
     //TODO: Fill out details on this method
@@ -103,9 +96,8 @@ class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
      * @return
      */
     @Override
-    public boolean isMaterialise() {
-        Object object = getProperty(Schema.ConceptProperty.IS_MATERIALISED);
-        return object != null && Boolean.parseBoolean(object.toString());
+    public Boolean isMaterialise() {
+        return getPropertyBoolean(Schema.ConceptProperty.IS_MATERIALISED);
     }
 
     /**

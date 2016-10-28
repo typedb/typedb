@@ -22,7 +22,7 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.AskQuery;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.admin.AskQueryAdmin;
-import io.mindmaps.graql.internal.util.ANSI;
+import io.mindmaps.graql.internal.util.StringConverter;
 
 import java.util.stream.Stream;
 
@@ -47,11 +47,7 @@ class AskQueryImpl implements AskQueryAdmin {
 
     @Override
     public Stream<String> resultsString() {
-        if (execute()) {
-            return Stream.of(ANSI.color("True", ANSI.GREEN));
-        } else {
-            return Stream.of(ANSI.color("False", ANSI.RED));
-        }
+        return Stream.of(StringConverter.graqlString(execute()));
     }
 
     @Override

@@ -23,6 +23,7 @@ import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.Aggregate;
 import io.mindmaps.graql.AggregateQuery;
 import io.mindmaps.graql.admin.MatchQueryAdmin;
+import io.mindmaps.graql.internal.util.StringConverter;
 
 import java.util.Map;
 import java.util.stream.Stream;
@@ -53,7 +54,7 @@ class AggregateQueryImpl<T> implements AggregateQuery<T> {
 
     @Override
     public Stream<String> resultsString() {
-        return Stream.of(execute().toString());
+        return Stream.of(StringConverter.graqlString(execute()));
     }
 
     @Override

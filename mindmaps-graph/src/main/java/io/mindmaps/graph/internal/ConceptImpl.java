@@ -31,7 +31,7 @@ import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.RuleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.exception.ConceptException;
-import io.mindmaps.exception.ConceptIdNotUniqueException;
+import io.mindmaps.exception.ConceptNotUniqueException;
 import io.mindmaps.exception.InvalidConceptTypeException;
 import io.mindmaps.exception.InvalidConceptValueException;
 import io.mindmaps.exception.MoreThanOneEdgeException;
@@ -59,7 +59,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
         return (T) this;
     }
 
-    final AbstractMindmapsGraph mindmapsGraph;
+    private final AbstractMindmapsGraph mindmapsGraph;
     private Vertex vertex;
 
     ConceptImpl(Vertex v, V type, AbstractMindmapsGraph mindmapsGraph){
@@ -95,19 +95,6 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
     }
 
     /**
-     *
-     * @param key The key of the property to retrieve
-     * @return The value in the property
-     */
-    private Object getProperty(String key){
-        VertexProperty property = vertex.property(key);
-        if(property != null && property.isPresent())
-            return property.value();
-        else
-            return null;
-    }
-
-    /**
      * Deletes the concept.
      * @throws ConceptException Throws an exception if the node has any edges attached to it.
      */
@@ -135,7 +122,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
         if(mindmapsGraph.isBatchLoadingEnabled() || updateAllowed(key, id))
             return setProperty(key, id);
         else
-            throw new ConceptIdNotUniqueException(this, key, id);
+            throw new ConceptNotUniqueException(this, key, id);
     }
 
     /**
@@ -556,8 +543,18 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @param key The key of the non-unique property to retrieve
      * @return The value stored in the property
      */
-    public Object getProperty(Schema.ConceptProperty key){
-        return getProperty(key.name());
+    @SuppressWarnings("unchecked")
+    public <X extends Object> X getProperty(Schema.ConceptProperty key){
+        VertexProperty property = vertex.property(key.name());
+        if(property != null && property.isPresent())
+            return (X) property.value();
+        return null;
+    }
+    public Boolean getPropertyBoolean(Schema.ConceptProperty key){
+        Boolean value = getProperty(key);
+        if(value == null)
+            return false;
+        return value;
     }
 
     /**
@@ -601,7 +598,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      */
     @Override
     public String getId(){
-        return (String) getProperty(Schema.ConceptProperty.ITEM_IDENTIFIER);
+        return getProperty(Schema.ConceptProperty.ITEM_IDENTIFIER);
     }
 
     /**
@@ -609,7 +606,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @return The id of the type of this concept. This is a shortcut used to prevent traversals.
      */
     public String getType(){
-        return String.valueOf(getProperty(Schema.ConceptProperty.TYPE));
+        return getProperty(Schema.ConceptProperty.TYPE);
     }
 
     /**
@@ -645,7 +642,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      *
      * @return The mindmaps graph this concept is bound to.
      */
-    AbstractMindmapsGraph getMindmapsGraph() {return mindmapsGraph;}
+    protected AbstractMindmapsGraph getMindmapsGraph() {return mindmapsGraph;}
 
     //--------- Create Links -------//
     /**

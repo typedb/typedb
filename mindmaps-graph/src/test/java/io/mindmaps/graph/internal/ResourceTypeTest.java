@@ -37,6 +37,8 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class ResourceTypeTest {
 
@@ -101,6 +103,15 @@ public class ResourceTypeTest {
                 containsString(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage("[abc]", thing.toString()))
         ));
         resourceType.setRegex("[abc]");
+    }
+
+    @Test
+    public void testGetUniqueResourceType(){
+        ResourceType unique = mindmapsGraph.putResourceTypeUnique("Random ID", ResourceType.DataType.LONG);
+        ResourceType notUnique = mindmapsGraph.putResourceType("Random ID 2", ResourceType.DataType.LONG);
+
+        assertTrue(unique.isUnique());
+        assertFalse(notUnique.isUnique());
     }
 
     @Test
