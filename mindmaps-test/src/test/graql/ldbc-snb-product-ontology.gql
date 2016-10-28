@@ -1,7 +1,11 @@
 insert 
 
 entity isa entity-type, is-abstract;
-product sub entity, has-resource min-age, has-resource max-age, has-resource gender;
+product sub entity
+    has-resource name
+    has-resource min-age
+    has-resource max-age
+    has-resource gender;
 
 # product resources
 min-age isa resource-type, datatype long;
@@ -11,7 +15,8 @@ gender isa resource-type, datatype string;
 product-made isa role-type;
 product-origin isa role-type;
 made-in isa relation-type, has-role product-origin, has-role product-made;
-product plays-role product-made;
+product plays-role product-made
+    plays-role typed-product;
 
 recommended-product isa role-type;
 recommended-customer isa role-type;
@@ -27,5 +32,7 @@ place plays-role product-origin;
 typed-product isa role-type;
 product-type isa role-type;
 typing isa relation-type, has-role typed-product, has-role product-type;
-category isa entity-type, plays-role product-type;
-product plays-role typed-product;
+category isa entity-type
+    has-resource name
+    plays-role product-type
+    plays-role typed-product;

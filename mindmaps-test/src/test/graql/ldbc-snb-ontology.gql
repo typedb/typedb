@@ -1,7 +1,8 @@
 insert
 #string, long, double, boolean
 
-"entity" isa entity-type, is-abstract; # generic type for a lot of resources
+"entity" isa entity-type, is-abstract
+    has-resource name;
 "place" sub entity;
 "organization" sub entity;
 "tag" sub entity;
@@ -49,6 +50,7 @@ organization plays-role located-subject;
 "person" isa entity-type;
 
 person
+    has-resource name,
     has-resource firstname,
     has-resource lastname,
     has-resource gender,
@@ -56,7 +58,7 @@ person
     has-resource email,
     has-resource age;
 
-
+"name" isa resource-type, datatype string;
 "firstname" isa resource-type, datatype string;
 "lastname" isa resource-type, datatype string;
 "gender" isa resource-type, datatype string;

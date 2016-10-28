@@ -1,7 +1,7 @@
 insert
 
 #transitivity of resides & sublocate
-"R1" isa inference-rule,
+isa inference-rule,
 lhs {(located-subject: $x, subject-location: $y) isa resides;
 (member-location: $y, container-location: $z) isa sublocate;
 },
@@ -9,119 +9,119 @@ rhs {(located-subject: $x, subject-location: $z) isa resides;};
 #introduces ambiguity in rule ->rhs {($x, $z) isa resides;};
 
 # transitivity of sublocate
-"R2" isa inference-rule,
+isa inference-rule,
 lhs {
 (member-location: $x, container-location: $y) isa sublocate;
 (member-location: $y, container-location: $z) isa sublocate;
 },
 rhs {(member-location: $x, container-location: $z) isa sublocate;};
 
-"R3" isa inference-rule,
+isa inference-rule,
 lhs {($x, $y) isa moderates;},
 rhs {($x, $y) isa membership;};
 
-"R4" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t1 isa tag;$t1 id 'Ennio Morricone';
-$t2 isa tag;$t2 id 'John Wayne';
+$t1 isa tag;$t1 has name 'Ennio Morricone';
+$t2 isa tag;$t2 has name 'John Wayne';
 ($x, $t1) isa tagging;
 ($x, $t2) isa tagging;
 $y isa product;
-$y id 'The Good the Bad the Ugly';
+$y has name 'The Good the Bad the Ugly';
 },
 rhs {($x, $y) isa recommendation;};
 
-#"R5" isa inference-rule,
+#isa inference-rule,
 #lhs {$x isa person;
-#$t isa tag;{$t id 'Ozzy Osbourne';} or {$t id 'Rising Force';};
+#$t isa tag;{$t has name 'Ozzy Osbourne';} or {$t has name 'Rising Force';};
 #($x, $t) isa tagging;
 #$y isa product;
-#{$y id 'Blizzard of Ozz';} or {$y id 'Stratocaster';};
+#{$y has name 'Blizzard of Ozz';} or {$y has name 'Stratocaster';};
 #},
 #rhs {($x, $y) isa recommendation;};
 
-"R5a" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Ozzy Osbourne';
+$t isa tag;$t has name 'Ozzy Osbourne';
 ($x, $t) isa tagging;
 $y isa product;
-$y id 'Blizzard of Ozz';
+$y has name 'Blizzard of Ozz';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R5b" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Ozzy Osbourne';
+$t isa tag;$t has name 'Ozzy Osbourne';
 ($x, $t) isa tagging;
 $y isa product;
-$y id 'Stratocaster';
+$y has name 'Stratocaster';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R5c" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Rising Force';
+$t isa tag;$t has name 'Rising Force';
 ($x, $t) isa tagging;
 $y isa product;
-$y id 'Blizzard of Ozz';
+$y has name 'Blizzard of Ozz';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R5d" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Rising Force';
+$t isa tag;$t has name 'Rising Force';
 ($x, $t) isa tagging;
 $y isa product;
-$y id 'Stratocaster';
+$y has name 'Stratocaster';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R6" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
 $x has gender 'male';$x has age >=18;
 $y isa product;$y has min-age >=18;
-$z isa country;$z id 'Italy';
+$z isa country;$z has name 'Italy';
 ($y, $z) isa made-in;
 },
 rhs {($x, $y) isa recommendation;};
 
-#"R7" isa inference-rule,
+#isa inference-rule,
 #lhs {$x isa person;
-#$t isa tag;{$t id 'Ludwig van Beethoven';} or {$t id 'Johann Sebastian Bach';} or {$t id 'Wolfgang Amadeus Mozart';};
+#$t isa tag;{$t has name 'Ludwig van Beethoven';} or {$t has name 'Johann Sebastian Bach';} or {$t has name 'Wolfgang Amadeus Mozart';};
 #($x, $t) isa tagging;
-#$y isa product;$y id 'Nocturnes';
+#$y isa product;$y has name 'Nocturnes';
 #},
 #rhs {($x, $y) isa recommendation;};
 
-"R7a" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Ludwig van Beethoven';
+$t isa tag;$t has name 'Ludwig van Beethoven';
 ($x, $t) isa tagging;
-$y isa product;$y id 'Nocturnes';
+$y isa product;$y has name 'Nocturnes';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R7b" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Johann Sebastian Bach';
+$t isa tag;$t has name 'Johann Sebastian Bach';
 ($x, $t) isa tagging;
-$y isa product;$y id 'Nocturnes';
+$y isa product;$y has name 'Nocturnes';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R7c" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Wolfgang Amadeus Mozart';
+$t isa tag;$t has name 'Wolfgang Amadeus Mozart';
 ($x, $t) isa tagging;
-$y isa product;$y id 'Nocturnes';
+$y isa product;$y has name 'Nocturnes';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R8" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Roger Waters';
+$t isa tag;$t has name 'Roger Waters';
 ($x, $t) isa tagging;
-$y isa product;$y id 'The Wall';
+$y isa product;$y has name 'The Wall';
 },
 rhs {($x, $y) isa recommendation;};
 
@@ -129,143 +129,143 @@ rhs {($x, $y) isa recommendation;};
 ##################Writer->Book######################
 #############################################
 
-#"R9" isa inference-rule,
+#isa inference-rule,
 #lhs {
 #$x isa person;$t isa tag;
 #($x, $t) isa tagging;
-#$tt isa category;$tt id 'Writer';
+#$tt isa category;$tt has name 'Writer';
 #($t, $tt) isa grouping;
 #$y isa product;
-#$yt isa category;$yt id 'book';
+#$yt isa category;$yt has name 'book';
 #($y, $yt) isa typing;},
 #rhs {
 #($x, $y) isa recommendation;};
 
-"R10" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'H. G. Wells';
+$t isa tag;$t has name 'H. G. Wells';
 ($x, $t) isa tagging;
-$y isa product;$y id 'War of the Worlds';
+$y isa product;$y has name 'War of the Worlds';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R11" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Fyodor Dostoyevsky';
+$t isa tag;$t has name 'Fyodor Dostoyevsky';
 ($x, $t) isa tagging;
-$y isa product;$y id 'Crime and Punishment';
+$y isa product;$y has name 'Crime and Punishment';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R12" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'George Orwell';
+$t isa tag;$t has name 'George Orwell';
 ($x, $t) isa tagging;
-$y isa product;$y id 'Animal Farm';
+$y isa product;$y has name 'Animal Farm';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R13" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Lewis Carroll';
+$t isa tag;$t has name 'Lewis Carroll';
 ($x, $t) isa tagging;
-$y isa product;$y id 'Adventures in Wonderland';
+$y isa product;$y has name 'Adventures in Wonderland';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R14" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Agatha Christie';
+$t isa tag;$t has name 'Agatha Christie';
 ($x, $t) isa tagging;
-$y isa product;$y id 'Orient Express';
+$y isa product;$y has name 'Orient Express';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R15" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Hans Christian Andersen';
+$t isa tag;$t has name 'Hans Christian Andersen';
 ($x, $t) isa tagging;
-$y isa product;$y id 'Fairy Tales';
+$y isa product;$y has name 'Fairy Tales';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R16" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Terry Pratchett';
+$t isa tag;$t has name 'Terry Pratchett';
 ($x, $t) isa tagging;
-$y isa product;$y id 'Colour of Magic';
+$y isa product;$y has name 'Colour of Magic';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R17" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'P. G. Wodehouse';
+$t isa tag;$t has name 'P. G. Wodehouse';
 ($x, $t) isa tagging;
-$y isa product;$y id 'My Man Jeeves';
+$y isa product;$y has name 'My Man Jeeves';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R18" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Oscar Wilde';
+$t isa tag;$t has name 'Oscar Wilde';
 ($x, $t) isa tagging;
-$y isa product;$y id 'Dorian Gray';
+$y isa product;$y has name 'Dorian Gray';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R19" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'J. R. R. Tolkien';
+$t isa tag;$t has name 'J. R. R. Tolkien';
 ($x, $t) isa tagging;
-$y isa product;$y id 'Lord of the Rings';
+$y isa product;$y has name 'Lord of the Rings';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R20" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'J. K. Rowling';
+$t isa tag;$t has name 'J. K. Rowling';
 ($x, $t) isa tagging;
-$y isa product;$y id 'Harry Potter';
+$y isa product;$y has name 'Harry Potter';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R21" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Arthur Conan Doyle';
+$t isa tag;$t has name 'Arthur Conan Doyle';
 ($x, $t) isa tagging;
-$y isa product;$y id 'Sherlock Holmes';
+$y isa product;$y has name 'Sherlock Holmes';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R22" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Ernest Hemingway';
+$t isa tag;$t has name 'Ernest Hemingway';
 ($x, $t) isa tagging;
-$y isa product;$y id 'For Whom the Bell Tolls';
+$y isa product;$y has name 'For Whom the Bell Tolls';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R23" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'John Steinbeck';
+$t isa tag;$t has name 'John Steinbeck';
 ($x, $t) isa tagging;
-$y isa product;$y id 'Of Mice and Men';
+$y isa product;$y has name 'Of Mice and Men';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R24" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Franz Kafka';
+$t isa tag;$t has name 'Franz Kafka';
 ($x, $t) isa tagging;
-$y isa product;$y id 'Trial';
+$y isa product;$y has name 'Trial';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R25" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Johann Wolfgang von Goethe';
+$t isa tag;$t has name 'Johann Wolfgang von Goethe';
 ($x, $t) isa tagging;
-$y isa product;$y id 'Faust';
+$y isa product;$y has name 'Faust';
 },
 rhs {($x, $y) isa recommendation;};
 
@@ -273,94 +273,94 @@ rhs {($x, $y) isa recommendation;};
 ##############MusicalArtist->Band############
 #############################################
 
-"R26" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Ozzy Osbourne';
+$t isa tag;$t has name 'Ozzy Osbourne';
 ($x, $t) isa tagging;
-$y isa tag;$y id 'Black Sabbath';
+$y isa tag;$y has name 'Black Sabbath';
 },
 rhs {($x, $y) isa recommendation;};
 
-#"R27" isa inference-rule,
+#isa inference-rule,
 #lhs {$x isa person;
-#$t isa tag;{$t id 'Paul McCartney';} or {$t id 'George Harrison';};
+#$t isa tag;{$t has name 'Paul McCartney';} or {$t has name 'George Harrison';};
 #($x, $t) isa tagging;
-#$y isa tag;$y id 'Beatles';
+#$y isa tag;$y has name 'Beatles';
 #},
 #rhs {($x, $y) isa recommendation;};
 
-"R27a" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Paul McCartney';
+$t isa tag;$t has name 'Paul McCartney';
 ($x, $t) isa tagging;
-$y isa tag;$y id 'Beatles';
+$y isa tag;$y has name 'Beatles';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R27b" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'George Harrison';
+$t isa tag;$t has name 'George Harrison';
 ($x, $t) isa tagging;
-$y isa tag;$y id 'Beatles';
+$y isa tag;$y has name 'Beatles';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R28" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Roger Waters';
+$t isa tag;$t has name 'Roger Waters';
 ($x, $t) isa tagging;
-$y isa tag;$y id 'Pink Floyd';
+$y isa tag;$y has name 'Pink Floyd';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R29" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Keith Richards';
+$t isa tag;$t has name 'Keith Richards';
 ($x, $t) isa tagging;
-$y isa tag;$y id 'Rolling Stones';
+$y isa tag;$y has name 'Rolling Stones';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R30" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Paul Simon';
+$t isa tag;$t has name 'Paul Simon';
 ($x, $t) isa tagging;
-$y isa tag;$y id 'Simon and Garfunkel';
+$y isa tag;$y has name 'Simon and Garfunkel';
 },
 rhs {($x, $y) isa recommendation;};
 
-#"R31" isa inference-rule,
+#isa inference-rule,
 #lhs {$x isa person;
-#$t isa tag;$t id 'Eric Clapton';
+#$t isa tag;$t has name 'Eric Clapton';
 #($x, $t) isa tagging;
 #$y isa tag;
-#{$y id 'Cream';} or {$y id 'Yardbirds';};
+#{$y has name 'Cream';} or {$y has name 'Yardbirds';};
 #},
 #rhs {($x, $y) isa recommendation;};
 
-"R31a" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Eric Clapton';
+$t isa tag;$t has name 'Eric Clapton';
 ($x, $t) isa tagging;
 $y isa tag;
-$y id 'Cream';
+$y has name 'Cream';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R31b" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Eric Clapton';
+$t isa tag;$t has name 'Eric Clapton';
 ($x, $t) isa tagging;
 $y isa tag;
-$y id 'Yardbirds';
+$y has name 'Yardbirds';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R32" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Bob Marley';
+$t isa tag;$t has name 'Bob Marley';
 ($x, $t) isa tagging;
-$y isa tag;$y id 'Bob Marley and the Wailers';
+$y isa tag;$y has name 'Bob Marley and the Wailers';
 },
 rhs {($x, $y) isa recommendation;};
 
@@ -368,93 +368,93 @@ rhs {($x, $y) isa recommendation;};
 ##############Album->Band##################
 #############################################
 
-"R33" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Master of Puppets';
+$t isa tag;$t has name 'Master of Puppets';
 ($x, $t) isa tagging;
 $y isa tag;
-{$y id 'Megadeth';} or {$y id 'Slayer';};
+{$y has name 'Megadeth';} or {$y has name 'Slayer';};
 },
 rhs {($x, $y) isa recommendation;};
 
-"R34" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Far Beyond Driven';
+$t isa tag;$t has name 'Far Beyond Driven';
 ($x, $t) isa tagging;
 $y isa tag;
-{$y id 'Pantera';} or {$y id 'Superjoint Ritual';};
+{$y has name 'Pantera';} or {$y has name 'Superjoint Ritual';};
 },
 rhs {($x, $y) isa recommendation;};
 
-"R35" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Hybrid Theory';
+$t isa tag;$t has name 'Hybrhas name Theory';
 ($x, $t) isa tagging;
 $y isa tag;
-{$y id 'Linkin Park';} or {$y id 'Limp Bizkit';};
+{$y has name 'Linkin Park';} or {$y has name 'Limp Bizkit';};
 },
 rhs {($x, $y) isa recommendation;};
 
-"R36" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Powerslave';
+$t isa tag;$t has name 'Powerslave';
 ($x, $t) isa tagging;
 $y isa tag;
-{$y id 'Iron Maiden';} or {$y id 'Judas Priest';};
+{$y has name 'Iron Maiden';} or {$y has name 'Judas Priest';};
 },
 rhs {($x, $y) isa recommendation;};
 
-"R37" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Enter the Chicken';
+$t isa tag;$t has name 'Enter the Chicken';
 ($x, $t) isa tagging;
 $y isa tag;
-{$y id 'Buckethead';} or {$y id 'Primus';};
+{$y has name 'Buckethead';} or {$y has name 'Primus';};
 },
 rhs {($x, $y) isa recommendation;};
 
-#"R38" isa inference-rule,
+#isa inference-rule,
 #lhs {$x isa person;
-#$t isa tag;$t id 'Rising Force';
+#$t isa tag;$t has name 'Rising Force';
 #($x, $t) isa tagging;
 #$y isa tag;
-#{$y id 'Yngwie Malmsteen';} or {$y id 'Steve Vai';} or {$y id 'Cacophony';};
+#{$y has name 'Yngwie Malmsteen';} or {$y has name 'Steve Vai';} or {$y has name 'Cacophony';};
 #},
 #rhs {($x, $y) isa recommendation;};
 
-"R38a" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Rising Force';
+$t isa tag;$t has name 'Rising Force';
 ($x, $t) isa tagging;
 $y isa tag;
-$y id 'Yngwie Malmsteen';
+$y has name 'Yngwie Malmsteen';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R38b" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Rising Force';
+$t isa tag;$t has name 'Rising Force';
 ($x, $t) isa tagging;
 $y isa tag;
-$y id 'Steve Vai';
+$y has name 'Steve Vai';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R38c" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Rising Force';
+$t isa tag;$t has name 'Rising Force';
 ($x, $t) isa tagging;
 $y isa tag;
-$y id 'Cacophony';
+$y has name 'Cacophony';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R39" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Led Zeppelin IV';
+$t isa tag;$t has name 'Led Zeppelin IV';
 ($x, $t) isa tagging;
 $y isa tag;
-{$y id 'Led Zeppelin';} or {$y id 'Deep Purple';};
+{$y has name 'Led Zeppelin';} or {$y has name 'Deep Purple';};
 },
 rhs {($x, $y) isa recommendation;};
 
@@ -462,43 +462,43 @@ rhs {($x, $y) isa recommendation;};
 ##############Song/Single->Band##################
 #############################################
 
-"R40" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'All_Along_the_Watchtower';
+$t isa tag;$t has name 'All_Along_the_Watchtower';
 ($x, $t) isa tagging;
-$y isa tag;$y id 'Jimi Hendrix';
+$y isa tag;$y has name 'Jimi Hendrix';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R41" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'These_Are_the_Days_of_Our_Lives';
+$t isa tag;$t has name 'These_Are_the_Days_of_Our_Lives';
 ($x, $t) isa tagging;
-$y isa tag;$y id 'Queen';
+$y isa tag;$y has name 'Queen';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R42" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Come_Together';
+$t isa tag;$t has name 'Come_Together';
 ($x, $t) isa tagging;
-$y isa tag;$y id ' Beatles';
+$y isa tag;$y has name ' Beatles';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R43" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Smoke_on_the_Water';
+$t isa tag;$t has name 'Smoke_on_the_Water';
 ($x, $t) isa tagging;
-$y isa tag;$y id 'Deep Purple';
+$y isa tag;$y has name 'Deep Purple';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R44" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Immigrant_Song';
+$t isa tag;$t has name 'Immigrant_Song';
 ($x, $t) isa tagging;
-$y isa tag;$y id 'Led Zeppelin';
+$y isa tag;$y has name 'Led Zeppelin';
 },
 rhs {($x, $y) isa recommendation;};
 
@@ -506,73 +506,73 @@ rhs {($x, $y) isa recommendation;};
 ##################Artist->Painting####################
 #######################################################
 
-"R45" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Claude Monet';
+$t isa tag;$t has name 'Claude Monet';
 ($x, $t) isa tagging;
-$y isa product;$y id 'Water Lillies';
+$y isa product;$y has name 'Water Lillies';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R46" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Rembrandt';
+$t isa tag;$t has name 'Rembrandt';
 ($x, $t) isa tagging;
-$y isa product;$y id 'The Night Watch';
+$y isa product;$y has name 'The Night Watch';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R47" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Leonardo da Vinci';
+$t isa tag;$t has name 'Leonardo da Vinci';
 ($x, $t) isa tagging;
-$y isa product;$y id 'Mona Lisa';
+$y isa product;$y has name 'Mona Lisa';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R48" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Raphael';
+$t isa tag;$t has name 'Raphael';
 ($x, $t) isa tagging;
-$y isa product;$y id 'Madonna';
+$y isa product;$y has name 'Madonna';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R49" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Titian';
+$t isa tag;$t has name 'Titian';
 ($x, $t) isa tagging;
-$y isa product;$y id 'Bacchus and Ariadne';
+$y isa product;$y has name 'Bacchus and Ariadne';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R50" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Vincent van Gogh';
+$t isa tag;$t has name 'Vincent van Gogh';
 ($x, $t) isa tagging;
-$y isa product;$y id 'Sunflowers';
+$y isa product;$y has name 'Sunflowers';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R51" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Diego Rivera';
+$t isa tag;$t has name 'Diego Rivera';
 ($x, $t) isa tagging;
-$y isa product;$y id 'Controller of the Universe';
+$y isa product;$y has name 'Controller of the Universe';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R52" isa inference-rule,
+isa inference-rule,
 lhs {$x isa person;
-$t isa tag;$t id 'Piet Mondrian';
+$t isa tag;$t has name 'Piet Mondrian';
 ($x, $t) isa tagging;
-$y isa product;$y id 'Gray Tree';
+$y isa product;$y has name 'Gray Tree';
 },
 rhs {($x, $y) isa recommendation;};
 
-"R53" isa inference-rule,
-lhs {$x isa person;$t isa tag;$t id 'Michelangelo';
+isa inference-rule,
+lhs {$x isa person;$t isa tag;$t has name 'Michelangelo';
 ($x, $t) isa tagging;
-$y isa product;$y id 'Last Judgement';
+$y isa product;$y has name 'Last Judgement';
 },
 rhs {($x, $y) isa recommendation;};
