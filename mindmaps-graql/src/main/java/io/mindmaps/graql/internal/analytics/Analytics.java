@@ -43,6 +43,7 @@ public class Analytics {
 
     // TODO: allow user specified resources
     public static final String degree = "degree";
+    public static final String connectedComponent = "connectedComponent";
     private static final int numberOfOntologyChecks = 10;
 
     private final String keySpace;
@@ -101,9 +102,7 @@ public class Analytics {
             excludedTypes.addAll(graph.getMetaRuleType().instances());
 
             // collect analytics resource types to exclude
-            HashSet<String> analyticsElements =
-                    Sets.newHashSet(Analytics.degree, GraqlType.HAS_RESOURCE.getId(Analytics.degree));
-            analyticsElements.stream()
+            CommonOLAP.analyticsElements.stream()
                     .filter(element -> graph.getType(element) != null)
                     .map(graph::getType)
                     .forEach(excludedTypes::add);
@@ -124,10 +123,6 @@ public class Analytics {
                 t.subTypes().forEach(subtype -> this.statisticsResourceTypes.add(subtype.getId()));
             }
         }
-
-        // add analytics ontology - hard coded for now
-        mutateResourceOntology(degree, ResourceType.DataType.LONG);
-        waitOnMutateResourceOntology(degree);
     }
 
     /**
@@ -317,12 +312,15 @@ public class Analytics {
      * @param resourceType the type of the resource that will contain the degree
      */
     private void degreesAndPersist(String resourceType) {
+        mutateResourceOntology(resourceType, ResourceType.DataType.LONG);
+        waitOnMutateResourceOntology(resourceType);
+
         if (!Sets.intersection(subtypes, CommonOLAP.analyticsElements).isEmpty()) {
             throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                     .getMessage(this.getClass().toString()));
         }
-        MindmapsComputer computer = getGraphComputer();
-        computer.compute(new DegreeAndPersistVertexProgram(keySpace, subtypes));
+        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
+        computer.compute(new DegreeAndPersistVertexProgram(subtypes, keySpace));
     }
 
     /**
