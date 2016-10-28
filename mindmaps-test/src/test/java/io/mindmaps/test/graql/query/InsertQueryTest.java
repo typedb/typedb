@@ -464,6 +464,13 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testErrorInsertInstanceWithId() {
         exception.expect(IllegalStateException.class);
+        exception.expectMessage(allOf(containsString("instance"), containsString("id"), containsString("abc")));
+        qb.insert(id("abc").isa("movie")).execute();
+    }
+
+    @Test
+    public void testErrorInsertResourceWithId() {
+        exception.expect(IllegalStateException.class);
         exception.expectMessage(allOf(containsString("instance"), containsString("id"), containsString("bobby")));
         qb.insert(id("bobby").value("bob").isa("name")).execute();
     }
@@ -472,6 +479,42 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     public void testInsertDuplicatePattern() {
         qb.insert(var().isa("person").has("name", "a name"), var().isa("person").has("name", "a name")).execute();
         assertEquals(2, qb.match(var().has("name", "a name")).stream().count());
+    }
+
+    @Test
+    public void testInsertResourceOnExistingId() {
+        String apocalypseNow = qb.match(var("x").has("title", "Apocalypse Now")).get("x").findAny().get().getId();
+
+        assertFalse(qb.match(id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).ask().execute());
+        qb.insert(id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).execute();
+        assertTrue(qb.match(id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).ask().execute());
+    }
+
+    @Test
+    public void testInsertResourceOnExistingIdWithType() {
+        String apocalypseNow = qb.match(var("x").has("title", "Apocalypse Now")).get("x").findAny().get().getId();
+
+        assertFalse(qb.match(id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).ask().execute());
+        qb.insert(id(apocalypseNow).isa("movie").has("title", "Apocalypse Maybe Tomorrow")).execute();
+        assertTrue(qb.match(id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).ask().execute());
+    }
+
+    @Test
+    public void testInsertResourceOnExistingResourceId() {
+        String apocalypseNow = qb.match(var("x").value("Apocalypse Now")).get("x").findAny().get().getId();
+
+        assertFalse(qb.match(id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).ask().execute());
+        qb.insert(id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).execute();
+        assertTrue(qb.match(id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).ask().execute());
+    }
+
+    @Test
+    public void testInsertResourceOnExistingResourceIdWithType() {
+        String apocalypseNow = qb.match(var("x").value("Apocalypse Now")).get("x").findAny().get().getId();
+
+        assertFalse(qb.match(id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).ask().execute());
+        qb.insert(id(apocalypseNow).isa("title").has("title", "Apocalypse Maybe Tomorrow")).execute();
+        assertTrue(qb.match(id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).ask().execute());
     }
 
     @Test
