@@ -21,7 +21,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
     <div class="row">
         <div class="col-xs-12">
             <div class="panel panel-filled" style="margin-bottom: 0px;">
-                <div class="panel-body">
+                <div class="panel-body panel-console">
                     <div class="form-group">
                         <textarea v-el:graql-editor class="form-control" rows="3" placeholder=">>"></textarea>
                     </div>
