@@ -4,7 +4,8 @@ insert
 ####################Ontology######################
 #################################################
 
-"person" isa entity-type;
+"person" isa entity-type
+     has-resource name;
 
 "parent" isa role-type;
 "child" isa role-type;
@@ -31,58 +32,60 @@ person plays-role down-from, plays-role down-to;
 "flat" isa relation-type, has-role flat-to, has-role flat-from;
 person plays-role flat-from, plays-role flat-to;
 
+"name" isa resource-type, datatype string;
+
 ####################################################
 ##################DATA#############################
 ####################################################
 
-"a" isa person;
-"b" isa person;
-"c" isa person;
-"d" isa person;
-"e" isa person;
-"f" isa person;
-"g" isa person;
-"h" isa person;
-"i" isa person;
-"j" isa person;
-"k" isa person;
-"l" isa person;
-"m" isa person;
-"n" isa person;
-"o" isa person;
-"p" isa person;
+$a isa person, has name "a";
+$b isa person, has name "b";
+$c isa person, has name "c";
+$d isa person, has name "d";
+$e isa person, has name "e";
+$f isa person, has name "f";
+$g isa person, has name "g";
+$h isa person, has name "h";
+$i isa person, has name "i";
+$j isa person, has name "j";
+$k isa person, has name "k";
+$l isa person, has name "l";
+$m isa person, has name "m";
+$n isa person, has name "n";
+$o isa person, has name "o";
+$p isa person, has name "p";
 
-(up-from: 'a', up-to: 'e') isa up;
-(up-from: 'a', up-to: 'f') isa up;
-(up-from: 'f', up-to: 'm') isa up;
-(up-from: 'g', up-to: 'n') isa up;
-(up-from: 'h', up-to: 'n') isa up;
-(up-from: 'i', up-to: 'o') isa up;
-(up-from: 'j', up-to: 'o') isa up;
+(up-from: $a, up-to: $e) isa up;
+(up-from: $a, up-to: $f) isa up;
+(up-from: $f, up-to: $m) isa up;
+(up-from: $g, up-to: $n) isa up;
+(up-from: $h, up-to: $n) isa up;
+(up-from: $i, up-to: $o) isa up;
+(up-from: $j, up-to: $o) isa up;
 
-(flat-from: 'g', flat-to: 'f') isa flat;
-(flat-from: 'm', flat-to: 'n') isa flat;
-(flat-from: 'm', flat-to: 'o') isa flat;
-(flat-from: 'p', flat-to: 'm') isa flat;
+(flat-from: $g, flat-to: $f) isa flat;
+(flat-from: $m, flat-to: $n) isa flat;
+(flat-from: $m, flat-to: $o) isa flat;
+(flat-from: $p, flat-to: $m) isa flat;
 
-(down-from: 'l', down-to: 'f') isa down;
-(down-from: 'm', down-to: 'f') isa down;
-(down-from: 'g', down-to: 'b') isa down;
-(down-from: 'h', down-to: 'c') isa down;
-(down-from: 'i', down-to: 'd') isa down;
-(down-from: 'p', down-to: 'k') isa down;
+(down-from: $l, down-to: $f) isa down;
+(down-from: $m, down-to: $f) isa down;
+(down-from: $g, down-to: $b) isa down;
+(down-from: $h, down-to: $c) isa down;
+(down-from: $i, down-to: $d) isa down;
+(down-from: $p, down-to: $k) isa down;
 
 ####################################################
 ##################RULES#############################
 ####################################################
 
-"R1" isa inference-rule,
+isa inference-rule,
 lhs {
 (flat-from: $x, flat-to: $y) isa flat;},
 rhs {
 (RSG-from: $x, RSG-to: $y) isa RevSG;};
 
-"R2" isa inference-rule,
+isa inference-rule,
 lhs {
 (up-from: $x, up-to: $x1) isa up;
 (RSG-from: $y1, RSG-to: $x1) isa RevSG;

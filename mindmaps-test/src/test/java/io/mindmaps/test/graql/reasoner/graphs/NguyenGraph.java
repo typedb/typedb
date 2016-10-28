@@ -83,17 +83,12 @@ public class NguyenGraph extends GenericGraph{
             mindmaps.addRelation(P)
                     .putRolePlayer(Pfrom, mindmaps.getInstance(cId))
                     .putRolePlayer(Pto, mindmaps.getInstance(bInstancesIds[i]));
-                    //.putRolePlayer(Pto, mindmaps.getInstance("b" + i));
             mindmaps.addRelation(Q)
                     .putRolePlayer(Qfrom, mindmaps.getInstance(aInstancesIds[i]))
                     .putRolePlayer(Qto, mindmaps.getInstance(bInstancesIds[i]));
-                    //.putRolePlayer(Qfrom, mindmaps.getInstance("a" + i))
-                    //.putRolePlayer(Qto, mindmaps.getInstance("b" + i));
             mindmaps.addRelation(Q)
                     .putRolePlayer(Qfrom, mindmaps.getInstance(bInstancesIds[i]))
                     .putRolePlayer(Qto, mindmaps.getInstance(aInstancesIds[i+1]));
-                    //.putRolePlayer(Qfrom, mindmaps.getInstance("b" + i))
-                    //.putRolePlayer(Qto, mindmaps.getInstance("a" + (i+1)));
         }
     }
 
