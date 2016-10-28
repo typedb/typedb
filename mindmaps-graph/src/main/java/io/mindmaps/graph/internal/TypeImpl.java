@@ -183,8 +183,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      */
     @Override
     public Boolean isAbstract() {
-        Object object = getProperty(Schema.ConceptProperty.IS_ABSTRACT);
-        return object != null && Boolean.parseBoolean(object.toString());
+        return getPropertyBoolean(Schema.ConceptProperty.IS_ABSTRACT);
     }
 
     /**

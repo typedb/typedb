@@ -58,14 +58,14 @@ public interface Rule extends Instance{
      *
      * @return
      */
-    boolean getExpectation();
+    Boolean getExpectation();
 
     //TODO: Fill out details on this method
     /**
      *
      * @return
      */
-    boolean isMaterialise();
+    Boolean isMaterialise();
 
     /**
      *

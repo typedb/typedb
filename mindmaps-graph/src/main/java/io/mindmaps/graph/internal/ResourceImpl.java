@@ -127,10 +127,9 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
      *
      * @return The value casted to the correct type
      */
-    @SuppressWarnings("unchecked")
     @Override
     public D getValue(){
-        return (D) getProperty(dataType().getConceptProperty());
+        return getProperty(dataType().getConceptProperty());
     }
 
     @Override
