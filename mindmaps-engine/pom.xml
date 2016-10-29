@@ -23,7 +23,7 @@
     <parent>
         <artifactId>mindmaps</artifactId>
         <groupId>io.mindmaps</groupId>
-        <version>0.5.0-SNAPSHOT</version>
+        <version>0.5.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
