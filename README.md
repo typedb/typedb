@@ -1,14 +1,14 @@
 # GRAKN.AI
-  
+
+[![Build Status](https://travis-ci.org/graknlabs/grakn.svg?branch=internal)](https://travis-ci.org/graknlabs/grakn)
+[![Coverage Status](https://coveralls.io/repos/github/graknlabs/grakn/badge.svg?branch=master)](https://coveralls.io/github/graknlabs/grakn?branch=master)
+[![Slack Status](http://grakn-slackin.herokuapp.com/badge.svg)](https://grakn.ai/slack)
+
 Copyright (C) 2016  Mindmaps Research Ltd.  
 
 ### Version 0.5.0 (28 October 2016)
 
 For release notes, please see our separate changelog file.   
-
-[![Build Status](https://travis-ci.org/graknlabs/grakn.svg?branch=internal)](https://travis-ci.org/graknlabs/grakn)
-[![Coverage Status](https://coveralls.io/repos/github/graknlabs/grakn/badge.svg?branch=master)](https://coveralls.io/github/graknlabs/grakn?branch=master)
-[![Slack Status](http://grakn-slackin.herokuapp.com/badge.svg)](https://grakn.ai/slack)
 
 ## Licensing
 
