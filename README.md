@@ -20,7 +20,7 @@ This product includes software developed by [Grakn Labs](http://grakn.ai/).  It'
 
 [Grakn Documentation Portal](https://grakn.ai/pages/index.html) - includes API reference documentation, set up guide, basic tutorials and troubleshooting information.
 
-[Grakn on Github](https://github.com/graknlabs/grakn). The repo for our source code. Find out how to build it from the [documentation download page](https://grakn.ai/pages/documentation/resources/downloads.html).
+[Grakn on Github](https://github.com/graknlabs/grakn) - the repository for our source code. Find out how to build it from the [documentation download page](https://grakn.ai/pages/documentation/resources/downloads.html).
 
 [Grakn Community](https://grakn.ai/community.html) - a useful page with links to various communication channels such as Slack and our Discussion boards.
 
