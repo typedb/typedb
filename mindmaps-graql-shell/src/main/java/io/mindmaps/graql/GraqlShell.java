@@ -69,7 +69,7 @@ import static io.mindmaps.util.REST.RemoteShell.ACTION;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_AUTOCOMPLETE;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_COMMIT;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_ERROR;
-import static io.mindmaps.util.REST.RemoteShell.ACTION_KEYSPACE;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_INIT;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_PING;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY_ABORT;
@@ -78,6 +78,7 @@ import static io.mindmaps.util.REST.RemoteShell.ACTION_ROLLBACK;
 import static io.mindmaps.util.REST.RemoteShell.AUTOCOMPLETE_CURSOR;
 import static io.mindmaps.util.REST.RemoteShell.ERROR;
 import static io.mindmaps.util.REST.RemoteShell.KEYSPACE;
+import static io.mindmaps.util.REST.RemoteShell.OUTPUT_FORMAT;
 import static io.mindmaps.util.REST.RemoteShell.QUERY;
 import static io.mindmaps.util.REST.RemoteShell.QUERY_RESULT;
 import static io.mindmaps.util.REST.WebPath.IMPORT_DATA_URI;
@@ -98,6 +99,7 @@ public class GraqlShell {
 
     private static final String DEFAULT_KEYSPACE = "mindmaps";
     private static final String DEFAULT_URI = "localhost:4567";
+    private static final String DEFAULT_OUTPUT_FORMAT = "graql";
 
     private static final String PROMPT = ">>> ";
 
@@ -191,6 +193,7 @@ public class GraqlShell {
 
         String keyspace = cmd.getOptionValue("k", DEFAULT_KEYSPACE);
         String uriString = cmd.getOptionValue("u", DEFAULT_URI);
+        String outputFormat = cmd.getOptionValue("o", DEFAULT_OUTPUT_FORMAT);
 
         if (cmd.hasOption("b")) {
             try {
@@ -209,7 +212,7 @@ public class GraqlShell {
 
             URI uri = new URI("ws://" + uriString + REMOTE_SHELL_URI);
 
-            new GraqlShell(historyFilename, keyspace, client, uri, queries);
+            new GraqlShell(historyFilename, keyspace, client, uri, queries, outputFormat);
         } catch (java.net.ConnectException e) {
             System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());
         } catch (Throwable e) {
@@ -267,7 +270,8 @@ public class GraqlShell {
      * Create a new Graql shell
      */
     GraqlShell(
-            String historyFilename, String keyspace, GraqlClient client, URI uri, Optional<List<String>> queryStrings
+            String historyFilename, String keyspace, GraqlClient client, URI uri, Optional<List<String>> queryStrings,
+            String outputFormat
     ) throws Throwable {
 
         this.historyFilename = historyFilename;
@@ -286,8 +290,12 @@ public class GraqlShell {
                 throw e.getCause();
             }
 
-            // Send the requested keyspace to the server once connected
-            sendJson(Json.object(ACTION, ACTION_KEYSPACE, KEYSPACE, keyspace));
+            // Send the requested keyspace and output format to the server once connected
+            sendJson(Json.object(
+                    ACTION, ACTION_INIT,
+                    KEYSPACE, keyspace,
+                    OUTPUT_FORMAT, outputFormat
+            ));
 
             // Start shell
             start(queryStrings);

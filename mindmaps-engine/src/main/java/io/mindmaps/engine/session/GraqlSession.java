@@ -27,7 +27,6 @@ import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.Printer;
 import io.mindmaps.graql.Query;
 import io.mindmaps.graql.Reasoner;
-import io.mindmaps.graql.internal.printer.Printers;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketException;
@@ -58,6 +57,7 @@ import static io.mindmaps.util.REST.RemoteShell.QUERY_RESULT;
 class GraqlSession {
     private final Session session;
     private final MindmapsGraph graph;
+    private final Printer printer;
     private StringBuilder queryStringBuilder = new StringBuilder();
     private final Reasoner reasoner;
     private final Logger LOG = LoggerFactory.getLogger(GraqlSession.class);
@@ -70,9 +70,10 @@ class GraqlSession {
     // All requests are run within a single thread, so they always happen in a single thread-bound transaction
     private final ExecutorService queryExecutor = Executors.newSingleThreadExecutor();
 
-    GraqlSession(Session session, MindmapsGraph graph) {
+    GraqlSession(Session session, MindmapsGraph graph, Printer printer) {
         this.session = session;
         this.graph = graph;
+        this.printer = printer;
         reasoner = new Reasoner(graph);
 
         // Begin sending pings
@@ -145,7 +146,6 @@ class GraqlSession {
                 }
 
                 // Return results unless query is cancelled
-                Printer printer = Printers.graql();
                 query.resultsString(printer).forEach(result -> {
                     if (queryCancelled) return;
                     sendQueryResult(result);

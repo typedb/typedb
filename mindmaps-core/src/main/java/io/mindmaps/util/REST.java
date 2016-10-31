@@ -66,7 +66,7 @@ public class REST {
 
     public static class RemoteShell {
         public static final String ACTION = "action";
-        public static final String ACTION_KEYSPACE = "keyspace";
+        public static final String ACTION_INIT = "init";
         public static final String ACTION_QUERY = "query";
         public static final String ACTION_QUERY_END = "queryEnd";
         public static final String ACTION_ERROR = "error";
@@ -77,6 +77,7 @@ public class REST {
         public static final String ACTION_PING = "ping";
 
         public static final String KEYSPACE = "keyspace";
+        public static final String OUTPUT_FORMAT = "outputFormat";
         public static final String QUERY = "query";
         public static final String QUERY_RESULT = "result";
         public static final String AUTOCOMPLETE_CANDIDATES = "candidates";

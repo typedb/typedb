@@ -216,7 +216,7 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
 
     @Test
     public void testRollback() throws Exception {
-        String[] result = testShell("insert E isa entity-type;\nrollback\nmatch $x isa entity-type\n").split("\n");
+        String[] result = testShell("insert E isa entity-type;\nrollback\nmatch $x isa entity-type'\n").split("\n");
 
         // Make sure there are no results for match query
         assertEquals(">>> match $x isa entity-type", result[result.length-2]);
@@ -231,9 +231,12 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
 
     @Test
     public void testJsonOutput() throws Exception {
-        String result = testShell("", "-e", "match $x sub type;", "-o", "json");
-        Json json = Json.read(result);
-        assertTrue("expected more than 5 results: " + json, json.asJsonList().size() > 5);
+        String[] result = testShell("", "-e", "match $x sub type;", "-o", "json").split("\n");
+        assertTrue("expected more than 5 results: " + Arrays.toString(result), result.length > 5);
+        Json json = Json.read(result[0]);
+        Json x = json.at("x");
+        assertTrue(x.has("id"));
+        assertFalse(x.has("isa"));
     }
 
     @Test
