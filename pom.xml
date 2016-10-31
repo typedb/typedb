@@ -22,25 +22,25 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>io.mindmaps</groupId>
-    <artifactId>mindmaps</artifactId>
+    <groupId>io.grakn</groupId>
+    <artifactId>grakn</artifactId>
     <packaging>pom</packaging>
     <version>0.6.0-SNAPSHOT</version>
-    <name>MindmapsDB</name>
+    <name>Grakn</name>
     <description>A distributed semantic graph database.</description>
-    <url>http://mindmaps.io/platform.html</url>
+    <url>http://grakn.io/platform.html</url>
     <modules>
-        <module>mindmaps-graph</module>
-        <module>mindmaps-titan-factory</module>
-        <module>mindmaps-graql</module>
-        <module>mindmaps-graql-shell</module>
-        <module>mindmaps-engine</module>
-        <module>mindmaps-dashboard</module>
-        <module>mindmaps-migration</module>
-        <module>mindmaps-dist</module>
-        <module>mindmaps-test</module>
-        <module>mindmaps-core</module>
-        <module>mindmaps-orientdb-factory</module>
+        <module>grakn-graph</module>
+        <module>grakn-titan-factory</module>
+        <module>grakn-graql</module>
+        <module>grakn-graql-shell</module>
+        <module>grakn-engine</module>
+        <module>grakn-dashboard</module>
+        <module>grakn-migration</module>
+        <module>grakn-dist</module>
+        <module>grakn-test</module>
+        <module>grakn-core</module>
+        <module>grakn-orientdb-factory</module>
     </modules>
 
     <properties>
@@ -81,70 +81,70 @@
     <developers>
         <developer>
             <name>Haikal Pribadi</name>
-            <email>haikal@mindmaps.io</email>
+            <email>haikal@grakn.io</email>
             <organization>Mindmaps Research Ltd</organization>
-            <organizationUrl>http://mindmaps.io</organizationUrl>
+            <organizationUrl>http://grakn.io</organizationUrl>
         </developer>
         <developer>
             <name>Borislav Iordanov</name>
-            <email>borislav@mindmaps.io</email>
+            <email>borislav@grakn.io</email>
             <organization>Mindmaps Research Ltd</organization>
-            <organizationUrl>http://mindmaps.io</organizationUrl>
+            <organizationUrl>http://grakn.io</organizationUrl>
         </developer>
         <developer>
             <name>Filipe Teixeira</name>
-            <email>filipe@mindmaps.io</email>
+            <email>filipe@grakn.io</email>
             <organization>Mindmaps Research Ltd</organization>
-            <organizationUrl>http://mindmaps.io</organizationUrl>
+            <organizationUrl>http://grakn.io</organizationUrl>
         </developer>
         <developer>
             <name>Felix Chapman</name>
-            <email>felix@mindmaps.io</email>
+            <email>felix@grakn.io</email>
             <organization>Mindmaps Research Ltd</organization>
-            <organizationUrl>http://mindmaps.io</organizationUrl>
+            <organizationUrl>http://grakn.io</organizationUrl>
         </developer>
         <developer>
             <name>Sheldon Hall</name>
-            <email>sheldon@mindmaps.io</email>
+            <email>sheldon@grakn.io</email>
             <organization>Mindmaps Research Ltd</organization>
-            <organizationUrl>http://mindmaps.io</organizationUrl>
+            <organizationUrl>http://grakn.io</organizationUrl>
         </developer>
         <developer>
             <name>Alexandra Orth</name>
-            <email>alexandra@mindmaps.io</email>
+            <email>alexandra@grakn.io</email>
             <organization>Mindmaps Research Ltd</organization>
-            <organizationUrl>http://mindmaps.io</organizationUrl>
+            <organizationUrl>http://grakn.io</organizationUrl>
         </developer>
         <developer>
             <name>Jason Liu</name>
-            <email>jason@mindmaps.io</email>
+            <email>jason@grakn.io</email>
             <organization>Mindmaps Research Ltd</organization>
-            <organizationUrl>http://mindmaps.io</organizationUrl>
+            <organizationUrl>http://grakn.io</organizationUrl>
         </developer>
         <developer>
             <name>Marco Scoppetta</name>
-            <email>marco@mindmaps.io</email>
+            <email>marco@grakn.io</email>
             <organization>Mindmaps Research Ltd</organization>
-            <organizationUrl>http://mindmaps.io</organizationUrl>
+            <organizationUrl>http://grakn.io</organizationUrl>
         </developer>
         <developer>
             <name>Kasper Piskorski</name>
-            <email>kasper@mindmaps.io</email>
+            <email>kasper@grakn.io</email>
             <organization>Mindmaps Research Ltd</organization>
-            <organizationUrl>http://mindmaps.io</organizationUrl>
+            <organizationUrl>http://grakn.io</organizationUrl>
         </developer>
         <developer>
             <name>Denis Igorevich Lobanov</name>
-            <email>denis@mindmaps.io</email>
+            <email>denis@grakn.io</email>
             <organization>Mindmaps Research Ltd</organization>
-            <organizationUrl>http://mindmaps.io</organizationUrl>
+            <organizationUrl>http://grakn.io</organizationUrl>
         </developer>
     </developers>
 
     <scm>
-        <connection>scm:git:git://github.com/mindmapsdb/mindmapsdb.git</connection>
-        <developerConnection>scm:git:ssh://github.com:mindmapsdb/mindmapsdb.git</developerConnection>
-        <url>https://github.com/mindmapsdb/mindmapsdb/tree/master</url>
+        <connection>scm:git:git://github.com/grakndb/grakndb.git</connection>
+        <developerConnection>scm:git:ssh://github.com:grakndb/grakndb.git</developerConnection>
+        <url>https://github.com/grakndb/grakndb/tree/master</url>
     </scm>
 
     <dependencies>
@@ -161,12 +161,12 @@
         <repository>
             <id>releases</id>
             <name>Internal Releases</name>
-            <url>http://maven.internal.mindmaps.io:8082/nexus/content/repositories/releases/</url>
+            <url>http://maven.internal.grakn.io:8082/nexus/content/repositories/releases/</url>
         </repository>
         <snapshotRepository>
             <id>development-snapshots</id>
             <name>snapshots</name>
-            <url>http://maven.internal.mindmaps.io:8082/nexus/content/repositories/development-snapshots/</url>
+            <url>http://maven.internal.grakn.io:8082/nexus/content/repositories/development-snapshots/</url>
         </snapshotRepository>
     </distributionManagement>
 -->
@@ -184,7 +184,7 @@
         <!--Snapshot repository for 3rd party libraries -->
         <repository>
             <id>development-snapshots</id>
-            <url>https://maven.mindmaps.io/content/repositories/snapshots/</url>
+            <url>https://maven.grakn.io/content/repositories/snapshots/</url>
         </repository>
     </repositories>
 
