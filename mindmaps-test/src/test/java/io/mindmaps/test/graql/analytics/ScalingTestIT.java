@@ -50,11 +50,17 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static io.mindmaps.graql.Graql.var;
+import static java.lang.Math.pow;
+import static java.lang.Math.sqrt;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
@@ -75,7 +81,7 @@ public class ScalingTestIT extends AbstractScalingTest {
 
     // test parameters
     int NUM_SUPER_NODES = 10; // the number of supernodes to generate in the test graph
-    int MAX_SIZE = 10000; // the maximum number of non super nodes to add to the test graph
+    int MAX_SIZE = 16; // the maximum number of non super nodes to add to the test graph
     int NUM_DIVS = 4; // the number of divisions of the MAX_SIZE to use in the scaling test
     int REPEAT = 3; // the number of times to repeat at each size for average runtimes
     int MAX_WORKERS = Runtime.getRuntime().availableProcessors(); // the maximum number of workers that spark should use
@@ -85,6 +91,7 @@ public class ScalingTestIT extends AbstractScalingTest {
     int STEP_SIZE;
     List<Integer> graphSizes;
     List<Integer> workerNumbers;
+    List<String> headers;
 
     @Before
     public void setUp() {
@@ -101,6 +108,10 @@ public class ScalingTestIT extends AbstractScalingTest {
         factory = factoryWithNewKeyspace();
         MindmapsGraph graph = factory.getGraph();
         keyspace = graph.getKeyspace();
+
+        headers = new ArrayList<>();
+        headers.add("Size");
+        headers.addAll(workerNumbers.stream().map(String::valueOf).collect(Collectors.toList()));
     }
 
     @After
@@ -111,11 +122,7 @@ public class ScalingTestIT extends AbstractScalingTest {
 
     @Test
     public void countIT() throws InterruptedException, ExecutionException, MindmapsValidationException, IOException {
-        Appendable out = new PrintWriter("countIT.txt","UTF-8");
-        List<String> headers = new ArrayList<>();
-        headers.add("Size");
-        headers.addAll(workerNumbers.stream().map(String::valueOf).collect(Collectors.toList()));
-        CSVPrinter printer = CSVFormat.DEFAULT.withHeader(headers.toArray(new String[0])).print(out);
+        CSVPrinter printer = createCSVPrinter("countIT.txt");
 
         PrintWriter writer = null;
         try {
@@ -181,13 +188,8 @@ public class ScalingTestIT extends AbstractScalingTest {
 
     @Test
     public void persistConstantIncreasingLoadIT() throws InterruptedException, MindmapsValidationException, ExecutionException, IOException {
-        Appendable outWrite = new PrintWriter("persistConstantIncreasingLoadITWrite.txt","UTF-8");
-        Appendable outMutate = new PrintWriter("persistConstantIncreasingLoadITMutate.txt","UTF-8");
-        List<String> headers = new ArrayList<>();
-        headers.add("Size");
-        headers.addAll(workerNumbers.stream().map(String::valueOf).collect(Collectors.toList()));
-        CSVPrinter printerWrite = CSVFormat.DEFAULT.withHeader(headers.toArray(new String[0])).print(outWrite);
-        CSVPrinter printerMutate = CSVFormat.DEFAULT.withHeader(headers.toArray(new String[0])).print(outMutate);
+        CSVPrinter printerWrite = createCSVPrinter("persistConstantIncreasingLoadITWrite.txt");
+        CSVPrinter printerMutate = createCSVPrinter("persistConstantIncreasingLoadITMutate.txt");
 
         PrintWriter writer = null;
         try {
@@ -358,14 +360,60 @@ public class ScalingTestIT extends AbstractScalingTest {
      * The sum of these values at STEP g is given by the formula:
      *
      * sum(g) = g*N(1/2 + g*N/2 + 3*S*N + 1)
+     *
+     * The min:
+     *
+     * min(g) = (S-g)*N + 1
+     *
+     * The max:
+     *
+     * max(g) = 2*N*(g+S)
+     *
+     * The mean:
+     *
+     * mean(g) = sum(g)/(2*g*N)
+     *
+     * The std:
+     *
+     *
      */
     @Test
     public void testStatisticsWithConstantDegree() throws IOException, MindmapsValidationException {
-        Appendable outSum = new PrintWriter("testStatisticsWithConstantDegreeSum.txt","UTF-8");
-        List<String> headers = new ArrayList<>();
-        headers.add("Size");
-        headers.addAll(workerNumbers.stream().map(String::valueOf).collect(Collectors.toList()));
-        CSVPrinter printerSum = CSVFormat.DEFAULT.withHeader(headers.toArray(new String[0])).print(outSum);
+        int totalSteps = NUM_DIVS;
+        int nodesPerStep = MAX_SIZE/NUM_DIVS/2;
+        int v_m = totalSteps*nodesPerStep;
+        int V_m = 2*(totalSteps*nodesPerStep+1);
+
+        // detail methods that must be executed when testing
+        List<String> methods = new ArrayList<>();
+        Map<String,Function<AnalyticsMock,Optional>> statisticsMethods = new HashMap<>();
+        Map<String,Consumer<Number>> statisticsAssertions = new HashMap<>();
+        methods.add("testStatisticsWithConstantDegreeSum.txt");
+        statisticsMethods.put(methods.get(0),analyticsMock -> analyticsMock.sum());
+        methods.add("testStatisticsWithConstantDegreeMin.txt");
+        statisticsMethods.put(methods.get(1),analyticsMock -> analyticsMock.min());
+        methods.add("testStatisticsWithConstantDegreeMax.txt");
+        statisticsMethods.put(methods.get(2),analyticsMock -> analyticsMock.max());
+        methods.add("testStatisticsWithConstantDegreeMean.txt");
+        statisticsMethods.put(methods.get(3),analyticsMock -> analyticsMock.mean());
+        methods.add("testStatisticsWithConstantDegreeStd.txt");
+        statisticsMethods.put(methods.get(4),analyticsMock -> analyticsMock.std());
+        methods.add("testStatisticsWithConstantDegreeMedian.txt");
+        statisticsMethods.put(methods.get(5),analyticsMock -> analyticsMock.median());
+
+        // load up the result files
+        Map<String,CSVPrinter> printers = new HashMap<>();
+        for (String method: methods) {
+            printers.put(method,createCSVPrinter(method));
+        }
+
+        // generic output
+        PrintWriter writer = null;
+        try {
+            writer = new PrintWriter("testStatisticsWithConstantDegreeProgress.txt", "UTF-8");
+        } catch (FileNotFoundException | UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
 
         // create the ontology
         simpleOntology(keyspace);
@@ -377,14 +425,12 @@ public class ScalingTestIT extends AbstractScalingTest {
         distributedLoader.setPollingFrequency(1000);
         distributedLoader.setBatchSize(100);
 
-        int totalSteps = 3;
-        int nodesPerStep = 2;
-        int v_m = totalSteps*nodesPerStep;
-        int V_m = 2*(totalSteps*nodesPerStep+1);
         for (int g=1; g<totalSteps+1; g++) {
-            printerSum.print(2*g*nodesPerStep);
+            writer.println("starting step: "+g);
 
             // load data
+            writer.println("start loading data");
+            writer.flush();
             for (int m=1; m<nodesPerStep+1; m++) {
                 distributedLoader.addToQueue(var().isa("thing").has("degree",v_m));
                 distributedLoader.addToQueue(var().isa("thing").has("degree",V_m));
@@ -392,18 +438,96 @@ public class ScalingTestIT extends AbstractScalingTest {
                 V_m+=2;
             }
             distributedLoader.waitToFinish();
+            writer.println("stop loading data");
+            writer.println("gremlin count is: " + factory.getGraph().getTinkerTraversal().count().next());
+            writer.flush();
 
-            // check the sum is correct
-            assertEquals((long) g*nodesPerStep*(1+g*nodesPerStep+6*totalSteps*nodesPerStep+2)/2
-                    ,new Analytics(keyspace, new HashSet<String>(), Collections.singleton("degree")).sum().get());
+            for (String method : methods) {
+                printers.get(method).print(2 * g * nodesPerStep);
+                writer.println("starting to execute: "+method);
+                for (int workerNumber : workerNumbers) {
+                    writer.println("starting with: " + workerNumber + " threads");
 
-            printerSum.println();
-            printerSum.flush();
+                    // configure assertions
+                    final int currentG = g;
+                    statisticsAssertions.put(methods.get(0), number -> {
+                        Number sum = (Number) (currentG * nodesPerStep * (1 + currentG * nodesPerStep + 6 * totalSteps * nodesPerStep + 2) / 2);
+                        assertEquals(sum.doubleValue(),
+                                number.doubleValue(), 1E-9);
+                    });
+                    statisticsAssertions.put(methods.get(1), number -> {
+                        Number min = (Number) ((totalSteps-currentG)*nodesPerStep+1);
+                        assertEquals(min.doubleValue(),
+                                number.doubleValue(), 1E-9);
+                    });
+                    statisticsAssertions.put(methods.get(2), number -> {
+                        Number max = (Number) ((totalSteps+currentG)*nodesPerStep*2);
+                        assertEquals(max.doubleValue(),
+                                number.doubleValue(), 1E-9);
+                    });
+                    statisticsAssertions.put(methods.get(3), number -> {
+                        double mean = meanOfSequence(currentG, nodesPerStep, totalSteps);
+                        assertEquals(mean,
+                                number.doubleValue(), 1E-9);
+                    });
+                    statisticsAssertions.put(methods.get(4), number -> {
+                        double std = stdOfSequence(currentG,nodesPerStep,totalSteps);
+                        assertEquals(std,
+                                number.doubleValue(), 1E-9);
+                    });
+                    statisticsAssertions.put(methods.get(5), number -> {
+                        Number median = (Number) (totalSteps*nodesPerStep);
+                        assertEquals(median.doubleValue(),
+                                number.doubleValue(), 1E-9);
+                    });
+
+                    long averageTime = 0;
+                    for (int i = 0; i < REPEAT; i++) {
+                        writer.println("starting repeat: " + i);
+                        writer.flush();
+                        // check stats are correct
+                        Long startTime = System.currentTimeMillis();
+                        Number currentResult = (Number) statisticsMethods.get(method).apply(new AnalyticsMock(keyspace, new HashSet<String>(), Collections.singleton("degree"), workerNumber)).get();
+                        Long stopTime = System.currentTimeMillis();
+                        averageTime += stopTime - startTime;
+                        statisticsAssertions.get(method).accept(currentResult);
+                    }
+                    averageTime /= REPEAT * 1000;
+                    printers.get(method).print(averageTime);
+                }
+                printers.get(method).println();
+                printers.get(method).flush();
+            }
         }
 
-        printerSum.flush();
-        printerSum.close();
+        for (String method : methods) {
+            printers.get(method).flush();
+            printers.get(method).close();
+        }
         factory.getGraph().clear();
+    }
+
+    private double meanOfSequence(int currentG, int nodesPerStep, int totalSteps) {
+        return ((double) (1 + currentG * nodesPerStep + 6 * totalSteps * nodesPerStep + 2) / 4.0);
+    }
+
+    private double stdOfSequence(int currentG, int nodesPerStep, int totalSteps) {
+        double mean = meanOfSequence(currentG, nodesPerStep, totalSteps);
+        double t = mean*((double) (-6*totalSteps*nodesPerStep^2*currentG - 2*currentG*nodesPerStep - 1));
+        t += 2.0*mean*mean;
+        t += 5.0*(double) totalSteps*pow((double) nodesPerStep, 2.0)*(double) currentG;
+        t += 5.0*pow((double) totalSteps, 2.0)*pow((double) nodesPerStep, 3.0)*(double) currentG;
+        t += 3.0*(double) totalSteps*(double) nodesPerStep;
+        t += 3.0/2.0;
+        t -= (double) currentG*(double) nodesPerStep;
+        t += 5.0/2.0*pow((double) currentG, 2.0)*pow((double) nodesPerStep, 2.0);
+        return sqrt(t/(2.0*(double) currentG*(double) nodesPerStep));
+    }
+
+    private CSVPrinter createCSVPrinter(String fileName) throws IOException {
+        Appendable out = new PrintWriter(fileName,"UTF-8");
+        return CSVFormat.DEFAULT.withHeader(headers.toArray(new String[0])).print(out);
+
     }
 
     private void addNodes(String keyspace, int startRange, int endRange) throws MindmapsValidationException, InterruptedException {
