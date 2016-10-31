@@ -1,7 +1,7 @@
 package io.grakn.graph.internal;
 
 import io.grakn.GraknGraph;
-import io.grakn.factory.MindmapsOrientDBInternalFactory;
+import io.grakn.factory.GraknOrientDBInternalFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -27,7 +27,7 @@ public class GraknOrientDBGraphTest {
 
     @Before
     public void setup(){
-        graknGraph = new MindmapsOrientDBInternalFactory(TEST_NAME, TEST_URI, null).getGraph(TEST_BATCH_LOADING);
+        graknGraph = new GraknOrientDBInternalFactory(TEST_NAME, TEST_URI, null).getGraph(TEST_BATCH_LOADING);
     }
 
     @After

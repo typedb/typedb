@@ -34,64 +34,64 @@ import org.slf4j.LoggerFactory;
  */
 final class ElementFactory {
     protected final Logger LOG = LoggerFactory.getLogger(ElementFactory.class);
-    private final AbstractGraknGraph mindmapsGraph;
+    private final AbstractGraknGraph graknGraph;
 
-    public ElementFactory(AbstractGraknGraph mindmapsGraph){
-        this.mindmapsGraph = mindmapsGraph;
+    public ElementFactory(AbstractGraknGraph graknGraph){
+        this.graknGraph = graknGraph;
     }
 
     public RelationImpl buildRelation(Vertex v, RelationType type){
-        return new RelationImpl(v, type, mindmapsGraph);
+        return new RelationImpl(v, type, graknGraph);
     }
 
     public CastingImpl buildCasting(Vertex v, RoleType type){
-        return new CastingImpl(v, type, mindmapsGraph);
+        return new CastingImpl(v, type, graknGraph);
     }
 
     public TypeImpl buildConceptType(Vertex v, Type type){
-        return  new TypeImpl(v, type, mindmapsGraph);
+        return  new TypeImpl(v, type, graknGraph);
     }
 
     public RuleTypeImpl buildRuleType(Vertex v, Type type){
-        return  new RuleTypeImpl(v, type, mindmapsGraph);
+        return  new RuleTypeImpl(v, type, graknGraph);
     }
 
     public RoleTypeImpl buildRoleType(Vertex v, Type type){
-        return new RoleTypeImpl(v, type, mindmapsGraph);
+        return new RoleTypeImpl(v, type, graknGraph);
     }
 
     public <V> ResourceTypeImpl<V> buildResourceType(Vertex v, Type type){
-        return new ResourceTypeImpl<>(v, type, mindmapsGraph);
+        return new ResourceTypeImpl<>(v, type, graknGraph);
     }
     public <V> ResourceTypeImpl<V> buildResourceType(Vertex v, Type type, ResourceType.DataType<V> dataType, boolean isUnique){
-        return new ResourceTypeImpl<>(v, type, mindmapsGraph, dataType, isUnique);
+        return new ResourceTypeImpl<>(v, type, graknGraph, dataType, isUnique);
     }
 
     public RelationTypeImpl buildRelationType(Vertex v, Type type){
-        return  new RelationTypeImpl(v, type, mindmapsGraph);
+        return  new RelationTypeImpl(v, type, graknGraph);
     }
 
     public EntityTypeImpl buildEntityType(Vertex v, Type type){
-        return  new EntityTypeImpl(v, type, mindmapsGraph);
+        return  new EntityTypeImpl(v, type, graknGraph);
     }
 
     public EntityImpl buildEntity(Vertex v, EntityType type){
-        return  new EntityImpl(v, type, mindmapsGraph);
+        return  new EntityImpl(v, type, graknGraph);
     }
 
     public <V> ResourceImpl <V> buildResource(Vertex v, ResourceType<V> type){
-        return new ResourceImpl<>(v, type, mindmapsGraph);
+        return new ResourceImpl<>(v, type, graknGraph);
     }
 
     public <V> ResourceImpl <V> buildResource(Vertex v, ResourceType<V> type, V value){
-        return new ResourceImpl<>(v, type, mindmapsGraph, value);
+        return new ResourceImpl<>(v, type, graknGraph, value);
     }
 
     public RuleImpl buildRule(Vertex v, RuleType type){
         return buildRule(v, type, v.value(Schema.ConceptProperty.RULE_LHS.name()), v.value(Schema.ConceptProperty.RULE_RHS.name()));
     }
     public RuleImpl buildRule(Vertex v, RuleType type, String lhs, String rhs){
-        return  new RuleImpl(v, type, mindmapsGraph, lhs, rhs);
+        return  new RuleImpl(v, type, graknGraph, lhs, rhs);
     }
 
     /**
@@ -173,7 +173,7 @@ final class ElementFactory {
         return conceptType;
     }
 
-    public EdgeImpl buildEdge(org.apache.tinkerpop.gremlin.structure.Edge edge, AbstractGraknGraph mindmapsGraph){
-        return new EdgeImpl(edge, mindmapsGraph);
+    public EdgeImpl buildEdge(org.apache.tinkerpop.gremlin.structure.Edge edge, AbstractGraknGraph graknGraph){
+        return new EdgeImpl(edge, graknGraph);
     }
 }

@@ -30,10 +30,10 @@ import io.grakn.graph.internal.GraknComputerImpl;
  */
 public class GraknGraphFactoryInMemory implements GraknGraphFactory {
     private static final String TINKER_GRAPH_COMPUTER = "org.apache.tinkerpop.gremlin.tinkergraph.process.computer.TinkerGraphComputer";
-    private final MindmapsTinkerInternalFactory factory;
+    private final GraknTinkerInternalFactory factory;
 
     public GraknGraphFactoryInMemory(String keyspace, String ignored){
-        factory = new MindmapsTinkerInternalFactory(keyspace, null, null);
+        factory = new GraknTinkerInternalFactory(keyspace, null, null);
     }
 
     @Override

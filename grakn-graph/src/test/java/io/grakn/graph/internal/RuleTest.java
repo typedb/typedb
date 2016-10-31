@@ -37,34 +37,34 @@ import static org.junit.Assert.assertTrue;
 
 public class RuleTest {
 
-    private AbstractGraknGraph mindmapsGraph;
+    private AbstractGraknGraph graknGraph;
 
     @Before
     public void buildGraph() {
-        mindmapsGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        mindmapsGraph.initialiseMetaConcepts();
+        graknGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        graknGraph.initialiseMetaConcepts();
     }
 
     @Test
     public void testType() {
-        RuleType conceptType = mindmapsGraph.putRuleType("A Thing");
-        Rule rule = mindmapsGraph.addRule("lhs", "rhs", conceptType);
+        RuleType conceptType = graknGraph.putRuleType("A Thing");
+        Rule rule = graknGraph.addRule("lhs", "rhs", conceptType);
         assertNotNull(rule.type());
         assertEquals(conceptType, rule.type());
     }
 
     @Test
     public void testRuleValues() throws Exception {
-        RuleType conceptType = mindmapsGraph.putRuleType("A Thing");
-        Rule rule = mindmapsGraph.addRule("lhs", "rhs", conceptType);
+        RuleType conceptType = graknGraph.putRuleType("A Thing");
+        Rule rule = graknGraph.addRule("lhs", "rhs", conceptType);
         assertEquals("lhs", rule.getLHS());
         assertEquals("rhs", rule.getRHS());
     }
 
     @Test
     public void testExpectation() throws Exception {
-        RuleType conceptType = mindmapsGraph.putRuleType("A Thing");
-        Rule rule = mindmapsGraph.addRule("lhs", "rhs", conceptType);
+        RuleType conceptType = graknGraph.putRuleType("A Thing");
+        Rule rule = graknGraph.addRule("lhs", "rhs", conceptType);
         assertFalse(rule.getExpectation());
         rule.setExpectation(true);
         assertTrue(rule.getExpectation());
@@ -72,8 +72,8 @@ public class RuleTest {
 
     @Test
     public void testMaterialise() throws Exception {
-        RuleType conceptType = mindmapsGraph.putRuleType("A Thing");
-        Rule rule = mindmapsGraph.addRule("lhs", "rhs", conceptType);
+        RuleType conceptType = graknGraph.putRuleType("A Thing");
+        Rule rule = graknGraph.addRule("lhs", "rhs", conceptType);
         assertFalse(rule.isMaterialise());
         rule.setMaterialise(true);
         assertTrue(rule.isMaterialise());
@@ -81,11 +81,11 @@ public class RuleTest {
 
     @Test
     public void testAddHypothesis() throws Exception {
-        RuleType conceptType = mindmapsGraph.putRuleType("A Thing");
-        Rule rule = mindmapsGraph.addRule("lhs", "rhs", conceptType);
-        Vertex ruleVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(((RuleImpl) rule).getBaseIdentifier()).next();
-        Type type1 = mindmapsGraph.putEntityType("A Concept Type 1");
-        Type type2 = mindmapsGraph.putEntityType("A Concept Type 2");
+        RuleType conceptType = graknGraph.putRuleType("A Thing");
+        Rule rule = graknGraph.addRule("lhs", "rhs", conceptType);
+        Vertex ruleVertex = graknGraph.getTinkerPopGraph().traversal().V(((RuleImpl) rule).getBaseIdentifier()).next();
+        Type type1 = graknGraph.putEntityType("A Concept Type 1");
+        Type type2 = graknGraph.putEntityType("A Concept Type 2");
         assertFalse(ruleVertex.edges(Direction.BOTH, Schema.EdgeLabel.HYPOTHESIS.getLabel()).hasNext());
         rule.addHypothesis(type1).addHypothesis(type2);
         assertTrue(ruleVertex.edges(Direction.BOTH, Schema.EdgeLabel.HYPOTHESIS.getLabel()).hasNext());
@@ -93,11 +93,11 @@ public class RuleTest {
 
     @Test
     public void testAddConclusion() throws Exception {
-        RuleType conceptType = mindmapsGraph.putRuleType("A Thing");
-        Rule rule = mindmapsGraph.addRule("lhs", "rhs", conceptType);
-        Vertex ruleVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(((RuleImpl) rule).getBaseIdentifier()).next();
-        Type type1 = mindmapsGraph.putEntityType("A Concept Type 1");
-        Type type2 = mindmapsGraph.putEntityType("A Concept Type 2");
+        RuleType conceptType = graknGraph.putRuleType("A Thing");
+        Rule rule = graknGraph.addRule("lhs", "rhs", conceptType);
+        Vertex ruleVertex = graknGraph.getTinkerPopGraph().traversal().V(((RuleImpl) rule).getBaseIdentifier()).next();
+        Type type1 = graknGraph.putEntityType("A Concept Type 1");
+        Type type2 = graknGraph.putEntityType("A Concept Type 2");
         assertFalse(ruleVertex.edges(Direction.BOTH, Schema.EdgeLabel.CONCLUSION.getLabel()).hasNext());
         rule.addConclusion(type1).addConclusion(type2);
         assertTrue(ruleVertex.edges(Direction.BOTH, Schema.EdgeLabel.CONCLUSION.getLabel()).hasNext());
@@ -105,12 +105,12 @@ public class RuleTest {
 
     @Test
     public void testHypothesisTypes(){
-        RuleType ruleType = mindmapsGraph.putRuleType("A Rule Type");
-        Rule rule = mindmapsGraph.addRule("lhs", "rhs", ruleType);
+        RuleType ruleType = graknGraph.putRuleType("A Rule Type");
+        Rule rule = graknGraph.addRule("lhs", "rhs", ruleType);
         assertEquals(0, rule.getHypothesisTypes().size());
 
-        Type ct1 = mindmapsGraph.putEntityType("A Concept Type 1");
-        Type ct2 = mindmapsGraph.putEntityType("A Concept Type 2");
+        Type ct1 = graknGraph.putEntityType("A Concept Type 1");
+        Type ct2 = graknGraph.putEntityType("A Concept Type 2");
         rule.addHypothesis(ct1).addHypothesis(ct2);
         assertEquals(2, rule.getHypothesisTypes().size());
         assertTrue(rule.getHypothesisTypes().contains(ct1));
@@ -119,12 +119,12 @@ public class RuleTest {
 
     @Test
     public void testConclusionTypes(){
-        RuleType ruleType = mindmapsGraph.putRuleType("A Rule Type");
-        Rule rule = mindmapsGraph.addRule("lhs", "rhs", ruleType);
+        RuleType ruleType = graknGraph.putRuleType("A Rule Type");
+        Rule rule = graknGraph.addRule("lhs", "rhs", ruleType);
         assertEquals(0, rule.getConclusionTypes().size());
 
-        Type ct1 = mindmapsGraph.putEntityType("A Concept Type 1");
-        Type ct2 = mindmapsGraph.putEntityType("A Concept Type 2");
+        Type ct1 = graknGraph.putEntityType("A Concept Type 1");
+        Type ct2 = graknGraph.putEntityType("A Concept Type 2");
         rule.addConclusion(ct1).addConclusion(ct2);
         assertEquals(2, rule.getConclusionTypes().size());
         assertTrue(rule.getConclusionTypes().contains(ct1));

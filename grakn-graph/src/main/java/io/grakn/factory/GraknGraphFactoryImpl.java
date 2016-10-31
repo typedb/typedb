@@ -108,7 +108,7 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
                 computer = bundle.getString(COMPUTER);
             }
 
-            return new ConfigureFactory(path, computer, MindmapsFactoryBuilder.getFactory(keyspace, engineUrl, path));
+            return new ConfigureFactory(path, computer, GraknFactoryBuilder.getFactory(keyspace, engineUrl, path));
         } catch (IOException e) {
             throw new IllegalArgumentException(ErrorMessage.CONFIG_NOT_FOUND.getMessage(engineUrl, e.getMessage()));
         }
@@ -117,9 +117,9 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
     static class ConfigureFactory {
         String path;
         String graphComputer;
-        MindmapsInternalFactory factory;
+        GraknInternalFactory factory;
 
-        ConfigureFactory(String path, String graphComputer, MindmapsInternalFactory factory){
+        ConfigureFactory(String path, String graphComputer, GraknInternalFactory factory){
             this.path = path;
             this.graphComputer = graphComputer;
             this.factory = factory;

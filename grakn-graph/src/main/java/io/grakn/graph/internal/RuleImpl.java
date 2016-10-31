@@ -31,8 +31,8 @@ import java.util.HashSet;
  * A rule represents an instance of a Rule Type which is used to make inferences over the data instances.
  */
 class RuleImpl extends InstanceImpl<Rule, RuleType> implements Rule {
-    RuleImpl(Vertex v, RuleType type, AbstractGraknGraph mindmapsGraph, String lhs, String rhs) {
-        super(v, type, mindmapsGraph);
+    RuleImpl(Vertex v, RuleType type, AbstractGraknGraph graknGraph, String lhs, String rhs) {
+        super(v, type, graknGraph);
         setImmutableProperty(Schema.ConceptProperty.RULE_LHS, lhs);
         setImmutableProperty(Schema.ConceptProperty.RULE_RHS, rhs);
     }

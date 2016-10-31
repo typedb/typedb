@@ -42,7 +42,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class RoleTypeTest {
-    private AbstractGraknGraph mindmapsGraph;
+    private AbstractGraknGraph graknGraph;
     private RoleType roleType;
     private RelationType relationType;
 
@@ -51,20 +51,20 @@ public class RoleTypeTest {
 
     @Before
     public void buildGraph(){
-        mindmapsGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        mindmapsGraph.initialiseMetaConcepts();
+        graknGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        graknGraph.initialiseMetaConcepts();
 
-        roleType = mindmapsGraph.putRoleType("RoleType");
-        relationType = mindmapsGraph.putRelationType("RelationType");
+        roleType = graknGraph.putRoleType("RoleType");
+        relationType = graknGraph.putRelationType("RelationType");
     }
     @After
     public void destroyGraph()  throws Exception{
-        mindmapsGraph.close();
+        graknGraph.close();
     }
 
     @Test
     public void overrideFail(){
-        RelationType relationType = mindmapsGraph.putRelationType("original");
+        RelationType relationType = graknGraph.putRelationType("original");
 
         expectedException.expect(RuntimeException.class);
         expectedException.expectMessage(allOf(
@@ -72,12 +72,12 @@ public class RoleTypeTest {
         ));
 
 
-        mindmapsGraph.putRoleType("original");
+        graknGraph.putRoleType("original");
     }
 
     @Test
     public void testRoleTypeItemIdentifier(){
-        RoleType roleType = mindmapsGraph.putRoleType("test");
+        RoleType roleType = graknGraph.putRoleType("test");
         assertEquals("test", roleType.getId());
     }
 
@@ -99,7 +99,7 @@ public class RoleTypeTest {
                 containsString(ErrorMessage.MORE_THAN_ONE_EDGE.getMessage(roleType.toString(), Schema.EdgeLabel.HAS_ROLE.name()))
         ));
 
-        RelationType relationType2 = mindmapsGraph.putRelationType("relationType2");
+        RelationType relationType2 = graknGraph.putRelationType("relationType2");
         relationType.hasRole(roleType);
         relationType2.hasRole(roleType);
 
@@ -108,10 +108,10 @@ public class RoleTypeTest {
 
     @Test
     public void testRolePlayerConceptType(){
-        Type type1 = mindmapsGraph.putEntityType("CT1").playsRole(roleType);
-        Type type2 = mindmapsGraph.putEntityType("CT2").playsRole(roleType);
-        Type type3 = mindmapsGraph.putEntityType("CT3").playsRole(roleType);
-        Type type4 = mindmapsGraph.putEntityType("CT4").playsRole(roleType);
+        Type type1 = graknGraph.putEntityType("CT1").playsRole(roleType);
+        Type type2 = graknGraph.putEntityType("CT2").playsRole(roleType);
+        Type type3 = graknGraph.putEntityType("CT3").playsRole(roleType);
+        Type type4 = graknGraph.putEntityType("CT4").playsRole(roleType);
 
         assertEquals(4, roleType.playedByTypes().size());
         assertTrue(roleType.playedByTypes().contains(type1));
@@ -122,9 +122,9 @@ public class RoleTypeTest {
 
     @Test
     public void testPlayedByTypes(){
-        RoleType crewMember = mindmapsGraph.putRoleType("crew-member").setAbstract(true);
-        EntityType person = mindmapsGraph.putEntityType("person").playsRole(crewMember);
-        RoleType productionDesigner = mindmapsGraph.putRoleType("production-designer").superType(crewMember);
+        RoleType crewMember = graknGraph.putRoleType("crew-member").setAbstract(true);
+        EntityType person = graknGraph.putEntityType("person").playsRole(crewMember);
+        RoleType productionDesigner = graknGraph.putRoleType("production-designer").superType(crewMember);
 
         assertEquals(1, productionDesigner.playedByTypes().size());
         assertEquals(person, productionDesigner.playedByTypes().iterator().next());
@@ -132,29 +132,29 @@ public class RoleTypeTest {
 
     @Test
     public  void getInstancesTest(){
-        RoleType roleA = mindmapsGraph.putRoleType("roleA");
-        RoleType roleB = mindmapsGraph.putRoleType("roleB");
-        RelationType relationType = mindmapsGraph.putRelationType("relationType").hasRole(roleA).hasRole(roleB);
-        EntityType entityType = mindmapsGraph.putEntityType("entityType").playsRole(roleA).playsRole(roleB);
+        RoleType roleA = graknGraph.putRoleType("roleA");
+        RoleType roleB = graknGraph.putRoleType("roleB");
+        RelationType relationType = graknGraph.putRelationType("relationType").hasRole(roleA).hasRole(roleB);
+        EntityType entityType = graknGraph.putEntityType("entityType").playsRole(roleA).playsRole(roleB);
 
-        Entity a = mindmapsGraph.addEntity(entityType);
-        Entity b = mindmapsGraph.addEntity(entityType);
-        Entity c = mindmapsGraph.addEntity(entityType);
-        Entity d = mindmapsGraph.addEntity(entityType);
+        Entity a = graknGraph.addEntity(entityType);
+        Entity b = graknGraph.addEntity(entityType);
+        Entity c = graknGraph.addEntity(entityType);
+        Entity d = graknGraph.addEntity(entityType);
 
-        mindmapsGraph.addRelation(relationType).
+        graknGraph.addRelation(relationType).
                 putRolePlayer(roleA, a).
                 putRolePlayer(roleB, b);
 
-        mindmapsGraph.addRelation(relationType).
+        graknGraph.addRelation(relationType).
                 putRolePlayer(roleA, c).
                 putRolePlayer(roleB, d);
 
-        mindmapsGraph.addRelation(relationType).
+        graknGraph.addRelation(relationType).
                 putRolePlayer(roleA, a).
                 putRolePlayer(roleB, c);
 
-        mindmapsGraph.addRelation(relationType).
+        graknGraph.addRelation(relationType).
                 putRolePlayer(roleA, c).
                 putRolePlayer(roleB, b);
 

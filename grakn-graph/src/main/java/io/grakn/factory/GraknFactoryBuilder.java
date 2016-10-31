@@ -29,21 +29,21 @@ import java.util.MissingResourceException;
 import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
 
-class MindmapsFactoryBuilder {
+class GraknFactoryBuilder {
     private static final String FACTORY = "factory.internal";
-    private static final Map<String, MindmapsInternalFactory> openFactories = new HashMap<>();
+    private static final Map<String, GraknInternalFactory> openFactories = new HashMap<>();
 
-    private MindmapsFactoryBuilder(){
+    private GraknFactoryBuilder(){
         throw new UnsupportedOperationException();
     }
 
-    static MindmapsInternalFactory getFactory(String keyspace, String engineUrl, String config){
+    static GraknInternalFactory getFactory(String keyspace, String engineUrl, String config){
         try{
             FileInputStream fis = new FileInputStream(config);
             ResourceBundle bundle = new PropertyResourceBundle(fis);
             fis.close();
 
-            return getMindmapsGraphFactory(bundle.getString(FACTORY), keyspace, engineUrl, config);
+            return getGraknGraphFactory(bundle.getString(FACTORY), keyspace, engineUrl, config);
         } catch (IOException e) {
             throw new IllegalArgumentException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(config), e);
         } catch(MissingResourceException e){
@@ -54,22 +54,22 @@ class MindmapsFactoryBuilder {
     /**
      *
      * @param factoryType The string defining which factory should be used for creating the grakn graph.
-     *                    A valid example includes: io.grakn.factory.MindmapsTinkerInternalFactory
+     *                    A valid example includes: io.grakn.factory.GraknTinkerInternalFactory
      * @return A graph factory which produces the relevant expected graph.
     */
-    private static MindmapsInternalFactory getMindmapsGraphFactory(String factoryType, String keyspace, String engineUrl, String config){
+    private static GraknInternalFactory getGraknGraphFactory(String factoryType, String keyspace, String engineUrl, String config){
         String key = factoryType + keyspace;
         if(!openFactories.containsKey(key)) {
-            MindmapsInternalFactory mindmapsInternalFactory;
+            GraknInternalFactory graknInternalFactory;
             try {
-                //mindmapsInternalFactory = (MindmapsInternalFactory) Class.forName(factoryType).newInstance();
-                mindmapsInternalFactory = (MindmapsInternalFactory) Class.forName(factoryType)
+                //graknInternalFactory = (GraknInternalFactory) Class.forName(factoryType).newInstance();
+                graknInternalFactory = (GraknInternalFactory) Class.forName(factoryType)
                         .getDeclaredConstructor(String.class, String.class, String.class)
                         .newInstance(keyspace, engineUrl, config);
             } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
                 throw new IllegalArgumentException(ErrorMessage.INVALID_FACTORY.getMessage(factoryType), e);
             }
-            openFactories.put(key, mindmapsInternalFactory);
+            openFactories.put(key, graknInternalFactory);
         }
         return openFactories.get(key);
     }

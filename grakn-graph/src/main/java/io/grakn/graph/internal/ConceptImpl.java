@@ -59,14 +59,14 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
         return (T) this;
     }
 
-    private final AbstractGraknGraph mindmapsGraph;
+    private final AbstractGraknGraph graknGraph;
     private Vertex vertex;
 
-    ConceptImpl(Vertex v, V type, AbstractGraknGraph mindmapsGraph){
+    ConceptImpl(Vertex v, V type, AbstractGraknGraph graknGraph){
         this.vertex = v;
-        this.mindmapsGraph = mindmapsGraph;
+        this.graknGraph = graknGraph;
         type(type);
-        mindmapsGraph.getConceptLog().putConcept(this);
+        graknGraph.getConceptLog().putConcept(this);
     }
 
     /**
@@ -100,7 +100,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      */
     @Override
     public void delete() throws ConceptException {
-        ConceptImpl properType = getMindmapsGraph().getElementFactory().buildUnknownConcept(vertex);
+        ConceptImpl properType = getGraknGraph().getElementFactory().buildUnknownConcept(vertex);
         properType.innerDelete(); //This will execute the proper deletion method.
     }
 
@@ -119,7 +119,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @return The concept itself casted to the correct interface itself
      */
     T setUniqueProperty(Schema.ConceptProperty key, String id){
-        if(mindmapsGraph.isBatchLoadingEnabled() || updateAllowed(key, id))
+        if(graknGraph.isBatchLoadingEnabled() || updateAllowed(key, id))
             return setProperty(key, id);
         else
             throw new ConceptNotUniqueException(this, key, id);
@@ -132,7 +132,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @return True if the concept can be updated. I.e. the value is unique for the property.
      */
     private boolean updateAllowed(Schema.ConceptProperty key, String value) {
-        ConceptImpl fetchedConcept = mindmapsGraph.getConcept(key, value);
+        ConceptImpl fetchedConcept = graknGraph.getConcept(key, value);
         return fetchedConcept == null || this.equals(fetchedConcept);
     }
 
@@ -144,10 +144,10 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
         vertex.edges(Direction.BOTH).
                 forEachRemaining(
                         e -> {
-                            mindmapsGraph.getConceptLog().putConcept(getMindmapsGraph().getElementFactory().buildUnknownConcept(e.inVertex()));
-                            mindmapsGraph.getConceptLog().putConcept(getMindmapsGraph().getElementFactory().buildUnknownConcept(e.outVertex()));}
+                            graknGraph.getConceptLog().putConcept(getGraknGraph().getElementFactory().buildUnknownConcept(e.inVertex()));
+                            graknGraph.getConceptLog().putConcept(getGraknGraph().getElementFactory().buildUnknownConcept(e.outVertex()));}
                 );
-        mindmapsGraph.getConceptLog().removeConcept(this);
+        graknGraph.getConceptLog().removeConcept(this);
         // delete node
         vertex.remove();
         vertex = null;
@@ -614,7 +614,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
     protected Set<EdgeImpl> getEdgesOfType(Direction direction, Schema.EdgeLabel type){
         Set<EdgeImpl> edges = new HashSet<>();
         vertex.edges(direction, type.getLabel()).
-                forEachRemaining(e -> edges.add(new EdgeImpl(e, getMindmapsGraph())));
+                forEachRemaining(e -> edges.add(new EdgeImpl(e, getGraknGraph())));
         return edges;
     }
 
@@ -638,7 +638,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      *
      * @return The grakn graph this concept is bound to.
      */
-    protected AbstractGraknGraph getMindmapsGraph() {return mindmapsGraph;}
+    protected AbstractGraknGraph getGraknGraph() {return graknGraph;}
 
     //--------- Create Links -------//
     /**
@@ -648,7 +648,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      */
     void putEdge(Concept to, Schema.EdgeLabel type){
         ConceptImpl toConcept = (ConceptImpl) to;
-        GraphTraversal<Vertex, Edge> traversal = mindmapsGraph.getTinkerPopGraph().traversal().V(getBaseIdentifier()).outE(type.getLabel()).as("edge").otherV().hasId(toConcept.getBaseIdentifier()).select("edge");
+        GraphTraversal<Vertex, Edge> traversal = graknGraph.getTinkerPopGraph().traversal().V(getBaseIdentifier()).outE(type.getLabel()).as("edge").otherV().hasId(toConcept.getBaseIdentifier()).select("edge");
         if(!traversal.hasNext())
             addEdge(toConcept, type);
     }
@@ -660,10 +660,10 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @return The edge created
      */
     public EdgeImpl addEdge(ConceptImpl toConcept, Schema.EdgeLabel type) {
-        mindmapsGraph.getConceptLog().putConcept(this);
-        mindmapsGraph.getConceptLog().putConcept(toConcept);
+        graknGraph.getConceptLog().putConcept(this);
+        graknGraph.getConceptLog().putConcept(toConcept);
 
-        return getMindmapsGraph().getElementFactory().buildEdge(toConcept.addEdgeFrom(this.vertex, type.getLabel()), mindmapsGraph);
+        return getGraknGraph().getElementFactory().buildEdge(toConcept.addEdgeFrom(this.vertex, type.getLabel()), graknGraph);
     }
 
     /**
@@ -676,10 +676,10 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
         vertex.edges(direction, type.getLabel()).
                 forEachRemaining(
                         e -> {
-                            mindmapsGraph.getConceptLog().putConcept(
-                                    getMindmapsGraph().getElementFactory().buildUnknownConcept(e.inVertex()));
-                            mindmapsGraph.getConceptLog().putConcept(
-                                    getMindmapsGraph().getElementFactory().buildUnknownConcept(e.outVertex()));
+                            graknGraph.getConceptLog().putConcept(
+                                    getGraknGraph().getElementFactory().buildUnknownConcept(e.inVertex()));
+                            graknGraph.getConceptLog().putConcept(
+                                    getGraknGraph().getElementFactory().buildUnknownConcept(e.outVertex()));
                         }
                 );
 
@@ -693,7 +693,7 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
      * @param toConcept The target concept
      */
     void deleteEdgeTo(Schema.EdgeLabel type, Concept toConcept){
-        GraphTraversal<Vertex, Edge> traversal = mindmapsGraph.getTinkerPopGraph().traversal().V(getBaseIdentifier()).
+        GraphTraversal<Vertex, Edge> traversal = graknGraph.getTinkerPopGraph().traversal().V(getBaseIdentifier()).
                 outE(type.getLabel()).as("edge").otherV().hasId(((ConceptImpl) toConcept).getBaseIdentifier()).select("edge");
         if(traversal.hasNext())
             traversal.next().remove();

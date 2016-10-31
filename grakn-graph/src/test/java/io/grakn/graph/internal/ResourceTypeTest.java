@@ -42,7 +42,7 @@ import static org.junit.Assert.assertTrue;
 
 public class ResourceTypeTest {
 
-    private AbstractGraknGraph mindmapsGraph;
+    private AbstractGraknGraph graknGraph;
     private ResourceType<String> resourceType;
 
     @Rule
@@ -50,9 +50,9 @@ public class ResourceTypeTest {
 
     @Before
     public void buildGraph() {
-        mindmapsGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        mindmapsGraph.initialiseMetaConcepts();
-        resourceType = mindmapsGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
+        graknGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        graknGraph.initialiseMetaConcepts();
+        resourceType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
     }
 
     @Test
@@ -76,7 +76,7 @@ public class ResourceTypeTest {
 
     @Test
     public void testRegexSetOnNonString(){
-        ResourceType<Long> thing = mindmapsGraph.putResourceType("Random ID", ResourceType.DataType.LONG);
+        ResourceType<Long> thing = graknGraph.putResourceType("Random ID", ResourceType.DataType.LONG);
         expectedException.expect(UnsupportedOperationException.class);
         expectedException.expectMessage(allOf(
                 containsString(ErrorMessage.REGEX_NOT_STRING.getMessage(thing.toString()))
@@ -87,17 +87,17 @@ public class ResourceTypeTest {
     @Test
     public void testRegexInstance(){
         resourceType.setRegex("[abc]");
-        mindmapsGraph.putResource("a", resourceType);
+        graknGraph.putResource("a", resourceType);
         expectedException.expect(InvalidConceptValueException.class);
         expectedException.expectMessage(allOf(
                 containsString("regular expressions")
         ));
-        mindmapsGraph.putResource("1", resourceType);
+        graknGraph.putResource("1", resourceType);
     }
 
     @Test
     public void testRegexInstanceChangeRegexWithInstances(){
-        Resource<String> thing = mindmapsGraph.putResource("1", resourceType);
+        Resource<String> thing = graknGraph.putResource("1", resourceType);
         expectedException.expect(InvalidConceptValueException.class);
         expectedException.expectMessage(allOf(
                 containsString(ErrorMessage.REGEX_INSTANCE_FAILURE.getMessage("[abc]", thing.toString()))
@@ -107,8 +107,8 @@ public class ResourceTypeTest {
 
     @Test
     public void testGetUniqueResourceType(){
-        ResourceType unique = mindmapsGraph.putResourceTypeUnique("Random ID", ResourceType.DataType.LONG);
-        ResourceType notUnique = mindmapsGraph.putResourceType("Random ID 2", ResourceType.DataType.LONG);
+        ResourceType unique = graknGraph.putResourceTypeUnique("Random ID", ResourceType.DataType.LONG);
+        ResourceType notUnique = graknGraph.putResourceType("Random ID 2", ResourceType.DataType.LONG);
 
         assertTrue(unique.isUnique());
         assertFalse(notUnique.isUnique());
@@ -116,8 +116,8 @@ public class ResourceTypeTest {
 
     @Test
     public void checkSuper() throws Exception{
-        ResourceType superConcept = mindmapsGraph.putResourceType("super", ResourceType.DataType.STRING);
-        ResourceType resourceType = mindmapsGraph.putResourceType("resourceType", ResourceType.DataType.STRING);
+        ResourceType superConcept = graknGraph.putResourceType("super", ResourceType.DataType.STRING);
+        ResourceType resourceType = graknGraph.putResourceType("resourceType", ResourceType.DataType.STRING);
         resourceType.superType(superConcept);
         assertThat(resourceType.superType(), instanceOf(ResourceType.class));
         assertEquals(superConcept, resourceType.superType());

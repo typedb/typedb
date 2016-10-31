@@ -26,19 +26,19 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  */
 class EdgeImpl {
     private Edge edge;
-    private final AbstractGraknGraph mindmapsGraph;
+    private final AbstractGraknGraph graknGraph;
 
-    EdgeImpl(org.apache.tinkerpop.gremlin.structure.Edge e, AbstractGraknGraph mindmapsGraph){
+    EdgeImpl(org.apache.tinkerpop.gremlin.structure.Edge e, AbstractGraknGraph graknGraph){
         edge = e;
-        this.mindmapsGraph = mindmapsGraph;
+        this.graknGraph = graknGraph;
     }
 
     /**
      * Deletes the edge between two concepts and adds both those concepts for re-validation in case something goes wrong
      */
     public void delete(){
-        mindmapsGraph.getConceptLog().putConcept(getTarget());
-        mindmapsGraph.getConceptLog().putConcept(getSource());
+        graknGraph.getConceptLog().putConcept(getTarget());
+        graknGraph.getConceptLog().putConcept(getSource());
 
         edge.remove();
         edge = null;
@@ -59,7 +59,7 @@ class EdgeImpl {
      * @return The source of the edge.
      */
     public ConceptImpl getSource(){
-        return mindmapsGraph.getElementFactory().buildUnknownConcept(edge.outVertex());
+        return graknGraph.getElementFactory().buildUnknownConcept(edge.outVertex());
     }
 
     /**
@@ -67,7 +67,7 @@ class EdgeImpl {
      * @return The target of the edge
      */
     public ConceptImpl getTarget(){
-        return mindmapsGraph.getElementFactory().buildUnknownConcept(edge.inVertex());
+        return graknGraph.getElementFactory().buildUnknownConcept(edge.inVertex());
     }
 
     /**

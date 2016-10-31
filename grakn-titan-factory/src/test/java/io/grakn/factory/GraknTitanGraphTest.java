@@ -46,7 +46,7 @@ public class GraknTitanGraphTest {
 
     @Before
     public void setup(){
-        graknGraph = new MindmapsTitanInternalFactory(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph(TEST_BATCH_LOADING);
+        graknGraph = new GraknTitanInternalFactory(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph(TEST_BATCH_LOADING);
     }
 
     @After
@@ -118,8 +118,8 @@ public class GraknTitanGraphTest {
 
     @Test
     public void testCaseSensitiveKeyspaces(){
-        MindmapsTitanInternalFactory factory1 = new MindmapsTitanInternalFactory("case", TEST_URI, TEST_CONFIG);
-        MindmapsTitanInternalFactory factory2 = new MindmapsTitanInternalFactory("Case", TEST_URI, TEST_CONFIG);
+        GraknTitanInternalFactory factory1 = new GraknTitanInternalFactory("case", TEST_URI, TEST_CONFIG);
+        GraknTitanInternalFactory factory2 = new GraknTitanInternalFactory("Case", TEST_URI, TEST_CONFIG);
         GraknTitanGraph case1 = factory1.getGraph(TEST_BATCH_LOADING);
         GraknTitanGraph case2 = factory2.getGraph(TEST_BATCH_LOADING);
 

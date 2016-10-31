@@ -27,7 +27,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
  * An ontological element which represents the categories instances can fall within.
  */
 class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements EntityType{
-    EntityTypeImpl(Vertex v, Type type, AbstractGraknGraph mindmapsGraph) {
-        super(v, type, mindmapsGraph);
+    EntityTypeImpl(Vertex v, Type type, AbstractGraknGraph graknGraph) {
+        super(v, type, graknGraph);
     }
 }

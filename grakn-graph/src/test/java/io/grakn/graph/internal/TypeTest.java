@@ -52,20 +52,20 @@ import static org.junit.Assert.assertTrue;
 @SuppressWarnings("unchecked")
 public class TypeTest {
 
-    private AbstractGraknGraph mindmapsGraph;
+    private AbstractGraknGraph graknGraph;
 
     @org.junit.Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void buildGraph(){
-        mindmapsGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        mindmapsGraph.initialiseMetaConcepts();
-        EntityType top = mindmapsGraph.putEntityType("top");
-        EntityType middle1 = mindmapsGraph.putEntityType("mid1");
-        EntityType middle2 = mindmapsGraph.putEntityType("mid2");
-        EntityType middle3 = mindmapsGraph.putEntityType("mid3'");
-        EntityType bottom = mindmapsGraph.putEntityType("bottom");
+        graknGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        graknGraph.initialiseMetaConcepts();
+        EntityType top = graknGraph.putEntityType("top");
+        EntityType middle1 = graknGraph.putEntityType("mid1");
+        EntityType middle2 = graknGraph.putEntityType("mid2");
+        EntityType middle3 = graknGraph.putEntityType("mid3'");
+        EntityType bottom = graknGraph.putEntityType("bottom");
 
         bottom.superType(middle1);
         middle1.superType(top);
@@ -74,28 +74,28 @@ public class TypeTest {
     }
     @After
     public void destroyGraph()  throws Exception{
-        mindmapsGraph.close();
+        graknGraph.close();
     }
 
     @Test
     public void testItemIdentifier(){
-        Type test = mindmapsGraph.putEntityType("test");
+        Type test = graknGraph.putEntityType("test");
         assertEquals("test", test.getId());
     }
 
     @Test
     public void testGetRoleTypeAsConceptType(){
-        RoleType test1 = mindmapsGraph.putRoleType("test");
-        Type test2 = mindmapsGraph.getEntityType("test");
+        RoleType test1 = graknGraph.putRoleType("test");
+        Type test2 = graknGraph.getEntityType("test");
         assertNull(test2);
     }
 
     @Test
     public void testGetPlayedRole() throws Exception{
-        EntityType creature = mindmapsGraph.putEntityType("creature");
-        RoleType monster = mindmapsGraph.putRoleType("monster");
-        RoleType animal = mindmapsGraph.putRoleType("animal");
-        RoleType monsterSub = mindmapsGraph.putRoleType("monsterSub");
+        EntityType creature = graknGraph.putEntityType("creature");
+        RoleType monster = graknGraph.putRoleType("monster");
+        RoleType animal = graknGraph.putRoleType("animal");
+        RoleType monsterSub = graknGraph.putRoleType("monsterSub");
 
         assertEquals(0, creature.playsRoles().size());
 
@@ -112,10 +112,10 @@ public class TypeTest {
 
     @Test
     public void testGetSubHierarchySuperSet() throws Exception{
-        TypeImpl c1 = (TypeImpl) mindmapsGraph.putEntityType("c1");
-        TypeImpl c2 = (TypeImpl) mindmapsGraph.putEntityType("c2");
-        TypeImpl c3 = (TypeImpl) mindmapsGraph.putEntityType("c3'");
-        TypeImpl c4 = (TypeImpl) mindmapsGraph.putEntityType("c4");
+        TypeImpl c1 = (TypeImpl) graknGraph.putEntityType("c1");
+        TypeImpl c2 = (TypeImpl) graknGraph.putEntityType("c2");
+        TypeImpl c3 = (TypeImpl) graknGraph.putEntityType("c3'");
+        TypeImpl c4 = (TypeImpl) graknGraph.putEntityType("c4");
 
         assertTrue(c1.getSubHierarchySuperSet().contains(c1));
         assertFalse(c1.getSubHierarchySuperSet().contains(c2));
@@ -134,7 +134,7 @@ public class TypeTest {
         assertTrue(c1.getSubHierarchySuperSet().contains(c3));
         assertFalse(c1.getSubHierarchySuperSet().contains(c4));
 
-        mindmapsGraph.getTinkerPopGraph().traversal().V().
+        graknGraph.getTinkerPopGraph().traversal().V().
                 has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), c3.getId()).
                 outE(Schema.EdgeLabel.ISA.getLabel()).next().remove();
         c3.superType(c4);
@@ -151,8 +151,8 @@ public class TypeTest {
 
     @Test
     public void testCannotSubClassMetaTypes(){
-        RuleType metaType = mindmapsGraph.getMetaRuleInference();
-        RuleType superType = mindmapsGraph.putRuleType("An Entity Type");
+        RuleType metaType = graknGraph.getMetaRuleInference();
+        RuleType superType = graknGraph.putRuleType("An Entity Type");
 
         expectedException.expect(InvalidConceptTypeException.class);
         expectedException.expectMessage(allOf(
@@ -164,10 +164,10 @@ public class TypeTest {
 
     @Test
     public void testGetSubChildrenSet(){
-        EntityType parent = mindmapsGraph.putEntityType("parent");
-        EntityType child1 = mindmapsGraph.putEntityType("c1");
-        EntityType child2 = mindmapsGraph.putEntityType("c2");
-        EntityType child3 = mindmapsGraph.putEntityType("c3");
+        EntityType parent = graknGraph.putEntityType("parent");
+        EntityType child1 = graknGraph.putEntityType("c1");
+        EntityType child2 = graknGraph.putEntityType("c2");
+        EntityType child3 = graknGraph.putEntityType("c3");
 
         assertEquals(1, parent.subTypes().size());
 
@@ -183,16 +183,16 @@ public class TypeTest {
 
     @Test
     public void testGetSubHierarchySubSet(){
-        EntityType parent = mindmapsGraph.putEntityType("p");
-        EntityType superParent = mindmapsGraph.putEntityType("sp");
-        EntityType child1 = mindmapsGraph.putEntityType("c1");
-        EntityType child2 = mindmapsGraph.putEntityType("c2");
-        EntityType child3 = mindmapsGraph.putEntityType("c3");
-        EntityType child3a = mindmapsGraph.putEntityType("3a");
-        EntityType child3b = mindmapsGraph.putEntityType("3b");
-        EntityType child3b1 = mindmapsGraph.putEntityType("3b1");
-        EntityType child3b2 = mindmapsGraph.putEntityType("3b2");
-        EntityType child3b3 = mindmapsGraph.putEntityType("3b3");
+        EntityType parent = graknGraph.putEntityType("p");
+        EntityType superParent = graknGraph.putEntityType("sp");
+        EntityType child1 = graknGraph.putEntityType("c1");
+        EntityType child2 = graknGraph.putEntityType("c2");
+        EntityType child3 = graknGraph.putEntityType("c3");
+        EntityType child3a = graknGraph.putEntityType("3a");
+        EntityType child3b = graknGraph.putEntityType("3b");
+        EntityType child3b1 = graknGraph.putEntityType("3b1");
+        EntityType child3b2 = graknGraph.putEntityType("3b2");
+        EntityType child3b3 = graknGraph.putEntityType("3b3");
 
         assertEquals(1, ((TypeImpl) parent).subTypes().size());
 
@@ -222,16 +222,16 @@ public class TypeTest {
 
     @Test
     public void testDuplicateConceptType(){
-        Type movie = mindmapsGraph.putEntityType("movie");
-        Type moive2 = mindmapsGraph.putEntityType("movie");
+        Type movie = graknGraph.putEntityType("movie");
+        Type moive2 = graknGraph.putEntityType("movie");
         assertEquals(movie, moive2);
     }
 
     @Test
     public void testSuperConceptType(){
-        EntityType parent = mindmapsGraph.putEntityType("p");
-        EntityType superParent = mindmapsGraph.putEntityType("sp");
-        EntityType superParent2 = mindmapsGraph.putEntityType("sp2");
+        EntityType parent = graknGraph.putEntityType("p");
+        EntityType superParent = graknGraph.putEntityType("sp");
+        EntityType superParent2 = graknGraph.putEntityType("sp2");
 
         parent.superType(superParent);
         assertNotEquals(superParent2, parent.superType());
@@ -244,14 +244,14 @@ public class TypeTest {
 
     @Test
     public void allowsRoleType(){
-        EntityTypeImpl conceptType = (EntityTypeImpl) mindmapsGraph.putEntityType("ct");
-        RoleType roleType1 = mindmapsGraph.putRoleType("rt1'");
-        RoleType roleType2 = mindmapsGraph.putRoleType("rt2");
+        EntityTypeImpl conceptType = (EntityTypeImpl) graknGraph.putEntityType("ct");
+        RoleType roleType1 = graknGraph.putRoleType("rt1'");
+        RoleType roleType2 = graknGraph.putRoleType("rt2");
 
         conceptType.playsRole(roleType1).playsRole(roleType2);
         Set<RoleType> foundRoles = new HashSet<>();
-        mindmapsGraph.getTinkerPopGraph().traversal().V(conceptType.getBaseIdentifier()).
-                out(Schema.EdgeLabel.PLAYS_ROLE.getLabel()).forEachRemaining(r -> foundRoles.add(mindmapsGraph.getRoleType(r.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name()))));
+        graknGraph.getTinkerPopGraph().traversal().V(conceptType.getBaseIdentifier()).
+                out(Schema.EdgeLabel.PLAYS_ROLE.getLabel()).forEachRemaining(r -> foundRoles.add(graknGraph.getRoleType(r.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name()))));
 
         assertEquals(2, foundRoles.size());
         assertTrue(foundRoles.contains(roleType1));
@@ -260,8 +260,8 @@ public class TypeTest {
 
     @Test
     public void checkSuperConceptTypeOverride(){
-        EntityTypeImpl conceptType = (EntityTypeImpl) mindmapsGraph.putEntityType("A Thing");
-        EntityTypeImpl conceptType2 = (EntityTypeImpl) mindmapsGraph.putEntityType("A Super Thing");
+        EntityTypeImpl conceptType = (EntityTypeImpl) graknGraph.putEntityType("A Thing");
+        EntityTypeImpl conceptType2 = (EntityTypeImpl) graknGraph.putEntityType("A Super Thing");
         assertNotNull(conceptType.getOutgoingNeighbour(Schema.EdgeLabel.ISA));
         assertNull(conceptType.getOutgoingNeighbour(Schema.EdgeLabel.SUB));
         conceptType.superType(conceptType2);
@@ -271,11 +271,11 @@ public class TypeTest {
 
     @Test
     public void testRulesOfHypothesis(){
-        Type type = mindmapsGraph.putEntityType("A Concept Type");
-        RuleType ruleType = mindmapsGraph.putRuleType("A Rule Type");
+        Type type = graknGraph.putEntityType("A Concept Type");
+        RuleType ruleType = graknGraph.putRuleType("A Rule Type");
         assertEquals(0, type.getRulesOfHypothesis().size());
-        Rule rule1 = mindmapsGraph.addRule("lhs", "rhs", ruleType).addHypothesis(type);
-        Rule rule2 = mindmapsGraph.addRule("lhs", "rhs", ruleType).addHypothesis(type);
+        Rule rule1 = graknGraph.addRule("lhs", "rhs", ruleType).addHypothesis(type);
+        Rule rule2 = graknGraph.addRule("lhs", "rhs", ruleType).addHypothesis(type);
         assertEquals(2, type.getRulesOfHypothesis().size());
         assertTrue(type.getRulesOfHypothesis().contains(rule1));
         assertTrue(type.getRulesOfHypothesis().contains(rule2));
@@ -283,11 +283,11 @@ public class TypeTest {
 
     @Test
     public void getRulesOfConclusion(){
-        Type type = mindmapsGraph.putEntityType("A Concept Type");
-        RuleType ruleType = mindmapsGraph.putRuleType("A Rule Type");
+        Type type = graknGraph.putEntityType("A Concept Type");
+        RuleType ruleType = graknGraph.putRuleType("A Rule Type");
         assertEquals(0, type.getRulesOfConclusion().size());
-        Rule rule1 = mindmapsGraph.addRule("lhs", "rhs", ruleType).addConclusion(type);
-        Rule rule2 = mindmapsGraph.addRule("lhs", "rhs", ruleType).addConclusion(type);
+        Rule rule1 = graknGraph.addRule("lhs", "rhs", ruleType).addConclusion(type);
+        Rule rule2 = graknGraph.addRule("lhs", "rhs", ruleType).addConclusion(type);
         assertEquals(2, type.getRulesOfConclusion().size());
         assertTrue(type.getRulesOfConclusion().contains(rule1));
         assertTrue(type.getRulesOfConclusion().contains(rule2));
@@ -295,9 +295,9 @@ public class TypeTest {
 
     @Test
     public void testDeletePlaysRole(){
-        EntityType type = mindmapsGraph.putEntityType("A Concept Type");
-        RoleType role1 = mindmapsGraph.putRoleType("A Role 1");
-        RoleType role2 = mindmapsGraph.putRoleType("A Role 2");
+        EntityType type = graknGraph.putEntityType("A Concept Type");
+        RoleType role1 = graknGraph.putRoleType("A Role 1");
+        RoleType role2 = graknGraph.putRoleType("A Role 2");
         assertEquals(0, type.playsRoles().size());
         type.playsRole(role1).playsRole(role2);
         assertEquals(2, type.playsRoles().size());
@@ -311,13 +311,13 @@ public class TypeTest {
 
     @Test
     public void testDeleteConceptType(){
-        EntityType toDelete = mindmapsGraph.putEntityType("1");
-        assertNotNull(mindmapsGraph.getConcept("1"));
+        EntityType toDelete = graknGraph.putEntityType("1");
+        assertNotNull(graknGraph.getConcept("1"));
         toDelete.delete();
-        assertNull(mindmapsGraph.getConcept("1"));
+        assertNull(graknGraph.getConcept("1"));
 
-        toDelete = mindmapsGraph.putEntityType("2");
-        Instance instance = mindmapsGraph.addEntity(toDelete);
+        toDelete = graknGraph.putEntityType("2");
+        Instance instance = graknGraph.addEntity(toDelete);
 
         boolean conceptExceptionThrown = false;
         try{
@@ -330,15 +330,15 @@ public class TypeTest {
 
     @Test
     public void testGetInstances(){
-        EntityType entityType = mindmapsGraph.putEntityType("Entity");
-        RoleType actor = mindmapsGraph.putRoleType("Actor");
-        mindmapsGraph.addEntity(entityType);
-        EntityType production = mindmapsGraph.putEntityType("Production");
-        EntityType movie = mindmapsGraph.putEntityType("Movie").superType(production);
-        Instance musicVideo = mindmapsGraph.addEntity(production);
-        Instance godfather = mindmapsGraph.addEntity(movie);
+        EntityType entityType = graknGraph.putEntityType("Entity");
+        RoleType actor = graknGraph.putRoleType("Actor");
+        graknGraph.addEntity(entityType);
+        EntityType production = graknGraph.putEntityType("Production");
+        EntityType movie = graknGraph.putEntityType("Movie").superType(production);
+        Instance musicVideo = graknGraph.addEntity(production);
+        Instance godfather = graknGraph.addEntity(movie);
 
-        Collection<? extends Concept> types = mindmapsGraph.getMetaType().instances();
+        Collection<? extends Concept> types = graknGraph.getMetaType().instances();
         Collection<? extends Concept> data = production.instances();
 
         assertEquals(11, types.size());
@@ -354,15 +354,15 @@ public class TypeTest {
 
     @Test(expected=ConceptException.class)
     public void testCircularSub(){
-        EntityType entityType = mindmapsGraph.putEntityType("Entity");
+        EntityType entityType = graknGraph.putEntityType("Entity");
         entityType.superType(entityType);
     }
 
     @Test(expected=ConceptException.class)
     public void testCircularSubLong(){
-        EntityType entityType1 = mindmapsGraph.putEntityType("Entity1");
-        EntityType entityType2 = mindmapsGraph.putEntityType("Entity2");
-        EntityType entityType3 = mindmapsGraph.putEntityType("Entity3");
+        EntityType entityType1 = graknGraph.putEntityType("Entity1");
+        EntityType entityType2 = graknGraph.putEntityType("Entity2");
+        EntityType entityType3 = graknGraph.putEntityType("Entity3");
         entityType1.superType(entityType2);
         entityType2.superType(entityType3);
         entityType3.superType(entityType1);
@@ -371,7 +371,7 @@ public class TypeTest {
 
     @Test
     public void testMetaTypeIsAbstractImmutable(){
-        Type meta = mindmapsGraph.getMetaRuleType();
+        Type meta = graknGraph.getMetaRuleType();
 
         expectedException.expect(ConceptException.class);
         expectedException.expectMessage(allOf(
@@ -383,8 +383,8 @@ public class TypeTest {
 
     @Test
     public void testMetaTypePlaysRoleImmutable(){
-        Type meta = mindmapsGraph.getMetaRuleType();
-        RoleType roleType = mindmapsGraph.putRoleType("A Role");
+        Type meta = graknGraph.getMetaRuleType();
+        RoleType roleType = graknGraph.putRoleType("A Role");
 
         expectedException.expect(ConceptException.class);
         expectedException.expectMessage(allOf(

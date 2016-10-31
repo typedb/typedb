@@ -56,7 +56,7 @@ import static org.junit.Assert.assertTrue;
 
 public class RelationTest {
 
-    private AbstractGraknGraph mindmapsGraph;
+    private AbstractGraknGraph graknGraph;
 
     private RelationImpl relation;
     private RoleTypeImpl role1;
@@ -76,33 +76,33 @@ public class RelationTest {
 
     @Before
     public void buildGraph(){
-        mindmapsGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        mindmapsGraph.initialiseMetaConcepts();
+        graknGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        graknGraph.initialiseMetaConcepts();
 
-        type = mindmapsGraph.putEntityType("Main concept Type");
-        relationType = mindmapsGraph.putRelationType("Main relation type");
+        type = graknGraph.putEntityType("Main concept Type");
+        relationType = graknGraph.putRelationType("Main relation type");
 
-        relation = (RelationImpl) mindmapsGraph.addRelation(relationType);
-        role1 = (RoleTypeImpl) mindmapsGraph.putRoleType("Role 1");
-        rolePlayer1 = (InstanceImpl) mindmapsGraph.addEntity(type);
-        role2 = (RoleTypeImpl) mindmapsGraph.putRoleType("Role 2");
-        rolePlayer2 = (InstanceImpl) mindmapsGraph.addEntity(type);
-        role3 = (RoleTypeImpl) mindmapsGraph.putRoleType("Role 3");
+        relation = (RelationImpl) graknGraph.addRelation(relationType);
+        role1 = (RoleTypeImpl) graknGraph.putRoleType("Role 1");
+        rolePlayer1 = (InstanceImpl) graknGraph.addEntity(type);
+        role2 = (RoleTypeImpl) graknGraph.putRoleType("Role 2");
+        rolePlayer2 = (InstanceImpl) graknGraph.addEntity(type);
+        role3 = (RoleTypeImpl) graknGraph.putRoleType("Role 3");
         rolePlayer3 = null;
 
-        casting1 = mindmapsGraph.putCasting(role1, rolePlayer1, relation);
-        casting2 = mindmapsGraph.putCasting(role2, rolePlayer2, relation);
+        casting1 = graknGraph.putCasting(role1, rolePlayer1, relation);
+        casting2 = graknGraph.putCasting(role2, rolePlayer2, relation);
     }
     @After
     public void destroyGraph()  throws Exception{
-        mindmapsGraph.close();
+        graknGraph.close();
     }
 
     @Test
     public void testPutRolePlayer(){
-        Relation relation = mindmapsGraph.addRelation(relationType);
-        RoleType roleType = mindmapsGraph.putRoleType("A role");
-        Instance instance = mindmapsGraph.addEntity(type);
+        Relation relation = graknGraph.addRelation(relationType);
+        RoleType roleType = graknGraph.putRoleType("A role");
+        Instance instance = graknGraph.addEntity(type);
 
         relation.putRolePlayer(roleType, instance);
         assertEquals(1, relation.rolePlayers().size());
@@ -112,17 +112,17 @@ public class RelationTest {
 
     @Test
     public void scopeTest(){
-        RelationType relationType = mindmapsGraph.putRelationType("rel type");
-        RelationImpl relation = (RelationImpl) mindmapsGraph.addRelation(relationType);
-        RelationImpl relationValue = (RelationImpl) mindmapsGraph.addRelation(relationType);
-        InstanceImpl scope = (InstanceImpl) mindmapsGraph.addEntity(type);
+        RelationType relationType = graknGraph.putRelationType("rel type");
+        RelationImpl relation = (RelationImpl) graknGraph.addRelation(relationType);
+        RelationImpl relationValue = (RelationImpl) graknGraph.addRelation(relationType);
+        InstanceImpl scope = (InstanceImpl) graknGraph.addEntity(type);
         relation.scope(scope);
         relationValue.scope(scope);
 
-        Vertex vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(relation.getBaseIdentifier()).out(Schema.EdgeLabel.HAS_SCOPE.getLabel()).next();
+        Vertex vertex = graknGraph.getTinkerPopGraph().traversal().V(relation.getBaseIdentifier()).out(Schema.EdgeLabel.HAS_SCOPE.getLabel()).next();
         assertEquals(scope.getBaseIdentifier(), vertex.id());
 
-        vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(relationValue.getBaseIdentifier()).out(Schema.EdgeLabel.HAS_SCOPE.getLabel()).next();
+        vertex = graknGraph.getTinkerPopGraph().traversal().V(relationValue.getBaseIdentifier()).out(Schema.EdgeLabel.HAS_SCOPE.getLabel()).next();
         assertEquals(scope.getBaseIdentifier(), vertex.id());
     }
 
@@ -149,8 +149,8 @@ public class RelationTest {
     @Test
     public void testGetScope(){
         assertEquals(0, relation.scopes().size());
-        Instance scope1 = mindmapsGraph.addEntity(type);
-        Instance scope2 = mindmapsGraph.addEntity(type);
+        Instance scope1 = graknGraph.addEntity(type);
+        Instance scope2 = graknGraph.addEntity(type);
         relation.scope(scope1);
         relation.scope(scope2);
         Collection<Instance> scopes = relation.scopes();
@@ -161,11 +161,11 @@ public class RelationTest {
 
     @Test
     public void testDeleteScope() throws ConceptException {
-        RelationType relationType = mindmapsGraph.putRelationType("Relation type");
-        RelationImpl relation2 = (RelationImpl) mindmapsGraph.addRelation(relationType);
-        InstanceImpl scope1 = (InstanceImpl) mindmapsGraph.addEntity(type);
-        Instance scope2 = mindmapsGraph.addEntity(type);
-        InstanceImpl scope3 = (InstanceImpl) mindmapsGraph.addEntity(type);
+        RelationType relationType = graknGraph.putRelationType("Relation type");
+        RelationImpl relation2 = (RelationImpl) graknGraph.addRelation(relationType);
+        InstanceImpl scope1 = (InstanceImpl) graknGraph.addEntity(type);
+        Instance scope2 = graknGraph.addEntity(type);
+        InstanceImpl scope3 = (InstanceImpl) graknGraph.addEntity(type);
         relation2.scope(scope3);
         relation.scope(scope3);
         relation.scope(scope1);
@@ -173,7 +173,7 @@ public class RelationTest {
         relation2.scope(scope2);
 
         relation2.deleteScope(scope2);
-        Vertex assertion2_vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(relation2.getBaseIdentifier()).next();
+        Vertex assertion2_vertex = graknGraph.getTinkerPopGraph().traversal().V(relation2.getBaseIdentifier()).next();
 
         int count = 0;
         Iterator<Edge> edges =  assertion2_vertex.edges(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE.getLabel());
@@ -184,49 +184,49 @@ public class RelationTest {
         assertEquals(2, count);
 
         relation2.deleteScope(scope3);
-        assertTrue(mindmapsGraph.getTinkerPopGraph().traversal().V(scope3.getBaseIdentifier()).hasNext());
+        assertTrue(graknGraph.getTinkerPopGraph().traversal().V(scope3.getBaseIdentifier()).hasNext());
 
         relation.deleteScope(scope1);
-        assertTrue(mindmapsGraph.getTinkerPopGraph().traversal().V(scope1.getBaseIdentifier()).hasNext());
+        assertTrue(graknGraph.getTinkerPopGraph().traversal().V(scope1.getBaseIdentifier()).hasNext());
         relation2.deleteScope(scope1);
         relation.deleteScope(scope3);
-        assertFalse(mindmapsGraph.getTinkerPopGraph().traversal().V(relation.getBaseIdentifier()).next().edges(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE.getLabel()).hasNext());
+        assertFalse(graknGraph.getTinkerPopGraph().traversal().V(relation.getBaseIdentifier()).next().edges(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE.getLabel()).hasNext());
     }
 
     @Test
     public void testDeleteAllScopes() throws ConceptException {
-        Instance scope2 = mindmapsGraph.addEntity(type);
-        Instance scope1 = mindmapsGraph.addEntity(type);
+        Instance scope2 = graknGraph.addEntity(type);
+        Instance scope1 = graknGraph.addEntity(type);
         relation.scope(scope1);
         relation.scope(scope2);
 
         relation.scopes().forEach(relation::deleteScope);
-        assertFalse(mindmapsGraph.getTinkerPopGraph().traversal().V(relation.getBaseIdentifier()).next().edges(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE.getLabel()).hasNext());
+        assertFalse(graknGraph.getTinkerPopGraph().traversal().V(relation.getBaseIdentifier()).next().edges(Direction.OUT, Schema.EdgeLabel.HAS_SCOPE.getLabel()).hasNext());
     }
 
     @Test
     public void testDelete() throws ConceptException{
         relation.delete();
-        assertNull(mindmapsGraph.getConceptByBaseIdentifier(relation.getBaseIdentifier()));
+        assertNull(graknGraph.getConceptByBaseIdentifier(relation.getBaseIdentifier()));
     }
 
     @Test
     public void testDeleteShortcuts() {
-        EntityType type = mindmapsGraph.putEntityType("A thing");
-        ResourceType resourceType = mindmapsGraph.putResourceType("A resource thing", ResourceType.DataType.STRING);
-        EntityImpl instance1 = (EntityImpl) mindmapsGraph.addEntity(type);
-        EntityImpl instance2 = (EntityImpl) mindmapsGraph.addEntity(type);
-        EntityImpl instance3 = (EntityImpl) mindmapsGraph.addEntity(type);
-        ResourceImpl resource = (ResourceImpl) mindmapsGraph.putResource("Resource 1", resourceType);
-        RoleType roleType1 = mindmapsGraph.putRoleType("Role 1");
-        RoleType roleType2 = mindmapsGraph.putRoleType("Role 2");
-        RoleType roleType3 = mindmapsGraph.putRoleType("Role 3");
-        RelationType relationType = mindmapsGraph.putRelationType("Relation Type");
+        EntityType type = graknGraph.putEntityType("A thing");
+        ResourceType resourceType = graknGraph.putResourceType("A resource thing", ResourceType.DataType.STRING);
+        EntityImpl instance1 = (EntityImpl) graknGraph.addEntity(type);
+        EntityImpl instance2 = (EntityImpl) graknGraph.addEntity(type);
+        EntityImpl instance3 = (EntityImpl) graknGraph.addEntity(type);
+        ResourceImpl resource = (ResourceImpl) graknGraph.putResource("Resource 1", resourceType);
+        RoleType roleType1 = graknGraph.putRoleType("Role 1");
+        RoleType roleType2 = graknGraph.putRoleType("Role 2");
+        RoleType roleType3 = graknGraph.putRoleType("Role 3");
+        RelationType relationType = graknGraph.putRelationType("Relation Type");
 
-        Relation rel = mindmapsGraph.addRelation(relationType).
+        Relation rel = graknGraph.addRelation(relationType).
                 putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2).putRolePlayer(roleType3, resource);
 
-        Relation rel2 = mindmapsGraph.addRelation(relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance3);
+        Relation rel2 = graknGraph.addRelation(relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance3);
 
         assertEquals(1, instance1.resources().size());
         assertEquals(2, resource.ownerInstances().size());
@@ -246,14 +246,14 @@ public class RelationTest {
     @Test
     public void testRelationHash(){
         TreeMap<RoleType, Instance> roleMap = new TreeMap<>();
-        EntityType type = mindmapsGraph.putEntityType("concept type");
-        RoleType roleType1 = mindmapsGraph.putRoleType("role type 1");
-        RoleType roleType2 = mindmapsGraph.putRoleType("role type 2");
-        RelationType relationType = mindmapsGraph.putRelationType("relation type").hasRole(roleType1).hasRole(roleType2);
-        Instance instance1 = mindmapsGraph.addEntity(type);
-        Instance instance2 = mindmapsGraph.addEntity(type);
+        EntityType type = graknGraph.putEntityType("concept type");
+        RoleType roleType1 = graknGraph.putRoleType("role type 1");
+        RoleType roleType2 = graknGraph.putRoleType("role type 2");
+        RelationType relationType = graknGraph.putRelationType("relation type").hasRole(roleType1).hasRole(roleType2);
+        Instance instance1 = graknGraph.addEntity(type);
+        Instance instance2 = graknGraph.addEntity(type);
 
-        RelationImpl relation = (RelationImpl) mindmapsGraph.addRelation(relationType);
+        RelationImpl relation = (RelationImpl) graknGraph.addRelation(relationType);
         assertTrue(relation.getIndex().startsWith("RelationBaseId_" + relation.getBaseIdentifier()));
 
         relation.putRolePlayer(roleType1, instance1);
@@ -281,34 +281,34 @@ public class RelationTest {
 
     @Test
     public void testCreatingRelationsWithSameRolePlayersButDifferentIds(){
-        RoleType roleType1 = mindmapsGraph.putRoleType("role type 1");
-        RoleType roleType2 = mindmapsGraph.putRoleType("role type 2");
-        EntityType type = mindmapsGraph.putEntityType("concept type").playsRole(roleType1).playsRole(roleType2);
-        Instance instance1 = mindmapsGraph.addEntity(type);
-        Instance instance2 = mindmapsGraph.addEntity(type);
-        RelationType relationType = mindmapsGraph.putRelationType("relation type").hasRole(roleType1).hasRole(roleType2);
+        RoleType roleType1 = graknGraph.putRoleType("role type 1");
+        RoleType roleType2 = graknGraph.putRoleType("role type 2");
+        EntityType type = graknGraph.putEntityType("concept type").playsRole(roleType1).playsRole(roleType2);
+        Instance instance1 = graknGraph.addEntity(type);
+        Instance instance2 = graknGraph.addEntity(type);
+        RelationType relationType = graknGraph.putRelationType("relation type").hasRole(roleType1).hasRole(roleType2);
 
-        Relation relation1 = mindmapsGraph.addRelation(relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
+        Relation relation1 = graknGraph.addRelation(relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
 
         expectedException.expect(ConceptException.class);
         expectedException.expectMessage(allOf(
                 containsString(ErrorMessage.RELATION_EXISTS.getMessage(relation1))
         ));
 
-        mindmapsGraph.addRelation(relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
+        graknGraph.addRelation(relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
     }
 
     @Test
     public void testCreatingRelationsWithSameRolePlayersButDifferentIds2(){
-        RoleType roleType1 = mindmapsGraph.putRoleType("role type 1");
-        RoleType roleType2 = mindmapsGraph.putRoleType("role type 2");
-        EntityType type = mindmapsGraph.putEntityType("concept type").playsRole(roleType1).playsRole(roleType2);
-        Instance instance1 = mindmapsGraph.addEntity(type);
-        Instance instance2 = mindmapsGraph.addEntity(type);
-        RelationType relationType = mindmapsGraph.putRelationType("relation type").hasRole(roleType1).hasRole(roleType2);
+        RoleType roleType1 = graknGraph.putRoleType("role type 1");
+        RoleType roleType2 = graknGraph.putRoleType("role type 2");
+        EntityType type = graknGraph.putEntityType("concept type").playsRole(roleType1).playsRole(roleType2);
+        Instance instance1 = graknGraph.addEntity(type);
+        Instance instance2 = graknGraph.addEntity(type);
+        RelationType relationType = graknGraph.putRelationType("relation type").hasRole(roleType1).hasRole(roleType2);
 
-        Relation relation1 = mindmapsGraph.addRelation(relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
-        Relation relation2 = mindmapsGraph.addRelation(relationType).putRolePlayer(roleType1, instance1);
+        Relation relation1 = graknGraph.addRelation(relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
+        Relation relation2 = graknGraph.addRelation(relationType).putRolePlayer(roleType1, instance1);
 
         expectedException.expect(ConceptException.class);
         expectedException.expectMessage(allOf(
@@ -320,13 +320,13 @@ public class RelationTest {
 
     @Test
     public void testGetRoleMapWithMissingInstance() {
-        RoleType roleType1 = mindmapsGraph.putRoleType("role type 1");
-        RoleType roleType2 = mindmapsGraph.putRoleType("role type 2");
-        EntityType type = mindmapsGraph.putEntityType("concept type").playsRole(roleType1).playsRole(roleType2);
-        RelationType relationType1 = mindmapsGraph.putRelationType("Another relation type").hasRole(roleType1).hasRole(roleType2);
-        Instance instance1 = mindmapsGraph.addEntity(type);
+        RoleType roleType1 = graknGraph.putRoleType("role type 1");
+        RoleType roleType2 = graknGraph.putRoleType("role type 2");
+        EntityType type = graknGraph.putEntityType("concept type").playsRole(roleType1).playsRole(roleType2);
+        RelationType relationType1 = graknGraph.putRelationType("Another relation type").hasRole(roleType1).hasRole(roleType2);
+        Instance instance1 = graknGraph.addEntity(type);
 
-        Relation relation1 = mindmapsGraph.addRelation(relationType1).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, null);
+        Relation relation1 = graknGraph.addRelation(relationType1).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, null);
 
         Map<RoleType, Instance> roleTypeInstanceMap = new HashMap<>();
         roleTypeInstanceMap.put(roleType1, instance1);
@@ -337,19 +337,19 @@ public class RelationTest {
 
     @Test
     public void makeSureCastingsNotRemoved(){
-        RoleType entityRole = mindmapsGraph.putRoleType("Entity Role");
-        RoleType degreeRole = mindmapsGraph.putRoleType("Degree Role");
-        EntityType entityType = mindmapsGraph.putEntityType("Entity Type").playsRole(entityRole);
-        ResourceType<Long> degreeType = mindmapsGraph.putResourceType("Resource Type", ResourceType.DataType.LONG).playsRole(degreeRole);
+        RoleType entityRole = graknGraph.putRoleType("Entity Role");
+        RoleType degreeRole = graknGraph.putRoleType("Degree Role");
+        EntityType entityType = graknGraph.putEntityType("Entity Type").playsRole(entityRole);
+        ResourceType<Long> degreeType = graknGraph.putResourceType("Resource Type", ResourceType.DataType.LONG).playsRole(degreeRole);
 
-        RelationType hasDegree = mindmapsGraph.putRelationType("Has Degree").hasRole(entityRole).hasRole(degreeRole);
+        RelationType hasDegree = graknGraph.putRelationType("Has Degree").hasRole(entityRole).hasRole(degreeRole);
 
-        Entity entity = mindmapsGraph.addEntity(entityType);
-        Resource<Long> degree1 = mindmapsGraph.putResource(100L, degreeType);
-        Resource<Long> degree2 = mindmapsGraph.putResource(101L, degreeType);
+        Entity entity = graknGraph.addEntity(entityType);
+        Resource<Long> degree1 = graknGraph.putResource(100L, degreeType);
+        Resource<Long> degree2 = graknGraph.putResource(101L, degreeType);
 
-        Relation relation1 = mindmapsGraph.addRelation(hasDegree).putRolePlayer(entityRole, entity).putRolePlayer(degreeRole, degree1);
-        mindmapsGraph.addRelation(hasDegree).putRolePlayer(entityRole, entity).putRolePlayer(degreeRole, degree2);
+        Relation relation1 = graknGraph.addRelation(hasDegree).putRolePlayer(entityRole, entity).putRolePlayer(degreeRole, degree1);
+        graknGraph.addRelation(hasDegree).putRolePlayer(entityRole, entity).putRolePlayer(degreeRole, degree2);
 
         assertEquals(2, entity.relations().size());
 

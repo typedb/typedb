@@ -43,7 +43,7 @@ import static org.junit.Assert.assertTrue;
 
 public class CastingTest {
 
-    private AbstractGraknGraph mindmapsGraph;
+    private AbstractGraknGraph graknGraph;
     private CastingImpl casting;
     private RoleTypeImpl role;
     private RelationImpl relation;
@@ -54,37 +54,37 @@ public class CastingTest {
 
     @Before
     public void setUp() {
-        mindmapsGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        mindmapsGraph.initialiseMetaConcepts();
-        role = (RoleTypeImpl) mindmapsGraph.putRoleType("Role");
-        EntityTypeImpl conceptType = (EntityTypeImpl) mindmapsGraph.putEntityType("A thing");
-        rolePlayer = (InstanceImpl) mindmapsGraph.addEntity(conceptType);
-        RelationTypeImpl relationType = (RelationTypeImpl) mindmapsGraph.putRelationType("A type");
-        relation = (RelationImpl) mindmapsGraph.addRelation(relationType);
-        casting = mindmapsGraph.putCasting(role, rolePlayer, relation);
+        graknGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        graknGraph.initialiseMetaConcepts();
+        role = (RoleTypeImpl) graknGraph.putRoleType("Role");
+        EntityTypeImpl conceptType = (EntityTypeImpl) graknGraph.putEntityType("A thing");
+        rolePlayer = (InstanceImpl) graknGraph.addEntity(conceptType);
+        RelationTypeImpl relationType = (RelationTypeImpl) graknGraph.putRelationType("A type");
+        relation = (RelationImpl) graknGraph.addRelation(relationType);
+        casting = graknGraph.putCasting(role, rolePlayer, relation);
     }
     @After
     public void destroyGraphAccessManager() throws Exception {
-        mindmapsGraph.close();
+        graknGraph.close();
     }
 
     @Test
     public void testEquals() throws Exception {
-        Graph graph = mindmapsGraph.getTinkerPopGraph();
+        Graph graph = graknGraph.getTinkerPopGraph();
         Vertex v = graph.traversal().V(relation.getBaseIdentifier()).out(Schema.EdgeLabel.CASTING.getLabel()).next();
-        CastingImpl castingCopy = (CastingImpl) mindmapsGraph.getConcept(v.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name()));
+        CastingImpl castingCopy = (CastingImpl) graknGraph.getConcept(v.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name()));
         assertEquals(casting, castingCopy);
 
-        EntityType type = mindmapsGraph.putEntityType("Another entity type");
-        RoleTypeImpl role = (RoleTypeImpl) mindmapsGraph.putRoleType("Role 2");
-        InstanceImpl rolePlayer = (InstanceImpl) mindmapsGraph.addEntity(type);
-        CastingImpl casting2 = mindmapsGraph.putCasting(role, rolePlayer, relation);
+        EntityType type = graknGraph.putEntityType("Another entity type");
+        RoleTypeImpl role = (RoleTypeImpl) graknGraph.putRoleType("Role 2");
+        InstanceImpl rolePlayer = (InstanceImpl) graknGraph.addEntity(type);
+        CastingImpl casting2 = graknGraph.putCasting(role, rolePlayer, relation);
         assertNotEquals(casting, casting2);
     }
 
     @Test
     public void hashCodeTest() throws Exception {
-        Vertex castingVertex = mindmapsGraph.getTinkerPopGraph().traversal().V(casting.getBaseIdentifier()).next();
+        Vertex castingVertex = graknGraph.getTinkerPopGraph().traversal().V(casting.getBaseIdentifier()).next();
         assertEquals(casting.hashCode(), castingVertex.hashCode());
     }
 
@@ -93,10 +93,10 @@ public class CastingTest {
         assertEquals(role, casting.getRole());
 
         String id = UUID.randomUUID().toString();
-        Vertex vertex = mindmapsGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
+        Vertex vertex = graknGraph.getTinkerPopGraph().addVertex(Schema.BaseType.CASTING.name());
         vertex.property(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), id);
 
-        CastingImpl casting2 = (CastingImpl) mindmapsGraph.getConcept(id);
+        CastingImpl casting2 = (CastingImpl) graknGraph.getConcept(id);
         boolean exceptionThrown = false;
         try{
             casting2.getRole();
@@ -106,11 +106,11 @@ public class CastingTest {
         assertTrue(exceptionThrown);
 
 
-        TypeImpl c1 = (TypeImpl) mindmapsGraph.putEntityType("c1'");
-        TypeImpl c2 = (TypeImpl) mindmapsGraph.putEntityType("c2");
-        Vertex casting2_Vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(casting2.getBaseIdentifier()).next();
-        Vertex c1_Vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(c1.getBaseIdentifier()).next();
-        Vertex c2_Vertex = mindmapsGraph.getTinkerPopGraph().traversal().V(c2.getBaseIdentifier()).next();
+        TypeImpl c1 = (TypeImpl) graknGraph.putEntityType("c1'");
+        TypeImpl c2 = (TypeImpl) graknGraph.putEntityType("c2");
+        Vertex casting2_Vertex = graknGraph.getTinkerPopGraph().traversal().V(casting2.getBaseIdentifier()).next();
+        Vertex c1_Vertex = graknGraph.getTinkerPopGraph().traversal().V(c1.getBaseIdentifier()).next();
+        Vertex c2_Vertex = graknGraph.getTinkerPopGraph().traversal().V(c2.getBaseIdentifier()).next();
 
         casting2_Vertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), c1_Vertex);
         casting2_Vertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), c2_Vertex);
@@ -131,22 +131,22 @@ public class CastingTest {
 
     @Test (expected = RuntimeException.class)
     public void testGetRolePlayerFail() throws Exception {
-        Concept anotherConcept = mindmapsGraph.putEntityType("ac'");
+        Concept anotherConcept = graknGraph.putEntityType("ac'");
         casting.addEdge((ConceptImpl) anotherConcept, Schema.EdgeLabel.ROLE_PLAYER);
         casting.getRolePlayer();
     }
 
     @Test
     public void testGetAssertion(){
-        RoleTypeImpl role2 = (RoleTypeImpl) mindmapsGraph.putRoleType("Role 2");
-        RelationTypeImpl genericRelation = (RelationTypeImpl) mindmapsGraph.putRelationType("gr");
-        RelationTypeImpl resourceType = (RelationTypeImpl) mindmapsGraph.putRelationType("rt");
-        RelationImpl relationValue = (RelationImpl) mindmapsGraph.addRelation(resourceType);
+        RoleTypeImpl role2 = (RoleTypeImpl) graknGraph.putRoleType("Role 2");
+        RelationTypeImpl genericRelation = (RelationTypeImpl) graknGraph.putRelationType("gr");
+        RelationTypeImpl resourceType = (RelationTypeImpl) graknGraph.putRelationType("rt");
+        RelationImpl relationValue = (RelationImpl) graknGraph.addRelation(resourceType);
 
         relation.addEdge(genericRelation, Schema.EdgeLabel.ISA);
         relationValue.addEdge(resourceType, Schema.EdgeLabel.ISA);
 
-        CastingImpl casting2 = mindmapsGraph.putCasting(role2, rolePlayer, relationValue);
+        CastingImpl casting2 = graknGraph.putCasting(role2, rolePlayer, relationValue);
 
         assertTrue(casting.getRelations().contains(relation));
         assertTrue(casting2.getRelations().contains(relationValue));

@@ -25,7 +25,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
  * The interface used to build new graphs from different vendors.
  * Adding new vendor support means implementing this interface.
  */
-interface MindmapsInternalFactory<M extends GraknGraph, T extends Graph> {
+interface GraknInternalFactory<M extends GraknGraph, T extends Graph> {
     /**
      *
      * @param batchLoading A flag which indicates if the graph has batch loading enabled or not.

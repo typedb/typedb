@@ -25,14 +25,13 @@ import io.grakn.concept.Instance;
 import io.grakn.concept.Relation;
 import io.grakn.concept.RelationType;
 import io.grakn.concept.RoleType;
-import io.grakn.exception.InvalidConceptTypeException;
 import io.grakn.exception.GraknValidationException;
+import io.grakn.exception.InvalidConceptTypeException;
 import io.grakn.util.ErrorMessage;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.slf4j.Logger;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -48,19 +47,18 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class ValidatorTest {
-    private final Logger LOG = org.slf4j.LoggerFactory.getLogger(ValidatorTest.class);
-    private AbstractGraknGraph mindmapsGraph;
+    private AbstractGraknGraph graknGraph;
 
     @org.junit.Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void buildGraphAccessManager(){
-        mindmapsGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        graknGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
     }
     @After
     public void destroyGraphAccessManager()  throws Exception{
-        mindmapsGraph.close();
+        graknGraph.close();
     }
 
     @Test
@@ -81,27 +79,27 @@ public class ValidatorTest {
     @Test
     public void testValidateBigTest(){
         //Actual Concepts To Appear Linked In Graph
-        RelationType cast = mindmapsGraph.putRelationType("Cast");
-        RoleType feature = mindmapsGraph.putRoleType("Feature");
-        RoleType actor = mindmapsGraph.putRoleType("Actor");
-        EntityType movie = mindmapsGraph.putEntityType("Movie");
-        EntityType person = mindmapsGraph.putEntityType("Person");
-        Instance pacino = mindmapsGraph.addEntity(person);
-        Instance godfather = mindmapsGraph.addEntity(movie);
-        EntityType genre = mindmapsGraph.putEntityType("Genre");
-        RoleType movieOfGenre = mindmapsGraph.putRoleType("Movie of Genre");
-        RoleType movieGenre = mindmapsGraph.putRoleType("Movie Genre");
-        Instance crime = mindmapsGraph.addEntity(genre);
-        RelationType movieHasGenre = mindmapsGraph.putRelationType("Movie Has Genre");
+        RelationType cast = graknGraph.putRelationType("Cast");
+        RoleType feature = graknGraph.putRoleType("Feature");
+        RoleType actor = graknGraph.putRoleType("Actor");
+        EntityType movie = graknGraph.putEntityType("Movie");
+        EntityType person = graknGraph.putEntityType("Person");
+        Instance pacino = graknGraph.addEntity(person);
+        Instance godfather = graknGraph.addEntity(movie);
+        EntityType genre = graknGraph.putEntityType("Genre");
+        RoleType movieOfGenre = graknGraph.putRoleType("Movie of Genre");
+        RoleType movieGenre = graknGraph.putRoleType("Movie Genre");
+        Instance crime = graknGraph.addEntity(genre);
+        RelationType movieHasGenre = graknGraph.putRelationType("Movie Has Genre");
 
         //Construction
         cast.hasRole(feature);
         cast.hasRole(actor);
 
-        mindmapsGraph.addRelation(cast).
+        graknGraph.addRelation(cast).
                 putRolePlayer(feature, godfather).putRolePlayer(actor, pacino);
 
-        mindmapsGraph.addRelation(movieHasGenre).
+        graknGraph.addRelation(movieHasGenre).
                 putRolePlayer(movieOfGenre, godfather).putRolePlayer(movieGenre, crime);
 
         movieHasGenre.hasRole(movieOfGenre);
@@ -114,7 +112,7 @@ public class ValidatorTest {
 
         boolean exceptionThrown = false;
         try {
-            mindmapsGraph.validateGraph();
+            graknGraph.validateGraph();
         } catch (GraknValidationException e) {
             e.printStackTrace();
             exceptionThrown = true;
@@ -124,25 +122,25 @@ public class ValidatorTest {
 
     @Test
     public void castingValidationOfRoleTypeAndPlaysRoleEdge(){
-        EntityType fakeType = mindmapsGraph.putEntityType("Fake Concept");
-        RelationType relationType = mindmapsGraph.putRelationType("kicks");
-        RoleType kicker = mindmapsGraph.putRoleType("kicker");
-        RoleType kickee = mindmapsGraph.putRoleType("kickee");
-        Instance kyle = mindmapsGraph.addEntity(fakeType);
-        Instance icke = mindmapsGraph.addEntity(fakeType);
+        EntityType fakeType = graknGraph.putEntityType("Fake Concept");
+        RelationType relationType = graknGraph.putRelationType("kicks");
+        RoleType kicker = graknGraph.putRoleType("kicker");
+        RoleType kickee = graknGraph.putRoleType("kickee");
+        Instance kyle = graknGraph.addEntity(fakeType);
+        Instance icke = graknGraph.addEntity(fakeType);
 
-        RelationImpl assertion = (RelationImpl) mindmapsGraph.addRelation(relationType).
+        RelationImpl assertion = (RelationImpl) graknGraph.addRelation(relationType).
                 putRolePlayer(kicker, kyle).putRolePlayer(kickee, icke);
 
         boolean failure = false;
         try {
-            mindmapsGraph.validateGraph();
+            graknGraph.validateGraph();
         } catch (GraknValidationException e) {
             failure = true;
         }
         assertTrue(failure);
 
-        Validator validator = new Validator(mindmapsGraph);
+        Validator validator = new Validator(graknGraph);
         assertFalse(validator.validate());
         assertEquals(6, validator.getErrorsFound().size());
 
@@ -156,8 +154,8 @@ public class ValidatorTest {
 
     @Test
     public void hasRoleEdgeTestFail(){
-        RoleType alone = mindmapsGraph.putRoleType("alone");
-        Validator validator = new Validator(mindmapsGraph);
+        RoleType alone = graknGraph.putRoleType("alone");
+        Validator validator = new Validator(graknGraph);
         assertFalse(validator.validate());
         assertEquals(1, validator.getErrorsFound().size());
         assertTrue(expectedErrorFound(validator, ErrorMessage.VALIDATION_ROLE_TYPE.getMessage(alone.getId())));
@@ -165,8 +163,8 @@ public class ValidatorTest {
 
     @Test
     public void relationTypeHasRolesTest(){
-        RelationType alone = mindmapsGraph.putRelationType("alone");
-        Validator validator = new Validator(mindmapsGraph);
+        RelationType alone = graknGraph.putRelationType("alone");
+        Validator validator = new Validator(graknGraph);
         assertFalse(validator.validate());
         assertEquals(1, validator.getErrorsFound().size());
         assertTrue(expectedErrorFound(validator, ErrorMessage.VALIDATION_RELATION_TYPE.getMessage(alone.getId())));
@@ -174,17 +172,17 @@ public class ValidatorTest {
 
     @Test
     public void validateAssertionFail(){
-        EntityType fakeType = mindmapsGraph.putEntityType("Fake Concept");
-        RelationType relationType = mindmapsGraph.putRelationType("kicks");
-        RoleType kicker = mindmapsGraph.putRoleType("kicker");
-        RoleType kickee = mindmapsGraph.putRoleType("kickee");
-        InstanceImpl kyle = (InstanceImpl) mindmapsGraph.addEntity(fakeType);
-        InstanceImpl icke = (InstanceImpl) mindmapsGraph.addEntity(fakeType);
+        EntityType fakeType = graknGraph.putEntityType("Fake Concept");
+        RelationType relationType = graknGraph.putRelationType("kicks");
+        RoleType kicker = graknGraph.putRoleType("kicker");
+        RoleType kickee = graknGraph.putRoleType("kickee");
+        InstanceImpl kyle = (InstanceImpl) graknGraph.addEntity(fakeType);
+        InstanceImpl icke = (InstanceImpl) graknGraph.addEntity(fakeType);
 
-        mindmapsGraph.addRelation(relationType).
+        graknGraph.addRelation(relationType).
                 putRolePlayer(kicker, kyle).putRolePlayer(kickee, icke);
 
-        Validator validator = new Validator(mindmapsGraph);
+        Validator validator = new Validator(graknGraph);
         assertFalse(validator.validate());
 
         assertEquals(6, validator.getErrorsFound().size());
@@ -193,35 +191,35 @@ public class ValidatorTest {
 
     @Test
     public void validateCastingFail(){
-        EntityType fakeType = mindmapsGraph.putEntityType("Fake Concept");
-        RelationType relationType = mindmapsGraph.putRelationType("kicks");
-        RoleType kicker = mindmapsGraph.putRoleType("kicker");
-        RoleType kickee = mindmapsGraph.putRoleType("kickee");
-        Instance kyle = mindmapsGraph.addEntity(fakeType);
-        Instance icke = mindmapsGraph.addEntity(fakeType);
+        EntityType fakeType = graknGraph.putEntityType("Fake Concept");
+        RelationType relationType = graknGraph.putRelationType("kicks");
+        RoleType kicker = graknGraph.putRoleType("kicker");
+        RoleType kickee = graknGraph.putRoleType("kickee");
+        Instance kyle = graknGraph.addEntity(fakeType);
+        Instance icke = graknGraph.addEntity(fakeType);
 
-        RelationImpl assertion = (RelationImpl) mindmapsGraph.addRelation(relationType).
+        RelationImpl assertion = (RelationImpl) graknGraph.addRelation(relationType).
                 putRolePlayer(kicker, kyle).putRolePlayer(kickee, icke);
         CastingImpl casting = (CastingImpl) assertion.getMappingCasting().toArray()[0];
-        Validator validator = new Validator(mindmapsGraph);
+        Validator validator = new Validator(graknGraph);
         assertFalse(validator.validate());
         assertEquals(6, validator.getErrorsFound().size());
     }
 
     @Test
     public void validateIsAbstract(){
-        EntityType x1 = mindmapsGraph.putEntityType("x1");
-        EntityType x2 = mindmapsGraph.putEntityType("x2");
-        EntityType x3 = mindmapsGraph.putEntityType("x3");
-        EntityType x4 = mindmapsGraph.putEntityType("x4");
-        Instance x5 = mindmapsGraph.addEntity(x1);
+        EntityType x1 = graknGraph.putEntityType("x1");
+        EntityType x2 = graknGraph.putEntityType("x2");
+        EntityType x3 = graknGraph.putEntityType("x3");
+        EntityType x4 = graknGraph.putEntityType("x4");
+        Instance x5 = graknGraph.addEntity(x1);
 
         x1.setAbstract(true);
         x4.setAbstract(true);
 
         x4.superType(x3);
 
-        Validator validator = new Validator(mindmapsGraph);
+        Validator validator = new Validator(graknGraph);
 
         validator.validate();
 
@@ -233,33 +231,33 @@ public class ValidatorTest {
 
     @Test
     public void testValidateAfterManualAssertionDelete() throws GraknValidationException {
-        mindmapsGraph.initialiseMetaConcepts();
+        graknGraph.initialiseMetaConcepts();
 
         // ontology
-        EntityType person = mindmapsGraph.putEntityType("person");
-        EntityType movie = mindmapsGraph.putEntityType("movie");
-        RelationType cast = mindmapsGraph.putRelationType("cast");
-        RoleType feature = mindmapsGraph.putRoleType("feature");
-        RoleType actor = mindmapsGraph.putRoleType("actor");
+        EntityType person = graknGraph.putEntityType("person");
+        EntityType movie = graknGraph.putEntityType("movie");
+        RelationType cast = graknGraph.putRelationType("cast");
+        RoleType feature = graknGraph.putRoleType("feature");
+        RoleType actor = graknGraph.putRoleType("actor");
         cast.hasRole(feature).hasRole(actor);
         person.playsRole(actor);
         movie.playsRole(feature);
 
         // add a single movie
-        Instance godfather = mindmapsGraph.addEntity(movie);
+        Instance godfather = graknGraph.addEntity(movie);
 
         // add many random actors
         int n = 100;
         for (int i=0; i < n; i++) {
-            Instance newPerson = mindmapsGraph.addEntity(person);
-            mindmapsGraph.addRelation(cast).
+            Instance newPerson = graknGraph.addEntity(person);
+            graknGraph.addRelation(cast).
                     putRolePlayer(actor, newPerson).putRolePlayer(feature, godfather);
         }
 
-        mindmapsGraph.commit();
+        graknGraph.commit();
 
         // now try to delete all assertions and then the movie
-        godfather = mindmapsGraph.getEntityType("movie").instances().iterator().next();
+        godfather = graknGraph.getEntityType("movie").instances().iterator().next();
         Collection<Relation> assertions = godfather.relations();
         Set<String> assertionIds = new HashSet<>();
         Set<String> castingIds = new HashSet<>();
@@ -270,60 +268,60 @@ public class ValidatorTest {
         }
         godfather.delete();
 
-        mindmapsGraph.commit();
+        graknGraph.commit();
 
-        assertionIds.forEach(id -> assertNull(mindmapsGraph.getConcept(id)));
+        assertionIds.forEach(id -> assertNull(graknGraph.getConcept(id)));
 
         // assert the movie is gone
-        assertNull(mindmapsGraph.getEntity("godfather"));
+        assertNull(graknGraph.getEntity("godfather"));
 
     }
 
     @Test
     public void testChangeTypeOfEntity() throws GraknValidationException {
-        RoleType role1 = mindmapsGraph.putRoleType("role1");
-        RoleType role2 = mindmapsGraph.putRoleType("role2");
-        RelationType rel = mindmapsGraph.putRelationType("rel").hasRole(role1).hasRole(role2);
-        EntityType ent = mindmapsGraph.putEntityType("ent").playsRole(role1).playsRole(role2);
-        EntityType ent_t = mindmapsGraph.putEntityType("ent_t");
-        Entity ent1 = mindmapsGraph.addEntity(ent);
-        Entity ent2 = mindmapsGraph.addEntity(ent);
-        mindmapsGraph.addRelation(rel).putRolePlayer(role1, ent1).putRolePlayer(role2, ent2);
-        mindmapsGraph.commit();
+        RoleType role1 = graknGraph.putRoleType("role1");
+        RoleType role2 = graknGraph.putRoleType("role2");
+        RelationType rel = graknGraph.putRelationType("rel").hasRole(role1).hasRole(role2);
+        EntityType ent = graknGraph.putEntityType("ent").playsRole(role1).playsRole(role2);
+        EntityType ent_t = graknGraph.putEntityType("ent_t");
+        Entity ent1 = graknGraph.addEntity(ent);
+        Entity ent2 = graknGraph.addEntity(ent);
+        graknGraph.addRelation(rel).putRolePlayer(role1, ent1).putRolePlayer(role2, ent2);
+        graknGraph.commit();
 
         expectedException.expect(InvalidConceptTypeException.class);
         expectedException.expectMessage(allOf(
                 containsString(ErrorMessage.IMMUTABLE_TYPE.getMessage(ent1, ent_t, ent))
         ));
 
-        mindmapsGraph.putEntity(ent1.getId(), ent_t);
+        graknGraph.putEntity(ent1.getId(), ent_t);
     }
 
     @Test
     public void testRoleTypeCanPlayRoleIfAbstract() throws GraknValidationException {
-        RoleType role1 = mindmapsGraph.putRoleType("role1").setAbstract(true);
-        RoleType role2 = mindmapsGraph.putRoleType("role2").setAbstract(true);
-        EntityType entityType = mindmapsGraph.putEntityType("my type").playsRole(role1).playsRole(role2);
-        mindmapsGraph.commit();
+        RoleType role1 = graknGraph.putRoleType("role1").setAbstract(true);
+        RoleType role2 = graknGraph.putRoleType("role2").setAbstract(true);
+        EntityType entityType = graknGraph.putEntityType("my type").playsRole(role1).playsRole(role2);
+        graknGraph.commit();
     }
 
     @Test
     public void testNormalRelationshipWithTwoPlaysRole() throws GraknValidationException {
-        RoleType characterBeingPlayed = mindmapsGraph.putRoleType("Character being played");
-        RoleType personPlayingCharacter = mindmapsGraph.putRoleType("Person Playing Char");
-        RelationType playsChar = mindmapsGraph.putRelationType("Plays Char").hasRole(characterBeingPlayed).hasRole(personPlayingCharacter);
+        RoleType characterBeingPlayed = graknGraph.putRoleType("Character being played");
+        RoleType personPlayingCharacter = graknGraph.putRoleType("Person Playing Char");
+        RelationType playsChar = graknGraph.putRelationType("Plays Char").hasRole(characterBeingPlayed).hasRole(personPlayingCharacter);
 
-        EntityType person = mindmapsGraph.putEntityType("person").playsRole(characterBeingPlayed).playsRole(personPlayingCharacter);
-        EntityType character = mindmapsGraph.putEntityType("character").playsRole(characterBeingPlayed);
+        EntityType person = graknGraph.putEntityType("person").playsRole(characterBeingPlayed).playsRole(personPlayingCharacter);
+        EntityType character = graknGraph.putEntityType("character").playsRole(characterBeingPlayed);
 
-        Entity matt = mindmapsGraph.addEntity(person);
-        Entity walker = mindmapsGraph.addEntity(character);
+        Entity matt = graknGraph.addEntity(person);
+        Entity walker = graknGraph.addEntity(character);
 
-        mindmapsGraph.addRelation(playsChar).
+        graknGraph.addRelation(playsChar).
                 putRolePlayer(personPlayingCharacter, matt).
                 putRolePlayer(characterBeingPlayed, walker);
 
-        mindmapsGraph.commit();
+        graknGraph.commit();
     }
 
 }

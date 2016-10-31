@@ -35,12 +35,12 @@ import java.util.regex.Pattern;
  */
 class ResourceTypeImpl<D> extends TypeImpl<ResourceType<D>, Resource<D>> implements ResourceType<D> {
 
-    ResourceTypeImpl(Vertex v, Type type, AbstractGraknGraph mindmapsGraph) {
-        super(v, type, mindmapsGraph);
+    ResourceTypeImpl(Vertex v, Type type, AbstractGraknGraph graknGraph) {
+        super(v, type, graknGraph);
     }
 
-    ResourceTypeImpl(Vertex v, Type type, AbstractGraknGraph mindmapsGraph, DataType<D> dataType, boolean isUnique) {
-        super(v, type, mindmapsGraph);
+    ResourceTypeImpl(Vertex v, Type type, AbstractGraknGraph graknGraph, DataType<D> dataType, boolean isUnique) {
+        super(v, type, graknGraph);
         setImmutableProperty(Schema.ConceptProperty.DATA_TYPE, dataType.getName());
         setImmutableProperty(Schema.ConceptProperty.IS_UNIQUE, isUnique);
     }

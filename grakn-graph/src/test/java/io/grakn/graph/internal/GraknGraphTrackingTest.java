@@ -46,35 +46,35 @@ import static org.junit.Assert.assertTrue;
 
 public class GraknGraphTrackingTest {
 
-    private AbstractGraknGraph mindmapsGraph;
+    private AbstractGraknGraph graknGraph;
     private Set<ConceptImpl> modifiedConcepts;
     private Stack<Concept> newConcepts;
 
     @Before
     public void buildGraphAccessManager() {
-        mindmapsGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        graknGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         // start standard rootGraph access manager
-        mindmapsGraph.initialiseMetaConcepts();
+        graknGraph.initialiseMetaConcepts();
         modifiedConcepts = new HashSet<>();
         newConcepts = new Stack<>();
     }
 
     @After
     public void destroyGraphAccessManager()  throws Exception{
-        mindmapsGraph.close();
+        graknGraph.close();
     }
 
     @Test
     public void testAddConcept () {
         // add concepts to rootGraph in as many ways as possible
-        newConcepts.push(mindmapsGraph.putEntityType("test item id"));
-        newConcepts.push(mindmapsGraph.putRelationType("test subject id"));
-        newConcepts.push(mindmapsGraph.putRoleType("1"));
-        newConcepts.push(mindmapsGraph.putRuleType("4"));
-        newConcepts.push(mindmapsGraph.putEntityType("3"));
+        newConcepts.push(graknGraph.putEntityType("test item id"));
+        newConcepts.push(graknGraph.putRelationType("test subject id"));
+        newConcepts.push(graknGraph.putRoleType("1"));
+        newConcepts.push(graknGraph.putRuleType("4"));
+        newConcepts.push(graknGraph.putEntityType("3"));
 
         // verify the concepts that we expected are returned in the set
-        modifiedConcepts = mindmapsGraph.getModifiedConcepts();
+        modifiedConcepts = graknGraph.getModifiedConcepts();
         assertTrue(modifiedConcepts.containsAll(newConcepts));
 
     }
@@ -85,55 +85,55 @@ public class GraknGraphTrackingTest {
         Instance c3;
 
         // fetch the existing concepts
-        c1 = mindmapsGraph.putEntityType("1");
+        c1 = graknGraph.putEntityType("1");
         newConcepts.push(c1);
-        c2 = mindmapsGraph.putEntityType("2");
+        c2 = graknGraph.putEntityType("2");
         newConcepts.push(c2);
 
         // check the concept tracker is empty
-        modifiedConcepts = mindmapsGraph.getModifiedConcepts();
+        modifiedConcepts = graknGraph.getModifiedConcepts();
         assertEquals(4, modifiedConcepts.size());
 
         // add primitive edges in as many ways as possible
         c1.superType(c2);
 
-        c3 = mindmapsGraph.addEntity(c2);
+        c3 = graknGraph.addEntity(c2);
         newConcepts.push(c3);
 
         // verify the concepts that we expected are returned in the set
-        modifiedConcepts = mindmapsGraph.getModifiedConcepts();
+        modifiedConcepts = graknGraph.getModifiedConcepts();
         assertTrue(modifiedConcepts.containsAll(newConcepts));
 
     }
 
     @Test
     public void testDeleteConceptAfterAddingWithinTransaction () throws ConceptException {
-        EntityType entityType = mindmapsGraph.putEntityType("entityType");
+        EntityType entityType = graknGraph.putEntityType("entityType");
         // add concepts to rootGraph
         newConcepts.push(
-                mindmapsGraph.addEntity(entityType));
-        Type type = mindmapsGraph.putEntityType("test subject id");
+                graknGraph.addEntity(entityType));
+        Type type = graknGraph.putEntityType("test subject id");
 
         // delete some concepts
         type.delete();
 
         // verify the concepts that we expected are returned in the set
-        modifiedConcepts = mindmapsGraph.getModifiedConcepts();
+        modifiedConcepts = graknGraph.getModifiedConcepts();
         assertTrue(modifiedConcepts.containsAll(newConcepts));
     }
 
     @Test
     public void testDeleteConceptFromPrimitiveEdgeWithinTransaction() throws ConceptException {
         // add concepts and edge to rootGraph
-        EntityType type = mindmapsGraph.putEntityType("a type");
-        Instance instance = mindmapsGraph.addEntity(type);
+        EntityType type = graknGraph.putEntityType("a type");
+        Instance instance = graknGraph.addEntity(type);
 
         // delete a concept
         newConcepts.push(type);
         instance.delete();
 
         // verify the concepts that we expected are returned in the set
-        modifiedConcepts = mindmapsGraph.getModifiedConcepts();
+        modifiedConcepts = graknGraph.getModifiedConcepts();
         assertTrue(modifiedConcepts.containsAll(newConcepts));
 
     }

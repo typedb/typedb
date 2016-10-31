@@ -33,8 +33,8 @@ import java.util.Set;
  * A Relation Type is an ontological element used to concept how entity types relate to one another.
  */
 class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
-    RelationTypeImpl(Vertex v, Type type, AbstractGraknGraph mindmapsGraph) {
-        super(v, type, mindmapsGraph);
+    RelationTypeImpl(Vertex v, Type type, AbstractGraknGraph graknGraph) {
+        super(v, type, graknGraph);
     }
 
     /**
@@ -68,7 +68,7 @@ class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements Relat
     public RelationType deleteHasRole(RoleType roleType) {
         deleteEdgeTo(Schema.EdgeLabel.HAS_ROLE, roleType);
         //Add castings of roleType to make sure relations are still valid
-        ((RoleTypeImpl) roleType).castings().forEach(casting -> getMindmapsGraph().getConceptLog().putConcept(casting));
+        ((RoleTypeImpl) roleType).castings().forEach(casting -> getGraknGraph().getConceptLog().putConcept(casting));
         return this;
     }
 }

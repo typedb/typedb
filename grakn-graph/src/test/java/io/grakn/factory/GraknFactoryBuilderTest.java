@@ -43,23 +43,23 @@ public class GraknFactoryBuilderTest {
 
     @Test(expected=InvocationTargetException.class)
     public void testConstructorIsPrivate() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
-        Constructor<MindmapsFactoryBuilder> c = MindmapsFactoryBuilder.class.getDeclaredConstructor();
+        Constructor<GraknFactoryBuilder> c = GraknFactoryBuilder.class.getDeclaredConstructor();
         c.setAccessible(true);
         c.newInstance();
     }
 
     @Test
-    public void testBuildMindmapsFactory(){
-        MindmapsInternalFactory mgf = MindmapsFactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_CONFIG);
-        assertThat(mgf, instanceOf(MindmapsTinkerInternalFactory.class));
+    public void testBuildGraknFactory(){
+        GraknInternalFactory mgf = GraknFactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_CONFIG);
+        assertThat(mgf, instanceOf(GraknTinkerInternalFactory.class));
     }
 
     @Test
     public void testSingleton(){
-        MindmapsInternalFactory mgf1 = MindmapsFactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_CONFIG);
-        MindmapsInternalFactory mgf2 = MindmapsFactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_CONFIG);
-        MindmapsInternalFactory mgf3 = MindmapsFactoryBuilder.getFactory("key", ENGINE_URL, TEST_CONFIG);
-        MindmapsInternalFactory mgf4 = MindmapsFactoryBuilder.getFactory("key", ENGINE_URL, TEST_CONFIG);
+        GraknInternalFactory mgf1 = GraknFactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_CONFIG);
+        GraknInternalFactory mgf2 = GraknFactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_CONFIG);
+        GraknInternalFactory mgf3 = GraknFactoryBuilder.getFactory("key", ENGINE_URL, TEST_CONFIG);
+        GraknInternalFactory mgf4 = GraknFactoryBuilder.getFactory("key", ENGINE_URL, TEST_CONFIG);
 
         assertEquals(mgf1, mgf2);
         assertEquals(mgf3, mgf4);
@@ -74,7 +74,7 @@ public class GraknFactoryBuilderTest {
         expectedException.expectMessage(allOf(
                 containsString(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage("rubbish"))
         ));
-        MindmapsFactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, "rubbish");
+        GraknFactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, "rubbish");
     }
 
 }

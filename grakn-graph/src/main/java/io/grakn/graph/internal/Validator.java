@@ -28,11 +28,11 @@ import java.util.*;
  * Handles calling the relevant validation depending on the type of the concept.
  */
 class Validator {
-    private final AbstractGraknGraph mindmapsGraph;
+    private final AbstractGraknGraph graknGraph;
     private final List<String> errorsFound = new ArrayList<>();
 
-    public Validator(AbstractGraknGraph mindmapsGraph){
-        this.mindmapsGraph = mindmapsGraph;
+    public Validator(AbstractGraknGraph graknGraph){
+        this.graknGraph = graknGraph;
     }
 
     /**
@@ -48,7 +48,7 @@ class Validator {
      * @return True if the data and schema conforms to our concept.
      */
     public boolean validate(){
-        Set<ConceptImpl> validationList = new HashSet<>(mindmapsGraph.getModifiedConcepts());
+        Set<ConceptImpl> validationList = new HashSet<>(graknGraph.getModifiedConcepts());
 
         for(ConceptImpl nextToValidate: validationList){
             if(nextToValidate.isAlive()) {

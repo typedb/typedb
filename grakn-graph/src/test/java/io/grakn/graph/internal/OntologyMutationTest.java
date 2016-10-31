@@ -39,7 +39,7 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.core.StringContains.containsString;
 
 public class OntologyMutationTest {
-    private AbstractGraknGraph mindmapsGraph;
+    private AbstractGraknGraph graknGraph;
     private RoleType husband;
     private RoleType wife;
     private RelationType marriage;
@@ -56,31 +56,31 @@ public class OntologyMutationTest {
 
     @Before
     public void buildGraph() throws GraknValidationException {
-        mindmapsGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        graknGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
 
-        //spouse = mindmapsGraph.putRoleType("Spouse");
-        husband = mindmapsGraph.putRoleType("Husband");//.superType(spouse);
-        wife = mindmapsGraph.putRoleType("Wife");
-        RoleType driver = mindmapsGraph.putRoleType("Driver");
-        RoleType driven = mindmapsGraph.putRoleType("Driven");
+        //spouse = graknGraph.putRoleType("Spouse");
+        husband = graknGraph.putRoleType("Husband");//.superType(spouse);
+        wife = graknGraph.putRoleType("Wife");
+        RoleType driver = graknGraph.putRoleType("Driver");
+        RoleType driven = graknGraph.putRoleType("Driven");
 
-        //union = mindmapsGraph.putRelationType("Union").hasRole(spouse).hasRole(wife);
-        marriage = mindmapsGraph.putRelationType("marriage").hasRole(husband).hasRole(wife);
-        RelationType carBeingDrivenBy = mindmapsGraph.putRelationType("car being driven by").hasRole(driven).hasRole(driver);
+        //union = graknGraph.putRelationType("Union").hasRole(spouse).hasRole(wife);
+        marriage = graknGraph.putRelationType("marriage").hasRole(husband).hasRole(wife);
+        RelationType carBeingDrivenBy = graknGraph.putRelationType("car being driven by").hasRole(driven).hasRole(driver);
 
-        person = mindmapsGraph.putEntityType("Person").playsRole(husband).playsRole(wife);
-        man = mindmapsGraph.putEntityType("Man").superType(person);
-        woman = mindmapsGraph.putEntityType("Woman").superType(person);
-        car = mindmapsGraph.putEntityType("Car");
+        person = graknGraph.putEntityType("Person").playsRole(husband).playsRole(wife);
+        man = graknGraph.putEntityType("Man").superType(person);
+        woman = graknGraph.putEntityType("Woman").superType(person);
+        car = graknGraph.putEntityType("Car");
 
-        alice = mindmapsGraph.addEntity(woman);
-        bob = mindmapsGraph.addEntity(man);
-        relation = mindmapsGraph.addRelation(marriage).putRolePlayer(wife, alice).putRolePlayer(husband, bob);
-        mindmapsGraph.commit();
+        alice = graknGraph.addEntity(woman);
+        bob = graknGraph.addEntity(man);
+        relation = graknGraph.addRelation(marriage).putRolePlayer(wife, alice).putRolePlayer(husband, bob);
+        graknGraph.commit();
     }
     @After
     public void destroyGraph()  throws Exception{
-        mindmapsGraph.close();
+        graknGraph.close();
     }
 
     @Test
@@ -92,7 +92,7 @@ public class OntologyMutationTest {
                 containsString(ErrorMessage.VALIDATION_CASTING.getMessage(woman.getId(), alice.getId(), wife.getId()))
         ));
 
-        mindmapsGraph.commit();
+        graknGraph.commit();
     }
 
     @Test
@@ -115,7 +115,7 @@ public class OntologyMutationTest {
                         rolePlayers.split(",").length, roles))
         ));
 
-        mindmapsGraph.commit();
+        graknGraph.commit();
     }
 
     @Test
@@ -127,7 +127,7 @@ public class OntologyMutationTest {
                 containsString(ErrorMessage.VALIDATION_CASTING.getMessage(man.getId(), bob.getId(), husband.getId()))
         ));
 
-        mindmapsGraph.commit();
+        graknGraph.commit();
     }
 
     @Test
@@ -139,7 +139,7 @@ public class OntologyMutationTest {
                 containsString(ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(man.getId()))
         ));
 
-        mindmapsGraph.commit();
+        graknGraph.commit();
     }
 
 }

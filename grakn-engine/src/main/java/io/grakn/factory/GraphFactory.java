@@ -40,10 +40,10 @@ public class GraphFactory {
     }
 
     public synchronized GraknGraph getGraph(String keyspace) {
-        return MindmapsFactoryBuilder.getFactory(keyspace, null, graphConfig).getGraph(false);
+        return GraknFactoryBuilder.getFactory(keyspace, null, graphConfig).getGraph(false);
     }
     public synchronized GraknGraph getGraphBatchLoading(String keyspace) {
-        return MindmapsFactoryBuilder.getFactory(keyspace, null, graphBatchConfig).getGraph(true);
+        return GraknFactoryBuilder.getFactory(keyspace, null, graphBatchConfig).getGraph(true);
     }
 }
 

@@ -35,8 +35,8 @@ import java.util.Set;
  * An ontological element which defines a role which can be played in a relation type.
  */
 class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
-    RoleTypeImpl(Vertex v, Type type, AbstractGraknGraph mindmapsGraph) {
-        super(v, type, mindmapsGraph);
+    RoleTypeImpl(Vertex v, Type type, AbstractGraknGraph graknGraph) {
+        super(v, type, graknGraph);
     }
 
     /**
@@ -82,7 +82,7 @@ class RoleTypeImpl extends TypeImpl<RoleType, Instance> implements RoleType{
      */
     public Set<CastingImpl> castings(){
         Set<CastingImpl> castings = new HashSet<>();
-        getIncomingNeighbours(Schema.EdgeLabel.ISA).forEach(concept -> ((CastingImpl) concept).getRelations().forEach(relation -> getMindmapsGraph().getConceptLog().putConcept(relation)));
+        getIncomingNeighbours(Schema.EdgeLabel.ISA).forEach(concept -> ((CastingImpl) concept).getRelations().forEach(relation -> getGraknGraph().getConceptLog().putConcept(relation)));
         return castings;
     }
 }

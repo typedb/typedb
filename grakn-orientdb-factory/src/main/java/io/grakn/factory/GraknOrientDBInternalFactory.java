@@ -16,14 +16,14 @@ import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-public class MindmapsOrientDBInternalFactory extends AbstractMindmapsInternalFactory<GraknOrientDBGraph, OrientGraph> {
-    private final Logger LOG = LoggerFactory.getLogger(MindmapsOrientDBInternalFactory.class);
+public class GraknOrientDBInternalFactory extends AbstractGraknInternalFactory<GraknOrientDBGraph, OrientGraph> {
+    private final Logger LOG = LoggerFactory.getLogger(GraknOrientDBInternalFactory.class);
     private final Map<String, OrientGraphFactory> openFactories;
     private static final String KEY_TYPE = "keytype";
     private static final String UNIQUE = "type";
     private static final String SPECIAL_IN_MEMORY = "memory";
 
-    public MindmapsOrientDBInternalFactory(String keyspace, String engineUrl, String config) {
+    public GraknOrientDBInternalFactory(String keyspace, String engineUrl, String config) {
         super(keyspace, engineUrl, config);
         openFactories = new HashMap<>();
     }
@@ -34,7 +34,7 @@ public class MindmapsOrientDBInternalFactory extends AbstractMindmapsInternalFac
     }
 
     @Override
-    GraknOrientDBGraph buildMindmapsGraphFromTinker(OrientGraph graph, boolean batchLoading) {
+    GraknOrientDBGraph buildGraknGraphFromTinker(OrientGraph graph, boolean batchLoading) {
         return new GraknOrientDBGraph(graph, super.keyspace, super.engineUrl, batchLoading);
     }
 

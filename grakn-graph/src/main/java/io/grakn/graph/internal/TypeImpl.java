@@ -43,8 +43,8 @@ import java.util.Set;
  * @param <V> The type of the instances of this concept type.
  */
 class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> implements Type {
-    TypeImpl(Vertex v, Type type, AbstractGraknGraph mindmapsGraph) {
-        super(v, type, mindmapsGraph);
+    TypeImpl(Vertex v, Type type, AbstractGraknGraph graknGraph) {
+        super(v, type, graknGraph);
     }
 
     /**
@@ -57,7 +57,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
         Iterator<Edge> edges = getVertex().edges(Direction.OUT, Schema.EdgeLabel.PLAYS_ROLE.getLabel());
 
         edges.forEachRemaining(edge -> {
-            RoleTypeImpl roleType = getMindmapsGraph().getElementFactory().buildRoleType(edge.inVertex(), null);
+            RoleTypeImpl roleType = getGraknGraph().getElementFactory().buildRoleType(edge.inVertex(), null);
             roleType.subTypes().forEach(role -> rolesPlayed.add(role.asRoleType()));
         });
 
@@ -161,14 +161,14 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
         Set<V> instances = new HashSet<>();
 
         //noinspection unchecked
-        GraphTraversal<Vertex, Vertex> traversal = getMindmapsGraph().getTinkerPopGraph().traversal().V()
+        GraphTraversal<Vertex, Vertex> traversal = getGraknGraph().getTinkerPopGraph().traversal().V()
                 .has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), getId())
                 .union(__.identity(), __.repeat(__.in(Schema.EdgeLabel.SUB.getLabel())).emit()).unfold()
                 .in(Schema.EdgeLabel.ISA.getLabel())
                 .union(__.identity(), __.repeat(__.in(Schema.EdgeLabel.SUB.getLabel())).emit()).unfold();
 
         traversal.forEachRemaining(vertex -> {
-            ConceptImpl concept = getMindmapsGraph().getElementFactory().buildUnknownConcept(vertex);
+            ConceptImpl concept = getGraknGraph().getElementFactory().buildUnknownConcept(vertex);
             if(!Schema.BaseType.CASTING.name().equals(concept.getBaseType())){
                 instances.add((V) concept);
             }
@@ -224,7 +224,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
             currentSuperType.instances().forEach(concept -> {
                 if(concept.isInstance()){
                     ((InstanceImpl<?, ?>) concept).castings().forEach(
-                            instance -> getMindmapsGraph().getConceptLog().putConcept(instance));
+                            instance -> getGraknGraph().getConceptLog().putConcept(instance));
                 }
             });
         }
@@ -259,7 +259,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
         //Add castings to tracking to make sure they can still be played.
         instances().forEach(concept -> {
             if (concept.isInstance()) {
-                ((InstanceImpl<?, ?>) concept).castings().forEach(casting -> getMindmapsGraph().getConceptLog().putConcept(casting));
+                ((InstanceImpl<?, ?>) concept).castings().forEach(casting -> getGraknGraph().getConceptLog().putConcept(casting));
             }
         });
 
@@ -283,7 +283,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
         checkMetaType();
         setProperty(Schema.ConceptProperty.IS_ABSTRACT, isAbstract);
         if(isAbstract)
-            getMindmapsGraph().getConceptLog().putConcept(this);
+            getGraknGraph().getConceptLog().putConcept(this);
         return getThis();
     }
 

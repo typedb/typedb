@@ -40,8 +40,8 @@ import java.util.stream.Collectors;
  * @param <V> The type of the concept.
  */
 abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptImpl<T, V> implements Instance {
-    InstanceImpl(Vertex v, V type, AbstractGraknGraph mindmapsGraph) {
-        super(v, type, mindmapsGraph);
+    InstanceImpl(Vertex v, V type, AbstractGraknGraph graknGraph) {
+        super(v, type, graknGraph);
         generateInstanceId(type);
     }
 
@@ -55,10 +55,10 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
         deleteNode();
         for(CastingImpl casting: castings){
             Set<RelationImpl> relations = casting.getRelations();
-            getMindmapsGraph().getConceptLog().putConcept(casting);
+            getGraknGraph().getConceptLog().putConcept(casting);
 
             for(RelationImpl relation : relations) {
-                getMindmapsGraph().getConceptLog().putConcept(relation);
+                getGraknGraph().getConceptLog().putConcept(relation);
                 relation.cleanUp();
             }
 

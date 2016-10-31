@@ -29,11 +29,11 @@ import static org.junit.Assert.assertThat;
 public class GraknTitanHadoopGraphFactoryTest {
     private final String TEST_CONFIG = "../conf/main/grakn-analytics.properties";
 
-    private MindmapsTitanHadoopInternalFactory factory;
+    private GraknTitanHadoopInternalFactory factory;
 
     @Before
     public void setUp() throws Exception {
-        factory = new MindmapsTitanHadoopInternalFactory("rubbish", "rubbish", TEST_CONFIG);
+        factory = new GraknTitanHadoopInternalFactory("rubbish", "rubbish", TEST_CONFIG);
     }
 
     @Test(expected=UnsupportedOperationException.class)

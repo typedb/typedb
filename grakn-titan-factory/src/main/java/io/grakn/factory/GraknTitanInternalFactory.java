@@ -43,11 +43,11 @@ import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-class MindmapsTitanInternalFactory extends AbstractMindmapsInternalFactory<GraknTitanGraph, TitanGraph> {
-    protected final Logger LOG = LoggerFactory.getLogger(MindmapsTitanInternalFactory.class);
+class GraknTitanInternalFactory extends AbstractGraknInternalFactory<GraknTitanGraph, TitanGraph> {
+    protected final Logger LOG = LoggerFactory.getLogger(GraknTitanInternalFactory.class);
     private final static String DEFAULT_CONFIG = "backend-default";
 
-    MindmapsTitanInternalFactory(String keyspace, String engineUrl, String config) {
+    GraknTitanInternalFactory(String keyspace, String engineUrl, String config) {
         super(keyspace, engineUrl, config);
     }
 
@@ -57,7 +57,7 @@ class MindmapsTitanInternalFactory extends AbstractMindmapsInternalFactory<Grakn
     }
 
     @Override
-    GraknTitanGraph buildMindmapsGraphFromTinker(TitanGraph graph, boolean batchLoading) {
+    GraknTitanGraph buildGraknGraphFromTinker(TitanGraph graph, boolean batchLoading) {
         return new GraknTitanGraph(graph, super.keyspace, super.engineUrl, batchLoading);
     }
 

@@ -36,12 +36,12 @@ import java.util.regex.Pattern;
  * @param <D> The data type of this resource. Supported Types include: String, Long, Double, and Boolean
  */
 class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> implements Resource<D> {
-    ResourceImpl(Vertex v, ResourceType type, AbstractGraknGraph mindmapsGraph, D value) {
-        super(v, type, mindmapsGraph);
+    ResourceImpl(Vertex v, ResourceType type, AbstractGraknGraph graknGraph, D value) {
+        super(v, type, graknGraph);
         setValue(value);
     }
-    ResourceImpl(Vertex v, ResourceType type, AbstractGraknGraph mindmapsGraph) {
-        super(v, type, mindmapsGraph);
+    ResourceImpl(Vertex v, ResourceType type, AbstractGraknGraph graknGraph) {
+        super(v, type, graknGraph);
     }
 
     /**
