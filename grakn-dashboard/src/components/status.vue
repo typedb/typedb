@@ -56,7 +56,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 
             <div class="panel panel-filled panel-c-danger" v-else>
                 <div class="panel-heading">
-                    Could not connect to MindmapsDB
+                    Could not connect to Grakn
                 </div>
                 <div class="panel-body">
                     Have you tried turning it off and on again?

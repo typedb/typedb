@@ -31,7 +31,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                     <!--</div>-->
                 <!--</div>-->
                 <!--<a class="navbar-brand" href="/">-->
-                    <!--MindmapsDB-->
+                    <!--Grakn-->
                     <!--<span>{{version}}</span>-->
                 <!--</a>-->
             <!--</div>-->
@@ -49,7 +49,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
     <!-- Navigation-->
     <aside class="navigation">
         <div class="brand" href="/">
-            MindmapsDB
+            Grakn
             <span>{{version}}</span>
         </div>
         <nav>
@@ -67,7 +67,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                 </li>
 
                 <li v-link-active>
-                    <a target="_blank" href="https://mindmaps.io/pages/index.html">Documentation</a>
+                    <a target="_blank" href="https://grakn.ai/pages/index.html">Documentation</a>
                 </li>
 
                 <li class="nav-info">
