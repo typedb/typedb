@@ -27,7 +27,7 @@ import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import java.util.Iterator;
 import java.util.Set;
 
-class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
+class DegreeAndPersistVertexProgram extends GraknVertexProgram<Long> {
 
     private static final String KEYSPACE_KEY = "keyspace";
 

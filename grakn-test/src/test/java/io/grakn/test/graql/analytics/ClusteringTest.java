@@ -7,7 +7,7 @@ import io.grakn.Grakn;
 import io.grakn.concept.*;
 import io.grakn.exception.GraknValidationException;
 import io.grakn.graql.internal.analytics.Analytics;
-import io.grakn.graql.internal.analytics.MindmapsVertexProgram;
+import io.grakn.graql.internal.analytics.GraknVertexProgram;
 import io.grakn.graql.internal.util.GraqlType;
 import io.grakn.test.AbstractGraphTest;
 import org.junit.Before;
@@ -47,7 +47,7 @@ public class ClusteringTest extends AbstractGraphTest {
 
         keyspace = graph.getKeyspace();
 
-        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(MindmapsVertexProgram.class);
+        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(GraknVertexProgram.class);
         logger.setLevel(Level.DEBUG);
     }
 

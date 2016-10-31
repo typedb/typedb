@@ -31,7 +31,7 @@ import java.util.Set;
  * This class is not used in analytics, as CountMapReduce is consistently faster.
  */
 
-public class CountVertexProgram extends MindmapsVertexProgram {
+public class CountVertexProgram extends GraknVertexProgram {
 
     public static final String COUNT = "countVertexProgram.count";
 

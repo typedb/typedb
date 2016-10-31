@@ -12,7 +12,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-public class SumMapReduce extends MindmapsMapReduce<Number> {
+public class SumMapReduce extends GraknMapReduce<Number> {
 
     public static final String MEMORY_KEY = "sum";
     private static final String RESOURCE_DATA_TYPE_KEY = "RESOURCE_DATA_TYPE_KEY";

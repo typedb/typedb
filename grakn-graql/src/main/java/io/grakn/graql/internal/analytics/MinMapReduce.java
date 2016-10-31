@@ -12,7 +12,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-class MinMapReduce extends MindmapsMapReduce<Number> {
+class MinMapReduce extends GraknMapReduce<Number> {
 
     public static final String MEMORY_KEY = "min";
     private static final String RESOURCE_DATA_TYPE_KEY = "RESOURCE_DATA_TYPE_KEY";

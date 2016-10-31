@@ -31,12 +31,12 @@ import java.util.Map;
 /**
  * A map reduce task specific to Grakn with common method implementations.
  */
-public abstract class MindmapsMapReduce<T> extends CommonOLAP
+public abstract class GraknMapReduce<T> extends CommonOLAP
         implements MapReduce<Serializable, T, Serializable, T, Map<Serializable, T>> {
 
-    static final Logger LOGGER = LoggerFactory.getLogger(MindmapsMapReduce.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(GraknMapReduce.class);
 
-    static final String MAP_REDUCE_MEMORY_KEY = "MindmapsMapReduce.memoryKey";
+    static final String MAP_REDUCE_MEMORY_KEY = "GraknMapReduce.memoryKey";
 
     /**
      * An alternative to the execute method when ghost vertices are an issue. Our "Ghostbuster".
@@ -70,7 +70,7 @@ public abstract class MindmapsMapReduce<T> extends CommonOLAP
     @Override
     public MapReduce<Serializable, T, Serializable, T, Map<Serializable, T>> clone() {
         try {
-            return (MindmapsMapReduce) super.clone();
+            return (GraknMapReduce) super.clone();
         } catch (final CloneNotSupportedException e) {
             throw new IllegalStateException(ErrorMessage.CLONE_FAILED.getMessage(this.getClass().toString(),
                     e.getMessage()), e);

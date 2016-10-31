@@ -38,7 +38,7 @@ import java.util.Set;
  * This class implements quick select algorithm to find the median.
  */
 
-public class MedianVertexProgram extends MindmapsVertexProgram<Long> {
+public class MedianVertexProgram extends GraknVertexProgram<Long> {
 
     public static final int MAX_ITERATION = 40;
     private static final String RESOURCE_DATA_TYPE = "medianVertexProgram.resourceDataType";

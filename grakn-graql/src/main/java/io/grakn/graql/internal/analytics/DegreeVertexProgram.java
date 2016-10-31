@@ -25,7 +25,7 @@ import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
 import java.util.*;
 
-public class DegreeVertexProgram extends MindmapsVertexProgram<Long> {
+public class DegreeVertexProgram extends GraknVertexProgram<Long> {
 
     // element key
     public static final String DEGREE = "medianVertexProgram.degree";

@@ -139,7 +139,7 @@ public class Analytics {
         GraknComputer computer = getGraphComputer();
         if (!selectedTypesHaveInstance()) return 0L;
         ComputerResult result = computer.compute(new CountMapReduce(subtypes));
-        Map<String, Long> count = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
+        Map<String, Long> count = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         return count.getOrDefault(CountMapReduce.MEMORY_KEY, 0L);
     }
 
@@ -160,7 +160,7 @@ public class Analytics {
         GraknComputer computer = Grakn.factory(Grakn.DEFAULT_URI, keySpace).getGraphComputer();
         ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
                 new MinMapReduce(statisticsResourceTypes, dataType));
-        Map<String, Number> min = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
+        Map<String, Number> min = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         return Optional.of(min.get(MinMapReduce.MEMORY_KEY));
     }
 
@@ -181,7 +181,7 @@ public class Analytics {
         GraknComputer computer = Grakn.factory(Grakn.DEFAULT_URI, keySpace).getGraphComputer();
         ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
                 new MaxMapReduce(statisticsResourceTypes, dataType));
-        Map<String, Number> max = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
+        Map<String, Number> max = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         return Optional.of(max.get(MaxMapReduce.MEMORY_KEY));
     }
 
@@ -202,7 +202,7 @@ public class Analytics {
         GraknComputer computer = Grakn.factory(Grakn.DEFAULT_URI, keySpace).getGraphComputer();
         ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
                 new SumMapReduce(statisticsResourceTypes, dataType));
-        Map<String, Number> max = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
+        Map<String, Number> max = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         return Optional.of(max.get(SumMapReduce.MEMORY_KEY));
     }
 
@@ -223,7 +223,7 @@ public class Analytics {
         GraknComputer computer = Grakn.factory(Grakn.DEFAULT_URI, keySpace).getGraphComputer();
         ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
                 new MeanMapReduce(statisticsResourceTypes, dataType));
-        Map<String, Map<String, Double>> mean = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
+        Map<String, Map<String, Double>> mean = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         Map<String, Double> meanPair = mean.get(MeanMapReduce.MEMORY_KEY);
         return Optional.of(meanPair.get(MeanMapReduce.SUM) / meanPair.get(MeanMapReduce.COUNT));
     }
@@ -265,7 +265,7 @@ public class Analytics {
         GraknComputer computer = Grakn.factory(Grakn.DEFAULT_URI, keySpace).getGraphComputer();
         ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
                 new StdMapReduce(statisticsResourceTypes, dataType));
-        Map<String, Map<String, Double>> std = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
+        Map<String, Map<String, Double>> std = result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
         Map<String, Double> stdTuple = std.get(StdMapReduce.MEMORY_KEY);
         double squareSum = stdTuple.get(StdMapReduce.SQUARE_SUM);
         double sum = stdTuple.get(StdMapReduce.SUM);
@@ -283,7 +283,7 @@ public class Analytics {
         GraknComputer computer = Grakn.factory(Grakn.DEFAULT_URI, keySpace).getGraphComputer();
         ComputerResult result = computer.compute(new ConnectedComponentVertexProgram(subtypes),
                 new ClusterMemberMapReduce(subtypes, ConnectedComponentVertexProgram.CLUSTER_LABEL));
-        return result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
+        return result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
     }
 
     /**
@@ -296,7 +296,7 @@ public class Analytics {
         GraknComputer computer = Grakn.factory(Grakn.DEFAULT_URI, keySpace).getGraphComputer();
         ComputerResult result = computer.compute(new ConnectedComponentVertexProgram(subtypes),
                 new ClusterSizeMapReduce(subtypes, ConnectedComponentVertexProgram.CLUSTER_LABEL));
-        return result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
+        return result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
     }
 
     /**
@@ -307,7 +307,7 @@ public class Analytics {
     public Map<Long, Set<String>> degrees() {
         GraknComputer computer = Grakn.factory(Grakn.DEFAULT_URI, keySpace).getGraphComputer();
         ComputerResult result = computer.compute(new DegreeVertexProgram(subtypes), new DegreeDistributionMapReduce(subtypes));
-        return result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
+        return result.memory().get(GraknMapReduce.MAP_REDUCE_MEMORY_KEY);
     }
 
     /**

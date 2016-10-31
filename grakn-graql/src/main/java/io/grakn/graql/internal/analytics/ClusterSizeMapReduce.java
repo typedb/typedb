@@ -7,7 +7,7 @@ import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import java.io.Serializable;
 import java.util.*;
 
-class ClusterSizeMapReduce extends MindmapsMapReduce<Long> {
+class ClusterSizeMapReduce extends GraknMapReduce<Long> {
 
     private static final String CLUSTER_LABEL = "clusterMemberMapReduce.clusterLabel";
 

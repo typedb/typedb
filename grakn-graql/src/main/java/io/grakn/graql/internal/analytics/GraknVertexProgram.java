@@ -32,9 +32,9 @@ import java.util.Set;
 /**
  * A vertex program specific to Grakn with common method implementations.
  */
-public abstract class MindmapsVertexProgram<T> extends CommonOLAP implements VertexProgram<T> {
+public abstract class GraknVertexProgram<T> extends CommonOLAP implements VertexProgram<T> {
 
-    static final Logger LOGGER = LoggerFactory.getLogger(MindmapsVertexProgram.class);
+    static final Logger LOGGER = LoggerFactory.getLogger(GraknVertexProgram.class);
 
     final MessageScope.Local<Long> messageScopeIn = MessageScope.Local.of(__::inE);
     final MessageScope.Local<Long> messageScopeOut = MessageScope.Local.of(__::outE);
@@ -85,9 +85,9 @@ public abstract class MindmapsVertexProgram<T> extends CommonOLAP implements Ver
     }
 
     @Override
-    public MindmapsVertexProgram clone() {
+    public GraknVertexProgram clone() {
         try {
-            return (MindmapsVertexProgram) super.clone();
+            return (GraknVertexProgram) super.clone();
         } catch (final CloneNotSupportedException e) {
             throw new IllegalStateException(ErrorMessage.CLONE_FAILED.getMessage(this.getClass().toString(), e.getMessage()), e);
         }

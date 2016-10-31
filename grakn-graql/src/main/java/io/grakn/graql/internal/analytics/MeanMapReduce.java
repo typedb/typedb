@@ -12,7 +12,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-public class MeanMapReduce extends MindmapsMapReduce<Map<String, Double>> {
+public class MeanMapReduce extends GraknMapReduce<Map<String, Double>> {
 
     public static final String MEMORY_KEY = "mean";
     private static final String RESOURCE_DATA_TYPE_KEY = "RESOURCE_DATA_TYPE_KEY";
