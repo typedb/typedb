@@ -155,6 +155,7 @@ public class GraqlShell {
         options.addOption("f", "file", true, "graql file path to execute");
         options.addOption("u", "uri", true, "uri to factory to engine");
         options.addOption("b", "batch", true, "graql file path to batch load");
+        options.addOption("o", "output", true, "output format for results");
         options.addOption("h", "help", false, "print usage message");
         options.addOption("v", "version", false, "print version");
 

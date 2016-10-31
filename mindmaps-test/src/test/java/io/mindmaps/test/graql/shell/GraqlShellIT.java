@@ -22,6 +22,7 @@ import com.google.common.base.Strings;
 import io.mindmaps.graql.GraqlClientImpl;
 import io.mindmaps.graql.GraqlShell;
 import io.mindmaps.test.AbstractRollbackGraphTest;
+import mjson.Json;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -223,6 +224,19 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
     }
 
     @Test
+    public void testGraqlOutput() throws Exception {
+        String result = testShell("", "-e", "match $x sub type;", "-o", "graql");
+        assertThat(result, allOf(containsString("$x"), containsString("entity-type")));
+    }
+
+    @Test
+    public void testJsonOutput() throws Exception {
+        String result = testShell("", "-e", "match $x sub type;", "-o", "json");
+        Json json = Json.read(result);
+        assertTrue("expected more than 5 results: " + json, json.asJsonList().size() > 5);
+    }
+
+    @Test
     public void testErrorWhenEngineNotRunning() throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
         testShell("", err, "-u", "localhost:7654");
@@ -257,12 +271,14 @@ public class GraqlShellIT extends AbstractRollbackGraphTest {
 
     private String testShell(String input, String... args) throws Exception {
         ByteArrayOutputStream err = new ByteArrayOutputStream();
-        return testShell(input, err, args);
+        String result = testShell(input, err, args);
+        assertTrue(err.toString(), err.toString().isEmpty());
+        return result;
     }
 
     private String testShell(String input, ByteArrayOutputStream berr, String... args) throws Exception {
         String[] newArgs = Arrays.copyOf(args, args.length + 2);
-        newArgs[newArgs.length-2] = "-n";
+        newArgs[newArgs.length-2] = "-k";
         newArgs[newArgs.length-1] = graph.getKeyspace();
 
         InputStream in = new ByteArrayInputStream(input.getBytes());

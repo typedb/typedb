@@ -9,4 +9,8 @@ public class Printers {
     public static Printer graql() {
         return new GraqlPrinter();
     }
+
+    public static Printer json() {
+        return new JsonPrinter();
+    }
 }

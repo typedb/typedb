@@ -9,45 +9,40 @@ import java.util.Optional;
 /**
  * Interface describing a way to print Graql objects.
  */
-public interface Printer {
+public interface Printer<T> {
 
     default String graqlString(Object object) {
-        StringBuilder sb = new StringBuilder();
-        graqlString(sb, false, object);
-        return sb.toString();
+        T builder = graqlString(false, object);
+        return build(builder);
     }
 
-    default StringBuilder graqlString(StringBuilder sb, boolean inner, Object object) {
+    default T graqlString(boolean inner, Object object) {
         if (object instanceof Concept) {
-            graqlString(sb, inner, (Concept) object);
+            return graqlString(inner, (Concept) object);
         } else if (object instanceof Boolean) {
-            graqlString(sb, inner, (boolean) object);
+            return graqlString(inner, (boolean) object);
         } else if (object instanceof Optional) {
-            graqlString(sb, inner, (Optional<?>) object);
+            return graqlString(inner, (Optional<?>) object);
         } else if (object instanceof Collection) {
-            graqlString(sb, inner, (Collection<?>) object);
+            return graqlString(inner, (Collection<?>) object);
         } else if (object instanceof Map) {
-            graqlString(sb, inner, (Map<?, ?>) object);
-        } else if (object instanceof Map.Entry) {
-            graqlString(sb, inner, (Map.Entry<?, ?>) object);
+            return graqlString(inner, (Map<?, ?>) object);
         } else {
-            graqlStringDefault(sb, inner, object);
+            return graqlStringDefault(inner, object);
         }
-
-        return sb;
     }
 
-    StringBuilder graqlString(StringBuilder sb, boolean inner, Concept concept);
+    String build(T builder);
 
-    StringBuilder graqlString(StringBuilder sb, boolean inner, boolean bool);
+    T graqlString(boolean inner, Concept concept);
 
-    StringBuilder graqlString(StringBuilder sb, boolean inner, Optional<?> optional);
+    T graqlString(boolean inner, boolean bool);
 
-    StringBuilder graqlString(StringBuilder sb, boolean inner, Collection<?> collection);
+    T graqlString(boolean inner, Optional<?> optional);
 
-    StringBuilder graqlString(StringBuilder sb, boolean inner, Map<?, ?> map);
+    T graqlString(boolean inner, Collection<?> collection);
 
-    StringBuilder graqlString(StringBuilder sb, boolean inner, Map.Entry<?, ?> entry);
+    T graqlString(boolean inner, Map<?, ?> map);
 
-    StringBuilder graqlStringDefault(StringBuilder sb, boolean inner, Object object);
+    T graqlStringDefault(boolean inner, Object object);
 }
