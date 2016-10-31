@@ -486,7 +486,7 @@ Version v0.1.0
 - removed answer explosion, better selection and fixes (#121)
 - collectors fix (#124)
 - New changes to Engine:
-- small fix in assets path and moved MindmapsEngineServer inside io.mindmaps
+- small fix in assets path and moved MindmapsEngineServer inside io.grakn
 - Hal path master (#125)
 - Make Travis automatically cache Maven directory (#126)
 - adding multiple HAL objects
@@ -530,7 +530,7 @@ Version v0.1.0
 - Add support for aggregate queries to shell (#168)
 - Fix bug where errors were "in quotes" in Graql shell (#169)
 - Integration of SQL migration (#8918) (#164)
-- Repackage engine to io.mindmaps.engine (#170)
+- Repackage engine to io.grakn.engine (#170)
 - Update compute query syntax (#172)
 - migration compile problems fix.
 - Remove references to "tranasction" (#175)

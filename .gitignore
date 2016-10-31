@@ -32,7 +32,7 @@ hs_err_pid*
 logs/
 
 # Analytics files #
-mindmaps-test/db/
-mindmaps-test/output/
-mindmaps-test/*.txt
-mindmaps-test/output/
+grakn-test/db/
+grakn-test/output/
+grakn-test/*.txt
+grakn-test/output/
