@@ -36,7 +36,7 @@ import static spark.Spark.get;
 
 
 @Path("/status")
-@Api(value = "/status", description = "Endpoints used to retrieve all the info about the current instance of MindmapsDB")
+@Api(value = "/status", description = "Endpoints used to retrieve all the info about the current instance of Grakn")
 @Produces({"application/json"})
 public class StatusController {
 

@@ -51,7 +51,7 @@ public class TransactionControllerTest extends GraknEngineTestBase {
     public void insertValidQuery() {
         String exampleInsertQuery = "insert id \"actor-123\" isa Man;";
         String transactionUUID = given().body(exampleInsertQuery).
-                when().post(REST.WebPath.NEW_TRANSACTION_URI + "?graphName=mindmapstest").body().asString();
+                when().post(REST.WebPath.NEW_TRANSACTION_URI + "?graphName=grakntest").body().asString();
         int i = 0;
         String status = "QUEUED";
         while (i < 5 && !status.equals("FINISHED")) {
@@ -71,7 +71,7 @@ public class TransactionControllerTest extends GraknEngineTestBase {
     public void insertInvalidQuery() {
         String exampleInvalidInsertQuery = "insert id ?Cdcs;w4. '' ervalue;";
         String transactionUUID = given().body(exampleInvalidInsertQuery).
-                when().post(REST.WebPath.NEW_TRANSACTION_URI + "?graphName=mindmapstest").body().asString();
+                when().post(REST.WebPath.NEW_TRANSACTION_URI + "?graphName=grakntest").body().asString();
         int i = 0;
         String status = "QUEUED";
         while (i < 10 && !status.equals("ERROR")) {
@@ -91,7 +91,7 @@ public class TransactionControllerTest extends GraknEngineTestBase {
     public void checkLoaderStateTest() {
         String exampleInvalidInsertQuery = "insert id ?Cdcs;w4. '' ervalue;";
         given().body(exampleInvalidInsertQuery).
-                when().post(REST.WebPath.NEW_TRANSACTION_URI + "?graphName=mindmapstest").body().asString();
+                when().post(REST.WebPath.NEW_TRANSACTION_URI + "?graphName=grakntest").body().asString();
         JSONObject resultObj = new JSONObject(get(REST.WebPath.LOADER_STATE_URI).then().statusCode(200).and().extract().body().asString());
         assertTrue(resultObj.has(TransactionState.State.QUEUED.name()));
         assertTrue(resultObj.has(TransactionState.State.ERROR.name()));

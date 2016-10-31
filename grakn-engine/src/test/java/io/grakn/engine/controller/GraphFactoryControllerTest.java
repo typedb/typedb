@@ -63,22 +63,22 @@ public class GraphFactoryControllerTest extends GraknEngineTestBase {
 
     @Test
     public void testGraknClientBatch() {
-        GraknGraph batch = Grakn.factory(Grakn.DEFAULT_URI, "mindmapstest").getGraphBatchLoading();
+        GraknGraph batch = Grakn.factory(Grakn.DEFAULT_URI, "grakntest").getGraphBatchLoading();
         assertTrue(((AbstractGraknGraph) batch).isBatchLoadingEnabled());
     }
 
     @Test
     public void testGrakn() {
-        AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, "mindmapstest").getGraph();
-        AbstractGraknGraph graph2 = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, "mindmapstest2").getGraph();
-        AbstractGraknGraph graphCopy = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, "mindmapstest").getGraph();
+        AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, "grakntest").getGraph();
+        AbstractGraknGraph graph2 = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, "grakntest2").getGraph();
+        AbstractGraknGraph graphCopy = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, "grakntest").getGraph();
         assertNotEquals(0, graph.getTinkerPopGraph().traversal().V().toList().size());
         assertFalse(graph.isBatchLoadingEnabled());
         assertNotEquals(graph, graph2);
         assertEquals(graph, graphCopy);
         graph.close();
 
-        AbstractGraknGraph batch = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, "mindmapstest").getGraphBatchLoading();
+        AbstractGraknGraph batch = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, "grakntest").getGraphBatchLoading();
         assertTrue(batch.isBatchLoadingEnabled());
         assertNotEquals(graph, batch);
 

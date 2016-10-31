@@ -26,7 +26,7 @@
         <appender-ref ref="ROLLING"/>
     </logger>
 
-    <logger name="io.grakn" level="${mindmaps.log.level}">
+    <logger name="io.grakn" level="${grakn.log.level}">
         <appender-ref ref="ROLLING"/>
     </logger>
 
