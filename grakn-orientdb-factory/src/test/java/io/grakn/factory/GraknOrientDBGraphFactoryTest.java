@@ -35,56 +35,56 @@ public class GraknOrientDBGraphFactoryTest {
 
     @Test
     public void testBuildSimpleGraph() throws Exception {
-        AbstractGraknGraph mindmapsGraph = orientGraphFactory.getGraph(false);
-        assertThat(mindmapsGraph.getTinkerPopGraph(), instanceOf(OrientGraph.class));
-        assertEquals(8, mindmapsGraph.getTinkerPopGraph().traversal().V().toList().size());
+        AbstractGraknGraph graknGraph = orientGraphFactory.getGraph(false);
+        assertThat(graknGraph.getTinkerPopGraph(), instanceOf(OrientGraph.class));
+        assertEquals(8, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
     }
 
     @Test
     public void testBuildSingletonGraphs(){
-        AbstractGraknGraph<OrientGraph> mindmapsGraph1 = orientGraphFactory.getGraph(false);
-        AbstractGraknGraph<OrientGraph> mindmapsGraph2 = orientGraphFactory.getGraph(false);
-        AbstractGraknGraph<OrientGraph> mindmapsGraph3 = orientGraphFactory.getGraph(true);
+        AbstractGraknGraph<OrientGraph> graknGraph1 = orientGraphFactory.getGraph(false);
+        AbstractGraknGraph<OrientGraph> graknGraph2 = orientGraphFactory.getGraph(false);
+        AbstractGraknGraph<OrientGraph> graknGraph3 = orientGraphFactory.getGraph(true);
 
-        assertEquals(mindmapsGraph1, mindmapsGraph2);
-        assertNotEquals(mindmapsGraph2, mindmapsGraph3);
+        assertEquals(graknGraph1, graknGraph2);
+        assertNotEquals(graknGraph2, graknGraph3);
 
-        assertEquals(8, mindmapsGraph1.getTinkerPopGraph().traversal().V().toList().size());
-        assertEquals(8, mindmapsGraph2.getTinkerPopGraph().traversal().V().toList().size());
-        assertEquals(8, mindmapsGraph3.getTinkerPopGraph().traversal().V().toList().size());
+        assertEquals(8, graknGraph1.getTinkerPopGraph().traversal().V().toList().size());
+        assertEquals(8, graknGraph2.getTinkerPopGraph().traversal().V().toList().size());
+        assertEquals(8, graknGraph3.getTinkerPopGraph().traversal().V().toList().size());
     }
 
     @Test
     public void testBuildGraph() throws GraknValidationException {
-        GraknOrientDBGraph mindmapsGraph = orientGraphFactory.getGraph(false);
+        GraknOrientDBGraph graknGraph = orientGraphFactory.getGraph(false);
 
-        assertEquals(8, mindmapsGraph.getTinkerPopGraph().traversal().V().toList().size());
-        assertNotNull(mindmapsGraph.getMetaEntityType());
+        assertEquals(8, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
+        assertNotNull(graknGraph.getMetaEntityType());
 
-        EntityType entityType = mindmapsGraph.putEntityType("My Entity Type");
-        mindmapsGraph.addEntity(entityType);
-        mindmapsGraph.addEntity(entityType);
-        mindmapsGraph.addEntity(entityType);
-        mindmapsGraph.commit();
-        assertEquals(12, mindmapsGraph.getTinkerPopGraph().traversal().V().toList().size());
+        EntityType entityType = graknGraph.putEntityType("My Entity Type");
+        graknGraph.addEntity(entityType);
+        graknGraph.addEntity(entityType);
+        graknGraph.addEntity(entityType);
+        graknGraph.commit();
+        assertEquals(12, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
 
-        RoleType role1 = mindmapsGraph.putRoleType("Role 1");
-        RoleType role2 = mindmapsGraph.putRoleType("Role 2");
-        mindmapsGraph.putRelationType("My Relation Type").hasRole(role1).hasRole(role2);
-        mindmapsGraph.commit();
-        assertEquals(15, mindmapsGraph.getTinkerPopGraph().traversal().V().toList().size());
+        RoleType role1 = graknGraph.putRoleType("Role 1");
+        RoleType role2 = graknGraph.putRoleType("Role 2");
+        graknGraph.putRelationType("My Relation Type").hasRole(role1).hasRole(role2);
+        graknGraph.commit();
+        assertEquals(15, graknGraph.getTinkerPopGraph().traversal().V().toList().size());
     }
 
     @Test
     public void testVertexIndices(){
-        GraknOrientDBGraph mindmapsGraph = orientGraphFactory.getGraph(false);
+        GraknOrientDBGraph graknGraph = orientGraphFactory.getGraph(false);
         for (Schema.BaseType baseType : Schema.BaseType.values()) {
-            assertEquals(6, mindmapsGraph.getTinkerPopGraph().getVertexIndexedKeys(baseType.name()).size());
+            assertEquals(6, graknGraph.getTinkerPopGraph().getVertexIndexedKeys(baseType.name()).size());
         }
 
-        assertNotNull(mindmapsGraph.getMetaEntityType());
-        assertNotNull(mindmapsGraph.getMetaRelationType());
-        assertNotNull(mindmapsGraph.getMetaType());
+        assertNotNull(graknGraph.getMetaEntityType());
+        assertNotNull(graknGraph.getMetaRelationType());
+        assertNotNull(graknGraph.getMetaType());
     }
 
 

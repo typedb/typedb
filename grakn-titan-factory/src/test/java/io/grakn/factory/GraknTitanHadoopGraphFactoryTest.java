@@ -37,7 +37,7 @@ public class GraknTitanHadoopGraphFactoryTest {
     }
 
     @Test(expected=UnsupportedOperationException.class)
-    public void buildMindmapsGraphFromTinker() throws Exception {
+    public void buildGraknGraphFromTinker() throws Exception {
         factory.getGraph(false);
     }
 
