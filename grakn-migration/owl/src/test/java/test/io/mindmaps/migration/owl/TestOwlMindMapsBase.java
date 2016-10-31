@@ -29,16 +29,16 @@ import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
 
-import io.mindmaps.Mindmaps;
-import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.Concept;
-import io.mindmaps.concept.Entity;
-import io.mindmaps.concept.Instance;
-import io.mindmaps.concept.Relation;
-import io.mindmaps.concept.RelationType;
-import io.mindmaps.concept.Resource;
-import io.mindmaps.concept.RoleType;
-import io.mindmaps.migration.owl.OWLMigrator;
+import io.grakn.Mindmaps;
+import io.grakn.MindmapsGraph;
+import io.grakn.concept.Concept;
+import io.grakn.concept.Entity;
+import io.grakn.concept.Instance;
+import io.grakn.concept.Relation;
+import io.grakn.concept.RelationType;
+import io.grakn.concept.Resource;
+import io.grakn.concept.RoleType;
+import io.grakn.migration.owl.OWLMigrator;
 
 /**
  * Base class for OWL migrator unit tests: create and holds OWL manager and

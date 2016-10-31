@@ -1,7 +1,7 @@
 package test.io.mindmaps.migration.owl;
 
-import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.graql.Graql;
+import io.grakn.exception.MindmapsValidationException;
+import io.grakn.graql.Graql;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

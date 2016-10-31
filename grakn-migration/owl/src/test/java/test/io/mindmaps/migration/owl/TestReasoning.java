@@ -19,13 +19,13 @@
 package test.io.mindmaps.migration.owl;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.concept.Concept;
-import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.graql.Graql;
-import io.mindmaps.graql.MatchQuery;
-import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.graql.internal.reasoner.query.Query;
-import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
+import io.grakn.concept.Concept;
+import io.grakn.exception.MindmapsValidationException;
+import io.grakn.graql.Graql;
+import io.grakn.graql.MatchQuery;
+import io.grakn.graql.QueryBuilder;
+import io.grakn.graql.internal.reasoner.query.Query;
+import io.grakn.graql.internal.reasoner.query.QueryAnswers;
 import org.junit.Before;
 import org.junit.Test;
 import org.semanticweb.HermiT.Configuration;
@@ -46,7 +46,7 @@ import java.util.Set;
 
 import java.util.stream.Collectors;
 
-import static io.mindmaps.graql.Graql.var;
+import static io.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 
 public class TestReasoning extends TestOwlMindMapsBase {
@@ -55,7 +55,7 @@ public class TestReasoning extends TestOwlMindMapsBase {
     private OWLOntology family = null;
     private String dataPath = "/io/mindmaps/migration/owl/samples/";
     private OWLReasoner hermit;
-    private io.mindmaps.graql.Reasoner mmReasoner;
+    private io.grakn.graql.Reasoner mmReasoner;
 
     @Before
     public void loadOwlFiles() throws MindmapsValidationException {
@@ -63,7 +63,7 @@ public class TestReasoning extends TestOwlMindMapsBase {
         migrator.ontology(family).graph(graph).migrate();
         migrator.graph().commit();
         hermit = new Reasoner(new Configuration(), family);
-        mmReasoner = new io.mindmaps.graql.Reasoner(migrator.graph());
+        mmReasoner = new io.grakn.graql.Reasoner(migrator.graph());
     }
 
     //infer all subjects of relation relationIRI with object 'instanceId'

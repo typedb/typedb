@@ -21,19 +21,15 @@ import java.util.Optional;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.JUnitCore;
-import org.junit.runner.Request;
-import org.junit.runner.Result;
-import org.junit.runner.notification.Failure;
 import org.semanticweb.owlapi.model.OWLOntology;
 
-import io.mindmaps.concept.Entity;
-import io.mindmaps.concept.EntityType;
-import io.mindmaps.concept.RelationType;
-import io.mindmaps.concept.Resource;
-import io.mindmaps.concept.RoleType;
-import io.mindmaps.graql.Reasoner;
-import io.mindmaps.migration.owl.OwlModel;
+import io.grakn.concept.Entity;
+import io.grakn.concept.EntityType;
+import io.grakn.concept.RelationType;
+import io.grakn.concept.Resource;
+import io.grakn.concept.RoleType;
+import io.grakn.graql.Reasoner;
+import io.grakn.migration.owl.OwlModel;
 
 /**
  * Load and verify the ontology from the test sample resources. 

@@ -26,16 +26,16 @@
         <appender-ref ref="ROLLING"/>
     </logger>
 
-    <logger name="io.mindmaps" level="${mindmaps.log.level}">
+    <logger name="io.grakn" level="${mindmaps.log.level}">
         <appender-ref ref="ROLLING"/>
     </logger>
 
-    <logger name="io.mindmaps.engine.MindmapsEngineServer" level="INFO">
+    <logger name="io.grakn.engine.MindmapsEngineServer" level="INFO">
         <appender-ref ref="STDOUT"/>
     </logger>
 
     <!-- It is possible to change the logging level to a more granular level. For example:-->
-    <!--<logger name="io.mindmaps.engine.postprocessing.BackgroundTasks" level="DEBUG">-->
+    <!--<logger name="io.grakngine.postprocessing.BackgroundTasks" level="DEBUG">-->
         <!--<appender-ref ref="FILE"/>-->
     <!--</logger>-->
 

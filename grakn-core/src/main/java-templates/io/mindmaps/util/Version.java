@@ -1,7 +1,7 @@
-package io.mindmaps.util;
+package io.grakn.util;
 
 /**
- * Class for storing the maven version. The templating-maven-plugin in mindmaps-dist will automatically insert the
+ * Class for storing the maven version. The templating-maven-plugin in grakn-dist will automatically insert the
  * project version here.
  */
 public class Version {
