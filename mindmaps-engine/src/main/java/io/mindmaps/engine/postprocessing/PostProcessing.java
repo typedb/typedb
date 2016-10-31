@@ -18,14 +18,12 @@
 
 package io.mindmaps.engine.postprocessing;
 
-import io.mindmaps.engine.loader.RESTLoader;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -35,35 +33,22 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class BackgroundTasks {
-    private static long timeLapse;
+public class PostProcessing {
     private static final String CASTING_STAGE = "Scanning for duplicate castings . . .";
     private static final String RESOURCE_STAGE = "Scanning for duplicate resources . . .";
 
+    private static PostProcessing instance = null;
+
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
-    private final Logger LOG = LoggerFactory.getLogger(BackgroundTasks.class);
+    private final Logger LOG = LoggerFactory.getLogger(PostProcessing.class);
+
     private ExecutorService postpool;
     private ExecutorService statDump;
     private Set<Future> futures;
     private String currentStage;
-
-    private static BackgroundTasks instance = null;
-
     private Cache cache;
 
-
-    public static synchronized BackgroundTasks getInstance() {
-        if (instance == null)
-            instance = new BackgroundTasks();
-        return instance;
-    }
-
-    public boolean isPostProcessingRunning() {
-        return isRunning.get();
-    }
-
-    private BackgroundTasks() {
-        timeLapse = ConfigProperties.getInstance().getPropertyAsLong(ConfigProperties.TIME_LAPSE);
+    private PostProcessing() {
         postpool = Executors.newFixedThreadPool(ConfigProperties.getInstance().getAvailableThreads());
         statDump = Executors.newSingleThreadExecutor();
         cache = Cache.getInstance();
@@ -71,27 +56,42 @@ public class BackgroundTasks {
         isRunning.set(false);
     }
 
-    public void performPostprocessing() {
-        futures = ConcurrentHashMap.newKeySet();
-
-        if (maintenanceAllowed()) {
-            postprocessing();
-        }
+    public static synchronized PostProcessing getInstance() {
+        if (instance == null)
+            instance = new PostProcessing();
+        return instance;
     }
 
-    public void forcePostprocessing() {
-        postprocessing();
-    }
-
-    private void postprocessing() {
+    public void run() {
         if (!isRunning.get()) {
             LOG.info("Starting maintenance.");
             isRunning.set(true);
+
             statDump.submit(this::dumpStats);
             performTasks();
+
+            futures = ConcurrentHashMap.newKeySet();
             isRunning.set(false);
             LOG.info("Maintenance completed.");
         }
+    }
+
+    public void stop() {
+        if(isRunning.get()) {
+            LOG.warn("Shutting down running tasks");
+            futures.forEach(f -> f.cancel(true));
+            postpool.shutdownNow();
+            statDump.shutdownNow();
+        }
+
+        isRunning.set(false);
+    }
+
+    public void reset() {
+        isRunning.set(false);
+        futures.clear();
+        postpool = Executors.newFixedThreadPool(ConfigProperties.getInstance().getAvailableThreads());
+        statDump = Executors.newSingleThreadExecutor();
     }
 
     private void performTasks() {
@@ -132,12 +132,6 @@ public class BackgroundTasks {
                 LOG.error("Error while trying to perform post processing on graph [" + keyspace + "]",e);
             }
         });
-    }
-
-    private boolean maintenanceAllowed() {
-        long lastJob = RESTLoader.getInstance().getLastJobFinished();
-        long currentTime = System.currentTimeMillis();
-        return (currentTime - lastJob) >= timeLapse && RESTLoader.getInstance().getLoadingJobs() == 0;
     }
 
     private void waitToContinue() {
