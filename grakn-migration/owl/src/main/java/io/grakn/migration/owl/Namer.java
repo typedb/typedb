@@ -17,10 +17,10 @@
  */
 package io.grakn.migration.owl;
 
-import org.semanticweb.owlapi.model.IRI;
-
 import io.grakn.concept.Entity;
 import io.grakn.concept.ResourceType;
+import org.semanticweb.owlapi.model.IRI;
+
 
 /**
  * <p>

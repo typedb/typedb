@@ -17,13 +17,13 @@
  */
 package io.grakn.migration.owl;
 
-import io.grakn.MindmapsGraph;
-import io.grakn.exception.MindmapsValidationException;
+import io.grakn.GraknGraph;
 import io.grakn.concept.Entity;
 import io.grakn.concept.EntityType;
 import io.grakn.concept.RelationType;
 import io.grakn.concept.ResourceType;
 import io.grakn.concept.RoleType;
+import io.grakn.exception.GraknValidationException;
 import org.semanticweb.owlapi.model.OWLAnnotationProperty;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassAssertionAxiom;
@@ -51,7 +51,7 @@ public class OWLMigrator {
     
     private Namer namer;
     private OWLOntology ontology;
-    private MindmapsGraph graph;
+    private GraknGraph graph;
 
     private <T> T eval(Supplier<T> f) {
         return f.get();
@@ -79,17 +79,17 @@ public class OWLMigrator {
         return this.ontology;
     }
     
-    public OWLMigrator graph(MindmapsGraph graph) {
+    public OWLMigrator graph(GraknGraph graph) {
         this.graph = graph;
         return this;
     }
     
-    public MindmapsGraph graph() {
+    public GraknGraph graph() {
         return graph;
     }
     
-    public void migrate() throws MindmapsValidationException { 
-        OwlMindmapsGraphStoringVisitor visitor = new OwlMindmapsGraphStoringVisitor(this);
+    public void migrate() throws GraknValidationException {
+        OwlGraknGraphStoringVisitor visitor = new OwlGraknGraphStoringVisitor(this);
         visitor.prepareOWL();
         ontology.axioms().forEach(ax -> {
             ax.accept(visitor); 
@@ -97,7 +97,7 @@ public class OWLMigrator {
         graph.commit();
     }
 
-    public ResourceType.DataType<?> owlBuiltInToMindmapsDatatype(OWL2Datatype propertyType) {
+    public ResourceType.DataType<?> owlBuiltInToGraknDatatype(OWL2Datatype propertyType) {
         if (propertyType == OWL2Datatype.XSD_BOOLEAN)
             return ResourceType.DataType.BOOLEAN;
         else if (propertyType == OWL2Datatype.XSD_FLOAT || 
@@ -198,8 +198,8 @@ public class OWLMigrator {
                 .findFirst();
             return ax.isPresent() ? ax.get().getRange().asOWLDatatype().getBuiltInDatatype() : null;
         });
-        ResourceType.DataType<?> mindmapsType = propertyType == null ? ResourceType.DataType.STRING : owlBuiltInToMindmapsDatatype(propertyType);
-        ResourceType<?> resourceType = graph.putResourceType(namer.fromIri(property.getIRI()), mindmapsType);
+        ResourceType.DataType<?> graknType = propertyType == null ? ResourceType.DataType.STRING : owlBuiltInToGraknDatatype(propertyType);
+        ResourceType<?> resourceType = graph.putResourceType(namer.fromIri(property.getIRI()), graknType);
         return resourceType;        
     }   
 }

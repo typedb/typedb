@@ -15,13 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-package test.io.mindmaps.migration.owl;
-
-import java.util.Optional;
-
-import org.junit.Assert;
-import org.junit.Test;
-import org.semanticweb.owlapi.model.OWLOntology;
+package test.io.grakn.migration.owl;
 
 import io.grakn.concept.Entity;
 import io.grakn.concept.EntityType;
@@ -30,6 +24,11 @@ import io.grakn.concept.Resource;
 import io.grakn.concept.RoleType;
 import io.grakn.graql.Reasoner;
 import io.grakn.migration.owl.OwlModel;
+import org.junit.Assert;
+import org.junit.Test;
+import org.semanticweb.owlapi.model.OWLOntology;
+
+import java.util.Optional;
 
 /**
  * Load and verify the ontology from the test sample resources. 
@@ -37,13 +36,13 @@ import io.grakn.migration.owl.OwlModel;
  * @author borislav
  *
  */
-public class TestSamplesImport extends TestOwlMindMapsBase {
+public class TestSamplesImport extends TestOwlGraknBase {
     
     @Test
     public void testShoppingOntology()  {       
         // Load
         try {
-            OWLOntology O = loadOntologyFromResource("/io/mindmaps/migration/owl/samples/Shopping.owl");
+            OWLOntology O = loadOntologyFromResource("/io/grakn/migration/owl/samples/Shopping.owl");
             migrator.ontology(O).graph(graph).migrate();
             migrator.graph().commit();
         }
@@ -69,7 +68,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
     public void testShakespeareOntology()   {       
         // Load
         try {
-            OWLOntology O = loadOntologyFromResource("/io/mindmaps/migration/owl/samples/shakespeare.owl");         
+            OWLOntology O = loadOntologyFromResource("/io/grakn/migration/owl/samples/shakespeare.owl");
             migrator.ontology(O).graph(graph).migrate();
             migrator.graph().commit();
         }
@@ -109,7 +108,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
     public void testProductOntology()   {
         // Load
         try {
-            OWLOntology O = loadOntologyFromResource("/io/mindmaps/migration/owl/samples/Product.owl");
+            OWLOntology O = loadOntologyFromResource("/io/grakn/migration/owl/samples/Product.owl");
             migrator.ontology(O).graph(graph).migrate();
             migrator.graph().commit();
         }
@@ -136,7 +135,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
     public void test1Ontology() {       
         // Load
         try {
-            OWLOntology O = loadOntologyFromResource("/io/mindmaps/migration/owl/samples/test1.owl");
+            OWLOntology O = loadOntologyFromResource("/io/grakn/migration/owl/samples/test1.owl");
             O.axioms().forEach(System.out::println);            
             migrator.ontology(O).graph(graph).migrate();
             migrator.graph().commit();
@@ -183,7 +182,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
     public void testFamilyOntology()   {
         // Load
         try {
-            OWLOntology O = loadOntologyFromResource("/io/mindmaps/migration/owl/samples/family.owl");
+            OWLOntology O = loadOntologyFromResource("/io/grakn/migration/owl/samples/family.owl");
             migrator.ontology(O).graph(graph).migrate();
             migrator.graph().commit();
         }

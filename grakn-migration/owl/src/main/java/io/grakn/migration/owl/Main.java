@@ -1,25 +1,24 @@
 /*
- * MindmapsDB - A Distributed Semantic Database
- * Copyright (C) 2016  Mindmaps Research Ltd
+ * GraknDB - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Research Ltd
  *
- * MindmapsDB is free software: you can redistribute it and/or modify
+ * GraknDB is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * MindmapsDB is distributed in the hope that it will be useful,
+ * GraknDB is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * along with GraknDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 package io.grakn.migration.owl;
 
-import io.grakn.MindmapsGraph;
-import io.grakn.concept.RelationType;
-import io.grakn.Mindmaps;
+import io.grakn.Grakn;
+import io.grakn.GraknGraph;
 import io.grakn.engine.util.ConfigProperties;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 
@@ -27,8 +26,8 @@ import java.io.File;
 
 /**
  * <p>
- * Main program to migrate an OWL knowledge base into a Mindmaps knowledge graph. Expected 
- * arguments are an OWL file and a Mindmaps Engine URL. At a minimum an OWL file must be provided. 
+ * Main program to migrate an OWL knowledge base into a Grakn knowledge graph. Expected 
+ * arguments are an OWL file and a Grakn Engine URL. At a minimum an OWL file must be provided. 
  * Note that the OWLAPI is not very good at intelligently resolving imports, such as looking in the
  * same folder etc. To import a large ontology made up of multiple imports scattered around in files, 
  * the easiest thing is to use protege to "merge" them into a single ontology file with all axioms 
@@ -44,7 +43,7 @@ public class Main {
 
     static void die(String errorMsg) {
         System.out.println(errorMsg);
-        System.out.println("\nSyntax: ./migration.sh owl -file <owl filename> [-graph <graph name>] [-engine <Mindmaps engine URL>]");
+        System.out.println("\nSyntax: ./migration.sh owl -file <owl filename> [-graph <graph name>] [-engine <Grakn engine URL>]");
         System.exit(-1);
     }
 
@@ -80,8 +79,8 @@ public class Main {
         OWLMigrator migrator = new OWLMigrator();
 
         try {
-            MindmapsGraph graph = engineUrl == null ? Mindmaps.factory(Mindmaps.DEFAULT_URI, graphName).getGraph()
-                                                    : Mindmaps.factory(engineUrl, graphName).getGraph();
+            GraknGraph graph = engineUrl == null ? Grakn.factory(Grakn.DEFAULT_URI, graphName).getGraph()
+                                                    : Grakn.factory(engineUrl, graphName).getGraph();
             migrator.graph(graph)
                     .ontology(OWLManager.createOWLOntologyManager().loadOntologyFromOntologyDocument(owlfile))
                     .migrate();

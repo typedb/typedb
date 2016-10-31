@@ -1,46 +1,57 @@
 /*
- * MindmapsDB - A Distributed Semantic Database
- * Copyright (C) 2016  Mindmaps Research Ltd
+ * GraknDB - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Research Ltd
  *
- * MindmapsDB is free software: you can redistribute it and/or modify
+ * GraknDB is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * MindmapsDB is distributed in the hope that it will be useful,
+ * GraknDB is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * along with GraknDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
 package io.grakn.migration.json;
 
 import com.google.common.io.Files;
-import io.grakn.MindmapsGraph;
-import io.grakn.concept.*;
-import io.grakn.engine.MindmapsEngineServer;
+import io.grakn.GraknGraph;
+import io.grakn.concept.Entity;
+import io.grakn.concept.EntityType;
+import io.grakn.concept.Instance;
+import io.grakn.concept.Resource;
+import io.grakn.engine.GraknEngineServer;
+import io.grakn.engine.GraknEngineServer;
 import io.grakn.engine.util.ConfigProperties;
-import io.grakn.exception.MindmapsValidationException;
+import io.grakn.exception.GraknValidationException;
 import io.grakn.factory.GraphFactory;
 import io.grakn.graql.Graql;
-import org.junit.*;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 
-import static io.grakn.migration.json.JsonMigratorUtil.*;
+import static io.grakn.migration.json.JsonMigratorUtil.getFile;
+import static io.grakn.migration.json.JsonMigratorUtil.getProperties;
+import static io.grakn.migration.json.JsonMigratorUtil.getProperty;
+import static io.grakn.migration.json.JsonMigratorUtil.getResource;
 import static java.util.stream.Collectors.joining;
 import static junit.framework.TestCase.assertEquals;
 
 public class JsonMigratorMainTest {
 
     private final String GRAPH_NAME = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
-    private MindmapsGraph graph;
+    private GraknGraph graph;
 
     private final String dataFile = getFile("simple-schema/data.json").getAbsolutePath();;
     private final String templateFile = getFile("simple-schema/template.gql").getAbsolutePath();
@@ -50,12 +61,12 @@ public class JsonMigratorMainTest {
         System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
         System.setProperty(ConfigProperties.CURRENT_DIR_SYSTEM_PROPERTY, System.getProperty("user.dir")+"/../");
 
-        MindmapsEngineServer.start();
+        GraknEngineServer.start();
     }
 
     @AfterClass
     public static void stop(){
-        MindmapsEngineServer.stop();
+        GraknEngineServer.stop();
     }
 
     @Before
@@ -151,7 +162,7 @@ public class JsonMigratorMainTest {
                     .execute();
 
             graph.commit();
-        } catch (IOException |MindmapsValidationException e){
+        } catch (IOException |GraknValidationException e){
             throw new RuntimeException(e);
         }
     }

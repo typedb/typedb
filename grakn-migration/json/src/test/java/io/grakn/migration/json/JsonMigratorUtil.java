@@ -18,7 +18,7 @@
 
 package io.grakn.migration.json;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.*;
 import io.grakn.graql.internal.util.GraqlType;
 
@@ -36,12 +36,12 @@ public class JsonMigratorUtil {
         return new File(JsonMigratorUtil.class.getClassLoader().getResource(fileName).getPath());
     }
 
-    public static Instance getProperty(MindmapsGraph graph, Instance instance, String name) {
+    public static Instance getProperty(GraknGraph graph, Instance instance, String name) {
         assertEquals(1, getProperties(graph, instance, name).size());
         return getProperties(graph, instance, name).iterator().next();
     }
 
-    public static Collection<Instance> getProperties(MindmapsGraph graph, Instance instance, String name) {
+    public static Collection<Instance> getProperties(GraknGraph graph, Instance instance, String name) {
         RelationType relation = graph.getRelationType(name);
 
         Set<Instance> instances = new HashSet<>();
@@ -54,12 +54,12 @@ public class JsonMigratorUtil {
         return instances;
     }
 
-    public static Resource getResource(MindmapsGraph graph, Instance instance, String name) {
+    public static Resource getResource(GraknGraph graph, Instance instance, String name) {
         assertEquals(1, getResources(graph, instance, name).count());
         return getResources(graph, instance, name).findAny().get();
     }
 
-    public static Stream<Resource> getResources(MindmapsGraph graph, Instance instance, String name) {
+    public static Stream<Resource> getResources(GraknGraph graph, Instance instance, String name) {
         RoleType roleOwner = graph.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(name));
         RoleType roleOther = graph.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(name));
 

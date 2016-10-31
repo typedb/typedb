@@ -1,26 +1,26 @@
 /*
- * MindmapsDB - A Distributed Semantic Database
- * Copyright (C) 2016  Mindmaps Research Ltd
+ * GraknDB - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Research Ltd
  *
- * MindmapsDB is free software: you can redistribute it and/or modify
+ * GraknDB is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * MindmapsDB is distributed in the hope that it will be useful,
+ * GraknDB is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * along with GraknDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package test.io.mindmaps.migration.owl;
+package test.io.grakn.migration.owl;
 
 import com.google.common.collect.Sets;
 import io.grakn.concept.Concept;
-import io.grakn.exception.MindmapsValidationException;
+import io.grakn.exception.GraknValidationException;
 import io.grakn.graql.Graql;
 import io.grakn.graql.MatchQuery;
 import io.grakn.graql.QueryBuilder;
@@ -49,16 +49,16 @@ import java.util.stream.Collectors;
 import static io.grakn.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 
-public class TestReasoning extends TestOwlMindMapsBase {
+public class TestReasoning extends TestOwlGraknBase {
 
     private IRI baseIri = IRI.create("http://www.co-ode.org/roberts/family-tree.owl");
     private OWLOntology family = null;
-    private String dataPath = "/io/mindmaps/migration/owl/samples/";
+    private String dataPath = "/io/grakn/migration/owl/samples/";
     private OWLReasoner hermit;
     private io.grakn.graql.Reasoner mmReasoner;
 
     @Before
-    public void loadOwlFiles() throws MindmapsValidationException {
+    public void loadOwlFiles() throws GraknValidationException {
         family = loadOntologyFromResource(dataPath + "family.owl");
         migrator.ontology(family).graph(graph).migrate();
         migrator.graph().commit();

@@ -1,7 +1,7 @@
 Migration
 =====
 
-This component provides the ability to move from various other storage format to a Mindmaps graph.
+This component provides the ability to move from various other storage format to a Grakn graph.
 
 OWL Migration
 ----

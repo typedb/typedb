@@ -1,36 +1,24 @@
 /*
- * MindmapsDB - A Distributed Semantic Database
- * Copyright (C) 2016  Mindmaps Research Ltd
+ * GraknDB - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Research Ltd
  *
- * MindmapsDB is free software: you can redistribute it and/or modify
+ * GraknDB is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * MindmapsDB is distributed in the hope that it will be useful,
+ * GraknDB is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * along with GraknDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-package test.io.mindmaps.migration.owl;
+package test.io.grakn.migration.owl;
 
-import java.io.InputStream;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Optional;
-
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.semanticweb.owlapi.apibinding.OWLManager;
-import org.semanticweb.owlapi.model.OWLOntology;
-import org.semanticweb.owlapi.model.OWLOntologyManager;
-
-import io.grakn.Mindmaps;
-import io.grakn.MindmapsGraph;
+import io.grakn.Grakn;
+import io.grakn.GraknGraph;
 import io.grakn.concept.Concept;
 import io.grakn.concept.Entity;
 import io.grakn.concept.Instance;
@@ -39,6 +27,17 @@ import io.grakn.concept.RelationType;
 import io.grakn.concept.Resource;
 import io.grakn.concept.RoleType;
 import io.grakn.migration.owl.OWLMigrator;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.semanticweb.owlapi.apibinding.OWLManager;
+import org.semanticweb.owlapi.model.OWLOntology;
+import org.semanticweb.owlapi.model.OWLOntologyManager;
+
+import java.io.InputStream;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * Base class for OWL migrator unit tests: create and holds OWL manager and
@@ -48,10 +47,10 @@ import io.grakn.migration.owl.OWLMigrator;
  * @author borislav
  *
  */
-public class TestOwlMindMapsBase {
+public class TestOwlGraknBase {
     public static final String OWL_TEST_GRAPH = "owltestgraph";
  
-    MindmapsGraph graph = Mindmaps.factory(Mindmaps.IN_MEMORY, "graph-" + this.getClass().getName()).getGraph();
+    GraknGraph graph = Grakn.factory(Grakn.IN_MEMORY, "graph-" + this.getClass().getName()).getGraph();
     OWLOntologyManager manager;
     
     @Before

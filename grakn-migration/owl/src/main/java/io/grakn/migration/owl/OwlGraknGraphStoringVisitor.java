@@ -1,32 +1,30 @@
 /*
- * MindmapsDB - A Distributed Semantic Database
- * Copyright (C) 2016  Mindmaps Research Ltd
+ * GraknDB - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Research Ltd
  *
- * MindmapsDB is free software: you can redistribute it and/or modify
+ * GraknDB is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * MindmapsDB is distributed in the hope that it will be useful,
+ * GraknDB is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * along with GraknDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 package io.grakn.migration.owl;
 
-import io.grakn.concept.*;
+import io.grakn.concept.Concept;
+import io.grakn.concept.Entity;
 import io.grakn.concept.EntityType;
+import io.grakn.concept.RelationType;
+import io.grakn.concept.Resource;
+import io.grakn.concept.ResourceType;
+import io.grakn.concept.RoleType;
 import io.grakn.exception.ConceptException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
 import javafx.util.Pair;
 import org.semanticweb.owlapi.model.AsOWLObjectProperty;
 import org.semanticweb.owlapi.model.OWLAnnotationAssertionAxiom;
@@ -39,6 +37,8 @@ import org.semanticweb.owlapi.model.OWLDataProperty;
 import org.semanticweb.owlapi.model.OWLDataPropertyAssertionAxiom;
 import org.semanticweb.owlapi.model.OWLDeclarationAxiom;
 import org.semanticweb.owlapi.model.OWLEntityVisitorEx;
+import org.semanticweb.owlapi.model.OWLEquivalentObjectPropertiesAxiom;
+import org.semanticweb.owlapi.model.OWLInverseObjectPropertiesAxiom;
 import org.semanticweb.owlapi.model.OWLLiteral;
 import org.semanticweb.owlapi.model.OWLNamedIndividual;
 import org.semanticweb.owlapi.model.OWLObjectProperty;
@@ -46,17 +46,22 @@ import org.semanticweb.owlapi.model.OWLObjectPropertyAssertionAxiom;
 import org.semanticweb.owlapi.model.OWLObjectPropertyDomainAxiom;
 import org.semanticweb.owlapi.model.OWLObjectPropertyExpression;
 import org.semanticweb.owlapi.model.OWLObjectPropertyRangeAxiom;
+import org.semanticweb.owlapi.model.OWLReflexiveObjectPropertyAxiom;
 import org.semanticweb.owlapi.model.OWLSubClassOfAxiom;
 import org.semanticweb.owlapi.model.OWLSubDataPropertyOfAxiom;
 import org.semanticweb.owlapi.model.OWLSubObjectPropertyOfAxiom;
 import org.semanticweb.owlapi.model.OWLSubPropertyChainOfAxiom;
 import org.semanticweb.owlapi.model.OWLTransitiveObjectPropertyAxiom;
-import org.semanticweb.owlapi.model.OWLReflexiveObjectPropertyAxiom;
-import org.semanticweb.owlapi.model.OWLInverseObjectPropertiesAxiom;
-import org.semanticweb.owlapi.model.OWLEquivalentObjectPropertiesAxiom;
-
-import java.util.Optional;
 import org.semanticweb.owlapi.model.SWRLRule;
+
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static io.grakn.graql.internal.reasoner.Utility.createPropertyChainRule;
 import static io.grakn.graql.internal.reasoner.Utility.createReflexiveRule;
@@ -67,24 +72,24 @@ import static io.grakn.graql.internal.reasoner.Utility.createTransitiveRule;
 /**
  * <p>
  * This is the main class processing an OWL ontology file. It implements the OWLAPI visitor interfaces
- * to traverse all axioms and entities in the ontology and convert them into equivalent Mindmaps elements.
+ * to traverse all axioms and entities in the ontology and convert them into equivalent Grakn elements.
  * </p>
  * <p>
- * TODO - a lot of the logical more advanced axioms are skipped for now, waiting for the Mindmaps reasoning engine
+ * TODO - a lot of the logical more advanced axioms are skipped for now, waiting for the Grakn reasoning engine
  * to mature a bit. 
  * </p>
  * 
  * @author borislav
  *
  */
-public class OwlMindmapsGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, OWLEntityVisitorEx<Concept> {
+public class OwlGraknGraphStoringVisitor implements OWLAxiomVisitorEx<Concept>, OWLEntityVisitorEx<Concept> {
     private OWLMigrator migrator;
 
-    public OwlMindmapsGraphStoringVisitor(OWLMigrator migrator) {
+    public OwlGraknGraphStoringVisitor(OWLMigrator migrator) {
         this.migrator = migrator;
     }
     
-    public OwlMindmapsGraphStoringVisitor prepareOWL() {
+    public OwlGraknGraphStoringVisitor prepareOWL() {
         migrator.entityType(migrator.ontology().getOWLOntologyManager().getOWLDataFactory().getOWLClass(OwlModel.THING.owlname()));
         migrator.relation(migrator.ontology().getOWLOntologyManager().getOWLDataFactory().getOWLObjectProperty(OwlModel.OBJECT_PROPERTY.owlname()))
           .hasRole(migrator.graph().putRoleType(OwlModel.OBJECT.owlname()))
@@ -339,7 +344,7 @@ public class OwlMindmapsGraphStoringVisitor implements OWLAxiomVisitorEx<Concept
         }
         catch (ConceptException ex) {
             if (ex.getMessage().contains("The Relation with the provided role players already exists"))
-                System.err.println("[WARN] Mindmaps does not support multiple values per data property/resource, ignoring axiom " + axiom);
+                System.err.println("[WARN] Grakn does not support multiple values per data property/resource, ignoring axiom " + axiom);
             else
                 ex.printStackTrace(System.err);
             return null;

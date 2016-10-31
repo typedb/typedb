@@ -1,6 +1,6 @@
-package test.io.mindmaps.migration.owl;
+package test.io.grakn.migration.owl;
 
-import io.grakn.exception.MindmapsValidationException;
+import io.grakn.exception.GraknValidationException;
 import io.grakn.graql.Graql;
 import org.junit.Assert;
 import org.junit.Before;
@@ -14,13 +14,13 @@ import org.semanticweb.owlapi.model.OWLOntology;
 import java.util.Map;
 import java.util.Set;
 
-public class TestSubProperties extends TestOwlMindMapsBase {
+public class TestSubProperties extends TestOwlGraknBase {
 	private IRI baseIri = IRI.create("http://www.workingontologist.org/Examples/Chapter3/shakespeare.owl");
 	private OWLOntology shakespeare = null;
 	
 	@Before
-	public void loadShakespeare() throws MindmapsValidationException {
-        shakespeare = loadOntologyFromResource("/io/mindmaps/migration/owl/samples/shakespeare.owl");
+	public void loadShakespeare() throws GraknValidationException {
+        shakespeare = loadOntologyFromResource("/io/grakn/migration/owl/samples/shakespeare.owl");
         migrator.ontology(shakespeare).graph(graph).migrate();
         migrator.graph().commit();
 	}
