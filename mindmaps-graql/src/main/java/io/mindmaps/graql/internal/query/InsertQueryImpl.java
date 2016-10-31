@@ -24,6 +24,7 @@ import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.Printer;
 import io.mindmaps.graql.admin.InsertQueryAdmin;
 import io.mindmaps.graql.admin.MatchQueryAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
@@ -89,7 +90,7 @@ class InsertQueryImpl implements InsertQueryAdmin {
     }
 
     @Override
-    public Stream<String> resultsString() {
+    public Stream<String> resultsString(Printer printer) {
         execute();
         return Stream.empty();
     }

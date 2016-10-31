@@ -29,13 +29,13 @@ import io.mindmaps.graql.DeleteQuery;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.Printer;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.admin.MatchQueryAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.query.Queries;
 import io.mindmaps.graql.internal.util.ANSI;
 import io.mindmaps.graql.internal.util.AdminConverter;
-import io.mindmaps.graql.internal.util.StringConverter;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -67,8 +67,8 @@ public interface MatchQueryInternal extends MatchQueryAdmin {
     }
 
     @Override
-    default Stream<String> resultsString() {
-        return stream().map(StringConverter::graqlString);
+    default Stream<String> resultsString(Printer printer) {
+        return stream().map(printer::graqlString);
     }
 
     @Override

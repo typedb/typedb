@@ -24,8 +24,10 @@ import io.mindmaps.exception.ConceptException;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.Autocomplete;
 import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.Printer;
 import io.mindmaps.graql.Query;
 import io.mindmaps.graql.Reasoner;
+import io.mindmaps.graql.internal.printer.Printers;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketException;
@@ -37,7 +39,18 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static io.mindmaps.graql.Graql.withGraph;
-import static io.mindmaps.util.REST.RemoteShell.*;
+import static io.mindmaps.util.REST.RemoteShell.ACTION;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_AUTOCOMPLETE;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_COMMIT;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_ERROR;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_PING;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY_END;
+import static io.mindmaps.util.REST.RemoteShell.AUTOCOMPLETE_CANDIDATES;
+import static io.mindmaps.util.REST.RemoteShell.AUTOCOMPLETE_CURSOR;
+import static io.mindmaps.util.REST.RemoteShell.ERROR;
+import static io.mindmaps.util.REST.RemoteShell.QUERY;
+import static io.mindmaps.util.REST.RemoteShell.QUERY_RESULT;
 
 /**
  * A Graql shell session for a single client, running on one graph in one thread
@@ -132,7 +145,8 @@ class GraqlSession {
                 }
 
                 // Return results unless query is cancelled
-                query.resultsString().forEach(result -> {
+                Printer printer = Printers.graql();
+                query.resultsString(printer).forEach(result -> {
                     if (queryCancelled) return;
                     sendQueryResult(result);
                 });

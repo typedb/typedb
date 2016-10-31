@@ -35,7 +35,7 @@ public interface Query<T> {
     /**
      * Execute the query and return a human-readable stream of results
      */
-    Stream<String> resultsString();
+    Stream<String> resultsString(Printer printer);
 
     /**
      * Whether this query will modify the graph
