@@ -18,7 +18,7 @@
 
 package io.grakn.graph.internal;
 
-import io.grakn.Mindmaps;
+import io.grakn.Grakn;
 import io.grakn.concept.Concept;
 import io.grakn.concept.EntityType;
 import io.grakn.concept.Instance;
@@ -44,15 +44,15 @@ import static org.junit.Assert.assertTrue;
  *
  */
 
-public class MindmapsGraphTrackingTest {
+public class GraknGraphTrackingTest {
 
-    private AbstractMindmapsGraph mindmapsGraph;
+    private AbstractGraknGraph mindmapsGraph;
     private Set<ConceptImpl> modifiedConcepts;
     private Stack<Concept> newConcepts;
 
     @Before
     public void buildGraphAccessManager() {
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        mindmapsGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         // start standard rootGraph access manager
         mindmapsGraph.initialiseMetaConcepts();
         modifiedConcepts = new HashSet<>();

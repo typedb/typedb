@@ -19,7 +19,7 @@
 package io.grakn.graql.internal.pattern.property;
 
 import com.google.common.collect.Sets;
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.Concept;
 import io.grakn.concept.RoleType;
 import io.grakn.graql.admin.VarAdmin;
@@ -77,7 +77,7 @@ public class HasRoleProperty extends AbstractVarProperty implements NamedPropert
     }
 
     @Override
-    public void delete(MindmapsGraph graph, Concept concept) {
+    public void delete(GraknGraph graph, Concept concept) {
         String roleId = role.getId().orElseThrow(() -> failDelete(this));
         concept.asRelationType().deleteHasRole(graph.getRoleType(roleId));
     }

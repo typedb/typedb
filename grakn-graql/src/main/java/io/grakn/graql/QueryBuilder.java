@@ -19,7 +19,7 @@
 package io.grakn.graql;
 
 import com.google.common.collect.ImmutableSet;
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.graql.admin.VarAdmin;
 import io.grakn.graql.internal.parser.QueryParser;
 import io.grakn.graql.internal.pattern.Patterns;
@@ -40,14 +40,14 @@ import java.util.stream.Stream;
 /**
  * A starting point for creating queries.
  * <p>
- * A {@code QueryBuiler} is constructed with a {@code MindmapsGraph}. All operations are performed using this
+ * A {@code QueryBuiler} is constructed with a {@code GraknGraph}. All operations are performed using this
  * graph. The user must explicitly commit or rollback changes after executing queries.
  * <p>
  * {@code QueryBuilder} also provides static methods for creating {@code Vars}.
  */
 public class QueryBuilder {
 
-    private final Optional<MindmapsGraph> graph;
+    private final Optional<GraknGraph> graph;
     private final QueryParser queryParser;
     private final TemplateParser templateParser;
 
@@ -57,7 +57,7 @@ public class QueryBuilder {
         templateParser = TemplateParser.create();
     }
 
-    QueryBuilder(MindmapsGraph graph) {
+    QueryBuilder(GraknGraph graph) {
         this.graph = Optional.of(graph);
         queryParser = QueryParser.create(this);
         templateParser = TemplateParser.create();

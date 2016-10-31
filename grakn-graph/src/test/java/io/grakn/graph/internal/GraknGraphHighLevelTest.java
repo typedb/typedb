@@ -18,8 +18,8 @@
 
 package io.grakn.graph.internal;
 
-import io.grakn.Mindmaps;
-import io.grakn.MindmapsGraph;
+import io.grakn.Grakn;
+import io.grakn.GraknGraph;
 import io.grakn.concept.Concept;
 import io.grakn.concept.EntityType;
 import io.grakn.concept.Instance;
@@ -59,10 +59,10 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class MindmapsGraphHighLevelTest {
+public class GraknGraphHighLevelTest {
 
-    private MindmapsGraph mindmapsGraph;
-    private AbstractMindmapsGraph graph;
+    private GraknGraph graknGraph;
+    private AbstractGraknGraph graph;
     private EntityType type;
     private RelationTypeImpl relationType;
     private RoleTypeImpl role1;
@@ -77,8 +77,8 @@ public class MindmapsGraphHighLevelTest {
 
     @Before
     public void buildGraphAccessManager(){
-        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        graph = (AbstractMindmapsGraph) mindmapsGraph;
+        graknGraph = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        graph = (AbstractGraknGraph) graknGraph;
         graph.initialiseMetaConcepts();
 
         type = graph.putEntityType("Test");
@@ -545,7 +545,7 @@ public class MindmapsGraphHighLevelTest {
 
     @Test
     public void testPutRelationSimple(){
-        AbstractMindmapsGraph graph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraphBatchLoading();
+        AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraphBatchLoading();
 
         EntityType type = graph.putEntityType("Test");
         RoleType actor = graph.putRoleType("Actor");

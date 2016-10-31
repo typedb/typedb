@@ -18,7 +18,7 @@
 
 package io.grakn.graql;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 
 import java.util.stream.Stream;
 
@@ -28,7 +28,7 @@ public interface Query<T> {
      * @param graph the graph to execute the query on
      * @return a new query with the graph set
      */
-    Query<T> withGraph(MindmapsGraph graph);
+    Query<T> withGraph(GraknGraph graph);
 
     T execute();
 

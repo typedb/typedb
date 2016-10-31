@@ -17,7 +17,7 @@
  */
 package io.grakn.graql.internal.reasoner.atom;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.RelationType;
 import io.grakn.concept.RoleType;
 import io.grakn.concept.Rule;
@@ -133,7 +133,7 @@ public class Relation extends Atom {
         if (t != null)
             return !t.getRulesOfConclusion().isEmpty();
         else{
-            MindmapsGraph graph = getParentQuery().getGraph().orElse(null);
+            GraknGraph graph = getParentQuery().getGraph().orElse(null);
             Set<Rule> rules = Reasoner.getRules(graph);
             return rules.stream()
                     .flatMap(rule -> rule.getConclusionTypes().stream())
@@ -152,7 +152,7 @@ public class Relation extends Atom {
 
     private Set<RoleType> getExplicitRoleTypes(){
         Set<RoleType> roleTypes = new HashSet<>();
-        MindmapsGraph graph = getParentQuery().getGraph().orElse(null);
+        GraknGraph graph = getParentQuery().getGraph().orElse(null);
         castings.stream()
                 .filter(c -> c.getRoleType().isPresent())
                 .filter(c -> c.getRoleType().get().getId().isPresent())
@@ -220,7 +220,7 @@ public class Relation extends Atom {
         Map<String, Pair<Type, RoleType>> roleVarTypeMap = new HashMap<>();
         if (getParentQuery() == null) return roleVarTypeMap;
 
-        MindmapsGraph graph =  getParentQuery().getGraph().orElse(null);
+        GraknGraph graph =  getParentQuery().getGraph().orElse(null);
         Type relType = getType();
         Set<String> vars = getVarNames();
         Map<String, Type> varTypeMap = getParentQuery().getVarTypeMap();
@@ -264,7 +264,7 @@ public class Relation extends Atom {
     private Map<RoleType, Pair<String, Type>> computeRoleVarTypeMap() {
         Map<RoleType, Pair<String, Type>> roleVarTypeMap = new HashMap<>();
         if (getParentQuery() == null || getType() == null) return roleVarTypeMap;
-        MindmapsGraph graph =  getParentQuery().getGraph().orElse(null);
+        GraknGraph graph =  getParentQuery().getGraph().orElse(null);
         Map<String, Type> varTypeMap = getParentQuery().getVarTypeMap();
         Set<String> allocatedVars = new HashSet<>();
         Set<RoleType> allocatedRoles = new HashSet<>();

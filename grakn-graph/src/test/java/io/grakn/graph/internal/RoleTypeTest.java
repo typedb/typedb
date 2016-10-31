@@ -18,7 +18,7 @@
 
 package io.grakn.graph.internal;
 
-import io.grakn.Mindmaps;
+import io.grakn.Grakn;
 import io.grakn.concept.Entity;
 import io.grakn.concept.EntityType;
 import io.grakn.concept.RelationType;
@@ -42,7 +42,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class RoleTypeTest {
-    private AbstractMindmapsGraph mindmapsGraph;
+    private AbstractGraknGraph mindmapsGraph;
     private RoleType roleType;
     private RelationType relationType;
 
@@ -51,7 +51,7 @@ public class RoleTypeTest {
 
     @Before
     public void buildGraph(){
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        mindmapsGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         mindmapsGraph.initialiseMetaConcepts();
 
         roleType = mindmapsGraph.putRoleType("RoleType");

@@ -18,10 +18,10 @@
 
 package io.grakn.engine.loader;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.engine.MindmapsEngineTestBase;
 import io.grakn.engine.util.ConfigProperties;
-import io.grakn.exception.MindmapsValidationException;
+import io.grakn.exception.GraknValidationException;
 import io.grakn.factory.GraphFactory;
 import io.grakn.graql.Graql;
 import org.junit.After;
@@ -48,7 +48,7 @@ public class DistributedLoaderTest extends MindmapsEngineTestBase{
 
     private final Logger LOG = LoggerFactory.getLogger(DistributedLoaderTest.class);
 
-    private MindmapsGraph graph;
+    private GraknGraph graph;
 
     private DistributedLoader loader;
 
@@ -93,7 +93,7 @@ public class DistributedLoaderTest extends MindmapsEngineTestBase{
     }
 
     private void loadOntologyFromFile() {
-        MindmapsGraph graph = GraphFactory.getInstance().getGraphBatchLoading(graphName);
+        GraknGraph graph = GraphFactory.getInstance().getGraphBatchLoading(graphName);
         ClassLoader classLoader = getClass().getClassLoader();
 
         LOG.info("Loading new ontology .. ");
@@ -108,7 +108,7 @@ public class DistributedLoaderTest extends MindmapsEngineTestBase{
         Graql.parse(query).withGraph(graph).execute();
         try {
             graph.commit();
-        } catch (MindmapsValidationException e) {
+        } catch (GraknValidationException e) {
             e.printStackTrace();
         }
 

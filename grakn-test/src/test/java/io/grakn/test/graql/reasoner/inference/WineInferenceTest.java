@@ -19,7 +19,7 @@
 package io.grakn.test.graql.reasoner.inference;
 
 import com.google.common.collect.Sets;
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.graql.Graql;
 import io.grakn.graql.MatchQuery;
 import io.grakn.graql.QueryBuilder;
@@ -38,7 +38,7 @@ public class WineInferenceTest {
 
     @BeforeClass
     public static void setUpClass() {
-        MindmapsGraph graph = GenericGraph.getGraph("wines-test.gql", "wines-rules.gql");
+        GraknGraph graph = GenericGraph.getGraph("wines-test.gql", "wines-rules.gql");
         reasoner = new Reasoner(graph);
         qb = Graql.withGraph(graph);
     }

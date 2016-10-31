@@ -27,7 +27,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import java.util.*;
 
 /**
- * Core Mindmaps implementation of the common methods on the MapReduce and VertexProgram interfaces.
+ * Core Grakn implementation of the common methods on the MapReduce and VertexProgram interfaces.
  */
 abstract class CommonOLAP {
 

@@ -18,7 +18,7 @@
 
 package io.grakn.graph.internal;
 
-import io.grakn.Mindmaps;
+import io.grakn.Grakn;
 import io.grakn.concept.Concept;
 import io.grakn.concept.EntityType;
 import io.grakn.concept.Relation;
@@ -43,7 +43,7 @@ import static org.junit.Assert.assertTrue;
 
 public class CastingTest {
 
-    private AbstractMindmapsGraph mindmapsGraph;
+    private AbstractGraknGraph mindmapsGraph;
     private CastingImpl casting;
     private RoleTypeImpl role;
     private RelationImpl relation;
@@ -54,7 +54,7 @@ public class CastingTest {
 
     @Before
     public void setUp() {
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        mindmapsGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         mindmapsGraph.initialiseMetaConcepts();
         role = (RoleTypeImpl) mindmapsGraph.putRoleType("Role");
         EntityTypeImpl conceptType = (EntityTypeImpl) mindmapsGraph.putEntityType("A thing");

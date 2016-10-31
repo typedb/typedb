@@ -18,7 +18,7 @@
 
 package io.grakn.test.graql.reasoner.graphs;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.EntityType;
 import io.grakn.concept.RelationType;
 import io.grakn.concept.RoleType;
@@ -27,7 +27,7 @@ import static com.google.common.math.IntMath.pow;
 
 public class PathGraph extends GenericGraph {
 
-    public static MindmapsGraph getGraph(int n, int children) {
+    public static GraknGraph getGraph(int n, int children) {
         final String gqlFile = "path-test.gql";
         getGraph(gqlFile);
         buildExtensionalDB(n, children);

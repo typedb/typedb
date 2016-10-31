@@ -25,7 +25,7 @@ package io.grakn.graql.internal.shell;
 public enum ErrorMessage {
 
     COULD_NOT_CREATE_TEMP_FILE("WARNING: could not create temporary file for editing queries"),
-    COULD_NOT_CONNECT("Could not connect to Mindmaps Engine. Have you run 'grakn.sh start'?");
+    COULD_NOT_CONNECT("Could not connect to Grakn Engine. Have you run 'grakn.sh start'?");
 
     private final String message;
 

@@ -18,11 +18,11 @@
 
 package io.grakn.factory;
 
-import io.grakn.MindmapsComputer;
-import io.grakn.MindmapsGraph;
-import io.grakn.MindmapsGraphFactory;
+import io.grakn.GraknGraphFactory;
+import io.grakn.GraknComputer;
+import io.grakn.GraknGraph;
 import io.grakn.graph.internal.EngineCommunicator;
-import io.grakn.graph.internal.MindmapsComputerImpl;
+import io.grakn.graph.internal.GraknComputerImpl;
 import io.grakn.util.ErrorMessage;
 import io.grakn.util.REST;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -42,12 +42,12 @@ import static io.grakn.util.REST.WebPath.GRAPH_FACTORY_URI;
  * This is to abstract away factories and the backend from the user.
  * The deployer of engine decides on the backend and this class will handle producing the correct graphs.
  */
-public class MindmapsGraphFactoryImpl implements MindmapsGraphFactory{
+public class GraknGraphFactoryImpl implements GraknGraphFactory {
     private static final String COMPUTER = "graph.computer";
     private final String uri;
     private final String keyspace;
 
-    public MindmapsGraphFactoryImpl(String keyspace, String uri){
+    public GraknGraphFactoryImpl(String keyspace, String uri){
         this.uri = uri;
         this.keyspace = keyspace;
     }
@@ -56,7 +56,7 @@ public class MindmapsGraphFactoryImpl implements MindmapsGraphFactory{
      *
      * @return A new or existing grakn graph with the defined name
      */
-    public MindmapsGraph getGraph(){
+    public GraknGraph getGraph(){
         ConfigureFactory configuredFactory = configureGraphFactory(keyspace, uri, REST.GraphConfig.DEFAULT);
         return configuredFactory.factory.getGraph(false);
     }
@@ -65,7 +65,7 @@ public class MindmapsGraphFactoryImpl implements MindmapsGraphFactory{
      *
      * @return A new or existing grakn graph with the defined name connecting to the specified remote uri with batch loading enabled
      */
-    public MindmapsGraph getGraphBatchLoading(){
+    public GraknGraph getGraphBatchLoading(){
         ConfigureFactory configuredFactory = configureGraphFactory(keyspace, uri, REST.GraphConfig.BATCH);
         return configuredFactory.factory.getGraph(true);
     }
@@ -73,10 +73,10 @@ public class MindmapsGraphFactoryImpl implements MindmapsGraphFactory{
     /**
      * @return A new or existing grakn graph compute with the defined name
      */
-    public MindmapsComputer getGraphComputer() {
+    public GraknComputer getGraphComputer() {
         ConfigureFactory configuredFactory = configureGraphFactory(keyspace, uri, REST.GraphConfig.COMPUTER);
         Graph graph = configuredFactory.factory.getTinkerPopGraph(false);
-        return new MindmapsComputerImpl(graph, configuredFactory.graphComputer);
+        return new GraknComputerImpl(graph, configuredFactory.graphComputer);
     }
 
     /**

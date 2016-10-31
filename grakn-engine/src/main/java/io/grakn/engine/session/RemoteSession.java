@@ -18,7 +18,7 @@
 
 package io.grakn.engine.session;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.factory.GraphFactory;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
@@ -41,7 +41,7 @@ import static io.grakn.util.REST.RemoteShell.*;
 @WebSocket
 public class RemoteSession {
     private final Map<Session, GraqlSession> sessions = new HashMap<>();
-    private final Function<String, MindmapsGraph> getGraph;
+    private final Function<String, GraknGraph> getGraph;
     private final Logger LOG = LoggerFactory.getLogger(RemoteSession.class);
 
 
@@ -51,7 +51,7 @@ public class RemoteSession {
         this(GraphFactory.getInstance()::getGraph);
     }
 
-    public RemoteSession(Function<String, MindmapsGraph> getGraph) {
+    public RemoteSession(Function<String, GraknGraph> getGraph) {
         this.getGraph = getGraph;
     }
 
@@ -110,7 +110,7 @@ public class RemoteSession {
      */
     private void startSession(Session session, Json json) {
         String keyspace = json.at(KEYSPACE).asString();
-        MindmapsGraph graph = getGraph.apply(keyspace);
+        GraknGraph graph = getGraph.apply(keyspace);
         GraqlSession graqlSession = new GraqlSession(session, graph);
         sessions.put(session, graqlSession);
     }

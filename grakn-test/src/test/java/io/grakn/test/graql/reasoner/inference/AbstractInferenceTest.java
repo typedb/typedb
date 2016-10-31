@@ -19,7 +19,7 @@
 package io.grakn.test.graql.reasoner.inference;
 
 import com.google.common.collect.Sets;
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.graql.Graql;
 import io.grakn.graql.MatchQuery;
 import io.grakn.graql.QueryBuilder;
@@ -39,7 +39,7 @@ public class AbstractInferenceTest {
 
     @BeforeClass
     public static void setUpClass() {
-        MindmapsGraph graph = AbstractGraph.getGraph();
+        GraknGraph graph = AbstractGraph.getGraph();
         reasoner = new Reasoner(graph);
         qb = Graql.withGraph(graph);
     }

@@ -19,9 +19,9 @@
 package io.grakn.test.graql.reasoner.graphs;
 
 
-import io.grakn.Mindmaps;
-import io.grakn.MindmapsGraph;
-import io.grakn.exception.MindmapsValidationException;
+import io.grakn.Grakn;
+import io.grakn.GraknGraph;
+import io.grakn.exception.GraknValidationException;
 import io.grakn.graql.Graql;
 import io.grakn.graql.QueryBuilder;
 
@@ -34,15 +34,15 @@ import java.util.UUID;
 
 public class SNBGraph {
 
-    private static MindmapsGraph mindmaps;
+    private static GraknGraph mindmaps;
 
-    public static MindmapsGraph getGraph() {
-        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+    public static GraknGraph getGraph() {
+        mindmaps = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         buildGraph();
 
         try {
             mindmaps.commit();
-        } catch (MindmapsValidationException e) {
+        } catch (GraknValidationException e) {
             System.out.println(e.getMessage());
         }
 

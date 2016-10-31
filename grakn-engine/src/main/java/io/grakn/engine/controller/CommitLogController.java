@@ -20,7 +20,7 @@ package io.grakn.engine.controller;
 
 import io.grakn.engine.postprocessing.Cache;
 import io.grakn.engine.util.ConfigProperties;
-import io.grakn.exception.MindmapsEngineServerException;
+import io.grakn.exception.GraknEngineServerException;
 import io.grakn.util.ErrorMessage;
 import io.grakn.util.REST;
 import io.grakn.util.Schema;
@@ -108,7 +108,7 @@ public class CommitLogController {
 
             return "Graph [" + graphName + "] now has [" + numJobs + "] post processing jobs";
         } catch(Exception e){
-            throw new MindmapsEngineServerException(500,e);
+            throw new GraknEngineServerException(500,e);
         }
     }
     private long getJobCount(Set jobs){

@@ -18,7 +18,7 @@
 
 package io.grakn.migration.export;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.engine.MindmapsEngineServer;
 import io.grakn.engine.util.ConfigProperties;
 import io.grakn.example.PokemonGraphFactory;
@@ -43,7 +43,7 @@ public class GraphWriterMainTest {
         System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
         System.setProperty(ConfigProperties.CURRENT_DIR_SYSTEM_PROPERTY, System.getProperty("user.dir")+"/../");
 
-        MindmapsGraph original = GraphFactory.getInstance().getGraph("original");
+        GraknGraph original = GraphFactory.getInstance().getGraph("original");
         PokemonGraphFactory.loadGraph(original);
         MindmapsEngineServer.start();
     }

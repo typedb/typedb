@@ -18,10 +18,10 @@
 
 package io.grakn.factory;
 
-import io.grakn.graph.internal.AbstractMindmapsGraph;
+import io.grakn.graph.internal.AbstractGraknGraph;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
-abstract class AbstractMindmapsInternalFactory<M extends AbstractMindmapsGraph<G>, G extends Graph> implements MindmapsInternalFactory<M, G> {
+abstract class AbstractMindmapsInternalFactory<M extends AbstractGraknGraph<G>, G extends Graph> implements MindmapsInternalFactory<M, G> {
     protected final String keyspace;
     protected final String engineUrl;
     protected final String config;

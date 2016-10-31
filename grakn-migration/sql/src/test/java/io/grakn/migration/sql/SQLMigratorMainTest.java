@@ -18,7 +18,7 @@
 
 package io.grakn.migration.sql;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.Entity;
 import io.grakn.engine.MindmapsEngineServer;
 import io.grakn.engine.util.ConfigProperties;
@@ -33,7 +33,7 @@ import static org.junit.Assert.assertTrue;
 public class SQLMigratorMainTest {
 
     private Namer namer = new Namer() {};
-    private MindmapsGraph graph;
+    private GraknGraph graph;
 
     @BeforeClass
     public static void start(){

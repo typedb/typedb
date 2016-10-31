@@ -18,7 +18,7 @@
 
 package io.grakn.graph.internal;
 
-import io.grakn.Mindmaps;
+import io.grakn.Grakn;
 import io.grakn.concept.Entity;
 import io.grakn.concept.EntityType;
 import io.grakn.concept.Relation;
@@ -42,7 +42,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class PostprocessingTest {
-    private AbstractMindmapsGraph graph;
+    private AbstractGraknGraph graph;
     private RoleType roleType1;
     private RoleType roleType2;
     private RelationType relationType;
@@ -53,7 +53,7 @@ public class PostprocessingTest {
 
     @Before
     public void buildGraphAccessManager(){
-        graph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        graph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         graph.initialiseMetaConcepts();
 
         roleType1 = graph.putRoleType("role 1");

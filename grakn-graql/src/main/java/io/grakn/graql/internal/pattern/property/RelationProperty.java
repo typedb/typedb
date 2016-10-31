@@ -21,7 +21,7 @@ package io.grakn.graql.internal.pattern.property;
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.Concept;
 import io.grakn.concept.Instance;
 import io.grakn.concept.Relation;
@@ -188,7 +188,7 @@ public class RelationProperty extends AbstractVarProperty implements UniqueVarPr
     }
 
     @Override
-    public void checkValidProperty(MindmapsGraph graph, VarAdmin var) throws IllegalStateException {
+    public void checkValidProperty(GraknGraph graph, VarAdmin var) throws IllegalStateException {
 
         Set<String> roleTypes = castings.stream()
                 .map(VarAdmin.Casting::getRoleType).flatMap(CommonUtil::optionalToStream)

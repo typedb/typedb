@@ -19,7 +19,7 @@
 package io.grakn.graql.internal.reasoner.query;
 
 import com.google.common.collect.Sets;
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.Concept;
 import io.grakn.concept.RelationType;
 import io.grakn.concept.RoleType;
@@ -44,12 +44,12 @@ public class AtomicQuery extends Query{
 
     final private Set<AtomicQuery> children = new HashSet<>();
 
-    public AtomicQuery(String rhs, MindmapsGraph graph){
+    public AtomicQuery(String rhs, GraknGraph graph){
         super(rhs, graph);
         atom = selectAtoms().iterator().next();
     }
 
-    public AtomicQuery(MatchQuery query, MindmapsGraph graph){
+    public AtomicQuery(MatchQuery query, GraknGraph graph){
         super(query, graph);
         atom = selectAtoms().iterator().next();
     }

@@ -18,9 +18,9 @@
 
 package io.grakn.migration.sql;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.engine.MindmapsEngineServer;
-import io.grakn.exception.MindmapsValidationException;
+import io.grakn.exception.GraknValidationException;
 import io.grakn.concept.Entity;
 import io.grakn.concept.Instance;
 import io.grakn.concept.RoleType;
@@ -43,7 +43,7 @@ import static org.junit.Assert.assertTrue;
 
 public class SQLDataMigratorTest {
 
-    private MindmapsGraph graph;
+    private GraknGraph graph;
     private BlockingLoader loader;
     private Namer namer = new Namer() {};
 
@@ -112,7 +112,7 @@ public class SQLDataMigratorTest {
     }
 
     @Test
-    public void postgresDataTest() throws SQLException, MindmapsValidationException {
+    public void postgresDataTest() throws SQLException, GraknValidationException {
         Connection connection = Util.setupExample("postgresql-example");
         schemaMigrator.configure(connection).migrate(loader);
         dataMigrator.configure(connection).migrate(loader);

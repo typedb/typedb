@@ -19,7 +19,7 @@
 
 package io.grakn.graql.internal.query.match;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.Concept;
 import io.grakn.concept.Type;
 import io.grakn.util.ErrorMessage;
@@ -34,16 +34,16 @@ import java.util.stream.Stream;
  */
 class MatchQueryGraph extends MatchQueryModifier {
 
-    private final MindmapsGraph graph;
+    private final GraknGraph graph;
 
-    MatchQueryGraph(MindmapsGraph graph, MatchQueryInternal inner) {
+    MatchQueryGraph(GraknGraph graph, MatchQueryInternal inner) {
         super(inner);
         this.graph = graph;
     }
 
     @Override
     public Stream<Map<String, Concept>> stream(
-            Optional<MindmapsGraph> graph, Optional<MatchOrder> order
+            Optional<GraknGraph> graph, Optional<MatchOrder> order
     ) {
         if (graph.isPresent()) {
             throw new IllegalStateException(ErrorMessage.MULTIPLE_GRAPH.getMessage());
@@ -53,7 +53,7 @@ class MatchQueryGraph extends MatchQueryModifier {
     }
 
     @Override
-    public Optional<MindmapsGraph> getGraph() {
+    public Optional<GraknGraph> getGraph() {
         return Optional.of(graph);
     }
 

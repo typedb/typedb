@@ -19,7 +19,7 @@
 package io.grakn.graql;
 
 import com.google.common.collect.ImmutableSet;
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.Concept;
 import io.grakn.graql.internal.antlr.GraqlLexer;
 import io.grakn.util.Schema;
@@ -50,7 +50,7 @@ public class Autocomplete {
      * @param cursorPosition the cursor position in the query
      * @return an autocomplete object containing potential candidates and cursor position to autocomplete from
      */
-    public static Autocomplete create(MindmapsGraph graph, String query, int cursorPosition) {
+    public static Autocomplete create(GraknGraph graph, String query, int cursorPosition) {
         return new Autocomplete(graph, query, cursorPosition);
     }
 
@@ -73,7 +73,7 @@ public class Autocomplete {
      * @param query the query to autocomplete
      * @param cursorPosition the cursor position in the query
      */
-    private Autocomplete(MindmapsGraph graph, String query, int cursorPosition) {
+    private Autocomplete(GraknGraph graph, String query, int cursorPosition) {
         Optional<? extends Token> optToken = getCursorToken(query, cursorPosition);
         candidates = findCandidates(graph, query, optToken);
         this.cursorPosition = findCursorPosition(cursorPosition, optToken);
@@ -85,7 +85,7 @@ public class Autocomplete {
      * @param optToken the token the cursor is on in the query
      * @return a set of potential autocomplete words
      */
-    private static ImmutableSet<String> findCandidates(MindmapsGraph graph, String query, Optional<? extends Token> optToken) {
+    private static ImmutableSet<String> findCandidates(GraknGraph graph, String query, Optional<? extends Token> optToken) {
         ImmutableSet<String> allCandidates = Stream.of(GRAQL_KEYWORDS.stream(), getTypes(graph), getVariables(query))
                 .flatMap(Function.identity()).collect(toImmutableSet());
 
@@ -120,7 +120,7 @@ public class Autocomplete {
      * @param graph the graph to find types in
      * @return all type IDs in the ontology
      */
-    private static Stream<String> getTypes(MindmapsGraph graph) {
+    private static Stream<String> getTypes(GraknGraph graph) {
         Stream<String> types = graph.getMetaType().instances().stream().map(Concept::getId);
 
         Stream<String> metaTypes = Stream.of(Schema.MetaSchema.values()).map(Schema.MetaSchema::getId);

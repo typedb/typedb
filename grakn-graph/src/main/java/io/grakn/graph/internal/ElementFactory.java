@@ -34,9 +34,9 @@ import org.slf4j.LoggerFactory;
  */
 final class ElementFactory {
     protected final Logger LOG = LoggerFactory.getLogger(ElementFactory.class);
-    private final AbstractMindmapsGraph mindmapsGraph;
+    private final AbstractGraknGraph mindmapsGraph;
 
-    public ElementFactory(AbstractMindmapsGraph mindmapsGraph){
+    public ElementFactory(AbstractGraknGraph mindmapsGraph){
         this.mindmapsGraph = mindmapsGraph;
     }
 
@@ -173,7 +173,7 @@ final class ElementFactory {
         return conceptType;
     }
 
-    public EdgeImpl buildEdge(org.apache.tinkerpop.gremlin.structure.Edge edge, AbstractMindmapsGraph mindmapsGraph){
+    public EdgeImpl buildEdge(org.apache.tinkerpop.gremlin.structure.Edge edge, AbstractGraknGraph mindmapsGraph){
         return new EdgeImpl(edge, mindmapsGraph);
     }
 }

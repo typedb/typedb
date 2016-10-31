@@ -20,11 +20,11 @@ package io.grakn.engine.controller;
 
 import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.Concept;
 import io.grakn.engine.util.ConfigProperties;
 import io.grakn.engine.visualiser.HALConcept;
-import io.grakn.exception.MindmapsEngineServerException;
+import io.grakn.exception.GraknEngineServerException;
 import io.grakn.factory.GraphFactory;
 import io.grakn.graql.MatchQuery;
 import io.grakn.graql.internal.pattern.property.RelationProperty;
@@ -88,13 +88,13 @@ public class VisualiserController {
         String graphNameParam = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
         String currentGraphName = (graphNameParam == null) ? defaultGraphName : graphNameParam;
 
-        try(MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)){
+        try(GraknGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)){
             Concept concept = graph.getConcept(req.params(REST.Request.ID_PARAMETER));
             LOG.trace("Building HAL resource for concept with id {}", concept.getId());
             return new HALConcept(concept, separationDegree, false, new HashSet<>()).render();
 
         } catch (Exception e) {
-            throw new MindmapsEngineServerException(500, e);
+            throw new GraknEngineServerException(500, e);
         }
     }
 
@@ -110,13 +110,13 @@ public class VisualiserController {
         String graphNameParam = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
         String currentGraphName = (graphNameParam == null) ? defaultGraphName : graphNameParam;
 
-        try(MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)) {
+        try(GraknGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)) {
             Concept concept = graph.getConcept(req.params(REST.Request.ID_PARAMETER));
             LOG.trace("Building HAL resource for concept with id {}", concept.getId());
             return new HALConcept(concept).render();
 
         } catch (Exception e) {
-            throw new MindmapsEngineServerException(500, e);
+            throw new GraknEngineServerException(500, e);
         }
     }
 
@@ -133,7 +133,7 @@ public class VisualiserController {
         String currentGraphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
         if (currentGraphName == null) currentGraphName = defaultGraphName;
 
-        try (MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)) {
+        try (GraknGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)) {
 
             LOG.debug("Start querying for: [{}]", req.queryParams(REST.Request.QUERY_FIELD));
             MatchQuery matchQuery = withGraph(graph).parse(req.queryParams(REST.Request.QUERY_FIELD));
@@ -149,7 +149,7 @@ public class VisualiserController {
             LOG.debug("Done building resources.");
             return halArray.toString();
         } catch (Exception e) {
-            throw new MindmapsEngineServerException(500, e);
+            throw new GraknEngineServerException(500, e);
         }
     }
 

@@ -21,8 +21,8 @@ package io.grakn.exception;
 /**
  * Thrown when a grakn validation rule is broken. {@see io.grakn.core.implementation.Validator} for more details
  */
-public class MindmapsValidationException extends Exception{
-    public MindmapsValidationException(String error) {
+public class GraknValidationException extends Exception{
+    public GraknValidationException(String error) {
         super(error);
     }
 }

@@ -18,7 +18,7 @@
 
 package io.grakn.graql.internal.query;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.exception.InvalidConceptTypeException;
 import io.grakn.graql.ComputeQuery;
 import io.grakn.graql.internal.analytics.Analytics;
@@ -35,12 +35,12 @@ import static java.util.stream.Collectors.joining;
 
 class ComputeQueryImpl implements ComputeQuery {
 
-    private final Optional<MindmapsGraph> graph;
+    private final Optional<GraknGraph> graph;
     private final Set<String> subTypeIds;
     private final Set<String> statisticsResourceTypeIds;
     private final String computeMethod;
 
-    ComputeQueryImpl(Optional<MindmapsGraph> graph, String computeMethod, Set<String> subTypeIds, Set<String> statisticsResourceTypeIds) {
+    ComputeQueryImpl(Optional<GraknGraph> graph, String computeMethod, Set<String> subTypeIds, Set<String> statisticsResourceTypeIds) {
         this.graph = graph;
         this.computeMethod = computeMethod;
         this.subTypeIds = subTypeIds;
@@ -49,7 +49,7 @@ class ComputeQueryImpl implements ComputeQuery {
 
     @Override
     public Object execute() {
-        MindmapsGraph theGraph = graph.orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage()));
+        GraknGraph theGraph = graph.orElseThrow(() -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage()));
 
         String keyspace = theGraph.getKeyspace();
 
@@ -155,7 +155,7 @@ class ComputeQueryImpl implements ComputeQuery {
     }
 
     @Override
-    public ComputeQuery withGraph(MindmapsGraph graph) {
+    public ComputeQuery withGraph(GraknGraph graph) {
         return new ComputeQueryImpl(Optional.of(graph), computeMethod, subTypeIds, statisticsResourceTypeIds);
     }
 }

@@ -18,9 +18,9 @@
 
 package io.grakn.migration.sql;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.engine.MindmapsEngineServer;
-import io.grakn.exception.MindmapsValidationException;
+import io.grakn.exception.GraknValidationException;
 import io.grakn.concept.RelationType;
 import io.grakn.concept.ResourceType;
 import io.grakn.concept.RoleType;
@@ -45,7 +45,7 @@ public class SQLSchemaMigratorTest {
 
     private static final String GRAPH_NAME = "test";
 
-    private MindmapsGraph graph;
+    private GraknGraph graph;
     private BlockingLoader loader;
 
     private Namer namer = new Namer() {};
@@ -67,7 +67,7 @@ public class SQLSchemaMigratorTest {
     }
 
     @Before
-    public void setup() throws MindmapsValidationException {
+    public void setup() throws GraknValidationException {
         graph = GraphFactory.getInstance().getGraphBatchLoading(GRAPH_NAME);
         loader = new BlockingLoader(GRAPH_NAME);
     }

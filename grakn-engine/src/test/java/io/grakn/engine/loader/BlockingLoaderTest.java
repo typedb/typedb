@@ -18,10 +18,10 @@
 
 package io.grakn.engine.loader;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.engine.MindmapsEngineTestBase;
 import io.grakn.engine.util.ConfigProperties;
-import io.grakn.exception.MindmapsValidationException;
+import io.grakn.exception.GraknValidationException;
 import io.grakn.factory.GraphFactory;
 import io.grakn.graql.Graql;
 import org.junit.After;
@@ -94,7 +94,7 @@ public class BlockingLoaderTest extends MindmapsEngineTestBase {
     }
 
     private void loadOntology() {
-        MindmapsGraph graph = GraphFactory.getInstance().getGraphBatchLoading(graphName);
+        GraknGraph graph = GraphFactory.getInstance().getGraphBatchLoading(graphName);
         ClassLoader classLoader = getClass().getClassLoader();
 
         LOG.debug("Loading new ontology .. ");
@@ -109,7 +109,7 @@ public class BlockingLoaderTest extends MindmapsEngineTestBase {
         Graql.parse(query).withGraph(graph).execute();
         try {
             graph.commit();
-        } catch (MindmapsValidationException e) {
+        } catch (GraknValidationException e) {
             e.printStackTrace();
         }
 

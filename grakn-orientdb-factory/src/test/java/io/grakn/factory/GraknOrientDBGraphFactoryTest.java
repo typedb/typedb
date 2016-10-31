@@ -2,9 +2,9 @@ package io.grakn.factory;
 
 import io.grakn.concept.EntityType;
 import io.grakn.concept.RoleType;
-import io.grakn.exception.MindmapsValidationException;
-import io.grakn.graph.internal.AbstractMindmapsGraph;
-import io.grakn.graph.internal.MindmapsOrientDBGraph;
+import io.grakn.exception.GraknValidationException;
+import io.grakn.graph.internal.AbstractGraknGraph;
+import io.grakn.graph.internal.GraknOrientDBGraph;
 import io.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.orientdb.OrientGraph;
 import org.junit.After;
@@ -17,7 +17,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
-public class MindmapsOrientDBGraphFactoryTest {
+public class GraknOrientDBGraphFactoryTest {
     private final static String TEST_NAME = "MyGraph";
     private final static String TEST_URI = "memory";
     private static MindmapsOrientDBInternalFactory orientGraphFactory ;
@@ -28,23 +28,23 @@ public class MindmapsOrientDBGraphFactoryTest {
     }
 
     @After
-    public void clear() throws MindmapsValidationException {
-        MindmapsOrientDBGraph graph = orientGraphFactory.getGraph(false);
+    public void clear() throws GraknValidationException {
+        GraknOrientDBGraph graph = orientGraphFactory.getGraph(false);
         graph.clear();
     }
 
     @Test
     public void testBuildSimpleGraph() throws Exception {
-        AbstractMindmapsGraph mindmapsGraph = orientGraphFactory.getGraph(false);
+        AbstractGraknGraph mindmapsGraph = orientGraphFactory.getGraph(false);
         assertThat(mindmapsGraph.getTinkerPopGraph(), instanceOf(OrientGraph.class));
         assertEquals(8, mindmapsGraph.getTinkerPopGraph().traversal().V().toList().size());
     }
 
     @Test
     public void testBuildSingletonGraphs(){
-        AbstractMindmapsGraph<OrientGraph> mindmapsGraph1 = orientGraphFactory.getGraph(false);
-        AbstractMindmapsGraph<OrientGraph> mindmapsGraph2 = orientGraphFactory.getGraph(false);
-        AbstractMindmapsGraph<OrientGraph> mindmapsGraph3 = orientGraphFactory.getGraph(true);
+        AbstractGraknGraph<OrientGraph> mindmapsGraph1 = orientGraphFactory.getGraph(false);
+        AbstractGraknGraph<OrientGraph> mindmapsGraph2 = orientGraphFactory.getGraph(false);
+        AbstractGraknGraph<OrientGraph> mindmapsGraph3 = orientGraphFactory.getGraph(true);
 
         assertEquals(mindmapsGraph1, mindmapsGraph2);
         assertNotEquals(mindmapsGraph2, mindmapsGraph3);
@@ -55,8 +55,8 @@ public class MindmapsOrientDBGraphFactoryTest {
     }
 
     @Test
-    public void testBuildGraph() throws MindmapsValidationException {
-        MindmapsOrientDBGraph mindmapsGraph = orientGraphFactory.getGraph(false);
+    public void testBuildGraph() throws GraknValidationException {
+        GraknOrientDBGraph mindmapsGraph = orientGraphFactory.getGraph(false);
 
         assertEquals(8, mindmapsGraph.getTinkerPopGraph().traversal().V().toList().size());
         assertNotNull(mindmapsGraph.getMetaEntityType());
@@ -77,7 +77,7 @@ public class MindmapsOrientDBGraphFactoryTest {
 
     @Test
     public void testVertexIndices(){
-        MindmapsOrientDBGraph mindmapsGraph = orientGraphFactory.getGraph(false);
+        GraknOrientDBGraph mindmapsGraph = orientGraphFactory.getGraph(false);
         for (Schema.BaseType baseType : Schema.BaseType.values()) {
             assertEquals(6, mindmapsGraph.getTinkerPopGraph().getVertexIndexedKeys(baseType.name()).size());
         }

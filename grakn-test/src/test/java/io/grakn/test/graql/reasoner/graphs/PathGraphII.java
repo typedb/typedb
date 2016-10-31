@@ -18,14 +18,14 @@
 
 package io.grakn.test.graql.reasoner.graphs;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.EntityType;
 import io.grakn.concept.RelationType;
 import io.grakn.concept.RoleType;
 
 public class PathGraphII extends GenericGraph {
 
-    public static MindmapsGraph getGraph(int n, int m) {
+    public static GraknGraph getGraph(int n, int m) {
         final String gqlFile = "path-test.gql";
         getGraph(gqlFile);
         buildExtensionalDB(n, m);

@@ -19,12 +19,12 @@
 package io.grakn.migration.csv;
 
 import com.google.common.io.Files;
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.Entity;
 import io.grakn.concept.ResourceType;
 import io.grakn.engine.MindmapsEngineServer;
 import io.grakn.engine.util.ConfigProperties;
-import io.grakn.exception.MindmapsValidationException;
+import io.grakn.exception.GraknValidationException;
 import io.grakn.factory.GraphFactory;
 import io.grakn.graql.Graql;
 import org.junit.*;
@@ -40,7 +40,7 @@ import static junit.framework.TestCase.assertEquals;
 public class CSVMigratorMainTest {
 
     private final String GRAPH_NAME = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
-    private MindmapsGraph graph;
+    private GraknGraph graph;
 
     private final String dataFile = get("single-file/data/cars.csv").getAbsolutePath();;
     private final String templateFile = get("single-file/template.gql").getAbsolutePath();
@@ -147,7 +147,7 @@ public class CSVMigratorMainTest {
                     .execute();
 
             graph.commit();
-        } catch (IOException|MindmapsValidationException e){
+        } catch (IOException|GraknValidationException e){
             throw new RuntimeException(e);
         }
     }

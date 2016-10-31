@@ -19,7 +19,7 @@
 
 package io.grakn.graql.internal.query.match;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.Concept;
 import io.grakn.util.ErrorMessage;
 
@@ -41,7 +41,7 @@ class MatchQueryOrder extends MatchQueryModifier {
 
     @Override
     public Stream<Map<String, Concept>> stream(
-            Optional<MindmapsGraph> graph, Optional<MatchOrder> order
+            Optional<GraknGraph> graph, Optional<MatchOrder> order
     ) {
         if (order.isPresent()) {
             throw new IllegalStateException(ErrorMessage.MULTIPLE_ORDER.getMessage());

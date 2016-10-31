@@ -19,7 +19,7 @@
 package io.grakn.migration.sql;
 
 import com.google.common.base.Throwables;
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.ResourceType;
 import io.grakn.engine.loader.Loader;
 import io.grakn.graql.Var;
@@ -49,7 +49,7 @@ public class SQLDataMigrator implements Iterable<Collection<Var>>, Closeable {
     private final Logger logger = LoggerFactory.getLogger(SQLDataMigrator.class);
 
     private Namer namer;
-    private MindmapsGraph graph;
+    private GraknGraph graph;
     private Connection connection;
     private SQLModel metadata;
 
@@ -69,16 +69,16 @@ public class SQLDataMigrator implements Iterable<Collection<Var>>, Closeable {
 
     /**
      * Set a graph from which to get information
-     * @param graph a Mindmaps graph
+     * @param graph a Grakn graph
      */
-    public SQLDataMigrator graph(MindmapsGraph graph){
+    public SQLDataMigrator graph(GraknGraph graph){
         this.graph = graph;
         return this;
     }
 
     /**
-     * Migrate a CSV schema into a Mindmaps ontology
-     * @return var patterns representing the migrated Mindmaps ontology
+     * Migrate a CSV schema into a Grakn ontology
+     * @return var patterns representing the migrated Grakn ontology
      */
     public Collection<Var> migrate(){
         Collection<Var> collection = new HashSet<>();

@@ -3,9 +3,9 @@ package io.grakn.test.graql.analytics;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Sets;
-import io.grakn.Mindmaps;
+import io.grakn.Grakn;
 import io.grakn.concept.*;
-import io.grakn.exception.MindmapsValidationException;
+import io.grakn.exception.GraknValidationException;
 import io.grakn.graql.internal.analytics.Analytics;
 import io.grakn.graql.internal.analytics.MindmapsVertexProgram;
 import io.grakn.graql.internal.util.GraqlType;
@@ -119,7 +119,7 @@ public class ClusteringTest extends AbstractGraphTest {
         assertEquals(13, populationCount3.get(1).intValue());
     }
 
-    private void addOntologyAndEntities() throws MindmapsValidationException {
+    private void addOntologyAndEntities() throws GraknValidationException {
         EntityType entityType1 = graph.putEntityType(thing);
         EntityType entityType2 = graph.putEntityType(anotherThing);
 
@@ -213,11 +213,11 @@ public class ClusteringTest extends AbstractGraphTest {
                 .playsRole(resourceValue7));
 
         graph.commit();
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
     }
 
-    private void addResourceRelations() throws MindmapsValidationException {
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+    private void addResourceRelations() throws GraknValidationException {
+        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
 
         Entity entity1 = graph.getEntity(entityId1);
         Entity entity2 = graph.getEntity(entityId2);
@@ -290,7 +290,7 @@ public class ClusteringTest extends AbstractGraphTest {
         graph.putResource(0.8, graph.getResourceType(resourceType6));
 
         graph.commit();
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
     }
 
 }

@@ -18,7 +18,7 @@
 
 package io.grakn.graph.internal;
 
-import io.grakn.Mindmaps;
+import io.grakn.Grakn;
 import io.grakn.concept.Entity;
 import io.grakn.concept.EntityType;
 import io.grakn.util.Schema;
@@ -35,14 +35,14 @@ import static org.junit.Assert.assertNull;
 
 public class EdgeTest {
 
-    private AbstractMindmapsGraph mindmapsGraph;
+    private AbstractGraknGraph mindmapsGraph;
     private EntityType entityType;
     private Entity entity;
     private EdgeImpl edge;
 
     @Before
     public void setUp(){
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        mindmapsGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         entityType = mindmapsGraph.putEntityType("My Entity Type");
         entity = mindmapsGraph.addEntity(entityType);
         Edge tinkerEdge = (Edge) mindmapsGraph.getTinkerTraversal().has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), entity.getId()).outE().next();

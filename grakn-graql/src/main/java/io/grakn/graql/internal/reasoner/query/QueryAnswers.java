@@ -18,7 +18,7 @@
 
 package io.grakn.graql.internal.reasoner.query;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.Concept;
 import io.grakn.concept.Type;
 import io.grakn.graql.internal.reasoner.atom.Atom;
@@ -124,7 +124,7 @@ public class QueryAnswers extends HashSet<Map<String, Concept>> {
      */
     public static QueryAnswers getUnifiedAnswers(AtomicQuery parentQuery, AtomicQuery childQuery, QueryAnswers answers){
         if (parentQuery == childQuery) return new QueryAnswers(answers);
-        MindmapsGraph graph = childQuery.getGraph().orElse(null);
+        GraknGraph graph = childQuery.getGraph().orElse(null);
         Atomic childAtom = childQuery.getAtom();
         Atomic parentAtom = parentQuery.getAtom();
 

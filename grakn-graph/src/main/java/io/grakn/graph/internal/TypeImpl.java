@@ -43,7 +43,7 @@ import java.util.Set;
  * @param <V> The type of the instances of this concept type.
  */
 class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> implements Type {
-    TypeImpl(Vertex v, Type type, AbstractMindmapsGraph mindmapsGraph) {
+    TypeImpl(Vertex v, Type type, AbstractGraknGraph mindmapsGraph) {
         super(v, type, mindmapsGraph);
     }
 

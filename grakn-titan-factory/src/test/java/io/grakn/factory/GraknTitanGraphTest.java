@@ -18,9 +18,9 @@
 
 package io.grakn.factory;
 
-import io.grakn.MindmapsGraph;
-import io.grakn.exception.MindmapsValidationException;
-import io.grakn.graph.internal.MindmapsTitanGraph;
+import io.grakn.GraknGraph;
+import io.grakn.exception.GraknValidationException;
+import io.grakn.graph.internal.GraknTitanGraph;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,21 +37,21 @@ import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-public class MindmapsTitanGraphTest {
+public class GraknTitanGraphTest {
     private static final String TEST_CONFIG = "conf/grakn-titan-test.properties";
     private static final String TEST_NAME = "mindmapstest";
     private static final String TEST_URI = null;
     private static final boolean TEST_BATCH_LOADING = false;
-    private MindmapsGraph mindmapsGraph;
+    private GraknGraph graknGraph;
 
     @Before
     public void setup(){
-        mindmapsGraph = new MindmapsTitanInternalFactory(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph(TEST_BATCH_LOADING);
+        graknGraph = new MindmapsTitanInternalFactory(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph(TEST_BATCH_LOADING);
     }
 
     @After
     public void cleanup(){
-        mindmapsGraph.clear();
+        graknGraph.clear();
     }
 
     @Test
@@ -60,7 +60,7 @@ public class MindmapsTitanGraphTest {
         ExecutorService pool = Executors.newFixedThreadPool(10);
 
         for(int i = 0; i < 100; i ++){
-            futures.add(pool.submit(() -> addEntityType(mindmapsGraph)));
+            futures.add(pool.submit(() -> addEntityType(graknGraph)));
         }
 
         futures.forEach(future -> {
@@ -71,13 +71,13 @@ public class MindmapsTitanGraphTest {
             }
         });
 
-        assertEquals(108, mindmapsGraph.getTinkerTraversal().toList().size());
+        assertEquals(108, graknGraph.getTinkerTraversal().toList().size());
     }
-    private void addEntityType(MindmapsGraph mindmapsGraph){
-        mindmapsGraph.putEntityType(UUID.randomUUID().toString());
+    private void addEntityType(GraknGraph graknGraph){
+        graknGraph.putEntityType(UUID.randomUUID().toString());
         try {
-            mindmapsGraph.commit();
-        } catch (MindmapsValidationException e) {
+            graknGraph.commit();
+        } catch (GraknValidationException e) {
             e.printStackTrace();
         }
     }
@@ -86,12 +86,12 @@ public class MindmapsTitanGraphTest {
     public void testTestThreadLocal(){
         ExecutorService pool = Executors.newFixedThreadPool(10);
         Set<Future> futures = new HashSet<>();
-        mindmapsGraph.putEntityType(UUID.randomUUID().toString());
-        assertEquals(9, mindmapsGraph.getTinkerTraversal().toList().size());
+        graknGraph.putEntityType(UUID.randomUUID().toString());
+        assertEquals(9, graknGraph.getTinkerTraversal().toList().size());
 
         for(int i = 0; i < 100; i ++){
             futures.add(pool.submit(() -> {
-                MindmapsGraph innerTranscation = this.mindmapsGraph;
+                GraknGraph innerTranscation = this.graknGraph;
                 innerTranscation.putEntityType(UUID.randomUUID().toString());
             }));
         }
@@ -104,24 +104,24 @@ public class MindmapsTitanGraphTest {
             }
         });
 
-        assertEquals(9, mindmapsGraph.getTinkerTraversal().toList().size());
+        assertEquals(9, graknGraph.getTinkerTraversal().toList().size());
     }
 
     @Test
     public void testRollback() {
-        assertNull(mindmapsGraph.getEntityType("X"));
-        mindmapsGraph.putEntityType("X");
-        assertNotNull(mindmapsGraph.getEntityType("X"));
-        mindmapsGraph.rollback();
-        assertNull(mindmapsGraph.getEntityType("X"));
+        assertNull(graknGraph.getEntityType("X"));
+        graknGraph.putEntityType("X");
+        assertNotNull(graknGraph.getEntityType("X"));
+        graknGraph.rollback();
+        assertNull(graknGraph.getEntityType("X"));
     }
 
     @Test
     public void testCaseSensitiveKeyspaces(){
         MindmapsTitanInternalFactory factory1 = new MindmapsTitanInternalFactory("case", TEST_URI, TEST_CONFIG);
         MindmapsTitanInternalFactory factory2 = new MindmapsTitanInternalFactory("Case", TEST_URI, TEST_CONFIG);
-        MindmapsTitanGraph case1 = factory1.getGraph(TEST_BATCH_LOADING);
-        MindmapsTitanGraph case2 = factory2.getGraph(TEST_BATCH_LOADING);
+        GraknTitanGraph case1 = factory1.getGraph(TEST_BATCH_LOADING);
+        GraknTitanGraph case2 = factory2.getGraph(TEST_BATCH_LOADING);
 
         assertEquals(case1.getKeyspace(), case2.getKeyspace());
     }

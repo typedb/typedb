@@ -18,7 +18,7 @@
 
 package io.grakn.shell;
 
-import io.grakn.Mindmaps;
+import io.grakn.Grakn;
 import io.grakn.engine.session.RemoteSession;
 import io.grakn.graql.GraqlClient;
 import io.grakn.graql.GraqlShell;
@@ -33,7 +33,7 @@ class GraqlClientMock implements GraqlClient {
 
     private RemoteSession server = new RemoteSession(keyspace -> {
         this.keyspace = keyspace;
-        return Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        return Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
     });
 
     private String keyspace = null;

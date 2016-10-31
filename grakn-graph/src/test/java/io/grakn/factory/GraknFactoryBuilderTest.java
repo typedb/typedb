@@ -33,7 +33,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 
-public class MindmapsFactoryBuilderTest {
+public class GraknFactoryBuilderTest {
     private final static String TEST_CONFIG = "../conf/test/tinker/grakn-tinker.properties";
     private final static String KEYSPACE = "keyspace";
     private final static String ENGINE_URL = "rubbish";

@@ -20,7 +20,7 @@ package io.grakn.engine;
 
 import io.grakn.engine.controller.*;
 import io.grakn.engine.util.ConfigProperties;
-import io.grakn.exception.MindmapsEngineServerException;
+import io.grakn.exception.GraknEngineServerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Spark;
@@ -66,8 +66,8 @@ public class MindmapsEngineServer {
 
 
         //Register Exception Handler
-        exception(MindmapsEngineServerException.class, (e, request, response) -> {
-            response.status(((MindmapsEngineServerException) e).getStatus());
+        exception(GraknEngineServerException.class, (e, request, response) -> {
+            response.status(((GraknEngineServerException) e).getStatus());
             response.body("New exception: "+e.getMessage()+" - Please refer to grakn.log file for full stack trace.");
         });
 
@@ -84,13 +84,13 @@ public class MindmapsEngineServer {
 
     /**
      * Method that prints a welcome message, listening address and path to the LOG that will be used.
-     * @param host Host address to which Mindmaps Engine is bound to
+     * @param host Host address to which Grakn Engine is bound to
      * @param port Web server port number
      * @param logFilePath Path to the LOG file.
      */
     private static void printStartMessage(String host, String port, String logFilePath) {
         LOG.info(ConfigProperties.MINDMAPS_ASCII);
-        LOG.info("Mindmaps Engine is ready. Listening on [http://" + host + ":" + port + "]");
-        LOG.info("Mindmaps LOG file located at ["+logFilePath+"]");
+        LOG.info("Grakn Engine is ready. Listening on [http://" + host + ":" + port + "]");
+        LOG.info("Grakn LOG file located at ["+logFilePath+"]");
     }
 }

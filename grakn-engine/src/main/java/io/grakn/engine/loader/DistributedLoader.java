@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
 import static io.grakn.engine.loader.TransactionState.State;
 
 /**
- * RESTLoader that distributes computation to multiple Mindmaps Engine instances
+ * RESTLoader that distributes computation to multiple Grakn Engine instances
  */
 public class DistributedLoader extends Loader {
 

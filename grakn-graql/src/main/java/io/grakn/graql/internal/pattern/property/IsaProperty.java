@@ -19,7 +19,7 @@
 package io.grakn.graql.internal.pattern.property;
 
 import com.google.common.collect.Sets;
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.Type;
 import io.grakn.graql.admin.UniqueVarProperty;
 import io.grakn.graql.admin.VarAdmin;
@@ -83,7 +83,7 @@ public class IsaProperty extends AbstractVarProperty implements UniqueVarPropert
     }
 
     @Override
-    public void checkValidProperty(MindmapsGraph graph, VarAdmin var) throws IllegalStateException {
+    public void checkValidProperty(GraknGraph graph, VarAdmin var) throws IllegalStateException {
         type.getIdOnly().map(graph::getType).filter(Type::isRoleType).ifPresent(type -> {
             throw new IllegalStateException(ErrorMessage.INSTANCE_OF_ROLE_TYPE.getMessage(type.getId()));
         });

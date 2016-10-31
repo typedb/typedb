@@ -18,8 +18,8 @@
 
 package io.grakn.engine.postprocessing;
 
-import io.grakn.Mindmaps;
-import io.grakn.MindmapsGraph;
+import io.grakn.Grakn;
+import io.grakn.GraknGraph;
 import io.grakn.concept.EntityType;
 import io.grakn.concept.Instance;
 import io.grakn.concept.Relation;
@@ -28,8 +28,8 @@ import io.grakn.concept.Resource;
 import io.grakn.concept.ResourceType;
 import io.grakn.concept.RoleType;
 import io.grakn.engine.MindmapsEngineTestBase;
-import io.grakn.exception.MindmapsValidationException;
-import io.grakn.graph.internal.AbstractMindmapsGraph;
+import io.grakn.exception.GraknValidationException;
+import io.grakn.graph.internal.AbstractGraknGraph;
 import io.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -46,7 +46,7 @@ import static org.junit.Assert.assertEquals;
 
 public class BackgroundTasksTest extends MindmapsEngineTestBase{
     private BackgroundTasks backgroundTasks;
-    private MindmapsGraph mindmapsGraph;
+    private GraknGraph graknGraph;
     private Cache cache;
     private String keyspace;
 
@@ -55,7 +55,7 @@ public class BackgroundTasksTest extends MindmapsEngineTestBase{
         cache = Cache.getInstance();
         keyspace = UUID.randomUUID().toString().replaceAll("-", "a");
         backgroundTasks = BackgroundTasks.getInstance();
-        mindmapsGraph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraphBatchLoading();
+        graknGraph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraphBatchLoading();
     }
 
     @After
@@ -67,16 +67,16 @@ public class BackgroundTasksTest extends MindmapsEngineTestBase{
     @Test
     public void testMergingCastings() throws Exception {
         //Create Scenario
-        RoleType roleType1 = mindmapsGraph.putRoleType("role 1");
-        RoleType roleType2 = mindmapsGraph.putRoleType("role 2");
-        RelationType relationType = mindmapsGraph.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
-        EntityType thing = mindmapsGraph.putEntityType("thing").playsRole(roleType1).playsRole(roleType2);
-        Instance instance1 = mindmapsGraph.addEntity(thing);
-        Instance instance2 = mindmapsGraph.addEntity(thing);
-        Instance instance3 = mindmapsGraph.addEntity(thing);
-        Instance instance4 = mindmapsGraph.addEntity(thing);
+        RoleType roleType1 = graknGraph.putRoleType("role 1");
+        RoleType roleType2 = graknGraph.putRoleType("role 2");
+        RelationType relationType = graknGraph.putRelationType("rel type").hasRole(roleType1).hasRole(roleType2);
+        EntityType thing = graknGraph.putEntityType("thing").playsRole(roleType1).playsRole(roleType2);
+        Instance instance1 = graknGraph.addEntity(thing);
+        Instance instance2 = graknGraph.addEntity(thing);
+        Instance instance3 = graknGraph.addEntity(thing);
+        Instance instance4 = graknGraph.addEntity(thing);
 
-        mindmapsGraph.addRelation(relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
+        graknGraph.addRelation(relationType).putRolePlayer(roleType1, instance1).putRolePlayer(roleType2, instance2);
 
         //Record Needed Ids
         String relationTypeId = relationType.getId();
@@ -86,37 +86,37 @@ public class BackgroundTasksTest extends MindmapsEngineTestBase{
         String otherInstanceId3 = instance3.getId();
         String otherInstanceId4 = instance4.getId();
 
-        mindmapsGraph.commit();
+        graknGraph.commit();
 
         //Check Number of castings is as expected
-        assertEquals(2, ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
+        assertEquals(2, ((AbstractGraknGraph) this.graknGraph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
 
         //Break The Graph With Fake Castings
         buildDuplicateCasting(relationTypeId, mainRoleTypeId, mainInstanceId, otherRoleTypeId, otherInstanceId3);
         buildDuplicateCasting(relationTypeId, mainRoleTypeId, mainInstanceId, otherRoleTypeId, otherInstanceId4);
 
         //Check the graph is broken
-        assertEquals(6, ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
+        assertEquals(6, ((AbstractGraknGraph) this.graknGraph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
 
         waitForCache(true, keyspace, 4);
         //Now fix everything
         backgroundTasks.forcePostprocessing();
 
         //Check it's all fixed
-        assertEquals(4, ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
+        assertEquals(4, ((AbstractGraknGraph) this.graknGraph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
     }
 
     private void buildDuplicateCasting(String relationTypeId, String mainRoleTypeId, String mainInstanceId, String otherRoleTypeId, String otherInstanceId) throws Exception {
-        //Get Needed Mindmaps Objects
-        RelationType relationType = mindmapsGraph.getRelationType(relationTypeId);
-        Instance otherInstance = mindmapsGraph.getInstance(otherInstanceId);
-        RoleType otherRoleType = mindmapsGraph.getRoleType(otherRoleTypeId);
-        Relation relation = mindmapsGraph.addRelation(relationType).putRolePlayer(otherRoleType, otherInstance);
+        //Get Needed Grakn Objects
+        RelationType relationType = graknGraph.getRelationType(relationTypeId);
+        Instance otherInstance = graknGraph.getInstance(otherInstanceId);
+        RoleType otherRoleType = graknGraph.getRoleType(otherRoleTypeId);
+        Relation relation = graknGraph.addRelation(relationType).putRolePlayer(otherRoleType, otherInstance);
         String relationId = relation.getId();
 
-        mindmapsGraph.commit();
+        graknGraph.commit();
 
-        Graph rawGraph = ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph();
+        Graph rawGraph = ((AbstractGraknGraph) this.graknGraph).getTinkerPopGraph();
 
         //Get Needed Vertices
         Vertex mainRoleTypeVertex = rawGraph.traversal().V().
@@ -141,14 +141,14 @@ public class BackgroundTasksTest extends MindmapsEngineTestBase{
     }
 
     @Test
-    public void testMergeDuplicateResources() throws MindmapsValidationException, InterruptedException {
+    public void testMergeDuplicateResources() throws GraknValidationException, InterruptedException {
         String keyspace = "testbatchgraph";
         String value = "1";
         String sample = "Sample";
         ExecutorService pool = Executors.newFixedThreadPool(10);
 
         //Create Graph With Duplicate Resources
-        MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraphBatchLoading();
+        GraknGraph graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraphBatchLoading();
         ResourceType<String> resourceType = graph.putResourceType(sample, ResourceType.DataType.STRING);
         Resource<String> resource = graph.putResource(value, resourceType);
         graph.commit();
@@ -169,8 +169,8 @@ public class BackgroundTasksTest extends MindmapsEngineTestBase{
         //Check it's fixed
         assertEquals(1, graph.getResourceType(sample).instances().size());
     }
-    private void createDuplicateResource(MindmapsGraph mindmapsGraph, ResourceType resourceType, Resource resource){
-        AbstractMindmapsGraph graph = (AbstractMindmapsGraph) mindmapsGraph;
+    private void createDuplicateResource(GraknGraph graknGraph, ResourceType resourceType, Resource resource){
+        AbstractGraknGraph graph = (AbstractGraknGraph) graknGraph;
         Vertex originalResource = (Vertex) graph.getTinkerTraversal()
                 .has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), resource.getId()).next();
         Vertex vertexResourceType = (Vertex) graph.getTinkerTraversal()
@@ -183,7 +183,7 @@ public class BackgroundTasksTest extends MindmapsEngineTestBase{
 
         resourceVertex.addEdge(Schema.EdgeLabel.ISA.getLabel(), vertexResourceType);
 
-        cache.getResourceJobs(mindmapsGraph.getKeyspace()).add(resourceVertex.id().toString());
+        cache.getResourceJobs(graknGraph.getKeyspace()).add(resourceVertex.id().toString());
     }
 
     private void waitForCache(boolean isCasting, String keyspace, int value) throws InterruptedException {

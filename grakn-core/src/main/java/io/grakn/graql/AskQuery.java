@@ -18,7 +18,7 @@
 
 package io.grakn.graql;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.graql.admin.AskQueryAdmin;
 
 /**
@@ -32,7 +32,7 @@ public interface AskQuery extends Query<Boolean> {
      * @param graph the graph to execute the query on
      * @return a new AskQuery with the graph set
      */
-    AskQuery withGraph(MindmapsGraph graph);
+    AskQuery withGraph(GraknGraph graph);
 
     /**
      * @return admin instance for inspecting and manipulating this query

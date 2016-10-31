@@ -19,7 +19,7 @@
 
 package io.grakn.graql;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.Concept;
 import io.grakn.graql.admin.MatchQueryAdmin;
 
@@ -123,7 +123,7 @@ public interface MatchQuery extends Query<List<Map<String, Concept>>>, Streamabl
      * @param graph the graph to execute the query on
      * @return a new MatchQuery with the graph set
      */
-    MatchQuery withGraph(MindmapsGraph graph);
+    MatchQuery withGraph(GraknGraph graph);
 
     /**
      * @param limit the maximum number of results the query should return

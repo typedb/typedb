@@ -19,7 +19,7 @@
 
 package io.grakn.graql;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 
 /**
  * An aggregate query produced from a {@link MatchQuery}.
@@ -29,5 +29,5 @@ import io.grakn.MindmapsGraph;
 public interface AggregateQuery<T> extends Query<T> {
 
     @Override
-    AggregateQuery<T> withGraph(MindmapsGraph graph);
+    AggregateQuery<T> withGraph(GraknGraph graph);
 }

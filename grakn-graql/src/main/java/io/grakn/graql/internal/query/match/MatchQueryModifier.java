@@ -18,7 +18,7 @@
 
 package io.grakn.graql.internal.query.match;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.Concept;
 import io.grakn.concept.Type;
 import io.grakn.graql.admin.Conjunction;
@@ -45,12 +45,12 @@ abstract class MatchQueryModifier implements MatchQueryInternal {
     }
 
     @Override
-    public Stream<Map<String, Concept>> stream(Optional<MindmapsGraph> graph, Optional<MatchOrder> order) {
+    public Stream<Map<String, Concept>> stream(Optional<GraknGraph> graph, Optional<MatchOrder> order) {
         return transformStream(inner.stream(graph, order));
     }
 
     @Override
-    public final Set<Type> getTypes(MindmapsGraph graph) {
+    public final Set<Type> getTypes(GraknGraph graph) {
         return inner.getTypes(graph);
     }
 
@@ -60,7 +60,7 @@ abstract class MatchQueryModifier implements MatchQueryInternal {
     }
 
     @Override
-    public Optional<MindmapsGraph> getGraph() {
+    public Optional<GraknGraph> getGraph() {
         return inner.getGraph();
     }
 

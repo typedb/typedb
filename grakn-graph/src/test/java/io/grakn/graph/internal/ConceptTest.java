@@ -18,7 +18,7 @@
 
 package io.grakn.graph.internal;
 
-import io.grakn.Mindmaps;
+import io.grakn.Grakn;
 import io.grakn.concept.Concept;
 import io.grakn.concept.Entity;
 import io.grakn.concept.EntityType;
@@ -57,7 +57,7 @@ import static org.junit.Assert.assertTrue;
 
 public class ConceptTest {
 
-    private AbstractMindmapsGraph mindmapsGraph;
+    private AbstractGraknGraph mindmapsGraph;
     private ConceptImpl concept;
 
     @Rule
@@ -65,7 +65,7 @@ public class ConceptTest {
 
     @Before
     public void setUp(){
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        mindmapsGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         mindmapsGraph.initialiseMetaConcepts();
         concept = (ConceptImpl) mindmapsGraph.putEntityType("main_concept");
     }

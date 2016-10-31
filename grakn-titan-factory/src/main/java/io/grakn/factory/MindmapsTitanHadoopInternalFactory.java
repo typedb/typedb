@@ -18,8 +18,8 @@
 
 package io.grakn.factory;
 
+import io.grakn.graph.internal.AbstractGraknGraph;
 import io.grakn.util.ErrorMessage;
-import io.grakn.graph.internal.AbstractMindmapsGraph;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 
-public class MindmapsTitanHadoopInternalFactory extends AbstractMindmapsInternalFactory<AbstractMindmapsGraph<HadoopGraph>, HadoopGraph> {
+public class MindmapsTitanHadoopInternalFactory extends AbstractMindmapsInternalFactory<AbstractGraknGraph<HadoopGraph>, HadoopGraph> {
     private static final String CLUSTER_KEYSPACE = "titanmr.ioformat.conf.storage.cassandra.keyspace";
     private static final String INPUT_KEYSPACE = "cassandra.input.keyspace";
     private final Logger LOG = LoggerFactory.getLogger(MindmapsTitanHadoopInternalFactory.class);
@@ -45,8 +45,8 @@ public class MindmapsTitanHadoopInternalFactory extends AbstractMindmapsInternal
     }
 
     @Override
-    AbstractMindmapsGraph<HadoopGraph> buildMindmapsGraphFromTinker(HadoopGraph graph, boolean batchLoading) {
-        throw new UnsupportedOperationException(ErrorMessage.CANNOT_PRODUCE_MINDMAPS_GRAPH.getMessage(HadoopGraph.class.getName()));
+    AbstractGraknGraph<HadoopGraph> buildMindmapsGraphFromTinker(HadoopGraph graph, boolean batchLoading) {
+        throw new UnsupportedOperationException(ErrorMessage.CANNOT_PRODUCE_GRAKN_GRAPH.getMessage(HadoopGraph.class.getName()));
     }
 
     @Override

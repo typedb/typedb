@@ -20,7 +20,7 @@
 package io.grakn.graql;
 
 import com.google.common.collect.ImmutableSet;
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.Concept;
 import io.grakn.graql.admin.Conjunction;
 import io.grakn.graql.admin.Disjunction;
@@ -51,7 +51,7 @@ public class Graql {
      * @param graph the graph to operate the query on
      * @return a query builder using the specified graph
      */
-    public static QueryBuilder withGraph(MindmapsGraph graph) {
+    public static QueryBuilder withGraph(GraknGraph graph) {
         return new QueryBuilder(graph);
     }
 

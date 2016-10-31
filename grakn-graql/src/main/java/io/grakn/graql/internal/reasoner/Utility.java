@@ -21,7 +21,7 @@ package io.grakn.graql.internal.reasoner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.*;
 import io.grakn.graql.Graql;
 import io.grakn.graql.Var;
@@ -121,7 +121,7 @@ public class Utility {
      * @param graph graph
      * @return rule instance
      */
-    public static Rule createTransitiveRule(String ruleId, RelationType relType, String fromRoleId, String toRoleId, MindmapsGraph graph){
+    public static Rule createTransitiveRule(String ruleId, RelationType relType, String fromRoleId, String toRoleId, GraknGraph graph){
         final int arity = relType.hasRoles().size();
         if (arity != 2)
             throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
@@ -141,7 +141,7 @@ public class Utility {
      * @param graph graph
      * @return rule instance
      */
-    public static Rule createReflexiveRule(String ruleId, RelationType relType, MindmapsGraph graph){
+    public static Rule createReflexiveRule(String ruleId, RelationType relType, GraknGraph graph){
         final int arity = relType.hasRoles().size();
         if (arity != 2)
             throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
@@ -161,7 +161,7 @@ public class Utility {
      * @return rule instance
      */
     public static Rule createSubPropertyRule(String ruleId, RelationType parent, RelationType child, Map<String, String> roleMappings,
-                                             MindmapsGraph graph){
+                                             GraknGraph graph){
         final int parentArity = parent.hasRoles().size();
         final int childArity = child.hasRoles().size();
         if (parentArity != childArity || parentArity != roleMappings.size())
@@ -182,7 +182,7 @@ public class Utility {
     }
 
     public static Rule createPropertyChainRule(String ruleId, RelationType relation, String fromRoleId, String toRoleId,
-                                             LinkedHashMap<RelationType, Pair<String, String>> chain, MindmapsGraph graph){
+                                             LinkedHashMap<RelationType, Pair<String, String>> chain, GraknGraph graph){
         Stack<String> varNames = new Stack<>();
         varNames.push("x");
         Set<VarAdmin> bodyVars = new HashSet<>();

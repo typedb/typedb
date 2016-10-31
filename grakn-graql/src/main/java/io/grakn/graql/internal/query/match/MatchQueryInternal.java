@@ -20,7 +20,7 @@
 package io.grakn.graql.internal.query.match;
 
 import com.google.common.collect.ImmutableSet;
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.Concept;
 import io.grakn.graql.Aggregate;
 import io.grakn.graql.AggregateQuery;
@@ -82,7 +82,7 @@ public interface MatchQueryInternal extends MatchQueryAdmin {
      * @param order how to order the resulting stream
      * @return a stream of results
      */
-    Stream<Map<String, Concept>> stream(Optional<MindmapsGraph> graph, Optional<MatchOrder> order);
+    Stream<Map<String, Concept>> stream(Optional<GraknGraph> graph, Optional<MatchOrder> order);
 
     @Override
     default Stream<Map<String, Concept>> stream() {
@@ -90,7 +90,7 @@ public interface MatchQueryInternal extends MatchQueryAdmin {
     }
 
     @Override
-    default MatchQuery withGraph(MindmapsGraph graph) {
+    default MatchQuery withGraph(GraknGraph graph) {
         return new MatchQueryGraph(graph, this);
     }
 

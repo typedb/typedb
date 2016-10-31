@@ -38,7 +38,7 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
 /**
- * The CSV data migrator will migrate all of the data in a CSV file into Mindmaps Graql var patters, to be
+ * The CSV data migrator will migrate all of the data in a CSV file into Grakn Graql var patters, to be
  * imported into a graph as the user sees fit.
  */
 public class CSVMigrator {
@@ -186,7 +186,7 @@ public class CSVMigrator {
     }
 
     /**
-     * Test if an object is a valid Mindmaps value
+     * Test if an object is a valid Grakn value
      * @param value object to check
      * @return if the value is valid
      */

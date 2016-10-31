@@ -18,7 +18,7 @@
 
 package io.grakn.graph.internal;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.Concept;
 import io.grakn.concept.Entity;
 import io.grakn.concept.EntityType;
@@ -34,7 +34,7 @@ import io.grakn.concept.Type;
 import io.grakn.exception.ConceptException;
 import io.grakn.exception.ConceptNotUniqueException;
 import io.grakn.exception.GraphRuntimeException;
-import io.grakn.exception.MindmapsValidationException;
+import io.grakn.exception.GraknValidationException;
 import io.grakn.exception.MoreThanOneConceptException;
 import io.grakn.util.ErrorMessage;
 import io.grakn.util.REST;
@@ -62,8 +62,8 @@ import java.util.stream.Collectors;
 
 import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.outE;
 
-public abstract class AbstractMindmapsGraph<G extends Graph> implements MindmapsGraph {
-    protected final Logger LOG = LoggerFactory.getLogger(AbstractMindmapsGraph.class);
+public abstract class AbstractGraknGraph<G extends Graph> implements GraknGraph {
+    protected final Logger LOG = LoggerFactory.getLogger(AbstractGraknGraph.class);
     private final ThreadLocal<ConceptLog> context = new ThreadLocal<>();
     private final ElementFactory elementFactory;
     //private final ConceptLog conceptLog;
@@ -72,7 +72,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     private final boolean batchLoadingEnabled;
     private final G graph;
 
-    public AbstractMindmapsGraph(G graph, String keyspace, String engine, boolean batchLoadingEnabled) {
+    public AbstractGraknGraph(G graph, String keyspace, String engine, boolean batchLoadingEnabled) {
         this.graph = graph;
         this.keyspace = keyspace;
         this.engine = engine;
@@ -82,7 +82,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         if(initialiseMetaConcepts()) {
             try {
                 commit();
-            } catch (MindmapsValidationException e) {
+            } catch (GraknValidationException e) {
                 throw new RuntimeException(ErrorMessage.CREATING_ONTOLOGY_ERROR.getMessage(e.getMessage()));
             }
         }
@@ -633,10 +633,10 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
 
     /**
      * Commits the graph
-     * @throws MindmapsValidationException when the graph does not conform to the object concept
+     * @throws GraknValidationException when the graph does not conform to the object concept
      */
     @Override
-    public void commit() throws MindmapsValidationException {
+    public void commit() throws GraknValidationException {
         validateGraph();
 
         Map<Schema.BaseType, Set<String>> modifiedConcepts = new HashMap<>();
@@ -665,7 +665,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     }
 
 
-    protected void validateGraph() throws MindmapsValidationException {
+    protected void validateGraph() throws GraknValidationException {
         Validator validator = new Validator(this);
         if (!validator.validate()) {
             List<String> errors = validator.getErrorsFound();
@@ -673,7 +673,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
             for (String s : errors) {
                 error += s;
             }
-            throw new MindmapsValidationException(error);
+            throw new GraknValidationException(error);
         }
     }
 

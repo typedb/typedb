@@ -23,7 +23,7 @@ import io.grakn.engine.loader.DistributedLoader;
 import io.grakn.engine.loader.Loader;
 import io.grakn.engine.postprocessing.BackgroundTasks;
 import io.grakn.engine.util.ConfigProperties;
-import io.grakn.exception.MindmapsEngineServerException;
+import io.grakn.exception.GraknEngineServerException;
 import io.grakn.graql.Var;
 import io.grakn.graql.admin.VarAdmin;
 import io.grakn.util.ErrorMessage;
@@ -122,10 +122,10 @@ public class ImportController {
 
         } catch (JSONException | FileNotFoundException j) {
             loadingInProgress.set(false);
-            throw new MindmapsEngineServerException(400, j);
+            throw new GraknEngineServerException(400, j);
         } catch (Exception e) {
             loadingInProgress.set(false);
-            throw new MindmapsEngineServerException(500, e);
+            throw new GraknEngineServerException(500, e);
         }
 
         return "Distributed loading successfully STARTED. \n";
@@ -155,10 +155,10 @@ public class ImportController {
 
         } catch (JSONException | FileNotFoundException j) {
             loadingInProgress.set(false);
-            throw new MindmapsEngineServerException(400, j);
+            throw new GraknEngineServerException(400, j);
         } catch (Exception e) {
             loadingInProgress.set(false);
-            throw new MindmapsEngineServerException(500, e);
+            throw new GraknEngineServerException(500, e);
         }
 
         return "Total patterns found [" + totalPatterns + "]. \n" +

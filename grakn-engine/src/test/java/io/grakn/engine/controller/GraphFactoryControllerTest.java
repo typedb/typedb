@@ -19,10 +19,10 @@
 package io.grakn.engine.controller;
 
 import com.jayway.restassured.response.Response;
-import io.grakn.Mindmaps;
-import io.grakn.MindmapsGraph;
+import io.grakn.Grakn;
+import io.grakn.GraknGraph;
 import io.grakn.engine.MindmapsEngineTestBase;
-import io.grakn.graph.internal.AbstractMindmapsGraph;
+import io.grakn.graph.internal.AbstractGraknGraph;
 import io.grakn.util.REST.GraphConfig;
 import org.junit.Test;
 
@@ -63,22 +63,22 @@ public class GraphFactoryControllerTest extends MindmapsEngineTestBase {
 
     @Test
     public void testMindmapsClientBatch() {
-        MindmapsGraph batch = Mindmaps.factory(Mindmaps.DEFAULT_URI, "mindmapstest").getGraphBatchLoading();
-        assertTrue(((AbstractMindmapsGraph) batch).isBatchLoadingEnabled());
+        GraknGraph batch = Grakn.factory(Grakn.DEFAULT_URI, "mindmapstest").getGraphBatchLoading();
+        assertTrue(((AbstractGraknGraph) batch).isBatchLoadingEnabled());
     }
 
     @Test
     public void testMindmaps() {
-        AbstractMindmapsGraph graph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.DEFAULT_URI, "mindmapstest").getGraph();
-        AbstractMindmapsGraph graph2 = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.DEFAULT_URI, "mindmapstest2").getGraph();
-        AbstractMindmapsGraph graphCopy = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.DEFAULT_URI, "mindmapstest").getGraph();
+        AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, "mindmapstest").getGraph();
+        AbstractGraknGraph graph2 = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, "mindmapstest2").getGraph();
+        AbstractGraknGraph graphCopy = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, "mindmapstest").getGraph();
         assertNotEquals(0, graph.getTinkerPopGraph().traversal().V().toList().size());
         assertFalse(graph.isBatchLoadingEnabled());
         assertNotEquals(graph, graph2);
         assertEquals(graph, graphCopy);
         graph.close();
 
-        AbstractMindmapsGraph batch = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.DEFAULT_URI, "mindmapstest").getGraphBatchLoading();
+        AbstractGraknGraph batch = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, "mindmapstest").getGraphBatchLoading();
         assertTrue(batch.isBatchLoadingEnabled());
         assertNotEquals(graph, batch);
 

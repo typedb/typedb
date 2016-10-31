@@ -18,13 +18,13 @@
 
 package io.grakn.graph.internal;
 
-import io.grakn.Mindmaps;
+import io.grakn.Grakn;
 import io.grakn.concept.EntityType;
 import io.grakn.concept.Instance;
 import io.grakn.concept.Relation;
 import io.grakn.concept.RelationType;
 import io.grakn.concept.RoleType;
-import io.grakn.exception.MindmapsValidationException;
+import io.grakn.exception.GraknValidationException;
 import io.grakn.util.ErrorMessage;
 import org.junit.After;
 import org.junit.Before;
@@ -39,7 +39,7 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.core.StringContains.containsString;
 
 public class OntologyMutationTest {
-    private AbstractMindmapsGraph mindmapsGraph;
+    private AbstractGraknGraph mindmapsGraph;
     private RoleType husband;
     private RoleType wife;
     private RelationType marriage;
@@ -55,8 +55,8 @@ public class OntologyMutationTest {
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
-    public void buildGraph() throws MindmapsValidationException {
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+    public void buildGraph() throws GraknValidationException {
+        mindmapsGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
 
         //spouse = mindmapsGraph.putRoleType("Spouse");
         husband = mindmapsGraph.putRoleType("Husband");//.superType(spouse);
@@ -84,10 +84,10 @@ public class OntologyMutationTest {
     }
 
     @Test
-    public void testDeletePlaysRole() throws MindmapsValidationException {
+    public void testDeletePlaysRole() throws GraknValidationException {
         person.deletePlaysRole(wife);
 
-        expectedException.expect(MindmapsValidationException.class);
+        expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(allOf(
                 containsString(ErrorMessage.VALIDATION_CASTING.getMessage(woman.getId(), alice.getId(), wife.getId()))
         ));
@@ -96,7 +96,7 @@ public class OntologyMutationTest {
     }
 
     @Test
-    public void testDeleteHasRole() throws MindmapsValidationException {
+    public void testDeleteHasRole() throws GraknValidationException {
         marriage.deleteHasRole(husband);
 
         String roles = "";
@@ -108,7 +108,7 @@ public class OntologyMutationTest {
                 rolePlayers = rolePlayers + entry.getValue().getId() + ",";
         }
 
-        expectedException.expect(MindmapsValidationException.class);
+        expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(allOf(
                 containsString(ErrorMessage.VALIDATION_RELATION.getMessage(relation.getId(), marriage.getId(),
                         roles.split(",").length, roles,
@@ -119,10 +119,10 @@ public class OntologyMutationTest {
     }
 
     @Test
-    public void testChangeSuperTypeOfEntityType() throws MindmapsValidationException {
+    public void testChangeSuperTypeOfEntityType() throws GraknValidationException {
         man.superType(car);
 
-        expectedException.expect(MindmapsValidationException.class);
+        expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(allOf(
                 containsString(ErrorMessage.VALIDATION_CASTING.getMessage(man.getId(), bob.getId(), husband.getId()))
         ));
@@ -131,10 +131,10 @@ public class OntologyMutationTest {
     }
 
     @Test
-    public void testChangeIsAbstract() throws MindmapsValidationException{
+    public void testChangeIsAbstract() throws GraknValidationException {
         man.setAbstract(true);
 
-        expectedException.expect(MindmapsValidationException.class);
+        expectedException.expect(GraknValidationException.class);
         expectedException.expectMessage(allOf(
                 containsString(ErrorMessage.VALIDATION_IS_ABSTRACT.getMessage(man.getId()))
         ));

@@ -18,7 +18,7 @@
 
 package io.grakn.graql;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 
 /**
  * A query that triggers an OLAP computation on a graph.
@@ -26,5 +26,5 @@ import io.grakn.MindmapsGraph;
 public interface ComputeQuery extends Query<Object> {
 
     @Override
-    ComputeQuery withGraph(MindmapsGraph graph);
+    ComputeQuery withGraph(GraknGraph graph);
 }

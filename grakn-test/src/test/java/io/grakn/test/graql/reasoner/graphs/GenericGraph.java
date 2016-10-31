@@ -18,9 +18,9 @@
 
 package io.grakn.test.graql.reasoner.graphs;
 
-import io.grakn.Mindmaps;
-import io.grakn.MindmapsGraph;
-import io.grakn.exception.MindmapsValidationException;
+import io.grakn.Grakn;
+import io.grakn.GraknGraph;
+import io.grakn.exception.GraknValidationException;
 import io.grakn.graql.Graql;
 import io.grakn.graql.QueryBuilder;
 
@@ -33,19 +33,19 @@ import java.util.UUID;
 
 public class GenericGraph {
 
-    protected static MindmapsGraph mindmaps;
+    protected static GraknGraph mindmaps;
     private final static String filePath = "src/test/graql/";
 
-    public static MindmapsGraph getGraph(String graqlFile) {
-        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+    public static GraknGraph getGraph(String graqlFile) {
+        mindmaps = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         buildGraph(graqlFile);
         commit();
 
         return mindmaps;
     }
 
-    public static MindmapsGraph getGraph(String ontologyFile, String... files) {
-        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+    public static GraknGraph getGraph(String ontologyFile, String... files) {
+        mindmaps = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         loadGraqlFile(ontologyFile);
         for( String graqlFile : files) {
             loadGraqlFile(graqlFile);
@@ -77,7 +77,7 @@ public class GenericGraph {
     protected static void commit(){
         try {
             mindmaps.commit();
-        } catch (MindmapsValidationException e) {
+        } catch (GraknValidationException e) {
             System.out.println(e.getMessage());
         }
     }

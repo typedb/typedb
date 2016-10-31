@@ -7,8 +7,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-public class MindmapsOrientDBGraph extends AbstractMindmapsGraph<OrientGraph> {
-    public MindmapsOrientDBGraph(OrientGraph graph, String name, String engineUrl, boolean batchLoading){
+public class GraknOrientDBGraph extends AbstractGraknGraph<OrientGraph> {
+    public GraknOrientDBGraph(OrientGraph graph, String name, String engineUrl, boolean batchLoading){
         super(graph, name, engineUrl, batchLoading);
     }
 

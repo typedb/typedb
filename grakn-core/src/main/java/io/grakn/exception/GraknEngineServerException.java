@@ -21,21 +21,21 @@ package io.grakn.exception;
 import org.slf4j.LoggerFactory;
 
 /**
- * This Exception is thrown by Mindmaps Engine web server when operations accessible through APIs go wrong.
+ * This Exception is thrown by Grakn Engine web server when operations accessible through APIs go wrong.
  */
-public class MindmapsEngineServerException extends RuntimeException {
+public class GraknEngineServerException extends RuntimeException {
 
     int status;
 
-    public MindmapsEngineServerException(int status, String message) {
+    public GraknEngineServerException(int status, String message) {
         super(message);
-        LoggerFactory.getLogger(MindmapsEngineServerException.class).error("New Mindmaps Engine Server exception {}", message);
+        LoggerFactory.getLogger(GraknEngineServerException.class).error("New Grakn Engine Server exception {}", message);
         this.status = status;
     }
 
-    public MindmapsEngineServerException(int status, Exception e) {
+    public GraknEngineServerException(int status, Exception e) {
         super(e.toString());
-        LoggerFactory.getLogger(MindmapsEngineServerException.class).error("New Mindmaps Engine Server exception", e);
+        LoggerFactory.getLogger(GraknEngineServerException.class).error("New Grakn Engine Server exception", e);
         this.status = status;
     }
 

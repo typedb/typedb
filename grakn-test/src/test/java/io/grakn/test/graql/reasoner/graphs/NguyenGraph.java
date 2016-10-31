@@ -18,14 +18,14 @@
 
 package io.grakn.test.graql.reasoner.graphs;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.EntityType;
 import io.grakn.concept.RelationType;
 import io.grakn.concept.RoleType;
 
 public class NguyenGraph extends GenericGraph{
 
-    public static MindmapsGraph getGraph(int n) {
+    public static GraknGraph getGraph(int n) {
         final String gqlFile = "nguyen-test.gql";
         getGraph(gqlFile);
         buildExtensionalDB(n);

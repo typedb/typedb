@@ -1,6 +1,6 @@
 package io.grakn.graql.internal.reasoner.rule;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.Rule;
 import io.grakn.concept.Type;
 import io.grakn.graql.Graql;
@@ -26,7 +26,7 @@ public class InferenceRule {
 
     private final Rule rule;
 
-    public InferenceRule(Rule rl, MindmapsGraph graph){
+    public InferenceRule(Rule rl, GraknGraph graph){
         this.rule = rl;
         QueryBuilder qb = Graql.withGraph(graph);
         body = new Query(qb.match(qb.parsePatterns(rule.getLHS())), graph);

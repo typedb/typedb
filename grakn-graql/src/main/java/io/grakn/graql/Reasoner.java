@@ -19,7 +19,7 @@
 package io.grakn.graql;
 
 import com.google.common.collect.Lists;
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.Concept;
 import io.grakn.concept.RoleType;
 import io.grakn.concept.Rule;
@@ -43,12 +43,12 @@ import static io.grakn.graql.internal.reasoner.query.QueryAnswers.getUnifiedAnsw
 
 public class Reasoner {
 
-    private final MindmapsGraph graph;
+    private final GraknGraph graph;
     private final Logger LOG = LoggerFactory.getLogger(Reasoner.class);
 
     private final Map<String, InferenceRule> workingMemory = new HashMap<>();
 
-    public Reasoner(MindmapsGraph graph) {
+    public Reasoner(GraknGraph graph) {
         this.graph = graph;
         linkConceptTypes();
     }
@@ -130,7 +130,7 @@ public class Reasoner {
         LOG.debug("Rule " + rule.getId() + " linked");
     }
 
-    public static Set<Rule> getRules(MindmapsGraph graph) {
+    public static Set<Rule> getRules(GraknGraph graph) {
         Set<Rule> rules = new HashSet<>();
         QueryBuilder qb = Graql.withGraph(graph);
         MatchQuery sq = qb.parse("match $x isa inference-rule;");

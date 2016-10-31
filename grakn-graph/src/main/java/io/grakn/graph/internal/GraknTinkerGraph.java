@@ -26,8 +26,8 @@ import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
  * A grakn graph which uses a Tinkergraph backend.
  * Primarily used for testing
  */
-public class MindmapsTinkerGraph extends AbstractMindmapsGraph<TinkerGraph> {
-    public MindmapsTinkerGraph(TinkerGraph tinkerGraph, String name, String engineUrl, boolean batchLoading){
+public class GraknTinkerGraph extends AbstractGraknGraph<TinkerGraph> {
+    public GraknTinkerGraph(TinkerGraph tinkerGraph, String name, String engineUrl, boolean batchLoading){
         super(tinkerGraph, name, engineUrl, batchLoading);
     }
 

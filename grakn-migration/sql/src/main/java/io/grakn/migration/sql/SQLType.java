@@ -26,7 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Maps JDBC supported data types to Mindmaps types
+ * Maps JDBC supported data types to Grakn types
  */
 public class SQLType {
 

@@ -18,7 +18,7 @@
 
 package io.grakn.example;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.Entity;
 import io.grakn.concept.EntityType;
 import io.grakn.concept.Instance;
@@ -27,7 +27,7 @@ import io.grakn.concept.Resource;
 import io.grakn.concept.ResourceType;
 import io.grakn.concept.RoleType;
 import io.grakn.concept.RuleType;
-import io.grakn.exception.MindmapsValidationException;
+import io.grakn.exception.GraknValidationException;
 import io.grakn.util.ErrorMessage;
 
 import java.text.ParseException;
@@ -38,7 +38,7 @@ import java.util.Locale;
  * A class which loads sample data into a grakn graph
  */
 public class MovieGraphFactory {
-    private static MindmapsGraph mindmapsGraph;
+    private static GraknGraph graknGraph;
     private static EntityType movie, person, genre, character, cluster, language;
     private static ResourceType<String> title, gender, realName, name;
     private static ResourceType<Long> tmdbVoteCount, releaseDate, runtime;
@@ -61,12 +61,12 @@ public class MovieGraphFactory {
         throw new UnsupportedOperationException();
     }
 
-    public static void loadGraph(MindmapsGraph mindmapsGraph) {
-        MovieGraphFactory.mindmapsGraph = mindmapsGraph;
+    public static void loadGraph(GraknGraph graknGraph) {
+        MovieGraphFactory.graknGraph = graknGraph;
         buildGraph();
         try {
-            MovieGraphFactory.mindmapsGraph.commit();
-        } catch (MindmapsValidationException e) {
+            MovieGraphFactory.graknGraph.commit();
+        } catch (GraknValidationException e) {
             throw new RuntimeException(ErrorMessage.CANNOT_LOAD_EXAMPLE.getMessage(), e);
         }
     }
@@ -84,37 +84,37 @@ public class MovieGraphFactory {
 
     private static void buildOntology() {
 
-        productionBeingDirected = mindmapsGraph.putRoleType("production-being-directed");
-        director = mindmapsGraph.putRoleType("director");
-        directedBy = mindmapsGraph.putRelationType("directed-by")
+        productionBeingDirected = graknGraph.putRoleType("production-being-directed");
+        director = graknGraph.putRoleType("director");
+        directedBy = graknGraph.putRelationType("directed-by")
                 .hasRole(productionBeingDirected).hasRole(director);
 
-        productionWithCast = mindmapsGraph.putRoleType("production-with-cast");
-        actor = mindmapsGraph.putRoleType("actor");
-        characterBeingPlayed = mindmapsGraph.putRoleType("character-being-played");
-        hasCast = mindmapsGraph.putRelationType("has-cast")
+        productionWithCast = graknGraph.putRoleType("production-with-cast");
+        actor = graknGraph.putRoleType("actor");
+        characterBeingPlayed = graknGraph.putRoleType("character-being-played");
+        hasCast = graknGraph.putRelationType("has-cast")
                 .hasRole(productionWithCast).hasRole(actor).hasRole(characterBeingPlayed);
 
-        genreOfProduction = mindmapsGraph.putRoleType("genre-of-production");
-        productionWithGenre = mindmapsGraph.putRoleType("production-with-genre");
-        hasGenre = mindmapsGraph.putRelationType("has-genre")
+        genreOfProduction = graknGraph.putRoleType("genre-of-production");
+        productionWithGenre = graknGraph.putRoleType("production-with-genre");
+        hasGenre = graknGraph.putRelationType("has-genre")
                 .hasRole(genreOfProduction).hasRole(productionWithGenre);
 
-        clusterOfProduction = mindmapsGraph.putRoleType("cluster-of-production");
-        productionWithCluster = mindmapsGraph.putRoleType("production-with-cluster");
-        hasCluster = mindmapsGraph.putRelationType("has-cluster")
+        clusterOfProduction = graknGraph.putRoleType("cluster-of-production");
+        productionWithCluster = graknGraph.putRoleType("production-with-cluster");
+        hasCluster = graknGraph.putRelationType("has-cluster")
                 .hasRole(clusterOfProduction).hasRole(productionWithCluster);
 
-        title = mindmapsGraph.putResourceType("title", ResourceType.DataType.STRING);
-        tmdbVoteCount = mindmapsGraph.putResourceType("tmdb-vote-count", ResourceType.DataType.LONG);
-        tmdbVoteAverage = mindmapsGraph.putResourceType("tmdb-vote-average", ResourceType.DataType.DOUBLE);
-        releaseDate = mindmapsGraph.putResourceType("release-date", ResourceType.DataType.LONG);
-        runtime = mindmapsGraph.putResourceType("runtime", ResourceType.DataType.LONG);
-        gender = mindmapsGraph.putResourceType("gender", ResourceType.DataType.STRING).setRegex("(fe)?male");
-        realName = mindmapsGraph.putResourceType("real-name", ResourceType.DataType.STRING);
-        name = mindmapsGraph.putResourceType("name", ResourceType.DataType.STRING);
+        title = graknGraph.putResourceType("title", ResourceType.DataType.STRING);
+        tmdbVoteCount = graknGraph.putResourceType("tmdb-vote-count", ResourceType.DataType.LONG);
+        tmdbVoteAverage = graknGraph.putResourceType("tmdb-vote-average", ResourceType.DataType.DOUBLE);
+        releaseDate = graknGraph.putResourceType("release-date", ResourceType.DataType.LONG);
+        runtime = graknGraph.putResourceType("runtime", ResourceType.DataType.LONG);
+        gender = graknGraph.putResourceType("gender", ResourceType.DataType.STRING).setRegex("(fe)?male");
+        realName = graknGraph.putResourceType("real-name", ResourceType.DataType.STRING);
+        name = graknGraph.putResourceType("name", ResourceType.DataType.STRING);
 
-        EntityType production = mindmapsGraph.putEntityType("production")
+        EntityType production = graknGraph.putEntityType("production")
                 .playsRole(productionWithCluster).playsRole(productionBeingDirected).playsRole(productionWithCast)
                 .playsRole(productionWithGenre);
 
@@ -124,32 +124,32 @@ public class MovieGraphFactory {
         hasResource(production, releaseDate);
         hasResource(production, runtime);
 
-        movie = mindmapsGraph.putEntityType("movie").superType(production);
+        movie = graknGraph.putEntityType("movie").superType(production);
 
-        mindmapsGraph.putEntityType("tv-show").superType(production);
+        graknGraph.putEntityType("tv-show").superType(production);
 
-        person = mindmapsGraph.putEntityType("person")
+        person = graknGraph.putEntityType("person")
                 .playsRole(director).playsRole(actor).playsRole(characterBeingPlayed);
 
         hasResource(person, gender);
         hasResource(person, name);
         hasResource(person, realName);
 
-        genre = mindmapsGraph.putEntityType("genre").playsRole(genreOfProduction);
+        genre = graknGraph.putEntityType("genre").playsRole(genreOfProduction);
 
         hasResource(genre, name);
 
-        character = mindmapsGraph.putEntityType("character")
+        character = graknGraph.putEntityType("character")
                 .playsRole(characterBeingPlayed);
 
         hasResource(character, name);
 
-        mindmapsGraph.putEntityType("award");
-        language = mindmapsGraph.putEntityType("language");
+        graknGraph.putEntityType("award");
+        language = graknGraph.putEntityType("language");
 
         hasResource(language, name);
 
-        cluster = mindmapsGraph.putEntityType("cluster").playsRole(clusterOfProduction);
+        cluster = graknGraph.putEntityType("cluster").playsRole(clusterOfProduction);
     }
 
     private static void buildInstances() throws ParseException {
@@ -253,7 +253,7 @@ public class MovieGraphFactory {
     }
 
     private static void buildRelations() {
-        mindmapsGraph.addRelation(directedBy)
+        graknGraph.addRelation(directedBy)
                 .putRolePlayer(productionBeingDirected, chineseCoffee)
                 .putRolePlayer(director, alPacino);
 
@@ -298,58 +298,58 @@ public class MovieGraphFactory {
 
     private static void buildRules() {
         // These rules are totally made up for testing purposes and don't work!
-        RuleType aRuleType = mindmapsGraph.putRuleType("a-rule-type");
+        RuleType aRuleType = graknGraph.putRuleType("a-rule-type");
 
-        mindmapsGraph.putRule("expectation-rule", "$x id 'expect-lhs';", "$x id 'expect-rhs';", aRuleType)
+        graknGraph.putRule("expectation-rule", "$x id 'expect-lhs';", "$x id 'expect-rhs';", aRuleType)
                 .setExpectation(true)
                 .addConclusion(movie).addHypothesis(person);
 
-        mindmapsGraph.putRule("materialize-rule", "$x id 'materialize-lhs';", "$x id 'materialize-rhs';", aRuleType)
+        graknGraph.putRule("materialize-rule", "$x id 'materialize-lhs';", "$x id 'materialize-rhs';", aRuleType)
                 .setMaterialise(true)
                 .addConclusion(person).addConclusion(genre).addHypothesis(hasCast);
     }
 
     private static Entity putEntity(EntityType type, String name) {
-        return mindmapsGraph.putEntity(name.replaceAll(" ", "-").replaceAll("\\.", ""), type);
+        return graknGraph.putEntity(name.replaceAll(" ", "-").replaceAll("\\.", ""), type);
     }
 
     private static void hasResource(EntityType type, ResourceType<?> resourceType) {
-        RoleType owner = mindmapsGraph.putRoleType("has-" + resourceType.getId() + "-owner");
-        RoleType value = mindmapsGraph.putRoleType("has-" + resourceType.getId() + "-value");
-        mindmapsGraph.putRelationType("has-" + resourceType.getId()).hasRole(owner).hasRole(value);
+        RoleType owner = graknGraph.putRoleType("has-" + resourceType.getId() + "-owner");
+        RoleType value = graknGraph.putRoleType("has-" + resourceType.getId() + "-value");
+        graknGraph.putRelationType("has-" + resourceType.getId()).hasRole(owner).hasRole(value);
 
         type.playsRole(owner);
         resourceType.playsRole(value);
     }
 
     private static <D> void putResource(Instance instance, ResourceType<D> resourceType, D resource) {
-        Resource resourceInstance = mindmapsGraph.putResource(resource, resourceType);
+        Resource resourceInstance = graknGraph.putResource(resource, resourceType);
 
-        RoleType owner = mindmapsGraph.putRoleType("has-" + resourceType.getId() + "-owner");
-        RoleType value = mindmapsGraph.putRoleType("has-" + resourceType.getId() + "-value");
-        RelationType relationType = mindmapsGraph.putRelationType("has-" + resourceType.getId())
+        RoleType owner = graknGraph.putRoleType("has-" + resourceType.getId() + "-owner");
+        RoleType value = graknGraph.putRoleType("has-" + resourceType.getId() + "-value");
+        RelationType relationType = graknGraph.putRelationType("has-" + resourceType.getId())
                 .hasRole(owner).hasRole(value);
 
-        mindmapsGraph.addRelation(relationType)
+        graknGraph.addRelation(relationType)
                 .putRolePlayer(owner, instance)
                 .putRolePlayer(value, resourceInstance);
     }
 
     private static void hasCast(Instance movie, Instance person, Instance character) {
-        mindmapsGraph.addRelation(hasCast)
+        graknGraph.addRelation(hasCast)
                 .putRolePlayer(productionWithCast, movie)
                 .putRolePlayer(actor, person)
                 .putRolePlayer(characterBeingPlayed, character);
     }
 
     private static void hasGenre(Instance movie, Instance genre) {
-        mindmapsGraph.addRelation(hasGenre)
+        graknGraph.addRelation(hasGenre)
                 .putRolePlayer(productionWithGenre, movie)
                 .putRolePlayer(genreOfProduction, genre);
     }
 
     private static void hasCluster(Instance movie, Instance cluster) {
-        mindmapsGraph.addRelation(hasCluster)
+        graknGraph.addRelation(hasCluster)
                 .putRolePlayer(productionWithCluster, movie)
                 .putRolePlayer(clusterOfProduction, cluster);
     }

@@ -18,7 +18,7 @@
 
 package io.grakn.graql.internal.query;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.graql.AskQuery;
 import io.grakn.graql.MatchQuery;
 import io.grakn.graql.admin.AskQueryAdmin;
@@ -56,7 +56,7 @@ class AskQueryImpl implements AskQueryAdmin {
     }
 
     @Override
-    public AskQuery withGraph(MindmapsGraph graph) {
+    public AskQuery withGraph(GraknGraph graph) {
         return new AskQueryImpl(matchQuery.withGraph(graph));
     }
 

@@ -21,13 +21,13 @@ package io.grakn.test.graql.analytics;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Sets;
-import io.grakn.Mindmaps;
+import io.grakn.Grakn;
 import io.grakn.concept.Entity;
 import io.grakn.concept.EntityType;
 import io.grakn.concept.RelationType;
 import io.grakn.concept.ResourceType;
 import io.grakn.concept.RoleType;
-import io.grakn.exception.MindmapsValidationException;
+import io.grakn.exception.GraknValidationException;
 import io.grakn.graql.internal.analytics.Analytics;
 import io.grakn.graql.internal.analytics.MindmapsVertexProgram;
 import io.grakn.graql.internal.util.GraqlType;
@@ -377,7 +377,7 @@ public class StatisticsTest extends AbstractGraphTest {
         assertEquals(-7L, computer.median().get().longValue());
     }
 
-    private void addOntologyAndEntities() throws MindmapsValidationException {
+    private void addOntologyAndEntities() throws GraknValidationException {
         EntityType entityType1 = graph.putEntityType(thing);
         EntityType entityType2 = graph.putEntityType(anotherThing);
 
@@ -467,11 +467,11 @@ public class StatisticsTest extends AbstractGraphTest {
                 .playsRole(resourceValue7));
 
         graph.commit();
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
     }
 
-    private void addResourcesInstances() throws MindmapsValidationException {
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+    private void addResourcesInstances() throws GraknValidationException {
+        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
 
         graph.putResource(1.2, graph.getResourceType(resourceType1));
         graph.putResource(1.5, graph.getResourceType(resourceType1));
@@ -494,11 +494,11 @@ public class StatisticsTest extends AbstractGraphTest {
         graph.putResource("c", graph.getResourceType(resourceType4));
 
         graph.commit();
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
     }
 
-    private void addResourceRelations() throws MindmapsValidationException {
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+    private void addResourceRelations() throws GraknValidationException {
+        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
 
         Entity entity1 = graph.getEntity("1");
         Entity entity2 = graph.getEntity("2");
@@ -572,6 +572,6 @@ public class StatisticsTest extends AbstractGraphTest {
         graph.putResource(0.8, graph.getResourceType(resourceType6));
 
         graph.commit();
-        graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraph();
+        graph = Grakn.factory(Grakn.DEFAULT_URI, keyspace).getGraph();
     }
 }

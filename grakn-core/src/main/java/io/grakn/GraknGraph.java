@@ -31,7 +31,7 @@ import io.grakn.concept.RoleType;
 import io.grakn.concept.Rule;
 import io.grakn.concept.RuleType;
 import io.grakn.concept.Type;
-import io.grakn.exception.MindmapsValidationException;
+import io.grakn.exception.GraknValidationException;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -41,7 +41,7 @@ import java.util.Map;
 /**
  * A thread bound grakn graph
  */
-public interface MindmapsGraph extends AutoCloseable{
+public interface GraknGraph extends AutoCloseable{
     //------------------------------------- Concept Construction ----------------------------------
 
     /**
@@ -335,9 +335,9 @@ public interface MindmapsGraph extends AutoCloseable{
 
     /**
      * Validates and attempts to commit the graph. An exception is thrown if validation fails or if the graph cannot be persisted due to an underlying database issue.
-     * @throws MindmapsValidationException is thrown when a structural validation fails.
+     * @throws GraknValidationException is thrown when a structural validation fails.
      */
-    void commit() throws MindmapsValidationException;
+    void commit() throws GraknValidationException;
 
     /**
      * Resets the current transaction without commiting.

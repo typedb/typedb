@@ -18,9 +18,9 @@
 
 package io.grakn.graph.internal;
 
-import io.grakn.Mindmaps;
-import io.grakn.MindmapsGraph;
-import io.grakn.exception.MindmapsValidationException;
+import io.grakn.Grakn;
+import io.grakn.GraknGraph;
+import io.grakn.exception.GraknValidationException;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,13 +37,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
-public class MindmapsTinkerGraphTest {
-    private MindmapsGraph mindmapsGraph;
+public class GraknTinkerGraphTest {
+    private GraknGraph graknGraph;
 
     @Before
-    public void setup() throws MindmapsValidationException {
-        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        mindmapsGraph.commit();
+    public void setup() throws GraknValidationException {
+        graknGraph = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        graknGraph.commit();
     }
 
     @Test
@@ -52,7 +52,7 @@ public class MindmapsTinkerGraphTest {
         ExecutorService pool = Executors.newFixedThreadPool(10);
 
         for(int i = 0; i < 100; i ++){
-            futures.add(pool.submit(() -> addEntityType(mindmapsGraph)));
+            futures.add(pool.submit(() -> addEntityType(graknGraph)));
         }
 
         futures.forEach(future -> {
@@ -63,13 +63,13 @@ public class MindmapsTinkerGraphTest {
             }
         });
 
-        assertEquals(108, ((AbstractMindmapsGraph<Graph>) mindmapsGraph).getTinkerPopGraph().traversal().V().toList().size());
+        assertEquals(108, ((AbstractGraknGraph<Graph>) graknGraph).getTinkerPopGraph().traversal().V().toList().size());
     }
-    private void addEntityType(MindmapsGraph mindmapsGraph){
-        mindmapsGraph.putEntityType(UUID.randomUUID().toString());
+    private void addEntityType(GraknGraph graknGraph){
+        graknGraph.putEntityType(UUID.randomUUID().toString());
         try {
-            mindmapsGraph.commit();
-        } catch (MindmapsValidationException e) {
+            graknGraph.commit();
+        } catch (GraknValidationException e) {
             e.printStackTrace();
         }
     }
@@ -78,13 +78,13 @@ public class MindmapsTinkerGraphTest {
     public void testTestThreadLocal(){
         ExecutorService pool = Executors.newFixedThreadPool(10);
         Set<Future> futures = new HashSet<>();
-        AbstractMindmapsGraph transcation = (AbstractMindmapsGraph) mindmapsGraph;
+        AbstractGraknGraph transcation = (AbstractGraknGraph) graknGraph;
         transcation.putEntityType(UUID.randomUUID().toString());
         assertEquals(9, transcation.getTinkerTraversal().toList().size());
 
         for(int i = 0; i < 100; i ++){
             futures.add(pool.submit(() -> {
-                MindmapsGraph innerTranscation = mindmapsGraph;
+                GraknGraph innerTranscation = graknGraph;
                 innerTranscation.putEntityType(UUID.randomUUID().toString());
             }));
         }
@@ -102,10 +102,10 @@ public class MindmapsTinkerGraphTest {
 
     @Test
     public void testClear(){
-        mindmapsGraph.putEntityType("entity type");
-        assertNotNull(mindmapsGraph.getEntityType("entity type"));
-        mindmapsGraph.clear();
-        assertNull(mindmapsGraph.getEntityType("entity type"));
-        assertNotNull(mindmapsGraph.getMetaEntityType());
+        graknGraph.putEntityType("entity type");
+        assertNotNull(graknGraph.getEntityType("entity type"));
+        graknGraph.clear();
+        assertNull(graknGraph.getEntityType("entity type"));
+        assertNotNull(graknGraph.getMetaEntityType());
     }
 }

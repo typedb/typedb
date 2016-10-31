@@ -17,7 +17,7 @@
  */
 package io.grakn.graql.internal.reasoner.atom;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.RoleType;
 import io.grakn.concept.Rule;
 import io.grakn.concept.Type;
@@ -114,7 +114,7 @@ public abstract class Atom extends AtomBase {
         return atomRecursive;
     }
 
-    public MatchQuery getMatchQuery(MindmapsGraph graph) {
+    public MatchQuery getMatchQuery(GraknGraph graph) {
         QueryBuilder qb = Graql.withGraph(graph);
         MatchQuery matchQuery = qb.match(getPattern());
 

@@ -19,7 +19,7 @@
 package io.grakn.test.graql.reasoner;
 
 import com.google.common.collect.Sets;
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.graql.AskQuery;
 import io.grakn.graql.Graql;
 import io.grakn.graql.MatchQuery;
@@ -43,7 +43,7 @@ import java.util.Map;
 import static org.junit.Assert.assertTrue;
 
 public class AtomicQueryTest {
-    private static MindmapsGraph graph;
+    private static GraknGraph graph;
     private static QueryBuilder qb;
 
     @org.junit.Rule
@@ -103,7 +103,7 @@ public class AtomicQueryTest {
 
     @Test
     public void testUnification(){
-        MindmapsGraph localGraph = GenericGraph.getGraph("ancestor-friend-test.gql");
+        GraknGraph localGraph = GenericGraph.getGraph("ancestor-friend-test.gql");
         AtomicQuery parentQuery = new AtomicQuery("match ($Y, $z) isa Friend; $Y id 'd'; select $z;", localGraph);
         AtomicQuery childQuery = new AtomicQuery("match ($X, $Y) isa Friend; $Y id 'd'; select $X;", localGraph);
 

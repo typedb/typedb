@@ -19,7 +19,7 @@
 package io.grakn.test.graql.reasoner;
 
 import com.google.common.collect.Sets;
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.RelationType;
 import io.grakn.concept.Rule;
 import io.grakn.graql.Graql;
@@ -48,7 +48,7 @@ public class ReasonerTest {
 
     @Test
     public void testSubPropertyRule() {
-        MindmapsGraph graph = SNBGraph.getGraph();
+        GraknGraph graph = SNBGraph.getGraph();
         Map<String, String> roleMap = new HashMap<>();
         RelationType parent = graph.getRelationType("sublocate");
         RelationType child = graph.getRelationType("resides");
@@ -69,7 +69,7 @@ public class ReasonerTest {
 
     @Test
     public void testTransitiveRule() {
-        MindmapsGraph graph = SNBGraph.getGraph();
+        GraknGraph graph = SNBGraph.getGraph();
 
         Rule rule = createTransitiveRule("testRule", graph.getRelationType("sublocate"),
                 graph.getRoleType("member-location").getId(), graph.getRoleType("container-location").getId(), graph);
@@ -87,7 +87,7 @@ public class ReasonerTest {
 
     @Test
     public void testReflexiveRule() {
-        MindmapsGraph graph = SNBGraph.getGraph();
+        GraknGraph graph = SNBGraph.getGraph();
         Rule rule = createReflexiveRule("testRule", graph.getRelationType("knows"), graph);
         InferenceRule R = new InferenceRule(rule, graph);
 
@@ -101,7 +101,7 @@ public class ReasonerTest {
 
     @Test
     public void testIdComma(){
-        MindmapsGraph graph = SNBGraph.getGraph();
+        GraknGraph graph = SNBGraph.getGraph();
         String queryString = "match $x isa Person, id 'Bob';";
         Query query = new Query(queryString, graph);
         assertTrue(query.getAtoms().size() == 2);
@@ -109,7 +109,7 @@ public class ReasonerTest {
 
     @Test
     public void testComma(){
-        MindmapsGraph graph = SNBGraph.getGraph();
+        GraknGraph graph = SNBGraph.getGraph();
         String queryString = "match $x isa person, has firstname 'Bob', id 'Bob', value 'Bob', has age <21;";
         String queryString2 = "match $x isa person; $x has firstname 'Bob';$x id 'Bob';$x value 'Bob';$x has age <21;";
         Query query = new Query(queryString, graph);
@@ -119,7 +119,7 @@ public class ReasonerTest {
 
     @Test
     public void testComma2(){
-        MindmapsGraph graph = SNBGraph.getGraph();
+        GraknGraph graph = SNBGraph.getGraph();
         String queryString = "match $x isa person, value <21 value >18;";
         String queryString2 = "match $x isa person;$x value <21;$x value >18;";
         Query query = new Query(queryString, graph);
@@ -129,7 +129,7 @@ public class ReasonerTest {
 
     @Test
     public void testResourceAsVar(){
-        MindmapsGraph graph = SNBGraph.getGraph();
+        GraknGraph graph = SNBGraph.getGraph();
         String queryString = "match $x isa person, has firstname $y;";
         String queryString2 = "match $x isa person;$x has firstname $y;";
         Query query = new Query(queryString, graph);
@@ -139,7 +139,7 @@ public class ReasonerTest {
 
     @Test
     public void testResourceAsVar2(){
-        MindmapsGraph graph = SNBGraph.getGraph();
+        GraknGraph graph = SNBGraph.getGraph();
         String queryString = "match $x has firstname $y;";
         Query query = new Query(queryString, graph);
         String body = "$x isa person;$x id 'Bob';";
@@ -153,7 +153,7 @@ public class ReasonerTest {
 
     @Test
     public void testResourceAsVar3(){
-        MindmapsGraph graph = SNBGraph.getGraph();
+        GraknGraph graph = SNBGraph.getGraph();
         String queryString = "match $x isa person;$x has age <10;";
         String queryString2 = "match $x isa person;$x has age $y;$y value <10;select $x;";
         Query query = new AtomicQuery(queryString, graph);
@@ -163,7 +163,7 @@ public class ReasonerTest {
 
     @Test
     public void testResourceAsVar4(){
-        MindmapsGraph graph = SNBGraph.getGraph();
+        GraknGraph graph = SNBGraph.getGraph();
         String queryString = "match $x has firstname 'Bob';";
         String queryString2 = "match $x has firstname $y;$y value 'Bob';select $x;";
         Query query = new AtomicQuery(queryString, graph);
@@ -173,7 +173,7 @@ public class ReasonerTest {
 
     @Test
     public void testResourceAsVar5(){
-        MindmapsGraph graph = SNBGraph.getGraph();
+        GraknGraph graph = SNBGraph.getGraph();
         String queryString = "match $x has firstname 'Bob', has lastname 'Geldof';";
         String queryString2 = "match $x has firstname 'Bob';$x has lastname 'Geldof';";
         String queryString3 = "match $x has firstname $x1;$x has lastname $x2;$x1 value 'Bob';$x2 value 'Geldof';";
@@ -191,7 +191,7 @@ public class ReasonerTest {
 
     @Test
     public void testNoRelationType(){
-        MindmapsGraph lgraph = GeoGraph.getGraph();
+        GraknGraph lgraph = GeoGraph.getGraph();
         String queryString = "match $x isa city;$y isa country;($x, $y);$y id 'Poland';";
         String queryString2 = "match $x isa city;$y isa country;" +
                     "(geo-entity: $x, entity-location: $y) isa is-located-in;$y id 'Poland';";
@@ -204,7 +204,7 @@ public class ReasonerTest {
 
     @Test
     public void testNoRelationTypeWithRoles(){
-        MindmapsGraph lgraph = GeoGraph.getGraph();
+        GraknGraph lgraph = GeoGraph.getGraph();
         String queryString = "match $x isa city;$y isa country;(geo-entity: $x, $y);$y id 'Poland';";
         String queryString2 = "match $x isa city;$y isa country;" +
                     "(geo-entity: $x, entity-location: $y) isa is-located-in;$y id 'Poland';";
@@ -217,7 +217,7 @@ public class ReasonerTest {
 
     @Test
     public void testNoRelationTypeWithRoles2(){
-        MindmapsGraph lgraph = GeoGraph.getGraph();
+        GraknGraph lgraph = GeoGraph.getGraph();
         String queryString = "match $x isa city;$y isa country;(geo-entity: $x, $y);";
         String queryString2 = "match $x isa city;$y isa country;" +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;";
@@ -230,7 +230,7 @@ public class ReasonerTest {
 
     @Test
     public void testSub(){
-        MindmapsGraph lgraph = GeoGraph.getGraph();
+        GraknGraph lgraph = GeoGraph.getGraph();
         String queryString = "match $x isa $type;$type sub geoObject;" +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in; $y isa country;$y id 'Poland';";
         String queryString2 = "match $y isa country;$y id 'Poland';" +
@@ -244,7 +244,7 @@ public class ReasonerTest {
 
     @Test
     public void testPlaysRole(){
-        MindmapsGraph lgraph = GeoGraph.getGraph();
+        GraknGraph lgraph = GeoGraph.getGraph();
         String queryString = "match $x isa $type;$type plays-role geo-entity;$y isa country;$y id 'Poland';" +
              "($x, $y);select $x, $y;";
         String queryString2 = "match $y isa country;$y id 'Poland';" +
@@ -258,7 +258,7 @@ public class ReasonerTest {
 
     @Test
     public void testHasResource(){
-        MindmapsGraph lgraph = SNBGraph.getGraph();
+        GraknGraph lgraph = SNBGraph.getGraph();
         String queryString = "match $x isa $type;$type has-resource name;$y isa product;($x, $y) isa recommendation;";
         String queryString2 = "match $x isa $person;$y isa product;($x, $y) isa recommendation;";
         MatchQuery query = new Query(queryString, lgraph);
@@ -270,7 +270,7 @@ public class ReasonerTest {
 
     @Test
     public void testAllVarsRelation(){
-        MindmapsGraph lgraph = GeoGraph.getGraph();
+        GraknGraph lgraph = GeoGraph.getGraph();
         String queryString = "match ($x, $y) isa $rel;";
         String queryString2 = "match ($x, $y) isa is-located-in;";
         MatchQuery query = new Query(queryString, lgraph);
@@ -282,7 +282,7 @@ public class ReasonerTest {
 
     @Test
     public void testVarContraction(){
-        MindmapsGraph graph = SNBGraph.getGraph();
+        GraknGraph graph = SNBGraph.getGraph();
         createReflexiveRule("testRule", graph.getRelationType("knows"), graph);
         String queryString = "match ($x, $y) isa knows;select $y;";
         String explicitQuery = "match $y isa person;$y id 'Bob' or $y id 'Charlie';";
@@ -296,7 +296,7 @@ public class ReasonerTest {
     @Ignore
     //propagated sub [x/Bob] prevents from capturing the right inference
     public void testVarContraction2(){
-        MindmapsGraph graph = SNBGraph.getGraph();
+        GraknGraph graph = SNBGraph.getGraph();
         createReflexiveRule("testRule", graph.getRelationType("knows"), graph);
         String queryString = "match ($x, $y) isa knows;$x id 'Bob';select $y;";
         String explicitQuery = "match $y isa person;$y id 'Bob' or $y id 'Charlie';";
@@ -309,7 +309,7 @@ public class ReasonerTest {
     @Ignore
     //Bug with unification, perhaps should unify select vars not atom vars
     public void testVarContraction3(){
-        MindmapsGraph graph = SNBGraph.getGraph();
+        GraknGraph graph = SNBGraph.getGraph();
         String body = "$x isa person;";
         String head = "($x, $x) isa knows;";
         graph.putRule("test", body, head, graph.getMetaRuleInference());
@@ -324,7 +324,7 @@ public class ReasonerTest {
     @Test
     @Ignore
     public void testTypeVariable(){
-        MindmapsGraph lgraph = GeoGraph.getGraph();
+        GraknGraph lgraph = GeoGraph.getGraph();
         String queryString = "match $x isa $type;$type id 'city';"+
                 "(geo-entity: $x, entity-location: $y), isa is-located-in; $y isa country;select $x, $y;";
         String queryString2 = "match $x isa city;"+
@@ -340,7 +340,7 @@ public class ReasonerTest {
     @Test
     @Ignore
     public void testTypeVariable2(){
-        MindmapsGraph lgraph = GeoGraph.getGraph();
+        GraknGraph lgraph = GeoGraph.getGraph();
         String queryString = "match $x isa $type;$type isa city;"+
                 "(geo-entity: $x, entity-location: $y), isa is-located-in; $y isa country;$y id 'Poland';select $x, $y";
         String queryString2 = "match $x isa city;"+
@@ -354,7 +354,7 @@ public class ReasonerTest {
 
     @Test
     public void testRelationVariable(){
-        MindmapsGraph lgraph = GeoGraph.getGraph();
+        GraknGraph lgraph = GeoGraph.getGraph();
         String queryString = "match $r($x, $y);";
         MatchQuery query = new Query(queryString, lgraph);
 

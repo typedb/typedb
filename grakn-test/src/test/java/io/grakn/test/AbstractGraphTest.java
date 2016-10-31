@@ -18,8 +18,8 @@
 
 package io.grakn.test;
 
-import io.grakn.MindmapsGraph;
-import io.grakn.MindmapsGraphFactory;
+import io.grakn.GraknGraph;
+import io.grakn.GraknGraphFactory;
 import org.junit.Before;
 
 /**
@@ -27,8 +27,8 @@ import org.junit.Before;
  */
 public abstract class AbstractGraphTest extends AbstractEngineTest {
 
-    protected MindmapsGraphFactory factory;
-    protected MindmapsGraph graph;
+    protected GraknGraphFactory factory;
+    protected GraknGraph graph;
 
     @Before
     public void createGraph() {

@@ -18,7 +18,7 @@
 
 package io.grakn.graql;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.graql.admin.DeleteQueryAdmin;
 
 /**
@@ -37,7 +37,7 @@ public interface DeleteQuery extends Query<Void> {
      * @param graph the graph to execute the query on
      * @return a new DeleteQuery with the graph set
      */
-    DeleteQuery withGraph(MindmapsGraph graph);
+    DeleteQuery withGraph(GraknGraph graph);
 
     /**
      * @return admin instance for inspecting and manipulating this query

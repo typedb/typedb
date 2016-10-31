@@ -2,7 +2,7 @@ package io.grakn.graql.internal.gremlin;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.graql.internal.gremlin.fragment.Fragment;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
@@ -17,7 +17,7 @@ import java.util.Set;
 import static java.util.stream.Collectors.joining;
 
 /**
- * A traversal over a Mindmaps graph, representing one of many ways to execute a {@code MatchQuery}.
+ * A traversal over a Grakn graph, representing one of many ways to execute a {@code MatchQuery}.
  * Comprised of ordered {@code Fragment}s which are used to construct a TinkerPop {@code GraphTraversal}, which can be
  * retrieved and executed.
  */
@@ -29,14 +29,14 @@ public class GraqlTraversal {
     //             |            |
     //             V            V
     private final ImmutableSet<ImmutableList<Fragment>> fragments;
-    private final MindmapsGraph graph;
+    private final GraknGraph graph;
 
-    private GraqlTraversal(MindmapsGraph graph, ImmutableSet<ImmutableList<Fragment>> fragments) {
+    private GraqlTraversal(GraknGraph graph, ImmutableSet<ImmutableList<Fragment>> fragments) {
         this.graph = graph;
         this.fragments = fragments;
     }
 
-    public static GraqlTraversal create(MindmapsGraph graph, ImmutableSet<ImmutableList<Fragment>> fragments) {
+    public static GraqlTraversal create(GraknGraph graph, ImmutableSet<ImmutableList<Fragment>> fragments) {
         return new GraqlTraversal(graph, fragments);
     }
 

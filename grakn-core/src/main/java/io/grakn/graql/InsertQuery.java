@@ -18,7 +18,7 @@
 
 package io.grakn.graql;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.Concept;
 import io.grakn.graql.admin.InsertQueryAdmin;
 
@@ -38,7 +38,7 @@ public interface InsertQuery extends Query<Void>, Streamable<Concept> {
      * @param graph the graph to execute the query on
      * @return a new InsertQuery with the graph set
      */
-    InsertQuery withGraph(MindmapsGraph graph);
+    InsertQuery withGraph(GraknGraph graph);
 
     /**
      * @return admin instance for inspecting and manipulating this query

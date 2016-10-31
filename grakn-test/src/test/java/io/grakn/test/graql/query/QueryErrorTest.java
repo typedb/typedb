@@ -18,9 +18,9 @@
 
 package io.grakn.test.graql.query;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.ResourceType;
-import io.grakn.exception.MindmapsValidationException;
+import io.grakn.exception.GraknValidationException;
 import io.grakn.graql.QueryBuilder;
 import io.grakn.test.AbstractMovieGraphTest;
 import org.junit.Before;
@@ -133,9 +133,9 @@ public class QueryErrorTest extends AbstractMovieGraphTest {
     }
 
     @Test
-    public void testExceptionWhenNoHasResourceRelation() throws MindmapsValidationException {
+    public void testExceptionWhenNoHasResourceRelation() throws GraknValidationException {
         // Create a fresh graph, with no has-resource between person and name
-        MindmapsGraph empty = factoryWithNewKeyspace().getGraph();
+        GraknGraph empty = factoryWithNewKeyspace().getGraph();
 
         QueryBuilder emptyQb = withGraph(empty);
         emptyQb.insert(
@@ -143,7 +143,7 @@ public class QueryErrorTest extends AbstractMovieGraphTest {
                 id("name").isa("resource-type").datatype(ResourceType.DataType.STRING)
         ).execute();
 
-        exception.expect(MindmapsValidationException.class);
+        exception.expect(GraknValidationException.class);
         exception.expectMessage(allOf(
                 containsString("person"),
                 containsString("name")

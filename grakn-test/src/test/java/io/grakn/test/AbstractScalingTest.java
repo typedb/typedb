@@ -20,8 +20,8 @@ package io.grakn.test;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import io.grakn.Mindmaps;
-import io.grakn.MindmapsGraphFactory;
+import io.grakn.Grakn;
+import io.grakn.GraknGraphFactory;
 import org.junit.BeforeClass;
 
 import java.util.UUID;
@@ -37,10 +37,10 @@ public abstract class AbstractScalingTest {
         logger.setLevel(Level.OFF);
     }
 
-    protected static MindmapsGraphFactory factoryWithNewKeyspace() {
+    protected static GraknGraphFactory factoryWithNewKeyspace() {
         String keyspace;
         keyspace = UUID.randomUUID().toString().replaceAll("-", "");
-        return Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace);
+        return Grakn.factory(Grakn.DEFAULT_URI, keyspace);
     }
 
 }

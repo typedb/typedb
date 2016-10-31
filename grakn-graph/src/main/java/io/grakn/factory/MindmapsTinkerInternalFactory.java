@@ -18,7 +18,7 @@
 
 package io.grakn.factory;
 
-import io.grakn.graph.internal.MindmapsTinkerGraph;
+import io.grakn.graph.internal.GraknTinkerGraph;
 import io.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.slf4j.Logger;
@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 /**
  * A graph factory which provides a grakn graph with a tinker graph backend.
  */
-class MindmapsTinkerInternalFactory extends AbstractMindmapsInternalFactory<MindmapsTinkerGraph, TinkerGraph> {
+class MindmapsTinkerInternalFactory extends AbstractMindmapsInternalFactory<GraknTinkerGraph, TinkerGraph> {
     private final Logger LOG = LoggerFactory.getLogger(MindmapsTinkerInternalFactory.class);
 
     MindmapsTinkerInternalFactory(String keyspace, String engineUrl, String config){
@@ -41,8 +41,8 @@ class MindmapsTinkerInternalFactory extends AbstractMindmapsInternalFactory<Mind
     }
 
     @Override
-    MindmapsTinkerGraph buildMindmapsGraphFromTinker(TinkerGraph graph, boolean batchLoading) {
-        return new MindmapsTinkerGraph(graph, super.keyspace, super.engineUrl, batchLoading);
+    GraknTinkerGraph buildMindmapsGraphFromTinker(TinkerGraph graph, boolean batchLoading) {
+        return new GraknTinkerGraph(graph, super.keyspace, super.engineUrl, batchLoading);
     }
 
     @Override

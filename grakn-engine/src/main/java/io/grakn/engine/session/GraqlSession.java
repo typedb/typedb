@@ -19,9 +19,9 @@
 package io.grakn.engine.session;
 
 import com.google.common.base.Splitter;
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.exception.ConceptException;
-import io.grakn.exception.MindmapsValidationException;
+import io.grakn.exception.GraknValidationException;
 import io.grakn.graql.Autocomplete;
 import io.grakn.graql.MatchQuery;
 import io.grakn.graql.Query;
@@ -44,7 +44,7 @@ import static io.grakn.util.REST.RemoteShell.*;
  */
 class GraqlSession {
     private final Session session;
-    private final MindmapsGraph graph;
+    private final GraknGraph graph;
     private StringBuilder queryStringBuilder = new StringBuilder();
     private final Reasoner reasoner;
     private final Logger LOG = LoggerFactory.getLogger(GraqlSession.class);
@@ -57,7 +57,7 @@ class GraqlSession {
     // All requests are run within a single thread, so they always happen in a single thread-bound transaction
     private final ExecutorService queryExecutor = Executors.newSingleThreadExecutor();
 
-    GraqlSession(Session session, MindmapsGraph graph) {
+    GraqlSession(Session session, GraknGraph graph) {
         this.session = session;
         this.graph = graph;
         reasoner = new Reasoner(graph);
@@ -171,7 +171,7 @@ class GraqlSession {
         queryExecutor.submit(() -> {
             try {
                 graph.commit();
-            } catch (MindmapsValidationException e) {
+            } catch (GraknValidationException e) {
                 sendCommitError(e.getMessage());
             }
         });

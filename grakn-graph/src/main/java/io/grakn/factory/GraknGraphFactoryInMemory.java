@@ -18,36 +18,36 @@
 
 package io.grakn.factory;
 
-import io.grakn.MindmapsComputer;
-import io.grakn.MindmapsGraph;
-import io.grakn.MindmapsGraphFactory;
-import io.grakn.graph.internal.MindmapsComputerImpl;
+import io.grakn.GraknGraph;
+import io.grakn.GraknComputer;
+import io.grakn.GraknGraphFactory;
+import io.grakn.graph.internal.GraknComputerImpl;
 
 /**
  * A client for creating a grakn graph from a running engine.
  * This is to abstract away factories and the backend from the user.
  * The deployer of engine decides on the backend and this class will handle producing the correct graphs.
  */
-public class MindmapsGraphFactoryInMemory implements MindmapsGraphFactory {
+public class GraknGraphFactoryInMemory implements GraknGraphFactory {
     private static final String TINKER_GRAPH_COMPUTER = "org.apache.tinkerpop.gremlin.tinkergraph.process.computer.TinkerGraphComputer";
     private final MindmapsTinkerInternalFactory factory;
 
-    public MindmapsGraphFactoryInMemory(String keyspace, String ignored){
+    public GraknGraphFactoryInMemory(String keyspace, String ignored){
         factory = new MindmapsTinkerInternalFactory(keyspace, null, null);
     }
 
     @Override
-    public MindmapsGraph getGraph() {
+    public GraknGraph getGraph() {
         return factory.getGraph(false);
     }
 
     @Override
-    public MindmapsGraph getGraphBatchLoading() {
+    public GraknGraph getGraphBatchLoading() {
         return factory.getGraph(true);
     }
 
     @Override
-    public MindmapsComputer getGraphComputer() {
-        return new MindmapsComputerImpl(factory.getTinkerPopGraph(false), TINKER_GRAPH_COMPUTER);
+    public GraknComputer getGraphComputer() {
+        return new GraknComputerImpl(factory.getTinkerPopGraph(false), TINKER_GRAPH_COMPUTER);
     }
 }

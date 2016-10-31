@@ -19,15 +19,15 @@
 package io.grakn.test.graql.reasoner.graphs;
 
 
-import io.grakn.Mindmaps;
-import io.grakn.MindmapsGraph;
+import io.grakn.Grakn;
+import io.grakn.GraknGraph;
 import io.grakn.concept.EntityType;
 import io.grakn.concept.Instance;
 import io.grakn.concept.RelationType;
 import io.grakn.concept.Resource;
 import io.grakn.concept.ResourceType;
 import io.grakn.concept.RoleType;
-import io.grakn.exception.MindmapsValidationException;
+import io.grakn.exception.GraknValidationException;
 import io.grakn.graql.Graql;
 
 import java.io.IOException;
@@ -39,7 +39,7 @@ import java.util.UUID;
 
 public class AdmissionsGraph {
 
-    private static MindmapsGraph mindmaps;
+    private static GraknGraph mindmaps;
 
     private static EntityType applicant;
 
@@ -97,13 +97,13 @@ public class AdmissionsGraph {
 
     private static RoleType hasResourceTarget, hasResourceValue;
 
-    public static MindmapsGraph getGraph() {
-        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+    public static GraknGraph getGraph() {
+        mindmaps = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         buildGraph();
 
         try {
             mindmaps.commit();
-        } catch (MindmapsValidationException e) {
+        } catch (GraknValidationException e) {
             System.out.println(e.getMessage());
         }
 

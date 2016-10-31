@@ -20,7 +20,7 @@ package io.grakn.graql.internal.gremlin;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.graql.admin.Conjunction;
 import io.grakn.graql.admin.PatternAdmin;
 import io.grakn.graql.admin.VarAdmin;
@@ -50,7 +50,7 @@ import static java.util.stream.Collectors.toList;
  */
 public class GremlinQuery {
 
-    private final MindmapsGraph graph;
+    private final GraknGraph graph;
     private final Collection<ConjunctionQuery> innerQueries;
     private final ImmutableSet<String> names;
     private final Optional<MatchOrder> order;
@@ -61,7 +61,7 @@ public class GremlinQuery {
      * @param names the variable names to select
      * @param order an optional ordering
      */
-    public GremlinQuery(MindmapsGraph graph, PatternAdmin pattern, ImmutableSet<String> names, Optional<MatchOrder> order) {
+    public GremlinQuery(GraknGraph graph, PatternAdmin pattern, ImmutableSet<String> names, Optional<MatchOrder> order) {
         Collection<Conjunction<VarAdmin>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
         if (graph == null) {

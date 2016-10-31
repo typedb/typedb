@@ -31,7 +31,7 @@ import java.nio.charset.StandardCharsets;
 import static java.util.stream.Collectors.joining;
 
 /**
- * Main program to migrate CSV files into a Mindmaps graph. For use from a command line.
+ * Main program to migrate CSV files into a Grakn graph. For use from a command line.
  * Expected arguments are the CSV file and the Graql template.
  * Additionally, delimiter, batch size, location of engine and graph name can be provided.
  */
@@ -40,7 +40,7 @@ public class Main {
     private static ConfigProperties properties = ConfigProperties.getInstance();
 
     static void die(String errorMsg) {
-        throw new RuntimeException(errorMsg + "\nSyntax: ./migration.sh csv -file <csv file> -template <template file> [-delimiter <delimiter>] [-batch <number of rows>] [-graph <graph name>] [-engine <Mindmaps engine URL>])");
+        throw new RuntimeException(errorMsg + "\nSyntax: ./migration.sh csv -file <csv file> -template <template file> [-delimiter <delimiter>] [-batch <number of rows>] [-graph <graph name>] [-engine <Grakn engine URL>])");
     }
 
     public static void main(String[] args){

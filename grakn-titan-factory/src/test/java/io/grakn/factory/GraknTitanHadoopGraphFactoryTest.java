@@ -26,7 +26,7 @@ import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
-public class MindmapsTitanHadoopGraphFactoryTest {
+public class GraknTitanHadoopGraphFactoryTest {
     private final String TEST_CONFIG = "../conf/main/grakn-analytics.properties";
 
     private MindmapsTitanHadoopInternalFactory factory;

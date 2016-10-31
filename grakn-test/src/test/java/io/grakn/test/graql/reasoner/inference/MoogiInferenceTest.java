@@ -1,7 +1,7 @@
 package io.grakn.test.graql.reasoner.inference;
 
 import com.google.common.collect.Sets;
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.graql.Graql;
 import io.grakn.graql.MatchQuery;
 import io.grakn.graql.QueryBuilder;
@@ -15,7 +15,7 @@ import static org.junit.Assert.assertEquals;
 
 public class MoogiInferenceTest {
 
-    private static MindmapsGraph graph;
+    private static GraknGraph graph;
     private static Reasoner reasoner;
     private static QueryBuilder qb;
     private final static String dataDir = "femtomoogi/";

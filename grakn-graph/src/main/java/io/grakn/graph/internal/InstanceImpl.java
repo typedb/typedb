@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
  * @param <V> The type of the concept.
  */
 abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptImpl<T, V> implements Instance {
-    InstanceImpl(Vertex v, V type, AbstractMindmapsGraph mindmapsGraph) {
+    InstanceImpl(Vertex v, V type, AbstractGraknGraph mindmapsGraph) {
         super(v, type, mindmapsGraph);
         generateInstanceId(type);
     }

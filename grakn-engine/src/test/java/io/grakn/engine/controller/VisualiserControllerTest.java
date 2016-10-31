@@ -19,7 +19,7 @@
 package io.grakn.engine.controller;
 
 import com.jayway.restassured.response.Response;
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.EntityType;
 import io.grakn.engine.MindmapsEngineTestBase;
 import io.grakn.factory.GraphFactory;
@@ -47,7 +47,7 @@ public class VisualiserControllerTest extends MindmapsEngineTestBase{
 
     @Before
     public void setUp() throws Exception {
-        MindmapsGraph graph = GraphFactory.getInstance().getGraph(graphName);
+        GraknGraph graph = GraphFactory.getInstance().getGraph(graphName);
         EntityType man = graph.putEntityType("Man");
         entityId = graph.addEntity(man).getId();
         graph.commit();

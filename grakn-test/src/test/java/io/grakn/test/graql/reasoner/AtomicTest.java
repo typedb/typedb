@@ -19,7 +19,7 @@
 package io.grakn.test.graql.reasoner;
 
 import com.google.common.collect.Sets;
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.RelationType;
 import io.grakn.concept.RoleType;
 import io.grakn.concept.Type;
@@ -62,7 +62,7 @@ public class AtomicTest {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(ErrorMessage.PATTERN_NOT_VAR.getMessage());
 
-        MindmapsGraph graph = SNBGraph.getGraph();
+        GraknGraph graph = SNBGraph.getGraph();
         QueryBuilder qb = Graql.withGraph(graph);
         String atomString = "match $x isa person;";
 
@@ -75,7 +75,7 @@ public class AtomicTest {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(ErrorMessage.PATTERN_NOT_VAR.getMessage());
 
-        MindmapsGraph graph = SNBGraph.getGraph();
+        GraknGraph graph = SNBGraph.getGraph();
         QueryBuilder qb = Graql.withGraph(graph);
         String atomString = "match $x isa person;";
 
@@ -88,7 +88,7 @@ public class AtomicTest {
         exception.expect(IllegalArgumentException.class);
         exception.expectMessage(ErrorMessage.PATTERN_NOT_VAR.getMessage());
 
-        MindmapsGraph graph = SNBGraph.getGraph();
+        GraknGraph graph = SNBGraph.getGraph();
         QueryBuilder qb = Graql.withGraph(graph);
         String recRelString = "match ($x, $y) isa resides;";
 
@@ -99,7 +99,7 @@ public class AtomicTest {
 
     @Test
     public void testRecursive(){
-        MindmapsGraph graph = SNBGraph.getGraph();
+        GraknGraph graph = SNBGraph.getGraph();
         QueryBuilder qb = Graql.withGraph(graph);
         Reasoner reasoner = new Reasoner(graph);
 
@@ -119,7 +119,7 @@ public class AtomicTest {
 
     @Test
     public void testFactory(){
-        MindmapsGraph graph = SNBGraph.getGraph();
+        GraknGraph graph = SNBGraph.getGraph();
         QueryBuilder qb = Graql.withGraph(graph);
         String atomString = "match $x isa person;";
         String relString = "match ($x, $y) isa recommendation;";
@@ -139,7 +139,7 @@ public class AtomicTest {
 
     @Test
     public void testRoleInference(){
-        MindmapsGraph graph = CWGraph.getGraph();
+        GraknGraph graph = CWGraph.getGraph();
         String queryString = "match isa owns, ($z, $y); $z isa country; $y isa weapon; select $y, $z;";
         AtomicQuery query = new AtomicQuery(queryString, graph);
         Atom atom = query.getAtom();
@@ -155,7 +155,7 @@ public class AtomicTest {
 
     @Test
     public void testRoleInference2(){
-        MindmapsGraph graph = CWGraph.getGraph();
+        GraknGraph graph = CWGraph.getGraph();
         String queryString = "match ($z, $y, $x), isa transaction;$z isa country;$x isa person; select $x, $y, $z;";
         AtomicQuery query = new AtomicQuery(queryString, graph);
         Atom atom = query.getAtom();
@@ -170,7 +170,7 @@ public class AtomicTest {
 
     @Test
     public void testRelationConstructor(){
-        MindmapsGraph graph = GenericGraph.getGraph("geo-test.gql");
+        GraknGraph graph = GenericGraph.getGraph("geo-test.gql");
         QueryBuilder qb = Graql.withGraph(graph);
 
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
@@ -193,7 +193,7 @@ public class AtomicTest {
 
     @Test
     public void testRelationConstructor2(){
-        MindmapsGraph graph = GenericGraph.getGraph("geo-test.gql");
+        GraknGraph graph = GenericGraph.getGraph("geo-test.gql");
         QueryBuilder qb = Graql.withGraph(graph);
 
         String queryString = "match ($x, $y, $z) isa ternary-relation-test;";
@@ -218,7 +218,7 @@ public class AtomicTest {
 
     @Test
     public void testValuePredicateComparison(){
-        MindmapsGraph graph = SNBGraph.getGraph();
+        GraknGraph graph = SNBGraph.getGraph();
         QueryBuilder qb = Graql.withGraph(graph);
         Atomic atom = AtomicFactory.create(qb.parsePatterns("$x value '0';").iterator().next().admin());
         Atomic atom2 = AtomicFactory.create(qb.parsePatterns("$x value != '0';").iterator().next().admin());

@@ -17,8 +17,8 @@
  */
 package io.grakn.migration.export;
 
-import io.grakn.Mindmaps;
-import io.grakn.MindmapsGraph;
+import io.grakn.Grakn;
+import io.grakn.GraknGraph;
 import io.grakn.concept.Concept;
 import io.grakn.concept.Entity;
 import io.grakn.concept.Instance;
@@ -38,8 +38,8 @@ import static junit.framework.Assert.assertNotNull;
 
 public abstract class GraphWriterTestBase {
 
-    protected static final MindmapsGraph original = Mindmaps.factory(Mindmaps.IN_MEMORY, "original").getGraph();
-    protected static final MindmapsGraph copy = Mindmaps.factory(Mindmaps.IN_MEMORY, "copy").getGraph();
+    protected static final GraknGraph original = Grakn.factory(Grakn.IN_MEMORY, "original").getGraph();
+    protected static final GraknGraph copy = Grakn.factory(Grakn.IN_MEMORY, "copy").getGraph();
     protected static final GraphWriter writer = new GraphWriter(original);
 
     @After
@@ -50,14 +50,14 @@ public abstract class GraphWriterTestBase {
         }).forEach(Concept::delete);
     }
 
-    public void assertDataEqual(MindmapsGraph one, MindmapsGraph two){
+    public void assertDataEqual(GraknGraph one, GraknGraph two){
         one.getMetaType().instances().stream()
                 .flatMap(c -> c.asType().instances().stream())
                 .map(Concept::asInstance)
                 .forEach(i -> assertInstanceCopied(i, two));
     }
 
-    public void assertInstanceCopied(Instance instance, MindmapsGraph two){
+    public void assertInstanceCopied(Instance instance, GraknGraph two){
 
         if(instance instanceof Entity){
             assertEntityCopied(instance.asEntity(), two);
@@ -71,7 +71,7 @@ public abstract class GraphWriterTestBase {
 
     }
 
-    public void assertEntityCopied(Entity entity1, MindmapsGraph two){
+    public void assertEntityCopied(Entity entity1, GraknGraph two){
         Entity entity2 = two.getEntity(entity1.getId());
 
         Map<String, Object> resources1 = entity1.resources().stream().collect(toMap(c -> c.type().getId(), Resource::getValue));
@@ -80,7 +80,7 @@ public abstract class GraphWriterTestBase {
         assertEquals(resources1, resources2);
     }
 
-    public void assertRelationCopied(Relation relation1, MindmapsGraph two){
+    public void assertRelationCopied(Relation relation1, GraknGraph two){
         if(relation1.rolePlayers().values().stream().anyMatch(Concept::isResource)){
             return;
         }
@@ -94,20 +94,20 @@ public abstract class GraphWriterTestBase {
         assertNotNull(two.getRelation(relationType, rolemap));
     }
 
-    public void assertResourceCopied(Resource resource1, MindmapsGraph two){
+    public void assertResourceCopied(Resource resource1, GraknGraph two){
         assertEquals(true, two.getResourcesByValue(resource1.getValue()).stream()
                 .map(Concept::type)
                 .map(Type::getId)
                 .anyMatch(t -> resource1.type().getId().equals(t)));
     }
 
-    public void assertRuleCopied(Rule rule1, MindmapsGraph two){
+    public void assertRuleCopied(Rule rule1, GraknGraph two){
         Rule rule2 = two.getRule(rule1.getId());
         assertEquals(rule1.getLHS(), rule2.getLHS());
         assertEquals(rule1.getRHS(), rule2.getRHS());
     }
 
-    public void assertOntologiesEqual(MindmapsGraph one, MindmapsGraph two){
+    public void assertOntologiesEqual(GraknGraph one, GraknGraph two){
         boolean ontologyCorrect = one.getMetaType().instances().stream()
                 .allMatch(t -> typesEqual(t.asType(), two.getType(t.getId())));
         assertEquals(true, ontologyCorrect);

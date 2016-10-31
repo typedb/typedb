@@ -18,7 +18,7 @@
 
 package io.grakn.graql.internal.query;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.Concept;
 import io.grakn.graql.Aggregate;
 import io.grakn.graql.AggregateQuery;
@@ -43,7 +43,7 @@ class AggregateQueryImpl<T> implements AggregateQuery<T> {
     }
 
     @Override
-    public AggregateQuery<T> withGraph(MindmapsGraph graph) {
+    public AggregateQuery<T> withGraph(GraknGraph graph) {
         return new AggregateQueryImpl<>(matchQuery.withGraph(graph).admin(), aggregate);
     }
 

@@ -19,7 +19,7 @@
 package io.grakn.graql.internal.reasoner.query;
 
 import com.google.common.collect.Sets;
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.Concept;
 import io.grakn.concept.Type;
 import io.grakn.graql.Graql;
@@ -43,20 +43,20 @@ import static io.grakn.graql.internal.reasoner.Utility.createFreshVariable;
 
 public class Query implements MatchQueryInternal {
 
-    protected final MindmapsGraph graph;
+    protected final GraknGraph graph;
     protected final Set<Atomic> atomSet;
 
     private final Conjunction<PatternAdmin> pattern;
     private final Set<String> selectVars;
 
-    public Query(MatchQuery query, MindmapsGraph graph) {
+    public Query(MatchQuery query, GraknGraph graph) {
         this.graph = graph;
         this.selectVars = Sets.newHashSet(query.admin().getSelectedNames());
         this.atomSet = AtomicFactory.createAtomSet(query.admin().getPattern(), this);
         this.pattern = createPattern(atomSet);
     }
 
-    public Query(String query, MindmapsGraph graph) {
+    public Query(String query, GraknGraph graph) {
         this(Graql.withGraph(graph).<MatchQuery>parse(query), graph);
     }
 
@@ -107,7 +107,7 @@ public class Query implements MatchQueryInternal {
     public String toString() { return getMatchQuery().toString();}
 
     @Override
-    public Set<Type> getTypes(MindmapsGraph graph){ return getMatchQuery().admin().getTypes(graph);}
+    public Set<Type> getTypes(GraknGraph graph){ return getMatchQuery().admin().getTypes(graph);}
 
     @Override
     public Set<Type> getTypes() { return getMatchQuery().admin().getTypes(); }
@@ -116,12 +116,12 @@ public class Query implements MatchQueryInternal {
     public Set<String> getSelectedNames() { return selectVars;}
 
     @Override
-    public Stream<Map<String, Concept>> stream(Optional<MindmapsGraph> graph, Optional<MatchOrder> order) {
+    public Stream<Map<String, Concept>> stream(Optional<GraknGraph> graph, Optional<MatchOrder> order) {
         return getMatchQuery().stream();
     }
 
     @Override
-    public Optional<MindmapsGraph> getGraph(){ return Optional.of(graph);}
+    public Optional<GraknGraph> getGraph(){ return Optional.of(graph);}
 
     @Override
     public Conjunction<PatternAdmin> getPattern(){ return pattern;}

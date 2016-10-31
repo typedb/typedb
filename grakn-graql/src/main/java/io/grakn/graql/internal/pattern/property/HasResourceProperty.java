@@ -19,7 +19,7 @@
 package io.grakn.graql.internal.pattern.property;
 
 import com.google.common.collect.Sets;
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.Concept;
 import io.grakn.concept.Instance;
 import io.grakn.concept.Relation;
@@ -95,7 +95,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     }
 
     @Override
-    void checkValidProperty(MindmapsGraph graph, VarAdmin var) {
+    void checkValidProperty(GraknGraph graph, VarAdmin var) {
         if (graph.getResourceType(resourceType) == null) {
             throw new IllegalStateException(ErrorMessage.MUST_BE_RESOURCE_TYPE.getMessage(resourceType));
         }
@@ -108,7 +108,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
         ResourceType type = resourceConcept.type();
 
-        MindmapsGraph graph = insertQueryExecutor.getGraph();
+        GraknGraph graph = insertQueryExecutor.getGraph();
 
         RelationType hasResource = graph.putRelationType(GraqlType.HAS_RESOURCE.getId(type.getId()));
         RoleType hasResourceTarget = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(type.getId()));
@@ -120,7 +120,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     }
 
     @Override
-    public void delete(MindmapsGraph graph, Concept concept) {
+    public void delete(GraknGraph graph, Concept concept) {
         Optional<ValuePredicateAdmin> predicate = resource.getValuePredicates().stream().findAny();
 
         resources(concept).stream()

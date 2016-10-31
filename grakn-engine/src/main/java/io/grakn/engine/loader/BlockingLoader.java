@@ -18,10 +18,10 @@
 
 package io.grakn.engine.loader;
 
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
+import io.grakn.graph.internal.AbstractGraknGraph;
 import io.grakn.util.ErrorMessage;
-import io.grakn.graph.internal.AbstractMindmapsGraph;
-import io.grakn.exception.MindmapsValidationException;
+import io.grakn.exception.GraknValidationException;
 import io.grakn.engine.postprocessing.Cache;
 import io.grakn.engine.util.ConfigProperties;
 import io.grakn.factory.GraphFactory;
@@ -90,15 +90,15 @@ public class BlockingLoader extends Loader {
 
     private void loadData(String name, Collection<Var> batch) {
 
-        try(MindmapsGraph graph = GraphFactory.getInstance().getGraphBatchLoading(name)) {
+        try(GraknGraph graph = GraphFactory.getInstance().getGraphBatchLoading(name)) {
             for (int i = 0; i < repeatCommits; i++) {
                 try {
                     insert(batch).withGraph(graph).execute();
                     graph.commit();
-                    cache.addJobCasting(graphName, ((AbstractMindmapsGraph) graph).getModifiedCastingIds());
-                    cache.addJobResource(graphName, ((AbstractMindmapsGraph) graph).getModifiedCastingIds());
+                    cache.addJobCasting(graphName, ((AbstractGraknGraph) graph).getModifiedCastingIds());
+                    cache.addJobResource(graphName, ((AbstractGraknGraph) graph).getModifiedCastingIds());
                     return;
-                } catch (MindmapsValidationException e) {
+                } catch (GraknValidationException e) {
                     //If it's a validation exception there is no point in re-trying
                     LOG.error(ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));
                     return;

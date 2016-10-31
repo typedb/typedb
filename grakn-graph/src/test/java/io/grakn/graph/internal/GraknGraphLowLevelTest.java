@@ -18,7 +18,7 @@
 
 package io.grakn.graph.internal;
 
-import io.grakn.Mindmaps;
+import io.grakn.Grakn;
 import io.grakn.concept.Concept;
 import io.grakn.concept.Entity;
 import io.grakn.concept.EntityType;
@@ -30,7 +30,7 @@ import io.grakn.concept.ResourceType;
 import io.grakn.concept.RoleType;
 import io.grakn.concept.RuleType;
 import io.grakn.concept.Type;
-import io.grakn.exception.MindmapsValidationException;
+import io.grakn.exception.GraknValidationException;
 import io.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -56,16 +56,16 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class MindmapsGraphLowLevelTest {
+public class GraknGraphLowLevelTest {
 
-    private AbstractMindmapsGraph mindmapsGraph;
+    private AbstractGraknGraph mindmapsGraph;
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void buildGraphAccessManager(){
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        mindmapsGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         mindmapsGraph.initialiseMetaConcepts();
     }
     @After
@@ -385,7 +385,7 @@ public class MindmapsGraphLowLevelTest {
     }
 
     @Test
-    public void testComplexDelete() throws MindmapsValidationException {
+    public void testComplexDelete() throws GraknValidationException {
         RoleType roleType1 = mindmapsGraph.putRoleType("roleType 1");
         RoleType roleType2 = mindmapsGraph.putRoleType("roleType 2");
         RoleType roleType3 = mindmapsGraph.putRoleType("roleType 3");

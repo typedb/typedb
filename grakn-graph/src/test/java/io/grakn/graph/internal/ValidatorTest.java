@@ -18,7 +18,7 @@
 
 package io.grakn.graph.internal;
 
-import io.grakn.Mindmaps;
+import io.grakn.Grakn;
 import io.grakn.concept.Entity;
 import io.grakn.concept.EntityType;
 import io.grakn.concept.Instance;
@@ -26,7 +26,7 @@ import io.grakn.concept.Relation;
 import io.grakn.concept.RelationType;
 import io.grakn.concept.RoleType;
 import io.grakn.exception.InvalidConceptTypeException;
-import io.grakn.exception.MindmapsValidationException;
+import io.grakn.exception.GraknValidationException;
 import io.grakn.util.ErrorMessage;
 import org.junit.After;
 import org.junit.Before;
@@ -49,14 +49,14 @@ import static org.junit.Assert.assertTrue;
 
 public class ValidatorTest {
     private final Logger LOG = org.slf4j.LoggerFactory.getLogger(ValidatorTest.class);
-    private AbstractMindmapsGraph mindmapsGraph;
+    private AbstractGraknGraph mindmapsGraph;
 
     @org.junit.Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void buildGraphAccessManager(){
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        mindmapsGraph = (AbstractGraknGraph) Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
     }
     @After
     public void destroyGraphAccessManager()  throws Exception{
@@ -115,7 +115,7 @@ public class ValidatorTest {
         boolean exceptionThrown = false;
         try {
             mindmapsGraph.validateGraph();
-        } catch (MindmapsValidationException e) {
+        } catch (GraknValidationException e) {
             e.printStackTrace();
             exceptionThrown = true;
         }
@@ -137,7 +137,7 @@ public class ValidatorTest {
         boolean failure = false;
         try {
             mindmapsGraph.validateGraph();
-        } catch (MindmapsValidationException e) {
+        } catch (GraknValidationException e) {
             failure = true;
         }
         assertTrue(failure);
@@ -232,7 +232,7 @@ public class ValidatorTest {
     }
 
     @Test
-    public void testValidateAfterManualAssertionDelete() throws MindmapsValidationException {
+    public void testValidateAfterManualAssertionDelete() throws GraknValidationException {
         mindmapsGraph.initialiseMetaConcepts();
 
         // ontology
@@ -280,7 +280,7 @@ public class ValidatorTest {
     }
 
     @Test
-    public void testChangeTypeOfEntity() throws MindmapsValidationException {
+    public void testChangeTypeOfEntity() throws GraknValidationException {
         RoleType role1 = mindmapsGraph.putRoleType("role1");
         RoleType role2 = mindmapsGraph.putRoleType("role2");
         RelationType rel = mindmapsGraph.putRelationType("rel").hasRole(role1).hasRole(role2);
@@ -300,7 +300,7 @@ public class ValidatorTest {
     }
 
     @Test
-    public void testRoleTypeCanPlayRoleIfAbstract() throws MindmapsValidationException {
+    public void testRoleTypeCanPlayRoleIfAbstract() throws GraknValidationException {
         RoleType role1 = mindmapsGraph.putRoleType("role1").setAbstract(true);
         RoleType role2 = mindmapsGraph.putRoleType("role2").setAbstract(true);
         EntityType entityType = mindmapsGraph.putEntityType("my type").playsRole(role1).playsRole(role2);
@@ -308,7 +308,7 @@ public class ValidatorTest {
     }
 
     @Test
-    public void testNormalRelationshipWithTwoPlaysRole() throws MindmapsValidationException {
+    public void testNormalRelationshipWithTwoPlaysRole() throws GraknValidationException {
         RoleType characterBeingPlayed = mindmapsGraph.putRoleType("Character being played");
         RoleType personPlayingCharacter = mindmapsGraph.putRoleType("Person Playing Char");
         RelationType playsChar = mindmapsGraph.putRelationType("Plays Char").hasRole(characterBeingPlayed).hasRole(personPlayingCharacter);

@@ -20,7 +20,7 @@ package io.grakn.engine.controller;
 
 import io.grakn.engine.loader.RESTLoader;
 import io.grakn.engine.util.ConfigProperties;
-import io.grakn.exception.MindmapsEngineServerException;
+import io.grakn.exception.GraknEngineServerException;
 import io.grakn.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -74,7 +74,7 @@ public class TransactionController {
             res.status(201);
             return uuid.toString();
         } else {
-            throw new MindmapsEngineServerException(500,"Error while trying to load a new transaction.");
+            throw new GraknEngineServerException(500,"Error while trying to load a new transaction.");
         }
     }
 
@@ -88,7 +88,7 @@ public class TransactionController {
         try {
             return loader.getStatus(UUID.fromString(req.params(REST.Request.UUID_PARAMETER)));
         } catch (Exception e) {
-            throw new MindmapsEngineServerException(500,e);
+            throw new GraknEngineServerException(500,e);
         }
     }
 
@@ -100,7 +100,7 @@ public class TransactionController {
         try {
             return loader.getLoaderState();
         } catch (Exception e) {
-            throw new MindmapsEngineServerException(500,e);
+            throw new GraknEngineServerException(500,e);
         }
     }
 }

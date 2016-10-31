@@ -19,7 +19,7 @@
 package io.grakn.migration.sql;
 
 import com.google.common.collect.Lists;
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.ResourceType;
 import io.grakn.engine.loader.Loader;
 import io.grakn.graql.Var;
@@ -41,7 +41,7 @@ public class SQLSchemaMigrator implements Closeable {
     private Namer namer;
     private Connection connection;
     private SQLModel metadata;
-    private MindmapsGraph graph;
+    private GraknGraph graph;
 
     public SQLSchemaMigrator(){
         this.namer = new Namer(){};
@@ -59,9 +59,9 @@ public class SQLSchemaMigrator implements Closeable {
 
     /**
      * Set a graph from which to get information
-     * @param graph a Mindmaps graph
+     * @param graph a Grakn graph
      */
-    public SQLSchemaMigrator graph(MindmapsGraph graph){
+    public SQLSchemaMigrator graph(GraknGraph graph){
         this.graph = graph;
         return this;
     }

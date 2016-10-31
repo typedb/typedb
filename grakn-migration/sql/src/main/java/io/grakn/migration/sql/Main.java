@@ -28,16 +28,16 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 
 /**
- * Main program to migrate a SQL database into a Mindmaps graph. For use from a command line.
- * Expected arguments are the JDBC driver, JDBC username, JDBC password, JDBC database name and the Mindmaps Graph name
- * Optionally you can provide the Mindmaps engine URL
+ * Main program to migrate a SQL database into a Grakn graph. For use from a command line.
+ * Expected arguments are the JDBC driver, JDBC username, JDBC password, JDBC database name and the Grakn Graph name
+ * Optionally you can provide the Grakn engine URL
  */
 public class Main {
 
     private static ConfigProperties properties = ConfigProperties.getInstance();
 
     static void die(String errorMsg){
-        throw new RuntimeException(errorMsg + "\nSyntax: ./migration.sh sql -driver <jdbc driver> -database <database url> -user <username> -pass <password> [-engine <Mindmaps engine URL>] [-graph <graph name>]");
+        throw new RuntimeException(errorMsg + "\nSyntax: ./migration.sh sql -driver <jdbc driver> -database <database url> -user <username> -pass <password> [-engine <Grakn engine URL>] [-graph <graph name>]");
     }
 
     public static void main(String[] args){

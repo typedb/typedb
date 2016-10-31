@@ -18,8 +18,8 @@
 
 package io.grakn.test.graql.reasoner.graphs;
 
-import io.grakn.Mindmaps;
-import io.grakn.MindmapsGraph;
+import io.grakn.Grakn;
+import io.grakn.GraknGraph;
 import io.grakn.concept.EntityType;
 import io.grakn.concept.Instance;
 import io.grakn.concept.RelationType;
@@ -27,13 +27,13 @@ import io.grakn.concept.Resource;
 import io.grakn.concept.ResourceType;
 import io.grakn.concept.RoleType;
 import io.grakn.concept.RuleType;
-import io.grakn.exception.MindmapsValidationException;
+import io.grakn.exception.GraknValidationException;
 
 import java.util.UUID;
 
 public class CWGraph {
 
-    private static MindmapsGraph mindmaps;
+    private static GraknGraph mindmaps;
 
     private static EntityType person, criminal, weapon, rocket, missile, country;
     
@@ -60,13 +60,13 @@ public class CWGraph {
 
     private static Instance colonelWest, Nono, America, Tomahawk;
 
-    public static MindmapsGraph getGraph() {
-        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+    public static GraknGraph getGraph() {
+        mindmaps = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         buildGraph();
 
         try {
             mindmaps.commit();
-        } catch (MindmapsValidationException e) {
+        } catch (GraknValidationException e) {
             System.out.println(e.getMessage());
         }
 

@@ -17,8 +17,8 @@
  */
 package io.grakn.migration.export;
 
-import io.grakn.Mindmaps;
-import io.grakn.MindmapsGraph;
+import io.grakn.Grakn;
+import io.grakn.GraknGraph;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -28,7 +28,7 @@ import java.io.IOException;
 public class Main {
 
     static void die(String errorMsg){
-        throw new RuntimeException(errorMsg + "\nSyntax: ./migration.sh export {ontology, data} -file <output file> -graph <graph name> [-engine <Mindmaps engine URL>]");
+        throw new RuntimeException(errorMsg + "\nSyntax: ./migration.sh export {ontology, data} -file <output file> -graph <graph name> [-engine <Grakn engine URL>]");
     }
 
     public static void main(String[] args){
@@ -56,7 +56,7 @@ public class Main {
                 die("Unknown option " + args[i]);
         }
 
-        engineURL = engineURL == null ? Mindmaps.DEFAULT_URI : engineURL;
+        engineURL = engineURL == null ? Grakn.DEFAULT_URI : engineURL;
         if(graphName == null){
             die("You must provide a graph name argument using -graph");
         }
@@ -64,7 +64,7 @@ public class Main {
         System.out.println("Writing graph " + graphName + " using MM Engine " +
                 engineURL + " to file " + (outputFileName == null ? "System.out" : outputFileName));
 
-        MindmapsGraph graph = Mindmaps.factory(engineURL, graphName).getGraph();
+        GraknGraph graph = Grakn.factory(engineURL, graphName).getGraph();
         GraphWriter writer = new GraphWriter(graph);
 
         String contents = null;

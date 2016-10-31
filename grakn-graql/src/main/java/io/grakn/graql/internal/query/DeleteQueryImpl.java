@@ -20,7 +20,7 @@ package io.grakn.graql.internal.query;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import io.grakn.MindmapsGraph;
+import io.grakn.GraknGraph;
 import io.grakn.concept.Concept;
 import io.grakn.exception.ConceptException;
 import io.grakn.graql.DeleteQuery;
@@ -68,7 +68,7 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
     }
 
     @Override
-    public DeleteQuery withGraph(MindmapsGraph graph) {
+    public DeleteQuery withGraph(GraknGraph graph) {
         return Queries.delete(deleters.values(), matchQuery.withGraph(graph));
     }
 
@@ -113,7 +113,7 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
         }
     }
 
-    private MindmapsGraph getGraph() {
+    private GraknGraph getGraph() {
         return matchQuery.getGraph().orElseThrow(
                 () -> new IllegalStateException(ErrorMessage.NO_GRAPH.getMessage())
         );

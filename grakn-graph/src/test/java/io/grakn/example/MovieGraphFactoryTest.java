@@ -18,14 +18,14 @@
 
 package io.grakn.example;
 
-import io.grakn.Mindmaps;
-import io.grakn.MindmapsGraph;
+import io.grakn.Grakn;
+import io.grakn.GraknGraph;
 import io.grakn.concept.Entity;
 import io.grakn.concept.EntityType;
 import io.grakn.concept.Resource;
 import io.grakn.concept.ResourceType;
 import io.grakn.concept.RuleType;
-import io.grakn.graph.internal.AbstractMindmapsGraph;
+import io.grakn.graph.internal.AbstractGraknGraph;
 import io.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.junit.BeforeClass;
@@ -48,29 +48,29 @@ import static org.junit.Assert.assertTrue;
 public class MovieGraphFactoryTest {
 
     private static Graph graph;
-    private static MindmapsGraph mindmapsGraph;
+    private static GraknGraph graknGraph;
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
     @BeforeClass
     public static void setUp() throws IOException{
-        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        MovieGraphFactory.loadGraph(mindmapsGraph);
-        graph = ((AbstractMindmapsGraph)mindmapsGraph).getTinkerPopGraph();
+        graknGraph = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        MovieGraphFactory.loadGraph(graknGraph);
+        graph = ((AbstractGraknGraph) graknGraph).getTinkerPopGraph();
     }
 
     @Test
     public void failToLoad(){
-        MindmapsGraph mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        mindmapsGraph.putRelationType("fake");
+        GraknGraph graknGraph = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        graknGraph.putRelationType("fake");
 
         expectedException.expect(RuntimeException.class);
         expectedException.expectMessage(allOf(
                 containsString(ErrorMessage.CANNOT_LOAD_EXAMPLE.getMessage())
         ));
 
-        MovieGraphFactory.loadGraph(mindmapsGraph);
+        MovieGraphFactory.loadGraph(graknGraph);
     }
 
     @Test(expected=InvocationTargetException.class)
@@ -97,27 +97,27 @@ public class MovieGraphFactoryTest {
 
     @Test
     public void testGraphHasMovie() {
-        EntityType movie = mindmapsGraph.getEntityType("movie");
-        assertTrue(movie.superType().equals(mindmapsGraph.getEntityType("production")));
+        EntityType movie = graknGraph.getEntityType("movie");
+        assertTrue(movie.superType().equals(graknGraph.getEntityType("production")));
     }
 
     @Test
     public void testGraphHasTvShow() {
-        EntityType tvShow = mindmapsGraph.getEntityType("tv-show");
-        assertTrue(tvShow.superType().equals(mindmapsGraph.getEntityType("production")));
+        EntityType tvShow = graknGraph.getEntityType("tv-show");
+        assertTrue(tvShow.superType().equals(graknGraph.getEntityType("production")));
     }
 
     @Test
     public void testGodfatherHasResource() {
-        ResourceType tmdbVoteCount = mindmapsGraph.getResourceType("tmdb-vote-count");
-        Entity godfather = mindmapsGraph.getEntity("Godfather");
+        ResourceType tmdbVoteCount = graknGraph.getResourceType("tmdb-vote-count");
+        Entity godfather = graknGraph.getEntity("Godfather");
         Stream<Resource<?>> resources = godfather.resources().stream();
         assertTrue(resources.anyMatch(r -> r.type().equals(tmdbVoteCount) && r.getValue().equals(1000L)));
     }
 
     @Test
     public void testRulesExists() {
-        RuleType ruleType = mindmapsGraph.getRuleType("a-rule-type");
+        RuleType ruleType = graknGraph.getRuleType("a-rule-type");
         assertEquals(2, ruleType.instances().size());
     }
 }
