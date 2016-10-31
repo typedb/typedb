@@ -7,7 +7,7 @@ cache:
   directories:
   - $HOME/.m2
 notifications:
-  slack: mindmapsdb:3M1bWW0kGQ7LdniMmKeaY3o5
+  slack: grakn:RbxoPzX267spGT4cgmoGLMpT
 script:
     - mvn test jacoco:report coveralls:report
 before_install:
