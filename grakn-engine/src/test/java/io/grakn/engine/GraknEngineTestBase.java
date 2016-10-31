@@ -7,19 +7,19 @@ import org.junit.BeforeClass;
 
 import java.util.Properties;
 
-public abstract class MindmapsEngineTestBase {
+public abstract class GraknEngineTestBase {
     @BeforeClass
     public static void setupControllers() throws InterruptedException {
         System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY, ConfigProperties.TEST_CONFIG_FILE);
         Properties prop = ConfigProperties.getInstance().getProperties();
         RestAssured.baseURI = "http://" + prop.getProperty("server.host") + ":" + prop.getProperty("server.port");
-        MindmapsEngineServer.start();
+        GraknEngineServer.start();
         Thread.sleep(5000);
     }
 
     @AfterClass
     public static void takeDownControllers() throws InterruptedException {
-        MindmapsEngineServer.stop();
+        GraknEngineServer.stop();
         Thread.sleep(5000);
     }
 }

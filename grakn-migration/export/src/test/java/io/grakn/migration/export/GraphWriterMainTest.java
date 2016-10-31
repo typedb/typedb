@@ -19,7 +19,7 @@
 package io.grakn.migration.export;
 
 import io.grakn.GraknGraph;
-import io.grakn.engine.MindmapsEngineServer;
+import io.grakn.engine.GraknEngineServer;
 import io.grakn.engine.util.ConfigProperties;
 import io.grakn.example.PokemonGraphFactory;
 import io.grakn.factory.GraphFactory;
@@ -45,12 +45,12 @@ public class GraphWriterMainTest {
 
         GraknGraph original = GraphFactory.getInstance().getGraph("original");
         PokemonGraphFactory.loadGraph(original);
-        MindmapsEngineServer.start();
+        GraknEngineServer.start();
     }
 
     @AfterClass
     public static void stop(){
-        MindmapsEngineServer.stop();
+        GraknEngineServer.stop();
     }
 
     @Test

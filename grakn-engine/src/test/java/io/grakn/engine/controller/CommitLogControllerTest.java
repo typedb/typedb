@@ -28,7 +28,7 @@ import io.grakn.concept.RelationType;
 import io.grakn.concept.Resource;
 import io.grakn.concept.ResourceType;
 import io.grakn.concept.RoleType;
-import io.grakn.engine.MindmapsEngineTestBase;
+import io.grakn.engine.GraknEngineTestBase;
 import io.grakn.engine.postprocessing.Cache;
 import io.grakn.exception.GraknValidationException;
 import io.grakn.graph.internal.AbstractGraknGraph;
@@ -45,7 +45,7 @@ import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class CommitLogControllerTest extends MindmapsEngineTestBase {
+public class CommitLogControllerTest extends GraknEngineTestBase {
     public final String KEYSPACE = "test";
     private Cache cache;
 

@@ -30,7 +30,7 @@
         <appender-ref ref="ROLLING"/>
     </logger>
 
-    <logger name="io.grakn.engine.MindmapsEngineServer" level="INFO">
+    <logger name="io.grakn.engine.GraknEngineServer" level="INFO">
         <appender-ref ref="STDOUT"/>
     </logger>
 

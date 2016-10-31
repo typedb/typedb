@@ -21,7 +21,7 @@ package io.grakn.engine.controller;
 import com.jayway.restassured.response.Response;
 import io.grakn.Grakn;
 import io.grakn.GraknGraph;
-import io.grakn.engine.MindmapsEngineTestBase;
+import io.grakn.engine.GraknEngineTestBase;
 import io.grakn.graph.internal.AbstractGraknGraph;
 import io.grakn.util.REST.GraphConfig;
 import org.junit.Test;
@@ -35,7 +35,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 
-public class GraphFactoryControllerTest extends MindmapsEngineTestBase {
+public class GraphFactoryControllerTest extends GraknEngineTestBase {
 
     @Test
     public void testConfigWorking() {
@@ -62,13 +62,13 @@ public class GraphFactoryControllerTest extends MindmapsEngineTestBase {
     }
 
     @Test
-    public void testMindmapsClientBatch() {
+    public void testGraknClientBatch() {
         GraknGraph batch = Grakn.factory(Grakn.DEFAULT_URI, "mindmapstest").getGraphBatchLoading();
         assertTrue(((AbstractGraknGraph) batch).isBatchLoadingEnabled());
     }
 
     @Test
-    public void testMindmaps() {
+    public void testGrakn() {
         AbstractGraknGraph graph = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, "mindmapstest").getGraph();
         AbstractGraknGraph graph2 = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, "mindmapstest2").getGraph();
         AbstractGraknGraph graphCopy = (AbstractGraknGraph) Grakn.factory(Grakn.DEFAULT_URI, "mindmapstest").getGraph();

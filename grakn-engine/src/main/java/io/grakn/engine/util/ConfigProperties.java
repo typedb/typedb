@@ -238,7 +238,7 @@ public class ConfigProperties {
         return Long.parseLong(prop.getProperty(property));
     }
 
-    public static final String MINDMAPS_ASCII =
+    public static final String GRAKN_ASCII =
             "\n  __  __ _           _                           ____  ____  \n" +
                     " |  \\/  (_)_ __   __| |_ __ ___   __ _ _ __  ___|  _ \\| __ ) \n" +
                     " | |\\/| | | '_ \\ / _` | '_ ` _ \\ / _` | '_ \\/ __| | | |  _ \\ \n" +

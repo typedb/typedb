@@ -91,7 +91,7 @@ start)
         # engine has not already started
         echo -n "Starting engine"
         SCRIPTPATH=`cd "$(dirname "$0")" && pwd -P`
-        java -cp "`dirname $path`/../lib/*" -Dmindmaps.dir=$SCRIPTPATH io.grakn.engine.MindmapsEngineServer &
+        java -cp "`dirname $path`/../lib/*" -Dmindmaps.dir=$SCRIPTPATH io.grakn.engine.GraknEngineServer &
         echo $!>$ENGINE_PS
         wait_for_engine
     fi

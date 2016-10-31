@@ -20,7 +20,7 @@ package io.grakn.engine.controller;
 
 import com.jayway.restassured.response.Response;
 import io.grakn.GraknGraph;
-import io.grakn.engine.MindmapsEngineTestBase;
+import io.grakn.engine.GraknEngineTestBase;
 import io.grakn.engine.util.ConfigProperties;
 import io.grakn.exception.GraknValidationException;
 import io.grakn.factory.GraphFactory;
@@ -39,7 +39,7 @@ import java.util.List;
 
 import static com.jayway.restassured.RestAssured.given;
 
-public class ImportControllerTest extends MindmapsEngineTestBase {
+public class ImportControllerTest extends GraknEngineTestBase {
 
     private String graphName;
 

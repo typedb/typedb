@@ -20,7 +20,7 @@ package io.grakn.migration.sql;
 
 import io.grakn.GraknGraph;
 import io.grakn.concept.Entity;
-import io.grakn.engine.MindmapsEngineServer;
+import io.grakn.engine.GraknEngineServer;
 import io.grakn.engine.util.ConfigProperties;
 import io.grakn.factory.GraphFactory;
 import org.junit.*;
@@ -40,12 +40,12 @@ public class SQLMigratorMainTest {
         System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
         System.setProperty(ConfigProperties.CURRENT_DIR_SYSTEM_PROPERTY, System.getProperty("user.dir")+"/../");
 
-        MindmapsEngineServer.start();
+        GraknEngineServer.start();
     }
 
     @AfterClass
     public static void stop(){
-        MindmapsEngineServer.stop();
+        GraknEngineServer.stop();
     }
 
     @Before

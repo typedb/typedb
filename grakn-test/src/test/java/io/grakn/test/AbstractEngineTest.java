@@ -22,7 +22,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import io.grakn.Grakn;
 import io.grakn.GraknGraphFactory;
-import io.grakn.engine.MindmapsEngineServer;
+import io.grakn.engine.GraknEngineServer;
 import org.junit.BeforeClass;
 
 import java.util.UUID;
@@ -49,7 +49,7 @@ public abstract class AbstractEngineTest {
                 startEmbeddedCassandra();
             }
 
-            MindmapsEngineServer.start();
+            GraknEngineServer.start();
 
             sleep(5000);
         }

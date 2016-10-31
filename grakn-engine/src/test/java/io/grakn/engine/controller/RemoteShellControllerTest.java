@@ -21,7 +21,7 @@ package io.grakn.engine.controller;
 import com.jayway.restassured.response.Response;
 import io.grakn.GraknGraph;
 import io.grakn.concept.EntityType;
-import io.grakn.engine.MindmapsEngineTestBase;
+import io.grakn.engine.GraknEngineTestBase;
 import io.grakn.engine.util.ConfigProperties;
 import io.grakn.factory.GraphFactory;
 import org.junit.After;
@@ -32,7 +32,7 @@ import org.junit.Test;
 import static com.jayway.restassured.RestAssured.get;
 import static org.junit.Assert.assertTrue;
 
-public class RemoteShellControllerTest extends MindmapsEngineTestBase {
+public class RemoteShellControllerTest extends GraknEngineTestBase {
 
     private String graphName;
     private String entityId;

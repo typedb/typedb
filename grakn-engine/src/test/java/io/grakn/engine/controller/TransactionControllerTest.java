@@ -19,7 +19,7 @@
 package io.grakn.engine.controller;
 
 import io.grakn.GraknGraph;
-import io.grakn.engine.MindmapsEngineTestBase;
+import io.grakn.engine.GraknEngineTestBase;
 import io.grakn.engine.loader.TransactionState;
 import io.grakn.engine.util.ConfigProperties;
 import io.grakn.factory.GraphFactory;
@@ -35,7 +35,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class TransactionControllerTest extends MindmapsEngineTestBase{
+public class TransactionControllerTest extends GraknEngineTestBase {
 
     private String graphName;
 

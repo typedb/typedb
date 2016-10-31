@@ -21,7 +21,7 @@ package io.grakn.engine.controller;
 import com.jayway.restassured.response.Response;
 import io.grakn.GraknGraph;
 import io.grakn.concept.EntityType;
-import io.grakn.engine.MindmapsEngineTestBase;
+import io.grakn.engine.GraknEngineTestBase;
 import io.grakn.factory.GraphFactory;
 import io.grakn.util.REST;
 import org.json.JSONArray;
@@ -38,7 +38,7 @@ import static com.jayway.restassured.RestAssured.get;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class VisualiserControllerTest extends MindmapsEngineTestBase{
+public class VisualiserControllerTest extends GraknEngineTestBase {
 
     private static String graphName = "specialtestgraph";
     private String entityId;

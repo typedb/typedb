@@ -31,7 +31,7 @@ import static spark.Spark.*;
  * Main class in charge to start a web server and all the REST controllers.
  */
 
-public class MindmapsEngineServer {
+public class GraknEngineServer {
 
     private static Logger LOG = null;
 
@@ -44,7 +44,7 @@ public class MindmapsEngineServer {
 
         ConfigProperties prop = ConfigProperties.getInstance();
 
-        LOG = LoggerFactory.getLogger(MindmapsEngineServer.class);
+        LOG = LoggerFactory.getLogger(GraknEngineServer.class);
 
         // Set host name
         ipAddress(prop.getProperty(ConfigProperties.SERVER_HOST_NAME));
@@ -89,7 +89,7 @@ public class MindmapsEngineServer {
      * @param logFilePath Path to the LOG file.
      */
     private static void printStartMessage(String host, String port, String logFilePath) {
-        LOG.info(ConfigProperties.MINDMAPS_ASCII);
+        LOG.info(ConfigProperties.GRAKN_ASCII);
         LOG.info("Grakn Engine is ready. Listening on [http://" + host + ":" + port + "]");
         LOG.info("Grakn LOG file located at ["+logFilePath+"]");
     }

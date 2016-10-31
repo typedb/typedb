@@ -27,7 +27,7 @@ import io.grakn.concept.RelationType;
 import io.grakn.concept.Resource;
 import io.grakn.concept.ResourceType;
 import io.grakn.concept.RoleType;
-import io.grakn.engine.MindmapsEngineTestBase;
+import io.grakn.engine.GraknEngineTestBase;
 import io.grakn.exception.GraknValidationException;
 import io.grakn.graph.internal.AbstractGraknGraph;
 import io.grakn.util.Schema;
@@ -44,7 +44,7 @@ import java.util.concurrent.Executors;
 
 import static org.junit.Assert.assertEquals;
 
-public class BackgroundTasksTest extends MindmapsEngineTestBase{
+public class BackgroundTasksTest extends GraknEngineTestBase {
     private BackgroundTasks backgroundTasks;
     private GraknGraph graknGraph;
     private Cache cache;
