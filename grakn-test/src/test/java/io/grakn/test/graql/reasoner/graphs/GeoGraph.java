@@ -33,7 +33,7 @@ import java.util.UUID;
 
 public class GeoGraph {
 
-    private static GraknGraph mindmaps;
+    private static GraknGraph grakn;
 
     private static EntityType university, city, region, country, continent, geographicalObject;
     private static RelationType hasResource, isLocatedIn;
@@ -48,14 +48,14 @@ public class GeoGraph {
     private static Instance UW, PW, Imperial, UniversityOfMunich, UCL;
 
     public static GraknGraph getGraph() {
-        mindmaps = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        grakn = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         buildGraph();
         try {
-            mindmaps.commit();
+            grakn.commit();
         } catch (GraknValidationException e) {
             System.out.println(e.getMessage());
         }
-        return mindmaps;
+        return grakn;
     }
 
     private static void buildGraph() {
@@ -66,150 +66,150 @@ public class GeoGraph {
     }
 
     private static void buildOntology() {
-        hasResourceTarget = mindmaps.putRoleType("has-resource-target");
-        hasResourceValue = mindmaps.putRoleType("has-resource-value");
-        hasResource = mindmaps.putRelationType("has-resource")
+        hasResourceTarget = grakn.putRoleType("has-resource-target");
+        hasResourceValue = grakn.putRoleType("has-resource-value");
+        hasResource = grakn.putRelationType("has-resource")
                 .hasRole(hasResourceTarget).hasRole(hasResourceValue);
 
 
-        geoEntity = mindmaps.putRoleType("geo-entity");
-        entityLocation = mindmaps.putRoleType("entity-location");
-        isLocatedIn = mindmaps.putRelationType("is-located-in")
+        geoEntity = grakn.putRoleType("geo-entity");
+        entityLocation = grakn.putRoleType("entity-location");
+        isLocatedIn = grakn.putRelationType("is-located-in")
                 .hasRole(geoEntity).hasRole(entityLocation);
 
-        geographicalObject = mindmaps.putEntityType("geoObject");
+        geographicalObject = grakn.putEntityType("geoObject");
 
-        continent = mindmaps.putEntityType("continent").superType(geographicalObject)
+        continent = grakn.putEntityType("continent").superType(geographicalObject)
                     .playsRole(entityLocation);
-        country = mindmaps.putEntityType("country").superType(geographicalObject)
+        country = grakn.putEntityType("country").superType(geographicalObject)
                 .playsRole(geoEntity).playsRole(entityLocation);
-        region = mindmaps.putEntityType("region").superType(geographicalObject)
+        region = grakn.putEntityType("region").superType(geographicalObject)
                 .playsRole(geoEntity).playsRole(entityLocation);
-        city = mindmaps.putEntityType("city").superType(geographicalObject)
+        city = grakn.putEntityType("city").superType(geographicalObject)
                 .playsRole(geoEntity).playsRole(entityLocation);
-        university = mindmaps.putEntityType("university")
+        university = grakn.putEntityType("university")
                         .playsRole(geoEntity);
     }
 
     private static void buildInstances() {
 
-        Europe = mindmaps.putEntity("Europe", continent);
-        NorthAmerica = mindmaps.putEntity("Europe", continent);
+        Europe = grakn.putEntity("Europe", continent);
+        NorthAmerica = grakn.putEntity("Europe", continent);
 
-        Poland = mindmaps.putEntity("Poland", country);
-        England = mindmaps.putEntity("England", country);
-        Germany = mindmaps.putEntity("Germany", country);
-        France = mindmaps.putEntity("France", country);
-        Italy = mindmaps.putEntity("Italy", country);
+        Poland = grakn.putEntity("Poland", country);
+        England = grakn.putEntity("England", country);
+        Germany = grakn.putEntity("Germany", country);
+        France = grakn.putEntity("France", country);
+        Italy = grakn.putEntity("Italy", country);
 
-        Masovia = mindmaps.putEntity("Masovia", region);
-        Silesia = mindmaps.putEntity("Silesia", region);
-        GreaterLondon = mindmaps.putEntity("GreaterLondon", region);
-        Bavaria = mindmaps.putEntity("Bavaria", region);
-        IleDeFrance = mindmaps.putEntity("IleDeFrance", region);
-        Lombardy = mindmaps.putEntity("Lombardy", region);
+        Masovia = grakn.putEntity("Masovia", region);
+        Silesia = grakn.putEntity("Silesia", region);
+        GreaterLondon = grakn.putEntity("GreaterLondon", region);
+        Bavaria = grakn.putEntity("Bavaria", region);
+        IleDeFrance = grakn.putEntity("IleDeFrance", region);
+        Lombardy = grakn.putEntity("Lombardy", region);
 
-        Warsaw = mindmaps.putEntity("Warsaw", city);
-        Wroclaw = mindmaps.putEntity("Wroclaw", city);
-        London = mindmaps.putEntity("London", city);
-        Munich = mindmaps.putEntity("Munich", city);
-        Paris = mindmaps.putEntity("Paris", city);
-        Milan = mindmaps.putEntity("Milan", city);
+        Warsaw = grakn.putEntity("Warsaw", city);
+        Wroclaw = grakn.putEntity("Wroclaw", city);
+        London = grakn.putEntity("London", city);
+        Munich = grakn.putEntity("Munich", city);
+        Paris = grakn.putEntity("Paris", city);
+        Milan = grakn.putEntity("Milan", city);
 
-        UW = mindmaps.putEntity("University-of-Warsaw", university);
-        PW = mindmaps.putEntity("Warsaw-Polytechnics", university);
-        Imperial = mindmaps.putEntity("Imperial College London", university);
-        UCL = mindmaps.putEntity("University College London", university);
-        UniversityOfMunich = mindmaps.putEntity("University of Munich", university);
+        UW = grakn.putEntity("University-of-Warsaw", university);
+        PW = grakn.putEntity("Warsaw-Polytechnics", university);
+        Imperial = grakn.putEntity("Imperial College London", university);
+        UCL = grakn.putEntity("University College London", university);
+        UniversityOfMunich = grakn.putEntity("University of Munich", university);
 
     }
 
     private static void buildRelations() {
-        mindmaps.addRelation(isLocatedIn)
+        grakn.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, PW)
                 .putRolePlayer(entityLocation, Warsaw);
-        mindmaps.addRelation(isLocatedIn)
+        grakn.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, UW)
                 .putRolePlayer(entityLocation, Warsaw);
-        mindmaps.addRelation(isLocatedIn)
+        grakn.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Imperial)
                 .putRolePlayer(entityLocation, London);
-        mindmaps.addRelation(isLocatedIn)
+        grakn.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, UCL)
                 .putRolePlayer(entityLocation, London);
 
-        mindmaps.addRelation(isLocatedIn)
+        grakn.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Warsaw)
                 .putRolePlayer(entityLocation, Masovia);
-        mindmaps.addRelation(isLocatedIn)
+        grakn.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Masovia)
                 .putRolePlayer(entityLocation, Poland);
-        mindmaps.addRelation(isLocatedIn)
+        grakn.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Wroclaw)
                 .putRolePlayer(entityLocation, Silesia);
-        mindmaps.addRelation(isLocatedIn)
+        grakn.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Silesia)
                 .putRolePlayer(entityLocation, Poland);
-        mindmaps.addRelation(isLocatedIn)
+        grakn.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Poland)
                 .putRolePlayer(entityLocation, Europe);
 
-        mindmaps.addRelation(isLocatedIn)
+        grakn.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, London)
                 .putRolePlayer(entityLocation, GreaterLondon);
-        mindmaps.addRelation(isLocatedIn)
+        grakn.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, GreaterLondon)
                 .putRolePlayer(entityLocation, England);
-        mindmaps.addRelation(isLocatedIn)
+        grakn.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, England)
                 .putRolePlayer(entityLocation, Europe);
 
-        mindmaps.addRelation(isLocatedIn)
+        grakn.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Munich)
                 .putRolePlayer(entityLocation, Bavaria);
-        mindmaps.addRelation(isLocatedIn)
+        grakn.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Bavaria)
                 .putRolePlayer(entityLocation, Germany);
-        mindmaps.addRelation(isLocatedIn)
+        grakn.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Germany)
                 .putRolePlayer(entityLocation, Europe);
 
-        mindmaps.addRelation(isLocatedIn)
+        grakn.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Milan)
                 .putRolePlayer(entityLocation, Lombardy);
-        mindmaps.addRelation(isLocatedIn)
+        grakn.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Lombardy)
                 .putRolePlayer(entityLocation, Italy);
-        mindmaps.addRelation(isLocatedIn)
+        grakn.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Italy)
                 .putRolePlayer(entityLocation, Europe);
 
-        mindmaps.addRelation(isLocatedIn)
+        grakn.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, Paris)
                 .putRolePlayer(entityLocation, IleDeFrance);
-        mindmaps.addRelation(isLocatedIn)
+        grakn.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, IleDeFrance)
                 .putRolePlayer(entityLocation, France);
-        mindmaps.addRelation(isLocatedIn)
+        grakn.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, France)
                 .putRolePlayer(entityLocation, Europe);
 
     }
     private static void buildRules() {
-        RuleType inferenceRule = mindmaps.getMetaRuleInference();
+        RuleType inferenceRule = grakn.getMetaRuleInference();
 
         String transitivity_LHS = "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "(geo-entity: $y, entity-location: $z) isa is-located-in;";
 
         String transitivity_RHS = "(geo-entity: $x, entity-location: $z) isa is-located-in;";
 
-        mindmaps.putRule("transitivity", transitivity_LHS, transitivity_RHS, inferenceRule);
+        grakn.putRule("transitivity", transitivity_LHS, transitivity_RHS, inferenceRule);
     }
 
     private static <T> void putResource(Instance instance, ResourceType<T> resourceType, T resource) {
-        Resource resourceInstance = mindmaps.putResource(resource, resourceType);
+        Resource resourceInstance = grakn.putResource(resource, resourceType);
 
-        mindmaps.addRelation(hasResource)
+        grakn.addRelation(hasResource)
                 .putRolePlayer(hasResourceTarget, instance)
                 .putRolePlayer(hasResourceValue, resourceInstance);
     }

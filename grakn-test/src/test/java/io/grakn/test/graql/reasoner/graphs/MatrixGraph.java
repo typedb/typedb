@@ -30,45 +30,45 @@ public class MatrixGraph extends GenericGraph{
         getGraph(gqlFile);
         buildExtensionalDB(n, m);
         commit();
-        return mindmaps;
+        return grakn;
     }
 
     private static void buildExtensionalDB(int n, int m) {
-        RoleType R1from = mindmaps.getRoleType("R1-from");
-        RoleType R1to = mindmaps.getRoleType("R1-to");
-        RoleType R2from = mindmaps.getRoleType("R2-from");
-        RoleType R2to = mindmaps.getRoleType("R2-to");
+        RoleType R1from = grakn.getRoleType("R1-from");
+        RoleType R1to = grakn.getRoleType("R1-to");
+        RoleType R2from = grakn.getRoleType("R2-from");
+        RoleType R2to = grakn.getRoleType("R2-to");
 
-        EntityType aEntity = mindmaps.getEntityType("a-entity");
-        EntityType bEntity = mindmaps.getEntityType("b-entity");
-        RelationType R1 = mindmaps.getRelationType("R1");
-        RelationType R2 = mindmaps.getRelationType("R2");
+        EntityType aEntity = grakn.getEntityType("a-entity");
+        EntityType bEntity = grakn.getEntityType("b-entity");
+        RelationType R1 = grakn.getRelationType("R1");
+        RelationType R2 = grakn.getRelationType("R2");
 
-        mindmaps.putEntity("a0", mindmaps.getEntityType("start"));
-        mindmaps.putEntity("a" + m, mindmaps.getEntityType("end"));
+        grakn.putEntity("a0", grakn.getEntityType("start"));
+        grakn.putEntity("a" + m, grakn.getEntityType("end"));
         for(int i = 1 ; i < m ;i++)
-            mindmaps.putEntity("a" + i, aEntity);
+            grakn.putEntity("a" + i, aEntity);
 
         for(int i = 1 ; i < m ;i++)
             for(int j = 1 ; j <= n ;j++)
-                mindmaps.putEntity("b" + i + j, bEntity);
+                grakn.putEntity("b" + i + j, bEntity);
 
         for (int i = 0; i < m; i++)
-            mindmaps.addRelation(R1)
-                    .putRolePlayer(R1from, mindmaps.getInstance("a" + i))
-                    .putRolePlayer(R1to, mindmaps.getInstance("a" + (i+1)));
+            grakn.addRelation(R1)
+                    .putRolePlayer(R1from, grakn.getInstance("a" + i))
+                    .putRolePlayer(R1to, grakn.getInstance("a" + (i+1)));
 
         for(int j = 1 ; j <= n ;j++) {
-            mindmaps.addRelation(R2)
-                    .putRolePlayer(R2from, mindmaps.getInstance("a0"))
-                    .putRolePlayer(R2to, mindmaps.getInstance("b1" + j));
-            mindmaps.addRelation(R2)
-                    .putRolePlayer(R2from, mindmaps.getInstance("b" + (m-1) + j))
-                    .putRolePlayer(R2to, mindmaps.getInstance("a" + m));
+            grakn.addRelation(R2)
+                    .putRolePlayer(R2from, grakn.getInstance("a0"))
+                    .putRolePlayer(R2to, grakn.getInstance("b1" + j));
+            grakn.addRelation(R2)
+                    .putRolePlayer(R2from, grakn.getInstance("b" + (m-1) + j))
+                    .putRolePlayer(R2to, grakn.getInstance("a" + m));
             for (int i = 1; i < m - 1; i++) {
-                mindmaps.addRelation(R2)
-                        .putRolePlayer(R2from, mindmaps.getInstance("b" + i + j))
-                        .putRolePlayer(R2to, mindmaps.getInstance("b" + (i+1) + j));
+                grakn.addRelation(R2)
+                        .putRolePlayer(R2from, grakn.getInstance("b" + i + j))
+                        .putRolePlayer(R2to, grakn.getInstance("b" + (i+1) + j));
             }
         }
     }

@@ -9,6 +9,6 @@ public class PathGraphSymmetric extends PathGraph{
         getGraph(gqlFile);
         buildExtensionalDB(n, children);
         commit();
-        return mindmaps;
+        return grakn;
     }
 }

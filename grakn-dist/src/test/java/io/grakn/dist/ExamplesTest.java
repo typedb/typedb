@@ -1,25 +1,25 @@
 /*
- * MindmapsDB - A Distributed Semantic Database
- * Copyright (C) 2016  Mindmaps Research Ltd
+ * GraknDB - A Distributed Semantic Database
+ * Copyright (C) 2016  Grakn Research Ltd
  *
- * MindmapsDB is free software: you can redistribute it and/or modify
+ * GraknDB is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * MindmapsDB is distributed in the hope that it will be useful,
+ * GraknDB is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ * along with GraknDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
 package io.grakn.dist;
 
-import io.grakn.Mindmaps;
-import io.grakn.MindmapsGraph;
+import io.grakn.Grakn;
+import io.grakn.GraknGraph;
 import io.grakn.graql.Graql;
 import io.grakn.graql.QueryBuilder;
 import org.junit.Before;
@@ -40,7 +40,7 @@ public class ExamplesTest {
 
     @Before
     public void setUp() {
-        MindmapsGraph graph = Mindmaps.factory("in-memory", "my-graph").getGraph();
+        GraknGraph graph = Grakn.factory("in-memory", "my-graph").getGraph();
         qb = Graql.withGraph(graph);
     }
 

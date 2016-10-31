@@ -33,26 +33,26 @@ import java.util.UUID;
 
 public class GenericGraph {
 
-    protected static GraknGraph mindmaps;
+    protected static GraknGraph grakn;
     private final static String filePath = "src/test/graql/";
 
     public static GraknGraph getGraph(String graqlFile) {
-        mindmaps = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        grakn = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         buildGraph(graqlFile);
         commit();
 
-        return mindmaps;
+        return grakn;
     }
 
     public static GraknGraph getGraph(String ontologyFile, String... files) {
-        mindmaps = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        grakn = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         loadGraqlFile(ontologyFile);
         for( String graqlFile : files) {
             loadGraqlFile(graqlFile);
         }
         commit();
 
-        return mindmaps;
+        return grakn;
     }
 
     private static void buildGraph(String graqlFile) {
@@ -63,7 +63,7 @@ public class GenericGraph {
         System.out.println("Loading " + fileName);
         if (fileName.isEmpty()) return;
 
-        QueryBuilder qb = Graql.withGraph(mindmaps);
+        QueryBuilder qb = Graql.withGraph(grakn);
         try {
             List<String> lines = Files.readAllLines(Paths.get(filePath + fileName), StandardCharsets.UTF_8);
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
@@ -76,7 +76,7 @@ public class GenericGraph {
 
     protected static void commit(){
         try {
-            mindmaps.commit();
+            grakn.commit();
         } catch (GraknValidationException e) {
             System.out.println(e.getMessage());
         }

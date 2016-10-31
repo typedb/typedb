@@ -41,22 +41,22 @@
             <includes>
                 <include>pom.xml</include>
                 <include>LICENSE.txt</include>
-                <include>mindmaps-core/**</include>
-                <include>mindmaps-dashboard/**</include>
-                <include>mindmaps-dist/**</include>
-                <include>mindmaps-engine/**</include>
-                <include>mindmaps-graph/**</include>
-                <include>mindmaps-graql/**</include>
-                <include>mindmaps-graql-shell/**</include>
-                <include>mindmaps-migration/**</include>
-                <include>mindmaps-orientdb-factory/**</include>
-                <include>mindmaps-test/**</include>
-                <include>mindmaps-titan-factory/**</include>
+                <include>grakn-core/**</include>
+                <include>grakn-dashboard/**</include>
+                <include>grakn-dist/**</include>
+                <include>grakn-engine/**</include>
+                <include>grakn-graph/**</include>
+                <include>grakn-graql/**</include>
+                <include>grakn-graql-shell/**</include>
+                <include>grakn-migration/**</include>
+                <include>grakn-orientdb-factory/**</include>
+                <include>grakn-test/**</include>
+                <include>grakn-titan-factory/**</include>
             </includes>
             <excludes>
                 <exclude>**/target/</exclude>
-                <exclude>mindmaps-dashboard/node_modules/</exclude>
-                <exclude>mindmaps-dashboard/static/dashboard.js</exclude>
+                <exclude>grakn-dashboard/node_modules/</exclude>
+                <exclude>grakn-dashboard/static/dashboard.js</exclude>
             </excludes>
         </fileSet>
         <fileSet>
@@ -96,7 +96,7 @@
         </fileSet>
         <fileSet>
             <outputDirectory>assets</outputDirectory>
-            <directory>${project.parent.basedir}/mindmaps-dashboard/static</directory>
+            <directory>${project.parent.basedir}/grakn-dashboard/static</directory>
             <includes>
                 <include>**</include>
             </includes>

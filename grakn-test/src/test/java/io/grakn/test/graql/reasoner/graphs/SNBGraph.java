@@ -34,19 +34,19 @@ import java.util.UUID;
 
 public class SNBGraph {
 
-    private static GraknGraph mindmaps;
+    private static GraknGraph grakn;
 
     public static GraknGraph getGraph() {
-        mindmaps = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        grakn = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         buildGraph();
 
         try {
-            mindmaps.commit();
+            grakn.commit();
         } catch (GraknValidationException e) {
             System.out.println(e.getMessage());
         }
 
-        return mindmaps;
+        return grakn;
     }
 
     private static void buildGraph() {
@@ -56,7 +56,7 @@ public class SNBGraph {
     }
 
     private static void addOntology() {
-        QueryBuilder qb = Graql.withGraph(mindmaps);
+        QueryBuilder qb = Graql.withGraph(grakn);
         try {
             List<String> lines = Files.readAllLines(Paths.get("src/test/graql/ldbc-snb-ontology.gql"), StandardCharsets.UTF_8);
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
@@ -77,7 +77,7 @@ public class SNBGraph {
     }
 
     private static void addRules() {
-        QueryBuilder qb = Graql.withGraph(mindmaps);
+        QueryBuilder qb = Graql.withGraph(grakn);
         try {
             List<String> lines = Files.readAllLines(Paths.get("src/test/graql/ldbc-snb-rules.gql"), StandardCharsets.UTF_8);
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);
@@ -89,7 +89,7 @@ public class SNBGraph {
     }
 
     private static void addData() {
-        QueryBuilder qb = Graql.withGraph(mindmaps);
+        QueryBuilder qb = Graql.withGraph(grakn);
         try {
             List<String> lines = Files.readAllLines(Paths.get("src/test/graql/ldbc-snb-data.gql"), StandardCharsets.UTF_8);
             String query = lines.stream().reduce("", (s1, s2) -> s1 + "\n" + s2);

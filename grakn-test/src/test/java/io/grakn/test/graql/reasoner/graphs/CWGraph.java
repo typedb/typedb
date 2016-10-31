@@ -33,7 +33,7 @@ import java.util.UUID;
 
 public class CWGraph {
 
-    private static GraknGraph mindmaps;
+    private static GraknGraph grakn;
 
     private static EntityType person, criminal, weapon, rocket, missile, country;
     
@@ -61,16 +61,16 @@ public class CWGraph {
     private static Instance colonelWest, Nono, America, Tomahawk;
 
     public static GraknGraph getGraph() {
-        mindmaps = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
+        grakn = Grakn.factory(Grakn.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         buildGraph();
 
         try {
-            mindmaps.commit();
+            grakn.commit();
         } catch (GraknValidationException e) {
             System.out.println(e.getMessage());
         }
 
-        return mindmaps;
+        return grakn;
     }
 
     private static void buildGraph() {
@@ -81,89 +81,89 @@ public class CWGraph {
     }
 
     private static void buildOntology() {
-        hasResourceTarget = mindmaps.putRoleType("has-resource-target");
-        hasResourceValue = mindmaps.putRoleType("has-resource-value");
-        hasResource = mindmaps.putRelationType("has-resource")
+        hasResourceTarget = grakn.putRoleType("has-resource-target");
+        hasResourceValue = grakn.putRoleType("has-resource-value");
+        hasResource = grakn.putRelationType("has-resource")
                 .hasRole(hasResourceTarget).hasRole(hasResourceValue);
 
-        nationalityTarget = mindmaps.putRoleType("has-nationality-owner");
-        nationalityValue = mindmaps.putRoleType("has-nationality-value");
-        nationalityRelation = mindmaps.putRelationType("has-nationality")
+        nationalityTarget = grakn.putRoleType("has-nationality-owner");
+        nationalityValue = grakn.putRoleType("has-nationality-value");
+        nationalityRelation = grakn.putRelationType("has-nationality")
                 .hasRole(nationalityTarget).hasRole(nationalityValue);
-        nationality = mindmaps.putResourceType("nationality", ResourceType.DataType.STRING).playsRole(hasResourceValue)
+        nationality = grakn.putResourceType("nationality", ResourceType.DataType.STRING).playsRole(hasResourceValue)
                 .playsRole(nationalityValue);
 
-        propulsionTarget = mindmaps.putRoleType("has-propulsion-owner");
-        propulsionValue = mindmaps.putRoleType("has-propulsion-value");
-        propulsionRelation = mindmaps.putRelationType("has-propulsion")
+        propulsionTarget = grakn.putRoleType("has-propulsion-owner");
+        propulsionValue = grakn.putRoleType("has-propulsion-value");
+        propulsionRelation = grakn.putRelationType("has-propulsion")
                 .hasRole(propulsionTarget).hasRole(propulsionValue);
-        propulsion = mindmaps.putResourceType("propulsion", ResourceType.DataType.STRING).playsRole(hasResourceValue)
+        propulsion = grakn.putResourceType("propulsion", ResourceType.DataType.STRING).playsRole(hasResourceValue)
                 .playsRole(propulsionValue);
 
-        alignmentTarget = mindmaps.putRoleType("has-alignment-owner");
-        alignmentValue = mindmaps.putRoleType("has-alignment-value");
-        alignmentRelation = mindmaps.putRelationType("has-alignment")
+        alignmentTarget = grakn.putRoleType("has-alignment-owner");
+        alignmentValue = grakn.putRoleType("has-alignment-value");
+        alignmentRelation = grakn.putRelationType("has-alignment")
                 .hasRole(alignmentTarget).hasRole(alignmentValue);
-        alignment = mindmaps.putResourceType("alignment", ResourceType.DataType.STRING).playsRole(hasResourceValue)
+        alignment = grakn.putResourceType("alignment", ResourceType.DataType.STRING).playsRole(hasResourceValue)
                 .playsRole(alignmentValue);
 
 
-        enemySource = mindmaps.putRoleType("enemy-source");
-        enemyTarget = mindmaps.putRoleType("enemy-target");
-        isEnemyOf = mindmaps.putRelationType("is-enemy-of")
+        enemySource = grakn.putRoleType("enemy-source");
+        enemyTarget = grakn.putRoleType("enemy-target");
+        isEnemyOf = grakn.putRelationType("is-enemy-of")
                 .hasRole(enemySource).hasRole(enemyTarget);
 
         //owns
-        owner = mindmaps.putRoleType("item-owner");
-        ownedItem = mindmaps.putRoleType("owned-item");
-        owns = mindmaps.putRelationType("owns")
+        owner = grakn.putRoleType("item-owner");
+        ownedItem = grakn.putRoleType("owned-item");
+        owns = grakn.putRelationType("owns")
                 .hasRole(owner).hasRole(ownedItem);
 
 
         //transaction
-        seller = mindmaps.putRoleType("seller");
-        buyer = mindmaps.putRoleType("buyer");
-        transactionItem = mindmaps.putRoleType("transaction-item");
-        transaction = mindmaps.putRelationType("transaction")
+        seller = grakn.putRoleType("seller");
+        buyer = grakn.putRoleType("buyer");
+        transactionItem = grakn.putRoleType("transaction-item");
+        transaction = grakn.putRelationType("transaction")
                 .hasRole(seller).hasRole(buyer).hasRole(transactionItem);
 
         //isPaidBy
-        payee = mindmaps.putRoleType("payee");
-        payer = mindmaps.putRoleType("payer");
-        isPaidBy = mindmaps.putRelationType("is-paid-by")
+        payee = grakn.putRoleType("payee");
+        payer = grakn.putRoleType("payer");
+        isPaidBy = grakn.putRelationType("is-paid-by")
                 .hasRole(payee).hasRole(payer);
 
 
-        person = mindmaps.putEntityType("person")
+        person = grakn.putEntityType("person")
                 .playsRole(seller)
                 .playsRole(payee)
                 .playsRole(hasResourceTarget)
                 .playsRole(nationalityTarget);
 
-        criminal = mindmaps.putEntityType("criminal").superType(person);
+        criminal = grakn.putEntityType("criminal").superType(person);
 
         //device = grakn.putEntityType("device").setValue("device");
-        weapon = mindmaps.putEntityType("weapon")
+        weapon = grakn.putEntityType("weapon")
                 .playsRole(transactionItem).playsRole(ownedItem).playsRole(hasResourceTarget);//.superEntity(device);
-        rocket = mindmaps.putEntityType("rocket")
+        rocket = grakn.putEntityType("rocket")
                 .playsRole(hasResourceTarget)
                 .playsRole(transactionItem)
                 .playsRole(ownedItem)
                 .playsRole(propulsionTarget);
-        missile = mindmaps.putEntityType("missile").superType(weapon)
+        missile = grakn.putEntityType("missile").superType(weapon)
                 .playsRole(transactionItem).playsRole(hasResourceTarget);
 
 
-        country = mindmaps.putEntityType("country")
+        country = grakn.putEntityType("country")
                 .playsRole(buyer).playsRole(owner).playsRole(enemyTarget).playsRole(payer).playsRole(enemySource).playsRole(hasResourceTarget);
 
     }
 
     private static void buildInstances() {
-        colonelWest = mindmaps.putEntity("colonelWest", person);
-        Nono = mindmaps.putEntity("Nono", country);
-        America = mindmaps.putEntity("America", country);
-        Tomahawk = mindmaps.putEntity("Tomahawk", rocket);
+        colonelWest = grakn.putEntity("colonelWest", person);
+        Nono = grakn.putEntity("Nono", country);
+        America = grakn.putEntity("America", country);
+        Tomahawk = grakn.putEntity("Tomahawk", rocket);
 
         putResource(colonelWest, nationality, "American", nationalityRelation, nationalityTarget, nationalityValue);
         putResource(Tomahawk, propulsion, "gsp", propulsionRelation, propulsionTarget, propulsionValue);
@@ -171,23 +171,23 @@ public class CWGraph {
 
     private static void buildRelations() {
         //Enemy(Nono, America)
-        mindmaps.addRelation(isEnemyOf)
+        grakn.addRelation(isEnemyOf)
                 .putRolePlayer(enemySource, Nono)
                 .putRolePlayer(enemyTarget, America);
 
         //Owns(Nono, Missile)
-        mindmaps.addRelation(owns)
+        grakn.addRelation(owns)
                 .putRolePlayer(owner, Nono)
                 .putRolePlayer(ownedItem, Tomahawk);
 
         //isPaidBy(West, Nono)
-        mindmaps.addRelation(isPaidBy)
+        grakn.addRelation(isPaidBy)
                 .putRolePlayer(payee, colonelWest)
                 .putRolePlayer(payer, Nono);
 
     }
     private static void buildRules() {
-        RuleType inferenceRule = mindmaps.getMetaRuleInference();
+        RuleType inferenceRule = grakn.getMetaRuleInference();
 
         //R1: "It is a crime for an American to sell weapons to hostile nations"
         String R1_LHS =
@@ -198,13 +198,13 @@ public class CWGraph {
 
         String R1_RHS = "$x isa criminal;";
 
-        mindmaps.putRule("R1", R1_LHS, R1_RHS, inferenceRule);
+        grakn.putRule("R1", R1_LHS, R1_RHS, inferenceRule);
 
         //R2: "Missiles are a kind of a weapon"
         String  R2_LHS = "$x isa missile;";
         String R2_RHS = "$x isa weapon;";
 
-        mindmaps.putRule("R2", R2_LHS, R2_RHS, inferenceRule);
+        grakn.putRule("R2", R2_LHS, R2_RHS, inferenceRule);
 
         //R3: "If a country is an enemy of America then it is hostile"
         String R3_LHS =
@@ -213,13 +213,13 @@ public class CWGraph {
                 "$y isa country;$y id 'America';";
         String R3_RHS = "$x has alignment 'hostile';";
 
-        mindmaps.putRule("R3", R3_LHS, R3_RHS, inferenceRule);
+        grakn.putRule("R3", R3_LHS, R3_RHS, inferenceRule);
 
         //R4: "If a rocket is self-propelled and guided, it is a missile"
         String R4_LHS = "$x isa rocket;$x has propulsion 'gsp';";
         String R4_RHS = "$x isa missile;";
 
-        mindmaps.putRule("R4", R4_LHS, R4_RHS, inferenceRule);
+        grakn.putRule("R4", R4_LHS, R4_RHS, inferenceRule);
 
         String R5_LHS =
                 "$x isa person;" +
@@ -230,22 +230,22 @@ public class CWGraph {
 
         String R5_RHS = "(seller: $x, buyer: $y, transaction-item: $z) isa transaction;";
 
-        mindmaps.putRule("R5", R5_LHS, R5_RHS, inferenceRule);
+        grakn.putRule("R5", R5_LHS, R5_RHS, inferenceRule);
     }
 
     private static <T> void putResource(Instance instance, ResourceType<T> resourceType, T resource) {
-        Resource resourceInstance = mindmaps.putResource(resource, resourceType);
+        Resource resourceInstance = grakn.putResource(resource, resourceType);
 
-        mindmaps.addRelation(hasResource)
+        grakn.addRelation(hasResource)
                 .putRolePlayer(hasResourceTarget, instance)
                 .putRolePlayer(hasResourceValue, resourceInstance);
     }
 
     private static <T> void putResource(Instance instance, ResourceType<T> resourceType, T resource, RelationType relationType,
                                         RoleType targetRole, RoleType valueRole) {
-        Resource resourceInstance = mindmaps.putResource(resource, resourceType);
+        Resource resourceInstance = grakn.putResource(resource, resourceType);
 
-        mindmaps.addRelation(relationType)
+        grakn.addRelation(relationType)
                 .putRolePlayer(targetRole, instance)
                 .putRolePlayer(valueRole, resourceInstance);
     }

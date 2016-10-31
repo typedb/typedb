@@ -32,42 +32,42 @@ public class PathGraph extends GenericGraph {
         getGraph(gqlFile);
         buildExtensionalDB(n, children);
         commit();
-        return mindmaps;
+        return grakn;
     }
 
     protected static void buildExtensionalDB(int n, int children) {
         long startTime = System.currentTimeMillis();
 
-        EntityType vertex = mindmaps.getEntityType("vertex");
-        EntityType startVertex = mindmaps.getEntityType("start-vertex");
-        RoleType arcFrom = mindmaps.getRoleType("arc-from");
-        RoleType arcTo = mindmaps.getRoleType("arc-to");
+        EntityType vertex = grakn.getEntityType("vertex");
+        EntityType startVertex = grakn.getEntityType("start-vertex");
+        RoleType arcFrom = grakn.getRoleType("arc-from");
+        RoleType arcTo = grakn.getRoleType("arc-to");
 
-        RelationType arc = mindmaps.getRelationType("arc");
-        mindmaps.putEntity("a0", startVertex);
+        RelationType arc = grakn.getRelationType("arc");
+        grakn.putEntity("a0", startVertex);
 
         for(int i = 1 ; i <= n ;i++) {
             int m = pow(children, i);
             for (int j = 0; j < m; j++) {
-                mindmaps.putEntity("a" + i + "," + j, vertex);
+                grakn.putEntity("a" + i + "," + j, vertex);
                 if (j != 0 && j % 100 ==0)
                     System.out.println(j + " entities out of " + m + " inserted");
             }
         }
 
         for (int j = 0; j < children; j++) {
-            mindmaps.addRelation(arc)
-                    .putRolePlayer(arcFrom, mindmaps.getInstance("a0"))
-                    .putRolePlayer(arcTo, mindmaps.getInstance("a1," + j));
+            grakn.addRelation(arc)
+                    .putRolePlayer(arcFrom, grakn.getInstance("a0"))
+                    .putRolePlayer(arcTo, grakn.getInstance("a1," + j));
         }
 
         for(int i = 1 ; i < n ;i++) {
             int m = pow(children, i);
             for (int j = 0; j < m; j++) {
                 for (int c = 0; c < children; c++) {
-                    mindmaps.addRelation(arc)
-                            .putRolePlayer(arcFrom, mindmaps.getInstance("a" + i + "," + j))
-                            .putRolePlayer(arcTo, mindmaps.getInstance("a" + (i + 1) + "," + (j * children + c)));
+                    grakn.addRelation(arc)
+                            .putRolePlayer(arcFrom, grakn.getInstance("a" + i + "," + j))
+                            .putRolePlayer(arcTo, grakn.getInstance("a" + (i + 1) + "," + (j * children + c)));
 
                 }
                 if (j!= 0 && j % 100 == 0)

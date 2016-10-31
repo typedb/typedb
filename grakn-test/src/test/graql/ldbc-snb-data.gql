@@ -1,7 +1,7 @@
 insert
 
 "University of Cambridge" isa university;
-"Mindmaps" isa company;
+"Grakn Labs" isa company;
 "Cambridge" isa city;
 "London" isa city;
 "UK" isa country;
@@ -19,7 +19,7 @@ insert
 
 (acquaintance1: Bob, acquaintance2: Charlie) isa knows;
 (located-subject: 'University of Cambridge', subject-location: Cambridge) isa resides;
-(located-subject: 'Mindmaps', subject-location: London) isa resides;
+(located-subject: 'Grakn Labs', subject-location: London) isa resides;
 (member-location: Cambridge, container-location: UK) isa sublocate;
 (member-location: London, container-location: UK) isa sublocate;
 (member-location: UK, container-location: Europe) isa sublocate;
