@@ -302,7 +302,7 @@ public class Analytics {
             mutateResourceOntology(connectedComponent, ResourceType.DataType.STRING);
             waitOnMutateResourceOntology(connectedComponent);
 
-            MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
+            MindmapsComputer computer = getGraphComputer();
             ComputerResult result = computer.compute(new ConnectedComponentVertexProgram(subtypes, keySpace),
                     new ClusterSizeMapReduce(subtypes, ConnectedComponentVertexProgram.CLUSTER_LABEL));
             return result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
@@ -317,7 +317,8 @@ public class Analytics {
      */
     public Map<Long, Set<String>> degrees() {
         MindmapsComputer computer = getGraphComputer();
-        ComputerResult result = computer.compute(new DegreeVertexProgram(subtypes), new DegreeDistributionMapReduce(subtypes));
+        ComputerResult result = computer.compute(new DegreeVertexProgram(subtypes),
+                new DegreeDistributionMapReduce(subtypes));
         return result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
     }
 
@@ -335,7 +336,7 @@ public class Analytics {
             throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                     .getMessage(this.getClass().toString()));
         }
-        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
+        MindmapsComputer computer = getGraphComputer();
         computer.compute(new DegreeAndPersistVertexProgram(subtypes, keySpace));
     }
 
