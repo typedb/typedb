@@ -50,12 +50,12 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
         );
 
         ownerRole = Graql.id(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId))
-                .isa(Schema.MetaType.ROLE_TYPE.getId()).admin();
+                .isa(Schema.MetaSchema.ROLE_TYPE.getId()).admin();
         valueRole = Graql.id(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId))
-                .isa(Schema.MetaType.ROLE_TYPE.getId()).admin();
+                .isa(Schema.MetaSchema.ROLE_TYPE.getId()).admin();
 
         relationType = Graql.id(GraqlType.HAS_RESOURCE.getId(resourceTypeId))
-                .isa(Schema.MetaType.RELATION_TYPE.getId())
+                .isa(Schema.MetaSchema.RELATION_TYPE.getId())
                 .hasRole(ownerRole).hasRole(valueRole).admin();
 
         ownerPlaysRole = new PlaysRoleProperty(ownerRole);

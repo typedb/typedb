@@ -219,15 +219,15 @@ public class InsertQueryExecutor {
             throw new IllegalStateException(INSERT_NON_RESOURCE_WITH_VALUE.getMessage(type.getId()));
         }
 
-        if (typeId.equals(Schema.MetaType.ENTITY_TYPE.getId())) {
+        if (typeId.equals(Schema.MetaSchema.ENTITY_TYPE.getId())) {
             return graph.putEntityType(getTypeIdOrThrow(id));
-        } else if (typeId.equals(Schema.MetaType.RELATION_TYPE.getId())) {
+        } else if (typeId.equals(Schema.MetaSchema.RELATION_TYPE.getId())) {
             return graph.putRelationType(getTypeIdOrThrow(id));
-        } else if (typeId.equals(Schema.MetaType.ROLE_TYPE.getId())) {
+        } else if (typeId.equals(Schema.MetaSchema.ROLE_TYPE.getId())) {
             return graph.putRoleType(getTypeIdOrThrow(id));
-        } else if (typeId.equals(Schema.MetaType.RESOURCE_TYPE.getId())) {
+        } else if (typeId.equals(Schema.MetaSchema.RESOURCE_TYPE.getId())) {
             return graph.putResourceType(getTypeIdOrThrow(id), getDataType(var));
-        } else if (typeId.equals(Schema.MetaType.RULE_TYPE.getId())) {
+        } else if (typeId.equals(Schema.MetaSchema.RULE_TYPE.getId())) {
             return graph.putRuleType(getTypeIdOrThrow(id));
         } else if (type.isEntityType()) {
             return putInstance(id, type.asEntityType(), graph::putEntity, graph::addEntity);

@@ -183,8 +183,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      */
     @Override
     public Boolean isAbstract() {
-        Object object = getProperty(Schema.ConceptProperty.IS_ABSTRACT);
-        return object != null && Boolean.parseBoolean(object.toString());
+        return getPropertyBoolean(Schema.ConceptProperty.IS_ABSTRACT);
     }
 
     /**
@@ -215,7 +214,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      * @return The Type itself
      */
     public T superType(T type) {
-        if(Schema.MetaType.isMetaId(type.getId()) && !Schema.MetaType.isMetaId(getId())){
+        if(Schema.MetaSchema.isMetaId(type.getId()) && !Schema.MetaSchema.isMetaId(getId())){
             throw new InvalidConceptTypeException(ErrorMessage.CANNOT_SUBCLASS_META.getMessage(type.getId(), getId()));
         }
 
@@ -225,7 +224,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
             currentSuperType.instances().forEach(concept -> {
                 if(concept.isInstance()){
                     ((InstanceImpl<?, ?>) concept).castings().forEach(
-                            instance -> mindmapsGraph.getConceptLog().putConcept(instance));
+                            instance -> getMindmapsGraph().getConceptLog().putConcept(instance));
                 }
             });
         }
@@ -260,7 +259,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
         //Add castings to tracking to make sure they can still be played.
         instances().forEach(concept -> {
             if (concept.isInstance()) {
-                ((InstanceImpl<?, ?>) concept).castings().forEach(casting -> mindmapsGraph.getConceptLog().putConcept(casting));
+                ((InstanceImpl<?, ?>) concept).castings().forEach(casting -> getMindmapsGraph().getConceptLog().putConcept(casting));
             }
         });
 
@@ -284,14 +283,14 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
         checkMetaType();
         setProperty(Schema.ConceptProperty.IS_ABSTRACT, isAbstract);
         if(isAbstract)
-            mindmapsGraph.getConceptLog().putConcept(this);
+            getMindmapsGraph().getConceptLog().putConcept(this);
         return getThis();
     }
 
     private void checkMetaType(){
-        for (Schema.MetaType metaType : Schema.MetaType.values()) {
-            if(metaType.getId().equals(getId())){
-                throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(metaType.getId()));
+        for (Schema.MetaSchema metaSchema : Schema.MetaSchema.values()) {
+            if(metaSchema.getId().equals(getId())){
+                throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(metaSchema.getId()));
             }
         }
     }

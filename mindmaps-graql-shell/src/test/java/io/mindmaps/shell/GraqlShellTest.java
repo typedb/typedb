@@ -92,15 +92,15 @@ public class GraqlShellTest {
     }
 
     @Test
-    public void testDefaultNamespace() throws IOException {
+    public void testDefaultKeyspace() throws IOException {
         testShell("");
-        assertEquals("mindmaps", client.getNamespace());
+        assertEquals("mindmaps", client.getKeyspace());
     }
 
     @Test
-    public void testSpecifiedNamespace() throws IOException {
-        testShell("", "-n", "myspace");
-        assertEquals("myspace", client.getNamespace());
+    public void testSpecifiedKeyspace() throws IOException {
+        testShell("", "-k", "myspace");
+        assertEquals("myspace", client.getKeyspace());
     }
 
    @Test

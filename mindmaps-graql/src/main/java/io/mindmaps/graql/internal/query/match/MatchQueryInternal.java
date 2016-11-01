@@ -22,20 +22,29 @@ package io.mindmaps.graql.internal.query.match;
 import com.google.common.collect.ImmutableSet;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
-import io.mindmaps.concept.Type;
-import io.mindmaps.graql.*;
+import io.mindmaps.graql.Aggregate;
+import io.mindmaps.graql.AggregateQuery;
+import io.mindmaps.graql.AskQuery;
+import io.mindmaps.graql.DeleteQuery;
+import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.InsertQuery;
+import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.Var;
 import io.mindmaps.graql.admin.MatchQueryAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
-import io.mindmaps.graql.internal.util.ANSI;
 import io.mindmaps.graql.internal.query.Queries;
+import io.mindmaps.graql.internal.util.ANSI;
 import io.mindmaps.graql.internal.util.AdminConverter;
 import io.mindmaps.graql.internal.util.StringConverter;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
-import static io.mindmaps.graql.internal.query.match.MatchQueryInternal.colorKeyword;
-import static io.mindmaps.graql.internal.query.match.MatchQueryInternal.colorType;
 import static java.util.stream.Collectors.toList;
 
 @SuppressWarnings("UnusedReturnValue")
@@ -59,38 +68,7 @@ public interface MatchQueryInternal extends MatchQueryAdmin {
 
     @Override
     default Stream<String> resultsString() {
-        return stream().map(results -> {
-            StringBuilder str = new StringBuilder();
-
-            results.forEach((name, concept) -> {
-                str.append("$").append(name);
-
-                // Display values for resources and ids for everything else
-                if (concept.isResource()) {
-                    str.append(colorKeyword(" value "));
-                    str.append(StringConverter.valueToString(concept.asResource().getValue()));
-                } else {
-                    str.append(colorKeyword(" id "));
-                    str.append("\"").append(StringConverter.escapeString(concept.getId())).append("\"");
-                }
-
-                // Display type of each concept
-                Type type = concept.type();
-                if (type != null) {
-                    str.append(colorKeyword(" isa ")).append(colorType(StringConverter.idToString(type.getId())));
-                }
-
-                // Display lhs and rhs for rules
-                if (concept.isRule()) {
-                    str.append(colorKeyword(" lhs ")).append("{ ").append(concept.asRule().getLHS()).append(" }");
-                    str.append(colorKeyword(" rhs ")).append("{ ").append(concept.asRule().getRHS()).append(" }");
-                }
-
-                str.append("; ");
-            });
-
-            return str.toString();
-        });
+        return stream().map(StringConverter::graqlString);
     }
 
     @Override

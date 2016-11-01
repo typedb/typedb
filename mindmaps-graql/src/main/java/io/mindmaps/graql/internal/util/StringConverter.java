@@ -19,12 +19,19 @@
 package io.mindmaps.graql.internal.util;
 
 import com.google.common.collect.ImmutableSet;
+import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.Type;
 import io.mindmaps.graql.internal.antlr.GraqlLexer;
 import org.apache.commons.lang.StringEscapeUtils;
 
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
+import static io.mindmaps.graql.internal.query.match.MatchQueryInternal.colorKeyword;
+import static io.mindmaps.graql.internal.query.match.MatchQueryInternal.colorType;
 import static io.mindmaps.graql.internal.util.CommonUtil.toImmutableSet;
 
 /**
@@ -88,6 +95,106 @@ public class StringConverter {
     }
 
     /**
+     * Get a Graql string representation of an object, for printing as a result
+     */
+    public static String graqlString(Object object) {
+        StringBuilder sb = new StringBuilder();
+        graqlString(sb, false, object);
+        return sb.toString();
+    }
+
+    private static StringBuilder graqlString(StringBuilder sb, boolean inner, Object object) {
+        if (object instanceof Concept) {
+            graqlString(sb, (Concept) object);
+        } else if (object instanceof Boolean) {
+            graqlString(sb, (boolean) object);
+        } else if (object instanceof Optional) {
+            graqlString(sb, inner, (Optional<?>) object);
+        } else if (object instanceof Collection) {
+            graqlString(sb, inner, (Collection<?>) object);
+        } else if (object instanceof Map) {
+            graqlString(sb, inner, (Map<?, ?>) object);
+        } else if (object instanceof Map.Entry) {
+            graqlString(sb, (Map.Entry<?, ?>) object);
+        } else {
+            sb.append(object.toString());
+        }
+
+        return sb;
+    }
+
+    private static void graqlString(StringBuilder sb, Concept concept) {
+        // Display values for resources and ids for everything else
+        if (concept.isResource()) {
+            sb.append(colorKeyword("value "));
+            sb.append(StringConverter.valueToString(concept.asResource().getValue()));
+        } else {
+            sb.append(colorKeyword("id "));
+            sb.append("\"").append(StringConverter.escapeString(concept.getId())).append("\"");
+        }
+
+        // Display type of each concept
+        Type type = concept.type();
+        if (type != null) {
+            sb.append(colorKeyword(" isa ")).append(colorType(StringConverter.idToString(type.getId())));
+        }
+
+        // Display lhs and rhs for rules
+        if (concept.isRule()) {
+            sb.append(colorKeyword(" lhs ")).append("{ ").append(concept.asRule().getLHS()).append(" }");
+            sb.append(colorKeyword(" rhs ")).append("{ ").append(concept.asRule().getRHS()).append(" }");
+        }
+    }
+
+    private static void graqlString(StringBuilder sb, boolean bool) {
+        if (bool) {
+            sb.append(ANSI.color("True", ANSI.GREEN));
+        } else {
+            sb.append(ANSI.color("False", ANSI.RED));
+        }
+    }
+
+    private static void graqlString(StringBuilder sb, boolean inner, Optional<?> optional) {
+        if (optional.isPresent()) {
+            graqlString(sb, inner, optional.get());
+        } else {
+            sb.append("Nothing");
+        }
+    }
+
+    private static void graqlString(StringBuilder sb, boolean inner, Collection<?> collection) {
+        if (inner) {
+            sb.append("{");
+            collection.stream().findFirst().ifPresent(item -> graqlString(sb, true, item));
+            collection.stream().skip(1).forEach(item -> graqlString(sb.append(", "), true, item));
+            sb.append("}");
+        } else {
+            collection.forEach(item -> graqlString(sb, true, item).append("\n"));
+        }
+    }
+
+    private static void graqlString(StringBuilder sb, boolean inner, Map<?, ?> map) {
+        if (!map.entrySet().isEmpty()) {
+            Map.Entry<?, ?> entry = map.entrySet().iterator().next();
+
+            // If this looks like a graql result, assume the key is a variable name
+            if (entry.getKey() instanceof String && entry.getValue() instanceof Concept) {
+                map.forEach((name, concept) ->
+                    sb.append("$").append(name).append(" ").append(StringConverter.graqlString(concept)).append("; ")
+                );
+                return;
+            }
+        }
+
+        graqlString(sb, inner, map.entrySet());
+    }
+
+    private static void graqlString(StringBuilder sb, Map.Entry<?, ?> entry) {
+        graqlString(sb, true, entry.getKey()).append(":\t");
+        graqlString(sb, true, entry.getValue());
+    }
+
+    /**
      * @return all Graql keywords
      */
     private static Stream<String> getKeywords() {
@@ -100,5 +207,4 @@ public class StringConverter {
 
         return keywords.stream();
     }
-
 }

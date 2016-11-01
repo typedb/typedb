@@ -18,19 +18,25 @@
 
 package io.mindmaps.exception;
 
-import io.mindmaps.util.Schema;
-import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.Instance;
+import io.mindmaps.concept.Resource;
+import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.util.Schema;
 
 /**
  * This exception is thrown when two concepts attept to have the same unique id.
  */
-public class ConceptIdNotUniqueException extends ConceptException {
-    public ConceptIdNotUniqueException(Concept concept, Schema.ConceptProperty type, String id) {
+public class ConceptNotUniqueException extends ConceptException {
+    public ConceptNotUniqueException(Concept concept, Schema.ConceptProperty type, String id) {
         super(ErrorMessage.ID_NOT_UNIQUE.getMessage(concept.toString(), type.name(), id));
     }
 
-    public ConceptIdNotUniqueException(Concept concept, String id){
+    public ConceptNotUniqueException(Concept concept, String id){
         super(ErrorMessage.ID_ALREADY_TAKEN.getMessage(id, concept.toString()));
+    }
+
+    public ConceptNotUniqueException(Resource resource, Instance instance){
+        super(ErrorMessage.RESOURCE_TYPE_UNIQUE.getMessage(resource.getId(), instance.getId()));
     }
 }
