@@ -81,7 +81,7 @@ public class ScalingTestIT extends AbstractScalingTest {
 
     // test parameters
     int NUM_SUPER_NODES = 10; // the number of supernodes to generate in the test graph
-    int MAX_SIZE = 16; // the maximum number of non super nodes to add to the test graph
+    int MAX_SIZE = 10000; // the maximum number of non super nodes to add to the test graph
     int NUM_DIVS = 4; // the number of divisions of the MAX_SIZE to use in the scaling test
     int REPEAT = 3; // the number of times to repeat at each size for average runtimes
     int MAX_WORKERS = Runtime.getRuntime().availableProcessors(); // the maximum number of workers that spark should use
@@ -375,7 +375,13 @@ public class ScalingTestIT extends AbstractScalingTest {
      *
      * The std:
      *
+     * ss = 5*(1/6 + SN + S^2*N^2) + 3*g*N(1/2 +S*N) + 5*g^2*N^2/3
      *
+     * std(g) = sqrt(ss/2 - mean(g))
+     *
+     * The median:
+     *
+     * median(g) = S*N
      */
     @Test
     public void testStatisticsWithConstantDegree() throws IOException, MindmapsValidationException {
@@ -451,17 +457,17 @@ public class ScalingTestIT extends AbstractScalingTest {
                     // configure assertions
                     final int currentG = g;
                     statisticsAssertions.put(methods.get(0), number -> {
-                        Number sum = (Number) (currentG * nodesPerStep * (1 + currentG * nodesPerStep + 6 * totalSteps * nodesPerStep + 2) / 2);
+                        Number sum = currentG * nodesPerStep * (1 + currentG * nodesPerStep + 6 * totalSteps * nodesPerStep + 2) / 2;
                         assertEquals(sum.doubleValue(),
                                 number.doubleValue(), 1E-9);
                     });
                     statisticsAssertions.put(methods.get(1), number -> {
-                        Number min = (Number) ((totalSteps-currentG)*nodesPerStep+1);
+                        Number min = (totalSteps-currentG)*nodesPerStep+1;
                         assertEquals(min.doubleValue(),
                                 number.doubleValue(), 1E-9);
                     });
                     statisticsAssertions.put(methods.get(2), number -> {
-                        Number max = (Number) ((totalSteps+currentG)*nodesPerStep*2);
+                        Number max = (totalSteps+currentG)*nodesPerStep*2;
                         assertEquals(max.doubleValue(),
                                 number.doubleValue(), 1E-9);
                     });
@@ -476,7 +482,7 @@ public class ScalingTestIT extends AbstractScalingTest {
                                 number.doubleValue(), 1E-9);
                     });
                     statisticsAssertions.put(methods.get(5), number -> {
-                        Number median = (Number) (totalSteps*nodesPerStep);
+                        Number median = totalSteps*nodesPerStep;
                         assertEquals(median.doubleValue(),
                                 number.doubleValue(), 1E-9);
                     });
@@ -513,15 +519,13 @@ public class ScalingTestIT extends AbstractScalingTest {
 
     private double stdOfSequence(int currentG, int nodesPerStep, int totalSteps) {
         double mean = meanOfSequence(currentG, nodesPerStep, totalSteps);
-        double t = mean*((double) (-6*totalSteps*nodesPerStep^2*currentG - 2*currentG*nodesPerStep - 1));
-        t += 2.0*mean*mean;
-        t += 5.0*(double) totalSteps*pow((double) nodesPerStep, 2.0)*(double) currentG;
-        t += 5.0*pow((double) totalSteps, 2.0)*pow((double) nodesPerStep, 3.0)*(double) currentG;
-        t += 3.0*(double) totalSteps*(double) nodesPerStep;
-        t += 3.0/2.0;
-        t -= (double) currentG*(double) nodesPerStep;
-        t += 5.0/2.0*pow((double) currentG, 2.0)*pow((double) nodesPerStep, 2.0);
-        return sqrt(t/(2.0*(double) currentG*(double) nodesPerStep));
+        double S = (double) totalSteps;
+        double N = (double) nodesPerStep;
+        double g = (double) currentG;
+        double t = 5.0*(1.0/6.0 + S*N + pow(S*N,2.0));
+        t += 3.0*g*N*(1.0/2.0 + S*N);
+        t += 5.0*pow(g*N,2.0)/3.0;
+        return sqrt(t/2.0 - pow(mean,2.0));
     }
 
     private CSVPrinter createCSVPrinter(String fileName) throws IOException {
