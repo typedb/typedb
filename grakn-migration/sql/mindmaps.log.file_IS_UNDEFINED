@@ -1,4 +1,0 @@
-10:55:17.127 [main] INFO  i.grakn.engine.util.ConfigProperties - Logging configuration file in use:[/Users/filipe/IntelliJ/grakn/grakn-migration/sql/..//../conf/main/logback.xml]
-10:55:17.129 [main] INFO  i.grakn.engine.util.ConfigProperties - Project directory in use: [/Users/filipe/IntelliJ/grakn/grakn-migration/sql/..//]
-10:55:17.129 [main] INFO  i.grakn.engine.util.ConfigProperties - Configuration file in use: [/Users/filipe/IntelliJ/grakn/grakn-migration/sql/..//../conf/test/tinker/grakn-engine.properties]
-10:55:17.129 [main] INFO  i.grakn.engine.util.ConfigProperties - Number of threads set to [8]
