@@ -5,7 +5,7 @@
     "url": "https://github.com/mindmapsdb/mindmapsdb.git"
   },
   "name": "mindmapsdb-dashboard",
-  "version": "0.5.0-SNAPSHOT",
+  "version": "0.6.0-SNAPSHOT",
   "author": "Denis Igorevich Lobanov",
   "bugs": {
     "url": "https://github.com/mindmapsdb/mindmapsdb/issues"
