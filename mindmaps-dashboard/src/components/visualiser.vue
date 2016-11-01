@@ -21,7 +21,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
         <div class="row">
             <div class="col-xs-12">
                 <div class="panel panel-filled" style="margin-bottom: 0px;">
-                    <div class="panel-body">
+                    <div class="panel-body panel-console">
                         <div class="form-group">
                             <textarea v-el:graql-editor class="form-control" rows="3" placeholder=">>"></textarea>
                         </div>
@@ -85,10 +85,33 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                     </ul>
                     <div class="tab-content">
                         <div id="tab-1" class="tab-pane active">
-                            <div class="panel-body">
-                                <div class="graph-div" v-el:graph @contextmenu="suppressEventDefault"></div>
+                            <div class="panel-body graph-panel-body">
+                                <div class="graph-div" v-el:graph @contextmenu="suppressEventDefault" ></div>
+                                <div class="panel panel-filled panel-c-accent properties-tab" id="list-resources-tab">
+                                  <div class="panel-heading">
+                                    <div class="panel-tools">
+                                        <a class="panel-close" @click="closeConfigPanel"><i class="fa fa-times"></i></a>
+                                    </div>
+                                    <h4><i id="graph-icon" class="pe page-header-icon pe-7s-share"></i>{{selectedNodeLabel}}</h4>
+                                  </div>
+                                  <div class="panel-body">
+                                    <div class="properties-list">
+                                        <span>Node:</span>
+                                          <div class="dd-item" v-for="(key, value) in allNodeOntologyProps">
+                                            <div class="dd-handle"><span class="list-key">{{key}}:</span> {{value}}</div>
+                                            </div>
+                                        <span v-show="numOfResources>0">Resources:</span>
+                                            <div class="dd-item" v-for="(key, value) in allNodeResources">
+                                                <div class="dd-handle"><span class="list-key">{{key}}:</span> {{value}}</div>
+                                            </div>
+                                        <span v-show="numOfLinks>0">Links:</span>
+                                            <div class="dd-item" v-for="(key, value) in allNodeLinks">
+                                              <div class="dd-handle"><span class="list-key">{{key}}:</span> {{value}}</div>
+                                            </div>
+                                    </div>
+                                    </div>
+                              </div>
                             </div>
-
                         </div>
                         <div id="tab-3" class="tab-pane">
                             <div class="panel-body">
@@ -156,7 +179,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td>Right Click</td>
+                                            <td>Hold Click</td>
                                             <td>Show node label configuration menu. You can select what properties to
                                                 display on the node label.
                                             </td>
@@ -181,301 +204,69 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                     </div>
                 </div>
             </div>
-
-            <div class="col-md-2" v-show="nodeType">
-                <div class="panel panel-filled panel-c-white properties-tab">
-                    <div class="panel-heading">
-                        <div class="panel-tools">
-                            <a class="panel-close" @click="closeConfigPanel"><i class="fa fa-times"></i></a>
-                        </div>
-                        Display Configuration
-                    </div>
-                    <div class="panel-body">
-                        <div class="properties-list">
-                            <p v-show="allNodeProps.length">Select properties to be show on nodes of type
-                                "{{nodeType}}".</p>
-                            <p v-else>Sorry, theres nothing you can configure for nodes of type "{{nodeType}}".</p>
-                            <br/>
-                            <ul class="dd-list">
-                                <li class="dd-item" v-for="prop in allNodeProps"
-                                    v-bind:class="{'li-active':selectedProps.includes(prop)}">
-                                    <div class="dd-handle" @click="configureNode(prop)"
-                                    ">{{prop}}
-                        </div>
-                        </li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="panel-footer" style="text-align: right">
-                    <button type="button" class="btn btn-warning" @click="closeConfigPanel">Done</button>
-                </div>
-            </div>
-        </div>
     </div>
     </div>
+    <!-- MODAL -->
+    <div class="modal fade" id="myModal2" tabindex="-1" role="dialog" aria-hidden="true" style="display: none;">
+                      <div class="modal-dialog modal-sm">
+                                        <div class="modal-content">
+                                            <div class="modal-header text-center">
+                                                <h5 class="modal-title">Node settings &nbsp;<i style="font-size:35px;" class="pe page-header-icon pe-7s-paint-bucket"></i></h5>
+                                            </div>
+                                            <div class="modal-body">
+                                                  <div class="properties-list">
+                                                      <p v-show="allNodeProps.length">Select properties to be show on nodes of type
+                                                          "{{nodeType}}".</p>
+                                                      <p v-else>There is nothing configurable for nodes of type "{{nodeType}}".</p>
+                                                      <br/>
+                                                      <ul class="dd-list">
+                                                          <li class="dd-item" v-for="prop in allNodeProps"
+                                                              v-bind:class="{'li-active':selectedProps.includes(prop)}">
+                                                              <div class="dd-handle" @click="configureNode(prop)">{{prop}}</div>
+                                                          </li>
+                                                      </ul>
+                                              </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-default" data-dismiss="modal">Done</button>
+                                            </div>
+                                        </div>
+                                    </div>
+      </div>
 </template>
 
 <style>
-.tab-row {
-    padding-top: 20px;
-}
-.pe-7s-angle-right-circle {
-    padding-left: 5px;
-}
-.pe-7s-refresh {
-    padding-right: 0px;
-    padding-left: 5px;
-}
-.form-buttons {
-    padding-bottom: 0px;
-    margin-bottom: 0px;
-}
-.types-button {
-    padding-left: 5px;
-}
-h4 {
-    margin-top: 0px;
-    margin-bottom: 0px;
-    margin-left: -10px;
-}
-.li-active {
-     background-color: #337ab7;
-}
+    .tab-row {
+        padding-top: 20px;
+    }
 
+    .pe-7s-angle-right-circle {
+        padding-left: 5px;
+    }
+
+    .pe-7s-refresh {
+        padding-right: 0px;
+        padding-left: 5px;
+    }
+
+    .form-buttons {
+        padding-bottom: 0px;
+        margin-bottom: 0px;
+    }
+
+    .types-button {
+        padding-left: 5px;
+    }
+
+    h4 {
+        margin-top: 0px;
+        margin-bottom: 0px;
+        margin-left: -10px;
+    }
+
+    .li-active {
+        background-color: #337ab7;
+    }
 </style>
 
-<script>
-import _ from 'underscore';
-import Prism from 'prismjs';
-import CodeMirror from 'codemirror';
-import placeholder from 'codemirror/addon/display/placeholder.js';
-import simpleMode from 'codemirror/addon/mode/simple.js';
-
-import Visualiser from '../js/visualiser/Visualiser.js';
-import HALParser from '../js/HAL/HALParser.js';
-import EngineClient from '../js/EngineClient.js';
-import * as PLang from '../js/prismGraql.js';
-import simpleGraql from '../js/codemirrorGraql.js';
-
-export default {
-    data() {
-        return {
-            errorMessage: undefined,
-            errorPanelClass: undefined,
-            visualiser: {},
-            engineClient: {},
-            halParser: {},
-
-            typeInstances: false,
-            typeKeys: [],
-
-            allNodeProps: [],
-            selectedProps: [],
-            nodeType: undefined,
-
-            codeMirror: {}
-        }
-    },
-
-    created() {
-        visualiser = new Visualiser();
-        visualiser.setOnDoubleClick(this.doubleClick)
-                  .setOnRightClick(this.rightClick)
-                  .setOnClick(this.leftClick)
-                  .setOnDragEnd(this.dragEnd);
-
-        engineClient = new EngineClient();
-
-        halParser = new HALParser();
-        halParser.setNewResource((id, p, a) => { visualiser.addNode(id, p, a) });
-        halParser.setNewRelationship((f, t, l) => { visualiser.addEdge(f, t, l) });
-    },
-
-    attached() {
-        var graph = this.$els.graph;
-        visualiser.render(graph);
-
-        // set window height
-        var height = window.innerHeight - graph.offsetTop - $('.graph-div').offset().top;
-        $('.graph-div').height(height+"px");
-        $('.properties-tab').height($('.graph-div').height());
-
-        window.onresize = function() {
-            var x = Math.abs(window.innerHeight - graph.offsetTop - $('.graph-div').offset().top);
-            $('.graph-div').height(x+"px");
-            $('.properties-tab').height($('.graph-div').height());
-        };
-
-        codeMirror = CodeMirror.fromTextArea(this.$els.graqlEditor, {
-                lineNumbers: true,
-                theme: "dracula",
-                mode: "graql",
-                viewportMargin: Infinity,
-                extraKeys: {
-                    Enter: this.runQuery,
-                    "Shift-Delete": this.clearGraph,
-                    "Shift-Backspace": this.clearGraph
-                }
-            });
-    },
-
-    methods: {
-        /*
-         * User interaction: queries.
-         */
-        runQuery() {
-            const query = codeMirror.getValue();
-
-            // Empty query.
-            if(query == undefined || query.length === 0)
-                return;
-
-            engineClient.graqlHAL(query, this.graphResponse);
-            this.resetMsg();
-        },
-
-        typeQuery(t, ti) {
-            codeMirror.setValue("match $x "+(t === 'roles' ? 'plays-role':'isa')+" "+ti+";");
-            this.typeInstances = false;
-            this.runQuery();
-        },
-
-        getMetaTypes() {
-            if(this.typeInstances)
-                this.typeInstances = false;
-            else
-                engineClient.getMetaTypes(x => { if(x != null){ this.typeInstances = x; this.typeKeys = _.keys(x) } });
-        },
-
-        /*
-         * User interaction: visualiser
-         */
-        leftClick(param) {
-            // As multiselect is disabled, there will only ever be one node.
-            const node = param.nodes[0];
-            const eventKeys = param.event.srcEvent;
-
-            if(!eventKeys.altKey || node == undefined)
-                return;
-
-            if(!visualiser.expandCluster(node))
-                engineClient.request({ url: visualiser.nodes._data[node].ontology,
-                                       callback: this.typeQueryResponse });
-        },
-
-        dragEnd(param) {
-            // As multiselect is disabled, there will only ever be one node.
-            const node = param.nodes[0];
-            visualiser.disablePhysicsOnNode(node);
-        },
-
-        doubleClick(param) {
-            const node = param.nodes[0];
-            if(node == undefined || visualiser.expandCluster(node))
-                return;
-
-            const eventKeys = param.event.srcEvent;
-            if(!eventKeys.shiftKey)
-                visualiser.clearGraph();
-
-            engineClient.request({url: node, callback: this.typeQueryResponse});
-        },
-
-        rightClick(param) {
-            const node = param.nodes[0];
-            if(node == undefined)
-                return;
-
-            if(param.event.shiftKey) {
-                param.nodes.map(x => { visualiser.deleteNode(x) });
-
-            } else if(!visualiser.expandCluster(node)) {
-                $('.tabs-col').removeClass('col-md-12').addClass('col-md-10');
-
-                this.allNodeProps = visualiser.getAllNodeProperties(node);
-                this.nodeType = visualiser.getNodeType(node);
-            }
-        },
-
-        /*
-         * User interaction: visual elements control
-         */
-        configureNode(p) {
-            if(this.selectedProps.includes(p))
-                this.selectedProps = this.selectedProps.filter(x => x != p);
-            else
-                this.selectedProps.push(p);
-
-            visualiser.setDisplayProperties(this.nodeType, this.selectedProps);
-        },
-
-        closeConfigPanel() {
-            $('.tabs-col').removeClass('col-md-10').addClass('col-md-12');
-            this.nodeType = undefined;
-            this.allNodeProps = [];
-            this.selectedProps = [];
-        },
-
-        /*
-         * EngineClient callbacks
-         */
-        graphResponse(resp, err) {
-            if(resp != null) {
-                if(!halParser.parseResponse(resp))
-                    this.showWarning("Sorry, no results found for your query.");
-                else
-                    visualiser.cluster();
-            } else {
-                this.showError(err);
-            }
-        },
-
-        typeQueryResponse(resp, err) {
-            if(resp != undefined) {
-                halParser.parseHalObject(resp);
-                visualiser.cluster();
-            } else {
-                this.showError(err);
-            }
-        },
-
-        /*
-         * UX
-         */
-        suppressEventDefault(e) {
-            e.preventDefault();
-        },
-
-        showError(msg) {
-            this.errorPanelClass = 'panel-c-danger';
-            this.errorMessage = msg;
-            $('.search-button').removeClass('btn-default').addClass('btn-danger');
-        },
-
-        showWarning(msg) {
-            this.errorPanelClass = 'panel-c-warning';
-            this.errorMessage = msg;
-            $('.search-button').removeClass('btn-default').addClass('btn-warning');
-        },
-
-        resetMsg() {
-            this.errorMessage = undefined;
-            $('.search-button')
-                .removeClass('btn-danger')
-                .removeClass('btn-warning')
-                .addClass('btn-default');
-            this.closeConfigPanel();
-        },
-
-        clearGraph() {
-            // Reset all interface elements to default.
-            codeMirror.setValue("");
-            this.resetMsg();
-
-            // And clear the graph
-            visualiser.clearGraph();
-        }
-    }
-}
-
-</script>
+<script src="visualiserController.js"></script>

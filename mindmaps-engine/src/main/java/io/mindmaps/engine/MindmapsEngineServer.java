@@ -89,8 +89,10 @@ public class MindmapsEngineServer {
      * @param logFilePath Path to the LOG file.
      */
     private static void printStartMessage(String host, String port, String logFilePath) {
+        LOG.info("\nMindmaps LOG file located at ["+logFilePath+"]");
+        LOG.info("\n=============================================================");
         LOG.info(ConfigProperties.MINDMAPS_ASCII);
-        LOG.info("Mindmaps Engine is ready. Listening on [http://" + host + ":" + port + "]");
-        LOG.info("Mindmaps LOG file located at ["+logFilePath+"]");
+        LOG.info("            Web Dashboard available at [http://" + host + ":" + port + "]");
+        LOG.info("\n=============================================================");
     }
 }

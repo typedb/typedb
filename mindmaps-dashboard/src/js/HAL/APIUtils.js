@@ -26,11 +26,11 @@ import * as API from './APITerms';
  * Used to decide the directionality of a relationship between two resources, based on the API.KEY_DIRECTION property.
  */
 export function edgeLeftToRight(a, b) {
-    if(API.KEY_DIRECTION in b)
-        if(b[API.KEY_DIRECTION] === "OUT")
+    if (API.KEY_DIRECTION in b)
+        if (b[API.KEY_DIRECTION] === "OUT")
             return false;
-    else
-        console.log("API ERROR: ["+API.KEY_DIRECTION+"] not found in "+b[API.KEY_ID]);
+        else
+            console.log("API ERROR: [" + API.KEY_DIRECTION + "] not found in " + b[API.KEY_ID]);
 
     return true;
 }
@@ -51,7 +51,20 @@ export function defaultProperties(resource) {
 export function additionalProperties(resource) {
     return Object.keys(resource)
         .filter(x => !x.startsWith('_'))
-        .reduce((p, c) => {p[c] = resource[c]; return p}, {});
+        .reduce((newPropertiesObject, key) => {
+            newPropertiesObject[key] = resource[key];
+            return newPropertiesObject
+        }, {});
+}
+
+export function nodeLinks(resource) {
+    var linksObject = resource[API.KEY_LINKS];
+    return  Object.keys(linksObject)
+        .filter(x => (x!==API.KEY_SELF && x!==API.KEY_ONTOLOGY))
+        .reduce((newLinksObject, key) => {
+            newLinksObject[key] = linksObject[key].length;
+            return newLinksObject
+        }, {});
 }
 
 /*
@@ -60,7 +73,7 @@ export function additionalProperties(resource) {
 function buildLabel(resource) {
     var label = undefined;
 
-    switch(resource[API.KEY_BASE_TYPE]) {
+    switch (resource[API.KEY_BASE_TYPE]) {
         case API.ENTITY_TYPE:
             label = resource[API.KEY_TYPE] + ": " + resource[API.KEY_ID];
             break;
@@ -75,7 +88,7 @@ function buildLabel(resource) {
             label = resource[API.KEY_ID];
     }
 
-    if(API.KEY_VALUE in resource)
+    if (API.KEY_VALUE in resource)
         label = resource[API.KEY_VALUE] || label;
 
     return label;

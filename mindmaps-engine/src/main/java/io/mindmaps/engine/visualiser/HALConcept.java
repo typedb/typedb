@@ -214,8 +214,6 @@ public class HALConcept {
             //If the current relation is to a resource we don't show the assertion, but directly the resource node.
             if (!isResource) {
                 attachRelation(halResource, rel, rolePlayedByCurrentConcept, separationDegree);
-            } else {
-                attachResource(halResource, resourceToUse, rolePlayedByCurrentConcept);
             }
         });
     }
@@ -225,13 +223,6 @@ public class HALConcept {
                 .withProperty(DIRECTION_PROPERTY, INBOUND_EDGE);
         handleConcept(relationResource, rel, separationDegree - 1);
         halResource.withRepresentation(role, relationResource);
-    }
-
-    private void attachResource(Representation halResource, Concept resourceToUse, String role) {
-        Representation resourceResource = factory.newRepresentation(resourceLinkPrefix + resourceToUse.getId())
-                .withProperty(DIRECTION_PROPERTY, OUTBOUND_EDGE);
-        handleConcept(resourceResource, resourceToUse.asResource(), 0);
-        halResource.withRepresentation(role, resourceResource);
     }
 
 

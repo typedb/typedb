@@ -48,18 +48,22 @@ export default class HALParser {
      * Start parsing HAL response in @data. Will call functions set by setNewResource() and setNewRelationship().
      */
     parseResponse(data) {
-        _.map(data, x => { this.parseHalObject(x) });
+        _.map(data, x => {
+            this.parseHalObject(x)
+        });
         return data.length;
     }
 
     parseHalObject(obj) {
-        this.newResource(this.getHref(obj), Utils.defaultProperties(obj), Utils.additionalProperties(obj));
-
-        // Add assertions from _embedded
-        if(API.KEY_EMBEDDED in obj) {
-            _.map(Object.keys(obj[API.KEY_EMBEDDED]), key => {
-                this.parseEmbedded(obj[API.KEY_EMBEDDED][key], obj, key)
-            });
+        if (obj !== null) {
+            var links = Utils.nodeLinks(obj);
+            this.newResource(this.getHref(obj), Utils.defaultProperties(obj), Utils.additionalProperties(obj), links);
+            // Add assertions from _embedded
+            if (API.KEY_EMBEDDED in obj) {
+                _.map(Object.keys(obj[API.KEY_EMBEDDED]), key => {
+                    this.parseEmbedded(obj[API.KEY_EMBEDDED][key], obj, key)
+                });
+            }
         }
     }
 
@@ -71,13 +75,14 @@ export default class HALParser {
      */
     parseEmbedded(objs, parent, roleName) {
         _.map(objs, child => {
+          var links = Utils.nodeLinks(child);
             // Add resource and iterate its _embedded field
             var hrefP = this.getHref(child);
             var hrefC = this.getHref(parent);
 
-            this.newResource(hrefP, Utils.defaultProperties(child), Utils.additionalProperties(child));
+            this.newResource(hrefP, Utils.defaultProperties(child), Utils.additionalProperties(child), links);
 
-            if(Utils.edgeLeftToRight(parent, child))
+            if (Utils.edgeLeftToRight(parent, child))
                 this.newRelationship(hrefP, hrefC, roleName);
             else
                 this.newRelationship(hrefC, hrefP, roleName);
@@ -86,6 +91,7 @@ export default class HALParser {
 
         });
     }
+
 
     /**
      * Returns href of current resource.
