@@ -114,8 +114,6 @@ public abstract class GraphWriterTestBase {
     }
 
     public boolean typesEqual(Type one, Type two){
-        System.out.println(one);
-        System.out.println(two);
         return one.getId().equals(two.getId())
                 && one.isAbstract().equals(two.isAbstract())
                 && one.type().getId().equals(two.type().getId())

@@ -32,9 +32,17 @@ import java.util.Collection;
 import static io.mindmaps.graql.Graql.var;
 import static java.util.stream.Collectors.toSet;
 
+/**
+ * Map Grakn Core instance to Graql representation
+ */
 public class InstanceMapper {
 
-    public static String map(Instance instance){
+    /**
+     * Map an Instance to the equivalent Graql representation
+     * @param instance instance to be mapped
+     * @return Graql representation of given instance
+     */
+    public static Var map(Instance instance){
         Var mapped = var();
         if(instance instanceof Entity){
             mapped = map(instance.asEntity());
@@ -46,10 +54,16 @@ public class InstanceMapper {
             mapped = map(instance.asRule());
         }
 
-        return mapped.toString().replaceAll(" has-resource$", " \"has-resource\"").replaceAll(" has-resource ", " \"has-resource\" ");
+        return mapped;
     }
 
-    public static Var map(Entity entity){
+    /**
+     * Map a Entity to a Var
+     * This includes mapping the instance itself, its id and any has-resource relations
+     * @param entity entity to be mapped
+     * @return var patterns representing given instance
+     */
+    private static Var map(Entity entity){
         Var var = base(entity);
         var = hasResources(var, entity);
         var = var.id(entity.getId());
@@ -57,13 +71,13 @@ public class InstanceMapper {
     }
 
     /**
-     *
+     * Map a relation to a var, along with all of the roleplayers
      * Exclude any relations that are mapped to an encountered resource
-     * @param relation
-     * @return
+     * @param relation relation to be mapped
+     * @return var patterns representing the given instance
      */
     //TODO resources on relations
-    public static Var map(Relation relation){
+    private static Var map(Relation relation){
         if(isHasResourceRelation(relation)){
             return var();
         }
@@ -75,12 +89,11 @@ public class InstanceMapper {
     }
 
     /**
-     *
-     * Exclude any resources that have been encountered while mapping an entity.
-     * @param resource
-     * @return
+     * Map a Resource to a var IF it is not attached in a has-resource relation to another instance
+     * @param resource resource to be mapped
+     * @return var patterns representing the given instance
      */
-    public static Var map(Resource resource){
+    private static Var map(Resource resource){
         if(isHasResourceResource(resource)){
             return var();
         }
@@ -90,8 +103,13 @@ public class InstanceMapper {
         return var;
     }
 
+    /**
+     * Map a Rule to a var
+     * @param rule rule to be mapped
+     * @return var patterns representing the given instance
+     */
     //TODO hypothesis, conclusion, isMaterialize, etc
-    public static Var map(Rule rule){
+    private static Var map(Rule rule){
         Var var = base(rule);
         var = var.id(rule.getId());
         var = var.lhs(rule.getLHS());
@@ -99,6 +117,12 @@ public class InstanceMapper {
         return var;
     }
 
+    /**
+     * Add the resources of an entity
+     * @param var var representing the entity
+     * @param entity entity containing resource information
+     * @return var pattern with resources
+     */
     private static Var hasResources(Var var, Entity entity){
         for(Resource resource:entity.resources()){
            var = var.has(resource.type().getId(), resource.getValue());
@@ -106,6 +130,12 @@ public class InstanceMapper {
         return var;
     }
 
+    /**
+     * Add the roleplayers of a relation to the relation var
+     * @param var var representing the relation
+     * @param relation relation that contains roleplayer data
+     * @return var pattern with roleplayers
+     */
     private static  Var roleplayers(Var var, Relation relation){
         for(RoleType role:relation.rolePlayers().keySet()){
             var = var.rel(role.getId(), relation.rolePlayers().get(role).getId());
@@ -113,10 +143,20 @@ public class InstanceMapper {
         return var;
     }
 
+    /**
+     * Given an instance, return a var with the type.
+     * @param instance instance to map
+     * @return var patterns representing given instance
+     */
     private static  Var base(Instance instance){
         return var(instance.getId()).isa(instance.type().getId());
     }
 
+    /**
+     * Check if the given relation conforms to the has-resource syntax and requirements
+     * @param relation relation instance to check
+     * @return true if the relation is a has-resource relation
+     */
     private static boolean isHasResourceRelation(Relation relation){
         String relationType = relation.type().getId();
 
@@ -131,6 +171,11 @@ public class InstanceMapper {
                 roles.contains(relationType + "-owner");
     }
 
+    /**
+     * Check if the given resource conforms to the has-resource syntax and structural requirements
+     * @param resource resource to check
+     * @return true if the resource is target of has-resource relation
+     */
     private static boolean isHasResourceResource(Resource resource){
         ResourceType resourceType = resource.type();
 

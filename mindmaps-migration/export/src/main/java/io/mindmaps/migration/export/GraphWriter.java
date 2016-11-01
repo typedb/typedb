@@ -20,6 +20,7 @@ package io.mindmaps.migration.export;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Type;
+import io.mindmaps.graql.Var;
 
 import java.util.Arrays;
 import java.util.List;
@@ -27,6 +28,9 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
 
+/**
+ * Export contents of a Grakn graph as a Graql insert query.
+ */
 public class GraphWriter {
 
     private static final String EOL = ";\n";
@@ -39,10 +43,18 @@ public class GraphWriter {
         this.graph = graph;
     }
 
+    /**
+     * Export the ontology of a Grakn graph as Graql string
+     * @return Graql insert query with ontology of given graph
+     */
     public String dumpOntology(){
         return joinAsInsert(types().map(TypeMapper::map));
     }
 
+    /**
+     *  Export the data of a Grakn graph as a Graql string
+     * @return Graql insert query with data in given graph
+     */
     public String dumpData(){
         return joinAsInsert(types()
                 .filter(t -> t.superType() == null)
@@ -52,12 +64,20 @@ public class GraphWriter {
                 .map(InstanceMapper::map));
     }
 
-    private String joinAsInsert(Stream<String> stream){
-        return stream.filter(s -> !s.isEmpty())
+    /**
+     * Turn a stream of Graql patterns into a Graql insert query.
+     * @param stream stream of Graql patterns
+     * @return Graql patterns as a string
+     */
+    private String joinAsInsert(Stream<Var> stream){
+        return stream
+                .map(Object::toString)
+                .filter(s -> !s.isEmpty())
                 .collect(joining(EOL, INSERT, EOL));
     }
 
     /**
+     * Get all the types in a graph.
      * @return a stream of all types with non-reserved IDs
      */
     private Stream<Type> types(){
