@@ -28,7 +28,7 @@
     <version>0.6.0-SNAPSHOT</version>
     <name>Grakn</name>
     <description>A distributed semantic graph database.</description>
-    <url>http://grakn.ai/platform.html</url>
+    <url>http://grakn.io/platform.html</url>
     <modules>
         <module>grakn-graph</module>
         <module>grakn-titan-factory</module>
@@ -81,61 +81,61 @@
     <developers>
         <developer>
             <name>Haikal Pribadi</name>
-            <email>haikal@grakn.ai</email>
+            <email>haikal@grakn.io</email>
             <organization>Grakn Labs</organization>
             <organizationUrl>http://grakn.ai</organizationUrl>
         </developer>
         <developer>
             <name>Borislav Iordanov</name>
-            <email>borislav@grakn.ai</email>
+            <email>borislav@grakn.io</email>
             <organization>Grakn Labs</organization>
             <organizationUrl>http://grakn.ai</organizationUrl>
         </developer>
         <developer>
             <name>Filipe Teixeira</name>
-            <email>filipe@grakn.ai</email>
+            <email>filipe@grakn.io</email>
             <organization>Grakn Labs</organization>
             <organizationUrl>http://grakn.ai</organizationUrl>
         </developer>
         <developer>
             <name>Felix Chapman</name>
-            <email>felix@grakn.ai</email>
+            <email>felix@grakn.io</email>
             <organization>Grakn Labs</organization>
             <organizationUrl>http://grakn.ai</organizationUrl>
         </developer>
         <developer>
             <name>Sheldon Hall</name>
-            <email>sheldon@grakn.ai</email>
+            <email>sheldon@grakn.io</email>
             <organization>Grakn Labs</organization>
             <organizationUrl>http://grakn.ai</organizationUrl>
         </developer>
         <developer>
             <name>Alexandra Orth</name>
-            <email>alexandra@grakn.ai</email>
+            <email>alexandra@grakn.io</email>
             <organization>Grakn Labs</organization>
             <organizationUrl>http://grakn.ai</organizationUrl>
         </developer>
         <developer>
             <name>Jason Liu</name>
-            <email>jason@grakn.ai</email>
+            <email>jason@grakn.io</email>
             <organization>Grakn Labs</organization>
             <organizationUrl>http://grakn.ai</organizationUrl>
         </developer>
         <developer>
             <name>Marco Scoppetta</name>
-            <email>marco@grakn.ai</email>
+            <email>marco@grakn.io</email>
             <organization>Grakn Labs</organization>
             <organizationUrl>http://grakn.ai</organizationUrl>
         </developer>
         <developer>
             <name>Kasper Piskorski</name>
-            <email>kasper@grakn.ai</email>
+            <email>kasper@grakn.io</email>
             <organization>Grakn Labs</organization>
             <organizationUrl>http://grakn.ai</organizationUrl>
         </developer>
         <developer>
             <name>Denis Igorevich Lobanov</name>
-            <email>denis@grakn.ai</email>
+            <email>denis@grakn.io</email>
             <organization>Grakn Labs</organization>
             <organizationUrl>http://grakn.ai</organizationUrl>
         </developer>
@@ -161,12 +161,12 @@
         <repository>
             <id>releases</id>
             <name>Internal Releases</name>
-            <url>http://maven.internal.mindmaps.io:8082/nexus/content/repositories/releases/</url>
+            <url>http://maven.internal.grakn.io:8082/nexus/content/repositories/releases/</url>
         </repository>
         <snapshotRepository>
             <id>development-snapshots</id>
             <name>snapshots</name>
-            <url>http://maven.internal.mindmaps.io:8082/nexus/content/repositories/development-snapshots/</url>
+            <url>http://maven.internal.grakn.io:8082/nexus/content/repositories/development-snapshots/</url>
         </snapshotRepository>
     </distributionManagement>
 -->
@@ -184,7 +184,7 @@
         <!--Snapshot repository for 3rd party libraries -->
         <repository>
             <id>development-snapshots</id>
-            <url>https://maven.grakn.ai/content/repositories/snapshots/</url>
+            <url>https://maven.grakn.io/content/repositories/snapshots/</url>
         </repository>
     </repositories>
 
