@@ -72,11 +72,15 @@ class ComputeQueryImpl implements ComputeQuery {
                 }
                 case "connectedComponents": {
                     analytics = getAnalytics(keyspace, false);
-                    return analytics.connectedComponent();
+                    return analytics.connectedComponents();
                 }
                 case "connectedComponentsSize": {
                     analytics = getAnalytics(keyspace, false);
-                    return analytics.connectedComponentSize();
+                    return analytics.connectedComponentsSize();
+                }
+                case "connectedComponentsAndPersist": {
+                    analytics = getAnalytics(keyspace, false);
+                    return analytics.connectedComponentsAndPersist();
                 }
                 case "max": {
                     analytics = getAnalytics(keyspace, true);
