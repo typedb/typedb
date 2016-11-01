@@ -66,7 +66,7 @@ import static org.junit.Assert.assertFalse;
 
 /**
  * These tests are used for generating a report of the performance of analytics. In order to run them on a machine use
- * this maven command: mvn verify -Dtest=ScalingTestIT -DfailIfNoTests=false -Pscaling
+ * this maven command: mvn test -Dtest=ScalingTestIT -DfailIfNoTests=false -Pscaling
  *
  * NB: Mindmaps must be running on a machine already and you may need to significantly increase the size of the java
  * heap to stop failures.
