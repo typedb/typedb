@@ -157,7 +157,7 @@ public class Analytics {
         allSubtypes.addAll(subtypes);
         allSubtypes.addAll(statisticsResourceTypes);
 
-        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
+        MindmapsComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
                 new MinMapReduce(statisticsResourceTypes, dataType));
         Map<String, Number> min = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
@@ -178,7 +178,7 @@ public class Analytics {
         allSubtypes.addAll(subtypes);
         allSubtypes.addAll(statisticsResourceTypes);
 
-        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
+        MindmapsComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
                 new MaxMapReduce(statisticsResourceTypes, dataType));
         Map<String, Number> max = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
@@ -199,7 +199,7 @@ public class Analytics {
         allSubtypes.addAll(subtypes);
         allSubtypes.addAll(statisticsResourceTypes);
 
-        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
+        MindmapsComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
                 new SumMapReduce(statisticsResourceTypes, dataType));
         Map<String, Number> max = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
@@ -220,7 +220,7 @@ public class Analytics {
         allSubtypes.addAll(subtypes);
         allSubtypes.addAll(statisticsResourceTypes);
 
-        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
+        MindmapsComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
                 new MeanMapReduce(statisticsResourceTypes, dataType));
         Map<String, Map<String, Double>> mean = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
@@ -242,7 +242,7 @@ public class Analytics {
         allSubtypes.addAll(subtypes);
         allSubtypes.addAll(statisticsResourceTypes);
 
-        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
+        MindmapsComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(
                 new MedianVertexProgram(allSubtypes, statisticsResourceTypes, dataType));
         return Optional.of(result.memory().get(MedianVertexProgram.MEDIAN));
@@ -262,7 +262,7 @@ public class Analytics {
         allSubtypes.addAll(subtypes);
         allSubtypes.addAll(statisticsResourceTypes);
 
-        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
+        MindmapsComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(new DegreeVertexProgram(allSubtypes),
                 new StdMapReduce(statisticsResourceTypes, dataType));
         Map<String, Map<String, Double>> std = result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
@@ -280,7 +280,7 @@ public class Analytics {
      */
     public Map<String, Set<String>> connectedComponent() {
         if (!selectedTypesHaveInstance()) return Collections.emptyMap();
-        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
+        MindmapsComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(new ConnectedComponentVertexProgram(subtypes),
                 new ClusterMemberMapReduce(subtypes, ConnectedComponentVertexProgram.CLUSTER_LABEL));
         return result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
@@ -293,7 +293,7 @@ public class Analytics {
      */
     public Map<String, Long> connectedComponentSize() {
         if (!selectedTypesHaveInstance()) return Collections.emptyMap();
-        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
+        MindmapsComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(new ConnectedComponentVertexProgram(subtypes),
                 new ClusterSizeMapReduce(subtypes, ConnectedComponentVertexProgram.CLUSTER_LABEL));
         return result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
@@ -305,7 +305,7 @@ public class Analytics {
      * @return a map from each instance to its degree
      */
     public Map<Long, Set<String>> degrees() {
-        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
+        MindmapsComputer computer = getGraphComputer();
         ComputerResult result = computer.compute(new DegreeVertexProgram(subtypes), new DegreeDistributionMapReduce(subtypes));
         return result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
     }
@@ -321,7 +321,7 @@ public class Analytics {
             throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                     .getMessage(this.getClass().toString()));
         }
-        MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
+        MindmapsComputer computer = getGraphComputer();
         computer.compute(new DegreeAndPersistVertexProgram(keySpace, subtypes));
     }
 
