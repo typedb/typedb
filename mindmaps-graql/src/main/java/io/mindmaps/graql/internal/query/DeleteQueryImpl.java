@@ -25,6 +25,7 @@ import io.mindmaps.concept.Concept;
 import io.mindmaps.exception.ConceptException;
 import io.mindmaps.graql.DeleteQuery;
 import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.Printer;
 import io.mindmaps.graql.admin.DeleteQueryAdmin;
 import io.mindmaps.graql.admin.MatchQueryAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
@@ -57,7 +58,7 @@ class DeleteQueryImpl implements DeleteQueryAdmin {
     }
 
     @Override
-    public Stream<String> resultsString() {
+    public Stream<String> resultsString(Printer printer) {
         execute();
         return Stream.empty();
     }

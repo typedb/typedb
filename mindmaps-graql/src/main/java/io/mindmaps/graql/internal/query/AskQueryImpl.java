@@ -21,8 +21,8 @@ package io.mindmaps.graql.internal.query;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.AskQuery;
 import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.Printer;
 import io.mindmaps.graql.admin.AskQueryAdmin;
-import io.mindmaps.graql.internal.util.StringConverter;
 
 import java.util.stream.Stream;
 
@@ -46,8 +46,8 @@ class AskQueryImpl implements AskQueryAdmin {
     }
 
     @Override
-    public Stream<String> resultsString() {
-        return Stream.of(StringConverter.graqlString(execute()));
+    public Stream<String> resultsString(Printer printer) {
+        return Stream.of(printer.graqlString(execute()));
     }
 
     @Override
