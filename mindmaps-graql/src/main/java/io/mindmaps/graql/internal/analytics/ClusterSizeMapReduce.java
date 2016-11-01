@@ -1,12 +1,14 @@
 package io.mindmaps.graql.internal.analytics;
 
-import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 class ClusterSizeMapReduce extends MindmapsMapReduce<Long> {
 
@@ -23,7 +25,7 @@ class ClusterSizeMapReduce extends MindmapsMapReduce<Long> {
     @Override
     public void safeMap(final Vertex vertex, final MapEmitter<Serializable, Long> emitter) {
         if (selectedTypes.contains(Utility.getVertexType(vertex))) {
-            emitter.emit(vertex.value((String)persistentProperties.get(CLUSTER_LABEL)), 1L);
+            emitter.emit(vertex.value((String) persistentProperties.get(CLUSTER_LABEL)), 1L);
         }
     }
 
