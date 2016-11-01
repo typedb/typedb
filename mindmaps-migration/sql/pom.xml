@@ -32,6 +32,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.mindmaps</groupId>
+            <artifactId>migration-base</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
             <version>${h2.version}</version>

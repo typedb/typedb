@@ -80,7 +80,7 @@ public class SQLSchemaMigratorTest {
 
     @Test
     public void usersTest() throws SQLException {
-        Connection connection = Util.setupExample("simple");
+        Connection connection = SQLMigratorUtil.setupExample("simple");
         migrator.configure(connection).migrate(loader);
 
         Type type = graph.getEntityType("USERS");
@@ -93,7 +93,7 @@ public class SQLSchemaMigratorTest {
 
     @Test
     public void alterTableTest() throws SQLException {
-        Connection connection = Util.setupExample("alter-table");
+        Connection connection = SQLMigratorUtil.setupExample("alter-table");
         migrator.configure(connection).migrate(loader);
 
         Type cart = graph.getEntityType("CART");
@@ -129,7 +129,7 @@ public class SQLSchemaMigratorTest {
 
     @Test
     public void emptyTest() throws SQLException {
-        Connection connection = Util.setupExample("empty");
+        Connection connection = SQLMigratorUtil.setupExample("empty");
         migrator.configure(connection).migrate(loader);
 
         System.out.println(graph.getMetaType().instances());
@@ -143,7 +143,7 @@ public class SQLSchemaMigratorTest {
 
     @Test
     public void datavaultSchemaTest() throws SQLException {
-        Connection connection = Util.setupExample("datavault");
+        Connection connection = SQLMigratorUtil.setupExample("datavault");
         migrator.configure(connection).migrate(loader);
 
         Type entity = graph.getEntityType("AZ_BAKUAPPEALCOURT_CASES");
@@ -157,7 +157,7 @@ public class SQLSchemaMigratorTest {
 
     @Test
     public void postgresSchemaTest() throws SQLException, ClassNotFoundException {
-        Connection connection = Util.setupExample("postgresql-example");
+        Connection connection = SQLMigratorUtil.setupExample("postgresql-example");
         migrator.configure(connection).migrate(loader);
 
         Type city = graph.getEntityType("CITY");
@@ -184,7 +184,7 @@ public class SQLSchemaMigratorTest {
 
     @Test
     public void mysqlSchemaTest() throws SQLException {
-        Connection connection = Util.setupExample("mysql-example");
+        Connection connection = SQLMigratorUtil.setupExample("mysql-example");
         migrator.configure(connection).migrate(loader);
 
         System.out.println(graph.getMetaEntityType().instances());
@@ -208,7 +208,7 @@ public class SQLSchemaMigratorTest {
 
     @Test
     public void combinedKeyTest() throws SQLException {
-        Connection connection = Util.setupExample("combined-key");
+        Connection connection = SQLMigratorUtil.setupExample("combined-key");
         migrator.configure(connection).migrate(loader);
 
         Type type = graph.getEntityType("USERS");

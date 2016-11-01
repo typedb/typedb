@@ -76,7 +76,7 @@ public class TestOwlMindMapsBase {
     }
     
     OWLOntology loadOntologyFromResource(String resource) {
-        try (InputStream in = this.getClass().getResourceAsStream(resource)) {
+        try (InputStream in = TestOwlMindMapsBase.class.getClassLoader().getResourceAsStream(resource)) {
             if (in == null)
                 throw new NullPointerException("Resource : " + resource + " not found.");
             return owlManager().loadOntologyFromOntologyDocument(in);

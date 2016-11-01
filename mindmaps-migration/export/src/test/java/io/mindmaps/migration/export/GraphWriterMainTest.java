@@ -27,6 +27,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
@@ -34,6 +35,9 @@ import java.io.File;
 import static org.junit.Assert.assertTrue;
 
 public class GraphWriterMainTest {
+
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
 
     @Rule
     public TemporaryFolder folder= new TemporaryFolder();
@@ -53,36 +57,39 @@ public class GraphWriterMainTest {
         MindmapsEngineServer.stop();
     }
 
+
     @Test
     public void exportOntologyToSystemOutTest(){
-        runAndAssertDataCorrect(new String[]{"export", "ontology", "-graph", "original"});
+        runAndAssertDataCorrect(new String[]{"export", "-ontology", "-keyspace", "original"});
     }
 
     @Test
     public void exportDataToSystemOutTest(){
-        runAndAssertDataCorrect(new String[]{"export", "data", "-graph", "original"});
+        runAndAssertDataCorrect(new String[]{"export", "-data", "-keyspace", "original"});
     }
 
     @Test
     public void exportToFileTest(){
-        runAndAssertDataCorrect(new String[]{"export", "data", "-file", "/tmp/pokemon.gql", "-graph", "original"});
+        runAndAssertDataCorrect(new String[]{"export", "-data", "-file", "/tmp/pokemon.gql", "-keyspace", "original"});
         File pokemonFile = new File("/tmp/pokemon.gql");
         assertTrue(pokemonFile.exists());
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void exportToFileNotFoundTest(){
-        runAndAssertDataCorrect(new String[]{"export", "data", "-file", "grah/?*", "-graph", "original"});
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("Problem writing to file grah/?*");
+        runAndAssertDataCorrect(new String[]{"export", "-data", "-file", "grah/?*", "-keyspace", "original"});
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void exportNoGraphNameTest(){
         runAndAssertDataCorrect(new String[]{"export", "ontology"});
     }
 
     @Test
     public void exportEngineURLProvidedTest(){
-        runAndAssertDataCorrect(new String[]{"export", "data", "-engine", "0.0.0.0:4567", "-graph", "original"});
+        runAndAssertDataCorrect(new String[]{"export", "-data", "-uri", "localhost:4567", "-keyspace", "original"});
     }
 
     private void runAndAssertDataCorrect(String[] args){

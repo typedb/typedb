@@ -20,7 +20,7 @@ public class TestSubProperties extends TestOwlMindMapsBase {
 	
 	@Before
 	public void loadShakespeare() throws MindmapsValidationException {
-        shakespeare = loadOntologyFromResource("/io/mindmaps/migration/owl/samples/shakespeare.owl");
+        shakespeare = loadOntologyFromResource("shakespeare.owl");
         migrator.ontology(shakespeare).graph(graph).migrate();
         migrator.graph().commit();
 	}
