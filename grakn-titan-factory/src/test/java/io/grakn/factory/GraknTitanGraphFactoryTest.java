@@ -16,16 +16,16 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.factory;
+package ai.grakn.factory;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.thinkaurelius.titan.core.TitanGraph;
 import com.thinkaurelius.titan.core.TitanTransaction;
 import com.thinkaurelius.titan.core.schema.TitanManagement;
-import io.grakn.GraknGraph;
-import io.grakn.graph.internal.GraknTitanGraph;
-import io.grakn.util.Schema;
+import ai.grakn.GraknGraph;
+import ai.grakn.graph.internal.GraknTitanGraph;
+import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Graph;

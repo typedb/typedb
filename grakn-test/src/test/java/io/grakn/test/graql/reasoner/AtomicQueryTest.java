@@ -16,23 +16,23 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.test.graql.reasoner;
+package ai.grakn.test.graql.reasoner;
 
 import com.google.common.collect.Sets;
-import io.grakn.GraknGraph;
-import io.grakn.graql.AskQuery;
-import io.grakn.graql.Graql;
-import io.grakn.graql.MatchQuery;
-import io.grakn.graql.QueryBuilder;
-import io.grakn.graql.admin.Conjunction;
-import io.grakn.graql.admin.PatternAdmin;
-import io.grakn.graql.internal.reasoner.atom.Atomic;
-import io.grakn.graql.internal.reasoner.atom.AtomicFactory;
-import io.grakn.graql.internal.reasoner.atom.IdPredicate;
-import io.grakn.graql.internal.reasoner.query.AtomicQuery;
-import io.grakn.test.graql.reasoner.graphs.GenericGraph;
-import io.grakn.test.graql.reasoner.graphs.SNBGraph;
-import io.grakn.util.ErrorMessage;
+import ai.grakn.GraknGraph;
+import ai.grakn.graql.AskQuery;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.internal.reasoner.atom.Atomic;
+import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
+import ai.grakn.graql.internal.reasoner.atom.IdPredicate;
+import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
+import ai.grakn.test.graql.reasoner.graphs.GenericGraph;
+import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
+import ai.grakn.util.ErrorMessage;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;

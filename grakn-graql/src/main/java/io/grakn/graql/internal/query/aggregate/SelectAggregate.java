@@ -17,10 +17,10 @@
  *
  */
 
-package io.grakn.graql.internal.query.aggregate;
+package ai.grakn.graql.internal.query.aggregate;
 
 import com.google.common.collect.ImmutableSet;
-import io.grakn.graql.NamedAggregate;
+import ai.grakn.graql.NamedAggregate;
 
 import java.util.HashMap;
 import java.util.List;

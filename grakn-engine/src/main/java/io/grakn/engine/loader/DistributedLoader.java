@@ -16,12 +16,12 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.engine.loader;
+package ai.grakn.engine.loader;
 
-import io.grakn.engine.util.ConfigProperties;
-import io.grakn.graql.Var;
-import io.grakn.util.ErrorMessage;
-import io.grakn.util.REST;
+import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.graql.Var;
+import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.REST;
 import mjson.Json;
 import spark.utils.IOUtils;
 

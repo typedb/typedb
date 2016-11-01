@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.engine.postprocessing;
+package ai.grakn.engine.postprocessing;
 
 import java.util.HashSet;
 import java.util.Map;

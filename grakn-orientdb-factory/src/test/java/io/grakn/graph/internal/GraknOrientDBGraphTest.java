@@ -1,7 +1,7 @@
-package io.grakn.graph.internal;
+package ai.grakn.graph.internal;
 
-import io.grakn.GraknGraph;
-import io.grakn.factory.GraknOrientDBInternalFactory;
+import ai.grakn.GraknGraph;
+import ai.grakn.factory.GraknOrientDBInternalFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;

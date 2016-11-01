@@ -16,12 +16,12 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.test.graql.reasoner.graphs;
+package ai.grakn.test.graql.reasoner.graphs;
 
-import io.grakn.GraknGraph;
-import io.grakn.concept.EntityType;
-import io.grakn.concept.RelationType;
-import io.grakn.concept.RoleType;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RoleType;
 
 public class NguyenGraph extends GenericGraph{
 

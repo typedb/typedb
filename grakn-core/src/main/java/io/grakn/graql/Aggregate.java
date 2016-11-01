@@ -17,7 +17,7 @@
  *
  */
 
-package io.grakn.graql;
+package ai.grakn.graql;
 
 import java.util.stream.Stream;
 

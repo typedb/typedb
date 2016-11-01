@@ -16,9 +16,9 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.parser;
+package ai.grakn.graql.internal.parser;
 
-import io.grakn.util.ErrorMessage;
+import ai.grakn.util.ErrorMessage;
 import org.apache.commons.lang.StringUtils;
 
 class SyntaxError {

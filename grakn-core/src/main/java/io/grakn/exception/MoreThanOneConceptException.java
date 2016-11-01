@@ -16,7 +16,7 @@
  *  along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.exception;
+package ai.grakn.exception;
 
 /**
  * Thrown when two concepts are returned when using a unique id to retrieve them.

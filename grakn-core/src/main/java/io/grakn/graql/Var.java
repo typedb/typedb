@@ -17,10 +17,10 @@
  *
  */
 
-package io.grakn.graql;
+package ai.grakn.graql;
 
-import io.grakn.concept.ResourceType;
-import io.grakn.graql.admin.VarAdmin;
+import ai.grakn.concept.ResourceType;
+import ai.grakn.graql.admin.VarAdmin;
 
 /**
  * A wildcard variable to refers to a concept in a query.

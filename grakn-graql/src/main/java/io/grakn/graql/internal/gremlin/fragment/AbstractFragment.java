@@ -1,6 +1,6 @@
-package io.grakn.graql.internal.gremlin.fragment;
+package ai.grakn.graql.internal.gremlin.fragment;
 
-import io.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
 
 import java.util.Optional;
 

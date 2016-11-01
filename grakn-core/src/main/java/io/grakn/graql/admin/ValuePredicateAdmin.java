@@ -17,9 +17,9 @@
  *
  */
 
-package io.grakn.graql.admin;
+package ai.grakn.graql.admin;
 
-import io.grakn.graql.ValuePredicate;
+import ai.grakn.graql.ValuePredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import java.util.Optional;

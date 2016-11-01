@@ -16,10 +16,10 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.test;
+package ai.grakn.test;
 
-import io.grakn.GraknGraph;
-import io.grakn.GraknGraphFactory;
+import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
 import org.junit.After;
 import org.junit.Before;
 

@@ -1,9 +1,9 @@
-package io.grakn.graql.internal.gremlin;
+package ai.grakn.graql.internal.gremlin;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import io.grakn.GraknGraph;
-import io.grakn.graql.internal.gremlin.fragment.Fragment;
+import ai.grakn.GraknGraph;
+import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;

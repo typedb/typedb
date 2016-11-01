@@ -16,12 +16,12 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.test.graql.analytics;
+package ai.grakn.test.graql.analytics;
 
-import io.grakn.Grakn;
-import io.grakn.GraknComputer;
-import io.grakn.factory.GraknGraphFactoryMock;
-import io.grakn.graql.internal.analytics.Analytics;
+import ai.grakn.Grakn;
+import ai.grakn.GraknComputer;
+import ai.grakn.factory.GraknGraphFactoryMock;
+import ai.grakn.graql.internal.analytics.Analytics;
 
 import java.util.Set;
 

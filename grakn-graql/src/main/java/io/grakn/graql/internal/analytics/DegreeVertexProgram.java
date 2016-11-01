@@ -16,9 +16,9 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.analytics;
+package ai.grakn.graql.internal.analytics;
 
-import io.grakn.util.Schema;
+import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.*;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;

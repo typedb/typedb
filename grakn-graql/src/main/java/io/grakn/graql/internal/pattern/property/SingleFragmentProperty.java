@@ -16,11 +16,11 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.pattern.property;
+package ai.grakn.graql.internal.pattern.property;
 
 import com.google.common.collect.Sets;
-import io.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import io.grakn.graql.internal.gremlin.fragment.Fragment;
+import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 
 import java.util.Collection;
 

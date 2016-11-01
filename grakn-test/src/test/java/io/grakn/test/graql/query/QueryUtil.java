@@ -16,10 +16,10 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.test.graql.query;
+package ai.grakn.test.graql.query;
 
 import com.google.common.collect.Sets;
-import io.grakn.concept.Concept;
+import ai.grakn.concept.Concept;
 
 import java.util.Map;
 import java.util.Set;

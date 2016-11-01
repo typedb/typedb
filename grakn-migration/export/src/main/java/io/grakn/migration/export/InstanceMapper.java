@@ -15,17 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-package io.grakn.migration.export;
+package ai.grakn.migration.export;
 
-import io.grakn.concept.Concept;
-import io.grakn.concept.Entity;
-import io.grakn.concept.Instance;
-import io.grakn.concept.Relation;
-import io.grakn.concept.Resource;
-import io.grakn.concept.ResourceType;
-import io.grakn.concept.RoleType;
-import io.grakn.concept.Rule;
-import io.grakn.graql.Var;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.Entity;
+import ai.grakn.concept.Instance;
+import ai.grakn.concept.Relation;
+import ai.grakn.concept.Resource;
+import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Rule;
+import ai.grakn.graql.Var;
 
 import java.util.Collection;
 

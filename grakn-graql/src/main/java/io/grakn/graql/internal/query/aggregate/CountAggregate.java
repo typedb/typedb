@@ -17,7 +17,7 @@
  *
  */
 
-package io.grakn.graql.internal.query.aggregate;
+package ai.grakn.graql.internal.query.aggregate;
 
 import java.util.stream.Stream;
 

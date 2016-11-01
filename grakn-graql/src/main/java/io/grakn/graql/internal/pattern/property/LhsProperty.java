@@ -16,11 +16,11 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.pattern.property;
+package ai.grakn.graql.internal.pattern.property;
 
-import io.grakn.graql.admin.UniqueVarProperty;
-import io.grakn.graql.internal.gremlin.fragment.Fragment;
-import io.grakn.graql.internal.gremlin.fragment.Fragments;
+import ai.grakn.graql.admin.UniqueVarProperty;
+import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import ai.grakn.graql.internal.gremlin.fragment.Fragments;
 
 public class LhsProperty extends AbstractVarProperty implements UniqueVarProperty, NamedProperty, SingleFragmentProperty {
 

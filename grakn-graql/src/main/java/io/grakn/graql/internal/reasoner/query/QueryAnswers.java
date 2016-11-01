@@ -16,15 +16,15 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.reasoner.query;
+package ai.grakn.graql.internal.reasoner.query;
 
-import io.grakn.GraknGraph;
-import io.grakn.concept.Concept;
-import io.grakn.concept.Type;
-import io.grakn.graql.internal.reasoner.atom.Atom;
-import io.grakn.graql.internal.reasoner.atom.Atomic;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.Type;
+import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.Atomic;
 
-import io.grakn.graql.internal.reasoner.atom.Predicate;
+import ai.grakn.graql.internal.reasoner.atom.Predicate;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;

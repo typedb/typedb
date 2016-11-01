@@ -16,11 +16,11 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.template;
+package ai.grakn.graql.internal.template;
 
-import io.grakn.graql.internal.antlr.GraqlTemplateBaseVisitor;
-import io.grakn.graql.internal.antlr.GraqlTemplateParser;
-import io.grakn.graql.internal.template.macro.Macro;
+import ai.grakn.graql.internal.antlr.GraqlTemplateBaseVisitor;
+import ai.grakn.graql.internal.antlr.GraqlTemplateParser;
+import ai.grakn.graql.internal.template.macro.Macro;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;

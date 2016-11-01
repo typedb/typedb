@@ -17,10 +17,10 @@
  *
  */
 
-package io.grakn.concept;
+package ai.grakn.concept;
 
 
-import io.grakn.util.Schema;
+import ai.grakn.util.Schema;
 
 import java.util.Collection;
 import java.util.HashMap;

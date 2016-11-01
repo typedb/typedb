@@ -16,11 +16,11 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.analytics;
+package ai.grakn.graql.internal.analytics;
 
 import com.google.common.collect.Sets;
-import io.grakn.graql.internal.util.GraqlType;
-import io.grakn.util.Schema;
+import ai.grakn.graql.internal.util.GraqlType;
+import ai.grakn.util.Schema;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 

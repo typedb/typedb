@@ -16,9 +16,9 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.query.predicate;
+package ai.grakn.graql.internal.query.predicate;
 
-import io.grakn.graql.ValuePredicate;
+import ai.grakn.graql.ValuePredicate;
 
 public class Predicates {
 

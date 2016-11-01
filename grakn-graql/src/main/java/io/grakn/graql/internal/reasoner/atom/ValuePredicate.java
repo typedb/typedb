@@ -16,12 +16,12 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.reasoner.atom;
+package ai.grakn.graql.internal.reasoner.atom;
 
-import io.grakn.graql.Graql;
-import io.grakn.graql.admin.ValuePredicateAdmin;
-import io.grakn.graql.admin.VarAdmin;
-import io.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.admin.ValuePredicateAdmin;
+import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.reasoner.query.Query;
 import java.util.Set;
 
 public class ValuePredicate extends Predicate<ValuePredicateAdmin> {

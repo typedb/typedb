@@ -16,9 +16,9 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.test.graql.template;
+package ai.grakn.test.graql.template;
 
-import io.grakn.graql.Graql;
+import ai.grakn.graql.Graql;
 import org.junit.Test;
 
 import java.util.Collections;

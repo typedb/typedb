@@ -1,4 +1,4 @@
-package io.grakn.util;
+package ai.grakn.util;
 
 public class REST {
 

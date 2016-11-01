@@ -16,21 +16,21 @@
  * along with GraknDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.migration.json;
+package ai.grakn.migration.json;
 
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
-import io.grakn.GraknGraph;
-import io.grakn.concept.Entity;
-import io.grakn.concept.EntityType;
-import io.grakn.concept.Instance;
-import io.grakn.concept.Resource;
-import io.grakn.engine.GraknEngineServer;
-import io.grakn.engine.loader.BlockingLoader;
-import io.grakn.engine.util.ConfigProperties;
-import io.grakn.exception.GraknValidationException;
-import io.grakn.factory.GraphFactory;
-import io.grakn.graql.Graql;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Instance;
+import ai.grakn.concept.Resource;
+import ai.grakn.engine.GraknEngineServer;
+import ai.grakn.engine.loader.BlockingLoader;
+import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.exception.GraknValidationException;
+import ai.grakn.factory.GraphFactory;
+import ai.grakn.graql.Graql;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;

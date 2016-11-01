@@ -16,9 +16,9 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql;
+package ai.grakn.graql;
 
-import io.grakn.GraknGraph;
+import ai.grakn.GraknGraph;
 
 /**
  * A query that triggers an OLAP computation on a graph.

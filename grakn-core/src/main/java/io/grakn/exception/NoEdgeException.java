@@ -16,9 +16,9 @@
  *  along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.exception;
+package ai.grakn.exception;
 
-import io.grakn.util.ErrorMessage;
+import ai.grakn.util.ErrorMessage;
 
 /**
  * The exception thrown when an edge is expected between two concepts.

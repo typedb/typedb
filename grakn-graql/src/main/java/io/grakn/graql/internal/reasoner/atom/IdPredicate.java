@@ -16,12 +16,12 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.reasoner.atom;
+package ai.grakn.graql.internal.reasoner.atom;
 
-import io.grakn.concept.Concept;
-import io.grakn.graql.Graql;
-import io.grakn.graql.admin.VarAdmin;
-import io.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.concept.Concept;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.reasoner.query.Query;
 
 public class IdPredicate extends Predicate<String>{
 

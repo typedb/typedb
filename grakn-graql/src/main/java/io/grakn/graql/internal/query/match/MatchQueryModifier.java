@@ -16,13 +16,13 @@
  *  along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.query.match;
+package ai.grakn.graql.internal.query.match;
 
-import io.grakn.GraknGraph;
-import io.grakn.concept.Concept;
-import io.grakn.concept.Type;
-import io.grakn.graql.admin.Conjunction;
-import io.grakn.graql.admin.PatternAdmin;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.Type;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.PatternAdmin;
 
 import java.util.Map;
 import java.util.Optional;

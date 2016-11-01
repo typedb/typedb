@@ -16,10 +16,10 @@
  *  along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.factory;
+package ai.grakn.factory;
 
-import io.grakn.graph.internal.AbstractGraknGraph;
-import io.grakn.util.ErrorMessage;
+import ai.grakn.graph.internal.AbstractGraknGraph;
+import ai.grakn.util.ErrorMessage;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;

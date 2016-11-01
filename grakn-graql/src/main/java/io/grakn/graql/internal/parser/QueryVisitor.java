@@ -16,27 +16,27 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.parser;
+package ai.grakn.graql.internal.parser;
 
 import com.google.common.collect.ImmutableMap;
-import io.grakn.concept.ResourceType;
-import io.grakn.graql.Aggregate;
-import io.grakn.graql.AggregateQuery;
-import io.grakn.graql.AskQuery;
-import io.grakn.graql.ComputeQuery;
-import io.grakn.graql.DeleteQuery;
-import io.grakn.graql.Graql;
-import io.grakn.graql.InsertQuery;
-import io.grakn.graql.MatchQuery;
-import io.grakn.graql.NamedAggregate;
-import io.grakn.graql.Pattern;
-import io.grakn.graql.Query;
-import io.grakn.graql.QueryBuilder;
-import io.grakn.graql.ValuePredicate;
-import io.grakn.graql.Var;
-import io.grakn.graql.internal.antlr.GraqlBaseVisitor;
-import io.grakn.graql.internal.antlr.GraqlParser;
-import io.grakn.graql.internal.util.StringConverter;
+import ai.grakn.concept.ResourceType;
+import ai.grakn.graql.Aggregate;
+import ai.grakn.graql.AggregateQuery;
+import ai.grakn.graql.AskQuery;
+import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.DeleteQuery;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.NamedAggregate;
+import ai.grakn.graql.Pattern;
+import ai.grakn.graql.Query;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.ValuePredicate;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.internal.antlr.GraqlBaseVisitor;
+import ai.grakn.graql.internal.antlr.GraqlParser;
+import ai.grakn.graql.internal.util.StringConverter;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.tree.TerminalNode;

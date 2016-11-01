@@ -1,7 +1,7 @@
 package test.io.grakn.migration.owl;
 
-import io.grakn.exception.GraknValidationException;
-import io.grakn.graql.Graql;
+import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graql.Graql;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

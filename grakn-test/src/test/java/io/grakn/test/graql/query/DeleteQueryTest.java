@@ -16,12 +16,12 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.test.graql.query;
+package ai.grakn.test.graql.query;
 
-import io.grakn.graql.Graql;
-import io.grakn.graql.QueryBuilder;
-import io.grakn.graql.Var;
-import io.grakn.test.AbstractMovieGraphTest;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.Var;
+import ai.grakn.test.AbstractMovieGraphTest;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

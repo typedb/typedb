@@ -16,24 +16,24 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.query;
+package ai.grakn.graql.internal.query;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import io.grakn.GraknGraph;
-import io.grakn.concept.Concept;
-import io.grakn.concept.Instance;
-import io.grakn.concept.ResourceType;
-import io.grakn.concept.Type;
-import io.grakn.graql.admin.VarAdmin;
-import io.grakn.graql.internal.pattern.Patterns;
-import io.grakn.graql.internal.pattern.property.SubProperty;
-import io.grakn.graql.internal.pattern.property.DataTypeProperty;
-import io.grakn.graql.internal.pattern.property.LhsProperty;
-import io.grakn.graql.internal.pattern.property.RhsProperty;
-import io.grakn.graql.internal.pattern.property.VarPropertyInternal;
-import io.grakn.util.ErrorMessage;
-import io.grakn.util.Schema;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.Instance;
+import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Type;
+import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.pattern.property.SubProperty;
+import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
+import ai.grakn.graql.internal.pattern.property.LhsProperty;
+import ai.grakn.graql.internal.pattern.property.RhsProperty;
+import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
+import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.Schema;
 
 import java.util.Collection;
 import java.util.HashMap;

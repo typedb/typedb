@@ -15,16 +15,16 @@
  * You should have received a copy of the GNU General Public License
  * along with GraknDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-package io.grakn.migration.owl;
+package ai.grakn.migration.owl;
 
-import io.grakn.concept.Concept;
-import io.grakn.concept.Entity;
-import io.grakn.concept.EntityType;
-import io.grakn.concept.RelationType;
-import io.grakn.concept.Resource;
-import io.grakn.concept.ResourceType;
-import io.grakn.concept.RoleType;
-import io.grakn.exception.ConceptException;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Resource;
+import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.RoleType;
+import ai.grakn.exception.ConceptException;
 import javafx.util.Pair;
 import org.semanticweb.owlapi.model.AsOWLObjectProperty;
 import org.semanticweb.owlapi.model.OWLAnnotationAssertionAxiom;

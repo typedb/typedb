@@ -17,7 +17,7 @@
  *
  */
 
-package io.grakn.graql;
+package ai.grakn.graql;
 
 /**
  * An aggregate operation with an associated name. Used when combining aggregates using the 'select' aggregate.

@@ -16,16 +16,16 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graph.internal;
+package ai.grakn.graph.internal;
 
-import io.grakn.exception.InvalidConceptTypeException;
-import io.grakn.util.Schema;
-import io.grakn.util.ErrorMessage;
-import io.grakn.exception.ConceptException;
-import io.grakn.concept.Concept;
-import io.grakn.concept.RoleType;
-import io.grakn.concept.Rule;
-import io.grakn.concept.Type;
+import ai.grakn.exception.InvalidConceptTypeException;
+import ai.grakn.util.Schema;
+import ai.grakn.util.ErrorMessage;
+import ai.grakn.exception.ConceptException;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Rule;
+import ai.grakn.concept.Type;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;

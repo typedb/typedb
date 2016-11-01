@@ -15,21 +15,21 @@
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-package io.grakn.graql.internal.reasoner.atom;
+package ai.grakn.graql.internal.reasoner.atom;
 
-import io.grakn.GraknGraph;
-import io.grakn.concept.RoleType;
-import io.grakn.concept.Rule;
-import io.grakn.concept.Type;
-import io.grakn.graql.Graql;
-import io.grakn.graql.MatchQuery;
-import io.grakn.graql.QueryBuilder;
-import io.grakn.graql.admin.PatternAdmin;
-import io.grakn.graql.admin.ValuePredicateAdmin;
-import io.grakn.graql.admin.VarAdmin;
-import io.grakn.graql.internal.pattern.Patterns;
-import io.grakn.graql.internal.reasoner.query.Query;
-import io.grakn.util.ErrorMessage;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Rule;
+import ai.grakn.concept.Type;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.ValuePredicateAdmin;
+import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.util.ErrorMessage;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;

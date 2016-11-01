@@ -16,19 +16,19 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.query.match;
+package ai.grakn.graql.internal.query.match;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import io.grakn.GraknGraph;
-import io.grakn.concept.Concept;
-import io.grakn.concept.Type;
-import io.grakn.graql.admin.Conjunction;
-import io.grakn.graql.admin.PatternAdmin;
-import io.grakn.graql.admin.VarAdmin;
-import io.grakn.graql.internal.gremlin.GremlinQuery;
-import io.grakn.graql.internal.pattern.property.VarPropertyInternal;
-import io.grakn.util.ErrorMessage;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.Type;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.gremlin.GremlinQuery;
+import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
+import ai.grakn.util.ErrorMessage;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 

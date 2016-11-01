@@ -1,4 +1,4 @@
-package io.grakn;
+package ai.grakn;
 
 /**
  * A factory instance which produces graphs bound to the same persistence layer and keyspace.

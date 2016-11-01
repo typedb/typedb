@@ -1,7 +1,7 @@
-package io.grakn.engine;
+package ai.grakn.engine;
 
 import com.jayway.restassured.RestAssured;
-import io.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.util.ConfigProperties;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 

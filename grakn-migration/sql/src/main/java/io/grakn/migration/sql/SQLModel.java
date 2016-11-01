@@ -16,9 +16,9 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.migration.sql;
+package ai.grakn.migration.sql;
 
-import io.grakn.concept.ResourceType;
+import ai.grakn.concept.ResourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

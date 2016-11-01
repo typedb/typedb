@@ -16,23 +16,23 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.test.graql.parser;
+package ai.grakn.test.graql.parser;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import io.grakn.concept.Concept;
-import io.grakn.concept.ResourceType;
-import io.grakn.graql.AggregateQuery;
-import io.grakn.graql.AskQuery;
-import io.grakn.graql.Graql;
-import io.grakn.graql.InsertQuery;
-import io.grakn.graql.MatchQuery;
-import io.grakn.graql.QueryBuilder;
-import io.grakn.graql.Var;
-import io.grakn.graql.admin.VarAdmin;
-import io.grakn.graql.internal.pattern.property.DataTypeProperty;
-import io.grakn.graql.internal.query.aggregate.AbstractAggregate;
-import io.grakn.test.AbstractMovieGraphTest;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.ResourceType;
+import ai.grakn.graql.AggregateQuery;
+import ai.grakn.graql.AskQuery;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
+import ai.grakn.graql.internal.query.aggregate.AbstractAggregate;
+import ai.grakn.test.AbstractMovieGraphTest;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

@@ -16,9 +16,9 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.analytics;
+package ai.grakn.graql.internal.analytics;
 
-import io.grakn.util.ErrorMessage;
+import ai.grakn.util.ErrorMessage;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.structure.Vertex;

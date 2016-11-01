@@ -16,17 +16,17 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.test.graql.analytics;
+package ai.grakn.test.graql.analytics;
 
 import com.google.common.collect.Sets;
-import io.grakn.Grakn;
-import io.grakn.GraknGraph;
-import io.grakn.concept.*;
-import io.grakn.exception.GraknValidationException;
-import io.grakn.graph.internal.AbstractGraknGraph;
-import io.grakn.graql.internal.analytics.Analytics;
-import io.grakn.graql.internal.util.GraqlType;
-import io.grakn.test.AbstractGraphTest;
+import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.*;
+import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graph.internal.AbstractGraknGraph;
+import ai.grakn.graql.internal.analytics.Analytics;
+import ai.grakn.graql.internal.util.GraqlType;
+import ai.grakn.test.AbstractGraphTest;
 import org.apache.commons.collections.CollectionUtils;
 import org.junit.Assert;
 import org.junit.Before;

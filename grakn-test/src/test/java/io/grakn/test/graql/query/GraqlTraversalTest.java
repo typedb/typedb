@@ -1,10 +1,10 @@
-package io.grakn.test.graql.query;
+package ai.grakn.test.graql.query;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import io.grakn.graql.internal.gremlin.GraqlTraversal;
-import io.grakn.graql.internal.gremlin.fragment.Fragment;
-import io.grakn.test.AbstractRollbackGraphTest;
+import ai.grakn.graql.internal.gremlin.GraqlTraversal;
+import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import ai.grakn.test.AbstractRollbackGraphTest;
 import org.junit.Test;
 
 import static io.grakn.graql.internal.gremlin.fragment.Fragments.distinctCasting;

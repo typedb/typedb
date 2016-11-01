@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.engine.util;
+package ai.grakn.engine.util;
 
 import org.junit.Before;
 import org.junit.Test;

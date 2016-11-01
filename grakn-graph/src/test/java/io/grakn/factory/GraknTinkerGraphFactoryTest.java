@@ -16,11 +16,11 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.factory;
+package ai.grakn.factory;
 
-import io.grakn.GraknGraph;
-import io.grakn.graph.internal.AbstractGraknGraph;
-import io.grakn.graph.internal.GraknTinkerGraph;
+import ai.grakn.GraknGraph;
+import ai.grakn.graph.internal.AbstractGraknGraph;
+import ai.grakn.graph.internal.GraknTinkerGraph;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.junit.Before;

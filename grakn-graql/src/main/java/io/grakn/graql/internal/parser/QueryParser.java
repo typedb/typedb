@@ -16,15 +16,15 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.parser;
+package ai.grakn.graql.internal.parser;
 
 import com.google.common.collect.ImmutableMap;
-import io.grakn.graql.Aggregate;
-import io.grakn.graql.Pattern;
-import io.grakn.graql.Query;
-import io.grakn.graql.QueryBuilder;
-import io.grakn.graql.internal.antlr.GraqlLexer;
-import io.grakn.graql.internal.antlr.GraqlParser;
+import ai.grakn.graql.Aggregate;
+import ai.grakn.graql.Pattern;
+import ai.grakn.graql.Query;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.internal.antlr.GraqlLexer;
+import ai.grakn.graql.internal.antlr.GraqlParser;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 

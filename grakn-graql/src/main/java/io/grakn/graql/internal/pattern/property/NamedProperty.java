@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.pattern.property;
+package ai.grakn.graql.internal.pattern.property;
 
 interface NamedProperty extends VarPropertyInternal {
 

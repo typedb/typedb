@@ -16,12 +16,12 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.util;
+package ai.grakn.graql.internal.util;
 
 import com.google.common.collect.ImmutableSet;
-import io.grakn.concept.Concept;
-import io.grakn.concept.Type;
-import io.grakn.graql.internal.antlr.GraqlLexer;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.Type;
+import ai.grakn.graql.internal.antlr.GraqlLexer;
 import org.apache.commons.lang.StringEscapeUtils;
 
 import java.util.Collection;

@@ -16,15 +16,15 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.engine.loader;
+package ai.grakn.engine.loader;
 
-import io.grakn.engine.postprocessing.BackgroundTasks;
-import io.grakn.engine.postprocessing.Cache;
-import io.grakn.engine.util.ConfigProperties;
-import io.grakn.exception.GraknValidationException;
-import io.grakn.factory.GraphFactory;
-import io.grakn.graph.internal.AbstractGraknGraph;
-import io.grakn.util.ErrorMessage;
+import ai.grakn.engine.postprocessing.BackgroundTasks;
+import ai.grakn.engine.postprocessing.Cache;
+import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.exception.GraknValidationException;
+import ai.grakn.factory.GraphFactory;
+import ai.grakn.graph.internal.AbstractGraknGraph;
+import ai.grakn.util.ErrorMessage;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -16,13 +16,13 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.migration.export;
+package ai.grakn.migration.export;
 
-import io.grakn.GraknGraph;
-import io.grakn.engine.GraknEngineServer;
-import io.grakn.engine.util.ConfigProperties;
-import io.grakn.example.PokemonGraphFactory;
-import io.grakn.factory.GraphFactory;
+import ai.grakn.GraknGraph;
+import ai.grakn.engine.GraknEngineServer;
+import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.example.PokemonGraphFactory;
+import ai.grakn.factory.GraphFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;

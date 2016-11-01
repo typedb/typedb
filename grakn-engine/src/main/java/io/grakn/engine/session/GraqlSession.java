@@ -16,16 +16,16 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.engine.session;
+package ai.grakn.engine.session;
 
 import com.google.common.base.Splitter;
-import io.grakn.GraknGraph;
-import io.grakn.exception.ConceptException;
-import io.grakn.exception.GraknValidationException;
-import io.grakn.graql.Autocomplete;
-import io.grakn.graql.MatchQuery;
-import io.grakn.graql.Query;
-import io.grakn.graql.Reasoner;
+import ai.grakn.GraknGraph;
+import ai.grakn.exception.ConceptException;
+import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graql.Autocomplete;
+import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Query;
+import ai.grakn.graql.Reasoner;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketException;

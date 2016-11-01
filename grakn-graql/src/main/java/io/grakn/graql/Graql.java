@@ -17,18 +17,18 @@
  *
  */
 
-package io.grakn.graql;
+package ai.grakn.graql;
 
 import com.google.common.collect.ImmutableSet;
-import io.grakn.GraknGraph;
-import io.grakn.concept.Concept;
-import io.grakn.graql.admin.Conjunction;
-import io.grakn.graql.admin.Disjunction;
-import io.grakn.graql.admin.PatternAdmin;
-import io.grakn.graql.internal.pattern.Patterns;
-import io.grakn.graql.internal.query.aggregate.Aggregates;
-import io.grakn.graql.internal.query.predicate.Predicates;
-import io.grakn.graql.internal.util.AdminConverter;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.Disjunction;
+import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.query.aggregate.Aggregates;
+import ai.grakn.graql.internal.query.predicate.Predicates;
+import ai.grakn.graql.internal.util.AdminConverter;
 
 import java.io.InputStream;
 import java.util.*;

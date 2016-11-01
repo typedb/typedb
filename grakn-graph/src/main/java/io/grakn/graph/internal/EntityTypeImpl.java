@@ -16,11 +16,11 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graph.internal;
+package ai.grakn.graph.internal;
 
-import io.grakn.concept.Entity;
-import io.grakn.concept.EntityType;
-import io.grakn.concept.Type;
+import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Type;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 /**

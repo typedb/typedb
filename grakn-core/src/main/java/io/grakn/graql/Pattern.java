@@ -16,9 +16,9 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql;
+package ai.grakn.graql;
 
-import io.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.PatternAdmin;
 
 /**
  * A pattern describing a subgraph.

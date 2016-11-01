@@ -16,11 +16,11 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.migration.json;
+package ai.grakn.migration.json;
 
-import io.grakn.GraknGraph;
-import io.grakn.concept.*;
-import io.grakn.graql.internal.util.GraqlType;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.*;
+import ai.grakn.graql.internal.util.GraqlType;
 
 import java.io.File;
 import java.util.Collection;

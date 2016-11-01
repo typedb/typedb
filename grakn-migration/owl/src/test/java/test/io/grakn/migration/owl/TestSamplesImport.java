@@ -17,13 +17,13 @@
  */
 package test.io.grakn.migration.owl;
 
-import io.grakn.concept.Entity;
-import io.grakn.concept.EntityType;
-import io.grakn.concept.RelationType;
-import io.grakn.concept.Resource;
-import io.grakn.concept.RoleType;
-import io.grakn.graql.Reasoner;
-import io.grakn.migration.owl.OwlModel;
+import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Resource;
+import ai.grakn.concept.RoleType;
+import ai.grakn.graql.Reasoner;
+import ai.grakn.migration.owl.OwlModel;
 import org.junit.Assert;
 import org.junit.Test;
 import org.semanticweb.owlapi.model.OWLOntology;

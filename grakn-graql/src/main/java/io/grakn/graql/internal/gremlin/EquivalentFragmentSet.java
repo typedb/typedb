@@ -16,9 +16,9 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.gremlin;
+package ai.grakn.graql.internal.gremlin;
 
-import io.grakn.graql.internal.gremlin.fragment.Fragment;
+import ai.grakn.graql.internal.gremlin.fragment.Fragment;
 
 import java.util.Arrays;
 import java.util.Collection;

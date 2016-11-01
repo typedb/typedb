@@ -16,9 +16,9 @@
  *  along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.factory;
+package ai.grakn.factory;
 
-import io.grakn.graph.internal.AbstractGraknGraph;
+import ai.grakn.graph.internal.AbstractGraknGraph;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 abstract class AbstractGraknInternalFactory<M extends AbstractGraknGraph<G>, G extends Graph> implements GraknInternalFactory<M, G> {

@@ -16,14 +16,14 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.engine.controller;
+package ai.grakn.engine.controller;
 
 import com.jayway.restassured.response.Response;
-import io.grakn.GraknGraph;
-import io.grakn.concept.EntityType;
-import io.grakn.engine.GraknEngineTestBase;
-import io.grakn.factory.GraphFactory;
-import io.grakn.util.REST;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.EntityType;
+import ai.grakn.engine.GraknEngineTestBase;
+import ai.grakn.factory.GraphFactory;
+import ai.grakn.util.REST;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.After;

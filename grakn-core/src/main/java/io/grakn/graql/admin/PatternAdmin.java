@@ -17,9 +17,9 @@
  *
  */
 
-package io.grakn.graql.admin;
+package ai.grakn.graql.admin;
 
-import io.grakn.graql.Pattern;
+import ai.grakn.graql.Pattern;
 
 import java.util.Set;
 

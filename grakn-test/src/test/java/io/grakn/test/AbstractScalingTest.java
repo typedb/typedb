@@ -16,12 +16,12 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.test;
+package ai.grakn.test;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import io.grakn.Grakn;
-import io.grakn.GraknGraphFactory;
+import ai.grakn.Grakn;
+import ai.grakn.GraknGraphFactory;
 import org.junit.BeforeClass;
 
 import java.util.UUID;

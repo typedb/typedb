@@ -17,9 +17,9 @@
  *
  */
 
-package io.grakn.concept;
+package ai.grakn.concept;
 
-import io.grakn.exception.ConceptException;
+import ai.grakn.exception.ConceptException;
 
 /**
  * A Concept which represents anything in the graph.
@@ -56,13 +56,13 @@ public interface Concept extends Comparable<Concept>{
      *
      * @return A Entity Type if the concept is a Entity Type
      */
-    EntityType asEntityType();
+    ai.grakn.concept.EntityType asEntityType();
 
     /**
      *
      * @return A Role Type if the concept is a Role Type
      */
-    RoleType asRoleType();
+    ai.grakn.concept.RoleType asRoleType();
 
     /**
      *
@@ -74,13 +74,13 @@ public interface Concept extends Comparable<Concept>{
      *
      * @return A Resource Type if the concept is a Resource Type
      */
-    <D> ResourceType<D> asResourceType();
+    <D> ai.grakn.concept.ResourceType<D> asResourceType();
 
     /**
      *
      * @return A Rule Type if the concept is a Rule Type
      */
-    RuleType asRuleType();
+    ai.grakn.concept.RuleType asRuleType();
 
     /**
      *
@@ -98,7 +98,7 @@ public interface Concept extends Comparable<Concept>{
      *
      * @return A Resource if the concept is a Resource
      */
-    <D> Resource<D> asResource();
+    <D> ai.grakn.concept.Resource<D> asResource();
 
     /**
      *

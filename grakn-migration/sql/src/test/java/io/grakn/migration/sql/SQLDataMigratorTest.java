@@ -16,18 +16,18 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.migration.sql;
+package ai.grakn.migration.sql;
 
-import io.grakn.GraknGraph;
-import io.grakn.engine.GraknEngineServer;
-import io.grakn.exception.GraknValidationException;
-import io.grakn.concept.Entity;
-import io.grakn.concept.Instance;
-import io.grakn.concept.RoleType;
-import io.grakn.concept.Type;
-import io.grakn.engine.loader.BlockingLoader;
-import io.grakn.engine.util.ConfigProperties;
-import io.grakn.factory.GraphFactory;
+import ai.grakn.GraknGraph;
+import ai.grakn.engine.GraknEngineServer;
+import ai.grakn.exception.GraknValidationException;
+import ai.grakn.concept.Entity;
+import ai.grakn.concept.Instance;
+import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Type;
+import ai.grakn.engine.loader.BlockingLoader;
+import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.factory.GraphFactory;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;

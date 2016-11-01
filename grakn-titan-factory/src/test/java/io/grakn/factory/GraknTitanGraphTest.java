@@ -16,11 +16,11 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.factory;
+package ai.grakn.factory;
 
-import io.grakn.GraknGraph;
-import io.grakn.exception.GraknValidationException;
-import io.grakn.graph.internal.GraknTitanGraph;
+import ai.grakn.GraknGraph;
+import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graph.internal.GraknTitanGraph;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

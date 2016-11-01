@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.engine.loader;
+package ai.grakn.engine.loader;
 
 import mjson.Json;
 

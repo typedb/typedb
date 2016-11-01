@@ -15,11 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with GraknDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-package io.grakn.migration.owl;
+package ai.grakn.migration.owl;
 
-import io.grakn.Grakn;
-import io.grakn.GraknGraph;
-import io.grakn.engine.util.ConfigProperties;
+import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
+import ai.grakn.engine.util.ConfigProperties;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 
 import java.io.File;

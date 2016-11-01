@@ -16,14 +16,14 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.test.graql.query;
+package ai.grakn.test.graql.query;
 
 import com.google.common.collect.Sets;
-import io.grakn.graql.admin.Conjunction;
-import io.grakn.graql.admin.Disjunction;
-import io.grakn.graql.admin.PatternAdmin;
-import io.grakn.graql.admin.VarAdmin;
-import io.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.Disjunction;
+import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.pattern.Patterns;
 import org.junit.Test;
 
 import java.util.HashSet;

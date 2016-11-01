@@ -16,13 +16,13 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.pattern.property;
+package ai.grakn.graql.internal.pattern.property;
 
-import io.grakn.graql.admin.ValuePredicateAdmin;
-import io.grakn.graql.admin.VarAdmin;
-import io.grakn.graql.internal.gremlin.fragment.Fragment;
-import io.grakn.graql.internal.gremlin.fragment.Fragments;
-import io.grakn.util.ErrorMessage;
+import ai.grakn.graql.admin.ValuePredicateAdmin;
+import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import ai.grakn.util.ErrorMessage;
 
 public class ValueProperty extends AbstractVarProperty implements NamedProperty, SingleFragmentProperty {
 

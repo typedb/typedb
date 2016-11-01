@@ -16,19 +16,19 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.engine.controller;
+package ai.grakn.engine.controller;
 
 import com.theoryinpractise.halbuilder.api.Representation;
 import com.theoryinpractise.halbuilder.api.RepresentationFactory;
-import io.grakn.GraknGraph;
-import io.grakn.concept.Concept;
-import io.grakn.engine.util.ConfigProperties;
-import io.grakn.engine.visualiser.HALConcept;
-import io.grakn.exception.GraknEngineServerException;
-import io.grakn.factory.GraphFactory;
-import io.grakn.graql.MatchQuery;
-import io.grakn.graql.internal.pattern.property.RelationProperty;
-import io.grakn.util.REST;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
+import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.visualiser.HALConcept;
+import ai.grakn.exception.GraknEngineServerException;
+import ai.grakn.factory.GraphFactory;
+import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.internal.pattern.property.RelationProperty;
+import ai.grakn.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;

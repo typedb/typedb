@@ -16,10 +16,10 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graph.internal;
+package ai.grakn.graph.internal;
 
-import io.grakn.util.ErrorMessage;
-import io.grakn.util.REST;
+import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.REST;
 import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 
 /**

@@ -17,10 +17,10 @@
  *
  */
 
-package io.grakn.graql.internal.query.aggregate;
+package ai.grakn.graql.internal.query.aggregate;
 
-import io.grakn.concept.Concept;
-import io.grakn.graql.Aggregate;
+import ai.grakn.concept.Concept;
+import ai.grakn.graql.Aggregate;
 
 import java.util.Map;
 import java.util.stream.Collector;

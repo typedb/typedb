@@ -16,16 +16,16 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graph.internal;
+package ai.grakn.graph.internal;
 
-import io.grakn.Grakn;
-import io.grakn.concept.EntityType;
-import io.grakn.concept.Instance;
-import io.grakn.concept.Relation;
-import io.grakn.concept.RelationType;
-import io.grakn.concept.RoleType;
-import io.grakn.exception.GraknValidationException;
-import io.grakn.util.ErrorMessage;
+import ai.grakn.Grakn;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Instance;
+import ai.grakn.concept.Relation;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RoleType;
+import ai.grakn.exception.GraknValidationException;
+import ai.grakn.util.ErrorMessage;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;

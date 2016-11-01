@@ -15,10 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-package io.grakn.migration.owl;
+package ai.grakn.migration.owl;
 
-import io.grakn.concept.Entity;
-import io.grakn.concept.ResourceType;
+import ai.grakn.concept.Entity;
+import ai.grakn.concept.ResourceType;
 import org.semanticweb.owlapi.model.IRI;
 
 

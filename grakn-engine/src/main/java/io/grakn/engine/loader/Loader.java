@@ -16,11 +16,11 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.engine.loader;
+package ai.grakn.engine.loader;
 
-import io.grakn.graql.Graql;
-import io.grakn.graql.InsertQuery;
-import io.grakn.graql.Var;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.Var;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

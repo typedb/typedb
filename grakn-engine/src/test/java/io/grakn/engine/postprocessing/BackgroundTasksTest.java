@@ -16,21 +16,21 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.engine.postprocessing;
+package ai.grakn.engine.postprocessing;
 
-import io.grakn.Grakn;
-import io.grakn.GraknGraph;
-import io.grakn.concept.EntityType;
-import io.grakn.concept.Instance;
-import io.grakn.concept.Relation;
-import io.grakn.concept.RelationType;
-import io.grakn.concept.Resource;
-import io.grakn.concept.ResourceType;
-import io.grakn.concept.RoleType;
-import io.grakn.engine.GraknEngineTestBase;
-import io.grakn.exception.GraknValidationException;
-import io.grakn.graph.internal.AbstractGraknGraph;
-import io.grakn.util.Schema;
+import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Instance;
+import ai.grakn.concept.Relation;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Resource;
+import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.RoleType;
+import ai.grakn.engine.GraknEngineTestBase;
+import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graph.internal.AbstractGraknGraph;
+import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;

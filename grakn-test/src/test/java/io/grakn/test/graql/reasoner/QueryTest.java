@@ -16,20 +16,20 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.test.graql.reasoner;
+package ai.grakn.test.graql.reasoner;
 
 import com.google.common.collect.Sets;
-import io.grakn.GraknGraph;
-import io.grakn.graql.Graql;
-import io.grakn.graql.MatchQuery;
-import io.grakn.graql.QueryBuilder;
-import io.grakn.graql.internal.reasoner.atom.Atomic;
-import io.grakn.graql.internal.reasoner.atom.AtomicFactory;
-import io.grakn.graql.internal.reasoner.query.AtomicQuery;
-import io.grakn.graql.internal.reasoner.query.Query;
-import io.grakn.test.graql.reasoner.graphs.GenericGraph;
-import io.grakn.test.graql.reasoner.graphs.GeoGraph;
-import io.grakn.test.graql.reasoner.graphs.SNBGraph;
+import ai.grakn.GraknGraph;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.internal.reasoner.atom.Atomic;
+import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
+import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
+import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.test.graql.reasoner.graphs.GenericGraph;
+import ai.grakn.test.graql.reasoner.graphs.GeoGraph;
+import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

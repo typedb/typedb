@@ -17,7 +17,7 @@
  *
  */
 
-package io.grakn.concept;
+package ai.grakn.concept;
 
 
 

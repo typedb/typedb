@@ -16,15 +16,15 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.factory;
+package ai.grakn.factory;
 
-import io.grakn.GraknGraphFactory;
-import io.grakn.GraknComputer;
-import io.grakn.GraknGraph;
-import io.grakn.graph.internal.EngineCommunicator;
-import io.grakn.graph.internal.GraknComputerImpl;
-import io.grakn.util.ErrorMessage;
-import io.grakn.util.REST;
+import ai.grakn.GraknComputer;
+import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
+import ai.grakn.graph.internal.EngineCommunicator;
+import ai.grakn.graph.internal.GraknComputerImpl;
+import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.REST;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import java.io.BufferedWriter;
@@ -108,7 +108,7 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
                 computer = bundle.getString(COMPUTER);
             }
 
-            return new ConfigureFactory(path, computer, GraknFactoryBuilder.getFactory(keyspace, engineUrl, path));
+            return new ConfigureFactory(path, computer, ai.grakn.factory.GraknFactoryBuilder.getFactory(keyspace, engineUrl, path));
         } catch (IOException e) {
             throw new IllegalArgumentException(ErrorMessage.CONFIG_NOT_FOUND.getMessage(engineUrl, e.getMessage()));
         }
@@ -117,9 +117,9 @@ public class GraknGraphFactoryImpl implements GraknGraphFactory {
     static class ConfigureFactory {
         String path;
         String graphComputer;
-        GraknInternalFactory factory;
+        ai.grakn.factory.GraknInternalFactory factory;
 
-        ConfigureFactory(String path, String graphComputer, GraknInternalFactory factory){
+        ConfigureFactory(String path, String graphComputer, ai.grakn.factory.GraknInternalFactory factory){
             this.path = path;
             this.graphComputer = graphComputer;
             this.factory = factory;

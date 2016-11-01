@@ -16,11 +16,11 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql;
+package ai.grakn.graql;
 
-import io.grakn.GraknGraph;
-import io.grakn.concept.Concept;
-import io.grakn.graql.admin.InsertQueryAdmin;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
+import ai.grakn.graql.admin.InsertQueryAdmin;
 
 /**
  * A query for inserting data.

@@ -16,14 +16,14 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.migration.sql;
+package ai.grakn.migration.sql;
 
 import com.google.common.base.Throwables;
-import io.grakn.GraknGraph;
-import io.grakn.concept.ResourceType;
-import io.grakn.engine.loader.Loader;
-import io.grakn.graql.Var;
-import io.grakn.migration.sql.SQLModel.SQLTable;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.ResourceType;
+import ai.grakn.engine.loader.Loader;
+import ai.grakn.graql.Var;
+import ai.grakn.migration.sql.SQLModel.SQLTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

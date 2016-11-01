@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.concept;
+package ai.grakn.concept;
 
 import java.util.Collection;
 

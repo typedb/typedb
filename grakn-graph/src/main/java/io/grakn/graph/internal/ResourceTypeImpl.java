@@ -16,14 +16,14 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graph.internal;
+package ai.grakn.graph.internal;
 
-import io.grakn.concept.Resource;
-import io.grakn.concept.ResourceType;
-import io.grakn.concept.Type;
-import io.grakn.exception.InvalidConceptValueException;
-import io.grakn.util.ErrorMessage;
-import io.grakn.util.Schema;
+import ai.grakn.concept.Resource;
+import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.Type;
+import ai.grakn.exception.InvalidConceptValueException;
+import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.regex.Matcher;

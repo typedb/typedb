@@ -16,17 +16,17 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.test.orientdb.graph;
+package ai.grakn.test.orientdb.graph;
 
-import io.grakn.Grakn;
-import io.grakn.GraknGraph;
-import io.grakn.concept.Entity;
-import io.grakn.concept.EntityType;
-import io.grakn.concept.RelationType;
-import io.grakn.concept.RoleType;
-import io.grakn.engine.postprocessing.Cache;
-import io.grakn.exception.GraknValidationException;
-import io.grakn.test.AbstractRollbackGraphTest;
+import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RoleType;
+import ai.grakn.engine.postprocessing.Cache;
+import ai.grakn.exception.GraknValidationException;
+import ai.grakn.test.AbstractRollbackGraphTest;
 import org.junit.Ignore;
 import org.junit.Test;
 

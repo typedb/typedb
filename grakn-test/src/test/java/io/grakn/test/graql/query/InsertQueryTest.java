@@ -16,19 +16,19 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.test.graql.query;
+package ai.grakn.test.graql.query;
 
 import com.google.common.collect.Sets;
-import io.grakn.concept.Concept;
-import io.grakn.concept.EntityType;
-import io.grakn.concept.ResourceType;
-import io.grakn.example.MovieGraphFactory;
-import io.grakn.graql.InsertQuery;
-import io.grakn.graql.MatchQuery;
-import io.grakn.graql.Pattern;
-import io.grakn.graql.QueryBuilder;
-import io.grakn.graql.Var;
-import io.grakn.test.AbstractMovieGraphTest;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.ResourceType;
+import ai.grakn.example.MovieGraphFactory;
+import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Pattern;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.Var;
+import ai.grakn.test.AbstractMovieGraphTest;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

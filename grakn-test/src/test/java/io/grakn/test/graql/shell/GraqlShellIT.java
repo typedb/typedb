@@ -16,12 +16,12 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.test.graql.shell;
+package ai.grakn.test.graql.shell;
 
 import com.google.common.base.Strings;
-import io.grakn.graql.GraqlClientImpl;
-import io.grakn.graql.GraqlShell;
-import io.grakn.test.AbstractRollbackGraphTest;
+import ai.grakn.graql.GraqlClientImpl;
+import ai.grakn.graql.GraqlShell;
+import ai.grakn.test.AbstractRollbackGraphTest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;

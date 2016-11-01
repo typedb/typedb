@@ -16,16 +16,16 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql;
+package ai.grakn.graql;
 
 import com.google.common.collect.ImmutableSet;
-import io.grakn.GraknGraph;
-import io.grakn.graql.admin.VarAdmin;
-import io.grakn.graql.internal.parser.QueryParser;
-import io.grakn.graql.internal.pattern.Patterns;
-import io.grakn.graql.internal.query.Queries;
-import io.grakn.graql.internal.template.TemplateParser;
-import io.grakn.graql.internal.util.AdminConverter;
+import ai.grakn.GraknGraph;
+import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.parser.QueryParser;
+import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.query.Queries;
+import ai.grakn.graql.internal.template.TemplateParser;
+import ai.grakn.graql.internal.util.AdminConverter;
 
 import java.io.InputStream;
 import java.util.Arrays;

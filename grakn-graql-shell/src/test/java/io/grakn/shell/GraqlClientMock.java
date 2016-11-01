@@ -16,12 +16,12 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.shell;
+package ai.grakn.shell;
 
-import io.grakn.Grakn;
-import io.grakn.engine.session.RemoteSession;
-import io.grakn.graql.GraqlClient;
-import io.grakn.graql.GraqlShell;
+import ai.grakn.Grakn;
+import ai.grakn.engine.session.RemoteSession;
+import ai.grakn.graql.GraqlClient;
+import ai.grakn.graql.GraqlShell;
 import org.eclipse.jetty.websocket.api.Session;
 
 import java.net.URI;

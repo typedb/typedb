@@ -16,9 +16,9 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graph.internal;
+package ai.grakn.graph.internal;
 
-import io.grakn.util.Schema;
+import ai.grakn.util.Schema;
 
 import java.util.HashSet;
 import java.util.Set;

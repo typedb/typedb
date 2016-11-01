@@ -16,19 +16,19 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.reasoner;
+package ai.grakn.graql.internal.reasoner;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import io.grakn.GraknGraph;
-import io.grakn.concept.*;
-import io.grakn.graql.Graql;
-import io.grakn.graql.Var;
-import io.grakn.graql.admin.VarAdmin;
-import io.grakn.graql.internal.pattern.Patterns;
-import io.grakn.graql.MatchQuery;
-import io.grakn.util.ErrorMessage;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.*;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.MatchQuery;
+import ai.grakn.util.ErrorMessage;
 import javafx.util.Pair;
 
 import java.util.*;

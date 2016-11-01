@@ -16,13 +16,13 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.test.graql.reasoner.graphs;
+package ai.grakn.test.graql.reasoner.graphs;
 
-import io.grakn.Grakn;
-import io.grakn.GraknGraph;
-import io.grakn.exception.GraknValidationException;
-import io.grakn.graql.Graql;
-import io.grakn.graql.QueryBuilder;
+import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
+import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.QueryBuilder;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

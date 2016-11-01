@@ -17,10 +17,10 @@
  *
  */
 
-package io.grakn.concept;
+package ai.grakn.concept;
 
 
-import io.grakn.exception.ConceptException;
+import ai.grakn.exception.ConceptException;
 
 import java.util.Collection;
 import java.util.Map;

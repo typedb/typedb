@@ -16,24 +16,24 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.reasoner.query;
+package ai.grakn.graql.internal.reasoner.query;
 
 import com.google.common.collect.Sets;
-import io.grakn.GraknGraph;
-import io.grakn.concept.Concept;
-import io.grakn.concept.Type;
-import io.grakn.graql.Graql;
-import io.grakn.graql.MatchQuery;
-import io.grakn.graql.admin.Conjunction;
-import io.grakn.graql.internal.query.match.MatchOrder;
-import io.grakn.graql.internal.query.match.MatchQueryInternal;
-import io.grakn.graql.internal.reasoner.atom.Atom;
-import io.grakn.graql.internal.reasoner.atom.Predicate;
-import io.grakn.util.ErrorMessage;
-import io.grakn.graql.admin.PatternAdmin;
-import io.grakn.graql.internal.pattern.Patterns;
-import io.grakn.graql.internal.reasoner.atom.Atomic;
-import io.grakn.graql.internal.reasoner.atom.AtomicFactory;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.Type;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.internal.query.match.MatchOrder;
+import ai.grakn.graql.internal.query.match.MatchQueryInternal;
+import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.Predicate;
+import ai.grakn.util.ErrorMessage;
+import ai.grakn.graql.admin.PatternAdmin;
+import ai.grakn.graql.internal.pattern.Patterns;
+import ai.grakn.graql.internal.reasoner.atom.Atomic;
+import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;

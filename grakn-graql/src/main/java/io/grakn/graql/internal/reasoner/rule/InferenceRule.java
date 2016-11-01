@@ -1,15 +1,15 @@
-package io.grakn.graql.internal.reasoner.rule;
+package ai.grakn.graql.internal.reasoner.rule;
 
-import io.grakn.GraknGraph;
-import io.grakn.concept.Rule;
-import io.grakn.concept.Type;
-import io.grakn.graql.Graql;
-import io.grakn.graql.QueryBuilder;
-import io.grakn.graql.internal.reasoner.atom.Atom;
-import io.grakn.graql.internal.reasoner.atom.Atomic;
-import io.grakn.graql.internal.reasoner.query.AtomicQuery;
-import io.grakn.graql.internal.reasoner.query.Query;
-import io.grakn.util.ErrorMessage;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Rule;
+import ai.grakn.concept.Type;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.Atomic;
+import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
+import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.util.ErrorMessage;
 
 import java.util.Collection;
 import java.util.HashSet;

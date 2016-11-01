@@ -16,11 +16,11 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.engine.postprocessing;
+package ai.grakn.engine.postprocessing;
 
-import io.grakn.engine.loader.RESTLoader;
-import io.grakn.engine.util.ConfigProperties;
-import io.grakn.factory.GraphFactory;
+import ai.grakn.engine.loader.RESTLoader;
+import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.factory.GraphFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

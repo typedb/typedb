@@ -1,6 +1,6 @@
-package io.grakn.graql.internal.gremlin.fragment;
+package ai.grakn.graql.internal.gremlin.fragment;
 
-import io.grakn.graql.internal.gremlin.FragmentPriority;
+import ai.grakn.graql.internal.gremlin.FragmentPriority;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;

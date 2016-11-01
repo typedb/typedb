@@ -17,10 +17,10 @@
  *
  */
 
-package io.grakn.graql.admin;
+package ai.grakn.graql.admin;
 
-import io.grakn.graql.DeleteQuery;
-import io.grakn.graql.MatchQuery;
+import ai.grakn.graql.DeleteQuery;
+import ai.grakn.graql.MatchQuery;
 
 import java.util.Collection;
 

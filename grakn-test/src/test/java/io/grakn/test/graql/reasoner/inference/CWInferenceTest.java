@@ -16,16 +16,16 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.test.graql.reasoner.inference;
+package ai.grakn.test.graql.reasoner.inference;
 
 import com.google.common.collect.Sets;
-import io.grakn.GraknGraph;
-import io.grakn.concept.RuleType;
-import io.grakn.graql.Graql;
-import io.grakn.graql.MatchQuery;
-import io.grakn.graql.QueryBuilder;
-import io.grakn.graql.Reasoner;
-import io.grakn.test.graql.reasoner.graphs.CWGraph;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.RuleType;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.Reasoner;
+import ai.grakn.test.graql.reasoner.graphs.CWGraph;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

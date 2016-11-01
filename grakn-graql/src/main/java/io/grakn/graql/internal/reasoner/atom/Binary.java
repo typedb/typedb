@@ -1,11 +1,11 @@
-package io.grakn.graql.internal.reasoner.atom;
+package ai.grakn.graql.internal.reasoner.atom;
 
 
 import com.google.common.collect.Sets;
-import io.grakn.graql.admin.VarAdmin;
-import io.grakn.graql.internal.pattern.property.HasResourceProperty;
-import io.grakn.graql.internal.reasoner.query.Query;
-import io.grakn.util.ErrorMessage;
+import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
+import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.util.ErrorMessage;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;

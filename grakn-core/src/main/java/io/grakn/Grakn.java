@@ -1,4 +1,4 @@
-package io.grakn;
+package ai.grakn;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -16,13 +16,13 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.test.graql.examples;
+package ai.grakn.test.graql.examples;
 
-import io.grakn.graql.Graql;
-import io.grakn.graql.InsertQuery;
-import io.grakn.graql.MatchQuery;
-import io.grakn.graql.QueryBuilder;
-import io.grakn.test.AbstractRollbackGraphTest;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.test.AbstractRollbackGraphTest;
 import org.junit.Before;
 import org.junit.Test;
 

@@ -16,17 +16,17 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql;
+package ai.grakn.graql;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.io.CharStreams;
-import io.grakn.graql.internal.shell.ErrorMessage;
-import io.grakn.graql.internal.shell.GraQLCompleter;
-import io.grakn.graql.internal.shell.GraqlSignalHandler;
-import io.grakn.graql.internal.shell.ShellCommandCompleter;
-import io.grakn.util.Version;
+import ai.grakn.graql.internal.shell.ErrorMessage;
+import ai.grakn.graql.internal.shell.GraQLCompleter;
+import ai.grakn.graql.internal.shell.GraqlSignalHandler;
+import ai.grakn.graql.internal.shell.ShellCommandCompleter;
+import ai.grakn.util.Version;
 import jline.console.ConsoleReader;
 import jline.console.completer.AggregateCompleter;
 import jline.console.history.FileHistory;

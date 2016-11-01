@@ -15,10 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-package io.grakn.migration.export;
+package ai.grakn.migration.export;
 
-import io.grakn.example.MovieGraphFactory;
-import io.grakn.graql.Graql;
+import ai.grakn.example.MovieGraphFactory;
+import ai.grakn.graql.Graql;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

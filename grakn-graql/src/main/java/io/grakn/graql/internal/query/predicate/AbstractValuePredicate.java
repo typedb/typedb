@@ -16,12 +16,12 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.query.predicate;
+package ai.grakn.graql.internal.query.predicate;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import io.grakn.graql.ValuePredicate;
-import io.grakn.graql.admin.ValuePredicateAdmin;
+import ai.grakn.graql.ValuePredicate;
+import ai.grakn.graql.admin.ValuePredicateAdmin;
 
 import java.util.Collections;
 import java.util.Set;

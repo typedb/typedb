@@ -16,13 +16,13 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.pattern.property;
+package ai.grakn.graql.internal.pattern.property;
 
-import io.grakn.concept.Concept;
-import io.grakn.graql.admin.UniqueVarProperty;
-import io.grakn.graql.internal.gremlin.fragment.Fragment;
-import io.grakn.graql.internal.gremlin.fragment.Fragments;
-import io.grakn.graql.internal.query.InsertQueryExecutor;
+import ai.grakn.concept.Concept;
+import ai.grakn.graql.admin.UniqueVarProperty;
+import ai.grakn.graql.internal.gremlin.fragment.Fragment;
+import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import ai.grakn.graql.internal.query.InsertQueryExecutor;
 
 public class IsAbstractProperty extends AbstractVarProperty implements UniqueVarProperty, SingleFragmentProperty {
 

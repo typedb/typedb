@@ -16,12 +16,12 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.shell;
+package ai.grakn.shell;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.base.Strings;
-import io.grakn.graql.GraqlShell;
+import ai.grakn.graql.GraqlShell;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;

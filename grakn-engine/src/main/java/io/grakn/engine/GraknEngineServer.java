@@ -15,12 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-package io.grakn.engine;
+package ai.grakn.engine;
 
 
-import io.grakn.engine.controller.*;
-import io.grakn.engine.util.ConfigProperties;
-import io.grakn.exception.GraknEngineServerException;
+import ai.grakn.engine.controller.*;
+import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.exception.GraknEngineServerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Spark;

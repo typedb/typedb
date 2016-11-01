@@ -16,18 +16,18 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.engine.controller;
+package ai.grakn.engine.controller;
 
-import io.grakn.engine.loader.BlockingLoader;
-import io.grakn.engine.loader.DistributedLoader;
-import io.grakn.engine.loader.Loader;
-import io.grakn.engine.postprocessing.BackgroundTasks;
-import io.grakn.engine.util.ConfigProperties;
-import io.grakn.exception.GraknEngineServerException;
-import io.grakn.graql.Var;
-import io.grakn.graql.admin.VarAdmin;
-import io.grakn.util.ErrorMessage;
-import io.grakn.util.REST;
+import ai.grakn.engine.loader.BlockingLoader;
+import ai.grakn.engine.loader.DistributedLoader;
+import ai.grakn.engine.loader.Loader;
+import ai.grakn.engine.postprocessing.BackgroundTasks;
+import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.exception.GraknEngineServerException;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;

@@ -17,12 +17,12 @@
  *
  */
 
-package io.grakn.graql.internal.query.match;
+package ai.grakn.graql.internal.query.match;
 
-import io.grakn.GraknGraph;
-import io.grakn.concept.Concept;
-import io.grakn.concept.Type;
-import io.grakn.util.ErrorMessage;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.Type;
+import ai.grakn.util.ErrorMessage;
 
 import java.util.Map;
 import java.util.Optional;

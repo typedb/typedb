@@ -16,7 +16,7 @@
  *  along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.exception;
+package ai.grakn.exception;
 
 /**
  * Thrown when the value of a resource does not match the resources datatype.

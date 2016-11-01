@@ -16,19 +16,19 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.example;
+package ai.grakn.example;
 
-import io.grakn.GraknGraph;
-import io.grakn.concept.Entity;
-import io.grakn.concept.EntityType;
-import io.grakn.concept.Instance;
-import io.grakn.concept.RelationType;
-import io.grakn.concept.Resource;
-import io.grakn.concept.ResourceType;
-import io.grakn.concept.RoleType;
-import io.grakn.concept.RuleType;
-import io.grakn.exception.GraknValidationException;
-import io.grakn.util.ErrorMessage;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Instance;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Resource;
+import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.RoleType;
+import ai.grakn.concept.RuleType;
+import ai.grakn.exception.GraknValidationException;
+import ai.grakn.util.ErrorMessage;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;

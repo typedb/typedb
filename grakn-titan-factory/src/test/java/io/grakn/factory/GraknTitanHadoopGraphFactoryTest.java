@@ -16,7 +16,7 @@
  *  along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.factory;
+package ai.grakn.factory;
 
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.junit.Before;

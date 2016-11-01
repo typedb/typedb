@@ -1,7 +1,7 @@
-package io.grakn.graph.internal;
+package ai.grakn.graph.internal;
 
-import io.grakn.util.ErrorMessage;
-import io.grakn.util.Schema;
+import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.orientdb.OrientGraph;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;

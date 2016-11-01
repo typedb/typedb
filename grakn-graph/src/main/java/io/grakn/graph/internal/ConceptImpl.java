@@ -16,27 +16,27 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graph.internal;
+package ai.grakn.graph.internal;
 
-import io.grakn.concept.Concept;
-import io.grakn.concept.Entity;
-import io.grakn.concept.EntityType;
-import io.grakn.concept.Instance;
-import io.grakn.concept.Relation;
-import io.grakn.concept.RelationType;
-import io.grakn.concept.Resource;
-import io.grakn.concept.ResourceType;
-import io.grakn.concept.RoleType;
-import io.grakn.concept.Rule;
-import io.grakn.concept.RuleType;
-import io.grakn.concept.Type;
-import io.grakn.exception.ConceptException;
-import io.grakn.exception.ConceptNotUniqueException;
-import io.grakn.exception.InvalidConceptTypeException;
-import io.grakn.exception.InvalidConceptValueException;
-import io.grakn.exception.MoreThanOneEdgeException;
-import io.grakn.util.ErrorMessage;
-import io.grakn.util.Schema;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Instance;
+import ai.grakn.concept.Relation;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Resource;
+import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Rule;
+import ai.grakn.concept.RuleType;
+import ai.grakn.concept.Type;
+import ai.grakn.exception.ConceptException;
+import ai.grakn.exception.ConceptNotUniqueException;
+import ai.grakn.exception.InvalidConceptTypeException;
+import ai.grakn.exception.InvalidConceptValueException;
+import ai.grakn.exception.MoreThanOneEdgeException;
+import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;

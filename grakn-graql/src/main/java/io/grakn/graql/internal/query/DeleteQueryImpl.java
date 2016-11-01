@@ -16,20 +16,20 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.query;
+package ai.grakn.graql.internal.query;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import io.grakn.GraknGraph;
-import io.grakn.concept.Concept;
-import io.grakn.exception.ConceptException;
-import io.grakn.graql.DeleteQuery;
-import io.grakn.graql.MatchQuery;
-import io.grakn.graql.admin.DeleteQueryAdmin;
-import io.grakn.graql.admin.MatchQueryAdmin;
-import io.grakn.graql.admin.VarAdmin;
-import io.grakn.graql.internal.pattern.property.VarPropertyInternal;
-import io.grakn.util.ErrorMessage;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
+import ai.grakn.exception.ConceptException;
+import ai.grakn.graql.DeleteQuery;
+import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.admin.DeleteQueryAdmin;
+import ai.grakn.graql.admin.MatchQueryAdmin;
+import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.pattern.property.VarPropertyInternal;
+import ai.grakn.util.ErrorMessage;
 
 import java.util.Collection;
 import java.util.stream.Stream;

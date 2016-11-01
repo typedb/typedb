@@ -1,9 +1,9 @@
-package io.grakn.graql.internal.reasoner.query;
+package ai.grakn.graql.internal.reasoner.query;
 
 
-import io.grakn.GraknGraph;
-import io.grakn.concept.Concept;
-import io.grakn.graql.MatchQuery;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
+import ai.grakn.graql.MatchQuery;
 
 import java.util.Map;
 import java.util.stream.Stream;

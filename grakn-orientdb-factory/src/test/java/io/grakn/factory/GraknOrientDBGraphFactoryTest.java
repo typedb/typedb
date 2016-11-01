@@ -1,11 +1,11 @@
-package io.grakn.factory;
+package ai.grakn.factory;
 
-import io.grakn.concept.EntityType;
-import io.grakn.concept.RoleType;
-import io.grakn.exception.GraknValidationException;
-import io.grakn.graph.internal.AbstractGraknGraph;
-import io.grakn.graph.internal.GraknOrientDBGraph;
-import io.grakn.util.Schema;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.RoleType;
+import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graph.internal.AbstractGraknGraph;
+import ai.grakn.graph.internal.GraknOrientDBGraph;
+import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.orientdb.OrientGraph;
 import org.junit.After;
 import org.junit.Before;

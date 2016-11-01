@@ -16,37 +16,37 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.pattern;
+package ai.grakn.graql.internal.pattern;
 
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.Maps;
-import io.grakn.concept.ResourceType;
-import io.grakn.graql.ValuePredicate;
-import io.grakn.graql.Var;
-import io.grakn.graql.admin.Conjunction;
-import io.grakn.graql.admin.Disjunction;
-import io.grakn.graql.admin.UniqueVarProperty;
-import io.grakn.graql.admin.ValuePredicateAdmin;
-import io.grakn.graql.admin.VarAdmin;
-import io.grakn.graql.admin.VarProperty;
-import io.grakn.graql.internal.pattern.property.SubProperty;
-import io.grakn.graql.internal.pattern.property.DataTypeProperty;
-import io.grakn.graql.internal.pattern.property.HasResourceProperty;
-import io.grakn.graql.internal.pattern.property.HasResourceTypeProperty;
-import io.grakn.graql.internal.pattern.property.HasRoleProperty;
-import io.grakn.graql.internal.pattern.property.HasScopeProperty;
-import io.grakn.graql.internal.pattern.property.IdProperty;
-import io.grakn.graql.internal.pattern.property.IsAbstractProperty;
-import io.grakn.graql.internal.pattern.property.IsaProperty;
-import io.grakn.graql.internal.pattern.property.LhsProperty;
-import io.grakn.graql.internal.pattern.property.PlaysRoleProperty;
-import io.grakn.graql.internal.pattern.property.RegexProperty;
-import io.grakn.graql.internal.pattern.property.RelationProperty;
-import io.grakn.graql.internal.pattern.property.RhsProperty;
-import io.grakn.graql.internal.pattern.property.ValueFlagProperty;
-import io.grakn.graql.internal.pattern.property.ValueProperty;
-import io.grakn.graql.internal.util.CommonUtil;
-import io.grakn.graql.internal.util.StringConverter;
+import ai.grakn.concept.ResourceType;
+import ai.grakn.graql.ValuePredicate;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.Conjunction;
+import ai.grakn.graql.admin.Disjunction;
+import ai.grakn.graql.admin.UniqueVarProperty;
+import ai.grakn.graql.admin.ValuePredicateAdmin;
+import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.pattern.property.SubProperty;
+import ai.grakn.graql.internal.pattern.property.DataTypeProperty;
+import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
+import ai.grakn.graql.internal.pattern.property.HasResourceTypeProperty;
+import ai.grakn.graql.internal.pattern.property.HasRoleProperty;
+import ai.grakn.graql.internal.pattern.property.HasScopeProperty;
+import ai.grakn.graql.internal.pattern.property.IdProperty;
+import ai.grakn.graql.internal.pattern.property.IsAbstractProperty;
+import ai.grakn.graql.internal.pattern.property.IsaProperty;
+import ai.grakn.graql.internal.pattern.property.LhsProperty;
+import ai.grakn.graql.internal.pattern.property.PlaysRoleProperty;
+import ai.grakn.graql.internal.pattern.property.RegexProperty;
+import ai.grakn.graql.internal.pattern.property.RelationProperty;
+import ai.grakn.graql.internal.pattern.property.RhsProperty;
+import ai.grakn.graql.internal.pattern.property.ValueFlagProperty;
+import ai.grakn.graql.internal.pattern.property.ValueProperty;
+import ai.grakn.graql.internal.util.CommonUtil;
+import ai.grakn.graql.internal.util.StringConverter;
 
 import java.util.Collection;
 import java.util.Collections;

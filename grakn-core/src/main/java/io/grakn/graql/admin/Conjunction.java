@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.admin;
+package ai.grakn.graql.admin;
 
 import java.util.Set;
 

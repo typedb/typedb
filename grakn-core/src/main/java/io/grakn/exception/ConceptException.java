@@ -16,7 +16,7 @@
  *  along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.exception;
+package ai.grakn.exception;
 
 /**
  * This Exception is thrown when a concept is malformed or incorrect in some way.

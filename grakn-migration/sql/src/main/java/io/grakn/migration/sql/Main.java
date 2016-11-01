@@ -16,13 +16,13 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.migration.sql;
+package ai.grakn.migration.sql;
 
 import com.google.common.collect.Lists;
-import io.grakn.engine.loader.BlockingLoader;
-import io.grakn.engine.loader.DistributedLoader;
-import io.grakn.engine.loader.Loader;
-import io.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.loader.BlockingLoader;
+import ai.grakn.engine.loader.DistributedLoader;
+import ai.grakn.engine.loader.Loader;
+import ai.grakn.engine.util.ConfigProperties;
 
 import java.sql.Connection;
 import java.sql.DriverManager;

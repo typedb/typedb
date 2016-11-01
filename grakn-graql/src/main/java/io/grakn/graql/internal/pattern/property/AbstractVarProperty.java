@@ -16,15 +16,15 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.pattern.property;
+package ai.grakn.graql.internal.pattern.property;
 
-import io.grakn.GraknGraph;
-import io.grakn.concept.Concept;
-import io.grakn.graql.admin.VarAdmin;
-import io.grakn.graql.admin.VarProperty;
-import io.grakn.graql.internal.query.InsertQueryExecutor;
-import io.grakn.graql.internal.util.CommonUtil;
-import io.grakn.util.ErrorMessage;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
+import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.admin.VarProperty;
+import ai.grakn.graql.internal.query.InsertQueryExecutor;
+import ai.grakn.graql.internal.util.CommonUtil;
+import ai.grakn.util.ErrorMessage;
 
 import java.util.stream.Stream;
 

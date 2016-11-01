@@ -17,10 +17,10 @@
  *
  */
 
-package io.grakn.graql.admin;
+package ai.grakn.graql.admin;
 
-import io.grakn.graql.AskQuery;
-import io.grakn.graql.MatchQuery;
+import ai.grakn.graql.AskQuery;
+import ai.grakn.graql.MatchQuery;
 
 /**
  * Admin class for inspecting and manipulating an AskQuery

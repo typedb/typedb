@@ -15,11 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-package io.grakn.graql.internal.reasoner.atom;
+package ai.grakn.graql.internal.reasoner.atom;
 
-import io.grakn.graql.admin.VarAdmin;
-import io.grakn.graql.internal.pattern.property.HasResourceProperty;
-import io.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.pattern.property.HasResourceProperty;
+import ai.grakn.graql.internal.reasoner.query.Query;
 import java.util.Set;
 import java.util.stream.Collectors;
 

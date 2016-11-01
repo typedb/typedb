@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.util;
+package ai.grakn.util;
 
 /**
  * A type enum which restricts the types of links/concepts which can be created

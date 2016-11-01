@@ -16,13 +16,13 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.test.graql.query;
+package ai.grakn.test.graql.query;
 
-import io.grakn.graql.AskQuery;
-import io.grakn.graql.DeleteQuery;
-import io.grakn.graql.InsertQuery;
-import io.grakn.graql.MatchQuery;
-import io.grakn.test.AbstractMovieGraphTest;
+import ai.grakn.graql.AskQuery;
+import ai.grakn.graql.DeleteQuery;
+import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.MatchQuery;
+import ai.grakn.test.AbstractMovieGraphTest;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;

@@ -16,24 +16,24 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.pattern.property;
+package ai.grakn.graql.internal.pattern.property;
 
 import com.google.common.collect.Sets;
-import io.grakn.GraknGraph;
-import io.grakn.concept.Concept;
-import io.grakn.concept.Instance;
-import io.grakn.concept.Relation;
-import io.grakn.concept.RelationType;
-import io.grakn.concept.Resource;
-import io.grakn.concept.ResourceType;
-import io.grakn.concept.RoleType;
-import io.grakn.graql.admin.ValuePredicateAdmin;
-import io.grakn.graql.admin.VarAdmin;
-import io.grakn.graql.internal.gremlin.EquivalentFragmentSet;
-import io.grakn.graql.internal.gremlin.fragment.Fragments;
-import io.grakn.graql.internal.query.InsertQueryExecutor;
-import io.grakn.graql.internal.util.GraqlType;
-import io.grakn.util.ErrorMessage;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.Instance;
+import ai.grakn.concept.Relation;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Resource;
+import ai.grakn.concept.ResourceType;
+import ai.grakn.concept.RoleType;
+import ai.grakn.graql.admin.ValuePredicateAdmin;
+import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.gremlin.EquivalentFragmentSet;
+import ai.grakn.graql.internal.gremlin.fragment.Fragments;
+import ai.grakn.graql.internal.query.InsertQueryExecutor;
+import ai.grakn.graql.internal.util.GraqlType;
+import ai.grakn.util.ErrorMessage;
 
 import java.util.Collection;
 import java.util.HashSet;

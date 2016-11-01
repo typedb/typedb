@@ -16,10 +16,10 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.engine.session;
+package ai.grakn.engine.session;
 
-import io.grakn.GraknGraph;
-import io.grakn.factory.GraphFactory;
+import ai.grakn.GraknGraph;
+import ai.grakn.factory.GraphFactory;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;

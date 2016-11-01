@@ -16,14 +16,14 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.migration.csv;
+package ai.grakn.migration.csv;
 
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
-import io.grakn.engine.loader.BlockingLoader;
-import io.grakn.engine.loader.DistributedLoader;
-import io.grakn.engine.loader.Loader;
-import io.grakn.engine.util.ConfigProperties;
+import ai.grakn.engine.loader.BlockingLoader;
+import ai.grakn.engine.loader.DistributedLoader;
+import ai.grakn.engine.loader.Loader;
+import ai.grakn.engine.util.ConfigProperties;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;

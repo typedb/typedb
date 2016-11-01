@@ -17,11 +17,11 @@
  *
  */
 
-package io.grakn.graql;
+package ai.grakn.graql;
 
-import io.grakn.GraknGraph;
-import io.grakn.concept.Concept;
-import io.grakn.graql.admin.MatchQueryAdmin;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
+import ai.grakn.graql.admin.MatchQueryAdmin;
 
 import java.util.*;
 import java.util.stream.Stream;

@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.shell;import org.eclipse.jetty.websocket.api.*;
+package ai.grakn.shell;import org.eclipse.jetty.websocket.api.*;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;

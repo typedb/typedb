@@ -15,18 +15,18 @@
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-package io.grakn.graql.internal.reasoner.atom;
+package ai.grakn.graql.internal.reasoner.atom;
 
-import io.grakn.GraknGraph;
-import io.grakn.concept.RelationType;
-import io.grakn.concept.RoleType;
-import io.grakn.concept.Rule;
-import io.grakn.concept.Type;
-import io.grakn.graql.Graql;
-import io.grakn.graql.Reasoner;
-import io.grakn.graql.Var;
-import io.grakn.graql.admin.VarAdmin;
-import io.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Rule;
+import ai.grakn.concept.Type;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.Reasoner;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.reasoner.query.Query;
 import javafx.util.Pair;
 
 import java.util.*;

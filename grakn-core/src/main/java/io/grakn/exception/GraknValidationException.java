@@ -16,7 +16,7 @@
  *  along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.exception;
+package ai.grakn.exception;
 
 /**
  * Thrown when a grakn validation rule is broken. {@see io.grakn.core.implementation.Validator} for more details

@@ -16,10 +16,10 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.test.graql.parser;
+package ai.grakn.test.graql.parser;
 
-import io.grakn.graql.Pattern;
-import io.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.Pattern;
+import ai.grakn.graql.admin.VarAdmin;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;

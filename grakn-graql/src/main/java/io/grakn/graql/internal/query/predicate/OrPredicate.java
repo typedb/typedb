@@ -16,10 +16,10 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.query.predicate;
+package ai.grakn.graql.internal.query.predicate;
 
 import com.google.common.collect.ImmutableSet;
-import io.grakn.graql.admin.ValuePredicateAdmin;
+import ai.grakn.graql.admin.ValuePredicateAdmin;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 class OrPredicate extends AbstractValuePredicate {

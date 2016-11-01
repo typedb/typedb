@@ -17,9 +17,9 @@
  *
  */
 
-package io.grakn.graql;
+package ai.grakn.graql;
 
-import io.grakn.GraknGraph;
+import ai.grakn.GraknGraph;
 
 /**
  * An aggregate query produced from a {@link MatchQuery}.

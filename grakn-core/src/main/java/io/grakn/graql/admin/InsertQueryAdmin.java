@@ -17,12 +17,12 @@
  *
  */
 
-package io.grakn.graql.admin;
+package ai.grakn.graql.admin;
 
-import io.grakn.GraknGraph;
-import io.grakn.concept.Type;
-import io.grakn.graql.InsertQuery;
-import io.grakn.graql.MatchQuery;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Type;
+import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.MatchQuery;
 
 import java.util.Collection;
 import java.util.Optional;

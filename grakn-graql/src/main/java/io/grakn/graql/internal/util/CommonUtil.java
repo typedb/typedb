@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.util;
+package ai.grakn.graql.internal.util;
 
 import com.google.common.collect.ImmutableMultiset;
 import com.google.common.collect.ImmutableSet;

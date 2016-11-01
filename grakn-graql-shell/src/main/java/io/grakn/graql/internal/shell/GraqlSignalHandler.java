@@ -16,9 +16,9 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.shell;
+package ai.grakn.graql.internal.shell;
 
-import io.grakn.graql.GraqlShell;
+import ai.grakn.graql.GraqlShell;
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
 

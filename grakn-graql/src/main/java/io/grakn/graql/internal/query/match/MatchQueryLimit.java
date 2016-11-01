@@ -16,9 +16,9 @@
  *  along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.query.match;
+package ai.grakn.graql.internal.query.match;
 
-import io.grakn.concept.Concept;
+import ai.grakn.concept.Concept;
 
 import java.util.Map;
 import java.util.stream.Stream;

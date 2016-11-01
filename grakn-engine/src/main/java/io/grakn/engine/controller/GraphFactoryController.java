@@ -16,13 +16,13 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.engine.controller;
+package ai.grakn.engine.controller;
 
 
-import io.grakn.engine.util.ConfigProperties;
-import io.grakn.exception.GraknEngineServerException;
-import io.grakn.util.ErrorMessage;
-import io.grakn.util.REST;
+import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.exception.GraknEngineServerException;
+import ai.grakn.util.ErrorMessage;
+import ai.grakn.util.REST;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

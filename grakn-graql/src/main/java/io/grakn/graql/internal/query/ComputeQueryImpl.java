@@ -16,14 +16,14 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.query;
+package ai.grakn.graql.internal.query;
 
-import io.grakn.GraknGraph;
-import io.grakn.exception.InvalidConceptTypeException;
-import io.grakn.graql.ComputeQuery;
-import io.grakn.graql.internal.analytics.Analytics;
-import io.grakn.graql.internal.util.StringConverter;
-import io.grakn.util.ErrorMessage;
+import ai.grakn.GraknGraph;
+import ai.grakn.exception.InvalidConceptTypeException;
+import ai.grakn.graql.ComputeQuery;
+import ai.grakn.graql.internal.analytics.Analytics;
+import ai.grakn.graql.internal.util.StringConverter;
+import ai.grakn.util.ErrorMessage;
 
 import java.io.Serializable;
 import java.util.Map;

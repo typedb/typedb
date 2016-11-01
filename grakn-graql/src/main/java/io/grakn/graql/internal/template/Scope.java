@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.template;
+package ai.grakn.graql.internal.template;
 
 import com.google.common.collect.Sets;
 

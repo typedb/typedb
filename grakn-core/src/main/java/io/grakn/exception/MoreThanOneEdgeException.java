@@ -16,11 +16,11 @@
  *  along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.exception;
+package ai.grakn.exception;
 
-import io.grakn.util.Schema;
-import io.grakn.util.ErrorMessage;
-import io.grakn.concept.Concept;
+import ai.grakn.util.Schema;
+import ai.grakn.util.ErrorMessage;
+import ai.grakn.concept.Concept;
 
 /**
  * Thrown when more than one edge appears between two oncepts when it should not be the case.

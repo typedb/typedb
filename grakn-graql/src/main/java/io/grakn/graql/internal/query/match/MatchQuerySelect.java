@@ -16,12 +16,12 @@
  *  along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.query.match;
+package ai.grakn.graql.internal.query.match;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
-import io.grakn.concept.Concept;
-import io.grakn.util.ErrorMessage;
+import ai.grakn.concept.Concept;
+import ai.grakn.util.ErrorMessage;
 
 import java.util.Map;
 import java.util.Set;

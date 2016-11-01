@@ -17,13 +17,13 @@
  *
  */
 
-package io.grakn.test.graql.query;
+package ai.grakn.test.graql.query;
 
-import io.grakn.concept.Concept;
-import io.grakn.concept.Instance;
-import io.grakn.graql.AggregateQuery;
-import io.grakn.graql.QueryBuilder;
-import io.grakn.test.AbstractMovieGraphTest;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.Instance;
+import ai.grakn.graql.AggregateQuery;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.test.AbstractMovieGraphTest;
 import org.junit.Before;
 import org.junit.Test;
 

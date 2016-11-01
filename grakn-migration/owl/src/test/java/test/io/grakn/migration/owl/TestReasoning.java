@@ -19,13 +19,13 @@
 package test.io.grakn.migration.owl;
 
 import com.google.common.collect.Sets;
-import io.grakn.concept.Concept;
-import io.grakn.exception.GraknValidationException;
-import io.grakn.graql.Graql;
-import io.grakn.graql.MatchQuery;
-import io.grakn.graql.QueryBuilder;
-import io.grakn.graql.internal.reasoner.query.Query;
-import io.grakn.graql.internal.reasoner.query.QueryAnswers;
+import ai.grakn.concept.Concept;
+import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.QueryBuilder;
+import ai.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import org.junit.Before;
 import org.junit.Test;
 import org.semanticweb.HermiT.Configuration;

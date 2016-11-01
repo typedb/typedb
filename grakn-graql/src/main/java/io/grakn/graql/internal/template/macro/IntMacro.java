@@ -16,9 +16,9 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.template.macro;
+package ai.grakn.graql.internal.template.macro;
 
-import io.grakn.graql.internal.template.Value;
+import ai.grakn.graql.internal.template.Value;
 
 import java.util.List;
 

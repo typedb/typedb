@@ -17,25 +17,25 @@
  *
  */
 
-package io.grakn.graql.internal.query.match;
+package ai.grakn.graql.internal.query.match;
 
 import com.google.common.collect.ImmutableSet;
-import io.grakn.GraknGraph;
-import io.grakn.concept.Concept;
-import io.grakn.graql.Aggregate;
-import io.grakn.graql.AggregateQuery;
-import io.grakn.graql.AskQuery;
-import io.grakn.graql.DeleteQuery;
-import io.grakn.graql.Graql;
-import io.grakn.graql.InsertQuery;
-import io.grakn.graql.MatchQuery;
-import io.grakn.graql.Var;
-import io.grakn.graql.admin.MatchQueryAdmin;
-import io.grakn.graql.admin.VarAdmin;
-import io.grakn.graql.internal.query.Queries;
-import io.grakn.graql.internal.util.ANSI;
-import io.grakn.graql.internal.util.AdminConverter;
-import io.grakn.graql.internal.util.StringConverter;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
+import ai.grakn.graql.Aggregate;
+import ai.grakn.graql.AggregateQuery;
+import ai.grakn.graql.AskQuery;
+import ai.grakn.graql.DeleteQuery;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.admin.MatchQueryAdmin;
+import ai.grakn.graql.admin.VarAdmin;
+import ai.grakn.graql.internal.query.Queries;
+import ai.grakn.graql.internal.util.ANSI;
+import ai.grakn.graql.internal.util.AdminConverter;
+import ai.grakn.graql.internal.util.StringConverter;
 
 import java.util.Arrays;
 import java.util.Collection;

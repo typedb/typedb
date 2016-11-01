@@ -1,6 +1,6 @@
-package io.grakn.test.graql.reasoner.graphs;
+package ai.grakn.test.graql.reasoner.graphs;
 
-import io.grakn.GraknGraph;
+import ai.grakn.GraknGraph;
 
 public class PathGraphSymmetric extends PathGraph{
 

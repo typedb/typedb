@@ -16,10 +16,10 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.factory;
+package ai.grakn.factory;
 
-import io.grakn.GraknGraph;
-import io.grakn.engine.util.ConfigProperties;
+import ai.grakn.GraknGraph;
+import ai.grakn.engine.util.ConfigProperties;
 
 public class GraphFactory {
     private String graphConfig;

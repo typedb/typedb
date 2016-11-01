@@ -16,12 +16,12 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.factory;
+package ai.grakn.factory;
 
-import io.grakn.GraknGraph;
-import io.grakn.GraknComputer;
-import io.grakn.GraknGraphFactory;
-import io.grakn.graph.internal.GraknComputerImpl;
+import ai.grakn.GraknGraph;
+import ai.grakn.GraknComputer;
+import ai.grakn.GraknGraphFactory;
+import ai.grakn.graph.internal.GraknComputerImpl;
 
 /**
  * A client for creating a grakn graph from a running engine.

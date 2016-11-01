@@ -16,11 +16,11 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.test.graql.query;
+package ai.grakn.test.graql.query;
 
 import com.google.common.collect.Sets;
-import io.grakn.graql.Autocomplete;
-import io.grakn.test.AbstractMovieGraphTest;
+import ai.grakn.graql.Autocomplete;
+import ai.grakn.test.AbstractMovieGraphTest;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

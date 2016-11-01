@@ -16,10 +16,10 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.migration.sql;
+package ai.grakn.migration.sql;
 
 
-import io.grakn.concept.ResourceType;
+import ai.grakn.concept.ResourceType;
 
 import java.sql.Types;
 import java.util.HashMap;

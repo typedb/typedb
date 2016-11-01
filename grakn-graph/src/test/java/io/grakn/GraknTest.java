@@ -1,6 +1,6 @@
-package io.grakn;
+package ai.grakn;
 
-import io.grakn.graph.internal.GraknTinkerGraph;
+import ai.grakn.graph.internal.GraknTinkerGraph;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.instanceOf;

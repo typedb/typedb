@@ -16,21 +16,21 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql.internal.reasoner.query;
+package ai.grakn.graql.internal.reasoner.query;
 
 import com.google.common.collect.Sets;
-import io.grakn.GraknGraph;
-import io.grakn.concept.Concept;
-import io.grakn.concept.RelationType;
-import io.grakn.concept.RoleType;
-import io.grakn.graql.Graql;
-import io.grakn.graql.InsertQuery;
-import io.grakn.graql.MatchQuery;
-import io.grakn.graql.internal.reasoner.atom.Atom;
-import io.grakn.graql.internal.reasoner.atom.Atomic;
-import io.grakn.graql.internal.reasoner.atom.Relation;
-import io.grakn.graql.internal.reasoner.atom.IdPredicate;
-import io.grakn.util.ErrorMessage;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.RoleType;
+import ai.grakn.graql.Graql;
+import ai.grakn.graql.InsertQuery;
+import ai.grakn.graql.MatchQuery;
+import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.Atomic;
+import ai.grakn.graql.internal.reasoner.atom.Relation;
+import ai.grakn.graql.internal.reasoner.atom.IdPredicate;
+import ai.grakn.util.ErrorMessage;
 
 import java.util.*;
 import java.util.stream.Collectors;

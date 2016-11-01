@@ -16,9 +16,9 @@
  *  along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.factory;
+package ai.grakn.factory;
 
-import io.grakn.util.ErrorMessage;
+import ai.grakn.util.ErrorMessage;
 
 import java.io.FileInputStream;
 import java.io.IOException;

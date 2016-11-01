@@ -15,10 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
-package io.grakn.migration.export;
+package ai.grakn.migration.export;
 
-import io.grakn.Grakn;
-import io.grakn.GraknGraph;
+import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
 
 import java.io.BufferedWriter;
 import java.io.File;

@@ -16,9 +16,9 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.factory;
-import io.grakn.GraknComputer;
-import io.grakn.util.REST;
+package ai.grakn.factory;
+import ai.grakn.GraknComputer;
+import ai.grakn.util.REST;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
 /**

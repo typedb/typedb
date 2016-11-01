@@ -16,22 +16,22 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.grakn.graql;
+package ai.grakn.graql;
 
 import com.google.common.collect.Lists;
-import io.grakn.GraknGraph;
-import io.grakn.concept.Concept;
-import io.grakn.concept.RoleType;
-import io.grakn.concept.Rule;
-import io.grakn.concept.Type;
-import io.grakn.graql.internal.reasoner.atom.Atom;
-import io.grakn.graql.internal.reasoner.atom.Predicate;
-import io.grakn.graql.internal.reasoner.query.AtomicMatchQuery;
-import io.grakn.graql.internal.reasoner.query.AtomicQuery;
-import io.grakn.graql.internal.reasoner.query.QueryAnswers;
-import io.grakn.graql.internal.reasoner.query.ReasonerMatchQuery;
-import io.grakn.graql.internal.reasoner.rule.InferenceRule;
-import io.grakn.graql.internal.reasoner.query.Query;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.RoleType;
+import ai.grakn.concept.Rule;
+import ai.grakn.concept.Type;
+import ai.grakn.graql.internal.reasoner.atom.Atom;
+import ai.grakn.graql.internal.reasoner.atom.Predicate;
+import ai.grakn.graql.internal.reasoner.query.AtomicMatchQuery;
+import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
+import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
+import ai.grakn.graql.internal.reasoner.query.ReasonerMatchQuery;
+import ai.grakn.graql.internal.reasoner.rule.InferenceRule;
+import ai.grakn.graql.internal.reasoner.query.Query;
 import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
