@@ -17,16 +17,16 @@
  */
 package test.io.grakn.migration.owl;
 
-import io.grakn.Grakn;
-import io.grakn.GraknGraph;
-import io.grakn.concept.Concept;
-import io.grakn.concept.Entity;
-import io.grakn.concept.Instance;
-import io.grakn.concept.Relation;
-import io.grakn.concept.RelationType;
-import io.grakn.concept.Resource;
-import io.grakn.concept.RoleType;
-import io.grakn.migration.owl.OWLMigrator;
+import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
+import ai.grakn.concept.Concept;
+import ai.grakn.concept.Entity;
+import ai.grakn.concept.Instance;
+import ai.grakn.concept.Relation;
+import ai.grakn.concept.RelationType;
+import ai.grakn.concept.Resource;
+import ai.grakn.concept.RoleType;
+import ai.grakn.migration.owl.OWLMigrator;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
