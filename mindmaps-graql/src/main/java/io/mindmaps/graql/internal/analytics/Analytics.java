@@ -43,6 +43,7 @@ public class Analytics {
 
     // TODO: allow user specified resources
     public static final String degree = "degree";
+    public static final String connectedComponent = "connectedComponent";
     private static final int numberOfOntologyChecks = 10;
 
     private final String keySpace;
@@ -101,9 +102,7 @@ public class Analytics {
             excludedTypes.addAll(graph.getMetaRuleType().instances());
 
             // collect analytics resource types to exclude
-            HashSet<String> analyticsElements =
-                    Sets.newHashSet(Analytics.degree, GraqlType.HAS_RESOURCE.getId(Analytics.degree));
-            analyticsElements.stream()
+            CommonOLAP.analyticsElements.stream()
                     .filter(element -> graph.getType(element) != null)
                     .map(graph::getType)
                     .forEach(excludedTypes::add);
@@ -124,10 +123,6 @@ public class Analytics {
                 t.subTypes().forEach(subtype -> this.statisticsResourceTypes.add(subtype.getId()));
             }
         }
-
-        // add analytics ontology - hard coded for now
-        mutateResourceOntology(degree, ResourceType.DataType.LONG);
-        waitOnMutateResourceOntology(degree);
     }
 
     /**
@@ -278,7 +273,7 @@ public class Analytics {
      *
      * @return a map of set, each set contains all the vertex ids belonging to one connected component
      */
-    public Map<String, Set<String>> connectedComponent() {
+    public Map<String, Set<String>> connectedComponents() {
         if (!selectedTypesHaveInstance()) return Collections.emptyMap();
         MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
         ComputerResult result = computer.compute(new ConnectedComponentVertexProgram(subtypes),
@@ -291,12 +286,28 @@ public class Analytics {
      *
      * @return a map of component size
      */
-    public Map<String, Long> connectedComponentSize() {
+    public Map<String, Long> connectedComponentsSize() {
         if (!selectedTypesHaveInstance()) return Collections.emptyMap();
         MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
         ComputerResult result = computer.compute(new ConnectedComponentVertexProgram(subtypes),
                 new ClusterSizeMapReduce(subtypes, ConnectedComponentVertexProgram.CLUSTER_LABEL));
         return result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
+    }
+
+    /**
+     * Compute the connected components and persist the component labels
+     */
+    public Map<String, Long> connectedComponentsAndPersist() {
+        if (selectedTypesHaveInstance()) {
+            mutateResourceOntology(connectedComponent, ResourceType.DataType.STRING);
+            waitOnMutateResourceOntology(connectedComponent);
+
+            MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
+            ComputerResult result = computer.compute(new ConnectedComponentVertexProgram(subtypes, keySpace),
+                    new ClusterSizeMapReduce(subtypes, ConnectedComponentVertexProgram.CLUSTER_LABEL));
+            return result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
+        }
+        return Collections.emptyMap();
     }
 
     /**
@@ -306,7 +317,8 @@ public class Analytics {
      */
     public Map<Long, Set<String>> degrees() {
         MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
-        ComputerResult result = computer.compute(new DegreeVertexProgram(subtypes), new DegreeDistributionMapReduce(subtypes));
+        ComputerResult result = computer.compute(new DegreeVertexProgram(subtypes),
+                new DegreeDistributionMapReduce(subtypes));
         return result.memory().get(MindmapsMapReduce.MAP_REDUCE_MEMORY_KEY);
     }
 
@@ -317,12 +329,15 @@ public class Analytics {
      * @param resourceType the type of the resource that will contain the degree
      */
     private void degreesAndPersist(String resourceType) {
+        mutateResourceOntology(resourceType, ResourceType.DataType.LONG);
+        waitOnMutateResourceOntology(resourceType);
+
         if (!Sets.intersection(subtypes, CommonOLAP.analyticsElements).isEmpty()) {
             throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                     .getMessage(this.getClass().toString()));
         }
         MindmapsComputer computer = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraphComputer();
-        computer.compute(new DegreeAndPersistVertexProgram(keySpace, subtypes));
+        computer.compute(new DegreeAndPersistVertexProgram(subtypes, keySpace));
     }
 
     /**

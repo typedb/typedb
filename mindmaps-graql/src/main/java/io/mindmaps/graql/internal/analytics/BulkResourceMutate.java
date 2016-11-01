@@ -55,7 +55,7 @@ class BulkResourceMutate<T> {
     private int batchSize = 100;
     private MindmapsGraph graph;
     private int currentNumberOfVertices = 0;
-    private final String resourceTypeId = Analytics.degree;
+    private String resourceTypeId;
     private final String keyspace;
     private Map<String, T> resourcesToPersist = new HashMap<>();
 
@@ -67,12 +67,13 @@ class BulkResourceMutate<T> {
     // This has been added for debugging purposes - set to true for debugging
     private boolean verboseOutput = false;
 
-    public BulkResourceMutate(String keyspace) {
+    public BulkResourceMutate(String keyspace, String resourceTypeId) {
         this.keyspace = keyspace;
+        this.resourceTypeId = resourceTypeId;
     }
 
-    public BulkResourceMutate(String keyspace, int batchSize) {
-        this(keyspace);
+    public BulkResourceMutate(String keyspace, String resourceTypeId, int batchSize) {
+        this(keyspace, resourceTypeId);
         this.batchSize = batchSize;
     }
 
