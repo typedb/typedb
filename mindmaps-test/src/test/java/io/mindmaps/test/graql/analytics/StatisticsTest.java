@@ -22,11 +22,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.collect.Sets;
 import io.mindmaps.Mindmaps;
-import io.mindmaps.concept.Entity;
-import io.mindmaps.concept.EntityType;
-import io.mindmaps.concept.RelationType;
-import io.mindmaps.concept.ResourceType;
-import io.mindmaps.concept.RoleType;
+import io.mindmaps.concept.*;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.graql.internal.analytics.MindmapsVertexProgram;
@@ -35,11 +31,7 @@ import io.mindmaps.test.AbstractGraphTest;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Supplier;
 
 import static org.junit.Assert.*;

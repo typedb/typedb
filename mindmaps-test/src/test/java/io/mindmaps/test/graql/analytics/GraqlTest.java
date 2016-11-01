@@ -18,58 +18,60 @@
 
 package io.mindmaps.test.graql.analytics;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import com.google.common.collect.Lists;
 import io.mindmaps.Mindmaps;
-import io.mindmaps.concept.Entity;
-import io.mindmaps.concept.EntityType;
-import io.mindmaps.concept.Instance;
-import io.mindmaps.concept.RelationType;
-import io.mindmaps.concept.Resource;
-import io.mindmaps.concept.ResourceType;
-import io.mindmaps.concept.RoleType;
+import io.mindmaps.concept.*;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.ComputeQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.internal.analytics.Analytics;
+import io.mindmaps.graql.internal.analytics.MindmapsVertexProgram;
 import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.test.AbstractGraphTest;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 
-import static io.mindmaps.graql.Graql.or;
-import static io.mindmaps.graql.Graql.var;
-import static io.mindmaps.graql.Graql.withGraph;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static io.mindmaps.graql.Graql.*;
+import static org.junit.Assert.*;
 import static org.junit.Assume.assumeFalse;
 
 public class GraqlTest extends AbstractGraphTest {
 
     private QueryBuilder qb;
 
+    private static final String thing = "thing";
+    private static final String anotherThing = "anotherThing";
+    private static final String related = "related";
+
+    private String entityId1;
+    private String entityId2;
+    private String entityId3;
+    private String entityId4;
+    private List<String> instanceIds;
+
+    String keyspace;
+
     @Before
     public void setUp() {
         // TODO: Make orientdb support analytics
         assumeFalse(usingOrientDB());
         qb = withGraph(graph);
+        keyspace = graph.getKeyspace();
+
+        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(MindmapsVertexProgram.class);
+        logger.setLevel(Level.DEBUG);
     }
 
     @Test
     public void testGraqlCount() throws MindmapsValidationException, InterruptedException, ExecutionException {
 
         // assert the graph is empty
-        Analytics computer = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
+        Analytics computer = new Analytics(graph.getKeyspace(), new HashSet<>(), new HashSet<>());
         assertEquals(0, computer.count());
 
         // create 3 instances
@@ -287,29 +289,44 @@ public class GraqlTest extends AbstractGraphTest {
         Entity theResourceOwner = graph.addEntity(thing);
 
         graph.addRelation(relationType)
-                .putRolePlayer(resourceOwner,theResourceOwner)
-                .putRolePlayer(resourceValue,graph.putResource(1L,resource));
+                .putRolePlayer(resourceOwner, theResourceOwner)
+                .putRolePlayer(resourceValue, graph.putResource(1L, resource));
         graph.addRelation(relationType)
-                .putRolePlayer(resourceOwner,theResourceOwner)
-                .putRolePlayer(resourceValue,graph.putResource(2L,resource));
+                .putRolePlayer(resourceOwner, theResourceOwner)
+                .putRolePlayer(resourceValue, graph.putResource(2L, resource));
         graph.addRelation(relationType)
-                .putRolePlayer(resourceOwner,theResourceOwner)
-                .putRolePlayer(resourceValue,graph.putResource(3L,resource));
+                .putRolePlayer(resourceOwner, theResourceOwner)
+                .putRolePlayer(resourceValue, graph.putResource(3L, resource));
 
         graph.commit();
 
         // use graql to compute various statistics
         Optional<Number> result = (Optional<Number>) ((ComputeQuery) qb.parse("compute sum of resource;")).execute();
-        assertEquals(6L,(long) result.orElse(0L));
+        assertEquals(6L, (long) result.orElse(0L));
         result = (Optional<Number>) ((ComputeQuery) qb.parse("compute min of resource;")).execute();
-        assertEquals(1L,(long) result.orElse(0L));
+        assertEquals(1L, (long) result.orElse(0L));
         result = (Optional<Number>) ((ComputeQuery) qb.parse("compute max of resource;")).execute();
-        assertEquals(3L,(long) result.orElse(0L));
+        assertEquals(3L, (long) result.orElse(0L));
         result = (Optional<Number>) ((ComputeQuery) qb.parse("compute mean of resource;")).execute();
         assertEquals(2.0, (double) result.orElse(0L), 0.1);
         result = (Optional<Number>) ((ComputeQuery) qb.parse("compute median of resource;")).execute();
         assertEquals(2L, (long) result.orElse(0L));
+    }
 
+    @Test
+    public void testConnectedComponents() throws MindmapsValidationException {
+        // TODO: Fix on TinkerGraphComputer
+        assumeFalse(usingTinker());
+
+        Map<String, Long> sizeMap =
+                (Map<String, Long>) qb.parse("compute connectedComponentsSize;").execute();
+        assertTrue(sizeMap.isEmpty());
+        Map<String, Set<String>> memberMap =
+                (Map<String, Set<String>>) qb.parse("compute connectedComponents;").execute();
+        assertTrue(memberMap.isEmpty());
+        Map<String, Long> sizeMapPersist =
+                (Map<String, Long>) qb.parse("compute connectedComponentsAndPersist;").execute();
+        assertTrue(sizeMapPersist.isEmpty());
     }
 
     @Test(expected = IllegalStateException.class)
@@ -350,5 +367,37 @@ public class GraqlTest extends AbstractGraphTest {
             graph.rollback();
             assertNull(graph.getEntityType("thing"));
         });
+    }
+
+    private void addOntologyAndEntities() throws MindmapsValidationException {
+        EntityType entityType1 = graph.putEntityType(thing);
+        EntityType entityType2 = graph.putEntityType(anotherThing);
+
+        Entity entity1 = graph.addEntity(entityType1);
+        Entity entity2 = graph.addEntity(entityType1);
+        Entity entity3 = graph.addEntity(entityType1);
+        Entity entity4 = graph.addEntity(entityType2);
+        entityId1 = entity1.getId();
+        entityId2 = entity2.getId();
+        entityId3 = entity3.getId();
+        entityId4 = entity4.getId();
+
+        RoleType role1 = graph.putRoleType("role1");
+        RoleType role2 = graph.putRoleType("role2");
+        entityType1.playsRole(role1).playsRole(role2);
+        entityType2.playsRole(role1).playsRole(role2);
+        RelationType relationType = graph.putRelationType(related).hasRole(role1).hasRole(role2);
+
+        String relationId12 = graph.addRelation(relationType)
+                .putRolePlayer(role1, entity1)
+                .putRolePlayer(role2, entity2).getId();
+        String relationId23 = graph.addRelation(relationType)
+                .putRolePlayer(role1, entity2)
+                .putRolePlayer(role2, entity3).getId();
+        String relationId24 = graph.addRelation(relationType)
+                .putRolePlayer(role1, entity2)
+                .putRolePlayer(role2, entity4).getId();
+        instanceIds = Lists.newArrayList(entityId1, entityId2, entityId3, entityId4,
+                relationId12, relationId23, relationId24);
     }
 }

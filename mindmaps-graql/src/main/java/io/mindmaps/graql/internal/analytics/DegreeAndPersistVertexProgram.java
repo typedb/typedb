@@ -19,7 +19,6 @@
 package io.mindmaps.graql.internal.analytics;
 
 import io.mindmaps.util.Schema;
-import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
