@@ -112,31 +112,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 </template>
 
 <style>
-.tab-row {
-    padding-top: 20px;
-}
-.pe-7s-angle-right-circle {
-    padding-left: 5px;
-}
-.pe-7s-refresh {
-    padding-right: 0px;
-    padding-left: 5px;
-}
-.form-buttons {
-    padding-bottom: 0px;
-    margin-bottom: 0px;
-}
-.types-button {
-    padding-left: 5px;
-}
-h4 {
-    margin-top: 0px;
-    margin-bottom: 0px;
-    margin-left: -10px;
-}
-.li-active {
-     background-color: #337ab7;
-}
+
 </style>
 
 <script>

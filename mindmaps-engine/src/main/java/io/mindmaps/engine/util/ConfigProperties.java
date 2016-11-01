@@ -238,11 +238,13 @@ public class ConfigProperties {
         return Long.parseLong(prop.getProperty(property));
     }
 
-    public static final String MINDMAPS_ASCII =
-            "\n  __  __ _           _                           ____  ____  \n" +
-                    " |  \\/  (_)_ __   __| |_ __ ___   __ _ _ __  ___|  _ \\| __ ) \n" +
-                    " | |\\/| | | '_ \\ / _` | '_ ` _ \\ / _` | '_ \\/ __| | | |  _ \\ \n" +
-                    " | |  | | | | | | (_| | | | | | | (_| | |_) \\__ \\ |_| | |_) |\n" +
-                    " |_|  |_|_|_| |_|\\__,_|_| |_| |_|\\__,_| .__/|___/____/|____/ \n" +
-                    "                                      |_|                    ";
+    public static final String GRAKN_ASCII =
+                    "   _____           _          \n" +
+                    "  / ____|         | |         \n" +
+                    " | |  __ _ __ __ _| | ___ __        ,___,\n" +
+                    " | | |_ | '__/ _` | |/ / '_ \\       [O.o] \n" +
+                    " | |__| | | | (_| |   <| | | |      /)__)\n" +
+                    "  \\_____|_|  \\__,_|_|\\_\\_| |_|      -\"--\"- \n" +
+                    "        \n" +
+                    "  Web Dashboard available at [%s]";
 }

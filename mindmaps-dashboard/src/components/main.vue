@@ -49,7 +49,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
     <!-- Navigation-->
     <aside class="navigation">
         <div class="brand" href="/">
-            MindmapsDB
+            Grakn.AI
             <span>{{version}}</span>
         </div>
         <nav>
