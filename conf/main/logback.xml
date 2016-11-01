@@ -5,11 +5,11 @@
         </encoder>
     </appender>
     <appender name="ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${grakn.log.file}</file>
+        <file>${mindmaps.log.file}</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <!-- rollover at the beginning of each month (add '-dd' to have a daily rollover)-->
             <!-- improve this by handling only log path without name included-->
-            <fileNamePattern>${grakn.log.file}-%d{yyyy-MM}.%i.log</fileNamePattern>
+            <fileNamePattern>${mindmaps.log.file}-%d{yyyy-MM}.%i.log</fileNamePattern>
             <!-- each file should be at most 50MB, keep 60 days worth of history, but at most 1GB -->
             <maxFileSize>50MB</maxFileSize>
             <maxHistory>60</maxHistory>
@@ -26,16 +26,16 @@
         <appender-ref ref="ROLLING"/>
     </logger>
 
-    <logger name="io.grakn" level="${grakn.log.level}">
+    <logger name="io.mindmaps" level="${mindmaps.log.level}">
         <appender-ref ref="ROLLING"/>
     </logger>
 
-    <logger name="io.grakn.engine.GraknEngineServer" level="INFO">
+    <logger name="io.mindmaps.engine.MindmapsEngineServer" level="INFO">
         <appender-ref ref="STDOUT"/>
     </logger>
 
     <!-- It is possible to change the logging level to a more granular level. For example:-->
-    <!--<logger name="io.grakngine.postprocessing.BackgroundTasks" level="DEBUG">-->
+    <!--<logger name="io.mindmaps.engine.postprocessing.BackgroundTasks" level="DEBUG">-->
         <!--<appender-ref ref="FILE"/>-->
     <!--</logger>-->
 
