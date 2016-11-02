@@ -45,6 +45,6 @@ public class MindmapsTinkerGraph extends AbstractMindmapsGraph<TinkerGraph> {
 
     @Override
     public void rollback(){
-        LOG.warn(ErrorMessage.UNSUPPORTED_GRAPH.getMessage(getTinkerPopGraph().getClass().getName(), "rollback"));
+        throw new UnsupportedOperationException(ErrorMessage.UNSUPPORTED_GRAPH.getMessage(getTinkerPopGraph().getClass().getName(), "rollback"));
     }
 }
