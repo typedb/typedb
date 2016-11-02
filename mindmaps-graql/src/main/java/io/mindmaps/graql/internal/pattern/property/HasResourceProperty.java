@@ -22,11 +22,7 @@ import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Instance;
-import io.mindmaps.concept.Relation;
-import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.Resource;
-import io.mindmaps.concept.ResourceType;
-import io.mindmaps.concept.RoleType;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.EquivalentFragmentSet;
@@ -105,18 +101,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
         Resource resourceConcept = insertQueryExecutor.getConcept(resource).asResource();
         Instance instance = concept.asInstance();
-
-        ResourceType type = resourceConcept.type();
-
-        MindmapsGraph graph = insertQueryExecutor.getGraph();
-
-        RelationType hasResource = graph.putRelationType(Schema.Resource.HAS_RESOURCE.getId(type.getId()));
-        RoleType hasResourceTarget = graph.putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(type.getId()));
-        RoleType hasResourceValue = graph.putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(type.getId()));
-
-        Relation relation = graph.addRelation(hasResource);
-        relation.putRolePlayer(hasResourceTarget, instance);
-        relation.putRolePlayer(hasResourceValue, resourceConcept);
+        instance.hasResource(resourceConcept);
     }
 
     @Override

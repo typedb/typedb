@@ -28,6 +28,7 @@ import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.graql.internal.analytics.MindmapsVertexProgram;
 import io.mindmaps.test.AbstractGraphTest;
+import io.mindmaps.util.Schema;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -35,8 +36,12 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import static io.mindmaps.graql.Graql.*;
-import static org.junit.Assert.*;
+import static io.mindmaps.graql.Graql.or;
+import static io.mindmaps.graql.Graql.var;
+import static io.mindmaps.graql.Graql.withGraph;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
 public class GraqlTest extends AbstractGraphTest {
