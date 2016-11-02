@@ -36,8 +36,8 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import static io.mindmaps.graql.Graql.or;
 import static io.mindmaps.graql.Graql.var;
+import static io.mindmaps.graql.Graql.id;
 import static io.mindmaps.graql.Graql.withGraph;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
