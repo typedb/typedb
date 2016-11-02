@@ -432,7 +432,7 @@ public class RecursiveInferenceTest {
         QueryBuilder qb = Graql.withGraph(graph);
         Reasoner reasoner = new Reasoner(graph);
 
-        String queryString = "match ($x, $y) isa path;$x id 'a0'; select $y;";
+        String queryString = "match ($x, $y) isa path;$x has index 'a0'; select $y;";
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $y isa vertex;";
 
@@ -449,7 +449,7 @@ public class RecursiveInferenceTest {
         QueryBuilder qb = Graql.withGraph(graph);
         Reasoner reasoner = new Reasoner(graph);
 
-        String queryString = "match ($x, $y) isa path;$x id 'a0'; select $y;";
+        String queryString = "match ($x, $y) isa path;$x has index 'a0'; select $y;";
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $y isa vertex;";
 

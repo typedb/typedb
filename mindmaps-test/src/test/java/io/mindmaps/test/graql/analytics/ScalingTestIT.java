@@ -32,7 +32,6 @@ import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.test.AbstractScalingTest;
 import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVPrinter;
 import org.junit.After;
 import org.junit.Before;
@@ -55,9 +54,9 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static io.mindmaps.graql.Graql.insert;
 import static io.mindmaps.graql.Graql.var;
 import static java.lang.Math.pow;
 import static java.lang.Math.sqrt;
@@ -438,8 +437,8 @@ public class ScalingTestIT extends AbstractScalingTest {
             writer.println("start loading data");
             writer.flush();
             for (int m=1; m<nodesPerStep+1; m++) {
-                distributedLoader.addToQueue(var().isa("thing").has("degree",v_m));
-                distributedLoader.addToQueue(var().isa("thing").has("degree",V_m));
+                distributedLoader.add(insert(var().isa("thing").has("degree",v_m)));
+                distributedLoader.add(insert(var().isa("thing").has("degree",V_m)));
                 v_m--;
                 V_m+=2;
             }
@@ -544,7 +543,7 @@ public class ScalingTestIT extends AbstractScalingTest {
 
         for (int nodeIndex = startRange; nodeIndex < endRange; nodeIndex++) {
             String nodeId = "node-" + nodeIndex;
-            distributedLoader.addToQueue(var().isa("thing").id(nodeId));
+            distributedLoader.add(insert(var().isa("thing").id(nodeId)));
         }
 
         distributedLoader.waitToFinish();
@@ -562,9 +561,9 @@ public class ScalingTestIT extends AbstractScalingTest {
         for (String supernodeId : superNodes) {
             for (int nodeIndex = startRange; nodeIndex < endRange; nodeIndex++) {
                 String nodeId = "node-" + nodeIndex;
-                distributedLoader.addToQueue(var().isa("related")
+                distributedLoader.add(insert(var().isa("related")
                         .rel("relation1", var().id(nodeId))
-                        .rel("relation2", var().id(supernodeId)));
+                        .rel("relation2", var().id(supernodeId))));
             }
         }
 
@@ -614,9 +613,9 @@ public class ScalingTestIT extends AbstractScalingTest {
 
             String nodeId1 = "node-" + startNode;
             String nodeId2 = "node-" + ++startNode;
-            distributedLoader.addToQueue(var().isa("related")
+            distributedLoader.add(insert(var().isa("related")
                     .rel("relation1", var().id(nodeId1))
-                    .rel("relation2", var().id(nodeId2)));
+                    .rel("relation2", var().id(nodeId2))));
 
             startNode++;
         }

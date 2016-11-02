@@ -27,7 +27,6 @@ import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
 import io.mindmaps.test.graql.reasoner.graphs.SNBGraph;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -219,16 +218,16 @@ public class SNBInferenceTest {
         MatchQuery query = qb.parse(queryString);
 
         String explicitQuery = "match $x isa person;" +
-                "{$x id 'Alice';$y id 'War of the Worlds';} or" +
-                "{$x id 'Bob';{$y id 'Ducatti 1299';} or {$y id 'The Good the Bad the Ugly';};} or" +
-                "{$x id 'Charlie';{$y id 'Blizzard of Ozz';} or {$y id 'Stratocaster';};} or " +
-                "{$x id 'Denis';{$y id 'Colour of Magic';} or {$y id 'Dorian Gray';};} or"+
-                "{$x id 'Frank';$y id 'Nocturnes';} or" +
-                "{$x id 'Karl Fischer';{$y id 'Faust';} or {$y id 'Nocturnes';};} or " +
-                "{$x id 'Gary';$y id 'The Wall';} or" +
-                "{$x id 'Charlie';" +
-                "{$y id 'Yngwie Malmsteen';} or {$y id 'Cacophony';} or {$y id 'Steve Vai';} or {$y id 'Black Sabbath';};} or " +
-                "{$x id 'Gary';$y id 'Pink Floyd';};";
+                "{$x has name 'Alice';$y has name 'War of the Worlds';} or" +
+                "{$x has name 'Bob';{$y has name 'Ducatti 1299';} or {$y has name 'The Good the Bad the Ugly';};} or" +
+                "{$x has name 'Charlie';{$y has name 'Blizzard of Ozz';} or {$y has name 'Stratocaster';};} or " +
+                "{$x has name 'Denis';{$y has name 'Colour of Magic';} or {$y has name 'Dorian Gray';};} or"+
+                "{$x has name 'Frank';$y has name 'Nocturnes';} or" +
+                "{$x has name 'Karl Fischer';{$y has name 'Faust';} or {$y has name 'Nocturnes';};} or " +
+                "{$x has name 'Gary';$y has name 'The Wall';} or" +
+                "{$x has name 'Charlie';" +
+                "{$y has name 'Yngwie Malmsteen';} or {$y has name 'Cacophony';} or {$y has name 'Steve Vai';} or {$y has name 'Black Sabbath';};} or " +
+                "{$x has name 'Gary';$y has name 'Pink Floyd';};";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
@@ -246,16 +245,16 @@ public class SNBInferenceTest {
         MatchQuery query = qb.parse(queryString);
 
         String explicitQuery = "match $p isa person;" +
-                "{$p id 'Alice';$r id 'War of the Worlds';} or" +
-                "{$p id 'Bob';{$r id 'Ducatti 1299';} or {$r id 'The Good the Bad the Ugly';};} or" +
-                "{$p id 'Charlie';{$r id 'Blizzard of Ozz';} or {$r id 'Stratocaster';};} or " +
-                "{$p id 'Denis';{$r id 'Colour of Magic';} or {$r id 'Dorian Gray';};} or"+
-                "{$p id 'Frank';$r id 'Nocturnes';} or" +
-                "{$p id 'Karl Fischer';{$r id 'Faust';} or {$r id 'Nocturnes';};} or " +
-                "{$p id 'Gary';$r id 'The Wall';} or" +
-                "{$p id 'Charlie';" +
-                "{$r id 'Yngwie Malmsteen';} or {$r id 'Cacophony';} or {$r id 'Steve Vai';} or {$r id 'Black Sabbath';};} or " +
-                "{$p id 'Gary';$r id 'Pink Floyd';};";
+                "{$p has name 'Alice';$r has name 'War of the Worlds';} or" +
+                "{$p has name 'Bob';{$r has name 'Ducatti 1299';} or {$r has name 'The Good the Bad the Ugly';};} or" +
+                "{$p has name 'Charlie';{$r has name 'Blizzard of Ozz';} or {$r has name 'Stratocaster';};} or " +
+                "{$p has name 'Denis';{$r has name 'Colour of Magic';} or {$r has name 'Dorian Gray';};} or"+
+                "{$p has name 'Frank';$r has name 'Nocturnes';} or" +
+                "{$p has name 'Karl Fischer';{$r has name 'Faust';} or {$r has name 'Nocturnes';};} or " +
+                "{$p has name 'Gary';$r has name 'The Wall';} or" +
+                "{$p has name 'Charlie';" +
+                "{$r has name 'Yngwie Malmsteen';} or {$r has name 'Cacophony';} or {$r has name 'Steve Vai';} or {$r has name 'Black Sabbath';};} or " +
+                "{$p has name 'Gary';$r has name 'Pink Floyd';};";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
