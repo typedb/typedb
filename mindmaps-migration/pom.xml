@@ -29,7 +29,6 @@
   <modules>
       <module>owl</module>
       <module>csv</module>
-      <module>sql</module>
       <module>json</module>
       <module>base</module>
       <module>export</module>
