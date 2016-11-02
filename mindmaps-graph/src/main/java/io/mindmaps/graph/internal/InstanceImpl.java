@@ -141,4 +141,15 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
     }
 
 
+    /**
+     * Creates a relation from this instance to the provided resource.
+     * @param resource The resource to creating a relationship to
+     * @return A relation which contains both the entity and the resource
+     */
+    @Override
+    public Relation hasResource(Resource resource){
+        return null;
+    }
+
+
 }
