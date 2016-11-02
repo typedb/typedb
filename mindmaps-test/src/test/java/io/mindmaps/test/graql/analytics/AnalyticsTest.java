@@ -25,7 +25,6 @@ import io.mindmaps.concept.*;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import io.mindmaps.graql.internal.analytics.Analytics;
-import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.test.AbstractGraphTest;
 import org.apache.commons.collections.CollectionUtils;
 import org.junit.Assert;
@@ -515,9 +514,9 @@ public class AnalyticsTest extends AbstractGraphTest {
         referenceDegrees.put(daveBreedsAndOwnsCoco.getId(), 2L);
 
         // create a decoy resource using same relationship
-        RoleType degreeOwner = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(Analytics.degree));
-        RoleType degreeValue = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(Analytics.degree));
-        RelationType hasResource = graph.putRelationType(GraqlType.HAS_RESOURCE.getId(Analytics.degree))
+        RoleType degreeOwner = graph.putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(Analytics.degree));
+        RoleType degreeValue = graph.putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(Analytics.degree));
+        RelationType hasResource = graph.putRelationType(Schema.Resource.HAS_RESOURCE.getId(Analytics.degree))
                 .hasRole(degreeOwner).hasRole(degreeValue);
         ResourceType<Long> decoyResourceType =
                 graph.putResourceType("decoy-resource", ResourceType.DataType.LONG).playsRole(degreeValue);
@@ -902,9 +901,9 @@ public class AnalyticsTest extends AbstractGraphTest {
         EntityType thing = graph.putEntityType("thing");
 
         graph.putResourceType(resourceTypeId, ResourceType.DataType.LONG);
-        RoleType degreeOwner = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
-        RoleType degreeValue = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
-        RelationType relationType = graph.putRelationType(GraqlType.HAS_RESOURCE.getId(resourceTypeId))
+        RoleType degreeOwner = graph.putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId));
+        RoleType degreeValue = graph.putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId));
+        RelationType relationType = graph.putRelationType(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId))
                 .hasRole(degreeOwner)
                 .hasRole(degreeValue);
         thing.playsRole(degreeOwner);

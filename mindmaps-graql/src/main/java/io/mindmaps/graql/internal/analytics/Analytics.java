@@ -22,17 +22,30 @@ import com.google.common.collect.Sets;
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsComputer;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.*;
+import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.ResourceType;
+import io.mindmaps.concept.RoleType;
+import io.mindmaps.concept.Type;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.Pattern;
-import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-import static io.mindmaps.graql.Graql.*;
+import static io.mindmaps.graql.Graql.or;
+import static io.mindmaps.graql.Graql.var;
+import static io.mindmaps.graql.Graql.withGraph;
 
 /**
  * OLAP computations that can be applied to a Mindmaps Graph. The current implementation uses the SparkGraphComputer
@@ -151,7 +164,7 @@ public class Analytics {
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypes)) return Optional.empty();
 
         Set<String> allSubtypes = statisticsResourceTypes.stream()
-                .map(GraqlType.HAS_RESOURCE::getId).collect(Collectors.toSet());
+                .map(Schema.Resource.HAS_RESOURCE::getId).collect(Collectors.toSet());
         allSubtypes.addAll(subtypes);
         allSubtypes.addAll(statisticsResourceTypes);
 
@@ -172,7 +185,7 @@ public class Analytics {
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypes)) return Optional.empty();
 
         Set<String> allSubtypes = statisticsResourceTypes.stream()
-                .map(GraqlType.HAS_RESOURCE::getId).collect(Collectors.toSet());
+                .map(Schema.Resource.HAS_RESOURCE::getId).collect(Collectors.toSet());
         allSubtypes.addAll(subtypes);
         allSubtypes.addAll(statisticsResourceTypes);
 
@@ -193,7 +206,7 @@ public class Analytics {
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypes)) return Optional.empty();
 
         Set<String> allSubtypes = statisticsResourceTypes.stream()
-                .map(GraqlType.HAS_RESOURCE::getId).collect(Collectors.toSet());
+                .map(Schema.Resource.HAS_RESOURCE::getId).collect(Collectors.toSet());
         allSubtypes.addAll(subtypes);
         allSubtypes.addAll(statisticsResourceTypes);
 
@@ -214,7 +227,7 @@ public class Analytics {
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypes)) return Optional.empty();
 
         Set<String> allSubtypes = statisticsResourceTypes.stream()
-                .map(GraqlType.HAS_RESOURCE::getId).collect(Collectors.toSet());
+                .map(Schema.Resource.HAS_RESOURCE::getId).collect(Collectors.toSet());
         allSubtypes.addAll(subtypes);
         allSubtypes.addAll(statisticsResourceTypes);
 
@@ -236,7 +249,7 @@ public class Analytics {
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypes)) return Optional.empty();
 
         Set<String> allSubtypes = statisticsResourceTypes.stream()
-                .map(GraqlType.HAS_RESOURCE::getId).collect(Collectors.toSet());
+                .map(Schema.Resource.HAS_RESOURCE::getId).collect(Collectors.toSet());
         allSubtypes.addAll(subtypes);
         allSubtypes.addAll(statisticsResourceTypes);
 
@@ -256,7 +269,7 @@ public class Analytics {
         if (!selectedResourceTypesHaveInstance(statisticsResourceTypes)) return Optional.empty();
 
         Set<String> allSubtypes = statisticsResourceTypes.stream()
-                .map(GraqlType.HAS_RESOURCE::getId).collect(Collectors.toSet());
+                .map(Schema.Resource.HAS_RESOURCE::getId).collect(Collectors.toSet());
         allSubtypes.addAll(subtypes);
         allSubtypes.addAll(statisticsResourceTypes);
 
@@ -362,9 +375,9 @@ public class Analytics {
         MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraph();
 
         ResourceType resource = graph.putResourceType(resourceTypeId, resourceDataType);
-        RoleType degreeOwner = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
-        RoleType degreeValue = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
-        graph.putRelationType(GraqlType.HAS_RESOURCE.getId(resourceTypeId))
+        RoleType degreeOwner = graph.putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId));
+        RoleType degreeValue = graph.putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId));
+        graph.putRelationType(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId))
                 .hasRole(degreeOwner)
                 .hasRole(degreeValue);
 
@@ -401,11 +414,11 @@ public class Analytics {
 
             ResourceType resource = graph.getResourceType(resourceTypeId);
             if (resource == null) continue;
-            RoleType degreeOwner = graph.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
+            RoleType degreeOwner = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId));
             if (degreeOwner == null) continue;
-            RoleType degreeValue = graph.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
+            RoleType degreeValue = graph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId));
             if (degreeValue == null) continue;
-            RelationType relationType = graph.getRelationType(GraqlType.HAS_RESOURCE.getId(resourceTypeId));
+            RelationType relationType = graph.getRelationType(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId));
             if (relationType == null) continue;
 
             for (String type : subtypes) {

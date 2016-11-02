@@ -23,7 +23,6 @@ import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.EquivalentFragmentSet;
 import io.mindmaps.graql.internal.query.InsertQueryExecutor;
-import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
 
@@ -49,12 +48,12 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
                 () -> new IllegalStateException(ErrorMessage.NO_ID_SPECIFIED_FOR_HAS_RESOURCE.getMessage())
         );
 
-        ownerRole = Graql.id(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId))
+        ownerRole = Graql.id(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId))
                 .isa(Schema.MetaSchema.ROLE_TYPE.getId()).admin();
-        valueRole = Graql.id(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId))
+        valueRole = Graql.id(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId))
                 .isa(Schema.MetaSchema.ROLE_TYPE.getId()).admin();
 
-        relationType = Graql.id(GraqlType.HAS_RESOURCE.getId(resourceTypeId))
+        relationType = Graql.id(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId))
                 .isa(Schema.MetaSchema.RELATION_TYPE.getId())
                 .hasRole(ownerRole).hasRole(valueRole).admin();
 

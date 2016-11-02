@@ -27,7 +27,6 @@ import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.Mindmaps;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -174,9 +173,9 @@ class BulkResourceMutate<T> {
 
     private void refreshOntologyElements() {
         resourceType = graph.getResourceType(resourceTypeId);
-        resourceOwner = graph.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
-        resourceValue = graph.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
-        relationType = graph.getRelationType(GraqlType.HAS_RESOURCE.getId(resourceTypeId));
+        resourceOwner = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId));
+        resourceValue = graph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId));
+        relationType = graph.getRelationType(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId));
     }
 
     private void initialiseGraph() {

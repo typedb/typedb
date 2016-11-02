@@ -32,8 +32,8 @@ import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.EquivalentFragmentSet;
 import io.mindmaps.graql.internal.gremlin.fragment.Fragments;
 import io.mindmaps.graql.internal.query.InsertQueryExecutor;
-import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.util.Schema;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -79,9 +79,9 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     @Override
     public Collection<EquivalentFragmentSet> match(String start) {
-        Optional<String> hasResource = Optional.of(GraqlType.HAS_RESOURCE.getId(resourceType));
-        Optional<String> hasResourceOwner = Optional.of(GraqlType.HAS_RESOURCE_OWNER.getId(resourceType));
-        Optional<String> hasResourceValue = Optional.of(GraqlType.HAS_RESOURCE_VALUE.getId(resourceType));
+        Optional<String> hasResource = Optional.of(Schema.Resource.HAS_RESOURCE.getId(resourceType));
+        Optional<String> hasResourceOwner = Optional.of(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceType));
+        Optional<String> hasResourceValue = Optional.of(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceType));
 
         return Sets.newHashSet(EquivalentFragmentSet.create(
                 Fragments.shortcut(hasResource, hasResourceOwner, hasResourceValue, start, resource.getName()),
@@ -110,9 +110,9 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
         MindmapsGraph graph = insertQueryExecutor.getGraph();
 
-        RelationType hasResource = graph.putRelationType(GraqlType.HAS_RESOURCE.getId(type.getId()));
-        RoleType hasResourceTarget = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(type.getId()));
-        RoleType hasResourceValue = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(type.getId()));
+        RelationType hasResource = graph.putRelationType(Schema.Resource.HAS_RESOURCE.getId(type.getId()));
+        RoleType hasResourceTarget = graph.putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(type.getId()));
+        RoleType hasResourceValue = graph.putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(type.getId()));
 
         Relation relation = graph.addRelation(hasResource);
         relation.putRolePlayer(hasResourceTarget, instance);

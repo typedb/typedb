@@ -19,7 +19,6 @@
 package io.mindmaps.graql.internal.analytics;
 
 import com.google.common.collect.Sets;
-import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.util.Schema;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -38,8 +37,8 @@ abstract class CommonOLAP {
      * The types that are reserved by analytics and are not "seen" by analytics.
      */
     public static final Set<String> analyticsElements = Collections.unmodifiableSet(Sets.newHashSet(
-            Analytics.degree, GraqlType.HAS_RESOURCE.getId(Analytics.degree),
-            Analytics.connectedComponent, GraqlType.HAS_RESOURCE.getId(Analytics.connectedComponent)));
+            Analytics.degree, Schema.Resource.HAS_RESOURCE.getId(Analytics.degree),
+            Analytics.connectedComponent, Schema.Resource.HAS_RESOURCE.getId(Analytics.connectedComponent)));
 
     /**
      * The concepts that can be "seen" by analytics by default.
