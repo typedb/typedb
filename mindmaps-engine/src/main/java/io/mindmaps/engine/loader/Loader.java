@@ -18,16 +18,14 @@
 
 package io.mindmaps.engine.loader;
 
-import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.InsertQuery;
-import io.mindmaps.graql.Var;
+import io.mindmaps.graql.admin.InsertQueryAdmin;
 import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -41,7 +39,7 @@ public abstract class Loader {
     protected AtomicInteger finishedJobs;
     protected AtomicInteger errorJobs;
 
-    protected Collection<Var> batch;
+    protected Collection<InsertQuery> queries;
     protected int batchSize;
     protected int threadsNumber;
 
@@ -53,13 +51,13 @@ public abstract class Loader {
         loadingJobs = new AtomicInteger();
         errorJobs = new AtomicInteger();
         finishedJobs = new AtomicInteger();
-        batch = new HashSet<>();
+        queries = new HashSet<>();
     }
 
     /**
      * Method to load data into the graph. Implementation depends on the type of the loader.
      */
-    protected abstract void submitBatch(Collection<Var> batch);
+    protected abstract void sendQueriesToLoader(Collection<InsertQuery> batch);
 
     /**
      * Wait for all loading to terminate.
@@ -67,36 +65,14 @@ public abstract class Loader {
     public abstract void waitToFinish();
 
     /**
-     * Add a single var to the queue
-     * @param var to be loaded
+     * Add an insert query to the queue
+     * @param query insert query to be executed
      */
-    public void addToQueue(Var var){
-        addToQueue(Collections.singleton(var));
-    }
-
-    /**
-     * Add the given query to the queue to load
-     * @param vars to be loaded
-     */
-    public void addToQueue(String vars){
-        try {
-            addToQueue(Graql.<InsertQuery>parse(vars).admin().getVars());
-        }
-        catch (IllegalArgumentException e){
-            System.out.println(vars);
-            LOG.error("IllegalArgumentException",e);
-        }
-    }
-
-    /**
-     * Add multiple vars to the queue. These should be inserted in one transaction.
-     * @param vars to be loaded
-     */
-    public void addToQueue(Collection<? extends Var> vars){
-        batch.addAll(vars);
-        if(batch.size() >= batchSize){
-            submitBatch(batch);
-            batch.clear();
+    public void add(InsertQuery query){
+        queries.add(query);
+        if(queries.size() >= batchSize){
+            sendQueriesToLoader(queries);
+            queries.clear();
         }
     }
 
@@ -108,10 +84,16 @@ public abstract class Loader {
         this.batchSize = size;
     }
 
+    /**
+     * @return the current batch size - minimum number of vars to be loaded in a transaction
+     */
     public int getBatchSize(){
         return this.batchSize;
     }
 
+    /**
+     * Set the number of thread that will execute insert transactions at a time
+     */
     public void setThreadsNumber(int number){
         this.threadsNumber = number;
     }
@@ -120,9 +102,9 @@ public abstract class Loader {
      * Load any remaining batches in the queue.
      */
     public void flush(){
-        if(batch.size() > 0){
-            submitBatch(batch);
-            batch.clear();
+        if(queries.size() > 0){
+            sendQueriesToLoader(queries);
+            queries.clear();
         }
     }
 

@@ -18,8 +18,9 @@
 
 package io.mindmaps.engine.loader;
 
+import com.google.common.collect.Lists;
 import io.mindmaps.engine.util.ConfigProperties;
-import io.mindmaps.graql.Var;
+import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.REST;
 import mjson.Json;
@@ -31,14 +32,13 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
-import java.util.stream.Collectors;
 
 import static io.mindmaps.engine.loader.TransactionState.State;
 
@@ -47,13 +47,15 @@ import static io.mindmaps.engine.loader.TransactionState.State;
  */
 public class DistributedLoader extends Loader {
 
+    private static ConfigProperties prop = ConfigProperties.getInstance();
     private static ExecutorService executor = Executors.newSingleThreadExecutor();
-    private Future future;
 
+    private Future future;
     private long pollingFrequency;
     private String graphName;
+
     private int currentHost;
-    private String[] hostsArray;
+    private List<String> hosts;
 
     private Map<String, Semaphore> availability;
     private Map<String, Integer> jobsTerminated;
@@ -67,33 +69,40 @@ public class DistributedLoader extends Loader {
             ConfigProperties.getInstance().getProperty(ConfigProperties.SERVER_PORT_NUMBER) +
             REST.WebPath.LOADER_STATE_URI;
 
-    public DistributedLoader(String graphNameInit, Collection<String> hosts) {
-        ConfigProperties prop = ConfigProperties.getInstance();
-        batchSize = prop.getPropertyAsInt(ConfigProperties.BATCH_SIZE_PROPERTY);
-        graphName = graphNameInit;
-        batch = new HashSet<>();
-        hostsArray = hosts.toArray(new String[hosts.size()]);
+    public DistributedLoader(String graphName, Collection<String> hosts) {
+        this.hosts = Lists.newArrayList(hosts);
         currentHost = 0;
-        pollingFrequency = prop.getPropertyAsLong(ConfigProperties.POLLING_FREQUENCY_PROPERTY);
 
-        threadsNumber = prop.getAvailableThreads() * 3;
+        setBatchSize(prop.getPropertyAsInt(ConfigProperties.BATCH_SIZE_PROPERTY));
+        setPollingFrequency(prop.getPropertyAsLong(ConfigProperties.POLLING_FREQUENCY_PROPERTY));
+        setThreadsNumber(prop.getAvailableThreads());
 
-        // create availability map
-        availability = new HashMap<>();
-        hosts.forEach(h -> availability.put(h, new Semaphore(threadsNumber)));
+        resetAvailabilityMap();
+        resetJobsTerminated();
 
-        jobsTerminated = new HashMap<>();
-        hosts.forEach(h -> jobsTerminated.put(h, 0));
+        this.graphName = graphName;
     }
 
     @Override
     public void setThreadsNumber(int number){
         this.threadsNumber = number;
-
-        // create availability map
-        availability.keySet().forEach(h -> availability.put(h, new Semaphore(threadsNumber)));
+        resetAvailabilityMap();
     }
 
+    public void resetAvailabilityMap(){
+        // create availability map
+        availability = new HashMap<>();
+        hosts.forEach(h -> availability.put(h, new Semaphore(threadsNumber * 3)));
+    }
+
+    public void resetJobsTerminated(){
+        jobsTerminated = new HashMap<>();
+        hosts.forEach(h -> jobsTerminated.put(h, 0));
+    }
+
+    /**
+     * Amount of time to wait before checking number completed jobs with slaves
+     */
     public void setPollingFrequency(long number){
         this.pollingFrequency = number;
     }
@@ -110,19 +119,15 @@ public class DistributedLoader extends Loader {
                 LOG.error(e.getMessage());
             }
         }
-
-        LOG.info("All tasks done!");
     }
 
-    public void submitBatch(Collection<Var> batch) {
-        String batchedString = batch.stream().map(b -> b + ";").collect(Collectors.joining(" "));
+    public void sendQueriesToLoader(Collection<InsertQuery> queries) {
 
-        if (batchedString.length() == 0) { return; }
+        Json inserts = Json.array();
+        queries.stream().map(InsertQuery::toString).forEach(inserts::add);
 
         HttpURLConnection currentConn = acquireNextHost();
-        String query = REST.HttpConn.INSERT_PREFIX + batchedString;
-
-        executePost(currentConn, query);
+        executePost(currentConn, inserts.toString());
 
         int responseCode = getResponseCode(currentConn);
         if (responseCode != REST.HttpConn.HTTP_TRANSACTION_CREATED) {
@@ -130,7 +135,7 @@ public class DistributedLoader extends Loader {
         }
 
         loadingJobs.incrementAndGet();
-        LOG.info("Transaction sent to host: " + hostsArray[currentHost]);
+        LOG.info("Transaction sent to host: " + hosts.get(currentHost));
 
         if(future == null){ startCheckingStatus(); }
 
@@ -251,11 +256,11 @@ public class DistributedLoader extends Loader {
      */
     private String nextHost() {
         currentHost++;
-        if (currentHost == hostsArray.length) {
+        if (currentHost == hosts.size()) {
             currentHost = 0;
         }
 
-        return hostsArray[currentHost];
+        return hosts.get(currentHost);
     }
 
     /**
@@ -276,6 +281,9 @@ public class DistributedLoader extends Loader {
         return urlConn;
     }
 
+    /**
+     * Send an insert query to one host
+     */
     private String executePost(HttpURLConnection connection, String body){
 
         try {

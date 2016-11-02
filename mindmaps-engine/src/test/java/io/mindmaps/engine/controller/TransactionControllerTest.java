@@ -24,6 +24,7 @@ import io.mindmaps.engine.loader.TransactionState;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.util.REST;
+import mjson.Json;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
@@ -49,8 +50,8 @@ public class TransactionControllerTest extends MindmapsEngineTestBase{
 
     @Test
     public void insertValidQuery() {
-        String exampleInsertQuery = "insert $x isa Man;";
-        String transactionUUID = given().body(exampleInsertQuery).
+        Json exampleInsertQuery = Json.array("insert $x isa Man;");
+        String transactionUUID = given().body(exampleInsertQuery.toString()).
                 when().post(REST.WebPath.NEW_TRANSACTION_URI + "?graphName=mindmapstest").body().asString();
         int i = 0;
         String status = "QUEUED";
@@ -69,8 +70,8 @@ public class TransactionControllerTest extends MindmapsEngineTestBase{
 
     @Test
     public void insertInvalidQuery() {
-        String exampleInvalidInsertQuery = "insert id ?Cdcs;w4. '' ervalue;";
-        String transactionUUID = given().body(exampleInvalidInsertQuery).
+        Json exampleInvalidInsertQuery = Json.array("insert id ?Cdcs;w4. '' ervalue;");
+        String transactionUUID = given().body(exampleInvalidInsertQuery.toString()).
                 when().post(REST.WebPath.NEW_TRANSACTION_URI + "?graphName=mindmapstest").body().asString();
         int i = 0;
         String status = "QUEUED";

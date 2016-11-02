@@ -25,6 +25,7 @@ import io.mindmaps.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiOperation;
+import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -64,12 +65,12 @@ public class TransactionController {
     @Path("/new")
     @ApiOperation(
             value = "Load a new transaction made of Graql insert queries into the graph.",
-            notes = "The body of the request must only contain the insert Graql strings.")
+            notes = "The body of the request should be a JSON array of the insert Graql strings.")
     @ApiImplicitParam(name = "graphName", value = "Name of graph to use", dataType = "string", paramType = "query")
     private String newTransactionREST(Request req, Response res) {
         String currentGraphName = req.queryParams(REST.Request.GRAPH_NAME_PARAM);
         if (currentGraphName == null) currentGraphName = defaultGraphName;
-        UUID uuid = loader.addJob(currentGraphName, req.body());
+        UUID uuid = loader.addJob(currentGraphName, Json.read(req.body()));
         if (uuid != null) {
             res.status(201);
             return uuid.toString();

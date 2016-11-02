@@ -24,6 +24,7 @@ import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.Pattern;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,6 +40,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static io.mindmaps.graql.Graql.parsePatterns;
 import static org.junit.Assert.assertEquals;
@@ -84,7 +86,8 @@ public class DistributedLoaderTest extends MindmapsEngineTestBase{
         loader.setBatchSize(50);
         loader.setPollingFrequency(1000);
         try {
-            parsePatterns(new FileInputStream(file)).forEach(pattern -> loader.addToQueue(pattern.admin().asVar()));
+            Stream<Pattern> patterns = parsePatterns(new FileInputStream(file));
+            patterns.map(p -> Graql.insert(p.admin().asVar())).forEach(loader::add);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
