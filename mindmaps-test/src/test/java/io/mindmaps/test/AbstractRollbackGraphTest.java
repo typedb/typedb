@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a graph of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
@@ -20,6 +20,7 @@ package io.mindmaps.test;
 
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.MindmapsGraphFactory;
+import io.mindmaps.concept.Concept;
 import org.junit.After;
 import org.junit.Before;
 

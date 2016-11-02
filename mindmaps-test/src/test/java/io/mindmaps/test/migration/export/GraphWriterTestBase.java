@@ -1,0 +1,121 @@
+/*
+ * MindmapsDB - A Distributed Semantic Database
+ * Copyright (C) 2016  Mindmaps Research Ltd
+ *
+ * MindmapsDB is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * MindmapsDB is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
+ */
+package io.mindmaps.test.migration.export;
+
+import io.mindmaps.MindmapsGraph;
+import io.mindmaps.MindmapsGraphFactory;
+import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.Entity;
+import io.mindmaps.concept.Instance;
+import io.mindmaps.concept.Relation;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.Resource;
+import io.mindmaps.concept.RoleType;
+import io.mindmaps.concept.Rule;
+import io.mindmaps.concept.Type;
+import io.mindmaps.migration.export.GraphWriter;
+import io.mindmaps.test.migration.AbstractMindmapsMigratorTest;
+import org.junit.After;
+import org.junit.Before;
+
+import java.util.Map;
+
+import static java.util.stream.Collectors.toMap;
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertNotNull;
+
+public abstract class GraphWriterTestBase extends AbstractMindmapsMigratorTest {
+
+    protected static MindmapsGraph copy;
+    protected static GraphWriter writer;
+
+    @Before
+    public void start(){
+        writer = new GraphWriter(graph);
+        copy = factoryWithNewKeyspace().getGraph();
+    }
+
+    public void assertDataEqual(MindmapsGraph one, MindmapsGraph two){
+        one.getMetaType().instances().stream()
+                .flatMap(c -> c.asType().instances().stream())
+                .map(Concept::asInstance)
+                .forEach(i -> assertInstanceCopied(i, two));
+    }
+
+    public void assertInstanceCopied(Instance instance, MindmapsGraph two){
+
+        if(instance instanceof Entity){
+            assertEntityCopied(instance.asEntity(), two);
+        } else if(instance instanceof Relation){
+            assertRelationCopied(instance.asRelation(), two);
+        } else if(instance instanceof Rule){
+            assertRuleCopied(instance.asRule(), two);
+        } else if(instance instanceof Resource){
+            assertResourceCopied(instance.asResource(), two);
+        }
+    }
+
+    public void assertEntityCopied(Entity entity1, MindmapsGraph two){
+        Entity entity2 = two.getEntity(entity1.getId());
+
+        Map<String, Object> resources1 = entity1.resources().stream().collect(toMap(c -> c.type().getId(), Resource::getValue));
+        Map<String, Object> resources2 = entity2.resources().stream().collect(toMap(c -> c.type().getId(), Resource::getValue));
+
+        assertEquals(resources1, resources2);
+    }
+
+    public void assertRelationCopied(Relation relation1, MindmapsGraph two){
+        if(relation1.rolePlayers().values().stream().anyMatch(Concept::isResource)){
+            return;
+        }
+
+        RelationType relationType = two.getRelationType(relation1.type().getId());
+        Map<RoleType, Instance> rolemap = relation1.rolePlayers().entrySet().stream().collect(toMap(
+                e -> two.getRoleType(e.getKey().getId()),
+                e -> two.getEntity(e.getValue().getId())
+        ));
+
+        assertNotNull(two.getRelation(relationType, rolemap));
+    }
+
+    public void assertResourceCopied(Resource resource1, MindmapsGraph two){
+        assertEquals(true, two.getResourcesByValue(resource1.getValue()).stream()
+                .map(Concept::type)
+                .map(Type::getId)
+                .anyMatch(t -> resource1.type().getId().equals(t)));
+    }
+
+    public void assertRuleCopied(Rule rule1, MindmapsGraph two){
+        Rule rule2 = two.getRule(rule1.getId());
+        assertEquals(rule1.getLHS(), rule2.getLHS());
+        assertEquals(rule1.getRHS(), rule2.getRHS());
+    }
+
+    public void assertOntologiesEqual(MindmapsGraph one, MindmapsGraph two){
+        boolean ontologyCorrect = one.getMetaType().instances().stream()
+                .allMatch(t -> typesEqual(t.asType(), two.getType(t.getId())));
+        assertEquals(true, ontologyCorrect);
+    }
+
+    public boolean typesEqual(Type one, Type two){
+        return one.getId().equals(two.getId())
+                && one.isAbstract().equals(two.isAbstract())
+                && one.type().getId().equals(two.type().getId())
+                && (!one.isResourceType() || one.asResourceType().getDataType().equals(two.asResourceType().getDataType()));
+    }
+}
