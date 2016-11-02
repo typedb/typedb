@@ -19,6 +19,8 @@
 package io.mindmaps.graql.internal.pattern.property;
 
 import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.EntityType;
+import io.mindmaps.concept.ResourceType;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.EquivalentFragmentSet;
@@ -104,16 +106,9 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
 
     @Override
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
-        Concept relationConcept = insertQueryExecutor.getConcept(relationType);
-
-        relationType.getProperties().forEach(property ->
-                ((VarPropertyInternal) property).insert(insertQueryExecutor, relationConcept)
-        );
-
-        Concept resourceConcept = insertQueryExecutor.getConcept(resourceType);
-
-        ownerPlaysRole.insert(insertQueryExecutor, concept);
-        valuePlaysRole.insert(insertQueryExecutor, resourceConcept);
+        EntityType entityTypeConcept = concept.asEntityType();
+        ResourceType resourceTypeConcept = insertQueryExecutor.getConcept(resourceType).asResourceType();
+        entityTypeConcept.hasResource(resourceTypeConcept);
     }
 
     @Override
