@@ -196,13 +196,11 @@ public class HALConcept {
             //find the role played by the current instance in the current relation and use the role type as key in the embedded
             String rolePlayedByCurrentConcept = null;
             boolean isResource = false;
-            Concept resourceToUse = null;
             for (Map.Entry<RoleType, Instance> entry : rel.rolePlayers().entrySet()) {
                 //Some role players can be null
                 if (entry.getValue() != null) {
                     if (entry.getValue().isResource()) {
                         isResource = true;
-                        resourceToUse = entry.getValue();
                         rolePlayedByCurrentConcept = entry.getKey().getId();
                     } else {
                         if (entry.getValue().getId().equals(entity.getId()))

@@ -20,8 +20,8 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
     <div class="container-fluid">
         <div class="row">
             <div class="col-xs-12">
-                <div class="panel panel-filled" style="margin-bottom: 0px;">
-                    <div class="panel-body panel-console row">
+                <div class="panel panel-filled" id="panel-console-container">
+                    <div class="panel-body row" id="panel-console">
                         <div class="form-group col-xs-8" style="margin-bottom:0px;">
                             <textarea v-el:graql-editor class="form-control" rows="3" placeholder=">>"></textarea>
                         </div>
@@ -41,7 +41,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 
         <div class="row" v-show="typeInstances">
             <div class="col-xs-12">
-                <div class="panel panel-c-info panel-filled" style="margin-bottom: 0px; margin-top: 20px;">
+                <div class="panel panel-filled" style="margin-bottom: 0px; margin-top: 20px;">
                     <div class="tabs-col">
                         <div class="tabs-container">
                             <ul class="nav nav-tabs">
@@ -102,7 +102,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                                             </div>
                                         <span v-show="numOfResources>0">Resources:</span>
                                             <div class="dd-item" v-for="(key, value) in allNodeResources">
-                                                <div class="dd-handle"><span class="list-key">{{key}}:</span> {{value}}</div>
+                                                <div class="dd-handle" @click="addResourceNode(prop)"><span class="list-key">{{key}}:</span> {{value}}</div>
                                             </div>
                                         <span v-show="numOfLinks>0">Links:</span>
                                             <div class="dd-item" v-for="(key, value) in allNodeLinks">
@@ -215,7 +215,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                                             </div>
                                             <div class="modal-body">
                                                   <div class="properties-list">
-                                                      <p v-show="allNodeProps.length">Select properties to be show on nodes of type
+                                                      <p v-show="allNodeProps.length">Select properties to show on nodes of type
                                                           "{{nodeType}}".</p>
                                                       <p v-else>There is nothing configurable for nodes of type "{{nodeType}}".</p>
                                                       <br/>

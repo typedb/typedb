@@ -49,15 +49,11 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
     <!-- Navigation-->
     <aside class="navigation">
         <div class="brand" href="/">
-            Grakn.AI
+            GRAKN.AI
             <span>{{version}}</span>
         </div>
         <nav>
             <ul class="nav luna-nav">
-                <li v-link-active>
-                    <a v-link="{ path: '/status' }">Status</a>
-                </li>
-
                 <li v-link-active>
                     <a v-link="{ path: '/graph' }">Graph</a>
                 </li>
@@ -67,7 +63,11 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                 </li>
 
                 <li v-link-active>
-                    <a target="_blank" href="https://mindmaps.io/pages/index.html">Documentation</a>
+                    <a v-link="{ path: '/status' }">Status</a>
+                </li>
+
+                <li v-link-active>
+                    <a target="_blank" href="https://grakn.ai/pages/index.html">Documentation</a>
                 </li>
 
                 <li class="nav-info">

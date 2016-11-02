@@ -20,24 +20,28 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 <div class="container-fluid">
     <div class="row">
         <div class="col-xs-12">
-            <div class="panel panel-filled" style="margin-bottom: 0px;">
-                <div class="panel-body panel-console">
-                    <div class="form-group">
-                        <textarea v-el:graql-editor class="form-control" rows="3" placeholder=">>"></textarea>
+          <div class="panel panel-filled" id="panel-console-container">
+              <div class="panel-body row" id="panel-console">
+                  <div class="form-group col-xs-8" style="margin-bottom:0px;">
+                      <textarea v-el:graql-editor class="form-control" rows="3" placeholder=">>"></textarea>
+                  </div>
+                  <div class="form-buttons col-xs-4">
+                    <button @click="getMetaTypes" class="btn btn-info console-button">Explore<i class="types-button"
+                                                                                    v-bind:class="[typeInstances ? 'pe-7s-angle-up-circle' : 'pe-7s-angle-down-circle']"></i>
+                    </button>
+                    <button @click="clearGraph" class="btn btn-default console-button">Clear<i class="pe-7s-refresh"></i>
+                    </button>
+                      <button @click="runQuery" class="btn btn-default search-button console-button">Submit<i
+                              class="pe-7s-angle-right-circle"></i></button>
                     </div>
-                    <div class="from-buttons">
-                        <button @click="runQuery" class="btn btn-default search-button">Submit<i class="pe-7s-angle-right-circle"></i></button>
-                        <button @click="clearGraph" class="btn btn-default">Clear<i class="pe-7s-refresh"></i></button>
-                        <button @click="getMetaTypes" class="btn btn-info">Show Types<i class="types-button" v-bind:class="[typeInstances ? 'pe-7s-angle-up-circle' : 'pe-7s-angle-down-circle']"></i></button>
-                    </div>
-                </div>
-            </div>
+              </div>
+          </div>
         </div>
     </div>
 
     <div class="row" v-show="typeInstances">
         <div class="col-xs-12">
-            <div class="panel panel-c-info panel-filled" style="margin-bottom: 0px; margin-top: 20px;">
+            <div class="panel panel-filled" style="margin-bottom: 0px; margin-top: 20px;">
                 <div class="tabs-col">
                     <div class="tabs-container">
                         <ul class="nav nav-tabs">

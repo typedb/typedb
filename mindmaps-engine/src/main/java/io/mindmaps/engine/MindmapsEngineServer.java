@@ -91,8 +91,8 @@ public class MindmapsEngineServer {
     private static void printStartMessage(String host, String port, String logFilePath) {
         String address = "http://" + host + ":" + port;
         LOG.info("\nGrakn LOG file located at ["+logFilePath+"]");
-        LOG.info("\n==========================================================");
-        LOG.info(String.format(ConfigProperties.GRAKN_ASCII,address));
-        LOG.info("\n==========================================================");
+        LOG.info("\n=======================================================");
+        LOG.info("\n"+String.format(ConfigProperties.GRAKN_ASCII,address));
+        LOG.info("\n=======================================================");
     }
 }

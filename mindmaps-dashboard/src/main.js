@@ -44,7 +44,7 @@ router.map({
 })
 router.redirect({
     // home page
-    '*': '/status'
+    '*': '/graph'
 })
 
 router.start(app, '#app')

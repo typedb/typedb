@@ -18,7 +18,8 @@
   float: right;
 }
 .btn-info{
-  margin-left: 10px;
+  margin-left: 20px;
+  margin-right: 10px;
 }
 .form-buttons {
     padding-bottom: 0px;
@@ -81,8 +82,13 @@ div {
   margin-right:10px;
 }
 
-.panel-console{
-  padding:7px;
+#panel-console-container{
+  border: 3px solid #4e5156;
+  margin-bottom: 0px;
+}
+
+#panel-console{
+  padding: 10px;
   margin-bottom: 0px;
 }
 
