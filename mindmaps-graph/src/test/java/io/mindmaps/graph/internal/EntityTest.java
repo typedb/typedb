@@ -263,4 +263,28 @@ public class EntityTest {
         assertTrue(rule.getId().startsWith(Schema.BaseType.RULE.name() + "-" + rule.type().getId() + "-"));
     }
 
+    @Test
+    public void testHasResource(){
+        String resourceTypeId = "A Resource Thing";
+        EntityType entityType = mindmapsGraph.putEntityType("A Thing");
+        ResourceType resourceType = mindmapsGraph.putResourceType(resourceTypeId, ResourceType.DataType.STRING);
+        entityType.hasResource(resourceType);
+
+        Entity entity = mindmapsGraph.addEntity(entityType);
+        Resource resource = mindmapsGraph.putResource("A resource thing", resourceType);
+
+        Relation relation = entity.hasResource(resource);
+        assertEquals(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId), relation.type().getId());
+
+        relation.rolePlayers().entrySet().forEach(entry -> {
+            RoleType roleType = entry.getKey();
+            Instance instance = entry.getValue();
+
+            if(instance.equals(entity)){
+                assertEquals(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId), roleType.getId());
+            } else {
+                assertEquals(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId), roleType.getId());
+            }
+        });
+    }
 }
