@@ -24,8 +24,16 @@ import io.mindmaps.engine.backgroundtasks.TaskStatus;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.lang.reflect.Array;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.UUID;
 
+import static io.mindmaps.engine.backgroundtasks.TaskStatus.*;
+import static io.mindmaps.engine.backgroundtasks.TaskStatus.RUNNING;
+import static io.mindmaps.engine.backgroundtasks.TaskStatus.SCHEDULED;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
@@ -40,40 +48,42 @@ public class PostProcessingTaskTest extends MindmapsEngineTestBase {
     @Test
     public void testStart() throws Exception {
         UUID uuid = taskManager.scheduleTask(new PostProcessingTask(), 100);
-        assertNotEquals(TaskStatus.CREATED, taskManager.getTaskState(uuid).getStatus());
+        assertNotEquals(CREATED, taskManager.getTaskState(uuid).getStatus());
 
         // Wait for supervisor thread to mark task as completed
         Thread.sleep(2000);
 
         // Check that task has ran
-        assertEquals(TaskStatus.COMPLETED, taskManager.getTaskState(uuid).getStatus());
+        assertEquals(COMPLETED, taskManager.getTaskState(uuid).getStatus());
     }
 
     @Test
     public void testStop() {
         UUID uuid = taskManager.scheduleRecurringTask(new PostProcessingTask(), 100, 10000);
         taskManager.stopTask(uuid);
-        assertEquals(TaskStatus.STOPPED, taskManager.getTaskState(uuid).getStatus());
+        assertEquals(STOPPED, taskManager.getTaskState(uuid).getStatus());
     }
 
     @Test
     public void testPauseResume() {
         UUID uuid = taskManager.scheduleTask(new PostProcessingTask(), 1000);
-        assertNotEquals(TaskStatus.CREATED, taskManager.getTaskState(uuid).getStatus());
+        assertNotEquals(CREATED, taskManager.getTaskState(uuid).getStatus());
 
         taskManager.pauseTask(uuid);
-        assertEquals(TaskStatus.PAUSED, taskManager.getTaskState(uuid).getStatus());
+        assertEquals(PAUSED, taskManager.getTaskState(uuid).getStatus());
 
         taskManager.resumeTask(uuid);
-        assertEquals(TaskStatus.RUNNING, taskManager.getTaskState(uuid).getStatus());
+        assertEquals(RUNNING, taskManager.getTaskState(uuid).getStatus());
     }
 
     @Test
-    public void testRestart() throws Exception {
+    public void testRestart() {
         UUID uuid = taskManager.scheduleTask(new PostProcessingTask(), 0);
         taskManager.stopTask(uuid);
+        assertEquals(STOPPED, taskManager.getTaskState(uuid).getStatus());
         taskManager.restartTask(uuid);
-        Thread.sleep(100);
-        assertEquals(TaskStatus.RUNNING, taskManager.getTaskState(uuid).getStatus());
+        assertNotEquals(STOPPED, taskManager.getTaskState(uuid).getStatus());
     }
+
+
 }

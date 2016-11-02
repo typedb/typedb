@@ -70,6 +70,7 @@ public class MindmapsEngineServer {
         new CommitLogController();
         new TransactionController();
         new StatusController();
+        new BackgroundTasksController();
 
         //Register Exception Handler
         exception(MindmapsEngineServerException.class, (e, request, response) -> {

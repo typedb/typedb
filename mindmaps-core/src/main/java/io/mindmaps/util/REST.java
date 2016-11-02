@@ -25,6 +25,11 @@ public class REST {
 
 
         public static final String REMOTE_SHELL_URI = "/shell/remote";
+
+
+        public static final String ALL_BACKGROUND_TASKS_URI = "/backgroundtasks/all";
+        public static final String BACKGROUND_TASKS_BY_STATUS = "/backgroundtasks/tasks/";
+        public static final String BACKGROUND_TASK_STATUS ="/backgroundtasks/task/";
     }
 
     public static class Request{
@@ -35,6 +40,11 @@ public class REST {
         public static final String GRAPH_NAME_PARAM = "graphName";
         public static final String GRAPH_CONFIG_PARAM = "graphConfig";
         public static final String UUID_PARAMETER = ":uuid";
+        public static final String TASK_STATUS_PARAMETER = ":status";
+        public static final String TASK_PAUSE = "/pause";
+        public static final String TASK_RESUME = "/resume";
+        public static final String TASK_STOP = "/stop";
+        public static final String TASK_RESTART = "/restart";
     }
 
     public static class GraphConfig{
