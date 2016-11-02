@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.Reader;
-import java.util.stream.Stream;
 
 public class LoadingMigrator {
 
@@ -47,7 +46,7 @@ public class LoadingMigrator {
     public void migrate(String template, File file) {
         checkBatchSize();
         try{
-            migrator.migrate(template, file).forEach(loader::addToQueue);
+            migrator.migrate(template, file).forEach(loader::add);
         } finally {
             loader.waitToFinish();
         }
@@ -56,7 +55,7 @@ public class LoadingMigrator {
     public void migrate(String template, Reader reader) {
         checkBatchSize();
         try{
-            migrator.migrate(template, reader).forEach(loader::addToQueue);
+            migrator.migrate(template, reader).forEach(loader::add);
         } finally {
             loader.waitToFinish();
         }

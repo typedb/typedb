@@ -92,6 +92,7 @@ public class JsonMigratorTest {
         load(getFile("simple-schema/schema.gql"));
 
         String template = "  \n" +
+                "insert " +
                 "$person isa person;\n" +
                 " \n" +
                 "$address isa address\n" +
@@ -151,7 +152,7 @@ public class JsonMigratorTest {
         load(getFile("all-types/schema.gql"));
 
         String template = "" +
-                "$x isa thing\n" +
+                "insert $x isa thing\n" +
                 "  has a-boolean <a-boolean>\n" +
                 "  has a-number  <a-number>\n" +
                 "  for (int in array-of-ints ) do {\n" +
@@ -188,7 +189,7 @@ public class JsonMigratorTest {
         load(getFile("string-or-object/schema.gql"));
 
         String template = "\n" +
-                "$thing isa the-thing\n" +
+                "insert $thing isa the-thing\n" +
                 "        has a-string if (ne the-thing.a-string null) do {<the-thing.a-string>}\n" +
                 "        else {<the-thing>} ;";
 
@@ -211,7 +212,7 @@ public class JsonMigratorTest {
         load(getFile("string-or-object/schema.gql"));
 
         String template = "\n" +
-                "$thing isa the-thing\n" +
+                "insert $thing isa the-thing\n" +
                 "        has a-string if (ne the-thing.a-string null) do {<the-thing.a-string>}\n" +
                 "        else {<the-thing>} ;";
 

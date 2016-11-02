@@ -1,13 +1,16 @@
 insert
 
 model isa entity-type
+    has-resource name
     has-resource year
     has-resource description
     has-resource price
     plays-role model-of-car;
 make isa entity-type
+    has-resource name
     plays-role make-of-car;
 
+name isa resource-type datatype string;
 year isa resource-type datatype string;
 description isa resource-type datatype string;
 price isa resource-type datatype double;

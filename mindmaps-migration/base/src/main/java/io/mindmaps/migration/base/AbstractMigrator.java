@@ -21,22 +21,15 @@ package io.mindmaps.migration.base;
 import com.google.common.collect.Iterators;
 import io.mindmaps.engine.loader.Loader;
 import io.mindmaps.graql.Graql;
-import io.mindmaps.graql.Pattern;
-import io.mindmaps.graql.Var;
-import io.mindmaps.graql.admin.PatternAdmin;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.mindmaps.graql.InsertQuery;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
-import static java.util.stream.Collectors.toSet;
 
 public abstract class AbstractMigrator implements Migrator {
 
@@ -56,19 +49,9 @@ public abstract class AbstractMigrator implements Migrator {
         return new LoadingMigrator(loader, this);
     }
 
-    protected Collection<Var> template(String template, Collection<Map<String, Object>> data){
-        Map<String, Object> forData = Collections.singletonMap("data", data);
-        String expandedQuery = Graql.parseTemplate(loopForBatch(template), forData);
-
-        return Graql.parsePatterns(expandedQuery).stream()
-                .map(Pattern::admin)
-                .filter(PatternAdmin::isVar)
-                .map(PatternAdmin::asVar)
-                .collect(toSet());
-    }
-
-    protected String loopForBatch(String template){
-        return "for(data) do { " + template + "}";
+    protected InsertQuery template(String template, Map<String, Object> data){
+        String templated = Graql.parseTemplate(template, data);
+        return Graql.parse(templated);
     }
 
     /**
@@ -77,8 +60,9 @@ public abstract class AbstractMigrator implements Migrator {
      * @param <T> Type of values of iterator
      * @return Stream over a collection that are each of batchSize
      */
-    protected <T> Stream<Collection<T>> partitionedStream(Iterator<T> iterator){
-        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(
-                Iterators.partition(iterator, batchSize), Spliterator.ORDERED), false);
+    protected <T> Stream<T> stream(Iterator<T> iterator){
+        return StreamSupport.stream(
+                Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED), false);
+
     }
 }

@@ -1,3 +1,4 @@
+insert
 $person isa person;
 
 $address isa address

@@ -7,7 +7,8 @@ pokemon isa entity-type
     has-resource height
     has-resource weight;
 
-pokedex-no isa resource-type datatype long;
+type-id isa resource-type datatype string;
+pokedex-no isa resource-type datatype string;
 description isa resource-type datatype string;
 number isa resource-type datatype long;
 height isa resource-type datatype long;
@@ -15,6 +16,7 @@ weight isa resource-type datatype long;
 
 pokemon-type isa entity-type
     has-resource description
+    has-resource type-id
     plays-role type-of-pokemon;
 
 has-type isa relation-type

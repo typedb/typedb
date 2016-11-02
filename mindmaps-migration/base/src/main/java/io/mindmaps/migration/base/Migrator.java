@@ -18,11 +18,10 @@
 
 package io.mindmaps.migration.base;
 
-import io.mindmaps.graql.Var;
+import io.mindmaps.graql.InsertQuery;
 
 import java.io.File;
 import java.io.Reader;
-import java.util.Collection;
 import java.util.stream.Stream;
 
 public interface Migrator {
@@ -32,12 +31,12 @@ public interface Migrator {
      * @param template parametrized graql insert query
      * @param file file containing data to be migrated
      */
-    public  Stream<Collection<Var>> migrate(String template, File file);
+    public  Stream<InsertQuery> migrate(String template, File file);
 
     /**
      * Migrate all the data in the given file based on the given template.
      * @param template parametrized graql insert query
      * @param reader reader over the data to be migrated
      */
-    public Stream<Collection<Var>> migrate(String template, Reader reader);
+    public Stream<InsertQuery> migrate(String template, Reader reader);
 }

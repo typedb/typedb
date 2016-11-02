@@ -26,6 +26,7 @@ import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.engine.loader.Loader;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Var;
 import org.apache.commons.cli.CommandLine;
@@ -76,12 +77,12 @@ public class MigrationCLI {
         }
     }
 
-    public void writeToFile(Stream<Collection<Var>> vars){
+    public void writeToFile(Stream<InsertQuery> queries){
         if(hasOption("o")){
             File outputFile = new File(getOption("o"));
 
             try(BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile))){
-                vars.flatMap(Collection::stream).map(Object::toString).forEach((str) -> {
+                queries.map(InsertQuery::toString).forEach((str) -> {
                     try {
                         writer.write(str);
                     } catch (IOException e) {
