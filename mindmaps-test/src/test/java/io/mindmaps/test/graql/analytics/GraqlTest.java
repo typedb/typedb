@@ -27,8 +27,8 @@ import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.graql.internal.analytics.MindmapsVertexProgram;
-import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.test.AbstractGraphTest;
+import io.mindmaps.util.Schema;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -36,8 +36,12 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import static io.mindmaps.graql.Graql.*;
-import static org.junit.Assert.*;
+import static io.mindmaps.graql.Graql.var;
+import static io.mindmaps.graql.Graql.id;
+import static io.mindmaps.graql.Graql.withGraph;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
 public class GraqlTest extends AbstractGraphTest {
@@ -141,9 +145,9 @@ public class GraqlTest extends AbstractGraphTest {
 
         String resourceTypeId = "resource";
 
-        RoleType resourceOwner = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
-        RoleType resourceValue = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
-        RelationType relationType = graph.putRelationType(GraqlType.HAS_RESOURCE.getId(resourceTypeId))
+        RoleType resourceOwner = graph.putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId));
+        RoleType resourceValue = graph.putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId));
+        RelationType relationType = graph.putRelationType(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId))
                 .hasRole(resourceOwner)
                 .hasRole(resourceValue);
 

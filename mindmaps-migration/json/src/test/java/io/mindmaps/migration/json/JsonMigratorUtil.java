@@ -19,8 +19,12 @@
 package io.mindmaps.migration.json;
 
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.*;
-import io.mindmaps.graql.internal.util.GraqlType;
+import io.mindmaps.concept.Instance;
+import io.mindmaps.concept.Relation;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.Resource;
+import io.mindmaps.concept.RoleType;
+import io.mindmaps.util.Schema;
 
 import java.io.File;
 import java.util.Collection;
@@ -60,8 +64,8 @@ public class JsonMigratorUtil {
     }
 
     public static Stream<Resource> getResources(MindmapsGraph graph, Instance instance, String name) {
-        RoleType roleOwner = graph.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(name));
-        RoleType roleOther = graph.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(name));
+        RoleType roleOwner = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(name));
+        RoleType roleOther = graph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(name));
 
         Collection<Relation> relations = instance.relations(roleOwner);
         return relations.stream().map(r -> r.rolePlayers().get(roleOther).asResource());

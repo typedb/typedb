@@ -21,6 +21,7 @@ package io.mindmaps.graph.internal;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.Relation;
+import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
@@ -138,6 +139,27 @@ abstract class InstanceImpl<T extends Instance, V extends Type> extends ConceptI
         ConceptImpl<?, ?> parent = this;
         parent.getIncomingNeighbours(Schema.EdgeLabel.ROLE_PLAYER).forEach(c -> roleTypes.add(c.asCasting().getRole()));
         return roleTypes;
+    }
+
+
+    /**
+     * Creates a relation from this instance to the provided resource.
+     * @param resource The resource to creating a relationship to
+     * @return A relation which contains both the entity and the resource
+     */
+    @Override
+    public Relation hasResource(Resource resource){
+        ResourceType type = resource.type();
+
+        RelationType hasResource = getMindmapsGraph().putRelationType(Schema.Resource.HAS_RESOURCE.getId(type.getId()));
+        RoleType hasResourceTarget = getMindmapsGraph().putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(type.getId()));
+        RoleType hasResourceValue = getMindmapsGraph().putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(type.getId()));
+
+        Relation relation = getMindmapsGraph().addRelation(hasResource);
+        relation.putRolePlayer(hasResourceTarget, this);
+        relation.putRolePlayer(hasResourceValue, resource);
+
+        return relation;
     }
 
 
