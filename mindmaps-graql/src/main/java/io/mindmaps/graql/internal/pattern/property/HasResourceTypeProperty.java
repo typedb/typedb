@@ -19,11 +19,12 @@
 package io.mindmaps.graql.internal.pattern.property;
 
 import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.ResourceType;
+import io.mindmaps.concept.Type;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.EquivalentFragmentSet;
 import io.mindmaps.graql.internal.query.InsertQueryExecutor;
-import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
 
@@ -40,7 +41,6 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     private final VarAdmin relationType;
 
     private final PlaysRoleProperty ownerPlaysRole;
-    private final PlaysRoleProperty valuePlaysRole;
 
     public HasResourceTypeProperty(VarAdmin resourceType) {
         this.resourceType = resourceType;
@@ -49,17 +49,16 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
                 () -> new IllegalStateException(ErrorMessage.NO_ID_SPECIFIED_FOR_HAS_RESOURCE.getMessage())
         );
 
-        ownerRole = Graql.id(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId))
+        ownerRole = Graql.id(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId))
                 .isa(Schema.MetaSchema.ROLE_TYPE.getId()).admin();
-        valueRole = Graql.id(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId))
+        valueRole = Graql.id(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId))
                 .isa(Schema.MetaSchema.ROLE_TYPE.getId()).admin();
 
-        relationType = Graql.id(GraqlType.HAS_RESOURCE.getId(resourceTypeId))
+        relationType = Graql.id(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId))
                 .isa(Schema.MetaSchema.RELATION_TYPE.getId())
                 .hasRole(ownerRole).hasRole(valueRole).admin();
 
         ownerPlaysRole = new PlaysRoleProperty(ownerRole);
-        valuePlaysRole = new PlaysRoleProperty(valueRole);
     }
 
     public VarAdmin getResourceType() {
@@ -105,16 +104,9 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
 
     @Override
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
-        Concept relationConcept = insertQueryExecutor.getConcept(relationType);
-
-        relationType.getProperties().forEach(property ->
-                ((VarPropertyInternal) property).insert(insertQueryExecutor, relationConcept)
-        );
-
-        Concept resourceConcept = insertQueryExecutor.getConcept(resourceType);
-
-        ownerPlaysRole.insert(insertQueryExecutor, concept);
-        valuePlaysRole.insert(insertQueryExecutor, resourceConcept);
+        Type entityTypeConcept = concept.asType();
+        ResourceType resourceTypeConcept = insertQueryExecutor.getConcept(resourceType).asResourceType();
+        entityTypeConcept.hasResource(resourceTypeConcept);
     }
 
     @Override

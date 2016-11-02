@@ -18,6 +18,8 @@
 
 package io.mindmaps.graph.internal;
 
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.ResourceType;
 import io.mindmaps.exception.InvalidConceptTypeException;
 import io.mindmaps.util.Schema;
 import io.mindmaps.util.ErrorMessage;
@@ -293,5 +295,25 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
                 throw new ConceptException(ErrorMessage.META_TYPE_IMMUTABLE.getMessage(metaSchema.getId()));
             }
         }
+    }
+
+    /**
+     * Creates a relation type which allows this type and a resource type to be linked.
+     * @param resourceType The resource type which instances of this type should be allowed to play.
+     * @return The resulting relation type which allows instances of this type to have relations with the provided resourceType.
+     */
+    @Override
+    public RelationType hasResource(ResourceType resourceType){
+        String resourceTypeId = resourceType.getId();
+        RoleType ownerRole = getMindmapsGraph().putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId));
+        RoleType valueRole = getMindmapsGraph().putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId));
+
+        this.playsRole(ownerRole);
+        resourceType.playsRole(valueRole);
+
+        return getMindmapsGraph().
+                putRelationType(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId)).
+                hasRole(ownerRole).
+                hasRole(valueRole);
     }
 }

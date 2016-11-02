@@ -156,25 +156,25 @@ public class CWInferenceTest {
         MatchQuery query = qb.parse(queryString);
 
         String explicitQuery = "match " +
-            "{{$x isa criminal} or {$x has nationality 'American';" +
-            "{$z has alignment 'hostile'} or {" +
+            "{{$x isa criminal;} or {$x has nationality 'American';" +
+            "{$z has alignment 'hostile';} or {" +
                 "$yy value 'America';" +
                 "($z, $yy) isa is-enemy-of;" +
                 "$z isa country;" +
-                "$yy isa country" +
+                "$yy isa country;" +
             "};" +
             "($x, $y, $z) isa transaction or {" +
                 "$x isa person;" +
                 "$z isa country;" +
-                "{ {$y isa weapon} or { {$y isa missile} or {$y isa rocket;$y has propulsion 'gsp'} } };" +
+                "{ {$y isa weapon;} or { {$y isa missile;} or {$y isa rocket;$y has propulsion 'gsp';} ;} ;};" +
                 "($x, $z) isa is-paid-by;" +
-                "($z, $y) isa owns" +
+                "($z, $y) isa owns;" +
             "};" +
-            "{$y isa weapon} or {{$y isa missile} or {$y has propulsion 'gsp';$y isa rocket}};" +
+            "{$y isa weapon;} or {{$y isa missile;} or {$y has propulsion 'gsp';$y isa rocket;};};" +
             "$x isa person;" +
-            "$z isa country}} or {$x has nationality 'American';$x isa person} select $x;";
+            "$z isa country;};} or {$x has nationality 'American';$x isa person;}; select $x;";
 
-        //assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     @Test

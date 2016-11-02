@@ -22,6 +22,8 @@ import io.mindmaps.Mindmaps;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
+import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.RuleType;
@@ -39,6 +41,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -392,5 +395,24 @@ public class TypeTest {
         ));
 
         meta.playsRole(roleType);
+    }
+
+    @Test
+    public void testHasResource(){
+        String resourceTypeId = "Resource Type";
+        EntityType entityType = mindmapsGraph.putEntityType("Entity1");
+        ResourceType resourceType = mindmapsGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
+
+        RelationType relationType = entityType.hasResource(resourceType);
+        assertEquals(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId), relationType.getId());
+
+        Set<String> roleIds = relationType.hasRoles().stream().map(Concept::getId).collect(Collectors.toSet());
+        assertEquals(2, roleIds.size());
+
+        assertTrue(roleIds.contains(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId)));
+        assertTrue(roleIds.contains(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId)));
+
+        assertEquals(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId), entityType.playsRoles().iterator().next().getId());
+        assertEquals(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId), resourceType.playsRoles().iterator().next().getId());
     }
 }

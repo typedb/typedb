@@ -327,7 +327,8 @@ public class Reasoner {
         }
     }
 
-    private QueryAnswers resolveQuery(Query query, boolean materialise) {
+    private QueryAnswers resolveConjunctiveQuery(Query query, boolean materialise) {
+        if (!query.isRuleResolvable()) return new QueryAnswers(Sets.newHashSet(query.execute()));
         Iterator<Atom> atIt = query.selectAtoms().iterator();
         AtomicQuery atomicQuery = new AtomicMatchQuery(atIt.next());
         QueryAnswers answers = resolveAtomicQuery(atomicQuery, materialise);
@@ -345,8 +346,16 @@ public class Reasoner {
      * @return set of answers
      */
     public QueryAnswers resolve(MatchQuery inputQuery, boolean materialise) {
-        Query query = new ReasonerMatchQuery(inputQuery, graph);
-        return resolveQuery(query, materialise);
+        Set<String> selectVars = inputQuery.admin().getSelectedNames();
+        QueryAnswers answers = new QueryAnswers();
+        inputQuery.admin().getPattern()
+                .getDisjunctiveNormalForm()
+                .getPatterns()
+                .forEach( conj -> {
+                    Query cq = new ReasonerMatchQuery(Graql.withGraph(graph).match(conj).select(selectVars), graph);
+                    answers.addAll(resolveConjunctiveQuery(cq, materialise));
+                });
+        return answers;
     }
 
     public QueryAnswers  resolve(MatchQuery inputQuery) { return resolve(inputQuery, false);}
@@ -357,10 +366,7 @@ public class Reasoner {
      * @return MatchQuery with answers
      */
     public MatchQuery resolveToQuery(MatchQuery inputQuery, boolean materialise) {
-        Query query = new Query(inputQuery, graph);
-        if (!query.isRuleResolvable()) return inputQuery;
-        QueryAnswers answers = resolveQuery(query, materialise);
-        return new ReasonerMatchQuery(inputQuery, graph, answers);
+        return new ReasonerMatchQuery(inputQuery, graph, resolve(inputQuery, materialise));
     }
 
     public MatchQuery resolveToQuery(MatchQuery inputQuery) { return resolveToQuery(inputQuery, false);}

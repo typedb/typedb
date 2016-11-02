@@ -22,18 +22,14 @@ import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Instance;
-import io.mindmaps.concept.Relation;
-import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.Resource;
-import io.mindmaps.concept.ResourceType;
-import io.mindmaps.concept.RoleType;
 import io.mindmaps.graql.admin.ValuePredicateAdmin;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.gremlin.EquivalentFragmentSet;
 import io.mindmaps.graql.internal.gremlin.fragment.Fragments;
 import io.mindmaps.graql.internal.query.InsertQueryExecutor;
-import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.util.Schema;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -79,9 +75,9 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
 
     @Override
     public Collection<EquivalentFragmentSet> match(String start) {
-        Optional<String> hasResource = Optional.of(GraqlType.HAS_RESOURCE.getId(resourceType));
-        Optional<String> hasResourceOwner = Optional.of(GraqlType.HAS_RESOURCE_OWNER.getId(resourceType));
-        Optional<String> hasResourceValue = Optional.of(GraqlType.HAS_RESOURCE_VALUE.getId(resourceType));
+        Optional<String> hasResource = Optional.of(Schema.Resource.HAS_RESOURCE.getId(resourceType));
+        Optional<String> hasResourceOwner = Optional.of(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceType));
+        Optional<String> hasResourceValue = Optional.of(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceType));
 
         return Sets.newHashSet(EquivalentFragmentSet.create(
                 Fragments.shortcut(hasResource, hasResourceOwner, hasResourceValue, start, resource.getName()),
@@ -105,18 +101,7 @@ public class HasResourceProperty extends AbstractVarProperty implements NamedPro
     public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
         Resource resourceConcept = insertQueryExecutor.getConcept(resource).asResource();
         Instance instance = concept.asInstance();
-
-        ResourceType type = resourceConcept.type();
-
-        MindmapsGraph graph = insertQueryExecutor.getGraph();
-
-        RelationType hasResource = graph.putRelationType(GraqlType.HAS_RESOURCE.getId(type.getId()));
-        RoleType hasResourceTarget = graph.putRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(type.getId()));
-        RoleType hasResourceValue = graph.putRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(type.getId()));
-
-        Relation relation = graph.addRelation(hasResource);
-        relation.putRolePlayer(hasResourceTarget, instance);
-        relation.putRolePlayer(hasResourceValue, resourceConcept);
+        instance.hasResource(resourceConcept);
     }
 
     @Override

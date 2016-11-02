@@ -209,58 +209,56 @@ public class SNBInferenceTest {
     }
 
     @Test
-    @Ignore
     public void testCombinedProductTag() {
         MindmapsGraph graph = SNBGraph.getGraph();
         QueryBuilder qb = Graql.withGraph(graph);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match " +
-                "{$x isa person;{$y isa product} or {$y isa tag};($x, $y) isa recommendation}";
+                "$x isa person;{$y isa product;} or {$y isa tag;};($x, $y) isa recommendation;";
         MatchQuery query = qb.parse(queryString);
 
-        String explicitQuery = "match " +
-                "{$x isa person;$y isa product;" +
-                "{$x id 'Alice';$y id 'war-of-the-worlds'} or" +
-                "{$x id 'Bob';{$y id 'Ducatti-1299'} or {$y id 'The-good-the-bad-the-ugly'}} or" +
-                "{$x id 'Charlie';{$y id 'blizzard-of-ozz'} or {$y id 'stratocaster'}} or " +
-                "{$x id 'Denis';{$y id 'colour-of-magic'} or {$y id 'dorian-gray'}} or"+
-                "{$x id 'Frank';$y id 'nocturnes'} or" +
-                "{$x id 'Karl Fischer';{$y id 'faust'} or {$y id 'nocturnes'}} or " +
-                "{$x id 'Gary';$y id 'the-wall'}} or" +
-                "{$x isa person;$y isa tag;" +
-                "{$x id 'Charlie';{$y id 'yngwie-malmsteen'} or {$y id 'cacophony'} or {$y id 'steve-vai'} or {$y id 'black-sabbath'}} or " +
-                "{$x id 'Gary';$y id 'pink-floyd'}}";
+        String explicitQuery = "match $x isa person;" +
+                "{$x id 'Alice';$y id 'War of the Worlds';} or" +
+                "{$x id 'Bob';{$y id 'Ducatti 1299';} or {$y id 'The Good the Bad the Ugly';};} or" +
+                "{$x id 'Charlie';{$y id 'Blizzard of Ozz';} or {$y id 'Stratocaster';};} or " +
+                "{$x id 'Denis';{$y id 'Colour of Magic';} or {$y id 'Dorian Gray';};} or"+
+                "{$x id 'Frank';$y id 'Nocturnes';} or" +
+                "{$x id 'Karl Fischer';{$y id 'Faust';} or {$y id 'Nocturnes';};} or " +
+                "{$x id 'Gary';$y id 'The Wall';} or" +
+                "{$x id 'Charlie';" +
+                "{$y id 'Yngwie Malmsteen';} or {$y id 'Cacophony';} or {$y id 'Steve Vai';} or {$y id 'Black Sabbath';};} or " +
+                "{$x id 'Gary';$y id 'Pink Floyd';};";
 
-        //assertQueriesEqual(reasoner.expand(query), qb.parseMatch(explicitQuery));
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
     }
 
     @Test
-    @Ignore
     public void testCombinedProductTag2() {
         MindmapsGraph graph = SNBGraph.getGraph();
         QueryBuilder qb = Graql.withGraph(graph);
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match " +
-                "{$x isa person;$y isa product;($x, $y) isa recommendation} or" +
-                "{$x isa person;$y isa tag;($x, $y) isa recommendation}";
+                "{$p isa person;$r isa product;($p, $r) isa recommendation;} or" +
+                "{$p isa person;$r isa tag;($p, $r) isa recommendation;};";
         MatchQuery query = qb.parse(queryString);
 
-        String explicitQuery = "match " +
-                "{$x isa person;$y isa product;" +
-                "{$x id 'Alice';$y id 'war-of-the-worlds'} or" +
-                "{$x id 'Bob';{$y id 'Ducatti-1299'} or {$y id 'The-good-the-bad-the-ugly'}} or" +
-                "{$x id 'Charlie';{$y id 'blizzard-of-ozz'} or {$y id 'stratocaster'}} or " +
-                "{$x id 'Denis';{$y id 'colour-of-magic'} or {$y id 'dorian-gray'}} or"+
-                "{$x id 'Frank';$y id 'nocturnes'} or" +
-                "{$x id 'Karl Fischer';{$y id 'faust'} or {$y id 'nocturnes'}} or " +
-                "{$x id 'Gary';$y id 'the-wall'}} or" +
-                "{$x isa person;$y isa tag;" +
-                "{$x id 'Charlie';{$y id 'yngwie-malmsteen'} or {$y id 'cacophony'} or {$y id 'steve-vai'} or {$y id 'black-sabbath'}} or " +
-                "{$x id 'Gary';$y id 'pink-floyd'}}";
+        String explicitQuery = "match $p isa person;" +
+                "{$p id 'Alice';$r id 'War of the Worlds';} or" +
+                "{$p id 'Bob';{$r id 'Ducatti 1299';} or {$r id 'The Good the Bad the Ugly';};} or" +
+                "{$p id 'Charlie';{$r id 'Blizzard of Ozz';} or {$r id 'Stratocaster';};} or " +
+                "{$p id 'Denis';{$r id 'Colour of Magic';} or {$r id 'Dorian Gray';};} or"+
+                "{$p id 'Frank';$r id 'Nocturnes';} or" +
+                "{$p id 'Karl Fischer';{$r id 'Faust';} or {$r id 'Nocturnes';};} or " +
+                "{$p id 'Gary';$r id 'The Wall';} or" +
+                "{$p id 'Charlie';" +
+                "{$r id 'Yngwie Malmsteen';} or {$r id 'Cacophony';} or {$r id 'Steve Vai';} or {$r id 'Black Sabbath';};} or " +
+                "{$p id 'Gary';$r id 'Pink Floyd';};";
 
-        //assertQueriesEqual(reasoner.expand(query), qb.parseMatch(explicitQuery));
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
     }
 
     @Test

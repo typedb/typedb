@@ -168,7 +168,8 @@ public enum ErrorMessage {
     ONTOLOGY_MUTATION("The mutations to the ontology have not been successfully committed. Validation Errors: [%s]"),
     BULK_PERSIST("The bulk persist operation on instances of concept type [%s] has failed with validation error: [%s]"),
     CLONE_FAILED("The vertex program could not be cloned, check implementation of the clone method in class: [%s]. Stacktrace: [%s]"),
-    CANNOT_DELETE_AND_ADD("Both the putValue and cleanup methods have been called in the same iteration. This can corrupt the graph.");
+    CANNOT_DELETE_AND_ADD("Both the putValue and cleanup methods have been called in the same iteration. This can corrupt the graph."),
+    MAX_ITERATION_REACHED("Max iteration reached.");
 
     private final String message;
 

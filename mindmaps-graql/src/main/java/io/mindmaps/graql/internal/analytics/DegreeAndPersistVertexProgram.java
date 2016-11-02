@@ -19,7 +19,6 @@
 package io.mindmaps.graql.internal.analytics;
 
 import io.mindmaps.util.Schema;
-import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -37,7 +36,7 @@ class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
     public DegreeAndPersistVertexProgram() {
     }
 
-    public DegreeAndPersistVertexProgram(String keySpace, Set<String> types) {
+    public DegreeAndPersistVertexProgram(Set<String> types, String keySpace) {
         persistentProperties.put(KEYSPACE_KEY, keySpace);
         selectedTypes = types;
     }
@@ -83,7 +82,8 @@ class DegreeAndPersistVertexProgram extends MindmapsVertexProgram<Long> {
 
     @Override
     public void workerIterationStart(Memory memory) {
-        bulkResourceMutate = new BulkResourceMutate<Long>((String) persistentProperties.get(KEYSPACE_KEY));
+        bulkResourceMutate =
+                new BulkResourceMutate<Long>((String) persistentProperties.get(KEYSPACE_KEY), Analytics.degree);
     }
 
     @Override
