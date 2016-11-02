@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-import static io.mindmaps.graql.Graql.id;
 import static io.mindmaps.graql.Graql.var;
 import static java.util.stream.Collectors.joining;
 import static org.junit.Assert.assertTrue;
@@ -47,19 +46,19 @@ public class ExamplesTest {
     @Test
     public void testModern() throws IOException {
         runInsertQuery("src/examples/modern.gql");
-        assertTrue(qb.match(id("marko").isa("person")).ask().execute());
+        assertTrue(qb.match(var().has("name", "marko").isa("person")).ask().execute());
     }
 
     @Test
     public void testPhilosophers() throws IOException {
         runInsertQuery("src/examples/philosophers.gql");
-        assertTrue(qb.match(id("Alexander").has("title", "Shah of Persia")).ask().execute());
+        assertTrue(qb.match(var().has("name", "Alexander").has("title", "Shah of Persia")).ask().execute());
     }
 
     @Test
     public void testPokemon() throws IOException {
         runInsertQuery("src/examples/pokemon.gql");
-        assertTrue(qb.match(var().rel(id("Pikachu")).rel(id("electric")).isa("has-type")).ask().execute());
+        assertTrue(qb.match(var().rel(var().has("name", "Pikachu")).rel(var().has("name", "electric")).isa("has-type")).ask().execute());
     }
 
     private void runInsertQuery(String path) throws IOException {

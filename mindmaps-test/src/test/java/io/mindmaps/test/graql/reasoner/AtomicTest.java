@@ -123,18 +123,15 @@ public class AtomicTest {
         QueryBuilder qb = Graql.withGraph(graph);
         String atomString = "match $x isa person;";
         String relString = "match ($x, $y) isa recommendation;";
-        String subString = "match $x id 'Bob';";
         String resString = "match $x has gender 'male';";
 
         Atomic atom = AtomicFactory.create(qb.<MatchQuery>parse(atomString).admin().getPattern().getPatterns().iterator().next());
         Atomic relation = AtomicFactory.create(qb.<MatchQuery>parse(relString).admin().getPattern().getPatterns().iterator().next());
-        Atomic sub = AtomicFactory.create(qb.<MatchQuery>parse(subString).admin().getPattern().getPatterns().iterator().next());
         Atomic res = AtomicFactory.create(qb.<MatchQuery>parse(resString).admin().getPattern().getPatterns().iterator().next());
 
         assert(((Atom) atom).isType());
         assert(((Atom) relation).isRelation());
         assert(((Atom) res).isResource());
-        assert(((Predicate) sub).isIdPredicate());
     }
 
     @Test

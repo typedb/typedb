@@ -36,8 +36,11 @@ public class CWGraph {
     private static MindmapsGraph mindmaps;
 
     private static EntityType person, criminal, weapon, rocket, missile, country;
-    
 
+    private static RelationType hasNameRelation;
+    private static ResourceType<String> name;
+    private static RoleType hasNameTarget, hasNameValue;
+    
     private static ResourceType<String> alignment;
     private static RelationType alignmentRelation;
     private static RoleType alignmentValue, alignmentTarget;
@@ -50,9 +53,8 @@ public class CWGraph {
     private static RelationType nationalityRelation;
     private static RoleType nationalityValue, nationalityTarget;
     
-    private static RelationType hasResource, isEnemyOf, isPaidBy, owns, transaction;
-
-    private static RoleType hasResourceTarget, hasResourceValue;
+    private static RelationType isEnemyOf, isPaidBy, owns, transaction;
+    
     private static RoleType enemySource, enemyTarget;
     private static RoleType owner, ownedItem;
     private static RoleType payee, payer;
@@ -81,30 +83,31 @@ public class CWGraph {
     }
 
     private static void buildOntology() {
-        hasResourceTarget = mindmaps.putRoleType("has-resource-target");
-        hasResourceValue = mindmaps.putRoleType("has-resource-value");
-        hasResource = mindmaps.putRelationType("has-resource")
-                .hasRole(hasResourceTarget).hasRole(hasResourceValue);
+        hasNameTarget = mindmaps.putRoleType("has-name-owner");
+        hasNameValue = mindmaps.putRoleType("has-name-value");
+        hasNameRelation = mindmaps.putRelationType("has-name")
+                .hasRole(hasNameTarget).hasRole(hasNameValue);
+        name = mindmaps.putResourceType("name", ResourceType.DataType.STRING).playsRole(hasNameValue);
 
         nationalityTarget = mindmaps.putRoleType("has-nationality-owner");
         nationalityValue = mindmaps.putRoleType("has-nationality-value");
         nationalityRelation = mindmaps.putRelationType("has-nationality")
                 .hasRole(nationalityTarget).hasRole(nationalityValue);
-        nationality = mindmaps.putResourceType("nationality", ResourceType.DataType.STRING).playsRole(hasResourceValue)
+        nationality = mindmaps.putResourceType("nationality", ResourceType.DataType.STRING) 
                 .playsRole(nationalityValue);
 
         propulsionTarget = mindmaps.putRoleType("has-propulsion-owner");
         propulsionValue = mindmaps.putRoleType("has-propulsion-value");
         propulsionRelation = mindmaps.putRelationType("has-propulsion")
                 .hasRole(propulsionTarget).hasRole(propulsionValue);
-        propulsion = mindmaps.putResourceType("propulsion", ResourceType.DataType.STRING).playsRole(hasResourceValue)
+        propulsion = mindmaps.putResourceType("propulsion", ResourceType.DataType.STRING) 
                 .playsRole(propulsionValue);
 
         alignmentTarget = mindmaps.putRoleType("has-alignment-owner");
         alignmentValue = mindmaps.putRoleType("has-alignment-value");
         alignmentRelation = mindmaps.putRelationType("has-alignment")
                 .hasRole(alignmentTarget).hasRole(alignmentValue);
-        alignment = mindmaps.putResourceType("alignment", ResourceType.DataType.STRING).playsRole(hasResourceValue)
+        alignment = mindmaps.putResourceType("alignment", ResourceType.DataType.STRING) 
                 .playsRole(alignmentValue);
 
 
@@ -119,7 +122,6 @@ public class CWGraph {
         owns = mindmaps.putRelationType("owns")
                 .hasRole(owner).hasRole(ownedItem);
 
-
         //transaction
         seller = mindmaps.putRoleType("seller");
         buyer = mindmaps.putRoleType("buyer");
@@ -133,37 +135,43 @@ public class CWGraph {
         isPaidBy = mindmaps.putRelationType("is-paid-by")
                 .hasRole(payee).hasRole(payer);
 
-
         person = mindmaps.putEntityType("person")
+                .playsRole(hasNameTarget)
                 .playsRole(seller)
                 .playsRole(payee)
-                .playsRole(hasResourceTarget)
                 .playsRole(nationalityTarget);
 
-        criminal = mindmaps.putEntityType("criminal").superType(person);
+        criminal = mindmaps.putEntityType("criminal")
+                .superType(person);
 
-        //device = mindmaps.putEntityType("device").setValue("device");
         weapon = mindmaps.putEntityType("weapon")
-                .playsRole(transactionItem).playsRole(ownedItem).playsRole(hasResourceTarget);//.superEntity(device);
+                .playsRole(hasNameTarget)
+                .playsRole(transactionItem)
+                .playsRole(ownedItem);
         rocket = mindmaps.putEntityType("rocket")
-                .playsRole(hasResourceTarget)
+                .playsRole(hasNameTarget)
                 .playsRole(transactionItem)
                 .playsRole(ownedItem)
                 .playsRole(propulsionTarget);
-        missile = mindmaps.putEntityType("missile").superType(weapon)
-                .playsRole(transactionItem).playsRole(hasResourceTarget);
-
+        missile = mindmaps.putEntityType("missile")
+                .superType(weapon)
+                .playsRole(hasNameTarget)
+                .playsRole(transactionItem);
 
         country = mindmaps.putEntityType("country")
-                .playsRole(buyer).playsRole(owner).playsRole(enemyTarget).playsRole(payer).playsRole(enemySource).playsRole(hasResourceTarget);
-
+                .playsRole(hasNameTarget)
+                .playsRole(buyer)
+                .playsRole(owner)
+                .playsRole(enemyTarget)
+                .playsRole(payer)
+                .playsRole(enemySource);
     }
 
     private static void buildInstances() {
-        colonelWest = mindmaps.putEntity("colonelWest", person);
-        Nono = mindmaps.putEntity("Nono", country);
-        America = mindmaps.putEntity("America", country);
-        Tomahawk = mindmaps.putEntity("Tomahawk", rocket);
+        colonelWest =  putEntity("colonelWest", person);
+        Nono =  putEntity("Nono", country);
+        America =  putEntity("America", country);
+        Tomahawk =  putEntity("Tomahawk", rocket);
 
         putResource(colonelWest, nationality, "American", nationalityRelation, nationalityTarget, nationalityValue);
         putResource(Tomahawk, propulsion, "gsp", propulsionRelation, propulsionTarget, propulsionValue);
@@ -198,28 +206,28 @@ public class CWGraph {
 
         String R1_RHS = "$x isa criminal;";
 
-        mindmaps.putRule("R1", R1_LHS, R1_RHS, inferenceRule);
+        mindmaps.addRule(R1_LHS, R1_RHS, inferenceRule);
 
         //R2: "Missiles are a kind of a weapon"
         String  R2_LHS = "$x isa missile;";
         String R2_RHS = "$x isa weapon;";
 
-        mindmaps.putRule("R2", R2_LHS, R2_RHS, inferenceRule);
+        mindmaps.addRule(R2_LHS, R2_RHS, inferenceRule);
 
         //R3: "If a country is an enemy of America then it is hostile"
         String R3_LHS =
                 "$x isa country;" +
                 "($x, $y) isa is-enemy-of;" +
-                "$y isa country;$y id 'America';";
+                "$y isa country;$y has name 'America';";
         String R3_RHS = "$x has alignment 'hostile';";
 
-        mindmaps.putRule("R3", R3_LHS, R3_RHS, inferenceRule);
+        mindmaps.addRule(R3_LHS, R3_RHS, inferenceRule);
 
         //R4: "If a rocket is self-propelled and guided, it is a missile"
         String R4_LHS = "$x isa rocket;$x has propulsion 'gsp';";
         String R4_RHS = "$x isa missile;";
 
-        mindmaps.putRule("R4", R4_LHS, R4_RHS, inferenceRule);
+        mindmaps.addRule(R4_LHS, R4_RHS, inferenceRule);
 
         String R5_LHS =
                 "$x isa person;" +
@@ -230,21 +238,18 @@ public class CWGraph {
 
         String R5_RHS = "(seller: $x, buyer: $y, transaction-item: $z) isa transaction;";
 
-        mindmaps.putRule("R5", R5_LHS, R5_RHS, inferenceRule);
+        mindmaps.addRule(R5_LHS, R5_RHS, inferenceRule);
     }
 
-    private static <T> void putResource(Instance instance, ResourceType<T> resourceType, T resource) {
-        Resource resourceInstance = mindmaps.putResource(resource, resourceType);
-
-        mindmaps.addRelation(hasResource)
-                .putRolePlayer(hasResourceTarget, instance)
-                .putRolePlayer(hasResourceValue, resourceInstance);
+    private static Instance putEntity(String id, EntityType type) {
+        Instance inst = mindmaps.addEntity(type);
+        putResource(inst, name, id, hasNameRelation, hasNameTarget, hasNameValue);
+        return inst;
     }
 
     private static <T> void putResource(Instance instance, ResourceType<T> resourceType, T resource, RelationType relationType,
                                         RoleType targetRole, RoleType valueRole) {
         Resource resourceInstance = mindmaps.putResource(resource, resourceType);
-
         mindmaps.addRelation(relationType)
                 .putRolePlayer(targetRole, instance)
                 .putRolePlayer(valueRole, resourceInstance);

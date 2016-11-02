@@ -48,13 +48,13 @@ public class WineInferenceTest {
         String queryString = "match $x isa person;$y isa wine;($x, $y) isa wine-recommendation;";
         MatchQuery query = qb.parse(queryString);
 
-        String explicitQuery = "match $x isa person;$y isa wine;" +
-                            "{$x id 'Bob';$y id 'White Champagne';} or" +
-                        "{$x id 'Alice';$y id 'Cabernet Sauvignion';} or" +
-                        "{$x id 'Charlie';$y id 'Pinot Grigio Rose';} or" +
-                        "{$x id 'Denis';$y id 'Busuioaca Romaneasca';} or" +
-                        "{$x id 'Eva';$y id 'Tamaioasa Romaneasca';} or" +
-                        "{$x id 'Frank';$y id 'Riojo Blanco CVNE 2003';};";
+        String explicitQuery = "match $x isa person, has name $nameP;$y isa wine, has name $nameW;" +
+                            "{$nameP value 'Bob';$nameW value 'White Champagne';} or" +
+                        "{$nameP value 'Alice';$nameW value 'Cabernet Sauvignion';} or" +
+                        "{$nameP value 'Charlie';$nameW value 'Pinot Grigio Rose';} or" +
+                        "{$nameP value 'Denis';$nameW value 'Busuioaca Romaneasca';} or" +
+                        "{$nameP value 'Eva';$nameW value 'Tamaioasa Romaneasca';} or" +
+                        "{$nameP value 'Frank';$nameW value 'Riojo Blanco CVNE 2003';}; select $x, $y;";
 
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));

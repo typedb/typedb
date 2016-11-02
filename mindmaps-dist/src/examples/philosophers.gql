@@ -8,16 +8,20 @@ person isa entity-type
     plays-role teacher
     plays-role student
     plays-role thinker
+    has-resource name
     has-resource title
     has-resource epithet;
 
 school isa entity-type
+    has-resource name
     plays-role philosophy;
 
 fact isa entity-type
     plays-role thought
+    has-resource name
     has-resource description;
 
+name isa resource-type datatype string;
 title isa resource-type datatype string;
 epithet isa resource-type datatype string;
 description isa resource-type datatype string;
@@ -47,11 +51,12 @@ thought isa role-type;
 
 # Instances
 
-"Socrates" isa person;
-"Plato" isa person;
-"Aristotle" isa person;
+$socrates isa person, has name "Socrates";
+$plato isa person, has name "Plato";
+$aristotle isa person, has name "Aristotle";
 
-"Alexander" isa person
+$alexander isa person
+    has name "Alexander"
     has epithet "The Great"
     has title "Hegeon"
     has title "King of Macedon"
@@ -59,29 +64,29 @@ thought isa role-type;
     has title "Pharaoh of Egypt"
     has title "Lord of Asia";
 
-"Peripateticism" isa school;
-"Platonism" isa school;
-"Idealism" isa school;
-"Cynicism" isa school;
+$peripateticism isa school, has name "Peripateticism";
+$platonism isa school, has name "Platonism";
+$idealism isa school, has name "Idealism";
+$cynicism isa school, has name "Cynicism";
 
-"sun-fact" isa fact, has description "The Sun is bigger than the Earth";
-"cave-fact" isa fact, has description "Caves are mostly pretty dark";
-"nothing" isa fact;
+$sun-fact isa fact, has name 'sun-fact', has description "The Sun is bigger than the Earth";
+$cave-fact isa fact, has name 'cave-fact', has description "Caves are mostly pretty dark";
+$nothing isa fact, has name 'nothing';
 
 
 # Relations
 
-(philosopher: Socrates, philosophy: Platonism) isa practice;
-(philosopher: Plato, philosophy: Idealism) isa practice;
-(philosopher: Plato, philosophy: Platonism) isa practice;
-(philosopher: Aristotle, philosophy: Peripateticism) isa practice;
+(philosopher: $socrates, philosophy: $platonism) isa practice;
+(philosopher: $plato, philosophy: $idealism) isa practice;
+(philosopher: $plato, philosophy: $platonism) isa practice;
+(philosopher: $aristotle, philosophy: $peripateticism) isa practice;
 
-(teacher: Socrates, student: Plato) isa education;
-(teacher: Plato, student: Aristotle) isa education;
-(teacher: Aristotle, student: Alexander) isa education;
+(teacher: $socrates, student: $plato) isa education;
+(teacher: $plato, student: $aristotle) isa education;
+(teacher: $aristotle, student: $alexander) isa education;
 
-(thinker: Aristotle, thought: sun-fact) isa knowledge;
-(thinker: Plato, thought: cave-fact) isa knowledge;
+(thinker: $aristotle, thought: $sun-fact) isa knowledge;
+(thinker: $plato, thought: $cave-fact) isa knowledge;
 
-$socratesKnowsNothing (thinker: Socrates, thought: nothing) isa knowledge;
-(thinker: Socrates, thought: $socratesKnowsNothing) isa knowledge;
+$socratesKnowsNothing (thinker: $socrates, thought: $nothing) isa knowledge;
+(thinker: $socrates, thought: $socratesKnowsNothing) isa knowledge;

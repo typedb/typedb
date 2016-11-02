@@ -4,7 +4,8 @@ insert
 ####################Ontology######################
 #################################################
 
-"entity" isa entity-type;
+"entity" isa entity-type
+    has-resource index;
 "a-entity" sub entity;
 "b-entity" sub entity;
 
@@ -18,18 +19,19 @@ entity plays-role P-from plays-role P-to;
 "Q" isa relation-type, has-role Q-from, has-role Q-to;
 entity plays-role Q-from plays-role Q-to;
 
+"index" isa resource-type, datatype string;
 
 ####################################################
 ##################RULES#############################
 ####################################################
 
-"R1" isa inference-rule,
+isa inference-rule,
 lhs {
 (Q-from: $x, Q-to: $y) isa Q;},
 rhs {
 (P-from: $x, P-to: $y) isa P;};
 
-"R2" isa inference-rule,
+isa inference-rule,
 lhs {
 (Q-from: $x, Q-to: $z) isa Q;
 (P-from: $z, P-to: $y) isa P;},

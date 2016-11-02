@@ -11,11 +11,13 @@ id "named_entity" isa role-type;
 
 # The reason I am using an entitiy instead of a resource is that
 # there will be a lot of entities with the same name
-id "name_tag" isa entity-type plays-role name_of_named_entity plays-role journal_tag plays-role publisher_tag plays-role author_tag plays-role editor_tag has-resource name_tag_string;
+id "name_tag" isa entity-type plays-role name_of_named_entity plays-role journal_tag plays-role publisher_tag plays-role author_tag plays-role editor_tag has-resource name_tag_id has-resource name_tag_string;
 
 # I should probably use the value of name_tag, but I am still
 # not able to.
 id "name_tag_string" isa resource-type datatype string;
+
+id "name_tag_id" isa resource-type datatype string;
 
   ## DBLP record entities, i.e. first order children
 id "dblp_record" isa entity-type plays-role editor_target plays-role publisher_target plays-role authored_record plays-role journal_target plays-role note_target plays-role referenced_record plays-role referencing_record has-resource dblp_mdate has-resource dblp_title has-resource dblp_booktitle has-resource dblp_pages has-resource dblp_year has-resource dblp_address has-resource dblp_volume has-resource dblp_number has-resource dblp_month has-resource dblp_url has-resource dblp_ee has-resource dblp_cdrom has-resource dblp_cite has-resource dblp_isbn has-resource dblp_series has-resource dblp_school has-resource dblp_chapter;

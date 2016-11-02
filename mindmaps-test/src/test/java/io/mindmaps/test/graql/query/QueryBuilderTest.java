@@ -60,22 +60,22 @@ public class QueryBuilderTest extends AbstractMovieGraphTest {
     @Test
     public void testBuildInsertQueryGraphLast() {
         assertFalse(withGraph(graph).match(var().id("a-movie")).ask().execute());
-        InsertQuery query = insert(var().id("a-movie").isa("movie")).withGraph(graph);
+        InsertQuery query = insert(var().has("title", "a-movie").isa("movie")).withGraph(graph);
         query.execute();
-        assertTrue(withGraph(graph).match(var().id("a-movie")).ask().execute());
+        assertTrue(withGraph(graph).match(var().has("title", "a-movie")).ask().execute());
     }
 
     @Test
     public void testBuildDeleteQueryGraphLast() {
         // Insert some data to delete
-        withGraph(graph).insert(var().id("123").isa("movie")).execute();
+        withGraph(graph).insert(var().has("title", "123").isa("movie")).execute();
 
-        assertTrue(withGraph(graph).match(var().id("123")).ask().execute());
+        assertTrue(withGraph(graph).match(var().has("title", "123")).ask().execute());
 
-        DeleteQuery query = match(var("x").id("123")).delete("x").withGraph(graph);
+        DeleteQuery query = match(var("x").has("title", "123")).delete("x").withGraph(graph);
         query.execute();
 
-        assertFalse(withGraph(graph).match(var().id("123")).ask().execute());
+        assertFalse(withGraph(graph).match(var().has("title", "123")).ask().execute());
     }
 
     @Test
@@ -83,9 +83,9 @@ public class QueryBuilderTest extends AbstractMovieGraphTest {
         assertFalse(withGraph(graph).match(var().id("a-movie")).ask().execute());
         InsertQuery query =
                 match(var("x").id("movie")).
-                insert(var().id("a-movie").isa("movie")).withGraph(graph);
+                insert(var().has("title", "a-movie").isa("movie")).withGraph(graph);
         query.execute();
-        assertTrue(withGraph(graph).match(var().id("a-movie")).ask().execute());
+        assertTrue(withGraph(graph).match(var().has("title", "a-movie")).ask().execute());
     }
 
     @Test

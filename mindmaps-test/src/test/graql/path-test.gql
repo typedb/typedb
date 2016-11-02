@@ -4,8 +4,11 @@ insert
 ####################Ontology######################
 #################################################
 
-"start-vertex" isa entity-type;
-"vertex" isa entity-type;
+
+"vertex" isa entity-type
+   has-resource index;
+"start-vertex" isa entity-type
+   has-resource index;
 
 "arc-from" isa role-type;
 "arc-to" isa role-type;
@@ -19,17 +22,19 @@ start-vertex plays-role arc-from;
 vertex plays-role path-from, plays-role path-to;
 start-vertex plays-role path-from;
 
+"index" isa resource-type, datatype string;
+
 ####################################################
 ##################RULES#############################
 ####################################################
 
-"R1" isa inference-rule,
+isa inference-rule,
 lhs {
 (arc-from: $x, arc-to: $y) isa arc;},
 rhs {
 (path-from: $x, path-to: $y) isa path;};
 
-"R2" isa inference-rule,
+isa inference-rule,
 lhs {
 (path-from: $x, path-to: $z) isa path;
 (path-from: $z, path-to: $y) isa path;},

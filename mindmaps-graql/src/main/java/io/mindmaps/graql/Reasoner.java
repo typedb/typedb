@@ -19,6 +19,7 @@
 package io.mindmaps.graql;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.RoleType;
@@ -264,7 +265,7 @@ public class Reasoner {
                 AtomicQuery childAtomicQuery = new AtomicMatchQuery(at);
                 atomicQuery.establishRelation(childAtomicQuery);
                 QueryAnswers subs = answer(childAtomicQuery, subGoals, matAnswers);
-                while(atIt.hasNext()){
+                while (atIt.hasNext()) {
                     at = atIt.next();
                     childAtomicQuery = new AtomicMatchQuery(at);
                     atomicQuery.establishRelation(childAtomicQuery);
@@ -277,7 +278,7 @@ public class Reasoner {
                 QueryAnswers newAnswers = new QueryAnswers();
                 if (atom.isResource())
                     newAnswers.addAll(new AtomicMatchQuery(ruleHead, answers).materialise());
-                if (!newAnswers.isEmpty()) answers = newAnswers;
+                if (!newAnswers.isEmpty()) answers = answers.join(newAnswers);
 
                 QueryAnswers filteredAnswers = answers.filterInComplete(atomicQuery.getSelectedNames());
                 atomicQuery.getAnswers().addAll(filteredAnswers);
@@ -319,7 +320,7 @@ public class Reasoner {
                 Set<AtomicQuery> subGoals = new HashSet<>();
                 dAns = atomicQuery.getAnswers().size();
                 answer(atomicQuery, subGoals, matAnswers, materialise);
-                LOG.debug("iter: " + iter++ + " answers: " + atomicQuery.getAnswers().size());
+                LOG.debug("Atom: " + atomicQuery.getAtom() + " iter: " + iter++ + " answers: " + atomicQuery.getAnswers().size());
                 dAns = atomicQuery.getAnswers().size() - dAns;
             } while (dAns != 0);
             return atomicQuery.getAnswers();

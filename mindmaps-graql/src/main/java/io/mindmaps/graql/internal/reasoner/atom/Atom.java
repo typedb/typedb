@@ -188,7 +188,16 @@ public abstract class Atom extends AtomBase {
 
     public Set<Predicate> getValuePredicates(){
         return getParentQuery().getValuePredicates().stream()
-                .filter(atom -> containsVar(atom.getVarName()))
+                .filter(atom -> (containsVar(atom.getVarName())))
+                .collect(Collectors.toSet());
+    }
+
+    public Set<Predicate> getResourceValuePredicates(){
+        Set<String> resVars = getResources().stream()
+                .map(Atom::getValueVariable)
+                .collect(Collectors.toSet());
+        return getParentQuery().getValuePredicates().stream()
+                .filter(atom -> resVars.contains(atom.getVarName()))
                 .collect(Collectors.toSet());
     }
 
@@ -197,6 +206,13 @@ public abstract class Atom extends AtomBase {
                 .filter(atom -> containsVar(atom.getVarName()))
                 .collect(Collectors.toSet());
     }
+
+    public Set<Atom> getResources(){
+        return getParentQuery().getResources().stream()
+                .filter(atom-> containsVar(atom.getVarName()))
+                .collect(Collectors.toSet());
+    }
+
 
     public Map<String, Predicate> getVarSubMap() {
         Map<String, Predicate> map = new HashMap<>();

@@ -53,38 +53,36 @@ public class DeleteQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testDeleteMultiple() {
         qb.insert(var().id("fake-type").isa(ENTITY_TYPE.getId())).execute();
-        qb.insert(var().id("fake-type-1").isa("fake-type"), var().id("fake-type-2").isa("fake-type")).execute();
+        qb.insert(var("x").isa("fake-type"), var("y").isa("fake-type")).execute();
 
         assertEquals(2, qb.match(var("x").isa("fake-type")).stream().count());
 
         qb.match(var("x").isa("fake-type")).delete("x").execute();
 
         assertFalse(qb.match(var().isa("fake-type")).ask().execute());
-
-        qb.match(var("x").id("http://mindmaps.io/fake-type")).delete("x");
     }
 
     @Test
     public void testDeleteName() {
         qb.insert(
-                var().id("123").isa("person")
+                var().isa("person")
                         .has("real-name", "Bob")
                         .has("real-name", "Robert")
                         .has("gender", "male")
         ).execute();
 
-        assertTrue(qb.match(var().id("123").has("real-name", "Bob")).ask().execute());
-        assertTrue(qb.match(var().id("123").has("real-name", "Robert")).ask().execute());
-        assertTrue(qb.match(var().id("123").has("gender", "male")).ask().execute());
+        assertTrue(qb.match(var().isa("person").has("real-name", "Bob")).ask().execute());
+        assertTrue(qb.match(var().isa("person").has("real-name", "Robert")).ask().execute());
+        assertTrue(qb.match(var().isa("person").has("gender", "male")).ask().execute());
 
-        qb.match(var("x").id("123")).delete(var("x").has("real-name")).execute();
+        qb.match(var("x").has("real-name", "Bob")).delete(var("x").has("real-name")).execute();
 
-        assertFalse(qb.match(var().id("123").has("real-name", "Bob")).ask().execute());
-        assertFalse(qb.match(var().id("123").has("real-name", "Robert")).ask().execute());
-        assertTrue(qb.match(var().id("123").has("gender", "male")).ask().execute());
+        assertFalse(qb.match(var().isa("person").has("real-name", "Bob")).ask().execute());
+        assertFalse(qb.match(var().isa("person").has("real-name", "Robert")).ask().execute());
+        assertTrue(qb.match(var().isa("person").has("gender", "male")).ask().execute());
 
-        qb.match(var("x").id("123")).delete("x").execute();
-        assertFalse(qb.match(var().id("123")).ask().execute());
+        qb.match(var("x").has("gender", "male")).delete("x").execute();
+        assertFalse(qb.match(var().has("gender", "male")).ask().execute());
     }
 
     @Test
@@ -107,24 +105,24 @@ public class DeleteQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testDeleteSpecificName() {
         qb.insert(
-                var().id("123").isa("person")
+                var().isa("person")
                         .has("real-name", "Bob")
                         .has("real-name", "Robert")
                         .has("gender", "male")
         ).execute();
 
-        assertTrue(qb.match(var().id("123").has("real-name", "Bob")).ask().execute());
-        assertTrue(qb.match(var().id("123").has("real-name", "Robert")).ask().execute());
-        assertTrue(qb.match(var().id("123").has("gender", "male")).ask().execute());
+        assertTrue(qb.match(var().isa("person").has("real-name", "Bob")).ask().execute());
+        assertTrue(qb.match(var().isa("person").has("real-name", "Robert")).ask().execute());
+        assertTrue(qb.match(var().isa("person").has("gender", "male")).ask().execute());
 
-        qb.match(var("x").id("123")).delete(var("x").has("real-name", "Robert")).execute();
+        qb.match(var("x").has("real-name", "Bob")).delete(var("x").has("real-name", "Robert")).execute();
 
-        assertTrue(qb.match(var().id("123").has("real-name", "Bob")).ask().execute());
-        assertFalse(qb.match(var().id("123").has("real-name", "Robert")).ask().execute());
-        assertTrue(qb.match(var().id("123").has("gender", "male")).ask().execute());
+        assertTrue(qb.match(var().isa("person").has("real-name", "Bob")).ask().execute());
+        assertFalse(qb.match(var().isa("person").has("real-name", "Robert")).ask().execute());
+        assertTrue(qb.match(var().isa("person").has("gender", "male")).ask().execute());
 
-        qb.match(var("x").id("123")).delete("x").execute();
-        assertFalse(qb.match(var().id("123")).ask().execute());
+        qb.match(var("x").has("real-name", "Bob")).delete("x").execute();
+        assertFalse(qb.match(var().has("real-name", "Bob").isa("person")).ask().execute());
     }
 
     @Test

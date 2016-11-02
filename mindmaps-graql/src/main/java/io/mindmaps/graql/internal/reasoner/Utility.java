@@ -114,14 +114,13 @@ public class Utility {
 
     /**
      * create transitive rule R(from: X, to: Y) :- R(from: X,to: Z), R(from: Z, to: Y)
-     * @param ruleId rule identifier
      * @param relType transitive relation type
      * @param fromRoleId  from directional role type id
      * @param toRoleId to directional role type id
      * @param graph graph
      * @return rule instance
      */
-    public static Rule createTransitiveRule(String ruleId, RelationType relType, String fromRoleId, String toRoleId, MindmapsGraph graph){
+    public static Rule createTransitiveRule(RelationType relType, String fromRoleId, String toRoleId, MindmapsGraph graph){
         final int arity = relType.hasRoles().size();
         if (arity != 2)
             throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
@@ -131,36 +130,34 @@ public class Utility {
         VarAdmin headVar = Graql.var().isa(relType.getId()).rel(fromRoleId, "x").rel(toRoleId, "y").admin();
         String body = Patterns.conjunction(Sets.newHashSet(startVar, endVar)).toString() + ";";
         String head = headVar.toString() + ";";
-        return graph.putRule(ruleId, body, head, graph.getMetaRuleInference());
+        return graph.addRule(body, head, graph.getMetaRuleInference());
     }
 
     /**
      * create reflexive rule R(from: X, to: X) :- R(from: X,to: Y)
-     * @param ruleId rule identifier
      * @param relType reflexive relation type
      * @param graph graph
      * @return rule instance
      */
-    public static Rule createReflexiveRule(String ruleId, RelationType relType, MindmapsGraph graph){
+    public static Rule createReflexiveRule(RelationType relType, MindmapsGraph graph){
         final int arity = relType.hasRoles().size();
         if (arity != 2)
             throw new IllegalArgumentException(ErrorMessage.RULE_CREATION_ARITY_ERROR.getMessage());
 
         String body = Graql.var().isa(relType.getId()).rel("x").rel("y").toString() + ";";
         String head = Graql.var().isa(relType.getId()).rel("x").rel("x").toString() + ";";
-        return graph.putRule(ruleId, body, head, graph.getMetaRuleInference());
+        return graph.addRule(body, head, graph.getMetaRuleInference());
     }
 
     /**
      * creates rule parent :- child
-     * @param ruleId rule identifier
      * @param parent relation type of parent
      * @param child relation type of child
      * @param roleMappings map of corresponding role type ids
      * @param graph graph
      * @return rule instance
      */
-    public static Rule createSubPropertyRule(String ruleId, RelationType parent, RelationType child, Map<String, String> roleMappings,
+    public static Rule createSubPropertyRule(RelationType parent, RelationType child, Map<String, String> roleMappings,
                                              MindmapsGraph graph){
         final int parentArity = parent.hasRoles().size();
         final int childArity = child.hasRoles().size();
@@ -178,10 +175,10 @@ public class Utility {
         });
         String body = childVar.toString() + ";";
         String head = parentVar.toString() + ";";
-        return graph.putRule(ruleId, body, head, graph.getMetaRuleInference());
+        return graph.addRule(body, head, graph.getMetaRuleInference());
     }
 
-    public static Rule createPropertyChainRule(String ruleId, RelationType relation, String fromRoleId, String toRoleId,
+    public static Rule createPropertyChainRule(RelationType relation, String fromRoleId, String toRoleId,
                                              LinkedHashMap<RelationType, Pair<String, String>> chain, MindmapsGraph graph){
         Stack<String> varNames = new Stack<>();
         varNames.push("x");
@@ -198,7 +195,7 @@ public class Utility {
         Var headVar = Graql.var().isa(relation.getId()).rel(fromRoleId, "x").rel(toRoleId, varNames.peek());
         String body = Patterns.conjunction(bodyVars).toString() + ";";
         String head = headVar.toString() + ";";
-        return graph.putRule(ruleId, body, head, graph.getMetaRuleInference());
+        return graph.addRule(body, head, graph.getMetaRuleInference());
     }
 
     public static boolean checkTypesCompatible(Type aType, Type bType) {

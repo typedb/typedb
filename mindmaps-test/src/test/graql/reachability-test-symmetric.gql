@@ -4,8 +4,8 @@ insert
 ####################Ontology######################
 #################################################
 
-"vertex" isa entity-type;
-
+"vertex" isa entity-type
+    has-resource index;
 
 "link-endA" isa role-type;
 "link-endB" isa role-type;
@@ -17,31 +17,33 @@ vertex plays-role link-endA, plays-role link-endB;
 "reachable" isa relation-type, has-role reach-endA, has-role reach-endB;
 vertex plays-role reach-endA, plays-role reach-endB;
 
+"index" isa resource-type, datatype string;
+
 ####################################################
 ##################DATA#############################
 ####################################################
 
-"a" isa vertex;
-"b" isa vertex;
-"c" isa vertex;
-"d" isa vertex;
+$a isa vertex, has index "a";
+$b isa vertex, has index "b";
+$c isa vertex, has index "c";
+$d isa vertex, has index "d";
 
-(link-endA: 'a', link-endB: 'b') isa link;
-(link-endA: 'b', link-endB: 'c') isa link;
-(link-endA: 'c', link-endB: 'c') isa link;
-(link-endA: 'c', link-endB: 'd') isa link;
+(link-endA: $a, link-endB: $b) isa link;
+(link-endA: $b, link-endB: $c) isa link;
+(link-endA: $c, link-endB: $c) isa link;
+(link-endA: $c, link-endB: $d) isa link;
 
 ####################################################
 ##################RULES#############################
 ####################################################
 
-"R1" isa inference-rule,
+isa inference-rule,
 lhs {
 ($x, $y) isa link;},
 rhs {
 ($x, $y) isa reachable;};
 
-"R2" isa inference-rule,
+isa inference-rule,
 lhs {
 ($x, $z) isa link;
 ($z, $y) isa reachable;},

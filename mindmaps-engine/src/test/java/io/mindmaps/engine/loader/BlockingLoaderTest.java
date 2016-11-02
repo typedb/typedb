@@ -90,7 +90,7 @@ public class BlockingLoaderTest extends MindmapsEngineTestBase {
         // TODO: Make this assertion consistently pass
         // Assert.assertTrue(secondLoadingTime < firstLoadingTime);
 
-        Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getConcept("X506965727265204162656c").getId());
+        Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getResourcesByValue("X506965727265204162656c").iterator().next().getId());
     }
 
     private void loadOntology() {

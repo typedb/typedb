@@ -28,6 +28,7 @@ import io.mindmaps.test.graql.reasoner.graphs.GeoGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static io.mindmaps.graql.internal.reasoner.Utility.printAnswers;
 import static io.mindmaps.graql.internal.reasoner.Utility.printMatchQueryResults;
 import static org.junit.Assert.assertEquals;
 
@@ -46,31 +47,30 @@ public class GeoInferenceTest {
 
     @Test
     public void testQuery() {
-        String queryString = "match " +
-                        "$x isa city;(geo-entity: $x, entity-location: $y) isa is-located-in;\n"+
-                        "$y isa country;$y id 'Poland'; select $x;";
+        String queryString = "match $x isa city;$x has name $name;"+
+                        "(geo-entity: $x, entity-location: $y) isa is-located-in;\n"+
+                        "$y isa country;$y has name 'Poland'; select $x, $name;";
         MatchQuery query = qb.parse(queryString);
         printMatchQueryResults(query.distinct());
 
         String explicitQuery = "match " +
-                "$x isa city;{$x id 'Warsaw';} or {$x id 'Wroclaw';};" +
-                "$y isa country;$y id 'Poland'; select $x;";
+                "$x isa city;$x has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $x, $name;";
 
+        //printAnswers(reasoner.resolve(query));
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
     }
 
     @Test
     public void testQueryPrime() {
-        String queryString = "match " +
-                "$x isa city;($x, $y) isa is-located-in;\n"+
-                "$y isa country;$y id 'Poland'; select $x;";
+        String queryString = "match $x isa city;$x has name $name;"+
+                "($x, $y) isa is-located-in;"+
+                "$y isa country;$y has name 'Poland'; select $x, $name;";
         MatchQuery query = qb.parse(queryString);
         printMatchQueryResults(query.distinct());
 
         String explicitQuery = "match " +
-                "$x isa city;{$x id 'Warsaw';} or {$x id 'Wroclaw';};" +
-                "$y isa country;$y id 'Poland'; select $x;";
+                "$x isa city;$x has name $name;{$name value 'Warsaw';} or {$name value 'Wroclaw';};select $x, $name;";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
@@ -78,13 +78,13 @@ public class GeoInferenceTest {
 
     @Test
     public void testQuery2() {
-        String queryString = "match " +
-                "$x isa university;(geo-entity: $x, entity-location: $y) isa is-located-in;"+
-                "$y isa country;$y id 'Poland'; select $x;";
+        String queryString = "match $x isa university;$x has name $name;"+
+                "(geo-entity: $x, entity-location: $y) isa is-located-in;"+
+                "$y isa country;$y has name 'Poland'; select $x, $name;";
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match " +
-                "$x isa university;{$x id 'University-of-Warsaw';} or {$x id 'Warsaw-Polytechnics';};" +
-                "$y isa country;$y id 'Poland'; select $x;";
+                "$x isa university;$x has name $name;" +
+                "{$x has name 'University-of-Warsaw';} or {$x has name'Warsaw-Polytechnics';};";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
@@ -92,13 +92,13 @@ public class GeoInferenceTest {
 
     @Test
     public void testQuery2Prime() {
-        String queryString = "match " +
-                "$x isa university;($x, $y) isa is-located-in;"+
-                "$y isa country;$y id 'Poland'; select $x;";
+        String queryString = "match $x isa university;$x has name $name;"+
+                "($x, $y) isa is-located-in;"+
+                "$y isa country;$y has name 'Poland'; select $x, $name;";
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match " +
-                "$x isa university;{$x id 'University-of-Warsaw';} or {$x id 'Warsaw-Polytechnics';};" +
-                "$y isa country;$y id 'Poland'; select $x;";
+                "$x isa university;$x has name $name;" +
+                "{$x has name 'University-of-Warsaw';} or {$x has name'Warsaw-Polytechnics';};";
 
         assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
