@@ -284,7 +284,6 @@ public class AnalyticsTest extends AbstractGraphTest {
             }
         }
 
-        //TODO: Get rid of this close. We should be refreshing the graph in the factory when switching between normal and batch
         ((AbstractMindmapsGraph) graph).getTinkerPopGraph().close();
         computer = new Analytics(graph.getKeyspace(),new HashSet<>(),new HashSet<>());
 

@@ -20,6 +20,8 @@ package io.mindmaps.test;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import com.thinkaurelius.titan.core.TitanFactory;
+import com.thinkaurelius.titan.core.util.TitanCleanup;
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraphFactory;
 import io.mindmaps.engine.MindmapsEngineServer;
@@ -39,7 +41,7 @@ public abstract class AbstractEngineTest {
 
     private static void hideLogs() {
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.OFF);
+        logger.setLevel(Level.INFO);
     }
 
     @BeforeClass
@@ -75,7 +77,6 @@ public abstract class AbstractEngineTest {
             cl.getMethod("startEmbeddedCassandra", String.class).invoke(null, "cassandra-embedded.yaml");
 
             hideLogs();
-            sleep(5000);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

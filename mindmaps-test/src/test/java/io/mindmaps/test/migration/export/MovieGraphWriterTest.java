@@ -15,30 +15,36 @@
  * You should have received a copy of the GNU General Public License
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
+package io.mindmaps.test.migration.export;
 
-package io.mindmaps.test;
-
-import io.mindmaps.MindmapsGraph;
-import io.mindmaps.MindmapsGraphFactory;
-import org.junit.After;
+import io.mindmaps.example.MovieGraphFactory;
+import io.mindmaps.graql.Graql;
 import org.junit.Before;
+import org.junit.Test;
 
-/**
- * Abstract test class that provides a new empty graph every test that can be committed to.
- */
-public abstract class AbstractGraphTest extends AbstractEngineTest {
-
-    protected MindmapsGraphFactory factory;
-    protected MindmapsGraph graph;
+public class MovieGraphWriterTest extends GraphWriterTestBase {
 
     @Before
-    public void createGraph() {
-        factory = factoryWithNewKeyspace();
-        graph = factory.getGraph();
+    public void setup() {
+        MovieGraphFactory.loadGraph(graph);
     }
 
-    @After
-    public void closeGraph() {
-        graph.close();
+    @Test
+    public void testWritingMovieGraphOntology() {
+        String ontology = writer.dumpOntology();
+        Graql.withGraph(copy).parse(ontology).execute();
+
+        assertOntologiesEqual(graph, copy);
+    }
+
+    @Test
+    public void testWritingMovieGraphData() {
+        String ontology = writer.dumpOntology();
+        Graql.withGraph(copy).parse(ontology).execute();
+
+        String data = writer.dumpData();
+        Graql.withGraph(copy).parse(data).execute();
+
+        assertDataEqual(graph, copy);
     }
 }
