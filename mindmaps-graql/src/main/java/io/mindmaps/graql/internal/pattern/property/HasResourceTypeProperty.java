@@ -41,7 +41,6 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
     private final VarAdmin relationType;
 
     private final PlaysRoleProperty ownerPlaysRole;
-    private final PlaysRoleProperty valuePlaysRole;
 
     public HasResourceTypeProperty(VarAdmin resourceType) {
         this.resourceType = resourceType;
@@ -60,7 +59,6 @@ public class HasResourceTypeProperty extends AbstractVarProperty implements Name
                 .hasRole(ownerRole).hasRole(valueRole).admin();
 
         ownerPlaysRole = new PlaysRoleProperty(ownerRole);
-        valuePlaysRole = new PlaysRoleProperty(valueRole);
     }
 
     public VarAdmin getResourceType() {
