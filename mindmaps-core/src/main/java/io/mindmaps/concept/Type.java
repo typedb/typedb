@@ -40,6 +40,13 @@ public interface Type extends Concept {
      */
     Type playsRole(RoleType roleType);
 
+    /**
+     * Creates a relation type which allows this type and a resource type to be linked.
+     * @param resourceType The resource type which instances of this type should be allowed to play.
+     * @return The resulting relation type which allows instances of this type to have relations with the provided resourceType.
+     */
+    RelationType hasResource(ResourceType resourceType);
+
     //------------------------------------- Accessors ----------------------------------
 
     /**

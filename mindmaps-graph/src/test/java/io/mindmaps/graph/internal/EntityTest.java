@@ -262,4 +262,5 @@ public class EntityTest {
         assertTrue(relation.getId().startsWith(Schema.BaseType.RELATION.name() + "-" + relation.type().getId() + "-"));
         assertTrue(rule.getId().startsWith(Schema.BaseType.RULE.name() + "-" + rule.type().getId() + "-"));
     }
+
 }
