@@ -18,7 +18,7 @@
 
 package io.mindmaps.engine.loader;
 
-import io.mindmaps.engine.backgroundtasks.InMemoryTaskRunner;
+import io.mindmaps.engine.backgroundtasks.InMemoryTaskScheduler;
 import io.mindmaps.engine.postprocessing.Cache;
 import io.mindmaps.engine.postprocessing.PostProcessing;
 import io.mindmaps.engine.util.ConfigProperties;
@@ -98,7 +98,7 @@ public class RESTLoader {
 
     private void startPeriodPostProcessingCheck() {
         long postProcessingDelay = ConfigProperties.getInstance().getPropertyAsLong(ConfigProperties.POSTPROCESSING_DELAY);
-        InMemoryTaskRunner.getInstance().scheduleRecurringTask(new PostProcessing(), postProcessingDelay, postProcessingDelay);
+        InMemoryTaskScheduler.getInstance().scheduleRecurringTask(new PostProcessing(), postProcessingDelay, postProcessingDelay);
     }
 
     public String getLoaderState() {

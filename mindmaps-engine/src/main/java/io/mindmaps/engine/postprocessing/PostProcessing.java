@@ -19,7 +19,7 @@
 package io.mindmaps.engine.postprocessing;
 
 import io.mindmaps.engine.backgroundtasks.types.BackgroundTask;
-import io.mindmaps.engine.backgroundtasks.types.TaskStatus;
+import io.mindmaps.engine.backgroundtasks.TaskStatus;
 
 public class PostProcessing extends BackgroundTask {
     public PostProcessing() {

@@ -16,16 +16,15 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.engine.backgroundtasks.types;
+package io.mindmaps.engine.backgroundtasks;
 
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
- * The main interface all BackgroundTasks must implement to be executable.
+ * Internal task state model used to keep track of scheduled tasks.
  */
-public class BackgroundTask {
+public class TaskState {
     private TaskStatus status;
     private Date statusChangeTime;
     private String statusChangedBy;
@@ -39,40 +38,14 @@ public class BackgroundTask {
     private long delay;
     private Boolean recurring;
     private long interval;
+    private Map<String, Object> pauseState;
 
-    private Map<String, Object> customConfig;
-
-    /**
-     * Called to execute task.
-     */
-    public void start() {
-        System.err.println("In: " + Thread.currentThread().getStackTrace()[1].toString() + " .start() should be overridden!");
-        status = TaskStatus.COMPLETED;
-    }
-
-    /**
-     * Called to stop task.
-     */
-    public void stop() {
-        System.err.println("In: " + Thread.currentThread().getStackTrace()[1].toString() + " .stop() should be overridden!");
-        status = TaskStatus.STOPPED;
-    }
-
-    /**
-     * Print statistics to STDOUT.
-     */
-    public void dumpStats() {
-        System.err.println("In: " + Thread.currentThread().getStackTrace()[1].toString() + " .dumpStats() should be overridden!");
-    }
-
-
-    public BackgroundTask(String name) {
-        customConfig = new HashMap<>();
+    public TaskState(String name) {
         status = TaskStatus.CREATED;
         this.name = name;
     }
 
-    public BackgroundTask setStatus(TaskStatus status) {
+    public TaskState setStatus(TaskStatus status) {
         this.status = status;
         statusChangeTime = new Date();
         return this;
@@ -90,7 +63,7 @@ public class BackgroundTask {
         return statusChangeTime;
     }
 
-    public BackgroundTask setQueuedTime(Date queuedTime) {
+    public TaskState setQueuedTime(Date queuedTime) {
         this.queuedTime = queuedTime;
         return this;
     }
@@ -99,7 +72,7 @@ public class BackgroundTask {
         return queuedTime;
     }
 
-    public BackgroundTask setExecutingHostname(String hostname) {
+    public TaskState setExecutingHostname(String hostname) {
         executingHostname = hostname;
         return this;
     }
@@ -108,7 +81,7 @@ public class BackgroundTask {
         return executingHostname;
     }
 
-    public BackgroundTask setCreator(String creator) {
+    public TaskState setCreator(String creator) {
         this.creator = creator;
         return this;
     }
@@ -117,7 +90,7 @@ public class BackgroundTask {
         return creator;
     }
 
-    public BackgroundTask setStatusChangedBy(String statusChangedBy) {
+    public TaskState setStatusChangedBy(String statusChangedBy) {
         this.statusChangedBy = statusChangedBy;
         return this;
     }
@@ -126,7 +99,7 @@ public class BackgroundTask {
         return statusChangedBy;
     }
 
-    public BackgroundTask setStatuChangeMessage(String message) {
+    public TaskState setStatusChangeMessage(String message) {
         statusChangeMessage = message;
         return this;
     }
@@ -135,29 +108,11 @@ public class BackgroundTask {
         return statusChangeMessage;
     }
 
-    public BackgroundTask setConfigItem(String name, Object value) {
-        customConfig.put(name, value);
-        return this;
-    }
-
-    public Object getConfigItem(String name) {
-        return customConfig.get(name);
-    }
-
-    public BackgroundTask setConfig(Map<String, Object> config) {
-        customConfig = config;
-        return this;
-    }
-
-    public Map<String, Object> getConfig() {
-        return customConfig;
-    }
-
     public long getDelay() {
         return delay;
     }
 
-    public BackgroundTask setDelay(long delay) {
+    public TaskState setDelay(long delay) {
         this.delay = delay;
         return this;
     }
@@ -166,7 +121,7 @@ public class BackgroundTask {
         return recurring;
     }
 
-    public BackgroundTask setRecurring(Boolean recurring) {
+    public TaskState setRecurring(Boolean recurring) {
         this.recurring = recurring;
         return this;
     }
@@ -175,8 +130,17 @@ public class BackgroundTask {
         return interval;
     }
 
-    public BackgroundTask setInterval(long interval) {
+    public TaskState setInterval(long interval) {
         this.interval = interval;
+        return this;
+    }
+
+    public Map<String, Object> getPauseState() {
+        return pauseState;
+    }
+
+    public TaskState setPauseState(Map<String, Object> pauseState) {
+        this.pauseState = pauseState;
         return this;
     }
 }

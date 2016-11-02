@@ -18,7 +18,7 @@
 
 package io.mindmaps.engine.controller;
 
-import io.mindmaps.engine.backgroundtasks.InMemoryTaskRunner;
+import io.mindmaps.engine.backgroundtasks.InMemoryTaskScheduler;
 import io.mindmaps.engine.loader.BlockingLoader;
 import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.engine.loader.Loader;
@@ -204,7 +204,7 @@ public class ImportController {
             processedEntities.set(0);
             processedRelations.set(0);
             loadingInProgress.set(false);
-            InMemoryTaskRunner.getInstance().scheduleTask(new PostProcessing(), 0);
+            InMemoryTaskScheduler.getInstance().scheduleTask(new PostProcessing(), 0);
         } catch (Exception e) {
             LOG.error("Exception while batch loading data.", e);
             loadingInProgress.set(false);

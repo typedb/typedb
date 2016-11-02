@@ -19,7 +19,6 @@
 package io.mindmaps.engine.backgroundtasks;
 
 import io.mindmaps.engine.backgroundtasks.types.BackgroundTask;
-import io.mindmaps.engine.backgroundtasks.types.TaskStatus;
 
 public class TestTask extends BackgroundTask {
     private int runCount;

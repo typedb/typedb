@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package io.mindmaps.engine.backgroundtasks.types;
+package io.mindmaps.engine.backgroundtasks;
 
 public enum TaskStatus {
     CREATED,

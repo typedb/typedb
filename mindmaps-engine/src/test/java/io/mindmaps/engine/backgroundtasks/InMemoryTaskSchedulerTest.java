@@ -18,7 +18,6 @@
 
 package io.mindmaps.engine.backgroundtasks;
 
-import io.mindmaps.engine.backgroundtasks.types.TaskStatus;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -30,14 +29,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
-public class InMemoryTaskRunnerTest {
-    private InMemoryTaskRunner taskRunner;
+public class InMemoryTaskSchedulerTest {
+    private InMemoryTaskScheduler taskRunner;
     private static String TASK_NAME = "Empty BackgroundTask() for unit testing";
     private static long TASK_DELAY = 100000;
 
     @Before
     public void setUp() {
-        taskRunner = InMemoryTaskRunner.getInstance();
+        taskRunner = InMemoryTaskScheduler.getInstance();
     }
 
     @Test
