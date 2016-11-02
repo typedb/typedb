@@ -27,13 +27,19 @@ import java.util.Map;
  */
 public class BackgroundTask {
     private TaskStatus status;
-    private String name;
-    private Date queuedTime;
     private Date statusChangeTime;
-    private String executingHostname;
-    private String creator;
     private String statusChangedBy;
     private String statusChangeMessage;
+
+    private String name;
+    private Date queuedTime;
+    private String creator;
+
+    private String executingHostname;
+    private long delay;
+    private Boolean recurring;
+    private long interval;
+
     private Map<String, Object> customConfig;
 
     /**
@@ -145,5 +151,32 @@ public class BackgroundTask {
 
     public Map<String, Object> getConfig() {
         return customConfig;
+    }
+
+    public long getDelay() {
+        return delay;
+    }
+
+    public BackgroundTask setDelay(long delay) {
+        this.delay = delay;
+        return this;
+    }
+
+    public Boolean getRecurring() {
+        return recurring;
+    }
+
+    public BackgroundTask setRecurring(Boolean recurring) {
+        this.recurring = recurring;
+        return this;
+    }
+
+    public long getInterval() {
+        return interval;
+    }
+
+    public BackgroundTask setInterval(long interval) {
+        this.interval = interval;
+        return this;
     }
 }

@@ -27,7 +27,6 @@ import java.util.UUID;
 public interface TaskRunner {
     UUID scheduleTask(BackgroundTask task, long delay);
     UUID scheduleRecurringTask(BackgroundTask task, long delay, long period);
-    UUID scheduleDaemon(BackgroundTask daemon);
 
     TaskRunner stopTask(UUID uuid);
     TaskRunner stopTask(UUID uuid, String requesterName, String message);
@@ -37,6 +36,9 @@ public interface TaskRunner {
 
     TaskRunner resumeTask(UUID uuid);
     TaskRunner resumeTask(UUID uuid, String requesterName, String message);
+
+    TaskRunner restartTask(UUID uuid);
+    TaskRunner restartTask(UUID uuid, String requesterName, String message);
 
     TaskStatus taskStatus(UUID uuid);
 

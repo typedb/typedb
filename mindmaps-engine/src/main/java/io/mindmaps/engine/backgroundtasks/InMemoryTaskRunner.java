@@ -35,6 +35,7 @@ public class InMemoryTaskRunner implements TaskRunner {
     private static String STATUS_MESSAGE_STOPPED = "Task stop requested.";
     private static String STATUS_MESSAGE_PAUSED = "Task pause requested.";
     private static String STATUS_MESSAGE_RESUMED = "Task resume requested.";
+    private static String STATUS_MESSAGE_RESTARTED = "Task restart requested.";
 
     private final Logger LOG = LoggerFactory.getLogger(InMemoryTaskRunner.class);
     private static InMemoryTaskRunner instance = null;
@@ -55,26 +56,21 @@ public class InMemoryTaskRunner implements TaskRunner {
     }
 
     public UUID scheduleTask(BackgroundTask task, long delay) {
-        UUID uuid = saveNewTask(task);
+        task.setDelay(delay)
+            .setRecurring(false);
 
+        UUID uuid = saveNewTask(task);
         scheduledThreadPool.schedule(task::start, delay, TimeUnit.MILLISECONDS);
         return uuid;
     }
 
     public UUID scheduleRecurringTask(BackgroundTask task, long delay, long interval) {
+        task.setDelay(delay)
+            .setInterval(interval)
+            .setRecurring(true);
+
         UUID uuid = saveNewTask(task);
-
         scheduledThreadPool.scheduleAtFixedRate(task::start, delay, interval, TimeUnit.MILLISECONDS);
-        return uuid;
-    }
-
-    public UUID scheduleDaemon(BackgroundTask task) {
-        LOG.error(this.getClass().getName()+".scheduleDaemon() NOT IMPLEMENTED");
-
-        task.setStatuChangeMessage("scheduleDaemon() NOT IMPLEMENTED");
-        UUID uuid = UUID.randomUUID();
-        storage.put(uuid, task);
-
         return uuid;
     }
 
@@ -115,26 +111,41 @@ public class InMemoryTaskRunner implements TaskRunner {
     }
 
     public TaskRunner pauseTask(UUID uuid) {
-        return pauseTask(uuid, "", STATUS_MESSAGE_PAUSED);
+        return pauseTask(uuid, Thread.currentThread().getStackTrace()[1].toString(), STATUS_MESSAGE_PAUSED);
     }
 
-    public TaskRunner resumeTask(UUID uuid, String requestName, String message) {
+    public TaskRunner resumeTask(UUID uuid, String requesterName, String message) {
         BackgroundTask task = storage.get(uuid);
         task.setStatus(TaskStatus.RUNNING)
             .setStatuChangeMessage(message)
-            .setStatusChangedBy(requestName);
+            .setStatusChangedBy(requesterName);
         storage.put(uuid, task);
 
         return this;
     }
 
     public TaskRunner resumeTask(UUID uuid) {
-        return resumeTask(uuid, "", STATUS_MESSAGE_RESUMED);
+        return resumeTask(uuid, Thread.currentThread().getStackTrace()[1].toString(), STATUS_MESSAGE_RESUMED);
     }
 
     public TaskStatus taskStatus(UUID uuid) {
         BackgroundTask task = storage.get(uuid);
         return task.getStatus();
+    }
+
+    public TaskRunner restartTask(UUID uuid, String requesterName, String message) {
+        BackgroundTask task = storage.get(uuid);
+
+        if(task.getRecurring())
+            scheduledThreadPool.scheduleAtFixedRate(task::start, task.getDelay(), task.getInterval(), TimeUnit.MILLISECONDS);
+        else
+            scheduledThreadPool.schedule(task::start, task.getDelay(), TimeUnit.MILLISECONDS);
+
+        return this;
+    }
+
+    public TaskRunner restartTask(UUID uuid) {
+        return restartTask(uuid, Thread.currentThread().getStackTrace()[1].toString(), STATUS_MESSAGE_RESTARTED);
     }
 
     public Set<UUID> getAllTasks() {
@@ -144,7 +155,7 @@ public class InMemoryTaskRunner implements TaskRunner {
     public Set<UUID> getTasks(TaskStatus taskStatus) {
         return storage.entrySet().stream()
                 .filter(x -> x.getValue().getStatus() == taskStatus)
-                .map(x -> x.getKey())
+                .map(Map.Entry::getKey)
                 .collect(Collectors.toSet());
     }
 }

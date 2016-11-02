@@ -18,7 +18,6 @@
 
 package io.mindmaps.engine.backgroundtasks;
 
-import io.mindmaps.engine.backgroundtasks.types.BackgroundTask;
 import io.mindmaps.engine.backgroundtasks.types.TaskStatus;
 import org.junit.Before;
 import org.junit.Test;
@@ -43,31 +42,46 @@ public class InMemoryTaskRunnerTest {
 
     @Test
     public void testQueueAndRetrieve() throws Exception {
-        UUID uuid = taskRunner.scheduleTask(new BackgroundTask(TASK_NAME), 0);
+        TestTask task = new TestTask();
+        UUID uuid = taskRunner.scheduleTask(task, 0);
         assertNotEquals(TaskStatus.CREATED, taskRunner.taskStatus(uuid));
 
         // Check that task has ran
         Thread.sleep(1000);
         assertEquals(TaskStatus.COMPLETED, taskRunner.taskStatus(uuid));
+        assertEquals(1, task.getRunCount());
+    }
+
+    @Test
+    public void testRecurring() throws Exception {
+        TestTask task = new TestTask();
+        UUID uuid = taskRunner.scheduleRecurringTask(task, 100, 100);
+        assertNotEquals(TaskStatus.CREATED, taskRunner.taskStatus(uuid));
+
+        // Check that task has repeatedly ran
+        Thread.sleep(1100);
+        int runCount = task.getRunCount();
+        System.out.println("task run count: "+Integer.toString(runCount));
+        assertTrue(runCount >= 10);
     }
 
     @Test
     public void testStop() {
-        UUID uuid = taskRunner.scheduleTask(new BackgroundTask(TASK_NAME), TASK_DELAY);
+        UUID uuid = taskRunner.scheduleTask(new TestTask(), TASK_DELAY);
         taskRunner.stopTask(uuid);
         assertEquals(TaskStatus.STOPPED, taskRunner.taskStatus(uuid));
     }
 
     @Test
     public void testPause() {
-        UUID uuid = taskRunner.scheduleTask(new BackgroundTask(TASK_NAME), TASK_DELAY);
+        UUID uuid = taskRunner.scheduleTask(new TestTask(), TASK_DELAY);
         taskRunner.pauseTask(uuid);
         assertEquals(TaskStatus.PAUSED, taskRunner.taskStatus(uuid));
     }
 
     @Test
     public void testResume() {
-        UUID uuid = taskRunner.scheduleTask(new BackgroundTask(TASK_NAME), TASK_DELAY);
+        UUID uuid = taskRunner.scheduleTask(new TestTask(), TASK_DELAY);
         taskRunner.pauseTask(uuid);
         assertEquals(TaskStatus.PAUSED, taskRunner.taskStatus(uuid));
         taskRunner.resumeTask(uuid);
@@ -75,11 +89,19 @@ public class InMemoryTaskRunnerTest {
     }
 
     @Test
+    public void testRestart() {
+        UUID uuid = taskRunner.scheduleTask(new TestTask(), TASK_DELAY);
+        taskRunner.stopTask(uuid);
+        assertEquals(TaskStatus.STOPPED, taskRunner.taskStatus(uuid));
+        taskRunner.restartTask(uuid);
+        assertEquals(TaskStatus.RUNNING, taskRunner.taskStatus(uuid));
+    }
+
+    @Test
     public void testGetAll() {
         Set<UUID> uuids = new HashSet<>();
-
         for (int i = 0; i < 10; i++) {
-            uuids.add(taskRunner.scheduleTask(new BackgroundTask(TASK_NAME+Integer.toString(i)), TASK_DELAY));
+            uuids.add(taskRunner.scheduleTask(new TestTask(TASK_NAME+Integer.toString(i)), TASK_DELAY));
         }
 
         // taskRunner can now contain completed tasks from other tests
@@ -91,7 +113,7 @@ public class InMemoryTaskRunnerTest {
     public void testGetTasks() {
         Set<UUID> paused = new HashSet<>();
         for (int i = 0; i < 10; i++) {
-            UUID uuid = taskRunner.scheduleTask(new BackgroundTask(TASK_NAME+Integer.toString(i)), TASK_DELAY);
+            UUID uuid = taskRunner.scheduleTask(new TestTask(TASK_NAME+Integer.toString(i)), TASK_DELAY);
             if(i%2 == 0) {
                 taskRunner.pauseTask(uuid);
                 paused.add(uuid);
