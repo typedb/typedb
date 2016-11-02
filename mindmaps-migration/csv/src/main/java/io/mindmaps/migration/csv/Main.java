@@ -18,14 +18,15 @@
 
 package io.mindmaps.migration.csv;
 
-import com.google.common.collect.Lists;
 import com.google.common.io.Files;
-import io.mindmaps.engine.loader.BlockingLoader;
-import io.mindmaps.engine.loader.DistributedLoader;
-import io.mindmaps.engine.loader.Loader;
-import io.mindmaps.engine.util.ConfigProperties;
+import io.mindmaps.migration.base.AbstractMigrator;
+import io.mindmaps.migration.base.LoadingMigrator;
+import io.mindmaps.migration.base.io.MigrationCLI;
+import org.apache.commons.cli.Options;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.nio.charset.StandardCharsets;
 
 import static java.util.stream.Collectors.joining;
@@ -37,78 +38,51 @@ import static java.util.stream.Collectors.joining;
  */
 public class Main {
 
-    private static ConfigProperties properties = ConfigProperties.getInstance();
-
-    static void die(String errorMsg) {
-        throw new RuntimeException(errorMsg + "\nSyntax: ./migration.sh csv -file <csv file> -template <template file> [-delimiter <delimiter>] [-batch <number of rows>] [-graph <graph name>] [-engine <Mindmaps engine URL>])");
+    private static Options getOptions(){
+        Options options = new Options();
+        options.addOption("f", "file", true, "csv file");
+        options.addOption("t", "template", true, "graql template to apply over data");
+        options.addOption("d", "delimiter", true, "delimiter of columns in input file");
+        options.addOption("b", "batch", true, "number of row to load at once");
+        return options;
     }
 
     public static void main(String[] args){
 
-        String batchSize = null;
-        String csvFileName = null;
-        String csvTemplateName = null;
-        String csvDelimiter = null;
-        String engineURL = null;
-        String graphName = null;
+        MigrationCLI cli = new MigrationCLI(args, getOptions());
 
-        for (int i = 0; i < args.length; i++) {
-            if ("-file".equals(args[i]))
-                csvFileName = args[++i];
-            else if ("-template".equals(args[i]))
-                csvTemplateName = args[++i];
-            else if ("-delimiter".equals(args[i]))
-                csvDelimiter = args[++i];
-            else if ("-batch".equals(args[i]))
-                batchSize = args[++i];
-            else if ("-graph".equals(args[i]))
-                graphName = args[++i];
-            else if ("-engine".equals(args[i]))
-                engineURL = args[++i];
-            else if(i == 0 && "csv".equals(args[i]))
-                continue;
-            else
-                die("Unknown option " + args[i]);
-        }
+        String csvDataFileName = cli.getRequiredOption("f", "Data file missing (-f)");
+        String csvTemplateName = cli.getRequiredOption("t", "Template file missing (-t)");
+        char csvDelimiter =  cli.hasOption("d") ? cli.getOption("d").charAt(0) : CSVMigrator.DELIMITER;
+        int batchSize = cli.hasOption("b") ? Integer.valueOf(cli.getOption("b")) : CSVMigrator.BATCH_SIZE;
 
-        if(csvFileName == null){
-            die("Please specify CSV file using the -csv option");
-        }
-        File csvFile = new File(csvFileName);
-
-        if(csvTemplateName == null){
-            die("Please specify the template using the -template option");
-        }
+        // get files
+        File csvDataFile = new File(csvDataFileName);
         File csvTemplate = new File(csvTemplateName);
 
-        if(!csvTemplate.exists() || !csvFile.exists()){
-            die("Cannot find file: " + csvFileName);
+        if(!csvTemplate.exists() || !csvDataFile.exists()){
+            cli.die("Cannot find file: " + csvDataFileName);
         }
 
+        cli.printInitMessage(csvDataFile.getPath());
 
-        if(graphName == null){
-            graphName = properties.getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
-        }
-
-        System.out.println("Migrating " + csvFileName + " using MM Engine " +
-                (engineURL == null ? "local" : engineURL ) + " into graph " + graphName);
-
-        //
         try{
-            Loader loader = engineURL == null ? new BlockingLoader(graphName)
-                                              : new DistributedLoader(graphName, Lists.newArrayList(engineURL));
-
-            CSVMigrator migrator = new CSVMigrator(loader)
-                                        .setDelimiter(csvDelimiter == null ? CSVMigrator.DELIMITER : csvDelimiter.charAt(0))
-                                        .setBatchSize(batchSize == null ? CSVMigrator.BATCH_SIZE : Integer.valueOf(batchSize));
+            AbstractMigrator migrator = new CSVMigrator()
+                                        .setDelimiter(csvDelimiter)
+                                        .setBatchSize(batchSize);
 
             String template = Files.readLines(csvTemplate, StandardCharsets.UTF_8).stream().collect(joining("\n"));
-            migrator.migrate(template, csvFile);
 
-            System.out.println("Migration complete!");
+            if(cli.hasOption("o")){
+                cli.writeToFile(migrator.setBatchSize(Integer.MAX_VALUE).migrate(template, csvDataFile));
+                cli.printPartialCompletionMessage();
+            } else {
+                migrator.getLoadingMigrator(cli.getLoader()).migrate(template, csvDataFile);
+                cli.printWholeCompletionMessage();
+            }
         }
         catch (Throwable throwable){
-            die(throwable.getMessage());
+            cli.die(throwable.getMessage());
         }
     }
 }

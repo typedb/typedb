@@ -27,6 +27,8 @@ import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.Graql;
 import org.junit.*;
+import org.junit.Rule;
+import org.junit.rules.ExpectedException;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,6 +40,9 @@ import static java.util.stream.Collectors.joining;
 import static junit.framework.TestCase.assertEquals;
 
 public class JsonMigratorMainTest {
+
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
 
     private final String GRAPH_NAME = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
     private MindmapsGraph graph;
@@ -71,59 +76,56 @@ public class JsonMigratorMainTest {
 
     @Test
     public void jsonMigratorMainTest(){
-        String[] args = {
-                "-data", dataFile,
-                "-template", templateFile,
-                "-graph", GRAPH_NAME
-        };
-
-        runAndAssertDataCorrect(args);
+        runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace()});
     }
 
     @Test
     public void jsonMainDistributedLoaderTest(){
-        String[] args = {
-                "-data", dataFile,
-                "-template", templateFile,
-                "-engine", "0.0.0.0"
-        };
-
-        runAndAssertDataCorrect(args);
+        runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace(), "-uri", "localhost:4567"});
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void jsonMainNoDataFileNameTest(){
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("Data file missing (-f)");
         runAndAssertDataCorrect(new String[]{"json"});
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void jsonMainNoTemplateFileNameTest(){
-        runAndAssertDataCorrect(new String[]{"-data", ""});
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("Template file missing (-t)");
+        runAndAssertDataCorrect(new String[]{"-file", ""});
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void jsonMainUnknownArgumentTest(){
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("Unrecognized option: -whale");
         runAndAssertDataCorrect(new String[]{"-whale", ""});
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void jsonMainNoDataFileExistsTest(){
-        runAndAssertDataCorrect(new String[]{"-data", dataFile + "wrong", "-template", templateFile + "wrong"});
+        exception.expect(RuntimeException.class);
+        runAndAssertDataCorrect(new String[]{"-file", dataFile + "wrong", "-template", templateFile + "wrong"});
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void jsonMainNoTemplateFileExistsTest(){
-        runAndAssertDataCorrect(new String[]{"-data", dataFile, "-template", templateFile + "wrong"});
+        exception.expect(RuntimeException.class);
+        runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile + "wrong"});
     }
 
     @Test
     public void jsonMainBatchSizeArgumentTest(){
-        runAndAssertDataCorrect(new String[]{"-data", dataFile, "-template", templateFile, "-batch", "100"});
+        runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile, "-batch", "100", "-keyspace", graph.getKeyspace(),});
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void jsonMainThrowableTest(){
-        runAndAssertDataCorrect(new String[]{"-data", dataFile, "-template", templateFile, "-batch", "hello"});
+        exception.expect(NumberFormatException.class);
+        runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile, "-batch", "hello"});
     }
 
     private void runAndAssertDataCorrect(String[] args){

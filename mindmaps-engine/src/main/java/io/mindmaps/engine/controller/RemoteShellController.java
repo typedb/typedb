@@ -24,7 +24,8 @@ import io.mindmaps.engine.session.RemoteSession;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsEngineServerException;
 import io.mindmaps.factory.GraphFactory;
-import io.mindmaps.graph.internal.AbstractMindmapsGraph;
+import io.mindmaps.graql.Printer;
+import io.mindmaps.graql.internal.printer.Printers;
 import io.mindmaps.util.REST;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -43,7 +44,9 @@ import javax.ws.rs.Produces;
 import java.util.stream.Collectors;
 
 import static io.mindmaps.graql.Graql.withGraph;
-import static spark.Spark.*;
+import static spark.Spark.get;
+import static spark.Spark.webSocket;
+import static spark.Spark.webSocketIdleTimeoutMillis;
 
 
 @Path("/shell")
@@ -109,9 +112,11 @@ public class RemoteShellController {
 
         LOG.debug("Received match query: \"" + req.queryParams(REST.Request.QUERY_FIELD) + "\"");
 
+        Printer printer = Printers.graql();
+
         try(MindmapsGraph graph = GraphFactory.getInstance().getGraph(currentGraphName)) {
             return withGraph(graph).parse(req.queryParams(REST.Request.QUERY_FIELD))
-                    .resultsString()
+                    .resultsString(printer)
                     .map(x -> x.replaceAll("\u001B\\[\\d+[m]", ""))
                     .collect(Collectors.joining("\n"));
         } catch (Exception e) {

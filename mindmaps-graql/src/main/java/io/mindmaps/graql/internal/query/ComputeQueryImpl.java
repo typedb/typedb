@@ -21,8 +21,8 @@ package io.mindmaps.graql.internal.query;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.exception.InvalidConceptTypeException;
 import io.mindmaps.graql.ComputeQuery;
+import io.mindmaps.graql.Printer;
 import io.mindmaps.graql.internal.analytics.Analytics;
-import io.mindmaps.graql.internal.util.StringConverter;
 import io.mindmaps.util.ErrorMessage;
 
 import java.io.Serializable;
@@ -72,11 +72,15 @@ class ComputeQueryImpl implements ComputeQuery {
                 }
                 case "connectedComponents": {
                     analytics = getAnalytics(keyspace, false);
-                    return analytics.connectedComponent();
+                    return analytics.connectedComponents();
                 }
                 case "connectedComponentsSize": {
                     analytics = getAnalytics(keyspace, false);
-                    return analytics.connectedComponentSize();
+                    return analytics.connectedComponentsSize();
+                }
+                case "connectedComponentsAndPersist": {
+                    analytics = getAnalytics(keyspace, false);
+                    return analytics.connectedComponentsAndPersist();
                 }
                 case "max": {
                     analytics = getAnalytics(keyspace, true);
@@ -117,7 +121,7 @@ class ComputeQueryImpl implements ComputeQuery {
     }
 
     @Override
-    public Stream<String> resultsString() {
+    public Stream<String> resultsString(Printer printer) {
         Object computeResult = execute();
         if (computeResult instanceof Map) {
             if (((Map) computeResult).isEmpty())
@@ -134,7 +138,7 @@ class ComputeQueryImpl implements ComputeQuery {
             }
         }
 
-        return Stream.of(StringConverter.graqlString(computeResult));
+        return Stream.of(printer.graqlString(computeResult));
     }
 
     @Override

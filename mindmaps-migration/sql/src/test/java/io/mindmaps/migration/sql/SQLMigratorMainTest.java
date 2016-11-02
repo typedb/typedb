@@ -24,8 +24,8 @@ import io.mindmaps.engine.MindmapsEngineServer;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
 import org.junit.*;
+import org.junit.rules.ExpectedException;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 
 import static org.junit.Assert.assertNotNull;
@@ -35,6 +35,9 @@ public class SQLMigratorMainTest {
 
     private Namer namer = new Namer() {};
     private MindmapsGraph graph;
+
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
 
     @BeforeClass
     public static void start(){
@@ -53,7 +56,7 @@ public class SQLMigratorMainTest {
     public void setup() throws SQLException {
         String graphName = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
         graph = GraphFactory.getInstance().getGraphBatchLoading(graphName);
-        Util.setupExample("simple");
+        SQLMigratorUtil.setupExample("simple");
     }
 
     @After
@@ -61,48 +64,58 @@ public class SQLMigratorMainTest {
         graph.clear();
     }
 
-    @Test(expected = RuntimeException.class)
-    public void sqlMainUnknownOptionTest(){
-        runAndAssertDataCorrect(new String[]{"sql", "whale"});
-    }
-
-    @Test(expected = RuntimeException.class)
+    @Test
     public void sqlMainMissingDriverTest(){
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("No driver specified (-driver)");
         runAndAssertDataCorrect(new String[]{"sql"});
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void sqlMainMissingURLTest(){
-        runAndAssertDataCorrect(new String[]{"-driver", Util.DRIVER});
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("No db specified (-database)");
+        runAndAssertDataCorrect(new String[]{"-driver", SQLMigratorUtil.DRIVER});
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void sqlMainMissingUserTest(){
-        runAndAssertDataCorrect(new String[]{"-driver", Util.DRIVER, "-database", Util.URL});
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("No username specified (-user)");
+        runAndAssertDataCorrect(new String[]{"-driver", SQLMigratorUtil.DRIVER, "-database", SQLMigratorUtil.URL});
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void sqlMainMissingPassTest(){
-        runAndAssertDataCorrect(new String[]{"-driver", Util.DRIVER, "-database", Util.URL, "-user", Util.USER});
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("No password specified (-pass)");
+        runAndAssertDataCorrect(new String[]{"-driver", SQLMigratorUtil.DRIVER, "-database", SQLMigratorUtil.URL, "-user", SQLMigratorUtil.USER});
+    }
+
+    @Test
+    public void unknownArgumentTest(){
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("Unrecognized option: -whale");
+        runAndAssertDataCorrect(new String[]{ "-whale", ""});
     }
 
     @Test
     public void sqlMainDifferentGraphNameTest(){
-        String name = "different";
-        graph = GraphFactory.getInstance().getGraphBatchLoading(name);
-        runAndAssertDataCorrect(new String[]{"-driver", Util.DRIVER, "-database", Util.URL, "-user", Util.USER, "-pass", Util.PASS,
-                                             "-graph", name});
+        runAndAssertDataCorrect(new String[]{"-driver", SQLMigratorUtil.DRIVER, "-database", SQLMigratorUtil.URL, "-user", SQLMigratorUtil.USER, "-pass", SQLMigratorUtil.PASS,
+                "-keyspace", graph.getKeyspace()});
     }
 
     @Test
     public void sqlMainDistributedLoaderTest(){
-        runAndAssertDataCorrect(new String[]{"-driver", Util.DRIVER, "-database", Util.URL, "-user", Util.USER, "-pass", Util.PASS,
-                                             "-engine", "0.0.0.0"});
+        runAndAssertDataCorrect(new String[]{"-driver", SQLMigratorUtil.DRIVER, "-database", SQLMigratorUtil.URL, "-user", SQLMigratorUtil.USER, "-pass", SQLMigratorUtil.PASS,
+                "-uri", "localhost:4567", "-keyspace", graph.getKeyspace()});
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void sqlMainThrowableTest(){
-        runAndAssertDataCorrect(new String[]{"-driver", Util.DRIVER, "-database", Util.URL, "-user", "none", "-pass", Util.PASS,});
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("Wrong user name or password [28000-192]");
+        runAndAssertDataCorrect(new String[]{"-driver", SQLMigratorUtil.DRIVER, "-database", SQLMigratorUtil.URL, "-user", "none", "-pass", SQLMigratorUtil.PASS,});
     }
 
     private void runAndAssertDataCorrect(String[] args){

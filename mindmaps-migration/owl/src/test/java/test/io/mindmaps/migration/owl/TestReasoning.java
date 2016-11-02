@@ -53,13 +53,12 @@ public class TestReasoning extends TestOwlMindMapsBase {
 
     private IRI baseIri = IRI.create("http://www.co-ode.org/roberts/family-tree.owl");
     private OWLOntology family = null;
-    private String dataPath = "/io/mindmaps/migration/owl/samples/";
     private OWLReasoner hermit;
     private io.mindmaps.graql.Reasoner mmReasoner;
 
     @Before
     public void loadOwlFiles() throws MindmapsValidationException {
-        family = loadOntologyFromResource(dataPath + "family.owl");
+        family = loadOntologyFromResource("family.owl");
         migrator.ontology(family).graph(graph).migrate();
         migrator.graph().commit();
         hermit = new Reasoner(new Configuration(), family);

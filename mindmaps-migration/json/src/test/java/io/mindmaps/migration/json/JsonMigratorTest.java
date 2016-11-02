@@ -31,6 +31,7 @@ import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.Graql;
+import io.mindmaps.migration.base.LoadingMigrator;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -55,7 +56,7 @@ import static org.junit.Assert.assertTrue;
 public class JsonMigratorTest {
 
     private MindmapsGraph graph;
-    private JsonMigrator migrator;
+    private LoadingMigrator migrator;
 
     @BeforeClass
     public static void start(){
@@ -78,7 +79,7 @@ public class JsonMigratorTest {
         BlockingLoader loader = new BlockingLoader(GRAPH_NAME);
         loader.setExecutorSize(1);
 
-        migrator = new JsonMigrator(loader);
+        migrator = new JsonMigrator().getLoadingMigrator(loader);
     }
 
     @After

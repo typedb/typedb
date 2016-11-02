@@ -24,6 +24,7 @@ import io.mindmaps.exception.ConceptException;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graql.Autocomplete;
 import io.mindmaps.graql.MatchQuery;
+import io.mindmaps.graql.Printer;
 import io.mindmaps.graql.Query;
 import io.mindmaps.graql.Reasoner;
 import mjson.Json;
@@ -37,7 +38,18 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static io.mindmaps.graql.Graql.withGraph;
-import static io.mindmaps.util.REST.RemoteShell.*;
+import static io.mindmaps.util.REST.RemoteShell.ACTION;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_AUTOCOMPLETE;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_COMMIT;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_ERROR;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_PING;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY_END;
+import static io.mindmaps.util.REST.RemoteShell.AUTOCOMPLETE_CANDIDATES;
+import static io.mindmaps.util.REST.RemoteShell.AUTOCOMPLETE_CURSOR;
+import static io.mindmaps.util.REST.RemoteShell.ERROR;
+import static io.mindmaps.util.REST.RemoteShell.QUERY;
+import static io.mindmaps.util.REST.RemoteShell.QUERY_RESULT;
 
 /**
  * A Graql shell session for a single client, running on one graph in one thread
@@ -45,6 +57,7 @@ import static io.mindmaps.util.REST.RemoteShell.*;
 class GraqlSession {
     private final Session session;
     private final MindmapsGraph graph;
+    private final Printer printer;
     private StringBuilder queryStringBuilder = new StringBuilder();
     private final Reasoner reasoner;
     private final Logger LOG = LoggerFactory.getLogger(GraqlSession.class);
@@ -57,9 +70,10 @@ class GraqlSession {
     // All requests are run within a single thread, so they always happen in a single thread-bound transaction
     private final ExecutorService queryExecutor = Executors.newSingleThreadExecutor();
 
-    GraqlSession(Session session, MindmapsGraph graph) {
+    GraqlSession(Session session, MindmapsGraph graph, Printer printer) {
         this.session = session;
         this.graph = graph;
+        this.printer = printer;
         reasoner = new Reasoner(graph);
 
         // Begin sending pings
@@ -132,7 +146,7 @@ class GraqlSession {
                 }
 
                 // Return results unless query is cancelled
-                query.resultsString().forEach(result -> {
+                query.resultsString(printer).forEach(result -> {
                     if (queryCancelled) return;
                     sendQueryResult(result);
                 });

@@ -27,7 +27,6 @@ import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.Mindmaps;
 import io.mindmaps.exception.MindmapsValidationException;
-import io.mindmaps.graql.internal.util.GraqlType;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -55,7 +54,7 @@ class BulkResourceMutate<T> {
     private int batchSize = 100;
     private MindmapsGraph graph;
     private int currentNumberOfVertices = 0;
-    private final String resourceTypeId = Analytics.degree;
+    private String resourceTypeId;
     private final String keyspace;
     private Map<String, T> resourcesToPersist = new HashMap<>();
 
@@ -67,12 +66,13 @@ class BulkResourceMutate<T> {
     // This has been added for debugging purposes - set to true for debugging
     private boolean verboseOutput = false;
 
-    public BulkResourceMutate(String keyspace) {
+    public BulkResourceMutate(String keyspace, String resourceTypeId) {
         this.keyspace = keyspace;
+        this.resourceTypeId = resourceTypeId;
     }
 
-    public BulkResourceMutate(String keyspace, int batchSize) {
-        this(keyspace);
+    public BulkResourceMutate(String keyspace, String resourceTypeId, int batchSize) {
+        this(keyspace, resourceTypeId);
         this.batchSize = batchSize;
     }
 
@@ -173,9 +173,9 @@ class BulkResourceMutate<T> {
 
     private void refreshOntologyElements() {
         resourceType = graph.getResourceType(resourceTypeId);
-        resourceOwner = graph.getRoleType(GraqlType.HAS_RESOURCE_OWNER.getId(resourceTypeId));
-        resourceValue = graph.getRoleType(GraqlType.HAS_RESOURCE_VALUE.getId(resourceTypeId));
-        relationType = graph.getRelationType(GraqlType.HAS_RESOURCE.getId(resourceTypeId));
+        resourceOwner = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId));
+        resourceValue = graph.getRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId));
+        relationType = graph.getRelationType(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId));
     }
 
     private void initialiseGraph() {

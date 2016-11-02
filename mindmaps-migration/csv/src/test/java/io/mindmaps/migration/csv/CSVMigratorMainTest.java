@@ -28,6 +28,7 @@ import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.Graql;
 import org.junit.*;
+import org.junit.rules.ExpectedException;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,11 +40,14 @@ import static junit.framework.TestCase.assertEquals;
 
 public class CSVMigratorMainTest {
 
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
     private final String GRAPH_NAME = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
     private MindmapsGraph graph;
 
-    private final String dataFile = get("single-file/data/cars.csv").getAbsolutePath();;
-    private final String templateFile = get("single-file/template.gql").getAbsolutePath();
+    private final String dataFile = getFile("single-file/data/cars.csv").getAbsolutePath();;
+    private final String templateFile = getFile("single-file/template.gql").getAbsolutePath();
 
     @BeforeClass
     public static void start(){
@@ -61,7 +65,7 @@ public class CSVMigratorMainTest {
     @Before
     public void setup(){
         graph = GraphFactory.getInstance().getGraphBatchLoading(GRAPH_NAME);
-        load(get("single-file/schema.gql"));
+        load(getFile("single-file/schema.gql"));
     }
 
     @After
@@ -71,47 +75,55 @@ public class CSVMigratorMainTest {
 
     @Test
     public void csvMainTest(){
-        runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile, "-graph", GRAPH_NAME});
+        runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace()});
     }
 
     @Test
     public void tsvMainTest(){
-        String tsvFile = get("single-file/data/cars.tsv").getAbsolutePath();
-        runAndAssertDataCorrect(new String[]{"-file", tsvFile, "-template", templateFile, "-delimiter", "\t"});
+        String tsvFile = getFile("single-file/data/cars.tsv").getAbsolutePath();
+        runAndAssertDataCorrect(new String[]{"-file", tsvFile, "-template", templateFile, "-delimiter", "\t", "-keyspace", graph.getKeyspace()});
     }
 
     @Test
     public void csvMainTestDistributedLoader(){
-        runAndAssertDataCorrect(new String[]{"csv", "-file", dataFile, "-template", templateFile, "-engine", "0.0.0.0"});
+        runAndAssertDataCorrect(new String[]{"csv", "-file", dataFile, "-template", templateFile, "-uri", "localhost:4567", "-keyspace", graph.getKeyspace()});
     }
 
     @Test
     public void csvMainDifferentBatchSizeTest(){
-        runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile, "-batch", "100"});
+        runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile, "-batch", "100", "-keyspace", graph.getKeyspace()});
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void csvMainNoFileNameTest(){
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("Data file missing (-f)");
         runAndAssertDataCorrect(new String[]{});
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void csvMainNoTemplateNameTest(){
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("Template file missing (-t)");
         runAndAssertDataCorrect(new String[]{"-file", dataFile});
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void csvMainInvalidTemplateFileTest(){
+        exception.expect(RuntimeException.class);
         runAndAssertDataCorrect(new String[]{"-file", dataFile + "wrong", "-template", templateFile + "wrong"});
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void csvMainThrowableTest(){
+        exception.expect(NumberFormatException.class);
         runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile, "-batch", "hello"});
     }
 
-    @Test(expected = RuntimeException.class)
+    @Test
     public void unknownArgumentTest(){
+        exception.expect(RuntimeException.class);
+        exception.expectMessage("Unrecognized option: -whale");
         runAndAssertDataCorrect(new String[]{ "-whale", ""});
     }
 
@@ -135,7 +147,7 @@ public class CSVMigratorMainTest {
         assertEquals(0, ventureLarge.resources(description).size());
     }
 
-    private File get(String fileName){
+    private File getFile(String fileName){
         return new File(CSVMigratorMainTest.class.getClassLoader().getResource(fileName).getPath());
     }
 

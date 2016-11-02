@@ -31,20 +31,8 @@
     <dependencies>
         <dependency>
             <groupId>io.mindmaps</groupId>
-            <artifactId>mindmaps-graql</artifactId>
+            <artifactId>migration-base</artifactId>
             <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.mindmaps</groupId>
-            <artifactId>mindmaps-engine</artifactId>
-            <version>${project.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.servicemix.bundles</groupId>
-                    <artifactId>org.apache.servicemix.bundles.commons-csv</artifactId>
-                </exclusion>
-            </exclusions>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 

@@ -27,9 +27,17 @@ import io.mindmaps.graql.Var;
 
 import static io.mindmaps.graql.Graql.var;
 
+/**
+ * Map Grakn Core type to equivalent Graql representation
+ */
 public class TypeMapper {
 
-    public static String map(Type type) {
+    /**
+     * Map a Type to the Graql string representation
+     * @param type type to be mapped
+     * @return Graql var equivalent to the given type
+     */
+    public static Var map(Type type) {
         Var mapped = formatBase(type);
         if (type instanceof EntityType) {
             mapped = map(mapped, type.asEntityType());
@@ -43,29 +51,64 @@ public class TypeMapper {
             mapped = map(mapped, type.asRuleType());
         }
 
-        return mapped.toString();
+        return mapped;
     }
 
-    public static Var map(Var var, EntityType entityType) {
+    /**
+     * Map an EntityType to a Var
+     * @param var holder var with basic information
+     * @param entityType type to be mapped
+     * @return var with EntityType specific metadata
+     */
+    private static Var map(Var var, EntityType entityType) {
         return var;
     }
 
-    public static Var map(Var var, RelationType relationType) {
+    /**
+     * Map a RelationType to a Var with all of the has-role edges
+     * @param var holder var with basic information
+     * @param relationType type to be mapped
+     * @return var with RelationType specific metadata
+     */
+    private static Var map(Var var, RelationType relationType) {
         return hasRoles(var, relationType);
     }
 
-    public static Var map(Var var, RoleType roleType) {
+    /**
+     * Map a RoleType to a Var
+     * @param var holder var with basic information
+     * @param roleType type to be mapped
+     * @return var with RoleType specific metadata
+     */
+    private static Var map(Var var, RoleType roleType) {
         return var;
     }
 
-    public static Var map(Var var, ResourceType resourceType) {
+    /**
+     * Map a ResourceType to a Var with the datatype
+     * @param var holder var with basic information
+     * @param resourceType type to be mapped
+     * @return var with ResourceType specific metadata
+     */
+    private static Var map(Var var, ResourceType resourceType) {
         return datatype(var, resourceType);
     }
 
-    public static Var map(Var var, RuleType ruleType) {
+    /**
+     * Map a RuleType to a Var
+     * @param var holder var with basic information
+     * @param ruleType type to be mapped
+     * @return var with RuleType specific metadata
+     */
+    private static Var map(Var var, RuleType ruleType) {
         return var;
     }
 
+    /**
+     * Create a var with the information underlying all Types
+     * @param type type to be mapped
+     * @return Var containing basic information about the given type
+     */
     private static Var formatBase(Type type) {
         Var var = var().id(type.getId()).isa(type.type().getId());
         var = playsRoles(var, type);
@@ -74,10 +117,21 @@ public class TypeMapper {
         return var;
     }
 
+    /**
+     * Add is-abstract annotation to a var
+     * @param var var to be marked
+     * @param type type from which metadata extracted
+     */
     private static Var isAbstract(Var var, Type type) {
        return type.isAbstract() ? var.isAbstract() : var;
     }
 
+    /**
+     * Add plays-role edges to a var, given a type
+     * @param var var to be modified
+     * @param type type from which metadata extracted
+     * @return var with appropriate plays-role edges
+     */
     private static Var playsRoles(Var var, Type type) {
         for(RoleType role:type.playsRoles()){
             var = var.playsRole(role.getId());
@@ -85,6 +139,12 @@ public class TypeMapper {
         return var;
     }
 
+    /**
+     * Add has-role edges to a var, given a type
+     * @param var var to be modified
+     * @param type type from which metadata extracted
+     * @return var with appropriate has-role edges
+     */
     private static Var hasRoles(Var var, RelationType type){
         for(RoleType role:type.hasRoles()){
             var = var.hasRole(role.getId());
@@ -92,6 +152,12 @@ public class TypeMapper {
         return var;
     }
 
+    /**
+     * Add a datatype to a resource type var
+     * @param var var to be modified
+     * @param type type from which metadata extracted
+     * @return var with appropriate datatype
+     */
     private static Var datatype(Var var, ResourceType type) {
         return var.datatype(type.getDataType());
     }

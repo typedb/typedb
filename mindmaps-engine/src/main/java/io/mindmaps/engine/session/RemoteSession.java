@@ -18,8 +18,11 @@
 
 package io.mindmaps.engine.session;
 
+import com.google.common.collect.ImmutableMap;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.factory.GraphFactory;
+import io.mindmaps.graql.Printer;
+import io.mindmaps.graql.internal.printer.Printers;
 import mjson.Json;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
@@ -33,7 +36,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import static io.mindmaps.util.REST.RemoteShell.*;
+import static io.mindmaps.util.REST.RemoteShell.ACTION;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_AUTOCOMPLETE;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_COMMIT;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_INIT;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY_ABORT;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_QUERY_END;
+import static io.mindmaps.util.REST.RemoteShell.ACTION_ROLLBACK;
+import static io.mindmaps.util.REST.RemoteShell.KEYSPACE;
+import static io.mindmaps.util.REST.RemoteShell.OUTPUT_FORMAT;
 
 /**
  * Web socket for running a Graql shell
@@ -43,6 +55,9 @@ public class RemoteSession {
     private final Map<Session, GraqlSession> sessions = new HashMap<>();
     private final Function<String, MindmapsGraph> getGraph;
     private final Logger LOG = LoggerFactory.getLogger(RemoteSession.class);
+
+    private static final ImmutableMap<String, Printer> printers =
+            ImmutableMap.of("graql", Printers.graql(), "json", Printers.json());
 
 
     // This constructor is magically invoked by spark's websocket stuff
@@ -77,7 +92,7 @@ public class RemoteSession {
             Json json = Json.read(message);
 
             switch (json.at(ACTION).asString()) {
-                case ACTION_KEYSPACE:
+                case ACTION_INIT:
                     startSession(session, json);
                     break;
                 case ACTION_QUERY:
@@ -110,8 +125,10 @@ public class RemoteSession {
      */
     private void startSession(Session session, Json json) {
         String keyspace = json.at(KEYSPACE).asString();
+        String outputFormat = json.at(OUTPUT_FORMAT).asString();
+        Printer printer = printers.getOrDefault(outputFormat, Printers.graql());
         MindmapsGraph graph = getGraph.apply(keyspace);
-        GraqlSession graqlSession = new GraqlSession(session, graph);
+        GraqlSession graqlSession = new GraqlSession(session, graph, printer);
         sessions.put(session, graqlSession);
     }
 }

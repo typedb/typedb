@@ -47,7 +47,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
     public void testShoppingOntology()  {       
         // Load
         try {
-            OWLOntology O = loadOntologyFromResource("/io/mindmaps/migration/owl/samples/Shopping.owl");
+            OWLOntology O = loadOntologyFromResource("Shopping.owl");
             migrator.ontology(O).graph(graph).migrate();
             migrator.graph().commit();
         }
@@ -73,7 +73,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
     public void testShakespeareOntology()   {       
         // Load
         try {
-            OWLOntology O = loadOntologyFromResource("/io/mindmaps/migration/owl/samples/shakespeare.owl");         
+            OWLOntology O = loadOntologyFromResource("shakespeare.owl");
             migrator.ontology(O).graph(graph).migrate();
             migrator.graph().commit();
         }
@@ -113,7 +113,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
     public void testProductOntology()   {
         // Load
         try {
-            OWLOntology O = loadOntologyFromResource("/io/mindmaps/migration/owl/samples/Product.owl");
+            OWLOntology O = loadOntologyFromResource("Product.owl");
             migrator.ontology(O).graph(graph).migrate();
             migrator.graph().commit();
         }
@@ -140,7 +140,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
     public void test1Ontology() {       
         // Load
         try {
-            OWLOntology O = loadOntologyFromResource("/io/mindmaps/migration/owl/samples/test1.owl");
+            OWLOntology O = loadOntologyFromResource("test1.owl");
             O.axioms().forEach(System.out::println);            
             migrator.ontology(O).graph(graph).migrate();
             migrator.graph().commit();
@@ -187,7 +187,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
     public void testFamilyOntology()   {
         // Load
         try {
-            OWLOntology O = loadOntologyFromResource("/io/mindmaps/migration/owl/samples/family.owl");
+            OWLOntology O = loadOntologyFromResource("family.owl");
             migrator.ontology(O).graph(graph).migrate();
             migrator.graph().commit();
         }

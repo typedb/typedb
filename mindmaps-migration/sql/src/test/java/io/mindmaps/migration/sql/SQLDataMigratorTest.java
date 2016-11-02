@@ -83,7 +83,7 @@ public class SQLDataMigratorTest {
 
     @Test
     public void usersDataTest() throws SQLException {
-        Connection connection = Util.setupExample("simple");
+        Connection connection = SQLMigratorUtil.setupExample("simple");
         schemaMigrator.configure(connection).migrate(loader);
         dataMigrator.configure(connection).migrate(loader);
 
@@ -103,7 +103,7 @@ public class SQLDataMigratorTest {
 
     @Test(expected = AssertionError.class)
     public void usersDataDoesNotExist() throws SQLException {
-        Connection connection = Util.setupExample("simple");
+        Connection connection = SQLMigratorUtil.setupExample("simple");
         schemaMigrator.configure(connection).migrate(loader);
         dataMigrator.configure(connection).migrate(loader);
 
@@ -113,7 +113,7 @@ public class SQLDataMigratorTest {
 
     @Test
     public void postgresDataTest() throws SQLException, MindmapsValidationException {
-        Connection connection = Util.setupExample("postgresql-example");
+        Connection connection = SQLMigratorUtil.setupExample("postgresql-example");
         schemaMigrator.configure(connection).migrate(loader);
         dataMigrator.configure(connection).migrate(loader);
 
@@ -142,7 +142,7 @@ public class SQLDataMigratorTest {
 
     @Test
     public void combinedKeyDataTest() throws SQLException {
-        Connection connection = Util.setupExample("combined-key");
+        Connection connection = SQLMigratorUtil.setupExample("combined-key");
         schemaMigrator.configure(connection).migrate(loader);
         dataMigrator.configure(connection).migrate(loader);
 
