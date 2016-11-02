@@ -160,25 +160,25 @@ public class CWInferenceTest {
         MatchQuery query = qb.parse(queryString);
 
         String explicitQuery = "match " +
-            "{{$x isa criminal} or {$x has nationality 'American';\n" +
-            "{$z has alignment 'hostile'} or {" +
-                "$yy value 'America';\n" +
-                "($z, $yy) isa is-enemy-of;\n" +
-                "$z isa country;\n" +
-                "$yy isa country" +
-            "};\n" +
+            "{{$x isa criminal;} or {$x has nationality 'American';" +
+            "{$z has alignment 'hostile';} or {" +
+                "$yy value 'America';" +
+                "($z, $yy) isa is-enemy-of;" +
+                "$z isa country;" +
+                "$yy isa country;" +
+            "};" +
             "($x, $y, $z) isa transaction or {" +
-                "$x isa person;\n" +
-                "$z isa country;\n" +
-                "{ {$y isa weapon} or { {$y isa missile} or {$y isa rocket;$y has propulsion 'gsp'} } };\n" +
-                "($x, $z) isa is-paid-by;\n" +
-                "($z, $y) isa owns\n" +
-            "};\n" +
-            "{$y isa weapon} or {{$y isa missile} or {$y has propulsion 'gsp';$y isa rocket}};\n" +
-            "$x isa person;\n" +
-            "$z isa country}} or {$x has nationality 'American';$x isa person} select $x;";
+                "$x isa person;" +
+                "$z isa country;" +
+                "{ {$y isa weapon;} or { {$y isa missile;} or {$y isa rocket;$y has propulsion 'gsp';} ;} ;};" +
+                "($x, $z) isa is-paid-by;" +
+                "($z, $y) isa owns;" +
+            "};" +
+            "{$y isa weapon;} or {{$y isa missile;} or {$y has propulsion 'gsp';$y isa rocket;};};" +
+            "$x isa person;" +
+            "$z isa country;};} or {$x has nationality 'American';$x isa person;}; select $x;";
 
-        //assertQueriesEqual(reasoner.resolveToQuery(query), qb.parseMatch(explicitQuery));
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
 
     @Test
@@ -259,20 +259,20 @@ public class CWInferenceTest {
         MatchQuery query = lqb.parse(queryString);
 
         String explicitQuery = "match " +
-                "{$x isa criminal;} or {\n" +
-                "$x has nationality 'American';\n" +
+                "{$x isa criminal;} or {" +
+                "$x has nationality 'American';" +
                 "($x, $y, $z) isa transaction or {" +
-                "$x isa person ;\n" +
-                "{$z isa country;} or {$z isa region;};\n" +
-                "{ {$y isa weapon;} or { {$y isa missile;} or {$y isa rocket;$y has propulsion 'gsp';}; }; };\n" +
-                "($x, $z) isa is-paid-by;\n" +
-                "($z, $y) isa owns;\n" +
-                "};\n" +
-                "{$y isa weapon;} or {{$y isa missile;} or {$y has propulsion 'gsp';$y isa rocket;};};\n" +
+                "$x isa person ;" +
+                "{$z isa country;} or {$z isa region;};" +
+                "{ {$y isa weapon;} or { {$y isa missile;} or {$y isa rocket;$y has propulsion 'gsp';}; }; };" +
+                "($x, $z) isa is-paid-by;" +
+                "($z, $y) isa owns;" +
+                "};" +
+                "{$y isa weapon;} or {{$y isa missile;} or {$y has propulsion 'gsp';$y isa rocket;};};" +
                 "{$z has alignment 'hostile';} or {" +
-                "$yy id 'America';\n" +
-                "($z, $yy) isa is-enemy-of;\n" +
-                "$z isa country;\n" +
+                "$yy id 'America';" +
+                "($z, $yy) isa is-enemy-of;" +
+                "$z isa country;" +
                 "$yy isa country;" +
                 "};" +
                 "}; select $x;";

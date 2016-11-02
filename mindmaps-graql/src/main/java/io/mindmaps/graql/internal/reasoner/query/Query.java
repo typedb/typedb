@@ -72,11 +72,7 @@ public class Query implements MatchQueryInternal {
         this.pattern = Patterns.conjunction(Sets.newHashSet());
         atomSet = new HashSet<>();
         addAtom(AtomicFactory.create(atom, this));
-        addAtomConstraints(atom.getIdPredicates());
-        addAtomConstraints(atom.getValuePredicates());
-        addAtomConstraints(atom.getTypeConstraints()
-                .stream().filter(at -> !at.isRuleResolvable())
-                .collect(Collectors.toSet()));
+        addAtomConstraints(atom);
     }
 
     //alpha-equivalence equality
@@ -161,19 +157,20 @@ public class Query implements MatchQueryInternal {
                 .filter(Predicate::isIdPredicate)
                 .collect(Collectors.toSet());
     }
-    public Set<Atom> getTypeConstraints(){
-        return getAtoms().stream()
-                .filter(Atomic::isAtom)
-                .map(at -> (Atom) at)
-                .filter(Atom::isType)
-                .collect(Collectors.toSet());
-    }
 
     public Set<Predicate> getValuePredicates(){
         return getAtoms().stream()
                 .filter(Atomic::isPredicate)
                 .map(at -> (Predicate) at)
                 .filter(Predicate::isValuePredicate)
+                .collect(Collectors.toSet());
+    }
+
+    public Set<Atom> getTypeConstraints(){
+        return getAtoms().stream()
+                .filter(Atomic::isAtom)
+                .map(at -> (Atom) at)
+                .filter(Atom::isType)
                 .collect(Collectors.toSet());
     }
 
@@ -363,16 +360,22 @@ public class Query implements MatchQueryInternal {
         pattern.getPatterns().remove(atom.getPattern());
     }
 
-    public void addAtomConstraints(Set<? extends Atomic> constrs){
-        constrs.stream()
-                .filter(type -> containsVar(type.getVarName()))
-                .forEach(con -> {
-                    Atomic lcon = AtomicFactory.create(con, this);
-                    lcon.setParentQuery(this);
-                    addAtom(lcon);
-                    if (lcon.isPredicate() && ((Predicate)lcon).isIdPredicate())
-                        selectVars.remove(lcon.getVarName());
+    public void addAtomConstraints(Set<? extends Atomic> cstrs){
+        cstrs.forEach(con -> {
+            Atomic lcon = AtomicFactory.create(con, this);
+            lcon.setParentQuery(this);
+            addAtom(lcon);
+            if (lcon.isPredicate() && ((Predicate)lcon).isIdPredicate())
+                selectVars.remove(lcon.getVarName());
         });
+    }
+
+    public void addAtomConstraints(Atom atom){
+        addAtomConstraints(atom.getIdPredicates());
+        addAtomConstraints(atom.getValuePredicates());
+        addAtomConstraints(atom.getTypeConstraints()
+                .stream().filter(at -> !at.isRuleResolvable())
+                .collect(Collectors.toSet()));
     }
 
     /**

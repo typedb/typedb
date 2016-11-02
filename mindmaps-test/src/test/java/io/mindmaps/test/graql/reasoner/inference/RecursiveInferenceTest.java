@@ -31,6 +31,7 @@ import io.mindmaps.test.graql.reasoner.graphs.MatrixGraphII;
 import io.mindmaps.test.graql.reasoner.graphs.NguyenGraph;
 import io.mindmaps.test.graql.reasoner.graphs.PathGraph;
 import io.mindmaps.test.graql.reasoner.graphs.PathGraphII;
+import io.mindmaps.test.graql.reasoner.graphs.PathGraphSymmetric;
 import io.mindmaps.test.graql.reasoner.graphs.TailRecursionGraph;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -387,7 +388,7 @@ public class RecursiveInferenceTest {
         QueryBuilder qb = Graql.withGraph(graph);
         Reasoner reasoner = new Reasoner(graph);
 
-        String queryString = "match (S-from: $x, S-to: $y) isa S;$x id 'a'; select $y;";
+        String queryString = "match (P-from: $x, P-to: $y) isa P;$x id 'a'; select $y;";
         MatchQuery query = qb.parse(queryString);
         String explicitQuery = "match $y isa a-entity;";
 
@@ -414,6 +415,39 @@ public class RecursiveInferenceTest {
     }
 
     @Test
+    public void testPathPrime(){
+        final int N = 3;
+        MindmapsGraph graph = PathGraph.getGraph(N, 3);
+        QueryBuilder qb = Graql.withGraph(graph);
+        Reasoner reasoner = new Reasoner(graph);
+
+        String queryString = "match ($x, $y) isa path;$x id 'a0'; select $y;";
+        MatchQuery query = qb.parse(queryString);
+        String explicitQuery = "match $y isa vertex;";
+
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+    }
+
+    @Test
+    @Ignore
+    public void testPathSymmetric(){
+        final int N = 3;
+        MindmapsGraph graph = PathGraphSymmetric.getGraph(N, 3);
+        QueryBuilder qb = Graql.withGraph(graph);
+        Reasoner reasoner = new Reasoner(graph);
+
+        String queryString = "match ($x, $y) isa path;$x id 'a0'; select $y;";
+        MatchQuery query = qb.parse(queryString);
+        String explicitQuery = "match $y isa vertex;";
+
+        assertEquals(reasoner.resolve(query), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+        assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
+        assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
+    }
+
+    @Test
     /**modified test 6.10 from Cao p. 82*/
     public void testPathII(){
         final int N = 3;
@@ -431,9 +465,10 @@ public class RecursiveInferenceTest {
     }
 
     @Test
-    public void testPathSymmetric(){
+    /**modified test 6.10 from Cao p. 82*/
+    public void testPathIIPrime(){
         final int N = 3;
-        MindmapsGraph graph = PathGraph.getGraph(N, 3);
+        MindmapsGraph graph = PathGraphII.getGraph(N, N);
         QueryBuilder qb = Graql.withGraph(graph);
         Reasoner reasoner = new Reasoner(graph);
 
@@ -445,7 +480,7 @@ public class RecursiveInferenceTest {
         assertQueriesEqual(reasoner.resolveToQuery(query), qb.parse(explicitQuery));
         assertEquals(reasoner.resolve(query, true), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
     }
-
+    
     /**from Abiteboul - Foundations of databases p. 312/Cao test 6.14 p. 89*/
     @Test
     public void testReverseSameGeneration(){
