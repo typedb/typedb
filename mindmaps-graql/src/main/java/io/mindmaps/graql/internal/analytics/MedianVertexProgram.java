@@ -138,37 +138,20 @@ public class MedianVertexProgram extends MindmapsVertexProgram<Long> {
         switch (memory.getIteration()) {
             case 0:
                 if (selectedTypes.contains(Utility.getVertexType(vertex))) {
-                    String type = vertex.label();
-                    if (type.equals(Schema.BaseType.ENTITY.name()) || type.equals(Schema.BaseType.RESOURCE.name())) {
-                        messenger.sendMessage(this.messageScopeIn, 1L);
-                    } else if (type.equals(Schema.BaseType.RELATION.name())) {
-                        messenger.sendMessage(this.messageScopeIn, 1L);
-                        messenger.sendMessage(this.messageScopeOut, -1L);
-                    }
+                    degreeStep0(vertex, messenger);
                 }
                 break;
             case 1:
-                String type = vertex.label();
-                if (type.equals(Schema.BaseType.CASTING.name())) {
-                    boolean hasRolePlayer = false;
-                    long assertionCount = 0;
-                    Iterator<Long> iterator = messenger.receiveMessages();
-                    while (iterator.hasNext()) {
-                        long message = iterator.next();
-                        if (message < 0) assertionCount++;
-                        else hasRolePlayer = true;
-                    }
-                    if (hasRolePlayer) {
-                        messenger.sendMessage(this.messageScopeIn, 1L);
-                        messenger.sendMessage(this.messageScopeOut, assertionCount);
-                    }
+                if (vertex.label().equals(Schema.BaseType.CASTING.name())) {
+                    degreeStep1(messenger);
                 }
                 break;
             case 2:
                 if (statisticsResourceTypes.contains(Utility.getVertexType(vertex))) {
                     // put degree
-                    long edgeCount = IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
+                    long edgeCount = getEdgeCount(messenger);
                     vertex.property(DEGREE, edgeCount);
+
                     //TODO: select three values in each iteration, pick the median of the three as pivot
                     // select pivot randomly
                     if (edgeCount > 0) {

@@ -88,16 +88,16 @@ public class ConnectedComponentVertexProgram extends MindmapsVertexProgram<Strin
     public void safeExecute(final Vertex vertex, Messenger<String> messenger, final Memory memory) {
         switch (memory.getIteration()) {
             case 0:
-                if (selectedTypes.contains(Utility.getVertexType(vertex)) && !Utility.isAnalyticsElement(vertex)) {
+                    if (selectedTypes.contains(Utility.getVertexType(vertex))) {
                     String type = vertex.label();
                     if (type.equals(Schema.BaseType.ENTITY.name()) || type.equals(Schema.BaseType.RESOURCE.name())) {
                         // each role-player sends 1 to castings following incoming edges
-                        messenger.sendMessage(this.messageScopeIn, MESSAGE_FROM_ROLE_PLAYER);
+                        messenger.sendMessage(messageScopeIn, MESSAGE_FROM_ROLE_PLAYER);
                     } else if (type.equals(Schema.BaseType.RELATION.name())) {
                         // the assertion can also be a role-player, so sending 1 to castings following incoming edges
-                        messenger.sendMessage(this.messageScopeIn, MESSAGE_FROM_ROLE_PLAYER);
+                        messenger.sendMessage(messageScopeIn, MESSAGE_FROM_ROLE_PLAYER);
                         // send -1 to castings following outgoing edges
-                        messenger.sendMessage(this.messageScopeOut, MESSAGE_FROM_ASSERTION);
+                        messenger.sendMessage(messageScopeOut, MESSAGE_FROM_ASSERTION);
                     }
                 }
                 break;
@@ -115,8 +115,7 @@ public class ConnectedComponentVertexProgram extends MindmapsVertexProgram<Strin
                     }
                     // casting is active if both its assertion and role-player is in the subgraph
                     vertex.property(IS_ACTIVE_CASTING, hasBothMessages);
-                } else if (selectedTypes.contains(Utility.getVertexType(vertex)) &&
-                        !Utility.isAnalyticsElement(vertex)) {
+                } else if (selectedTypes.contains(Utility.getVertexType(vertex))) {
                     String id = vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name());
                     vertex.property(CLUSTER_LABEL, id);
                     messenger.sendMessage(messageScopeIn, id);
@@ -136,41 +135,35 @@ public class ConnectedComponentVertexProgram extends MindmapsVertexProgram<Strin
                 break;
             default:
                 if (memory.get(IS_LAST_ITERATION)) {
-                    if (selectedTypes.contains(Utility.getVertexType(vertex)) &&
-                            !Utility.isAnalyticsElement(vertex)) {
+                    if (selectedTypes.contains(Utility.getVertexType(vertex))) {
                         bulkResourceMutate.putValue(vertex, vertex.value(CLUSTER_LABEL));
                     }
                 } else {
                     // split the default case because shortcut edges cannot be filtered out
                     if (memory.getIteration() % 2 == 1) {
-                        if (selectedTypes.contains(Utility.getVertexType(vertex)) &&
-                                !Utility.isAnalyticsElement(vertex)) {
-                            String currentMax = vertex.value(CLUSTER_LABEL);
-                            String max = IteratorUtils.reduce(messenger.receiveMessages(), currentMax,
-                                    (a, b) -> a.compareTo(b) > 0 ? a : b);
-                            if (max.compareTo(currentMax) > 0) {
-                                vertex.property(CLUSTER_LABEL, max);
-                                messenger.sendMessage(messageScopeIn, max);
-                                messenger.sendMessage(messageScopeOut, max);
-                                memory.and(VOTE_TO_HALT, false);
-                            }
+                        if (selectedTypes.contains(Utility.getVertexType(vertex))) {
+                            update(vertex, messenger, memory);
                         }
                     } else {
                         if (vertex.label().equals(Schema.BaseType.CASTING.name()) &&
                                 (boolean) vertex.value(IS_ACTIVE_CASTING)) {
-                            String currentMax = vertex.value(CLUSTER_LABEL);
-                            String max = IteratorUtils.reduce(messenger.receiveMessages(), currentMax,
-                                    (a, b) -> a.compareTo(b) > 0 ? a : b);
-                            if (max.compareTo(currentMax) > 0) {
-                                vertex.property(CLUSTER_LABEL, max);
-                                messenger.sendMessage(messageScopeIn, max);
-                                messenger.sendMessage(messageScopeOut, max);
-                                memory.and(VOTE_TO_HALT, false);
-                            }
+                            update(vertex, messenger, memory);
                         }
                     }
                 }
                 break;
+        }
+    }
+
+    private void update(Vertex vertex, Messenger<String> messenger, Memory memory) {
+        String currentMax = vertex.value(CLUSTER_LABEL);
+        String max = IteratorUtils.reduce(messenger.receiveMessages(), currentMax,
+                (a, b) -> a.compareTo(b) > 0 ? a : b);
+        if (max.compareTo(currentMax) > 0) {
+            vertex.property(CLUSTER_LABEL, max);
+            messenger.sendMessage(messageScopeIn, max);
+            messenger.sendMessage(messageScopeOut, max);
+            memory.and(VOTE_TO_HALT, false);
         }
     }
 
