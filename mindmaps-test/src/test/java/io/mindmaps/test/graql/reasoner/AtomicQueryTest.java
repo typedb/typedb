@@ -115,4 +115,17 @@ public class AtomicQueryTest {
         assertTrue(unifiers.equals(correctUnifiers));
     }
 
+    @Test
+    public void testResourceEquivalence(){
+        String queryString = "match" + "" +
+                "$x-firstname-9cbf242b-6baf-43b0-97a3-f3af5d801777 value 'c';" +
+                "$x has firstname $x-firstname-9cbf242b-6baf-43b0-97a3-f3af5d801777;";
+        String queryString2 = "match" +
+                "$x has firstname $x-firstname-d6a3b1d0-2a1c-48f3-b02e-9a6796e2b581;" +
+                "$x-firstname-d6a3b1d0-2a1c-48f3-b02e-9a6796e2b581 value 'c';";
+        AtomicQuery parentQuery = new AtomicQuery(queryString, graph);
+        AtomicQuery childQuery = new AtomicQuery(queryString2, graph);
+        assertTrue(parentQuery.isEquivalent(childQuery));
+    }
+
 }
