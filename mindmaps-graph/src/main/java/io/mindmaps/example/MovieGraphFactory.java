@@ -26,7 +26,9 @@ import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
+import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.RuleType;
+import io.mindmaps.concept.Type;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.util.ErrorMessage;
 
@@ -150,6 +152,7 @@ public class MovieGraphFactory {
         hasResource(language, name);
 
         cluster = mindmapsGraph.putEntityType("cluster").playsRole(clusterOfProduction);
+        hasResource(cluster, name);
     }
 
     private static void buildInstances() throws ParseException {
@@ -250,6 +253,8 @@ public class MovieGraphFactory {
 
         cluster0 = putEntity(cluster, "0");
         cluster1 = putEntity(cluster, "1");
+        putResource(cluster0, name, "0");
+        putResource(cluster1, name, "1");
     }
 
     private static void buildRelations() {
@@ -299,21 +304,26 @@ public class MovieGraphFactory {
     private static void buildRules() {
         // These rules are totally made up for testing purposes and don't work!
         RuleType aRuleType = mindmapsGraph.putRuleType("a-rule-type");
+        hasResource(aRuleType, name);
 
-        mindmapsGraph.putRule("expectation-rule", "$x id 'expect-lhs';", "$x id 'expect-rhs';", aRuleType)
+        Rule expectation = mindmapsGraph.putRule("expectation-rule", "$x id 'expect-lhs';", "$x id 'expect-rhs';", aRuleType)
                 .setExpectation(true)
                 .addConclusion(movie).addHypothesis(person);
 
-        mindmapsGraph.putRule("materialize-rule", "$x id 'materialize-lhs';", "$x id 'materialize-rhs';", aRuleType)
+        putResource(expectation, name, "expectation-rule");
+
+        Rule materialize = mindmapsGraph.putRule("materialize-rule", "$x id 'materialize-lhs';", "$x id 'materialize-rhs';", aRuleType)
                 .setMaterialise(true)
                 .addConclusion(person).addConclusion(genre).addHypothesis(hasCast);
+
+        putResource(materialize, name, "materialize-rule");
     }
 
     private static Entity putEntity(EntityType type, String name) {
         return mindmapsGraph.putEntity(name.replaceAll(" ", "-").replaceAll("\\.", ""), type);
     }
 
-    private static void hasResource(EntityType type, ResourceType<?> resourceType) {
+    private static void hasResource(Type type, ResourceType<?> resourceType) {
         RoleType owner = mindmapsGraph.putRoleType("has-" + resourceType.getId() + "-owner");
         RoleType value = mindmapsGraph.putRoleType("has-" + resourceType.getId() + "-value");
         mindmapsGraph.putRelationType("has-" + resourceType.getId()).hasRole(owner).hasRole(value);
