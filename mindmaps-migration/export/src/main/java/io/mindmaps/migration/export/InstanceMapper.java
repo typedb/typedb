@@ -28,6 +28,7 @@ import io.mindmaps.concept.Rule;
 import io.mindmaps.graql.Var;
 
 import java.util.Collection;
+import java.util.Collections;
 
 import static io.mindmaps.graql.Graql.var;
 import static java.util.stream.Collectors.toSet;
@@ -65,8 +66,6 @@ public class InstanceMapper {
      */
     private static Var map(Entity entity){
         Var var = base(entity);
-        var = hasResources(var, entity);
-        var = var.id(entity.getId());
         return var;
     }
 
@@ -111,7 +110,6 @@ public class InstanceMapper {
     //TODO hypothesis, conclusion, isMaterialize, etc
     private static Var map(Rule rule){
         Var var = base(rule);
-        var = var.id(rule.getId());
         var = var.lhs(rule.getLHS());
         var = var.rhs(rule.getRHS());
         return var;
@@ -120,11 +118,22 @@ public class InstanceMapper {
     /**
      * Add the resources of an entity
      * @param var var representing the entity
-     * @param entity entity containing resource information
+     * @param instance instance containing resource information
      * @return var pattern with resources
      */
-    private static Var hasResources(Var var, Entity entity){
-        for(Resource resource:entity.resources()){
+    private static Var hasResources(Var var, Instance instance){
+        Collection<Resource<?>> resources = Collections.EMPTY_SET;
+        if(instance instanceof Resource){
+            return var;
+        } else if(instance instanceof Entity){
+            resources = instance.asEntity().resources();
+        } else if (instance instanceof Relation){
+            resources = instance.asRelation().resources();
+        } else if(instance instanceof Rule){
+            resources = instance.asRule().resources();
+        }
+
+        for(Resource resource:resources){
            var = var.has(resource.type().getId(), resource.getValue());
         }
         return var;
@@ -149,7 +158,8 @@ public class InstanceMapper {
      * @return var patterns representing given instance
      */
     private static  Var base(Instance instance){
-        return var(instance.getId()).isa(instance.type().getId());
+        Var var = var(instance.getId()).isa(instance.type().getId());
+        return hasResources(var, instance);
     }
 
     /**

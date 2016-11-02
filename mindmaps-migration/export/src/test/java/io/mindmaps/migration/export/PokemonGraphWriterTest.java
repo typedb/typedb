@@ -17,15 +17,21 @@
  */
 package io.mindmaps.migration.export;
 
+import io.mindmaps.Mindmaps;
 import io.mindmaps.example.PokemonGraphFactory;
 import io.mindmaps.graql.Graql;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class PokemonGraphWriterTest extends GraphWriterTestBase {
 
-    @BeforeClass
-    public static void setup(){
+    @Before
+    public void setup(){
+        original = Mindmaps.factory(Mindmaps.IN_MEMORY, "original").getGraph();
+        copy = Mindmaps.factory(Mindmaps.IN_MEMORY, "copy").getGraph();
+        writer = new GraphWriter(original);
+
         PokemonGraphFactory.loadGraph(original);
     }
 
