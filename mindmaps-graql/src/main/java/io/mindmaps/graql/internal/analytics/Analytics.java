@@ -375,16 +375,10 @@ public class Analytics {
         MindmapsGraph graph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keySpace).getGraph();
 
         ResourceType resource = graph.putResourceType(resourceTypeId, resourceDataType);
-        RoleType degreeOwner = graph.putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId));
-        RoleType degreeValue = graph.putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId));
-        graph.putRelationType(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId))
-                .hasRole(degreeOwner)
-                .hasRole(degreeValue);
 
         for (String type : subtypes) {
-            graph.getType(type).playsRole(degreeOwner);
+            graph.getType(type).hasResource(resource);
         }
-        resource.playsRole(degreeValue);
 
         try {
             graph.commit();

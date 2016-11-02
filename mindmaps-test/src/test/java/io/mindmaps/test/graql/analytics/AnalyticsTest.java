@@ -531,15 +531,11 @@ public class AnalyticsTest extends AbstractGraphTest {
         referenceDegrees.put(daveBreedsAndOwnsCoco.getId(), 2L);
 
         // create a decoy resource using same relationship
-        RoleType degreeOwner = graph.putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(Analytics.degree));
-        RoleType degreeValue = graph.putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(Analytics.degree));
-        RelationType hasResource = graph.putRelationType(Schema.Resource.HAS_RESOURCE.getId(Analytics.degree))
-                .hasRole(degreeOwner).hasRole(degreeValue);
-        ResourceType<Long> decoyResourceType =
-                graph.putResourceType("decoy-resource", ResourceType.DataType.LONG).playsRole(degreeValue);
+        ResourceType<Long> decoyResourceType = graph.putResourceType("decoy-resource", ResourceType.DataType.LONG);
         Resource<Long> decoyResource = graph.putResource(100L, decoyResourceType);
-        graph.addRelation(hasResource).putRolePlayer(degreeOwner, coco).putRolePlayer(degreeValue, decoyResource);
-        animal.playsRole(degreeOwner);
+
+        animal.hasResource(decoyResourceType);
+        coco.hasResource(decoyResource);
 
         // validate
         graph.commit();
