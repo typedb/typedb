@@ -738,7 +738,8 @@ abstract class ConceptImpl<T extends Concept, V extends Type> implements Concept
             return false;
 
         try {
-            return vertex.property(Schema.BaseType.TYPE.name()).isPresent();
+            return vertex.property(Schema.BaseType.TYPE.name()).isPresent() &&
+                    getMindmapsGraph().getTinkerTraversal().hasId(vertex.id()).out().in().hasId(vertex.id()).hasNext();
         } catch (IllegalStateException e){
             return false;
         }
