@@ -56,7 +56,7 @@ public class MigrationCLI {
         defaultOptions.addOption("h", "help", false, "print usage message");
         defaultOptions.addOption("k", "keyspace", true, "keyspace to use");
         defaultOptions.addOption("u", "uri", true, "uri to engine endpoint");
-        defaultOptions.addOption("o", "output", true, "file to which you can output migrated data");
+        defaultOptions.addOption("d", "destination", true, "destination file - will not persist data in graph");
     }
 
     private CommandLine cmd;

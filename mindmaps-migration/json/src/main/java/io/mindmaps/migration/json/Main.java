@@ -38,7 +38,7 @@ public class Main {
 
     private static Options options = new Options();
     static {
-        options.addOption("f", "file", true, "json data file");
+        options.addOption("i", "input", true, "input json data file");
         options.addOption("t", "template", true, "graql template to apply over data");
         options.addOption("b", "batch", true, "number of row to load at once");
     }
@@ -47,8 +47,8 @@ public class Main {
 
         MigrationCLI cli = new MigrationCLI(args, options);
 
-        String jsonDataFileName = cli.getRequiredOption("f", "Data file missing (-f)");
-        String jsonTemplateName = cli.getRequiredOption("t", "Template file missing (-t)");
+        String jsonDataFileName = cli.getRequiredOption("input", "Data file missing (-i)");
+        String jsonTemplateName = cli.getRequiredOption("template", "Template file missing (-t)");
         int batchSize = cli.hasOption("b") ? Integer.valueOf(cli.getOption("b")) : JsonMigrator.BATCH_SIZE;
 
         // get files

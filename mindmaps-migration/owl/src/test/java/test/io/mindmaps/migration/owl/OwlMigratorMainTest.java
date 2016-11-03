@@ -76,13 +76,13 @@ public class OwlMigratorMainTest {
     @Test
     public void owlMainFileTest(){
         String owlFile = getFile("shakespeare.owl").getAbsolutePath();
-        runAndAssertDataCorrect(new String[]{"owl", "-file", owlFile, "-keyspace", graph.getKeyspace()});
+        runAndAssertDataCorrect(new String[]{"owl", "-input", owlFile, "-keyspace", graph.getKeyspace()});
     }
 
     @Test
     public void owlMainNoFileSpecifiedTest(){
         exception.expect(RuntimeException.class);
-        exception.expectMessage("Please specify owl file with the -owl option.");
+        exception.expectMessage("Please specify owl file with the -i option.");
         runAndAssertDataCorrect(new String[]{"owl", "-keyspace", graph.getKeyspace()});
     }
 
@@ -90,7 +90,7 @@ public class OwlMigratorMainTest {
     public void owlMainCannotOpenFileTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("Cannot find file: grah/?*");
-        runAndAssertDataCorrect(new String[]{"owl", "-file", "grah/?*", "-keyspace", graph.getKeyspace()});
+        runAndAssertDataCorrect(new String[]{"owl", "-input", "grah/?*", "-keyspace", graph.getKeyspace()});
     }
 
     public void runAndAssertDataCorrect(String[] args){

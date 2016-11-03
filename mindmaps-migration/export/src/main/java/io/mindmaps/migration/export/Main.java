@@ -33,16 +33,15 @@ public class Main {
 
     private static Options options = new Options();
     static {
-        options.addOption("f", "file", true, "output file");
-        options.addOption("o", "ontology", false, "export ontology");
-        options.addOption("d", "data", false, "export data");
+        options.addOption("ontology", false, "export ontology");
+        options.addOption("data", false, "export data");
     }
 
     public static void main(String[] args){
 
         MigrationCLI cli = new MigrationCLI(args, options);
 
-        String outputFile = cli.getOption("f");
+        String outputFile = cli.getOption("destination");
 
         System.out.println("Writing graph " + cli.getKeyspace() + " using MM Engine " +
                 cli.getEngineURI() + " to " + (outputFile == null ? "System.out" : outputFile));
@@ -51,11 +50,11 @@ public class Main {
         GraphWriter graphWriter = new GraphWriter(graph);
 
         StringBuilder builder = new StringBuilder();
-        if(cli.hasOption("o")){
+        if(cli.hasOption("ontology")){
             builder.append(graphWriter.dumpOntology());
         }
 
-        if(cli.hasOption("d")){
+        if(cli.hasOption("data")){
            builder.append(graphWriter.dumpData());
         }
 

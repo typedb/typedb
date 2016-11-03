@@ -65,7 +65,7 @@ public class GraphWriterMainTest {
 
     @Test
     public void exportToFileTest(){
-        runAndAssertDataCorrect(new String[]{"export", "-data", "-file", "/tmp/pokemon.gql", "-keyspace", "original"});
+        runAndAssertDataCorrect(new String[]{"export", "-data", "-destination", "/tmp/pokemon.gql", "-keyspace", "original"});
         File pokemonFile = new File("/tmp/pokemon.gql");
         assertTrue(pokemonFile.exists());
     }
@@ -74,7 +74,7 @@ public class GraphWriterMainTest {
     public void exportToFileNotFoundTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("Problem writing to file grah/?*");
-        runAndAssertDataCorrect(new String[]{"export", "-data", "-file", "grah/?*", "-keyspace", "original"});
+        runAndAssertDataCorrect(new String[]{"export", "-data", "-destination", "grah/?*", "-keyspace", "original"});
     }
 
     @Test
