@@ -190,6 +190,15 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
 
     /**
      *
+     * @return returns true if the type was created implicitly through {@link #hasResource}
+     */
+    @Override
+    public Boolean isImplicit(){
+        return null;
+    }
+
+    /**
+     *
      * @return A collection of Rules for which this Type serves as a hypothesis
      */
     @Override
