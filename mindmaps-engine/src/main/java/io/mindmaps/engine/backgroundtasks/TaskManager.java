@@ -21,21 +21,21 @@ package io.mindmaps.engine.backgroundtasks;
 import java.util.Set;
 import java.util.UUID;
 
-public interface TaskScheduler {
+public interface TaskManager {
     UUID scheduleTask(BackgroundTask task, long delay);
     UUID scheduleRecurringTask(BackgroundTask task, long delay, long period);
 
-    TaskScheduler stopTask(UUID uuid);
-    TaskScheduler stopTask(UUID uuid, String requesterName, String message);
+    TaskManager stopTask(UUID uuid);
+    TaskManager stopTask(UUID uuid, String requesterName, String message);
 
-    TaskScheduler pauseTask(UUID uuid);
-    TaskScheduler pauseTask(UUID uuid, String requesterName, String message);
+    TaskManager pauseTask(UUID uuid);
+    TaskManager pauseTask(UUID uuid, String requesterName, String message);
 
-    TaskScheduler resumeTask(UUID uuid);
-    TaskScheduler resumeTask(UUID uuid, String requesterName, String message);
+    TaskManager resumeTask(UUID uuid);
+    TaskManager resumeTask(UUID uuid, String requesterName, String message);
 
-    TaskScheduler restartTask(UUID uuid);
-    TaskScheduler restartTask(UUID uuid, String requesterName, String message);
+    TaskManager restartTask(UUID uuid);
+    TaskManager restartTask(UUID uuid, String requesterName, String message);
 
     TaskState getTaskState(UUID uuid);
 

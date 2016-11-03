@@ -29,33 +29,33 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
-public class InMemoryTaskSchedulerTest {
-    private InMemoryTaskScheduler taskRunner;
+public class InMemoryTaskManagerTest {
+    private InMemoryTaskManager taskManager;
     private static String TASK_NAME = "Empty BackgroundTask() for unit testing";
     private static long TASK_DELAY = 100000;
 
     @Before
     public void setUp() {
-        taskRunner = InMemoryTaskScheduler.getInstance();
+        taskManager = InMemoryTaskManager.getInstance();
     }
 
     @Test
     public void testQueueAndRetrieve() throws Exception {
         TestTask task = new TestTask();
-        UUID uuid = taskRunner.scheduleTask(task, 0);
-        assertNotEquals(TaskStatus.CREATED, taskRunner.taskStatus(uuid));
+        UUID uuid = taskManager.scheduleTask(task, 0);
+        assertNotEquals(TaskStatus.CREATED, taskManager.getTaskState(uuid).getStatus());
 
         // Check that task has ran
         Thread.sleep(1000);
-        assertEquals(TaskStatus.COMPLETED, taskRunner.taskStatus(uuid));
+        assertEquals(TaskStatus.COMPLETED, taskManager.getTaskState(uuid).getStatus());
         assertEquals(1, task.getRunCount());
     }
 
     @Test
     public void testRecurring() throws Exception {
         TestTask task = new TestTask();
-        UUID uuid = taskRunner.scheduleRecurringTask(task, 100, 100);
-        assertNotEquals(TaskStatus.CREATED, taskRunner.taskStatus(uuid));
+        UUID uuid = taskManager.scheduleRecurringTask(task, 100, 100);
+        assertNotEquals(TaskStatus.CREATED, taskManager.getTaskState(uuid).getStatus());
 
         // Check that task has repeatedly ran
         Thread.sleep(1100);
@@ -66,45 +66,45 @@ public class InMemoryTaskSchedulerTest {
 
     @Test
     public void testStop() {
-        UUID uuid = taskRunner.scheduleTask(new TestTask(), TASK_DELAY);
-        taskRunner.stopTask(uuid);
-        assertEquals(TaskStatus.STOPPED, taskRunner.taskStatus(uuid));
+        UUID uuid = taskManager.scheduleTask(new TestTask(), TASK_DELAY);
+        taskManager.stopTask(uuid);
+        assertEquals(TaskStatus.STOPPED, taskManager.getTaskState(uuid).getStatus());
     }
 
     @Test
     public void testPause() {
-        UUID uuid = taskRunner.scheduleTask(new TestTask(), TASK_DELAY);
-        taskRunner.pauseTask(uuid);
-        assertEquals(TaskStatus.PAUSED, taskRunner.taskStatus(uuid));
+        UUID uuid = taskManager.scheduleTask(new TestTask(), TASK_DELAY);
+        taskManager.pauseTask(uuid);
+        assertEquals(TaskStatus.PAUSED, taskManager.getTaskState(uuid).getStatus());
     }
 
     @Test
     public void testResume() {
-        UUID uuid = taskRunner.scheduleTask(new TestTask(), TASK_DELAY);
-        taskRunner.pauseTask(uuid);
-        assertEquals(TaskStatus.PAUSED, taskRunner.taskStatus(uuid));
-        taskRunner.resumeTask(uuid);
-        assertEquals(TaskStatus.RUNNING, taskRunner.taskStatus(uuid));
+        UUID uuid = taskManager.scheduleTask(new TestTask(), TASK_DELAY);
+        taskManager.pauseTask(uuid);
+        assertEquals(TaskStatus.PAUSED, taskManager.getTaskState(uuid).getStatus());
+        taskManager.resumeTask(uuid);
+        assertEquals(TaskStatus.RUNNING, taskManager.getTaskState(uuid).getStatus());
     }
 
     @Test
     public void testRestart() {
-        UUID uuid = taskRunner.scheduleTask(new TestTask(), TASK_DELAY);
-        taskRunner.stopTask(uuid);
-        assertEquals(TaskStatus.STOPPED, taskRunner.taskStatus(uuid));
-        taskRunner.restartTask(uuid);
-        assertEquals(TaskStatus.RUNNING, taskRunner.taskStatus(uuid));
+        UUID uuid = taskManager.scheduleTask(new TestTask(), TASK_DELAY);
+        taskManager.stopTask(uuid);
+        assertEquals(TaskStatus.STOPPED, taskManager.getTaskState(uuid).getStatus());
+        taskManager.restartTask(uuid);
+        assertEquals(TaskStatus.RUNNING, taskManager.getTaskState(uuid).getStatus());
     }
 
     @Test
     public void testGetAll() {
         Set<UUID> uuids = new HashSet<>();
         for (int i = 0; i < 10; i++) {
-            uuids.add(taskRunner.scheduleTask(new TestTask(TASK_NAME+Integer.toString(i)), TASK_DELAY));
+            uuids.add(taskManager.scheduleTask(new TestTask(), TASK_DELAY));
         }
 
-        // taskRunner can now contain completed tasks from other tests
-        Set<UUID> allTasks = taskRunner.getAllTasks();
+        // taskManager can now contain completed tasks from other tests
+        Set<UUID> allTasks = taskManager.getAllTasks();
         uuids.forEach(x -> assertTrue(allTasks.contains(x)));
     }
 
@@ -112,14 +112,14 @@ public class InMemoryTaskSchedulerTest {
     public void testGetTasks() {
         Set<UUID> paused = new HashSet<>();
         for (int i = 0; i < 10; i++) {
-            UUID uuid = taskRunner.scheduleTask(new TestTask(TASK_NAME+Integer.toString(i)), TASK_DELAY);
+            UUID uuid = taskManager.scheduleTask(new TestTask(), TASK_DELAY);
             if(i%2 == 0) {
-                taskRunner.pauseTask(uuid);
+                taskManager.pauseTask(uuid);
                 paused.add(uuid);
             }
         }
 
-        assertEquals(paused.size(), taskRunner.getTasks(TaskStatus.PAUSED).size());
-        taskRunner.getTasks(TaskStatus.PAUSED).forEach(x -> assertTrue(paused.contains(x)));
+        assertEquals(paused.size(), taskManager.getTasks(TaskStatus.PAUSED).size());
+        taskManager.getTasks(TaskStatus.PAUSED).forEach(x -> assertTrue(paused.contains(x)));
     }
 }

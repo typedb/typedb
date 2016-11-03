@@ -26,29 +26,30 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
-public class InMemoryTaskScheduler implements TaskScheduler {
+public class InMemoryTaskManager implements TaskManager {
     private static String STATUS_MESSAGE_SCHEDULED = "Task scheduled.";
-
-    private final Logger LOG = LoggerFactory.getLogger(InMemoryTaskScheduler.class);
-    private static InMemoryTaskScheduler instance = null;
+    private final Logger LOG = LoggerFactory.getLogger(InMemoryTaskManager.class);
+    private static InMemoryTaskManager instance = null;
 
     private Map<UUID, TaskState> taskStateStorage;
     private Map<UUID, ScheduledFuture<BackgroundTask>> taskStorage;
 
     private ScheduledExecutorService executorService;
 
-    private InMemoryTaskScheduler() {
-        taskStateStorage = new HashMap<>();
+    private InMemoryTaskManager() {
+        taskStateStorage = new ConcurrentHashMap<>();
         taskStorage = new HashMap<>();
 
         ConfigProperties properties = ConfigProperties.getInstance();
-        // One thread is used internally to supervise tasks.
+        // One thread is reserved for the supervisor
         executorService = Executors.newScheduledThreadPool(properties.getAvailableThreads()-1);
+        //FIXME: get from config
+        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this::supervisor, 2000, 1000, TimeUnit.MILLISECONDS);
     }
 
-    public static synchronized InMemoryTaskScheduler getInstance() {
+    public static synchronized InMemoryTaskManager getInstance() {
         if (instance == null)
-            instance = new InMemoryTaskScheduler();
+            instance = new InMemoryTaskManager();
         return instance;
     }
 
@@ -77,62 +78,67 @@ public class InMemoryTaskScheduler implements TaskScheduler {
         return uuid;
     }
 
-    public TaskScheduler stopTask(UUID uuid, String requesterName, String message) {
+    public TaskManager stopTask(UUID uuid, String requesterName, String message) {
         TaskState state = taskStateStorage.get(uuid);
         state.setStatus(TaskStatus.STOPPED)
              .setStatusChangeMessage(message)
              .setStatusChangedBy(requesterName);
         taskStateStorage.put(uuid, state);
 
+        ScheduledFuture<BackgroundTask> f = taskStorage.get(uuid);
         try {
-            ScheduledFuture<BackgroundTask> f = taskStorage.get(uuid);
-            f.get().stop();
+            if (!f.isDone())
+                instantiateTask(state.getName()).stop();
+
             f.cancel(true);
-            taskStorage.put(uuid, f);
-        } catch(InterruptedException | ExecutionException e) {
-            LOG.error(e.getMessage());
+        } catch(ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+            LOG.error("Could not run .stop() on task "+state.getName()+" id: "+uuid.toString()+" the error was: "+e.getMessage());
         }
 
         return this;
     }
 
-    public TaskScheduler stopTask(UUID uuid) {
+    public TaskManager stopTask(UUID uuid) {
         return stopTask(uuid, null, null);
     }
 
-    public TaskScheduler pauseTask(UUID uuid, String requesterName, String message) {
+    public TaskManager pauseTask(UUID uuid, String requesterName, String message) {
         TaskState state = taskStateStorage.get(uuid);
-        if(state.getStatus() != TaskStatus.RUNNING || state.getStatus() != TaskStatus.SCHEDULED) {
+        TaskStatus status = state.getStatus();
+
+        if(status == TaskStatus.SCHEDULED || status == TaskStatus.RUNNING) {
+            // Mark task state as paused.
+            state.setStatus(TaskStatus.PAUSED)
+                    .setStatusChangeMessage(message)
+                    .setStatusChangedBy(requesterName);
+
+            ScheduledFuture<BackgroundTask> f = taskStorage.get(uuid);
+            try {
+                // Call tasks .pause() method if it's still running.
+                if (status == TaskStatus.RUNNING && (!f.isDone()))
+                    state.setPauseState(f.get().pause());
+
+                f.cancel(true);
+            } catch (InterruptedException | ExecutionException e) {
+                LOG.error(e.getMessage());
+            }
+
+            taskStateStorage.put(uuid, state);
+        } else {
             LOG.warn("Ignoring pause request from: "+Thread.currentThread().getStackTrace()[1].toString()+
                      " for task "+uuid.toString()+
                      " because its status is "+state.getStatus());
-            return this;
-        }
-
-        state.setStatus(TaskStatus.PAUSED)
-             .setStatusChangeMessage(message)
-             .setStatusChangedBy(requesterName);
-
-        try {
-            ScheduledFuture<BackgroundTask> f = taskStorage.get(uuid);
-            state.setPauseState(f.get().pause());
-            taskStateStorage.put(uuid, state);
-
-            f.cancel(true);
-            taskStorage.put(uuid, f);
-        } catch(InterruptedException | ExecutionException e) {
-            LOG.error(e.getMessage());
         }
 
         return this;
     }
 
-    public TaskScheduler pauseTask(UUID uuid) {
+    public TaskManager pauseTask(UUID uuid) {
         return pauseTask(uuid, null, null);
     }
 
 
-    public TaskScheduler resumeTask(UUID uuid, String requesterName, String message) {
+    public TaskManager resumeTask(UUID uuid, String requesterName, String message) {
         TaskState state = taskStateStorage.get(uuid);
         if(state.getStatus() != TaskStatus.PAUSED) {
            LOG.warn("Ignoring resume request from: "+Thread.currentThread().getStackTrace()[1].toString()+
@@ -147,8 +153,7 @@ public class InMemoryTaskScheduler implements TaskScheduler {
         taskStateStorage.put(uuid, state);
 
         try {
-            Class<?> c = Class.forName(state.getName());
-            BackgroundTask task = (BackgroundTask) c.newInstance();
+            BackgroundTask task = instantiateTask(state.getName());
 
             if(state.getRecurring())
                 taskStorage.put(uuid,
@@ -172,24 +177,24 @@ public class InMemoryTaskScheduler implements TaskScheduler {
         return this;
     }
 
-    public TaskScheduler resumeTask(UUID uuid) {
+    public TaskManager resumeTask(UUID uuid) {
         return resumeTask(uuid, null, null);
     }
 
-    public TaskScheduler restartTask(UUID uuid, String requesterName, String message) {
-        try {
-            // Stop task
-            stopTask(uuid, requesterName, message);
+    public TaskManager restartTask(UUID uuid, String requesterName, String message) {
+        TaskState state = taskStateStorage.get(uuid);
+        TaskStatus status = state.getStatus();
+        if(status == TaskStatus.SCHEDULED || status == TaskStatus.CREATED || status == TaskStatus.RUNNING) {
+            LOG.warn(Thread.currentThread().getStackTrace()[1].toString()+" tried to call restartTask() on a "+status.toString()+" task. IGNORING.");
+            return this;
+        }
 
+        try {
             // Clean up etc
-            ScheduledFuture<BackgroundTask> f = taskStorage.get(uuid);
-            f.get().restart();
+            BackgroundTask task = instantiateTask(state.getName());
+            task.restart();
 
             // Start it up again
-            TaskState state = taskStateStorage.get(uuid);
-            Class<?> c = Class.forName(state.getName());
-            BackgroundTask task = (BackgroundTask) c.newInstance();
-
             if(state.getRecurring())
                 scheduleRecurringTask(task, state.getDelay(), state.getInterval());
             else
@@ -199,9 +204,6 @@ public class InMemoryTaskScheduler implements TaskScheduler {
             state.setStatusChangeMessage(message)
                  .setStatusChangedBy(requesterName);
             taskStateStorage.put(uuid, state);
-
-        } catch(InterruptedException | ExecutionException e) {
-            LOG.error("Unable to call .restart() on task "+uuid.toString()+" the error was: "+e.getMessage());
         } catch(ClassNotFoundException | InstantiationException | IllegalAccessException e) {
             LOG.error("Unable to start task "+uuid.toString()+" the error was: "+e.getMessage());
         }
@@ -209,7 +211,7 @@ public class InMemoryTaskScheduler implements TaskScheduler {
         return this;
     }
 
-    public TaskScheduler restartTask(UUID uuid) {
+    public TaskManager restartTask(UUID uuid) {
         return restartTask(uuid, null, null);
     }
 
@@ -234,7 +236,7 @@ public class InMemoryTaskScheduler implements TaskScheduler {
     private UUID saveNewState(TaskState state) {
         state.setStatus(TaskStatus.SCHEDULED)
              .setStatusChangeMessage(STATUS_MESSAGE_SCHEDULED)
-             .setStatusChangedBy(InMemoryTaskScheduler.class.getName())
+             .setStatusChangedBy(InMemoryTaskManager.class.getName())
              .setQueuedTime(new Date());
 
        UUID uuid = UUID.randomUUID();
@@ -242,20 +244,37 @@ public class InMemoryTaskScheduler implements TaskScheduler {
        return uuid;
     }
 
+    private BackgroundTask instantiateTask(String className) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
+        Class<?> c = Class.forName(className);
+        return (BackgroundTask) c.newInstance();
+    }
 
+    private void supervisor() {
+        taskStorage.entrySet().forEach(x -> {
+            // Validity check
+            if(!taskStateStorage.containsKey(x.getKey())) {
+                LOG.error("INTERNAL STATE DESYNCHRONISED: taskStorage("+x.getKey().toString()+") is not present in taskStateStorage! CANCELLING TASK.");
+                x.getValue().cancel(true);
+                taskStorage.remove(x.getKey());
+            }
 
+            // Update state of current tasks
+            else {
+                ScheduledFuture<BackgroundTask> f = x.getValue();
+                TaskState state = taskStateStorage.get(x.getKey());
 
+                if(f.isDone()) {
+                    state.setStatus(TaskStatus.COMPLETED);
+                }
 
+                else if(f.isCancelled()) {
+                    if(state.getStatus() != TaskStatus.STOPPED)
+                        state.setStatus(TaskStatus.DEAD)
+                        .setStatusChangedBy(this.getClass().getName()+" supervisor");
+                }
 
-
-
-
-
-
-
-
-
-
-
-
+                taskStateStorage.put(x.getKey(), state);
+            }
+        });
+    }
 }

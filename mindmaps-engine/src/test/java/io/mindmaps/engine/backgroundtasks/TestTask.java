@@ -18,42 +18,31 @@
 
 package io.mindmaps.engine.backgroundtasks;
 
-import io.mindmaps.engine.backgroundtasks.types.BackgroundTask;
 
-public class TestTask extends BackgroundTask {
-    private int runCount;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
-    TestTask() {
-        super(TestTask.class.getName());
-        runCount = 0;
-    }
-
-    TestTask(String name) {
-        super(name);
-        runCount = 0;
-    }
+public class TestTask implements BackgroundTask {
+    private static AtomicInteger runCount = new AtomicInteger(0);
 
     public void start() {
-        if(this.getStatus() == TaskStatus.SCHEDULED)
-            this.setStatus(TaskStatus.RUNNING)
-                .setStatusChangedBy(TestTask.class.getName());
-
-        if(this.getStatus() == TaskStatus.COMPLETED)
-            this.setStatus(TaskStatus.RUNNING)
-                .setStatuChangeMessage("starting another run")
-                .setStatusChangedBy(TestTask.class.getName());
-
-        if(this.getStatus() == TaskStatus.RUNNING)
-            runCount ++;
-
-        setStatus(TaskStatus.COMPLETED).setStatusChangedBy(TestTask.class.getName());
+        runCount.incrementAndGet();
     }
 
-    public void stop() {
-        setStatus(TaskStatus.STOPPED);
+    public void stop() {}
+
+    public Map<String, Object> pause() {
+        return new HashMap<>();
+    }
+
+    public void resume(Map<String, Object> m) {}
+
+    public void restart() {
+        runCount.set(0);
     }
 
     public int getRunCount() {
-        return runCount;
+        return runCount.get();
     }
 }
