@@ -80,6 +80,12 @@ public interface Type extends Concept {
 
     /**
      *
+     * @return returns true if the type was created implicitly through {@link #hasResource}
+     */
+    Boolean isImplicit();
+
+    /**
+     *
      * @return A collection of Rules for which this Type serves as a hypothesis
      */
     Collection<Rule> getRulesOfHypothesis();

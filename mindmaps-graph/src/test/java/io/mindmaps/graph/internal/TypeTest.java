@@ -414,5 +414,9 @@ public class TypeTest {
 
         assertEquals(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId), entityType.playsRoles().iterator().next().getId());
         assertEquals(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId), resourceType.playsRoles().iterator().next().getId());
+
+        //Check everything is implicit
+        assertTrue(relationType.isImplicit());
+        relationType.hasRoles().forEach(role -> assertTrue(role.isImplicit()));
     }
 }

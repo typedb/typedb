@@ -33,64 +33,70 @@ import org.slf4j.LoggerFactory;
  * Internal factory to produce different types of concepts
  */
 final class ElementFactory {
-    protected final Logger LOG = LoggerFactory.getLogger(ElementFactory.class);
+    private final Logger LOG = LoggerFactory.getLogger(ElementFactory.class);
     private final AbstractMindmapsGraph mindmapsGraph;
 
-    public ElementFactory(AbstractMindmapsGraph mindmapsGraph){
+    ElementFactory(AbstractMindmapsGraph mindmapsGraph){
         this.mindmapsGraph = mindmapsGraph;
     }
 
-    public RelationImpl buildRelation(Vertex v, RelationType type){
+    RelationImpl buildRelation(Vertex v, RelationType type){
         return new RelationImpl(v, type, mindmapsGraph);
     }
 
-    public CastingImpl buildCasting(Vertex v, RoleType type){
+    CastingImpl buildCasting(Vertex v, RoleType type){
         return new CastingImpl(v, type, mindmapsGraph);
     }
 
-    public TypeImpl buildConceptType(Vertex v, Type type){
+    TypeImpl buildConceptType(Vertex v, Type type){
         return  new TypeImpl(v, type, mindmapsGraph);
     }
 
-    public RuleTypeImpl buildRuleType(Vertex v, Type type){
+    RuleTypeImpl buildRuleType(Vertex v, Type type){
         return  new RuleTypeImpl(v, type, mindmapsGraph);
     }
 
-    public RoleTypeImpl buildRoleType(Vertex v, Type type){
+    RoleTypeImpl buildRoleTypeImplicit(Vertex v, Type type){
+        return new RoleTypeImpl(v, type, true, mindmapsGraph);
+    }
+    RoleTypeImpl buildRoleType(Vertex v, Type type){
         return new RoleTypeImpl(v, type, mindmapsGraph);
     }
 
-    public <V> ResourceTypeImpl<V> buildResourceType(Vertex v, Type type){
+    private <V> ResourceTypeImpl<V> buildResourceType(Vertex v, Type type){
         return new ResourceTypeImpl<>(v, type, mindmapsGraph);
     }
-    public <V> ResourceTypeImpl<V> buildResourceType(Vertex v, Type type, ResourceType.DataType<V> dataType, boolean isUnique){
+    <V> ResourceTypeImpl<V> buildResourceType(Vertex v, Type type, ResourceType.DataType<V> dataType, boolean isUnique){
         return new ResourceTypeImpl<>(v, type, mindmapsGraph, dataType, isUnique);
     }
 
-    public RelationTypeImpl buildRelationType(Vertex v, Type type){
+    RelationTypeImpl buildRelationTypeImplicit(Vertex v, Type type){
+        return  new RelationTypeImpl(v, type, true, mindmapsGraph);
+    }
+    private RelationTypeImpl buildRelationType(Vertex v, Type type){
         return  new RelationTypeImpl(v, type, mindmapsGraph);
     }
 
-    public EntityTypeImpl buildEntityType(Vertex v, Type type){
+    private EntityTypeImpl buildEntityType(Vertex v, Type type){
         return  new EntityTypeImpl(v, type, mindmapsGraph);
     }
 
-    public EntityImpl buildEntity(Vertex v, EntityType type){
+    EntityImpl buildEntity(Vertex v, EntityType type){
         return  new EntityImpl(v, type, mindmapsGraph);
     }
 
-    public <V> ResourceImpl <V> buildResource(Vertex v, ResourceType<V> type){
+    private <V> ResourceImpl <V> buildResource(Vertex v, ResourceType<V> type){
         return new ResourceImpl<>(v, type, mindmapsGraph);
     }
 
-    public <V> ResourceImpl <V> buildResource(Vertex v, ResourceType<V> type, V value){
+    <V> ResourceImpl <V> buildResource(Vertex v, ResourceType<V> type, V value){
         return new ResourceImpl<>(v, type, mindmapsGraph, value);
     }
 
-    public RuleImpl buildRule(Vertex v, RuleType type){
+    private RuleImpl buildRule(Vertex v, RuleType type){
         return buildRule(v, type, v.value(Schema.ConceptProperty.RULE_LHS.name()), v.value(Schema.ConceptProperty.RULE_RHS.name()));
     }
-    public RuleImpl buildRule(Vertex v, RuleType type, String lhs, String rhs){
+    RuleImpl buildRule(Vertex v, RuleType type, String lhs, String rhs){
         return  new RuleImpl(v, type, mindmapsGraph, lhs, rhs);
     }
 
@@ -99,7 +105,7 @@ final class ElementFactory {
      * @param v A vertex of an unknown type
      * @return A concept built to the correct type
      */
-    public ConceptImpl buildUnknownConcept(Vertex v){
+    ConceptImpl buildUnknownConcept(Vertex v){
         Schema.BaseType type;
         try {
             type = Schema.BaseType.valueOf(v.label());
@@ -148,7 +154,7 @@ final class ElementFactory {
         return concept;
     }
 
-    public TypeImpl buildSpecificConceptType(Vertex vertex, Type type){
+    TypeImpl buildSpecificConceptType(Vertex vertex, Type type){
         Schema.BaseType baseType = Schema.BaseType.valueOf(vertex.label());
         TypeImpl conceptType;
         switch (baseType){
@@ -173,7 +179,7 @@ final class ElementFactory {
         return conceptType;
     }
 
-    public EdgeImpl buildEdge(org.apache.tinkerpop.gremlin.structure.Edge edge, AbstractMindmapsGraph mindmapsGraph){
+    EdgeImpl buildEdge(org.apache.tinkerpop.gremlin.structure.Edge edge, AbstractMindmapsGraph mindmapsGraph){
         return new EdgeImpl(edge, mindmapsGraph);
     }
 }
