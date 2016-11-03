@@ -260,18 +260,18 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     public RelationType putRelationType(String itemIdentifier) {
         return putConceptType(itemIdentifier, Schema.BaseType.RELATION_TYPE, getMetaRelationType()).asRelationType();
     }
-    public RelationType putRelationTypeImplicit(String itemIdentifier) {
+    RelationType putRelationTypeImplicit(String itemIdentifier) {
         Vertex v = putVertex(itemIdentifier, Schema.BaseType.RELATION_TYPE);
-        return elementFactory.buildRelationType(v, true, getMetaRelationType());
+        return elementFactory.buildRelationTypeImplicit(v, getMetaRelationType());
     }
 
     @Override
     public RoleType putRoleType(String itemIdentifier) {
         return putConceptType(itemIdentifier, Schema.BaseType.ROLE_TYPE, getMetaRoleType()).asRoleType();
     }
-    public RoleType putRoleTypeImplicit(String itemIdentifier) {
+    RoleType putRoleTypeImplicit(String itemIdentifier) {
         Vertex v = putVertex(itemIdentifier, Schema.BaseType.ROLE_TYPE);
-        return elementFactory.buildRoleType(v, true, getMetaRoleType());
+        return elementFactory.buildRoleTypeImplicit(v, getMetaRoleType());
     }
 
     @Override
@@ -514,7 +514,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         }
     }
 
-    public void putShortcutEdges(Relation relation, RelationType relationType){
+    private void putShortcutEdges(Relation relation, RelationType relationType){
         Map<RoleType, Instance> roleMap = relation.rolePlayers();
         if(roleMap.size() > 1) {
             for(Map.Entry<RoleType, Instance> from : roleMap.entrySet()){
@@ -673,7 +673,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     }
 
 
-    protected void validateGraph() throws MindmapsValidationException {
+    void validateGraph() throws MindmapsValidationException {
         Validator validator = new Validator(this);
         if (!validator.validate()) {
             List<String> errors = validator.getErrorsFound();
@@ -685,7 +685,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         }
     }
 
-    protected void submitCommitLogs(Map<Schema.BaseType, Set<String>> concepts){
+    private void submitCommitLogs(Map<Schema.BaseType, Set<String>> concepts){
         JSONArray jsonArray = new JSONArray();
         for (Map.Entry<Schema.BaseType, Set<String>> entry : concepts.entrySet()) {
             Schema.BaseType type = entry.getKey();
@@ -705,7 +705,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
         String result = EngineCommunicator.contactEngine(getCommitLogEndPoint(), REST.HttpConn.POST_METHOD, postObject.toString());
         LOG.debug("Response from engine [" + result + "]");
     }
-    protected String getCommitLogEndPoint(){
+    String getCommitLogEndPoint(){
         if(engine == null)
             return null;
         return engine + REST.WebPath.COMMIT_LOG_URI + "?" + REST.Request.GRAPH_NAME_PARAM + "=" + keyspace;
