@@ -311,11 +311,6 @@ public class Reasoner {
         }
         else {
             Map<AtomicQuery, AtomicQuery> matAnswers = new HashMap<>();
-            if (!materialise) {
-                atomicQuery.DBlookup();
-                recordAnswers(atomicQuery, matAnswers);
-                matAnswers.put(atomicQuery, atomicQuery);
-            }
             do {
                 Set<AtomicQuery> subGoals = new HashSet<>();
                 dAns = atomicQuery.getAnswers().size();
