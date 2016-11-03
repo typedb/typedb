@@ -168,7 +168,6 @@ public class MacroTest {
 
     private void assertParseEquals(String template, Map<String, Object> data, String expected){
         String result = Graql.parseTemplate(template, data);
-        System.out.println(result);
         assertEquals(expected, result);
     }
 }
