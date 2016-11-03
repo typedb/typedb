@@ -76,8 +76,15 @@ public class MigrationCLI {
             die(e.getMessage());
         }
 
-        if (cmd.hasOption("h") || cmd.getOptions().length == 0) {
+        if (cmd.hasOption("h")) {
             printHelpMessage();
+        }
+
+        if(cmd.getOptions().length == 0){
+            printHelpMessage();
+            exit();
+        } else if(cmd.getOptions().length == 1 && cmd.hasOption("h")){
+            exit();
         }
     }
 
@@ -85,7 +92,7 @@ public class MigrationCLI {
         if(hasOption("o")){
             File outputFile = new File(getOption("o"));
 
-            try(BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile))){
+            try(BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile))) {
                 queries.map(InsertQuery::toString).forEach((str) -> {
                     try {
                         writer.write(str);
@@ -165,6 +172,10 @@ public class MigrationCLI {
 
     public void addOptions(Options options){
         options.getOptions().forEach(defaultOptions::addOption);
+    }
+
+    public void exit(){
+        System.exit(0);
     }
 
     public String die(String errorMsg) {
