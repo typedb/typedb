@@ -20,13 +20,16 @@ package io.mindmaps.graql.internal.analytics;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.util.ErrorMessage;
+import io.mindmaps.util.Schema;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.*;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Iterator;
 import java.util.Set;
 
 /**
@@ -36,9 +39,9 @@ public abstract class MindmapsVertexProgram<T> extends CommonOLAP implements Ver
 
     static final Logger LOGGER = LoggerFactory.getLogger(MindmapsVertexProgram.class);
 
-    final MessageScope.Local<Long> messageScopeIn = MessageScope.Local.of(__::inE);
-    final MessageScope.Local<Long> messageScopeOut = MessageScope.Local.of(__::outE);
-    final Set<MessageScope> messageScopeSet = Sets.newHashSet(messageScopeIn, messageScopeOut);
+    static final MessageScope.Local<Long> messageScopeIn = MessageScope.Local.of(__::inE);
+    static final MessageScope.Local<Long> messageScopeOut = MessageScope.Local.of(__::outE);
+    static final Set<MessageScope> messageScopeSet = Sets.newHashSet(messageScopeIn, messageScopeOut);
 
     @Override
     public Set<MessageScope> getMessageScopes(final Memory memory) {
@@ -93,4 +96,40 @@ public abstract class MindmapsVertexProgram<T> extends CommonOLAP implements Ver
         }
     }
 
+    void degreeStep0(Vertex vertex, Messenger<Long> messenger) {
+        // check if vertex is in the subgraph
+        String type = vertex.label();
+        if (type.equals(Schema.BaseType.ENTITY.name()) || type.equals(Schema.BaseType.RESOURCE.name())) {
+            // each role-player sends 1 to castings following incoming edges
+            messenger.sendMessage(messageScopeIn, 1L);
+        } else if (type.equals(Schema.BaseType.RELATION.name())) {
+            // the assertion can also be role-player, so sending 1 to castings following incoming edges
+            messenger.sendMessage(messageScopeIn, 1L);
+            // send -1 to castings following outgoing edges
+            messenger.sendMessage(messageScopeOut, -1L);
+        }
+    }
+
+    void degreeStep1(Messenger<Long> messenger) {
+        boolean hasRolePlayer = false;
+        long assertionCount = 0;
+        Iterator<Long> iterator = messenger.receiveMessages();
+        while (iterator.hasNext()) {
+            long message = iterator.next();
+            // count number of assertions connected
+            if (message < 0) assertionCount++;
+                // check if a message is received from the role-player
+            else hasRolePlayer = true;
+        }
+
+        // make sure this role-player is in the subgraph
+        if (hasRolePlayer) {
+            messenger.sendMessage(messageScopeIn, 1L);
+            messenger.sendMessage(messageScopeOut, assertionCount);
+        }
+    }
+
+    long getEdgeCount(Messenger<Long> messenger) {
+        return IteratorUtils.reduce(messenger.receiveMessages(), 0L, (a, b) -> a + b);
+    }
 }

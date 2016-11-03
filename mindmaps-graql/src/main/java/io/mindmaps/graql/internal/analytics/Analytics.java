@@ -314,6 +314,10 @@ public class Analytics {
      * Compute the connected components and persist the component labels
      */
     public Map<String, Long> connectedComponentsAndPersist() {
+        if (!Sets.intersection(subtypes, CommonOLAP.analyticsElements).isEmpty()) {
+            throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
+                    .getMessage(this.getClass().toString()));
+        }
         if (selectedTypesHaveInstance()) {
             mutateResourceOntology(connectedComponent, ResourceType.DataType.STRING);
             waitOnMutateResourceOntology(connectedComponent);
@@ -345,13 +349,14 @@ public class Analytics {
      * @param resourceType the type of the resource that will contain the degree
      */
     private void degreesAndPersist(String resourceType) {
-        mutateResourceOntology(resourceType, ResourceType.DataType.LONG);
-        waitOnMutateResourceOntology(resourceType);
-
         if (!Sets.intersection(subtypes, CommonOLAP.analyticsElements).isEmpty()) {
             throw new IllegalStateException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION
                     .getMessage(this.getClass().toString()));
         }
+
+        mutateResourceOntology(resourceType, ResourceType.DataType.LONG);
+        waitOnMutateResourceOntology(resourceType);
+
         MindmapsComputer computer = getGraphComputer();
         computer.compute(new DegreeAndPersistVertexProgram(subtypes, keySpace));
     }
