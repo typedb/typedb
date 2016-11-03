@@ -18,7 +18,11 @@
 
 package io.mindmaps.migration.csv;
 
+import com.opencsv.CSVParser;
+import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
+import com.opencsv.enums.CSVReaderNullFieldIndicator;
 import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.migration.base.AbstractMigrator;
 
@@ -69,7 +73,17 @@ public class CSVMigrator extends AbstractMigrator {
      */
     @Override
     public Stream<InsertQuery> migrate(String template, final Reader reader) {
-        try(CSVReader csvReader = new CSVReader(reader, delimiter, '"', 0)) {
+
+        try(
+                CSVReader csvReader =
+                        new CSVReader(reader, 0, new CSVParserBuilder()
+                                .withSeparator(delimiter)
+                                .withIgnoreLeadingWhiteSpace(true)
+                                .withEscapeChar('\\')
+                                .withFieldAsNull(CSVReaderNullFieldIndicator.EMPTY_SEPARATORS)
+                                .build())
+
+        ) {
 
             Iterator<String[]> it = csvReader.iterator();
 
@@ -111,6 +125,6 @@ public class CSVMigrator extends AbstractMigrator {
      * @return if the value is valid
      */
     private boolean validValue(Object value){
-        return value != null && !value.toString().isEmpty();
+        return value != null;
     }
 }

@@ -71,17 +71,18 @@ public class Main {
         cli.printInitMessage(csvDataFile.getPath());
 
         try{
-            AbstractMigrator migrator = new CSVMigrator()
-                                        .setDelimiter(csvDelimiter)
-                                        .setBatchSize(batchSize);
+            AbstractMigrator migrator = new CSVMigrator().setDelimiter(csvDelimiter);
+
 
             String template = Files.readLines(csvTemplate, StandardCharsets.UTF_8).stream().collect(joining("\n"));
 
             if(cli.hasOption("o")){
-                cli.writeToFile(migrator.setBatchSize(Integer.MAX_VALUE).migrate(template, csvDataFile));
+                cli.writeToFile(migrator.migrate(template, csvDataFile));
                 cli.printPartialCompletionMessage();
             } else {
-                migrator.getLoadingMigrator(cli.getLoader()).migrate(template, csvDataFile);
+                migrator.getLoadingMigrator(cli.getLoader())
+                        .setBatchSize(batchSize)
+                        .migrate(template, csvDataFile);
                 cli.printWholeCompletionMessage();
             }
         }

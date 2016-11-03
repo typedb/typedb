@@ -66,11 +66,12 @@ public class Main {
         cli.printInitMessage(jsonDataFile.getPath());
 
         try{
-            LoadingMigrator migrator = new JsonMigrator()
-                                        .setBatchSize(batchSize)
-                                        .getLoadingMigrator(cli.getLoader());
-
             String template = Files.readLines(jsonTemplateFile, StandardCharsets.UTF_8).stream().collect(joining("\n"));
+
+            LoadingMigrator migrator = new JsonMigrator()
+                    .getLoadingMigrator(cli.getLoader())
+                    .setBatchSize(batchSize);
+
             migrator.migrate(template, jsonDataFile);
 
             cli.printWholeCompletionMessage();
