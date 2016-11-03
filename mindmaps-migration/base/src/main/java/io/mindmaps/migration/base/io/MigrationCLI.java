@@ -122,10 +122,10 @@ public class MigrationCLI {
         builder.append("\t ").append(graph.getMetaRuleType().instances().size()).append(" rule types\n\n");
 
         builder.append("Graph data contains:\n");
-        builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("entity-type")).aggregate(count()).execute()).append(" entities\n");
-        builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("relation-type")).aggregate(count()).execute()).append(" relations\n");
-        builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("resource-type")).aggregate(count()).execute()).append(" resources\n");
-        builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("rule-type")).aggregate(count()).execute()).append(" rules\n\n");
+        builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("entity-type")).distinct().aggregate(count()).execute()).append(" entities\n");
+        builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("relation-type")).distinct().aggregate(count()).execute()).append(" relations\n");
+        builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("resource-type")).distinct().aggregate(count()).execute()).append(" resources\n");
+        builder.append("\t ").append(qb.match(var("x").isa(var("y")), var("y").isa("rule-type")).distinct().aggregate(count()).execute()).append(" rules\n\n");
 
         builder.append("Migration complete");
         System.out.println(builder);

@@ -31,8 +31,7 @@ import java.util.stream.StreamSupport;
 
 public abstract class AbstractMigrator implements Migrator {
 
-    public static final int BATCH_SIZE = 5;
-    protected int batchSize = BATCH_SIZE;
+    public static final int BATCH_SIZE = 25;
 
     public LoadingMigrator getLoadingMigrator(Loader loader){
         return new LoadingMigrator(loader, this);
