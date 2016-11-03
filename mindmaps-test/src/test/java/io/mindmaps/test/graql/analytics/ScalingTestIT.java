@@ -65,7 +65,7 @@ import static org.junit.Assert.assertFalse;
 
 /**
  * These tests are used for generating a report of the performance of analytics. In order to run them on a machine use
- * this maven command: mvn verify -Dtest=ScalingTestIT -DfailIfNoTests=false -Pscaling
+ * this maven command: mvn test -Dtest=ScalingTestIT -DfailIfNoTests=false -Pscaling
  *
  * NB: Mindmaps must be running on a machine already and you may need to significantly increase the size of the java
  * heap to stop failures.
@@ -80,7 +80,7 @@ public class ScalingTestIT extends AbstractScalingTest {
 
     // test parameters
     int NUM_SUPER_NODES = 10; // the number of supernodes to generate in the test graph
-    int MAX_SIZE = 10000; // the maximum number of non super nodes to add to the test graph
+    int MAX_SIZE = 100000; // the maximum number of non super nodes to add to the test graph
     int NUM_DIVS = 4; // the number of divisions of the MAX_SIZE to use in the scaling test
     int REPEAT = 3; // the number of times to repeat at each size for average runtimes
     int MAX_WORKERS = Runtime.getRuntime().availableProcessors(); // the maximum number of workers that spark should use
@@ -454,34 +454,36 @@ public class ScalingTestIT extends AbstractScalingTest {
                     writer.println("starting with: " + workerNumber + " threads");
 
                     // configure assertions
-                    final int currentG = g;
+                    final long currentG = Long.valueOf(g);
+                    final long N = Long.valueOf(nodesPerStep);
+                    final long S = Long.valueOf(totalSteps);
                     statisticsAssertions.put(methods.get(0), number -> {
-                        Number sum = currentG * nodesPerStep * (1 + currentG * nodesPerStep + 6 * totalSteps * nodesPerStep + 2) / 2;
+                        Number sum = currentG * N * (1L + currentG * N + 6L * S * N + 2L) / 2L;
                         assertEquals(sum.doubleValue(),
                                 number.doubleValue(), 1E-9);
                     });
                     statisticsAssertions.put(methods.get(1), number -> {
-                        Number min = (totalSteps-currentG)*nodesPerStep+1;
+                        Number min = (S-currentG)*N+1L;
                         assertEquals(min.doubleValue(),
                                 number.doubleValue(), 1E-9);
                     });
                     statisticsAssertions.put(methods.get(2), number -> {
-                        Number max = (totalSteps+currentG)*nodesPerStep*2;
+                        Number max = (S+currentG)*N*2D;
                         assertEquals(max.doubleValue(),
                                 number.doubleValue(), 1E-9);
                     });
                     statisticsAssertions.put(methods.get(3), number -> {
-                        double mean = meanOfSequence(currentG, nodesPerStep, totalSteps);
+                        double mean = meanOfSequence(currentG, N, S);
                         assertEquals(mean,
                                 number.doubleValue(), 1E-9);
                     });
                     statisticsAssertions.put(methods.get(4), number -> {
-                        double std = stdOfSequence(currentG,nodesPerStep,totalSteps);
+                        double std = stdOfSequence(currentG, N, S);
                         assertEquals(std,
                                 number.doubleValue(), 1E-9);
                     });
                     statisticsAssertions.put(methods.get(5), number -> {
-                        Number median = totalSteps*nodesPerStep;
+                        Number median = S*N;
                         assertEquals(median.doubleValue(),
                                 number.doubleValue(), 1E-9);
                     });
@@ -512,11 +514,11 @@ public class ScalingTestIT extends AbstractScalingTest {
         factory.getGraph().clear();
     }
 
-    private double meanOfSequence(int currentG, int nodesPerStep, int totalSteps) {
+    private double meanOfSequence(long currentG, long nodesPerStep, long totalSteps) {
         return ((double) (1 + currentG * nodesPerStep + 6 * totalSteps * nodesPerStep + 2) / 4.0);
     }
 
-    private double stdOfSequence(int currentG, int nodesPerStep, int totalSteps) {
+    private double stdOfSequence(long currentG, long nodesPerStep, long totalSteps) {
         double mean = meanOfSequence(currentG, nodesPerStep, totalSteps);
         double S = (double) totalSteps;
         double N = (double) nodesPerStep;
