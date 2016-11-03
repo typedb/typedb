@@ -102,6 +102,7 @@ class BulkResourceMutate<T> {
             try {
                 persistResources();
             } catch (Exception e) {
+                e.printStackTrace();
                 hasFailed = true;
                 numberOfFailures++;
                 if (!(numberOfFailures < numberOfRetries))
