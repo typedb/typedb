@@ -45,6 +45,10 @@ import java.util.Set;
  * @param <V> The type of the instances of this concept type.
  */
 class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> implements Type {
+    TypeImpl(Vertex v, Type type, Boolean isImplicit, AbstractMindmapsGraph mindmapsGraph) {
+        super(v, type, mindmapsGraph);
+        setImmutableProperty(Schema.ConceptProperty.IS_IMPLICIT, isImplicit);
+    }
     TypeImpl(Vertex v, Type type, AbstractMindmapsGraph mindmapsGraph) {
         super(v, type, mindmapsGraph);
     }
@@ -194,7 +198,7 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
      */
     @Override
     public Boolean isImplicit(){
-        return null;
+        return getPropertyBoolean(Schema.ConceptProperty.IS_IMPLICIT);
     }
 
     /**
@@ -314,14 +318,14 @@ class TypeImpl<T extends Type, V extends Concept> extends ConceptImpl<T, Type> i
     @Override
     public RelationType hasResource(ResourceType resourceType){
         String resourceTypeId = resourceType.getId();
-        RoleType ownerRole = getMindmapsGraph().putRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId));
-        RoleType valueRole = getMindmapsGraph().putRoleType(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId));
+        RoleType ownerRole = getMindmapsGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_OWNER.getId(resourceTypeId));
+        RoleType valueRole = getMindmapsGraph().putRoleTypeImplicit(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId));
 
         this.playsRole(ownerRole);
         resourceType.playsRole(valueRole);
 
         return getMindmapsGraph().
-                putRelationType(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId)).
+                putRelationTypeImplicit(Schema.Resource.HAS_RESOURCE.getId(resourceTypeId)).
                 hasRole(ownerRole).
                 hasRole(valueRole);
     }

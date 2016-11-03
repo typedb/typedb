@@ -260,10 +260,18 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     public RelationType putRelationType(String itemIdentifier) {
         return putConceptType(itemIdentifier, Schema.BaseType.RELATION_TYPE, getMetaRelationType()).asRelationType();
     }
+    public RelationType putRelationTypeImplicit(String itemIdentifier) {
+        Vertex v = putVertex(itemIdentifier, Schema.BaseType.RELATION_TYPE);
+        return elementFactory.buildRelationType(v, true, getMetaRelationType());
+    }
 
     @Override
     public RoleType putRoleType(String itemIdentifier) {
         return putConceptType(itemIdentifier, Schema.BaseType.ROLE_TYPE, getMetaRoleType()).asRoleType();
+    }
+    public RoleType putRoleTypeImplicit(String itemIdentifier) {
+        Vertex v = putVertex(itemIdentifier, Schema.BaseType.ROLE_TYPE);
+        return elementFactory.buildRoleType(v, true, getMetaRoleType());
     }
 
     @Override

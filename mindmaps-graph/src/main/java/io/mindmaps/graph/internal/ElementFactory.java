@@ -56,6 +56,9 @@ final class ElementFactory {
         return  new RuleTypeImpl(v, type, mindmapsGraph);
     }
 
+    public RoleTypeImpl buildRoleType(Vertex v, Boolean isImplicit, Type type){
+        return new RoleTypeImpl(v, type, isImplicit, mindmapsGraph);
+    }
     public RoleTypeImpl buildRoleType(Vertex v, Type type){
         return new RoleTypeImpl(v, type, mindmapsGraph);
     }
@@ -67,6 +70,9 @@ final class ElementFactory {
         return new ResourceTypeImpl<>(v, type, mindmapsGraph, dataType, isUnique);
     }
 
+    public RelationTypeImpl buildRelationType(Vertex v, Boolean isImplicit, Type type){
+        return  new RelationTypeImpl(v, type, isImplicit, mindmapsGraph);
+    }
     public RelationTypeImpl buildRelationType(Vertex v, Type type){
         return  new RelationTypeImpl(v, type, mindmapsGraph);
     }
