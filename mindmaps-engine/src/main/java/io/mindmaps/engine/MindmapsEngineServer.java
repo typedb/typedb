@@ -89,10 +89,10 @@ public class MindmapsEngineServer {
      * @param logFilePath Path to the LOG file.
      */
     private static void printStartMessage(String host, String port, String logFilePath) {
-        LOG.info("\nMindmaps LOG file located at ["+logFilePath+"]");
-        LOG.info("\n=============================================================");
-        LOG.info(ConfigProperties.MINDMAPS_ASCII);
-        LOG.info("            Web Dashboard available at [http://" + host + ":" + port + "]");
-        LOG.info("\n=============================================================");
+        String address = "http://" + host + ":" + port;
+        LOG.info("\nGrakn LOG file located at ["+logFilePath+"]");
+        LOG.info("\n=======================================================");
+        LOG.info("\n"+String.format(ConfigProperties.GRAKN_ASCII,address));
+        LOG.info("\n=======================================================");
     }
 }

@@ -164,7 +164,6 @@ export default class Visualiser {
      */
     addNode(id, bp, ap, ls) {
         if (!this.nodeExists(id)) {
-          console.log("im adding "+ bp.id);
             this.nodes.add({
                 id: id,
                 uuid: bp.id,
