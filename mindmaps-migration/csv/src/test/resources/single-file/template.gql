@@ -1,3 +1,5 @@
+insert
+
 $x isa make has name <Make>;
 $y isa model has name <Model>
     has year <Year>
