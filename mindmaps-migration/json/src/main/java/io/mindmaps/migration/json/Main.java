@@ -19,7 +19,6 @@
 package io.mindmaps.migration.json;
 
 import com.google.common.io.Files;
-import io.mindmaps.migration.base.AbstractMigrator;
 import io.mindmaps.migration.base.LoadingMigrator;
 import io.mindmaps.migration.base.io.MigrationCLI;
 import org.apache.commons.cli.Options;
@@ -68,13 +67,18 @@ public class Main {
         try{
             String template = Files.readLines(jsonTemplateFile, StandardCharsets.UTF_8).stream().collect(joining("\n"));
 
-            LoadingMigrator migrator = new JsonMigrator()
+            JsonMigrator jsonMigrator = new JsonMigrator();
+
+            LoadingMigrator migrator = jsonMigrator
                     .getLoadingMigrator(cli.getLoader())
                     .setBatchSize(batchSize);
 
-            migrator.migrate(template, jsonDataFile);
-
-            cli.printWholeCompletionMessage();
+            if(cli.hasOption("n")){
+                cli.writeToSout(jsonMigrator.migrate(template, jsonDataFile));
+            } else {
+                migrator.migrate(template, jsonDataFile);
+                cli.printWholeCompletionMessage();
+            }
         } catch (Throwable throwable){
             cli.die(throwable.getMessage());
         }

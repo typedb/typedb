@@ -36,9 +36,8 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.Collections;
 import java.util.stream.Stream;
@@ -56,7 +55,7 @@ public class MigrationCLI {
         defaultOptions.addOption("h", "help", false, "print usage message");
         defaultOptions.addOption("k", "keyspace", true, "keyspace to use");
         defaultOptions.addOption("u", "uri", true, "uri to engine endpoint");
-        defaultOptions.addOption("d", "destination", true, "destination file - will not persist data in graph");
+        defaultOptions.addOption("n", "no", false, "dry run- write to standard out");
     }
 
     private CommandLine cmd;
@@ -81,21 +80,25 @@ public class MigrationCLI {
         }
     }
 
-    public void writeToFile(Stream<InsertQuery> queries){
-        if(hasOption("o")){
-            File outputFile = new File(getOption("o"));
+    public void writeToSout(Stream<InsertQuery> queries){
+        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(System.out));
 
-            try(BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile))){
-                queries.map(InsertQuery::toString).forEach((str) -> {
-                    try {
-                        writer.write(str);
-                    } catch (IOException e) {
-                        die("Could not write to file " + outputFile.getPath());
-                    }
-                });
-            } catch (IOException e){
-                die("Could not write to file " + outputFile.getPath());
+        queries.map(InsertQuery::toString).forEach((str) -> {
+            try {
+                writer.write(str);
+                writer.write("\n");
             }
+            catch (IOException e) { die("Problem writing"); }
+        });
+    }
+
+    public void writeToSout(String string){
+        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(System.out));
+        try{
+            writer.write(string);
+            writer.flush();
+        } catch (IOException e){
+            die("Problem writing");
         }
     }
 

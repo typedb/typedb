@@ -19,7 +19,7 @@
 package io.mindmaps.migration.csv;
 
 import com.google.common.io.Files;
-import io.mindmaps.migration.base.AbstractMigrator;
+import io.mindmaps.migration.base.LoadingMigrator;
 import io.mindmaps.migration.base.io.MigrationCLI;
 import org.apache.commons.cli.Options;
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -71,18 +71,18 @@ public class Main {
         cli.printInitMessage(csvDataFile.getPath());
 
         try{
-            AbstractMigrator migrator = new CSVMigrator().setDelimiter(csvDelimiter);
-
-
             String template = Files.readLines(csvTemplate, StandardCharsets.UTF_8).stream().collect(joining("\n"));
 
-            if(cli.hasOption("d")){
-                cli.writeToFile(migrator.migrate(template, csvDataFile));
-                cli.printPartialCompletionMessage();
+            CSVMigrator csvMigrator = new CSVMigrator().setDelimiter(csvDelimiter);
+
+            LoadingMigrator migrator = csvMigrator
+                    .getLoadingMigrator(cli.getLoader())
+                    .setBatchSize(batchSize);
+
+            if(cli.hasOption("n")){
+                cli.writeToSout(csvMigrator.migrate(template, csvDataFile));
             } else {
-                migrator.getLoadingMigrator(cli.getLoader())
-                        .setBatchSize(batchSize)
-                        .migrate(template, csvDataFile);
+                migrator.migrate(template, csvDataFile);
                 cli.printWholeCompletionMessage();
             }
         }

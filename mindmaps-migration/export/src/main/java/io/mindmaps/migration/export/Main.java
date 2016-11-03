@@ -21,11 +21,6 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.migration.base.io.MigrationCLI;
 import org.apache.commons.cli.Options;
 
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.Writer;
-
 /**
  * Export data from Grakn. If no file is provided, it will dump graph content to standard out.
  */
@@ -49,33 +44,12 @@ public class Main {
         MindmapsGraph graph = cli.getGraph();
         GraphWriter graphWriter = new GraphWriter(graph);
 
-        StringBuilder builder = new StringBuilder();
         if(cli.hasOption("ontology")){
-            builder.append(graphWriter.dumpOntology());
+            cli.writeToSout(graphWriter.dumpOntology());
         }
 
         if(cli.hasOption("data")){
-           builder.append(graphWriter.dumpData());
-        }
-
-        Writer writer = null;
-        try {
-            writer = outputFile != null ? new FileWriter(outputFile) : new PrintWriter(System.out);
-
-            // If there is no fileWriter, use a printWriter
-            writer.write(builder.toString());
-            writer.flush();
-        } catch (IOException e){
-            cli.die("Problem writing to file " + outputFile);
-        } finally {
-            if(outputFile != null && writer != null) {
-                try {
-                    writer.close();
-                } catch (IOException e) {
-                    cli.die("Problem closing output stream.");
-                }
-            }
-            graph.close();
+            cli.writeToSout(graphWriter.dumpOntology());
         }
     }
 }

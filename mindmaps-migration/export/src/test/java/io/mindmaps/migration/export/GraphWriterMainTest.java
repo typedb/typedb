@@ -21,16 +21,11 @@ package io.mindmaps.migration.export;
 import io.mindmaps.engine.MindmapsEngineServer;
 import io.mindmaps.engine.util.ConfigProperties;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-
-import java.io.File;
-
-import static org.junit.Assert.assertTrue;
 
 public class GraphWriterMainTest {
 
@@ -61,20 +56,6 @@ public class GraphWriterMainTest {
     @Test
     public void exportDataToSystemOutTest(){
         runAndAssertDataCorrect(new String[]{"export", "-data", "-keyspace", "original"});
-    }
-
-    @Test
-    public void exportToFileTest(){
-        runAndAssertDataCorrect(new String[]{"export", "-data", "-destination", "/tmp/pokemon.gql", "-keyspace", "original"});
-        File pokemonFile = new File("/tmp/pokemon.gql");
-        assertTrue(pokemonFile.exists());
-    }
-
-    @Test
-    public void exportToFileNotFoundTest(){
-        exception.expect(RuntimeException.class);
-        exception.expectMessage("Problem writing to file grah/?*");
-        runAndAssertDataCorrect(new String[]{"export", "-data", "-destination", "grah/?*", "-keyspace", "original"});
     }
 
     @Test
