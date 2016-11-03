@@ -113,10 +113,12 @@ public class MigrationCLI {
     }
 
     public void printPartialCompletionMessage(){
-        System.out.println("Migration complete");
+        System.out.println("Migration complete.");
     }
 
     public void printWholeCompletionMessage(){
+        System.out.println("Migration complete. Gathering information about migrated data. If in a hurry, you can ctrl+c now.");
+
         MindmapsGraph graph = getGraph();
         QueryBuilder qb = Graql.withGraph(graph);
 
@@ -175,7 +177,7 @@ public class MigrationCLI {
     }
 
     public void exit(){
-        System.exit(0);
+        System.exit(1);
     }
 
     public String die(String errorMsg) {

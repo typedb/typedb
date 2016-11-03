@@ -72,6 +72,8 @@ public class CSVMigratorMainTest {
     public void setup(){
         graph = GraphFactory.getInstance().getGraphBatchLoading(GRAPH_NAME);
         load(getFile("pets/schema.gql"));
+
+        exit.expectSystemExitWithStatus(0);
     }
 
     @After
@@ -108,7 +110,7 @@ public class CSVMigratorMainTest {
 
     @Test
     public void csvMainNoArgsTest(){
-        exit.expectSystemExitWithStatus(0);
+        exit.expectSystemExitWithStatus(1);
         runAndAssertDataCorrect(new String[]{});
     }
 

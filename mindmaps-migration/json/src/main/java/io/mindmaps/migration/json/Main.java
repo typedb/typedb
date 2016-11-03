@@ -77,5 +77,7 @@ public class Main {
         } catch (Throwable throwable){
             cli.die(throwable.getMessage());
         }
+
+        System.exit(0);
     }
 }

@@ -78,5 +78,7 @@ public class Main {
             }
             graph.close();
         }
+
+        System.exit(0);
     }
 }

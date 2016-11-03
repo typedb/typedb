@@ -57,6 +57,11 @@ public class GraphWriterMainTest {
         MindmapsEngineServer.stop();
     }
 
+    @Before
+    public void setupExit(){
+        exit.expectSystemExitWithStatus(0);
+    }
+
     @Test
     public void exportOntologyToSystemOutTest(){
         runAndAssertDataCorrect(new String[]{"export", "-ontology", "-keyspace", "original"});
@@ -83,13 +88,13 @@ public class GraphWriterMainTest {
 
     @Test
     public void exportNoArgsTest(){
-        exit.expectSystemExitWithStatus(0);
+        exit.expectSystemExitWithStatus(1);
         runAndAssertDataCorrect(new String[]{"export", "ontology"});
     }
 
     @Test
     public void exportOnlyHelpMessageTest(){
-        exit.expectSystemExitWithStatus(0);
+        exit.expectSystemExitWithStatus(1);
         runAndAssertDataCorrect(new String[]{"export", "-h"});
     }
 

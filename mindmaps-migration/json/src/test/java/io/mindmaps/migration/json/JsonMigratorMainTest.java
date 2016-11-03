@@ -71,6 +71,8 @@ public class JsonMigratorMainTest {
     public void setup(){
         graph = GraphFactory.getInstance().getGraphBatchLoading(GRAPH_NAME);
         load(getFile("simple-schema/schema.gql"));
+
+        exit.expectSystemExitWithStatus(0);
     }
 
     @After
@@ -89,8 +91,8 @@ public class JsonMigratorMainTest {
     }
 
     @Test
-    public void jsonMainNoArgsTest(){
-        exit.expectSystemExitWithStatus(0);
+    public void jsonMainNoArgsTest() {
+        exit.expectSystemExitWithStatus(1);
         runAndAssertDataCorrect(new String[]{"json"});
     }
 
