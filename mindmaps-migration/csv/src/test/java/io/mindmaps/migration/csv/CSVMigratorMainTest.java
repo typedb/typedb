@@ -29,6 +29,7 @@ import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.Graql;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
+import spark.utils.CollectionUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,8 +47,8 @@ public class CSVMigratorMainTest {
     private final String GRAPH_NAME = ConfigProperties.getInstance().getProperty(ConfigProperties.DEFAULT_GRAPH_NAME_PROPERTY);
     private MindmapsGraph graph;
 
-    private final String dataFile = getFile("single-file/data/cars.csv").getAbsolutePath();;
-    private final String templateFile = getFile("single-file/template.gql").getAbsolutePath();
+    private final String dataFile = getFile("pets/data/pets.csv").getAbsolutePath();;
+    private final String templateFile = getFile("pets/template.gql").getAbsolutePath();
 
     @BeforeClass
     public static void start(){
@@ -65,7 +66,7 @@ public class CSVMigratorMainTest {
     @Before
     public void setup(){
         graph = GraphFactory.getInstance().getGraphBatchLoading(GRAPH_NAME);
-        load(getFile("single-file/schema.gql"));
+        load(getFile("pets/schema.gql"));
     }
 
     @After
@@ -80,8 +81,14 @@ public class CSVMigratorMainTest {
 
     @Test
     public void tsvMainTest(){
-        String tsvFile = getFile("single-file/data/cars.tsv").getAbsolutePath();
+        String tsvFile = getFile("pets/data/pets.tsv").getAbsolutePath();
         runAndAssertDataCorrect(new String[]{"-file", tsvFile, "-template", templateFile, "-delimiter", "\t", "-keyspace", graph.getKeyspace()});
+    }
+
+    @Test
+    public void spacesMainTest(){
+        String tsvFile = getFile("pets/data/pets.spaces").getAbsolutePath();
+        runAndAssertDataCorrect(new String[]{"-file", tsvFile, "-template", templateFile, "-delimiter", " ", "-keyspace", graph.getKeyspace()});
     }
 
     @Test
@@ -131,20 +138,24 @@ public class CSVMigratorMainTest {
         Main.main(args);
 
         // test
-        Collection<Entity> makes = graph.getEntityType("make").instances();
-        assertEquals(3, makes.size());
+        Collection<Entity> pets = graph.getEntityType("pet").instances();
+        assertEquals(9, pets.size());
 
-        Collection<Entity> models = graph.getEntityType("model").instances();
-        assertEquals(4, models.size());
+        Collection<Entity> cats = graph.getEntityType("cat").instances();
+        assertEquals(2, cats.size());
+
+        Collection<Entity> hamsters = graph.getEntityType("hamster").instances();
+        assertEquals(1, hamsters.size());
 
         // test empty value not created
-        ResourceType description = graph.getResourceType("description");
+        ResourceType<String> name = graph.getResourceType("name");
+        ResourceType<String> death = graph.getResourceType("death");
 
-        Entity venture = graph.getEntity("Venture");
-        assertEquals(1, venture.resources(description).size());
+        Entity puffball = graph.getResource("Puffball", name).ownerInstances().iterator().next().asEntity();
+        assertEquals(0, puffball.resources(death).size());
 
-        Entity ventureLarge = graph.getEntity("Venture Large");
-        assertEquals(0, ventureLarge.resources(description).size());
+        Entity bowser = graph.getResource("Bowser", name).ownerInstances().iterator().next().asEntity();
+        assertEquals(1, bowser.resources(death).size());
     }
 
     private File getFile(String fileName){

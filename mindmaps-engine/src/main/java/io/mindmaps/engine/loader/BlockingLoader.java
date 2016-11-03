@@ -19,24 +19,20 @@
 package io.mindmaps.engine.loader;
 
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.engine.postprocessing.Cache;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
-import io.mindmaps.graql.Var;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-
-import static io.mindmaps.graql.Graql.insert;
-
 
 /**
  * RESTLoader that submits tasks to locally running engine and performs basic load balancing.
@@ -74,28 +70,43 @@ public class BlockingLoader extends Loader {
         initExecutor();
     }
 
-    protected void submitBatch(Collection<Var> vars) {
+    /**
+     *
+     * @param queries
+     */
+    protected void sendQueriesToLoader(Collection<InsertQuery> queries) {
         try {
             transactionsSemaphore.acquire();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        Collection<Var> deepCopy = new ArrayList<>(vars);
+
+        Collection<InsertQuery> deepCopy = new ArrayList<>(queries);
         try {
-            executor.submit(() -> loadData(graphName, deepCopy));
+            executor.submit(() -> insertQueriesInOneTransaction(graphName, deepCopy));
         } catch (Exception e) {
             LOG.error("Exception ",e);
             transactionsSemaphore.release();
         }
     }
 
-    private void loadData(String name, Collection<Var> batch) {
+    /**
+     *
+     * @param name
+     * @param queries
+     */
+    private void insertQueriesInOneTransaction(String name, Collection<InsertQuery> queries) {
 
         try(MindmapsGraph graph = GraphFactory.getInstance().getGraphBatchLoading(name)) {
             for (int i = 0; i < repeatCommits; i++) {
                 try {
-                    insert(batch).withGraph(graph).execute();
+
+                    // execute each of the insert queries
+                    queries.forEach(q -> q.withGraph(graph).execute());
+
+                    // commit the transaction
                     graph.commit();
+
                     cache.addJobCasting(graphName, ((AbstractMindmapsGraph) graph).getModifiedCastingIds());
                     cache.addJobResource(graphName, ((AbstractMindmapsGraph) graph).getModifiedCastingIds());
                     return;
@@ -122,9 +133,9 @@ public class BlockingLoader extends Loader {
 
         try {
             executor.shutdown();
-            boolean finished = executor.awaitTermination(5, TimeUnit.MINUTES);
 
             LOG.info("All tasks submitted, waiting for termination..");
+            boolean finished = executor.awaitTermination(5, TimeUnit.MINUTES);
             if(finished){
                 LOG.info("All tasks done.");
             } else {

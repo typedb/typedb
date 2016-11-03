@@ -1,17 +1,24 @@
-insert 
+insert
+name isa resource-type
+    datatype string;
 age isa resource-type
 	datatype long;
 person isa entity-type;
+person has-resource name;
 person has-resource age;
 
-"marko" isa person;
-"vadas" isa person;
-"josh" isa person;
-"peter" isa person;
-"marko" has age 29;
-"josh" has age 32;
-"vadas" has age 27;
-"peter" has age 35;
+$marko isa person;
+$vadas isa person;
+$josh isa person;
+$peter isa person;
+$marko has name "marko";
+$vadas has name "vadas";
+$josh has name "josh";
+$peter has name "peter";
+$marko has age 29;
+$josh has age 32;
+$vadas has age 27;
+$peter has age 35;
 
 weight isa resource-type
 	datatype double;
@@ -27,19 +34,23 @@ knows isa relation-type
 	has-role known-about
 	has-resource weight;
 
-(knower: "marko", known-about: "josh") isa knows has weight 1.0;
-(knower: "marko", known-about: "vadas") isa knows has weight 0.5;
+(knower: $marko, known-about: $josh) isa knows has weight 1.0;
+(knower: $marko, known-about: $vadas) isa knows has weight 0.5;
 
 lang isa resource-type
 	datatype string;
 software isa entity-type;
+software has-resource name;
 software has-resource lang;
 
-"lop" isa software;
-"ripple" isa software;
+$lop isa software;
+$ripple isa software;
 
-"lop" has lang "java";
-"ripple" has lang "java";
+$lop has name "lop";
+$ripple has name "ripple";
+
+$lop has lang "java";
+$ripple has lang "java";
 
 programmer isa role-type;
 programmed isa role-type;
@@ -52,7 +63,7 @@ programming isa relation-type
 	has-role programmed
 	has-resource weight;
 
-(programmer: "marko", programmed: "lop") isa programming has weight 0.4;
-(programmer: "peter", programmed: "lop") isa programming has weight 0.2;
-(programmer: "josh", programmed: "lop") isa programming has weight 0.4;
-(programmer: "josh", programmed: "ripple") isa programming has weight 1.0;
+(programmer: $marko, programmed: $lop) isa programming has weight 0.4;
+(programmer: $peter, programmed: $lop) isa programming has weight 0.2;
+(programmer: $josh, programmed: $lop) isa programming has weight 0.4;
+(programmer: $josh, programmed: $ripple) isa programming has weight 1.0;

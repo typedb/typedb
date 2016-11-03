@@ -21,6 +21,7 @@ package io.mindmaps.test.graql.query;
 import com.google.common.collect.Sets;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.EntityType;
+import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.example.MovieGraphFactory;
 import io.mindmaps.graql.InsertQuery;
@@ -75,7 +76,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testInsertId() {
-        assertInsert(var("x").id("abc").isa("genre"));
+        assertInsert(var("x").has("name", "abc").isa("genre"));
     }
 
     @Test
@@ -85,7 +86,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testInsertIsa() {
-        assertInsert(var("x").id("Titanic").isa("movie"));
+        assertInsert(var("x").has("title", "Titanic").isa("movie"));
     }
 
     @Test
@@ -96,32 +97,27 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     @Test
     public void testInsertMultiple() {
         assertInsert(
-                var("x").id("123").isa("person"),
+                var("x").has("name", "123").isa("person"),
                 var("y").value(123L).isa("runtime"),
                 var("z").isa("language")
         );
     }
 
     @Test
-    public void testInsertResourceOrName() {
-        assertInsert(var("x").isa("movie").id("123").has("runtime", 100L));
-    }
-
-    @Test
     public void testInsertResource() {
-        assertInsert(var("x").isa("movie").id("123").has("runtime", 100L));
+        assertInsert(var("x").isa("movie").has("title", "Gladiator").has("runtime", 100L));
     }
 
     @Test
     public void testInsertName() {
-        assertInsert(var("x").isa("movie").id("123").has("title", "Hello"));
+        assertInsert(var("x").isa("movie").has("title", "Hello"));
     }
 
     @Test
     public void testInsertRelation() {
         Var rel = var("r").isa("has-genre").rel("genre-of-production", "x").rel("production-with-genre", "y");
-        Var x = var("x").id("Godfather").isa("movie");
-        Var y = var("y").id("comedy").isa("genre");
+        Var x = var("x").has("title", "Godfather").isa("movie");
+        Var y = var("y").has("name", "comedy").isa("genre");
         Var[] vars = new Var[] {rel, x, y};
         Pattern[] patterns = new Pattern[] {rel, x, y};
 
@@ -136,11 +132,11 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testInsertSameVarName() {
-        qb.insert(var("x").id("123"), var("x").has("title", "Star Wars").isa("movie")).execute();
+        qb.insert(var("x").has("title", "SW"), var("x").has("title", "Star Wars").isa("movie")).execute();
 
-        assertTrue(qb.match(var().isa("movie").id("123")).ask().execute());
-        assertTrue(qb.match(var().has("title", "Star Wars")).ask().execute());
-        assertTrue(qb.match(var().isa("movie").id("123").has("title", "Star Wars")).ask().execute());
+        assertTrue(qb.match(var().isa("movie").has("title", "SW")).ask().execute());
+        assertTrue(qb.match(var().isa("movie").has("title", "Star Wars")).ask().execute());
+        assertTrue(qb.match(var().isa("movie").has("title", "SW").has("title", "Star Wars")).ask().execute());
     }
 
     @Test
@@ -162,16 +158,16 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testMatchInsertQuery() {
-        Var language1 = var().isa("language").id("123");
-        Var language2 = var().isa("language").id("456");
+        Var language1 = var().isa("language").has("name", "123");
+        Var language2 = var().isa("language").has("name", "456");
 
         qb.insert(language1, language2).execute();
         assertTrue(qb.match(language1).ask().execute());
         assertTrue(qb.match(language2).ask().execute());
 
         qb.match(var("x").isa("language")).insert(var("x").has("name", "HELLO")).execute();
-        assertTrue(qb.match(var().isa("language").id("123").has("name", "HELLO")).ask().execute());
-        assertTrue(qb.match(var().isa("language").id("456").has("name", "HELLO")).ask().execute());
+        assertTrue(qb.match(var().isa("language").has("name", "123").has("name", "HELLO")).ask().execute());
+        assertTrue(qb.match(var().isa("language").has("name", "456").has("name", "HELLO")).ask().execute());
 
         qb.match(var("x").isa("language")).delete("x").execute();
         assertFalse(qb.match(language1).ask().execute());
@@ -186,11 +182,11 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
                 id("evolves-from").isa(ROLE_TYPE.getId()),
                 id("evolves-to").isa(ROLE_TYPE.getId()),
                 id("evolution").hasRole("evolves-from").hasRole("evolves-to"),
-                id("pokemon").playsRole("evolves-from").playsRole("evolves-to"),
+                id("pokemon").playsRole("evolves-from").playsRole("evolves-to").hasResource("name"),
 
-                var("x").id("Pichu").isa("pokemon"),
-                var("y").id("Pikachu").isa("pokemon"),
-                var("z").id("Raichu").isa("pokemon"),
+                var("x").has("name", "Pichu").isa("pokemon"),
+                var("y").has("name", "Pikachu").isa("pokemon"),
+                var("z").has("name", "Raichu").isa("pokemon"),
                 var().rel("evolves-from", "x").rel("evolves-to", "y").isa("evolution"),
                 var().rel("evolves-from", "y").rel("evolves-to", "z").isa("evolution")
         ).execute();
@@ -203,20 +199,20 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
         assertTrue(qb.match(id("pokemon").playsRole("evolves-from").playsRole("evolves-to")).ask().execute());
 
         assertTrue(qb.match(
-                var("x").id("Pichu").isa("pokemon"),
-                var("y").id("Pikachu").isa("pokemon"),
-                var("z").id("Raichu").isa("pokemon")
+                var("x").has("name", "Pichu").isa("pokemon"),
+                var("y").has("name", "Pikachu").isa("pokemon"),
+                var("z").has("name", "Raichu").isa("pokemon")
         ).ask().execute());
 
         assertTrue(qb.match(
-                var("x").id("Pichu").isa("pokemon"),
-                var("y").id("Pikachu").isa("pokemon"),
+                var("x").has("name", "Pichu").isa("pokemon"),
+                var("y").has("name", "Pikachu").isa("pokemon"),
                 var().rel("evolves-from", "x").rel("evolves-to", "y").isa("evolution")
         ).ask().execute());
 
         assertTrue(qb.match(
-                var("y").id("Pikachu").isa("pokemon"),
-                var("z").id("Raichu").isa("pokemon"),
+                var("y").has("name", "Pikachu").isa("pokemon"),
+                var("z").has("name", "Raichu").isa("pokemon"),
                 var().rel("evolves-from", "y").rel("evolves-to", "z").isa("evolution")
         ).ask().execute());
     }
@@ -270,46 +266,32 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     }
 
     @Test
-    public void testReferenceByIdAndVariableName() {
-        qb.insert(
-                id("123").isa("person"),
-                id("456").isa("movie"),
-                var("abc").id("123"),
-                var("def").id("456"),
-                var().rel("director", "abc").rel("production-being-directed", "def").isa("directed-by")
-        ).execute();
-
-        assertTrue(qb.match(id("123").isa("person")).ask().execute());
-        assertTrue(qb.match(id("456").isa("movie")).ask().execute());
-        assertTrue(qb.match(var().rel("director", id("123")).rel(id("456"))).ask().execute());
-    }
-
-    @Test
     public void testReferenceByVariableNameAndId() {
         qb.insert(
-                var("abc").isa("person"),
-                var("def").isa("movie"),
+                var("abc").isa("entity-type"),
                 var("abc").id("123"),
-                var("def").id("456"),
-                var().rel("director", id("123")).rel("production-being-directed", id("456")).isa("directed-by")
+                id("123").playsRole("actor"),
+                var("abc").playsRole("director")
         ).execute();
 
-        assertTrue(qb.match(id("123").isa("person")).ask().execute());
-        assertTrue(qb.match(id("456").isa("movie")).ask().execute());
-        assertTrue(qb.match(var().rel("director", id("123")).rel(id("456"))).ask().execute());
+        assertTrue(qb.match(id("123").isa("entity-type")).ask().execute());
+        assertTrue(qb.match(id("123").playsRole("actor")).ask().execute());
+        assertTrue(qb.match(id("123").playsRole("director")).ask().execute());
     }
 
     @Test
     public void testIterateInsertResults() {
         InsertQuery insert = qb.insert(
-                var("x").id("123").isa("person"),
-                var("z").id("xyz").isa("language")
+                var("x").has("name", "123").isa("person"),
+                var("z").has("name", "xyz").isa("language")
         );
 
-        Set<String> addedIds = insert.stream().map(Concept::getId).collect(Collectors.toSet());
-        Set<String> expectedIds = Sets.newHashSet("123", "person", "xyz", "language");
+        Set<Object> addedValues = insert.stream()
+                .filter(Concept::isResource).map(Concept::asResource).map(Resource::getValue)
+                .collect(Collectors.toSet());
+        Set<String> expectedIds = Sets.newHashSet("123", "xyz");
 
-        assertEquals(expectedIds, addedIds);
+        assertEquals(expectedIds, addedValues);
     }
 
     @Test
@@ -350,7 +332,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
                 var().id("new-type").isa(ENTITY_TYPE.getId()),
                 id("new-type").isAbstract(),
                 var().id("new-type").playsRole("has-title-owner"),
-                var().id("new-thing").isa("new-type")
+                var("x").isa("new-type")
         ).execute();
 
         MatchQuery typeQuery = qb.match(var("n").id("new-type"));
@@ -374,7 +356,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testInsertRule() {
-        assertInsert(var("x").id("123").isa("a-rule-type").lhs("lhs").rhs("rhs"));
+        assertInsert(var("x").isa("a-rule-type").lhs("lhs").rhs("rhs"));
     }
 
     @Test
@@ -384,7 +366,7 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
 
     @Test
     public void testInsertRepeatType() {
-        assertInsert(var("x").id("123").isa("movie").isa("movie"));
+        assertInsert(var("x").has("title", "WOW A TITLE").isa("movie").isa("movie"));
     }
 
     @Test
@@ -480,9 +462,16 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     }
 
     @Test
+    public void testErrorInsertInstanceWithId() {
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage(allOf(containsString("instance"), containsString("id"), containsString("abc")));
+        qb.insert(id("abc").isa("movie")).execute();
+    }
+
+    @Test
     public void testErrorInsertResourceWithId() {
         exception.expect(IllegalStateException.class);
-        exception.expectMessage(allOf(containsString("resource"), containsString("id"), containsString("bobby")));
+        exception.expectMessage(allOf(containsString("instance"), containsString("id"), containsString("bobby")));
         qb.insert(id("bobby").value("bob").isa("name")).execute();
     }
 
@@ -490,6 +479,42 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     public void testInsertDuplicatePattern() {
         qb.insert(var().isa("person").has("name", "a name"), var().isa("person").has("name", "a name")).execute();
         assertEquals(2, qb.match(var().has("name", "a name")).stream().count());
+    }
+
+    @Test
+    public void testInsertResourceOnExistingId() {
+        String apocalypseNow = qb.match(var("x").has("title", "Apocalypse Now")).get("x").findAny().get().getId();
+
+        assertFalse(qb.match(id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).ask().execute());
+        qb.insert(id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).execute();
+        assertTrue(qb.match(id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).ask().execute());
+    }
+
+    @Test
+    public void testInsertResourceOnExistingIdWithType() {
+        String apocalypseNow = qb.match(var("x").has("title", "Apocalypse Now")).get("x").findAny().get().getId();
+
+        assertFalse(qb.match(id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).ask().execute());
+        qb.insert(id(apocalypseNow).isa("movie").has("title", "Apocalypse Maybe Tomorrow")).execute();
+        assertTrue(qb.match(id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).ask().execute());
+    }
+
+    @Test
+    public void testInsertResourceOnExistingResourceId() {
+        String apocalypseNow = qb.match(var("x").value("Apocalypse Now")).get("x").findAny().get().getId();
+
+        assertFalse(qb.match(id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).ask().execute());
+        qb.insert(id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).execute();
+        assertTrue(qb.match(id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).ask().execute());
+    }
+
+    @Test
+    public void testInsertResourceOnExistingResourceIdWithType() {
+        String apocalypseNow = qb.match(var("x").value("Apocalypse Now")).get("x").findAny().get().getId();
+
+        assertFalse(qb.match(id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).ask().execute());
+        qb.insert(id(apocalypseNow).isa("title").has("title", "Apocalypse Maybe Tomorrow")).execute();
+        assertTrue(qb.match(id(apocalypseNow).has("title", "Apocalypse Maybe Tomorrow")).ask().execute());
     }
 
     @Test

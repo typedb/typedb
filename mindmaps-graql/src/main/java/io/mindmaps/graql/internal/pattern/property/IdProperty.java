@@ -18,14 +18,10 @@
 
 package io.mindmaps.graql.internal.pattern.property;
 
-import io.mindmaps.concept.Concept;
 import io.mindmaps.graql.admin.UniqueVarProperty;
 import io.mindmaps.graql.internal.gremlin.fragment.Fragment;
 import io.mindmaps.graql.internal.gremlin.fragment.Fragments;
-import io.mindmaps.graql.internal.query.InsertQueryExecutor;
 import io.mindmaps.graql.internal.util.StringConverter;
-
-import static io.mindmaps.util.ErrorMessage.INSERT_RESOURCE_WITH_ID;
 
 public class IdProperty extends AbstractVarProperty implements NamedProperty, UniqueVarProperty, SingleFragmentProperty {
 
@@ -68,12 +64,5 @@ public class IdProperty extends AbstractVarProperty implements NamedProperty, Un
     @Override
     public int hashCode() {
         return id.hashCode();
-    }
-
-    @Override
-    public void insert(InsertQueryExecutor insertQueryExecutor, Concept concept) throws IllegalStateException {
-        if (concept.isResource()) {
-            throw new IllegalStateException(INSERT_RESOURCE_WITH_ID.getMessage(id));
-        }
     }
 }

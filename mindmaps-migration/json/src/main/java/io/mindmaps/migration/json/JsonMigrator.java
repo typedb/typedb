@@ -19,7 +19,7 @@
 package io.mindmaps.migration.json;
 
 import com.google.common.io.CharStreams;
-import io.mindmaps.graql.Var;
+import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.migration.base.AbstractMigrator;
 import mjson.Json;
 
@@ -28,8 +28,6 @@ import java.io.FileReader;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -39,7 +37,7 @@ import java.util.stream.Stream;
 public class JsonMigrator extends AbstractMigrator {
 
     @Override
-    public  Stream<Collection<Var>> migrate(String template, File jsonFileOrDir) {
+    public  Stream<InsertQuery> migrate(String template, File jsonFileOrDir) {
         File[] files = {jsonFileOrDir};
         if(jsonFileOrDir.isDirectory()){
             files = jsonFileOrDir.listFiles(jsonFiles);
@@ -49,7 +47,7 @@ public class JsonMigrator extends AbstractMigrator {
                 map(this::asReader)
                 .map(this::asString);
 
-        return partitionedStream(jsonObjects.map(this::toJsonMap).iterator())
+        return stream(jsonObjects.map(this::toJsonMap).iterator())
                 .map(i -> template(template, i));
     }
 
@@ -59,8 +57,8 @@ public class JsonMigrator extends AbstractMigrator {
      * @param reader reader over the data to be migrated
      */
     @Override
-    public Stream<Collection<Var>> migrate(String template, Reader reader){
-        return Stream.of(template(template, Collections.singletonList(toJsonMap(asString(reader)))));
+    public Stream<InsertQuery> migrate(String template, Reader reader){
+        return Stream.of(template(template, toJsonMap(asString(reader))));
     }
 
     /**

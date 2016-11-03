@@ -20,7 +20,10 @@ package io.mindmaps.test.graql.reasoner.graphs;
 
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.EntityType;
+import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.Resource;
+import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 
 public class TailRecursionGraph extends GenericGraph{
@@ -41,22 +44,38 @@ public class TailRecursionGraph extends GenericGraph{
         EntityType bEntity = mindmaps.getEntityType("b-entity");
         RelationType Q = mindmaps.getRelationType("Q");
 
-        mindmaps.putEntity("a0", aEntity);
+        String a0Id = putEntity("a0", aEntity).getId();
+        String[][] bInstancesIds = new String[m+2][n+2];
         for(int i = 1 ; i <= m ;i++)
             for(int j = 1 ; j <= n ;j++)
-                mindmaps.putEntity("b" + i + j, bEntity);
+                bInstancesIds[i][j] = putEntity("b" + i + j, bEntity).getId();
 
         for (int j = 1; j <= n; j++) {
-
             mindmaps.addRelation(Q)
-                    .putRolePlayer(Qfrom, mindmaps.getInstance("a0"))
-                    .putRolePlayer(Qto, mindmaps.getInstance("b1" + j));
+                    .putRolePlayer(Qfrom, mindmaps.getInstance(a0Id))
+                    .putRolePlayer(Qto, mindmaps.getInstance(bInstancesIds[1][j]));
             for(int i = 1 ; i <= m ;i++) {
                 mindmaps.addRelation(Q)
-                        .putRolePlayer(Qfrom, mindmaps.getInstance("b" + i + j))
-                        .putRolePlayer(Qto, mindmaps.getInstance("b" + (i + 1) + j));
+                        .putRolePlayer(Qfrom, mindmaps.getInstance(bInstancesIds[i][j]))
+                        .putRolePlayer(Qto, mindmaps.getInstance(bInstancesIds[i+1][j]));
             }
         }
+    }
+    private static Instance putEntity(String id, EntityType type) {
+        ResourceType<String> index = mindmaps.getResourceType("index");
+        RelationType indexRelation = mindmaps.getRelationType("has-index");
+        RoleType indexTarget = mindmaps.getRoleType("has-index-owner");
+        RoleType indexValue = mindmaps.getRoleType("has-index-value");
+        Instance inst = mindmaps.addEntity(type);
+        putResource(inst, index, id, indexRelation, indexTarget, indexValue);
+        return inst;
+    }
 
+    private static <T> void putResource(Instance instance, ResourceType<T> resourceType, T resource, RelationType relationType,
+                                        RoleType targetRole, RoleType valueRole) {
+        Resource resourceInstance = mindmaps.putResource(resource, resourceType);
+        mindmaps.addRelation(relationType)
+                .putRolePlayer(targetRole, instance)
+                .putRolePlayer(valueRole, resourceInstance);
     }
 }

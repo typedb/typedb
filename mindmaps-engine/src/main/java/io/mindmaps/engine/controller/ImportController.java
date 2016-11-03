@@ -24,6 +24,7 @@ import io.mindmaps.engine.loader.Loader;
 import io.mindmaps.engine.postprocessing.BackgroundTasks;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsEngineServerException;
+import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.Var;
 import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.util.ErrorMessage;
@@ -218,9 +219,9 @@ public class ImportController {
                 String varId = (var.admin().getId().isPresent()) ? var.admin().getId().get() : UUID.randomUUID().toString();
                 entitiesMap.put(var.admin().getName(), varId);
                 // We force the ID of the current var to be the one computed by this controller.
-                loader.addToQueue(var.admin().id(varId));
+                loader.add(Graql.insert(var.admin().id(varId)));
             } else {
-                loader.addToQueue(var);
+                loader.add(Graql.insert(var));
             }
             processedEntities.incrementAndGet();
         }
@@ -249,7 +250,7 @@ public class ImportController {
 
         if (ready) {
             processedRelations.incrementAndGet();
-            loader.addToQueue(var);
+            loader.add(Graql.insert(var));
         }
 
     }

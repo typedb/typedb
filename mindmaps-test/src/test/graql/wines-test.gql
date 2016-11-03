@@ -46,7 +46,8 @@ insert
 
 "recommended-generic-wine-type" isa resource-type, datatype string;
 
-"person" isa entity-type;
+"person" isa entity-type
+    has-resource name;
 person plays-role recommendation-owner;
 person has-resource preferred-context;
 person has-resource preferred-body;
@@ -56,7 +57,10 @@ person has-resource preferred-colour;
 person has-resource preferred-sparklingness;
 person has-resource recommended-generic-wine-type;
 
-"wine" isa entity-type;
+"name" isa resource-type, datatype string;
+
+"wine" isa entity-type
+    has-resource name;
 wine plays-role recommended-wine;
 
 #######################################################
@@ -64,66 +68,66 @@ wine plays-role recommended-wine;
 #######################################################
 
 #recommend Cabernet Sauvignion
-"Alice" isa person, id "Alice";
-Alice has preferred-context "aperitif";
-Alice has preferred-sparklingness "non-sparkling";
-Alice has preferred-body "full";
-Alice has preferred-colour "red";
+$Alice isa person, has name "Alice";
+$Alice has preferred-context "aperitif";
+$Alice has preferred-sparklingness "non-sparkling";
+$Alice has preferred-body "full";
+$Alice has preferred-colour "red";
 
 #recommend White Champagne
-"Bob" isa person, id "Bob";
-Bob has preferred-context "aperitif";
-Bob has preferred-sparklingness "sparkling";
-Bob has preferred-body "full";
-Bob has preferred-colour "white";
+$Bob isa person, has name "Bob";
+$Bob has preferred-context "aperitif";
+$Bob has preferred-sparklingness "sparkling";
+$Bob has preferred-body "full";
+$Bob has preferred-colour "white";
 
 #recommend Pinot Grigio
-"Charlie" isa person, id "Charlie";
-Charlie has preferred-context "entree";
-Charlie has preferred-entree "white meat";
-Charlie has preferred-colour "rose";
+$Charlie isa person, has name "Charlie";
+$Charlie has preferred-context "entree";
+$Charlie has preferred-entree "white meat";
+$Charlie has preferred-colour "rose";
 
 #recommend Busuioaca Romaneasca
-"Denis" isa person, id "Denis";
-Denis has preferred-context "entree";
-Denis has preferred-entree "steak";
-Denis has preferred-colour "rose";
+$Denis isa person, has name "Denis";
+$Denis has preferred-context "entree";
+$Denis has preferred-entree "steak";
+$Denis has preferred-colour "rose";
 
 #recommend Tamaioasa Romaneasca
-"Eva" isa person, id "Eva";
-Eva has preferred-context "aperitif";
-Eva has preferred-body "full";
-Eva has preferred-sparklingness "non-sparkling";
-Eva has preferred-colour "white";
+$Eva isa person, has name "Eva";
+$Eva has preferred-context "aperitif";
+$Eva has preferred-body "full";
+$Eva has preferred-sparklingness "non-sparkling";
+$Eva has preferred-colour "white";
 
 #recommend Riojo Blanco
-"Frank" isa person, id "Frank";
-Frank has preferred-context "entree";
-Frank has preferred-entree "barbecue";
-Frank has preferred-body "full";
-Frank has preferred-sparklingness "non-sparkling";
-Frank has preferred-colour "white";
+$Frank isa person, has name "Frank";
+$Frank has preferred-context "entree";
+$Frank has preferred-entree "barbecue";
+$Frank has preferred-body "full";
+$Frank has preferred-sparklingness "non-sparkling";
+$Frank has preferred-colour "white";
 
 #wines
-"White Champagne" isa wine;
-"Cabernet Sauvignion" isa wine;
-"Tamaioasa Romaneasca" isa wine;
-"Busuioaca Romaneasca" isa wine;
-"Pinot Noir" isa wine;
-"Muscat Sec" isa wine;
-"Pinot Grigio Rose" isa wine;
-"Corbieres 2003" isa wine;
-"Chateau Agnel 2000" isa wine;
-"Rosso di Sicilia 2004" isa wine;
-"Riojo Blanco CVNE 2003" isa wine;
-"Tamaioasa Regala" isa wine;
-"Riojo Tempranillo" isa wine;
-"Chianti" isa wine;
-"White Riesling" isa wine;
-"Burgundy" isa wine;
-"Chardonnay" isa wine;
-"Bordeaux Blanc" isa wine;
-"Feteasca Regala" isa wine;
-"Feteasca Roz" isa wine;
-"Feteasca Neagra" isa wine;
-"Sauvignion Blanc" isa wine;
+$white-champagne isa wine, has name "White Champagne";
+$cabernet-sauvignion isa wine, has name "Cabernet Sauvignion";
+$tamaioasa-romaneasca isa wine, has name "Tamaioasa Romaneasca";
+$busuioaca-romaneasca isa wine, has name "Busuioaca Romaneasca";
+$pinot-noir isa wine, has name "Pinot Noir";
+$muscat-sec isa wine, has name "Muscat Sec";
+$pinot-grigio-rose isa wine, has name "Pinot Grigio Rose";
+$corbieres isa wine, has name "Corbieres 2003";
+$chateu isa wine, has name "Chateau Agnel 2000";
+$rosso isa wine, has name "Rosso di Sicilia 2004";
+$riojo-blanco isa wine, has name "Riojo Blanco CVNE 2003";
+$tamaioasa-regala isa wine, has name "Tamaioasa Regala";
+$riojo-tempranillo isa wine, has name "Riojo Tempranillo";
+$chianti isa wine, has name "Chianti";
+$white-riesling isa wine, has name "White Riesling";
+$burgundy isa wine, has name "Burgundy";
+$chardonnay isa wine, has name "Chardonnay";
+$bordeaux isa wine, has name "Bordeaux Blanc";
+$feteasca-regala isa wine, has name "Feteasca Regala";
+$feteasca-roz isa wine, has name "Feteasca Roz";
+$feteasca-neagra isa wine, has name "Feteasca Neagra";
+$sauvignion-blanc isa wine, has name "Sauvignion Blanc";

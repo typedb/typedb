@@ -18,12 +18,10 @@
 
 package io.mindmaps.migration.export;
 
-import io.mindmaps.MindmapsGraph;
 import io.mindmaps.engine.MindmapsEngineServer;
 import io.mindmaps.engine.util.ConfigProperties;
-import io.mindmaps.example.PokemonGraphFactory;
-import io.mindmaps.factory.GraphFactory;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -47,8 +45,6 @@ public class GraphWriterMainTest {
         System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY,ConfigProperties.TEST_CONFIG_FILE);
         System.setProperty(ConfigProperties.CURRENT_DIR_SYSTEM_PROPERTY, System.getProperty("user.dir")+"/../");
 
-        MindmapsGraph original = GraphFactory.getInstance().getGraph("original");
-        PokemonGraphFactory.loadGraph(original);
         MindmapsEngineServer.start();
     }
 
@@ -56,7 +52,6 @@ public class GraphWriterMainTest {
     public static void stop(){
         MindmapsEngineServer.stop();
     }
-
 
     @Test
     public void exportOntologyToSystemOutTest(){

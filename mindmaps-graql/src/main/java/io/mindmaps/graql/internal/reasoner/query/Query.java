@@ -21,6 +21,7 @@ package io.mindmaps.graql.internal.reasoner.query;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
+import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
@@ -38,6 +39,7 @@ import io.mindmaps.graql.internal.reasoner.atom.AtomicFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javafx.util.Pair;
 
 import static io.mindmaps.graql.internal.reasoner.Utility.createFreshVariable;
 
@@ -163,6 +165,14 @@ public class Query implements MatchQueryInternal {
                 .filter(Atomic::isPredicate)
                 .map(at -> (Predicate) at)
                 .filter(Predicate::isValuePredicate)
+                .collect(Collectors.toSet());
+    }
+
+    public Set<Atom> getResources(){
+        return getAtoms().stream()
+                .filter(Atomic::isAtom)
+                .map(at -> (Atom) at)
+                .filter(Atom::isResource)
                 .collect(Collectors.toSet());
     }
 
@@ -388,6 +398,7 @@ public class Query implements MatchQueryInternal {
                 .collect(Collectors.toSet());
         if (atoms.size() == 1) return atoms;
 
+        //pass relations or rule-resolvable types and resources
         Set<Atom> selectedAtoms = atoms.stream()
                 .filter(atom -> (!atom.isType()) || atom.isRuleResolvable())
                 .collect(Collectors.toSet());

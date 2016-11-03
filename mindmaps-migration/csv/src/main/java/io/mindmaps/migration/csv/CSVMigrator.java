@@ -19,14 +19,13 @@
 package io.mindmaps.migration.csv;
 
 import com.opencsv.CSVReader;
-import io.mindmaps.graql.Var;
+import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.migration.base.AbstractMigrator;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.stream.IntStream;
@@ -54,7 +53,7 @@ public class CSVMigrator extends AbstractMigrator {
     }
 
     @Override
-    public Stream<Collection<Var>> migrate(String template, File file){
+    public Stream<InsertQuery> migrate(String template, File file){
         try (FileReader reader = new FileReader(file)){
             return migrate(template, reader);
         } catch (IOException e){
@@ -69,26 +68,20 @@ public class CSVMigrator extends AbstractMigrator {
      * @return
      */
     @Override
-    public Stream<Collection<Var>> migrate(String template, final Reader reader) {
+    public Stream<InsertQuery> migrate(String template, final Reader reader) {
         try(CSVReader csvReader = new CSVReader(reader, delimiter, '"', 0)) {
 
             Iterator<String[]> it = csvReader.iterator();
 
             String[] header = it.next();
 
-            return partitionedStream(it).collect(toList()).stream()
-                    .map(col -> batchParse(header, col))
+            //TODO don't collect here
+            return stream(it).collect(toList()).stream()
+                    .map(col -> parse(header, col))
                     .map(col -> template(template, col));
         } catch (IOException e){
             throw new RuntimeException(e);
         }
-    }
-
-    /**
-     * Call parse of a collection of input data
-     */
-    private Collection<Map<String, Object>> batchParse(String[] header, Collection<String[]> batch){
-        return batch.stream().map(line -> parse(header, line)).collect(toList());
     }
 
     /**

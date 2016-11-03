@@ -24,6 +24,7 @@ import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
+import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.util.ErrorMessage;
 import mjson.Json;
 import org.slf4j.Logger;
@@ -111,7 +112,7 @@ public class RESTLoader {
     }
 
 
-    public UUID addJob(String name, String queryString) {
+    public UUID addJob(String name, Json queryString) {
         UUID newUUID = UUID.randomUUID();
         loaderState.put(newUUID, new TransactionState(State.QUEUED));
         executor.submit(() -> loadData(name, queryString, newUUID));
@@ -119,7 +120,7 @@ public class RESTLoader {
         return newUUID;
     }
 
-    public void loadData(String name, String batch, UUID uuid) {
+    public void loadData(String name, Json inserts, UUID uuid) {
         // Attempt committing the transaction a certain number of times
         // If a transaction fails, it must be repeated from scratch because Titan is forgetful
         loaderState.put(uuid, new TransactionState(State.LOADING));
@@ -131,8 +132,11 @@ public class RESTLoader {
             for (int i = 0; i < repeatCommits; i++) {
 
                 try {
-                    withGraph(graph).parse(batch).execute();
+                    QueryBuilder builder = withGraph(graph);
+                    inserts.asList().stream().map(Object::toString).forEach(b -> builder.parse(b).execute());
+
                     graph.commit();
+
                     cache.addJobCasting(name, graph.getModifiedCastingIds());
                     cache.addJobResource(name, graph.getModifiedResourceIds());
                     loaderState.get(uuid).setState(State.FINISHED);
@@ -141,7 +145,7 @@ public class RESTLoader {
 
                 } catch (MindmapsValidationException e) {
                     //If it's a validation exception there is no point in re-trying
-                    LOG.error("Input batch: {}", batch);
+                    LOG.error("Input batch: {}", inserts);
                     LOG.error("Caused Exception: {}", ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));
                     loaderState.get(uuid).setState(State.ERROR);
                     loaderState.get(uuid).setException(ErrorMessage.FAILED_VALIDATION.getMessage(e.getMessage()));
@@ -149,7 +153,7 @@ public class RESTLoader {
                     return;
                 } catch (IllegalArgumentException e) {
                     //If it's an illegal argument exception there is no point in re-trying
-                    LOG.error("Input batch: {}", batch);
+                    LOG.error("Input batch: {}", inserts);
                     LOG.error("Caused Exception: {}", ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION.getMessage(e.getMessage()));
                     loaderState.get(uuid).setState(State.ERROR);
                     loaderState.get(uuid).setException(ErrorMessage.ILLEGAL_ARGUMENT_EXCEPTION.getMessage(e.getMessage()));
@@ -170,7 +174,7 @@ public class RESTLoader {
             loadingJobs.decrementAndGet();
         }
 
-        LOG.error("Input batch: {}", batch);
+        LOG.error("Input batch: {}", inserts);
         LOG.error("Caused Exception: {}", ErrorMessage.FAILED_TRANSACTION.getMessage(repeatCommits));
 
         loaderState.get(uuid).setState(State.ERROR);

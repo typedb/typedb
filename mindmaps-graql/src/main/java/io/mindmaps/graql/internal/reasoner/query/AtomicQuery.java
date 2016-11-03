@@ -113,8 +113,9 @@ public class AtomicQuery extends Query{
         QueryAnswers insertAnswers = new QueryAnswers();
         if( getAtoms().stream()
                 .filter(Atomic::isPredicate)
-                .collect(Collectors.toSet()).size() < getVarSet().size())
-            throw new IllegalStateException(ErrorMessage.MATERIALIZATION_ERROR.getMessage(getMatchQuery().toString()));
+                .collect(Collectors.toSet()).size() < getVarSet().size()) {
+            throw new IllegalStateException(ErrorMessage.MATERIALIZATION_ERROR.getMessage());
+        }
         if (!getMatchQuery().ask().execute()) {
             InsertQuery insert = Graql.insert(getPattern().getVars()).withGraph(graph);
             insert.stream()

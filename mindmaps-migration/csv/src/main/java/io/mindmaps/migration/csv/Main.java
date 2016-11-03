@@ -20,13 +20,11 @@ package io.mindmaps.migration.csv;
 
 import com.google.common.io.Files;
 import io.mindmaps.migration.base.AbstractMigrator;
-import io.mindmaps.migration.base.LoadingMigrator;
 import io.mindmaps.migration.base.io.MigrationCLI;
 import org.apache.commons.cli.Options;
+import org.apache.commons.lang.exception.ExceptionUtils;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.nio.charset.StandardCharsets;
 
 import static java.util.stream.Collectors.joining;
@@ -53,8 +51,14 @@ public class Main {
 
         String csvDataFileName = cli.getRequiredOption("f", "Data file missing (-f)");
         String csvTemplateName = cli.getRequiredOption("t", "Template file missing (-t)");
-        char csvDelimiter =  cli.hasOption("d") ? cli.getOption("d").charAt(0) : CSVMigrator.DELIMITER;
         int batchSize = cli.hasOption("b") ? Integer.valueOf(cli.getOption("b")) : CSVMigrator.BATCH_SIZE;
+        String delimiterString =  cli.hasOption("d") ? cli.getOption("d") : Character.toString(CSVMigrator.DELIMITER);
+
+        if(delimiterString.toCharArray().length != 1){
+            cli.die("Wrong number of characters in delimiter " + delimiterString);
+        }
+
+        char csvDelimiter = delimiterString.toCharArray()[0];
 
         // get files
         File csvDataFile = new File(csvDataFileName);
@@ -82,7 +86,7 @@ public class Main {
             }
         }
         catch (Throwable throwable){
-            cli.die(throwable.getMessage());
+            cli.die(ExceptionUtils.getFullStackTrace(throwable));
         }
     }
 }

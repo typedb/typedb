@@ -1,6 +1,6 @@
 insert
 
-"R1" isa inference-rule,
+isa inference-rule,
 lhs {
 (production-with-genre: $x, genre-of-production: $y) isa has-genre;
 $y has description 'Sci-Fi';
@@ -8,47 +8,47 @@ $z isa genre;
 $z has description 'science fiction';},
 rhs {(production-with-genre: $x, genre-of-production: $z) isa has-genre;};
 
-"R2a" isa inference-rule,
+isa inference-rule,
 lhs {
 $x isa movie;$x has rotten-tomatoes-user-total-votes > 25000;},
 rhs {$x has status 'popular movie';};
 
-"R2b" isa inference-rule,
+isa inference-rule,
 lhs {
 $x isa movie; $x has tmdb-vote-count > 1000.0;},
 rhs {$x has status 'popular movie';};
 
-"R3a" isa inference-rule,
+isa inference-rule,
 lhs {
 $x isa movie;$x has rotten-tomatoes-user-rating >= 3.0;},
 rhs {$x has status 'decent movie';};
 
-"R3b" isa inference-rule,
+isa inference-rule,
 lhs {
 $x isa movie;$x has tmdb-vote-average < 4.0;},
 rhs {$x has status 'bad movie';};
 
-"R4" isa inference-rule,
+isa inference-rule,
 lhs {
 $x isa movie;
 $x has status 'popular movie';
 $x has status 'decent movie';},
 rhs {$x has status 'decent popular movie';};
 
-"R5" isa inference-rule,
+isa inference-rule,
 lhs {
 $x isa movie;
 $x has status 'popular movie';
 $x has status 'bad movie';},
 rhs {$x has status 'bad popular movie';};
 
-"R6" isa inference-rule,
+isa inference-rule,
 lhs {
 (actor: $x, production-with-cast: $y) isa has-cast;
 $y has status "popular movie";},
 rhs {$x has status 'popular actor';};
 
-"R7" isa inference-rule,
+isa inference-rule,
 lhs {
 (actor: $x) isa has-cast;
 (director: $x) isa production-crew;},

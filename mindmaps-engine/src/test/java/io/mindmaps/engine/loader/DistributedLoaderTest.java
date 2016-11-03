@@ -24,6 +24,7 @@ import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.Pattern;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,6 +40,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static io.mindmaps.graql.Graql.parsePatterns;
 import static org.junit.Assert.assertEquals;
@@ -69,11 +71,11 @@ public class DistributedLoaderTest extends MindmapsEngineTestBase{
         loadOntologyFromFile();
         loadDataFromFile(data);
 
-        assertNotNull(graph.getConcept("X4d616e75656c20417a656e6861").getId());
-        assertNotNull(graph.getConcept("X44616e69656c61204675696f726561").getId());
-        assertNotNull(graph.getConcept("X422e20476174686d616e6e").getId());
-        assertNotNull(graph.getConcept("X416e6472657720522e2057656262").getId());
-        assertNotNull(graph.getConcept("X4a752d4d696e205a68616f").getId());
+        assertNotNull(graph.getResourcesByValue("X4d616e75656c20417a656e6861").iterator().next().getId());
+        assertNotNull(graph.getResourcesByValue("X44616e69656c61204675696f726561").iterator().next().getId());
+        assertNotNull(graph.getResourcesByValue("X422e20476174686d616e6e").iterator().next().getId());
+        assertNotNull(graph.getResourcesByValue("X416e6472657720522e2057656262").iterator().next().getId());
+        assertNotNull(graph.getResourcesByValue("X4a752d4d696e205a68616f").iterator().next().getId());
 
         int size = graph.getEntityType("name_tag").instances().size();
         assertEquals(size, 100);
@@ -84,7 +86,8 @@ public class DistributedLoaderTest extends MindmapsEngineTestBase{
         loader.setBatchSize(50);
         loader.setPollingFrequency(1000);
         try {
-            parsePatterns(new FileInputStream(file)).forEach(pattern -> loader.addToQueue(pattern.admin().asVar()));
+            Stream<Pattern> patterns = parsePatterns(new FileInputStream(file));
+            patterns.map(p -> Graql.insert(p.admin().asVar())).forEach(loader::add);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }

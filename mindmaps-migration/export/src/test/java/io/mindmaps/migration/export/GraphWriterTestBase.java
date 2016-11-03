@@ -29,25 +29,27 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.Type;
 import org.junit.After;
+import org.junit.Before;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 
 import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 
 public abstract class GraphWriterTestBase {
 
-    protected static final MindmapsGraph original = Mindmaps.factory(Mindmaps.IN_MEMORY, "original").getGraph();
-    protected static final MindmapsGraph copy = Mindmaps.factory(Mindmaps.IN_MEMORY, "copy").getGraph();
-    protected static final GraphWriter writer = new GraphWriter(original);
+    protected MindmapsGraph original;
+    protected MindmapsGraph copy;
+    protected GraphWriter writer;
 
     @After
     public void clear(){
-        copy.getMetaType().instances().stream().flatMap(c -> c.asType().instances().stream()).forEach(Concept::delete);
-        copy.getMetaType().instances().stream().filter(i -> {
-            return !i.getId().equals("inference-rule") && !i.getId().equals("constraint-rule");
-        }).forEach(Concept::delete);
+        copy.clear();
+        original.clear();
     }
 
     public void assertDataEqual(MindmapsGraph one, MindmapsGraph two){
@@ -58,7 +60,6 @@ public abstract class GraphWriterTestBase {
     }
 
     public void assertInstanceCopied(Instance instance, MindmapsGraph two){
-
         if(instance instanceof Entity){
             assertEntityCopied(instance.asEntity(), two);
         } else if(instance instanceof Relation){
@@ -68,16 +69,52 @@ public abstract class GraphWriterTestBase {
         } else if(instance instanceof Resource){
             assertResourceCopied(instance.asResource(), two);
         }
-
     }
 
+    /**
+     * Assert that there are the same number of entities in each graph with the same resources
+     */
     public void assertEntityCopied(Entity entity1, MindmapsGraph two){
-        Entity entity2 = two.getEntity(entity1.getId());
+        Collection<Entity> entitiesFromGraph1 = entity1.resources().stream().map(Resource::ownerInstances).flatMap(Collection::stream).map(Concept::asEntity).collect(toSet());
+        Collection<Entity> entitiesFromGraph2 = getInstancesByResources(two, entity1).stream().map(Concept::asEntity).collect(toSet());
 
-        Map<String, Object> resources1 = entity1.resources().stream().collect(toMap(c -> c.type().getId(), Resource::getValue));
-        Map<String, Object> resources2 = entity2.resources().stream().collect(toMap(c -> c.type().getId(), Resource::getValue));
+        assertEquals(entitiesFromGraph1.size(), entitiesFromGraph2.size());
+    }
 
-        assertEquals(resources1, resources2);
+    /**
+     * Get all instances with the same resources
+     */
+    public Collection<Instance> getInstancesByResources(MindmapsGraph graph, Instance instance){
+        Collection<Resource<?>> resources = Collections.EMPTY_SET;
+        if(instance instanceof Resource){
+            return Collections.singleton(getResourceFromGraph(graph, instance.asResource()));
+        } else if(instance instanceof Entity){
+            resources = instance.asEntity().resources();
+        } else if (instance instanceof Relation){
+            resources = instance.asRelation().resources();
+        } else if(instance instanceof Rule){
+            resources = instance.asRule().resources();
+        }
+
+        return resources.stream()
+                .map(r -> getResourceFromGraph(graph, r))
+                .map(Resource::ownerInstances)
+                .flatMap(Collection::stream)
+                .collect(toSet());
+    }
+
+    /**
+     * Get an entity that is uniquely defined by its resources
+     */
+    public Instance getInstanceUniqueByResourcesFromGraph(MindmapsGraph graph, Instance instance){
+        System.out.println(instance);
+        System.out.println(getInstancesByResources(graph, instance));
+        return getInstancesByResources(graph, instance)
+               .iterator().next();
+    }
+
+    public <V> Resource<V> getResourceFromGraph(MindmapsGraph graph, Resource<V> resource){
+        return graph.getResource(resource.getValue(), resource.type());
     }
 
     public void assertRelationCopied(Relation relation1, MindmapsGraph two){
@@ -88,7 +125,7 @@ public abstract class GraphWriterTestBase {
         RelationType relationType = two.getRelationType(relation1.type().getId());
         Map<RoleType, Instance> rolemap = relation1.rolePlayers().entrySet().stream().collect(toMap(
                 e -> two.getRoleType(e.getKey().getId()),
-                e -> two.getEntity(e.getValue().getId())
+                e -> getInstanceUniqueByResourcesFromGraph(two, e.getValue())
         ));
 
         assertNotNull(two.getRelation(relationType, rolemap));
@@ -102,7 +139,8 @@ public abstract class GraphWriterTestBase {
     }
 
     public void assertRuleCopied(Rule rule1, MindmapsGraph two){
-        Rule rule2 = two.getRule(rule1.getId());
+        Rule rule2 = getInstanceUniqueByResourcesFromGraph(two, rule1).asRule();
+
         assertEquals(rule1.getLHS(), rule2.getLHS());
         assertEquals(rule1.getRHS(), rule2.getRHS());
     }

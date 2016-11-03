@@ -68,7 +68,7 @@ public class ImportControllerTest extends MindmapsEngineTestBase {
             e.printStackTrace();
         }
 
-        Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getConcept("X506965727265204162656c").getId());
+        Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getResourcesByValue("X506965727265204162656c").iterator().next().getId());
         GraphFactory.getInstance().getGraphBatchLoading(graphName).clear();
     }
 
@@ -93,7 +93,7 @@ public class ImportControllerTest extends MindmapsEngineTestBase {
             e.printStackTrace();
         }
 
-        Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getConcept("X506965727265204162656c").getId());
+        Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getResourcesByValue("X506965727265204162656c").iterator().next().getId());
         GraphFactory.getInstance().getGraphBatchLoading(graphName).clear();
     }
 
@@ -118,7 +118,7 @@ public class ImportControllerTest extends MindmapsEngineTestBase {
             e.printStackTrace();
         }
 
-        Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(customGraph).getConcept("X506965727265204162656c").getId());
+        Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(customGraph).getResourcesByValue("X506965727265204162656c").iterator().next().getId());
         GraphFactory.getInstance().getGraphBatchLoading(customGraph).clear();
     }
 

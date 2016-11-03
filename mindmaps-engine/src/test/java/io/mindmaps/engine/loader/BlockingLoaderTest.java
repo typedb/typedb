@@ -24,6 +24,7 @@ import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.Graql;
+import io.mindmaps.graql.Pattern;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -38,6 +39,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static io.mindmaps.graql.Graql.parsePatterns;
 
@@ -63,7 +65,9 @@ public class BlockingLoaderTest extends MindmapsEngineTestBase {
         loader.setExecutorSize(2);
         loader.setBatchSize(10);
         try {
-            parsePatterns(new FileInputStream(fileData)).forEach(pattern -> loader.addToQueue(pattern.admin().asVar()));
+
+            Stream<Pattern> patterns = parsePatterns(new FileInputStream(fileData));
+            patterns.map(p -> Graql.insert(p.admin().asVar())).forEach(loader::add);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -78,7 +82,8 @@ public class BlockingLoaderTest extends MindmapsEngineTestBase {
         loader.setBatchSize(10);
         startTime = System.currentTimeMillis();
         try {
-            parsePatterns(new FileInputStream(fileData)).forEach(pattern -> loader.addToQueue(pattern.admin().asVar()));
+            Stream<Pattern> patterns = parsePatterns(new FileInputStream(fileData));
+            patterns.map(p -> Graql.insert(p.admin().asVar())).forEach(loader::add);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -90,7 +95,7 @@ public class BlockingLoaderTest extends MindmapsEngineTestBase {
         // TODO: Make this assertion consistently pass
         // Assert.assertTrue(secondLoadingTime < firstLoadingTime);
 
-        Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getConcept("X506965727265204162656c").getId());
+        Assert.assertNotNull(GraphFactory.getInstance().getGraphBatchLoading(graphName).getResourcesByValue("X506965727265204162656c").iterator().next().getId());
     }
 
     private void loadOntology() {

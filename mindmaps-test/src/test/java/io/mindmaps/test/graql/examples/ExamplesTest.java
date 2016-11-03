@@ -43,23 +43,25 @@ public class ExamplesTest extends AbstractRollbackGraphTest {
     public void testPhilosophers() {
         load(
                 "insert person isa entity-type;",
-                "insert id 'Socrates' isa person;",
-                "insert id 'Plato' isa person;",
-                "insert id 'Aristotle' isa person;",
-                "insert id 'Alexander' isa person;"
+                "insert name isa resource-type, datatype string;",
+                "insert person has-resource name;",
+                "insert isa person, has name 'Socrates';",
+                "insert isa person, has name 'Plato';",
+                "insert isa person, has name 'Aristotle';",
+                "insert isa person, has name 'Alexander';"
         );
 
         assertEquals(4, qb.<MatchQuery>parse("match $p isa person;").stream().count());
 
         load(
-                "insert school isa entity-type;",
-                "insert id 'Peripateticism' isa school;",
-                "insert id 'Platonism' isa school;",
-                "insert id 'Idealism' isa school;",
-                "insert id 'Cynicism' isa school;"
+                "insert school isa entity-type, has-resource name;",
+                "insert isa school, has name 'Peripateticism';",
+                "insert isa school, has name 'Platonism';",
+                "insert isa school, has name 'Idealism';",
+                "insert isa school, has name 'Cynicism';"
         );
 
-        assertEquals(1, qb.<MatchQuery>parse("match $x id 'Cynicism';").stream().count());
+        assertEquals(1, qb.<MatchQuery>parse("match $x has name 'Cynicism';").stream().count());
 
         load(
                 "insert practice isa relation-type;",
@@ -68,15 +70,15 @@ public class ExamplesTest extends AbstractRollbackGraphTest {
                 "insert practice has-role philosopher, has-role philosophy;",
                 "insert person plays-role philosopher;",
                 "insert school plays-role philosophy;",
-                "insert (philosopher: Socrates, philosophy: Platonism) isa practice;",
-                "insert (philosopher: Plato, philosophy: Idealism) isa practice;",
-                "insert (philosopher: Plato, philosophy: Platonism) isa practice;",
-                "insert (philosopher: Aristotle, philosophy: Peripateticism) isa practice;"
+                "match $socrates has name 'Socrates'; $platonism has name 'Platonism'; insert (philosopher: $socrates, philosophy: $platonism) isa practice;",
+                "match $plato has name 'Plato'; $idealism has name 'Idealism'; insert (philosopher: $plato, philosophy: $idealism) isa practice;",
+                "match $plato has name 'Plato'; $platonism has name 'Platonism'; insert (philosopher: $plato, philosophy: $platonism) isa practice;",
+                "match $aristotle has name 'Aristotle'; $peripateticism has name 'Peripateticism'; insert (philosopher: $aristotle, philosophy: $peripateticism) isa practice;"
         );
 
         assertEquals(
                 2,
-                qb.<MatchQuery>parse("match (philosopher: $x, Platonism) isa practice;").stream().count()
+                qb.<MatchQuery>parse("match (philosopher: $x, $platonism) isa practice; $platonism has name 'Platonism';").stream().count()
         );
 
         load(
@@ -85,9 +87,9 @@ public class ExamplesTest extends AbstractRollbackGraphTest {
                 "insert student isa role-type;",
                 "insert education has-role teacher, has-role student;",
                 "insert person plays-role teacher, plays-role student;",
-                "insert (teacher: Socrates, student: Plato) isa education;",
-                "insert (teacher: Plato, student: Aristotle) isa education;",
-                "insert (teacher: Aristotle, student: Alexander) isa education;"
+                "match $socrates has name 'Socrates'; $plato has name 'Plato'; insert (teacher: $socrates, student: $plato) isa education;",
+                "match $plato has name 'Plato'; $aristotle has name 'Aristotle'; insert (teacher: $plato, student: $aristotle) isa education;",
+                "match $aristotle has name 'Aristotle'; $alexander has name 'Alexander'; insert (teacher: $aristotle, student: $alexander) isa education;"
         );
 
         load(
@@ -98,16 +100,16 @@ public class ExamplesTest extends AbstractRollbackGraphTest {
         );
 
         load(
-                "insert Alexander has epithet 'The Great';",
-                "insert Alexander has title 'Hegemon';",
-                "insert Alexander has title 'King of Macedon';",
-                "insert Alexander has title 'Shah of Persia';",
-                "insert Alexander has title 'Pharaoh of Egypt';",
-                "insert Alexander has title 'Lord of Asia';"
+                "match $alexander has name 'Alexander'; insert $alexander has epithet 'The Great';",
+                "match $alexander has name 'Alexander'; insert $alexander has title 'Hegemon';",
+                "match $alexander has name 'Alexander'; insert $alexander has title 'King of Macedon';",
+                "match $alexander has name 'Alexander'; insert $alexander has title 'Shah of Persia';",
+                "match $alexander has name 'Alexander'; insert $alexander has title 'Pharaoh of Egypt';",
+                "match $alexander has name 'Alexander'; insert $alexander has title 'Lord of Asia';"
         );
 
-        MatchQuery pharaoh = qb.parse("match $x has title contains 'Pharaoh';");
-        assertEquals("Alexander", pharaoh.iterator().next().get("x").getId());
+        MatchQuery pharaoh = qb.parse("match has name $x, has title contains 'Pharaoh';");
+        assertEquals("Alexander", pharaoh.iterator().next().get("x").asResource().getValue());
 
         load(
                 "insert knowledge isa relation-type;",
@@ -116,25 +118,25 @@ public class ExamplesTest extends AbstractRollbackGraphTest {
                 "insert knowledge has-role thinker, has-role thought;",
                 "insert fact isa entity-type, plays-role thought;",
                 "insert description isa resource-type, datatype string;",
-                "insert fact has-resource description;",
+                "insert fact has-resource name, has-resource description;",
                 "insert person plays-role thinker;",
-                "insert id 'sun-fact' isa fact, has description 'The Sun is bigger than the Earth';",
-                "insert (thinker: Aristotle, thought: sun-fact) isa knowledge;",
-                "insert id 'cave-fact' isa fact, has description 'Caves are mostly pretty dark';",
-                "insert (thinker: Plato, thought: cave-fact) isa knowledge;",
-                "insert id 'nothing' isa fact;",
-                "insert (thinker: Socrates, thought: nothing) isa knowledge;"
+                "insert isa fact, has name 'sun-fact', has description 'The Sun is bigger than the Earth';",
+                "match $aristotle has name 'Aristotle'; $sun-fact has name 'sun-fact'; insert (thinker: $aristotle, thought: $sun-fact) isa knowledge;",
+                "insert isa fact, has name 'cave-fact', has description 'Caves are mostly pretty dark';",
+                "match $plato has name 'Plato'; $cave-fact has name 'cave-fact'; insert (thinker: $plato, thought: $cave-fact) isa knowledge;",
+                "insert isa fact, has name 'nothing';",
+                "match $socrates has name 'Socrates'; $nothing has name 'nothing'; insert (thinker: $socrates, thought: $nothing) isa knowledge;"
         );
 
         load(
                 "insert knowledge plays-role thought;",
-                "match $socratesKnowsNothing (Socrates, nothing); " +
-                "insert (thinker: Socrates, thought: $socratesKnowsNothing) isa knowledge;"
+                "match $socrates has name 'Socrates'; $nothing has name 'nothing'; $socratesKnowsNothing ($socrates, $nothing); " +
+                "insert (thinker: $socrates, thought: $socratesKnowsNothing) isa knowledge;"
         );
 
         assertEquals(
                 2,
-                qb.<MatchQuery>parse("match (Socrates, $x) isa knowledge;").stream().count()
+                qb.<MatchQuery>parse("match $socrates has name 'Socrates'; ($socrates, $x) isa knowledge;").stream().count()
         );
     }
 
