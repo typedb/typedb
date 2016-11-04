@@ -25,6 +25,7 @@ import io.mindmaps.graql.internal.parser.QueryParser;
 import io.mindmaps.graql.internal.pattern.Patterns;
 import io.mindmaps.graql.internal.query.Queries;
 import io.mindmaps.graql.internal.template.TemplateParser;
+import io.mindmaps.graql.internal.template.macro.Macro;
 import io.mindmaps.graql.internal.util.AdminConverter;
 
 import java.io.InputStream;
@@ -140,5 +141,9 @@ public class QueryBuilder {
 
     public void registerAggregate(String name, Function<List<Object>, Aggregate> aggregateMethod) {
         queryParser.registerAggregate(name, aggregateMethod);
+    }
+
+    public void registerMacro(Macro macro){
+        templateParser.registerMacro(macro.name(), macro);
     }
 }

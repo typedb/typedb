@@ -51,5 +51,7 @@ public class Main {
         if(cli.hasOption("data")){
             cli.writeToSout(graphWriter.dumpOntology());
         }
+
+        System.exit(0);
     }
 }

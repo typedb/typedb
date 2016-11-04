@@ -89,5 +89,7 @@ public class Main {
         catch (Throwable throwable){
             cli.die(ExceptionUtils.getFullStackTrace(throwable));
         }
+
+        System.exit(0);
     }
 }

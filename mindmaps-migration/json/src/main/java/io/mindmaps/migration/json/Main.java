@@ -22,6 +22,7 @@ import com.google.common.io.Files;
 import io.mindmaps.migration.base.LoadingMigrator;
 import io.mindmaps.migration.base.io.MigrationCLI;
 import org.apache.commons.cli.Options;
+import org.apache.commons.lang.exception.ExceptionUtils;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -80,7 +81,9 @@ public class Main {
                 cli.printWholeCompletionMessage();
             }
         } catch (Throwable throwable){
-            cli.die(throwable.getMessage());
+            cli.die(ExceptionUtils.getFullStackTrace(throwable));
         }
+
+        System.exit(0);
     }
 }
