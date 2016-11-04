@@ -175,4 +175,17 @@ public class ResourceTest extends GraphTestBase{
 
         mindmapsGraph.addRelation(hasPrimaryKey).putRolePlayer(primaryKeyRole, pimaryKey1).putRolePlayer(entityRole, entity3);
     }
+
+    @Test
+    public void testNonUniqueResource(){
+        ResourceType resourceType = mindmapsGraph.putResourceType("A resourceType", ResourceType.DataType.STRING);
+        Resource resource = mindmapsGraph.putResource("A Thing", resourceType);
+
+        expectedException.expect(ConceptNotUniqueException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.RESOURCE_NOT_UNIQUE.getMessage(resource.getId()))
+        ));
+
+        resource.owner();
+    }
 }
