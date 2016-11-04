@@ -29,6 +29,8 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.RuleType;
 import io.mindmaps.exception.ConceptException;
+import io.mindmaps.exception.ConceptNotUniqueException;
+import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
 import org.junit.Test;
 
@@ -36,6 +38,8 @@ import java.util.Set;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNull;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
@@ -267,5 +271,35 @@ public class EntityTest extends GraphTestBase{
                 assertEquals(Schema.Resource.HAS_RESOURCE_VALUE.getId(resourceTypeId), roleType.getId());
             }
         });
+    }
+
+    @Test
+    public void testGetEntityByUniqueResource(){
+        //Create Ontology
+        EntityType entityType = mindmapsGraph.putEntityType("A Thing");
+        ResourceType resourceTypeUnique = mindmapsGraph.putResourceTypeUnique("A unique resource type", ResourceType.DataType.STRING);
+        ResourceType resourceTypeNotUnique = mindmapsGraph.putResourceType("A non-unique resource type", ResourceType.DataType.STRING);
+
+        entityType.hasResource(resourceTypeUnique);
+        entityType.hasResource(resourceTypeNotUnique);
+
+        //Create Entities
+        Entity entity = mindmapsGraph.addEntity(entityType);
+        Resource resourceUnique = mindmapsGraph.putResource("1", resourceTypeUnique);
+        Resource resourceNotUnique = mindmapsGraph.putResource("2", resourceTypeNotUnique);
+
+        entity.hasResource(resourceUnique);
+        entity.hasResource(resourceNotUnique);
+
+        //Check the get
+        assertEquals(entity, mindmapsGraph.getInstance(resourceUnique));
+
+        //Fail due to non unique resource
+        expectedException.expect(ConceptNotUniqueException.class);
+        expectedException.expectMessage(allOf(
+                containsString(ErrorMessage.RESOURCE_NOT_UNIQUE.getMessage(resourceUnique.getId()))
+        ));
+
+        mindmapsGraph.getInstance(resourceUnique);
     }
 }

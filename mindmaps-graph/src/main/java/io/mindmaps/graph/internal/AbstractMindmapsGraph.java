@@ -364,6 +364,11 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
     }
 
     @Override
+    public Instance getInstance(Resource uniqueResource){
+        return null;
+    }
+
+    @Override
     public Entity getEntity(String id) {
         return validConceptOfType(getConcept(id), EntityImpl.class);
     }

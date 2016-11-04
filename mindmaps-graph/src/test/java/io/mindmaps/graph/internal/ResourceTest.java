@@ -166,6 +166,8 @@ public class ResourceTest extends GraphTestBase{
         mindmapsGraph.addRelation(hasPrimaryKey).putRolePlayer(primaryKeyRole, pimaryKey1).putRolePlayer(entityRole, entity1);
         mindmapsGraph.addRelation(hasPrimaryKey).putRolePlayer(primaryKeyRole, pimaryKey2).putRolePlayer(entityRole, entity2);
 
+        assertEquals(entity1, pimaryKey1.owner());
+
         expectedException.expect(ConceptNotUniqueException.class);
         expectedException.expectMessage(allOf(
                 containsString(ErrorMessage.RESOURCE_TYPE_UNIQUE.getMessage(pimaryKey1.getId(), entity1.getId()))

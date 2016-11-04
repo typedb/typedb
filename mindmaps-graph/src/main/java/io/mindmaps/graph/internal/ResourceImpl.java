@@ -66,6 +66,11 @@ class ResourceImpl<D> extends InstanceImpl<Resource<D>, ResourceType<D>> impleme
         return owners;
     }
 
+    @Override
+    public Instance owner() {
+        return null;
+    }
+
     /**
      *
      * @param value The value to store on the resource
