@@ -18,8 +18,10 @@
 
 package io.mindmaps.engine.loader;
 
-import io.mindmaps.engine.postprocessing.BackgroundTasks;
+import io.mindmaps.engine.backgroundtasks.InMemoryTaskManager;
 import io.mindmaps.engine.postprocessing.Cache;
+import io.mindmaps.engine.postprocessing.PostProcessing;
+import io.mindmaps.engine.postprocessing.PostProcessingTask;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.factory.GraphFactory;
@@ -35,7 +37,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -99,9 +100,7 @@ public class RESTLoader {
 
     private void startPeriodPostProcessingCheck() {
         long postProcessingDelay = ConfigProperties.getInstance().getPropertyAsLong(ConfigProperties.POSTPROCESSING_DELAY);
-        Executors.newSingleThreadScheduledExecutor()
-                .scheduleAtFixedRate(() -> BackgroundTasks.getInstance().performPostprocessing(), postProcessingDelay,
-                        postProcessingDelay, TimeUnit.MILLISECONDS);
+        InMemoryTaskManager.getInstance().scheduleRecurringTask(new PostProcessingTask(), postProcessingDelay, postProcessingDelay);
     }
 
     public String getLoaderState() {

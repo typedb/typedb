@@ -35,7 +35,7 @@
     </logger>
 
     <!-- It is possible to change the logging level to a more granular level. For example:-->
-    <!--<logger name="io.mindmaps.engine.postprocessing.BackgroundTasks" level="DEBUG">-->
+    <!--<logger name="io.mindmaps.engine.postprocessing.PostProcessing" level="DEBUG">-->
         <!--<appender-ref ref="FILE"/>-->
     <!--</logger>-->
 

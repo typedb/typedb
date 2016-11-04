@@ -44,8 +44,8 @@ import java.util.concurrent.Executors;
 
 import static org.junit.Assert.assertEquals;
 
-public class BackgroundTasksTest extends MindmapsEngineTestBase{
-    private BackgroundTasks backgroundTasks;
+public class PostProcessingTest extends MindmapsEngineTestBase{
+    private PostProcessing postProcessing;
     private MindmapsGraph mindmapsGraph;
     private Cache cache;
     private String keyspace;
@@ -54,7 +54,7 @@ public class BackgroundTasksTest extends MindmapsEngineTestBase{
     public void setUp() throws Exception {
         cache = Cache.getInstance();
         keyspace = UUID.randomUUID().toString().replaceAll("-", "a");
-        backgroundTasks = BackgroundTasks.getInstance();
+        postProcessing = PostProcessing.getInstance();
         mindmapsGraph = Mindmaps.factory(Mindmaps.DEFAULT_URI, keyspace).getGraphBatchLoading();
     }
 
@@ -100,7 +100,7 @@ public class BackgroundTasksTest extends MindmapsEngineTestBase{
 
         waitForCache(true, keyspace, 4);
         //Now fix everything
-        backgroundTasks.forcePostprocessing();
+        postProcessing.run();
 
         //Check it's all fixed
         assertEquals(4, ((AbstractMindmapsGraph) this.mindmapsGraph).getTinkerPopGraph().traversal().V().hasLabel(Schema.BaseType.CASTING.name()).toList().size());
@@ -164,7 +164,7 @@ public class BackgroundTasksTest extends MindmapsEngineTestBase{
         waitForCache(false, keyspace, 5);
 
         //Now fix everything
-        backgroundTasks.forcePostprocessing();
+        postProcessing.run();
 
         //Check it's fixed
         assertEquals(1, graph.getResourceType(sample).instances().size());

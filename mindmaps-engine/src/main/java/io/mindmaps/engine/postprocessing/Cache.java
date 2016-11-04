@@ -76,6 +76,4 @@ public class Cache {
     public void deleteJobResource(String keyspace, String conceptId) {
         getResourceJobs(keyspace).remove(conceptId);
     }
-
-
 }
