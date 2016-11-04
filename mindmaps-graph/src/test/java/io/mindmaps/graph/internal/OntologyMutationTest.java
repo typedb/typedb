@@ -18,7 +18,6 @@
 
 package io.mindmaps.graph.internal;
 
-import io.mindmaps.Mindmaps;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.Relation;
@@ -26,20 +25,15 @@ import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.util.ErrorMessage;
-import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.util.Map;
-import java.util.UUID;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.core.StringContains.containsString;
 
-public class OntologyMutationTest {
-    private AbstractMindmapsGraph mindmapsGraph;
+public class OntologyMutationTest extends GraphTestBase{
     private RoleType husband;
     private RoleType wife;
     private RelationType marriage;
@@ -51,22 +45,15 @@ public class OntologyMutationTest {
     private Instance bob;
     private Relation relation;
 
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
-
     @Before
     public void buildGraph() throws MindmapsValidationException {
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-
-        //spouse = mindmapsGraph.putRoleType("Spouse");
-        husband = mindmapsGraph.putRoleType("Husband");//.superType(spouse);
+        husband = mindmapsGraph.putRoleType("Husband");
         wife = mindmapsGraph.putRoleType("Wife");
         RoleType driver = mindmapsGraph.putRoleType("Driver");
         RoleType driven = mindmapsGraph.putRoleType("Driven");
 
-        //union = mindmapsGraph.putRelationType("Union").hasRole(spouse).hasRole(wife);
         marriage = mindmapsGraph.putRelationType("marriage").hasRole(husband).hasRole(wife);
-        RelationType carBeingDrivenBy = mindmapsGraph.putRelationType("car being driven by").hasRole(driven).hasRole(driver);
+        mindmapsGraph.putRelationType("car being driven by").hasRole(driven).hasRole(driver);
 
         person = mindmapsGraph.putEntityType("Person").playsRole(husband).playsRole(wife);
         man = mindmapsGraph.putEntityType("Man").superType(person);
@@ -77,10 +64,6 @@ public class OntologyMutationTest {
         bob = mindmapsGraph.addEntity(man);
         relation = mindmapsGraph.addRelation(marriage).putRolePlayer(wife, alice).putRolePlayer(husband, bob);
         mindmapsGraph.commit();
-    }
-    @After
-    public void destroyGraph()  throws Exception{
-        mindmapsGraph.close();
     }
 
     @Test

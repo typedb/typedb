@@ -18,7 +18,6 @@
 
 package io.mindmaps.graph.internal;
 
-import io.mindmaps.Mindmaps;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Relation;
@@ -27,11 +26,8 @@ import io.mindmaps.exception.NoEdgeException;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.util.UUID;
 
@@ -41,31 +37,22 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class CastingTest {
+public class CastingTest extends GraphTestBase{
 
-    private AbstractMindmapsGraph mindmapsGraph;
     private CastingImpl casting;
     private RoleTypeImpl role;
     private RelationImpl relation;
     private InstanceImpl rolePlayer;
 
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void setUp() {
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        mindmapsGraph.initialiseMetaConcepts();
         role = (RoleTypeImpl) mindmapsGraph.putRoleType("Role");
         EntityTypeImpl conceptType = (EntityTypeImpl) mindmapsGraph.putEntityType("A thing");
         rolePlayer = (InstanceImpl) mindmapsGraph.addEntity(conceptType);
         RelationTypeImpl relationType = (RelationTypeImpl) mindmapsGraph.putRelationType("A type");
         relation = (RelationImpl) mindmapsGraph.addRelation(relationType);
         casting = mindmapsGraph.putCasting(role, rolePlayer, relation);
-    }
-    @After
-    public void destroyGraphAccessManager() throws Exception {
-        mindmapsGraph.close();
     }
 
     @Test

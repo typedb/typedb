@@ -18,7 +18,6 @@
 
 package io.mindmaps.graph.internal;
 
-import io.mindmaps.Mindmaps;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
@@ -31,13 +30,9 @@ import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.RuleType;
 import io.mindmaps.exception.ConceptException;
 import io.mindmaps.util.Schema;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.util.Set;
-import java.util.UUID;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNull;
@@ -45,21 +40,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
-public class EntityTest {
-    private AbstractMindmapsGraph mindmapsGraph;
-
-    @org.junit.Rule
-    public final ExpectedException expectedException = ExpectedException.none();
-
-    @Before
-    public void buildGraph(){
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        mindmapsGraph.initialiseMetaConcepts();
-    }
-    @After
-    public void destroyGraph()  throws Exception{
-        mindmapsGraph.close();
-    }
+public class EntityTest extends GraphTestBase{
 
     @Test
     public void testDeleteScope() throws ConceptException {

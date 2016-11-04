@@ -18,17 +18,13 @@
 
 package io.mindmaps.graph.internal;
 
-import io.mindmaps.Mindmaps;
 import io.mindmaps.concept.Resource;
 import io.mindmaps.concept.ResourceType;
 import io.mindmaps.exception.InvalidConceptValueException;
 import io.mindmaps.util.ErrorMessage;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
-import java.util.UUID;
 import java.util.regex.PatternSyntaxException;
 
 import static junit.framework.TestCase.assertNull;
@@ -40,18 +36,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class ResourceTypeTest {
-
-    private AbstractMindmapsGraph mindmapsGraph;
+public class ResourceTypeTest extends GraphTestBase{
     private ResourceType<String> resourceType;
 
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void buildGraph() {
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        mindmapsGraph.initialiseMetaConcepts();
         resourceType = mindmapsGraph.putResourceType("Resource Type", ResourceType.DataType.STRING);
     }
 

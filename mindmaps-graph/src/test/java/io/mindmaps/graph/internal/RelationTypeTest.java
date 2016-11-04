@@ -18,19 +18,14 @@
 
 package io.mindmaps.graph.internal;
 
-import io.mindmaps.Mindmaps;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.ConceptException;
 import io.mindmaps.util.ErrorMessage;
-import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.util.Collection;
-import java.util.UUID;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -39,22 +34,14 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class RelationTypeTest {
-
-    private AbstractMindmapsGraph mindmapsGraph;
+public class RelationTypeTest extends GraphTestBase{
     private RelationType relationType;
     private RoleType role1;
     private RoleType role2;
     private RoleType role3;
 
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
-
     @Before
     public void setUp() throws ConceptException {
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        mindmapsGraph.initialiseMetaConcepts();
-
         //Building
         relationType = mindmapsGraph.putRelationType("relationType");
         role1 = mindmapsGraph.putRoleType("role1");
@@ -64,10 +51,6 @@ public class RelationTypeTest {
         relationType.hasRole(role1);
         relationType.hasRole(role2);
         relationType.hasRole(role3);
-    }
-    @After
-    public void destroyGraphAccessManager() throws Exception {
-        mindmapsGraph.close();
     }
 
     @Test

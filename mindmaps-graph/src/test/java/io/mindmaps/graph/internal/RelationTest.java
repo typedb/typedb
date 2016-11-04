@@ -18,7 +18,6 @@
 
 package io.mindmaps.graph.internal;
 
-import io.mindmaps.Mindmaps;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
@@ -33,11 +32,8 @@ import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -45,7 +41,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.UUID;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -54,10 +49,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class RelationTest {
-
-    private AbstractMindmapsGraph mindmapsGraph;
-
+public class RelationTest extends GraphTestBase{
     private RelationImpl relation;
     private RoleTypeImpl role1;
     private InstanceImpl rolePlayer1;
@@ -71,14 +63,8 @@ public class RelationTest {
     private CastingImpl casting1;
     private CastingImpl casting2;
 
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
-
     @Before
     public void buildGraph(){
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        mindmapsGraph.initialiseMetaConcepts();
-
         type = mindmapsGraph.putEntityType("Main concept Type");
         relationType = mindmapsGraph.putRelationType("Main relation type");
 
@@ -92,10 +78,6 @@ public class RelationTest {
 
         casting1 = mindmapsGraph.putCasting(role1, rolePlayer1, relation);
         casting2 = mindmapsGraph.putCasting(role2, rolePlayer2, relation);
-    }
-    @After
-    public void destroyGraph()  throws Exception{
-        mindmapsGraph.close();
     }
 
     @Test

@@ -18,11 +18,9 @@
 
 package io.mindmaps.graph.internal;
 
-import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.exception.MindmapsValidationException;
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.util.HashSet;
@@ -37,14 +35,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
-public class MindmapsTinkerGraphTest {
-    private MindmapsGraph mindmapsGraph;
-
-    @Before
-    public void setup() throws MindmapsValidationException {
-        mindmapsGraph = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        mindmapsGraph.commit();
-    }
+public class MindmapsTinkerGraphTest extends GraphTestBase{
 
     @Test
     public void testMultithreading(){

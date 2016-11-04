@@ -18,7 +18,6 @@
 
 package io.mindmaps.graph.internal;
 
-import io.mindmaps.Mindmaps;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
@@ -28,16 +27,11 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.InvalidConceptTypeException;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.util.ErrorMessage;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.slf4j.Logger;
 
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -47,21 +41,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class ValidatorTest {
-    private final Logger LOG = org.slf4j.LoggerFactory.getLogger(ValidatorTest.class);
-    private AbstractMindmapsGraph mindmapsGraph;
-
-    @org.junit.Rule
-    public final ExpectedException expectedException = ExpectedException.none();
-
-    @Before
-    public void buildGraphAccessManager(){
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-    }
-    @After
-    public void destroyGraphAccessManager()  throws Exception{
-        mindmapsGraph.close();
-    }
+public class ValidatorTest extends GraphTestBase{
 
     @Test
     public void testGetErrorsFound() throws Exception {
