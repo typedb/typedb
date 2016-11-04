@@ -30,6 +30,7 @@ import io.mindmaps.util.ErrorMessage;
 import org.junit.Test;
 
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertNull;
 import static junit.framework.Assert.assertTrue;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -163,10 +164,11 @@ public class ResourceTest extends GraphTestBase{
         Entity entity3 = mindmapsGraph.addEntity(entityType);
 
         //Link Entities to resources
+        assertNull(pimaryKey1.owner());
         mindmapsGraph.addRelation(hasPrimaryKey).putRolePlayer(primaryKeyRole, pimaryKey1).putRolePlayer(entityRole, entity1);
-        mindmapsGraph.addRelation(hasPrimaryKey).putRolePlayer(primaryKeyRole, pimaryKey2).putRolePlayer(entityRole, entity2);
-
         assertEquals(entity1, pimaryKey1.owner());
+
+        mindmapsGraph.addRelation(hasPrimaryKey).putRolePlayer(primaryKeyRole, pimaryKey2).putRolePlayer(entityRole, entity2);
 
         expectedException.expect(ConceptNotUniqueException.class);
         expectedException.expectMessage(allOf(

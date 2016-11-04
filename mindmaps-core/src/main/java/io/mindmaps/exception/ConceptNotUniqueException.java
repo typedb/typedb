@@ -39,4 +39,8 @@ public class ConceptNotUniqueException extends ConceptException {
     public ConceptNotUniqueException(Resource resource, Instance instance){
         super(ErrorMessage.RESOURCE_TYPE_UNIQUE.getMessage(resource.getId(), instance.getId()));
     }
+
+    public ConceptNotUniqueException(Resource resource){
+        super(ErrorMessage.RESOURCE_NOT_UNIQUE.getMessage(resource.getId()));
+    }
 }
