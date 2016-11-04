@@ -42,12 +42,12 @@ import static io.mindmaps.util.REST.WebPath.GRAPH_FACTORY_URI;
  * This is to abstract away factories and the backend from the user.
  * The deployer of engine decides on the backend and this class will handle producing the correct graphs.
  */
-public class MindmapsGraphFactoryImpl implements MindmapsGraphFactory{
+public class MindmapsGraphFactoryPersistent implements MindmapsGraphFactory{
     private static final String COMPUTER = "graph.computer";
     private final String uri;
     private final String keyspace;
 
-    public MindmapsGraphFactoryImpl(String keyspace, String uri){
+    public MindmapsGraphFactoryPersistent(String keyspace, String uri){
         this.uri = uri;
         this.keyspace = keyspace;
     }
