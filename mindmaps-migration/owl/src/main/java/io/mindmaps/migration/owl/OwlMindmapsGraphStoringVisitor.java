@@ -18,14 +18,12 @@
 package io.mindmaps.migration.owl;
 
 import io.mindmaps.concept.*;
-import io.mindmaps.concept.EntityType;
 import io.mindmaps.exception.ConceptException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import javafx.util.Pair;
 import org.semanticweb.owlapi.model.AsOWLObjectProperty;

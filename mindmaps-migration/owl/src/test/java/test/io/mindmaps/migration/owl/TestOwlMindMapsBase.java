@@ -17,6 +17,8 @@
  */
 package test.io.mindmaps.migration.owl;
 
+import io.mindmaps.concept.ResourceType;
+import io.mindmaps.migration.owl.OwlModel;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.Map;
@@ -84,10 +86,20 @@ public class TestOwlMindMapsBase {
         catch (Exception ex) {
             throw new RuntimeException(ex);
         }
-    }   
+    }
+
+    ResourceType<String> owlIriResource(){ return graph.getResourceType(OwlModel.IRI.owlname());}
+
+    <T> Entity getEntity(T id, ResourceType<T> rtype){
+        Resource<T> iri = graph.getResource(id, rtype);
+        Instance inst = iri != null? iri.ownerInstances().stream().findFirst().orElse(null) : null;
+        return inst != null? inst.asEntity() : null;
+    }
+
+    Entity getEntity(String id){ return getEntity(id, owlIriResource());}
 
     <T extends Concept> Optional<T> findById(Collection<T> C, String id) {
-        return C.stream().filter(x -> x.getId().equals(id)).findFirst();
+        return C.stream().filter(x -> x.equals(getEntity(id))).findFirst();
     }
     
     void checkResource(final Entity e, final String resourceTypeId, final Object value) {

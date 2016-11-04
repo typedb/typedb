@@ -18,6 +18,8 @@
 package io.mindmaps.migration.owl;
 
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.concept.Instance;
+import io.mindmaps.concept.Resource;
 import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
@@ -88,7 +90,7 @@ public class OWLMigrator {
         return graph;
     }
     
-    public void migrate() throws MindmapsValidationException { 
+    public void migrate() throws MindmapsValidationException {
         OwlMindmapsGraphStoringVisitor visitor = new OwlMindmapsGraphStoringVisitor(this);
         visitor.prepareOWL();
         ontology.axioms().forEach(ax -> {
@@ -118,6 +120,35 @@ public class OWLMigrator {
                         ontology.getOWLOntologyManager().getOWLDataFactory().getOWLClass(
                                 OwlModel.THING.owlname()).getIRI()));
     }
+
+    public ResourceType<String> owlIriResource(){
+        return graph.putResourceType(OwlModel.IRI.owlname(), ResourceType.DataType.STRING);
+    }
+
+    public <T> Entity getEntity(T id, ResourceType<T> rtype){
+        Resource<T> iri = graph.getResource(id, rtype);
+        Instance inst = iri != null? iri.ownerInstances().stream().findFirst().orElse(null) : null;
+        return inst != null? inst.asEntity() : null;
+    }
+
+    public Entity putEntity(String id, EntityType type) {
+        Entity current = getEntity(id, owlIriResource());
+        if(current != null) return current;
+
+        String hasIriResourceId = OwlModel.IRI.owlname();
+        ResourceType<String> iriResource = owlIriResource();
+        RoleType hasIriOwner = entityRole(type, iriResource);
+        RoleType hasIriValue = resourceRole(iriResource);
+        RelationType hasIriRelation = graph.putRelationType(namer.resourceRelation(hasIriResourceId))
+                .hasRole(hasIriOwner).hasRole(hasIriValue);
+
+        Entity entity = graph.addEntity(type);
+        Resource resourceInstance = graph.putResource(id, iriResource);
+        graph.addRelation(hasIriRelation)
+                .putRolePlayer(hasIriOwner, entity)
+                .putRolePlayer(hasIriValue, resourceInstance);
+        return entity;
+    }
     
     public EntityType entityType(OWLClass owlclass) {
         EntityType type = graph.putEntityType(namer.classEntityTypeName(owlclass.getIRI()));
@@ -139,7 +170,7 @@ public class OWLMigrator {
                     .findFirst();
             return expr.isPresent() ? expr.get().getClassExpression().asOWLClass() : null;
         });
-        return graph.putEntity(id, owlclass == null ? owlThingEntityType() : entityType(owlclass));
+        return putEntity(id, owlclass == null ? owlThingEntityType() : entityType(owlclass));
     }   
 
     public RelationType relation(OWLObjectProperty property) {

@@ -20,7 +20,6 @@ package io.mindmaps.migration.owl;
 import io.mindmaps.migration.base.io.MigrationCLI;
 import org.apache.commons.cli.Options;
 import org.semanticweb.owlapi.apibinding.OWLManager;
-import org.semanticweb.owlapi.model.OWLOntology;
 
 import java.io.File;
 

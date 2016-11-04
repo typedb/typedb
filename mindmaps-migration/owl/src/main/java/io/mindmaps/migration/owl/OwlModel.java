@@ -29,7 +29,8 @@ public enum OwlModel {
     OBJECT_PROPERTY("owl:topObjectProperty"),
     SUBJECT_PROPERTY("owl:topDataProperty"),
     SUBJECT("owl-subject"),
-    OBJECT("owl-object")
+    OBJECT("owl-object"),
+    IRI("owl-iri")
     ;
     
     private String name;

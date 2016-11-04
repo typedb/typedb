@@ -19,16 +19,22 @@
 package test.io.mindmaps.migration.owl;
 
 import io.mindmaps.MindmapsGraph;
+import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.RelationType;
+import io.mindmaps.concept.Resource;
+import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.engine.MindmapsEngineServer;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.factory.GraphFactory;
 import io.mindmaps.graql.Reasoner;
 import io.mindmaps.migration.owl.Main;
+import io.mindmaps.migration.owl.OwlModel;
+import java.util.Collection;
+import java.util.Optional;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -93,6 +99,16 @@ public class OwlMigratorMainTest {
         runAndAssertDataCorrect(new String[]{"owl", "-file", "grah/?*", "-keyspace", graph.getKeyspace()});
     }
 
+    public ResourceType<String> owlIriResource(){ return graph.getResourceType(OwlModel.IRI.owlname());}
+
+    public <T> Entity getEntity(T id, ResourceType<T> rtype){
+        Resource<T> iri = graph.getResource(id, rtype);
+        Instance inst = iri != null? iri.ownerInstances().stream().findFirst().orElse(null) : null;
+        return inst != null? inst.asEntity() : null;
+    }
+
+    public Entity getEntity(String id){ return getEntity(id, owlIriResource());}
+
     public void runAndAssertDataCorrect(String[] args){
         Main.main(args);
 
@@ -105,12 +121,14 @@ public class OwlMigratorMainTest {
         Assert.assertEquals(top, type.superType().superType());
         assertTrue(top.subTypes().contains(graph.getEntityType("tPlace")));
         Assert.assertNotEquals(0, type.instances().size());
-        assertTrue(
-                type.instances().stream().map(Entity::getId).anyMatch(s -> s.equals("eShakespeare"))
+        assertTrue(type.instances().stream()
+                .flatMap(inst -> inst.asEntity()
+                .resources(graph.getResourceType(OwlModel.IRI.owlname())).stream())
+                .anyMatch(s -> s.getValue().equals("eShakespeare"))
         );
-        final Entity author = graph.getEntity("eShakespeare");
+        final Entity author = getEntity("eShakespeare");
         Assert.assertNotNull(author);
-        final Entity work = graph.getEntity("eHamlet");
+        final Entity work = getEntity("eHamlet");
         Assert.assertNotNull(work);
         assertRelationBetweenInstancesExists(work, author, "op-wrote");
         Reasoner reasoner = new Reasoner(graph);
