@@ -19,7 +19,7 @@ import java.util.Map;
  */
 public class Mindmaps {
     public static final String DEFAULT_URI = "localhost:4567";
-    private static final String ENGINE_CONTROLLED_IMPLEMENTATION = "io.mindmaps.factory.MindmapsGraphFactoryImpl";
+    private static final String ENGINE_CONTROLLED_IMPLEMENTATION = "io.mindmaps.factory.MindmapsGraphFactoryPersistent";
     
     public static final String IN_MEMORY = "in-memory";
     private static final String IN_MEMORY_IMPLEMENTATION = "io.mindmaps.factory.MindmapsGraphFactoryInMemory";
