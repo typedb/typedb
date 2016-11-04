@@ -18,7 +18,6 @@
 
 package io.mindmaps.graph.internal;
 
-import io.mindmaps.Mindmaps;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
@@ -36,47 +35,21 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.Veri
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.util.Collection;
 import java.util.UUID;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class MindmapsGraphLowLevelTest {
-
-    private AbstractMindmapsGraph mindmapsGraph;
-
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
-
-    @Before
-    public void buildGraphAccessManager(){
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        mindmapsGraph.initialiseMetaConcepts();
-    }
-    @After
-    public void destroyGraphAccessManager()  throws Exception{
-        mindmapsGraph.close();
-    }
-
-    @Test
-    public void testGetGraph(){
-        assertThat(mindmapsGraph.getTinkerPopGraph(), instanceOf(Graph.class));
-    }
+public class MindmapsGraphLowLevelTest extends GraphTestBase{
 
     @Test
     public void testPutConcept() throws Exception {
@@ -86,7 +59,6 @@ public class MindmapsGraphLowLevelTest {
         assertEquals(22, mindmapsGraph.getTinkerPopGraph().traversal().V().toList().size());
     }
 
-    //----------------------------------------------Concept Functionality-----------------------------------------------
     @Test(expected=RuntimeException.class)
     public void testTooManyNodesForId() {
         Graph graph = mindmapsGraph.getTinkerPopGraph();

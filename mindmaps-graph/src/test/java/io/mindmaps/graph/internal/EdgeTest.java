@@ -18,40 +18,29 @@
 
 package io.mindmaps.graph.internal;
 
-import io.mindmaps.Mindmaps;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 
-public class EdgeTest {
+public class EdgeTest extends GraphTestBase{
 
-    private AbstractMindmapsGraph mindmapsGraph;
     private EntityType entityType;
     private Entity entity;
     private EdgeImpl edge;
 
     @Before
     public void setUp(){
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
         entityType = mindmapsGraph.putEntityType("My Entity Type");
         entity = mindmapsGraph.addEntity(entityType);
         Edge tinkerEdge = (Edge) mindmapsGraph.getTinkerTraversal().has(Schema.ConceptProperty.ITEM_IDENTIFIER.name(), entity.getId()).outE().next();
         edge = new EdgeImpl(tinkerEdge, mindmapsGraph);
-    }
-
-    @After
-    public void destroyGraphAccessManager() throws Exception {
-        mindmapsGraph.close();
     }
 
     @Test

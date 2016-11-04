@@ -18,7 +18,6 @@
 
 package io.mindmaps.graph.internal;
 
-import io.mindmaps.Mindmaps;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
@@ -28,11 +27,7 @@ import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.exception.ConceptNotUniqueException;
 import io.mindmaps.util.ErrorMessage;
-import org.junit.Before;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
-import java.util.UUID;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
@@ -41,19 +36,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class ResourceTest {
-
-    private AbstractMindmapsGraph mindmapsGraph;
-
-    @org.junit.Rule
-    public final ExpectedException expectedException = ExpectedException.none();
-
-    @Before
-    public void buildGraph() {
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        mindmapsGraph.initialiseMetaConcepts();
-    }
-
+public class ResourceTest extends GraphTestBase{
     @Test
     public void testDataType() throws Exception {
         ResourceType resourceType = mindmapsGraph.putResourceType("resourceType", ResourceType.DataType.STRING);

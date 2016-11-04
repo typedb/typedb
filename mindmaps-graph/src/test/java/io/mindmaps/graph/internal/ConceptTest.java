@@ -18,7 +18,6 @@
 
 package io.mindmaps.graph.internal;
 
-import io.mindmaps.Mindmaps;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
@@ -36,15 +35,11 @@ import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -55,23 +50,14 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class ConceptTest {
+public class ConceptTest extends GraphTestBase{
 
-    private AbstractMindmapsGraph mindmapsGraph;
     private ConceptImpl concept;
 
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void setUp(){
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        mindmapsGraph.initialiseMetaConcepts();
         concept = (ConceptImpl) mindmapsGraph.putEntityType("main_concept");
-    }
-    @After
-    public void destroyGraphAccessManager() throws Exception {
-        mindmapsGraph.close();
     }
 
     @Test(expected=MoreThanOneEdgeException.class)

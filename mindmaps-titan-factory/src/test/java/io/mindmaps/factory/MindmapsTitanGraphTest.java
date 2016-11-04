@@ -46,7 +46,7 @@ public class MindmapsTitanGraphTest {
 
     @Before
     public void setup(){
-        mindmapsGraph = new MindmapsTitanInternalFactory(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph(TEST_BATCH_LOADING);
+        mindmapsGraph = new TitanInternalFactory(TEST_NAME, TEST_URI, TEST_CONFIG).getGraph(TEST_BATCH_LOADING);
     }
 
     @After
@@ -118,8 +118,8 @@ public class MindmapsTitanGraphTest {
 
     @Test
     public void testCaseSensitiveKeyspaces(){
-        MindmapsTitanInternalFactory factory1 = new MindmapsTitanInternalFactory("case", TEST_URI, TEST_CONFIG);
-        MindmapsTitanInternalFactory factory2 = new MindmapsTitanInternalFactory("Case", TEST_URI, TEST_CONFIG);
+        TitanInternalFactory factory1 = new TitanInternalFactory("case", TEST_URI, TEST_CONFIG);
+        TitanInternalFactory factory2 = new TitanInternalFactory("Case", TEST_URI, TEST_CONFIG);
         MindmapsTitanGraph case1 = factory1.getGraph(TEST_BATCH_LOADING);
         MindmapsTitanGraph case2 = factory2.getGraph(TEST_BATCH_LOADING);
 

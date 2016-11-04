@@ -24,7 +24,7 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 /**
  *
  */
-public class MindmapsGraphFactoryMock extends MindmapsGraphFactoryImpl {
+public class MindmapsGraphFactoryMock extends MindmapsGraphFactoryPersistent {
     private final String keyspace;
     private final String uri;
 

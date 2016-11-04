@@ -33,7 +33,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 
-public class MindmapsFactoryBuilderTest {
+public class FactoryBuilderTest {
     private final static String TEST_CONFIG = "../conf/test/tinker/mindmaps-tinker.properties";
     private final static String KEYSPACE = "keyspace";
     private final static String ENGINE_URL = "rubbish";
@@ -43,23 +43,23 @@ public class MindmapsFactoryBuilderTest {
 
     @Test(expected=InvocationTargetException.class)
     public void testConstructorIsPrivate() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
-        Constructor<MindmapsFactoryBuilder> c = MindmapsFactoryBuilder.class.getDeclaredConstructor();
+        Constructor<FactoryBuilder> c = FactoryBuilder.class.getDeclaredConstructor();
         c.setAccessible(true);
         c.newInstance();
     }
 
     @Test
     public void testBuildMindmapsFactory(){
-        MindmapsInternalFactory mgf = MindmapsFactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_CONFIG);
-        assertThat(mgf, instanceOf(MindmapsTinkerInternalFactory.class));
+        InternalFactory mgf = FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_CONFIG);
+        assertThat(mgf, instanceOf(TinkerInternalFactory.class));
     }
 
     @Test
     public void testSingleton(){
-        MindmapsInternalFactory mgf1 = MindmapsFactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_CONFIG);
-        MindmapsInternalFactory mgf2 = MindmapsFactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_CONFIG);
-        MindmapsInternalFactory mgf3 = MindmapsFactoryBuilder.getFactory("key", ENGINE_URL, TEST_CONFIG);
-        MindmapsInternalFactory mgf4 = MindmapsFactoryBuilder.getFactory("key", ENGINE_URL, TEST_CONFIG);
+        InternalFactory mgf1 = FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_CONFIG);
+        InternalFactory mgf2 = FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, TEST_CONFIG);
+        InternalFactory mgf3 = FactoryBuilder.getFactory("key", ENGINE_URL, TEST_CONFIG);
+        InternalFactory mgf4 = FactoryBuilder.getFactory("key", ENGINE_URL, TEST_CONFIG);
 
         assertEquals(mgf1, mgf2);
         assertEquals(mgf3, mgf4);
@@ -74,7 +74,7 @@ public class MindmapsFactoryBuilderTest {
         expectedException.expectMessage(allOf(
                 containsString(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage("rubbish"))
         ));
-        MindmapsFactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, "rubbish");
+        FactoryBuilder.getFactory(KEYSPACE, ENGINE_URL, "rubbish");
     }
 
 }

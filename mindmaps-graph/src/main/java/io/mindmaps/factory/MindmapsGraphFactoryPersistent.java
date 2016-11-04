@@ -42,12 +42,12 @@ import static io.mindmaps.util.REST.WebPath.GRAPH_FACTORY_URI;
  * This is to abstract away factories and the backend from the user.
  * The deployer of engine decides on the backend and this class will handle producing the correct graphs.
  */
-public class MindmapsGraphFactoryImpl implements MindmapsGraphFactory{
+public class MindmapsGraphFactoryPersistent implements MindmapsGraphFactory{
     private static final String COMPUTER = "graph.computer";
     private final String uri;
     private final String keyspace;
 
-    public MindmapsGraphFactoryImpl(String keyspace, String uri){
+    public MindmapsGraphFactoryPersistent(String keyspace, String uri){
         this.uri = uri;
         this.keyspace = keyspace;
     }
@@ -108,7 +108,7 @@ public class MindmapsGraphFactoryImpl implements MindmapsGraphFactory{
                 computer = bundle.getString(COMPUTER);
             }
 
-            return new ConfigureFactory(path, computer, MindmapsFactoryBuilder.getFactory(keyspace, engineUrl, path));
+            return new ConfigureFactory(path, computer, FactoryBuilder.getFactory(keyspace, engineUrl, path));
         } catch (IOException e) {
             throw new IllegalArgumentException(ErrorMessage.CONFIG_NOT_FOUND.getMessage(engineUrl, e.getMessage()));
         }
@@ -117,9 +117,9 @@ public class MindmapsGraphFactoryImpl implements MindmapsGraphFactory{
     static class ConfigureFactory {
         String path;
         String graphComputer;
-        MindmapsInternalFactory factory;
+        InternalFactory factory;
 
-        ConfigureFactory(String path, String graphComputer, MindmapsInternalFactory factory){
+        ConfigureFactory(String path, String graphComputer, InternalFactory factory){
             this.path = path;
             this.graphComputer = graphComputer;
             this.factory = factory;

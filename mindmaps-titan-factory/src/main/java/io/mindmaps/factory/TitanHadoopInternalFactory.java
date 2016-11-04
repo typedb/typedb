@@ -30,12 +30,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 
-public class MindmapsTitanHadoopInternalFactory extends AbstractMindmapsInternalFactory<AbstractMindmapsGraph<HadoopGraph>, HadoopGraph> {
+public class TitanHadoopInternalFactory extends AbstractInternalFactory<AbstractMindmapsGraph<HadoopGraph>, HadoopGraph> {
     private static final String CLUSTER_KEYSPACE = "titanmr.ioformat.conf.storage.cassandra.keyspace";
     private static final String INPUT_KEYSPACE = "cassandra.input.keyspace";
-    private final Logger LOG = LoggerFactory.getLogger(MindmapsTitanHadoopInternalFactory.class);
+    private final Logger LOG = LoggerFactory.getLogger(TitanHadoopInternalFactory.class);
 
-    MindmapsTitanHadoopInternalFactory(String keyspace, String engineUrl, String config) {
+    TitanHadoopInternalFactory(String keyspace, String engineUrl, String config) {
         super(keyspace, engineUrl, config);
     }
 

@@ -20,11 +20,11 @@ import static org.junit.Assert.assertThat;
 public class MindmapsOrientDBGraphFactoryTest {
     private final static String TEST_NAME = "MyGraph";
     private final static String TEST_URI = "memory";
-    private static MindmapsOrientDBInternalFactory orientGraphFactory ;
+    private static OrientDBInternalFactory orientGraphFactory ;
 
     @Before
     public void setUp() throws Exception {
-        orientGraphFactory = new MindmapsOrientDBInternalFactory(TEST_NAME, TEST_URI, null);
+        orientGraphFactory = new OrientDBInternalFactory(TEST_NAME, TEST_URI, null);
     }
 
     @After

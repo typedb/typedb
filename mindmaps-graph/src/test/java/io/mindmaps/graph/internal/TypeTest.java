@@ -18,7 +18,6 @@
 
 package io.mindmaps.graph.internal;
 
-import io.mindmaps.Mindmaps;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
@@ -32,15 +31,12 @@ import io.mindmaps.exception.ConceptException;
 import io.mindmaps.exception.InvalidConceptTypeException;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.allOf;
@@ -53,17 +49,10 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("unchecked")
-public class TypeTest {
-
-    private AbstractMindmapsGraph mindmapsGraph;
-
-    @org.junit.Rule
-    public final ExpectedException expectedException = ExpectedException.none();
+public class TypeTest extends GraphTestBase{
 
     @Before
     public void buildGraph(){
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        mindmapsGraph.initialiseMetaConcepts();
         EntityType top = mindmapsGraph.putEntityType("top");
         EntityType middle1 = mindmapsGraph.putEntityType("mid1");
         EntityType middle2 = mindmapsGraph.putEntityType("mid2");
@@ -74,10 +63,6 @@ public class TypeTest {
         middle1.superType(top);
         middle2.superType(top);
         middle3.superType(top);
-    }
-    @After
-    public void destroyGraph()  throws Exception{
-        mindmapsGraph.close();
     }
 
     @Test

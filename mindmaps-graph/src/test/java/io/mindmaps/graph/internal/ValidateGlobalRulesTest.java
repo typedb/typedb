@@ -18,7 +18,6 @@
 
 package io.mindmaps.graph.internal;
 
-import io.mindmaps.Mindmaps;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
@@ -27,33 +26,15 @@ import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Type;
 import io.mindmaps.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.UUID;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class ValidateGlobalRulesTest {
-    private AbstractMindmapsGraph mindmapsGraph;
-
-    @org.junit.Rule
-    public final ExpectedException expectedException = ExpectedException.none();
-
-    @Before
-    public void buildGraphAccessManager() {
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-    }
-
-    @After
-    public void destroyGraphAccessManager() throws Exception {
-        mindmapsGraph.close();
-    }
+public class ValidateGlobalRulesTest extends GraphTestBase{
 
     @Test(expected = InvocationTargetException.class)
     public void testConstructor() throws Exception { //Checks that you cannot initialise it.

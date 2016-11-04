@@ -29,15 +29,15 @@ import java.util.MissingResourceException;
 import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
 
-class MindmapsFactoryBuilder {
+class FactoryBuilder {
     private static final String FACTORY = "factory.internal";
-    private static final Map<String, MindmapsInternalFactory> openFactories = new HashMap<>();
+    private static final Map<String, InternalFactory> openFactories = new HashMap<>();
 
-    private MindmapsFactoryBuilder(){
+    private FactoryBuilder(){
         throw new UnsupportedOperationException();
     }
 
-    static MindmapsInternalFactory getFactory(String keyspace, String engineUrl, String config){
+    static InternalFactory getFactory(String keyspace, String engineUrl, String config){
         try{
             FileInputStream fis = new FileInputStream(config);
             ResourceBundle bundle = new PropertyResourceBundle(fis);
@@ -54,22 +54,22 @@ class MindmapsFactoryBuilder {
     /**
      *
      * @param factoryType The string defining which factory should be used for creating the mindmaps graph.
-     *                    A valid example includes: io.mindmaps.factory.MindmapsTinkerInternalFactory
+     *                    A valid example includes: io.mindmaps.factory.TinkerInternalFactory
      * @return A graph factory which produces the relevant expected graph.
     */
-    private static MindmapsInternalFactory getMindmapsGraphFactory(String factoryType, String keyspace, String engineUrl, String config){
+    private static InternalFactory getMindmapsGraphFactory(String factoryType, String keyspace, String engineUrl, String config){
         String key = factoryType + keyspace;
         if(!openFactories.containsKey(key)) {
-            MindmapsInternalFactory mindmapsInternalFactory;
+            InternalFactory internalFactory;
             try {
-                //mindmapsInternalFactory = (MindmapsInternalFactory) Class.forName(factoryType).newInstance();
-                mindmapsInternalFactory = (MindmapsInternalFactory) Class.forName(factoryType)
+                //internalFactory = (InternalFactory) Class.forName(factoryType).newInstance();
+                internalFactory = (InternalFactory) Class.forName(factoryType)
                         .getDeclaredConstructor(String.class, String.class, String.class)
                         .newInstance(keyspace, engineUrl, config);
             } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
                 throw new IllegalArgumentException(ErrorMessage.INVALID_FACTORY.getMessage(factoryType), e);
             }
-            openFactories.put(key, mindmapsInternalFactory);
+            openFactories.put(key, internalFactory);
         }
         return openFactories.get(key);
     }

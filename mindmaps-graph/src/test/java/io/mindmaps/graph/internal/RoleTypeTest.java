@@ -18,7 +18,6 @@
 
 package io.mindmaps.graph.internal;
 
-import io.mindmaps.Mindmaps;
 import io.mindmaps.concept.Entity;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.RelationType;
@@ -27,13 +26,8 @@ import io.mindmaps.concept.Type;
 import io.mindmaps.exception.MoreThanOneEdgeException;
 import io.mindmaps.util.ErrorMessage;
 import io.mindmaps.util.Schema;
-import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
-import java.util.UUID;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -41,25 +35,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class RoleTypeTest {
-    private AbstractMindmapsGraph mindmapsGraph;
+public class RoleTypeTest extends GraphTestBase {
     private RoleType roleType;
     private RelationType relationType;
 
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
-
     @Before
     public void buildGraph(){
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        mindmapsGraph.initialiseMetaConcepts();
-
         roleType = mindmapsGraph.putRoleType("RoleType");
         relationType = mindmapsGraph.putRelationType("RelationType");
-    }
-    @After
-    public void destroyGraph()  throws Exception{
-        mindmapsGraph.close();
     }
 
     @Test

@@ -18,20 +18,17 @@
 
 package io.mindmaps.graph.internal;
 
-import io.mindmaps.Mindmaps;
 import io.mindmaps.concept.Concept;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.Type;
 import io.mindmaps.exception.ConceptException;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Stack;
-import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -44,24 +41,14 @@ import static org.junit.Assert.assertTrue;
  *
  */
 
-public class MindmapsGraphTrackingTest {
-
-    private AbstractMindmapsGraph mindmapsGraph;
+public class MindmapsGraphTrackingTest extends GraphTestBase{
     private Set<ConceptImpl> modifiedConcepts;
     private Stack<Concept> newConcepts;
 
     @Before
     public void buildGraphAccessManager() {
-        mindmapsGraph = (AbstractMindmapsGraph) Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        // start standard rootGraph access manager
-        mindmapsGraph.initialiseMetaConcepts();
         modifiedConcepts = new HashSet<>();
         newConcepts = new Stack<>();
-    }
-
-    @After
-    public void destroyGraphAccessManager()  throws Exception{
-        mindmapsGraph.close();
     }
 
     @Test
@@ -92,7 +79,7 @@ public class MindmapsGraphTrackingTest {
 
         // check the concept tracker is empty
         modifiedConcepts = mindmapsGraph.getModifiedConcepts();
-        assertEquals(4, modifiedConcepts.size());
+        assertEquals(3, modifiedConcepts.size());
 
         // add primitive edges in as many ways as possible
         c1.superType(c2);
