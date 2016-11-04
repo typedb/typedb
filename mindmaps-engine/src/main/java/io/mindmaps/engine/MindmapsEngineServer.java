@@ -21,9 +21,18 @@ package io.mindmaps.engine;
 import io.mindmaps.engine.controller.*;
 import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.exception.MindmapsEngineServerException;
+import io.mindmaps.util.REST;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Spark;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
+import java.net.URL;
+import java.net.URLConnection;
 
 import static spark.Spark.*;
 
@@ -33,16 +42,14 @@ import static spark.Spark.*;
 
 public class MindmapsEngineServer {
 
+    private static ConfigProperties prop = ConfigProperties.getInstance();
     private static Logger LOG = null;
-
 
     public static void main(String[] args) {
         start();
     }
 
     public static void start() {
-
-        ConfigProperties prop = ConfigProperties.getInstance();
 
         LOG = LoggerFactory.getLogger(MindmapsEngineServer.class);
 
@@ -64,7 +71,6 @@ public class MindmapsEngineServer {
         new TransactionController();
         new StatusController();
 
-
         //Register Exception Handler
         exception(MindmapsEngineServerException.class, (e, request, response) -> {
             response.status(((MindmapsEngineServerException) e).getStatus());
@@ -81,6 +87,29 @@ public class MindmapsEngineServer {
         Spark.stop();
     }
 
+    /**
+     * Check if Mindmamps Engine has been started
+     * @return true if Mindmaps Engine running, false otherwise
+     */
+    public static boolean isRunning(){
+        try {
+            String host = prop.getProperty(ConfigProperties.SERVER_HOST_NAME);
+            String port = prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER);
+
+            HttpURLConnection connection = (HttpURLConnection)
+                    new URL("http://" + host + ":" + port + REST.WebPath.GRAPH_FACTORY_URI).openConnection();
+            connection.setRequestMethod("GET");
+            connection.connect();
+
+            InputStream inputStream = connection.getInputStream();
+            if(inputStream.available() == 0){
+                return false;
+            }
+        } catch (IOException e){
+            return false;
+        }
+        return true;
+    }
 
     /**
      * Method that prints a welcome message, listening address and path to the LOG that will be used.

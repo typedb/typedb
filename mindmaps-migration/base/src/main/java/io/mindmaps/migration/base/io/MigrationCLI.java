@@ -20,7 +20,7 @@ package io.mindmaps.migration.base.io;
 
 import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.concept.Concept;
+import io.mindmaps.engine.MindmapsEngineServer;
 import io.mindmaps.engine.loader.BlockingLoader;
 import io.mindmaps.engine.loader.DistributedLoader;
 import io.mindmaps.engine.loader.Loader;
@@ -28,7 +28,6 @@ import io.mindmaps.engine.util.ConfigProperties;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.InsertQuery;
 import io.mindmaps.graql.QueryBuilder;
-import io.mindmaps.graql.Var;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -41,8 +40,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.Buffer;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.stream.Stream;
 
@@ -50,6 +47,8 @@ import static io.mindmaps.graql.Graql.count;
 import static io.mindmaps.graql.Graql.var;
 
 public class MigrationCLI {
+
+    private static final String COULD_NOT_CONNECT  = "Could not connect to Mindmaps Engine. Have you run 'mindmaps.sh start'?";
 
     private static final ConfigProperties properties = ConfigProperties.getInstance();
     private Options defaultOptions = new Options();
@@ -63,6 +62,11 @@ public class MigrationCLI {
     private CommandLine cmd;
 
     public MigrationCLI(String[] args, Options options){
+        if(!MindmapsEngineServer.isRunning()){
+            System.out.println(COULD_NOT_CONNECT);
+            System.exit(-1);
+        }
+
         addOptions(options);
         CommandLineParser parser = new DefaultParser();
 
