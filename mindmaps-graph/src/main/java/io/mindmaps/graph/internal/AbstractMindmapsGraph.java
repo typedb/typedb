@@ -365,7 +365,7 @@ public abstract class AbstractMindmapsGraph<G extends Graph> implements Mindmaps
 
     @Override
     public Instance getInstance(Resource uniqueResource){
-        return null;
+        return uniqueResource.owner();
     }
 
     @Override

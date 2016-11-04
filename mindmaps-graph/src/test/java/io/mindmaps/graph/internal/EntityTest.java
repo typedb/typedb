@@ -297,9 +297,9 @@ public class EntityTest extends GraphTestBase{
         //Fail due to non unique resource
         expectedException.expect(ConceptNotUniqueException.class);
         expectedException.expectMessage(allOf(
-                containsString(ErrorMessage.RESOURCE_NOT_UNIQUE.getMessage(resourceUnique.getId()))
+                containsString(ErrorMessage.RESOURCE_NOT_UNIQUE.getMessage(resourceNotUnique.getId()))
         ));
 
-        mindmapsGraph.getInstance(resourceUnique);
+        mindmapsGraph.getInstance(resourceNotUnique);
     }
 }
