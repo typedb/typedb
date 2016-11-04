@@ -31,9 +31,7 @@ public class AtomicMatchQuery extends AtomicQuery{
     }
 
     @Override
-    public Stream<Map<String, Concept>> stream() {
-        return answers.stream();
-    }
+    public Stream<Map<String, Concept>> stream() {return answers.stream();}
 
     @Override
     public QueryAnswers getAnswers(){ return answers;}
