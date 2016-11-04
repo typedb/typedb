@@ -17,6 +17,7 @@ import io.mindmaps.exception.MindmapsValidationException;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import io.mindmaps.graql.internal.analytics.Analytics;
 import io.mindmaps.graql.internal.analytics.MindmapsVertexProgram;
+import io.mindmaps.graql.internal.analytics.BulkResourceMutate;
 import io.mindmaps.test.AbstractGraphTest;
 import io.mindmaps.util.Schema;
 import org.junit.Before;
@@ -69,6 +70,9 @@ public class ClusteringTest extends AbstractGraphTest {
         keyspace = graph.getKeyspace();
 
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(MindmapsVertexProgram.class);
+        logger.setLevel(Level.DEBUG);
+
+        logger = (Logger) org.slf4j.LoggerFactory.getLogger(BulkResourceMutate.class);
         logger.setLevel(Level.DEBUG);
     }
 

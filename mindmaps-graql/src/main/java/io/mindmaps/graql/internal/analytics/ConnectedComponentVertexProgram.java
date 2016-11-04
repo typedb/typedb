@@ -88,7 +88,7 @@ public class ConnectedComponentVertexProgram extends MindmapsVertexProgram<Strin
     public void safeExecute(final Vertex vertex, Messenger<String> messenger, final Memory memory) {
         switch (memory.getIteration()) {
             case 0:
-                    if (selectedTypes.contains(Utility.getVertexType(vertex))) {
+                if (selectedTypes.contains(Utility.getVertexType(vertex))) {
                     String type = vertex.label();
                     if (type.equals(Schema.BaseType.ENTITY.name()) || type.equals(Schema.BaseType.RESOURCE.name())) {
                         // each role-player sends 1 to castings following incoming edges
@@ -193,14 +193,14 @@ public class ConnectedComponentVertexProgram extends MindmapsVertexProgram<Strin
 
     @Override
     public void workerIterationStart(Memory memory) {
-        if ((boolean) this.persistentProperties.get(PERSIST))
+        if ((boolean) this.persistentProperties.get(PERSIST) && (boolean) memory.get(IS_LAST_ITERATION))
             bulkResourceMutate = new BulkResourceMutate<Long>((String) persistentProperties.get(KEYSPACE),
                     Analytics.connectedComponent);
     }
 
     @Override
     public void workerIterationEnd(Memory memory) {
-        if ((boolean) this.persistentProperties.get(PERSIST))
+        if ((boolean) this.persistentProperties.get(PERSIST) && (boolean) memory.get(IS_LAST_ITERATION))
             bulkResourceMutate.flush();
     }
 }
