@@ -125,13 +125,13 @@ public class OWLMigrator {
         return graph.putResourceType(OwlModel.IRI.owlname(), ResourceType.DataType.STRING);
     }
 
-    private <T> Entity getEntity(T id, ResourceType<T> rtype){
+    public <T> Entity getEntity(T id, ResourceType<T> rtype){
         Resource<T> iri = graph.getResource(id, rtype);
         Instance inst = iri != null? iri.ownerInstances().stream().findFirst().orElse(null) : null;
         return inst != null? inst.asEntity() : null;
     }
 
-    private Entity putEntity(String id, EntityType type) {
+    public Entity putEntity(String id, EntityType type) {
         Entity current = getEntity(id, owlIriResource());
         if(current != null) return current;
 

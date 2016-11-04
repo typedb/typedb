@@ -21,10 +21,6 @@ import java.util.Optional;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.JUnitCore;
-import org.junit.runner.Request;
-import org.junit.runner.Result;
-import org.junit.runner.notification.Failure;
 import org.semanticweb.owlapi.model.OWLOntology;
 
 import io.mindmaps.concept.Entity;

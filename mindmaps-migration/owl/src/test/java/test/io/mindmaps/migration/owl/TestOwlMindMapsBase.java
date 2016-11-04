@@ -87,9 +87,8 @@ public class TestOwlMindMapsBase {
             throw new RuntimeException(ex);
         }
     }
-    ResourceType<String> owlIriResource(){
-        return graph.getResourceType(OwlModel.IRI.owlname());
-    }
+
+    ResourceType<String> owlIriResource(){ return graph.getResourceType(OwlModel.IRI.owlname());}
 
     <T> Entity getEntity(T id, ResourceType<T> rtype){
         Resource<T> iri = graph.getResource(id, rtype);
