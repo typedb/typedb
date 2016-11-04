@@ -403,9 +403,17 @@ public class Query implements MatchQueryInternal {
                 .filter(atom -> (!atom.isType()) || atom.isRuleResolvable())
                 .collect(Collectors.toSet());
 
-        if (selectedAtoms.isEmpty())
+        //order by variables
+        Set<Atom> orderedSelection = new LinkedHashSet<>();
+        getVarSet().forEach(var -> {
+            orderedSelection.addAll(selectedAtoms.stream()
+                    .filter(atom -> atom.containsVar(var))
+                    .collect(Collectors.toSet()));
+        });
+
+        if (orderedSelection.isEmpty())
             throw new IllegalStateException(ErrorMessage.NO_ATOMS_SELECTED.getMessage(this.toString()));
-        return selectedAtoms;
+        return orderedSelection;
     }
 
     /**
