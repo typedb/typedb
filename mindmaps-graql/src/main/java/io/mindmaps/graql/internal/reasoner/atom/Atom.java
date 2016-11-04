@@ -93,7 +93,7 @@ public abstract class Atom extends AtomBase {
      * */
     public boolean isResource(){ return false;}
 
-    public boolean checkRuleApplicable(InferenceRule child) {
+    private boolean checkRuleApplicable(InferenceRule child) {
         boolean relRelevant = true;
         Query parent = getParentQuery();
         Atom childAtom = child.getRuleConclusionAtom();
