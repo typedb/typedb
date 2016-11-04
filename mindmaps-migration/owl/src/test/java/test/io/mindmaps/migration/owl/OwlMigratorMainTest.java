@@ -42,6 +42,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.contrib.java.lang.system.ExpectedSystemExit;
 import org.junit.rules.ExpectedException;
 
 import java.io.File;
@@ -49,6 +50,9 @@ import java.io.File;
 import static org.junit.Assert.assertTrue;
 
 public class OwlMigratorMainTest {
+
+    @Rule
+    public final ExpectedSystemExit exit = ExpectedSystemExit.none();
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -72,6 +76,8 @@ public class OwlMigratorMainTest {
     @Before
     public void setup(){
         graph = GraphFactory.getInstance().getGraphBatchLoading(GRAPH_NAME);
+
+        exit.expectSystemExitWithStatus(0);
     }
 
     @After
