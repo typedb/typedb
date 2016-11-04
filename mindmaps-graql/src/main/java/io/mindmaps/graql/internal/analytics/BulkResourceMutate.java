@@ -61,9 +61,6 @@ public class BulkResourceMutate<T> {
     private RoleType resourceValue;
     private RelationType relationType;
 
-    // This has been added for debugging purposes - set to true for debugging
-    private boolean verboseOutput = false;
-
     public BulkResourceMutate(String keyspace, String resourceTypeId) {
         LOGGER.debug("Starting BulkResourceMutate");
         this.keyspace = keyspace;
@@ -82,11 +79,6 @@ public class BulkResourceMutate<T> {
         LOGGER.debug("Considering vertex: " + vertex);
         vertex.properties().forEachRemaining(p -> LOGGER.debug("Vertex property: " + p.toString()));
 
-        if (verboseOutput) {
-            System.out.println("considering vertex: " + vertex);
-            vertex.properties().forEachRemaining(System.out::println);
-        }
-
         String id = vertex.value(Schema.ConceptProperty.ITEM_IDENTIFIER.name());
         resourcesToPersist.put(id, value);
 
@@ -102,7 +94,7 @@ public class BulkResourceMutate<T> {
 
         do {
             hasFailed = false;
-            LOGGER.debug("About to persist");
+            LOGGER.debug("Flush called, about to persist");
             try {
                 persistResources();
             } catch (Exception e) {
@@ -122,8 +114,12 @@ public class BulkResourceMutate<T> {
     }
 
     private void persistResources() throws MindmapsValidationException {
-        initialiseGraph();
+        if (resourcesToPersist.isEmpty()){
+            LOGGER.debug("Nothing to persist");
+            return;
+        }
 
+        initialiseGraph();
         resourcesToPersist.forEach((id, value) -> {
             Instance instance =
                     graph.getInstance(id);
@@ -142,11 +138,6 @@ public class BulkResourceMutate<T> {
                     }).collect(Collectors.toList());
 
             relations.forEach(relation -> LOGGER.debug("Assertions currently attached: " + relation.toString()));
-
-            if (verboseOutput) {
-                System.out.println("assertions currently attached");
-                relations.forEach(System.out::println);
-            }
 
             // if there are no resources at all make a new one
             if (relations.isEmpty()) {

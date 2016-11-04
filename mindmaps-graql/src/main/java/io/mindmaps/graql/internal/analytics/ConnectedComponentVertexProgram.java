@@ -193,14 +193,18 @@ public class ConnectedComponentVertexProgram extends MindmapsVertexProgram<Strin
 
     @Override
     public void workerIterationStart(Memory memory) {
-        if ((boolean) this.persistentProperties.get(PERSIST) && (boolean) memory.get(IS_LAST_ITERATION))
+        if ((boolean) this.persistentProperties.get(PERSIST) && (boolean) memory.get(IS_LAST_ITERATION)) {
+            LOGGER.debug("Iteration " + memory.getIteration() + ", workerIterationStart");
             bulkResourceMutate = new BulkResourceMutate<Long>((String) persistentProperties.get(KEYSPACE),
                     Analytics.connectedComponent);
+        }
     }
 
     @Override
     public void workerIterationEnd(Memory memory) {
-        if ((boolean) this.persistentProperties.get(PERSIST) && (boolean) memory.get(IS_LAST_ITERATION))
+        if ((boolean) this.persistentProperties.get(PERSIST) && (boolean) memory.get(IS_LAST_ITERATION)) {
+            LOGGER.debug("Iteration " + memory.getIteration() + ", workerIterationEnd");
             bulkResourceMutate.flush();
+        }
     }
 }
