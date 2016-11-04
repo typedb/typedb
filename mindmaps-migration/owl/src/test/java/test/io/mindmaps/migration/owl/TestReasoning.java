@@ -26,6 +26,7 @@ import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.graql.internal.reasoner.query.QueryAnswers;
+import io.mindmaps.migration.owl.OwlModel;
 import org.junit.Before;
 import org.junit.Test;
 import org.semanticweb.HermiT.Configuration;
@@ -46,6 +47,7 @@ import java.util.Set;
 
 import java.util.stream.Collectors;
 
+import static io.mindmaps.graql.Graql.id;
 import static io.mindmaps.graql.Graql.var;
 import static org.junit.Assert.assertEquals;
 
@@ -99,7 +101,7 @@ public class TestReasoning extends TestOwlMindMapsBase {
         String objectRoleId = "owl-object-" + relationId;
         MatchQuery query = qb.match(
                 var("x").isa("tPerson"),
-                var("y").id("e"+instanceId),
+                var("y").has(OwlModel.IRI.owlname(), "e"+instanceId),
                 var().isa(relationId).rel(subjectRoleId, "x").rel(objectRoleId, "y") ).select("x");
         QueryAnswers mmAnswers = mmReasoner.resolve(query);
         long mmTime = System.currentTimeMillis() - mmStartTime;
@@ -112,25 +114,27 @@ public class TestReasoning extends TestOwlMindMapsBase {
         QueryBuilder qb = Graql.withGraph(migrator.graph());
         String richardId = "richard_henry_steward_1897";
         String hasGreatUncleId = "op-hasGreatUncle";
-        String explicitQuery = "match $x isa tPerson;{$x id 'erichard_john_bright_1962';} or {$x id 'erobert_david_bright_1965';};";
+        String explicitQuery = "match $x isa tPerson;" +
+                "{$x has owl-iri  'erichard_john_bright_1962';} or {$x has owl-iri  'erobert_david_bright_1965';};";
         assertEquals(inferRelationMM(hasGreatUncleId, richardId), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery)));
 
-        String queryString2 = "match (owl-subject-op-hasGreatUncle: $x, owl-object-op-hasGreatUncle: $y) isa op-hasGreatUncle;$x id 'eethel_archer_1912'; select $y;";
+        String queryString2 = "match (owl-subject-op-hasGreatUncle: $x, owl-object-op-hasGreatUncle: $y) isa op-hasGreatUncle;2 +" +
+                "$x has owl-iri  'eethel_archer_1912'; select $y;";
         String explicitQuery2 = "match $y isa tPerson;"+
-                "{$y id 'eharry_whitfield_1854';} or" +
-                "{$y id 'ejames_whitfield_1848';} or" +
-                "{$y id 'ewalter_whitfield_1863';} or" +
-                "{$y id 'ewilliam_whitfield_1852';} or" +
-                "{$y id 'egeorge_whitfield_1865';};";
+                "{$y has owl-iri  'eharry_whitfield_1854';} or" +
+                "{$y has owl-iri  'ejames_whitfield_1848';} or" +
+                "{$y has owl-iri  'ewalter_whitfield_1863';} or" +
+                "{$y has owl-iri  'ewilliam_whitfield_1852';} or" +
+                "{$y has owl-iri  'egeorge_whitfield_1865';};";
         assertEquals(mmReasoner.resolve(new Query(queryString2, graph)), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery2)));
 
         String queryString3 = "match (owl-subject-op-hasGreatAunt: $x, owl-object-op-hasGreatAunt: $y) isa op-hasGreatAunt;" +
-                "$x id 'emary_kate_green_1865'; select $y;";
-        String explicitQuery3= "match $y isa tPerson;{$y id 'etamar_green_1810';} or" +
-                "{$y id 'ezilpah_green_1810';} or {$y id 'eelizabeth_pickard_1805';} or" +
-                "{$y id 'esarah_ingelby_1821';} or {$y id 'eann_pickard_1809';} or" +
-                "{$y id 'esusanna_pickard_1803';} or {$y id 'emary_green_1803';} or" +
-                "{$y id 'erebecca_green_1800';} or {$y id 'eann_green_1806';};";
+                "$x has owl-iri  'emary_kate_green_1865'; select $y;";
+        String explicitQuery3= "match $y isa tPerson;{$y has owl-iri  'etamar_green_1810';} or" +
+                "{$y has owl-iri  'ezilpah_green_1810';} or {$y has owl-iri  'eelizabeth_pickard_1805';} or" +
+                "{$y has owl-iri  'esarah_ingelby_1821';} or {$y has owl-iri  'eann_pickard_1809';} or" +
+                "{$y has owl-iri  'esusanna_pickard_1803';} or {$y has owl-iri  'emary_green_1803';} or" +
+                "{$y has owl-iri  'erebecca_green_1800';} or {$y has owl-iri  'eann_green_1806';};";
         assertEquals(mmReasoner.resolve(new Query(queryString3, graph)), Sets.newHashSet(qb.<MatchQuery>parse(explicitQuery3)));
 
         String eleanorId = "eleanor_pringle_1741";

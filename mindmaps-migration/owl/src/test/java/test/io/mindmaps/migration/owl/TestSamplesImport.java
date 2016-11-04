@@ -92,12 +92,16 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
             Assert.assertEquals(top, type.superType().superType());
             Assert.assertTrue(top.subTypes().contains(migrator.graph().getEntityType("tPlace")));
             Assert.assertNotEquals(0, type.instances().size());
+
             Assert.assertTrue(
-                type.instances().stream().map(Entity::getId).anyMatch(s -> s.equals("eShakespeare"))
+                type.instances().stream()
+                        .flatMap(inst -> inst.asEntity()
+                                .resources(migrator.graph().getResourceType(OwlModel.IRI.owlname())).stream())
+                        .anyMatch(s -> s.getValue().equals("eShakespeare"))
             );
-            final Entity author = migrator.graph().getEntity("eShakespeare");
+            final Entity author = getEntity("eShakespeare");
             Assert.assertNotNull(author);
-            final Entity work = migrator.graph().getEntity("eHamlet");
+            final Entity work = getEntity("eHamlet");
             Assert.assertNotNull(work);
             checkRelation(author, "op-wrote", work);
             Reasoner reasoner = new Reasoner(migrator.graph());
@@ -128,7 +132,7 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
             Optional<Entity> e = findById(type.instances(), "eProduct5");
             Assert.assertTrue(e.isPresent());
             e.get().resources().stream().map(Resource::type).forEach(System.out::println);
-            checkResource(e.get(),  "Product_Available", "14"); 
+            checkResource(e.get(), "Product_Available", "14");
         }
         catch (Throwable t) {
             t.printStackTrace(System.err);
@@ -153,12 +157,15 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
         try {
             EntityType type = migrator.entityType(owlManager().getOWLDataFactory().getOWLClass(OwlModel.THING.owlname()));          
             Assert.assertNotNull(type);         
-            Assert.assertTrue(type.instances().stream().map(Entity::getId).anyMatch(id -> id.equals("eItem1")));
-            Entity item1 = migrator.graph().getEntity("eItem1");
+            Assert.assertTrue(type.instances().stream().flatMap(inst -> inst.asEntity()
+                    .resources(migrator.graph().getResourceType(OwlModel.IRI.owlname())).stream())
+                    .anyMatch(s -> s.getValue().equals("eItem1")));
+
+            Entity item1 = getEntity("eItem1");
             // Item1 name data property is "First Name"
             item1.resources().stream().anyMatch(r -> r.getValue().equals("First Item"));
             item1.resources().stream().forEach(System.out::println);
-            Entity item2 = migrator.graph().getEntity("eItem2");
+            Entity item2 = getEntity("eItem2");
             RoleType subjectRole = migrator.graph().getRoleType(migrator.namer().subjectRole("op-related"));
             RoleType objectRole = migrator.graph().getRoleType(migrator.namer().objectRole("op-related"));
             Assert.assertTrue(item2.relations(subjectRole).stream().anyMatch(
@@ -168,10 +175,11 @@ public class TestSamplesImport extends TestOwlMindMapsBase {
             Assert.assertTrue(catobjectRole.playedByTypes().contains(migrator.graph().getEntityType("tCategory")));
             Assert.assertTrue(catsubjectRole.playedByTypes().contains(migrator.graph().getEntityType("tThing")));
             //Assert.assertFalse(catobjectRole.playedByTypes().contains(migrator.graph().getEntityType("Thing")));
-            Entity category2 = migrator.graph().getEntity("eCategory2");
+
+            Entity category2 = getEntity("eCategory2");
             Assert.assertTrue(category2.relations(catobjectRole).stream().anyMatch(
                     relation -> item1.equals(relation.rolePlayers().get(catsubjectRole))));
-            Entity category1 = migrator.graph().getEntity("eCategory1");
+            Entity category1 = getEntity("eCategory1");
             category1.resources().forEach(System.out::println);
             // annotation assertion axioms don't seem to be visited for some reason...need to troubleshoot seems like 
             // OWLAPI issue

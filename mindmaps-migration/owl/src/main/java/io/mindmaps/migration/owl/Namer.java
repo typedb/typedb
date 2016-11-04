@@ -100,6 +100,10 @@ public interface Namer {
         return "has-" + resourceId + "-owner";
     }
     /**
+     * Make a name for a resource relation type representing the value of an OWL data property.
+     */
+    default String resourceRelation(String resourceId) { return "has-" + resourceId;}
+    /**
      * Make a name for a resource role player representing the value of an OWL data property.
      */
     default String resourceRole(String resourceId) {
