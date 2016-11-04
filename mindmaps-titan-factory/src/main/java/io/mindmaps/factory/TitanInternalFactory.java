@@ -43,11 +43,11 @@ import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-class MindmapsTitanInternalFactory extends AbstractMindmapsInternalFactory<MindmapsTitanGraph, TitanGraph> {
-    protected final Logger LOG = LoggerFactory.getLogger(MindmapsTitanInternalFactory.class);
+class TitanInternalFactory extends AbstractInternalFactory<MindmapsTitanGraph, TitanGraph> {
+    protected final Logger LOG = LoggerFactory.getLogger(TitanInternalFactory.class);
     private final static String DEFAULT_CONFIG = "backend-default";
 
-    MindmapsTitanInternalFactory(String keyspace, String engineUrl, String config) {
+    TitanInternalFactory(String keyspace, String engineUrl, String config) {
         super(keyspace, engineUrl, config);
     }
 

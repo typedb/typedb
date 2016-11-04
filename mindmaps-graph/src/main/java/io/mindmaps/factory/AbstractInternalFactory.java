@@ -21,7 +21,7 @@ package io.mindmaps.factory;
 import io.mindmaps.graph.internal.AbstractMindmapsGraph;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
-abstract class AbstractMindmapsInternalFactory<M extends AbstractMindmapsGraph<G>, G extends Graph> implements MindmapsInternalFactory<M, G> {
+abstract class AbstractInternalFactory<M extends AbstractMindmapsGraph<G>, G extends Graph> implements InternalFactory<M, G> {
     protected final String keyspace;
     protected final String engineUrl;
     protected final String config;
@@ -32,7 +32,7 @@ abstract class AbstractMindmapsInternalFactory<M extends AbstractMindmapsGraph<G
     protected G graph = null;
     private G batchLoadingGraph = null;
 
-    AbstractMindmapsInternalFactory(String keyspace, String engineUrl, String config){
+    AbstractInternalFactory(String keyspace, String engineUrl, String config){
         this.keyspace = keyspace.toLowerCase();
         this.engineUrl = engineUrl;
         this.config = config;

@@ -16,14 +16,14 @@ import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
 
-public class MindmapsOrientDBInternalFactory extends AbstractMindmapsInternalFactory<MindmapsOrientDBGraph, OrientGraph> {
-    private final Logger LOG = LoggerFactory.getLogger(MindmapsOrientDBInternalFactory.class);
+public class OrientDBInternalFactory extends AbstractInternalFactory<MindmapsOrientDBGraph, OrientGraph> {
+    private final Logger LOG = LoggerFactory.getLogger(OrientDBInternalFactory.class);
     private final Map<String, OrientGraphFactory> openFactories;
     private static final String KEY_TYPE = "keytype";
     private static final String UNIQUE = "type";
     private static final String SPECIAL_IN_MEMORY = "memory";
 
-    public MindmapsOrientDBInternalFactory(String keyspace, String engineUrl, String config) {
+    public OrientDBInternalFactory(String keyspace, String engineUrl, String config) {
         super(keyspace, engineUrl, config);
         openFactories = new HashMap<>();
     }

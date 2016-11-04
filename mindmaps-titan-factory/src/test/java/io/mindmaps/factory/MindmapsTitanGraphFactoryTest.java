@@ -68,7 +68,7 @@ public class MindmapsTitanGraphFactoryTest {
     private static TitanGraph noIndexGraph;
     private static TitanGraph indexGraph;
 
-    private static MindmapsInternalFactory titanGraphFactory ;
+    private static InternalFactory titanGraphFactory ;
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
@@ -77,7 +77,7 @@ public class MindmapsTitanGraphFactoryTest {
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.OFF);
 
-        titanGraphFactory = new MindmapsTitanInternalFactory(TEST_SHARED, TEST_URI, TEST_CONFIG);
+        titanGraphFactory = new TitanInternalFactory(TEST_SHARED, TEST_URI, TEST_CONFIG);
 
         sharedGraph = ((MindmapsTitanGraph) titanGraphFactory.getGraph(TEST_BATCH_LOADING)).getTinkerPopGraph();
 
@@ -331,7 +331,7 @@ public class MindmapsTitanGraphFactoryTest {
 
     private static TitanGraph getGraph() {
         String name = UUID.randomUUID().toString();
-        titanGraphFactory = new MindmapsTitanInternalFactory(name, TEST_URI, TEST_CONFIG);
+        titanGraphFactory = new TitanInternalFactory(name, TEST_URI, TEST_CONFIG);
         Graph graph = ((MindmapsTitanGraph) titanGraphFactory.getGraph(TEST_BATCH_LOADING)).getTinkerPopGraph();
         assertThat(graph, instanceOf(TitanGraph.class));
         return (TitanGraph) graph;
