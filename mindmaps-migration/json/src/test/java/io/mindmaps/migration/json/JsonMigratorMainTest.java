@@ -76,18 +76,18 @@ public class JsonMigratorMainTest {
 
     @Test
     public void jsonMigratorMainTest(){
-        runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace()});
+        runAndAssertDataCorrect(new String[]{"-input", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace()});
     }
 
     @Test
     public void jsonMainDistributedLoaderTest(){
-        runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace(), "-uri", "localhost:4567"});
+        runAndAssertDataCorrect(new String[]{"-input", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace(), "-uri", "localhost:4567"});
     }
 
     @Test
     public void jsonMainNoDataFileNameTest(){
         exception.expect(RuntimeException.class);
-        exception.expectMessage("Data file missing (-f)");
+        exception.expectMessage("Data file missing (-i)");
         runAndAssertDataCorrect(new String[]{"json"});
     }
 
@@ -95,7 +95,7 @@ public class JsonMigratorMainTest {
     public void jsonMainNoTemplateFileNameTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("Template file missing (-t)");
-        runAndAssertDataCorrect(new String[]{"-file", ""});
+        runAndAssertDataCorrect(new String[]{"-input", ""});
     }
 
     @Test
@@ -108,24 +108,24 @@ public class JsonMigratorMainTest {
     @Test
     public void jsonMainNoDataFileExistsTest(){
         exception.expect(RuntimeException.class);
-        runAndAssertDataCorrect(new String[]{"-file", dataFile + "wrong", "-template", templateFile + "wrong"});
+        runAndAssertDataCorrect(new String[]{"-input", dataFile + "wrong", "-template", templateFile + "wrong"});
     }
 
     @Test
     public void jsonMainNoTemplateFileExistsTest(){
         exception.expect(RuntimeException.class);
-        runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile + "wrong"});
+        runAndAssertDataCorrect(new String[]{"-input", dataFile, "-template", templateFile + "wrong"});
     }
 
     @Test
     public void jsonMainBatchSizeArgumentTest(){
-        runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile, "-batch", "100", "-keyspace", graph.getKeyspace(),});
+        runAndAssertDataCorrect(new String[]{"-input", dataFile, "-template", templateFile, "-batch", "100", "-keyspace", graph.getKeyspace(),});
     }
 
     @Test
     public void jsonMainThrowableTest(){
         exception.expect(NumberFormatException.class);
-        runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile, "-batch", "hello"});
+        runAndAssertDataCorrect(new String[]{"-input", dataFile, "-template", templateFile, "-batch", "hello"});
     }
 
     private void runAndAssertDataCorrect(String[] args){

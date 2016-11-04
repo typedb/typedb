@@ -19,7 +19,7 @@
 package io.mindmaps.migration.csv;
 
 import com.google.common.io.Files;
-import io.mindmaps.migration.base.AbstractMigrator;
+import io.mindmaps.migration.base.LoadingMigrator;
 import io.mindmaps.migration.base.io.MigrationCLI;
 import org.apache.commons.cli.Options;
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -38,9 +38,9 @@ public class Main {
 
     private static Options getOptions(){
         Options options = new Options();
-        options.addOption("f", "file", true, "csv file");
+        options.addOption("i", "input", true, "input csv file");
         options.addOption("t", "template", true, "graql template to apply over data");
-        options.addOption("d", "delimiter", true, "delimiter of columns in input file");
+        options.addOption("s", "separator", true, "separator of columns in input file");
         options.addOption("b", "batch", true, "number of row to load at once");
         return options;
     }
@@ -49,10 +49,10 @@ public class Main {
 
         MigrationCLI cli = new MigrationCLI(args, getOptions());
 
-        String csvDataFileName = cli.getRequiredOption("f", "Data file missing (-f)");
-        String csvTemplateName = cli.getRequiredOption("t", "Template file missing (-t)");
+        String csvDataFileName = cli.getRequiredOption("input", "Data file missing (-i)");
+        String csvTemplateName = cli.getRequiredOption("template", "Template file missing (-t)");
         int batchSize = cli.hasOption("b") ? Integer.valueOf(cli.getOption("b")) : CSVMigrator.BATCH_SIZE;
-        String delimiterString =  cli.hasOption("d") ? cli.getOption("d") : Character.toString(CSVMigrator.DELIMITER);
+        String delimiterString =  cli.hasOption("s") ? cli.getOption("s") : Character.toString(CSVMigrator.DELIMITER);
 
         if(delimiterString.toCharArray().length != 1){
             cli.die("Wrong number of characters in delimiter " + delimiterString);
@@ -71,17 +71,18 @@ public class Main {
         cli.printInitMessage(csvDataFile.getPath());
 
         try{
-            AbstractMigrator migrator = new CSVMigrator()
-                                        .setDelimiter(csvDelimiter)
-                                        .setBatchSize(batchSize);
-
             String template = Files.readLines(csvTemplate, StandardCharsets.UTF_8).stream().collect(joining("\n"));
 
-            if(cli.hasOption("o")){
-                cli.writeToFile(migrator.setBatchSize(Integer.MAX_VALUE).migrate(template, csvDataFile));
-                cli.printPartialCompletionMessage();
+            CSVMigrator csvMigrator = new CSVMigrator().setDelimiter(csvDelimiter);
+
+            LoadingMigrator migrator = csvMigrator
+                    .getLoadingMigrator(cli.getLoader())
+                    .setBatchSize(batchSize);
+
+            if(cli.hasOption("n")){
+                cli.writeToSout(csvMigrator.migrate(template, csvDataFile));
             } else {
-                migrator.getLoadingMigrator(cli.getLoader()).migrate(template, csvDataFile);
+                migrator.migrate(template, csvDataFile);
                 cli.printWholeCompletionMessage();
             }
         }

@@ -40,11 +40,18 @@ public class LoadingMigrator {
     public LoadingMigrator(Loader loader, Migrator migrator){
         this.loader = loader;
         this.migrator = migrator;
-        loader.setBatchSize(1);
+    }
+
+    /**
+     * Set number of rows to migrate in one batch
+     * @param batchSize number of rows to migrate at once
+     */
+    public LoadingMigrator setBatchSize(int batchSize){
+        this.loader.setBatchSize(batchSize);
+        return this;
     }
 
     public void migrate(String template, File file) {
-        checkBatchSize();
         try{
             migrator.migrate(template, file).forEach(loader::add);
         } finally {
@@ -53,22 +60,10 @@ public class LoadingMigrator {
     }
 
     public void migrate(String template, Reader reader) {
-        checkBatchSize();
         try{
             migrator.migrate(template, reader).forEach(loader::add);
         } finally {
             loader.waitToFinish();
-        }
-    }
-
-    /**
-     * Warn the user when the batch size of the loader is greater than 1.
-     * If the batch size is greater than 1, it is possible that multiple of the same variables will be committed in
-     * one batch and the resulting committed data will be corrupted.
-     */
-    protected void checkBatchSize(){
-        if(loader.getBatchSize() > 1){
-            LOG.warn("Loading with batch size [" + loader.getBatchSize() + "]. This can cause conflicts on commit.");
         }
     }
 }

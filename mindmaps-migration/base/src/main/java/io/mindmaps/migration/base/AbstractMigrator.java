@@ -18,12 +18,10 @@
 
 package io.mindmaps.migration.base;
 
-import com.google.common.collect.Iterators;
 import io.mindmaps.engine.loader.Loader;
 import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.InsertQuery;
 
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Spliterator;
@@ -33,17 +31,7 @@ import java.util.stream.StreamSupport;
 
 public abstract class AbstractMigrator implements Migrator {
 
-    public static final int BATCH_SIZE = 5;
-    protected int batchSize = BATCH_SIZE;
-
-    /**
-     * Set number of rows to migrate in one batch
-     * @param batchSize number of rows to migrate at once
-     */
-    public AbstractMigrator setBatchSize(int batchSize){
-        this.batchSize = batchSize;
-        return this;
-    }
+    public static final int BATCH_SIZE = 25;
 
     public LoadingMigrator getLoadingMigrator(Loader loader){
         return new LoadingMigrator(loader, this);

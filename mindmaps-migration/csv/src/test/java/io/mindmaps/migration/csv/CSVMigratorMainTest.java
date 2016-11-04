@@ -76,35 +76,35 @@ public class CSVMigratorMainTest {
 
     @Test
     public void csvMainTest(){
-        runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace()});
+        runAndAssertDataCorrect(new String[]{"-input", dataFile, "-template", templateFile, "-keyspace", graph.getKeyspace()});
     }
 
     @Test
     public void tsvMainTest(){
         String tsvFile = getFile("pets/data/pets.tsv").getAbsolutePath();
-        runAndAssertDataCorrect(new String[]{"-file", tsvFile, "-template", templateFile, "-delimiter", "\t", "-keyspace", graph.getKeyspace()});
+        runAndAssertDataCorrect(new String[]{"-input", tsvFile, "-template", templateFile, "-separator", "\t", "-keyspace", graph.getKeyspace()});
     }
 
     @Test
     public void spacesMainTest(){
         String tsvFile = getFile("pets/data/pets.spaces").getAbsolutePath();
-        runAndAssertDataCorrect(new String[]{"-file", tsvFile, "-template", templateFile, "-delimiter", " ", "-keyspace", graph.getKeyspace()});
+        runAndAssertDataCorrect(new String[]{"-input", tsvFile, "-template", templateFile, "-separator", " ", "-keyspace", graph.getKeyspace()});
     }
 
     @Test
     public void csvMainTestDistributedLoader(){
-        runAndAssertDataCorrect(new String[]{"csv", "-file", dataFile, "-template", templateFile, "-uri", "localhost:4567", "-keyspace", graph.getKeyspace()});
+        runAndAssertDataCorrect(new String[]{"csv", "-input", dataFile, "-template", templateFile, "-uri", "localhost:4567", "-keyspace", graph.getKeyspace()});
     }
 
     @Test
     public void csvMainDifferentBatchSizeTest(){
-        runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile, "-batch", "100", "-keyspace", graph.getKeyspace()});
+        runAndAssertDataCorrect(new String[]{"-input", dataFile, "-template", templateFile, "-batch", "100", "-keyspace", graph.getKeyspace()});
     }
 
     @Test
     public void csvMainNoFileNameTest(){
         exception.expect(RuntimeException.class);
-        exception.expectMessage("Data file missing (-f)");
+        exception.expectMessage("Data file missing (-i)");
         runAndAssertDataCorrect(new String[]{});
     }
 
@@ -112,19 +112,19 @@ public class CSVMigratorMainTest {
     public void csvMainNoTemplateNameTest(){
         exception.expect(RuntimeException.class);
         exception.expectMessage("Template file missing (-t)");
-        runAndAssertDataCorrect(new String[]{"-file", dataFile});
+        runAndAssertDataCorrect(new String[]{"-input", dataFile});
     }
 
     @Test
     public void csvMainInvalidTemplateFileTest(){
         exception.expect(RuntimeException.class);
-        runAndAssertDataCorrect(new String[]{"-file", dataFile + "wrong", "-template", templateFile + "wrong"});
+        runAndAssertDataCorrect(new String[]{"-input", dataFile + "wrong", "-template", templateFile + "wrong"});
     }
 
     @Test
     public void csvMainThrowableTest(){
         exception.expect(NumberFormatException.class);
-        runAndAssertDataCorrect(new String[]{"-file", dataFile, "-template", templateFile, "-batch", "hello"});
+        runAndAssertDataCorrect(new String[]{"-input", dataFile, "-template", templateFile, "-batch", "hello"});
     }
 
     @Test

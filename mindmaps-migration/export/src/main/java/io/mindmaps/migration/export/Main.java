@@ -21,11 +21,6 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.migration.base.io.MigrationCLI;
 import org.apache.commons.cli.Options;
 
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.Writer;
-
 /**
  * Export data from Grakn. If no file is provided, it will dump graph content to standard out.
  */
@@ -33,16 +28,15 @@ public class Main {
 
     private static Options options = new Options();
     static {
-        options.addOption("f", "file", true, "output file");
-        options.addOption("o", "ontology", false, "export ontology");
-        options.addOption("d", "data", false, "export data");
+        options.addOption("ontology", false, "export ontology");
+        options.addOption("data", false, "export data");
     }
 
     public static void main(String[] args){
 
         MigrationCLI cli = new MigrationCLI(args, options);
 
-        String outputFile = cli.getOption("f");
+        String outputFile = cli.getOption("destination");
 
         System.out.println("Writing graph " + cli.getKeyspace() + " using MM Engine " +
                 cli.getEngineURI() + " to " + (outputFile == null ? "System.out" : outputFile));
@@ -50,33 +44,12 @@ public class Main {
         MindmapsGraph graph = cli.getGraph();
         GraphWriter graphWriter = new GraphWriter(graph);
 
-        StringBuilder builder = new StringBuilder();
-        if(cli.hasOption("o")){
-            builder.append(graphWriter.dumpOntology());
+        if(cli.hasOption("ontology")){
+            cli.writeToSout(graphWriter.dumpOntology());
         }
 
-        if(cli.hasOption("d")){
-           builder.append(graphWriter.dumpData());
-        }
-
-        Writer writer = null;
-        try {
-            writer = outputFile != null ? new FileWriter(outputFile) : new PrintWriter(System.out);
-
-            // If there is no fileWriter, use a printWriter
-            writer.write(builder.toString());
-            writer.flush();
-        } catch (IOException e){
-            cli.die("Problem writing to file " + outputFile);
-        } finally {
-            if(outputFile != null && writer != null) {
-                try {
-                    writer.close();
-                } catch (IOException e) {
-                    cli.die("Problem closing output stream.");
-                }
-            }
-            graph.close();
+        if(cli.hasOption("data")){
+            cli.writeToSout(graphWriter.dumpOntology());
         }
     }
 }

@@ -40,14 +40,14 @@ public class Main {
 
     private static Options options = new Options();
     static {
-        options.addOption("f", "file", true, "owl file");
+        options.addOption("i", "input", true, "input owl file");
     }
 
     public static void main(String[] args) {
 
         MigrationCLI cli = new MigrationCLI(args, options);
 
-        String owlFilename = cli.getRequiredOption("f", "Please specify owl file with the -owl option.");
+        String owlFilename = cli.getRequiredOption("input", "Please specify owl file with the -i option.");
 
         File owlfile = new File(owlFilename);
         if (!owlfile.exists())
