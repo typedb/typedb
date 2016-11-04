@@ -98,6 +98,10 @@
                     <groupId>com.boundary</groupId>
                     <artifactId>high-scale-lib</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>com.yammer.metrics</groupId>
+                    <artifactId>metrics-core</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 
