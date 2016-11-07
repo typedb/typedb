@@ -51,7 +51,7 @@ public abstract class GraphWriterTestBase {
     }
 
     public void insert(MindmapsGraph graph, String query){
-        graph.graql().parse("insert " + query + ";").execute();
+        graph.graql().parse("insert " + query).execute();
     }
 
     public void assertDataEqual(MindmapsGraph one, MindmapsGraph two){

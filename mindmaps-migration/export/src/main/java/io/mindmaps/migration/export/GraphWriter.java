@@ -72,7 +72,7 @@ public class GraphWriter {
         return stream
                 .map(Object::toString)
                 .filter(s -> !s.isEmpty())
-                .collect(joining(EOL));
+                .collect(joining(EOL, "", EOL));
     }
 
     /**
