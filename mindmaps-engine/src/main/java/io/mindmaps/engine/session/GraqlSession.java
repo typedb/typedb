@@ -37,7 +37,6 @@ import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static io.mindmaps.graql.Graql.withGraph;
 import static io.mindmaps.util.REST.RemoteShell.ACTION;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_AUTOCOMPLETE;
 import static io.mindmaps.util.REST.RemoteShell.ACTION_COMMIT;
@@ -139,7 +138,7 @@ class GraqlSession {
                 String queryString = queryStringBuilder.toString();
                 queryStringBuilder = new StringBuilder();
 
-                query = withGraph(graph).parse(queryString);
+                query = graph.graql().parse(queryString);
 
                 if (query instanceof MatchQuery) {
                     query = reasonMatchQuery((MatchQuery) query);

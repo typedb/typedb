@@ -21,7 +21,6 @@ package io.mindmaps.test.graql.reasoner.inference;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
-import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
@@ -48,7 +47,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testTransitivity() {
         MindmapsGraph graph = GenericGraph.getGraph("transitivity-test.gql");
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match ($x, $y) isa R;$x has index 'i'; select $y;";
@@ -75,7 +74,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testAncestor() {
         MindmapsGraph graph = GenericGraph.getGraph("ancestor-test.gql");
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match (ancestor: $X, descendant: $Y) isa Ancestor;$X has name 'aa';" +
@@ -95,7 +94,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testAncestorPrime() {
         MindmapsGraph graph = GenericGraph.getGraph("ancestor-test.gql");
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match ($X, $Y) isa Ancestor;$X has name 'aa'; select $Y;";
@@ -113,7 +112,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testAncestor2() {
         MindmapsGraph graph = GenericGraph.getGraph("ancestor-test.gql");
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match (ancestor: $X, descendant: $Y) isa Ancestor;";
@@ -134,7 +133,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testAncestor2Prime() {
         MindmapsGraph graph = GenericGraph.getGraph("ancestor-test.gql");
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match ($X, $Y) isa Ancestor;";
@@ -161,7 +160,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testAncestorFriend() {
         MindmapsGraph graph = GenericGraph.getGraph("ancestor-friend-test.gql");
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match (person: $X, ancestor-friend: $Y) isa Ancestor-friend;$X has name 'a'; select $Y;";
@@ -179,7 +178,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testAncestorFriendPrime() {
         MindmapsGraph graph = GenericGraph.getGraph("ancestor-friend-test.gql");
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match ($X, $Y) isa Ancestor-friend;$X has name 'a'; select $Y;";
@@ -195,7 +194,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testAncestorFriend2() {
         MindmapsGraph graph = GenericGraph.getGraph("ancestor-friend-test.gql");
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match (person: $X, ancestor-friend: $Y) isa Ancestor-friend;$Y has name 'd'; select $X;";
@@ -213,7 +212,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testAncestorFriend2Prime() {
         MindmapsGraph graph = GenericGraph.getGraph("ancestor-friend-test.gql");
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match ($X, $Y) isa Ancestor-friend;$Y has name 'd'; select $X;";
@@ -233,7 +232,7 @@ public class RecursiveInferenceTest {
     @Ignore
     public void testSameGeneration(){
         MindmapsGraph graph = GenericGraph.getGraph("recursivity-sg-test.gql");
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match ($x, $y) isa SameGen; $x has name 'a'; select $y;";
@@ -250,7 +249,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testTC() {
         MindmapsGraph graph = GenericGraph.getGraph("recursivity-tc-test.gql");
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match ($x, $y) isa N-TC; $y has index 'a'; select $x;";
@@ -266,7 +265,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testReachability(){
         MindmapsGraph graph = GenericGraph.getGraph("reachability-test.gql");
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match (reach-from: $x, reach-to: $y) isa reachable;";
@@ -289,7 +288,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testReachabilitySymmetric(){
         MindmapsGraph graph = GenericGraph.getGraph("reachability-test-symmetric.gql");
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match ($x, $y) isa reachable;$x has index 'a';select $y;";
@@ -308,7 +307,7 @@ public class RecursiveInferenceTest {
     public void testMatrix(){
         final int N = 5;
         MindmapsGraph graph = MatrixGraph.getGraph(N, N);
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match (Q1-from: $x, Q1-to: $y) isa Q1; $x has index 'a0'; select $y;";
@@ -325,7 +324,7 @@ public class RecursiveInferenceTest {
         final int N = 10;
         final int M = 5;
         MindmapsGraph graph = TailRecursionGraph.getGraph(N, M);
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match (P-from: $x, P-to: $y) isa P; $x has index 'a0'; select $y;";
@@ -342,7 +341,7 @@ public class RecursiveInferenceTest {
     public void testNguyen(){
         final int N = 9;
         MindmapsGraph graph = NguyenGraph.getGraph(N);
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match (N-rA: $x, N-rB: $y) isa N; $x has index 'c'; select $y;";
@@ -360,7 +359,7 @@ public class RecursiveInferenceTest {
     public void testNguyen2(){
         final int N = 9;
         MindmapsGraph graph = NguyenGraph.getGraph(N);
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match $y isa S;";
@@ -376,7 +375,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testSameGenerationCao(){
         MindmapsGraph graph = GenericGraph.getGraph("same-generation-test.gql");
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match ($x, $y) isa SameGen;$x has name 'ann';select $y;";
@@ -396,7 +395,7 @@ public class RecursiveInferenceTest {
         final int N = 5;
         final int M = 5;
         MindmapsGraph graph = MatrixGraphII.getGraph(N, M);
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match (P-from: $x, P-to: $y) isa P;$x has index 'a'; select $y;";
@@ -413,7 +412,7 @@ public class RecursiveInferenceTest {
     public void testPath(){
         final int N = 3;
         MindmapsGraph graph = PathGraph.getGraph(N, 3);
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match (path-from: $x, path-to: $y) isa path;$x has index 'a0'; select $y;";
@@ -429,7 +428,7 @@ public class RecursiveInferenceTest {
     public void testPathPrime(){
         final int N = 3;
         MindmapsGraph graph = PathGraph.getGraph(N, 3);
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match ($x, $y) isa path;$x has index 'a0'; select $y;";
@@ -446,7 +445,7 @@ public class RecursiveInferenceTest {
     public void testPathSymmetric(){
         final int N = 3;
         MindmapsGraph graph = PathGraphSymmetric.getGraph(N, 3);
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match ($x, $y) isa path;$x has index 'a0'; select $y;";
@@ -463,7 +462,7 @@ public class RecursiveInferenceTest {
     public void testPathII(){
         final int N = 3;
         MindmapsGraph graph = PathGraphII.getGraph(N, N);
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match (path-from: $x, path-to: $y) isa path;$x has index 'a0'; select $y;";
@@ -480,7 +479,7 @@ public class RecursiveInferenceTest {
     public void testPathIIPrime(){
         final int N = 3;
         MindmapsGraph graph = PathGraphII.getGraph(N, N);
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match ($x, $y) isa path;$x has index 'a0'; select $y;";
@@ -496,7 +495,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testReverseSameGeneration(){
         MindmapsGraph graph = GenericGraph.getGraph("recursivity-rsg-test.gql");
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match (RSG-from: $x, RSG-to: $y) isa RevSG;$x has name 'a'; select $y;";
@@ -511,7 +510,7 @@ public class RecursiveInferenceTest {
     @Test
     public void testReverseSameGeneration2() {
         MindmapsGraph graph = GenericGraph.getGraph("recursivity-rsg-test.gql");
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match (RSG-from: $x, RSG-to: $y) isa RevSG;";

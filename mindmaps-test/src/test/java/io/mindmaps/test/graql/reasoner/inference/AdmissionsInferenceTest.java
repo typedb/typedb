@@ -20,14 +20,11 @@ package io.mindmaps.test.graql.reasoner.inference;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.test.graql.reasoner.graphs.AdmissionsGraph;
-import io.mindmaps.test.graql.reasoner.graphs.NguyenGraph;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static io.mindmaps.graql.internal.reasoner.Utility.printAnswers;
@@ -39,7 +36,7 @@ public class AdmissionsInferenceTest {
     @Test
     public void testConditionalAdmission() {
         MindmapsGraph graph = AdmissionsGraph.getGraph();
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match $x isa applicant;$x has admissionStatus 'conditional';";
@@ -54,7 +51,7 @@ public class AdmissionsInferenceTest {
     @Test
     public void testDeniedAdmission() {
         MindmapsGraph graph = AdmissionsGraph.getGraph();
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match $x isa applicant;$x has admissionStatus 'denied';";
@@ -68,7 +65,7 @@ public class AdmissionsInferenceTest {
     @Test
     public void testProvisionalAdmission() {
         MindmapsGraph graph = AdmissionsGraph.getGraph();
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match $x isa applicant;$x has admissionStatus 'provisional';";
@@ -82,7 +79,7 @@ public class AdmissionsInferenceTest {
     @Test
     public void testWaitForTranscriptAdmission() {
         MindmapsGraph graph = AdmissionsGraph.getGraph();
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match $x isa applicant;$x has admissionStatus 'wait for transcript';";
@@ -96,7 +93,7 @@ public class AdmissionsInferenceTest {
     @Test
     public void testFullStatusAdmission() {
         MindmapsGraph graph = AdmissionsGraph.getGraph();
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match $x isa applicant;$x has name $name;$x has admissionStatus 'full';";
@@ -111,7 +108,7 @@ public class AdmissionsInferenceTest {
     @Test
     public void testAdmissions() {
         MindmapsGraph graph = AdmissionsGraph.getGraph();
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         Reasoner reasoner = new Reasoner(graph);
 
         String queryString = "match $x has admissionStatus $y;$x has name $name;";

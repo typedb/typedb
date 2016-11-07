@@ -21,7 +21,6 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.Rule;
 import io.mindmaps.concept.Type;
-import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.admin.PatternAdmin;
@@ -30,13 +29,14 @@ import io.mindmaps.graql.admin.VarAdmin;
 import io.mindmaps.graql.internal.pattern.Patterns;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.util.ErrorMessage;
+import javafx.util.Pair;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javafx.util.Pair;
 
 public abstract class Atom extends AtomBase {
 
@@ -115,7 +115,7 @@ public abstract class Atom extends AtomBase {
     }
 
     public MatchQuery getMatchQuery(MindmapsGraph graph) {
-        QueryBuilder qb = Graql.withGraph(graph);
+        QueryBuilder qb = graph.graql();
         MatchQuery matchQuery = qb.match(getPattern());
 
         //add IdPredicates

@@ -21,9 +21,7 @@ package io.mindmaps.test.graql.reasoner;
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.Concept;
-import io.mindmaps.concept.Instance;
 import io.mindmaps.graql.AskQuery;
-import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.admin.Conjunction;
@@ -35,8 +33,6 @@ import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.test.graql.reasoner.graphs.GenericGraph;
 import io.mindmaps.test.graql.reasoner.graphs.SNBGraph;
 import io.mindmaps.util.ErrorMessage;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -44,6 +40,8 @@ import org.junit.rules.ExpectedException;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertTrue;
 
@@ -57,7 +55,7 @@ public class AtomicQueryTest {
     @BeforeClass
     public static void setUpClass() {
         graph = SNBGraph.getGraph();
-        qb = Graql.withGraph(graph);
+        qb = graph.graql();
     }
 
     @Test

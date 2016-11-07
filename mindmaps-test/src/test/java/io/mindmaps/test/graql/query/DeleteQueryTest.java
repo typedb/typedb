@@ -18,7 +18,6 @@
 
 package io.mindmaps.test.graql.query;
 
-import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Var;
 import io.mindmaps.test.AbstractMovieGraphTest;
@@ -47,7 +46,7 @@ public class DeleteQueryTest extends AbstractMovieGraphTest {
         // TODO: Fix delete queries in titan
         assumeFalse(usingTitan());
 
-        qb = Graql.withGraph(graph);
+        qb = graph.graql();
     }
 
     @Test

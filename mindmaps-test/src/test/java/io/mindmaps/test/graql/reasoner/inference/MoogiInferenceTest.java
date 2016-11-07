@@ -2,7 +2,6 @@ package io.mindmaps.test.graql.reasoner.inference;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
@@ -31,7 +30,7 @@ public class MoogiInferenceTest {
     public static void setUpClass() {
         graph = GenericGraph.getGraph(schemaFile, entityFile, assertionFile2, assertionFile, ruleFile);
         reasoner = new Reasoner(graph);
-        qb = Graql.withGraph(graph);
+        qb = graph.graql();
     }
 
     @Test

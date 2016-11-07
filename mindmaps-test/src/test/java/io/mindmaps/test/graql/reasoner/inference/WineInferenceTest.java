@@ -20,7 +20,6 @@ package io.mindmaps.test.graql.reasoner.inference;
 
 import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
-import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
@@ -40,7 +39,7 @@ public class WineInferenceTest {
     public static void setUpClass() {
         MindmapsGraph graph = GenericGraph.getGraph("wines-test.gql", "wines-rules.gql");
         reasoner = new Reasoner(graph);
-        qb = Graql.withGraph(graph);
+        qb = graph.graql();
     }
 
     @Test
