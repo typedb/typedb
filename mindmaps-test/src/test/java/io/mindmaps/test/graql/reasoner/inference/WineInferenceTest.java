@@ -23,7 +23,7 @@ import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
-import io.mindmaps.test.graql.reasoner.graphs.GenericGraph;
+import io.mindmaps.test.graql.reasoner.graphs.TestGraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -37,7 +37,7 @@ public class WineInferenceTest {
 
     @BeforeClass
     public static void setUpClass() {
-        MindmapsGraph graph = GenericGraph.getGraph("wines-test.gql", "wines-rules.gql");
+        MindmapsGraph graph = TestGraph.getGraph("name", "wines-test.gql", "wines-rules.gql");
         reasoner = new Reasoner(graph);
         qb = graph.graql();
     }

@@ -30,8 +30,8 @@ import io.mindmaps.graql.internal.reasoner.atom.Atomic;
 import io.mindmaps.graql.internal.reasoner.atom.AtomicFactory;
 import io.mindmaps.graql.internal.reasoner.atom.IdPredicate;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
-import io.mindmaps.test.graql.reasoner.graphs.GenericGraph;
 import io.mindmaps.test.graql.reasoner.graphs.SNBGraph;
+import io.mindmaps.test.graql.reasoner.graphs.TestGraph;
 import io.mindmaps.util.ErrorMessage;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -109,7 +109,7 @@ public class AtomicQueryTest {
     @Test
     @Ignore
     public void testUnification(){
-        MindmapsGraph localGraph = GenericGraph.getGraph("ancestor-friend-test.gql");
+        MindmapsGraph localGraph = TestGraph.getGraph("name", "ancestor-friend-test.gql");
         AtomicQuery parentQuery = new AtomicQuery("match ($Y, $z) isa Friend; $Y has name 'd'; select $z;", localGraph);
         AtomicQuery childQuery = new AtomicQuery("match ($X, $Y) isa Friend; $Y has name 'd'; select $X;", localGraph);
 

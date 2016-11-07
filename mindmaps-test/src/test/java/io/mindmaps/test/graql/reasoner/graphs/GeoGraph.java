@@ -18,29 +18,19 @@
 
 package io.mindmaps.test.graql.reasoner.graphs;
 
-import io.mindmaps.Mindmaps;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.EntityType;
 import io.mindmaps.concept.Instance;
 import io.mindmaps.concept.RelationType;
-import io.mindmaps.concept.Resource;
-import io.mindmaps.concept.ResourceType;
 import io.mindmaps.concept.RoleType;
 import io.mindmaps.concept.RuleType;
-import io.mindmaps.exception.MindmapsValidationException;
 
-import java.util.UUID;
-
-public class GeoGraph {
-
-    private static MindmapsGraph mindmaps;
+public class GeoGraph extends TestGraph{
 
     private static EntityType university, city, region, country, continent, geographicalObject;
-    private static RelationType hasNameRelation, isLocatedIn;
-    private static ResourceType<String> name;
+    private static RelationType isLocatedIn;
 
     private static RoleType geoEntity, entityLocation;
-    private static RoleType hasNameTarget, hasNameValue;
 
     private static Instance Europe, NorthAmerica;
     private static Instance Warsaw, Wroclaw, London, Munich, Paris, Milan;
@@ -49,36 +39,17 @@ public class GeoGraph {
     private static Instance UW, PW, Imperial, UniversityOfMunich, UCL;
 
     public static MindmapsGraph getGraph() {
-        mindmaps = Mindmaps.factory(Mindmaps.IN_MEMORY, UUID.randomUUID().toString().replaceAll("-", "a")).getGraph();
-        buildGraph();
-        try {
-            mindmaps.commit();
-        } catch (MindmapsValidationException e) {
-            System.out.println(e.getMessage());
-        }
-        return mindmaps;
+        return new GeoGraph().graph();
     }
 
-    private static void buildGraph() {
-        buildOntology();
-        buildInstances();
-        buildRelations();
-        buildRules();
-    }
-
-    private static void buildOntology() {
-        hasNameTarget = mindmaps.putRoleType("has-name-owner");
-        hasNameValue = mindmaps.putRoleType("has-name-value");
-        hasNameRelation = mindmaps.putRelationType("has-name")
-                .hasRole(hasNameTarget).hasRole(hasNameValue);
-        name = mindmaps.putResourceType("name", ResourceType.DataType.STRING).playsRole(hasNameValue);
-        
+    @Override
+    protected void buildOntology() {
         geoEntity = mindmaps.putRoleType("geo-entity");
         entityLocation = mindmaps.putRoleType("entity-location");
         isLocatedIn = mindmaps.putRelationType("is-located-in")
                 .hasRole(geoEntity).hasRole(entityLocation);
 
-        geographicalObject = mindmaps.putEntityType("geoObject").playsRole(hasNameTarget);
+        geographicalObject = mindmaps.putEntityType("geoObject").playsRole(hasKeyTarget);
 
         continent = mindmaps.putEntityType("continent")
                 .superType(geographicalObject)
@@ -97,10 +68,11 @@ public class GeoGraph {
                 .playsRole(entityLocation);
         university = mindmaps.putEntityType("university")
                         .playsRole(geoEntity)
-                        .playsRole(hasNameTarget);
+                        .playsRole(hasKeyTarget);
     }
 
-    private static void buildInstances() {
+    @Override
+    protected void buildInstances() {
         Europe = putEntity("Europe", continent);
         NorthAmerica = putEntity("NorthAmerica", continent);
 
@@ -131,7 +103,8 @@ public class GeoGraph {
         UniversityOfMunich = putEntity("University of Munich", university);
     }
 
-    private static void buildRelations() {
+    @Override
+    protected void buildRelations() {
         mindmaps.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, PW)
                 .putRolePlayer(entityLocation, Warsaw);
@@ -200,27 +173,14 @@ public class GeoGraph {
         mindmaps.addRelation(isLocatedIn)
                 .putRolePlayer(geoEntity, France)
                 .putRolePlayer(entityLocation, Europe);
-
     }
-    private static void buildRules() {
+
+    @Override
+    protected void buildRules() {
         RuleType inferenceRule = mindmaps.getMetaRuleInference();
         String transitivity_LHS = "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                 "(geo-entity: $y, entity-location: $z) isa is-located-in;";
         String transitivity_RHS = "(geo-entity: $x, entity-location: $z) isa is-located-in;";
         mindmaps.addRule(transitivity_LHS, transitivity_RHS, inferenceRule);
-    }
-
-    private static Instance putEntity(String id, EntityType type) {
-        Instance inst = mindmaps.addEntity(type);
-        putResource(inst, name, id, hasNameRelation, hasNameTarget, hasNameValue);
-        return inst;
-    }
-
-    private static <T> void putResource(Instance instance, ResourceType<T> resourceType, T resource, RelationType relationType,
-                                        RoleType targetRole, RoleType valueRole) {
-        Resource resourceInstance = mindmaps.putResource(resource, resourceType);
-        mindmaps.addRelation(relationType)
-                .putRolePlayer(targetRole, instance)
-                .putRolePlayer(valueRole, resourceInstance);
     }
 }

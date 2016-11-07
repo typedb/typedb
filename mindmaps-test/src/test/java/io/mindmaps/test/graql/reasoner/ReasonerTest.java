@@ -79,7 +79,7 @@ public class ReasonerTest {
                       "(member-location: $z, container-location: $y) isa sublocate;";
         String head = "(member-location: $x, container-location: $y) isa sublocate;";
 
-        InferenceRule R2 = new InferenceRule(graph.putRule("test", body, head, graph.getMetaRuleInference()), graph);
+        InferenceRule R2 = new InferenceRule(graph.addRule(body, head, graph.getMetaRuleInference()), graph);
         assertTrue(R.getHead().equals(R2.getHead()));
         assertTrue(R.getBody().equals(R2.getBody()));
     }
@@ -93,7 +93,7 @@ public class ReasonerTest {
         String body = "($x, $y) isa knows;";
         String head = "($x, $x) isa knows;";
 
-        InferenceRule R2 = new InferenceRule(graph.putRule("test", body, head, graph.getMetaRuleInference()), graph);
+        InferenceRule R2 = new InferenceRule(graph.addRule(body, head, graph.getMetaRuleInference()), graph);
         assertTrue(R.getHead().equals(R2.getHead()));
         assertTrue(R.getBody().equals(R2.getBody()));
     }
@@ -143,7 +143,7 @@ public class ReasonerTest {
         Query query = new Query(queryString, graph);
         String body = "$x isa person;$x has name 'Bob';";
         String head = "$x has firstname 'Bob';";
-        graph.putRule("test", body, head, graph.getMetaRuleInference());
+        graph.addRule(body, head, graph.getMetaRuleInference());
 
         Reasoner reasoner = new Reasoner(graph);
         QueryBuilder qb = graph.graql();
@@ -314,7 +314,7 @@ public class ReasonerTest {
         MindmapsGraph graph = SNBGraph.getGraph();
         String body = "$x isa person;";
         String head = "($x, $x) isa knows;";
-        graph.putRule("test", body, head, graph.getMetaRuleInference());
+        graph.addRule(body, head, graph.getMetaRuleInference());
 
         String queryString = "match ($x, $y) isa knows;$x has name 'Bob';select $y;";
         String explicitQuery = "match $y isa person;$y has name 'Bob' or $y has name 'Charlie';";

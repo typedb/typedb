@@ -33,8 +33,8 @@ import io.mindmaps.graql.internal.reasoner.atom.Relation;
 import io.mindmaps.graql.internal.reasoner.query.AtomicQuery;
 import io.mindmaps.graql.internal.reasoner.query.Query;
 import io.mindmaps.test.graql.reasoner.graphs.CWGraph;
-import io.mindmaps.test.graql.reasoner.graphs.GenericGraph;
 import io.mindmaps.test.graql.reasoner.graphs.SNBGraph;
+import io.mindmaps.test.graql.reasoner.graphs.TestGraph;
 import io.mindmaps.util.ErrorMessage;
 import javafx.util.Pair;
 import org.junit.Test;
@@ -165,7 +165,7 @@ public class AtomicTest {
 
     @Test
     public void testRelationConstructor(){
-        MindmapsGraph graph = GenericGraph.getGraph("geo-test.gql");
+        MindmapsGraph graph = TestGraph.getGraph("name", "geo-test.gql");
         QueryBuilder qb = graph.graql();
 
         String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in;";
@@ -188,7 +188,7 @@ public class AtomicTest {
 
     @Test
     public void testRelationConstructor2(){
-        MindmapsGraph graph = GenericGraph.getGraph("geo-test.gql");
+        MindmapsGraph graph = TestGraph.getGraph("name", "geo-test.gql");
         QueryBuilder qb = graph.graql();
 
         String queryString = "match ($x, $y, $z) isa ternary-relation-test;";
