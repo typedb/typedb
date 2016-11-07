@@ -229,6 +229,23 @@ public class ReasonerTest {
     }
 
     @Test
+    public void testTypePatterns() {
+        MindmapsGraph lgraph = GeoGraph.getGraph();
+        QueryBuilder qb = lgraph.graql();
+        Query q = new Query("match $x isa university;", lgraph);
+        String typeString = "match $x isa $type; $type sub geoObject, plays-role geo-entity;";
+        MatchQuery mq = qb.parse(typeString);
+        Query q1 = new Query(typeString, lgraph);
+        /*
+        Query q2 = new Query("match $x isa $type; $type id 'university';", lgraph);
+        Query q3 = new Query("match $x isa $type; $type sub geoObject;", lgraph);
+        Query q4 = new Query("match $x isa $type; $type plays-role geo-entity;", lgraph);
+        Query q5 = new Query("match $x isa $type; $type has-resource name;", lgraph);
+        */
+        System.out.println();
+    }
+
+    @Test
     public void testTypeVar(){
         MindmapsGraph lgraph = GeoGraph.getGraph();
         String queryString = "match $x isa $type;$type id 'university';" +
@@ -283,6 +300,30 @@ public class ReasonerTest {
 
         Reasoner reasoner = new Reasoner(lgraph);
         assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
+    }
+
+    @Test
+    public void testRegex(){
+        MindmapsGraph lgraph = GeoGraph.getGraph();
+        String queryString = "match $y isa country;$y has name $name;"+
+                "$name value  /.*(.*)land(.*).*/;($x, $y) isa is-located-in;select $x, $y;";
+        String queryString2 = "match $y isa country;{$y has name 'Poland';} or {$y has name 'England';};" +
+                "($x, $y) isa is-located-in;";
+        MatchQuery query = new Query(queryString, lgraph);
+        Reasoner reasoner = new Reasoner(lgraph);
+        assertEquals(reasoner.resolve(query), reasoner.resolve(lgraph.graql().parse(queryString2)));
+    }
+
+    @Test
+    public void testContains(){
+        MindmapsGraph lgraph = GeoGraph.getGraph();
+        String queryString = "match $y isa country;$y has name $name;"+
+                "$name value contains 'land';($x, $y) isa is-located-in;select $x, $y;";
+        String queryString2 = "match $y isa country;{$y has name 'Poland';} or {$y has name 'England';};" +
+                "($x, $y) isa is-located-in;";
+        MatchQuery query = new Query(queryString, lgraph);
+        Reasoner reasoner = new Reasoner(lgraph);
+        assertEquals(reasoner.resolve(query), reasoner.resolve(lgraph.graql().parse(queryString2)));
     }
 
     @Test
