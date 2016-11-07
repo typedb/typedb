@@ -44,6 +44,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static io.mindmaps.graql.internal.pattern.Patterns.var;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -609,7 +610,18 @@ public class MindmapsGraphHighLevelTest extends GraphTestBase{
 
     @Test
     public void testGraqlQuery(){
+        String entityType = Schema.MetaSchema.ENTITY_TYPE.getId();
+        EntityType type1 = mindmapsGraph.putEntityType("Concept Type ");
+        EntityType type2 = mindmapsGraph.putEntityType("Concept Type 1");
 
+        List<Map<String, Concept>> results = mindmapsGraph.graql().match(var("x").isa(entityType)).execute();
+        System.out.println();
+
+        boolean found = results.stream().map(Map::values).anyMatch(concepts -> concepts.stream().anyMatch(concept -> concept.equals(type1)));
+        assertTrue(found);
+
+        found = results.stream().map(Map::values).anyMatch(concepts -> concepts.stream().anyMatch(concept -> concept.equals(type2)));
+        assertTrue(found);
     }
 
 }
