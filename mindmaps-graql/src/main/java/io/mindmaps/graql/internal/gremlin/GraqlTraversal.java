@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.internal.gremlin.fragment.Fragment;
+import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -152,7 +153,7 @@ public class GraqlTraversal {
                 if (!fragment.getStart().equals(currentName)) {
                     if (currentName != null) sb.append(" ");
 
-                    sb.append("$").append(fragment.getStart());
+                    sb.append("$").append(StringUtils.left(fragment.getStart(), 3));
                     currentName = fragment.getStart();
                 }
 
@@ -160,7 +161,7 @@ public class GraqlTraversal {
 
                 Optional<String> end = fragment.getEnd();
                 if (end.isPresent()) {
-                    sb.append("$").append(end.get());
+                    sb.append("$").append(StringUtils.left(end.get(), 3));
                     currentName = end.get();
                 }
             }
