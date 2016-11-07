@@ -22,6 +22,7 @@ import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.concept.RelationType;
 import io.mindmaps.concept.Rule;
+import io.mindmaps.graql.Graql;
 import io.mindmaps.graql.MatchQuery;
 import io.mindmaps.graql.QueryBuilder;
 import io.mindmaps.graql.Reasoner;
@@ -220,6 +221,22 @@ public class ReasonerTest {
         String queryString = "match $x isa city;$y isa country;(geo-entity: $x, $y);";
         String queryString2 = "match $x isa city;$y isa country;" +
                 "(geo-entity: $x, entity-location: $y) isa is-located-in;";
+        MatchQuery query = new Query(queryString, lgraph);
+        MatchQuery query2 = new Query(queryString2, lgraph);
+
+        Reasoner reasoner = new Reasoner(lgraph);
+        assertEquals(reasoner.resolve(query), reasoner.resolve(query2));
+    }
+
+    @Test
+    @Ignore
+    public void testTypeVar(){
+        MindmapsGraph lgraph = GeoGraph.getGraph();
+        String queryString = "match $x isa $type;$type id 'university';" +
+                "(geo-entity: $x, entity-location: $y) isa is-located-in; $y isa country;$y has name 'Poland';";
+        String queryString2 = "match $x isa university;$y isa country;$y has name 'Poland';" +
+                "(geo-entity: $x, entity-location: $y) isa is-located-in;";
+        MatchQuery orig = Graql.parse(queryString);
         MatchQuery query = new Query(queryString, lgraph);
         MatchQuery query2 = new Query(queryString2, lgraph);
 
