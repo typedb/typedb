@@ -2,10 +2,15 @@ package io.mindmaps.test.graql.query;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import io.mindmaps.graql.Var;
 import io.mindmaps.graql.internal.gremlin.GraqlTraversal;
+import io.mindmaps.graql.internal.gremlin.GremlinQuery;
 import io.mindmaps.graql.internal.gremlin.fragment.Fragment;
 import io.mindmaps.test.AbstractRollbackGraphTest;
 import org.junit.Test;
+
+import java.util.Optional;
+import java.util.Set;
 
 import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.distinctCasting;
 import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.id;
@@ -17,6 +22,8 @@ import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.outCasting;
 import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.outHasRole;
 import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.outIsa;
 import static io.mindmaps.graql.internal.gremlin.fragment.Fragments.outRolePlayer;
+import static io.mindmaps.graql.internal.pattern.Patterns.var;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class GraqlTraversalTest extends AbstractRollbackGraphTest {
@@ -92,6 +99,33 @@ public class GraqlTraversalTest extends AbstractRollbackGraphTest {
                 traversal(xId, inRolePlayer, inCasting, outCasting, outRolePlayer, distinctCasting);
 
         assertFaster(distinctLate, distinctEarly);
+    }
+
+    @Test
+    public void testAllTraversalsSimpleQuery() {
+        Var pattern = var("x").id("Titanic").isa(var("y").id("movie"));
+        GremlinQuery query = new GremlinQuery(graph, pattern.admin(), ImmutableSet.of("x"), Optional.empty());
+
+        Set<GraqlTraversal> traversals = query.allGraqlTraversals();
+
+        assertEquals(12, traversals.size());
+
+        Set<GraqlTraversal> expected = ImmutableSet.of(
+                traversal(xId, xIsaY, yId),
+                traversal(xId, yTypeOfX, yId),
+                traversal(xId, yId, xIsaY),
+                traversal(xId, yId, yTypeOfX),
+                traversal(xIsaY, xId, yId),
+                traversal(xIsaY, yId, xId),
+                traversal(yTypeOfX, xId, yId),
+                traversal(yTypeOfX, yId, xId),
+                traversal(yId, xId, xIsaY),
+                traversal(yId, xId, yTypeOfX),
+                traversal(yId, xIsaY, xId),
+                traversal(yId, yTypeOfX, xId)
+        );
+
+        assertEquals(expected, traversals);
     }
 
     private static GraqlTraversal traversal(Fragment... fragments) {

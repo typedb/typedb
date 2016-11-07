@@ -20,6 +20,7 @@ package io.mindmaps.graql.internal.gremlin;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import io.mindmaps.MindmapsGraph;
 import io.mindmaps.graql.admin.Conjunction;
 import io.mindmaps.graql.admin.PatternAdmin;
@@ -31,12 +32,15 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static io.mindmaps.graql.internal.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * A class for building gremlin traversals from patterns.
@@ -110,4 +114,9 @@ public class GremlinQuery {
         return innerQueries.stream().flatMap(ConjunctionQuery::getConcepts);
     }
 
+    public Set<GraqlTraversal> allGraqlTraversals() {
+        List<Set<List<Fragment>>> collect = innerQueries.stream().map(ConjunctionQuery::allFragmentOrders).collect(toList());
+        Set<List<List<Fragment>>> lists = Sets.cartesianProduct(collect);
+        return lists.stream().map(list -> GraqlTraversal.create(graph, Sets.newHashSet(list))).collect(toSet());
+    }
 }

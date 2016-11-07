@@ -10,10 +10,12 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import static io.mindmaps.graql.internal.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 
 /**
@@ -31,12 +33,12 @@ public class GraqlTraversal {
     private final ImmutableSet<ImmutableList<Fragment>> fragments;
     private final MindmapsGraph graph;
 
-    private GraqlTraversal(MindmapsGraph graph, ImmutableSet<ImmutableList<Fragment>> fragments) {
+    private GraqlTraversal(MindmapsGraph graph, Set<? extends List<Fragment>> fragments) {
         this.graph = graph;
-        this.fragments = fragments;
+        this.fragments = fragments.stream().map(ImmutableList::copyOf).collect(toImmutableSet());
     }
 
-    public static GraqlTraversal create(MindmapsGraph graph, ImmutableSet<ImmutableList<Fragment>> fragments) {
+    public static GraqlTraversal create(MindmapsGraph graph, Set<? extends List<Fragment>> fragments) {
         return new GraqlTraversal(graph, fragments);
     }
 
@@ -165,5 +167,24 @@ public class GraqlTraversal {
 
             return sb.toString();
         }).collect(joining(", ")) + "}";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        GraqlTraversal that = (GraqlTraversal) o;
+
+        if (fragments != null ? !fragments.equals(that.fragments) : that.fragments != null) return false;
+        return graph != null ? graph.equals(that.graph) : that.graph == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = fragments != null ? fragments.hashCode() : 0;
+        result = 31 * result + (graph != null ? graph.hashCode() : 0);
+        return result;
     }
 }

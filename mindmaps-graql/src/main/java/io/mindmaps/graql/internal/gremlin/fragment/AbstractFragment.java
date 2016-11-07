@@ -63,4 +63,20 @@ abstract class AbstractFragment implements Fragment{
     public String toString() {
         return "$" + start + getName() + end.map(e -> "$" + e).orElse("");
     }
+
+    @Override
+    public int hashCode() {
+        return toString().hashCode();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        AbstractFragment that = (AbstractFragment) o;
+
+        return start != null ? toString().equals(that.toString()) : that.start == null;
+
+    }
 }
